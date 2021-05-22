@@ -47,7 +47,7 @@ struct AdvertisementStatus {
 class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
  public:
   FakeLowEnergyAdvertiser(size_t max_ads, size_t max_ad_size,
-                          std::map<DeviceAddress, AdvertisementStatus>* ad_store)
+                          std::unordered_map<DeviceAddress, AdvertisementStatus>* ad_store)
       : max_ads_(max_ads), max_ad_size_(max_ad_size), ads_(ad_store) {
     ZX_ASSERT(ads_);
   }
@@ -113,7 +113,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
  private:
   size_t max_ads_, max_ad_size_;
-  std::map<DeviceAddress, AdvertisementStatus>* ads_;
+  std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Status pending_error_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
@@ -179,7 +179,7 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   }
 
   LowEnergyAdvertisingManager* adv_mgr() const { return adv_mgr_.get(); }
-  const std::map<DeviceAddress, AdvertisementStatus>& ad_store() { return ad_store_; }
+  const std::unordered_map<DeviceAddress, AdvertisementStatus>& ad_store() { return ad_store_; }
   AdvertisementId last_ad_id() const { return last_instance_.id(); }
 
   // Returns the currently active advertising state. This is useful for tests that want to verify
@@ -204,7 +204,7 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   // TODO(armansito): The address mapping is currently broken since the gap::LEAM always assigns the
   // controller random address. Make this track each instance by instance ID instead once the
   // layering issues have been fixed.
-  std::map<DeviceAddress, AdvertisementStatus> ad_store_;
+  std::unordered_map<DeviceAddress, AdvertisementStatus> ad_store_;
   AdvertisementInstance last_instance_;
   std::optional<hci::Status> last_status_;
   std::unique_ptr<FakeLowEnergyAdvertiser> advertiser_;
