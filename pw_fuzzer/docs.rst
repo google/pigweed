@@ -221,7 +221,7 @@ You can even verify fixes in your local source checkout:
 .. _compiler_rt: https://compiler-rt.llvm.org/
 .. _corpus: https://llvm.org/docs/LibFuzzer.html#corpus
 .. _FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION: https://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
-.. _FuzzedDataProvider: https://github.com/llvm/llvm-project/blob/master/compiler-rt/include/fuzzer/FuzzedDataProvider.h
+.. _FuzzedDataProvider: https://github.com/llvm/llvm-project/blob/HEAD/compiler-rt/include/fuzzer/FuzzedDataProvider.h
 .. _libFuzzer: https://llvm.org/docs/LibFuzzer.html
 .. _libFuzzer options: https://llvm.org/docs/LibFuzzer.html#options
 .. _LLVMFuzzerTestOneInput: https://llvm.org/docs/LibFuzzer.html#fuzz-target
@@ -230,7 +230,7 @@ You can even verify fixes in your local source checkout:
 .. _reproducing: https://google.github.io/oss-fuzz/advanced-topics/reproducing/
 .. _running a fuzzer: https://llvm.org/docs/LibFuzzer.html#running
 .. _sanitizer runtime flags: https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
-.. _split a fuzzing input: https://github.com/google/fuzzing/blob/master/docs/split-inputs.md
+.. _split a fuzzing input: https://github.com/google/fuzzing/blob/HEAD/docs/split-inputs.md
 .. _startup initialization: https://llvm.org/docs/LibFuzzer.html#startup-initialization
-.. _structure aware fuzzing: https://github.com/google/fuzzing/blob/master/docs/structure-aware_fuzzing.md
+.. _structure aware fuzzing: https://github.com/google/fuzzing/blob/HEAD/docs/structure-aware-fuzzing.md
 .. _valid options: https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html

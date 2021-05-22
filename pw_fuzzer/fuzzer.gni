@@ -79,12 +79,12 @@ template("pw_fuzzer") {
       }
     }
 
-    # Dummy target to satisfy `pw_test_group`. It is empty as we don't want to
+    # No-op target to satisfy `pw_test_group`. It is empty as we don't want to
     # automatically run fuzzers.
     group(target_name + ".run") {
     }
 
-    # Dummy target to satisfy `pw_test`. It is empty as we don't need a separate
+    # No-op target to satisfy `pw_test`. It is empty as we don't need a separate
     # lib target.
     group(target_name + ".lib") {
     }

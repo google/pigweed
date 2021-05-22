@@ -28,7 +28,7 @@ environment. The tooling is installed into your workspace, and makes no
 changes to your system. This tooling is designed to be reused by any
 project.
 
-.. _CIPD: https://github.com/luci/luci-go/tree/master/cipd
+.. _CIPD: https://github.com/luci/luci-go/tree/HEAD/cipd
 
 Users interact with  ``pw_env_setup`` with two commands: ``. bootstrap.sh`` and
 ``. activate.sh``. The bootstrap command always pulls down the current versions
@@ -196,7 +196,7 @@ that may require changes, like setting the ``PW_ROOT`` and ``PW_PROJECT_ROOT``
 environment variables. Explanations of parts of ``config.json`` are described
 here.
 
-.. _sample project: https://pigweed.googlesource.com/pigweed/sample_project/+/master
+.. _sample project: https://pigweed.googlesource.com/pigweed/sample_project/+/HEAD
 
 ``cipd_package_files``
   CIPD package file. JSON file consisting of a list of dictionaries with "path",
