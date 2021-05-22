@@ -59,7 +59,7 @@ class Error(Exception):
 
 
 def _get_module(member: object) -> types.ModuleType:
-    """Gets the module or a dummy module if the module isn't found."""
+    """Gets the module or a fake module if the module isn't found."""
     module = inspect.getmodule(member)
     return module if module else types.ModuleType('<unknown>')
 

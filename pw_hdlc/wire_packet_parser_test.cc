@@ -135,6 +135,7 @@ TEST(WirePacketParser, Parse_FlagInFrame) {
   EXPECT_FALSE(parser.Parse(bytes::Concat(kFlag,
                                           kEncodedAddress,
                                           kControl,
+                                          // inclusive-language: ignore
                                           bytes::String("he~lo"),
                                           0xdbae98fe,
                                           kFlag)));

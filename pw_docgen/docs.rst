@@ -36,6 +36,7 @@ Pigweed documentation files are written in `reStructuredText`_ format and
 rendered to HTML using `Sphinx`_ through Pigweed's GN build system.
 
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
+.. inclusive-language: ignore
 .. _Sphinx: http://www.sphinx-doc.org/en/master
 
 There are additonal Sphinx plugins used for rendering diagrams within
