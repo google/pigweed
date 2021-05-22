@@ -15,9 +15,13 @@ Features
 
 pw::i2c::Initiator
 ------------------
+.. inclusive-language: disable
+
 The common interface for initiating transactions with devices on an I2C bus.
 Other documentation sources may call this style of interface an I2C "master",
 "central" or "controller".
+
+.. inclusive-language: enable
 
 pw::i2c::Device
 ---------------

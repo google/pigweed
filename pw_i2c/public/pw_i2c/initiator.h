@@ -24,7 +24,7 @@ namespace pw::i2c {
 
 // Base driver interface for I2C initiating I2C transactions in a thread safe
 // manner. Other documentation sources may call this style of interface an I2C
-// "master", "central" or "controller".
+// "master", "central" or "controller".  // inclusive-language: ignore
 //
 // The Initiator is not required to support 10bit addressing. If only 7bit
 // addressing is supported, the Initiator will assert when given an address
@@ -177,7 +177,7 @@ class Initiator {
   //    enabled.
   Status ProbeDeviceFor(Address device_address,
                         chrono::SystemClock::duration for_at_least) {
-    std::byte ignored_buffer[1] = {};  // Read a dummy byte to probe.
+    std::byte ignored_buffer[1] = {};  // Read a byte to probe.
     return WriteReadFor(
         device_address, ConstByteSpan(), ignored_buffer, for_at_least);
   }

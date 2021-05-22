@@ -20,7 +20,7 @@ namespace pw {
 namespace i2c {
 namespace {
 
-// Dummy test initiator that's used for testing.
+// Fake test initiator that's used for testing.
 class TestInitiator : public Initiator {
  public:
   explicit TestInitiator() {}
