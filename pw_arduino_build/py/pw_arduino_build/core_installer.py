@@ -414,6 +414,6 @@ def install_stm32duino_core(install_prefix, install_dir, cache_dir):
     original_working_dir = os.getcwd()
     os.chdir(install_prefix)
     # TODO(tonymd): Fetch platform specific tools as specified by:
-    # https://github.com/stm32duino/BoardManagerFiles/raw/master/STM32/package_stm_index.json
+    # https://github.com/stm32duino/BoardManagerFiles/raw/HEAD/STM32/package_stm_index.json
     os.chdir(original_working_dir)
     return True

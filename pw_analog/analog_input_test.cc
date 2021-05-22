@@ -22,7 +22,7 @@ namespace {
 constexpr int32_t kLimitsMax = 4096;
 constexpr int32_t kLimitsMin = 0;
 
-// Dummy test analog input that's used for testing.
+// Fake test analog input that's used for testing.
 class TestAnalogInput : public AnalogInput {
  public:
   TestAnalogInput()
