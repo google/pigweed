@@ -23,7 +23,7 @@ import "pw_log_proto/log.proto";
 import "pw_thread_protos/thread.proto";
 import "pw_snapshot_metadata_proto/snapshot_metadata.proto";
 
-// The Snapshot proto is a master list that dictates field numbers that should
+// The Snapshot proto is a list that dictates field numbers that should
 // be used when serializing proto messages into a "Snapshot" that can be
 // ingested by Pigweed's upstream tooling.
 //

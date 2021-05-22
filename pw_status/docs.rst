@@ -13,12 +13,12 @@ The primary feature of ``pw_status`` is the ``pw::Status`` class.
 object that wraps a status code.
 
 ``pw::Status`` uses Google's standard status codes (see the `Google APIs
-repository <https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto>`_).
+repository <https://github.com/googleapis/googleapis/blob/HEAD/google/rpc/code.proto>`_).
 These codes are used extensively in Google projects including `Abseil
 <https://abseil.io>`_ (`status/status.h
-<https://cs.opensource.google/abseil/abseil-cpp/+/master:absl/status/status.h>`_
+<https://cs.opensource.google/abseil/abseil-cpp/+/HEAD:absl/status/status.h>`_
 ) and `gRPC <https://grpc.io>`_ (`doc/statuscodes.md
-<https://github.com/grpc/grpc/blob/master/doc/statuscodes.md>`_).
+<https://github.com/grpc/grpc/blob/HEAD/doc/statuscodes.md>`_).
 
 An OK ``Status`` is created by the ``pw::OkStatus`` function or by the default
 ``Status`` constructor.  Non-OK ``Status`` is created with a static member
