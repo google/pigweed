@@ -81,18 +81,18 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // If |address| is currently advertised, the advertisement is updated.
   //
   // If |connect_callback| is provided, the advertisement will be connectable,
-  // and the provided callback will be called with a connection reference
+  // and the provided |status_callback| will be called with a connection reference
   // when this advertisement is connected to and the advertisement has been
   // stopped.
   //
   // |adv_options.interval| must be a value in "controller timeslices". See
   // hci-spec/hci_constants.h for the valid range.
   //
-  // Provides results in |callback|. If advertising is setup, the final
+  // Provides results in |status_callback|. If advertising is setup, the final
   // interval of advertising is provided in |interval| and |status|
   // is kSuccess. Otherwise, |status| indicates the type of error and |interval| has no meaning.
   //
-  // |callback| may be called before this function returns, but will
+  // |status_callback| may be called before this function returns, but will
   // be called before any calls to |connect_callback|.
   //
   // The maximum advertising and scan response data sizes are determined by the Bluetooth controller
@@ -115,7 +115,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
   virtual void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
-                                ConnectionCallback connect_callback, StatusCallback callback) = 0;
+                                ConnectionCallback connect_callback,
+                                StatusCallback status_callback) = 0;
 
   // Stops any advertisement currently active on |address|. Idempotent and
   // asynchronous. Returns true if advertising will be stopped, false otherwise.

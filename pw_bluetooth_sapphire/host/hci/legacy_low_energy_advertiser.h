@@ -29,7 +29,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   //    and proceeds with start.
   void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                         const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
-                        ConnectionCallback connect_callback, StatusCallback callback) override;
+                        ConnectionCallback connect_callback,
+                        StatusCallback status_callback) override;
 
   // If called while a stop request is pending, returns false.
   // If called while a start request is pending, then cancels the start
@@ -51,7 +52,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StartAdvertisingInternal(const DeviceAddress& address, const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp, AdvertisingIntervalRange interval,
                                 AdvFlags flags, ConnectionCallback connect_callback,
-                                StatusCallback callback);
+                                StatusCallback status_callback);
 
   // Returns true if currently advertising.
   bool advertising() const { return advertised_ != DeviceAddress(); }
@@ -69,7 +70,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     AdvertisingData data;
     AdvertisingData scan_rsp;
     ConnectionCallback connect_callback;
-    StatusCallback callback;
+    StatusCallback status_callback;
   };
   std::optional<StagedParams> staged_params_;
   bool starting_ = false;

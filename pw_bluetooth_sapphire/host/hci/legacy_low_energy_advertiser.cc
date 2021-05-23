@@ -99,7 +99,7 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() { StopAdvertisingInterna
 void LegacyLowEnergyAdvertiser::StartAdvertisingInternal(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
     AdvertisingIntervalRange interval, AdvFlags flags, ConnectionCallback connect_callback,
-    StatusCallback callback) {
+    StatusCallback status_callback) {
   if (advertising()) {
     // Temporarily disable advertising so we can tweak the parameters.
     hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kDisable));
@@ -131,7 +131,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertisingInternal(
   hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kEnable));
 
   hci_cmd_runner_->RunCommands(
-      [this, address, callback = std::move(callback),
+      [this, address, status_callback = std::move(status_callback),
        connect_callback = std::move(connect_callback)](Status status) mutable {
         ZX_DEBUG_ASSERT(starting_);
         starting_ = false;
@@ -145,26 +145,29 @@ void LegacyLowEnergyAdvertiser::StartAdvertisingInternal(
           connect_callback_ = std::move(connect_callback);
         }
 
-        callback(status);
+        status_callback(status);
       });
 }
 
-void LegacyLowEnergyAdvertiser::StartAdvertising(
-    const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
-    AdvertisingOptions adv_options, ConnectionCallback connect_callback, StatusCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
+void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
+                                                 const AdvertisingData& data,
+                                                 const AdvertisingData& scan_rsp,
+                                                 AdvertisingOptions adv_options,
+                                                 ConnectionCallback connect_callback,
+                                                 StatusCallback status_callback) {
+  ZX_DEBUG_ASSERT(status_callback);
   ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   if (adv_options.anonymous) {
     bt_log(DEBUG, "hci-le", "anonymous advertising not supported");
-    callback(Status(HostError::kNotSupported));
+    status_callback(Status(HostError::kNotSupported));
     return;
   }
 
   if (advertising()) {
     if (address != advertised_) {
       bt_log(DEBUG, "hci-le", "already advertising");
-      callback(Status(HostError::kNotSupported));
+      status_callback(Status(HostError::kNotSupported));
       return;
     }
 
@@ -179,19 +182,19 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 
   if (data.CalculateBlockSize(/*include_flags=*/true) > size_limit) {
     bt_log(DEBUG, "hci-le", "advertising data too large");
-    callback(Status(HostError::kAdvertisingDataTooLong));
+    status_callback(Status(HostError::kAdvertisingDataTooLong));
     return;
   }
 
   if (scan_rsp.CalculateBlockSize() > size_limit) {
     bt_log(DEBUG, "hci-le", "scan response too large");
-    callback(Status(HostError::kScanResponseTooLong));
+    status_callback(Status(HostError::kScanResponseTooLong));
     return;
   }
 
   // Midst of a TX power level read - send a cancel over the previous status callback.
   if (staged_params_.has_value()) {
-    auto status_cb = std::move(staged_params_.value().callback);
+    auto status_cb = std::move(staged_params_.value().status_callback);
     status_cb(Status(HostError::kCanceled));
   }
 
@@ -211,7 +214,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
                                   std::move(data_copy),
                                   std::move(scan_rsp_copy),
                                   std::move(connect_callback),
-                                  std::move(callback)};
+                                  std::move(status_callback)};
     if (starting_ && hci_cmd_runner_->IsReady()) {
       return;
     }
@@ -231,17 +234,17 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   // proceed with starting advertising.
   //
   // If advertising was canceled during the TX power level read (either |starting_| was
-  // reset or the |callback| was moved), return early.
+  // reset or the |status_callback| was moved), return early.
   if (adv_options.include_tx_power_level) {
     auto power_cb = [this](auto, const hci::EventPacket& event) mutable {
       ZX_ASSERT(staged_params_.has_value());
-      if ((!starting_) || (!staged_params_.value().callback)) {
+      if ((!starting_) || (!staged_params_.value().status_callback)) {
         bt_log(INFO, "hci-le", "Advertising canceled during TX Power Level read.");
         return;
       }
 
       if (hci_is_error(event, WARN, "hci-le", "read TX power level failed")) {
-        staged_params_.value().callback(event.ToStatus());
+        staged_params_.value().status_callback(event.ToStatus());
         staged_params_ = {};
         starting_ = false;
         return;
@@ -261,7 +264,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
       StartAdvertisingInternal(staged_params.address, staged_params.data, staged_params.scan_rsp,
                                staged_params.interval, staged_params.flags,
                                std::move(staged_params.connect_callback),
-                               std::move(staged_params.callback));
+                               std::move(staged_params.status_callback));
     };
 
     hci_->command_channel()->SendCommand(BuildReadAdvertisingTxPower(), std::move(power_cb));
@@ -269,7 +272,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   }
 
   StartAdvertisingInternal(address, data, scan_rsp, adv_options.interval, adv_options.flags,
-                           std::move(connect_callback), std::move(callback));
+                           std::move(connect_callback), std::move(status_callback));
 }
 
 // TODO(fxbug.dev/50542): StopAdvertising() should cancel outstanding calls to StartAdvertising()
@@ -352,11 +355,11 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Co
 
   // Assign the currently advertised address as the local address of the
   // connection.
-  auto callback = std::move(connect_callback_);
+  auto connect_callback = std::move(connect_callback_);
   StopAdvertisingInternal();
 
   // Pass on the ownership.
-  callback(std::move(link));
+  connect_callback(std::move(link));
 }
 
 }  // namespace bt::hci
