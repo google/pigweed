@@ -13,10 +13,10 @@
 # the License.
 """Inclusive language presubmit check."""
 
-import collections
+import dataclasses
 from pathlib import Path
 import re
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from . import presubmit
 
@@ -81,16 +81,37 @@ _DISABLE = 'inclusive-language: disable'
 _ENABLE = 'inclusive-language: enable'
 
 
+@dataclasses.dataclass
+class PathMatch:
+    word: str
+
+    def __repr__(self):
+        return f'Found non-inclusive word "{self.word}" in file path'
+
+
+@dataclasses.dataclass
+class LineMatch:
+    line: int
+    word: str
+
+    def __repr__(self):
+        return f'Found non-inclusive word "{self.word}" on line {self.line}'
+
+
 def inclusive_language(
     ctx: presubmit.PresubmitContext,
     words_regex=NON_INCLUSIVE_WORDS_REGEX,
 ):
     """Presubmit check that ensures files do not contain banned words."""
 
-    Match = collections.namedtuple('Match', 'line word')
-    found_words: Dict[Path, List[Match]] = {}
+    found_words: Dict[Path, List[Union[PathMatch, LineMatch]]] = {}
 
     for path in ctx.paths:
+        match = words_regex.search(str(path.relative_to(ctx.root)))
+        if match:
+            found_words.setdefault(path, [])
+            found_words[path].append(PathMatch(match.group(0)))
+
         try:
             with open(path, 'r') as ins:
                 enabled = True
@@ -110,7 +131,8 @@ def inclusive_language(
 
                         if match:
                             found_words.setdefault(path, [])
-                            found_words[path].append(Match(i, match.group(0)))
+                            found_words[path].append(
+                                LineMatch(i, match.group(0)))
 
                     # Not using 'continue' so this line always executes.
                     prev = line
@@ -123,9 +145,7 @@ def inclusive_language(
         print('=' * 40)
         print(path)
         for match in matches:
-            print(
-                f'Found non-inclusive word "{match.word}" on line {match.line}'
-            )
+            print(match)
 
     if found_words:
         print()
