@@ -33,7 +33,7 @@ include_guard(GLOBAL)
 #   PREFIX - prefix add to the proto files
 #   STRIP_PREFIX - prefix to remove from the proto files
 #   INPUTS - files to include along with the .proto files (such as Nanopb
-#       .options files
+#       .options files)
 #
 function(pw_proto_library NAME)
   cmake_parse_arguments(PARSE_ARGV 1 arg "" "STRIP_PREFIX;PREFIX"
@@ -236,28 +236,37 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
     )
     set(generated_outputs $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
   else()
-    _pw_generate_protos("${NAME}._generate.nanopb"
-        nanopb
-        "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb"
-        ".pb.h;.pb.c"
-        "${INCLUDE_FILE}"
-        "${OUT_DIR}"
-        "${SOURCES}"
-        "${INPUTS}"
-        "${DEPS}"
-    )
+    # When compiling with the Nanopb plugin, the nanopb.proto file is already
+    # compiled internally, so skip recompiling it with protoc.
+    if("${SOURCES}" MATCHES "nanopb\\.proto")
+      add_custom_target("${NAME}._generate.nanopb")  # Nothing to do
+      add_library("${NAME}.nanopb" INTERFACE)
+      target_link_libraries("${NAME}.nanopb" INTERFACE pw_third_party.nanopb ${DEPS})
+    else()
+      _pw_generate_protos("${NAME}._generate.nanopb"
+          nanopb
+          "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb"
+          ".pb.h;.pb.c"
+          "${INCLUDE_FILE}"
+          "${OUT_DIR}"
+          "${SOURCES}"
+          "${INPUTS}"
+          "${DEPS}"
+      )
+
+      # Create the library with the generated source files.
+      add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${generated_outputs})
+      target_include_directories("${NAME}.nanopb" PUBLIC "${OUT_DIR}/nanopb")
+      target_link_libraries("${NAME}.nanopb" PUBLIC pw_third_party.nanopb ${DEPS})
+    endif()
+
+    add_dependencies("${NAME}.nanopb" "${NAME}._generate.nanopb")
 
     # Ensure that nanopb_pb2.py is generated to avoid race conditions.
     add_dependencies("${NAME}._generate.nanopb"
         pw_third_party.nanopb.generate_proto
     )
   endif()
-
-  # Create the library with the generated source files.
-  add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${generated_outputs})
-  target_include_directories("${NAME}.nanopb" PUBLIC "${OUT_DIR}/nanopb")
-  target_link_libraries("${NAME}.nanopb" PUBLIC pw_third_party.nanopb ${DEPS})
-  add_dependencies("${NAME}.nanopb" "${NAME}._generate.nanopb")
 endfunction(_pw_nanopb_library)
 
 # Internal function that creates a nanopb_rpc library.

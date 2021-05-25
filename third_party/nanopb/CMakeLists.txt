@@ -12,6 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
+
 set(dir_pw_third_party_nanopb "" CACHE PATH "Path to the Nanopb installation.")
 option(pw_third_party_nanopb_ADD_SUBDIRECTORY
     "Whether to add the dir_pw_third_party_nanopb subdirectory" OFF)
@@ -30,6 +33,13 @@ target_link_libraries(pw_third_party.nanopb INTERFACE "${nanopb_main_library}")
 target_include_directories(pw_third_party.nanopb
   INTERFACE
     "${dir_pw_third_party_nanopb}"
+)
+
+pw_proto_library(pw_third_party.nanopb.proto
+  SOURCES
+    "${dir_pw_third_party_nanopb}/generator/proto/nanopb.proto"
+  STRIP_PREFIX
+    "${dir_pw_third_party_nanopb}/generator/proto"
 )
 
 # Generates nanopb_pb2.py, which is needed to compile protobufs with Nanopb.
