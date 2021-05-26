@@ -102,7 +102,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
           include_tx_power_level(include_tx_power_level) {}
 
     AdvertisingIntervalRange interval;
-    bool anonymous;
+    bool anonymous;  // TODO(fxbug.dev/77537): anonymous advertising is currently not supported
     AdvFlags flags;
     bool include_tx_power_level;
   };
