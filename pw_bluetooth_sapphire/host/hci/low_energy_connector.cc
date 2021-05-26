@@ -224,7 +224,13 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   // If the connection did not match a pending request then we pass the
   // information down to the incoming connection delegate.
   if (!matches_pending_request) {
-    delegate_(handle, role, peer_address, connection_params);
+    // TODO(fxbug.dev/76213):: at the moment, we always pass std::nullopt through because there is
+    // only a single descendent of LowEnergyAdvertiser, LegacyLowEnergyAdvertiser. It looks a bit
+    // funny at the moment, but doing so right now allows us to break a circular dependency between
+    // the refactoring work and the extended advertising change itself, while also keeping changes
+    // small and reviewable. The std::nullopt will be expanded to the correct value based on the
+    // advertising type used (legacy or extended) in a future change.
+    delegate_(handle, role, std::nullopt, peer_address, connection_params);
     return CommandChannel::EventCallbackResult::kContinue;
   }
 

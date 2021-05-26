@@ -167,8 +167,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_TRUE(MoveLastStatus());
 
   // The connection manager will hand us a connection when one gets created.
-  advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, kRandomAddress,
-                                     LEConnectionParameters());
+  advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, std::nullopt,
+                                     kRandomAddress, LEConnectionParameters());
   ASSERT_TRUE(link);
   EXPECT_EQ(kHandle, link->handle());
   EXPECT_EQ(kPublicAddress, link->local_address());
@@ -193,8 +193,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
 
   // Accept a connection from kPublicAddress. The local and peer addresses
   // should get assigned correctly.
-  advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, kPublicAddress,
-                                     LEConnectionParameters());
+  advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, std::nullopt,
+                                     kPublicAddress, LEConnectionParameters());
   // ASSERT_TRUE(link);
   EXPECT_EQ(kRandomAddress, link->local_address());
   EXPECT_EQ(kPublicAddress, link->peer_address());
@@ -230,8 +230,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, RestartInConnectionCallback) {
     }
   });
 
-  advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, kRandomAddress,
-                                     LEConnectionParameters());
+  advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, std::nullopt,
+                                     kRandomAddress, LEConnectionParameters());
 
   // Advertising should get disabled and re-enabled.
   RunLoopUntilIdle();
@@ -261,7 +261,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) 
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller should
   // become disconnected.
-  advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
+  advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, std::nullopt, kRandomAddress,
                                      LEConnectionParameters());
   RunLoopUntilIdle();
   ASSERT_EQ(2u, connection_states.size());
@@ -299,7 +299,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAd
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller should
   // become disconnected.
-  advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
+  advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, std::nullopt, kRandomAddress,
                                      LEConnectionParameters());
   RunLoopUntilIdle();
   ASSERT_EQ(2u, connection_states.size());

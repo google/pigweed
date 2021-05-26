@@ -94,6 +94,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   }
 
   void OnIncomingConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+                            std::optional<DeviceAddress> local_address,
                             const DeviceAddress& peer_address,
                             const hci::LEConnectionParameters& conn_params) override {
     // Right now, we call the first callback, because we can't call any other
@@ -313,7 +314,8 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectCallback) {
   advertised_id = last_ad_id();
 
   DeviceAddress peer_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
-  advertiser()->OnIncomingConnection(1, hci::Connection::Role::kSlave, peer_address,
+  DeviceAddress local_address(DeviceAddress::Type::kLEPublic, {1, 2, 3, 3, 2, 1});
+  advertiser()->OnIncomingConnection(1, hci::Connection::Role::kSlave, local_address, peer_address,
                                      hci::LEConnectionParameters());
   RunLoopUntilIdle();
   ASSERT_TRUE(link);

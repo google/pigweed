@@ -41,6 +41,26 @@ class Transport;
 // of the controller while allowing simultaneous operations.
 class LowEnergyConnector : public LocalAddressClient {
  public:
+  // The IncomingConnectionDelegate defines the interface that LowEnergyConnector will use to
+  // callback on an incoming connection.
+  //
+  //  - |handle|: Data Connection Handle used for ACL and SCO logical link connections.
+  //
+  //  - |role|: The role (master or slave) that this device is opearting in for this connection.
+  //
+  //  - |local_address|: Some advertising modes (e.g. legacy advertising) support only a single
+  //    address set and don't return the local address in the LE_Connection_Complete event. As
+  //    such, the local_address parameter is optional to indicate whether we know the local address
+  //    or not (e.g. we do when using extended advertising).
+  //
+  //  - |peer_address|: The address of the remote peer.
+  //
+  //  - |conn_params|: Connection related parameters.
+  using IncomingConnectionDelegate = fit::function<void(
+      ConnectionHandle handle, Connection::Role role,
+      const std::optional<DeviceAddress> local_address, const DeviceAddress& peer_address,
+      const LEConnectionParameters& conn_params)>;
+
   // The constructor expects the following arguments:
   //   - |hci|: The HCI transport this should operate on.
   //
@@ -53,14 +73,11 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //   - |delegate|: The delegate that will be notified when a new logical link
   //     is established due to an incoming request (remote initiated).
-  using IncomingConnectionDelegate = fit::function<void(
-      ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
-      const LEConnectionParameters& conn_params)>;
   LowEnergyConnector(fxl::WeakPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
                      async_dispatcher_t* dispatcher, IncomingConnectionDelegate delegate);
 
   // Deleting an instance cancels any pending connection request.
-  ~LowEnergyConnector();
+  ~LowEnergyConnector() override;
 
   // Creates a LE link layer connection to the remote device identified by
   // |peer_address| with initial connection parameters |initial_parameters|.

@@ -42,6 +42,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // Clears the advertising state before passing |link| on to
   // |connect_callback_|.
   void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
+                            std::optional<DeviceAddress> local_address,
                             const DeviceAddress& peer_address,
                             const LEConnectionParameters& conn_params) override;
 

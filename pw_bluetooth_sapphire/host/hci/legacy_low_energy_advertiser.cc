@@ -329,18 +329,27 @@ void LegacyLowEnergyAdvertiser::StopAdvertisingInternal() {
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
+                                                     std::optional<DeviceAddress> opt_local_address,
                                                      const DeviceAddress& peer_address,
                                                      const LEConnectionParameters& conn_params) {
+  static DeviceAddress identity_address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+
+  // Since legacy advertising supports only a single address set, the LE_Connection_Complete event
+  // doesn't include the local address. Consequently, LegacyLowEnergyAdvertiser is the only entity
+  // that knows the local address being advertised. As such, we ignore a potential value in
+  // opt_local_address since we already know what the local address should be.
+  ZX_DEBUG_ASSERT(!opt_local_address);
+
+  // We use the identity address as the local address if we aren't advertising (obviously wrong if
+  // we aren't advertising). The link will be disconnected in that case before it can propagate to
+  // higher layers.
+  DeviceAddress local_address = identity_address;
+  if (advertising()) {
+    local_address = advertised_;
+  }
+
   // Immediately construct a Connection object. If this object goes out of scope following the error
-  // checks below, it will send the a command to disconnect the link. We assign |advertised_| as the
-  // local address however this address may be invalid if we're not advertising. This is OK as the
-  // link will be disconnected in that case before it can propagate to higher layers.
-  //
-  // TODO(fxbug.dev/2761): We can't assign the default address since an LE connection cannot have a
-  // BR/EDR type. This temporary default won't be necessary was we remove transport from the address
-  // type.
-  auto local_address =
-      advertising() ? advertised_ : DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+  // checks below, it will send the a command to disconnect the link.
   auto link = Connection::CreateLE(handle, role, local_address, peer_address, conn_params, hci_);
 
   if (!advertising()) {
