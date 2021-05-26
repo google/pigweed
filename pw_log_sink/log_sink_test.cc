@@ -35,8 +35,8 @@ std::string LogMessageToString(ConstByteSpan message) {
   EXPECT_TRUE(log_decoder.Next().ok());  // line_level - 2
   EXPECT_TRUE(log_decoder.Next().ok());  // flags - 3
   EXPECT_TRUE(log_decoder.Next().ok());  // timestamp - 5
-  EXPECT_TRUE(log_decoder.Next().ok());  // message_string - 16
-  EXPECT_EQ(16U, log_decoder.FieldNumber());
+  EXPECT_TRUE(log_decoder.Next().ok());  // message - 1
+  EXPECT_EQ(1u, log_decoder.FieldNumber());
   EXPECT_TRUE(log_decoder.ReadString(&log_entry_message).ok());
 
   return std::string(log_entry_message);

@@ -35,6 +35,7 @@ pw_python_group("python") {
     "$dir_pw_doctor/py",
     "$dir_pw_env_setup/py",
     "$dir_pw_hdlc/py",
+    "$dir_pw_log:protos.python",
     "$dir_pw_log_tokenized/py",
     "$dir_pw_module/py",
     "$dir_pw_package/py",

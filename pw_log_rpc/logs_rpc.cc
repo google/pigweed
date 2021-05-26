@@ -21,13 +21,14 @@
 namespace pw::log_rpc {
 namespace {
 
-Result<ConstByteSpan> GenerateDroppedEntryMessage(ByteSpan encode_buffer,
-                                                  size_t dropped_entries) {
-  pw::protobuf::NestedEncoder nested_encoder(encode_buffer);
-  pw::log::LogEntry::Encoder encoder(&nested_encoder);
-  encoder.WriteDropped(dropped_entries);
-  return nested_encoder.Encode();
-}
+// TODO(prashanthsw): Handle dropped messages.
+// Result<ConstByteSpan> GenerateDroppedEntryMessage(ByteSpan encode_buffer,
+//                                                   size_t dropped_entries) {
+//   pw::protobuf::NestedEncoder nested_encoder(encode_buffer);
+//   pw::log::LogEntry::Encoder encoder(&nested_encoder);
+//   encoder.WriteDropped(dropped_entries);
+//   return nested_encoder.Encode();
+// }
 
 }  // namespace
 
@@ -44,13 +45,14 @@ Status Logs::Flush() {
 
   // If previous calls to flush resulted in dropped entries, generate a
   // dropped entry message and write it before further log messages.
-  if (dropped_entries_ > 0) {
-    ByteSpan payload = response_writer_.PayloadBuffer();
-    Result dropped_log = GenerateDroppedEntryMessage(payload, dropped_entries_);
-    PW_TRY(dropped_log.status());
-    PW_TRY(response_writer_.Write(dropped_log.value()));
-    dropped_entries_ = 0;
-  }
+  // TODO(prashanthsw): Handle dropped messages.
+  // if (dropped_entries_ > 0) {
+  //   ByteSpan payload = response_writer_.PayloadBuffer();
+  //   Result dropped_log = GenerateDroppedEntryMessage(payload,
+  //   dropped_entries_); PW_TRY(dropped_log.status());
+  //   PW_TRY(response_writer_.Write(dropped_log.value()));
+  //   dropped_entries_ = 0;
+  // }
 
   // Write logs to the response writer. An important limitation of this
   // implementation is that if this RPC call fails, the logs are lost -

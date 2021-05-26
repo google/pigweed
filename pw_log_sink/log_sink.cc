@@ -79,8 +79,7 @@ extern "C" void pw_LogSink_Log(int level,
   va_start(args, message);
   buffer.FormatVaList(message, args);
   va_end(args);
-  encoder.WriteMessageString(buffer.c_str());
-  encoder.WriteThreadString("");
+  encoder.WriteMessage(std::as_bytes(std::span(buffer.view())));
 
   ConstByteSpan log_entry;
   Status status = nested_encoder.Encode(&log_entry);

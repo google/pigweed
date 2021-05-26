@@ -38,7 +38,7 @@ void VerifyLogEntry(pw::protobuf::Decoder& log_decoder,
                     const uint32_t expected_flags,
                     const uint32_t expected_level,
                     const uint32_t expected_line,
-                    const uint32_t expected_tokenized_thread,
+                    const uint32_t /* expected_tokenized_thread */,
                     const int64_t expected_timestamp) {
   ConstByteSpan log_entry_message;
   EXPECT_TRUE(log_decoder.Next().ok());  // preamble
@@ -68,15 +68,16 @@ void VerifyLogEntry(pw::protobuf::Decoder& log_decoder,
   EXPECT_TRUE(entry_decoder.ReadUint32(&flags).ok());
   EXPECT_EQ(expected_flags, flags);
 
-  uint32_t tokenized_thread;
-  EXPECT_TRUE(entry_decoder.Next().ok());  // tokenized_thread
-  EXPECT_EQ(4U, entry_decoder.FieldNumber());
-  EXPECT_TRUE(entry_decoder.ReadUint32(&tokenized_thread).ok());
-  EXPECT_EQ(expected_tokenized_thread, tokenized_thread);
+  // TODO(prashanthsw): Add thread name when supported.
+  // uint32_t tokenized_thread;
+  // EXPECT_TRUE(entry_decoder.Next().ok());  // tokenized_thread
+  // EXPECT_EQ(4U, entry_decoder.FieldNumber());
+  // EXPECT_TRUE(entry_decoder.ReadUint32(&tokenized_thread).ok());
+  // EXPECT_EQ(expected_tokenized_thread, tokenized_thread);
 
   int64_t timestamp;
   EXPECT_TRUE(entry_decoder.Next().ok());  // timestamp
-  EXPECT_EQ(5U, entry_decoder.FieldNumber());
+  EXPECT_EQ(4U, entry_decoder.FieldNumber());
   EXPECT_TRUE(entry_decoder.ReadInt64(&timestamp).ok());
   EXPECT_EQ(expected_timestamp, timestamp);
 }

@@ -34,24 +34,26 @@ Status LogQueue::PushTokenizedMessage(ConstByteSpan message,
                                       uint32_t flags,
                                       uint32_t level,
                                       uint32_t line,
-                                      uint32_t thread,
+                                      uint32_t /* thread */,
                                       int64_t timestamp) {
   pw::protobuf::NestedEncoder nested_encoder(encode_buffer_);
   pw::log::LogEntry::Encoder encoder(&nested_encoder);
   Status status;
 
-  encoder.WriteMessageTokenized(message);
+  encoder.WriteMessage(message);
   encoder.WriteLineLevel((level & PW_LOG_LEVEL_BITMASK) |
                          ((line << PW_LOG_LEVEL_BITS) & ~PW_LOG_LEVEL_BITMASK));
   encoder.WriteFlags(flags);
-  encoder.WriteThreadTokenized(thread);
+  // TODO(prashanthsw): Update when the thread_name field is added.
+  // encoder.WriteThreadName(bytes::CopyInOrder(std::endian::little, &thread));
 
   // TODO(prashanthsw): Add support for delta encoding of the timestamp.
   encoder.WriteTimestamp(timestamp);
 
-  if (dropped_entries_ > 0) {
-    encoder.WriteDropped(dropped_entries_);
-  }
+  // TODO(prashanthsw): Handle dropped messages.
+  // if (dropped_entries_ > 0) {
+  //   encoder.WriteDropped(dropped_entries_);
+  // }
 
   ConstByteSpan log_entry;
   status = nested_encoder.Encode(&log_entry);
