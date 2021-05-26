@@ -36,8 +36,8 @@ except ImportError:
 import pw_package.pigweed_packages
 
 from pw_presubmit import build, cli, format_code, git_repo, call, filter_paths
-from pw_presubmit import inclusive_language, plural, PresubmitContext
-from pw_presubmit import PresubmitFailure, Programs
+import pw_presubmit.inclusive_language
+from pw_presubmit import plural, PresubmitContext, PresubmitFailure, Programs
 from pw_presubmit.install_hook import install_hook
 
 _LOG = logging.getLogger(__name__)
@@ -611,6 +611,11 @@ def static_analysis(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
+@filter_paths(exclude=(r'\byarn.lock$', ))
+def inclusive_language(ctx: PresubmitContext):
+    pw_presubmit.inclusive_language.inclusive_language(ctx)
+
+
 def renode_check(ctx: PresubmitContext):
     """Placeholder for future check."""
     _LOG.info('%s %s', ctx.root, ctx.output_dir)
@@ -621,7 +626,7 @@ def renode_check(ctx: PresubmitContext):
 #
 
 OTHER_CHECKS = (
-    inclusive_language.inclusive_language,
+    inclusive_language,
     # TODO(pwbug/45): Remove clang-tidy from OTHER_CHECKS when it passes.
     clang_tidy,
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
