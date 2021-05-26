@@ -38,7 +38,7 @@ declare class SerialPort {
 }
 
 /**
- * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_port_filter.idl
+ * @see https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/modules/serial/serial_port_filter.idl
  */
 interface SerialPortFilter {
   usbVendorId?: number;
@@ -46,21 +46,21 @@ interface SerialPortFilter {
 }
 
 /**
- * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_port_request_options.idl
+ * @see https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/modules/serial/serial_port_request_options.idl
  */
 interface SerialPortRequestOptions {
   filters?: SerialPortFilter[];
 }
 
 /**
- * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_connection_event_init.idl
+ * @see https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/modules/serial/serial_connection_event_init.idl
  */
 interface SerialConnectionEventInit extends EventInit {
   port: SerialPort;
 }
 
 /**
- * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_connection_event.idl
+ * @see https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/modules/serial/serial_connection_event.idl
  */
 declare class SerialConnectionEvent extends Event {
   constructor(type: string, eventInitDict: SerialConnectionEventInit);
