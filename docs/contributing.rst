@@ -27,6 +27,8 @@ Pigweed contribution overview
     line to your commit
   - Install the Pigweed presubmit check hook with ``pw presubmit --install``
 
+.. TODO(pwbug/209) inclusive-language: disable
+
 #. Ensure all files include the correct copyright and license headers
 #. Include any necessary changes to the documentation
 #. Run :ref:`module-pw_presubmit` to detect style or compilation issues before
@@ -36,6 +38,8 @@ Pigweed contribution overview
 #. Submit change to CI builders to merge. If you are not part of Pigweed's
    core team, you can ask the reviewer to add the `+2 CQ` vote, which will
    trigger a rebase and submit once the builders pass
+
+.. TODO(pwbug/209) inclusive-language: enable
 
 .. note::
 
@@ -230,7 +234,11 @@ This will be effectively the same as running the following command before every
 If you ever need to bypass the presubmit hook (due to it being broken, for
 example) you may push using this command:
 
+.. TODO(pwbug/209) inclusive-language: disable
+
 .. code:: bash
 
   $ git push origin HEAD:refs/for/master --no-verify
+
+.. TODO(pwbug/209) inclusive-language: enable
 

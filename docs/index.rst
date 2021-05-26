@@ -125,7 +125,7 @@ compatible with `Google Test <https://github.com/google/googletest>`_. Unlike
 Google Test, `pw_unit_test <module-pw_unit_test>`_ is built on top of embedded
 friendly primitives; for example, it does not use dynamic memory allocation.
 Additionally, it is easy to port to new target platforms by implementing the
-`test event handler interface <https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/master/pw_unit_test/public/pw_unit_test/event_handler.h>`_.
+`test event handler interface <https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/public/pw_unit_test/event_handler.h>`_.
 
 Like other modules in Pigweed, ``pw_unit_test`` is designed for use in
 established codebases with their own build system, without the rest of Pigweed

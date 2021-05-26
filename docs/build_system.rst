@@ -185,7 +185,7 @@ containing some details about how GN works in general, this section is not
 intended to be a guide on how to use GN. To learn more about the tool itself,
 refer to the official `GN reference`_.
 
-.. _GN reference: https://gn.googlesource.com/gn/+/master/docs/reference.md
+.. _GN reference: https://gn.googlesource.com/gn/+/HEAD/docs/reference.md
 
 Entrypoint: .gn
 ---------------
@@ -289,7 +289,7 @@ toolchain.
   }
 
 .. warning::
-  Pigweed's default toolchain is never used, so it is set to a dummy toolchain
+  Pigweed's default toolchain is never used, so it is set to an empty toolchain
   which doesn't define any tools. ``//BUILD.gn`` contains conditions which check
   that the current toolchain is not the default before declaring any GN target
   dependencies to prevent the default toolchain from evaluating any other BUILD
@@ -411,15 +411,15 @@ are essentially GN toolchains which set special arguments telling Pigweed how to
 build. For information on Pigweed's target system, refer to
 :ref:`docs-targets`.
 
-The dummy toolchain
+The empty toolchain
 -------------------
-Pigweed's ``BUILDCONFIG.gn`` sets the project's default toolchain to a "dummy"
+Pigweed's ``BUILDCONFIG.gn`` sets the project's default toolchain to a "empty"
 toolchain which does not specify any compilers or override any build arguments.
 Downstream projects are recommended to do the same, following the steps
 described in :ref:`top-level-build` to configure builds for each of their
 Pigweed targets.
 
-.. admonition:: Why use a dummy?
+.. admonition:: Why use an empty toolchain?
 
   To support some of its advanced (and useful!) build features, Pigweed requires
   the ability to generate new toolchains on the fly. This requires having
@@ -567,6 +567,7 @@ For more information on how to create your own platforms refer to the official
 and platforms in the '//pw_build/platforms' and '//pw_build/constraints'
 directories.
 
+.. inclusive-language: ignore
 .. _Bazel platforms reference: https://docs.bazel.build/versions/master/platforms.html
 
 Testing
@@ -717,11 +718,15 @@ however it is possible to override this from the command line. e.g.
 
 
 
+.. inclusive-language: disable
+
 .. _Bazel selects reference: https://docs.bazel.build/versions/master/configurable-attributes.html#select-and-dependencies
 
 .. _Bazel target_compatible_with reference: https://docs.bazel.build/versions/master/platforms.html#skipping-incompatible-targets
 
 .. _Bazel config reference: https://docs.bazel.build/versions/master/skylark/config.html
+
+.. inclusive-language: enable
 
 
 Pigweeds configuration

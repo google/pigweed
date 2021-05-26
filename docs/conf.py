@@ -27,7 +27,7 @@ if sphinx.version_info[0] >= 4:
 # The suffix of source filenames.
 source_suffix = ['.rst']
 
-# The master toctree document.
+# The master toctree document.  # inclusive-language: ignore
 master_doc = 'index'
 
 # General information about the project.

@@ -282,7 +282,7 @@ tool.
 
 The ``.wheel`` subtarget of ``pw_python_package`` records the location of
 the generated wheel with `GN metadata
-<https://gn.googlesource.com/gn/+/master/docs/reference.md#var_metadata>`_.
+<https://gn.googlesource.com/gn/+/HEAD/docs/reference.md#var_metadata>`_.
 Wheels for a Python package and its transitive dependencies can be collected
 from the ``pw_python_package_wheels`` key. See
 :ref:`module-pw_build-python-dist`.

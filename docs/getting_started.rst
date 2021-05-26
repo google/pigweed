@@ -9,7 +9,7 @@ This guide will walk you through the typical upstream development workflow.
 
   We don't yet have thorough documentation for leveraging Pigweed in a separate
   project (our intended use case!). The `sample project
-  <https://pigweed.googlesource.com/pigweed/sample_project/+/refs/heads/master/README.md>`_
+  <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
   shows how to use Pigweed as a library in your broader project, but you may
   need further guidance.
 
@@ -376,7 +376,7 @@ If you'd like to see more of what Pigweed has to offer, dive into the
 Check out the sample project
 ----------------------------
 We have a `sample project
-<https://pigweed.googlesource.com/pigweed/sample_project/+/refs/heads/master/README.md>`_
+<https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
 that demonstrates how to use Pigweed in your own project. Note that there are
 many ways to leverage Pigweed and the sample project is one approach.
 
@@ -392,7 +392,7 @@ Set up Pigweed for your own project
 ------------------------------------
 We don't yet have thorough documentation for leveraging Pigweed in a separate
 project (our intended use case!). The `sample project
-<https://pigweed.googlesource.com/pigweed/sample_project/+/refs/heads/master/README.md>`_
+<https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
 shows how to use Pigweed as a library in your broader project, but you may need
 further guidance.
 
