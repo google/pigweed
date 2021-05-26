@@ -19,7 +19,7 @@
 #include <mutex>
 
 #include "pw_log/levels.h"
-#include "pw_log_proto/log.pwpb.h"
+#include "pw_log/proto/log.pwpb.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_status/try.h"
 #include "pw_string/string_builder.h"

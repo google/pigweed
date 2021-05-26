@@ -76,7 +76,8 @@ pw_test("basic_log_test") {
 }
 
 pw_proto_library("protos") {
-  sources = [ "pw_log_proto/log.proto" ]
+  sources = [ "log.proto" ]
+  prefix = "pw_log/proto"
 }
 
 pw_doc_group("docs") {

@@ -18,7 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_log/levels.h"
-#include "pw_log_proto/log.pwpb.h"
+#include "pw_log/proto/log.pwpb.h"
 #include "pw_log_sink/multisink_adapter.h"
 #include "pw_multisink/multisink.h"
 #include "pw_protobuf/decoder.h"

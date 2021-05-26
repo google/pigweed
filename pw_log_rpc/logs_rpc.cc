@@ -15,7 +15,7 @@
 #include "pw_log_rpc/logs_rpc.h"
 
 #include "pw_log/log.h"
-#include "pw_log_proto/log.pwpb.h"
+#include "pw_log/proto/log.pwpb.h"
 #include "pw_status/try.h"
 
 namespace pw::log_rpc {

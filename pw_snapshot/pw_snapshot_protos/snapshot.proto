@@ -19,7 +19,7 @@ option java_package = "pw.snapshot.proto";
 option java_outer_classname = "Snapshot";
 
 import "pw_cpu_exception_cortex_m_protos/cpu_state.proto";
-import "pw_log_proto/log.proto";
+import "pw_log/proto/log.proto";
 import "pw_thread_protos/thread.proto";
 import "pw_snapshot_metadata_proto/snapshot_metadata.proto";
 

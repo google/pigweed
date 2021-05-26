@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_log/levels.h"
-#include "pw_log_proto/log.pwpb.h"
+#include "pw_log/proto/log.pwpb.h"
 #include "pw_protobuf/decoder.h"
 
 namespace pw::log_rpc {
