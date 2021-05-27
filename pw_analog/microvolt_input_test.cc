@@ -46,7 +46,7 @@ constexpr int32_t kInvertedReferenceMaxVoltageUv =
 constexpr int32_t kInvertedReferenceMinVoltageUv =
     std::numeric_limits<int32_t>::max();
 
-// Dummy test voltage input that's used for testing.
+// Fake voltage input that's used for testing.
 class TestMicrovoltInput : public MicrovoltInput {
  public:
   constexpr explicit TestMicrovoltInput(AnalogInput::Limits limits,
