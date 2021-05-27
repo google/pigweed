@@ -136,26 +136,8 @@ class _Result:
         return self._messages
 
 
-def _process_globs(globs):
-    unique_globs = []
-    for pat in globs:
-        if pat and pat not in unique_globs:
-            unique_globs.append(pat)
-
-    files = []
-    warnings = []
-    for pat in unique_globs:
-        if pat:
-            matches = glob.glob(pat)
-            if not matches:
-                warnings.append(
-                    'warning: pattern "{}" matched 0 files'.format(pat))
-            files.extend(matches)
-
-    if globs and not files:
-        warnings.append('warning: matched 0 total files')
-
-    return files, warnings
+class ConfigError(Exception):
+    pass
 
 
 def result_func(glob_warnings):
@@ -177,7 +159,7 @@ class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
-                 virtualenv_requirements, virtualenv_gn_target,
+                 virtualenv_requirements, virtualenv_gn_target, strict,
                  virtualenv_gn_out_dir, json_file, project_root, config_file,
                  use_existing_cipd):
         self._env = environment.Environment()
@@ -192,6 +174,7 @@ class EnvSetup(object):
         self._install_dir = install_dir
         self._virtualenv_root = (virtualenv_root
                                  or os.path.join(install_dir, 'pigweed-venv'))
+        self._strict = strict
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -242,6 +225,32 @@ class EnvSetup(object):
         self._env.set('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('PW_ROOT', pw_root)
+
+    def _process_globs(self, globs):
+        unique_globs = []
+        for pat in globs:
+            if pat and pat not in unique_globs:
+                unique_globs.append(pat)
+
+        files = []
+        warnings = []
+        for pat in unique_globs:
+            if pat:
+                matches = glob.glob(pat)
+                if not matches:
+                    warning = 'pattern "{}" matched 0 files'.format(pat)
+                    warnings.append('warning: {}'.format(warning))
+                    if self._strict:
+                        raise ConfigError(warning)
+
+                files.extend(matches)
+
+        if globs and not files:
+            warnings.append('warning: matched 0 total files')
+            if self._strict:
+                raise ConfigError('matched 0 total files')
+
+        return files, warnings
 
     def _parse_config_file(self, config_file):
         config = json.load(config_file)
@@ -408,7 +417,8 @@ Then use `set +x` to go back to normal.
                     '    abandoning CIPD setup',
                 )
 
-        package_files, glob_warnings = _process_globs(self._cipd_package_file)
+        package_files, glob_warnings = self._process_globs(
+            self._cipd_package_file)
         result = result_func(glob_warnings)
 
         if not package_files:
@@ -427,7 +437,7 @@ Then use `set +x` to go back to normal.
     def virtualenv(self, unused_spin):
         """Setup virtualenv."""
 
-        requirements, req_glob_warnings = _process_globs(
+        requirements, req_glob_warnings = self._process_globs(
             self._virtualenv_requirements)
         result = result_func(req_glob_warnings)
 
@@ -592,6 +602,12 @@ def parse(argv=None):
     parser.add_argument(
         '--use-existing-cipd',
         help='Use cipd executable from the environment instead of fetching it.',
+        action='store_true',
+    )
+
+    parser.add_argument(
+        '--strict',
+        help='Fail if there are any warnings.',
         action='store_true',
     )
 
