@@ -1,6 +1,8 @@
 {
   "cipd_package_files": [
     "pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
+    "pw_env_setup/py/pw_env_setup/cipd_setup/bazel.json",
+    "pw_env_setup/py/pw_env_setup/cipd_setup/python.json",
     "pw_env_setup/py/pw_env_setup/cipd_setup/luci.json",
     "pw_env_setup/py/pw_env_setup/cipd_setup/compatibility.json"
   ],

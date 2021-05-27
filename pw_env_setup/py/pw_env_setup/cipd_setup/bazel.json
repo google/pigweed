@@ -1,0 +1,13 @@
+[
+  {
+    "_comment": "TODO(pwbug/93): Package Bazel for Windows.",
+    "path": "fuchsia/third_party/bazel/${platform}",
+    "platforms": [
+      "linux-amd64",
+      "mac-amd64"
+    ],
+    "tags": [
+      "version:4.0.0"
+    ]
+  }
+]
