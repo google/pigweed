@@ -60,7 +60,7 @@ void VerifyLogEntry(pw::protobuf::Decoder& log_decoder,
   EXPECT_TRUE(entry_decoder.ReadUint32(&line_level).ok());
   EXPECT_EQ(expected_level, line_level & PW_LOG_LEVEL_BITMASK);
   EXPECT_EQ(expected_line,
-            (line_level & ~PW_LOG_LEVEL_BITMASK) >> PW_LOG_LEVEL_BITWIDTH);
+            (line_level & ~PW_LOG_LEVEL_BITMASK) >> PW_LOG_LEVEL_BITS);
 
   uint32_t flags;
   EXPECT_TRUE(entry_decoder.Next().ok());  // flags

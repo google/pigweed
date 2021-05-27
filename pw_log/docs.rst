@@ -101,6 +101,8 @@ system, intended to be used directly.
   *flags* - Arbitrary flags the backend can leverage. The semantics of these
   flags are not defined in the facade, but are instead meant as a general
   mechanism for communication bits of information to the logging backend.
+  ``pw_log`` reserves 2 flag bits by default, but log backends may provide for
+  more or fewer flag bits.
 
   Here are some ideas for what a backend might use flags for:
 

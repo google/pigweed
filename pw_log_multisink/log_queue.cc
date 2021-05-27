@@ -41,9 +41,8 @@ Status LogQueue::PushTokenizedMessage(ConstByteSpan message,
   Status status;
 
   encoder.WriteMessageTokenized(message);
-  encoder.WriteLineLevel(
-      (level & PW_LOG_LEVEL_BITMASK) |
-      ((line << PW_LOG_LEVEL_BITWIDTH) & ~PW_LOG_LEVEL_BITMASK));
+  encoder.WriteLineLevel((level & PW_LOG_LEVEL_BITMASK) |
+                         ((line << PW_LOG_LEVEL_BITS) & ~PW_LOG_LEVEL_BITMASK));
   encoder.WriteFlags(flags);
   encoder.WriteThreadTokenized(thread);
 

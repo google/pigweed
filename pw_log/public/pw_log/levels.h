@@ -24,6 +24,7 @@
 #define PW_LOG_LEVEL_ERROR    4
 #define PW_LOG_LEVEL_CRITICAL 5
 
+// Number of bits required to represent the log level
+#define PW_LOG_LEVEL_BITS     3
 #define PW_LOG_LEVEL_BITMASK  7  // 0b111
-#define PW_LOG_LEVEL_BITWIDTH 3
 // clang-format on

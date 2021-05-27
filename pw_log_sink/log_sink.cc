@@ -66,7 +66,7 @@ extern "C" void pw_LogSink_Log(int level,
 
   encoder.WriteLineLevel(
       (level & PW_LOG_LEVEL_BITMASK) |
-      ((line_number << PW_LOG_LEVEL_BITWIDTH) & ~PW_LOG_LEVEL_BITMASK));
+      ((line_number << PW_LOG_LEVEL_BITS) & ~PW_LOG_LEVEL_BITMASK));
   encoder.WriteFlags(flags);
 
   // TODO(pwbug/301): Insert reasonable values for thread and timestamp.

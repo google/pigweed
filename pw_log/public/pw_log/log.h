@@ -68,10 +68,6 @@
 #include "pw_log/short.h"
 #endif  // PW_LOG_USE_SHORT_NAMES
 
-#if defined(PW_LOG_USE_ULTRA_SHORT_NAMES) && PW_LOG_USE_ULTRA_SHORT_NAMES == 1
-#include "pw_log/shorter.h"
-#endif  // PW_LOG_USE_ULTRA_SHORT_NAMES
-
 #ifndef PW_LOG
 #define PW_LOG(level, flags, message, ...)               \
   do {                                                   \
@@ -109,20 +105,11 @@
   PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_DEFAULT_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_CRITICAL
 
-// Default: Number of bits available for the log level
-//
-// All log statements have a level, and this define is the number of bits
-// available for the level. Some backends restrict this for better efficiency.
-// By default, pick a restricted but large enough value to work for most cases.
-#ifndef PW_LOG_LEVEL_BITS
-#define PW_LOG_LEVEL_BITS 6
-#endif  // PW_LOG_LEVEL_BITS
-
 // Default: Number of bits available for the log flags
 //
 // All log statements have a flags field, and this define is the number of bits
 // available for the flags. Some backends restrict this for better efficiency.
 // By default, pick a restricted but large enough value to work for most cases.
 #ifndef PW_LOG_FLAG_BITS
-#define PW_LOG_FLAG_BITS 10
+#define PW_LOG_FLAG_BITS 2
 #endif  // PW_LOG_FLAG_BITS
