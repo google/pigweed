@@ -165,14 +165,15 @@ function(_pw_generate_protos
     OUTPUT
       ${outputs}
   )
-  add_custom_target("${TARGET}" DEPENDS ${outputs})
+  add_custom_target("${TARGET}._generate.${LANGUAGE}" DEPENDS ${outputs})
+  add_dependencies("${TARGET}._generate.${LANGUAGE}" "${TARGET}._sources")
 endfunction(_pw_generate_protos)
 
 # Internal function that creates a pwpb proto library.
 function(_pw_pwpb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   list(TRANSFORM DEPS APPEND .pwpb)
 
-  _pw_generate_protos("${NAME}._generate.pwpb"
+  _pw_generate_protos("${NAME}"
       pwpb
       "$ENV{PW_ROOT}/pw_protobuf/py/pw_protobuf/plugin.py"
       ".pwpb.h"
@@ -194,7 +195,7 @@ endfunction(_pw_pwpb_library)
 function(_pw_raw_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   list(TRANSFORM DEPS APPEND .raw_rpc)
 
-  _pw_generate_protos("${NAME}._generate.raw_rpc"
+  _pw_generate_protos("${NAME}"
       raw_rpc
       "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_raw.py"
       ".raw_rpc.pb.h"
@@ -241,9 +242,13 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
     if("${SOURCES}" MATCHES "nanopb\\.proto")
       add_custom_target("${NAME}._generate.nanopb")  # Nothing to do
       add_library("${NAME}.nanopb" INTERFACE)
-      target_link_libraries("${NAME}.nanopb" INTERFACE pw_third_party.nanopb ${DEPS})
+      target_link_libraries("${NAME}.nanopb"
+        INTERFACE
+          pw_third_party.nanopb
+          ${DEPS}
+      )
     else()
-      _pw_generate_protos("${NAME}._generate.nanopb"
+      _pw_generate_protos("${NAME}"
           nanopb
           "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb"
           ".pb.h;.pb.c"
@@ -274,7 +279,7 @@ function(_pw_nanopb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   # Determine the names of the output files.
   list(TRANSFORM DEPS APPEND .nanopb_rpc)
 
-  _pw_generate_protos("${NAME}._generate.nanopb_rpc"
+  _pw_generate_protos("${NAME}"
       nanopb_rpc
       "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_nanopb.py"
       ".rpc.pb.h"
