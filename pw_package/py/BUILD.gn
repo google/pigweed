@@ -26,6 +26,7 @@ pw_python_package("py") {
     "pw_package/packages/arduino_core.py",
     "pw_package/packages/boringssl.py",
     "pw_package/packages/chromium_verifier.py",
+    "pw_package/packages/crlset.py",
     "pw_package/packages/mbedtls.py",
     "pw_package/packages/nanopb.py",
     "pw_package/packages/stm32cube.py",
