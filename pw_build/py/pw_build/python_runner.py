@@ -254,7 +254,9 @@ def _search_toolchain_ninja(ninja_file: Path, paths: GnPaths,
 
     # Older versions of GN used a .stamp file to signal completion of a target.
     stamp_dir = target.out_dir.relative_to(paths.build).as_posix()
-    stamp_tool = f'{target.toolchain_name()}_stamp'
+    stamp_tool = 'stamp'
+    if target.toolchain_name() != '':
+        stamp_tool = f'{target.toolchain_name()}_stamp'
     stamp_statement = f'build {stamp_dir}/{target.name}.stamp: {stamp_tool} '
 
     # Newer GN uses a phony Ninja target to signal completion of a target.
