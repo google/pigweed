@@ -40,7 +40,7 @@ config("overrides_config") {
     # without requiring a #include. This allows the use of newer C++ language
     # features in older C++ versions without an explicit include.
     "-include",
-    rebase_path("language_features.h"),
+    rebase_path("language_features.h", root_build_dir),
   ]
   visibility = [ ":*" ]
 }

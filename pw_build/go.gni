@@ -149,7 +149,7 @@ template("pw_go_executable") {
     args = [
       "build",
       "-o",
-      rebase_path(target_out_dir),
+      rebase_path(target_out_dir, root_build_dir),
       invoker.package,
     ]
     deps = [

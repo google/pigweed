@@ -105,7 +105,8 @@ def _collect_all_files(
 
     # Add all non-source files to package data.
     for file in (f for f in files if f.suffix != '.py'):
-        pkg = root / file.parent
+        pkg = file.parent
+
         package_name = pkg.relative_to(root).as_posix().replace('/', '.')
         pkg_data[package_name].add(file.name)
 

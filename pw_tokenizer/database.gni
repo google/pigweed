@@ -119,9 +119,9 @@ template("pw_tokenizer_database") {
 
     args += [
       "--database",
-      rebase_path(_database),
+      rebase_path(_database, root_build_dir),
     ]
-    args += rebase_path(_input_databases)
+    args += rebase_path(_input_databases, root_build_dir)
 
     foreach(target, _targets) {
       args += [ "<TARGET_FILE($target)>$_domain" ]
@@ -134,9 +134,8 @@ template("pw_tokenizer_database") {
     }
 
     if (defined(invoker.optional_paths)) {
-      _paths = rebase_path(invoker.optional_paths)
-      _out_dir = rebase_path(root_build_dir)
-      assert(filter_include(_paths, [ "$_out_dir/*" ]) == _paths,
+      _paths = rebase_path(invoker.optional_paths, root_build_dir)
+      assert(filter_include(_paths, [ "../*" ]) == [],
              "Paths in 'optional_paths' must be in the out directory. Use " +
                  "'input_databases' for files in the source tree.")
       args += _paths

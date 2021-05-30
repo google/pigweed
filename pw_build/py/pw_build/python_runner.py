@@ -41,20 +41,17 @@ def _parse_args() -> argparse.Namespace:
                         type=Path,
                         required=True,
                         help=('Path to the root of the GN tree; '
-                              'value of rebase_path("//")'))
+                              'value of rebase_path("//", root_build_dir)'))
     parser.add_argument('--current-path',
                         type=Path,
                         required=True,
-                        help='Value of rebase_path(".")')
+                        help='Value of rebase_path(".", root_build_dir)')
     parser.add_argument('--default-toolchain',
                         required=True,
                         help='Value of default_toolchain')
     parser.add_argument('--current-toolchain',
                         required=True,
                         help='Value of current_toolchain')
-    parser.add_argument('--directory',
-                        type=Path,
-                        help='Execute the command from this directory')
     parser.add_argument('--module', help='Run this module instead of a script')
     parser.add_argument('--env',
                         action='append',
@@ -164,7 +161,7 @@ _GN_NINJA_BUILD_STATEMENT = re.compile(r'^build (.+):[ \n](?!phony\b)')
 _MAIN_ARTIFACTS = '', '.elf', '.a', '.so', '.dylib', '.exe', '.lib', '.dll'
 
 
-def _get_artifact(build_dir: Path, entries: List[str]) -> _Artifact:
+def _get_artifact(entries: List[str]) -> _Artifact:
     """Attempts to resolve which artifact to use if there are multiple.
 
     Selects artifacts based on extension. This will not work if a toolchain
@@ -173,19 +170,19 @@ def _get_artifact(build_dir: Path, entries: List[str]) -> _Artifact:
     assert entries, "There should be at least one entry here!"
 
     if len(entries) == 1:
-        return _Artifact(build_dir / entries[0], {})
+        return _Artifact(Path(entries[0]), {})
 
     filtered = [p for p in entries if Path(p).suffix in _MAIN_ARTIFACTS]
 
     if len(filtered) == 1:
-        return _Artifact(build_dir / filtered[0], {})
+        return _Artifact(Path(filtered[0]), {})
 
     raise ExpressionError(
         f'Expected 1, but found {len(filtered)} artifacts, after filtering for '
         f'extensions {", ".join(repr(e) for e in _MAIN_ARTIFACTS)}: {entries}')
 
 
-def _parse_build_artifacts(build_dir: Path, fd) -> Iterator[_Artifact]:
+def _parse_build_artifacts(fd) -> Iterator[_Artifact]:
     """Partially parses the build statements in a Ninja file."""
     lines = iter(fd)
 
@@ -212,7 +209,7 @@ def _parse_build_artifacts(build_dir: Path, fd) -> Iterator[_Artifact]:
         else:
             match = _GN_NINJA_BUILD_STATEMENT.match(line)
             if match:
-                artifact = _get_artifact(build_dir, match.group(1).split())
+                artifact = _get_artifact(match.group(1).split())
 
             line = next_line()
 
@@ -220,7 +217,7 @@ def _parse_build_artifacts(build_dir: Path, fd) -> Iterator[_Artifact]:
         yield artifact
 
 
-def _search_target_ninja(ninja_file: Path, paths: GnPaths,
+def _search_target_ninja(ninja_file: Path,
                          target: Label) -> Tuple[Optional[Path], List[Path]]:
     """Parses the main output file and object files from <target>.ninja."""
 
@@ -230,16 +227,16 @@ def _search_target_ninja(ninja_file: Path, paths: GnPaths,
     _LOG.debug('Parsing target Ninja file %s for %s', ninja_file, target)
 
     with ninja_file.open() as fd:
-        for path, variables in _parse_build_artifacts(paths.build, fd):
+        for path, variables in _parse_build_artifacts(fd):
             # Older GN used .stamp files when there is no build artifact.
             if path.suffix == '.stamp':
                 continue
 
             if variables:
                 assert not artifact, f'Multiple artifacts for {target}!'
-                artifact = path
+                artifact = Path(path)
             else:
-                objects.append(path)
+                objects.append(Path(path))
 
     return artifact, objects
 
@@ -271,7 +268,7 @@ def _search_toolchain_ninja(ninja_file: Path, paths: GnPaths,
                 if line.startswith(statement):
                     output_files = line[len(statement):].strip().split()
                     if len(output_files) == 1:
-                        return paths.build / output_files[0]
+                        return Path(output_files[0])
 
                     break
 
@@ -283,7 +280,7 @@ def _search_ninja_files(
         target: Label) -> Tuple[bool, Optional[Path], List[Path]]:
     ninja_file = target.out_dir / f'{target.name}.ninja'
     if ninja_file.exists():
-        return (True, *_search_target_ninja(ninja_file, paths, target))
+        return (True, *_search_target_ninja(ninja_file, target))
 
     ninja_file = paths.build / target.toolchain_name() / 'toolchain.ninja'
     if ninja_file.exists():
@@ -366,7 +363,7 @@ def _target_file_if_exists(paths: GnPaths, expr: _Expression) -> _Actions:
         if target.artifact is None:
             raise ExpressionError(f'Target {target} has no output file!')
 
-        if Path(target.artifact).exists():
+        if paths.build.joinpath(target.artifact).exists():
             yield _ArgAction.APPEND, str(target.artifact)
             return
 
@@ -441,7 +438,6 @@ def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
 def main(
     gn_root: Path,
     current_path: Path,
-    directory: Optional[Path],
     original_cmd: List[str],
     default_toolchain: str,
     current_toolchain: str,
@@ -470,7 +466,7 @@ def main(
     if module is not None:
         command += ['-m', module]
 
-    run_args: dict = dict(cwd=directory)
+    run_args: dict = dict()
 
     if env is not None:
         environment = os.environ.copy()

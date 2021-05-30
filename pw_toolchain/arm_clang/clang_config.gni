@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-_script_path = rebase_path("../py/pw_toolchain/clang_arm_toolchain.py")
+_script_path =
+    get_path_info("../py/pw_toolchain/clang_arm_toolchain.py", "abspath")
 
 # This template generates a config that can be used to target ARM cores using
 # a clang compiler.

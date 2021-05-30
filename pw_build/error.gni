@@ -41,9 +41,9 @@ template("pw_error") {
       "--message",
       _message,
       "--root",
-      rebase_path("//"),
+      rebase_path("//", root_build_dir),
       "--out",
-      rebase_path(root_build_dir),
+      ".",
     ]
 
     # This output file is never created.

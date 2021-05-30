@@ -32,6 +32,7 @@ get a working build.
 
 import argparse
 import sys
+import os
 import subprocess
 
 from pathlib import Path
@@ -88,8 +89,10 @@ def get_gcc_lib_dir(cflags: List[str]) -> Path:
 
 def get_compiler_info(cflags: List[str]) -> Dict[str, str]:
     compiler_info: Dict[str, str] = {}
-    compiler_info['gcc_libs_dir'] = str(get_gcc_lib_dir(cflags))
-    compiler_info['sysroot'] = _compiler_info_command('-print-sysroot', cflags)
+    compiler_info['gcc_libs_dir'] = os.path.relpath(
+        str(get_gcc_lib_dir(cflags)), ".")
+    compiler_info['sysroot'] = os.path.relpath(
+        _compiler_info_command('-print-sysroot', cflags), ".")
     compiler_info['version'] = _compiler_info_command('-dumpversion', cflags)
     compiler_info['multi_dir'] = _compiler_info_command(
         '-print-multi-directory', cflags)

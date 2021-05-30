@@ -19,8 +19,8 @@ pw_universal_copy = {
     cp_command = "cp -af {{source}} {{output}}"
 
     # Use python script in absence of cp command.
-    copy_tool_path =
-        rebase_path(dir_pw_toolchain) + "/py/pw_toolchain/copy_with_metadata.py"
+    copy_tool_path = rebase_path(dir_pw_toolchain, root_build_dir) +
+                     "/py/pw_toolchain/copy_with_metadata.py"
     fallback_command = "python $copy_tool_path {{source}} {{output}}"
 
     command = "cmd /c \"($cp_command > NUL 2>&1) || ($fallback_command)\""

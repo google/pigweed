@@ -34,9 +34,9 @@ if (pw_build_HOST_TOOLS) {
       "--src",
       "<TARGET_FILE(${invoker.tool})>",
       "--dst",
-      rebase_path("$root_out_dir/host_tools"),
+      rebase_path("$root_out_dir/host_tools", root_build_dir),
       "--out-root",
-      rebase_path(root_out_dir),
+      rebase_path(root_out_dir, root_build_dir),
     ]
 
     if (defined(invoker.name) && invoker.name != "") {

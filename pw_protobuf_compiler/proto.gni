@@ -49,7 +49,8 @@ template("_pw_invoke_protoc") {
     }
 
     _includes =
-        rebase_path(get_target_outputs(":${invoker.base_target}._includes"))
+        rebase_path(get_target_outputs(":${invoker.base_target}._includes"),
+                    root_build_dir)
 
     pw_python_action("$target_name._gen") {
       script =
@@ -79,15 +80,16 @@ template("_pw_invoke_protoc") {
                "--include-file",
                _includes[0],
                "--compile-dir",
-               rebase_path(invoker.compile_dir),
+               rebase_path(invoker.compile_dir, root_build_dir),
                "--out-dir",
-               rebase_path(_out_dir),
+               rebase_path(_out_dir, root_build_dir),
                "--sources",
-             ] + rebase_path(invoker.sources)
+             ] + rebase_path(invoker.sources, root_build_dir)
 
       if (defined(invoker.plugin)) {
         inputs = [ invoker.plugin ]
-        args += [ "--plugin-path=" + rebase_path(invoker.plugin) ]
+        args +=
+            [ "--plugin-path=" + rebase_path(invoker.plugin, root_build_dir) ]
       }
 
       if (defined(invoker.outputs)) {
@@ -104,8 +106,9 @@ template("_pw_invoke_protoc") {
     # Output a .json file with information about this proto library.
     _proto_info = {
       label = get_label_info(":${invoker.target_name}", "label_no_toolchain")
-      protoc_outputs = rebase_path(get_target_outputs(":$target_name._gen"))
-      root = rebase_path(_out_dir)
+      protoc_outputs =
+          rebase_path(get_target_outputs(":$target_name._gen"), root_build_dir)
+      root = rebase_path(_out_dir, root_build_dir)
       package = invoker.package
 
       nested_in_python_package = ""
@@ -118,7 +121,8 @@ template("_pw_invoke_protoc") {
       foreach(dep, invoker.deps) {
         dependencies +=
             rebase_path([ get_label_info(dep, "target_gen_dir") + "/" +
-                              get_label_info(dep, "name") + ".json" ])
+                              get_label_info(dep, "name") + ".json" ],
+                        root_build_dir)
       }
     }
     write_file("$target_gen_dir/$target_name.json", _proto_info, "json")
@@ -494,7 +498,7 @@ template("pw_proto_library") {
 
     # Indicate this library's base directory for its dependents.
     metadata = {
-      protoc_includes = [ rebase_path(_common.compile_dir) ]
+      protoc_includes = [ rebase_path(_common.compile_dir, root_build_dir) ]
     }
   }
 

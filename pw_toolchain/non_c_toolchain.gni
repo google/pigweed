@@ -41,14 +41,15 @@ template("pw_non_c_toolchain") {
   _command = string_join(" ",
                          [
                            "python",
-                           rebase_path("$dir_pw_build/py/pw_build/error.py"),
+                           rebase_path("$dir_pw_build/py/pw_build/error.py",
+                                       root_build_dir),
                            "--message \"$_message\"",
                            "--target",
                            _label,
                            "--root",
-                           rebase_path("//"),
+                           rebase_path("//", root_build_dir),
                            "--out",
-                           rebase_path(root_build_dir),
+                           ".",
                          ])
 
   if (defined(invoker.command)) {

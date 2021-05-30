@@ -24,5 +24,6 @@ pw_non_c_toolchain("default") {
   # If the user tries to build a target with the default toolchain, run a script
   # printing out the error.
   command = "python " +
-            rebase_path("$dir_pw_toolchain/py/pw_toolchain/bad_toolchain.py")
+            rebase_path("$dir_pw_toolchain/py/pw_toolchain/bad_toolchain.py",
+                        root_build_dir)
 }

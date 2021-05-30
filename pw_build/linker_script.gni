@@ -73,7 +73,7 @@ template("pw_linker_script") {
       # Treat the following file as a C file.
       "-x",
       "c",
-      rebase_path(invoker.linker_script),
+      rebase_path(invoker.linker_script, root_build_dir),
     ]
 
     # Include any explicitly listed c flags.
@@ -91,7 +91,7 @@ template("pw_linker_script") {
     # Set output file.
     args += [
       "-o",
-      rebase_path(_final_linker_script),
+      rebase_path(_final_linker_script, root_build_dir),
     ]
     outputs = [ _final_linker_script ]
   }
@@ -103,7 +103,7 @@ template("pw_linker_script") {
     if (!defined(invoker.ldflags)) {
       ldflags = []
     }
-    ldflags += [ "-T" + rebase_path(_final_linker_script) ]
+    ldflags += [ "-T" + rebase_path(_final_linker_script, root_build_dir) ]
   }
 
   # The target that adds the linker script config to this library and everything

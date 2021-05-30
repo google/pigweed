@@ -47,9 +47,9 @@ template("pw_mirror_tree") {
 
   _args = [
     "--source-root",
-    rebase_path(_root),
+    rebase_path(_root, root_build_dir),
     "--directory",
-    rebase_path(invoker.directory),
+    rebase_path(invoker.directory, root_build_dir),
   ]
 
   _deps = []
@@ -75,7 +75,8 @@ template("pw_mirror_tree") {
 
     _deps += [ ":$target_name._path_list" ]
     _args += [ "--path-file" ] +
-             rebase_path(get_target_outputs(":$target_name._path_list"))
+             rebase_path(get_target_outputs(":$target_name._path_list"),
+                         root_build_dir)
   }
 
   pw_python_action(target_name) {
@@ -85,7 +86,7 @@ template("pw_mirror_tree") {
     outputs = []
 
     if (defined(invoker.sources)) {
-      args += rebase_path(invoker.sources)
+      args += rebase_path(invoker.sources, root_build_dir)
 
       foreach(path, rebase_path(invoker.sources, _root)) {
         outputs += [ "${invoker.directory}/$path" ]

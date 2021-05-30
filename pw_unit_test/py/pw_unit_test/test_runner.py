@@ -23,6 +23,7 @@ import shlex
 import subprocess
 import sys
 
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import pw_cli.log
@@ -136,7 +137,13 @@ class TestRunner:
             test_counter = f'Test {idx:{len(total)}}/{total}'
 
             _LOG.info('%s: [ RUN] %s', test_counter, test.name)
-            command = [self._executable, test.file_path, *self._args]
+
+            # Convert POSIX to native directory seperators as GN produces '/'
+            # but the Windows test runner needs '\\'.
+            command = [
+                str(Path(self._executable)),
+                str(Path(test.file_path)), *self._args
+            ]
 
             if self._executable.endswith('.py'):
                 command.insert(0, sys.executable)

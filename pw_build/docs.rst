@@ -162,8 +162,6 @@ target. Additionally, it has some of its own arguments:
   specifying ``outputs``. If ``stamp`` is true, a generic output file is
   used. If ``stamp`` is a file path, that file is used as a stamp file. Like any
   output file, ``stamp`` must be in the build directory. Defaults to false.
-* ``directory``: Optional path. Change to this directory before executing the
-  command. Paths in arguments may need to be adjusted.
 * ``environment``: Optional list of strings. Environment variables to set,
   passed as NAME=VALUE strings.
 
@@ -208,7 +206,7 @@ The following expressions are supported:
 
   ``TARGET_FILE`` only resolves GN target labels to their outputs. To resolve
   paths generally, use the standard GN approach of applying the
-  ``rebase_path(path)`` function. With default arguments, ``rebase_path``
+  ``rebase_path(path, root_build_dir)`` function. This function
   converts the provided GN path or list of paths to be relative to the build
   directory, from which all build commands and scripts are executed.
 
@@ -266,7 +264,7 @@ The following expressions are supported:
     script = "py/postprocess_binary.py"
     args = [
       "--database",
-      rebase_path("my/database.csv"),
+      rebase_path("my/database.csv", root_build_dir),
       "--binary=<TARGET_FILE(//firmware/images:main)>",
     ]
     stamp = true

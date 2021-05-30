@@ -194,6 +194,8 @@ class TargetTest(unittest.TestCase):
         self._tempdir, self._outdir, self._paths = _create_ninja_files(
             NINJA_SOURCE_SET)
 
+        self._rel_outdir = self._outdir.relative_to(self._paths.build)
+
     def tearDown(self):
         self._tempdir.cleanup()
 
@@ -207,22 +209,22 @@ class TargetTest(unittest.TestCase):
         self.assertTrue(target.generated)
         self.assertEqual(
             set(target.object_files), {
-                self._outdir / 'fake_source_set.file_a.cc.o',
-                self._outdir / 'fake_source_set.file_b.c.o',
+                self._rel_outdir / 'fake_source_set.file_a.cc.o',
+                self._rel_outdir / 'fake_source_set.file_b.c.o',
             })
 
     def test_executable_object_files(self):
         target = TargetInfo(self._paths, '//fake_module:fake_test')
         self.assertEqual(
             set(target.object_files), {
-                self._outdir / 'fake_test.fake_test.cc.o',
-                self._outdir / 'fake_test.fake_test_c.c.o',
+                self._rel_outdir / 'fake_test.fake_test.cc.o',
+                self._rel_outdir / 'fake_test.fake_test_c.c.o',
             })
 
     def test_executable_artifact(self):
         target = TargetInfo(self._paths, '//fake_module:fake_test')
         self.assertEqual(target.artifact,
-                         self._outdir / 'test' / 'fake_test.elf')
+                         self._rel_outdir / 'test' / 'fake_test.elf')
 
     def test_non_existent_target(self):
         target = TargetInfo(self._paths,
@@ -243,6 +245,8 @@ class StampTargetTest(TargetTest):
         self._tempdir, self._outdir, self._paths = _create_ninja_files(
             NINJA_SOURCE_SET_STAMP)
 
+        self._rel_outdir = self._outdir.relative_to(self._paths.build)
+
 
 class ExpandExpressionsTest(unittest.TestCase):
     """Tests expansion of expressions like <TARGET_FILE(//foo)>."""
@@ -260,7 +264,7 @@ class ExpandExpressionsTest(unittest.TestCase):
             path.touch()
         else:
             assert not path.exists()
-        return str(path)
+        return str(path.relative_to(self._paths.build))
 
     def test_empty(self):
         self.assertEqual(list(expand_expressions(self._paths, '')), [''])
@@ -388,6 +392,8 @@ class StampExpandExpressionsTest(TargetTest):
     def setUp(self):
         self._tempdir, self._outdir, self._paths = _create_ninja_files(
             NINJA_SOURCE_SET_STAMP)
+
+        self._rel_outdir = self._outdir.relative_to(self._paths.build)
 
 
 if __name__ == '__main__':

@@ -116,9 +116,10 @@ template("pw_size_report") {
 
       # Allow each binary to override the global bloaty config.
       if (defined(binary.bloaty_config)) {
-        _bloaty_configs += [ rebase_path(binary.bloaty_config) ]
+        _bloaty_configs += [ rebase_path(binary.bloaty_config, root_build_dir) ]
       } else {
-        _bloaty_configs += [ rebase_path(pw_bloat_BLOATY_CONFIG) ]
+        _bloaty_configs +=
+            [ rebase_path(pw_bloat_BLOATY_CONFIG, root_build_dir) ]
       }
 
       _binary_path += ";" + "<TARGET_FILE($_binary_base)>"
@@ -131,7 +132,7 @@ template("pw_size_report") {
       "--bloaty-config",
       string_join(";", _bloaty_configs),
       "--out-dir",
-      rebase_path(target_gen_dir),
+      rebase_path(target_gen_dir, root_build_dir),
       "--target",
       target_name,
       "--title",
@@ -165,7 +166,7 @@ template("pw_size_report") {
         }
         script = "$dir_pw_bloat/py/pw_bloat/no_bloaty.py"
         python_deps = [ "$dir_pw_bloat/py" ]
-        args = [ rebase_path(_doc_rst_output) ]
+        args = [ rebase_path(_doc_rst_output, root_build_dir) ]
         outputs = [ _doc_rst_output ]
       }
 
@@ -250,7 +251,8 @@ template("pw_toolchain_size_report") {
     _linker_script_target_name = "${_prefix}_linker_script"
     config(_linker_script_target_name) {
       if (defined(_toolchain.linker_script)) {
-        ldflags = [ "-T" + rebase_path(_toolchain.linker_script) ]
+        ldflags =
+            [ "-T" + rebase_path(_toolchain.linker_script, root_build_dir) ]
         inputs = [ _toolchain.linker_script ]
       } else {
         ldflags = []
@@ -327,7 +329,7 @@ template("pw_toolchain_size_report") {
       }
       script = "$dir_pw_bloat/py/pw_bloat/no_toolchains.py"
       python_deps = [ "$dir_pw_bloat/py" ]
-      args = [ rebase_path(_doc_rst_output) ]
+      args = [ rebase_path(_doc_rst_output, root_build_dir) ]
       outputs = [ _doc_rst_output ]
     }
   }

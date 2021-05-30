@@ -64,17 +64,17 @@ template("_pw_python_static_analysis_mypy") {
     ]
 
     if (defined(invoker.mypy_ini)) {
-      args += [ "--config-file=" + rebase_path(invoker.mypy_ini) ]
+      args +=
+          [ "--config-file=" + rebase_path(invoker.mypy_ini, root_build_dir) ]
       inputs = [ invoker.mypy_ini ]
     }
 
-    args += rebase_path(invoker.sources)
+    args += rebase_path(invoker.sources, root_build_dir)
 
     # Use this environment variable to force mypy to colorize output.
     # See https://github.com/python/mypy/issues/7771
     environment = [ "MYPY_FORCE_COLOR=1" ]
 
-    directory = invoker.directory
     stamp = true
 
     deps = invoker.deps
@@ -92,13 +92,13 @@ template("_pw_python_static_analysis_pylint") {
   pw_python_action_foreach(target_name) {
     module = "pylint"
     args = [
-      rebase_path(".") + "/{{source_target_relative}}",
+      rebase_path(".", root_build_dir) + "/{{source_target_relative}}",
       "--jobs=1",
       "--output-format=colorized",
     ]
 
     if (defined(invoker.pylintrc)) {
-      args += [ "--rcfile=" + rebase_path(invoker.pylintrc) ]
+      args += [ "--rcfile=" + rebase_path(invoker.pylintrc, root_build_dir) ]
       inputs = [ invoker.pylintrc ]
     }
 
@@ -108,7 +108,6 @@ template("_pw_python_static_analysis_pylint") {
     }
 
     sources = invoker.sources
-    directory = invoker.directory
 
     stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
 
@@ -151,10 +150,10 @@ template("_pw_python_static_analysis_pylint") {
 #       generate_setup is required in place of setup if proto_library is used.
 #   static_analysis: List of static analysis tools to run; "*" (default) runs
 #       all tools. The supported tools are "mypy" and "pylint".
-#   pylintrc: Optional path to a pylintrc configuration file to use. If not
-#       provided, Pylint's default rcfile search is used. Pylint is executed
-#       from the package's setup directory, so pylintrc files in that directory
-#       will take precedence over others.
+#   pylintrc: Path to a pylintrc configuration file to use. If not
+#       provided, Pylint's default rcfile search is used. As this may
+#       use the the local user's configuration file, it is highly
+#       recommended to pass this option to specify the rcfile explicitly.
 #   mypy_ini: Optional path to a mypy configuration file to use. If not
 #       provided, mypy's default configuration file search is used. mypy is
 #       executed from the package's setup directory, so mypy.ini files in that
@@ -346,10 +345,10 @@ template("pw_python_package") {
                  "--label",
                  get_label_info(":$target_name", "label_no_toolchain"),
                  "--generated-root",
-                 rebase_path(_setup_dir),
+                 rebase_path(_setup_dir, root_build_dir),
                  "--setup-json",
-                 rebase_path("$_setup_dir/setup.json"),
-               ] + rebase_path(_sources)
+                 rebase_path("$_setup_dir/setup.json", root_build_dir),
+               ] + rebase_path(_sources, root_build_dir)
 
         # Pass in the .json information files for the imported proto libraries.
         foreach(proto, _import_protos) {
@@ -359,7 +358,7 @@ template("pw_python_package") {
                   get_label_info(_label, "name") + ".json"
           args += [
             "--proto-library",
-            rebase_path(_file),
+            rebase_path(_file, root_build_dir),
           ]
         }
 
@@ -406,7 +405,7 @@ template("pw_python_package") {
           args += [ "--editable" ]
         }
 
-        args += [ rebase_path(_setup_dir) ]
+        args += [ rebase_path(_setup_dir, root_build_dir) ]
 
         stamp = true
 
@@ -431,12 +430,13 @@ template("pw_python_package") {
 
         module = "build"
 
-        args = [
-                 rebase_path(_setup_dir),
-                 "--wheel",
-                 "--no-isolation",
-                 "--outdir",
-               ] + rebase_path(metadata.pw_python_package_wheels)
+        args =
+            [
+              rebase_path(_setup_dir, root_build_dir),
+              "--wheel",
+              "--no-isolation",
+              "--outdir",
+            ] + rebase_path(metadata.pw_python_package_wheels, root_build_dir)
 
         deps = [ ":${invoker.target_name}" ]
         foreach(dep, _python_deps) {
@@ -508,12 +508,6 @@ template("pw_python_package") {
         sources = _all_py_files
         deps = _test_install_deps
         python_deps = _python_deps
-
-        if (defined(_setup_dir)) {
-          directory = rebase_path(_setup_dir)
-        } else {
-          directory = rebase_path(".")
-        }
 
         _optional_variables = [
           "mypy_ini",
@@ -729,7 +723,7 @@ template("pw_python_requirements") {
     foreach(_requirements_file, inputs) {
       args += [
         "--requirement",
-        rebase_path(_requirements_file),
+        rebase_path(_requirements_file, root_build_dir),
       ]
     }
 

@@ -232,7 +232,7 @@ pw_python_action("generate_ids_test") {
   outputs = [ "$target_gen_dir/generated_ids_test.cc" ]
 
   script = "py/tests/ids_test.py"
-  args = [ "--generate-cc-test" ] + rebase_path(outputs)
+  args = [ "--generate-cc-test" ] + rebase_path(outputs, root_build_dir)
   python_deps = [
     "$dir_pw_build/py",
     "py",

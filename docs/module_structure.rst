@@ -320,7 +320,7 @@ This example shows two ways to configure a module in the GN build system.
   config("set_options_in_header_file") {
     cflags = [
       "-include",
-      rebase_path("my_config_overrides.h"),
+      rebase_path("my_config_overrides.h", root_build_dir),
     ]
   }
 

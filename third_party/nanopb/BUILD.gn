@@ -54,7 +54,7 @@ if (dir_pw_third_party_nanopb != "") {
     sources = [ "generate_nanopb_proto.py" ]
     pylintrc = "$dir_pigweed/.pylintrc"
     action = {
-      args = [ rebase_path(dir_pw_third_party_nanopb) ]
+      args = [ rebase_path(dir_pw_third_party_nanopb, root_build_dir) ]
       stamp = true
     }
   }

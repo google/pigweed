@@ -185,7 +185,7 @@ template("pw_test") {
       python_deps = [ "$dir_pw_cli/py" ]
       args = [
         "--runner",
-        rebase_path(pw_unit_test_AUTOMATIC_RUNNER),
+        rebase_path(pw_unit_test_AUTOMATIC_RUNNER, root_build_dir),
         "--test",
         "<TARGET_FILE(:$_test_to_run)>",
       ]
