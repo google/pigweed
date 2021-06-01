@@ -46,6 +46,9 @@ class Key {
   operator std::string_view() { return std::string_view{str_, length_}; }
 #endif  // __cplusplus >= 201703L
 
+  // Assignment
+  constexpr Key& operator=(const Key&) = default;
+
   // Traits
   constexpr size_t size() const { return length_; }
   constexpr size_t length() const { return length_; }
