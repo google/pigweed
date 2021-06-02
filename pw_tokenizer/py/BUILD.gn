@@ -31,8 +31,6 @@ pw_python_package("py") {
     "pw_tokenizer/encode.py",
     "pw_tokenizer/serial_detokenizer.py",
     "pw_tokenizer/tokens.py",
-    "tokenized_string_decoding_test_data.py",
-    "varint_test_data.py",
   ]
   tests = [
     "database_test.py",
@@ -40,9 +38,12 @@ pw_python_package("py") {
     "detokenize_test.py",
     "elf_reader_test.py",
     "encode_test.py",
+    "tokenized_string_decoding_test_data.py",
     "tokens_test.py",
+    "varint_test_data.py",
   ]
   inputs = [
+    "elf_reader_test_binary.elf",
     "example_binary_with_tokenized_strings.elf",
     "example_legacy_binary_with_tokenized_strings.elf",
   ]

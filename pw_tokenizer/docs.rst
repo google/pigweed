@@ -876,8 +876,8 @@ in the tokenizer handler function. For example,
 
 Decoding
 --------
-Base64 decoding and detokenizing is supported in the Python detokenizer through
-the ``detokenize_base64`` and related functions.
+The Python ``Detokenizer`` class supprts decoding and detokenizing prefixed
+Base64 messages with ``detokenize_base64`` and related methods.
 
 .. tip::
   The Python detokenization tools support recursive detokenization for prefixed
@@ -1019,7 +1019,7 @@ Decoding tooling deployment
   * Provide simple wrapper shell scripts that fill in arguments for the
     project. For example, point ``detokenize.py`` to the project's token
     databases.
-  * Use ``pw_tokenizer.AutoReloadingDetokenizer`` to decode in
+  * Use ``pw_tokenizer.AutoUpdatingDetokenizer`` to decode in
     continuously-running tools, so that users don't have to restart the tool
     when the token database updates.
   * Integrate detokenization everywhere it is needed. Integrating the tools

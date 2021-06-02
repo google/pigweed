@@ -526,22 +526,21 @@ class DetokenizeBase64(unittest.TestCase):
     def test_detokenize_base64_live(self):
         for data, expected in self.TEST_CASES:
             output = io.BytesIO()
-            detokenize.detokenize_base64_live(self.detok, io.BytesIO(data),
-                                              output, '$')
+            self.detok.detokenize_base64_live(io.BytesIO(data), output, '$')
 
             self.assertEqual(expected, output.getvalue())
 
     def test_detokenize_base64_to_file(self):
         for data, expected in self.TEST_CASES:
             output = io.BytesIO()
-            detokenize.detokenize_base64_to_file(self.detok, data, output, '$')
+            self.detok.detokenize_base64_to_file(data, output, '$')
 
             self.assertEqual(expected, output.getvalue())
 
     def test_detokenize_base64(self):
         for data, expected in self.TEST_CASES:
-            self.assertEqual(
-                expected, detokenize.detokenize_base64(self.detok, data, b'$'))
+            self.assertEqual(expected,
+                             self.detok.detokenize_base64(data, b'$'))
 
 
 class DetokenizeBase64InfiniteRecursion(unittest.TestCase):
@@ -559,28 +558,24 @@ class DetokenizeBase64InfiniteRecursion(unittest.TestCase):
     def test_detokenize_self_recursion(self):
         for depth in range(5):
             self.assertEqual(
-                detokenize.detokenize_base64(self.detok,
-                                             b'This one is deep: $AAAAAA==',
+                self.detok.detokenize_base64(b'This one is deep: $AAAAAA==',
                                              recursion=depth),
                 b'This one is deep: $AAAAAA==')
 
     def test_detokenize_self_recursion_default(self):
         self.assertEqual(
-            detokenize.detokenize_base64(self.detok,
-                                         b'This one is deep: $AAAAAA=='),
+            self.detok.detokenize_base64(b'This one is deep: $AAAAAA=='),
             b'This one is deep: $AAAAAA==')
 
     def test_detokenize_cyclic_recursion_even(self):
         self.assertEqual(
-            detokenize.detokenize_base64(self.detok,
-                                         b'I said "$AQAAAA=="',
-                                         recursion=2), b'I said "$AgAAAA=="')
+            self.detok.detokenize_base64(b'I said "$AQAAAA=="', recursion=2),
+            b'I said "$AgAAAA=="')
 
     def test_detokenize_cyclic_recursion_odd(self):
         self.assertEqual(
-            detokenize.detokenize_base64(self.detok,
-                                         b'I said "$AQAAAA=="',
-                                         recursion=3), b'I said "$AwAAAA=="')
+            self.detok.detokenize_base64(b'I said "$AQAAAA=="', recursion=3),
+            b'I said "$AwAAAA=="')
 
 
 if __name__ == '__main__':

@@ -74,8 +74,7 @@ def _detokenize_serial(databases: Iterable, device: serial.Serial,
     serial_device = serial.Serial(port=device, baudrate=baudrate)
 
     try:
-        detokenize.detokenize_base64_live(detokenizer, serial_device, output,
-                                          prefix)
+        detokenizer.detokenize_base64_live(serial_device, output, prefix)
     except KeyboardInterrupt:
         output.flush()
 
