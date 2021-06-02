@@ -308,18 +308,11 @@ template("_pw_python_proto_library") {
   }
 
   if (defined(invoker.python_package) && invoker.python_package != "") {
-    # If anyone attempts to depend on this Python package, print an error.
-    pw_error(target_name) {
-      _pkg = get_label_info(invoker.python_package, "label_no_toolchain")
-      message_lines = [
-        "This proto Python package is embedded in the $_pkg Python package.",
-        "It cannot be used directly; instead, depend on $_pkg.",
-      ]
-    }
-    foreach(subtarget, pw_python_package_subtargets) {
-      group("$target_name.$subtarget") {
-        deps = [ ":${invoker.target_name}" ]
-      }
+    # This package is nested in another Python package. Depending on this
+    # its python subtarget is equivalent to depending on the Python package it
+    # is nested in.
+    pw_python_group(target_name) {
+      python_deps = [ invoker.python_package ]
     }
 
     # This proto library is merged into another package, but create a target to
@@ -375,6 +368,7 @@ template("_pw_python_proto_library") {
 #   strip_prefix: Remove this prefix from the source protos. All source and
 #       input files must be nested under this path.
 #   python_package: Label of Python package to which to add the proto modules.
+#       The .python subtarget will redirect to this package.
 #
 template("pw_proto_library") {
   assert(defined(invoker.sources) && invoker.sources != [],
