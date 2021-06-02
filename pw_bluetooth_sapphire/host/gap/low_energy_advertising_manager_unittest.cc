@@ -17,9 +17,15 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 
-namespace bt::gap {
+namespace bt {
+using testing::FakeController;
+
+namespace gap {
 namespace {
+using TestingBase = bt::testing::ControllerTest<FakeController>;
 
 constexpr size_t kDefaultMaxAds = 1;
 constexpr size_t kDefaultMaxAdSize = 23;
@@ -46,9 +52,12 @@ struct AdvertisementStatus {
 //  - Actually just accepts all ads and stores them in ad_store
 class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
  public:
-  FakeLowEnergyAdvertiser(size_t max_ads, size_t max_ad_size,
+  FakeLowEnergyAdvertiser(fxl::WeakPtr<hci::Transport> hci, size_t max_ads, size_t max_ad_size,
                           std::unordered_map<DeviceAddress, AdvertisementStatus>* ad_store)
-      : max_ads_(max_ads), max_ad_size_(max_ad_size), ads_(ad_store) {
+      : hci::LowEnergyAdvertiser(std::move(hci)),
+        max_ads_(max_ads),
+        max_ad_size_(max_ad_size),
+        ads_(ad_store) {
     ZX_ASSERT(ads_);
   }
 
@@ -113,14 +122,42 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   void ErrorOnNext(hci::Status error_status) { pending_error_ = error_status; }
 
  private:
+  std::unique_ptr<hci::CommandPacket> BuildEnablePacket(hci::GenericEnableParam enable) override {
+    return nullptr;
+  }
+
+  std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingParams(
+      hci::LEAdvertisingType type, hci::LEOwnAddressType own_address_type,
+      hci::AdvertisingIntervalRange interval) override {
+    return nullptr;
+  }
+
+  std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingData(const AdvertisingData& data,
+                                                              AdvFlags flags) override {
+    return nullptr;
+  }
+
+  std::unique_ptr<hci::CommandPacket> BuildUnsetAdvertisingData(
+      const DeviceAddress& address) override {
+    return nullptr;
+  }
+
+  std::unique_ptr<hci::CommandPacket> BuildSetScanResponse(
+      const AdvertisingData& scan_rsp) override {
+    return nullptr;
+  }
+
+  std::unique_ptr<hci::CommandPacket> BuildUnsetScanResponse(
+      const DeviceAddress& address) override {
+    return nullptr;
+  }
+
   size_t max_ads_, max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Status pending_error_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
 };
-
-using TestingBase = ::gtest::TestLoopFixture;
 
 class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
  public:
@@ -129,6 +166,8 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
 
  protected:
   void SetUp() override {
+    TestingBase::SetUp();
+
     fake_address_delegate_.set_local_address(kRandomAddress);
     MakeFakeAdvertiser();
     MakeAdvertisingManager();
@@ -137,6 +176,7 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   void TearDown() override {
     adv_mgr_ = nullptr;
     advertiser_ = nullptr;
+    TestingBase::TearDown();
   }
 
   // Makes some fake advertising data of a specific |packed_size|
@@ -172,7 +212,8 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   }
 
   void MakeFakeAdvertiser(size_t max_ads = kDefaultMaxAds, size_t max_ad_size = kDefaultMaxAdSize) {
-    advertiser_ = std::make_unique<FakeLowEnergyAdvertiser>(max_ads, max_ad_size, &ad_store_);
+    advertiser_ = std::make_unique<FakeLowEnergyAdvertiser>(transport()->WeakPtr(), max_ads,
+                                                            max_ad_size, &ad_store_);
   }
 
   void MakeAdvertisingManager() {
@@ -519,4 +560,5 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAd
 }
 
 }  // namespace
-}  // namespace bt::gap
+}  // namespace gap
+}  // namespace bt

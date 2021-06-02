@@ -41,6 +41,7 @@ class AdvertisingIntervalRange final {
 
 class LowEnergyAdvertiser : public LocalAddressClient {
  public:
+  explicit LowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
   ~LowEnergyAdvertiser() override = default;
 
   // Get the current limit in bytes of the advertisement data supported.
@@ -112,9 +113,13 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                 ConnectionCallback connect_callback,
                                 StatusCallback status_callback) = 0;
 
+  // Stops advertisement on all currently advertising addresses. Idempotent and asynchronous.
+  // Returns true if advertising will be stopped, false otherwise.
+  virtual bool StopAdvertising();
+
   // Stops any advertisement currently active on |address|. Idempotent and asynchronous. Returns
   // true if advertising will be stopped, false otherwise.
-  virtual bool StopAdvertising(const DeviceAddress& address) = 0;
+  virtual bool StopAdvertising(const DeviceAddress& address);
 
   // Callback for an incoming LE connection. This function should be called in reaction to any
   // connection that was not initiated locally. This object will determine if it was a result of an
@@ -128,6 +133,72 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                     std::optional<DeviceAddress> local_address,
                                     const DeviceAddress& peer_address,
                                     const LEConnectionParameters& conn_params) = 0;
+
+  // Returns true if currently advertising at all
+  bool IsAdvertising() const { return !connection_callbacks_.empty(); }
+
+  // Returns true if currently advertising for the given address
+  bool IsAdvertising(const DeviceAddress& address) const {
+    return connection_callbacks_.count(address) != 0;
+  }
+
+ protected:
+  // Build the HCI command packet to enable advertising for the flavor of low energy advertising
+  // being implemented.
+  virtual std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) = 0;
+
+  // Build the HCI command packet to set the advertising parameters for the flavor of low energy
+  // advertising being implemented.
+  virtual std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
+      LEAdvertisingType type, LEOwnAddressType own_address_type,
+      AdvertisingIntervalRange interval) = 0;
+
+  // Build the HCI command packet to set the advertising data for the flavor of low energy
+  // advertising being implemented.
+  virtual std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const AdvertisingData& data,
+                                                                 AdvFlags flags) = 0;
+
+  // Build the HCI command packet to delete the advertising parameters from the controller for the
+  // flavor of low energy advertising being implemented. This method is used when stopping an
+  // advertisement.
+  virtual std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(
+      const DeviceAddress& address) = 0;
+
+  // Build the HCI command packet to set the data sent in a scan response (if requested) for the
+  // flavor of low energy advertising being implemented.
+  virtual std::unique_ptr<CommandPacket> BuildSetScanResponse(const AdvertisingData& scan_rsp) = 0;
+
+  // Build the HCI command packet to delete the advertising parameters from the controller for the
+  // flavor of low energy advertising being implemented.
+  virtual std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) = 0;
+
+  // Unconditionally start advertising (all checks must be performed in the methods that call this
+  // one).
+  void StartAdvertisingInternal(const DeviceAddress& address, const AdvertisingData& data,
+                                const AdvertisingData& scan_rsp, AdvertisingIntervalRange interval,
+                                AdvFlags flags, ConnectionCallback connect_callback,
+                                StatusCallback callback);
+
+  // Handle shared housekeeping tasks when an incoming connection is completed (e.g. clean up
+  // internal state, call callbacks, etc)
+  virtual void CompleteIncomingConnection(ConnectionHandle handle, Connection::Role role,
+                                          const DeviceAddress& local_address,
+                                          const DeviceAddress& peer_address,
+                                          const LEConnectionParameters& conn_params);
+
+  SequentialCommandRunner& hci_cmd_runner() const { return *hci_cmd_runner_; }
+  fxl::WeakPtr<Transport> hci() const { return hci_; }
+
+  const std::unordered_map<DeviceAddress, ConnectionCallback>& connection_callbacks() const {
+    return connection_callbacks_;
+  }
+
+ private:
+  fxl::WeakPtr<Transport> hci_;
+  std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
+  std::unordered_map<DeviceAddress, ConnectionCallback> connection_callbacks_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiser);
 };
 
 }  // namespace hci

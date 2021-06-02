@@ -19,6 +19,7 @@ static_library("hci") {
     "legacy_low_energy_scanner.cc",
     "legacy_low_energy_scanner.h",
     "local_address_delegate.h",
+    "low_energy_advertiser.cc",
     "low_energy_advertiser.h",
     "low_energy_connector.cc",
     "low_energy_connector.h",

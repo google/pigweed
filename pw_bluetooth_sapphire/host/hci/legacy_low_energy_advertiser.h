@@ -14,13 +14,14 @@ class SequentialCommandRunner;
 
 class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
-  explicit LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
-  ~LegacyLowEnergyAdvertiser() override;
+  explicit LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
+      : LowEnergyAdvertiser(std::move(hci)) {}
+  ~LegacyLowEnergyAdvertiser() override { StopAdvertising(); }
 
   // LowEnergyAdvertiser overrides:
   size_t GetSizeLimit() override { return kMaxLEAdvertisingDataLength; }
   size_t GetMaxAdvertisements() const override { return 1; }
-  bool AllowsRandomAddressChange() const override { return !starting_ && !advertising(); }
+  bool AllowsRandomAddressChange() const override { return !starting_ && !IsAdvertising(); }
 
   // LegacyLowEnergyAdvertiser supports only a single advertising instance,
   // hence it can report additional errors in the following conditions:
@@ -32,6 +33,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
                         ConnectionCallback connect_callback,
                         StatusCallback status_callback) override;
 
+  bool StopAdvertising() override;
+
   // If called while a stop request is pending, returns false.
   // If called while a start request is pending, then cancels the start
   // request and proceeds with start.
@@ -39,29 +42,27 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // TODO(fxbug.dev/50542): Update documentation.
   bool StopAdvertising(const DeviceAddress& address) override;
 
-  // Clears the advertising state before passing |link| on to
-  // |connect_callback_|.
   void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                            std::optional<DeviceAddress> local_address,
+                            std::optional<DeviceAddress> opt_local_address,
                             const DeviceAddress& peer_address,
                             const LEConnectionParameters& conn_params) override;
 
  private:
-  // Unconditionally stops advertising.
-  void StopAdvertisingInternal();
+  std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) override;
 
-  void StartAdvertisingInternal(const DeviceAddress& address, const AdvertisingData& data,
-                                const AdvertisingData& scan_rsp, AdvertisingIntervalRange interval,
-                                AdvFlags flags, ConnectionCallback connect_callback,
-                                StatusCallback status_callback);
+  std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
+      LEAdvertisingType type, LEOwnAddressType own_address_type,
+      AdvertisingIntervalRange interval) override;
 
-  // Returns true if currently advertising.
-  bool advertising() const { return advertised_ != DeviceAddress(); }
+  std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const AdvertisingData& data,
+                                                         AdvFlags flags) override;
 
-  // The transport that's used to issue commands
-  fxl::WeakPtr<Transport> hci_;
+  std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(const DeviceAddress& address) override;
 
-  // |hci_cmd_runner_| will be running when a start or stop is pending.
+  std::unique_ptr<CommandPacket> BuildSetScanResponse(const AdvertisingData& scan_rsp) override;
+
+  std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) override;
+
   // |starting_| is set to true if a start is pending.
   // |staged_params_| are the parameters that will be advertised.
   struct StagedParams {
@@ -75,13 +76,6 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   };
   std::optional<StagedParams> staged_params_;
   bool starting_ = false;
-  std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
-
-  // Non-zero if advertising has been enabled.
-  DeviceAddress advertised_;
-
-  // if not null, the callback for connectable advertising.
-  ConnectionCallback connect_callback_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
 };
