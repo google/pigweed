@@ -834,6 +834,16 @@ this check can be done at compile time.
     return Detokenizer(kDefaultDatabase);
   }
 
+Protocol buffers
+----------------
+``pw_tokenizer`` provides utilities for handling tokenized fields in protobufs.
+See :ref:`module-pw_tokenizer-proto` for details.
+
+.. toctree::
+  :hidden:
+
+  proto.rst
+
 Base64 format
 =============
 The tokenizer encodes messages to a compact binary representation. Applications

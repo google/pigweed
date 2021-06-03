@@ -15,9 +15,14 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 
 pw_python_package("py") {
-  setup = [ "setup.py" ]
+  generate_setup = {
+    name = "pw_tokenizer"
+    version = "0.0.1"
+    extra_requires = [ "serial" ]
+  }
   sources = [
     "generate_argument_types_macro.py",
     "generate_hash_macro.py",
@@ -29,12 +34,14 @@ pw_python_package("py") {
     "pw_tokenizer/detokenize.py",
     "pw_tokenizer/elf_reader.py",
     "pw_tokenizer/encode.py",
+    "pw_tokenizer/proto/__init__.py",
     "pw_tokenizer/serial_detokenizer.py",
     "pw_tokenizer/tokens.py",
   ]
   tests = [
     "database_test.py",
     "decode_test.py",
+    "detokenize_proto_test.py",
     "detokenize_test.py",
     "elf_reader_test.py",
     "encode_test.py",
@@ -42,10 +49,18 @@ pw_python_package("py") {
     "tokens_test.py",
     "varint_test_data.py",
   ]
+  python_test_deps = [ ":test_proto.python" ]
   inputs = [
     "elf_reader_test_binary.elf",
     "example_binary_with_tokenized_strings.elf",
     "example_legacy_binary_with_tokenized_strings.elf",
   ]
+  proto_library = "..:proto"
   pylintrc = "$dir_pigweed/.pylintrc"
+}
+
+pw_proto_library("test_proto") {
+  sources = [ "detokenize_proto_test.proto" ]
+  deps = [ "..:proto" ]
+  prefix = "pw_tokenizer_tests"
 }

@@ -323,6 +323,9 @@ template("pw_python_package") {
         if (defined(invoker.tests)) {
           sources += invoker.tests
         }
+        if (defined(invoker.inputs)) {
+          sources += invoker.inputs
+        }
 
         source_root = _source_root
         public_deps = _python_deps + _other_deps

@@ -20,6 +20,7 @@ import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -351,6 +352,12 @@ pw_fuzzer("detokenize_fuzzer") {
   ]
 }
 
+pw_proto_library("proto") {
+  sources = [ "options.proto" ]
+  prefix = "pw_tokenizer/proto"
+  python_package = "py"
+}
+
 declare_args() {
   # pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS specifies the paths to use for
   # building Java Native Interface libraries. If no paths are provided, targets
@@ -380,6 +387,9 @@ pw_shared_library("detokenizer_jni") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "docs.rst",
+    "proto.rst",
+  ]
   inputs = [ "py/pw_tokenizer/encode.py" ]
 }
