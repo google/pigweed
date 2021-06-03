@@ -267,7 +267,6 @@ def cipd(ctx: DoctorContext):
     # TODO(mohrr) get these tools in CIPD for Windows.
     if os.name == 'posix':
         commands_expected_from_cipd += [
-            'bazel',
             'bloaty',
             'clang++',
         ]
