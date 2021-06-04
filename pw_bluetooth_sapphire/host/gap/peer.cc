@@ -6,12 +6,16 @@
 
 #include <zircon/assert.h>
 
+#include <iomanip>
+#include <sstream>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/utf_codecs.h"
 
 namespace bt::gap {
 
@@ -436,6 +440,17 @@ bool Peer::SetRssiInternal(int8_t rssi) {
 }
 
 bool Peer::SetNameInternal(const std::string& name) {
+  if (!fxl::IsStringUTF8(name)) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+    for (auto c : name) {
+      // Cast to uchar so promotion doesn't sign-extend, then format as unsigned
+      oss << std::setw(2) << unsigned{static_cast<unsigned char>(c)};
+    }
+    bt_log(WARN, "gap", "%s: not setting name to string that is not valid UTF-8 (%s)",
+           bt_str(*this), oss.str().c_str());
+    return false;
+  }
   if (!name_ || *name_ != name) {
     name_ = name;
     return true;

@@ -169,5 +169,58 @@ TEST_F(GAP_PeerTest, BrEdrDataAddServiceOnBondedPeerNotifiesListenersToUpdateBon
   EXPECT_TRUE(listener_notified);
 }
 
+TEST_F(GAP_PeerTest, LowEnergyDataSetAdvDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
+  peer().MutLe();  // Initialize LowEnergyData.
+  ASSERT_FALSE(peer().name().has_value());
+
+  bool listener_notified = false;
+  set_notify_listeners_cb([&](auto&, Peer::NotifyListenersChange) { listener_notified = true; });
+
+  const StaticByteBuffer kAdvData(0x05,  // Length
+                                  0x09,  // AD type: Complete Local Name
+                                  'T', 'e', 's',
+                                  0xFF  // 0xFF should not appear in a valid UTF-8 string
+  );
+
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData);
+  EXPECT_TRUE(listener_notified);  // Fresh AD still results in an update
+  EXPECT_FALSE(peer().name().has_value());
+}
+
+TEST_F(GAP_PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
+  peer().MutBrEdr();  // Initialize BrEdrData.
+  ASSERT_FALSE(peer().name().has_value());
+
+  bool listener_notified = false;
+  set_notify_listeners_cb([&](auto&, Peer::NotifyListenersChange) { listener_notified = true; });
+
+  const StaticByteBuffer kEirData(0x05,  // Length
+                                  0x09,  // AD type: Complete Local Name
+                                  'T', 'e', 's',
+                                  0xFF  // 0xFF should not appear in a valid UTF-8 string
+  );
+  hci::ExtendedInquiryResultEventParams eirep;
+  eirep.num_responses = 1;
+  eirep.bd_addr = peer().address().value();
+  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
+      .Write(kEirData);
+
+  peer().MutBrEdr().SetInquiryData(eirep);
+  EXPECT_TRUE(listener_notified);  // Fresh EIR data still results in an update
+  EXPECT_FALSE(peer().name().has_value());
+}
+
+TEST_F(GAP_PeerTest, SetNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
+  ASSERT_FALSE(peer().name().has_value());
+
+  bool listener_notified = false;
+  set_notify_listeners_cb([&](auto&, Peer::NotifyListenersChange) { listener_notified = true; });
+
+  const std::string kName = "Tes\xFF\x01";  // 0xFF should not appear in a valid UTF-8 string
+  peer().SetName(kName);
+  EXPECT_FALSE(listener_notified);
+  EXPECT_FALSE(peer().name().has_value());
+}
+
 }  // namespace
 }  // namespace bt::gap
