@@ -50,3 +50,30 @@ with a protocol buffer option so the ``pw_tokenizer.proto`` module can detect
 and detokenize tokenized fields as appropriate.
 
 See :ref:`module-pw_tokenizer-proto` for details.
+
+Utility functions
+-----------------
+Conversion into the ``log.proto`` format from a tokenized log message can be
+performed using the ``pw_log/proto_utils.h`` headers. Given tokenized data and
+a payload, the headers provide a quick way to encode to the LogEntry protobuf.
+
+.. code-block:: cpp
+
+   #include "pw_log/proto_utils.h"
+
+   extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
+       pw_tokenizer_Payload payload, const uint8_t data[], size_t size) {
+     pw::log_tokenized::Metadata metadata(payload);
+     std::byte log_buffer[kLogBufferSize];
+
+     Result<ConstByteSpan> result = EncodeTokenizedLog(
+         metadata,
+         std::as_bytes(std::span(data, size)),
+         log_buffer);
+     if (result.ok()) {
+       // This makes use of the encoded log proto and is custom per-product.
+       // It should be implemented by the caller and is not in Pigweed.
+       EmitProtoLogEntry(result.value());
+     }
+   }
+

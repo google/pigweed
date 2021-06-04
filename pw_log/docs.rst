@@ -10,9 +10,9 @@ two components:
 1. The facade (this module) which is only a macro interface layer
 2. The backend, provided elsewhere, that implements the low level logging
 
-``pw_log`` also defines a logging protobuf and RPC service for efficiently
-storing and transmitting log messages. See :ref:`module-pw_log-protobuf` for
-details.
+``pw_log`` also defines a logging protobuf, helper utilities, and an RPC
+service for efficiently storing and transmitting log messages. See
+:ref:`module-pw_log-protobuf` for details.
 
 .. toctree::
   :hidden:

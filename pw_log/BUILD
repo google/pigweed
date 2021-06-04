@@ -47,6 +47,22 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "proto_utils",
+    srcs = [
+        "proto_utils.cc",
+    ],
+    hdrs = [
+        "public/pw_log/proto_utils.h",
+    ],
+    deps = [
+        ":facade",
+        "//pw_bytes",
+        "//pw_log_tokenized",
+        "//pw_result",
+    ],
+)
+
+pw_cc_library(
     name = "backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = ["//pw_log_basic"],
@@ -61,6 +77,20 @@ pw_cc_test(
     deps = [
         ":facade",
         ":pw_log",
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "proto_utils_test",
+    srcs = [
+        "proto_utils_test.cc",
+    ],
+    deps = [
+        ":facade",
+        ":proto_utils",
+        "//pw_protobuf",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],

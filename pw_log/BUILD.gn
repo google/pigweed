@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/facade.gni")
+import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_log/backend.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
@@ -38,6 +39,19 @@ pw_facade("pw_log") {
   require_link_deps = [ ":impl" ]
 }
 
+pw_source_set("proto_utils") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_log/proto_utils.h" ]
+  public_deps = [
+    ":pw_log.facade",
+    "$dir_pw_bytes",
+    "$dir_pw_log_tokenized",
+    "$dir_pw_result",
+  ]
+  deps = [ "$dir_pw_log:protos.pwpb" ]
+  sources = [ "proto_utils.cc" ]
+}
+
 # pw_log is low-level and ubiquitous. Because of this, it can often cause
 # circular dependencies. This target collects dependencies from the backend that
 # cannot be used because they would cause circular deps.
@@ -58,7 +72,10 @@ group("impl") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":basic_log_test" ]
+  tests = [
+    ":basic_log_test",
+    ":proto_utils_test",
+  ]
 }
 
 pw_test("basic_log_test") {
@@ -73,6 +90,17 @@ pw_test("basic_log_test") {
     "basic_log_test.cc",
     "basic_log_test_plain_c.c",
   ]
+}
+
+pw_test("proto_utils_test") {
+  enable_if = pw_log_BACKEND != ""
+  deps = [
+    ":proto_utils",
+    ":pw_log.facade",
+    "$dir_pw_preprocessor",
+    "$dir_pw_protobuf",
+  ]
+  sources = [ "proto_utils_test.cc" ]
 }
 
 pw_proto_library("protos") {
