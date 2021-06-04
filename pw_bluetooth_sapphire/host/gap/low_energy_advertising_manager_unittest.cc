@@ -63,7 +63,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   ~FakeLowEnergyAdvertiser() override = default;
 
-  size_t GetSizeLimit() override { return max_ad_size_; }
+  size_t GetSizeLimit() const override { return max_ad_size_; }
 
   size_t GetMaxAdvertisements() const override { return max_ads_; }
 

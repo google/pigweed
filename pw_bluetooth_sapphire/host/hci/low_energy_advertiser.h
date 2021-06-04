@@ -45,7 +45,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   ~LowEnergyAdvertiser() override = default;
 
   // Get the current limit in bytes of the advertisement data supported.
-  virtual size_t GetSizeLimit() = 0;
+  virtual size_t GetSizeLimit() const = 0;
 
   // Get the current limit of number of advertising sets supported, including currently enabled
   // ones.  This can change when the state of advertising changes.  It should be checked before

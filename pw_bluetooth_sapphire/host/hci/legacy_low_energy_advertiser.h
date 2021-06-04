@@ -19,7 +19,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   ~LegacyLowEnergyAdvertiser() override { StopAdvertising(); }
 
   // LowEnergyAdvertiser overrides:
-  size_t GetSizeLimit() override { return kMaxLEAdvertisingDataLength; }
+  size_t GetSizeLimit() const override { return kMaxLEAdvertisingDataLength; }
   size_t GetMaxAdvertisements() const override { return 1; }
   bool AllowsRandomAddressChange() const override { return !starting_ && !IsAdvertising(); }
 
