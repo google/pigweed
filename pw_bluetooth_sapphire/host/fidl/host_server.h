@@ -206,6 +206,10 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // Used to drive the WatchPeers() method.
   WatchPeersGetter watch_peers_getter_;
 
+  // Id of the PeerCache::add_peer_updated_callback callback. Used to remove the callback when this
+  // server is closed.
+  bt::gap::PeerCache::CallbackId peer_updated_callback_id_;
+
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<HostServer> weak_ptr_factory_;

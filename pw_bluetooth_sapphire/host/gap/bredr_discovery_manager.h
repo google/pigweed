@@ -53,7 +53,7 @@ class BrEdrDiscoverySession final {
   // Set a result callback that will be notified whenever a result is returned
   // from the controller.  You will get duplicate results when using this
   // method.
-  // Prefer PeerCache.set_peer_updated_callback() instead.
+  // Prefer PeerCache.add_peer_updated_callback() instead.
   using PeerFoundCallback = fit::function<void(const Peer& peer)>;
   void set_result_callback(PeerFoundCallback callback) {
     peer_found_callback_ = std::move(callback);

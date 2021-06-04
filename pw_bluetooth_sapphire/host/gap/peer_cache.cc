@@ -289,6 +289,16 @@ void PeerCache::AttachInspect(inspect::Node& parent, std::string name) {
   }
 }
 
+PeerCache::CallbackId PeerCache::add_peer_updated_callback(PeerCallback callback) {
+  auto [iter, success] = peer_updated_callbacks_.emplace(next_callback_id_++, std::move(callback));
+  ZX_ASSERT(success);
+  return iter->first;
+}
+
+bool PeerCache::remove_peer_updated_callback(CallbackId id) {
+  return peer_updated_callbacks_.erase(id);
+}
+
 // Private methods below.
 
 Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& address,
@@ -334,9 +344,11 @@ void PeerCache::NotifyPeerBonded(const Peer& peer) {
 void PeerCache::NotifyPeerUpdated(const Peer& peer, Peer::NotifyListenersChange change) {
   ZX_DEBUG_ASSERT(peers_.find(peer.identifier()) != peers_.end());
   ZX_DEBUG_ASSERT(peers_.at(peer.identifier()).peer() == &peer);
-  if (peer_updated_callback_) {
-    peer_updated_callback_(peer);
+
+  for (auto& [_, peer_updated_callback] : peer_updated_callbacks_) {
+    peer_updated_callback(peer);
   }
+
   if (change == Peer::NotifyListenersChange::kBondUpdated) {
     ZX_ASSERT(peer.bonded());
     bt_log(INFO, "gap", "peer bond updated %s", bt_str(peer));

@@ -101,11 +101,12 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
   ZX_ASSERT(gatt_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  adapter->peer_cache()->set_peer_updated_callback([self](const auto& peer) {
-    if (self) {
-      self->OnPeerUpdated(peer);
-    }
-  });
+  peer_updated_callback_id_ =
+      adapter->peer_cache()->add_peer_updated_callback([self](const auto& peer) {
+        if (self) {
+          self->OnPeerUpdated(peer);
+        }
+      });
   adapter->peer_cache()->set_peer_removed_callback([self](const auto& identifier) {
     if (self) {
       self->OnPeerRemoved(identifier);
@@ -757,6 +758,9 @@ void HostServer::Close() {
   // Disallow future pairing.
   pairing_delegate_ = nullptr;
   ResetPairingDelegate();
+
+  // Unregister PeerCache callbacks.
+  adapter()->peer_cache()->remove_peer_updated_callback(peer_updated_callback_id_);
 
   // Send adapter state change.
   if (binding()->is_bound()) {

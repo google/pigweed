@@ -251,14 +251,42 @@ TEST_F(GAP_PeerCacheTest, ForEach) {
 
 TEST_F(GAP_PeerCacheTest, NewPeerInvokesCallbackWhenPeerIsFirstRegistered) {
   bool was_called = false;
-  cache()->set_peer_updated_callback([&was_called](const auto&) { was_called = true; });
+  cache()->add_peer_updated_callback([&was_called](const auto&) { was_called = true; });
   cache()->NewPeer(kAddrLePublic, true);
   EXPECT_TRUE(was_called);
 }
 
+TEST_F(GAP_PeerCacheTest, MultiplePeerUpdatedCallbacks) {
+  size_t updated_count_0 = 0, updated_count_1 = 0;
+  PeerCache::CallbackId id_0 =
+      cache()->add_peer_updated_callback([&](const auto&) { updated_count_0++; });
+  PeerCache::CallbackId id_1 =
+      cache()->add_peer_updated_callback([&](const auto&) { updated_count_1++; });
+
+  cache()->NewPeer(kAddrLePublic, true);
+  EXPECT_EQ(updated_count_0, 1u);
+  EXPECT_EQ(updated_count_1, 1u);
+
+  cache()->NewPeer(kAddrLeRandom, true);
+  EXPECT_EQ(updated_count_0, 2u);
+  EXPECT_EQ(updated_count_1, 2u);
+
+  EXPECT_TRUE(cache()->remove_peer_updated_callback(id_0));
+  EXPECT_FALSE(cache()->remove_peer_updated_callback(id_0));
+  cache()->NewPeer(kAddrLeRandom2, true);
+  EXPECT_EQ(updated_count_0, 2u);
+  EXPECT_EQ(updated_count_1, 3u);
+
+  EXPECT_TRUE(cache()->remove_peer_updated_callback(id_1));
+  EXPECT_FALSE(cache()->remove_peer_updated_callback(id_1));
+  cache()->NewPeer(kAddrBrEdr, true);
+  EXPECT_EQ(updated_count_0, 2u);
+  EXPECT_EQ(updated_count_1, 3u);
+}
+
 TEST_F(GAP_PeerCacheTest, NewPeerDoesNotInvokeCallbackWhenPeerIsReRegistered) {
   int call_count = 0;
-  cache()->set_peer_updated_callback([&call_count](const auto&) { ++call_count; });
+  cache()->add_peer_updated_callback([&call_count](const auto&) { ++call_count; });
   cache()->NewPeer(kAddrLePublic, true);
   cache()->NewPeer(kAddrLePublic, true);
   EXPECT_EQ(1, call_count);
@@ -467,7 +495,8 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
     bonded_callback_count_ = 0;
     cache()->set_peer_bonded_callback([this](const auto&) { bonded_callback_count_++; });
     updated_callback_count_ = 0;
-    cache()->set_peer_updated_callback([this](auto&) { updated_callback_count_++; });
+    updated_callback_id_ =
+        cache()->add_peer_updated_callback([this](auto&) { updated_callback_count_++; });
     removed_callback_count_ = 0;
     cache()->set_peer_removed_callback([this](PeerId) { removed_callback_count_++; });
   }
@@ -475,7 +504,7 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
   void TearDown() override {
     cache()->set_peer_removed_callback(nullptr);
     removed_callback_count_ = 0;
-    cache()->set_peer_updated_callback(nullptr);
+    EXPECT_TRUE(cache()->remove_peer_updated_callback(updated_callback_id_));
     updated_callback_count_ = 0;
     cache()->set_peer_bonded_callback(nullptr);
     bonded_callback_count_ = 0;
@@ -496,6 +525,7 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
   int bonded_callback_count_;
   int updated_callback_count_;
   int removed_callback_count_;
+  PeerCache::CallbackId updated_callback_id_ = 0;
 };
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingId) {
@@ -982,7 +1012,7 @@ class GAP_PeerCacheTest_UpdateCallbackTest : public GAP_PeerCacheTest {
 
     was_called_ = false;
     ASSERT_TRUE(NewPeer(*DevAddr, true));
-    cache()->set_peer_updated_callback([this](const auto&) { was_called_ = true; });
+    cache()->add_peer_updated_callback([this](const auto&) { was_called_ = true; });
     ir_.bd_addr = peer()->address().value();
     irr_.bd_addr = peer()->address().value();
     eirep_.bd_addr = peer()->address().value();
@@ -1032,7 +1062,7 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
 TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
        SetLowEnergyAdvertisingDataUpdateCallbackProvidesUpdatedPeer) {
   ASSERT_NE(peer()->rssi(), kTestRSSI);
-  cache()->set_peer_updated_callback([&](const auto& updated_peer) {
+  cache()->add_peer_updated_callback([&](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.le());
     EXPECT_TRUE(ContainersEqual(kAdvData, updated_peer.le()->advertising_data()));
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
@@ -1066,7 +1096,7 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest, BecomingDualModeTriggersUp
   EXPECT_EQ(TechnologyType::kLowEnergy, peer()->technology());
 
   size_t call_count = 0;
-  cache()->set_peer_updated_callback([&](const auto&) { ++call_count; });
+  cache()->add_peer_updated_callback([&](const auto&) { ++call_count; });
   peer()->MutBrEdr();
   EXPECT_EQ(TechnologyType::kDualMode, peer()->technology());
   EXPECT_EQ(call_count, 1U);
@@ -1094,7 +1124,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
 TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultUpdateCallbackProvidesUpdatedPeer) {
   ir().class_of_device = kTestDeviceClass;
-  cache()->set_peer_updated_callback([](const auto& updated_peer) {
+  cache()->add_peer_updated_callback([](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.bredr());
     ASSERT_TRUE(updated_peer.bredr()->device_class());
     EXPECT_EQ(DeviceClass::MajorClass(0x02), updated_peer.bredr()->device_class()->major_class());
@@ -1123,7 +1153,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
 TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSIUpdateCallbackProvidesUpdatedPeer) {
   irr().class_of_device = kTestDeviceClass;
-  cache()->set_peer_updated_callback([](const auto& updated_peer) {
+  cache()->add_peer_updated_callback([](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.bredr()->device_class());
     EXPECT_EQ(DeviceClass::MajorClass(0x02), updated_peer.bredr()->device_class()->major_class());
   });
@@ -1181,7 +1211,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   eir_data().Write(kEirData);
   ASSERT_FALSE(peer()->name().has_value());
   ASSERT_EQ(peer()->rssi(), hci::kRSSIInvalid);
-  cache()->set_peer_updated_callback([](const auto& updated_peer) {
+  cache()->add_peer_updated_callback([](const auto& updated_peer) {
     const auto& data = updated_peer.bredr();
     ASSERT_TRUE(data);
     ASSERT_TRUE(data->clock_offset().has_value());
@@ -1208,7 +1238,7 @@ TEST_F(
   eir_data().Write(kEirData);
 
   size_t call_count = 0;
-  cache()->set_peer_updated_callback([&](const auto&) { ++call_count; });
+  cache()->add_peer_updated_callback([&](const auto&) { ++call_count; });
   peer()->MutBrEdr().SetInquiryData(eirep());
   EXPECT_EQ(call_count, 1U);
 }
@@ -1259,7 +1289,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, SetNameDoesNotTriggerUpdateCal
   ASSERT_TRUE(was_called());
 
   bool was_called_again = false;
-  cache()->set_peer_updated_callback([&](const auto&) { was_called_again = true; });
+  cache()->add_peer_updated_callback([&](const auto&) { was_called_again = true; });
   peer()->SetName("nombre");
   EXPECT_FALSE(was_called_again);
 }
@@ -1268,7 +1298,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdate
   EXPECT_EQ(TechnologyType::kClassic, peer()->technology());
 
   size_t call_count = 0;
-  cache()->set_peer_updated_callback([&](const auto&) { ++call_count; });
+  cache()->add_peer_updated_callback([&](const auto&) { ++call_count; });
   peer()->MutLe();
   EXPECT_EQ(TechnologyType::kDualMode, peer()->technology());
   EXPECT_EQ(call_count, 1U);

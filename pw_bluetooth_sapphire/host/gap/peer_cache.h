@@ -36,6 +36,7 @@ namespace gap {
 // known to the system.
 class PeerCache final {
  public:
+  using CallbackId = uint64_t;
   using PeerCallback = fit::function<void(const Peer& peer)>;
   using PeerIdCallback = fit::function<void(PeerId identifier)>;
 
@@ -122,11 +123,12 @@ class PeerCache final {
   static constexpr const char* kInspectNodeName = "peer_cache";
   void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName);
 
-  // When set, |callback| will be invoked whenever a peer is added or updated.
-  void set_peer_updated_callback(PeerCallback callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-    peer_updated_callback_ = std::move(callback);
-  }
+  // Register a |callback| to be invoked whenever a peer is added or updated.
+  CallbackId add_peer_updated_callback(PeerCallback callback);
+
+  // Unregister the callback indicated by |id|. Returns true if the callback was removed
+  // successfully, or false otherwise (e.g. the callback was previously removed).
+  bool remove_peer_updated_callback(CallbackId id);
 
   // When set, |callback| will be invoked whenever a peer is removed.
   void set_peer_removed_callback(PeerIdCallback callback) {
@@ -236,7 +238,8 @@ class PeerCache final {
   // The LE identity resolving list used to resolve RPAs.
   IdentityResolvingList le_resolving_list_;
 
-  PeerCallback peer_updated_callback_;
+  CallbackId next_callback_id_ = 0u;
+  std::unordered_map<CallbackId, PeerCallback> peer_updated_callbacks_;
   PeerIdCallback peer_removed_callback_;
   PeerCallback peer_bonded_callback_;
 
