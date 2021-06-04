@@ -19,16 +19,13 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
-// Use the highest available log flag to indicate an assert failure.
-#define PW_LOG_ASSERT_FAILED_FLAG (1u << (PW_LOG_FLAG_BITS - 1u))
-
 // Die with a message with several attributes included. This crash frontend
 // funnels everything into the logger, which must then handle the true crash
 // behaviour.
 #define PW_HANDLE_CRASH(message, ...)       \
   do {                                      \
-    PW_LOG(PW_LOG_LEVEL_CRITICAL,           \
-           PW_LOG_ASSERT_FAILED_FLAG,       \
+    PW_LOG(PW_LOG_LEVEL_FATAL,              \
+           PW_LOG_DEFAULT_FLAGS,            \
            __FILE__ ":%d: Crash: " message, \
            __LINE__,                        \
            __VA_ARGS__);                    \
@@ -40,8 +37,8 @@
 // log, then crashing/rebooting the device.
 #define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...)         \
   do {                                                                   \
-    PW_LOG(PW_LOG_LEVEL_CRITICAL,                                        \
-           PW_LOG_ASSERT_FAILED_FLAG,                                    \
+    PW_LOG(PW_LOG_LEVEL_FATAL,                                           \
+           PW_LOG_DEFAULT_FLAGS,                                         \
            __FILE__ ":%d: Check failed: " condition_string ". " message, \
            __LINE__,                                                     \
            __VA_ARGS__);                                                 \
@@ -64,8 +61,8 @@
                                                 type_fmt,                 \
                                                 message, ...)             \
   do {                                                                    \
-    PW_LOG(PW_LOG_LEVEL_CRITICAL,                                         \
-           PW_LOG_ASSERT_FAILED_FLAG,                                     \
+    PW_LOG(PW_LOG_LEVEL_FATAL,                                            \
+           PW_LOG_DEFAULT_FLAGS,                                          \
            __FILE__ ":%d: Check failed: "                                 \
                  arg_a_str " (=" type_fmt ") "                            \
                  comparison_op_str " "                                    \

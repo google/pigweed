@@ -45,16 +45,29 @@ pw_source_set("pw_log_tokenized") {
     ":public_include_path",
   ]
   public_deps = [
-    "$dir_pw_log:facade",
+    ":config",
+    ":metadata",
     "$dir_pw_tokenizer:global_handler_with_payload.facade",
-    dir_pw_preprocessor,
-    pw_log_tokenized_CONFIG,
   ]
   public = [
-    "public/pw_log_tokenized/config.h",
     "public/pw_log_tokenized/log_tokenized.h",
     "public_overrides/pw_log_backend/log_backend.h",
   ]
+}
+
+pw_source_set("metadata") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":config" ]
+  public = [ "public/pw_log_tokenized/metadata.h" ]
+}
+
+pw_source_set("config") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_log:facade",
+    pw_log_tokenized_CONFIG,
+  ]
+  public = [ "public/pw_log_tokenized/config.h" ]
 }
 
 # The log backend deps that might cause circular dependencies, since
@@ -82,12 +95,27 @@ pw_source_set("base64_over_hdlc") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":log_tokenized_test" ]
+  tests = [
+    ":log_tokenized_test",
+    ":metadata_test",
+  ]
 }
 
 pw_test("log_tokenized_test") {
-  sources = [ "test.cc" ]
-  deps = [ ":pw_log_tokenized" ]
+  sources = [
+    "log_tokenized_test.cc",
+    "log_tokenized_test_c.c",
+    "pw_log_tokenized_private/test_utils.h",
+  ]
+  deps = [
+    ":pw_log_tokenized",
+    dir_pw_preprocessor,
+  ]
+}
+
+pw_test("metadata_test") {
+  sources = [ "metadata_test.cc" ]
+  deps = [ ":metadata" ]
 }
 
 pw_doc_group("docs") {

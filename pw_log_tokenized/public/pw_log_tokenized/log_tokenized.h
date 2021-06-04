@@ -18,6 +18,11 @@
 #include "pw_log_tokenized/config.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
+// TODO(hepler): Remove this include.
+#ifdef __cplusplus
+#include "pw_log_tokenized/metadata.h"
+#endif  // __cplusplus
+
 // This macro implements PW_LOG using
 // PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD or an equivalent alternate macro
 // provided by PW_LOG_TOKENIZED_ENCODE_MESSAGE. The log level, module token, and
@@ -45,76 +50,54 @@
 #define PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                     \
     level, flags, message, ...)                                              \
   do {                                                                       \
-    _PW_TOKENIZER_CONST uintptr_t _pw_log_module_token =                     \
+    _PW_TOKENIZER_CONST uintptr_t _pw_log_tokenized_module_token =           \
         PW_TOKENIZE_STRING_MASK("pw_log_module_names",                       \
                                 ((1u << PW_LOG_TOKENIZED_MODULE_BITS) - 1u), \
                                 PW_LOG_MODULE_NAME);                         \
+    const uintptr_t _pw_log_tokenized_level = level;                         \
     PW_LOG_TOKENIZED_ENCODE_MESSAGE(                                         \
-        ((uintptr_t)(level) |                                                \
-         (_pw_log_module_token << PW_LOG_TOKENIZED_LEVEL_BITS) |             \
-         ((uintptr_t)(flags)                                                 \
-          << (PW_LOG_TOKENIZED_LEVEL_BITS + PW_LOG_TOKENIZED_MODULE_BITS))), \
+        (_PW_LOG_TOKENIZED_LEVEL(_pw_log_tokenized_level) |                  \
+         _PW_LOG_TOKENIZED_MODULE(_pw_log_tokenized_module_token) |          \
+         _PW_LOG_TOKENIZED_FLAGS(flags) | _PW_LOG_TOKENIZED_LINE()),         \
         PW_LOG_TOKENIZED_FORMAT_STRING(message),                             \
         __VA_ARGS__);                                                        \
   } while (0)
 
-#ifdef __cplusplus
+// If the level field is present, clamp it to the maximum value.
+#if PW_LOG_TOKENIZED_LEVEL_BITS == 0
+#define _PW_LOG_TOKENIZED_LEVEL(value) ((uintptr_t)0)
+#else
+#define _PW_LOG_TOKENIZED_LEVEL(value)                   \
+  (value < ((uintptr_t)1 << PW_LOG_TOKENIZED_LEVEL_BITS) \
+       ? value                                           \
+       : ((uintptr_t)1 << PW_LOG_TOKENIZED_LEVEL_BITS) - 1)
+#endif  // PW_LOG_TOKENIZED_LEVEL_BITS
 
-namespace pw {
-namespace log_tokenized {
-namespace internal {
+// If the line number field is present, shift it to its position. Set it to zero
+// if the line number is too large for PW_LOG_TOKENIZED_LINE_BITS.
+#if PW_LOG_TOKENIZED_LINE_BITS == 0
+#define _PW_LOG_TOKENIZED_LINE() ((uintptr_t)0)
+#else
+#define _PW_LOG_TOKENIZED_LINE()                                            \
+  ((uintptr_t)(__LINE__ < (1 << PW_LOG_TOKENIZED_LINE_BITS) ? __LINE__ : 0) \
+   << PW_LOG_TOKENIZED_LEVEL_BITS)
+#endif  // PW_LOG_TOKENIZED_LINE_BITS
 
-// This class, which is aliased to pw::log_tokenized::Metadata below, is used to
-// access the log metadata packed into the tokenizer's payload argument.
-template <unsigned kLevelBits,
-          unsigned kModuleBits,
-          unsigned kFlagBits,
-          typename T = uintptr_t>
-class GenericMetadata {
- public:
-  template <T log_level, T module, T flags>
-  static constexpr GenericMetadata Set() {
-    static_assert(log_level < (1 << kLevelBits), "The level is too large!");
-    static_assert(module < (1 << kModuleBits), "The module is too large!");
-    static_assert(flags < (1 << kFlagBits), "The flags are too large!");
+// If the flags field is present, mask it and shift it to its position.
+#if PW_LOG_TOKENIZED_FLAG_BITS == 0
+#define _PW_LOG_TOKENIZED_FLAGS(value) ((uintptr_t)0)
+#else
+#define _PW_LOG_TOKENIZED_FLAGS(value)                                       \
+  (((uintptr_t)(value) & (((uintptr_t)1 << PW_LOG_TOKENIZED_FLAG_BITS) - 1)) \
+   << (PW_LOG_TOKENIZED_LEVEL_BITS + PW_LOG_TOKENIZED_LINE_BITS))
+#endif  // PW_LOG_TOKENIZED_FLAG_BITS
 
-    return GenericMetadata(log_level | (module << kLevelBits) |
-                           (flags << (kModuleBits + kLevelBits)));
-  }
-
-  constexpr GenericMetadata(T value) : bits_(value) {}
-
-  // The log level of this message.
-  constexpr T level() const { return bits_ & Mask<kLevelBits>(); }
-
-  // The 16 bit tokenized version of the module name (PW_LOG_MODULE_NAME).
-  constexpr T module() const {
-    return (bits_ >> kLevelBits) & Mask<kModuleBits>();
-  }
-
-  // The flags provided to the log call.
-  constexpr T flags() const {
-    return (bits_ >> (kLevelBits + kModuleBits)) & Mask<kFlagBits>();
-  }
-
- private:
-  template <int bits>
-  static constexpr T Mask() {
-    return (T(1) << bits) - 1;
-  }
-
-  T bits_;
-
-  static_assert(kLevelBits + kModuleBits + kFlagBits <= sizeof(bits_) * 8);
-};
-
-}  // namespace internal
-
-using Metadata = internal::GenericMetadata<PW_LOG_TOKENIZED_LEVEL_BITS,
-                                           PW_LOG_TOKENIZED_MODULE_BITS,
-                                           PW_LOG_TOKENIZED_FLAG_BITS>;
-
-}  // namespace log_tokenized
-}  // namespace pw
-
-#endif  // __cpluplus
+// If the module field is present, shift it to its position.
+#if PW_LOG_TOKENIZED_MODULE_BITS == 0
+#define _PW_LOG_TOKENIZED_MODULE(value) ((uintptr_t)0)
+#else
+#define _PW_LOG_TOKENIZED_MODULE(value)                  \
+  ((uintptr_t)(value) << ((PW_LOG_TOKENIZED_LEVEL_BITS + \
+                           PW_LOG_TOKENIZED_LINE_BITS +  \
+                           PW_LOG_TOKENIZED_FLAG_BITS)))
+#endif  // PW_LOG_TOKENIZED_MODULE_BITS

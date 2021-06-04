@@ -39,6 +39,95 @@ Example implementation:
 
 See the documentation for :ref:`module-pw_tokenizer` for further details.
 
+Metadata in the format string
+-----------------------------
+With tokenized logging, the log format string is converted to a 32-bit token.
+Regardless of how long the format string is, it's always represented by a 32-bit
+token. Because of this, metadata can be packed into the tokenized string with
+no cost.
+
+``pw_log_tokenized`` uses a simple key-value format to encode metadata in a
+format string. Each field starts with the ``■`` (U+25A0 "Black Square")
+character, followed by the key name, the ``♦`` (U+2666 "Black Diamond Suit")
+character, and then the value. The string is encoded as UTF-8. Key names are
+comprised of alphanumeric ASCII characters and underscore and start with a
+letter.
+
+.. code-block::
+
+  "■key1♦contents1■key2♦contents2■key3♦contents3"
+
+This format makes the message easily machine parseable and human readable. It is
+extremely unlikely to conflict with log message contents due to the characters
+used.
+
+``pw_log_tokenized`` uses three fields: ``msg``, ``module``, and ``file``.
+Implementations may add other fields, but they will be ignored by the
+``pw_log_tokenized`` tooling.
+
+.. code-block::
+
+  "■msg♦Hyperdrive %d set to %f■module♦engine■file♦propulsion/hyper.cc"
+
+Using key-value pairs allows placing the fields in any order.
+``pw_log_tokenized`` places the message first. This is prefered when tokenizing
+C code because the tokenizer only hashes a fixed number of characters. If the
+file were first, the long path might take most of the hashed characters,
+increasing the odds of a collision with other strings in that file. In C++, all
+characters in the string are hashed, so the order is not important.
+
+Metadata in the tokenizer payload argument
+-------------------------------------------
+``pw_log_tokenized`` packs runtime-accessible metadata into a 32-bit integer
+which is passed as the "payload" argument for ``pw_log_tokenizer``'s global
+handler with payload facade. Packing this metadata into a single word rather
+than separate arguments reduces the code size significantly.
+
+Four items are packed into the payload argument:
+
+- Log level -- Used for runtime log filtering by level.
+- Line number -- Used to track where a log message originated.
+- Log flags -- Implementation-defined log flags.
+- Tokenized :c:macro:`PW_LOG_MODULE_NAME` -- Used for runtime log filtering by
+  module.
+
+Configuring metadata bit fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The number of bits to use for each metadata field is configurable through macros
+in ``pw_log/config.h``. The field widths must sum to 32 bits. A field with zero
+bits allocated is excluded from the log metadata.
+
+.. c:macro:: PW_LOG_TOKENIZED_LEVEL_BITS
+
+  Bits to allocate for the log level. Defaults to :c:macro:`PW_LOG_LEVEL_BITS`
+  (3).
+
+.. c:macro:: PW_LOG_TOKENIZED_LINE_BITS
+
+  Bits to allocate for the line number. Defaults to 11 (up to line 2047). If the
+  line number is too large to be represented by this field, line is reported as
+  0.
+
+  Including the line number can slightly increase code size. Without the line
+  number, the log metadata argument is the same for all logs with the same level
+  and flags. With the line number, each metadata value is unique and must be
+  encoded as a separate word in the binary. Systems with extreme space
+  constraints may exclude line numbers by setting this macro to 0.
+
+  It is possible to include line numbers in tokenized log format strings, but
+  that is discouraged because line numbers change whenever a file is edited.
+  Passing the line number with the metadata is a lightweight way to include it.
+
+.. c:macro:: PW_LOG_TOKENIZED_FLAG_BITS
+
+  Bits to use for implementation-defined flags. Defaults to 2.
+
+.. c:macro:: PW_LOG_TOKENIZED_MODULE_BITS
+
+  Bits to use for the tokenized version of :c:macro:`PW_LOG_MODULE_NAME`.
+  Defaults to 16, which gives a ~1% probability of a collision with 37 module
+  names.
+
 Using a custom macro
 --------------------
 Applications may use their own macro instead of

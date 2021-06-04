@@ -27,6 +27,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_log_tokenized/config.h",
         "public/pw_log_tokenized/log_tokenized.h",
+        "public/pw_log_tokenized/metadata.h",
         "public_overrides/pw_log_backend/log_backend.h",
     ],
     includes = [
@@ -59,9 +60,22 @@ pw_cc_library(
 )
 
 pw_cc_test(
-    name = "test",
+    name = "log_tokenized_test",
     srcs = [
-        "test.cc",
+        "log_tokenized_test.cc",
+        "log_tokenized_test_c.c",
+        "pw_log_tokenized_private/test_utils.h",
+    ],
+    deps = [
+        ":headers",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "metadata_test",
+    srcs = [
+        "metadata_test.cc",
     ],
     deps = [
         ":headers",

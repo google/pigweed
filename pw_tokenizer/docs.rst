@@ -975,8 +975,9 @@ Firmware deployment
 .. attention::
   Do not encode line numbers in tokenized strings. This results in a huge
   number of lines being added to the database, since every time code moves,
-  new strings are tokenized. If line numbers are desired in a tokenized
-  string, add a ``"%d"`` to the string and pass ``__LINE__`` as an argument.
+  new strings are tokenized. If :ref:`module-pw_log_tokenized` is used, line
+  numbers are encoded in the log metadata. Line numbers may also be included by
+  by adding ``"%d"`` to the format string and passing ``__LINE__``.
 
 Database management
 -------------------
