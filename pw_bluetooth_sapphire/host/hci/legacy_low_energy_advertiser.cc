@@ -173,6 +173,8 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
   }
 
   if (!hci_cmd_runner().IsReady()) {
+    bt_log(DEBUG, "hci-le",
+           "canceling advertising start/stop sequence due to new advertising request");
     // Abort any remaining commands from the current stop sequence. If we got
     // here then the controller MUST receive our request to disable advertising,
     // so the commands that we send next will overwrite the current advertising
