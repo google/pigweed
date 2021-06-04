@@ -145,17 +145,19 @@ class LowEnergyAdvertiser : public LocalAddressClient {
  protected:
   // Build the HCI command packet to enable advertising for the flavor of low energy advertising
   // being implemented.
-  virtual std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) = 0;
+  virtual std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
+                                                           GenericEnableParam enable) = 0;
 
   // Build the HCI command packet to set the advertising parameters for the flavor of low energy
   // advertising being implemented.
   virtual std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
-      LEAdvertisingType type, LEOwnAddressType own_address_type,
+      const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
       AdvertisingIntervalRange interval) = 0;
 
   // Build the HCI command packet to set the advertising data for the flavor of low energy
   // advertising being implemented.
-  virtual std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const AdvertisingData& data,
+  virtual std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const DeviceAddress& address,
+                                                                 const AdvertisingData& data,
                                                                  AdvFlags flags) = 0;
 
   // Build the HCI command packet to delete the advertising parameters from the controller for the
@@ -166,7 +168,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Build the HCI command packet to set the data sent in a scan response (if requested) for the
   // flavor of low energy advertising being implemented.
-  virtual std::unique_ptr<CommandPacket> BuildSetScanResponse(const AdvertisingData& scan_rsp) = 0;
+  virtual std::unique_ptr<CommandPacket> BuildSetScanResponse(const DeviceAddress& address,
+                                                              const AdvertisingData& scan_rsp) = 0;
 
   // Build the HCI command packet to delete the advertising parameters from the controller for the
   // flavor of low energy advertising being implemented.

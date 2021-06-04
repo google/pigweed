@@ -122,17 +122,19 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   void ErrorOnNext(hci::Status error_status) { pending_error_ = error_status; }
 
  private:
-  std::unique_ptr<hci::CommandPacket> BuildEnablePacket(hci::GenericEnableParam enable) override {
+  std::unique_ptr<hci::CommandPacket> BuildEnablePacket(const DeviceAddress& address,
+                                                        hci::GenericEnableParam enable) override {
     return nullptr;
   }
 
   std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingParams(
-      hci::LEAdvertisingType type, hci::LEOwnAddressType own_address_type,
-      hci::AdvertisingIntervalRange interval) override {
+      const DeviceAddress& address, hci::LEAdvertisingType type,
+      hci::LEOwnAddressType own_address_type, hci::AdvertisingIntervalRange interval) override {
     return nullptr;
   }
 
-  std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingData(const AdvertisingData& data,
+  std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingData(const DeviceAddress& address,
+                                                              const AdvertisingData& data,
                                                               AdvFlags flags) override {
     return nullptr;
   }
@@ -143,7 +145,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   }
 
   std::unique_ptr<hci::CommandPacket> BuildSetScanResponse(
-      const AdvertisingData& scan_rsp) override {
+      const DeviceAddress& address, const AdvertisingData& scan_rsp) override {
     return nullptr;
   }
 

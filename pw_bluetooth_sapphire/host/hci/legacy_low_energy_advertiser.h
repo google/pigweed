@@ -48,18 +48,21 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
                             const LEConnectionParameters& conn_params) override;
 
  private:
-  std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) override;
+  std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
+                                                   GenericEnableParam enable) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
-      LEAdvertisingType type, LEOwnAddressType own_address_type,
+      const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
       AdvertisingIntervalRange interval) override;
 
-  std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const AdvertisingData& data,
+  std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const DeviceAddress& address,
+                                                         const AdvertisingData& data,
                                                          AdvFlags flags) override;
 
   std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(const DeviceAddress& address) override;
 
-  std::unique_ptr<CommandPacket> BuildSetScanResponse(const AdvertisingData& scan_rsp) override;
+  std::unique_ptr<CommandPacket> BuildSetScanResponse(const DeviceAddress& address,
+                                                      const AdvertisingData& scan_rsp) override;
 
   std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) override;
 
