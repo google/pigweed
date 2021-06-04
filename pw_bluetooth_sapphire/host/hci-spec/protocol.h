@@ -3199,7 +3199,7 @@ struct LESetExtendedAdvertisingParametersCommandParams {
   // Range: See kLEExtendedAdvertisingInterval[Min|Max] in hci_constants.h
   // Time = N * 0.625 s
   // Time Range: 20 ms to 10,485.759375 s
-  uint8_t primary_adv_internal_min[3];
+  uint8_t primary_adv_interval_min[3];
   uint8_t primary_adv_interval_max[3];
 
   // (see the constants kLEAdvertisingChannel* in hci_constants.h for possible
