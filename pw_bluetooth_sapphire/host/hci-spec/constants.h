@@ -589,14 +589,15 @@ enum class LESupportedFeature : uint64_t {
   kExtendedScannerFilterPolicies        = (1 << 7),
 
   // Added in 5.0
-  kStableModulationIndexTransmitter     = (1 << 8),
-  kStableModulationIndexReceiver        = (1 << 9),
-  kLECodedPHY                           = (1 << 10),
-  kLEExtendedAdvertising                = (1 << 11),
-  kLEPeriodicAdvertising                = (1 << 12),
-  kChannelSelectionAlgorithm2           = (1 << 13),
-  kLEPowerClass1                        = (1 << 14),
-  kMinimumNumberOfUsedChannelsProcedure = (1 << 15),
+  kLE2MPHY                              = (1 << 8),
+  kStableModulationIndexTransmitter     = (1 << 9),
+  kStableModulationIndexReceiver        = (1 << 10),
+  kLECodedPHY                           = (1 << 11),
+  kLEExtendedAdvertising                = (1 << 12),
+  kLEPeriodicAdvertising                = (1 << 13),
+  kChannelSelectionAlgorithm2           = (1 << 14),
+  kLEPowerClass1                        = (1 << 15),
+  kMinimumNumberOfUsedChannelsProcedure = (1 << 16),
 
   // The rest is reserved for future use.
 };
