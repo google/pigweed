@@ -107,18 +107,18 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
                                                  AdvertisingOptions adv_options,
                                                  ConnectionCallback connect_callback,
                                                  StatusCallback status_callback) {
-  ZX_DEBUG_ASSERT(status_callback);
-  ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
+  ZX_ASSERT(status_callback);
+  ZX_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   if (adv_options.anonymous) {
-    bt_log(DEBUG, "hci-le", "anonymous advertising not supported");
+    bt_log(WARN, "hci-le", "anonymous advertising not supported");
     status_callback(Status(HostError::kNotSupported));
     return;
   }
 
   if (IsAdvertising()) {
     if (!IsAdvertising(address)) {
-      bt_log(DEBUG, "hci-le", "already advertising (only one advertisement supported at a time)");
+      bt_log(INFO, "hci-le", "already advertising (only one advertisement supported at a time)");
       status_callback(Status(HostError::kNotSupported));
       return;
     }
@@ -132,14 +132,18 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
     size_limit -= kTxPowerLevelTLVSize;
   }
 
-  if (data.CalculateBlockSize(/*include_flags=*/true) > size_limit) {
-    bt_log(DEBUG, "hci-le", "advertising data too large");
+  size_t data_size = data.CalculateBlockSize(/*include_flags=*/true);
+  if (data_size > size_limit) {
+    bt_log(WARN, "hci-le", "advertising data too large (size: %zu, limit: %zu)", data_size,
+           size_limit);
     status_callback(Status(HostError::kAdvertisingDataTooLong));
     return;
   }
 
-  if (scan_rsp.CalculateBlockSize() > size_limit) {
-    bt_log(DEBUG, "hci-le", "scan response too large");
+  size_t scan_rsp_size = scan_rsp.CalculateBlockSize(/*include_flags=*/false);
+  if (scan_rsp_size > size_limit) {
+    bt_log(WARN, "hci-le", "scan response too large (size: %zu, limit: %zu)", scan_rsp_size,
+           size_limit);
     status_callback(Status(HostError::kScanResponseTooLong));
     return;
   }

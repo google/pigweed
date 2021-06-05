@@ -23,7 +23,7 @@ using testing::FakePeer;
 
 namespace hci {
 
-using AdvertisingOptions = LegacyLowEnergyAdvertiser::AdvertisingOptions;
+using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 
 namespace {
 

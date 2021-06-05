@@ -46,7 +46,7 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //  - |handle|: Data Connection Handle used for ACL and SCO logical link connections.
   //
-  //  - |role|: The role (master or slave) that this device is opearting in for this connection.
+  //  - |role|: The role that this device is operating in for this connection.
   //
   //  - |local_address|: Some advertising modes (e.g. legacy advertising) support only a single
   //    address set and don't return the local address in the LE_Connection_Complete event. As
