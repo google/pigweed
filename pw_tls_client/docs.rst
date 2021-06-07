@@ -29,6 +29,15 @@ trust anchors, time and entropy. These are under construction.
   This module is under construction, not ready for use, and the documentation
   is incomplete.
 
+System Dependencies
+===================
+This module requires the following dependencies:
+
+1. Entropy
+TLS requires an entropy source for generating random bytes. Users of this
+module should provide one by implementing a backend to the
+``pw_tls_client:entropy`` facade.
+
 Setup
 =====
 This module requires the following setup:
@@ -36,6 +45,8 @@ This module requires the following setup:
   1. Choose a ``pw_tls_client`` backend, or write one yourself.
   2. If using GN build, Specify the ``pw_tls_client_BACKEND`` GN build arg to
      point the library that provides a ``pw_tls_client`` backend.
+  3. Provide a `pw_tls_client:entropy` backend. If using GN build, specify the
+     backend with variable ``pw_tls_client_ENTROPY_BACKEND``.
 
 Module usage
 ============

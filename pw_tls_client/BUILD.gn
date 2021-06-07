@@ -20,6 +20,9 @@ import("$dir_pw_docgen/docs.gni")
 declare_args() {
   # Backend for :pw_tls_client
   pw_tls_client_BACKEND = ""
+
+  # Backend for :tls_entropy
+  pw_tls_client_ENTROPY_BACKEND = ""
 }
 
 config("public_includes") {
@@ -41,6 +44,16 @@ pw_facade("pw_tls_client") {
     "$dir_pw_status",
     "$dir_pw_stream",
     "$dir_pw_string",
+  ]
+}
+
+pw_facade("tls_entropy") {
+  backend = pw_tls_client_ENTROPY_BACKEND
+  public_configs = [ ":public_includes" ]
+  public = [ "public/pw_tls_client/entropy.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_status",
   ]
 }
 

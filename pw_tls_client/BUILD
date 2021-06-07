@@ -46,3 +46,15 @@ pw_cc_library(
 
 # TODO(zyecheng): Add a "backend_multiplexer" target once BoringSSL/MbedTLS is
 # ready.
+
+pw_cc_facade(
+    name = "pw_tls_client_entropy_facade",
+    hdrs = [
+        "public/pw_tls_client/entropy.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_bytes",
+        "//pw_status",
+    ]
+)
