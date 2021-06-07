@@ -7,6 +7,7 @@ import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 static_library("hci") {
   sources = [
+    "advertising_handle_map.cc",
     "advertising_report_parser.cc",
     "advertising_report_parser.h",
     "bredr_connection_request.cc",
@@ -68,6 +69,7 @@ source_set("tests") {
   testonly = true
 
   sources = [
+    "advertising_handle_map_unittest.cc",
     "advertising_report_parser_unittest.cc",
     "command_handler_unittest.cc",
     "connection_unittest.cc",

@@ -1220,6 +1220,10 @@ constexpr size_t kMaxEventPacketPayloadSize = 255;
 // stack.
 constexpr size_t kMaxACLPayloadSize = 1024;
 
+// The maximum valid advertising handle. See Core Spec v5.0 Vol 4, Part E,
+// 7.8.56.
+constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
+
 // Values that can be used in HCI Read|WriteFlowControlMode commands.
 enum class FlowControlMode : uint8_t {
   // Packet based data flow control mode (default for a Primary Controller)
@@ -1542,6 +1546,6 @@ constexpr zx::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * k
 constexpr zx::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * kDefaultPageTimeoutCommandParameterValue;
 constexpr zx::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * kMaxPageTimeoutCommandParameterValue;
 
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_CONSTANTS_H_
