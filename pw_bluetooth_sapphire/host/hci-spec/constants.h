@@ -589,15 +589,38 @@ enum class LESupportedFeature : uint64_t {
   kExtendedScannerFilterPolicies        = (1 << 7),
 
   // Added in 5.0
-  kLE2MPHY                              = (1 << 8),
-  kStableModulationIndexTransmitter     = (1 << 9),
-  kStableModulationIndexReceiver        = (1 << 10),
-  kLECodedPHY                           = (1 << 11),
-  kLEExtendedAdvertising                = (1 << 12),
-  kLEPeriodicAdvertising                = (1 << 13),
-  kChannelSelectionAlgorithm2           = (1 << 14),
-  kLEPowerClass1                        = (1 << 15),
-  kMinimumNumberOfUsedChannelsProcedure = (1 << 16),
+  kLE2MPHY                                  = (1 << 8),
+  kStableModulationIndexTransmitter         = (1 << 9),
+  kStableModulationIndexReceiver            = (1 << 10),
+  kLECodedPHY                               = (1 << 11),
+  kLEExtendedAdvertising                    = (1 << 12),
+  kLEPeriodicAdvertising                    = (1 << 13),
+  kChannelSelectionAlgorithm2               = (1 << 14),
+  kLEPowerClass1                            = (1 << 15),
+  kMinimumNumberOfUsedChannelsProcedure     = (1 << 16),
+
+  // Added in 5.1
+  kConnectionCTERequest                     = (1 << 17),
+  kConnectionCTEResponse                    = (1 << 18),
+  kConnectionlessCTETransmitter             = (1 << 19),
+  kConnectionlessCTEReceiver                = (1 << 20),
+  kAntennaSwitchingDuringCTETransmission    = (1 << 21),
+  kAntennaSwitchingDuringCTEReception       = (1 << 22),
+  kReceivingConstantToneExtensions          = (1 << 23),
+  kPeriodicAdvertisingSyncTransferSender    = (1 << 24),
+  kPeriodicAdvertisingSyncTransferRecipient = (1 << 25),
+  kSleepClockAccuracyUpdates                = (1 << 26),
+  kRemotePublicKeyValidation                = (1 << 27),
+
+  // Added in 5.2
+  kConnectedIsochronousStreamMaster         = (1 << 28),
+  kConnectedIsochronousStreamSlave          = (1 << 29),
+  kIsochronousBoradcaster                   = (1 << 30),
+  kSynchronizedReceiver                     = (1ul << 31),
+  kIsochronousChannels                      = (1ul << 32),
+  kLEPowerControlRequest                    = (1ul << 33),
+  kLEPowerChangeIndication                  = (1ul << 34),
+  kLEPathLossMonitoring                     = (1ul << 35),
 
   // The rest is reserved for future use.
 };
