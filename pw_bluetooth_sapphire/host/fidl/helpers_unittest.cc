@@ -16,6 +16,7 @@
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/comparison.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -1077,6 +1078,121 @@ TEST_F(FIDL_HelpersAdapterTest, FidlToScoParameters) {
   out = FidlToScoParameters(params).value();
   EXPECT_EQ(out.input_pcm_data_format, bt::hci::PcmDataFormat::kNotApplicable);
   EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 0u);
+}
+
+TEST(FIDL_HelpersTest, DiscoveryFilterFromEmptyFidlFilter) {
+  bt::gap::DiscoveryFilter filter = DiscoveryFilterFromFidl(fble::Filter());
+  EXPECT_TRUE(filter.service_uuids().empty());
+  EXPECT_FALSE(filter.manufacturer_code().has_value());
+  EXPECT_FALSE(filter.connectable().has_value());
+  EXPECT_TRUE(filter.name_substring().empty());
+  EXPECT_FALSE(filter.pathloss().has_value());
+}
+
+TEST(FIDL_HelpersTest, DiscoveryFilterFromFidlFilter) {
+  fble::Filter fidl_filter;
+  fuchsia::bluetooth::Uuid service_uuid;
+  service_uuid.value[0] = 1;
+  fidl_filter.set_service_uuid(service_uuid);
+  fidl_filter.set_manufacturer_id(2);
+  fidl_filter.set_connectable(true);
+  fidl_filter.set_name("name");
+  fidl_filter.set_max_path_loss(3);
+  bt::gap::DiscoveryFilter filter = DiscoveryFilterFromFidl(fidl_filter);
+  EXPECT_THAT(filter.service_uuids(), ::testing::ElementsAre(service_uuid.value));
+  ASSERT_TRUE(filter.manufacturer_code().has_value());
+  EXPECT_EQ(filter.manufacturer_code().value(), 2u);
+  ASSERT_TRUE(filter.connectable().has_value());
+  EXPECT_EQ(filter.connectable().value(), true);
+  EXPECT_EQ(filter.name_substring(), "name");
+  ASSERT_TRUE(filter.pathloss().has_value());
+  ASSERT_EQ(filter.pathloss().value(), 3);
+}
+
+TEST(FIDL_HelpersTest, EmptyAdvertisingDataToFidlScanData) {
+  bt::AdvertisingData input;
+  fble::ScanData output = AdvertisingDataToFidlScanData(input);
+  EXPECT_FALSE(output.has_tx_power());
+  EXPECT_FALSE(output.has_appearance());
+  EXPECT_FALSE(output.has_service_uuids());
+  EXPECT_FALSE(output.has_service_data());
+  EXPECT_FALSE(output.has_manufacturer_data());
+  EXPECT_FALSE(output.has_uris());
+}
+
+TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanData) {
+  bt::AdvertisingData input;
+  input.SetTxPower(4);
+  const uint16_t kAppearance = 193u;  // WATCH_SPORTS
+  input.SetAppearance(kAppearance);
+
+  const uint16_t id = 0x5678;
+  const bt::UUID kServiceUuid = bt::UUID(id);
+  auto service_bytes = bt::StaticByteBuffer(0x01, 0x02);
+  EXPECT_TRUE(input.AddServiceUuid(kServiceUuid));
+  EXPECT_TRUE(input.SetServiceData(kServiceUuid, service_bytes.view()));
+
+  const uint16_t kManufacturer = 0x98;
+  auto manufacturer_bytes = bt::StaticByteBuffer(0x04, 0x03);
+  EXPECT_TRUE(input.SetManufacturerData(kManufacturer, manufacturer_bytes.view()));
+
+  const char* const kUri = "http://fuchsia.cl/461435";
+  EXPECT_TRUE(input.AddUri(kUri));
+
+  fble::ScanData output = AdvertisingDataToFidlScanData(input);
+  EXPECT_EQ(4, output.tx_power());
+  EXPECT_EQ(fbt::Appearance{kAppearance}, output.appearance());
+  ASSERT_EQ(1u, output.service_uuids().size());
+  EXPECT_EQ(kServiceUuid, UuidFromFidl(output.service_uuids().front()));
+  ASSERT_EQ(1u, output.service_data().size());
+  auto service_data = output.service_data().front();
+  EXPECT_EQ(kServiceUuid, UuidFromFidl(service_data.uuid));
+  EXPECT_TRUE(ContainersEqual(bt::BufferView(service_bytes), service_data.data));
+  EXPECT_EQ(1u, output.manufacturer_data().size());
+  auto manufacturer_data = output.manufacturer_data().front();
+  EXPECT_EQ(kManufacturer, manufacturer_data.company_id);
+  EXPECT_TRUE(ContainersEqual(bt::BufferView(manufacturer_bytes), manufacturer_data.data));
+  EXPECT_THAT(output.uris(), ::testing::ElementsAre(kUri));
+}
+
+TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanDataOmitsNonEnumeratedAppearance) {
+  // There is an "unknown" appearance, which is why this isn't named that.
+  const uint16_t kNonEnumeratedAppearance = 0xFFFFu;
+  bt::AdvertisingData input;
+  input.SetAppearance(kNonEnumeratedAppearance);
+
+  EXPECT_FALSE(AdvertisingDataToFidlScanData(input).has_appearance());
+
+  const uint16_t kKnownAppearance = 832u;  // HEART_RATE_SENSOR
+  input.SetAppearance(kKnownAppearance);
+
+  EXPECT_TRUE(AdvertisingDataToFidlScanData(input).has_appearance());
+}
+
+TEST(FIDL_HelpersTest, PeerToFidlLe) {
+  const bt::PeerId kPeerId(1);
+  const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
+  bt::gap::PeerMetrics metrics;
+  bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, kPeerId, kAddr,
+                     /*connectable=*/true, &metrics);
+  peer.SetName("name");
+  const int8_t kRssi = 1;
+  auto adv_bytes = bt::StaticByteBuffer(
+      // Uri: "https://abc.xyz"
+      0x0B, bt::DataType::kURI, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
+  peer.MutLe().SetAdvertisingData(kRssi, adv_bytes);
+
+  fble::Peer fidl_peer = PeerToFidlLe(peer);
+  ASSERT_TRUE(fidl_peer.has_id());
+  EXPECT_EQ(fidl_peer.id().value, kPeerId.value());
+  ASSERT_TRUE(fidl_peer.has_bonded());
+  EXPECT_FALSE(fidl_peer.bonded());
+  ASSERT_TRUE(fidl_peer.has_name());
+  EXPECT_EQ(fidl_peer.name(), "name");
+  ASSERT_TRUE(fidl_peer.has_rssi());
+  EXPECT_EQ(fidl_peer.rssi(), kRssi);
+  ASSERT_TRUE(fidl_peer.has_data());
+  EXPECT_THAT(fidl_peer.data().uris(), ::testing::ElementsAre("https://abc.xyz"));
 }
 
 }  // namespace

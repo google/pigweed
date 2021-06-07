@@ -23,6 +23,7 @@ class Peer;
 // based on certain parameters, such as service UUIDs that might be present in
 // EIR or advertising data, or based on available proximity information, to name
 // a few.
+// TODO(77549): Support filtering on service data UUIDs.
 class DiscoveryFilter final {
  public:
   DiscoveryFilter() = default;
@@ -39,6 +40,7 @@ class DiscoveryFilter final {
 
   // Discovery filter based on whether or not a device is connectable.
   void set_connectable(bool connectable) { connectable_ = connectable; }
+  std::optional<bool> connectable() const { return connectable_; }
 
   // Sets the service UUIDs that should be present in a scan result. A scan
   // result satisfies this filter if it provides at least one of the provided
@@ -47,6 +49,7 @@ class DiscoveryFilter final {
   // Passing an empty value for |service_uuids| effectively disables this
   // filter.
   void set_service_uuids(const std::vector<UUID>& service_uuids) { service_uuids_ = service_uuids; }
+  const std::vector<UUID>& service_uuids() const { return service_uuids_; }
 
   // Sets a string to be matched against the device name. A scan result
   // satisifes this filter if part of the complete or shortened device name
@@ -55,6 +58,7 @@ class DiscoveryFilter final {
   // Passing an empty value for |name_substring| effectively disables this
   // filter.
   void set_name_substring(const std::string& name_substring) { name_substring_ = name_substring; }
+  const std::string& name_substring() const { return name_substring_; }
 
   // Sets a device to be filtered by the pathloss (in dBm) of the radio wave.
   // This value is calculated using the received signal strength (measured
@@ -72,6 +76,7 @@ class DiscoveryFilter final {
   // then the device will fail to satisfy this filter UNLESS an RSSI filter
   // parameter has been set via SetRSSI() that is satisfied by the scan result.
   void set_pathloss(int8_t pathloss) { pathloss_ = pathloss; }
+  std::optional<int8_t> pathloss() const { return pathloss_; }
 
   // Sets a device to be filtered by RSSI. While this can produce inaccurate
   // results when used alone to approximate proximity, it can still be useful
@@ -88,6 +93,7 @@ class DiscoveryFilter final {
   // satisfies this filter if it advertises manufacturer specific data
   // containing |manufacturer_code|.
   void set_manufacturer_code(uint16_t manufacturer_code) { manufacturer_code_ = manufacturer_code; }
+  std::optional<uint16_t> manufacturer_code() const { return manufacturer_code_; }
 
   // Sets this filter up for the "General Discovery" procedure.
   void SetGeneralDiscoveryFlags();

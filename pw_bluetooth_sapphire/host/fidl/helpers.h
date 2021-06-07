@@ -129,6 +129,7 @@ bool IsScanFilterValid(const fuchsia::bluetooth::le::ScanFilter& fidl_filter);
 // unmodified.
 bool PopulateDiscoveryFilter(const fuchsia::bluetooth::le::ScanFilter& fidl_filter,
                              bt::gap::DiscoveryFilter* out_filter);
+bt::gap::DiscoveryFilter DiscoveryFilterFromFidl(const fuchsia::bluetooth::le::Filter& fidl_filter);
 
 // Converts the given |mode_hint| to a stack interval value.
 bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(
@@ -139,6 +140,7 @@ std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(
 fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input);
 fuchsia::bluetooth::le::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
     const bt::AdvertisingData& input);
+fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::AdvertisingData& input);
 
 // Constructs a fuchsia.bluetooth.le Peer type from the stack representation.
 fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);

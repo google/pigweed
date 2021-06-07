@@ -773,6 +773,35 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
   return true;
 }
 
+bt::gap::DiscoveryFilter DiscoveryFilterFromFidl(
+    const fuchsia::bluetooth::le::Filter& fidl_filter) {
+  bt::gap::DiscoveryFilter out;
+
+  if (fidl_filter.has_service_uuid()) {
+    out.set_service_uuids({bt::UUID(fidl_filter.service_uuid().value)});
+  }
+
+  // TODO(fxbug.dev/77549): Set service data UUIDs.
+
+  if (fidl_filter.has_manufacturer_id()) {
+    out.set_manufacturer_code(fidl_filter.manufacturer_id());
+  }
+
+  if (fidl_filter.has_connectable()) {
+    out.set_connectable(fidl_filter.connectable());
+  }
+
+  if (fidl_filter.has_name()) {
+    out.set_name_substring(fidl_filter.name());
+  }
+
+  if (fidl_filter.has_max_path_loss()) {
+    out.set_pathloss(fidl_filter.max_path_loss());
+  }
+
+  return out;
+}
+
 bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(fble::AdvertisingModeHint mode_hint) {
   switch (mode_hint) {
     case fble::AdvertisingModeHint::VERY_FAST:
@@ -939,6 +968,32 @@ fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(const bt::Advert
   return output;
 }
 
+fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::AdvertisingData& input) {
+  // Reuse bt::AdvertisingData -> fble::AdvertisingData utility, since most fields are the same as
+  // fble::ScanData.
+  fble::AdvertisingData fidl_adv_data = AdvertisingDataToFidl(input);
+  fble::ScanData out;
+  if (fidl_adv_data.has_tx_power_level()) {
+    out.set_tx_power(fidl_adv_data.tx_power_level());
+  }
+  if (fidl_adv_data.has_appearance()) {
+    out.set_appearance(fidl_adv_data.appearance());
+  }
+  if (fidl_adv_data.has_service_uuids()) {
+    out.set_service_uuids(std::move(*fidl_adv_data.mutable_service_uuids()));
+  }
+  if (fidl_adv_data.has_service_data()) {
+    out.set_service_data(std::move(*fidl_adv_data.mutable_service_data()));
+  }
+  if (fidl_adv_data.has_manufacturer_data()) {
+    out.set_manufacturer_data(std::move(*fidl_adv_data.mutable_manufacturer_data()));
+  }
+  if (fidl_adv_data.has_uris()) {
+    out.set_uris(std::move(*fidl_adv_data.mutable_uris()));
+  }
+  return out;
+}
+
 fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   ZX_ASSERT(peer.le());
 
@@ -951,12 +1006,24 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   }
 
   if (peer.le()->advertising_data().size() != 0u) {
-    // We populate |output|'s AdvertisingData field if we can parse the payload. We leave it blank
-    // otherwise.
-    if (auto unpacked = bt::AdvertisingData::FromBytes(peer.le()->advertising_data())) {
-      output.set_advertising_data(fidl_helpers::AdvertisingDataToFidl(unpacked.value()));
+    std::optional<bt::AdvertisingData> advertising_data =
+        bt::AdvertisingData::FromBytes(peer.le()->advertising_data());
+
+    // We populate |output|'s AdvertisingData & ScanData fields if we can parse the payload. We
+    // leave them blank otherwise.
+    if (advertising_data) {
+      output.set_advertising_data(AdvertisingDataToFidl(advertising_data.value()));
+      output.set_data(AdvertisingDataToFidlScanData(advertising_data.value()));
     }
   }
+
+  if (peer.name()) {
+    output.set_name(peer.name().value());
+  }
+
+  output.set_bonded(peer.bonded());
+
+  // TODO(fxbug.dev/36373): Set last_updated field
 
   return output;
 }
