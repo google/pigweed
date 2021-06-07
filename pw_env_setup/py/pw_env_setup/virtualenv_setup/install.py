@@ -19,6 +19,7 @@ import datetime
 import glob
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -105,6 +106,22 @@ def _find_files_by_name(roots, name, allow_nesting=False):
     return matches
 
 
+def _check_venv(python, version, venv_path, pyvenv_cfg):
+    # Check if the python location and version used for the existing virtualenv
+    # is the same as the python we're using. If it doesn't match, we need to
+    # delete the existing virtualenv and start again.
+    if os.path.exists(pyvenv_cfg):
+        pyvenv_values = {}
+        with open(pyvenv_cfg, 'r') as ins:
+            for line in ins:
+                key, value = line.split(' = ', 1)
+                pyvenv_values[key] = value
+        if os.path.dirname(python) != pyvenv_values.get('home'):
+            shutil.rmtree(venv_path)
+        elif pyvenv_values.get('version') not in version:
+            shutil.rmtree(venv_path)
+
+
 def install(
         project_root,
         venv_path,
@@ -138,6 +155,9 @@ def install(
                 os.unlink(os.path.join(venv_bin, entry))
 
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
+
+    _check_venv(python, version, venv_path, pyvenv_cfg)
+
     if full_envsetup or not os.path.exists(pyvenv_cfg):
         # On Mac sometimes the CIPD Python has __PYVENV_LAUNCHER__ set to
         # point to the system Python, which causes CIPD Python to create
