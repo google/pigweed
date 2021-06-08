@@ -108,6 +108,18 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "initiator_gmock",
+    hdrs = [
+        "public/pw_i2c/initiator_gmock.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":initiator",
+        "$dir_pw_third_party/googletest",
+    ],
+)
+
 pw_cc_test(
     name = "initiator_mock_test",
     srcs = [

@@ -79,6 +79,15 @@ pw_source_set("mock") {
   ]
 }
 
+pw_source_set("gmock") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":initiator",
+    "$dir_pw_third_party/googletest",
+  ]
+  public = [ "public/pw_i2c/initiator_gmock.h" ]
+}
+
 # TODO: add mock_test here once chrono backend is supported for stm32f429i-disc1
 pw_test_group("tests") {
   tests = [

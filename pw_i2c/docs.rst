@@ -40,7 +40,6 @@ order to effectively use this interface.
 
 pw::i2c::MockInitiator
 ----------------------
-
 A generic mocked backend for for pw::i2c::Initiator. This is specifically
 intended for use when developing drivers for i2c devices. This is structured
 around a set of 'transactions' where each transaction contains a write, read and
@@ -79,3 +78,7 @@ list. An example of this is shown below:
   // Optionally check if the mocked transaction list has been exhausted.
   // Alternatively this is also called from MockInitiator::~MockInitiator().
   EXPECT_EQ(mocked_i2c.Finalize(), OkStatus());
+
+pw::i2c::GmockInitiator
+-----------------------
+gMock of Initiator used for testing and mocking out the Initiator.
