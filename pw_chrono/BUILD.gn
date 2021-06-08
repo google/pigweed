@@ -43,6 +43,16 @@ pw_facade("system_clock") {
   sources = [ "system_clock.cc" ]
 }
 
+pw_facade("system_timer") {
+  backend = pw_chrono_SYSTEM_TIMER_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_chrono/system_timer.h" ]
+  public_deps = [
+    ":system_clock",
+    "$dir_pw_function",
+  ]
+}
+
 # Dependency injectable implementation of pw::chrono::SystemClock::Interface.
 pw_source_set("simulated_system_clock") {
   public_configs = [ ":public_include_path" ]
@@ -57,6 +67,7 @@ pw_test_group("tests") {
   tests = [
     ":simulated_system_clock_test",
     ":system_clock_facade_test",
+    ":system_timer_facade_test",
   ]
 }
 
@@ -76,6 +87,16 @@ pw_test("system_clock_facade_test") {
     ":system_clock",
     "$dir_pw_preprocessor",
     pw_chrono_SYSTEM_CLOCK_BACKEND,
+  ]
+}
+
+pw_test("system_timer_facade_test") {
+  enable_if = pw_chrono_SYSTEM_TIMER_BACKEND != ""
+  sources = [ "system_timer_facade_test.cc" ]
+  deps = [
+    ":system_timer",
+    "$dir_pw_sync:thread_notification",
+    pw_chrono_SYSTEM_TIMER_BACKEND,
   ]
 }
 

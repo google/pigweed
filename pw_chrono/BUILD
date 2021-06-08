@@ -51,18 +51,46 @@ pw_cc_library(
     ],
     deps = [
         ":system_clock_facade",
-        "@pigweed_config//:pw_chrono_backend",
+        "@pigweed_config//:pw_chrono_system_clock_backend",
     ],
 )
 
 pw_cc_library(
-    name = "backend_multiplexer",
+    name = "system_clock_backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_clock"],
         "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_clock"],
         "//pw_build/constraints/rtos:threadx": ["//pw_chrono_threadx:system_clock"],
         "//conditions:default": ["//pw_chrono_stl:system_clock"],
+    }),
+)
+
+pw_cc_library(
+  name = "system_timer_facade",
+  hdrs = [
+      "public/pw_chrono/system_timer.h"
+  ],
+  includes = ["public"],
+  deps = [
+      ":system_clock",
+      "//pw_function",
+  ],
+)
+
+pw_cc_library(
+    name = "system_timer",
+    deps = [
+        ":system_timer_facade",
+        "@pigweed_config//:pw_chrono_system_timer_backend",
+    ],
+)
+
+pw_cc_library(
+    name = "system_timer_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//conditions:default": ["//pw_chrono_stl:system_timer"],
     }),
 )
 
@@ -97,6 +125,19 @@ pw_cc_test(
     deps = [
         ":system_clock",
         "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "system_timer_facade_test",
+    srcs = [
+        "system_timer_facade_test.cc",
+    ],
+    deps = [
+        ":system_clock",
+        ":system_timer",
+        "//pw_sync:thread_notification",
         "//pw_unit_test",
     ],
 )

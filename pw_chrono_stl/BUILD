@@ -50,3 +50,34 @@ pw_cc_library(
         "//pw_chrono:system_clock_facade",
     ],
 )
+
+pw_cc_library(
+    name = "system_timer_headers",
+    hdrs = [
+        "public/pw_chrono_stl/system_timer_inline.h",
+        "public/pw_chrono_stl/system_timer_native.h",
+        "public_overrides/pw_chrono_backend/system_timer_inline.h",
+        "public_overrides/pw_chrono_backend/system_timer_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_function",
+        "//pw_chrono:system_timer_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "system_timer",
+    srcs = [
+        "system_timer.cc",
+    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":system_timer_headers",
+        "//pw_chrono:system_timer_facade",
+    ],
+)

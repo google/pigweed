@@ -817,39 +817,39 @@ look like.
    |                            (Actual backend)
    |                                               ^
    |                                               |
-   |                            @pigweed//pw_chrono:backend_multiplexer
+   |                            @pigweed//pw_chrono:system_clock_backend_multiplexer
    |                            Select backend based on OS:
    |                            [FreeRTOS (X), Embos ( ), STL ( ), Threadx ( )]
    |                                               ^
    |                                               |
-  @pigweed//pw_chrono  -------> @pigweed_config//:pw_chrono_backend
+  @pigweed//pw_chrono  -------> @pigweed_config//:pw_chrono_system_clock_backend
    ^                            (Injectable)
    |
   //:time_is_relative
 
 So when evaluating this setup Bazel checks the dependencies for '//pw_chrono'
-and finds that it depends on "@pigweed_config//:pw_chrono_backend" which looks
+and finds that it depends on "@pigweed_config//:pw_chrono_system_clock_backend" which looks
 like this;
 
 .. code:: py
 
   # pw_chrono config.
   label_flag(
-      name = "pw_chrono_backend",
-      build_setting_default = "@pigweed//pw_chrono:backend_multiplexer",
+      name = "pw_chrono_system_clock_backend",
+      build_setting_default = "@pigweed//pw_chrono:system_clock_backend_multiplexer",
   )
 
 Looking at the 'build_setting_default' we can see that by default it depends
-back on the target "@pigweed//pw_chrono:backend_multiplexer". If you only had one
-backend you could actually just change the 'build_setting_default' to point
-directly to your backend. However because we have four different backends we
-have to use the select semantics to choose the right one. In this case it looks
-like;
+back on the target "@pigweed//pw_chrono:system_clock_backend_multiplexer". If
+you only had one backend you could actually just change the
+'build_setting_default' to point directly to your backend. However because we
+have four different backends we have to use the select semantics to choose the
+right one. In this case it looks like;
 
 .. code:: py
 
   pw_cc_library(
-    name = "backend_multiplexer",
+    name = "system_clock_backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
         "@pigweed//pw_build/constraints/rtos:freertos":
@@ -875,7 +875,7 @@ to override the label flag in '@pigweed_config'. For example;
 .. code:: sh
 
   bazel build //:time_is_relative \
-    --@pigweed_config//pw_chrono_backend=//pw_chrono_my_hardware_rtc:system_clock
+    --@pigweed_config//pw_chrono_system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
 
 This temporarily modifies the build graph to look something like this;
 
@@ -887,7 +887,7 @@ This temporarily modifies the build graph to look something like this;
    |                      (Actual backend)
    |                                         ^
    |                                         |
-  @pigweed//pw_chrono  -> @pigweed_config//:pw_chrono_backend
+  @pigweed//pw_chrono  -> @pigweed_config//:pw_chrono_system_clock_backend
    ^                      (Injectable)
    |
   //:time_is_relative
@@ -907,10 +907,10 @@ still want to share the bulk of the code between the two computers but now we
 need two separate implementations for our pw_chrono facade. Let's say we choose
 to keep the primary flight computer using the hardware RTC and switch the backup
 computer over to use Pigweeds default FreeRTOS backend. In this case we might,
-want to do something similar to '@pigweed//pw_chrono:backend_multiplexer' and
-create selectable dependencies for the two different computers. Now because
-there are no default constraint_setting's that meet our requirements we are
-going to have to;
+want to do something similar to
+'@pigweed//pw_chrono:system_clock_backend_multiplexer' and create selectable
+dependencies for the two different computers. Now because there are no default
+constraint_setting's that meet our requirements we are going to have to;
 
 1. Create a constraint_setting and a set of constraint_value's for the flight
    computer. For example;
@@ -957,7 +957,7 @@ going to have to;
     load("//pw_build:pigweed.bzl", "pw_cc_library")
 
     pw_cc_library(
-      name = "backend_multiplexer",
+      name = "system_clock_backend_multiplexer",
       deps = select({
         "//platforms/flight_computer:primary": [
           "//pw_chrono_my_hardware_rtc:system_clock",
@@ -973,7 +973,8 @@ going to have to;
 
 4. Copy and paste across the target/default_config.BUILD across from the
    Pigweed repository and modifying the build_setting_default for the target
-   'pw_chrono_backend' to point to your new backend_multiplexer target. For example;
+   'pw_chrono_system_clock_backend' to point to your new system_clock_backend_multiplexer
+   target. For example;
 
    This;
 
@@ -981,8 +982,8 @@ going to have to;
 
     # @pigweed//target:default_config.BUILD
     label_flag(
-        name = "pw_chrono_backend",
-        build_setting_default = "@pigweed//pw_chrono:backend_multiplexer",
+        name = "pw_chrono_system_clock_backend",
+        build_setting_default = "@pigweed//pw_chrono:system_clock_backend_multiplexer",
     )
 
   Becomes this;
@@ -991,9 +992,9 @@ going to have to;
 
     # @your_workspace//target:your_config.BUILD
     label_flag(
-      name = "pw_chrono_backend",
+      name = "pw_chrono_system_clock_backend",
       build_setting_default =
-        "@your_workspace//pw_chrono:backend_multiplexer",
+        "@your_workspace//pw_chrono:system_clock_backend_multiplexer",
     )
 
 5. Switch your workspace 'pigweed_config' rule over to use your custom config.
@@ -1023,12 +1024,12 @@ Will result in a build graph that looks like;
    |                     (Actual backend)
    |                                        ^
    |                                        |
-   |                     @your_workspace//pw_chrono:backend_multiplexer
+   |                     @your_workspace//pw_chrono:system_clock_backend_multiplexer
    |                     Select backend based on OS:
    |                     [Primary (X), Backup ( ), Host only default ( )]
    |                                        ^
    |                                        |
-  @pigweed//pw_chrono -> @pigweed_config//:pw_chrono_backend
+  @pigweed//pw_chrono -> @pigweed_config//:pw_chrono_system_clock_backend
    ^                     (Injectable)
    |
   //:time_is_relative

@@ -60,8 +60,9 @@ _host_common = {
   # Tokenizer trace time.
   pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:host_trace_time"
 
-  # Configure backend for pw_chrono's system_clock facade.
+  # Configure backend for pw_chrono's facades.
   pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_stl:system_clock"
+  pw_chrono_SYSTEM_TIMER_BACKEND = "$dir_pw_chrono_stl:system_timer"
 
   # Configure backends for pw_thread's facades.
   pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"

@@ -15,4 +15,7 @@
 declare_args() {
   # Backend for the pw_chrono module's system_clock.
   pw_chrono_SYSTEM_CLOCK_BACKEND = ""
+
+  # Backend for the pw_chrono module's system_timer.
+  pw_chrono_SYSTEM_TIMER_BACKEND = ""
 }
