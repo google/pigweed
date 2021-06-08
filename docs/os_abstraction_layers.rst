@@ -480,7 +480,7 @@ expected to land at some point in the future:
 2. We are evaluating a less-portable but very useful portability facade for
    event flags / groups. This would make it even easier to ensure all firmware
    can be fully executed on the host.
-3. Cooperative cancellation thread joining along with a ``std::jhtread`` like
+3. Cooperative cancellation thread joining along with a ``std::jthread`` like
    wrapper is in progress.
 4. We'd like to add support for queues, message queues, and similar channel
    abstractions which also support interprocessor communication in a transparent
