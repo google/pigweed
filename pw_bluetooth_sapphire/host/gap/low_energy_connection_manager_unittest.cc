@@ -60,6 +60,8 @@ using TestSm = sm::testing::TestSecurityManager;
 using TestSmFactory = sm::testing::TestSecurityManagerFactory;
 using ConnectionResult = LowEnergyConnectionManager::ConnectionResult;
 
+const bt::sm::LTK kLTK;
+
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
 const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {2});
@@ -3285,6 +3287,41 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, InspectFailedConnection) {
   // LECM must be destroyed before the inspector to avoid a page fault on destruction of inspect
   // properties (they try to update the inspect VMO, which is deleted on inspector destruction).
   DeleteConnMgr();
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       RegisterRemoteInitiatedLinkWithAddressDifferentFromIdentityAddressDoesNotCrash) {
+  DeviceAddress kIdentityAddress(DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
+  DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2, 0, 0, 0, 0, 0});
+  Peer* peer = peer_cache()->NewPeer(kRandomAddress, /*connectable=*/true);
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  data.identity_address = kIdentityAddress;
+  EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
+  EXPECT_EQ(peer->address(), kIdentityAddress);
+
+  test_device()->AddPeer(std::make_unique<FakePeer>(kRandomAddress));
+  test_device()->ConnectLowEnergy(kRandomAddress);
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
+                                          [&](auto result) {
+                                            ASSERT_TRUE(result.is_ok());
+                                            conn_handle = result.take_value();
+                                          });
+  EXPECT_EQ(peer->le()->connection_state(), Peer::ConnectionState::kInitializing);
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(conn_handle);
+  EXPECT_TRUE(conn_handle->active());
+  EXPECT_EQ(peer->identifier(), conn_handle->peer_identifier());
+  EXPECT_TRUE(peer->connected());
 }
 
 // Tests for assertions that enforce invariants.

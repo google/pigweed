@@ -98,7 +98,11 @@ LowEnergyConnector::LowEnergyConnector(
     }
   } else {
     ZX_ASSERT(connection);
-    ZX_ASSERT(peer_address_.value() == connection->peer_address().value());
+    // Connection address should resolve to same peer as the given peer ID.
+    Peer* conn_peer = peer_cache_->FindByAddress(connection->peer_address());
+    ZX_ASSERT(conn_peer);
+    ZX_ASSERT_MSG(peer_id_ == conn_peer->identifier(), "peer_id_ (%s) != connection peer (%s)",
+                  bt_str(peer_id_), bt_str(conn_peer->identifier()));
 
     InitializeConnection(std::move(connection));
     StartInterrogation();
