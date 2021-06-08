@@ -48,6 +48,30 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "microvolt_input_gmock",
+    hdrs = [
+        "public/pw_analog/microvolt_input_gmock.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":microvolt_input",
+        "$dir_pw_third_party/googletest",
+    ],
+)
+
+pw_cc_library(
+    name = "analog_input_gmock",
+    hdrs = [
+        "public/pw_analog/analog_input_gmock.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":analog_input",
+        "$dir_pw_third_party/googletest",
+    ],
+)
+
 pw_cc_test(
     name = "analog_input_test",
     srcs = [

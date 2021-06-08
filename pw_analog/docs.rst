@@ -28,3 +28,11 @@ own ADC driver implementation in order to configure and enable the ADC
 peripheral in order to provide the reference voltages and to configure and
 enable the ADC peripheral where needed. Users are responsible for managing
 multithreaded access to the ADC driver if the ADC services multiple channels.
+
+pw::analog::GmockAnalogInput
+-------------------------------
+gMock of AnalogInput used for testing and mocking out the AnalogInput.
+
+pw::analog::GmockMicrovoltInput
+-------------------------------
+gMock of MicrovoltInput used for testing and mocking out the MicrovoltInput.
