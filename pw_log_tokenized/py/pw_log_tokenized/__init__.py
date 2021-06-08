@@ -23,30 +23,29 @@ def _mask(value: int, start: int, count: int) -> int:
     return (value & (mask << start)) >> start
 
 
-@dataclass(frozen=True)
 class Metadata:
     """Parses the metadata payload used by pw_log_tokenized."""
-    _value: int
+    def __init__(self,
+                 value: int,
+                 *,
+                 log_bits: int = 3,
+                 line_bits: int = 11,
+                 flag_bits: int = 2,
+                 module_bits: int = 16) -> None:
+        self.value = value
 
-    log_bits: int = 3
-    module_bits: int = 16
-    flag_bits: int = 2
-    line_bits: int = 11
+        self.log_level = _mask(value, 0, log_bits)
+        self.line = _mask(value, log_bits, line_bits)
+        self.flags = _mask(value, log_bits + line_bits, flag_bits)
+        self.module_token = _mask(value, log_bits + line_bits + flag_bits,
+                                  module_bits)
 
-    def log_level(self) -> int:
-        return _mask(self._value, 0, self.log_bits)
-
-    def module_token(self) -> int:
-        return _mask(self._value, self.log_bits, self.module_bits)
-
-    def flags(self) -> int:
-        return _mask(self._value, self.log_bits + self.module_bits,
-                     self.flag_bits)
-
-    def line(self) -> int:
-        return _mask(self._value,
-                     self.log_bits + self.module_bits + self.flag_bits,
-                     self.line_bits)
+    def __repr__(self) -> str:
+        return (f'{type(self).__name__}('
+                f'log_level={self.log_level}, '
+                f'line={self.line}, '
+                f'flags={self.flags}, '
+                f'module_token={self.module_token})')
 
 
 class FormatStringWithMetadata:

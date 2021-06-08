@@ -19,6 +19,9 @@ import("$dir_pw_build/python.gni")
 pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [ "pw_log_tokenized/__init__.py" ]
-  tests = [ "format_string_test.py" ]
+  tests = [
+    "format_string_test.py",
+    "metadata_test.py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

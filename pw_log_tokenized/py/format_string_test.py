@@ -19,8 +19,8 @@ import unittest
 from pw_log_tokenized import FormatStringWithMetadata
 
 
-class TestDecodeTokenized(unittest.TestCase):
-    """Tests decoding tokenized strings with various arguments."""
+class TestFormatStringWithMetadata(unittest.TestCase):
+    """Tests extracting metadata from a pw_log_tokenized-style format string."""
     def test_all_fields(self):
         log = FormatStringWithMetadata(
             '■msg♦hello %d■file♦__FILE__■module♦log module name!')
