@@ -22,6 +22,11 @@ import time
 PW_ENVSETUP_DISABLE_SPINNER = os.environ.get('PW_ENVSETUP_DISABLE_SPINNER')
 
 
+def _disabled():
+    return PW_ENVSETUP_DISABLE_SPINNER or (PW_ENVSETUP_DISABLE_SPINNER is None
+                                           and not sys.stdout.isatty())
+
+
 class Spinner(object):  # pylint: disable=useless-object-inheritance
     """Spinner!"""
     def __init__(self):
@@ -42,7 +47,7 @@ class Spinner(object):  # pylint: disable=useless-object-inheritance
             i = (i + 1) % len(chars)
 
     def start(self):
-        if PW_ENVSETUP_DISABLE_SPINNER:
+        if _disabled():
             return
 
         self._done = False
@@ -50,7 +55,7 @@ class Spinner(object):  # pylint: disable=useless-object-inheritance
         self._thread.start()
 
     def stop(self):
-        if PW_ENVSETUP_DISABLE_SPINNER:
+        if _disabled():
             return
 
         assert self._thread
