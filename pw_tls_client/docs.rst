@@ -61,13 +61,42 @@ expiration. Provisioning of time source for TLS communication is very specific
 to the TLS library in use. However, common TLS libraires, such as BoringSSL
 and MbedTLS, support the use of C APIs ``time()`` and ``getimtofday()`` for
 obtaining date time. To accomodate the use of these libraries, a facade target
-``pw_tls_client:time`` is added that wraps these APIs. For gn build,
+``pw_tls_client:time`` is added that wraps these APIs. For GN builds,
 specify the backend target with variable ``pw_tls_client_C_TIME_BACKEND``.
 ``pw_tls_client_C_TIME_BACKEND`` defaults to the ``pw_tls_client::build_time``
 backend that returns build time.
 
 If downstream project chooses to use other TLS libraires that handle time source
 differently, then it needs to be investigated separately.
+
+4. CRLSet
+-----------
+The module supports CRLSet based revocation check for certificates. A CRLSet
+file specifies a list of X509 certificates that either need to be blocked, or
+have been revoked by the issuer. It is introduced by chromium and primarily
+used for certificate verification/revocation checks during TLS handshake. The
+format of a CRLSet file is available in
+https://chromium.googlesource.com/chromium/src/+/refs/heads/main/net/cert/crl_set.cc#24.
+
+Downstream projects need to provide a CRLSet file at build time. For GN builds,
+specify the path of the CRLSet file with the GN variable
+``pw_tls_client_CRLSET_FILE``. This module converts the CRLSet file into
+source code at build time and generates APIs for querying certificate
+block/revocation status. See ``pw_tls_client/crlset.h`` for more detail.
+
+Chromium maintains its own CRLSet that targets at the general Internet. To use it,
+run the following command to download the latest version:
+
+.. code-block:: sh
+
+  pw package install crlset --force
+
+The `--force` option forces CRLSet to be always re-downloaded so that it is
+up-to-date. Project that are concerned about up-to-date CRLSet should always
+run the above command before build.
+
+Toolings will be provided for generating custom CRLSet files from user-provided
+certificate files. The functionality is under construction.
 
 Setup
 =====

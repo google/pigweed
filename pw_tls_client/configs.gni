@@ -23,4 +23,7 @@ declare_args() {
 
   # Backend for pw_tls_client:time
   pw_tls_client_TIME_BACKEND = "$dir_pw_tls_client:build_time"
+
+  # The path to the CRLSet file.
+  pw_tls_client_CRLSET_FILE = ""
 }

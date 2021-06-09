@@ -69,3 +69,12 @@ pw_cc_library(
         "build_time.cc",
     ],
 )
+
+pw_cc_library(
+    name = "crlset",
+    hdrs = ["public/pw_tls_client/crlset.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_bytes",
+    ],
+)
