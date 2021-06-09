@@ -33,5 +33,12 @@ TEST(Stream, DefaultConservativeReadLimit) {
   EXPECT_EQ(stream.ConservativeReadLimit(), std::numeric_limits<size_t>::max());
 }
 
+TEST(Stream, DefaultConservativeReadWriteLimit) {
+  NullReaderWriter stream;
+  EXPECT_EQ(stream.ConservativeWriteLimit(),
+            std::numeric_limits<size_t>::max());
+  EXPECT_EQ(stream.ConservativeReadLimit(), std::numeric_limits<size_t>::max());
+}
+
 }  // namespace
 }  // namespace pw::stream

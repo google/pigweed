@@ -36,4 +36,21 @@ class NullReader final : public Reader {
   StatusWithSize DoRead(ByteSpan) final { return StatusWithSize::OutOfRange(); }
 };
 
+// Stream reader/writer that combines NullWriter and NullReader.
+class NullReaderWriter final : public ReaderWriter {
+ private:
+  NullWriter null_writer_;
+  NullReader null_reader_;
+
+  Status DoWrite(ConstByteSpan data) final { return null_writer_.Write(data); }
+
+  StatusWithSize DoRead(ByteSpan dest) final {
+    auto res = null_reader_.Read(dest);
+    if (!res.ok()) {
+      return StatusWithSize(res.status(), 0);
+    }
+    return StatusWithSize(res.value().size());
+  }
+};
+
 }  // namespace pw::stream

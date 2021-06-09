@@ -52,6 +52,10 @@ to implement the ``Reader`` interface **must** provide a ``DoRead()``
 implementation. Note that ``Read()`` itself is **not** virtual, and should not
 be overridden.
 
+pw::stream::ReaderWriter
+-------------------------
+The class simply combines the interfaces of pw::stream::Reader/Writer.
+
 pw::stream::MemoryWriter
 ------------------------
 The ``MemoryWriter`` class implements the ``Writer`` interface by backing the
@@ -68,6 +72,10 @@ pw::stream::NullWriter
 ------------------------
 The ``NullWriter`` class implements the ``Writer`` interface by dropping all
 requested data writes, similar to ``/dev/null``.
+
+pw::stream::NullReaderWriter
+-----------------------------
+The class simply combines pw::stream::NullReader/NullWriter.
 
 Why use pw_stream?
 ==================

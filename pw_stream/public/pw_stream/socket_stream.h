@@ -31,7 +31,7 @@ namespace pw::stream {
 static constexpr int kExitCode = -1;
 static constexpr int kInvalidFd = -1;
 
-class SocketStream : public Writer, public Reader {
+class SocketStream : public ReaderWriter {
  public:
   explicit SocketStream() {}
   ~SocketStream();

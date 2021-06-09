@@ -144,4 +144,8 @@ class Reader {
   virtual StatusWithSize DoRead(ByteSpan dest) = 0;
 };
 
+// A general-purpose ReaderWriter class that combines interfaces of Reader and
+// Writer.
+class ReaderWriter : public Writer, public Reader {};
+
 }  // namespace pw::stream
