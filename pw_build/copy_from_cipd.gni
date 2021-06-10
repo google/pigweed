@@ -69,7 +69,7 @@ template("pw_cipd_static_library") {
 
     # Parallel calls might both be invoking CIPD on the same directory which
     # might work but is redundant, so serialize calls.
-    pool = "$dir_pw_build:copy_from_cipd_pool"
+    pool = "$dir_pw_build/pool:copy_from_cipd($default_toolchain)"
 
     # TODO(pwbug/335): This should somehow track the actual .a for changes as
     # well.

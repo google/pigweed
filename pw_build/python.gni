@@ -410,7 +410,7 @@ template("pw_python_package") {
         stamp = true
 
         # Parallel pip installations don't work, so serialize pip invocations.
-        pool = "$dir_pw_build:pip_pool"
+        pool = "$dir_pw_build/pool:pip($default_toolchain)"
 
         foreach(dep, _python_deps) {
           # We need to add a suffix to the target name, but the label is
@@ -727,7 +727,7 @@ template("pw_python_requirements") {
       ]
     }
 
-    pool = "$dir_pw_build:pip_pool"
+    pool = "$dir_pw_build/pool:pip($default_toolchain)"
     stamp = true
   }
 

@@ -91,15 +91,12 @@ template("pw_tokenizer_database") {
     not_needed([ "_domain" ])
   }
 
-  # Restrict parallelism for updating this database file to one thread. This
-  # makes it safe to update it from multiple toolchains.
-  pool("$target_name._pool") {
-    depth = 1
-  }
-
   pw_python_action(target_name) {
     script = "$dir_pw_tokenizer/py/pw_tokenizer/database.py"
-    pool = ":$target_name._pool"
+
+    # Restrict parallelism for updating this database file to one thread. This
+    # makes it safe to update it from multiple toolchains.
+    pool = "$dir_pw_tokenizer/pool:database($default_toolchain)"
 
     inputs = _input_databases
 

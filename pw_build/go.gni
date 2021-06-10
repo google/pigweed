@@ -140,7 +140,7 @@ template("pw_go_executable") {
     skip_empty_args = true
 
     # Limit download parallelization to 1.
-    pool = "$dir_pw_build:go_download_pool"
+    pool = "$dir_pw_build/pool:go_download($default_toolchain)"
   }
 
   # Run a "go build" command with the environment configured from metadata.
