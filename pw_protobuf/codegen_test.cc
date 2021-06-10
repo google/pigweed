@@ -41,35 +41,47 @@ TEST(Codegen, Codegen) {
   stream::MemoryWriter writer(encode_buffer);
 
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);
-  pigweed.WriteMagicNumber(73);
-  pigweed.WriteZiggy(-111);
-  pigweed.WriteErrorMessage("not a typewriter");
-  pigweed.WriteBin(Pigweed::Protobuf::Binary::ZERO);
+  pigweed.WriteMagicNumber(73)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  pigweed.WriteZiggy(-111)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  pigweed.WriteErrorMessage("not a typewriter")
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  pigweed.WriteBin(Pigweed::Protobuf::Binary::ZERO)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   {
     Pigweed::Pigweed::StreamEncoder pigweed_pigweed =
         pigweed.GetPigweedEncoder();
-    pigweed_pigweed.WriteStatus(Bool::FILE_NOT_FOUND);
+    pigweed_pigweed.WriteStatus(Bool::FILE_NOT_FOUND)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     ASSERT_EQ(pigweed_pigweed.status(), OkStatus());
   }
 
   {
     Proto::StreamEncoder proto = pigweed.GetProtoEncoder();
-    proto.WriteBin(Proto::Binary::OFF);
-    proto.WritePigweedPigweedBin(Pigweed::Pigweed::Binary::ZERO);
-    proto.WritePigweedProtobufBin(Pigweed::Protobuf::Binary::ZERO);
+    proto.WriteBin(Proto::Binary::OFF)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    proto.WritePigweedPigweedBin(Pigweed::Pigweed::Binary::ZERO)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    proto.WritePigweedProtobufBin(Pigweed::Protobuf::Binary::ZERO)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     {
       Pigweed::Protobuf::Compiler::StreamEncoder meta = proto.GetMetaEncoder();
-      meta.WriteFileName("/etc/passwd");
-      meta.WriteStatus(Pigweed::Protobuf::Compiler::Status::FUBAR);
+      meta.WriteFileName("/etc/passwd")
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+      meta.WriteStatus(Pigweed::Protobuf::Compiler::Status::FUBAR)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
 
     {
       Pigweed::StreamEncoder nested_pigweed = proto.GetPigweedEncoder();
-      nested_pigweed.WriteErrorMessage("here we go again");
-      nested_pigweed.WriteMagicNumber(616);
+      nested_pigweed.WriteErrorMessage("here we go again")
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+      nested_pigweed.WriteMagicNumber(616)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
       {
         DeviceInfo::StreamEncoder device_info =
@@ -78,25 +90,31 @@ TEST(Codegen, Codegen) {
         {
           KeyValuePair::StreamEncoder attributes =
               device_info.GetAttributesEncoder();
-          attributes.WriteKey("version");
-          attributes.WriteValue("5.3.1");
+          attributes.WriteKey("version")
+              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+          attributes.WriteValue("5.3.1")
+              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         }
 
         {
           KeyValuePair::StreamEncoder attributes =
               device_info.GetAttributesEncoder();
-          attributes.WriteKey("chip");
-          attributes.WriteValue("left-soc");
+          attributes.WriteKey("chip")
+              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+          attributes.WriteValue("left-soc")
+              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         }
 
-        device_info.WriteStatus(DeviceInfo::DeviceStatus::PANIC);
+        device_info.WriteStatus(DeviceInfo::DeviceStatus::PANIC)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
     }
   }
 
   for (int i = 0; i < 5; ++i) {
     Proto::ID::StreamEncoder id = pigweed.GetIdEncoder();
-    id.WriteId(5 * i * i + 3 * i + 49);
+    id.WriteId(5 * i * i + 3 * i + 49)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   // clang-format off
@@ -185,18 +203,22 @@ TEST(Codegen, RecursiveSubmessage) {
   std::byte encode_buffer[512];
 
   Crate::MemoryEncoder biggest_crate(encode_buffer);
-  biggest_crate.WriteName("Huge crate");
+  biggest_crate.WriteName("Huge crate")
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   {
     Crate::StreamEncoder medium_crate = biggest_crate.GetSmallerCratesEncoder();
-    medium_crate.WriteName("Medium crate");
+    medium_crate.WriteName("Medium crate")
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     {
       Crate::StreamEncoder small_crate = medium_crate.GetSmallerCratesEncoder();
-      small_crate.WriteName("Small crate");
+      small_crate.WriteName("Small crate")
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
     {
       Crate::StreamEncoder tiny_crate = medium_crate.GetSmallerCratesEncoder();
-      tiny_crate.WriteName("Tiny crate");
+      tiny_crate.WriteName("Tiny crate")
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
   }
 
@@ -232,7 +254,8 @@ TEST(CodegenRepeated, NonPackedScalar) {
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   for (int i = 0; i < 4; ++i) {
-    repeated_test.WriteUint32s(i * 16);
+    repeated_test.WriteUint32s(i * 16)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   constexpr uint8_t expected_proto[] = {
@@ -251,7 +274,8 @@ TEST(CodegenRepeated, PackedScalar) {
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   constexpr uint32_t values[] = {0, 16, 32, 48};
-  repeated_test.WriteUint32s(values);
+  repeated_test.WriteUint32s(values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   constexpr uint8_t expected_proto[] = {0x0a, 0x04, 0x00, 0x10, 0x20, 0x30};
   ConstByteSpan result = writer.WrittenData();
@@ -268,7 +292,8 @@ TEST(CodegenRepeated, NonScalar) {
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   constexpr const char* strings[] = {"the", "quick", "brown", "fox"};
   for (const char* s : strings) {
-    repeated_test.WriteStrings(s);
+    repeated_test.WriteStrings(s)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   constexpr uint8_t expected_proto[] = {
@@ -287,8 +312,10 @@ TEST(CodegenRepeated, Message) {
   RepeatedTest::MemoryEncoder repeated_test(encode_buffer);
   for (int i = 0; i < 3; ++i) {
     auto structs = repeated_test.GetStructsEncoder();
-    structs.WriteOne(i * 1);
-    structs.WriteTwo(i * 2);
+    structs.WriteOne(i * 1)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    structs.WriteTwo(i * 2)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   // clang-format off
@@ -308,13 +335,14 @@ TEST(Codegen, Proto2) {
   std::byte encode_buffer[64];
 
   Foo::MemoryEncoder foo(encode_buffer);
-  foo.WriteInt(3);
+  foo.WriteInt(3).IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   {
     constexpr std::byte data[] = {
         std::byte(0xde), std::byte(0xad), std::byte(0xbe), std::byte(0xef)};
     Bar::StreamEncoder bar = foo.GetBarEncoder();
-    bar.WriteData(data);
+    bar.WriteData(data)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   constexpr uint8_t expected_proto[] = {
@@ -333,14 +361,18 @@ TEST(Codegen, Import) {
   Period::MemoryEncoder period(encode_buffer);
   {
     imported::Timestamp::StreamEncoder start = period.GetStartEncoder();
-    start.WriteSeconds(1589501793);
-    start.WriteNanoseconds(511613110);
+    start.WriteSeconds(1589501793)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    start.WriteNanoseconds(511613110)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   {
     imported::Timestamp::StreamEncoder end = period.GetEndEncoder();
-    end.WriteSeconds(1589501841);
-    end.WriteNanoseconds(490367432);
+    end.WriteSeconds(1589501841)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    end.WriteNanoseconds(490367432)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   EXPECT_EQ(period.status(), OkStatus());
@@ -352,8 +384,10 @@ TEST(Codegen, NonPigweedPackage) {
   std::array<const int64_t, 2> repeated = {0, 1};
   stream::MemoryWriter writer(encode_buffer);
   Packed::StreamEncoder packed(writer, ByteSpan());
-  packed.WriteRep(std::span<const int64_t>(repeated));
-  packed.WritePacked("packed");
+  packed.WriteRep(std::span<const int64_t>(repeated))
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  packed.WritePacked("packed")
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(packed.status(), OkStatus());
 }

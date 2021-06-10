@@ -97,7 +97,8 @@ TEST(BaseClientCall, SendsPacketWithPayload) {
                       [](BaseClientCall&, const Packet&) {});
 
   constexpr std::byte payload[]{std::byte{0x08}, std::byte{0x39}};
-  call.SendPacket(payload);
+  call.SendPacket(payload)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(context.output().packet_count(), 1u);
   Packet packet = context.output().sent_packet();

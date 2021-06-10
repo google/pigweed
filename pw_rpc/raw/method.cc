@@ -40,7 +40,9 @@ void RawMethod::SynchronousUnaryInvoker(const Method& method,
 
   PW_LOG_WARN("Failed to send response packet for channel %u",
               unsigned(call.channel().id()));
-  call.channel().Send(Packet::ServerError(request, Status::Internal()));
+  call.channel()
+      .Send(Packet::ServerError(request, Status::Internal()))
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 }
 
 void RawMethod::UnaryRequestInvoker(const Method& method,

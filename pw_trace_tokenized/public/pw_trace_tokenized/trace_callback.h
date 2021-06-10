@@ -212,15 +212,17 @@ class RegisterCallbackWhenCreated {
       CallbacksImpl::CallOnEveryEvent called_on_every_event =
           CallbacksImpl::kCallOnlyWhenEnabled,
       void* user_data = nullptr) {
-    Callbacks::Instance().RegisterEventCallback(
-        event_callback, called_on_every_event, user_data);
+    Callbacks::Instance()
+        .RegisterEventCallback(event_callback, called_on_every_event, user_data)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   RegisterCallbackWhenCreated(CallbacksImpl::SinkStartBlock sink_start,
                               CallbacksImpl::SinkAddBytes sink_add_bytes,
                               CallbacksImpl::SinkEndBlock sink_end,
                               void* user_data = nullptr) {
-    Callbacks::Instance().RegisterSink(
-        sink_start, sink_add_bytes, sink_end, user_data);
+    Callbacks::Instance()
+        .RegisterSink(sink_start, sink_add_bytes, sink_end, user_data)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 };
 

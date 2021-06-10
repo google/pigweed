@@ -44,7 +44,8 @@ void Context::Finish(Status status) {
   if (type_ == kRead) {
     handler_->FinalizeRead(status);
   } else {
-    handler_->FinalizeWrite(status);
+    handler_->FinalizeWrite(status)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   handler_ = nullptr;
@@ -63,7 +64,8 @@ void TransferService::Read(ServerContext&,
 void TransferService::Write(ServerContext&,
                             RawServerReaderWriter& reader_writer) {
   // TODO(frolv): Implement server-side write transfers.
-  reader_writer.Finish(Status::Unimplemented());
+  reader_writer.Finish(Status::Unimplemented())
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 }
 
 void TransferService::SendStatusChunk(RawServerReaderWriter& stream,
@@ -76,7 +78,8 @@ void TransferService::SendStatusChunk(RawServerReaderWriter& stream,
   Result<ConstByteSpan> result =
       internal::EncodeChunk(chunk, stream.PayloadBuffer());
   if (result.ok()) {
-    stream.Write(result.value());
+    stream.Write(result.value())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 }
 
@@ -90,8 +93,10 @@ bool TransferService::SendNextReadChunk(internal::Context& context) {
   // Begin by doing a partial encode of all the metadata fields, leaving the
   // buffer with usable space for the chunk data at the end.
   Chunk::MemoryEncoder encoder(buffer);
-  encoder.WriteTransferId(context.transfer_id());
-  encoder.WriteOffset(context.offset());
+  encoder.WriteTransferId(context.transfer_id())
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  encoder.WriteOffset(context.offset())
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Reserve space for the data proto field overhead and use the remainder of
   // the buffer for the chunk data.
@@ -108,13 +113,15 @@ bool TransferService::SendNextReadChunk(internal::Context& context) {
   Result<ByteSpan> data = context.reader().Read(data_buffer);
   if (data.status().IsOutOfRange()) {
     // No more data to read.
-    encoder.WriteRemainingBytes(0);
+    encoder.WriteRemainingBytes(0)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     context.set_pending_bytes(0);
   } else if (!data.ok()) {
     read_stream_.ReleaseBuffer();
     return false;
   } else {
-    encoder.WriteData(data.value());
+    encoder.WriteData(data.value())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     context.set_offset(context.offset() + data.value().size());
     context.set_pending_bytes(context.pending_bytes() - data.value().size());
   }

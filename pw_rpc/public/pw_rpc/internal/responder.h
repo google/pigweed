@@ -48,7 +48,10 @@ class Responder : public IntrusiveList<Responder>::Item {
  public:
   Responder(const Responder&) = delete;
 
-  ~Responder() { CloseAndSendResponse(OkStatus()).IgnoreError(); }
+  ~Responder() {
+    CloseAndSendResponse(OkStatus())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
 
   Responder& operator=(const Responder&) = delete;
 
@@ -60,8 +63,8 @@ class Responder : public IntrusiveList<Responder>::Item {
   uint32_t method_id() const;
 
   // Closes the Responder and sends a RESPONSE packet, if it is open. Returns
-  // the status from sending the packet, or FAILED_PRECONDITION if the Responder
-  // is not open.
+  // the status from sending the packet, or FAILED_PRECONDITION if the
+  // Responder is not open.
   Status CloseAndSendResponse(std::span<const std::byte> response,
                               Status status);
 

@@ -45,7 +45,8 @@ TEST(FindDecodeHandler, SingleLevel_FindsExistingField) {
   FindDecodeHandler finder(3);
 
   decoder.set_handler(&finder);
-  decoder.Decode(std::as_bytes(std::span(encoded_proto)));
+  decoder.Decode(std::as_bytes(std::span(encoded_proto)))
+      .IgnoreError(); // TODO(pwbug/387): Handle Status properly
 
   EXPECT_TRUE(finder.found());
   EXPECT_TRUE(decoder.cancelled());
@@ -56,7 +57,8 @@ TEST(FindDecodeHandler, SingleLevel_DoesntFindNonExistingField) {
   FindDecodeHandler finder(8);
 
   decoder.set_handler(&finder);
-  decoder.Decode(std::as_bytes(std::span(encoded_proto)));
+  decoder.Decode(std::as_bytes(std::span(encoded_proto)))
+      .IgnoreError(); // TODO(pwbug/387): Handle Status properly
 
   EXPECT_FALSE(finder.found());
   EXPECT_FALSE(decoder.cancelled());
@@ -68,7 +70,8 @@ TEST(FindDecodeHandler, MultiLevel_FindsExistingNestedField) {
   FindDecodeHandler finder(7, &nested_finder);
 
   decoder.set_handler(&finder);
-  decoder.Decode(std::as_bytes(std::span(encoded_proto)));
+  decoder.Decode(std::as_bytes(std::span(encoded_proto)))
+      .IgnoreError(); // TODO(pwbug/387): Handle Status properly
 
   EXPECT_TRUE(finder.found());
   EXPECT_TRUE(nested_finder.found());
@@ -81,7 +84,8 @@ TEST(FindDecodeHandler, MultiLevel_DoesntFindNonExistingNestedField) {
   FindDecodeHandler finder(7, &nested_finder);
 
   decoder.set_handler(&finder);
-  decoder.Decode(std::as_bytes(std::span(encoded_proto)));
+  decoder.Decode(std::as_bytes(std::span(encoded_proto)))
+      .IgnoreError(); // TODO(pwbug/387): Handle Status properly
 
   EXPECT_TRUE(finder.found());
   EXPECT_FALSE(nested_finder.found());

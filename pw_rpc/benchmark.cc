@@ -44,7 +44,8 @@ void BenchmarkService::BidirectionalEcho(
   reader_writer_.set_on_next([this](ConstByteSpan request) {
     Status status = reader_writer_.Write(request);
     if (!status.ok()) {
-      reader_writer_.Finish(status);
+      reader_writer_.Finish(status)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
   });
 }

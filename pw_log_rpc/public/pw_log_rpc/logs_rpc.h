@@ -41,7 +41,10 @@ class Logs final : public pw::log::generated::Logs<Logs> {
 
   // Interface for the owner of the service instance to close the RPC, if
   // one is attached.
-  void Finish() { response_writer_.Finish(); }
+  void Finish() {
+    response_writer_.Finish()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
 
  private:
   LogQueue& log_queue_;

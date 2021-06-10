@@ -32,7 +32,8 @@ Status ReadAndProcessPackets(rpc::Server& server,
     if (auto result = decoder.Process(data); result.ok()) {
       Frame& frame = result.value();
       if (frame.address() == rpc_address) {
-        server.ProcessPacket(frame.data(), output);
+        server.ProcessPacket(frame.data(), output)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
     }
   }

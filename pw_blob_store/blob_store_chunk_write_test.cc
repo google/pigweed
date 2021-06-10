@@ -34,18 +34,22 @@ class BlobStoreChunkTest : public ::testing::Test {
   BlobStoreChunkTest() : flash_(kFlashAlignment), partition_(&flash_) {}
 
   void InitFlashTo(std::span<const std::byte> contents) {
-    partition_.Erase();
+    partition_.Erase()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
   void InitSourceBufferToRandom(uint64_t seed) {
-    partition_.Erase();
+    partition_.Erase()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     random::XorShiftStarRng64 rng(seed);
-    rng.Get(source_buffer_);
+    rng.Get(source_buffer_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   void InitSourceBufferToFill(char fill) {
-    partition_.Erase();
+    partition_.Erase()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     std::memset(source_buffer_.data(), fill, source_buffer_.size());
   }
 

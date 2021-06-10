@@ -166,7 +166,8 @@ class KvsTester {
       label << ((options == kReinitWithPartialGC) ? "PartialGC" : "");
       label << ((kvs_.redundancy() > 1) ? "Redundant" : "");
 
-      partition_.SaveStorageStats(kvs_, label.data());
+      partition_.SaveStorageStats(kvs_, label.data())
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
   }
 

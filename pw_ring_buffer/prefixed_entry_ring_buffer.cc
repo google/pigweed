@@ -216,7 +216,8 @@ void PrefixedEntryRingBufferMulti::InternalPopFrontAll() {
   // Otherwise, pop the readers that have the largest value.
   for (Reader& reader : readers_) {
     if (reader.entry_count_ == entry_count) {
-      reader.PopFront();
+      reader.PopFront()
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
   }
 }

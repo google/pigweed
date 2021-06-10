@@ -56,21 +56,27 @@ class TraceTestInterface {
 
   TraceTestInterface() {
     PW_TRACE_SET_ENABLED(true);
-    pw::trace::Callbacks::Instance().RegisterSink(TraceSinkStartBlock,
-                                                  TraceSinkAddBytes,
-                                                  TraceSinkEndBlock,
-                                                  this,
-                                                  &sink_handle_);
-    pw::trace::Callbacks::Instance().RegisterEventCallback(
-        TraceEventCallback,
-        pw::trace::CallbacksImpl::kCallOnlyWhenEnabled,
-        this,
-        &event_callback_handle_);
+    pw::trace::Callbacks::Instance()
+        .RegisterSink(TraceSinkStartBlock,
+                      TraceSinkAddBytes,
+                      TraceSinkEndBlock,
+                      this,
+                      &sink_handle_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    pw::trace::Callbacks::Instance()
+        .RegisterEventCallback(TraceEventCallback,
+                               pw::trace::CallbacksImpl::kCallOnlyWhenEnabled,
+                               this,
+                               &event_callback_handle_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   ~TraceTestInterface() {
-    pw::trace::Callbacks::Instance().UnregisterSink(sink_handle_);
-    pw::trace::Callbacks::Instance().UnregisterEventCallback(
-        event_callback_handle_);
+    pw::trace::Callbacks::Instance()
+        .UnregisterSink(sink_handle_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    pw::trace::Callbacks::Instance()
+        .UnregisterEventCallback(event_callback_handle_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   // ActionOnEvent will perform a specific action within the callback when an
   // event matches one of the characteristics of event_match_.
@@ -568,7 +574,8 @@ TEST(TokenizedTrace, QueueSimple) {
   constexpr size_t kQueueSize = 5;
   pw::trace::internal::TraceQueue<kQueueSize> queue;
   constexpr size_t kTestNum = 1;
-  queue.TryPushBack(QUEUE_TESTS_ARGS(kTestNum));
+  queue.TryPushBack(QUEUE_TESTS_ARGS(kTestNum))
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   EXPECT_FALSE(queue.IsEmpty());
   EXPECT_FALSE(queue.IsFull());
   EXPECT_TRUE(QUEUE_CHECK_RESULT(kQueueSize, queue.PeekFront(), kTestNum));

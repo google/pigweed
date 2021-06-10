@@ -214,7 +214,8 @@ class MultiSink {
 
   // Constructs a multisink using a ring buffer backed by the provided buffer.
   MultiSink(ByteSpan buffer) : ring_buffer_(true), sequence_id_(0) {
-    ring_buffer_.SetBuffer(buffer);
+    ring_buffer_.SetBuffer(buffer)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     AttachDrain(oldest_entry_drain_);
   }
 

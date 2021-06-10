@@ -55,7 +55,8 @@ Responder::Responder(ServerCall& call, HasClientStream has_client_stream)
 
 Responder& Responder::operator=(Responder&& other) {
   // If this RPC was running, complete it before moving in the other RPC.
-  CloseAndSendResponse(OkStatus()).IgnoreError();
+  CloseAndSendResponse(OkStatus())
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Move the state variables, which may change when the other client closes.
   rpc_state_ = other.rpc_state_;
@@ -96,7 +97,8 @@ Status Responder::CloseAndSendResponse(std::span<const std::byte> response,
   // If the Responder implementer or user forgets to release an acquired buffer
   // before finishing, release it here.
   if (!response_.empty()) {
-    ReleasePayloadBuffer();
+    ReleasePayloadBuffer()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   Close();

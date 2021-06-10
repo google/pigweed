@@ -80,28 +80,36 @@ Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
 Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
   ProtoChunk::MemoryEncoder encoder(buffer);
 
-  encoder.WriteTransferId(chunk.transfer_id);
+  encoder.WriteTransferId(chunk.transfer_id)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   if (chunk.pending_bytes.has_value()) {
-    encoder.WritePendingBytes(chunk.pending_bytes.value());
+    encoder.WritePendingBytes(chunk.pending_bytes.value())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   if (chunk.max_chunk_size_bytes.has_value()) {
-    encoder.WriteMaxChunkSizeBytes(chunk.max_chunk_size_bytes.value());
+    encoder.WriteMaxChunkSizeBytes(chunk.max_chunk_size_bytes.value())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   if (chunk.min_delay_microseconds.has_value()) {
-    encoder.WriteMinDelayMicroseconds(chunk.min_delay_microseconds.value());
+    encoder.WriteMinDelayMicroseconds(chunk.min_delay_microseconds.value())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   if (chunk.offset != 0) {
-    encoder.WriteOffset(chunk.offset);
+    encoder.WriteOffset(chunk.offset)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   if (!chunk.data.empty()) {
-    encoder.WriteData(chunk.data);
+    encoder.WriteData(chunk.data)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   if (chunk.remaining_bytes.has_value()) {
-    encoder.WriteRemainingBytes(chunk.remaining_bytes.value());
+    encoder.WriteRemainingBytes(chunk.remaining_bytes.value())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   if (chunk.status.has_value()) {
-    encoder.WriteStatus(chunk.status.value().code());
+    encoder.WriteStatus(chunk.status.value().code())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   PW_TRY(encoder.status());

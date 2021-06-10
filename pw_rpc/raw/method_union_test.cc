@@ -65,7 +65,8 @@ class FakeGeneratedServiceImpl
     DecodeRawTestRequest(request);
 
     TestResponse::MemoryEncoder test_response(response);
-    test_response.WriteValue(last_request.integer + 5);
+    test_response.WriteValue(last_request.integer + 5)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     ConstByteSpan payload(test_response);
 
     return StatusWithSize::Unauthenticated(payload.size());
@@ -88,10 +89,12 @@ class FakeGeneratedServiceImpl
 
       switch (field) {
         case TestRequest::Fields::INTEGER:
-          decoder.ReadInt64(&last_request.integer);
+          decoder.ReadInt64(&last_request.integer)
+              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
           break;
         case TestRequest::Fields::STATUS_CODE:
-          decoder.ReadUint32(&last_request.status_code);
+          decoder.ReadUint32(&last_request.status_code)
+              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
           break;
       }
     }
@@ -102,8 +105,10 @@ TEST(RawMethodUnion, InvokesUnary) {
   std::byte buffer[16];
 
   TestRequest::MemoryEncoder test_request(buffer);
-  test_request.WriteInteger(456);
-  test_request.WriteStatusCode(7);
+  test_request.WriteInteger(456)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  test_request.WriteStatusCode(7)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   const Method& method =
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
@@ -127,8 +132,10 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
   std::byte buffer[16];
 
   TestRequest::MemoryEncoder test_request(buffer);
-  test_request.WriteInteger(777);
-  test_request.WriteStatusCode(2);
+  test_request.WriteInteger(777)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  test_request.WriteStatusCode(2)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   const Method& method =
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();

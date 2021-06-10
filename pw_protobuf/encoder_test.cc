@@ -254,7 +254,8 @@ TEST(StreamEncoder, RepeatedField) {
   // repeated uint32 values = 1;
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
   for (int i = 0; i < 5; ++i) {
-    encoder.WriteUint32(1, values[i]);
+    encoder.WriteUint32(1, values[i])
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   constexpr uint8_t encoded_proto[] = {
@@ -273,7 +274,8 @@ TEST(StreamEncoder, PackedVarint) {
 
   // repeated uint32 values = 1;
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
-  encoder.WritePackedUint32(1, values);
+  encoder.WritePackedUint32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x07, 0x00, 0x32, 0x64, 0x96, 0x01, 0xc8, 0x01};
@@ -291,7 +293,8 @@ TEST(StreamEncoder, PackedVarintInsufficientSpace) {
   MemoryEncoder encoder(encode_buffer);
 
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
-  encoder.WritePackedUint32(1, values);
+  encoder.WritePackedUint32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }
@@ -302,11 +305,13 @@ TEST(StreamEncoder, PackedFixed) {
 
   // repeated fixed32 values = 1;
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
-  encoder.WritePackedFixed32(1, values);
+  encoder.WritePackedFixed32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // repeated fixed64 values64 = 2;
   constexpr uint64_t values64[] = {0x0102030405060708};
-  encoder.WritePackedFixed64(2, values64);
+  encoder.WritePackedFixed64(2, values64)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x14, 0x00, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x64,
@@ -326,7 +331,8 @@ TEST(StreamEncoder, PackedZigzag) {
 
   // repeated sint32 values = 1;
   constexpr int32_t values[] = {-100, -25, -1, 0, 1, 25, 100};
-  encoder.WritePackedSint32(1, values);
+  encoder.WritePackedSint32(1, values)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x09, 0xc7, 0x01, 0x31, 0x01, 0x00, 0x02, 0x32, 0xc8, 0x01};
@@ -389,7 +395,7 @@ TEST(StreamEncoder, ChildUnavailableAfterFinalize) {
   MemoryEncoder parent(encode_buffer);
   {
     StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
-    child.Finalize();
+    child.Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
     ASSERT_EQ(child.status(), Status::Unavailable());
   }
 }

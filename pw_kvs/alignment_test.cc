@@ -175,7 +175,8 @@ TEST(AlignedWriter, DestructorFlushes) {
 
   {
     AlignedWriterBuffer<64> writer(3, output);
-    writer.Write(std::as_bytes(std::span("What is this?")));
+    writer.Write(std::as_bytes(std::span("What is this?")))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     EXPECT_EQ(called_with_bytes, 0u);  // Buffer not full; no output yet.
   }
 
@@ -211,12 +212,13 @@ TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
 
   {
     AlignedWriterBuffer<4> writer(3, output);
-    writer.Write(std::as_bytes(std::span("Everything is fine.")));
+    writer.Write(std::as_bytes(std::span("Everything is fine.")))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     output.state = OutputWithErrorInjection::kBreakOnNext;
     EXPECT_EQ(Status::Unknown(),
               writer.Write(std::as_bytes(std::span("No more writes, okay?")))
                   .status());
-    writer.Flush();
+    writer.Flush().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 }
 

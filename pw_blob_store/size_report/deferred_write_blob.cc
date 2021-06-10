@@ -51,16 +51,19 @@ int main() {
       std::memset((void*)working_buffer, sizeof(working_buffer), 0x55);
   is_set = (result != nullptr);
 
-  test_kvs.Init();
+  test_kvs.Init().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   unsigned kvs_value = 42;
-  test_kvs.Put("example_key", kvs_value);
+  test_kvs.Put("example_key", kvs_value)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   kvs_entry_count = test_kvs.size();
 
   unsigned read_value = 0;
-  test_kvs.Get("example_key", &read_value);
-  test_kvs.Delete("example_key");
+  test_kvs.Get("example_key", &read_value)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  test_kvs.Delete("example_key")
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   auto val = pw::kvs::FlashTestPartition().PartitionAddressToMcuAddress(0);
   PW_LOG_INFO("Use the variable. %u", unsigned(*val));
@@ -81,22 +84,23 @@ int main() {
 
   pw::blob_store::BlobStoreBuffer<kBufferSize> blob(
       name, pw::kvs::FlashTestPartition(), nullptr, test_kvs, kBufferSize);
-  blob.Init();
+  blob.Init().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Use writer.
   pw::blob_store::BlobStore::DeferredWriter writer(blob);
-  writer.Open();
-  writer.Write(write_data);
-  writer.Flush();
-  writer.Close();
+  writer.Open().IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  writer.Write(write_data)
+      .IgnoreError();            // TODO(pwbug/387): Handle Status properly
+  writer.Flush().IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  writer.Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Use reader.
   pw::blob_store::BlobStore::BlobReader reader(blob);
-  reader.Open();
+  reader.Open().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   pw::Result<pw::ConstByteSpan> get_result = reader.GetMemoryMappedBlob();
   PW_LOG_INFO("%d", get_result.ok());
   auto reader_result = reader.Read(read_span);
-  reader.Close();
+  reader.Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   PW_LOG_INFO("%d", reader_result.ok());
 
   // End of deferred blob **********************

@@ -28,7 +28,8 @@ FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
       Block::Init(region, &block),
       "Failed to initialize FreeListHeap region; misaligned or too small");
 
-  freelist_.AddChunk(BlockToSpan(block));
+  freelist_.AddChunk(BlockToSpan(block))
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   region_ = region;
   heap_stats_.total_bytes = region.size();
@@ -42,7 +43,8 @@ void* FreeListHeap::Allocate(size_t size) {
   if (chunk.data() == nullptr) {
     return nullptr;
   }
-  freelist_.RemoveChunk(chunk);
+  freelist_.RemoveChunk(chunk)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Block* chunk_block = Block::FromUsableSpace(chunk.data());
 
@@ -52,7 +54,8 @@ void* FreeListHeap::Allocate(size_t size) {
   Block* leftover;
   auto status = chunk_block->Split(size, &leftover);
   if (status == PW_STATUS_OK) {
-    freelist_.AddChunk(BlockToSpan(leftover));
+    freelist_.AddChunk(BlockToSpan(leftover))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   chunk_block->MarkUsed();
@@ -92,19 +95,24 @@ void FreeListHeap::Free(void* ptr) {
 
   if (prev != nullptr && !prev->Used()) {
     // Remove from freelist and merge
-    freelist_.RemoveChunk(BlockToSpan(prev));
-    chunk_block->MergePrev();
+    freelist_.RemoveChunk(BlockToSpan(prev))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    chunk_block->MergePrev()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // chunk_block is now invalid; prev now encompasses it.
     chunk_block = prev;
   }
 
   if (next != nullptr && !next->Used()) {
-    freelist_.RemoveChunk(BlockToSpan(next));
-    chunk_block->MergeNext();
+    freelist_.RemoveChunk(BlockToSpan(next))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    chunk_block->MergeNext()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   // Add back to the freelist
-  freelist_.AddChunk(BlockToSpan(chunk_block));
+  freelist_.AddChunk(BlockToSpan(chunk_block))
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   heap_stats_.bytes_allocated -= size_freed;
   heap_stats_.cumulative_freed += size_freed;

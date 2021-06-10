@@ -61,7 +61,10 @@ class RawServerReaderWriter : private internal::Responder {
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
 
   // Releases a buffer acquired from PayloadBuffer() without sending any data.
-  void ReleaseBuffer() { ReleasePayloadBuffer(); }
+  void ReleaseBuffer() {
+    ReleasePayloadBuffer()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
 
   // Sends a response packet with the given raw payload. The payload can either
   // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary

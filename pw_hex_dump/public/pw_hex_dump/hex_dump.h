@@ -97,10 +97,14 @@ class FormattedHexDumper {
                  .prefix_mode = AddressMode::kOffset};
 
   FormattedHexDumper() = default;
-  FormattedHexDumper(std::span<char> dest) { SetLineBuffer(dest); }
+  FormattedHexDumper(std::span<char> dest) {
+    SetLineBuffer(dest)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
   FormattedHexDumper(std::span<char> dest, Flags config_flags)
       : flags(config_flags) {
-    SetLineBuffer(dest);
+    SetLineBuffer(dest)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   // TODO(pwbug/218): Add iterator support.

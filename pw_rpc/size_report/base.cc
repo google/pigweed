@@ -27,8 +27,10 @@ int main() {
   PW_LOG_INFO("We care about optimizing: %d", *unoptimizable);
 
   std::byte packet_buffer[128];
-  pw::sys_io::ReadBytes(packet_buffer);
-  pw::sys_io::WriteBytes(packet_buffer);
+  pw::sys_io::ReadBytes(packet_buffer)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  pw::sys_io::WriteBytes(packet_buffer)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   return static_cast<int>(packet_buffer[92]);
 }

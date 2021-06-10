@@ -30,7 +30,8 @@ Status RawServerReaderWriter::Write(ConstByteSpan response) {
   std::span<std::byte> buffer = AcquirePayloadBuffer();
 
   if (response.size() > buffer.size()) {
-    ReleasePayloadBuffer();
+    ReleasePayloadBuffer()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return Status::OutOfRange();
   }
 

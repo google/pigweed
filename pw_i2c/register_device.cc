@@ -110,7 +110,8 @@ Status RegisterDevice::WriteRegisters(
       break;
 
     case 4:
-      PutRegisterData32InByteBuilder(builder, register_data, order_);
+      PutRegisterData32InByteBuilder(builder, register_data, order_)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       break;
 
     default:

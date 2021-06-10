@@ -26,7 +26,9 @@
 
 #include "pw_string/format.h"
 
-#define FORMAT_CASE(...) pw::string::Format(buffer, __VA_ARGS__)
+#define FORMAT_CASE(...)                  \
+  pw::string::Format(buffer, __VA_ARGS__) \
+      .IgnoreError()  // TODO(pwbug/387): Handle Status properly
 
 #else  // std::snprintf
 

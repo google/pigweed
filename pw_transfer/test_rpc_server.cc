@@ -94,7 +94,8 @@ void RunServer() {
   rpc::system_server::Server().RegisterService(transfer_service);
 
   PW_LOG_INFO("Starting pw_rpc server");
-  rpc::system_server::Start();
+  rpc::system_server::Start()
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 }
 
 }  // namespace

@@ -222,14 +222,12 @@ reduce visual clutter and succinctly highlight the intended behavior.
 
 Unused result warnings
 ----------------------
-If the ``PW_STATUS_CHECK_IF_USED`` option is enabled, ``pw::Status`` objects
+If the ``PW_STATUS_CFG_CHECK_IF_USED`` option is enabled, ``pw::Status`` objects
 returned from function calls must be used or it is a compilation error. To
 silence these warnings call ``IgnoreError()`` on the returned status object.
-
-``PW_STATUS_CHECK_IF_USED`` defaults to off. Pigweed and projects that use it
+``PW_STATUS_CFG_CHECK_IF_USED`` defaults to off. Pigweed and projects that use it
 will be updated to compile with this option enabled. After all projects have
-migrated, unused result warnings will be enabled unconditionally. See
-`pwbug/387 <https://bugs.chromium.org/p/pigweed/issues/detail?id=387>`_.
+migrated, unused result warnings will be enabled unconditionally.
 
 C compatibility
 ---------------

@@ -44,7 +44,8 @@ constexpr EntryFormat default_format{.magic = 0x749c361e,
 
 TEST(KvsFuzz, FuzzTest) {
   FlashPartition& test_partition = FlashTestPartition();
-  test_partition.Erase();
+  test_partition.Erase()
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_(&test_partition,
                                                            default_format);

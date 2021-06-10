@@ -77,8 +77,10 @@ int main(int argc, char** argv) {  // Take filename as arg
   }
 
   // Register trigger callback
-  pw::trace::Callbacks::Instance().RegisterEventCallback(
-      TraceEventCallback, pw::trace::CallbacksImpl::kCallOnEveryEvent);
+  pw::trace::Callbacks::Instance()
+      .RegisterEventCallback(TraceEventCallback,
+                             pw::trace::CallbacksImpl::kCallOnEveryEvent)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Ensure tracing is off at start, the trigger will turn it on.
   PW_TRACE_SET_ENABLED(false);

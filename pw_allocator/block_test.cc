@@ -136,10 +136,12 @@ TEST(Block, CanSplitMidBlock) {
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* block2 = nullptr;
-  block->Split(kSplit1, &block2);
+  block->Split(kSplit1, &block2)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Block* block3 = nullptr;
-  block->Split(kSplit2, &block3);
+  block->Split(kSplit2, &block3)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(block->Next(), block3);
   EXPECT_EQ(block3->Next(), block2);
@@ -282,10 +284,12 @@ TEST(Block, CanMergeWithNextBlock) {
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* block2 = nullptr;
-  block->Split(kSplit1, &block2);
+  block->Split(kSplit1, &block2)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Block* block3 = nullptr;
-  block->Split(kSplit2, &block3);
+  block->Split(kSplit2, &block3)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(block3->MergeNext(), OkStatus());
 
@@ -310,7 +314,8 @@ TEST(Block, CannotMergeWithFirstOrLastBlock) {
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
-  block->Split(512, &next_block);
+  block->Split(512, &next_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(next_block->MergeNext(), Status::OutOfRange());
   EXPECT_EQ(block->MergePrev(), Status::OutOfRange());
@@ -326,7 +331,8 @@ TEST(Block, CannotMergeUsedBlock) {
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
 
   Block* next_block = nullptr;
-  block->Split(512, &next_block);
+  block->Split(512, &next_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   block->MarkUsed();
   EXPECT_EQ(block->MergeNext(), Status::FailedPrecondition());
@@ -341,10 +347,12 @@ TEST(Block, CanCheckValidBlock) {
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &first_block), OkStatus());
 
   Block* second_block = nullptr;
-  first_block->Split(512, &second_block);
+  first_block->Split(512, &second_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Block* third_block = nullptr;
-  second_block->Split(256, &third_block);
+  second_block->Split(256, &third_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(first_block->IsValid(), true);
   EXPECT_EQ(second_block->IsValid(), true);
@@ -359,13 +367,16 @@ TEST(Block, CanCheckInalidBlock) {
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &first_block), OkStatus());
 
   Block* second_block = nullptr;
-  first_block->Split(512, &second_block);
+  first_block->Split(512, &second_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Block* third_block = nullptr;
-  second_block->Split(256, &third_block);
+  second_block->Split(256, &third_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Block* fourth_block = nullptr;
-  third_block->Split(128, &fourth_block);
+  third_block->Split(128, &fourth_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   std::byte* next_ptr = reinterpret_cast<std::byte*>(first_block);
   memcpy(next_ptr, second_block, sizeof(void*));
@@ -397,10 +408,12 @@ TEST(Block, CanPoisonBlock) {
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &first_block), OkStatus());
 
   Block* second_block = nullptr;
-  first_block->Split(512, &second_block);
+  first_block->Split(512, &second_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Block* third_block = nullptr;
-  second_block->Split(256, &third_block);
+  second_block->Split(256, &third_block)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(first_block->IsValid(), true);
   EXPECT_EQ(second_block->IsValid(), true);

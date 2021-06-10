@@ -34,18 +34,21 @@ class DeferredWriteTest : public ::testing::Test {
   DeferredWriteTest() : flash_(kFlashAlignment), partition_(&flash_) {}
 
   void InitFlashTo(std::span<const std::byte> contents) {
-    partition_.Erase();
+    partition_.Erase()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
   void InitBufferToRandom(uint64_t seed) {
-    partition_.Erase();
+    partition_.Erase()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     random::XorShiftStarRng64 rng(seed);
-    rng.Get(buffer_);
+    rng.Get(buffer_).IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   void InitBufferToFill(char fill) {
-    partition_.Erase();
+    partition_.Erase()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     std::memset(buffer_.data(), fill, buffer_.size());
   }
 

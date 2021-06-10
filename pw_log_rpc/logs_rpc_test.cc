@@ -68,7 +68,9 @@ TEST_F(LogsService, Get) {
 
   // Flush all logs from the buffer, then close the RPC.
   AddLogs(kLogEntryCount);
-  GetLogs(context).Flush();
+  GetLogs(context)
+      .Flush()
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   GetLogs(context).Finish();
 
   EXPECT_TRUE(context.done());
@@ -89,7 +91,9 @@ TEST_F(LogsService, GetMultiple) {
 
   for (size_t i = 0; i < kFlushCount; i++) {
     AddLogs(kLogEntryCount);
-    GetLogs(context).Flush();
+    GetLogs(context)
+        .Flush()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
   GetLogs(context).Finish();
 
@@ -104,7 +108,9 @@ TEST_F(LogsService, NoEntriesOnEmptyQueue) {
 
   // Invoking flush with no logs in the queue should behave like a no-op.
   context.call(rpc_buffer);
-  GetLogs(context).Flush();
+  GetLogs(context)
+      .Flush()
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   GetLogs(context).Finish();
 
   EXPECT_TRUE(context.done());
@@ -120,7 +126,9 @@ TEST_F(LogsService, QueueError) {
   // Generate failure on log queue.
   log_queue_tester.SetPopStatus(Status::Internal());
   context.call(rpc_buffer);
-  GetLogs(context).Flush();
+  GetLogs(context)
+      .Flush()
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   GetLogs(context).Finish();
 
   EXPECT_TRUE(context.done());

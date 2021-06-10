@@ -46,7 +46,7 @@ pw_source_set("pw_status") {
 }
 
 config("check_if_used_config") {
-  defines = [ "PW_STATUS_CHECK_IF_USED=1" ]
+  defines = [ "PW_STATUS_CFG_CHECK_IF_USED=1" ]
   visibility = [ ":*" ]
 }
 

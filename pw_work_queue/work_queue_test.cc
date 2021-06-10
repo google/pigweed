@@ -40,16 +40,21 @@ TEST(WorkQueue, PingPongOneRequestType) {
 
   for (int i = 0; i < kPingPongs; ++i) {
     // Ping: throw work at the queue that will increment our counter.
-    work_queue.PushWork([&context] {
-      context.counter++;
-      PW_LOG_INFO("Send pong...");
-      context.worker_ping.release();
-    });
+    work_queue
+        .PushWork([&context] {
+          context.counter++;
+          PW_LOG_INFO("Send pong...");
+          context.worker_ping.release();
+        })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // Throw a distraction in the queue.
-    work_queue.PushWork([] {
-      PW_LOG_INFO("I'm a random task in the work queue; nothing to see here!");
-    });
+    work_queue
+        .PushWork([] {
+          PW_LOG_INFO(
+              "I'm a random task in the work queue; nothing to see here!");
+        })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // Pong: wait for the callback to notify us from the worker thread.
     context.worker_ping.acquire();
@@ -79,26 +84,34 @@ TEST(WorkQueue, PingPongTwoRequestTypesWithExtraRequests) {
   // Run a bunch of work items in the queue.
   for (int i = 0; i < kPingPongs; ++i) {
     // Other requests...
-    work_queue.PushWork([] { PW_LOG_INFO("Chopping onions"); });
+    work_queue.PushWork([] { PW_LOG_INFO("Chopping onions"); })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // Ping A: throw work at the queue that will increment our counter.
-    work_queue.PushWork([&context_a] {
-      context_a.counter++;
-      context_a.worker_ping.release();
-    });
+    work_queue
+        .PushWork([&context_a] {
+          context_a.counter++;
+          context_a.worker_ping.release();
+        })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // Other requests...
-    work_queue.PushWork([] { PW_LOG_INFO("Dicing carrots"); });
-    work_queue.PushWork([] { PW_LOG_INFO("Blanching spinach"); });
+    work_queue.PushWork([] { PW_LOG_INFO("Dicing carrots"); })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    work_queue.PushWork([] { PW_LOG_INFO("Blanching spinach"); })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // Ping B: throw work at the queue that will increment our counter.
-    work_queue.PushWork([&context_b] {
-      context_b.counter++;
-      context_b.worker_ping.release();
-    });
+    work_queue
+        .PushWork([&context_b] {
+          context_b.counter++;
+          context_b.worker_ping.release();
+        })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // Other requests...
-    work_queue.PushWork([] { PW_LOG_INFO("Peeling potatoes"); });
+    work_queue.PushWork([] { PW_LOG_INFO("Peeling potatoes"); })
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     // Pong A & B: wait for the callbacks to notify us from the worker thread.
     context_a.worker_ping.acquire();

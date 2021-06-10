@@ -34,7 +34,9 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
     // If the call being assigned is active, replace it in the client's list
     // with a reference to the current object.
     other.Unregister();
-    other.channel_->client()->RegisterCall(*this);
+    other.channel_->client()
+        ->RegisterCall(*this)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   return *this;
@@ -42,7 +44,8 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
 
 void BaseClientCall::Cancel() {
   if (active()) {
-    channel_->Send(NewPacket(PacketType::CANCEL));
+    channel_->Send(NewPacket(PacketType::CANCEL))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 }
 
@@ -69,7 +72,11 @@ Packet BaseClientCall::NewPacket(PacketType type,
   return Packet(type, channel_->id(), service_id_, method_id_, payload);
 }
 
-void BaseClientCall::Register() { channel_->client()->RegisterCall(*this); }
+void BaseClientCall::Register() {
+  channel_->client()
+      ->RegisterCall(*this)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+}
 
 void BaseClientCall::Unregister() {
   if (active()) {

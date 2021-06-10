@@ -68,7 +68,7 @@ KeyValueStoreBuffer<kKvsTestMaxEntries, kFlashTestSectors, kKvsTestRedundancy>
 
 KeyValueStore& TestKvs() {
   if (!test_kvs.initialized()) {
-    test_kvs.Init();
+    test_kvs.Init().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   return test_kvs;

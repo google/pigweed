@@ -334,7 +334,8 @@ void DeringTest(bool preload) {
       // wrapped.
       for (i = 0; i < (kTotalEntryCount * (main_loop_count % 64u)); i++) {
         memset(single_entry_buffer, i, sizeof(single_entry_buffer));
-        ring.PushBack(single_entry_buffer);
+        ring.PushBack(single_entry_buffer)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
     }
 
@@ -352,7 +353,8 @@ void DeringTest(bool preload) {
       }
 
       // The ring buffer internally pushes the varint size byte.
-      ring.PushBack(single_entry_buffer);
+      ring.PushBack(single_entry_buffer)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
 
     // Check values before doing the dering.

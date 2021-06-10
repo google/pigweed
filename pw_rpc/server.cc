@@ -48,7 +48,8 @@ bool DecodePacket(ChannelOutput& interface,
     // Only send an ERROR response if a valid channel ID was provided.
     if (packet.channel_id() != Channel::kUnassignedChannelId) {
       internal::Channel temp_channel(packet.channel_id(), &interface);
-      temp_channel.Send(Packet::ServerError(packet, Status::DataLoss()));
+      temp_channel.Send(Packet::ServerError(packet, Status::DataLoss()))
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
     return false;
   }
@@ -62,7 +63,9 @@ Server::~Server() {
   // Since the responders remove themselves from the server in
   // CloseAndSendResponse(), close responders until no responders remain.
   while (!responders_.empty()) {
-    responders_.front().CloseAndSendResponse(OkStatus());
+    responders_.front()
+        .CloseAndSendResponse(OkStatus())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 }
 
@@ -84,16 +87,18 @@ Status Server::ProcessPacket(std::span<const byte> data,
     if (channel == nullptr) {
       // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error.
       internal::Channel temp_channel(packet.channel_id(), &interface);
-      temp_channel.Send(
-          Packet::ServerError(packet, Status::ResourceExhausted()));
-      return OkStatus();  // OK since the packet was handled
+      temp_channel
+          .Send(Packet::ServerError(packet, Status::ResourceExhausted()))
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+      return OkStatus();   // OK since the packet was handled
     }
   }
 
   const auto [service, method] = FindMethod(packet);
 
   if (method == nullptr) {
-    channel->Send(Packet::ServerError(packet, Status::NotFound()));
+    channel->Send(Packet::ServerError(packet, Status::NotFound()))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return OkStatus();
   }
 
@@ -132,7 +137,8 @@ Status Server::ProcessPacket(std::span<const byte> data,
       HandleClientStreamPacket(packet, *channel, responder);
       break;
     default:
-      channel->Send(Packet::ServerError(packet, Status::Unimplemented()));
+      channel->Send(Packet::ServerError(packet, Status::Unimplemented()))
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       PW_LOG_WARN("Unable to handle packet of type %u",
                   unsigned(packet.type()));
   }
@@ -159,17 +165,20 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
   if (responder == responders_.end()) {
     PW_LOG_DEBUG(
         "Received client stream packet for method that is not pending");
-    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
+    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return;
   }
 
   if (!responder->has_client_stream()) {
-    channel.Send(Packet::ServerError(packet, Status::InvalidArgument()));
+    channel.Send(Packet::ServerError(packet, Status::InvalidArgument()))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return;
   }
 
   if (!responder->client_stream_open()) {
-    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
+    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return;
   }
 
@@ -184,7 +193,8 @@ void Server::HandleCancelPacket(const Packet& packet,
                                 internal::Channel& channel,
                                 ResponderIterator responder) const {
   if (responder == responders_.end()) {
-    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
+    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     PW_LOG_DEBUG("Received CANCEL packet for method that is not pending");
   } else {
     responder->HandleError(Status::Cancelled());

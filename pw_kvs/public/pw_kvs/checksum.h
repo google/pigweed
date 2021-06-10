@@ -90,7 +90,10 @@ class IgnoreChecksum final : public ChecksumAlgorithm {
 template <size_t kAlignmentBytes, size_t kBufferSize = kAlignmentBytes>
 class AlignedChecksum : public ChecksumAlgorithm {
  public:
-  void Update(std::span<const std::byte> data) final { writer_.Write(data); }
+  void Update(std::span<const std::byte> data) final {
+    writer_.Write(data)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
 
  protected:
   constexpr AlignedChecksum(std::span<const std::byte> state)
@@ -104,7 +107,7 @@ class AlignedChecksum : public ChecksumAlgorithm {
   static_assert(kBufferSize >= kAlignmentBytes);
 
   void Finalize() final {
-    writer_.Flush();
+    writer_.Flush().IgnoreError();  // TODO(pwbug/387): Handle Status properly
     FinalizeAligned();
   }
 

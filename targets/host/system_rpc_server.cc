@@ -50,7 +50,8 @@ void set_socket_port(uint16_t new_socket_port) {
 void Init() {
   log_basic::SetOutput([](std::string_view log) {
     std::fprintf(stderr, "%.*s\n", static_cast<int>(log.size()), log.data());
-    hdlc::WriteUIFrame(1, std::as_bytes(std::span(log)), socket_stream);
+    hdlc::WriteUIFrame(1, std::as_bytes(std::span(log)), socket_stream)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 
   PW_CHECK_OK(socket_stream.Serve(socket_port));
@@ -71,7 +72,8 @@ Status Start() {
         if (auto result = decoder.Process(byte); result.ok()) {
           hdlc::Frame& frame = result.value();
           if (frame.address() == hdlc::kDefaultRpcAddress) {
-            server.ProcessPacket(frame.data(), hdlc_channel_output);
+            server.ProcessPacket(frame.data(), hdlc_channel_output)
+                .IgnoreError();  // TODO(pwbug/387): Handle Status properly
           }
         }
       }

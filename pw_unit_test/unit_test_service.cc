@@ -38,7 +38,8 @@ void UnitTestService::Run(ServerContext&,
   while ((status = decoder.Next()).ok()) {
     switch (static_cast<TestRunRequest::Fields>(decoder.FieldNumber())) {
       case TestRunRequest::Fields::REPORT_PASSED_EXPECTATIONS:
-        decoder.ReadBool(&verbose_);
+        decoder.ReadBool(&verbose_)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         break;
 
       case TestRunRequest::Fields::TEST_SUITE: {
@@ -52,7 +53,8 @@ void UnitTestService::Run(ServerContext&,
         } else {
           PW_LOG_ERROR("Maximum of %u test suite filters supported",
                        static_cast<unsigned>(suites_to_run.max_size()));
-          writer_.Finish(Status::InvalidArgument());
+          writer_.Finish(Status::InvalidArgument())
+              .IgnoreError();  // TODO(pwbug/387): Handle Status properly
           return;
         }
 
@@ -62,7 +64,8 @@ void UnitTestService::Run(ServerContext&,
   }
 
   if (status != Status::OutOfRange()) {
-    writer_.Finish(status);
+    writer_.Finish(status)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return;
   }
 
@@ -80,7 +83,7 @@ void UnitTestService::Run(ServerContext&,
 
   PW_LOG_INFO("Unit test run complete");
 
-  writer_.Finish();
+  writer_.Finish().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 }
 
 void UnitTestService::WriteTestRunStart() {
@@ -92,10 +95,14 @@ void UnitTestService::WriteTestRunStart() {
 void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
   WriteEvent([&](Event::StreamEncoder& event) {
     TestRunEnd::StreamEncoder test_run_end = event.GetTestRunEndEncoder();
-    test_run_end.WritePassed(summary.passed_tests);
-    test_run_end.WriteFailed(summary.failed_tests);
-    test_run_end.WriteSkipped(summary.skipped_tests);
-    test_run_end.WriteDisabled(summary.disabled_tests);
+    test_run_end.WritePassed(summary.passed_tests)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    test_run_end.WriteFailed(summary.failed_tests)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    test_run_end.WriteSkipped(summary.skipped_tests)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    test_run_end.WriteDisabled(summary.disabled_tests)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 }
 
@@ -103,15 +110,19 @@ void UnitTestService::WriteTestCaseStart(const TestCase& test_case) {
   WriteEvent([&](Event::StreamEncoder& event) {
     TestCaseDescriptor::StreamEncoder descriptor =
         event.GetTestCaseStartEncoder();
-    descriptor.WriteSuiteName(test_case.suite_name);
-    descriptor.WriteTestName(test_case.test_name);
-    descriptor.WriteFileName(test_case.file_name);
+    descriptor.WriteSuiteName(test_case.suite_name)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    descriptor.WriteTestName(test_case.test_name)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    descriptor.WriteFileName(test_case.file_name)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 }
 
 void UnitTestService::WriteTestCaseEnd(TestResult result) {
   WriteEvent([&](Event::StreamEncoder& event) {
-    event.WriteTestCaseEnd(static_cast<TestCaseResult>(result));
+    event.WriteTestCaseEnd(static_cast<TestCaseResult>(result))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 }
 
@@ -119,9 +130,12 @@ void UnitTestService::WriteTestCaseDisabled(const TestCase& test_case) {
   WriteEvent([&](Event::StreamEncoder& event) {
     TestCaseDescriptor::StreamEncoder descriptor =
         event.GetTestCaseDisabledEncoder();
-    descriptor.WriteSuiteName(test_case.suite_name);
-    descriptor.WriteTestName(test_case.test_name);
-    descriptor.WriteFileName(test_case.file_name);
+    descriptor.WriteSuiteName(test_case.suite_name)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    descriptor.WriteTestName(test_case.test_name)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    descriptor.WriteFileName(test_case.file_name)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 }
 
@@ -134,11 +148,15 @@ void UnitTestService::WriteTestCaseExpectation(
   WriteEvent([&](Event::StreamEncoder& event) {
     TestCaseExpectation::StreamEncoder test_case_expectation =
         event.GetTestCaseExpectationEncoder();
-    test_case_expectation.WriteExpression(expectation.expression);
-    test_case_expectation.WriteEvaluatedExpression(
-        expectation.evaluated_expression);
-    test_case_expectation.WriteLineNumber(expectation.line_number);
-    test_case_expectation.WriteSuccess(expectation.success);
+    test_case_expectation.WriteExpression(expectation.expression)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    test_case_expectation
+        .WriteEvaluatedExpression(expectation.evaluated_expression)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    test_case_expectation.WriteLineNumber(expectation.line_number)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    test_case_expectation.WriteSuccess(expectation.success)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 }
 

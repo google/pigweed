@@ -37,7 +37,8 @@ class UnitTestService final : public generated::UnitTest<UnitTestService> {
     Event::MemoryEncoder event(writer_.PayloadBuffer());
     event_writer(event);
     if (event.status().ok()) {
-      writer_.Write(event);
+      writer_.Write(event)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
   }
 

@@ -72,7 +72,7 @@ Status BlobStore::LoadMetadata() {
 
   if (!ValidateChecksum().ok()) {
     PW_LOG_ERROR("BlobStore init - Invalidating blob with invalid checksum");
-    Invalidate();
+    Invalidate().IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return Status::DataLoss();
   }
 
@@ -96,7 +96,7 @@ Status BlobStore::OpenWrite() {
 
   writer_open_ = true;
 
-  Invalidate();
+  Invalidate().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   return OkStatus();
 }
@@ -162,7 +162,7 @@ Status BlobStore::CloseWrite() {
     }
 
     if (!ValidateChecksum().ok()) {
-      Invalidate();
+      Invalidate().IgnoreError();  // TODO(pwbug/387): Handle Status properly
       return Status::DataLoss();
     }
 
@@ -443,7 +443,7 @@ Status BlobStore::Erase() {
     return OkStatus();
   }
 
-  Invalidate();
+  Invalidate().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   Status status = partition_.Erase();
 

@@ -72,7 +72,8 @@ int main() {
   pw::rpc::system_server::Server().RegisterService(unit_test_service);
 
   PW_LOG_INFO("Starting pw_rpc server");
-  pw::rpc::system_server::Start();
+  pw::rpc::system_server::Start()
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   return 0;
 }

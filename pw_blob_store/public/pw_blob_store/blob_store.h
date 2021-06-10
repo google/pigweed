@@ -60,7 +60,7 @@ class BlobStore {
     BlobWriter& operator=(const BlobWriter&) = delete;
     virtual ~BlobWriter() {
       if (open_) {
-        Close();
+        Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
     }
 
@@ -188,7 +188,7 @@ class BlobStore {
     BlobReader& operator=(const BlobReader&) = delete;
     ~BlobReader() {
       if (open_) {
-        Close();
+        Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
     }
 

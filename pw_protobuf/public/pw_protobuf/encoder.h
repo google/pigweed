@@ -78,7 +78,9 @@ class StreamEncoder {
         parent_(nullptr),
         nested_field_number_(0),
         memory_writer_(scratch_buffer) {}
-  ~StreamEncoder() { Finalize(); }
+  ~StreamEncoder() {
+    Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   StreamEncoder& operator=(const StreamEncoder& other) = delete;
@@ -88,7 +90,8 @@ class StreamEncoder {
   // parent_ pointer to become invalid.
   StreamEncoder& operator=(StreamEncoder&& other) = delete;
 
-  // Forwards the conservative write limit of the underlying pw::stream::Writer.
+  // Forwards the conservative write limit of the underlying
+  // pw::stream::Writer.
   //
   // Precondition: Encoder has no active child encoder.
   size_t ConservativeWriteLimit() const {
@@ -452,13 +455,17 @@ class StreamEncoder {
       return status_;
     }
 
-    WriteVarint(MakeKey(field_number, WireType::kDelimited));
-    WriteVarint(payload_size);
+    WriteVarint(MakeKey(field_number, WireType::kDelimited))
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    WriteVarint(payload_size)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     for (T value : values) {
       if (encode_type == VarintEncodeType::kZigZag) {
-        WriteZigzagVarint(static_cast<std::make_signed_t<T>>(value));
+        WriteZigzagVarint(static_cast<std::make_signed_t<T>>(value))
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       } else {
-        WriteVarint(value);
+        WriteVarint(value)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       }
     }
 
@@ -530,7 +537,9 @@ class StreamEncoder {
 class MemoryEncoder : public StreamEncoder {
  public:
   constexpr MemoryEncoder(ByteSpan dest) : StreamEncoder(*this, dest) {}
-  ~MemoryEncoder() { Finalize(); }
+  ~MemoryEncoder() {
+    Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   MemoryEncoder(const MemoryEncoder& other) = delete;

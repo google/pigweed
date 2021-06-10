@@ -55,7 +55,8 @@ pw::Status DumpTraceBufferToLog() {
   PW_LOG_INFO("[TRACE] begin");
   while (trace_buffer->PeekFront(std::span(entry_buffer).subspan(1),
                                  &bytes_read) != pw::Status::OutOfRange()) {
-    trace_buffer->PopFront();
+    trace_buffer->PopFront()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     entry_buffer[0] = static_cast<std::byte>(bytes_read);
     // The entry buffer is formatted as (size, entry) with an extra byte as
     // a header to the entry. The calcuation of bytes_read + 1 represents

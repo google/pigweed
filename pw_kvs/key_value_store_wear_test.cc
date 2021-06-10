@@ -73,7 +73,8 @@ TEST_F(WearTest, RepeatedLargeEntry) {
   EXPECT_GE(partition_.min_erase_count(), 7u);
   EXPECT_LE(partition_.max_erase_count(), partition_.min_erase_count() + 1u);
 
-  partition_.SaveStorageStats(kvs_, "WearTest RepeatedLargeEntry");
+  partition_.SaveStorageStats(kvs_, "WearTest RepeatedLargeEntry")
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 }
 
 // Test a KVS with a number of entries, several sectors that are nearly full

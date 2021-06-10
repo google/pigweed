@@ -26,8 +26,10 @@ Vector<std::byte, 64> EncodeRequest(int integer, Status status) {
   Vector<std::byte, 64> buffer(64);
   test::TestRequest::MemoryEncoder test_request(buffer);
 
-  test_request.WriteInteger(integer);
-  test_request.WriteStatusCode(status.code());
+  test_request.WriteInteger(integer)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  test_request.WriteStatusCode(status.code())
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(OkStatus(), test_request.status());
   buffer.resize(test_request.size());
@@ -38,7 +40,8 @@ Vector<std::byte, 64> EncodeResponse(int number) {
   Vector<std::byte, 64> buffer(64);
   test::TestStreamResponse::MemoryEncoder test_response(buffer);
 
-  test_response.WriteNumber(number);
+  test_response.WriteNumber(number)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(OkStatus(), test_response.status());
   buffer.resize(test_response.size());
@@ -62,7 +65,8 @@ class TestService final : public generated::TestService<TestService> {
     }
 
     TestResponse::MemoryEncoder test_response(response);
-    test_response.WriteValue(integer + 1);
+    test_response.WriteValue(integer + 1)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
     return StatusWithSize(status, test_response.size());
   }
@@ -78,19 +82,24 @@ class TestService final : public generated::TestService<TestService> {
       ByteSpan buffer = writer.PayloadBuffer();
 
       TestStreamResponse::MemoryEncoder test_stream_response(buffer);
-      test_stream_response.WriteNumber(i);
-      writer.Write(test_stream_response);
+      test_stream_response.WriteNumber(i)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+      writer.Write(test_stream_response)
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     }
 
-    writer.Finish(status);
+    writer.Finish(status)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   void TestClientStreamRpc(ServerContext&, RawServerReader& reader) {
     last_reader_ = std::move(reader);
 
     last_reader_.set_on_next([this](ConstByteSpan payload) {
-      last_reader_.Finish(EncodeResponse(ReadInteger(payload)),
-                          Status::Unauthenticated());
+      last_reader_
+          .Finish(EncodeResponse(ReadInteger(payload)),
+                  Status::Unauthenticated())
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     });
   }
 
@@ -99,8 +108,10 @@ class TestService final : public generated::TestService<TestService> {
     last_reader_writer_ = std::move(reader_writer);
 
     last_reader_writer_.set_on_next([this](ConstByteSpan payload) {
-      last_reader_writer_.Write(EncodeResponse(ReadInteger(payload)));
-      last_reader_writer_.Finish(Status::NotFound());
+      last_reader_writer_.Write(EncodeResponse(ReadInteger(payload)))
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+      last_reader_writer_.Finish(Status::NotFound())
+          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     });
   }
 
@@ -181,7 +192,8 @@ TEST(RawCodegen, Server_InvokeUnaryRpc) {
     switch (static_cast<test::TestResponse::Fields>(decoder.FieldNumber())) {
       case test::TestResponse::Fields::VALUE: {
         int32_t value;
-        decoder.ReadInt32(&value);
+        decoder.ReadInt32(&value)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         EXPECT_EQ(value, 124);
         break;
       }
@@ -203,7 +215,8 @@ TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
         static_cast<test::TestStreamResponse::Fields>(decoder.FieldNumber())) {
       case test::TestStreamResponse::Fields::NUMBER: {
         int32_t value;
-        decoder.ReadInt32(&value);
+        decoder.ReadInt32(&value)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         EXPECT_EQ(value, 4);
         break;
       }
@@ -221,7 +234,8 @@ int32_t ReadResponseNumber(ConstByteSpan data) {
     switch (
         static_cast<test::TestStreamResponse::Fields>(decoder.FieldNumber())) {
       case test::TestStreamResponse::Fields::NUMBER: {
-        decoder.ReadInt32(&value);
+        decoder.ReadInt32(&value)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         break;
       }
       default:

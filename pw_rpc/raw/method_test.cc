@@ -111,10 +111,12 @@ void DecodeRawTestRequest(ConstByteSpan request) {
 
     switch (field) {
       case TestRequest::Fields::INTEGER:
-        decoder.ReadInt64(&last_request.integer);
+        decoder.ReadInt64(&last_request.integer)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         break;
       case TestRequest::Fields::STATUS_CODE:
-        decoder.ReadUint32(&last_request.status_code);
+        decoder.ReadUint32(&last_request.status_code)
+            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         break;
     }
   }
@@ -126,7 +128,8 @@ StatusWithSize AddFive(ServerContext&,
   DecodeRawTestRequest(request);
 
   TestResponse::MemoryEncoder test_response(response);
-  test_response.WriteValue(last_request.integer + 5);
+  test_response.WriteValue(last_request.integer + 5)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   ConstByteSpan payload(test_response);
 
   return StatusWithSize::Unauthenticated(payload.size());
@@ -153,8 +156,10 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
   std::byte buffer[16];
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
-  test_request.WriteInteger(456);
-  test_request.WriteStatusCode(7);
+  test_request.WriteInteger(456)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  test_request.WriteStatusCode(7)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   const RawMethod& method = std::get<0>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
@@ -177,8 +182,10 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   std::byte buffer[16];
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
-  test_request.WriteInteger(777);
-  test_request.WriteStatusCode(2);
+  test_request.WriteInteger(777)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  test_request.WriteStatusCode(2)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);

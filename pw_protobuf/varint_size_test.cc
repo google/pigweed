@@ -31,7 +31,7 @@ TEST(Encoder, NestedWriteSmallerThanVarintSize) {
   StreamEncoder nested = encoder.GetNestedEncoder(1);
   // 1 byte key + 1 byte size + 125 byte value = 127 byte nested length.
   EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<125>(0xaa)), OkStatus());
-  nested.Finalize();
+  nested.Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(encoder.status(), OkStatus());
 }
@@ -47,7 +47,7 @@ TEST(Encoder, NestedWriteLargerThanVarintSizeReturnsResourceExhausted) {
   EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<126>(0xaa)),
             Status::ResourceExhausted());
   EXPECT_EQ(nested.WriteUint32(3, 42), Status::ResourceExhausted());
-  nested.Finalize();
+  nested.Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }
@@ -64,7 +64,7 @@ TEST(Encoder, NestedMessageLargerThanVarintSizeReturnsResourceExhausted) {
   EXPECT_EQ(nested.WriteBytes(3, bytes::Initialized<60>(0xaa)), OkStatus());
   EXPECT_EQ(nested.WriteBytes(4, bytes::Initialized<60>(0xaa)),
             Status::ResourceExhausted());
-  nested.Finalize();
+  nested.Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }

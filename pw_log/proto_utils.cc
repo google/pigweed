@@ -28,14 +28,19 @@ Result<ConstByteSpan> EncodeTokenizedLog(pw::log_tokenized::Metadata metadata,
   // Encode message to the LogEntry protobuf.
   LogEntry::MemoryEncoder encoder(encode_buffer);
 
-  encoder.WriteMessage(tokenized_data);
-  encoder.WriteLineLevel(
-      (metadata.level() & PW_LOG_LEVEL_BITMASK) |
-      ((metadata.line_number() << PW_LOG_LEVEL_BITS) & ~PW_LOG_LEVEL_BITMASK));
+  encoder.WriteMessage(tokenized_data)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  encoder
+      .WriteLineLevel((metadata.level() & PW_LOG_LEVEL_BITMASK) |
+                      ((metadata.line_number() << PW_LOG_LEVEL_BITS) &
+                       ~PW_LOG_LEVEL_BITMASK))
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   if (metadata.flags() != 0) {
-    encoder.WriteFlags(metadata.flags());
+    encoder.WriteFlags(metadata.flags())
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
-  encoder.WriteTimestamp(ticks_since_epoch);
+  encoder.WriteTimestamp(ticks_since_epoch)
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);

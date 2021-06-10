@@ -48,49 +48,57 @@ class InvocationContext {
 
   void SendClientError(Status error) {
     std::byte packet[kNoPayloadPacketSizeBytes];
-    server_.ProcessPacket(Packet(PacketType::CLIENT_ERROR,
-                                 channel_.id(),
-                                 service_.id(),
-                                 kMethodId,
-                                 {},
-                                 error)
-                              .Encode(packet)
-                              .value(),
-                          output_);
+    server_
+        .ProcessPacket(Packet(PacketType::CLIENT_ERROR,
+                              channel_.id(),
+                              service_.id(),
+                              kMethodId,
+                              {},
+                              error)
+                           .Encode(packet)
+                           .value(),
+                       output_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   void SendCancel() {
     std::byte packet[kNoPayloadPacketSizeBytes];
-    server_.ProcessPacket(
-        Packet(PacketType::CANCEL, channel_.id(), service_.id(), kMethodId)
-            .Encode(packet)
-            .value(),
-        output_);
+    server_
+        .ProcessPacket(
+            Packet(PacketType::CANCEL, channel_.id(), service_.id(), kMethodId)
+                .Encode(packet)
+                .value(),
+            output_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
  protected:
   template <size_t kMaxPayloadSize = 32>
   void SendClientStream(ConstByteSpan payload) {
     std::byte packet[kNoPayloadPacketSizeBytes + 3 + kMaxPayloadSize];
-    server_.ProcessPacket(Packet(PacketType::CLIENT_STREAM,
-                                 channel_.id(),
-                                 service_.id(),
-                                 kMethodId,
-                                 payload)
-                              .Encode(packet)
-                              .value(),
-                          output_);
+    server_
+        .ProcessPacket(Packet(PacketType::CLIENT_STREAM,
+                              channel_.id(),
+                              service_.id(),
+                              kMethodId,
+                              payload)
+                           .Encode(packet)
+                           .value(),
+                       output_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   void SendClientStreamEnd() {
     std::byte packet[kNoPayloadPacketSizeBytes];
-    server_.ProcessPacket(Packet(PacketType::CLIENT_STREAM_END,
-                                 channel_.id(),
-                                 service_.id(),
-                                 kMethodId)
-                              .Encode(packet)
-                              .value(),
-                          output_);
+    server_
+        .ProcessPacket(Packet(PacketType::CLIENT_STREAM_END,
+                              channel_.id(),
+                              service_.id(),
+                              kMethodId)
+                           .Encode(packet)
+                           .value(),
+                       output_)
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
   template <typename... Args>

@@ -82,7 +82,8 @@ constexpr EntryFormat default_format{.magic = 0x5b9a341e,
 class EmptyInitializedKvs : public ::testing::Test {
  protected:
   EmptyInitializedKvs() : kvs_(&test_partition, default_format) {
-    test_partition.Erase();
+    test_partition.Erase()
+        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     ASSERT_EQ(OkStatus(), kvs_.Init());
   }
 
@@ -440,7 +441,8 @@ TEST_F(EmptyInitializedKvs, Basic) {
   EXPECT_EQ(test2, value2);
 
   // Delete other key
-  kvs_.Delete(keys[1]);
+  kvs_.Delete(keys[1])
+      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Verify it was erased
   EXPECT_EQ(kvs_.size(), 0u);
