@@ -138,6 +138,17 @@ pw_python_requirements
 Represents a set of local and PyPI requirements, with no associated source
 files. These targets serve the role of a ``requirements.txt`` file.
 
+When packages are installed by Pigweed, additional version constraints can be
+provided using the ``pw_build_PIP_CONSTRAINTS`` GN arg. This option should
+contain a list of paths to pass to the ``--constraint`` option of ``pip
+install``. This can be used to synchronize dependency upgrades across a project
+which facilitates reproducibility of builds.
+
+Note using multiple ``pw_python_requirements`` that install different versions
+of the same package will currently cause unpredictable results, while using
+constraints should have correct results (which may be an error indicating a
+conflict).
+
 .. _module-pw_build-python-dist:
 
 ---------------------

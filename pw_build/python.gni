@@ -23,6 +23,10 @@ declare_args() {
   # Python tasks, such as running tests and Pylint, are done in a single GN
   # toolchain to avoid unnecessary duplication in the build.
   pw_build_PYTHON_TOOLCHAIN = "$dir_pw_build/python_toolchain:python"
+
+  # Constraints file selection (arguments to pip install --constraint).
+  # See pip help install.
+  pw_build_PIP_CONSTRAINTS = []
 }
 
 # Python packages provide the following targets as $target_name.$subtarget.
@@ -394,12 +398,20 @@ template("pw_python_package") {
 
         args = [ "install" ]
 
+        inputs = pw_build_PIP_CONSTRAINTS
+        foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
+          args += [
+            "--constraint",
+            rebase_path(_constraints_file, root_build_dir),
+          ]
+        }
+
         # For generated packages, reinstall when any files change. For regular
         # packages, only reinstall when setup.py changes.
         if (_generate_package) {
           public_deps += [ ":${invoker.target_name}" ]
         } else {
-          inputs = invoker.setup
+          inputs += invoker.setup
 
           # Install with --editable since the complete package is in source.
           args += [ "--editable" ]
@@ -724,6 +736,14 @@ template("pw_python_requirements") {
       args += [
         "--requirement",
         rebase_path(_requirements_file, root_build_dir),
+      ]
+    }
+
+    inputs += pw_build_PIP_CONSTRAINTS
+    foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
+      args += [
+        "--constraint",
+        rebase_path(_constraints_file, root_build_dir),
       ]
     }
 
