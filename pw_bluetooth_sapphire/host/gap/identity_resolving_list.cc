@@ -10,10 +10,14 @@
 namespace bt::gap {
 
 void IdentityResolvingList::Add(DeviceAddress identity, const UInt128& irk) {
+  bt_log(DEBUG, "gap", "Adding IRK for identity address %s", bt_str(identity));
   registry_[identity] = irk;
 }
 
-void IdentityResolvingList::Remove(DeviceAddress identity) { registry_.erase(identity); }
+void IdentityResolvingList::Remove(DeviceAddress identity) {
+  bt_log(DEBUG, "gap", "Removing IRK for identity address %s", bt_str(identity));
+  registry_.erase(identity);
+}
 
 std::optional<DeviceAddress> IdentityResolvingList::Resolve(DeviceAddress rpa) const {
   if (!rpa.IsResolvablePrivate()) {
@@ -22,6 +26,7 @@ std::optional<DeviceAddress> IdentityResolvingList::Resolve(DeviceAddress rpa) c
 
   for (const auto& [identity, irk] : registry_) {
     if (sm::util::IrkCanResolveRpa(irk, rpa)) {
+      bt_log(DEBUG, "gap", "RPA %s resolved to %s", bt_str(rpa), bt_str(identity));
       return identity;
     }
   }

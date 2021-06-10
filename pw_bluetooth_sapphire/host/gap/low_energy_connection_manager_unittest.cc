@@ -994,7 +994,6 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConn
   sm::PairingData data;
   data.peer_ltk = sm::LTK();
   data.local_ltk = sm::LTK();
-  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
 
   // Issue connection ref.
@@ -1028,7 +1027,6 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAuto
   sm::PairingData data;
   data.peer_ltk = sm::LTK();
   data.local_ltk = sm::LTK();
-  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
 
   // Issue connection ref.
@@ -3297,6 +3295,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   data.identity_address = kIdentityAddress;
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
   EXPECT_EQ(peer->address(), kIdentityAddress);

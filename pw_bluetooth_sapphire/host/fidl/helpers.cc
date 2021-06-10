@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "helpers.h"
-
 #include <endian.h>
 
 #include <algorithm>
@@ -11,6 +9,7 @@
 #include <unordered_set>
 
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
+#include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
@@ -598,10 +597,19 @@ std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
                                                            : bt::DeviceAddress::Type::kLEPublic;
   }
 
-  return {bt::DeviceAddress(type, bytes)};
+  bt::DeviceAddress address(type, bytes);
+
+  if (!address.IsPublic() && !address.IsStaticRandom()) {
+    bt_log(ERROR, "fidl", "%s: BondingData address is not public or static random (address: %s)",
+           __FUNCTION__, bt_str(address));
+    return std::nullopt;
+  }
+
+  return address;
 }
 
-bt::sm::PairingData LePairingDataFromFidl(const fsys::LeBondData& data) {
+bt::sm::PairingData LePairingDataFromFidl(bt::DeviceAddress peer_address,
+                                          const fuchsia::bluetooth::sys::LeBondData& data) {
   bt::sm::PairingData result;
 
   if (data.has_peer_ltk()) {
@@ -612,6 +620,10 @@ bt::sm::PairingData LePairingDataFromFidl(const fsys::LeBondData& data) {
   }
   if (data.has_irk()) {
     result.irk = PeerKeyFromFidl(data.irk());
+    // If there is an IRK, there must also be an identity address. Assume that the identity
+    // address is the peer address, since the peer address is set to the identity address upon
+    // bonding.
+    result.identity_address = peer_address;
   }
   if (data.has_csrk()) {
     result.csrk = PeerKeyFromFidl(data.csrk());

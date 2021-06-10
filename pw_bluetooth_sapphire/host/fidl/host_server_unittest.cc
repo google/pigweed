@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/fidl/host_server.h"
-
 #include <fuchsia/bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl_test_base.h>
@@ -20,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/host_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
@@ -59,7 +58,12 @@ const bt::DeviceAddress kLeTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0
 const bt::DeviceAddress kBredrTestAddr(bt::DeviceAddress::Type::kBREDR, {0x01, 0, 0, 0, 0, 0});
 
 const fbt::Address kTestFidlAddrPublic{fbt::AddressType::PUBLIC, {1, 0, 0, 0, 0, 0}};
-const fbt::Address kTestFidlAddrRandom{fbt::AddressType::RANDOM, {2, 0, 0, 0, 0, 0}};
+const fbt::Address kTestFidlAddrRandom{fbt::AddressType::RANDOM,
+                                       {0x55, 0x44, 0x33, 0x22, 0x11, 0b11000011}};
+const fbt::Address kTestFidlAddrResolvable{fbt::AddressType::RANDOM,
+                                           {0x55, 0x44, 0x33, 0x22, 0x11, 0b01000011}};
+const fbt::Address kTestFidlAddrNonResolvable{fbt::AddressType::RANDOM,
+                                              {0x55, 0x44, 0x33, 0x22, 0x11, 0x00}};
 
 // TODO(fxbug.dev/64167): Replace GMock usage with homegrown mocks.
 class MockPairingDelegate : public fsys::testing::PairingDelegate_TestBase {
@@ -957,6 +961,14 @@ TEST_F(FIDL_HostServerTest, RestoreBondsInvalidAddress) {
   // BR/EDR only
   bond.clear_le_bond();
   TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+
+  // Resolvable Private address should not be supported
+  fsys::BondingData resolvable_bond = MakeTestBond(kTestId, kTestFidlAddrResolvable);
+  TestRestoreBonds(MakeClonedVector(resolvable_bond), MakeClonedVector(resolvable_bond));
+
+  // Non-resolvable Private address should not be supported
+  fsys::BondingData non_resolvable_bond = MakeTestBond(kTestId, kTestFidlAddrNonResolvable);
+  TestRestoreBonds(MakeClonedVector(non_resolvable_bond), MakeClonedVector(non_resolvable_bond));
 }
 
 TEST_F(FIDL_HostServerTest, RestoreBondsLeOnlySuccess) {

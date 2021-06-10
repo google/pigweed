@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "helpers.h"
-
 #include <algorithm>
 #include <iterator>
 
@@ -14,6 +12,7 @@
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
+#include "helpers.h"
 #include "lib/fidl/cpp/comparison.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
@@ -48,9 +47,15 @@ const bt::sm::Key kTestKey(kTestSecurity, kTestKeyValue);
 
 // Constants as FIDL types
 const fbt::Address kPublicAddrFidl = fbt::Address{fbt::AddressType::PUBLIC, {1, 0, 0, 0, 0, 0}};
-const fbt::Address kRandomAddrFidl = fbt::Address{fbt::AddressType::RANDOM, {2, 0, 0, 0, 0, 0}};
+const fbt::Address kRandomAddrFidl =
+    fbt::Address{fbt::AddressType::RANDOM, {2, 0, 0, 0, 0, 0b11000011}};
+const fbt::Address kRandomAddrResolvableFidl{fbt::AddressType::RANDOM,
+                                             {0x55, 0x44, 0x33, 0x22, 0x11, 0b01000011}};
+const fbt::Address kRandomAddrNonResolvableFidl{fbt::AddressType::RANDOM,
+                                                {0x55, 0x44, 0x33, 0x22, 0x11, 0x00}};
 
 const bt::DeviceAddress kTestPeerAddr(bt::DeviceAddress::Type::kBREDR, {1, 0, 0, 0, 0, 0});
+const bt::DeviceAddress kLePublicAddress(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
 
 const fsys::PeerKey kTestKeyFidl{
     .security =
@@ -813,8 +818,26 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandom) {
   EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kLERandom);
 }
 
+TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandomResolvable) {
+  fsys::BondingData bond;
+  bond.set_address(kRandomAddrResolvableFidl);
+  bond.set_le_bond(fsys::LeBondData());
+
+  auto addr = AddressFromFidlBondingData(bond);
+  EXPECT_FALSE(addr);
+}
+
+TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandomNonResolvable) {
+  fsys::BondingData bond;
+  bond.set_address(kRandomAddrNonResolvableFidl);
+  bond.set_le_bond(fsys::LeBondData());
+
+  auto addr = AddressFromFidlBondingData(bond);
+  EXPECT_FALSE(addr);
+}
+
 TEST(FIDL_HelpersTest, LePairingDataFromFidlEmpty) {
-  bt::sm::PairingData result = LePairingDataFromFidl(fsys::LeBondData());
+  bt::sm::PairingData result = LePairingDataFromFidl(kLePublicAddress, fsys::LeBondData());
   EXPECT_FALSE(result.identity_address);
   EXPECT_FALSE(result.local_ltk);
   EXPECT_FALSE(result.peer_ltk);
@@ -829,16 +852,17 @@ TEST(FIDL_HelpersTest, LePairingDataFromFidl) {
   le.set_irk(kTestKeyFidl);
   le.set_csrk(kTestKeyFidl);
 
-  bt::sm::PairingData result = LePairingDataFromFidl(std::move(le));
-  EXPECT_FALSE(result.identity_address);
+  bt::sm::PairingData result = LePairingDataFromFidl(kLePublicAddress, std::move(le));
   ASSERT_TRUE(result.local_ltk);
   ASSERT_TRUE(result.peer_ltk);
   ASSERT_TRUE(result.irk);
+  ASSERT_TRUE(result.identity_address);
   ASSERT_TRUE(result.csrk);
 
   EXPECT_EQ(kTestLtk, *result.local_ltk);
   EXPECT_EQ(kTestLtk, *result.peer_ltk);
   EXPECT_EQ(kTestKey, *result.irk);
+  EXPECT_EQ(kLePublicAddress, *result.identity_address);
   EXPECT_EQ(kTestKey, *result.csrk);
 }
 

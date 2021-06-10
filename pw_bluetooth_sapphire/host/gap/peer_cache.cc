@@ -84,12 +84,15 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   }
 
   if (bond_le) {
+    ZX_ASSERT(bd.le_pairing_data.irk.has_value() ==
+              bd.le_pairing_data.identity_address.has_value());
     peer->MutLe().SetBondData(bd.le_pairing_data);
-    ZX_DEBUG_ASSERT(peer->le()->bonded());
+    ZX_ASSERT(peer->le()->bonded());
 
     // Add the peer to the resolving list if it has an IRK.
     if (bd.le_pairing_data.irk) {
-      le_resolving_list_.Add(peer->address(), bd.le_pairing_data.irk->value());
+      le_resolving_list_.Add(bd.le_pairing_data.identity_address.value(),
+                             bd.le_pairing_data.irk.value().value());
     }
   }
 
@@ -118,7 +121,8 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
 }
 
 bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bond_data) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
+  ZX_ASSERT(bond_data.irk.has_value() == bond_data.identity_address.has_value());
+
   auto* peer = FindById(identifier);
   if (!peer) {
     bt_log(WARN, "gap-le", "failed to store bond for unknown peer (peer: %s)", bt_str(identifier));
@@ -157,7 +161,7 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
 
   // Add the peer to the resolving list if it has an IRK.
   if (peer->identity_known() && bond_data.irk) {
-    le_resolving_list_.Add(peer->address(), bond_data.irk->value());
+    le_resolving_list_.Add(*bond_data.identity_address, bond_data.irk->value());
   }
 
   if (bond_data.cross_transport_key) {

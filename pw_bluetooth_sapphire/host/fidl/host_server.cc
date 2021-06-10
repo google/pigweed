@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "host_server.h"
-
 #include <fuchsia/mem/cpp/fidl.h>
 #include <lib/fit/result.h>
 #include <lib/syslog/cpp/macros.h>
@@ -11,6 +9,7 @@
 
 #include "gatt_server_server.h"
 #include "helpers.h"
+#include "host_server.h"
 #include "low_energy_central_server.h"
 #include "low_energy_peripheral_server.h"
 #include "profile_server.h"
@@ -314,7 +313,7 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
 
     auto address = fidl_helpers::AddressFromFidlBondingData(bond);
     if (!address) {
-      bt_log(ERROR, "fidl", "%s: BondingData address missing!", __FUNCTION__);
+      bt_log(ERROR, "fidl", "%s: BondingData address missing or invalid!", __FUNCTION__);
       errors.push_back(std::move(bond));
       continue;
     }
@@ -327,7 +326,7 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
     }
 
     if (bond.has_le_bond()) {
-      bd.le_pairing_data = fidl_helpers::LePairingDataFromFidl(bond.le_bond());
+      bd.le_pairing_data = fidl_helpers::LePairingDataFromFidl(*address, bond.le_bond());
     }
     if (bond.has_bredr_bond()) {
       bd.bredr_link_key = fidl_helpers::BredrKeyFromFidl(bond.bredr_bond());
