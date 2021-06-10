@@ -65,10 +65,12 @@ def _process_inclusive_language(*words):
     for word in all_words:
         _ = re.compile(word)
 
+    word_boundary = (
+        r'(\b|_|(?<=[a-z])(?=[A-Z])|(?<=[0-9])(?=\w)|(?<=\w)(?=[0-9]))')
+
     return re.compile(
-        r"(\b|_)({})(\b|_|e?[sd]_?\b)".format('|'.join(all_words)),
-        re.IGNORECASE,
-    )
+        r"({b})(?i:{w})(e?[sd]{b}|{b})".format(w='|'.join(all_words),
+                                               b=word_boundary), )
 
 
 NON_INCLUSIVE_WORDS_REGEX = _process_inclusive_language()
