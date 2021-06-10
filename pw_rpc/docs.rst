@@ -857,31 +857,25 @@ Example
   #include "pw_rpc/echo_service_nanopb.h"
 
   namespace {
-
-  // RPC response handler for pw.rpc.EchoService/Echo.
-  class EchoResponseHandler
-      : public pw::rpc::UnaryResponseHandler<pw_rpc_EchoMessage> {
-   public:
-    // Callback invoked when a response is received. This is called
-    // synchronously from Client::ProcessPacket.
-    void ReceivedResponse(pw::Status status,
-                          const pw_rpc_EchoMessage& response) final {
-      if (status.ok()) {
-        PW_LOG_INFO("Received echo response: %s", response.msg);
-      } else {
-        PW_LOG_ERROR("Echo failed with status %d",
-                     static_cast<int>(status.code()));
-      }
-    }
-  };
-
   // Generated clients are namespaced with their proto library.
   using pw::rpc::nanopb::EchoServiceClient;
 
   EchoServiceClient::EchoCall echo_call;
-  EchoResponseHandler response_handler;
+
+  // Callback invoked when a response is received. This is called synchronously
+  // from Client::ProcessPacket.
+  void EchoResponse(const pw_rpc_EchoMessage& response,
+                    pw::Status status) {
+    if (status.ok()) {
+      PW_LOG_INFO("Received echo response: %s", response.msg);
+    } else {
+      PW_LOG_ERROR("Echo failed with status %d",
+                   static_cast<int>(status.code()));
+    }
+  }
 
   }  // namespace
+
 
   void CallEcho(const char* message) {
     pw_rpc_EchoMessage request = pw_rpc_EchoMessage_init_default;
@@ -890,7 +884,7 @@ Example
     // By assigning the returned ClientCall to the global echo_call, the RPC
     // call is kept alive until it completes. When a response is received, it
     // will be logged by the handler function and the call will complete.
-    echo_call = EchoServiceClient::Echo(my_channel, request, response_handler);
+    echo_call = EchoServiceClient::Echo(my_channel, request, EchoResponse);
   }
 
 Client implementation details

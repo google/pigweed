@@ -50,6 +50,7 @@ pw_source_set("client") {
   public_deps = [
     ":common",
     "..:client",
+    dir_pw_function,
   ]
   public = [ "public/pw_rpc/nanopb_client_call.h" ]
   sources = [ "nanopb_client_call.cc" ]

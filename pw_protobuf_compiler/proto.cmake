@@ -299,6 +299,7 @@ function(_pw_nanopb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   target_link_libraries("${NAME}.nanopb_rpc"
     INTERFACE
       "${NAME}.nanopb"
+      pw_rpc.nanopb.client
       pw_rpc.nanopb.method_union
       pw_rpc.server
       ${DEPS}

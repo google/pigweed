@@ -16,6 +16,7 @@
 #include <new>
 
 #include "pw_bytes/span.h"
+#include "pw_function/function.h"
 #include "pw_rpc/internal/base_client_call.h"
 #include "pw_rpc/internal/method_type.h"
 #include "pw_rpc/internal/nanopb_common.h"
@@ -62,13 +63,12 @@ class BaseNanopbClientCall : public BaseClientCall {
   Status SendRequest(const void* request_struct);
 
  protected:
-  constexpr BaseNanopbClientCall(
-      rpc::Channel* channel,
-      uint32_t service_id,
-      uint32_t method_id,
-      ResponseHandler handler,
-      internal::NanopbMessageDescriptor request_fields,
-      internal::NanopbMessageDescriptor response_fields)
+  constexpr BaseNanopbClientCall(rpc::Channel* channel,
+                                 uint32_t service_id,
+                                 uint32_t method_id,
+                                 ResponseHandler handler,
+                                 NanopbMessageDescriptor request_fields,
+                                 NanopbMessageDescriptor response_fields)
       : BaseClientCall(channel, service_id, method_id, handler),
         serde_(request_fields, response_fields) {}
 
@@ -81,38 +81,61 @@ class BaseNanopbClientCall : public BaseClientCall {
   BaseNanopbClientCall(BaseNanopbClientCall&&) = default;
   BaseNanopbClientCall& operator=(BaseNanopbClientCall&&) = default;
 
-  constexpr const internal::NanopbMethodSerde& serde() const { return serde_; }
+  constexpr const NanopbMethodSerde& serde() const { return serde_; }
 
  private:
-  internal::NanopbMethodSerde serde_;
+  NanopbMethodSerde serde_;
 };
 
-template <typename Callback>
-struct CallbackTraits {};
+struct ErrorCallbacks {
+  ErrorCallbacks(Function<void(Status)> error) : rpc_error(std::move(error)) {}
+
+  void InvokeRpcError(Status status) {
+    if (rpc_error != nullptr) {
+      rpc_error(status);
+    }
+  }
+
+  Function<void(Status)> rpc_error;
+};
 
 template <typename ResponseType>
-struct CallbackTraits<UnaryResponseHandler<ResponseType>> {
+struct UnaryCallbacks : public ErrorCallbacks {
   using Response = ResponseType;
-
   static constexpr MethodType kType = MethodType::kUnary;
+
+  UnaryCallbacks(Function<void(const Response&, Status)> response,
+                 Function<void(Status)> error)
+      : ErrorCallbacks(std::move(error)), unary_response(std::move(response)) {}
+
+  Function<void(const Response&, Status)> unary_response;
 };
 
 template <typename ResponseType>
-struct CallbackTraits<ServerStreamingResponseHandler<ResponseType>> {
+struct ServerStreamingCallbacks : public ErrorCallbacks {
   using Response = ResponseType;
-
   static constexpr MethodType kType = MethodType::kServerStreaming;
+
+  ServerStreamingCallbacks(Function<void(const Response&)> response,
+                           Function<void(Status)> end,
+                           Function<void(Status)> error)
+      : ErrorCallbacks(std::move(error)),
+        stream_response(std::move(response)),
+        stream_end(std::move(end)) {}
+
+  Function<void(const Response&)> stream_response;
+  Function<void(Status)> stream_end;
 };
 
 }  // namespace internal
 
-template <typename Callback>
+template <typename Callbacks>
 class NanopbClientCall : public internal::BaseNanopbClientCall {
  public:
   constexpr NanopbClientCall(Channel* channel,
                              uint32_t service_id,
                              uint32_t method_id,
-                             Callback& callback,
+                             Callbacks callbacks,
                              internal::NanopbMessageDescriptor request_fields,
                              internal::NanopbMessageDescriptor response_fields)
       : BaseNanopbClientCall(channel,
@@ -121,9 +144,9 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
                              &ResponseHandler,
                              request_fields,
                              response_fields),
-        callback_(&callback) {}
+        callbacks_(std::move(callbacks)) {}
 
-  constexpr NanopbClientCall() : BaseNanopbClientCall(), callback_(nullptr) {}
+  constexpr NanopbClientCall() : BaseNanopbClientCall(), callbacks_({}) {}
 
   NanopbClientCall(const NanopbClientCall&) = delete;
   NanopbClientCall& operator=(const NanopbClientCall&) = delete;
@@ -132,8 +155,7 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
   NanopbClientCall& operator=(NanopbClientCall&&) = default;
 
  private:
-  using Traits = internal::CallbackTraits<Callback>;
-  using Response = typename Traits::Response;
+  using Response = typename Callbacks::Response;
 
   // Buffer into which the nanopb struct is decoded. Its contents are unknown,
   // so it is aligned to maximum alignment to accommodate any type.
@@ -144,32 +166,33 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
 
   static void ResponseHandler(internal::BaseClientCall& call,
                               const internal::Packet& packet) {
-    static_cast<NanopbClientCall<Callback>&>(call).HandleResponse(packet);
+    static_cast<NanopbClientCall<Callbacks>&>(call).HandleResponse(packet);
   }
 
   void HandleResponse(const internal::Packet& packet) {
-    if constexpr (Traits::kType == internal::MethodType::kUnary) {
+    if constexpr (Callbacks::kType == internal::MethodType::kUnary) {
       InvokeUnaryCallback(packet);
     }
-    if constexpr (Traits::kType == internal::MethodType::kServerStreaming) {
+    if constexpr (Callbacks::kType == internal::MethodType::kServerStreaming) {
       InvokeServerStreamingCallback(packet);
     }
   }
 
   void InvokeUnaryCallback(const internal::Packet& packet) {
     if (packet.type() == internal::PacketType::SERVER_ERROR) {
-      callback_->RpcError(packet.status());
+      callbacks_.InvokeRpcError(packet.status());
       return;
     }
 
     ResponseBuffer response_struct{};
 
-    if (serde().DecodeResponse(&response_struct, packet.payload())) {
-      callback_->ReceivedResponse(
-          packet.status(),
-          *std::launder(reinterpret_cast<Response*>(&response_struct)));
+    if (callbacks_.unary_response &&
+        serde().DecodeResponse(&response_struct, packet.payload())) {
+      callbacks_.unary_response(
+          *std::launder(reinterpret_cast<Response*>(&response_struct)),
+          packet.status());
     } else {
-      callback_->RpcError(Status::DataLoss());
+      callbacks_.InvokeRpcError(Status::DataLoss());
     }
 
     Unregister();
@@ -177,26 +200,28 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
 
   void InvokeServerStreamingCallback(const internal::Packet& packet) {
     if (packet.type() == internal::PacketType::SERVER_ERROR) {
-      callback_->RpcError(packet.status());
+      callbacks_.InvokeRpcError(packet.status());
       return;
     }
 
-    if (packet.type() == internal::PacketType::SERVER_STREAM_END) {
-      callback_->Complete(packet.status());
+    if (packet.type() == internal::PacketType::SERVER_STREAM_END &&
+        callbacks_.stream_end) {
+      callbacks_.stream_end(packet.status());
       return;
     }
 
     ResponseBuffer response_struct{};
 
-    if (serde().DecodeResponse(&response_struct, packet.payload())) {
-      callback_->ReceivedResponse(
+    if (callbacks_.stream_response &&
+        serde().DecodeResponse(&response_struct, packet.payload())) {
+      callbacks_.stream_response(
           *std::launder(reinterpret_cast<Response*>(&response_struct)));
     } else {
-      callback_->RpcError(Status::DataLoss());
+      callbacks_.InvokeRpcError(Status::DataLoss());
     }
   }
 
-  Callback* callback_;
+  Callbacks callbacks_;
 };
 
 }  // namespace pw::rpc

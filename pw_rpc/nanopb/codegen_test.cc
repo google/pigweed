@@ -131,17 +131,16 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc_ManualWriting) {
 }
 
 using TestServiceClient = test::nanopb::TestServiceClient;
-using internal::TestServerStreamingResponseHandler;
-using internal::TestUnaryResponseHandler;
 
 TEST(NanopbCodegen, Client_GeneratesCallAliases) {
   static_assert(
-      std::is_same_v<
-          TestServiceClient::TestRpcCall,
-          NanopbClientCall<UnaryResponseHandler<pw_rpc_test_TestResponse>>>);
-  static_assert(std::is_same_v<TestServiceClient::TestStreamRpcCall,
-                               NanopbClientCall<ServerStreamingResponseHandler<
-                                   pw_rpc_test_TestStreamResponse>>>);
+      std::is_same_v<TestServiceClient::TestRpcCall,
+                     NanopbClientCall<
+                         internal::UnaryCallbacks<pw_rpc_test_TestResponse>>>);
+  static_assert(
+      std::is_same_v<TestServiceClient::TestStreamRpcCall,
+                     NanopbClientCall<internal::ServerStreamingCallbacks<
+                         pw_rpc_test_TestStreamResponse>>>);
 }
 
 TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
@@ -149,10 +148,20 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   constexpr uint32_t method_id = internal::Hash("TestRpc");
 
   ClientContextForTest<128, 128, 99, service_id, method_id> context;
-  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
+
+  struct {
+    Status last_status = Status::Unknown();
+    int response_value = -1;
+  } result;
 
   auto call = TestServiceClient::TestRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 123, .status_code = 0},
+      [&result](const pw_rpc_test_TestResponse& response, Status status) {
+        result.last_status = status;
+        result.response_value = response.value;
+      });
+
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
   EXPECT_EQ(packet.channel_id(), context.channel().id());
@@ -163,9 +172,8 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
   context.SendResponse(OkStatus(), response);
-  ASSERT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_status(), OkStatus());
-  EXPECT_EQ(handler.last_response().value, 42);
+  EXPECT_EQ(result.last_status, OkStatus());
+  EXPECT_EQ(result.response_value, 42);
 }
 
 TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
@@ -173,10 +181,25 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
   constexpr uint32_t method_id = internal::Hash("TestStreamRpc");
 
   ClientContextForTest<128, 128, 99, service_id, method_id> context;
-  TestServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse> handler;
+
+  struct {
+    bool active = true;
+    Status stream_status = Status::Unknown();
+    int response_value = -1;
+  } result;
 
   auto call = TestServiceClient::TestStreamRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 123, .status_code = 0},
+      [&result](const pw_rpc_test_TestStreamResponse& response) {
+        result.active = true;
+        result.response_value = response.number;
+      },
+      [&result](Status status) {
+        result.active = false;
+        result.stream_status = status;
+      });
+
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
   EXPECT_EQ(packet.channel_id(), context.channel().id());
@@ -188,13 +211,13 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
   PW_ENCODE_PB(
       pw_rpc_test_TestStreamResponse, response, .chunk = {}, .number = 11u);
   context.SendResponse(OkStatus(), response);
-  ASSERT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_response().number, 11u);
+  EXPECT_TRUE(result.active);
+  EXPECT_EQ(result.response_value, 11);
 
   context.SendPacket(internal::PacketType::SERVER_STREAM_END,
                      Status::NotFound());
-  EXPECT_FALSE(handler.active());
-  EXPECT_EQ(handler.status(), Status::NotFound());
+  EXPECT_FALSE(result.active);
+  EXPECT_EQ(result.stream_status, Status::NotFound());
 }
 
 }  // namespace

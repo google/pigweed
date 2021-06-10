@@ -14,7 +14,7 @@
 """This module generates the code for nanopb-based pw_rpc services."""
 
 import os
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, NamedTuple, Optional
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
@@ -71,6 +71,20 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
                           'NanopbMethodUnion', _generate_method_descriptor)
 
 
+class _CallbackFunction(NamedTuple):
+    """Represents a callback function parameter in a client RPC call."""
+
+    function_type: str
+    name: str
+    default_value: Optional[str] = None
+
+    def __str__(self):
+        param = f'::pw::Function<{self.function_type}> {self.name}'
+        if self.default_value:
+            param += f' = {self.default_value}'
+        return param
+
+
 def _generate_code_for_client_method(method: ProtoServiceMethod,
                                      output: OutputFile) -> None:
     """Outputs client code for a single RPC method."""
@@ -79,10 +93,26 @@ def _generate_code_for_client_method(method: ProtoServiceMethod,
     res = method.response_type().nanopb_name()
     method_id = pw_rpc.ids.calculate(method.name())
 
+    rpc_error = _CallbackFunction(
+        'void(::pw::Status)',
+        'on_rpc_error',
+        'nullptr',
+    )
+
     if method.type() == ProtoServiceMethod.Type.UNARY:
-        callback = f'{RPC_NAMESPACE}::UnaryResponseHandler<{res}>'
+        callbacks = f'{RPC_NAMESPACE}::internal::UnaryCallbacks'
+        functions = [
+            _CallbackFunction(f'void(const {res}&, ::pw::Status)',
+                              'on_response'),
+            rpc_error,
+        ]
     elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
-        callback = f'{RPC_NAMESPACE}::ServerStreamingResponseHandler<{res}>'
+        callbacks = f'{RPC_NAMESPACE}::internal::ServerStreamingCallbacks'
+        functions = [
+            _CallbackFunction(f'void(const {res}&)', 'on_response'),
+            _CallbackFunction('void(::pw::Status)', 'on_stream_end'),
+            rpc_error,
+        ]
     else:
         raise NotImplementedError(
             'Only unary and server streaming RPCs are currently supported')
@@ -92,13 +122,19 @@ def _generate_code_for_client_method(method: ProtoServiceMethod,
     output.write_line()
     output.write_line(
         f'using {call_alias} = {RPC_NAMESPACE}::NanopbClientCall<')
-    output.write_line(f'    {callback}>;')
+    output.write_line(f'    {callbacks}<{res}>>;')
     output.write_line()
     output.write_line(f'static {call_alias} {method.name()}(')
     with output.indent(4):
         output.write_line(f'{RPC_NAMESPACE}::Channel& channel,')
         output.write_line(f'const {req}& request,')
-        output.write_line(f'{callback}& callback) {{')
+
+        # Write out each of the callback functions for the method type.
+        for i, function in enumerate(functions):
+            if i == len(functions) - 1:
+                output.write_line(f'{function}) {{')
+            else:
+                output.write_line(f'{function},')
 
     with output.indent():
         output.write_line(f'{call_alias} call(&channel,')
@@ -106,7 +142,11 @@ def _generate_code_for_client_method(method: ProtoServiceMethod,
             output.write_line('kServiceId,')
             output.write_line(
                 f'0x{method_id:08x},  // Hash of "{method.name()}"')
-            output.write_line('callback,')
+
+            moved_functions = (f'std::move({function.name})'
+                               for function in functions)
+            output.write_line(f'{callbacks}({", ".join(moved_functions)}),')
+
             output.write_line(f'{req}_fields,')
             output.write_line(f'{res}_fields);')
         output.write_line('call.SendRequest(&request);')
@@ -166,7 +206,7 @@ def _generate_code_for_package(proto_file, package: ProtoNode,
 
 class StubGenerator(codegen.StubGenerator):
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
-        return (f'pw::Status {prefix}{method.name()}(ServerContext&, '
+        return (f'::pw::Status {prefix}{method.name()}(ServerContext&, '
                 f'const {method.request_type().nanopb_name()}& request, '
                 f'{method.response_type().nanopb_name()}& response)')
 
@@ -176,7 +216,7 @@ class StubGenerator(codegen.StubGenerator):
         output.write_line('static_cast<void>(request);')
         output.write_line(codegen.STUB_RESPONSE_TODO)
         output.write_line('static_cast<void>(response);')
-        output.write_line('return pw::Status::Unimplemented();')
+        output.write_line('return ::pw::Status::Unimplemented();')
 
     def server_streaming_signature(self, method: ProtoServiceMethod,
                                    prefix: str) -> str:

@@ -65,7 +65,7 @@ class FunctionTarget {
   virtual bool IsNull() const = 0;
 
   // Invoke the callable stored by the function target.
-  virtual Return operator()(Args&&... args) const = 0;
+  virtual Return operator()(Args... args) const = 0;
 
   // Move initialize the function target to a provided location.
   virtual void MoveInitializeTo(void* ptr) = 0;
@@ -86,7 +86,7 @@ class NullFunctionTarget final : public FunctionTarget<Return, Args...> {
 
   bool IsNull() const final { return true; }
 
-  Return operator()(Args&&...) const final { PW_ASSERT(false); }
+  Return operator()(Args...) const final { PW_ASSERT(false); }
 
   void MoveInitializeTo(void* ptr) final { new (ptr) NullFunctionTarget(); }
 };
@@ -109,9 +109,7 @@ class InlineFunctionTarget final : public FunctionTarget<Return, Args...> {
 
   bool IsNull() const final { return false; }
 
-  Return operator()(Args&&... args) const final {
-    return callable_(std::forward<Args>(args)...);
-  }
+  Return operator()(Args... args) const final { return callable_(args...); }
 
   void MoveInitializeTo(void* ptr) final {
     new (ptr) InlineFunctionTarget(std::move(*this));
@@ -155,9 +153,7 @@ class MemoryFunctionTarget final : public FunctionTarget<Return, Args...> {
 
   bool IsNull() const final { return false; }
 
-  Return operator()(Args&&... args) const final {
-    return callable()(std::forward<Args>(args)...);
-  }
+  Return operator()(Args... args) const final { return callable()(args...); }
 
   void MoveInitializeTo(void* ptr) final {
     new (ptr) MemoryFunctionTarget(std::move(*this));
@@ -287,9 +283,7 @@ class Function<Return(Args...)> {
 
   ~Function() { holder_.DestructTarget(); }
 
-  Return operator()(Args&&... args) const {
-    return holder_.target()(std::forward<Args>(args)...);
-  };
+  Return operator()(Args... args) const { return holder_.target()(args...); };
 
   explicit operator bool() const { return !holder_.target().IsNull(); }
 

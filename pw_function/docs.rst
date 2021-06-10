@@ -172,7 +172,7 @@ Design
 from Fuchsia with some changes to make it more suitable for embedded
 development.
 
-Functions are moveable, but not copyable. This allows them to store and manage
+Functions are movable, but not copyable. This allows them to store and manage
 callables without having to perform bookkeeping such as reference counting, and
 avoids any reliance on dynamic memory management. The result is a simpler
 implementation which is easy to conceptualize and use in an embedded context.

@@ -28,46 +28,49 @@ constexpr uint32_t kServerStreamingMethodId = 112;
 
 class FakeGeneratedServiceClient {
  public:
-  static NanopbClientCall<UnaryResponseHandler<pw_rpc_test_TestResponse>>
+  static NanopbClientCall<internal::UnaryCallbacks<pw_rpc_test_TestResponse>>
   TestRpc(Channel& channel,
           const pw_rpc_test_TestRequest& request,
-          UnaryResponseHandler<pw_rpc_test_TestResponse>& callback) {
-    auto call = NanopbClientCall(&channel,
-                                 kServiceId,
-                                 kUnaryMethodId,
-                                 callback,
-                                 pw_rpc_test_TestRequest_fields,
-                                 pw_rpc_test_TestResponse_fields);
+          Function<void(const pw_rpc_test_TestResponse&, Status)> on_response,
+          Function<void(Status)> on_error = nullptr) {
+    auto call = NanopbClientCall(
+        &channel,
+        kServiceId,
+        kUnaryMethodId,
+        internal::UnaryCallbacks(std::move(on_response), std::move(on_error)),
+        pw_rpc_test_TestRequest_fields,
+        pw_rpc_test_TestResponse_fields);
     call.SendRequest(&request);
     return call;
   }
 
   static NanopbClientCall<
-      ServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse>>
-  TestStreamRpc(Channel& channel,
-                const pw_rpc_test_TestRequest& request,
-                ServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse>&
-                    callback) {
-    auto call = NanopbClientCall(&channel,
-                                 kServiceId,
-                                 kServerStreamingMethodId,
-                                 callback,
-                                 pw_rpc_test_TestRequest_fields,
-                                 pw_rpc_test_TestStreamResponse_fields);
+      internal::ServerStreamingCallbacks<pw_rpc_test_TestStreamResponse>>
+  TestStreamRpc(
+      Channel& channel,
+      const pw_rpc_test_TestRequest& request,
+      Function<void(const pw_rpc_test_TestStreamResponse&)> on_response,
+      Function<void(Status)> on_stream_end,
+      Function<void(Status)> on_error = nullptr) {
+    auto call = NanopbClientCall(
+        &channel,
+        kServiceId,
+        kServerStreamingMethodId,
+        internal::ServerStreamingCallbacks(std::move(on_response),
+                                           std::move(on_stream_end),
+                                           std::move(on_error)),
+        pw_rpc_test_TestRequest_fields,
+        pw_rpc_test_TestStreamResponse_fields);
     call.SendRequest(&request);
     return call;
   }
 };
 
-using internal::TestServerStreamingResponseHandler;
-using internal::TestUnaryResponseHandler;
-
 TEST(NanopbClientCall, Unary_SendsRequestPacket) {
   ClientContextForTest context;
-  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, handler);
+      context.channel(), {.integer = 123, .status_code = 0}, nullptr);
 
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
@@ -79,55 +82,116 @@ TEST(NanopbClientCall, Unary_SendsRequestPacket) {
   EXPECT_EQ(sent_proto.integer, 123);
 }
 
-TEST(NanopbClientCall, Unary_InvokesCallbackOnValidResponse) {
+class UnaryClientCall : public ::testing::Test {
+ protected:
+  Status last_status_ = Status::Unknown();
+  Status last_error_ = Status::Unknown();
+  int responses_received_ = 0;
+  int last_response_value_ = 0;
+};
+
+TEST_F(UnaryClientCall, InvokesCallbackOnValidResponse) {
   ClientContextForTest context;
-  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 123, .status_code = 0},
+      [this](const pw_rpc_test_TestResponse& response, Status status) {
+        ++responses_received_;
+        last_status_ = status;
+        last_response_value_ = response.value;
+      });
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
   context.SendResponse(OkStatus(), response);
 
-  ASSERT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_status(), OkStatus());
-  EXPECT_EQ(handler.last_response().value, 42);
+  ASSERT_EQ(responses_received_, 1);
+  EXPECT_EQ(last_status_, OkStatus());
+  EXPECT_EQ(last_response_value_, 42);
 }
 
-TEST(NanopbClientCall, Unary_InvokesErrorCallbackOnInvalidResponse) {
+TEST_F(UnaryClientCall, DoesNothingOnNullCallback) {
   ClientContextForTest context;
-  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, handler);
+      context.channel(), {.integer = 123, .status_code = 0}, nullptr);
+
+  PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
+  context.SendResponse(OkStatus(), response);
+
+  ASSERT_EQ(responses_received_, 0);
+}
+
+TEST_F(UnaryClientCall, InvokesErrorCallbackOnInvalidResponse) {
+  ClientContextForTest context;
+
+  auto call = FakeGeneratedServiceClient::TestRpc(
+      context.channel(),
+      {.integer = 123, .status_code = 0},
+      [this](const pw_rpc_test_TestResponse& response, Status status) {
+        ++responses_received_;
+        last_status_ = status;
+        last_response_value_ = response.value;
+      },
+      [this](Status status) { last_error_ = status; });
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
   context.SendResponse(OkStatus(), bad_payload);
 
-  EXPECT_EQ(handler.responses_received(), 0u);
-  EXPECT_EQ(handler.rpc_error(), Status::DataLoss());
+  EXPECT_EQ(responses_received_, 0);
+  EXPECT_EQ(last_error_, Status::DataLoss());
 }
 
-TEST(NanopbClientCall, Unary_InvokesErrorCallbackOnServerError) {
+TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
   ClientContextForTest context;
-  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 123, .status_code = 0},
+      [this](const pw_rpc_test_TestResponse& response, Status status) {
+        ++responses_received_;
+        last_status_ = status;
+        last_response_value_ = response.value;
+      },
+      [this](Status status) { last_error_ = status; });
 
   context.SendPacket(internal::PacketType::SERVER_ERROR, Status::NotFound());
 
-  EXPECT_EQ(handler.responses_received(), 0u);
-  EXPECT_EQ(handler.rpc_error(), Status::NotFound());
+  EXPECT_EQ(responses_received_, 0);
+  EXPECT_EQ(last_error_, Status::NotFound());
 }
 
-TEST(NanopbClientCall, Unary_OnlyReceivesOneResponse) {
+TEST_F(UnaryClientCall, DoesNothingOnErrorWithoutCallback) {
   ClientContextForTest context;
-  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 123, .status_code = 0},
+      [this](const pw_rpc_test_TestResponse& response, Status status) {
+        ++responses_received_;
+        last_status_ = status;
+        last_response_value_ = response.value;
+      });
+
+  constexpr std::byte bad_payload[]{
+      std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
+  context.SendResponse(OkStatus(), bad_payload);
+
+  EXPECT_EQ(responses_received_, 0);
+}
+
+TEST_F(UnaryClientCall, OnlyReceivesOneResponse) {
+  ClientContextForTest context;
+
+  auto call = FakeGeneratedServiceClient::TestRpc(
+      context.channel(),
+      {.integer = 123, .status_code = 0},
+      [this](const pw_rpc_test_TestResponse& response, Status status) {
+        ++responses_received_;
+        last_status_ = status;
+        last_response_value_ = response.value;
+      });
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, r1, .value = 42);
   context.SendResponse(Status::Unimplemented(), r1);
@@ -136,18 +200,26 @@ TEST(NanopbClientCall, Unary_OnlyReceivesOneResponse) {
   PW_ENCODE_PB(pw_rpc_test_TestResponse, r3, .value = 46);
   context.SendResponse(Status::Internal(), r3);
 
-  EXPECT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_status(), Status::Unimplemented());
-  EXPECT_EQ(handler.last_response().value, 42);
+  EXPECT_EQ(responses_received_, 1);
+  EXPECT_EQ(last_status_, Status::Unimplemented());
+  EXPECT_EQ(last_response_value_, 42);
 }
 
-TEST(NanopbClientCall, ServerStreaming_SendsRequestPacket) {
+class ServerStreamingClientCall : public ::testing::Test {
+ protected:
+  bool active_ = true;
+  Status stream_status_ = Status::Unknown();
+  Status rpc_error_ = Status::Unknown();
+  int responses_received_ = 0;
+  int last_response_number_ = 0;
+};
+
+TEST_F(ServerStreamingClientCall, SendsRequestPacket) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
-  TestServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestStreamRpc(
-      context.channel(), {.integer = 71, .status_code = 0}, handler);
+      context.channel(), {.integer = 71, .status_code = 0}, nullptr, nullptr);
 
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
@@ -159,48 +231,64 @@ TEST(NanopbClientCall, ServerStreaming_SendsRequestPacket) {
   EXPECT_EQ(sent_proto.integer, 71);
 }
 
-TEST(NanopbClientCall, ServerStreaming_InvokesCallbackOnValidResponse) {
+TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
-  TestServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestStreamRpc(
-      context.channel(), {.integer = 71, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 71, .status_code = 0},
+      [this](const pw_rpc_test_TestStreamResponse& response) {
+        ++responses_received_;
+        last_response_number_ = response.number;
+      },
+      [this](Status status) {
+        active_ = false;
+        stream_status_ = status;
+      });
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
   context.SendResponse(OkStatus(), r1);
-  EXPECT_TRUE(handler.active());
-  EXPECT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_response().number, 11u);
+  EXPECT_TRUE(active_);
+  EXPECT_EQ(responses_received_, 1);
+  EXPECT_EQ(last_response_number_, 11);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
   context.SendResponse(OkStatus(), r2);
-  EXPECT_TRUE(handler.active());
-  EXPECT_EQ(handler.responses_received(), 2u);
-  EXPECT_EQ(handler.last_response().number, 22u);
+  EXPECT_TRUE(active_);
+  EXPECT_EQ(responses_received_, 2);
+  EXPECT_EQ(last_response_number_, 22);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r3, .chunk = {}, .number = 33u);
   context.SendResponse(OkStatus(), r3);
-  EXPECT_TRUE(handler.active());
-  EXPECT_EQ(handler.responses_received(), 3u);
-  EXPECT_EQ(handler.last_response().number, 33u);
+  EXPECT_TRUE(active_);
+  EXPECT_EQ(responses_received_, 3);
+  EXPECT_EQ(last_response_number_, 33);
 }
 
-TEST(NanopbClientCall, ServerStreaming_ClosesOnFinish) {
+TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
-  TestServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestStreamRpc(
-      context.channel(), {.integer = 71, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 71, .status_code = 0},
+      [this](const pw_rpc_test_TestStreamResponse& response) {
+        ++responses_received_;
+        last_response_number_ = response.number;
+      },
+      [this](Status status) {
+        active_ = false;
+        stream_status_ = status;
+      });
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
   context.SendResponse(OkStatus(), r1);
-  EXPECT_TRUE(handler.active());
+  EXPECT_TRUE(active_);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
   context.SendResponse(OkStatus(), r2);
-  EXPECT_TRUE(handler.active());
+  EXPECT_TRUE(active_);
 
   // Close the stream.
   context.SendPacket(internal::PacketType::SERVER_STREAM_END,
@@ -208,40 +296,46 @@ TEST(NanopbClientCall, ServerStreaming_ClosesOnFinish) {
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r3, .chunk = {}, .number = 33u);
   context.SendResponse(OkStatus(), r3);
-  EXPECT_FALSE(handler.active());
+  EXPECT_FALSE(active_);
 
-  EXPECT_EQ(handler.responses_received(), 2u);
+  EXPECT_EQ(responses_received_, 2);
 }
 
-TEST(NanopbClientCall, ServerStreaming_InvokesErrorCallbackOnInvalidResponses) {
+TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
-  TestServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse> handler;
 
   auto call = FakeGeneratedServiceClient::TestStreamRpc(
-      context.channel(), {.integer = 71, .status_code = 0}, handler);
+      context.channel(),
+      {.integer = 71, .status_code = 0},
+      [this](const pw_rpc_test_TestStreamResponse& response) {
+        ++responses_received_;
+        last_response_number_ = response.number;
+      },
+      nullptr,
+      [this](Status error) { rpc_error_ = error; });
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
   context.SendResponse(OkStatus(), r1);
-  EXPECT_TRUE(handler.active());
-  EXPECT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_response().number, 11u);
+  EXPECT_TRUE(active_);
+  EXPECT_EQ(responses_received_, 1);
+  EXPECT_EQ(last_response_number_, 11);
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
   context.SendResponse(OkStatus(), bad_payload);
-  EXPECT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.rpc_error(), Status::DataLoss());
+  EXPECT_EQ(responses_received_, 1);
+  EXPECT_EQ(rpc_error_, Status::DataLoss());
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
   context.SendResponse(OkStatus(), r2);
-  EXPECT_TRUE(handler.active());
-  EXPECT_EQ(handler.responses_received(), 2u);
-  EXPECT_EQ(handler.last_response().number, 22u);
+  EXPECT_TRUE(active_);
+  EXPECT_EQ(responses_received_, 2);
+  EXPECT_EQ(last_response_number_, 22);
 
   context.SendPacket(internal::PacketType::SERVER_ERROR, Status::NotFound());
-  EXPECT_EQ(handler.responses_received(), 2u);
-  EXPECT_EQ(handler.rpc_error(), Status::NotFound());
+  EXPECT_EQ(responses_received_, 2);
+  EXPECT_EQ(rpc_error_, Status::NotFound());
 }
 
 }  // namespace
