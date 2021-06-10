@@ -41,10 +41,10 @@ class TestInitiator : public Initiator {
 // This test just checks to make sure the Device object compiles.
 // TODO(b/185609270): Full test coverage.
 TEST(DeviceCompilationTest, CompileOk) {
-  constexpr Address kDummyDeviceAddress = Address::SevenBit<0x3F>();
+  constexpr Address kTestDeviceAddress = Address::SevenBit<0x3F>();
 
   TestInitiator initiator;
-  Device device = Device(initiator, kDummyDeviceAddress);
+  Device device = Device(initiator, kTestDeviceAddress);
 }
 
 }  // namespace

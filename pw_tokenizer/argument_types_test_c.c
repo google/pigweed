@@ -24,7 +24,7 @@
 #error "This is a test of C code and must be compiled as C, not C++."
 #endif  // __cplusplus
 
-struct DummyType {};  // stand-in type for pointer argument type test
+struct FakeType {};  // stand-in type for pointer argument type test
 
 // Check each relevant type mapping using static_asserts.
 #define CHECK_TYPE(c_type, enum_type)                     \
@@ -62,7 +62,7 @@ CHECK_TYPE(signed char*,      _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 CHECK_TYPE(unsigned char*,    _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 CHECK_TYPE(int*,              _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 CHECK_TYPE(long long*,        _PW_TOKENIZER_SELECT_INT_TYPE(void*));
-CHECK_TYPE(struct DummyType*, _PW_TOKENIZER_SELECT_INT_TYPE(void*));
+CHECK_TYPE(struct FakeType*,  _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 // clang-format on
 
 // null

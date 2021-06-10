@@ -25,7 +25,7 @@ using ::pw::Status;
 using namespace std::literals::chrono_literals;
 
 constexpr uint8_t kErrorValue = 0x11;
-constexpr Address kDummyDeviceAddress = Address::SevenBit<0x3F>();
+constexpr Address kTestDeviceAddress = Address::SevenBit<0x3F>();
 
 constexpr chrono::SystemClock::duration kTimeout =
     std::chrono::duration_cast<chrono::SystemClock::duration>(100ms);
@@ -70,7 +70,7 @@ class TestInitiator : public Initiator {
 TEST(RegisterDevice, Construction) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 }
@@ -78,7 +78,7 @@ TEST(RegisterDevice, Construction) {
 TEST(RegisterDevice, WriteRegisters8With2RegistersAnd1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 
@@ -107,7 +107,7 @@ TEST(RegisterDevice, WriteRegisters8With2RegistersAnd1ByteAddress) {
 TEST(RegisterDevice, WriteRegisters8With2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k2Bytes);
 
@@ -137,7 +137,7 @@ TEST(RegisterDevice, WriteRegisters8With2RegistersAnd2ByteAddress) {
 TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k2Bytes);
 
@@ -172,7 +172,7 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddress) {
 TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k2Bytes);
 
@@ -209,7 +209,7 @@ TEST(RegisterDevice, WriteRegisters16With2RegistersAnd2ByteAddressBigEndian) {
 TEST(RegisterDevice, WriteRegisters8BufferTooSmall) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k2Bytes);
 
@@ -224,7 +224,7 @@ TEST(RegisterDevice, WriteRegisters8BufferTooSmall) {
 TEST(RegisterDevice, WriteRegister16With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 
@@ -253,7 +253,7 @@ TEST(RegisterDevice, WriteRegister16With1ByteAddress) {
 TEST(RegisterDevice, WriteRegister32With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 
@@ -282,7 +282,7 @@ TEST(RegisterDevice, WriteRegister32With1ByteAddress) {
 TEST(RegisterDevice, WriteRegister16with2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k2Bytes);
 
@@ -312,7 +312,7 @@ TEST(RegisterDevice, WriteRegister16with2ByteAddress) {
 TEST(RegisterDevice, WriteRegister16With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k1Byte);
 
@@ -342,7 +342,7 @@ TEST(RegisterDevice, WriteRegister16With1ByteAddressAndBigEndian) {
 TEST(RegisterDevice, WriteRegister32With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k1Byte);
 
@@ -372,7 +372,7 @@ TEST(RegisterDevice, WriteRegister32With1ByteAddressAndBigEndian) {
 TEST(RegisterDevice, WriteRegister16With2ByteAddressAndBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k2Bytes);
 
@@ -404,7 +404,7 @@ TEST(RegisterDevice, WriteRegister16With2ByteAddressAndBigEndian) {
 TEST(RegisterDevice, ReadRegisters8ByteWith2RegistersAnd1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 
@@ -434,7 +434,7 @@ TEST(RegisterDevice, ReadRegisters8ByteWith2RegistersAnd1ByteAddress) {
 TEST(RegisterDevice, ReadRegisters8IntWith2RegistersAnd1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 
@@ -465,7 +465,7 @@ TEST(RegisterDevice, ReadRegisters8IntWith2RegistersAnd1ByteAddress) {
 TEST(RegisterDevice, ReadRegisters8ByteWith2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k2Bytes);
 
@@ -495,7 +495,7 @@ TEST(RegisterDevice, ReadRegisters8ByteWith2RegistersAnd2ByteAddress) {
 TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k2Bytes);
 
@@ -526,7 +526,7 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddress) {
 TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddressBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k2Bytes);
 
@@ -559,7 +559,7 @@ TEST(RegisterDevice, ReadRegisters16With2RegistersAnd2ByteAddressBigEndian) {
 TEST(RegisterDevice, ReadRegister16With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 
@@ -590,7 +590,7 @@ TEST(RegisterDevice, ReadRegister16With1ByteAddress) {
 TEST(RegisterDevice, ReadRegister32With1ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k1Byte);
 
@@ -622,7 +622,7 @@ TEST(RegisterDevice, ReadRegister32With1ByteAddress) {
 TEST(RegisterDevice, ReadRegister16With2ByteAddress) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::little,
                         RegisterAddressSize::k2Bytes);
 
@@ -653,7 +653,7 @@ TEST(RegisterDevice, ReadRegister16With2ByteAddress) {
 TEST(RegisterDevice, ReadRegister16With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k1Byte);
 
@@ -686,7 +686,7 @@ TEST(RegisterDevice, ReadRegister16With1ByteAddressAndBigEndian) {
 TEST(RegisterDevice, ReadRegister32With1ByteAddressAndBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k1Byte);
 
@@ -720,7 +720,7 @@ TEST(RegisterDevice, ReadRegister32With1ByteAddressAndBigEndian) {
 TEST(RegisterDevice, ReadRegister16With2ByteAddressAndBigEndian) {
   TestInitiator initiator;
   RegisterDevice device(initiator,
-                        kDummyDeviceAddress,
+                        kTestDeviceAddress,
                         std::endian::big,
                         RegisterAddressSize::k2Bytes);
 

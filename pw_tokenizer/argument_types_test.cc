@@ -23,7 +23,7 @@
 namespace pw::tokenizer {
 namespace {
 
-struct DummyType {};
+struct FakeType {};
 
 // Check each relevant type mapping.
 #define CHECK_TYPE(c_type, enum_type)                     \
@@ -61,7 +61,7 @@ CHECK_TYPE(signed char*,      _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 CHECK_TYPE(unsigned char*,    _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 CHECK_TYPE(int*,              _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 CHECK_TYPE(long long*,        _PW_TOKENIZER_SELECT_INT_TYPE(void*));
-CHECK_TYPE(DummyType*,        _PW_TOKENIZER_SELECT_INT_TYPE(void*));
+CHECK_TYPE(FakeType*,         _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 
 // nullptr
 CHECK_TYPE(std::nullptr_t,    _PW_TOKENIZER_SELECT_INT_TYPE(void*));

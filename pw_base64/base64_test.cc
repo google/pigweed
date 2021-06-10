@@ -183,7 +183,7 @@ constexpr EncodedData kRandomTestData[] = {
     {4, "\x77\xe1\x63\x51", "d+FjUQ=="},
     {4, "\x7d\xa6\x8c\x5e", "faaMXg=="},
     {5, "\x6e\xb8\x91\x3f\xac", "briRP6w="},
-    {5, "\xd1\x16\x7f\x1d\xef", "0RZ/He8="},
+    {5, "\xd1\x16\x7f\x1d\xef", "0RZ/He8="},  // inclusive-language: ignore
     {5, "\x42\x95\xfb\x24\xee", "QpX7JO4="},
     {5, "\x19\xfd\xe5\x96\xc1", "Gf3llsE="},
     {5, "\x42\x5a\xb3\xfe\x13", "Qlqz/hM="},
