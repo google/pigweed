@@ -567,8 +567,7 @@ For more information on how to create your own platforms refer to the official
 and platforms in the '//pw_build/platforms' and '//pw_build/constraints'
 directories.
 
-.. inclusive-language: ignore
-.. _Bazel platforms reference: https://docs.bazel.build/versions/master/platforms.html
+.. _Bazel platforms reference: https://docs.bazel.build/versions/main/platforms.html
 
 Testing
 ^^^^^^^
@@ -718,15 +717,11 @@ however it is possible to override this from the command line. e.g.
 
 
 
-.. inclusive-language: disable
+.. _Bazel selects reference: https://docs.bazel.build/versions/main/configurable-attributes.html#select-and-dependencies
 
-.. _Bazel selects reference: https://docs.bazel.build/versions/master/configurable-attributes.html#select-and-dependencies
+.. _Bazel target_compatible_with reference: https://docs.bazel.build/versions/main/platforms.html#skipping-incompatible-targets
 
-.. _Bazel target_compatible_with reference: https://docs.bazel.build/versions/master/platforms.html#skipping-incompatible-targets
-
-.. _Bazel config reference: https://docs.bazel.build/versions/master/skylark/config.html
-
-.. inclusive-language: enable
+.. _Bazel config reference: https://docs.bazel.build/versions/main/skylark/config.html
 
 
 Pigweeds configuration
