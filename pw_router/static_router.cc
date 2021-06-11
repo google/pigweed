@@ -21,6 +21,7 @@ namespace pw::router {
 
 Status StaticRouter::RoutePacket(ConstByteSpan packet) {
   uint32_t address;
+  PacketMetadata metadata = {};
 
   {
     // Only packet parsing is synchronized within the router; egresses must be
@@ -39,6 +40,9 @@ Status StaticRouter::RoutePacket(ConstByteSpan packet) {
     }
 
     address = result.value();
+
+    // Populate the metadata with fields extracted from the packet.
+    metadata.priority = parser_.GetPriority();
   }
 
   auto route = std::find_if(routes_.begin(), routes_.end(), [&](auto r) {
@@ -49,7 +53,8 @@ Status StaticRouter::RoutePacket(ConstByteSpan packet) {
     return Status::NotFound();
   }
 
-  if (Status status = route->egress.SendPacket(packet); !status.ok()) {
+  if (Status status = route->egress.SendPacket(packet, metadata);
+      !status.ok()) {
     egress_errors_.Increment();
     return Status::Unavailable();
   }

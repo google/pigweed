@@ -25,12 +25,16 @@ struct BasicPacket {
   static constexpr uint32_t kMagic = 0x8badf00d;
 
   constexpr BasicPacket(uint32_t addr, uint64_t data)
-      : magic(kMagic), address(addr), payload(data) {}
+      : magic(kMagic), address(addr), priority(0), payload(data) {}
+
+  constexpr BasicPacket(uint32_t addr, uint32_t prio, uint64_t data)
+      : magic(kMagic), address(addr), priority(prio), payload(data) {}
 
   ConstByteSpan data() const { return std::as_bytes(std::span(this, 1)); }
 
   uint32_t magic;
   uint32_t address;
+  uint32_t priority;
   uint64_t payload;
 };
 
@@ -48,12 +52,19 @@ class BasicPacketParser : public PacketParser {
     return packet_->address;
   }
 
+  std::optional<uint32_t> GetPriority() const final {
+    PW_DCHECK_NOTNULL(packet_);
+    return packet_->priority;
+  };
+
  private:
   const BasicPacket* packet_;
 };
 
-EgressFunction GoodEgress(+[](ConstByteSpan) { return OkStatus(); });
-EgressFunction BadEgress(+[](ConstByteSpan) {
+EgressFunction GoodEgress(+[](ConstByteSpan, const PacketMetadata&) {
+  return OkStatus();
+});
+EgressFunction BadEgress(+[](ConstByteSpan, const PacketMetadata&) {
   return Status::ResourceExhausted();
 });
 
@@ -65,6 +76,23 @@ TEST(StaticRouter, RoutePacket_RoutesToAnEgress) {
   EXPECT_EQ(router.RoutePacket(BasicPacket(1, 0xdddd).data()), OkStatus());
   EXPECT_EQ(router.RoutePacket(BasicPacket(2, 0xdddd).data()),
             Status::Unavailable());
+}
+
+TEST(StaticRouter, RoutePacket_ForwardsPacketMetadata) {
+  PacketMetadata metadata = {};
+  EgressFunction metadata_egress(
+      [&metadata](ConstByteSpan, const PacketMetadata& md) {
+        metadata = md;
+        return OkStatus();
+      });
+
+  BasicPacketParser parser;
+  StaticRouter::Route routes[] = {{1, metadata_egress}};
+  StaticRouter router(parser, std::span(routes));
+
+  EXPECT_EQ(router.RoutePacket(BasicPacket(1, 71, 0xdddd).data()), OkStatus());
+  ASSERT_TRUE(metadata.priority.has_value());
+  EXPECT_EQ(metadata.priority.value(), 71u);
 }
 
 TEST(StaticRouter, RoutePacket_ReturnsParserError) {

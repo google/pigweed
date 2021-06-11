@@ -41,6 +41,13 @@ class PacketParser {
   // Guaranteed to only be called if Parse() succeeded and while the data passed
   // to Parse() is valid.
   virtual std::optional<uint32_t> GetDestinationAddress() const = 0;
+
+  // Extracts the project-specific priority of the last parsed packet, if one
+  // exists.
+  //
+  // Guaranteed to only be called if Parse() succeeded and while the data passed
+  // to Parse() is valid.
+  virtual std::optional<uint32_t> GetPriority() const { return std::nullopt; }
 };
 
 }  // namespace pw::router

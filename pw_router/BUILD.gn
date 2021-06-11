@@ -53,7 +53,10 @@ pw_source_set("packet_parser") {
 pw_source_set("egress_function") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_router/egress_function.h" ]
-  public_deps = [ ":egress" ]
+  public_deps = [
+    ":egress",
+    dir_pw_function,
+  ]
 }
 
 pw_doc_group("docs") {

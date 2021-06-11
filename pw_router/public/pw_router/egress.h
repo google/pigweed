@@ -13,12 +13,19 @@
 // the License.
 #pragma once
 
+#include <optional>
 #include <span>
 
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"
 
 namespace pw::router {
+
+// Data extracted from a packet which is forwarded to the egress.
+struct PacketMetadata {
+  // Project-defined priority of the packet.
+  std::optional<uint32_t> priority;
+};
 
 // Data egress for a router to send packets over some transport system.
 class Egress {
@@ -29,7 +36,8 @@ class Egress {
   // an error status on failure.
   //
   // TODO(frolv): Document possible return values.
-  virtual Status SendPacket(ConstByteSpan packet) = 0;
+  virtual Status SendPacket(ConstByteSpan packet,
+                            const PacketMetadata& metadata) = 0;
 };
 
 }  // namespace pw::router

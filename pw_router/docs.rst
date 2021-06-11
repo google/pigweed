@@ -22,6 +22,11 @@ The Egress class is a virtual interface for sending packet data over a network
 link. Egress implementations provide a single ``SendPacket`` function, which
 takes the raw packet data and transmits it.
 
+Egresses are provided with optional metadata extracted from the packet, if it
+exists, to aid with transmitting decisions. For example, if packets in a project
+include a priority, egresses may use it to provide quality-of-service by
+dropping certain packets under heavy load.
+
 Some common egress implementations are provided upstream in Pigweed.
 
 StaticRouter
