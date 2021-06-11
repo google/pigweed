@@ -63,12 +63,8 @@ def _link_files(source_root: Path, sources: Iterable[Path],
         # If the link failed try copying. If copying fails re-raise the
         # original exception.
         except OSError:
-            try:
-                shutil.copy(source, dest)
-                yield dest
-            except OSError:
-                pass
-            raise
+            shutil.copy(source, dest)
+            yield dest
 
 
 def _link_files_or_dirs(paths: Iterable[Path],
