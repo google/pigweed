@@ -23,6 +23,7 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/test_method.h"
 #include "pw_rpc/service.h"
+#include "pw_rpc_private/fake_server_reader_writer.h"
 #include "pw_rpc_private/internal_test_utils.h"
 
 namespace pw::rpc {
@@ -79,11 +80,21 @@ class BasicServer : public ::testing::Test {
       uint32_t channel_id,
       uint32_t service_id,
       uint32_t method_id,
-      std::span<const byte> payload = kDefaultPayload) {
-    auto result = Packet(type, channel_id, service_id, method_id, payload)
-                      .Encode(request_buffer_);
+      std::span<const byte> payload = kDefaultPayload,
+      Status status = OkStatus()) {
+    auto result =
+        Packet(type, channel_id, service_id, method_id, payload, status)
+            .Encode(request_buffer_);
     EXPECT_EQ(OkStatus(), result.status());
     return result.value_or(ConstByteSpan());
+  }
+
+  template <typename T = ConstByteSpan>
+  ConstByteSpan PacketForRpc(PacketType type,
+                             Status status = OkStatus(),
+                             T&& payload = {}) {
+    return EncodeRequest(
+        type, 1, 42, 100, std::as_bytes(std::span(payload)), status);
   }
 
   TestOutput<128> output_;
@@ -224,58 +235,76 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsError) {
   EXPECT_EQ(packet.status(), Status::FailedPrecondition());
 }
 
-class MethodPending : public BasicServer {
+class BidiMethod : public BasicServer {
  protected:
-  MethodPending()
+  BidiMethod()
       : call_(static_cast<internal::Server&>(server_),
               static_cast<internal::Channel&>(channels_[0]),
               service_,
               service_.method(100)),
-        writer_(call_) {
-    ASSERT_TRUE(writer_.open());
+        responder_(call_) {
+    ASSERT_TRUE(responder_.open());
   }
 
   internal::ServerCall call_;
-  internal::Responder writer_;
+  internal::test::FakeServerReaderWriter responder_;
 };
 
-TEST_F(MethodPending, ProcessPacket_Cancel_ClosesServerWriter) {
+TEST_F(BidiMethod, Cancel_ClosesServerWriter) {
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100),
-                                  output_));
+            server_.ProcessPacket(PacketForRpc(PacketType::CANCEL), output_));
 
-  EXPECT_FALSE(writer_.open());
+  EXPECT_FALSE(responder_.open());
 }
 
-TEST_F(MethodPending, ProcessPacket_Cancel_SendsNoResponse) {
+TEST_F(BidiMethod, Cancel_SendsNoResponse) {
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100),
-                                  output_));
+            server_.ProcessPacket(PacketForRpc(PacketType::CANCEL), output_));
 
   EXPECT_EQ(output_.packet_count(), 0u);
 }
 
-TEST_F(MethodPending,
-       ProcessPacket_ClientError_ClosesServerWriterWithoutStreamEnd) {
-  EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(
-                EncodeRequest(PacketType::CLIENT_ERROR, 1, 42, 100), output_));
+TEST_F(BidiMethod, ClientError_ClosesServerWriterWithoutResponse) {
+  ASSERT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_ERROR), output_));
 
-  EXPECT_FALSE(writer_.open());
+  EXPECT_FALSE(responder_.open());
   EXPECT_EQ(output_.packet_count(), 0u);
 }
 
-TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectChannel) {
+TEST_F(BidiMethod, ClientError_CallsOnErrorCallback) {
+  Status status = Status::Unknown();
+  responder_.set_on_error([&status](Status error) { status = error; });
+
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_ERROR,
+                                               Status::Unauthenticated()),
+                                  output_));
+
+  EXPECT_EQ(status, Status::Unauthenticated());
+}
+
+TEST_F(BidiMethod, Cancel_CallsOnErrorCallback) {
+  Status status = Status::Unknown();
+  responder_.set_on_error([&status](Status error) { status = error; });
+
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::CANCEL), output_));
+  EXPECT_EQ(status, Status::Cancelled());
+}
+
+TEST_F(BidiMethod, Cancel_IncorrectChannel) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 2, 42, 100),
                                   output_));
 
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::FailedPrecondition());
-  EXPECT_TRUE(writer_.open());
+  EXPECT_TRUE(responder_.open());
 }
 
-TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectService) {
+TEST_F(BidiMethod, Cancel_IncorrectService) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 43, 100),
                                   output_));
@@ -284,16 +313,89 @@ TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectService) {
   EXPECT_EQ(output_.sent_packet().status(), Status::NotFound());
   EXPECT_EQ(output_.sent_packet().service_id(), 43u);
   EXPECT_EQ(output_.sent_packet().method_id(), 100u);
-  EXPECT_TRUE(writer_.open());
+  EXPECT_TRUE(responder_.open());
 }
 
-TEST_F(MethodPending, ProcessPacket_CancelIncorrectMethod) {
+TEST_F(BidiMethod, Cancel_IncorrectMethod) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 101),
                                   output_));
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::NotFound());
-  EXPECT_TRUE(writer_.open());
+  EXPECT_TRUE(responder_.open());
+}
+
+TEST_F(BidiMethod, ClientStream_CallsCallback) {
+  ConstByteSpan data = std::as_bytes(std::span("?"));
+  responder_.set_on_next([&data](ConstByteSpan payload) { data = payload; });
+
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(
+                PacketForRpc(PacketType::CLIENT_STREAM, {}, "hello"), output_));
+
+  EXPECT_EQ(output_.packet_count(), 0u);
+  EXPECT_STREQ(reinterpret_cast<const char*>(data.data()), "hello");
+}
+
+TEST_F(BidiMethod, ClientStreamEnd_CallsCallback) {
+  bool called = false;
+  responder_.set_on_client_stream_end([&called]() { called = true; });
+
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END),
+                                  output_));
+
+  EXPECT_EQ(output_.packet_count(), 0u);
+  EXPECT_TRUE(called);
+}
+
+TEST_F(BidiMethod, ClientStreamEnd_ErrorWhenClosed) {
+  const auto end = PacketForRpc(PacketType::CLIENT_STREAM_END);
+  ASSERT_EQ(OkStatus(), server_.ProcessPacket(end, output_));
+
+  bool called = false;
+  responder_.set_on_client_stream_end([&called]() { called = true; });
+
+  ASSERT_EQ(OkStatus(), server_.ProcessPacket(end, output_));
+
+  ASSERT_EQ(output_.packet_count(), 1u);
+  EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
+  EXPECT_EQ(output_.sent_packet().status(), Status::FailedPrecondition());
+}
+
+class ServerStreamingMethod : public BasicServer {
+ protected:
+  ServerStreamingMethod()
+      : call_(static_cast<internal::Server&>(server_),
+              static_cast<internal::Channel&>(channels_[0]),
+              service_,
+              service_.method(100)),
+        responder_(call_) {
+    ASSERT_TRUE(responder_.open());
+  }
+
+  internal::ServerCall call_;
+  internal::test::FakeServerWriter responder_;
+};
+
+TEST_F(ServerStreamingMethod, ClientStream_InvalidArgumentError) {
+  ASSERT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM), output_));
+
+  ASSERT_EQ(output_.packet_count(), 1u);
+  EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
+  EXPECT_EQ(output_.sent_packet().status(), Status::InvalidArgument());
+}
+
+TEST_F(ServerStreamingMethod, ClientStreamEnd_InvalidArgumentError) {
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END),
+                                  output_));
+
+  ASSERT_EQ(output_.packet_count(), 1u);
+  EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
+  EXPECT_EQ(output_.sent_packet().status(), Status::InvalidArgument());
 }
 
 }  // namespace

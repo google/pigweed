@@ -96,6 +96,7 @@ pw_cc_library(
         ":internal_packet_pwpb",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_function",
         "//pw_log",
         "//pw_span",
         "//pw_status",
@@ -119,6 +120,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_rpc/internal/test_method.h",
         "pw_rpc_private/fake_channel_output.h",
+        "pw_rpc_private/fake_server_reader_writer.h",
         "pw_rpc_private/internal_test_utils.h",
         "pw_rpc_private/method_impl_tester.h",
     ],

@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -30,16 +30,25 @@
 
 namespace pw::rpc {
 
+// Non-templated base to avoid instantiating Write multiple times.
+class GenericNanopbServerWriter : public internal::Responder {
+ protected:
+  constexpr GenericNanopbServerWriter()
+      : internal::Responder(internal::Responder::kHasClientStream) {}
+
+  Status WriteResponse(const void* response);
+};
+
 // Define the Nanopb version of the the ServerWriter class.
 template <typename T>
-class ServerWriter : public internal::Responder {
+class NanopbServerWriter : public GenericNanopbServerWriter {
  public:
   // Allow default construction so that users can declare a variable into which
   // to move ServerWriters from RPC calls.
-  constexpr ServerWriter() = default;
+  constexpr NanopbServerWriter() = default;
 
-  ServerWriter(ServerWriter&&) = default;
-  ServerWriter& operator=(ServerWriter&&) = default;
+  NanopbServerWriter(NanopbServerWriter&&) = default;
+  NanopbServerWriter& operator=(NanopbServerWriter&&) = default;
 
   // Writes a response struct. Returns the following Status codes:
   //
@@ -49,8 +58,16 @@ class ServerWriter : public internal::Responder {
   //   other errors - the ChannelOutput failed to send the packet; the error
   //       codes are determined by the ChannelOutput implementation
   //
-  Status Write(const T& response);
+  Status Write(const T& response) { return WriteResponse(&response); }
+
+  Status Finish(Status status = OkStatus()) {
+    return CloseAndSendResponse(status);
+  }
 };
+
+// TODO(hepler): "pw::rpc::ServerWriter" should not be specific to Nanopb.
+template <typename T>
+using ServerWriter = NanopbServerWriter<T>;
 
 namespace internal {
 
@@ -299,24 +316,5 @@ class NanopbMethod : public Method {
 };
 
 }  // namespace internal
-
-template <typename T>
-Status ServerWriter<T>::Write(const T& response) {
-  if (!open()) {
-    return Status::FailedPrecondition();
-  }
-
-  std::span<std::byte> buffer = AcquirePayloadBuffer();
-
-  if (auto result =
-          static_cast<const internal::NanopbMethod&>(method()).EncodeResponse(
-              &response, buffer);
-      result.ok()) {
-    return ReleasePayloadBuffer(buffer.first(result.size()));
-  }
-
-  ReleasePayloadBuffer();
-  return Status::Internal();
-}
 
 }  // namespace pw::rpc

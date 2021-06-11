@@ -59,6 +59,7 @@ pw_add_module_library(pw_rpc.common
     pw_assert
     pw_bytes
     pw_containers
+    pw_function
     pw_span
     pw_status
     pw_rpc.protos.pwpb

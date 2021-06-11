@@ -100,6 +100,7 @@ pw_source_set("common") {
     "$dir_pw_containers:intrusive_list",
     dir_pw_assert,
     dir_pw_bytes,
+    dir_pw_function,
     dir_pw_status,
   ]
   deps = [ dir_pw_log ]
@@ -128,6 +129,7 @@ pw_source_set("test_utils") {
   public = [
     "public/pw_rpc/internal/test_method.h",
     "pw_rpc_private/fake_channel_output.h",
+    "pw_rpc_private/fake_server_reader_writer.h",
     "pw_rpc_private/internal_test_utils.h",
     "pw_rpc_private/method_impl_tester.h",
   ]

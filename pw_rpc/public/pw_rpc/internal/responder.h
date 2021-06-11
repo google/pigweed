@@ -18,9 +18,11 @@
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
+#include "pw_function/function.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/method_type.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 
@@ -33,38 +35,98 @@ namespace internal {
 class Packet;
 
 // Internal RPC Responder class. The Responder is used to respond to any type of
-// RPC. Public classes like ServerWriters inherit from it and provide a public
-// API for their use case.
+// RPC. Public classes like ServerWriters inherit from it with private
+// inheritance and provide a public API for their use case. The Responder's
+// public API is used by the Server class.
+//
+// Private inheritance is used in place of composition or more complex
+// inheritance hierarchy so that these objects all inherit from a common
+// IntrusiveList::Item object. Private inheritance also gives the derived classs
+// full control over their interfaces.
 class Responder : public IntrusiveList<Responder>::Item {
  public:
-  Responder(ServerCall& call);
+  enum HasClientStream : bool { kNoClientStream, kHasClientStream };
+
+  // Creates a Responder for an open RPC.
+  Responder(ServerCall& call, HasClientStream has_client_stream);
 
   Responder(const Responder&) = delete;
 
-  Responder(Responder&& other) : state_(kClosed) { *this = std::move(other); }
-
-  ~Responder() { Finish(); }
+  ~Responder() { CloseAndSendResponse(OkStatus()); }
 
   Responder& operator=(const Responder&) = delete;
 
-  Responder& operator=(Responder&& other);
-
   // True if the Responder is active and ready to send responses.
-  bool open() const { return state_ == kOpen; }
+  bool open() const { return rpc_state_ == kOpen; }
 
   uint32_t channel_id() const { return call_.channel().id(); }
   uint32_t service_id() const { return call_.service().id(); }
   uint32_t method_id() const;
 
-  // Closes the Responder, if it is open.
-  Status Finish(Status status = OkStatus());
+  // Closes the Responder and sends a RESPONSE packet, if it is open. Returns
+  // the status from sending the packet, or FAILED_PRECONDITION if the Responder
+  // is not open.
+  Status CloseAndSendResponse(Status status);
+
+  void HandleError(Status status) {
+    Close();
+    if (on_error_) {
+      on_error_(status);
+    }
+  }
+
+  void HandleClientStream(std::span<const std::byte> message) const {
+    if (on_next_) {
+      on_next_(message);
+    }
+  }
+
+  void EndClientStream() {
+    client_stream_state_ = kClientStreamClosed;
+
+    if (on_client_stream_end_) {
+      on_client_stream_end_();
+    }
+  }
+
+  bool has_client_stream() const {
+    return has_client_stream_ == kHasClientStream;
+  }
+
+  bool client_stream_open() const {
+    return client_stream_state_ == kClientStreamOpen;
+  }
 
  protected:
-  constexpr Responder() : state_{kClosed} {}
+  // Creates a Responder for a closed RPC.
+  constexpr Responder(HasClientStream has_client_stream)
+      : rpc_state_(kClosed),
+        has_client_stream_(has_client_stream),
+        client_stream_state_(kClientStreamClosed) {}
+
+  // Initialize rpc_state_ to closed since move-assignment will check if the
+  // Responder is open before moving into it.
+  Responder(Responder&& other) : rpc_state_(kClosed) {
+    *this = std::move(other);
+  }
+
+  Responder& operator=(Responder&& other);
 
   const Method& method() const { return call_.method(); }
 
   const Channel& channel() const { return call_.channel(); }
+
+  void set_on_error(Function<void(Status)> on_error) {
+    on_error_ = std::move(on_error);
+  }
+
+  void set_on_next(Function<void(std::span<const std::byte>)> on_next) {
+    on_next_ = std::move(on_next);
+  }
+
+  void set_on_client_stream_end(Function<void()> on_client_stream_end) {
+    on_client_stream_end_ = std::move(on_client_stream_end);
+  }
 
   constexpr const Channel::OutputBuffer& buffer() const { return response_; }
 
@@ -80,13 +142,26 @@ class Responder : public IntrusiveList<Responder>::Item {
   Status ReleasePayloadBuffer();
 
  private:
-  friend class rpc::Server;
-
+  // Removes the RPC from the server & marks as closed. The responder must be
+  // open when this is called.
   void Close();
 
   ServerCall call_;
   Channel::OutputBuffer response_;
-  enum { kClosed, kOpen } state_;
+
+  // Called when the RPC is terminated due to an error.
+  Function<void(Status error)> on_error_;
+
+  // Called when a request is received. Only used for RPCs with client streams.
+  // The raw payload buffer is passed to the callback.
+  Function<void(std::span<const std::byte> payload)> on_next_;
+
+  // Called when a client stream completes.
+  Function<void()> on_client_stream_end_;
+
+  enum : bool { kClosed, kOpen } rpc_state_;
+  HasClientStream has_client_stream_;
+  enum : bool { kClientStreamClosed, kClientStreamOpen } client_stream_state_;
 };
 
 }  // namespace internal

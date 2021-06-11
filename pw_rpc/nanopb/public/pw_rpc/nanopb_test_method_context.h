@@ -207,7 +207,8 @@ class ServerStreamingContext {
   // Invokes the RPC with the provided request.
   void call(const Request& request) {
     ctx_.output.clear();
-    internal::Responder server_writer(ctx_.call);
+    internal::Responder server_writer(ctx_.call,
+                                      internal::Responder::kNoClientStream);
     return CallMethodImplFunction<kMethod>(
         ctx_.call,
         request,
@@ -218,7 +219,8 @@ class ServerStreamingContext {
   // This should not be called alongside call(); use one or the other.
   ServerWriter<Response> writer() {
     ctx_.output.clear();
-    internal::Responder server_writer(ctx_.call);
+    internal::Responder server_writer(ctx_.call,
+                                      internal::Responder::kNoClientStream);
     return std::move(static_cast<ServerWriter<Response>&>(server_writer));
   }
 

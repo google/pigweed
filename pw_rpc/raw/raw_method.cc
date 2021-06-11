@@ -69,7 +69,7 @@ void RawMethod::CallUnary(ServerCall& call, const Packet& request) const {
 
 void RawMethod::CallServerStreaming(ServerCall& call,
                                     const Packet& request) const {
-  internal::Responder server_writer(call);
+  internal::Responder server_writer(call, internal::Responder::kNoClientStream);
   function_.server_streaming(call, request.payload(), server_writer);
 }
 

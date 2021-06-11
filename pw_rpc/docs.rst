@@ -463,6 +463,8 @@ status field indicates the type of error.
 * ``NOT_FOUND`` -- The requested service or method does not exist.
 * ``FAILED_PRECONDITION`` -- A client stream or cancel packet was sent for an
   RPC that is not pending.
+* ``INVALID_ARGUMENT`` -- The client sent a packet type to an RPC that does not
+  support it (e.g. a ``CLIENT_STREAM`` was sent to a server streaming RPC).
 * ``RESOURCE_EXHAUSTED`` -- The request came on a new channel, but a channel
   could not be allocated for it.
 * ``INTERNAL`` -- The server was unable to respond to an RPC due to an

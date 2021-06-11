@@ -19,9 +19,29 @@
 #include "pw_log/log.h"
 #include "pw_rpc/internal/packet.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
 
 using std::byte;
+
+Status GenericNanopbServerWriter::WriteResponse(const void* response) {
+  if (!open()) {
+    return Status::FailedPrecondition();
+  }
+
+  std::span<std::byte> buffer = AcquirePayloadBuffer();
+
+  if (auto result =
+          static_cast<const internal::NanopbMethod&>(method()).EncodeResponse(
+              response, buffer);
+      result.ok()) {
+    return ReleasePayloadBuffer(buffer.first(result.size()));
+  }
+
+  ReleasePayloadBuffer();
+  return Status::Internal();
+}
+
+namespace internal {
 
 void NanopbMethod::CallUnary(ServerCall& call,
                              const Packet& request,
@@ -42,7 +62,7 @@ void NanopbMethod::CallServerStreaming(ServerCall& call,
     return;
   }
 
-  internal::Responder server_writer(call);
+  internal::Responder server_writer(call, internal::Responder::kNoClientStream);
   function_.server_streaming(call, request_struct, server_writer);
 }
 
@@ -94,4 +114,5 @@ void NanopbMethod::SendResponse(Channel& channel,
                Packet::ServerError(request, Status::Internal()));
 }
 
-}  // namespace pw::rpc::internal
+}  // namespace internal
+}  // namespace pw::rpc

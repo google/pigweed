@@ -59,10 +59,10 @@ bool DecodePacket(ChannelOutput& interface,
 }  // namespace
 
 Server::~Server() {
-  // Since the writers remove themselves from the server in Finish(), remove the
-  // first writer until no writers remain.
-  while (!writers_.empty()) {
-    writers_.front().Finish();
+  // Since the responders remove themselves from the server in
+  // CloseAndSendResponse(), close responders until no responders remain.
+  while (!responders_.empty()) {
+    responders_.front().CloseAndSendResponse(OkStatus());
   }
 }
 
@@ -97,6 +97,14 @@ Status Server::ProcessPacket(std::span<const byte> data,
     return OkStatus();
   }
 
+  // Find an existing reader/writer for this RPC, if any.
+  auto responder =
+      std::find_if(responders_.begin(), responders_.end(), [&](auto& w) {
+        return packet.channel_id() == w.channel_id() &&
+               packet.service_id() == w.service_id() &&
+               packet.method_id() == w.method_id();
+      });
+
   switch (packet.type()) {
     case PacketType::REQUEST: {
       internal::ServerCall call(
@@ -105,16 +113,18 @@ Status Server::ProcessPacket(std::span<const byte> data,
       break;
     }
     case PacketType::CLIENT_STREAM:
-      // TODO(hepler): Support client streaming RPCs.
+      HandleClientStreamPacket(packet, *channel, responder);
       break;
     case PacketType::CLIENT_ERROR:
-      HandleClientError(packet);
+      if (responder != responders_.end()) {
+        responder->HandleError(packet.status());
+      }
       break;
     case PacketType::CANCEL:
-      HandleCancelPacket(packet, *channel);
+      HandleCancelPacket(packet, *channel, responder);
       break;
     case PacketType::CLIENT_STREAM_END:
-      // TODO(hepler): Handle client stream end packets.
+      HandleClientStreamPacket(packet, *channel, responder);
       break;
     default:
       channel->Send(Packet::ServerError(packet, Status::Unimplemented()));
@@ -138,34 +148,41 @@ std::tuple<Service*, const internal::Method*> Server::FindMethod(
   return {&(*service), service->FindMethod(packet.method_id())};
 }
 
-void Server::HandleCancelPacket(const Packet& packet,
-                                internal::Channel& channel) {
-  auto writer = std::find_if(writers_.begin(), writers_.end(), [&](auto& w) {
-    return w.channel_id() == packet.channel_id() &&
-           w.service_id() == packet.service_id() &&
-           w.method_id() == packet.method_id();
-  });
-
-  if (writer == writers_.end()) {
+void Server::HandleClientStreamPacket(const internal::Packet& packet,
+                                      internal::Channel& channel,
+                                      ResponderIterator responder) const {
+  if (responder == responders_.end()) {
+    PW_LOG_DEBUG(
+        "Received client stream packet for method that is not pending");
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
-    PW_LOG_WARN("Received CANCEL packet for method that is not pending");
-  } else {
-    writer->Close();
+    return;
+  }
+
+  if (!responder->has_client_stream()) {
+    channel.Send(Packet::ServerError(packet, Status::InvalidArgument()));
+    return;
+  }
+
+  if (!responder->client_stream_open()) {
+    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
+    return;
+  }
+
+  if (packet.type() == PacketType::CLIENT_STREAM) {
+    responder->HandleClientStream(packet.payload());
+  } else {  // Handle PacketType::CLIENT_STREAM_END.
+    responder->EndClientStream();
   }
 }
 
-void Server::HandleClientError(const Packet& packet) {
-  // A client error indicates that the client received a packet that it did not
-  // expect. If the packet belongs to a streaming RPC, cancel the stream without
-  // sending a final SERVER_STREAM_END packet.
-  auto writer = std::find_if(writers_.begin(), writers_.end(), [&](auto& w) {
-    return w.channel_id() == packet.channel_id() &&
-           w.service_id() == packet.service_id() &&
-           w.method_id() == packet.method_id();
-  });
-
-  if (writer != writers_.end()) {
-    writer->Close();
+void Server::HandleCancelPacket(const Packet& packet,
+                                internal::Channel& channel,
+                                ResponderIterator responder) const {
+  if (responder == responders_.end()) {
+    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
+    PW_LOG_DEBUG("Received CANCEL packet for method that is not pending");
+  } else {
+    responder->HandleError(Status::Cancelled());
   }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -23,6 +23,7 @@
 #include "pw_rpc/internal/test_method.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
+#include "pw_rpc_private/fake_server_reader_writer.h"
 #include "pw_rpc_private/internal_test_utils.h"
 
 namespace pw::rpc {
@@ -37,45 +38,28 @@ class TestService : public Service {
 namespace internal {
 namespace {
 
+using pw::rpc::internal::test::FakeServerWriter;
 using std::byte;
 
-TEST(Responder, ConstructWithContext_StartsOpen) {
+TEST(ServerWriter, ConstructWithContext_StartsOpen) {
   ServerContextForTest<TestService> context(TestService::method.method());
 
-  Responder writer(context.get());
+  FakeServerWriter writer(context.get());
 
   EXPECT_TRUE(writer.open());
 }
 
-TEST(Responder, Move_ClosesOriginal) {
+TEST(ServerWriter, Move_ClosesOriginal) {
   ServerContextForTest<TestService> context(TestService::method.method());
 
-  Responder moved(context.get());
-  Responder writer(std::move(moved));
+  FakeServerWriter moved(context.get());
+  FakeServerWriter writer(std::move(moved));
 
 #ifndef __clang_analyzer__
   EXPECT_FALSE(moved.open());
 #endif  // ignore use-after-move
   EXPECT_TRUE(writer.open());
 }
-
-class FakeServerWriter : public Responder {
- public:
-  FakeServerWriter(ServerCall& context) : Responder(context) {}
-
-  constexpr FakeServerWriter() = default;
-
-  Status Write(std::span<const byte> response) {
-    std::span buffer = AcquirePayloadBuffer();
-    std::memcpy(buffer.data(),
-                response.data(),
-                std::min(buffer.size(), response.size()));
-    return ReleasePayloadBuffer(buffer.first(response.size()));
-  }
-
-  ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
-  const Channel::OutputBuffer& output_buffer() { return buffer(); }
-};
 
 TEST(ServerWriter, DefaultConstruct_Closed) {
   FakeServerWriter writer;
@@ -89,8 +73,9 @@ TEST(ServerWriter, Construct_RegistersWithServer) {
 
   auto& writers = context.server().writers();
   EXPECT_FALSE(writers.empty());
-  auto it = std::find_if(
-      writers.begin(), writers.end(), [&](auto& w) { return &w == &writer; });
+  auto it = std::find_if(writers.begin(), writers.end(), [&](auto& w) {
+    return &w == &writer.as_responder();
+  });
   ASSERT_NE(it, writers.end());
 }
 
@@ -182,6 +167,87 @@ TEST(ServerWriter, Closed_IgnoresFinish) {
 
   EXPECT_EQ(OkStatus(), writer.Finish());
   EXPECT_EQ(Status::FailedPrecondition(), writer.Finish());
+}
+
+TEST(ServerWriter, DefaultConstructor_NoClientStream) {
+  FakeServerWriter writer;
+  EXPECT_FALSE(writer.as_responder().has_client_stream());
+  EXPECT_FALSE(writer.as_responder().client_stream_open());
+}
+
+TEST(ServerWriter, Open_NoClientStream) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  FakeServerWriter writer(context.get());
+
+  EXPECT_FALSE(writer.as_responder().has_client_stream());
+  EXPECT_FALSE(writer.as_responder().client_stream_open());
+}
+
+TEST(ServerReader, DefaultConstructor_ClientStreamClosed) {
+  test::FakeServerReader reader;
+  EXPECT_TRUE(reader.as_responder().has_client_stream());
+  EXPECT_FALSE(reader.as_responder().client_stream_open());
+}
+
+TEST(ServerReader, Open_ClientStreamStartsOpen) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  test::FakeServerReader reader(context.get());
+
+  EXPECT_TRUE(reader.as_responder().has_client_stream());
+  EXPECT_TRUE(reader.as_responder().client_stream_open());
+}
+
+TEST(ServerReader, Close_ClosesClientStream) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  test::FakeServerReader reader(context.get());
+
+  EXPECT_TRUE(reader.as_responder().open());
+  EXPECT_TRUE(reader.as_responder().client_stream_open());
+  EXPECT_EQ(OkStatus(), reader.as_responder().CloseAndSendResponse(OkStatus()));
+
+  EXPECT_FALSE(reader.as_responder().open());
+  EXPECT_FALSE(reader.as_responder().client_stream_open());
+}
+
+TEST(ServerReader, HandleClientStream_OnlyClosesClientStream) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  test::FakeServerReader reader(context.get());
+
+  EXPECT_TRUE(reader.open());
+  EXPECT_TRUE(reader.as_responder().client_stream_open());
+  reader.as_responder().EndClientStream();
+
+  EXPECT_TRUE(reader.open());
+  EXPECT_FALSE(reader.as_responder().client_stream_open());
+}
+
+TEST(ServerReaderWriter, Move_MaintainsClientStream) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  test::FakeServerReaderWriter reader_writer(context.get());
+  test::FakeServerReaderWriter destination;
+
+  EXPECT_FALSE(destination.as_responder().client_stream_open());
+
+  destination = std::move(reader_writer);
+  EXPECT_TRUE(destination.as_responder().has_client_stream());
+  EXPECT_TRUE(destination.as_responder().client_stream_open());
+}
+
+TEST(ServerReaderWriter, Move_MovesCallbacks) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  test::FakeServerReaderWriter reader_writer(context.get());
+
+  int calls = 0;
+  reader_writer.set_on_error([&calls](Status) { calls += 1; });
+  reader_writer.set_on_next([&calls](ConstByteSpan) { calls += 1; });
+  reader_writer.set_on_client_stream_end([&calls]() { calls += 1; });
+
+  test::FakeServerReaderWriter destination(std::move(reader_writer));
+  destination.as_responder().HandleClientStream({});
+  destination.as_responder().EndClientStream();
+  destination.as_responder().HandleError(Status::Unknown());
+
+  EXPECT_EQ(calls, 3);
 }
 
 }  // namespace

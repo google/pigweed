@@ -53,22 +53,29 @@ class Server {
   constexpr size_t channel_count() const { return channels_.size(); }
 
  protected:
-  IntrusiveList<internal::Responder>& writers() { return writers_; }
+  IntrusiveList<internal::Responder>& writers() { return responders_; }
 
  private:
   std::tuple<Service*, const internal::Method*> FindMethod(
       const internal::Packet& packet);
 
-  void HandleCancelPacket(const internal::Packet& request,
-                          internal::Channel& channel);
-  void HandleClientError(const internal::Packet& packet);
+  using ResponderIterator = IntrusiveList<internal::Responder>::iterator;
+
+  void HandleClientStreamPacket(const internal::Packet& packet,
+                                internal::Channel& channel,
+                                ResponderIterator responder) const;
+  void HandleCancelPacket(const internal::Packet& packet,
+                          internal::Channel& channel,
+                          ResponderIterator responder) const;
 
   internal::Channel* FindChannel(uint32_t id) const;
   internal::Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
   std::span<internal::Channel> channels_;
   IntrusiveList<Service> services_;
-  IntrusiveList<internal::Responder> writers_;
+
+  // Any asynchronously handled RPCs.
+  IntrusiveList<internal::Responder> responders_;
 };
 
 }  // namespace pw::rpc

@@ -23,7 +23,8 @@ namespace pw::rpc {
 
 class RawServerWriter : public internal::Responder {
  public:
-  RawServerWriter() = default;
+  constexpr RawServerWriter()
+      : internal::Responder(internal::Responder::kNoClientStream) {}
   RawServerWriter(RawServerWriter&&) = default;
   RawServerWriter& operator=(RawServerWriter&&) = default;
 
@@ -36,6 +37,10 @@ class RawServerWriter : public internal::Responder {
   // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary
   // external buffer.
   Status Write(ConstByteSpan response);
+
+  Status Finish(Status status = OkStatus()) {
+    return CloseAndSendResponse(status);
+  }
 };
 
 namespace internal {
