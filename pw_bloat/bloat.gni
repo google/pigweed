@@ -116,10 +116,9 @@ template("pw_size_report") {
 
       # Allow each binary to override the global bloaty config.
       if (defined(binary.bloaty_config)) {
-        _bloaty_configs += [ rebase_path(binary.bloaty_config, root_build_dir) ]
+        _bloaty_configs += [ binary.bloaty_config ]
       } else {
-        _bloaty_configs +=
-            [ rebase_path(pw_bloat_BLOATY_CONFIG, root_build_dir) ]
+        _bloaty_configs += [ pw_bloat_BLOATY_CONFIG ]
       }
 
       _binary_path += ";" + "<TARGET_FILE($_binary_base)>"
@@ -130,7 +129,7 @@ template("pw_size_report") {
 
     _bloat_script_args = [
       "--bloaty-config",
-      string_join(";", _bloaty_configs),
+      string_join(";", rebase_path(_bloaty_configs, root_build_dir)),
       "--out-dir",
       rebase_path(target_gen_dir, root_build_dir),
       "--target",
