@@ -191,6 +191,7 @@ template("_pw_nanopb_rpc_proto_library") {
                     "$dir_pw_third_party/nanopb",
                   ] + invoker.deps
     public = invoker.outputs
+    check_includes = false
   }
 }
 
@@ -234,7 +235,6 @@ template("_pw_nanopb_proto_library") {
       public_deps = [ "$dir_pw_third_party/nanopb" ] + invoker.deps
       sources = invoker.outputs
       public = filter_include(sources, [ "*.pb.h" ])
-      check_includes = false
     }
   }
 }
