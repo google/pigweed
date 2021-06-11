@@ -36,6 +36,7 @@ declare_args() {
   dir_pw_chrono_stl = get_path_info("pw_chrono_stl", "abspath")
   dir_pw_chrono_threadx = get_path_info("pw_chrono_threadx", "abspath")
   dir_pw_cli = get_path_info("pw_cli", "abspath")
+  dir_pw_console = get_path_info("pw_console", "abspath")
   dir_pw_containers = get_path_info("pw_containers", "abspath")
   dir_pw_cpu_exception = get_path_info("pw_cpu_exception", "abspath")
   dir_pw_cpu_exception_cortex_m =

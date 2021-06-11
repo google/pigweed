@@ -211,6 +211,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_bytes",
       "$dir_pw_checksum",
       "$dir_pw_chrono",
+      "$dir_pw_console",
       "$dir_pw_cpu_exception",
       "$dir_pw_hdlc",
       "$dir_pw_i2c",

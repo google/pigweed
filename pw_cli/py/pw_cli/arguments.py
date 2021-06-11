@@ -19,7 +19,7 @@ from pathlib import Path
 import sys
 from typing import NoReturn
 
-from pw_cli import plugins
+from pw_cli import argument_types, plugins
 from pw_cli.branding import banner
 
 _HELP_HEADER = '''The Pigweed command line interface (CLI).
@@ -60,20 +60,6 @@ def _parser() -> argparse.ArgumentParser:
         description=_HELP_HEADER,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    def directory(arg: str) -> Path:
-        path = Path(arg)
-        if path.is_dir():
-            return path.resolve()
-
-        raise argparse.ArgumentTypeError(f'{path} is not a directory')
-
-    def log_level(arg: str) -> int:
-        try:
-            return getattr(logging, arg.upper())
-        except AttributeError:
-            raise argparse.ArgumentTypeError(
-                f'{arg.upper()} is not a valid log level')
-
     # Do not use the built-in help argument so that displaying the help info can
     # be deferred until the pw plugins have been registered.
     argparser.add_argument('-h',
@@ -83,13 +69,13 @@ def _parser() -> argparse.ArgumentParser:
     argparser.add_argument(
         '-C',
         '--directory',
-        type=directory,
+        type=argument_types.directory,
         default=Path.cwd(),
         help='Change to this directory before doing anything')
     argparser.add_argument(
         '-l',
         '--loglevel',
-        type=log_level,
+        type=argument_types.log_level,
         default=logging.INFO,
         help='Set the log level (debug, info, warning, error, critical)')
     argparser.add_argument('--no-banner',

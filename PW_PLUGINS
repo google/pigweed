@@ -16,3 +16,4 @@ package pw_package.pigweed_packages main
 presubmit pw_presubmit.pigweed_presubmit main
 requires pw_cli.requires main
 rpc pw_hdlc.rpc_console main
+console pw_console.__main__ main

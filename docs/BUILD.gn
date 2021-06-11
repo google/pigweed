@@ -75,6 +75,7 @@ group("module_docs") {
     "$dir_pw_chrono_stl:docs",
     "$dir_pw_chrono_threadx:docs",
     "$dir_pw_cli:docs",
+    "$dir_pw_console:docs",
     "$dir_pw_containers:docs",
     "$dir_pw_cpu_exception:docs",
     "$dir_pw_cpu_exception_cortex_m:docs",

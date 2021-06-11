@@ -30,6 +30,7 @@ pw_python_group("python") {
     "$dir_pw_bloat/py",
     "$dir_pw_build/py",
     "$dir_pw_cli/py",
+    "$dir_pw_console/py",
     "$dir_pw_cpu_exception_cortex_m/py",
     "$dir_pw_docgen/py",
     "$dir_pw_doctor/py",
