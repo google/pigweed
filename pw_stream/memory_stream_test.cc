@@ -40,7 +40,18 @@ TEST(MemoryWriter, BytesWritten) {
       memory_writer.Write(&kExpectedStruct, sizeof(kExpectedStruct));
   EXPECT_EQ(status, OkStatus());
   EXPECT_EQ(memory_writer.bytes_written(), sizeof(kExpectedStruct));
-}  // namespace
+}
+
+TEST(MemoryWriter, BytesWrittenOnConstruction) {
+  constexpr size_t bytes_written = kSinkBufferSize / 2;
+  std::memset(memory_buffer.data(), 1u, bytes_written);
+  MemoryWriter memory_writer(memory_buffer, bytes_written);
+  EXPECT_EQ(memory_writer.bytes_written(), bytes_written);
+  EXPECT_EQ(memcmp(memory_writer.WrittenData().data(),
+                   memory_buffer.data(),
+                   bytes_written),
+            0);
+}
 
 TEST(MemoryWriter, ValidateContents) {
   MemoryWriter memory_writer(memory_buffer);

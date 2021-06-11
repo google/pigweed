@@ -27,6 +27,16 @@ class MemoryWriter : public Writer {
  public:
   constexpr MemoryWriter(ByteSpan dest) : dest_(dest) {}
 
+  // Construct writer with prepopulated data in the buffer. The number of
+  // pre-written bytes is provided as `bytes_written`.
+  //
+  // Precondition: The number of pre-written bytes must not be greater than the
+  // size of the provided buffer.
+  constexpr MemoryWriter(ByteSpan dest, size_t bytes_written)
+      : dest_(dest), bytes_written_(bytes_written) {
+    PW_ASSERT(bytes_written_ <= dest.size_bytes());
+  }
+
   size_t bytes_written() const { return bytes_written_; }
 
   size_t ConservativeWriteLimit() const override {
