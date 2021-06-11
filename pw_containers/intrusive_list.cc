@@ -18,8 +18,6 @@
 
 namespace pw::intrusive_list_impl {
 
-List::Item::~Item() { unlist(); }
-
 void List::Item::unlist(Item* prev) {
   if (prev == nullptr) {
     prev = previous();

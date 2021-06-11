@@ -18,49 +18,36 @@ size in a variable. This allows Vectors to be used without having to know
 their maximum size at compile time. It also keeps code size small since
 function implementations are shared for all maximum sizes.
 
-
 pw::IntrusiveList
 =================
-IntrusiveList provides an embedded-friendly singly-linked list implementation.
-An intrusive list is a type of linked list that embeds the "next" pointer into
-the list object itself. This allows the construction of a linked list without
-the need to dynamically allocate list entries to point to the actual in-memory
-objects. In C, an intrusive list can be made by manually including the "next"
-pointer as a member of the object's struct. `pw::IntrusiveList` uses C++
-features to simplify the process of creating an intrusive list and intrusive
-list objects by providing a class that list elements can inherit from. This
-protects the "next" pointer from being accessed by the actual item that is
-stored in the linked list; only the `pw::IntrusiveList` class can modify the
-list.
+IntrusiveList provides an embedded-friendly singly-linked intrusive list
+implementation. An intrusive list is a type of linked list that embeds the
+"next" pointer into the list object itself. This allows the construction of a
+linked list without the need to dynamically allocate list entries.
 
-
-pw::containers::FlatMap
-=======================
-FlatMap provides a simple, fixed-size associative array with lookup by key or
-value. ``pw::containers::FlatMap`` contains the same methods and features for
-looking up data as std::map. However, there are no methods that modify the
-underlying data.  The underlying array in ``pw::containers::FlatMap`` does not
-need to be sorted. During construction, ``pw::containers::FlatMap`` will
-perform a constexpr insertion sort.
-
+In C, an intrusive list can be made by manually including the "next" pointer as
+a member of the object's struct. ``pw::IntrusiveList`` uses C++ features to
+simplify the process of creating an intrusive list. ``pw::IntrusiveList``
+provides a class that list elements can inherit from. This protects the "next"
+pointer from being accessed by the item class, so only the ``pw::IntrusiveList``
+class can modify the list.
 
 Usage
 -----
-While the API of `pw::IntrusiveList` is relatively similar to a
-``std::forward_list``, there are extra steps to creating objects that can be
-stored in this data structure. Objects that will be added to a
-``IntrusiveList<T>`` must inherit from ``IntrusiveList<T>::Item``. When an item
-is instantiated and added to a linked list, the pointer to the object is added
-to the "next" pointer of whichever object is the current tail.
-
+While the API of ``pw::IntrusiveList`` is similar to a ``std::forward_list``,
+there are extra steps to creating objects that can be stored in this data
+structure. Objects that will be added to a ``IntrusiveList<T>`` must inherit
+from ``IntrusiveList<T>::Item``. They can inherit directly from it or inherit
+from it through another base class. When an item is instantiated and added to a
+linked list, the pointer to the object is added to the "next" pointer of
+whichever object is the current tail.
 
 That means two key things:
 
- - An instantiated IntrusiveList::Item must remain in scope for the lifetime of
-   the IntrusiveList it has been added to.
- - A linked list item CANNOT be included in two lists, as it is part of a
-   preexisting list and adding it to another implicitly breaks correctness
-   of the first list.
+ - An instantiated ``IntrusiveList<T>::Item`` must remain in scope for the
+   lifetime of the ``IntrusiveList`` it has been added to.
+ - A linked list item CANNOT be included in two lists. Attempting to do so
+   results in an assert failure.
 
 .. code-block:: cpp
 
@@ -85,15 +72,23 @@ That means two key things:
   squares.push_back(large);
 
   {
-    // ERROR: When this goes out of scope, it will break the linked list.
+    // When different_scope goes out of scope, it removes itself from the list.
     Square different_scope = Square(5);
     squares.push_back(&different_scope);
   }
 
-  for (auto& square : squares) {
-    PW_LOG_INFO("Found a square with an area of %ul", square.Area());
+  for (const auto& square : squares) {
+    PW_LOG_INFO("Found a square with an area of %lu", square.Area());
   }
 
+pw::containers::FlatMap
+=======================
+FlatMap provides a simple, fixed-size associative array with lookup by key or
+value. ``pw::containers::FlatMap`` contains the same methods and features for
+looking up data as std::map. However, there are no methods that modify the
+underlying data.  The underlying array in ``pw::containers::FlatMap`` does not
+need to be sorted. During construction, ``pw::containers::FlatMap`` will
+perform a constexpr insertion sort.
 
 Compatibility
 =============

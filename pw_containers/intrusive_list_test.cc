@@ -376,10 +376,26 @@ TEST(IntrusiveList, ConstIteratorRead) {
   }
 }
 
+TEST(IntrusiveList, CompareConstAndNonConstIterator) {
+  IntrusiveList<TestItem> list;
+  EXPECT_EQ(list.end(), list.cend());
+}
+
+#if defined(PW_COMPILE_FAIL_TEST_incompatible_iterator_types)
+
+struct OtherItem : public IntrusiveList<OtherItem>::Item {};
+
+TEST(IntrusiveList, CompareConstAndNonConstIterator_CompilationFails) {
+  IntrusiveList<TestItem> list;
+  IntrusiveList<OtherItem> list2;
+  static_cast<void>(list.end() == list2.end());
+}
+
+#endif
+
 // TODO(pwbug/47): These tests should fail to compile, enable when no-compile
 // tests are set up in Pigweed.
-#define NO_COMPILE_TESTS 0
-#if NO_COMPILE_TESTS
+#if defined(PW_COMPILE_FAIL_TEST_cannot_modify_through_const_iterator)
 TEST(IntrusiveList, ConstIteratorModify) {
   TestItem item1(1);
   TestItem item2(99);
@@ -396,7 +412,7 @@ TEST(IntrusiveList, ConstIteratorModify) {
     it++;
   }
 }
-#endif  // NO_COMPILE_TESTS
+#endif  // Compile failure test
 
 // TODO(pwbug/88): These tests should trigger a CHECK failure. This requires
 // using a testing version of pw_assert.
@@ -602,6 +618,52 @@ TEST(IntrusiveList, SizeScoped) {
   }
   EXPECT_EQ(list.size(), static_cast<size_t>(0));
 }
+
+// Test that a list of items derived from a different Item class can be created.
+class DerivedTestItem : public TestItem {};
+
+TEST(InstrusiveList, AddItemsOfDerivedClassToList) {
+  IntrusiveList<TestItem> list;
+
+  DerivedTestItem item1;
+  list.push_front(item1);
+
+  TestItem item2;
+  list.push_front(item2);
+
+  EXPECT_EQ(2u, list.size());
+}
+
+TEST(InstrusiveList, ListOfDerivedClassItems) {
+  IntrusiveList<DerivedTestItem> derived_from_compatible_item_type;
+
+  DerivedTestItem item1;
+  derived_from_compatible_item_type.push_front(item1);
+
+  EXPECT_EQ(1u, derived_from_compatible_item_type.size());
+
+// TODO(pwbug/47): Make these proper automated compilation failure tests.
+#if defined(PW_COMPILE_FAIL_TEST_cannot_add_base_class_to_derived_class_list)
+  TestItem item2;
+  derived_from_compatible_item_type.push_front(item2);
+#endif
+}
+
+#if defined(PW_COMPILE_FAIL_TEST_incompatibile_item_type)
+
+struct Foo {};
+
+class BadItem : public IntrusiveList<Foo>::Item {};
+
+[[maybe_unused]] IntrusiveList<BadItem> derived_from_incompatible_item_type;
+
+#elif defined(PW_COMPILE_FAIL_TEST_does_not_inherit_from_item)
+
+struct NotAnItem {};
+
+[[maybe_unused]] IntrusiveList<NotAnItem> list;
+
+#endif
 
 }  // namespace
 }  // namespace pw

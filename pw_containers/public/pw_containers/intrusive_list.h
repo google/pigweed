@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -55,6 +55,14 @@ class IntrusiveList {
   class Item : public intrusive_list_impl::List::Item {
    protected:
     constexpr Item() = default;
+
+   private:
+    // GetListElementTypeFromItem is used to find the element type from an item.
+    // It is used to ensure list items inherit from the correct Item type.
+    template <typename, bool>
+    friend struct intrusive_list_impl::GetListElementTypeFromItem;
+
+    using PwIntrusiveListElementType = T;
   };
 
   using element_type = T;
@@ -154,8 +162,9 @@ class IntrusiveList {
   // defined when the IntrusiveList<T> class is instantiated.
   static constexpr void CheckItemType() {
     static_assert(
-        std::is_base_of<Item, T>(),
-        "IntrusiveList items must be derived from IntrusiveList<T>::Item");
+        std::is_base_of<intrusive_list_impl::ElementTypeFromItem<T>, T>(),
+        "IntrusiveList items must be derived from IntrusiveList<T>::Item, "
+        "where T is the item or one of its bases.");
   }
 
   intrusive_list_impl::List list_;
