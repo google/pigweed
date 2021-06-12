@@ -213,9 +213,8 @@ TEST_F(BasicServer,
 TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsError) {
   // Set up a fake ServerWriter representing an ongoing RPC.
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(
-                EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 100),
-                output_));
+            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100),
+                                  output_));
 
   const Packet& packet = output_.sent_packet();
   EXPECT_EQ(packet.type(), PacketType::SERVER_ERROR);
@@ -242,18 +241,16 @@ class MethodPending : public BasicServer {
 
 TEST_F(MethodPending, ProcessPacket_Cancel_ClosesServerWriter) {
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(
-                EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 100),
-                output_));
+            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100),
+                                  output_));
 
   EXPECT_FALSE(writer_.open());
 }
 
 TEST_F(MethodPending, ProcessPacket_Cancel_SendsStreamEndPacket) {
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(
-                EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 100),
-                output_));
+            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100),
+                                  output_));
 
   const Packet& packet = output_.sent_packet();
   EXPECT_EQ(packet.type(), PacketType::SERVER_STREAM_END);
@@ -276,9 +273,8 @@ TEST_F(MethodPending,
 
 TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectChannel) {
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(
-                EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 2, 42, 100),
-                output_));
+            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 2, 42, 100),
+                                  output_));
 
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::FailedPrecondition());
@@ -287,9 +283,8 @@ TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectChannel) {
 
 TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectService) {
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(
-                EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 43, 100),
-                output_));
+            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 43, 100),
+                                  output_));
 
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::NotFound());
@@ -300,9 +295,8 @@ TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectService) {
 
 TEST_F(MethodPending, ProcessPacket_CancelIncorrectMethod) {
   EXPECT_EQ(OkStatus(),
-            server_.ProcessPacket(
-                EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 101),
-                output_));
+            server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 101),
+                                  output_));
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::NotFound());
   EXPECT_TRUE(writer_.open());

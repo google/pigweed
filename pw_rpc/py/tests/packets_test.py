@@ -58,7 +58,7 @@ class PacketsTest(unittest.TestCase):
 
         self.assertEqual(
             packet,
-            RpcPacket(type=PacketType.CANCEL_SERVER_STREAM,
+            RpcPacket(type=PacketType.CANCEL,
                       channel_id=9,
                       service_id=8,
                       method_id=7))

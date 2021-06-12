@@ -341,8 +341,7 @@ class CallbackClientImplTest(unittest.TestCase):
 
         call.cancel()
 
-        self.assertEqual(self._last_request.type,
-                         packet_pb2.PacketType.CANCEL_SERVER_STREAM)
+        self.assertEqual(self._last_request.type, packet_pb2.PacketType.CANCEL)
 
         # Ensure the RPC can be called after being cancelled.
         self._enqueue_response(1, stub.method, response=resp)

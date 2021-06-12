@@ -104,14 +104,17 @@ Status Server::ProcessPacket(std::span<const byte> data,
       method->Invoke(call, packet);
       break;
     }
-    case PacketType::CLIENT_STREAM_END:
+    case PacketType::CLIENT_STREAM:
       // TODO(hepler): Support client streaming RPCs.
       break;
     case PacketType::CLIENT_ERROR:
       HandleClientError(packet);
       break;
-    case PacketType::CANCEL_SERVER_STREAM:
+    case PacketType::CANCEL:
       HandleCancelPacket(packet, *channel);
+      break;
+    case PacketType::CLIENT_STREAM_END:
+      // TODO(hepler): Handle client stream end packets.
       break;
     default:
       channel->Send(Packet::ServerError(packet, Status::Unimplemented()));

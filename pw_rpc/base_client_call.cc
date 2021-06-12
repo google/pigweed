@@ -43,7 +43,7 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
 
 void BaseClientCall::Cancel() {
   if (active()) {
-    channel_->Send(NewPacket(PacketType::CANCEL_SERVER_STREAM));
+    channel_->Send(NewPacket(PacketType::CANCEL));
   }
 }
 

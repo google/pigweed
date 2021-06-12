@@ -80,8 +80,7 @@ TEST(Client, ProcessPacket_ReturnsDataLossOnBadPacket) {
 TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
   ClientContextForTest context;
   EXPECT_EQ(context.SendPacket(PacketType::REQUEST), Status::InvalidArgument());
-  EXPECT_EQ(context.SendPacket(PacketType::CANCEL_SERVER_STREAM),
-            Status::InvalidArgument());
+  EXPECT_EQ(context.SendPacket(PacketType::CANCEL), Status::InvalidArgument());
 }
 
 }  // namespace

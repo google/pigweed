@@ -26,14 +26,17 @@ enum PacketType {
   // A request from a client for a service method.
   REQUEST = 0;
 
-  // A client stream has completed.
-  CLIENT_STREAM_END = 2;
+  // A message in a client stream.
+  CLIENT_STREAM = 2;
 
   // The client received a packet for an RPC it did not request.
   CLIENT_ERROR = 4;
 
-  // The client requests cancellation of an ongoing server stream.
-  CANCEL_SERVER_STREAM = 6;
+  // The client requests cancellation of an ongoing RPC.
+  CANCEL = 6;
+
+  // A client stream has completed.
+  CLIENT_STREAM_END = 8;
 
   // Server-to-client packets
 
