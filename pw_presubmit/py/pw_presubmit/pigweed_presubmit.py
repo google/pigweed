@@ -332,7 +332,10 @@ COPYRIGHT_FIRST_LINE = r'Copyright 20\d\d The Pigweed Authors'
 COPYRIGHT_COMMENTS = r'(#|//| \*|REM|::)'
 COPYRIGHT_BLOCK_COMMENTS = (
     # HTML comments
-    (r'<!--', r'-->'), )
+    (r'<!--', r'-->'),
+    # Jinja comments
+    (r'{#', r'#}'),
+)
 
 COPYRIGHT_FIRST_LINE_EXCEPTIONS = (
     '#!',

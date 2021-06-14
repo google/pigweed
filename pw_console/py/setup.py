@@ -22,7 +22,12 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed interactive console',
     packages=setuptools.find_packages(),
-    package_data={'pw_console': ['py.typed']},
+    package_data={
+        'pw_console': [
+            'py.typed',
+            'templates/keybind_list.jinja',
+        ]
+    },
     zip_safe=False,
     entry_points={
         'console_scripts': [
