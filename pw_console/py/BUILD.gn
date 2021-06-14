@@ -24,6 +24,7 @@ pw_python_package("py") {
     "pw_console/console_app.py",
     "pw_console/help_window.py",
     "pw_console/key_bindings.py",
+    "pw_console/log_pane.py",
     "pw_console/repl_pane.py",
     "pw_console/style.py",
   ]
