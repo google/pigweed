@@ -37,9 +37,13 @@ template("bt_gtest_package") {
   with_death_tests =
       defined(invoker.with_death_tests) && invoker.with_death_tests
 
-  group("_component_metadata") {
-    metadata = {
-      if (with_death_tests) {
+  executable("tests_executable") {
+    testonly = true
+    output_name = package_name
+    deps = invoker.deps
+    deps += [ "//src/connectivity/bluetooth/core/bt-host/testing:gtest_main" ]
+    if (with_death_tests) {
+      metadata = {
         # Used by the fuchsia_test_component_manifest() template in v1.
         test_component_manifest_cmx = [
           {
@@ -52,8 +56,6 @@ template("bt_gtest_package") {
         # Used by the fuchsia_test_component_manifest() template in v2.
         test_component_manifest_cml = [
           {
-            # Add gtest test runner to generated manifest.
-            include = [ "//src/sys/test_runners/gtest/default.shard.cml" ]
             use = [
               {
                 # Enable gtest death tests to spawn processes.
@@ -62,32 +64,13 @@ template("bt_gtest_package") {
             ]
           },
         ]
-      } else {
-        # Used by the fuchsia_test_component_manifest() template in v2.
-        test_component_manifest_cml = [
-          {
-            # Add gtest test runner to generated manifest.
-            include = [ "//src/sys/test_runners/gtest/default.shard.cml" ]
-          },
-        ]
       }
     }
-  }
-
-  executable("tests_executable") {
-    testonly = true
-    output_name = package_name
-    deps = invoker.deps
-    deps += [ "//src/connectivity/bluetooth/core/bt-host/testing:gtest_main" ]
   }
 
   fuchsia_unittest_package(package_name) {
     # TODO(fxbug.dev/70289): Use v2 unit test components once GTest test runner issues are fixed.
     v2 = false
-    deps = [
-      # Metadata needs to be included in deps to be forwarded.
-      ":_component_metadata",
-      ":tests_executable",
-    ]
+    deps = [ ":tests_executable" ]
   }
 }
