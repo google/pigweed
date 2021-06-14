@@ -63,7 +63,10 @@ pw_test_group("tests") {
 }
 
 pw_test("function_test") {
-  deps = [ ":pw_function" ]
+  deps = [
+    ":pw_function",
+    dir_pw_polyfill,
+  ]
   sources = [ "function_test.cc" ]
 }
 

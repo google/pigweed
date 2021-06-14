@@ -54,6 +54,23 @@ Functions are nullable. Invoking a null function triggers a runtime assert.
     function();
   }
 
+``pw::Function``'s default constructor is ``constexpr``, so default-constructed
+functions may be used in classes with ``constexpr`` constructors and in
+``constinit`` expressions.
+
+.. code-block:: c++
+
+  class MyClass {
+   public:
+    // Default construction of a pw::Function is constexpr.
+    constexpr MyClass() { ... }
+
+    pw::Function<void(int)> my_function;
+  };
+
+  // pw::Function and classes that use it may be constant initialized.
+  constinit MyClass instance;
+
 Storage
 -------
 By default, a ``Function`` stores its callable inline within the object. The

@@ -15,9 +15,13 @@
 #include "pw_function/function.h"
 
 #include "gtest/gtest.h"
+#include "pw_polyfill/language_feature_macros.h"
 
 namespace pw {
 namespace {
+
+// Ensure that Function can be constant initialized.
+[[maybe_unused]] PW_CONSTINIT Function<void()> can_be_constant_initialized;
 
 int Multiply(int a, int b) { return a * b; }
 

@@ -54,13 +54,14 @@ static constexpr bool IsNull(const T& v) {
 template <typename Return, typename... Args>
 class FunctionTarget {
  public:
-  FunctionTarget() = default;
-  virtual ~FunctionTarget() = default;
+  constexpr FunctionTarget() = default;
 
   FunctionTarget(const FunctionTarget&) = delete;
   FunctionTarget(FunctionTarget&&) = delete;
   FunctionTarget& operator=(const FunctionTarget&) = delete;
   FunctionTarget& operator=(FunctionTarget&&) = delete;
+
+  virtual void Destroy() {}
 
   virtual bool IsNull() const = 0;
 
@@ -69,6 +70,9 @@ class FunctionTarget {
 
   // Move initialize the function target to a provided location.
   virtual void MoveInitializeTo(void* ptr) = 0;
+
+ protected:
+  ~FunctionTarget() = default;  // The destructor is never called.
 };
 
 // A function target that does not store any callable. Attempting to invoke it
@@ -76,8 +80,7 @@ class FunctionTarget {
 template <typename Return, typename... Args>
 class NullFunctionTarget final : public FunctionTarget<Return, Args...> {
  public:
-  NullFunctionTarget() = default;
-  ~NullFunctionTarget() final = default;
+  constexpr NullFunctionTarget() = default;
 
   NullFunctionTarget(const NullFunctionTarget&) = delete;
   NullFunctionTarget(NullFunctionTarget&&) = delete;
@@ -98,7 +101,7 @@ class InlineFunctionTarget final : public FunctionTarget<Return, Args...> {
   explicit InlineFunctionTarget(Callable&& callable)
       : callable_(std::move(callable)) {}
 
-  ~InlineFunctionTarget() final = default;
+  void Destroy() final { callable_.~Callable(); }
 
   InlineFunctionTarget(const InlineFunctionTarget&) = delete;
   InlineFunctionTarget& operator=(const InlineFunctionTarget&) = delete;
@@ -131,7 +134,7 @@ class MemoryFunctionTarget final : public FunctionTarget<Return, Args...> {
     new (address_) Callable(std::move(callable));
   }
 
-  ~MemoryFunctionTarget() final {
+  void Destroy() final {
     // Multiple MemoryFunctionTargets may have referred to the same callable
     // (due to moves), but only one can have a valid pointer to it. The owner is
     // responsible for destructing the callable.
@@ -182,7 +185,7 @@ using FunctionStorage =
 template <size_t kSizeBytes, typename Return, typename... Args>
 class FunctionTargetHolder {
  public:
-  FunctionTargetHolder() = default;
+  constexpr FunctionTargetHolder() : null_function_{} {}
 
   FunctionTargetHolder(const FunctionTargetHolder&) = delete;
   FunctionTargetHolder(FunctionTargetHolder&&) = delete;
@@ -193,7 +196,7 @@ class FunctionTargetHolder {
     using NullFunctionTarget = NullFunctionTarget<Return, Args...>;
     static_assert(sizeof(NullFunctionTarget) <= kSizeBytes,
                   "NullFunctionTarget must fit within FunctionTargetHolder");
-    new (&bits_) NullFunctionTarget;
+    new (&null_function_) NullFunctionTarget;
   }
 
   // Initializes an InlineFunctionTarget with the callable, failing if it is too
@@ -218,7 +221,7 @@ class FunctionTargetHolder {
     new (&bits_) MemoryFunctionTarget(storage, std::move(callable));
   }
 
-  void DestructTarget() { target().~Target(); }
+  void DestructTarget() { target().Destroy(); }
 
   // Initializes the function target within this callable from another target
   // holder's function target.
@@ -234,8 +237,13 @@ class FunctionTargetHolder {
   }
 
  private:
-  // Storage for an implementation of the FunctionTarget interface.
-  FunctionStorage<kSizeBytes> bits_;
+  // Storage for an implementation of the FunctionTarget interface. Make this a
+  // union with NullFunctionTarget so that the constexpr constructor can
+  // initialize null_function_ directly.
+  union {
+    FunctionStorage<kSizeBytes> bits_;
+    NullFunctionTarget<Return, Args...> null_function_;
+  };
 };
 
 template <typename Return, typename... Args>
@@ -244,7 +252,7 @@ class Function;
 template <typename Return, typename... Args>
 class Function<Return(Args...)> {
  public:
-  constexpr Function() { holder_.InitializeNullTarget(); }
+  constexpr Function() = default;
   constexpr Function(std::nullptr_t) : Function() {}
 
   template <typename Callable>
