@@ -22,6 +22,8 @@ pw_python_package("py") {
     "pw_console/__init__.py",
     "pw_console/__main__.py",
     "pw_console/console_app.py",
+    "pw_console/key_bindings.py",
+    "pw_console/style.py",
   ]
   tests = [ "console_app_test.py" ]
   python_deps = [
