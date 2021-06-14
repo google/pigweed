@@ -53,7 +53,7 @@ template("bt_gtest_package") {
         test_component_manifest_cml = [
           {
             # Add gtest test runner to generated manifest.
-            include = [ "src/sys/test_runners/gtest/default.shard.cml" ]
+            include = [ "//src/sys/test_runners/gtest/default.shard.cml" ]
             use = [
               {
                 # Enable gtest death tests to spawn processes.
@@ -67,7 +67,7 @@ template("bt_gtest_package") {
         test_component_manifest_cml = [
           {
             # Add gtest test runner to generated manifest.
-            include = [ "src/sys/test_runners/gtest/default.shard.cml" ]
+            include = [ "//src/sys/test_runners/gtest/default.shard.cml" ]
           },
         ]
       }
