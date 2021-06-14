@@ -15,14 +15,19 @@
 
 import unittest
 
+from prompt_toolkit.application import create_app_session
+# inclusive-language: ignore
+from prompt_toolkit.output import DummyOutput as FakeOutput
+
 from pw_console.console_app import ConsoleApp
 
 
 class TestConsoleApp(unittest.TestCase):
     """Tests for ConsoleApp."""
     def test_instantiate(self) -> None:
-        console_app = ConsoleApp()
-        self.assertIsNotNone(console_app)
+        with create_app_session(output=FakeOutput()):
+            console_app = ConsoleApp()
+            self.assertIsNotNone(console_app)
 
 
 if __name__ == '__main__':

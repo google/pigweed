@@ -19,7 +19,6 @@ from unittest.mock import Mock
 
 from prompt_toolkit.key_binding import KeyBindings
 
-from pw_console.console_app import ConsoleApp
 from pw_console.help_window import HelpWindow, KEYBIND_TEMPLATE
 
 
@@ -29,7 +28,8 @@ class TestHelpWindow(unittest.TestCase):
         self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_instantiate(self) -> None:
-        help_window = HelpWindow(ConsoleApp())
+        app = Mock()
+        help_window = HelpWindow(app)
         self.assertIsNotNone(help_window)
 
     def test_template_loads(self) -> None:
