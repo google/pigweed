@@ -23,7 +23,7 @@ from typing import List
 import pw_cli.log
 import pw_cli.argument_types
 
-from pw_console.console_app import embed
+from pw_console.console_app import embed, FAKE_DEVICE_LOGGER_NAME
 
 _LOG = logging.getLogger(__package__)
 
@@ -80,16 +80,20 @@ def main() -> int:
 
     pw_cli.log.install(args.loglevel, True, False, args.logfile)
 
+    global_vars = None
     default_loggers: List = []
-    # TODO: Add test-mode loggers here.
-    # if args.test_mode:
-    #     default_loggers = [
-    #         # Don't include pw_console package logs (_LOG) in the log pane UI.
-    #         # Add the fake logger for test_mode.
-    #         logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
-    #     ]
+    if args.test_mode:
+        default_loggers = [
+            # Don't include pw_console package logs (_LOG) in the log pane UI.
+            # Add the fake logger for test_mode.
+            logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
+        ]
+        # Give access to adding log messages from the repl via: `LOG.warning()`
+        global_vars = dict(LOG=default_loggers[0])
 
-    embed(loggers=default_loggers)
+    embed(global_vars=global_vars,
+          loggers=default_loggers,
+          test_mode=args.test_mode)
 
     if args.logfile:
         print(f'Logs saved to: {args.logfile}')

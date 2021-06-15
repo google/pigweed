@@ -49,6 +49,10 @@ from pw_console.style import pw_console_styles
 
 _LOG = logging.getLogger(__package__)
 
+# Fake logger for --test-mode
+FAKE_DEVICE_LOGGER_NAME = 'fake_device.1'
+_FAKE_DEVICE_LOG = logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
+
 
 class FloatingMessageBar(ConditionalContainer):
     """Floating message bar for showing status messages."""
@@ -267,14 +271,54 @@ class ConsoleApp:
         """Redraw the prompt_toolkit UI."""
         self.application.invalidate()
 
-    async def run(
-        self,
-        # TODO: remove pylint disable line.
-        test_mode=False  # pylint: disable=unused-argument
-    ):
+    async def run(self, test_mode=False):
         """Start the prompt_toolkit UI."""
-        unused_result = await self.application.run_async(
-            set_exception_handler=True)
+        if test_mode:
+            background_log_task = asyncio.create_task(self.log_forever())
+
+        try:
+            unused_result = await self.application.run_async(
+                set_exception_handler=True)
+        finally:
+            if test_mode:
+                background_log_task.cancel()
+
+    async def log_forever(self):
+        """Test mode async log generator coroutine that runs forever."""
+        message_count = 0
+        # Sample log lines:
+        # Log message [=         ] # 291
+        # Log message [ =        ] # 292
+        # Log message [  =       ] # 293
+        # Log message [   =      ] # 294
+        # Log message [    =     ] # 295
+        # Log message [     =    ] # 296
+        # Log message [      =   ] # 297
+        # Log message [       =  ] # 298
+        # Log message [        = ] # 299
+        # Log message [         =] # 300
+        while True:
+            await asyncio.sleep(2)
+            bar_size = 10
+            position = message_count % bar_size
+            bar_content = " " * (bar_size - position - 1) + "="
+            if position > 0:
+                bar_content = "=".rjust(position) + " " * (bar_size - position)
+            new_log_line = 'Log message [{}] # {}'.format(
+                bar_content, message_count)
+            if message_count % 10 == 0:
+                new_log_line += (" Lorem ipsum dolor sit amet, consectetur "
+                                 "adipiscing elit.") * 8
+            # TODO: Test log lines that include linebreaks.
+            # if message_count % 11 == 0:
+            #     new_log_line += inspect.cleandoc(""" [PYTHON] START
+            #         In []: import time;
+            #                 def t(s):
+            #                     time.sleep(s)
+            #                     return 't({}) seconds done'.format(s)""")
+
+            message_count += 1
+            _FAKE_DEVICE_LOG.info(new_log_line)
 
 
 def embed(
