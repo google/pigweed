@@ -198,6 +198,7 @@ class EnvSetup(object):
         self._virtualenv_requirements = []
         self._virtualenv_gn_targets = []
         self._optional_submodules = []
+        self._virtualenv_system_packages = False
 
         self._config_file_name = getattr(config_file, 'name', 'config file')
         if config_file:
@@ -263,6 +264,9 @@ class EnvSetup(object):
         for target in virtualenv.pop('gn_targets', ()):
             self._virtualenv_gn_targets.append(
                 virtualenv_setup.GnTarget('{}#{}'.format(root, target)))
+
+        self._virtualenv_system_packages = virtualenv.pop(
+            'system_packages', False)
 
         if virtualenv:
             raise ConfigFileError(
@@ -501,6 +505,7 @@ Then use `set +x` to go back to normal.
                 gn_out_dir=self._virtualenv_gn_out_dir,
                 python=new_python3,
                 env=self._env,
+                system_packages=self._virtualenv_system_packages,
         ):
             return result(_Result.Status.FAILED)
 

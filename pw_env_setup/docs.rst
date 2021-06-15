@@ -227,6 +227,10 @@ here.
   only installing Pigweed Python packages, use the location of the Pigweed
   submodule.
 
+``virtualenv.system_packages``
+  A boolean value that can be used the give the Python virtual environment
+  access to the system site packages. Defaults to ``false``.
+
 ``optional_submodules``
   By default environment setup will check that all submodules are present in
   the checkout. Any submodules in this list are excluded from that check.
@@ -245,7 +249,8 @@ An example of a config file is below.
       "gn_root": ".",
       "gn_targets": [
         ":python.install",
-      ]
+      ],
+      "system_packages": false
     },
     "optional_submodules": [
       "optional/submodule/one",

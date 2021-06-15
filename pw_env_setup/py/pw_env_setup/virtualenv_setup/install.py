@@ -123,14 +123,15 @@ def _check_venv(python, version, venv_path, pyvenv_cfg):
 
 
 def install(
-        project_root,
-        venv_path,
-        full_envsetup=True,
-        requirements=(),
-        gn_targets=(),
-        gn_out_dir=None,
-        python=sys.executable,
-        env=None,
+    project_root,
+    venv_path,
+    full_envsetup=True,
+    requirements=(),
+    gn_targets=(),
+    gn_out_dir=None,
+    python=sys.executable,
+    env=None,
+    system_packages=False,
 ):
     """Creates a venv and installs all packages in this Git repo."""
 
@@ -167,7 +168,9 @@ def install(
         if '__PYVENV_LAUNCHER__' in envcopy:
             del envcopy['__PYVENV_LAUNCHER__']
 
-        cmd = (python, '-m', 'venv', '--upgrade', venv_path)
+        cmd = [python, '-m', 'venv', '--upgrade']
+        cmd += ['--system-site-packages'] if system_packages else []
+        cmd += [venv_path]
         _check_call(cmd, env=envcopy)
 
     venv_python = os.path.join(venv_bin, 'python')
