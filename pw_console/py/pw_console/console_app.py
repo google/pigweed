@@ -38,10 +38,12 @@ from prompt_toolkit.widgets import (
     MenuItem,
 )
 from prompt_toolkit.key_binding import merge_key_bindings
+from ptpython.key_bindings import load_python_bindings  # type: ignore
 
 from pw_console.help_window import HelpWindow
 from pw_console.key_bindings import create_key_bindings
 from pw_console.log_pane import LogPane
+from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.repl_pane import ReplPane
 from pw_console.style import pw_console_styles
 
@@ -94,9 +96,19 @@ class ConsoleApp:
         self.show_help_window = False
         self.vertical_split = False
 
-        # Create one log pane and the repl pane.
+        # Create one log pane.
         self.log_pane = LogPane(application=self)
-        self.repl_pane = ReplPane(application=self)
+
+        # Create a ptpython repl instance.
+        self.pw_ptpython_repl = PwPtPythonRepl(
+            get_globals=lambda: global_vars,
+            get_locals=lambda: local_vars,
+        )
+
+        self.repl_pane = ReplPane(
+            application=self,
+            python_repl=self.pw_ptpython_repl,
+        )
 
         # List of enabled panes.
         self.active_panes = [
@@ -162,14 +174,14 @@ class ConsoleApp:
             layout=self.layout,
             after_render=self.run_after_render_hooks,
             key_bindings=merge_key_bindings([
-                # TODO: pull key bindings from ptpython
-                # load_python_bindings(self.pw_ptpython_repl),
+                # Pull key bindings from ptpython
+                load_python_bindings(self.pw_ptpython_repl),
                 self.key_bindings,
             ]),
             style=DynamicStyle(lambda: merge_styles([
                 pw_console_styles,
-                # TODO: Include ptpython styles
-                # self.pw_ptpython_repl._current_style
+                # Include ptpython styles
+                self.pw_ptpython_repl._current_style,  # pylint: disable=protected-access
             ])),
             enable_page_navigation_bindings=True,
             full_screen=True,

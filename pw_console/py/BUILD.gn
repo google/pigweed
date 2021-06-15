@@ -23,14 +23,17 @@ pw_python_package("py") {
     "pw_console/__main__.py",
     "pw_console/console_app.py",
     "pw_console/help_window.py",
+    "pw_console/helpers.py",
     "pw_console/key_bindings.py",
     "pw_console/log_pane.py",
+    "pw_console/pw_ptpython_repl.py",
     "pw_console/repl_pane.py",
     "pw_console/style.py",
   ]
   tests = [
     "console_app_test.py",
     "help_window_test.py",
+    "repl_pane_test.py",
   ]
   python_deps = [
     "$dir_pw_cli/py",

@@ -56,6 +56,8 @@ def create_key_bindings(console_app):
     @bindings.add('c-q')
     def exit_(event):
         """Quit the console application."""
+        # TODO(tonymd): Cancel any existing user repl or plugin tasks before
+        # exiting.
         event.app.exit()
 
     @bindings.add('s-tab')
@@ -70,5 +72,18 @@ def create_key_bindings(console_app):
     def app_focus_previous(event):
         """Move focus to the previous widget."""
         focus_previous(event)
+
+    # Bindings for when the ReplPane input field is in focus.
+    @bindings.add('c-c', filter=has_focus(console_app.pw_ptpython_repl))
+    def handle_ctrl_c(event):
+        """Reset the python repl on Ctrl-c"""
+        console_app.repl_pane.ctrl_c()
+
+    @bindings.add('c-d', filter=has_focus(console_app.pw_ptpython_repl))
+    def handle_ctrl_d(event):
+        """Do nothing on ctrl-d."""
+        # TODO(tonymd): Allow ctrl-d to quit the whole app with confirmation
+        # like ipython.
+        pass
 
     return bindings

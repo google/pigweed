@@ -26,6 +26,7 @@ setuptools.setup(
         'pw_console': [
             'py.typed',
             'templates/keybind_list.jinja',
+            'templates/repl_output.jinja',
         ]
     },
     zip_safe=False,
@@ -39,7 +40,8 @@ setuptools.setup(
         'ipython',
         'jinja2',
         'prompt_toolkit',
-        'ptpython',
+        # Required features are not yet in https://pypi.org/project/ptpython/
+        'ptpython @ git+https://github.com/prompt-toolkit/ptpython.git@b74af76',
         'pw_cli',
         'pw_tokenizer',
         'pygments',

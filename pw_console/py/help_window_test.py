@@ -23,7 +23,7 @@ from pw_console.help_window import HelpWindow, KEYBIND_TEMPLATE
 
 
 class TestHelpWindow(unittest.TestCase):
-    """Tests for ConsoleApp."""
+    """Tests for HelpWindow text and keybind lists."""
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
 

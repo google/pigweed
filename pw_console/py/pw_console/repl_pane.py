@@ -13,8 +13,11 @@
 # the License.
 """ReplPane class."""
 
+import concurrent
 import logging
+from dataclasses import dataclass
 from functools import partial
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -23,10 +26,12 @@ from typing import (
     Optional,
 )
 
+from jinja2 import Template
 from prompt_toolkit.filters import (
     Condition,
     has_focus,
 )
+from prompt_toolkit.document import Document
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.widgets import TextArea
@@ -44,10 +49,17 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.lexers import PygmentsLexer  # type: ignore
 from pygments.lexers.python import PythonLexer  # type: ignore
 
+from pw_console.pw_ptpython_repl import PwPtPythonRepl
+
 _LOG = logging.getLogger(__package__)
 
 _Namespace = Dict[str, Any]
 _GetNamespace = Callable[[], _Namespace]
+
+_OUTPUT_TEMPLATE_PATH = (Path(__file__).parent / 'templates' /
+                         'repl_output.jinja')
+with _OUTPUT_TEMPLATE_PATH.open() as tmpl:
+    OUTPUT_TEMPLATE = tmpl.read()
 
 
 def mouse_focus_handler(repl_pane, mouse_event: MouseEvent):
@@ -89,9 +101,9 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         """Return toolbar text showing if the ReplPane is in focus or not."""
         focused_text = (
             # Style
-            "",
+            '',
             # Text
-            " [FOCUSED] ",
+            ' [FOCUSED] ',
             # Mouse handler
             partial(mouse_focus_handler, repl_pane),
         )
@@ -171,6 +183,20 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
             filter=Condition(lambda: repl_pane.show_bottom_toolbar))
 
 
+@dataclass
+class UserCodeExecution:
+    """Class to hold a single user repl execution event."""
+    input: str
+    future: concurrent.futures.Future
+    output: str
+    stdout: str
+    stderr: str
+
+    @property
+    def is_running(self):
+        return not self.future.done()
+
+
 class ReplPane:
     """Pane for reading Python input."""
 
@@ -178,8 +204,7 @@ class ReplPane:
     def __init__(
             self,
             application: Any,
-            # TODO: Include ptpython repl.
-            # python_repl: PwPtPythonRepl,
+            python_repl: PwPtPythonRepl,
             # TODO: Make the height of input+output windows match the log pane
             # height. (Using minimum output height of 5 for now).
             output_height: Optional[AnyDimension] = Dimension(preferred=5),
@@ -197,13 +222,10 @@ class ReplPane:
         self.show_top_toolbar = True
         self.show_bottom_toolbar = True
 
-        # TODO: Include ptpython repl.
-        self.pw_ptpython_repl = Window(content=FormattedTextControl(
-            [('', '>>> Repl input buffer')], focusable=True))
-        self.last_error_output = ""
+        self.pw_ptpython_repl = python_repl
+        self.pw_ptpython_repl.set_repl_pane(self)
 
         self.output_field = TextArea(
-            text='Repl output buffer',
             style='class:output-field',
             height=output_height,
             # text=help_text,
@@ -265,3 +287,75 @@ class ReplPane:
 
     def after_render_hook(self):
         """Run tasks after the last UI render."""
+
+    def ctrl_c(self):
+        """Ctrl-C keybinding behavior."""
+        # If there is text in the input buffer, clear it.
+        if self.pw_ptpython_repl.default_buffer.text:
+            self.clear_input_buffer()
+        else:
+            self.interrupt_last_code_execution()
+
+    def clear_input_buffer(self):
+        self.pw_ptpython_repl.default_buffer.reset()
+
+    def interrupt_last_code_execution(self):
+        code = self._get_currently_running_code()
+        if code:
+            code.future.cancel()
+            code.output = 'Canceled'
+        self.pw_ptpython_repl.clear_last_result()
+        self.update_output_buffer()
+
+    def _get_currently_running_code(self):
+        for code in self.executed_code:
+            if not code.future.done():
+                return code
+        return None
+
+    def _get_executed_code(self, future):
+        for code in self.executed_code:
+            if code.future == future:
+                return code
+        return None
+
+    def _log_executed_code(self, code, prefix=''):
+        text = self.get_output_buffer_text([code], show_index=False)
+        _LOG.info('[PYTHON] %s\n%s', prefix, text)
+
+    def append_executed_code(self, text, future):
+        user_code = UserCodeExecution(input=text,
+                                      future=future,
+                                      output=None,
+                                      stdout=None,
+                                      stderr=None)
+        self.executed_code.append(user_code)
+        self._log_executed_code(user_code, prefix='START')
+
+    def append_result_to_executed_code(self,
+                                       _input_text,
+                                       future,
+                                       result_text,
+                                       stdout_text='',
+                                       stderr_text=''):
+        code = self._get_executed_code(future)
+        if code:
+            code.output = result_text
+            code.stdout = stdout_text
+            code.stderr = stderr_text
+        self._log_executed_code(code, prefix='FINISH')
+        self.update_output_buffer()
+
+    def get_output_buffer_text(self, code_items=None, show_index=True):
+        executed_code = code_items or self.executed_code
+        template = Template(OUTPUT_TEMPLATE,
+                            trim_blocks=True,
+                            lstrip_blocks=True)
+        return template.render(code_items=executed_code,
+                               show_index=show_index).strip()
+
+    def update_output_buffer(self):
+        text = self.get_output_buffer_text()
+        self.output_field.buffer.document = Document(text=text,
+                                                     cursor_position=len(text))
+        self.application.redraw_ui()
