@@ -281,18 +281,18 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":binary_semaphore_headers",
     ],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 pw_cc_library(
     name = "binary_semaphore_thread_notification_backend",
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        ":binary_semaphore_thread_notification_headers",
         ":binary_semaphore_facade",
+        ":binary_semaphore_thread_notification_headers",
         ":thread_notification_facade",
     ],
 )

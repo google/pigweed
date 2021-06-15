@@ -90,8 +90,8 @@ pw_cc_test(
     deps = [
         ":facade",
         ":proto_utils",
-        "//pw_protobuf",
         "//pw_preprocessor",
+        "//pw_protobuf",
         "//pw_unit_test",
     ],
 )

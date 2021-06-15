@@ -36,11 +36,11 @@ pw_cc_library(
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
+        "//pw_result",
+        "//pw_ring_buffer",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-        "//pw_result",
-        "//pw_ring_buffer",
         "//pw_varint",
     ],
 )
