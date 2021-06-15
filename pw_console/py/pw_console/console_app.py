@@ -188,10 +188,9 @@ class ConsoleApp:
             mouse_support=True,
         )
 
-    def add_log_handler(self, logger_instance: Iterable):
+    def add_log_handler(self, logger_instance: logging.Logger):
         """Add the Log pane as a handler for this logger instance."""
-        # TODO: Add log pane to addHandler call.
-        # logger_instance.addHandler(self.log_pane.log_container)
+        logger_instance.addHandler(self.log_pane.log_container)
 
     def _user_code_thread_entry(self):
         """Entry point for the user code thread."""
@@ -281,7 +280,7 @@ class ConsoleApp:
 def embed(
     global_vars=None,
     local_vars=None,
-    loggers: Optional[Iterable] = None,
+    loggers: Optional[Iterable[logging.Logger]] = None,
     test_mode=False,
 ) -> None:
     """Call this to embed pw console at the call point within your program.

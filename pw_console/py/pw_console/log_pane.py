@@ -16,10 +16,13 @@
 from functools import partial
 from typing import Any, List, Optional
 
+from prompt_toolkit.application.current import get_app
 from prompt_toolkit.filters import (
     Condition,
     has_focus,
 )
+from prompt_toolkit.formatted_text import to_formatted_text
+from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout import (
     ConditionalContainer,
     Dimension,
@@ -27,25 +30,28 @@ from prompt_toolkit.layout import (
     FloatContainer,
     FormattedTextControl,
     HSplit,
+    ScrollOffsets,
+    UIContent,
     VSplit,
+    VerticalAlign,
     Window,
     WindowAlign,
-    VerticalAlign,
 )
 from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+
+from pw_console.log_container import LogContainer
 
 
 class LogPaneLineInfoBar(ConditionalContainer):
     """One line bar for showing current and total log lines."""
     @staticmethod
-    def get_tokens(unused_log_pane):
+    def get_tokens(log_pane):
         """Return formatted text tokens for display."""
         tokens = ' Line {} / {} '.format(
-            # TODO: Replace fake counts with the current line (1) and total
-            # lines (10).
-            1,
-            10)
+            log_pane.log_container.get_current_line() + 1,
+            log_pane.log_container.get_total_count(),
+        )
         return [('', tokens)]
 
     def __init__(self, log_pane):
@@ -62,11 +68,7 @@ class LogPaneLineInfoBar(ConditionalContainer):
                    align=WindowAlign.RIGHT),
             # Only show current/total line info if not auto-following
             # logs. Similar to tmux behavior.
-            filter=Condition(
-                lambda: True
-                # TODO: replace True with log follow status.
-                # not log_pane.log_container.follow
-            ))
+            filter=Condition(lambda: not log_pane.log_container.follow))
 
 
 class LogPaneBottomToolbarBar(ConditionalContainer):
@@ -186,6 +188,115 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         )
 
 
+class LogContentControl(FormattedTextControl):
+    """LogPane prompt_toolkit UIControl for displaying LogContainer lines."""
+    @staticmethod
+    def indent_wrapped_pw_log_format_line(log_pane, line_number, wrap_count):
+        """Indent wrapped lines to match pw_cli timestamp & level formatter."""
+        if wrap_count == 0:
+            return None
+
+        prefix = ' ' * log_pane.log_container.longest_channel_prefix_width
+
+        # If this line matches the selected log line, highlight it.
+        if line_number == log_pane.log_container.get_cursor_position().y:
+            return to_formatted_text(prefix, style='class:selected-log-line')
+        return prefix
+
+    def create_content(self, width: int, height: Optional[int]) -> UIContent:
+        # Save redered height
+        if height:
+            self.log_pane.last_log_content_height += height
+        return super().create_content(width, height)
+
+    def __init__(self, log_pane, *args, **kwargs):
+        self.log_pane = log_pane
+
+        # Key bindings.
+        key_bindings = KeyBindings()
+
+        @key_bindings.add('w')
+        def _toggle_wrap_lines(_event: KeyPressEvent) -> None:
+            """Toggle log line wrapping."""
+            self.log_pane.toggle_wrap_lines()
+
+        @key_bindings.add('C')
+        def _clear_history(_event: KeyPressEvent) -> None:
+            """Toggle log line wrapping."""
+            self.log_pane.clear_history()
+
+        @key_bindings.add('g')
+        def _scroll_to_top(_event: KeyPressEvent) -> None:
+            """Scroll to top."""
+            self.log_pane.log_container.scroll_to_top()
+
+        @key_bindings.add('G')
+        def _scroll_to_bottom(_event: KeyPressEvent) -> None:
+            """Scroll to bottom."""
+            self.log_pane.log_container.scroll_to_bottom()
+
+        @key_bindings.add('f')
+        def _toggle_follow(_event: KeyPressEvent) -> None:
+            """Toggle log line following."""
+            self.log_pane.toggle_follow()
+
+        @key_bindings.add('up')
+        @key_bindings.add('k')
+        def _up(_event: KeyPressEvent) -> None:
+            """Select previous log line."""
+            self.log_pane.log_container.scroll_up()
+
+        @key_bindings.add('down')
+        @key_bindings.add('j')
+        def _down(_event: KeyPressEvent) -> None:
+            """Select next log line."""
+            self.log_pane.log_container.scroll_down()
+
+        @key_bindings.add('pageup')
+        def _pageup(_event: KeyPressEvent) -> None:
+            """Scroll the logs up by one page."""
+            self.log_pane.log_container.scroll_up_one_page()
+
+        @key_bindings.add('pagedown')
+        def _pagedown(_event: KeyPressEvent) -> None:
+            """Scroll the logs down by one page."""
+            self.log_pane.log_container.scroll_down_one_page()
+
+        super().__init__(*args, key_bindings=key_bindings, **kwargs)
+
+    def mouse_handler(self, mouse_event: MouseEvent):
+        """Mouse handler for this control."""
+        mouse_position = mouse_event.position
+
+        # Check for pane focus first.
+        # If not in focus, change forus to the log pane and do nothing else.
+        if not has_focus(self)():
+            if mouse_event.event_type == MouseEventType.MOUSE_UP:
+                # Focus buffer when clicked.
+                get_app().layout.focus(self)
+                # Mouse event handled, return None.
+                return None
+
+        if mouse_event.event_type == MouseEventType.MOUSE_UP:
+            # Scroll to the line clicked.
+            self.log_pane.log_container.scroll_to_position(mouse_position)
+            # Mouse event handled, return None.
+            return None
+
+        if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
+            self.log_pane.log_container.scroll_down()
+            # Mouse event handled, return None.
+            return None
+
+        if mouse_event.event_type == MouseEventType.SCROLL_UP:
+            self.log_pane.log_container.scroll_up()
+            # Mouse event handled, return None.
+            return None
+
+        # Mouse event not handled, return NotImplemented.
+        return NotImplemented
+
+
 class LogLineHSplit(HSplit):
     """PromptToolkit HSplit class with a write_to_screen function that saves the
     width and height of the container to be rendered.
@@ -234,25 +345,40 @@ class LogPane:
         self.height = height
         self.width = width
 
+        # Create the log container which stores and handles incoming logs.
+        self.log_container = LogContainer()
+        self.log_container.set_log_pane(self)
+        self.log_container.set_formatting()
+
         # Log pane size variables. These are updated just befor rendering the
         # pane by the LogLineHSplit class.
         self.current_log_pane_width = 0
         self.current_log_pane_height = 0
         self.last_log_pane_width = 0
         self.last_log_pane_height = 0
+        self.last_log_content_height = 0
 
         # Create the bottom toolbar for the whole log pane.
         self.bottom_toolbar = LogPaneBottomToolbarBar(self)
 
-        # TODO: Render logs here
-        self.log_content_control = FormattedTextControl(
-            [('', 'Logs appear here')],
+        self.log_content_control = LogContentControl(
+            self,  # parent LogPane
+            # FormattedTextControl args:
+            self.log_container.draw,
+            # Hide the cursor, use cursorline=True in self.log_display_window to
+            # indicate currently selected line.
+            show_cursor=False,
             focusable=True,
+            get_cursor_position=self.log_content_control_get_cursor_position,
         )
 
         self.log_display_window = Window(
             content=self.log_content_control,
+            # TODO: ScrollOffsets here causes jumpiness when lines are wrapped.
+            scroll_offsets=ScrollOffsets(top=0, bottom=0),
             allow_scroll_beyond_bottom=True,
+            get_line_prefix=partial(
+                LogContentControl.indent_wrapped_pw_log_format_line, self),
             wrap_lines=Condition(lambda: self.wrap_lines),
             cursorline=False,
             # Don't make the window taller to fill the parent split container.
@@ -310,12 +436,12 @@ class LogPane:
 
     def toggle_follow(self):
         """Toggle following log lines."""
-        # TODO: self.log_container.toggle_follow()
+        self.log_container.toggle_follow()
         self.redraw_ui()
 
     def clear_history(self):
         """Erase stored log lines."""
-        # TODO: self.log_container.clear_logs()
+        self.log_container.clear_logs()
         self.redraw_ui()
 
     def __pt_container__(self):
@@ -326,7 +452,15 @@ class LogPane:
     def get_all_key_bindings(self) -> List:
         """Return all keybinds for this pane."""
         # TODO: return log content control keybindings
-        return []
+        return [self.log_content_control.get_key_bindings()]
 
     def after_render_hook(self):
         """Run tasks after the last UI render."""
+        self.reset_log_content_height()
+
+    def reset_log_content_height(self):
+        """Reset log line pane content height."""
+        self.last_log_content_height = 0
+
+    def log_content_control_get_cursor_position(self):
+        return self.log_container.get_cursor_position()
