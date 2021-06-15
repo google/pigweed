@@ -48,7 +48,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _create_temp_log_file():
+def create_temp_log_file():
     """Create a unique tempfile for saving logs.
 
     Example format: /tmp/pw_console_2021-05-04_151807_8hem6iyq
@@ -76,7 +76,7 @@ def main() -> int:
     if not args.logfile:
         # Create a temp logfile to prevent logs from appearing over stdout. This
         # would corrupt the prompt toolkit UI.
-        args.logfile = _create_temp_log_file()
+        args.logfile = create_temp_log_file()
 
     pw_cli.log.install(args.loglevel, True, False, args.logfile)
 

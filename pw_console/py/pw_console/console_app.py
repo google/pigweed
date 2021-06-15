@@ -16,6 +16,7 @@
 import builtins
 import asyncio
 import logging
+from functools import partial
 from threading import Thread
 from typing import Iterable, Optional
 
@@ -37,15 +38,17 @@ from prompt_toolkit.widgets import (
     MenuContainer,
     MenuItem,
 )
-from prompt_toolkit.key_binding import merge_key_bindings
-from ptpython.key_bindings import load_python_bindings  # type: ignore
+from prompt_toolkit.key_binding import KeyBindings, merge_key_bindings
+from ptpython.key_bindings import (  # type: ignore
+    load_python_bindings, load_sidebar_bindings,
+)
 
 from pw_console.help_window import HelpWindow
 from pw_console.key_bindings import create_key_bindings
 from pw_console.log_pane import LogPane
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.repl_pane import ReplPane
-from pw_console.style import pw_console_styles
+from pw_console.style import generate_styles
 
 _LOG = logging.getLogger(__package__)
 
@@ -58,8 +61,10 @@ class FloatingMessageBar(ConditionalContainer):
     """Floating message bar for showing status messages."""
     def __init__(self, application):
         super().__init__(
-            FormattedTextToolbar(lambda: application.message
-                                 if application.message else []),
+            FormattedTextToolbar(
+                (lambda: application.message if application.message else []),
+                style='class:toolbar_inactive',
+            ),
             filter=Condition(
                 lambda: application.message and application.message != ''))
 
@@ -68,7 +73,11 @@ class ConsoleApp:
     """The main ConsoleApp class containing the whole console."""
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, global_vars=None, local_vars=None):
+    def __init__(self,
+                 global_vars=None,
+                 local_vars=None,
+                 repl_startup_message=None,
+                 help_text=None):
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
         #   https://docs.python.org/3/library/functions.html#globals
@@ -99,6 +108,13 @@ class ConsoleApp:
         # Top level UI state toggles.
         self.show_help_window = False
         self.vertical_split = False
+        self.load_theme()
+
+        self.help_window = HelpWindow(self,
+                                      preamble='Pigweed CLI v0.1',
+                                      additional_help_text=help_text)
+        # Used for tracking which pane was in focus before showing help window.
+        self.last_focused_pane = None
 
         # Create one log pane.
         self.log_pane = LogPane(application=self)
@@ -112,6 +128,7 @@ class ConsoleApp:
         self.repl_pane = ReplPane(
             application=self,
             python_repl=self.pw_ptpython_repl,
+            startup_message=repl_startup_message,
         )
 
         # List of enabled panes.
@@ -133,8 +150,53 @@ class ConsoleApp:
             MenuItem(
                 '[View] ',
                 children=[
+                    MenuItem(
+                        'Themes',
+                        children=[
+                            MenuItem('Toggle Light/Dark',
+                                     handler=self.toggle_light_theme),
+                            MenuItem('-'),
+                            MenuItem('UI: Default',
+                                     handler=partial(self.load_theme, 'dark')),
+                            MenuItem('UI: High Contrast',
+                                     handler=partial(self.load_theme,
+                                                     'high-contrast-dark')),
+                            MenuItem('-'),
+                            MenuItem(
+                                'Code: tomorrow-night',
+                                partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night')),
+                            MenuItem(
+                                'Code: tomorrow-night-bright',
+                                partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night-bright')),
+                            MenuItem(
+                                'Code: tomorrow-night-blue',
+                                partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night-blue')),
+                            MenuItem(
+                                'Code: tomorrow-night-eighties',
+                                partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night-eighties')),
+                            MenuItem(
+                                'Code: dracula',
+                                partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'dracula')),
+                            MenuItem(
+                                'Code: zenburn',
+                                partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'zenburn')),
+                        ],
+                    ),
                     MenuItem('Toggle Vertical/Horizontal Split',
                              handler=self.toggle_vertical_split),
+                    MenuItem('-'),
                     MenuItem('Toggle Log line Wrapping',
                              handler=self.toggle_log_line_wrapping),
                 ],
@@ -151,18 +213,29 @@ class ConsoleApp:
         # Key bindings registry.
         self.key_bindings = create_key_bindings(self)
 
+        # Create help window text based global key_bindings and active panes.
+        self._update_help_window()
+
         # prompt_toolkit root container.
         self.root_container = MenuContainer(
             body=self._create_root_split(),
             menu_items=self.menu_items,
             floats=[
                 # Top message bar
-                Float(top=0,
-                      right=0,
-                      height=1,
-                      content=FloatingMessageBar(self)),
+                Float(
+                    content=FloatingMessageBar(self),
+                    top=0,
+                    right=0,
+                    height=1,
+                ),
                 # Centered floating Help Window
-                Float(content=self._create_help_window()),
+                Float(
+                    content=self.help_window,
+                    top=2,
+                    bottom=2,
+                    # Callable to get width
+                    width=self.help_window.content_width,
+                ),
             ],
         )
 
@@ -180,17 +253,29 @@ class ConsoleApp:
             key_bindings=merge_key_bindings([
                 # Pull key bindings from ptpython
                 load_python_bindings(self.pw_ptpython_repl),
+                load_sidebar_bindings(self.pw_ptpython_repl),
                 self.key_bindings,
             ]),
             style=DynamicStyle(lambda: merge_styles([
-                pw_console_styles,
+                self._current_theme,
                 # Include ptpython styles
                 self.pw_ptpython_repl._current_style,  # pylint: disable=protected-access
             ])),
+            style_transformation=self.pw_ptpython_repl.style_transformation,
             enable_page_navigation_bindings=True,
             full_screen=True,
             mouse_support=True,
         )
+
+    def toggle_light_theme(self):
+        """Toggle light and dark theme colors."""
+        # Use ptpython's style_transformation to swap dark and light colors.
+        self.pw_ptpython_repl.swap_light_and_dark = (
+            not self.pw_ptpython_repl.swap_light_and_dark)
+
+    def load_theme(self, theme_name=None):
+        """Regenerate styles for the current theme_name."""
+        self._current_theme = generate_styles(theme_name)
 
     def add_log_handler(self, logger_instance: logging.Logger):
         """Add the Log pane as a handler for this logger instance."""
@@ -214,18 +299,20 @@ class ConsoleApp:
                         daemon=True)
         thread.start()
 
-    def _create_help_window(self):
-        help_window = HelpWindow(self)
-        # Create the help window and generate help text.
+    def _update_help_window(self):
+        """Generate the help window text based on active pane keybindings."""
         # Add global key bindings to the help text
-        help_window.add_keybind_help_text('Global', self.key_bindings)
+        self.help_window.add_keybind_help_text('Global', self.key_bindings)
         # Add activated plugin key bindings to the help text
         for pane in self.active_panes:
             for key_bindings in pane.get_all_key_bindings():
-                help_window.add_keybind_help_text(pane.__class__.__name__,
-                                                  key_bindings)
-        help_window.generate_help_text()
-        return help_window
+                if isinstance(key_bindings, KeyBindings):
+                    self.help_window.add_keybind_help_text(
+                        pane.__class__.__name__, key_bindings)
+                elif isinstance(key_bindings, dict):
+                    self.help_window.add_custom_keybinds_help_text(
+                        pane.__class__.__name__, key_bindings)
+        self.help_window.generate_help_text()
 
     def _create_root_split(self):
         """Create a vertical or horizontal split container for all active
@@ -236,7 +323,7 @@ class ConsoleApp:
                 # Add a vertical separator between each active window pane.
                 padding=1,
                 padding_char='│',
-                padding_style='',
+                padding_style='class:pane_separator',
             )
         else:
             self.active_pane_split = HSplit(self.active_panes)
@@ -259,9 +346,24 @@ class ConsoleApp:
 
         self.redraw_ui()
 
+    def focused_window(self):
+        """Return the currently focused window."""
+        return self.application.layout.current_window
+
     def toggle_help(self):
         """Toggle visibility of the help window."""
+        # Toggle state variable.
         self.show_help_window = not self.show_help_window
+
+        # Set the help window in focus.
+        if self.show_help_window:
+            self.last_focused_pane = self.focused_window()
+            self.application.layout.focus(self.help_window)
+        # Restore original focus.
+        else:
+            if self.last_focused_pane:
+                self.application.layout.focus(self.last_focused_pane)
+            self.last_focused_pane = None
 
     def exit_console(self):
         """Quit the console prompt_toolkit application UI."""
@@ -309,7 +411,8 @@ class ConsoleApp:
             if message_count % 10 == 0:
                 new_log_line += (" Lorem ipsum dolor sit amet, consectetur "
                                  "adipiscing elit.") * 8
-            # TODO: Test log lines that include linebreaks.
+            # TODO(tonymd): Add this in when testing log lines with included
+            # linebreaks.
             # if message_count % 11 == 0:
             #     new_log_line += inspect.cleandoc(""" [PYTHON] START
             #         In []: import time;
@@ -326,6 +429,8 @@ def embed(
     local_vars=None,
     loggers: Optional[Iterable[logging.Logger]] = None,
     test_mode=False,
+    repl_startup_message: Optional[str] = None,
+    help_text: Optional[str] = None,
 ) -> None:
     """Call this to embed pw console at the call point within your program.
     It's similar to `ptpython.embed` and `IPython.embed`. ::
@@ -355,15 +460,14 @@ def embed(
     console_app = ConsoleApp(
         global_vars=global_vars,
         local_vars=local_vars,
+        repl_startup_message=repl_startup_message,
+        help_text=help_text,
     )
 
     # Add loggers to the console app log pane.
     if loggers:
         for logger in loggers:
             console_app.add_log_handler(logger)
-
-    # TODO: Start prompt_toolkit app here
-    _LOG.debug('Pigweed Console Start')
 
     # Start a thread for running user code.
     console_app.start_user_code_thread()

@@ -47,7 +47,10 @@ def create_key_bindings(console_app):
         """Hide help window."""
         console_app.toggle_help()
 
-    @bindings.add('f2')
+    # F2 is ptpython settings
+    # F3 is ptpython history
+
+    @bindings.add('f4')
     def toggle_vertical_split(event):
         """Toggle horizontal and vertical window splitting."""
         console_app.toggle_vertical_split()
@@ -74,13 +77,15 @@ def create_key_bindings(console_app):
         focus_previous(event)
 
     # Bindings for when the ReplPane input field is in focus.
+    # These are hidden from help window global keyboard shortcuts since the
+    # method names end with `_hidden`.
     @bindings.add('c-c', filter=has_focus(console_app.pw_ptpython_repl))
-    def handle_ctrl_c(event):
+    def handle_ctrl_c_hidden(event):
         """Reset the python repl on Ctrl-c"""
         console_app.repl_pane.ctrl_c()
 
     @bindings.add('c-d', filter=has_focus(console_app.pw_ptpython_repl))
-    def handle_ctrl_d(event):
+    def handle_ctrl_d_hidden(event):
         """Do nothing on ctrl-d."""
         # TODO(tonymd): Allow ctrl-d to quit the whole app with confirmation
         # like ipython.

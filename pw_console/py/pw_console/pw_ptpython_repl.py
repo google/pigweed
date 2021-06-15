@@ -22,6 +22,7 @@ from pathlib import Path
 
 from prompt_toolkit.buffer import Buffer
 import ptpython.repl  # type: ignore
+from ptpython.completer import CompletePrivateAttributes  # type: ignore
 
 from pw_console.helpers import remove_formatting
 
@@ -32,18 +33,21 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
     """A ptpython repl class with changes to code execution and output related
     methods."""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         create_app=False,
-                         history_filename=(Path.home() /
-                                           '.pw_console_history').as_posix(),
-                         color_depth='256 colors',
-                         _input_buffer_height=8,
-                         **kwargs)
+        super().__init__(
+            *args,
+            create_app=False,
+            history_filename=(Path.home() / '.pw_console_history').as_posix(),
+            # Use python_toolkit default color depth.
+            # color_depth=ColorDepth.DEPTH_8_BIT,  # 256 Colors
+            _input_buffer_height=8,
+            **kwargs)
+
         # Change some ptpython.repl defaults.
-        self.use_code_colorscheme('zenburn')
+        self.use_code_colorscheme('tomorrow-night-bright')
         self.show_status_bar = False
         self.show_exit_confirmation = False
-        self.complete_private_attributes = False
+        self.complete_private_attributes = (
+            CompletePrivateAttributes.IF_NO_PUBLIC)
 
         # Additional state variables.
         self.repl_pane = None
@@ -180,6 +184,6 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         # Rebuild the parent ReplPane output buffer.
         self._update_output_buffer()
 
-        # TODO: Return True if exception is found?
+        # TODO(tonymd): Return True if exception is found?
         # Don't keep input for now. Return True to keep input text.
         return False

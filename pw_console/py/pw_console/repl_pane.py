@@ -49,6 +49,11 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.lexers import PygmentsLexer  # type: ignore
 from pygments.lexers.python import PythonLexer  # type: ignore
 
+from pw_console.helpers import (
+    get_pane_indicator,
+    get_pane_style,
+    get_toolbar_style,
+)
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 
 _LOG = logging.getLogger(__package__)
@@ -81,7 +86,7 @@ class FocusOnClickFloatContainer(ConditionalContainer):
 
         empty_text = FormattedTextControl([(
             # Style
-            '',
+            'class:default',
             # Text
             ' ',
             # Mouse handler
@@ -97,60 +102,69 @@ class FocusOnClickFloatContainer(ConditionalContainer):
 class ReplPaneBottomToolbarBar(ConditionalContainer):
     """Repl pane bottom toolbar."""
     @staticmethod
+    def get_left_text_tokens(repl_pane):
+        """Return toolbar indicator and title."""
+
+        title = ' Python Input '
+        mouse_handler = partial(mouse_focus_handler, repl_pane)
+        return get_pane_indicator(repl_pane, title, mouse_handler)
+
+    @staticmethod
     def get_center_text_tokens(repl_pane):
         """Return toolbar text showing if the ReplPane is in focus or not."""
-        focused_text = (
-            # Style
-            '',
-            # Text
-            ' [FOCUSED] ',
-            # Mouse handler
-            partial(mouse_focus_handler, repl_pane),
-        )
+        focused_text = [
+            (
+                # Style
+                '',
+                # Text
+                '[FOCUSED] ',
+                # Mouse handler
+                partial(mouse_focus_handler, repl_pane),
+            ),
+            ('class:keybind', 'enter'),
+            ('class:keyhelp', ':Run code'),
+        ]
 
-        out_of_focus_text = (
+        out_of_focus_text = [(
             # Style
             'class:keyhelp',
             # Text
-            ' [click to focus] ',
+            '[click to focus] ',
             # Mouse handler
             partial(mouse_focus_handler, repl_pane),
-        )
+        )]
 
         if has_focus(repl_pane)():
-            return [focused_text]
-        return [out_of_focus_text]
+            return focused_text
+        return out_of_focus_text
+
+    @staticmethod
+    def get_right_text_tokens(repl_pane):
+        """Return right toolbar text."""
+        if has_focus(repl_pane)():
+            return [
+                ('class:keybind', 'F2'),
+                ('class:keyhelp', ':Settings '),
+                ('class:keybind', 'F3'),
+                ('class:keyhelp', ':History '),
+            ]
+        return []
 
     def __init__(self, repl_pane):
-        left_section_text = FormattedTextControl([(
-            # Style
-            'class:logo',
-            # Text
-            ' Python Input ',
-            # Mouse handler
-            partial(mouse_focus_handler, repl_pane),
-        )])
-
-        center_section_text = FormattedTextControl(
-            # Callable to get formatted text tuples.
-            partial(ReplPaneBottomToolbarBar.get_center_text_tokens,
-                    repl_pane))
-
-        right_section_text = FormattedTextControl([(
-            # Style
-            'class:bottom_toolbar_colored_text',
-            # Text
-            ' [Enter]: run code ',
-        )])
-
         left_section_window = Window(
-            content=left_section_text,
+            content=FormattedTextControl(
+                # Callable to get formatted text tuples.
+                partial(ReplPaneBottomToolbarBar.get_left_text_tokens,
+                        repl_pane)),
             align=WindowAlign.LEFT,
             dont_extend_width=True,
         )
 
         center_section_window = Window(
-            content=center_section_text,
+            content=FormattedTextControl(
+                # Callable to get formatted text tuples.
+                partial(ReplPaneBottomToolbarBar.get_center_text_tokens,
+                        repl_pane)),
             # Center text is left justified to appear just right of the left
             # section text.
             align=WindowAlign.LEFT,
@@ -160,7 +174,10 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         )
 
         right_section_window = Window(
-            content=right_section_text,
+            content=FormattedTextControl(
+                # Callable to get formatted text tuples.
+                partial(ReplPaneBottomToolbarBar.get_right_text_tokens,
+                        repl_pane)),
             # Right side text should appear at the far right of the toolbar
             align=WindowAlign.RIGHT,
             dont_extend_width=True,
@@ -173,7 +190,7 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 right_section_window,
             ],
             height=1,
-            style='class:bottom_toolbar',
+            style=partial(get_toolbar_style, repl_pane),
             align=WindowAlign.LEFT,
         )
 
@@ -202,17 +219,18 @@ class ReplPane:
 
     # pylint: disable=too-many-instance-attributes,too-few-public-methods
     def __init__(
-            self,
-            application: Any,
-            python_repl: PwPtPythonRepl,
-            # TODO: Make the height of input+output windows match the log pane
-            # height. (Using minimum output height of 5 for now).
-            output_height: Optional[AnyDimension] = Dimension(preferred=5),
-            # TODO: Figure out how to resize ptpython input field.
-            _input_height: Optional[AnyDimension] = None,
-            # Default width and height to 50% of the screen
-            height: Optional[AnyDimension] = Dimension(weight=50),
-            width: Optional[AnyDimension] = Dimension(weight=50),
+        self,
+        application: Any,
+        python_repl: PwPtPythonRepl,
+        # TODO(tonymd): Make the height of input+output windows match the log
+        # pane height. (Using minimum output height of 5 for now).
+        output_height: Optional[AnyDimension] = Dimension(preferred=5),
+        # TODO(tonymd): Figure out how to resize ptpython input field.
+        _input_height: Optional[AnyDimension] = None,
+        # Default width and height to 50% of the screen
+        height: Optional[AnyDimension] = Dimension(weight=50),
+        width: Optional[AnyDimension] = Dimension(weight=50),
+        startup_message: Optional[str] = None,
     ) -> None:
         self.height = height
         self.width = width
@@ -225,10 +243,11 @@ class ReplPane:
         self.pw_ptpython_repl = python_repl
         self.pw_ptpython_repl.set_repl_pane(self)
 
+        self.startup_message = startup_message if startup_message else ''
+
         self.output_field = TextArea(
-            style='class:output-field',
             height=output_height,
-            # text=help_text,
+            text=self.startup_message,
             focusable=False,
             scrollbar=True,
             lexer=PygmentsLexer(PythonLexer),
@@ -244,15 +263,19 @@ class ReplPane:
                     # 1. Repl Output
                     self.output_field,
                     # 2. Static separator toolbar.
-                    Window(
-                        content=FormattedTextControl([(
-                            # Style
-                            'class:logo',
-                            # Text
-                            ' Python Results ',
-                        )]),
-                        height=1,
-                        style='class:menu-bar'),
+                    VSplit(
+                        [
+                            Window(
+                                content=FormattedTextControl(
+                                    partial(get_pane_indicator, self,
+                                            ' Python Results ')),
+                                align=WindowAlign.LEFT,
+                                dont_extend_width=True,
+                                height=1,
+                            ),
+                        ],
+                        style=partial(get_toolbar_style, self),
+                    ),
                     # 3. Repl Input
                     self.pw_ptpython_repl,
                     # 4. Bottom toolbar
@@ -260,16 +283,17 @@ class ReplPane:
                 ],
                 height=self.height,
                 width=self.width,
+                style=partial(get_pane_style, self),
             ),
             floats=[
                 # Transparent float container that will focus on the repl_pane
                 # when clicked. It is hidden if already in focus.
                 Float(
+                    # This is drawn as the full size of the ReplPane
                     FocusOnClickFloatContainer(self),
                     transparent=True,
-                    # Full size of the ReplPane minus one line for the bottom
-                    # toolbar.
-                    right=0,
+                    # Draw the empty space in the bottom right corner.
+                    right=1,
                     left=0,
                     top=0,
                     bottom=1,
@@ -283,7 +307,17 @@ class ReplPane:
     # pylint: disable=no-self-use
     def get_all_key_bindings(self) -> List:
         """Return all keybinds for this plugin."""
-        return []
+        # ptpython native bindings:
+        # return [load_python_bindings(self.pw_ptpython_repl)]
+
+        # Hand-crafted bindings for display in the HelpWindow:
+        return [{
+            'Erase input buffer.': ['ControlC'],
+            'Show ptpython settings.': ['F2'],
+            'Show ptpython history.': ['F3'],
+            'Execute code': ['Enter', 'OptionEnter', 'MetaEnter'],
+            'Reverse search history': ['ControlR'],
+        }]
 
     def after_render_hook(self):
         """Run tasks after the last UI render."""

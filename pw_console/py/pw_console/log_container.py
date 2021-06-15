@@ -32,6 +32,7 @@ from prompt_toolkit.formatted_text import (
 
 import pw_cli.color
 from pw_console.helpers import get_line_height
+from pw_log_tokenized import FormatStringWithMetadata
 
 _LOG = logging.getLogger(__package__)
 
@@ -44,19 +45,35 @@ class LogLine:
     record: logging.LogRecord
     formatted_log: str
 
+    def __post_init__(self):
+        self._metadata = None
+
     def time(self):
         """Return a datetime object for the log record."""
         return datetime.fromtimestamp(self.record.created)
 
+    # @property
+    # def metadata(self):
+    def update_metadata(self):
+        if self._metadata is None:
+            self._metadata = FormatStringWithMetadata(str(self.record.msg))
+            # Update the formatted log line
+            self.formatted_log = self.formatted_log.replace(
+                self._metadata.raw_string, self._metadata.message)
+        return self._metadata
+
     def get_fragments(self) -> List:
         """Return this log line as a list of FormattedText tuples."""
         # Manually make a FormattedText tuple, wrap in a list
-        # return [('class:bottom_toolbar_colored_text', self.record.msg)]
+        # return [('class:toolbar_active', self.record.msg)]
         # Use ANSI, returns a list of FormattedText tuples.
 
         # fragments = [('[SetCursorPosition]', '')]
         # fragments += ANSI(self.formatted_log).__pt_formatted_text__()
         # return fragments
+
+        # Parse metadata if any.
+        self.update_metadata()
 
         # Add a trailing linebreak
         return ANSI(self.formatted_log + '\n').__pt_formatted_text__()
@@ -399,7 +416,8 @@ class LogContainer(logging.Handler):
             used_lines += line_height
 
             # Count the number of line breaks included in the log line.
-            line_breaks = self.logs[i].record.msg.count('\n')
+            log_string = str(self.logs[i].record.msg)
+            line_breaks = log_string.count('\n')
             used_lines += line_breaks
 
             # If this is the selected line apply a style class for highlighting.

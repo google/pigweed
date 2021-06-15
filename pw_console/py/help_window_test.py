@@ -91,25 +91,52 @@ class TestHelpWindow(unittest.TestCase):
 
         app = Mock()
 
-        help_window = HelpWindow(app)
+        help_window = HelpWindow(app,
+                                 preamble='Pigweed CLI v0.1',
+                                 additional_help_text=cleandoc("""
+                                     Welcome to the Pigweed Console!
+                                     Please enjoy this extra help text.
+                                 """))
         help_window.add_keybind_help_text('Global', global_bindings)
         help_window.add_keybind_help_text('Focus', focus_bindings)
+        help_window.generate_help_text()
 
-        help_text = help_window.generate_help_text()
+        self.assertIn(
+            cleandoc("""
+                Pigweed CLI v0.1
 
+                ================================== Help =================================
+
+                Welcome to the Pigweed Console!
+                Please enjoy this extra help text.
+            """),
+            help_window.help_text,
+        )
+        self.assertIn(
+            cleandoc("""
+            ============================== Global Keys ==============================
+            """),
+            help_window.help_text,
+        )
         self.assertIn(
             cleandoc("""
             Toggle help window. -----------------  F1
             Quit the application. ---------------  ControlQ, ControlW
             """),
-            help_text,
+            help_window.help_text,
+        )
+        self.assertIn(
+            cleandoc("""
+            =============================== Focus Keys ==============================
+            """),
+            help_window.help_text,
         )
         self.assertIn(
             cleandoc("""
             Move focus to the next widget. ------  BackTab, ControlDown, ControlRight
             Move focus to the previous widget. --  ControlLeft, ControlUp
             """),
-            help_text,
+            help_window.help_text,
         )
 
 

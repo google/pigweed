@@ -13,6 +13,8 @@
 # the License.
 """Helper functions."""
 
+from prompt_toolkit.filters import has_focus
+
 
 def remove_formatting(formatted_text):
     """Throw away style info from formatted text tuples."""
@@ -40,3 +42,36 @@ def get_line_height(text_width, screen_width, prefix_width):
 
     # Add one for the last line that is < screen_width
     return total_height + 1
+
+
+def get_toolbar_style(pt_container) -> str:
+    """Return the style class for a toolbar if pt_container is in focus."""
+    if has_focus(pt_container.__pt_container__())():
+        return 'class:toolbar_active'
+    return 'class:toolbar_inactive'
+
+
+def get_pane_style(pt_container) -> str:
+    """Return the style class for a pane title if pt_container is in focus."""
+    if has_focus(pt_container.__pt_container__())():
+        return 'class:pane_active'
+    return 'class:pane_inactive'
+
+
+def get_pane_indicator(pt_container, title, mouse_handler=None):
+    """Return formatted text for a pane indicator and title."""
+    if mouse_handler:
+        inactive_indicator = ('class:pane_indicator_inactive', ' ',
+                              mouse_handler)
+        active_indicator = ('class:pane_indicator_active', ' ', mouse_handler)
+        inactive_title = ('class:pane_title_inactive', title, mouse_handler)
+        active_title = ('class:pane_title_active', title, mouse_handler)
+    else:
+        inactive_indicator = ('class:pane_indicator_inactive', ' ')
+        active_indicator = ('class:pane_indicator_active', ' ')
+        inactive_title = ('class:pane_title_inactive', title)
+        active_title = ('class:pane_title_active', title)
+
+    if has_focus(pt_container.__pt_container__())():
+        return [active_indicator, active_title]
+    return [inactive_indicator, inactive_title]

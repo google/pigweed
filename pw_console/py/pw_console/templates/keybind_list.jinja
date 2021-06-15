@@ -13,11 +13,26 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 #}
+{% set total_width = max_description_width + max_key_list_width + 5 %}
+{% if preamble %}
+{{ preamble }}
+{% endif %}
+{{ '\n' if preamble and additional_help_text -}} {# Add a single line break here with no trailing whitespace. #}
+{% if additional_help_text %}
+{{ ' Help '.format(section).center(total_width, '=') }}
+
+{{ additional_help_text.rstrip() }}
+
+
+{# Two empty lines between sections #}
+{% endif %}
 {% for section, key_dict in sections.items() %}
-{{ section|center }}
+{{ ' {} Keys '.format(section).center(total_width, '=') }}
 
 {% for description, key_list in key_dict.items() %}
 {{ (description+' ').ljust(max_description_width+3, '-') }}  {{ key_list|sort|join(', ') }}
 {% endfor %}
 
+
+{# Two empty lines between sections #}
 {% endfor %}

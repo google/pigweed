@@ -41,6 +41,11 @@ from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
 from pw_console.log_container import LogContainer
+from pw_console.helpers import (
+    get_pane_indicator,
+    get_pane_style,
+    get_toolbar_style,
+)
 
 
 class LogPaneLineInfoBar(ConditionalContainer):
@@ -64,7 +69,7 @@ class LogPaneLineInfoBar(ConditionalContainer):
         super().__init__(
             VSplit([info_bar_window],
                    height=1,
-                   style='class:bottom_toolbar',
+                   style='class:toolbar_active',
                    align=WindowAlign.RIGHT),
             # Only show current/total line info if not auto-following
             # logs. Similar to tmux behavior.
@@ -108,6 +113,15 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         return NotImplemented
 
     @staticmethod
+    def get_left_text_tokens(log_pane):
+        """Return toolbar indicator and title."""
+
+        title = ' Logs '
+        mouse_handler = partial(LogPaneBottomToolbarBar.mouse_handler_focus,
+                                log_pane)
+        return get_pane_indicator(log_pane, title, mouse_handler)
+
+    @staticmethod
     def get_center_text_tokens(log_pane):
         """Return formatted text tokens for display in the center part of the
         toolbar."""
@@ -127,9 +141,9 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         # If the log_pane is in focus, show keybinds in the toolbar.
         if has_focus(log_pane.__pt_container__())():
             return [
-                ('', ' [FOCUSED]'),
+                ('', '[FOCUSED]'),
                 separator_text,
-                # TODO: Indicate toggle status with a checkbox?
+                # TODO(tonymd): Indicate toggle status with a checkbox?
                 ('class:keybind', 'w', toggle_wrap_lines),
                 ('class:keyhelp', ':Wrap', toggle_wrap_lines),
                 separator_text,
@@ -141,31 +155,24 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
             ]
         # Show the click to focus button if log pane isn't in focus.
         return [
-            ('class:keyhelp', ' [click to focus] ', focus),
+            ('class:keyhelp', '[click to focus] ', focus),
         ]
 
     def __init__(self, log_pane):
-        title_section_text = FormattedTextControl([(
-            # Style
-            'class:logo',
-            # Text
-            ' Logs ',
-            # Mouse handler
-            partial(LogPaneBottomToolbarBar.mouse_handler_focus, log_pane),
-        )])
-
-        keybind_section_text = FormattedTextControl(
-            # Callable to get formatted text tuples.
-            partial(LogPaneBottomToolbarBar.get_center_text_tokens, log_pane))
-
         title_section_window = Window(
-            content=title_section_text,
+            content=FormattedTextControl(
+                # Callable to get formatted text tuples.
+                partial(LogPaneBottomToolbarBar.get_left_text_tokens,
+                        log_pane)),
             align=WindowAlign.LEFT,
             dont_extend_width=True,
         )
 
         keybind_section_window = Window(
-            content=keybind_section_text,
+            content=FormattedTextControl(
+                # Callable to get formatted text tuples.
+                partial(LogPaneBottomToolbarBar.get_center_text_tokens,
+                        log_pane)),
             align=WindowAlign.LEFT,
             dont_extend_width=False,
         )
@@ -176,7 +183,7 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
                 keybind_section_window,
             ],
             height=LogPaneBottomToolbarBar.TOOLBAR_HEIGHT,
-            style='class:bottom_toolbar',
+            style=partial(get_toolbar_style, log_pane),
             align=WindowAlign.LEFT,
         )
 
@@ -374,7 +381,8 @@ class LogPane:
 
         self.log_display_window = Window(
             content=self.log_content_control,
-            # TODO: ScrollOffsets here causes jumpiness when lines are wrapped.
+            # TODO(tonymd): ScrollOffsets here causes jumpiness when lines are
+            # wrapped.
             scroll_offsets=ScrollOffsets(top=0, bottom=0),
             allow_scroll_beyond_bottom=True,
             get_line_prefix=partial(
@@ -389,6 +397,9 @@ class LogPane:
             # extend to the end of the container. Otherwise backround colors
             # will only appear until the end of the log line.
             dont_extend_width=False,
+            # Needed for log lines ANSI sequences that don't specify foreground
+            # or background colors.
+            style=partial(get_pane_style, self),
         )
 
         # Root level container
@@ -404,6 +415,7 @@ class LogPane:
                 align=VerticalAlign.BOTTOM,
                 height=self.height,
                 width=self.width,
+                style=partial(get_pane_style, self),
             ),
             floats=[
                 # Floating LogPaneLineInfoBar
@@ -451,7 +463,7 @@ class LogPane:
     # pylint: disable=no-self-use
     def get_all_key_bindings(self) -> List:
         """Return all keybinds for this pane."""
-        # TODO: return log content control keybindings
+        # Return log content control keybindings
         return [self.log_content_control.get_key_bindings()]
 
     def after_render_hook(self):

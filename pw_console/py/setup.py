@@ -45,5 +45,7 @@ setuptools.setup(
         'pw_cli',
         'pw_tokenizer',
         'pygments',
+        'pygments-style-dracula',
+        'pygments-style-tomorrow',
     ],
 )
