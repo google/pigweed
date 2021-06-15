@@ -293,6 +293,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_tokenizer:tests",
       "$dir_pw_trace:tests",
       "$dir_pw_trace_tokenized:tests",
+      "$dir_pw_transfer:tests",
       "$dir_pw_unit_test:tests",
       "$dir_pw_varint:tests",
     ]

@@ -1,0 +1,106 @@
+// Copyright 2021 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+syntax = "proto3";
+
+package pw.transfer;
+
+// The transfer RPC service is used to send data between the client and server.
+service Transfer {
+  // Transfer data from the server to the client; a "download" from the client's
+  // perspective.
+  rpc Read(stream Chunk) returns (stream Chunk);
+
+  // Transfer data from the client to the server; an "upload" from the client's
+  // perspective.
+  rpc Write(stream Chunk) returns (stream Chunk);
+}
+
+// Represents a chunk of data sent by the transfer service. Includes fields for
+// configuring the transfer parameters.
+//
+// Notation: (Read|Write) (→|←)
+//   X → Means client sending data to the server.
+//   X ← Means server sending data to the client.
+message Chunk {
+  // Represents the source or destination of the data. May be ephemeral or
+  // stable depending on the implementation. Only ever sent by the client in the
+  // first request.
+  //
+  //  Read → ID of transfer
+  //  Read ← Omitted
+  // Write → ID of transfer
+  // Write ← Omitted
+  uint32 transfer_id = 1;
+
+  // Used by the receiver to indicate how many bytes it can accept. The
+  // transmitter sends this much data, divided into chunks no larger than
+  // max_chunk_size_bytes. The receiver then starts another window by sending
+  // request_bytes again with a new offset.
+  //
+  //  Read → The client requests this many bytes to be sent.
+  //  Read ← N/A
+  // Write → N/A
+  // Write ← The server requests this many bytes to be sent.
+  optional uint32 pending_bytes = 2;
+
+  // Maximum size of an individual chunk. The transmitter may send smaller
+  // chunks if required.
+  //
+  //  Read → Set maximum size for subsequent chunks.
+  //  Read ← N/A
+  // Write → N/A
+  // Write ← Set maximum size for subsequent chunks.
+  optional uint32 max_chunk_size_bytes = 3;
+
+  // Minimum required delay between chunks. The transmitter may delay longer if
+  // desired.
+  //
+  //  Read → Set minimum delay for subsequent chunks.
+  //  Read ← N/A
+  // Write → N/A
+  // Write ← Set minimum delay for subsequent chunks.
+  optional uint32 min_delay_microseconds = 4;
+
+  // On writes, the offset of the data. On reads, the offset at which to read.
+  //
+  //  Read → Read data starting at this offset.
+  //  Read ← Offset of the data.
+  // Write → Offset of the data.
+  // Write ← Write data starting at this offset.
+  uint64 offset = 5;
+
+  // The data that was read or the data to write.
+  //
+  //  Read → N/A
+  //  Read ← Data read
+  // Write → Data to write
+  // Write ← N/A
+  bytes data = 6;
+
+  // Estimated bytes remaining to read/write. Optional except for the last
+  // chunk, for which remaining_bytes must be set to 0.
+  //
+  // The sender can set remaining_bytes at the beginning of a read/write so that
+  // the receiver can track progress or cancel the transaction if the value is
+  // too large.
+  //
+  //  Read → N/A
+  //  Read ← Remaining bytes to read, excluding any data in this chunk. Set to
+  //         0 for the last chunk.
+  // Write → Reamining bytes to write, excluding any data in is chunk. Set to
+  //         0 for the last chunk.
+  // Write ← N/A
+  optional uint64 remaining_bytes = 7;
+}
