@@ -55,8 +55,8 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":microvolt_input",
         "$dir_pw_third_party/googletest",
+        ":microvolt_input",
     ],
 )
 
@@ -67,8 +67,8 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":analog_input",
         "$dir_pw_third_party/googletest",
+        ":analog_input",
     ],
 )
 

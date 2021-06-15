@@ -115,8 +115,8 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":initiator",
         "$dir_pw_third_party/googletest",
+        ":initiator",
     ],
 )
 
