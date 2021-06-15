@@ -18,12 +18,34 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("pw_transfer") {
+  public = [ "public/pw_transfer/handler.h" ]
+  visibility = [ ":*" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_containers:intrusive_list",
+    dir_pw_assert,
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+}
+
 pw_proto_library("proto") {
   sources = [ "transfer.proto" ]
 }
 
 pw_test_group("tests") {
-  tests = []
+  tests = [ ":handler_test" ]
+}
+
+pw_test("handler_test") {
+  sources = [ "handler_test.cc" ]
+  deps = [ ":pw_transfer" ]
 }
 
 pw_doc_group("docs") {
