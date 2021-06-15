@@ -183,6 +183,7 @@ class EnvSetup(object):
         self._cipd_package_file = []
         self._virtualenv_requirements = []
         self._virtualenv_gn_targets = []
+        self._optional_submodules = []
 
         if config_file:
             self._parse_config_file(config_file)
@@ -228,6 +229,8 @@ class EnvSetup(object):
 
     def _parse_config_file(self, config_file):
         config = json.load(config_file)
+
+        self._optional_submodules.extend(config.pop('optional_submodules', ()))
 
         self._cipd_package_file.extend(
             os.path.join(self._project_root, x)
