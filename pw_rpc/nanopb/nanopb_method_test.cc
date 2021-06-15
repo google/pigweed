@@ -35,95 +35,90 @@ struct FakePb {};
 // Create a fake service for use with the MethodImplTester.
 class TestNanopbService final : public Service {
  public:
+  // Unary signatures
+
   Status Unary(ServerContext&, const FakePb&, FakePb&) { return Status(); }
 
   static Status StaticUnary(ServerContext&, const FakePb&, FakePb&) {
     return Status();
   }
 
-  void ServerStreaming(ServerContext&, const FakePb&, ServerWriter<FakePb>&) {}
-
-  static void StaticServerStreaming(ServerContext&,
-                                    const FakePb&,
-                                    ServerWriter<FakePb>&) {}
-
   Status UnaryWrongArg(ServerContext&, FakePb&, FakePb&) { return Status(); }
 
   static void StaticUnaryVoidReturn(ServerContext&, const FakePb&, FakePb&) {}
 
+  // Server streaming signatures
+
+  void ServerStreaming(ServerContext&,
+                       const FakePb&,
+                       NanopbServerWriter<FakePb>&) {}
+
+  static void StaticServerStreaming(ServerContext&,
+                                    const FakePb&,
+                                    NanopbServerWriter<FakePb>&) {}
+
   int ServerStreamingBadReturn(ServerContext&,
                                const FakePb&,
-                               ServerWriter<FakePb>&) {
+                               NanopbServerWriter<FakePb>&) {
     return 5;
   }
 
   static void StaticServerStreamingMissingArg(const FakePb&,
-                                              ServerWriter<FakePb>&) {}
+                                              NanopbServerWriter<FakePb>&) {}
+
+  // Client streaming signatures
+
+  void ClientStreaming(ServerContext&, NanopbServerReader<FakePb, FakePb>&) {}
+
+  static void StaticClientStreaming(ServerContext&,
+                                    NanopbServerReader<FakePb, FakePb>&) {}
+
+  int ClientStreamingBadReturn(ServerContext&,
+                               NanopbServerReader<FakePb, FakePb>&) {
+    return 0;
+  }
+
+  static void StaticClientStreamingMissingArg(
+      NanopbServerReader<FakePb, FakePb>&) {}
+
+  // Bidirectional streaming signatures
+
+  void BidirectionalStreaming(ServerContext&,
+                              NanopbServerReaderWriter<FakePb, FakePb>&) {}
+
+  static void StaticBidirectionalStreaming(
+      ServerContext&, NanopbServerReaderWriter<FakePb, FakePb>&) {}
+
+  int BidirectionalStreamingBadReturn(
+      ServerContext&, NanopbServerReaderWriter<FakePb, FakePb>&) {
+    return 0;
+  }
+
+  static void StaticBidirectionalStreamingMissingArg(
+      NanopbServerReaderWriter<FakePb, FakePb>&) {}
 };
-
-// Test that the matches() function matches valid signatures.
-static_assert(NanopbMethod::template matches<&TestNanopbService::Unary,
-                                             FakePb,
-                                             FakePb>());
-static_assert(
-    NanopbMethod::template matches<&TestNanopbService::ServerStreaming,
-                                   FakePb,
-                                   FakePb>());
-static_assert(NanopbMethod::template matches<&TestNanopbService::StaticUnary,
-                                             FakePb,
-                                             FakePb>());
-static_assert(
-    NanopbMethod::template matches<&TestNanopbService::StaticServerStreaming,
-                                   FakePb,
-                                   FakePb>());
-
-// Test that the matches() function does not match the wrong method type.
-static_assert(!NanopbMethod::template matches<&TestNanopbService::UnaryWrongArg,
-                                              FakePb,
-                                              FakePb>());
-static_assert(
-    !NanopbMethod::template matches<&TestNanopbService::StaticUnaryVoidReturn,
-                                    FakePb,
-                                    FakePb>());
-static_assert(!NanopbMethod::template matches<
-              &TestNanopbService::ServerStreamingBadReturn,
-              FakePb,
-              FakePb>());
-static_assert(!NanopbMethod::template matches<
-              &TestNanopbService::StaticServerStreamingMissingArg,
-              FakePb,
-              FakePb>());
 
 struct WrongPb;
 
 // Test matches() rejects incorrect request/response types.
-static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary,
-                                              WrongPb,
-                                              FakePb>());
-static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary,
-                                              FakePb,
-                                              WrongPb>());
-static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary,
-                                              WrongPb,
-                                              WrongPb>());
-static_assert(
-    !NanopbMethod::template matches<&TestNanopbService::ServerStreaming,
-                                    WrongPb,
-                                    FakePb>());
+// clang-format off
+static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary, WrongPb, FakePb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary, FakePb, WrongPb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary, WrongPb, WrongPb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::StaticUnary, FakePb, WrongPb>());
 
-static_assert(!NanopbMethod::template matches<&TestNanopbService::StaticUnary,
-                                              FakePb,
-                                              WrongPb>());
-static_assert(
-    !NanopbMethod::template matches<&TestNanopbService::StaticServerStreaming,
-                                    FakePb,
-                                    WrongPb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::ServerStreaming, WrongPb, FakePb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::StaticServerStreaming, FakePb, WrongPb>());
 
-TEST(MethodImplTester, NanopbMethod) {
-  constexpr MethodImplTester<NanopbMethod, TestNanopbService, nullptr, nullptr>
-      method_tester;
-  EXPECT_TRUE(method_tester.MethodImplIsValid());
-}
+static_assert(!NanopbMethod::template matches<&TestNanopbService::ClientStreaming, WrongPb, FakePb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::StaticClientStreaming, FakePb, WrongPb>());
+
+static_assert(!NanopbMethod::template matches<&TestNanopbService::BidirectionalStreaming, WrongPb, FakePb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::StaticBidirectionalStreaming, FakePb, WrongPb>());
+// clang-format on
+
+static_assert(MethodImplTests<NanopbMethod, TestNanopbService>().Pass(
+    MatchesTypes<FakePb, FakePb>(), CreationArgs<nullptr, nullptr>()));
 
 pw_rpc_test_TestRequest last_request;
 ServerWriter<pw_rpc_test_TestResponse> last_writer;

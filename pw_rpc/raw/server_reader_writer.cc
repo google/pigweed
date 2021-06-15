@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,22 +12,30 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/nanopb_client_call.h"
+#include "pw_rpc/raw/server_reader_writer.h"
+
+#include <cstring>
 
 namespace pw::rpc {
-namespace internal {
 
-Status BaseNanopbClientCall::SendRequest(const void* request_struct) {
-  std::span<std::byte> buffer = AcquirePayloadBuffer();
-
-  StatusWithSize sws = serde_.EncodeRequest(request_struct, buffer);
-  if (!sws.ok()) {
-    ReleasePayloadBuffer({});
-    return sws.status();
+Status RawServerReaderWriter::Write(ConstByteSpan response) {
+  if (!open()) {
+    return Status::FailedPrecondition();
   }
 
-  return ReleasePayloadBuffer(buffer.first(sws.size()));
+  if (buffer().Contains(response)) {
+    return ReleasePayloadBuffer(response);
+  }
+
+  std::span<std::byte> buffer = AcquirePayloadBuffer();
+
+  if (response.size() > buffer.size()) {
+    ReleasePayloadBuffer();
+    return Status::OutOfRange();
+  }
+
+  std::memcpy(buffer.data(), response.data(), response.size());
+  return ReleasePayloadBuffer(buffer.first(response.size()));
 }
 
-}  // namespace internal
 }  // namespace pw::rpc

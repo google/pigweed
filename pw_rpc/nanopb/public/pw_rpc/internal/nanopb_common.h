@@ -29,32 +29,32 @@ class NanopbMethodSerde {
                               NanopbMessageDescriptor response_fields)
       : request_fields_(request_fields), response_fields_(response_fields) {}
 
-  StatusWithSize EncodeRequest(ByteSpan buffer,
-                               const void* proto_struct) const {
-    return Encode(request_fields_, buffer, proto_struct);
+  StatusWithSize EncodeRequest(const void* proto_struct,
+                               ByteSpan buffer) const {
+    return Encode(request_fields_, proto_struct, buffer);
   }
-  StatusWithSize EncodeResponse(ByteSpan buffer,
-                                const void* proto_struct) const {
-    return Encode(response_fields_, buffer, proto_struct);
+  StatusWithSize EncodeResponse(const void* proto_struct,
+                                ByteSpan buffer) const {
+    return Encode(response_fields_, proto_struct, buffer);
   }
 
-  bool DecodeRequest(void* proto_struct, ConstByteSpan buffer) const {
-    return Decode(request_fields_, proto_struct, buffer);
+  bool DecodeRequest(ConstByteSpan buffer, void* proto_struct) const {
+    return Decode(request_fields_, buffer, proto_struct);
   }
-  bool DecodeResponse(void* proto_struct, ConstByteSpan buffer) const {
-    return Decode(response_fields_, proto_struct, buffer);
+  bool DecodeResponse(ConstByteSpan buffer, void* proto_struct) const {
+    return Decode(response_fields_, buffer, proto_struct);
   }
 
  private:
   // Encodes a nanopb protobuf struct to serialized wire format.
   StatusWithSize Encode(NanopbMessageDescriptor fields,
-                        ByteSpan buffer,
-                        const void* proto_struct) const;
+                        const void* proto_struct,
+                        ByteSpan buffer) const;
 
   // Decodes a serialized protobuf to a nanopb struct.
   bool Decode(NanopbMessageDescriptor fields,
-              void* proto_struct,
-              ConstByteSpan buffer) const;
+              ConstByteSpan buffer,
+              void* proto_struct) const;
 
   NanopbMessageDescriptor request_fields_;
   NanopbMessageDescriptor response_fields_;

@@ -93,7 +93,7 @@ struct MethodTraits {
 
   // Specializations for member function types must set Service to an alias to
   // for the implemented service class.
-  using Service = rpc::Service;
+  // using Service = (derived service class);
 
   // Specializations may provide the C++ types of the requests and responses if
   // relevant.

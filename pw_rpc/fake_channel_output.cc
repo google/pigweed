@@ -29,12 +29,14 @@ void FakeChannelOutput::clear() {
 
 Status FakeChannelOutput::SendAndReleaseBuffer(
     std::span<const std::byte> buffer) {
-  PW_CHECK(!done_);
   PW_CHECK_PTR_EQ(buffer.data(), packet_buffer_.data());
 
+  // If the buffer is empty, this is just releasing an unused buffer.
   if (buffer.empty()) {
     return OkStatus();
   }
+
+  PW_CHECK(!done_);
 
   Result<Packet> result = Packet::FromBuffer(buffer);
   PW_CHECK_OK(result.status());

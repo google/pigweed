@@ -30,9 +30,14 @@
 namespace pw::rpc::internal {
 namespace {
 
+namespace TestRequest = ::pw::rpc::test::TestRequest;
+namespace TestResponse = ::pw::rpc::test::TestResponse;
+
 // Create a fake service for use with the MethodImplTester.
 class TestRawService final : public Service {
  public:
+  // Unary signatures
+
   StatusWithSize Unary(ServerContext&, ConstByteSpan, ByteSpan) {
     return StatusWithSize(0);
   }
@@ -41,15 +46,17 @@ class TestRawService final : public Service {
     return StatusWithSize(0);
   }
 
+  StatusWithSize UnaryWrongArg(ServerContext&, ConstByteSpan, ConstByteSpan) {
+    return StatusWithSize(0);
+  }
+
+  // Server streaming signatures
+
   void ServerStreaming(ServerContext&, ConstByteSpan, RawServerWriter&) {}
 
   static void StaticServerStreaming(ServerContext&,
                                     ConstByteSpan,
                                     RawServerWriter&) {}
-
-  StatusWithSize UnaryWrongArg(ServerContext&, ConstByteSpan, ConstByteSpan) {
-    return StatusWithSize(0);
-  }
 
   static void StaticUnaryVoidReturn(ServerContext&, ConstByteSpan, ByteSpan) {}
 
@@ -61,28 +68,32 @@ class TestRawService final : public Service {
 
   static void StaticServerStreamingMissingArg(ConstByteSpan, RawServerWriter&) {
   }
+
+  // Client streaming signatures
+
+  void ClientStreaming(ServerContext&, RawServerReader&) {}
+
+  static void StaticClientStreaming(ServerContext&, RawServerReader&) {}
+
+  int ClientStreamingBadReturn(ServerContext&, RawServerReader&) { return 0; }
+
+  static void StaticClientStreamingMissingArg(RawServerReader&) {}
+
+  // Bidirectional streaming signatures
+
+  void BidirectionalStreaming(ServerContext&, RawServerReaderWriter&) {}
+
+  static void StaticBidirectionalStreaming(ServerContext&,
+                                           RawServerReaderWriter&) {}
+
+  int BidirectionalStreamingBadReturn(ServerContext&, RawServerReaderWriter&) {
+    return 0;
+  }
+
+  static void StaticBidirectionalStreamingMissingArg(RawServerReaderWriter&) {}
 };
 
-// Test that the matches() function matches valid signatures.
-static_assert(RawMethod::template matches<&TestRawService::Unary>());
-static_assert(RawMethod::template matches<&TestRawService::ServerStreaming>());
-static_assert(RawMethod::template matches<&TestRawService::StaticUnary>());
-static_assert(
-    RawMethod::template matches<&TestRawService::StaticServerStreaming>());
-
-// Test that the matches() function does not match the wrong method type.
-static_assert(!RawMethod::template matches<&TestRawService::UnaryWrongArg>());
-static_assert(
-    !RawMethod::template matches<&TestRawService::StaticUnaryVoidReturn>());
-static_assert(
-    !RawMethod::template matches<&TestRawService::ServerStreamingBadReturn>());
-static_assert(!RawMethod::template matches<
-              &TestRawService::StaticServerStreamingMissingArg>());
-
-TEST(MethodImplTester, RawMethod) {
-  constexpr MethodImplTester<RawMethod, TestRawService> method_tester;
-  EXPECT_TRUE(method_tester.MethodImplIsValid());
-}
+static_assert(MethodImplTests<RawMethod, TestRawService>().Pass());
 
 struct {
   int64_t integer;
@@ -95,14 +106,14 @@ void DecodeRawTestRequest(ConstByteSpan request) {
   protobuf::Decoder decoder(request);
 
   while (decoder.Next().ok()) {
-    test::TestRequest::Fields field =
-        static_cast<test::TestRequest::Fields>(decoder.FieldNumber());
+    TestRequest::Fields field =
+        static_cast<TestRequest::Fields>(decoder.FieldNumber());
 
     switch (field) {
-      case test::TestRequest::Fields::INTEGER:
+      case TestRequest::Fields::INTEGER:
         decoder.ReadInt64(&last_request.integer);
         break;
-      case test::TestRequest::Fields::STATUS_CODE:
+      case TestRequest::Fields::STATUS_CODE:
         decoder.ReadUint32(&last_request.status_code);
         break;
     }
@@ -115,7 +126,7 @@ StatusWithSize AddFive(ServerContext&,
   DecodeRawTestRequest(request);
 
   protobuf::NestedEncoder encoder(response);
-  test::TestResponse::Encoder test_response(&encoder);
+  TestResponse::Encoder test_response(&encoder);
   test_response.WriteValue(last_request.integer + 5);
   ConstByteSpan payload;
   encoder.Encode(&payload);
@@ -143,7 +154,7 @@ class FakeService : public Service {
 TEST(RawMethod, UnaryRpc_SendsResponse) {
   std::byte buffer[16];
   protobuf::NestedEncoder encoder(buffer);
-  test::TestRequest::Encoder test_request(&encoder);
+  TestRequest::Encoder test_request(&encoder);
   test_request.WriteInteger(456);
   test_request.WriteStatusCode(7);
 
@@ -167,7 +178,7 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
 TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   std::byte buffer[16];
   protobuf::NestedEncoder encoder(buffer);
-  test::TestRequest::Encoder test_request(&encoder);
+  TestRequest::Encoder test_request(&encoder);
   test_request.WriteInteger(777);
   test_request.WriteStatusCode(2);
 

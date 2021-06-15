@@ -156,9 +156,11 @@ filegroup(
         "nanopb/public/pw_rpc/internal/nanopb_common.h",
         "nanopb/public/pw_rpc/internal/nanopb_method.h",
         "nanopb/public/pw_rpc/internal/nanopb_method_union.h",
+        "nanopb/public/pw_rpc/nanopb/server_reader_writer.h",
         "nanopb/public/pw_rpc/nanopb_client_call.h",
         "nanopb/public/pw_rpc/nanopb_test_method_context.h",
         "nanopb/pw_rpc_nanopb_private/internal_test_utils.h",
+        "nanopb/server_reader_writer.cc",
         "nanopb/stub_generation_test.cc",
     ],
 )

@@ -17,33 +17,10 @@
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_type.h"
 #include "pw_rpc/internal/responder.h"
+#include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_status/status_with_size.h"
 
-namespace pw::rpc {
-
-class RawServerWriter : public internal::Responder {
- public:
-  constexpr RawServerWriter()
-      : internal::Responder(internal::Responder::kNoClientStream) {}
-  RawServerWriter(RawServerWriter&&) = default;
-  RawServerWriter& operator=(RawServerWriter&&) = default;
-
-  ~RawServerWriter();
-
-  // Returns a buffer in which a response payload can be built.
-  ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
-
-  // Sends a response packet with the given raw payload. The payload can either
-  // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary
-  // external buffer.
-  Status Write(ConstByteSpan response);
-
-  Status Finish(Status status = OkStatus()) {
-    return CloseAndSendResponse(status);
-  }
-};
-
-namespace internal {
+namespace pw::rpc::internal {
 
 // A RawMethod is a method invoker which does not perform any automatic protobuf
 // serialization or deserialization. The implementer is given the raw binary
@@ -60,68 +37,100 @@ class RawMethod : public Method {
 
   template <auto method>
   static constexpr RawMethod Unary(uint32_t id) {
-    constexpr UnaryFunction wrapper =
+    constexpr SynchronousUnaryFunction wrapper =
         [](ServerCall& call, ConstByteSpan req, ByteSpan res) {
           return CallMethodImplFunction<method>(call, req, res);
         };
-    return RawMethod(id, UnaryInvoker, Function{.unary = wrapper});
+    return RawMethod(
+        id, SynchronousUnaryInvoker, Function{.synchronous_unary = wrapper});
   }
 
   template <auto method>
   static constexpr RawMethod ServerStreaming(uint32_t id) {
-    constexpr ServerStreamingFunction wrapper =
-        [](ServerCall& call, ConstByteSpan request, Responder& writer) {
-          CallMethodImplFunction<method>(
-              call, request, static_cast<RawServerWriter&>(writer));
+    constexpr UnaryRequestFunction wrapper =
+        [](ServerCall& call, ConstByteSpan request, RawServerWriter& writer) {
+          return CallMethodImplFunction<method>(call, request, writer);
         };
     return RawMethod(
-        id, ServerStreamingInvoker, Function{.server_streaming = wrapper});
+        id, UnaryRequestInvoker, Function{.unary_request = wrapper});
+  }
+
+  template <auto method>
+  static constexpr RawMethod ClientStreaming(uint32_t id) {
+    constexpr StreamRequestFunction wrapper =
+        [](ServerCall& call, RawServerReaderWriter& reader) {
+          return CallMethodImplFunction<method>(
+              call, static_cast<RawServerReader&>(reader));
+        };
+    return RawMethod(
+        id, StreamRequestInvoker, Function{.stream_request = wrapper});
+  }
+
+  template <auto method>
+  static constexpr RawMethod BidirectionalStreaming(uint32_t id) {
+    constexpr StreamRequestFunction wrapper =
+        [](ServerCall& call, RawServerReaderWriter& reader_writer) {
+          return CallMethodImplFunction<method>(call, reader_writer);
+        };
+    return RawMethod(
+        id, StreamRequestInvoker, Function{.stream_request = wrapper});
   }
 
   // Represents an invalid method. Used to reduce error message verbosity.
   static constexpr RawMethod Invalid() { return {0, InvalidInvoker, {}}; }
 
  private:
-  using UnaryFunction = StatusWithSize (*)(ServerCall&,
-                                           ConstByteSpan,
-                                           ByteSpan);
+  // Generic versions of the user-defined functions.
+  using SynchronousUnaryFunction = StatusWithSize (*)(ServerCall&,
+                                                      ConstByteSpan,
+                                                      ByteSpan);
 
-  using ServerStreamingFunction = void (*)(ServerCall&,
-                                           ConstByteSpan,
-                                           Responder&);
+  using UnaryRequestFunction = void (*)(ServerCall&,
+                                        ConstByteSpan,
+                                        RawServerWriter&);
+
+  using StreamRequestFunction = void (*)(ServerCall&, RawServerReaderWriter&);
+
   union Function {
-    UnaryFunction unary;
-    ServerStreamingFunction server_streaming;
-    // TODO(frolv): Support client and bidirectional streaming.
+    SynchronousUnaryFunction synchronous_unary;
+    UnaryRequestFunction unary_request;
+    StreamRequestFunction stream_request;
   };
 
   constexpr RawMethod(uint32_t id, Invoker invoker, Function function)
       : Method(id, invoker), function_(function) {}
 
-  static void UnaryInvoker(const Method& method,
-                           ServerCall& call,
-                           const Packet& request) {
-    static_cast<const RawMethod&>(method).CallUnary(call, request);
-  }
+  static void SynchronousUnaryInvoker(const Method& method,
+                                      ServerCall& call,
+                                      const Packet& request);
 
-  static void ServerStreamingInvoker(const Method& method,
-                                     ServerCall& call,
-                                     const Packet& request) {
-    static_cast<const RawMethod&>(method).CallServerStreaming(call, request);
-  }
+  static void UnaryRequestInvoker(const Method& method,
+                                  ServerCall& call,
+                                  const Packet& request);
 
-  void CallUnary(ServerCall& call, const Packet& request) const;
-  void CallServerStreaming(ServerCall& call, const Packet& request) const;
+  static void StreamRequestInvoker(const Method& method,
+                                   ServerCall& call,
+                                   const Packet&);
 
-  // Stores the user-defined RPC in a generic wrapper.
+  // Stores the user-defined RPC.
   Function function_;
 };
 
+// Expected function signatures for user-implemented RPC functions.
+using RawSynchronousUnary = StatusWithSize(ServerContext&,
+                                           ConstByteSpan,
+                                           ByteSpan);
+using RawServerStreaming = void(ServerContext&,
+                                ConstByteSpan,
+                                RawServerWriter&);
+using RawClientStreaming = void(ServerContext&, RawServerReader&);
+using RawBidirectionalStreaming = void(ServerContext&, RawServerReaderWriter&);
+
 // MethodTraits specialization for a static raw unary method.
 template <>
-struct MethodTraits<StatusWithSize (*)(
-    ServerContext&, ConstByteSpan, ByteSpan)> {
+struct MethodTraits<RawSynchronousUnary*> {
   using Implementation = RawMethod;
+
   static constexpr MethodType kType = MethodType::kUnary;
   static constexpr bool kServerStreaming = false;
   static constexpr bool kClientStreaming = false;
@@ -129,18 +138,14 @@ struct MethodTraits<StatusWithSize (*)(
 
 // MethodTraits specialization for a raw unary method.
 template <typename T>
-struct MethodTraits<StatusWithSize (T::*)(
-    ServerContext&, ConstByteSpan, ByteSpan)> {
-  using Implementation = RawMethod;
-  static constexpr MethodType kType = MethodType::kUnary;
-  static constexpr bool kServerStreaming = false;
-  static constexpr bool kClientStreaming = false;
+struct MethodTraits<RawSynchronousUnary(T::*)>
+    : MethodTraits<RawSynchronousUnary*> {
   using Service = T;
 };
 
 // MethodTraits specialization for a static raw server streaming method.
 template <>
-struct MethodTraits<void (*)(ServerContext&, ConstByteSpan, RawServerWriter&)> {
+struct MethodTraits<RawServerStreaming*> {
   using Implementation = RawMethod;
   static constexpr MethodType kType = MethodType::kServerStreaming;
   static constexpr bool kServerStreaming = true;
@@ -149,14 +154,41 @@ struct MethodTraits<void (*)(ServerContext&, ConstByteSpan, RawServerWriter&)> {
 
 // MethodTraits specialization for a raw server streaming method.
 template <typename T>
-struct MethodTraits<void (T::*)(
-    ServerContext&, ConstByteSpan, RawServerWriter&)> {
-  using Implementation = RawMethod;
-  static constexpr MethodType kType = MethodType::kServerStreaming;
-  static constexpr bool kServerStreaming = true;
-  static constexpr bool kClientStreaming = false;
+struct MethodTraits<RawServerStreaming(T::*)>
+    : MethodTraits<RawServerStreaming*> {
   using Service = T;
 };
 
-}  // namespace internal
-}  // namespace pw::rpc
+// MethodTraits specialization for a static raw client streaming method.
+template <>
+struct MethodTraits<RawClientStreaming*> {
+  using Implementation = RawMethod;
+  static constexpr MethodType kType = MethodType::kClientStreaming;
+  static constexpr bool kServerStreaming = false;
+  static constexpr bool kClientStreaming = true;
+};
+
+// MethodTraits specialization for a raw client streaming method.
+template <typename T>
+struct MethodTraits<RawClientStreaming(T::*)>
+    : MethodTraits<RawClientStreaming*> {
+  using Service = T;
+};
+
+// MethodTraits specialization for a static raw bidirectional streaming method.
+template <>
+struct MethodTraits<RawBidirectionalStreaming*> {
+  using Implementation = RawMethod;
+  static constexpr MethodType kType = MethodType::kBidirectionalStreaming;
+  static constexpr bool kServerStreaming = true;
+  static constexpr bool kClientStreaming = true;
+};
+
+// MethodTraits specialization for a raw bidirectional streaming method.
+template <typename T>
+struct MethodTraits<RawBidirectionalStreaming(T::*)>
+    : MethodTraits<RawBidirectionalStreaming*> {
+  using Service = T;
+};
+
+}  // namespace pw::rpc::internal

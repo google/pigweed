@@ -161,7 +161,7 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
     ResponseBuffer response_struct{};
 
     if (callbacks_.unary_response &&
-        serde().DecodeResponse(&response_struct, packet.payload())) {
+        serde().DecodeResponse(packet.payload(), &response_struct)) {
       callbacks_.unary_response(
           *std::launder(reinterpret_cast<Response*>(&response_struct)),
           packet.status());
@@ -188,7 +188,7 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
     ResponseBuffer response_struct{};
 
     if (callbacks_.stream_response &&
-        serde().DecodeResponse(&response_struct, packet.payload())) {
+        serde().DecodeResponse(packet.payload(), &response_struct)) {
       callbacks_.stream_response(
           *std::launder(reinterpret_cast<Response*>(&response_struct)));
     } else {

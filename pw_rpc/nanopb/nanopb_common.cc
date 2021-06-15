@@ -33,8 +33,8 @@ struct NanopbTraits<bool(pb_istream_t*, FieldsType, void*)> {
 using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 
 StatusWithSize NanopbMethodSerde::Encode(NanopbMessageDescriptor fields,
-                                         ByteSpan buffer,
-                                         const void* proto_struct) const {
+                                         const void* proto_struct,
+                                         ByteSpan buffer) const {
   auto output = pb_ostream_from_buffer(
       reinterpret_cast<pb_byte_t*>(buffer.data()), buffer.size());
   if (!pb_encode(&output, static_cast<Fields>(fields), proto_struct)) {
@@ -45,8 +45,8 @@ StatusWithSize NanopbMethodSerde::Encode(NanopbMessageDescriptor fields,
 }
 
 bool NanopbMethodSerde::Decode(NanopbMessageDescriptor fields,
-                               void* proto_struct,
-                               ConstByteSpan buffer) const {
+                               ConstByteSpan buffer,
+                               void* proto_struct) const {
   auto input = pb_istream_from_buffer(
       reinterpret_cast<const pb_byte_t*>(buffer.data()), buffer.size());
   return pb_decode(&input, static_cast<Fields>(fields), proto_struct);

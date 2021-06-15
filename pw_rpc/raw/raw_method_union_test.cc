@@ -28,6 +28,9 @@
 namespace pw::rpc::internal {
 namespace {
 
+namespace TestRequest = ::pw::rpc::test::TestRequest;
+namespace TestResponse = ::pw::rpc::test::TestResponse;
+
 template <typename Implementation>
 class FakeGeneratedService : public Service {
  public:
@@ -62,7 +65,7 @@ class FakeGeneratedServiceImpl
     DecodeRawTestRequest(request);
 
     protobuf::NestedEncoder encoder(response);
-    test::TestResponse::Encoder test_response(&encoder);
+    TestResponse::Encoder test_response(&encoder);
     test_response.WriteValue(last_request.integer + 5);
     ConstByteSpan payload;
     encoder.Encode(&payload);
@@ -82,14 +85,14 @@ class FakeGeneratedServiceImpl
     protobuf::Decoder decoder(request);
 
     while (decoder.Next().ok()) {
-      test::TestRequest::Fields field =
-          static_cast<test::TestRequest::Fields>(decoder.FieldNumber());
+      TestRequest::Fields field =
+          static_cast<TestRequest::Fields>(decoder.FieldNumber());
 
       switch (field) {
-        case test::TestRequest::Fields::INTEGER:
+        case TestRequest::Fields::INTEGER:
           decoder.ReadInt64(&last_request.integer);
           break;
-        case test::TestRequest::Fields::STATUS_CODE:
+        case TestRequest::Fields::STATUS_CODE:
           decoder.ReadUint32(&last_request.status_code);
           break;
       }
@@ -100,7 +103,7 @@ class FakeGeneratedServiceImpl
 TEST(RawMethodUnion, InvokesUnary) {
   std::byte buffer[16];
   protobuf::NestedEncoder encoder(buffer);
-  test::TestRequest::Encoder test_request(&encoder);
+  TestRequest::Encoder test_request(&encoder);
   test_request.WriteInteger(456);
   test_request.WriteStatusCode(7);
 
@@ -125,7 +128,7 @@ TEST(RawMethodUnion, InvokesUnary) {
 TEST(RawMethodUnion, InvokesServerStreaming) {
   std::byte buffer[16];
   protobuf::NestedEncoder encoder(buffer);
-  test::TestRequest::Encoder test_request(&encoder);
+  TestRequest::Encoder test_request(&encoder);
   test_request.WriteInteger(777);
   test_request.WriteStatusCode(2);
 

@@ -213,17 +213,15 @@ class ServerStreamingContext {
   // Invokes the RPC with the provided request.
   void call(ConstByteSpan request) {
     ctx_.output.clear();
-    Responder server_writer(ctx_.call, Responder::kNoClientStream);
-    return CallMethodImplFunction<kMethod>(
-        ctx_.call, request, static_cast<RawServerWriter&>(server_writer));
+    RawServerWriter server_writer(ctx_.call);
+    return CallMethodImplFunction<kMethod>(ctx_.call, request, server_writer);
   }
 
   // Returns a server writer which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
   RawServerWriter writer() {
     ctx_.output.clear();
-    Responder server_writer(ctx_.call, Responder::kNoClientStream);
-    return std::move(static_cast<RawServerWriter&>(server_writer));
+    return RawServerWriter(ctx_.call);
   }
 
   // Returns the responses that have been recorded. The maximum number of

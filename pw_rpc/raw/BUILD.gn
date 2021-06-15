@@ -25,8 +25,14 @@ config("public") {
 
 pw_source_set("method") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/internal/raw_method.h" ]
-  sources = [ "raw_method.cc" ]
+  public = [
+    "public/pw_rpc/internal/raw_method.h",
+    "public/pw_rpc/raw/server_reader_writer.h",
+  ]
+  sources = [
+    "raw_method.cc",
+    "server_reader_writer.cc",
+  ]
   public_deps = [
     "..:server",
     dir_pw_bytes,

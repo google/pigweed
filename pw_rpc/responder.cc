@@ -79,10 +79,15 @@ Responder& Responder::operator=(Responder&& other) {
 
 uint32_t Responder::method_id() const { return call_.method().id(); }
 
-Status Responder::CloseAndSendResponse(Status status) {
+Status Responder::CloseAndSendResponse(std::span<const std::byte> response,
+                                       Status status) {
   if (!open()) {
     return Status::FailedPrecondition();
   }
+
+  // Send a packet indicating that the RPC has terminated.
+  Status packet_status =
+      call_.channel().Send(ResponsePacket(call_, response, status));
 
   // If the Responder implementer or user forgets to release an acquired buffer
   // before finishing, release it here.
@@ -92,8 +97,7 @@ Status Responder::CloseAndSendResponse(Status status) {
 
   Close();
 
-  // Send a packet indicating that the RPC has terminated.
-  return call_.channel().Send(ResponsePacket(call_, {}, status));
+  return packet_status;
 }
 
 std::span<std::byte> Responder::AcquirePayloadBuffer() {

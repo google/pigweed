@@ -19,68 +19,47 @@
 #include <span>
 #include <type_traits>
 
+#include "pw_function/function.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_type.h"
 #include "pw_rpc/internal/nanopb_common.h"
 #include "pw_rpc/internal/responder.h"
+#include "pw_rpc/nanopb/server_reader_writer.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
-namespace pw::rpc {
-
-// Non-templated base to avoid instantiating Write multiple times.
-class GenericNanopbServerWriter : public internal::Responder {
- protected:
-  constexpr GenericNanopbServerWriter()
-      : internal::Responder(internal::Responder::kHasClientStream) {}
-
-  Status WriteResponse(const void* response);
-};
-
-// Define the Nanopb version of the the ServerWriter class.
-template <typename T>
-class NanopbServerWriter : public GenericNanopbServerWriter {
- public:
-  // Allow default construction so that users can declare a variable into which
-  // to move ServerWriters from RPC calls.
-  constexpr NanopbServerWriter() = default;
-
-  NanopbServerWriter(NanopbServerWriter&&) = default;
-  NanopbServerWriter& operator=(NanopbServerWriter&&) = default;
-
-  // Writes a response struct. Returns the following Status codes:
-  //
-  //   OK - the response was successfully sent
-  //   FAILED_PRECONDITION - the writer is closed
-  //   INTERNAL - pw_rpc was unable to encode the Nanopb protobuf
-  //   other errors - the ChannelOutput failed to send the packet; the error
-  //       codes are determined by the ChannelOutput implementation
-  //
-  Status Write(const T& response) { return WriteResponse(&response); }
-
-  Status Finish(Status status = OkStatus()) {
-    return CloseAndSendResponse(status);
-  }
-};
-
-// TODO(hepler): "pw::rpc::ServerWriter" should not be specific to Nanopb.
-template <typename T>
-using ServerWriter = NanopbServerWriter<T>;
-
-namespace internal {
+namespace pw::rpc::internal {
 
 class NanopbMethod;
 class Packet;
 
+// Expected function signatures for user-implemented RPC functions.
+template <typename Request, typename Response>
+using NanopbSynchronousUnary = Status(ServerContext&,
+                                      const Request&,
+                                      Response&);
+
+template <typename Request, typename Response>
+using NanopbServerStreaming = void(ServerContext&,
+                                   const Request&,
+                                   NanopbServerWriter<Response>&);
+
+template <typename Request, typename Response>
+using NanopbClientStreaming = void(ServerContext&,
+                                   NanopbServerReader<Request, Response>&);
+
+template <typename Request, typename Response>
+using NanopbBidirectionalStreaming =
+    void(ServerContext&, NanopbServerReaderWriter<Request, Response>&);
+
 // MethodTraits specialization for a static unary method.
-template <typename RequestType, typename ResponseType>
-struct MethodTraits<Status (*)(
-    ServerContext&, const RequestType&, ResponseType&)> {
+template <typename Req, typename Resp>
+struct MethodTraits<NanopbSynchronousUnary<Req, Resp>*> {
   using Implementation = NanopbMethod;
-  using Request = RequestType;
-  using Response = ResponseType;
+  using Request = Req;
+  using Response = Resp;
 
   static constexpr MethodType kType = MethodType::kUnary;
   static constexpr bool kServerStreaming = false;
@@ -88,21 +67,18 @@ struct MethodTraits<Status (*)(
 };
 
 // MethodTraits specialization for a unary method.
-template <typename T, typename RequestType, typename ResponseType>
-struct MethodTraits<Status (T::*)(
-    ServerContext&, const RequestType&, ResponseType&)>
-    : public MethodTraits<Status (*)(
-          ServerContext&, const RequestType&, ResponseType&)> {
+template <typename T, typename Req, typename Resp>
+struct MethodTraits<NanopbSynchronousUnary<Req, Resp>(T::*)>
+    : MethodTraits<NanopbSynchronousUnary<Req, Resp>*> {
   using Service = T;
 };
 
 // MethodTraits specialization for a static server streaming method.
-template <typename RequestType, typename ResponseType>
-struct MethodTraits<void (*)(
-    ServerContext&, const RequestType&, ServerWriter<ResponseType>&)> {
+template <typename Req, typename Resp>
+struct MethodTraits<NanopbServerStreaming<Req, Resp>*> {
   using Implementation = NanopbMethod;
-  using Request = RequestType;
-  using Response = ResponseType;
+  using Request = Req;
+  using Response = Resp;
 
   static constexpr MethodType kType = MethodType::kServerStreaming;
   static constexpr bool kServerStreaming = true;
@@ -110,11 +86,47 @@ struct MethodTraits<void (*)(
 };
 
 // MethodTraits specialization for a server streaming method.
-template <typename T, typename RequestType, typename ResponseType>
-struct MethodTraits<void (T::*)(
-    ServerContext&, const RequestType&, ServerWriter<ResponseType>&)>
-    : public MethodTraits<void (*)(
-          ServerContext&, const RequestType&, ServerWriter<ResponseType>&)> {
+template <typename T, typename Req, typename Resp>
+struct MethodTraits<NanopbServerStreaming<Req, Resp>(T::*)>
+    : MethodTraits<NanopbServerStreaming<Req, Resp>*> {
+  using Service = T;
+};
+
+// MethodTraits specialization for a static server streaming method.
+template <typename Req, typename Resp>
+struct MethodTraits<NanopbClientStreaming<Req, Resp>*> {
+  using Implementation = NanopbMethod;
+  using Request = Req;
+  using Response = Resp;
+
+  static constexpr MethodType kType = MethodType::kClientStreaming;
+  static constexpr bool kServerStreaming = false;
+  static constexpr bool kClientStreaming = true;
+};
+
+// MethodTraits specialization for a server streaming method.
+template <typename T, typename Req, typename Resp>
+struct MethodTraits<NanopbClientStreaming<Req, Resp>(T::*)>
+    : MethodTraits<NanopbClientStreaming<Req, Resp>*> {
+  using Service = T;
+};
+
+// MethodTraits specialization for a static server streaming method.
+template <typename Req, typename Resp>
+struct MethodTraits<NanopbBidirectionalStreaming<Req, Resp>*> {
+  using Implementation = NanopbMethod;
+  using Request = Req;
+  using Response = Resp;
+
+  static constexpr MethodType kType = MethodType::kBidirectionalStreaming;
+  static constexpr bool kServerStreaming = true;
+  static constexpr bool kClientStreaming = true;
+};
+
+// MethodTraits specialization for a server streaming method.
+template <typename T, typename Req, typename Resp>
+struct MethodTraits<NanopbBidirectionalStreaming<Req, Resp>(T::*)>
+    : MethodTraits<NanopbBidirectionalStreaming<Req, Resp>*> {
   using Service = T;
 };
 
@@ -143,7 +155,7 @@ class NanopbMethod : public Method {
            std::is_same_v<ResponseType, Response<method>>;
   }
 
-  // Creates a NanopbMethod for a unary RPC.
+  // Creates a NanopbMethod for a synchronous unary RPC.
   template <auto method>
   static constexpr NanopbMethod Unary(uint32_t id,
                                       NanopbMessageDescriptor request,
@@ -154,19 +166,20 @@ class NanopbMethod : public Method {
     //
     // In optimized builds, the compiler inlines the user-defined function into
     // this wrapper, elminating any overhead.
-    constexpr UnaryFunction wrapper =
+    constexpr SynchronousUnaryFunction wrapper =
         [](ServerCall& call, const void* req, void* resp) {
           return CallMethodImplFunction<method>(
               call,
               *static_cast<const Request<method>*>(req),
               *static_cast<Response<method>*>(resp));
         };
-    return NanopbMethod(id,
-                        UnaryInvoker<AllocateSpaceFor<Request<method>>(),
-                                     AllocateSpaceFor<Response<method>>()>,
-                        Function{.unary = wrapper},
-                        request,
-                        response);
+    return NanopbMethod(
+        id,
+        SynchronousUnaryInvoker<AllocateSpaceFor<Request<method>>(),
+                                AllocateSpaceFor<Response<method>>()>,
+        Function{.synchronous_unary = wrapper},
+        request,
+        response);
   }
 
   // Creates a NanopbMethod for a server-streaming RPC.
@@ -176,22 +189,64 @@ class NanopbMethod : public Method {
       NanopbMessageDescriptor request,
       NanopbMessageDescriptor response) {
     // Define a wrapper around the user-defined function that takes the request
-    // struct as void* and a Responder instead of the templated ServerWriter
-    // class. This wrapper is stored generically in the Function union, defined
-    // below.
-    constexpr ServerStreamingFunction wrapper =
-        [](ServerCall& call, const void* req, Responder& writer) {
+    // struct as void* and a GenericNanopbResponder instead of the
+    // templated NanopbServerWriter class. This wrapper is stored generically in
+    // the Function union, defined below.
+    constexpr UnaryRequestFunction wrapper =
+        [](ServerCall& call, const void* req, GenericNanopbResponder& writer) {
           return CallMethodImplFunction<method>(
               call,
               *static_cast<const Request<method>*>(req),
-              static_cast<ServerWriter<Response<method>>&>(writer));
+              static_cast<NanopbServerWriter<Response<method>>&>(writer));
         };
     return NanopbMethod(
         id,
-        ServerStreamingInvoker<AllocateSpaceFor<Request<method>>()>,
-        Function{.server_streaming = wrapper},
+        UnaryRequestInvoker<AllocateSpaceFor<Request<method>>()>,
+        Function{.unary_request = wrapper},
         request,
         response);
+  }
+
+  // Creates a NanopbMethod for a client-streaming RPC.
+  template <auto method>
+  static constexpr NanopbMethod ClientStreaming(
+      uint32_t id,
+      NanopbMessageDescriptor request,
+      NanopbMessageDescriptor response) {
+    constexpr StreamRequestFunction wrapper = [](ServerCall& call,
+                                                 GenericNanopbResponder&
+                                                     reader) {
+      return CallMethodImplFunction<method>(
+          call,
+          static_cast<NanopbServerReader<Request<method>, Response<method>>&>(
+              reader));
+    };
+    return NanopbMethod(id,
+                        StreamRequestInvoker<Request<method>>,
+                        Function{.stream_request = wrapper},
+                        request,
+                        response);
+  }
+
+  // Creates a NanopbMethod for a bidirectional-streaming RPC.
+  template <auto method>
+  static constexpr NanopbMethod BidirectionalStreaming(
+      uint32_t id,
+      NanopbMessageDescriptor request,
+      NanopbMessageDescriptor response) {
+    constexpr StreamRequestFunction wrapper =
+        [](ServerCall& call, GenericNanopbResponder& reader_writer) {
+          return CallMethodImplFunction<method>(
+              call,
+              static_cast<
+                  NanopbServerReaderWriter<Request<method>, Response<method>>&>(
+                  reader_writer));
+        };
+    return NanopbMethod(id,
+                        StreamRequestInvoker<Request<method>>,
+                        Function{.stream_request = wrapper},
+                        request,
+                        response);
   }
 
   // Represents an invalid method. Used to reduce error message verbosity.
@@ -199,43 +254,33 @@ class NanopbMethod : public Method {
     return {0, InvalidInvoker, {}, nullptr, nullptr};
   }
 
-  // Encodes a response protobuf with Nanopb to the provided buffer.
-  StatusWithSize EncodeResponse(const void* proto_struct,
-                                std::span<std::byte> buffer) const {
-    return serde_.EncodeResponse(buffer, proto_struct);
-  }
-
-  // Decodes a response protobuf with Nanopb to the provided buffer. For testing
-  // use.
-  bool DecodeResponse(std::span<const std::byte> response,
-                      void* proto_struct) const {
-    return serde_.DecodeResponse(proto_struct, response);
-  }
+  // Give access to the serializer/deserializer object for converting requests
+  // and responses between the wire format and Nanopb structs.
+  const NanopbMethodSerde& serde() const { return serde_; }
 
  private:
-  // Generic version of the unary RPC function signature:
-  //
-  //   Status(ServerCall&, const Request&, Response&)
-  //
-  using UnaryFunction = Status (*)(ServerCall&,
-                                   const void* request,
-                                   void* response);
+  // Generic function signature for synchronous unary RPCs.
+  using SynchronousUnaryFunction = Status (*)(ServerCall&,
+                                              const void* request,
+                                              void* response);
 
-  // Generic version of the server streaming RPC function signature:
-  //
-  //   Status(ServerCall&, const Request&, ServerWriter<Response>&)
-  //
-  using ServerStreamingFunction = void (*)(ServerCall&,
-                                           const void* request,
-                                           Responder& writer);
+  // Generic function signature for asynchronous unary and server streaming
+  // RPCs.
+  using UnaryRequestFunction = void (*)(ServerCall&,
+                                        const void* request,
+                                        GenericNanopbResponder& writer);
+
+  // Generic function signature for client and bidirectional streaming RPCs.
+  using StreamRequestFunction = void (*)(ServerCall&,
+                                         GenericNanopbResponder& reader_writer);
 
   // The Function union stores a pointer to a generic version of the
   // user-defined RPC function. Using a union instead of void* avoids
   // reinterpret_cast, which keeps this class fully constexpr.
   union Function {
-    UnaryFunction unary;
-    ServerStreamingFunction server_streaming;
-    // TODO(hepler): Add client_streaming and bidi_streaming
+    SynchronousUnaryFunction synchronous_unary;
+    UnaryRequestFunction unary_request;
+    StreamRequestFunction stream_request;
   };
 
   // Allocates space for a struct. Rounds up to a reasonable minimum size to
@@ -252,24 +297,22 @@ class NanopbMethod : public Method {
                          NanopbMessageDescriptor response)
       : Method(id, invoker), function_(function), serde_(request, response) {}
 
-  void CallUnary(ServerCall& call,
-                 const Packet& request,
-                 void* request_struct,
-                 void* response_struct) const;
+  void CallSynchronousUnary(ServerCall& call,
+                            const Packet& request,
+                            void* request_struct,
+                            void* response_struct) const;
 
-  void CallServerStreaming(ServerCall& call,
-                           const Packet& request,
-                           void* request_struct) const;
+  void CallUnaryRequest(ServerCall& call,
+                        const Packet& request,
+                        void* request_struct) const;
 
-  // TODO(hepler): Add CallClientStreaming and CallBidiStreaming
-
-  // Invoker function for unary RPCs. Allocates request and response structs by
-  // size, with maximum alignment, to avoid generating unnecessary copies of
-  // this function for each request/response type.
+  // Invoker function for synchronous unary RPCs. Allocates request and response
+  // structs by size, with maximum alignment, to avoid generating unnecessary
+  // copies of this function for each request/response type.
   template <size_t kRequestSize, size_t kResponseSize>
-  static void UnaryInvoker(const Method& method,
-                           ServerCall& call,
-                           const Packet& request) {
+  static void SynchronousUnaryInvoker(const Method& method,
+                                      ServerCall& call,
+                                      const Packet& request) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
@@ -277,23 +320,33 @@ class NanopbMethod : public Method {
     std::aligned_storage_t<kResponseSize, alignof(std::max_align_t)>
         response_struct{};
 
-    static_cast<const NanopbMethod&>(method).CallUnary(
+    static_cast<const NanopbMethod&>(method).CallSynchronousUnary(
         call, request, &request_struct, &response_struct);
   }
 
   // Invoker function for server streaming RPCs. Allocates space for a request
   // struct. Ignores the payload buffer since resposnes are sent through the
-  // ServerWriter.
+  // NanopbServerWriter.
   template <size_t kRequestSize>
-  static void ServerStreamingInvoker(const Method& method,
-                                     ServerCall& call,
-                                     const Packet& request) {
+  static void UnaryRequestInvoker(const Method& method,
+                                  ServerCall& call,
+                                  const Packet& request) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
 
-    static_cast<const NanopbMethod&>(method).CallServerStreaming(
+    static_cast<const NanopbMethod&>(method).CallUnaryRequest(
         call, request, &request_struct);
+  }
+
+  // Invoker function for client or bidirectional streaming RPCs.
+  template <typename Request>
+  static void StreamRequestInvoker(const Method& method,
+                                   ServerCall& call,
+                                   const Packet&) {
+    BaseNanopbServerReader<Request> reader_writer(call);
+    static_cast<const NanopbMethod&>(method).function_.stream_request(
+        call, reader_writer);
   }
 
   // Decodes a request protobuf with Nanopb to the provided buffer. Sends an
@@ -315,6 +368,4 @@ class NanopbMethod : public Method {
   NanopbMethodSerde serde_;
 };
 
-}  // namespace internal
-
-}  // namespace pw::rpc
+}  // namespace pw::rpc::internal

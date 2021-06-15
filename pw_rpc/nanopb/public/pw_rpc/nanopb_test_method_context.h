@@ -105,7 +105,7 @@ class MessageOutput final : public FakeChannelOutput {
     // If we run out of space, the back message is always the most recent.
     responses_.emplace_back();
     responses_.back() = {};
-    PW_ASSERT(method_.DecodeResponse(response, &responses_.back()));
+    PW_ASSERT(method_.serde().DecodeResponse(response, &responses_.back()));
   }
 
   void ClearResponses() override { responses_.clear(); }
@@ -207,21 +207,15 @@ class ServerStreamingContext {
   // Invokes the RPC with the provided request.
   void call(const Request& request) {
     ctx_.output.clear();
-    internal::Responder server_writer(ctx_.call,
-                                      internal::Responder::kNoClientStream);
-    return CallMethodImplFunction<kMethod>(
-        ctx_.call,
-        request,
-        static_cast<ServerWriter<Response>&>(server_writer));
+    NanopbServerWriter<Response> writer(ctx_.call);
+    return CallMethodImplFunction<kMethod>(ctx_.call, request, writer);
   }
 
   // Returns a server writer which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
-  ServerWriter<Response> writer() {
+  NanopbServerWriter<Response> writer() {
     ctx_.output.clear();
-    internal::Responder server_writer(ctx_.call,
-                                      internal::Responder::kNoClientStream);
-    return std::move(static_cast<ServerWriter<Response>&>(server_writer));
+    return NanopbServerWriter<Response>(ctx_.call);
   }
 
   // Returns the responses that have been recorded. The maximum number of

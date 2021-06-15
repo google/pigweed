@@ -19,41 +19,17 @@
 #include "pw_log/log.h"
 #include "pw_rpc/internal/packet.h"
 
-namespace pw::rpc {
+namespace pw::rpc::internal {
 
-RawServerWriter::~RawServerWriter() {
-  if (!buffer().empty()) {
-    ReleasePayloadBuffer();
-  }
-}
-
-Status RawServerWriter::Write(ConstByteSpan response) {
-  if (!open()) {
-    return Status::FailedPrecondition();
-  }
-
-  if (buffer().Contains(response)) {
-    return ReleasePayloadBuffer(response);
-  }
-
-  std::span<std::byte> buffer = AcquirePayloadBuffer();
-
-  if (response.size() > buffer.size()) {
-    ReleasePayloadBuffer();
-    return Status::OutOfRange();
-  }
-
-  std::memcpy(buffer.data(), response.data(), response.size());
-  return ReleasePayloadBuffer(buffer.first(response.size()));
-}
-
-namespace internal {
-
-void RawMethod::CallUnary(ServerCall& call, const Packet& request) const {
+void RawMethod::SynchronousUnaryInvoker(const Method& method,
+                                        ServerCall& call,
+                                        const Packet& request) {
   Channel::OutputBuffer response_buffer = call.channel().AcquireBuffer();
   std::span payload_buffer = response_buffer.payload(request);
 
-  StatusWithSize sws = function_.unary(call, request.payload(), payload_buffer);
+  StatusWithSize sws =
+      static_cast<const RawMethod&>(method).function_.synchronous_unary(
+          call, request.payload(), payload_buffer);
   Packet response = Packet::Response(request);
 
   response.set_payload(payload_buffer.first(sws.size()));
@@ -67,11 +43,20 @@ void RawMethod::CallUnary(ServerCall& call, const Packet& request) const {
   call.channel().Send(Packet::ServerError(request, Status::Internal()));
 }
 
-void RawMethod::CallServerStreaming(ServerCall& call,
-                                    const Packet& request) const {
-  internal::Responder server_writer(call, internal::Responder::kNoClientStream);
-  function_.server_streaming(call, request.payload(), server_writer);
+void RawMethod::UnaryRequestInvoker(const Method& method,
+                                    ServerCall& call,
+                                    const Packet& request) {
+  RawServerWriter server_writer(call);
+  static_cast<const RawMethod&>(method).function_.unary_request(
+      call, request.payload(), server_writer);
 }
 
-}  // namespace internal
-}  // namespace pw::rpc
+void RawMethod::StreamRequestInvoker(const Method& method,
+                                     ServerCall& call,
+                                     const Packet&) {
+  RawServerReaderWriter reader_writer(call);
+  static_cast<const RawMethod&>(method).function_.stream_request(call,
+                                                                 reader_writer);
+}
+
+}  // namespace pw::rpc::internal

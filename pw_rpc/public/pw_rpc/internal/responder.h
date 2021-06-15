@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -45,11 +45,6 @@ class Packet;
 // full control over their interfaces.
 class Responder : public IntrusiveList<Responder>::Item {
  public:
-  enum HasClientStream : bool { kNoClientStream, kHasClientStream };
-
-  // Creates a Responder for an open RPC.
-  Responder(ServerCall& call, HasClientStream has_client_stream);
-
   Responder(const Responder&) = delete;
 
   ~Responder() { CloseAndSendResponse(OkStatus()); }
@@ -66,7 +61,12 @@ class Responder : public IntrusiveList<Responder>::Item {
   // Closes the Responder and sends a RESPONSE packet, if it is open. Returns
   // the status from sending the packet, or FAILED_PRECONDITION if the Responder
   // is not open.
-  Status CloseAndSendResponse(Status status);
+  Status CloseAndSendResponse(std::span<const std::byte> response,
+                              Status status);
+
+  Status CloseAndSendResponse(Status status) {
+    return CloseAndSendResponse({}, status);
+  }
 
   void HandleError(Status status) {
     Close();
@@ -98,11 +98,16 @@ class Responder : public IntrusiveList<Responder>::Item {
   }
 
  protected:
+  enum HasClientStream : bool { kNoClientStream, kHasClientStream };
+
   // Creates a Responder for a closed RPC.
   constexpr Responder(HasClientStream has_client_stream)
       : rpc_state_(kClosed),
         has_client_stream_(has_client_stream),
         client_stream_state_(kClientStreamClosed) {}
+
+  // Creates a Responder for an open RPC.
+  Responder(ServerCall& call, HasClientStream has_client_stream);
 
   // Initialize rpc_state_ to closed since move-assignment will check if the
   // Responder is open before moving into it.

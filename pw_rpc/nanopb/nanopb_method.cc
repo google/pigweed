@@ -23,53 +23,37 @@ namespace pw::rpc {
 
 using std::byte;
 
-Status GenericNanopbServerWriter::WriteResponse(const void* response) {
-  if (!open()) {
-    return Status::FailedPrecondition();
-  }
-
-  std::span<std::byte> buffer = AcquirePayloadBuffer();
-
-  if (auto result =
-          static_cast<const internal::NanopbMethod&>(method()).EncodeResponse(
-              response, buffer);
-      result.ok()) {
-    return ReleasePayloadBuffer(buffer.first(result.size()));
-  }
-
-  ReleasePayloadBuffer();
-  return Status::Internal();
-}
-
 namespace internal {
 
-void NanopbMethod::CallUnary(ServerCall& call,
-                             const Packet& request,
-                             void* request_struct,
-                             void* response_struct) const {
+void NanopbMethod::CallSynchronousUnary(ServerCall& call,
+                                        const Packet& request,
+                                        void* request_struct,
+                                        void* response_struct) const {
   if (!DecodeRequest(call.channel(), request, request_struct)) {
     return;
   }
 
-  const Status status = function_.unary(call, request_struct, response_struct);
+  const Status status =
+      function_.synchronous_unary(call, request_struct, response_struct);
   SendResponse(call.channel(), request, response_struct, status);
 }
 
-void NanopbMethod::CallServerStreaming(ServerCall& call,
-                                       const Packet& request,
-                                       void* request_struct) const {
+void NanopbMethod::CallUnaryRequest(ServerCall& call,
+                                    const Packet& request,
+                                    void* request_struct) const {
   if (!DecodeRequest(call.channel(), request, request_struct)) {
     return;
   }
 
-  internal::Responder server_writer(call, internal::Responder::kNoClientStream);
-  function_.server_streaming(call, request_struct, server_writer);
+  GenericNanopbResponder server_writer(call,
+                                       GenericNanopbResponder::kNoClientStream);
+  function_.unary_request(call, request_struct, server_writer);
 }
 
 bool NanopbMethod::DecodeRequest(Channel& channel,
                                  const Packet& request,
                                  void* proto_struct) const {
-  if (serde_.DecodeRequest(proto_struct, request.payload())) {
+  if (serde_.DecodeRequest(request.payload(), proto_struct)) {
     return true;
   }
 
@@ -86,7 +70,8 @@ void NanopbMethod::SendResponse(Channel& channel,
   Channel::OutputBuffer response_buffer = channel.AcquireBuffer();
   std::span payload_buffer = response_buffer.payload(request);
 
-  StatusWithSize encoded = EncodeResponse(response_struct, payload_buffer);
+  StatusWithSize encoded =
+      serde_.EncodeResponse(response_struct, payload_buffer);
 
   if (encoded.ok()) {
     Packet response = Packet::Response(request);

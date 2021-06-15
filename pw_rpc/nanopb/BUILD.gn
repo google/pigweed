@@ -26,12 +26,19 @@ config("public") {
 
 pw_source_set("method") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/internal/nanopb_method.h" ]
-  sources = [ "nanopb_method.cc" ]
+  public = [
+    "public/pw_rpc/internal/nanopb_method.h",
+    "public/pw_rpc/nanopb/server_reader_writer.h",
+  ]
+  sources = [
+    "nanopb_method.cc",
+    "server_reader_writer.cc",
+  ]
   public_deps = [
     ":common",
     "..:config",
     "..:server",
+    dir_pw_bytes,
   ]
   deps = [ dir_pw_log ]
 }
