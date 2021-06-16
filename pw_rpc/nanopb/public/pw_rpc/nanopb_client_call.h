@@ -23,38 +23,6 @@
 #include "pw_status/status.h"
 
 namespace pw::rpc {
-
-// Response handler callback for unary RPC methods.
-template <typename Response>
-class UnaryResponseHandler {
- public:
-  virtual ~UnaryResponseHandler() = default;
-
-  // Called when the response is received from the server with the method's
-  // status and the deserialized response struct.
-  virtual void ReceivedResponse(Status status, const Response& response) = 0;
-
-  // Called when an error occurs internally in the RPC client or server.
-  virtual void RpcError(Status) {}
-};
-
-// Response handler callbacks for server streaming RPC methods.
-template <typename Response>
-class ServerStreamingResponseHandler {
- public:
-  virtual ~ServerStreamingResponseHandler() = default;
-
-  // Called on every response received from the server with the deserialized
-  // response struct.
-  virtual void ReceivedResponse(const Response& response) = 0;
-
-  // Called when the server ends the stream with the overall RPC status.
-  virtual void Complete(Status status) = 0;
-
-  // Called when an error occurs internally in the RPC client or server.
-  virtual void RpcError(Status) {}
-};
-
 namespace internal {
 
 // Non-templated nanopb base class providing protobuf encoding and decoding.
