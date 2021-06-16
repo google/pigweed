@@ -42,7 +42,7 @@ void NanopbMethod::CallServerStreaming(ServerCall& call,
     return;
   }
 
-  internal::BaseServerWriter server_writer(call);
+  internal::Responder server_writer(call);
   function_.server_streaming(call, request_struct, server_writer);
 }
 

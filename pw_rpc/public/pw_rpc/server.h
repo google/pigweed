@@ -53,7 +53,7 @@ class Server {
   constexpr size_t channel_count() const { return channels_.size(); }
 
  protected:
-  IntrusiveList<internal::BaseServerWriter>& writers() { return writers_; }
+  IntrusiveList<internal::Responder>& writers() { return writers_; }
 
  private:
   std::tuple<Service*, const internal::Method*> FindMethod(
@@ -68,7 +68,7 @@ class Server {
 
   std::span<internal::Channel> channels_;
   IntrusiveList<Service> services_;
-  IntrusiveList<internal::BaseServerWriter> writers_;
+  IntrusiveList<internal::Responder> writers_;
 };
 
 }  // namespace pw::rpc

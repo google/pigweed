@@ -236,7 +236,7 @@ class MethodPending : public BasicServer {
   }
 
   internal::ServerCall call_;
-  internal::BaseServerWriter writer_;
+  internal::Responder writer_;
 };
 
 TEST_F(MethodPending, ProcessPacket_Cancel_ClosesServerWriter) {

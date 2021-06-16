@@ -39,19 +39,19 @@ namespace {
 
 using std::byte;
 
-TEST(BaseServerWriter, ConstructWithContext_StartsOpen) {
+TEST(Responder, ConstructWithContext_StartsOpen) {
   ServerContextForTest<TestService> context(TestService::method.method());
 
-  BaseServerWriter writer(context.get());
+  Responder writer(context.get());
 
   EXPECT_TRUE(writer.open());
 }
 
-TEST(BaseServerWriter, Move_ClosesOriginal) {
+TEST(Responder, Move_ClosesOriginal) {
   ServerContextForTest<TestService> context(TestService::method.method());
 
-  BaseServerWriter moved(context.get());
-  BaseServerWriter writer(std::move(moved));
+  Responder moved(context.get());
+  Responder writer(std::move(moved));
 
 #ifndef __clang_analyzer__
   EXPECT_FALSE(moved.open());
@@ -59,9 +59,9 @@ TEST(BaseServerWriter, Move_ClosesOriginal) {
   EXPECT_TRUE(writer.open());
 }
 
-class FakeServerWriter : public BaseServerWriter {
+class FakeServerWriter : public Responder {
  public:
-  FakeServerWriter(ServerCall& context) : BaseServerWriter(context) {}
+  FakeServerWriter(ServerCall& context) : Responder(context) {}
 
   constexpr FakeServerWriter() = default;
 

@@ -32,7 +32,7 @@ namespace pw::rpc {
 
 // Define the Nanopb version of the the ServerWriter class.
 template <typename T>
-class ServerWriter : public internal::BaseServerWriter {
+class ServerWriter : public internal::Responder {
  public:
   // Allow default construction so that users can declare a variable into which
   // to move ServerWriters from RPC calls.
@@ -159,11 +159,11 @@ class NanopbMethod : public Method {
       NanopbMessageDescriptor request,
       NanopbMessageDescriptor response) {
     // Define a wrapper around the user-defined function that takes the request
-    // struct as void* and a BaseServerWriter instead of the templated
-    // ServerWriter class. This wrapper is stored generically in the Function
-    // union, defined below.
+    // struct as void* and a Responder instead of the templated ServerWriter
+    // class. This wrapper is stored generically in the Function union, defined
+    // below.
     constexpr ServerStreamingFunction wrapper =
-        [](ServerCall& call, const void* req, BaseServerWriter& writer) {
+        [](ServerCall& call, const void* req, Responder& writer) {
           return CallMethodImplFunction<method>(
               call,
               *static_cast<const Request<method>*>(req),
@@ -210,7 +210,7 @@ class NanopbMethod : public Method {
   //
   using ServerStreamingFunction = void (*)(ServerCall&,
                                            const void* request,
-                                           BaseServerWriter& writer);
+                                           Responder& writer);
 
   // The Function union stores a pointer to a generic version of the
   // user-defined RPC function. Using a union instead of void* avoids

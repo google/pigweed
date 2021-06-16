@@ -21,21 +21,20 @@
 
 namespace pw::rpc::internal {
 
-BaseServerWriter::BaseServerWriter(ServerCall& call)
-    : call_(call), state_(kOpen) {
-  call_.server().RegisterWriter(*this);
+Responder::Responder(ServerCall& call) : call_(call), state_(kOpen) {
+  call_.server().RegisterResponder(*this);
 }
 
-BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
+Responder& Responder::operator=(Responder&& other) {
   Finish();
 
   state_ = other.state_;
 
   if (other.open()) {
-    other.call_.server().RemoveWriter(other);
+    other.call_.server().RemoveResponder(other);
     other.state_ = kClosed;
 
-    other.call_.server().RegisterWriter(*this);
+    other.call_.server().RegisterResponder(*this);
   }
 
   call_ = std::move(other.call_);
@@ -44,14 +43,14 @@ BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
   return *this;
 }
 
-uint32_t BaseServerWriter::method_id() const { return call_.method().id(); }
+uint32_t Responder::method_id() const { return call_.method().id(); }
 
-Status BaseServerWriter::Finish(Status status) {
+Status Responder::Finish(Status status) {
   if (!open()) {
     return Status::FailedPrecondition();
   }
 
-  // If the ServerWriter implementer or user forgets to release an acquired
+  // If the Responder implementer or user forgets to release an acquired
   // buffer before finishing, release it here.
   if (!response_.empty()) {
     ReleasePayloadBuffer();
@@ -68,7 +67,7 @@ Status BaseServerWriter::Finish(Status status) {
                                      status));
 }
 
-std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
+std::span<std::byte> Responder::AcquirePayloadBuffer() {
   PW_DCHECK(open());
 
   // Only allow having one active buffer at a time.
@@ -79,29 +78,27 @@ std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
   return response_.payload(ResponsePacket());
 }
 
-Status BaseServerWriter::ReleasePayloadBuffer(
-    std::span<const std::byte> payload) {
+Status Responder::ReleasePayloadBuffer(std::span<const std::byte> payload) {
   PW_DCHECK(open());
   return call_.channel().Send(response_, ResponsePacket(payload));
 }
 
-Status BaseServerWriter::ReleasePayloadBuffer() {
+Status Responder::ReleasePayloadBuffer() {
   PW_DCHECK(open());
   call_.channel().Release(response_);
   return OkStatus();
 }
 
-void BaseServerWriter::Close() {
+void Responder::Close() {
   if (!open()) {
     return;
   }
 
-  call_.server().RemoveWriter(*this);
+  call_.server().RemoveResponder(*this);
   state_ = kClosed;
 }
 
-Packet BaseServerWriter::ResponsePacket(
-    std::span<const std::byte> payload) const {
+Packet Responder::ResponsePacket(std::span<const std::byte> payload) const {
   return Packet(PacketType::RESPONSE,
                 call_.channel().id(),
                 call_.service().id(),

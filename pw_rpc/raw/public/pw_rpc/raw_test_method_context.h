@@ -216,7 +216,7 @@ class ServerStreamingContext {
   // Invokes the RPC with the provided request.
   void call(ConstByteSpan request) {
     ctx_.output.clear();
-    BaseServerWriter server_writer(ctx_.call);
+    Responder server_writer(ctx_.call);
     return CallMethodImplFunction<method>(
         ctx_.call, request, static_cast<RawServerWriter&>(server_writer));
   }
@@ -225,7 +225,7 @@ class ServerStreamingContext {
   // This should not be called alongside call(); use one or the other.
   RawServerWriter writer() {
     ctx_.output.clear();
-    BaseServerWriter server_writer(ctx_.call);
+    Responder server_writer(ctx_.call);
     return std::move(static_cast<RawServerWriter&>(server_writer));
   }
 

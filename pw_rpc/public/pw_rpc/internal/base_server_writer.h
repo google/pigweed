@@ -32,37 +32,35 @@ namespace internal {
 
 class Packet;
 
-// Internal ServerWriter base class. ServerWriters are used to stream responses.
-// Implementations must provide a derived class that provides the interface for
-// sending responses.
-class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
+// Internal RPC Responder class. The Responder is used to respond to any type of
+// RPC. Public classes like ServerWriters inherit from it and provide a public
+// API for their use case.
+class Responder : public IntrusiveList<Responder>::Item {
  public:
-  BaseServerWriter(ServerCall& call);
+  Responder(ServerCall& call);
 
-  BaseServerWriter(const BaseServerWriter&) = delete;
+  Responder(const Responder&) = delete;
 
-  BaseServerWriter(BaseServerWriter&& other) : state_(kClosed) {
-    *this = std::move(other);
-  }
+  Responder(Responder&& other) : state_(kClosed) { *this = std::move(other); }
 
-  ~BaseServerWriter() { Finish(); }
+  ~Responder() { Finish(); }
 
-  BaseServerWriter& operator=(const BaseServerWriter&) = delete;
+  Responder& operator=(const Responder&) = delete;
 
-  BaseServerWriter& operator=(BaseServerWriter&& other);
+  Responder& operator=(Responder&& other);
 
-  // True if the ServerWriter is active and ready to send responses.
+  // True if the Responder is active and ready to send responses.
   bool open() const { return state_ == kOpen; }
 
   uint32_t channel_id() const { return call_.channel().id(); }
   uint32_t service_id() const { return call_.service().id(); }
   uint32_t method_id() const;
 
-  // Closes the ServerWriter, if it is open.
+  // Closes the Responder, if it is open.
   Status Finish(Status status = OkStatus());
 
  protected:
-  constexpr BaseServerWriter() : state_{kClosed} {}
+  constexpr Responder() : state_{kClosed} {}
 
   const Method& method() const { return call_.method(); }
 
@@ -70,12 +68,12 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
 
   constexpr const Channel::OutputBuffer& buffer() const { return response_; }
 
-  // Acquires a buffer into which to write a payload. The BaseServerWriter MUST
-  // be open when this is called!
+  // Acquires a buffer into which to write a payload. The Responder MUST be open
+  // when this is called!
   std::span<std::byte> AcquirePayloadBuffer();
 
   // Releases the buffer, sending a packet with the specified payload. The
-  // BaseServerWriter MUST be open when this is called!
+  // Responder MUST be open when this is called!
   Status ReleasePayloadBuffer(std::span<const std::byte> payload);
 
   // Releases the buffer without sending a packet.

@@ -21,7 +21,7 @@
 
 namespace pw::rpc {
 
-class RawServerWriter : public internal::BaseServerWriter {
+class RawServerWriter : public internal::Responder {
  public:
   RawServerWriter() = default;
   RawServerWriter(RawServerWriter&&) = default;
@@ -65,7 +65,7 @@ class RawMethod : public Method {
   template <auto method>
   static constexpr RawMethod ServerStreaming(uint32_t id) {
     constexpr ServerStreamingFunction wrapper =
-        [](ServerCall& call, ConstByteSpan request, BaseServerWriter& writer) {
+        [](ServerCall& call, ConstByteSpan request, Responder& writer) {
           CallMethodImplFunction<method>(
               call, request, static_cast<RawServerWriter&>(writer));
         };
@@ -83,7 +83,7 @@ class RawMethod : public Method {
 
   using ServerStreamingFunction = void (*)(ServerCall&,
                                            ConstByteSpan,
-                                           BaseServerWriter&);
+                                           Responder&);
   union Function {
     UnaryFunction unary;
     ServerStreamingFunction server_streaming;
