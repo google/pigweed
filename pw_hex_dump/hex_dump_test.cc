@@ -223,6 +223,27 @@ TEST_F(HexDump, FormattedHexDump_TwoLines) {
   EXPECT_STREQ(expected2, dest_.data());
 }
 
+TEST_F(HexDump, FormattedHexDump_LastLineCheck) {
+  constexpr const char* expected1 = "a4cc32629b46381a 231a2a7abce240a0";
+  constexpr const char* expected2 = "ff33e52b9e9f6b3c be9b893c7e4a7a48";
+  constexpr const char* expected3 = "18";
+
+  default_flags_.bytes_per_line = 16;
+  default_flags_.group_every = 8;
+  dumper_ = FormattedHexDumper(dest_, default_flags_);
+
+  EXPECT_TRUE(dumper_.BeginDump(source_data).ok());
+  // Dump first line.
+  EXPECT_TRUE(dumper_.DumpLine().ok());
+  EXPECT_STREQ(expected1, dest_.data());
+  // Dump second line.
+  EXPECT_TRUE(dumper_.DumpLine().ok());
+  EXPECT_STREQ(expected2, dest_.data());
+  // Dump third line.
+  EXPECT_TRUE(dumper_.DumpLine().ok());
+  EXPECT_STREQ(expected3, dest_.data());
+}
+
 TEST_F(HexDump, FormattedHexDump_Ascii) {
   constexpr const char* expected1 = "6d 79 20 74 65 73 74 20  my test ";
   constexpr const char* expected2 = "73 74 72 69 6e 67 0a     string.";
