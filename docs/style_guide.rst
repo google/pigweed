@@ -602,3 +602,11 @@ Assets within each field must be listed in alphabetical order
   pw_doc_group("docs") {
     sources = [ "docs.rst" ]
   }
+
+------------------
+Build files: Bazel
+------------------
+
+Similar to their BUILD.gn counterparts, build files for the Bazel build system
+must be named BUILD.bazel. Bazel can interpret files named just BUILD, but we
+use BUILD.bazel to avoid any ambiguity with other build systems or tooling.
