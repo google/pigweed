@@ -16,9 +16,8 @@
 #include <cstddef>
 #include <optional>
 
-#include "gtest/gtest.h"
-#include "initiator.h"
 #include "pw_bytes/span.h"
+#include "pw_i2c/initiator.h"
 
 namespace pw::i2c {
 
@@ -70,11 +69,11 @@ constexpr Transaction ReadTransaction(
     Address device_address,
     ConstByteSpan read_buffer,
     std::optional<chrono::SystemClock::duration> for_at_least = std::nullopt) {
-  return std::move(Transaction(expected_return_value,
-                               device_address,
-                               ConstByteSpan(),
-                               read_buffer,
-                               for_at_least));
+  return Transaction(expected_return_value,
+                     device_address,
+                     ConstByteSpan(),
+                     read_buffer,
+                     for_at_least);
 }
 
 // WriteTransaction is a helper that constructs a write only transaction.
@@ -83,11 +82,11 @@ constexpr Transaction WriteTransaction(
     Address device_address,
     ConstByteSpan write_buffer,
     std::optional<chrono::SystemClock::duration> for_at_least = std::nullopt) {
-  return std::move(Transaction(expected_return_value,
-                               device_address,
-                               write_buffer,
-                               ConstByteSpan(),
-                               for_at_least));
+  return Transaction(expected_return_value,
+                     device_address,
+                     write_buffer,
+                     ConstByteSpan(),
+                     for_at_least);
 }
 
 // MockInitiator takes a series of read and/or write transactions and

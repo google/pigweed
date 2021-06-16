@@ -13,8 +13,7 @@
 // the License.
 #include "pw_i2c/initiator_mock.h"
 
-#include <iostream>
-
+#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 
 namespace pw::i2c {
