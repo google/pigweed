@@ -19,9 +19,9 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/responder.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 

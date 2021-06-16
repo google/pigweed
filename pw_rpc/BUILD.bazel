@@ -44,8 +44,8 @@ pw_cc_library(
 pw_cc_library(
     name = "server",
     srcs = [
-        "base_server_writer.cc",
-        "public/pw_rpc/internal/base_server_writer.h",
+        "responder.cc",
+        "public/pw_rpc/internal/responder.h",
         "public/pw_rpc/internal/call.h",
         "public/pw_rpc/internal/hash.h",
         "public/pw_rpc/internal/method.h",
@@ -160,7 +160,7 @@ filegroup(
 pw_cc_test(
     name = "base_server_writer_test",
     srcs = [
-        "base_server_writer_test.cc",
+        "responder_test.cc",
     ],
     deps = [
         ":internal_test_utils",

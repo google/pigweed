@@ -24,7 +24,7 @@ add_subdirectory(system_server)
 
 pw_add_module_library(pw_rpc.server
   SOURCES
-    base_server_writer.cc
+    responder.cc
     server.cc
     service.cc
   PUBLIC_DEPS

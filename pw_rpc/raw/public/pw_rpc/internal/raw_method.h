@@ -14,9 +14,9 @@
 #pragma once
 
 #include "pw_bytes/span.h"
-#include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_type.h"
+#include "pw_rpc/internal/responder.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc {

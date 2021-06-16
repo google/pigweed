@@ -19,11 +19,11 @@
 #include <span>
 #include <type_traits>
 
-#include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_type.h"
 #include "pw_rpc/internal/nanopb_common.h"
+#include "pw_rpc/internal/responder.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"

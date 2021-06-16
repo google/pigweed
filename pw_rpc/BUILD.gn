@@ -54,14 +54,14 @@ pw_source_set("server") {
     "public/pw_rpc/service.h",
   ]
   sources = [
-    "base_server_writer.cc",
-    "public/pw_rpc/internal/base_server_writer.h",
     "public/pw_rpc/internal/call.h",
     "public/pw_rpc/internal/hash.h",
     "public/pw_rpc/internal/method.h",
     "public/pw_rpc/internal/method_lookup.h",
     "public/pw_rpc/internal/method_union.h",
+    "public/pw_rpc/internal/responder.h",
     "public/pw_rpc/internal/server.h",
+    "responder.cc",
     "server.cc",
     "service.cc",
   ]
@@ -217,7 +217,7 @@ pw_test("base_server_writer_test") {
     ":server",
     ":test_utils",
   ]
-  sources = [ "base_server_writer_test.cc" ]
+  sources = [ "responder_test.cc" ]
 }
 
 pw_test("channel_test") {
