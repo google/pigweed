@@ -24,23 +24,6 @@
 // C++11 is required for the features in this header.
 #if defined(__cplusplus) && __cplusplus >= 201103L
 
-// If consteval is not supported, use constexpr. This does not guarantee
-// compile-time execution, but works equivalently in constant expressions.
-#ifndef __cpp_consteval
-#define consteval constexpr
-#endif  // __cpp_consteval
-
-// If constinit is not supported, use a compiler attribute or omit it. If
-// omitted, the compiler may still constant initialize the variable, but there
-// is no guarantee.
-#ifndef __cpp_constinit
-#ifdef __clang__
-#define constinit [[clang::require_constant_initialization]]
-#else
-#define constinit
-#endif  // __clang__
-#endif  // __cpp_constinit
-
 // This is an adapter for supporting static_assert with a single argument in
 // C++11 or C++14. Macros don't correctly parse commas in template expressions,
 // so the static_assert arguments are passed to an overloaded C++ function. The

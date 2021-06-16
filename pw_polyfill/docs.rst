@@ -49,8 +49,6 @@ Header              Feature                           Level of support          
 <type_traits>       \*_t trait aliases                partial (can expand as needed)                __cpp_lib_transformation_trait_aliases
 <type_traits>       std::is_null_pointer              full                                          __cpp_lib_is_null_pointer
 <utilty>            std::integer_sequence & helpers   full                                          __cpp_lib_integer_sequence
-(language feature)  consteval keyword                 ignored (equivalent to constexpr)             __cpp_consteval
-(language feature)  constinit keyword                 supported in clang; ignored in GCC            __cpp_constinit
 (language feature)  static_assert with no message     full                                          __cpp_static_assert
 ==================  ================================  ============================================  ========================================
 
@@ -63,6 +61,19 @@ Adapt code to compile with different versions of C++
   - ``pw_polyfill/standard.h`` -- provides a macro for checking the C++ standard
   - ``pw_polyfill/language_feature_macros.h`` -- provides macros for adapting
     code to work with or without newer language features
+
+
+Language feature macros
+=======================
+======================  ================================  ========================================  ==========================
+Macro                   Feature                           Description                               Feature test macro
+======================  ================================  ========================================  ==========================
+PW_INLINE_VARIABLE      inline variables                  inline if supported by the compiler       __cpp_inline_variables
+PW_CONSTEXPR_FUNCTION   relaxed constexpr function rules  constexpr if relaxed rules are supported  __cpp_constexpr >= 201304L
+PW_CONSTEXPR_CPP20      constexpr in C++20                constexpr if compiling for C++20          __cplusplus >= 202002L
+PW_CONSTEVAL            consteval                         consteval if supported by the compiler    __cpp_consteval
+PW_CONSTINIT            constinit                         constinit in clang and GCC 10+            __cpp_constinit
+======================  ================================  ========================================  ==========================
 
 In GN, Bazel, or CMake, depend on ``$dir_pw_polyfill``, ``//pw_polyfill``,
 or ``pw_polyfill``, respectively, to access these features. In other build

@@ -14,9 +14,11 @@
 
 #include "pw_metric/global.h"
 
+#include "pw_polyfill/language_feature_macros.h"
+
 namespace pw::metric {
 
-constinit IntrusiveList<Group> global_groups;
-constinit IntrusiveList<Metric> global_metrics;
+PW_CONSTINIT IntrusiveList<Group> global_groups;
+PW_CONSTINIT IntrusiveList<Metric> global_metrics;
 
 }  // namespace pw::metric

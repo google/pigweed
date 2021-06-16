@@ -48,6 +48,7 @@ pw_source_set("global") {
     ":pw_metric",
     dir_pw_tokenizer,
   ]
+  deps = [ dir_pw_polyfill ]
 }
 
 ################################################################################

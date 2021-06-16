@@ -112,7 +112,7 @@ TEST(Cstddef, Byte_AssignmentOperators) {
 }
 
 // Check that consteval is at least equivalent to constexpr.
-consteval int ConstevalFunction() { return 123; }
+PW_CONSTEVAL int ConstevalFunction() { return 123; }
 static_assert(ConstevalFunction() == 123);
 
 int c_array[5423] = {};
@@ -128,7 +128,7 @@ TEST(Iterator, Data) {
   EXPECT_TRUE(std::data(array) == array.data());
 }
 
-constinit bool mutable_value = true;
+PW_CONSTINIT bool mutable_value = true;
 
 TEST(Constinit, ValueIsMutable) {
   ASSERT_TRUE(mutable_value);
