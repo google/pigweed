@@ -158,10 +158,8 @@ class ConfigFileError(Exception):
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
-                 use_pigweed_defaults, cipd_package_file, virtualenv_root,
-                 virtualenv_requirements, virtualenv_gn_target, strict,
-                 virtualenv_gn_out_dir, json_file, project_root, config_file,
-                 use_existing_cipd):
+                 virtualenv_root, strict, virtualenv_gn_out_dir, json_file,
+                 project_root, config_file, use_existing_cipd):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -194,30 +192,6 @@ class EnvSetup(object):
             self._json_file = os.path.join(self._install_dir, 'actions.json')
 
         self._use_existing_cipd = use_existing_cipd
-
-        setup_root = os.path.join(pw_root, 'pw_env_setup', 'py',
-                                  'pw_env_setup')
-
-        # TODO(pwbug/67, pwbug/68) Investigate pulling these files into an
-        # oxidized env setup executable instead of referring to them in the
-        # source tree. Note that this could be error-prone because users expect
-        # changes to the files in the source tree to affect bootstrap.
-        if use_pigweed_defaults:
-            # If updating this section make sure to update
-            # $PW_ROOT/pw_env_setup/docs.rst as well.
-            self._cipd_package_file.append(
-                os.path.join(setup_root, 'cipd_setup', 'pigweed.json'))
-            self._cipd_package_file.append(
-                os.path.join(setup_root, 'cipd_setup', 'luci.json'))
-            # Only set if no other GN target is provided.
-            if not virtualenv_gn_target:
-                self._virtualenv_gn_targets.append(
-                    virtualenv_setup.GnTarget(
-                        '{}#pw_env_setup:python.install'.format(pw_root)))
-
-        self._cipd_package_file.extend(cipd_package_file)
-        self._virtualenv_requirements.extend(virtualenv_requirements)
-        self._virtualenv_gn_targets.extend(virtualenv_gn_target)
         self._virtualenv_gn_out_dir = virtualenv_gn_out_dir
 
         self._env.set('PW_PROJECT_ROOT', project_root)
@@ -546,37 +520,7 @@ def parse(argv=None):
         '--config-file',
         help='JSON file describing CIPD and virtualenv requirements.',
         type=argparse.FileType('r'),
-    )
-
-    parser.add_argument(
-        '--use-pigweed-defaults',
-        help='Use Pigweed default values in addition to the given environment '
-        'variables.',
-        action='store_true',
-    )
-
-    parser.add_argument(
-        '--cipd-package-file',
-        help='CIPD package file. JSON file consisting of a list of dicts with '
-        '"path" and "tags" keys, where "tags" a list of str.',
-        default=[],
-        action='append',
-    )
-
-    parser.add_argument(
-        '--virtualenv-requirements',
-        help='Pip requirements file. Compiled with pip-compile.',
-        default=[],
-        action='append',
-    )
-
-    parser.add_argument(
-        '--virtualenv-gn-target',
-        help=('GN targets that build and install Python packages. Format: '
-              'path/to/gn_root#target'),
-        default=[],
-        action='append',
-        type=virtualenv_setup.GnTarget,
+        required=True,
     )
 
     parser.add_argument(
@@ -612,24 +556,6 @@ def parse(argv=None):
     )
 
     args = parser.parse_args(argv)
-
-    others = (
-        'use_pigweed_defaults',
-        'cipd_package_file',
-        'virtualenv_requirements',
-        'virtualenv_gn_target',
-    )
-
-    one_required = others + ('config_file', )
-
-    if not any(getattr(args, x) for x in one_required):
-        parser.error('At least one of ({}) is required'.format(', '.join(
-            '"--{}"'.format(x.replace('_', '-')) for x in one_required)))
-
-    if args.config_file and any(getattr(args, x) for x in others):
-        parser.error('Cannot combine --config-file with any of {}'.format(
-            ', '.join('"--{}"'.format(x.replace('_', '-'))
-                      for x in one_required)))
 
     return args
 
