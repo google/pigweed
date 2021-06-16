@@ -28,7 +28,6 @@ import platform
 import re
 import subprocess
 import sys
-import tempfile
 
 
 def parse(argv=None):
@@ -229,32 +228,35 @@ def update(
             root_install_dir,
             os.path.basename(os.path.splitext(package_file)[0]))
 
+        name = os.path.basename(install_dir)
+
         cmd = [
             cipd,
             'ensure',
             '-ensure-file', ensure_file,
             '-root', install_dir,
-            '-log-level', 'warning',
+            '-log-level', 'debug',
+            '-json-output',
+            os.path.join(root_install_dir, '{}-output.json'.format(name)),
             '-cache-dir', cache_dir,
             '-max-threads', '0',  # 0 means use CPU count.
         ]  # yapf: disable
 
         # TODO(pwbug/135) Use function from common utility module.
-        with tempfile.TemporaryFile(mode='w+') as temp:
-            print(*cmd, file=temp)
-            try:
+        log = os.path.join(root_install_dir, '{}.log'.format(name))
+        try:
+            with open(log, 'w') as outs:
+                print(*cmd, file=outs)
                 subprocess.check_call(cmd,
-                                      stdout=temp,
+                                      stdout=outs,
                                       stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError:
-                temp.seek(0)
-                sys.stderr.write(temp.read())
+        except subprocess.CalledProcessError:
+            with open(log, 'r') as ins:
+                sys.stderr.write(ins.read())
                 raise
 
         # Set environment variables so tools can later find things under, for
         # example, 'share'.
-        name = os.path.basename(install_dir)
-
         if env_vars:
             # Some executables get installed at top-level and some get
             # installed under 'bin'.
