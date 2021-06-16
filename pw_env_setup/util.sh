@@ -160,6 +160,9 @@ pw_deactivate() {
   _NEW_PW_ROOT="$PW_ROOT"
   _NEW_PW_PROJECT_ROOT="$PW_PROJECT_ROOT"
 
+  # PW_BANNER_FUNC is usually set by bootstrap.sh and not always cleaned up.
+  unset PW_BANNER_FUNC
+
   # Find deactivate script and run it.
   _PW_DEACTIVATE_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/deactivate.sh"
   if [ -f "$_PW_DEACTIVATE_SH" ]; then
