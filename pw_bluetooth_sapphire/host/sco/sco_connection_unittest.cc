@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "sco_connection.h"
-
 #include <gtest/gtest.h>
 
 #include "lib/gtest/test_loop_fixture.h"
+#include "sco_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
@@ -31,6 +30,7 @@ class SCO_ScoConnectionTest : public TestingBase {
         kConnectionHandle, bt::LinkType::kSCO, hci::Connection::Role::kMaster, DeviceAddress(),
         DeviceAddress());
     hci_conn_ = fake_conn->WeakPtr();
+    fake_conn_ = fake_conn.get();
     deactivated_cb_count_ = 0;
     sco_conn_ = ScoConnection::Create(std::move(fake_conn), [this] { deactivated_cb_count_++; });
   }
@@ -44,12 +44,15 @@ class SCO_ScoConnectionTest : public TestingBase {
 
   auto hci_conn() { return hci_conn_; }
 
+  auto fake_conn() { return fake_conn_; }
+
   size_t deactivated_count() const { return deactivated_cb_count_; }
 
  private:
   size_t deactivated_cb_count_;
   fbl::RefPtr<ScoConnection> sco_conn_;
   fxl::WeakPtr<hci::Connection> hci_conn_;
+  hci::testing::FakeConnection* fake_conn_;
 };
 
 TEST_F(SCO_ScoConnectionTest, Send) { EXPECT_FALSE(sco_conn()->Send(nullptr)); }
@@ -101,6 +104,25 @@ TEST_F(SCO_ScoConnectionTest, CloseWithoutActivating) {
   sco_conn()->Close();
   EXPECT_EQ(deactivated_count(), 0u);
   EXPECT_FALSE(hci_conn());
+}
+
+TEST_F(SCO_ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
+  size_t close_count = 0;
+  auto closed_cb = [&] { close_count++; };
+
+  EXPECT_TRUE(sco_conn()->Activate(nullptr, std::move(closed_cb)));
+  EXPECT_EQ(close_count, 0u);
+  ASSERT_TRUE(hci_conn());
+
+  fake_conn()->TriggerPeerDisconnectCallback();
+  EXPECT_EQ(close_count, 0u);
+  EXPECT_EQ(deactivated_count(), 1u);
+  EXPECT_FALSE(hci_conn());
+
+  // Deactivating should be idempotent.
+  sco_conn()->Deactivate();
+  EXPECT_EQ(close_count, 0u);
+  EXPECT_EQ(deactivated_count(), 1u);
 }
 
 }  // namespace

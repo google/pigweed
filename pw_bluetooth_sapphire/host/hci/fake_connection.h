@@ -17,6 +17,10 @@ class FakeConnection final : public Connection {
   // Triggers the encryption change callback.
   void TriggerEncryptionChangeCallback(Status status, bool enabled);
 
+  void TriggerPeerDisconnectCallback() {
+    peer_disconnect_callback()(this, hci::StatusCode::kRemoteUserTerminatedConnection);
+  }
+
   // Connection overrides:
   fxl::WeakPtr<Connection> WeakPtr() override;
   void Disconnect(StatusCode reason) override;

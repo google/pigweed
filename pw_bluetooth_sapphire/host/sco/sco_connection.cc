@@ -15,6 +15,11 @@ ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
   ZX_ASSERT(connection_->ll_type() == bt::LinkType::kSCO ||
             connection_->ll_type() == bt::LinkType::kESCO);
   handle_ = connection_->handle();
+
+  connection_->set_peer_disconnect_callback([this](auto, auto) {
+    // Notifies ScoConnectionManager that this connection has been disconnected.
+    Deactivate();
+  });
 }
 
 fbl::RefPtr<ScoConnection> ScoConnection::Create(std::unique_ptr<hci::Connection> connection,

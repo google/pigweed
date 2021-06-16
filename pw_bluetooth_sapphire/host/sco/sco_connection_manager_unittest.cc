@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 #include "sco_connection_manager.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -687,6 +686,51 @@ TEST_F(SCO_ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(handle_0),
                         &disconn_status_packet_0, &disconn_complete_0);
   conn_0.value()->Deactivate();
+  RunLoopUntilIdle();
+}
+
+TEST_F(SCO_ScoConnectionManagerTest,
+       OpenConnectionFollowedByPeerDisconnectAndSecondOpenConnectonWithHandleReuse) {
+  auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
+                                                          hci::StatusCode::kSuccess);
+  auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
+      kScoConnectionHandle, kPeerAddress, hci::LinkType::kExtendedSCO, hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
+      &setup_status_packet, &conn_complete_packet);
+
+  ConnectionResult conn_result_0;
+  auto conn_cb_0 = [&conn_result_0](auto result) { conn_result_0 = std::move(result); };
+
+  auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_result_0.is_ok());
+  ASSERT_TRUE(conn_result_0.value());
+  EXPECT_EQ(conn_result_0.value()->handle(), kScoConnectionHandle);
+
+  test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
+      kScoConnectionHandle, hci::StatusCode::kRemoteUserTerminatedConnection));
+  RunLoopUntilIdle();
+
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
+      &setup_status_packet, &conn_complete_packet);
+
+  ConnectionResult conn_result_1;
+  auto conn_cb_1 = [&conn_result_1](auto result) { conn_result_1 = std::move(result); };
+
+  auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_result_1.is_ok());
+  ASSERT_TRUE(conn_result_1.value());
+  EXPECT_EQ(conn_result_1.value()->handle(), kScoConnectionHandle);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
+  conn_result_1.value()->Close();
   RunLoopUntilIdle();
 }
 
