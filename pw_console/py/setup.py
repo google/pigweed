@@ -34,8 +34,7 @@ setuptools.setup(
         'ipython',
         'jinja2',
         'prompt_toolkit',
-        # inclusive-language: ignore
-        'ptpython @ git+git://github.com/prompt-toolkit/ptpython.git@master',
+        'ptpython',
         'pw_cli',
         'pw_tokenizer',
         'pygments',
