@@ -73,6 +73,12 @@ class Client {
   virtual void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
                                 att::StatusCallback status_callback) = 0;
 
+  // Same as DiscoverServices, but only discovers services in the range [range_start, range_end].
+  // |range_start| must be less than |range_end|.
+  virtual void DiscoverServicesInRange(ServiceKind kind, att::Handle range_start,
+                                       att::Handle range_end, ServiceCallback svc_callback,
+                                       att::StatusCallback status_callback) = 0;
+
   // Performs the "Discover All Primary Services by UUID" procedure defined in
   // v5.0, Vol 3, Part G, 4.4.2. |service_callback| is run for each discovered
   // service. |status_callback| is run with the result of the operation.

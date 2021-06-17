@@ -118,6 +118,9 @@ class FakeClient final : public Client {
   void ExchangeMTU(MTUCallback callback) override;
   void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
                         att::StatusCallback status_callback) override;
+  void DiscoverServicesInRange(ServiceKind kind, att::Handle start, att::Handle end,
+                               ServiceCallback svc_callback,
+                               att::StatusCallback status_callback) override {}
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                att::StatusCallback status_callback) override;

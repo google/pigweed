@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "client.h"
-
 #include <lib/trace/event.h>
 #include <zircon/assert.h>
 
+#include "client.h"
 #include "gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
@@ -184,12 +183,15 @@ class Impl final : public Client {
 
   void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
                         StatusCallback status_callback) override {
-    DiscoverServicesInternal(kind, att::kHandleMin, att::kHandleMax, std::move(svc_callback),
-                             std::move(status_callback));
+    DiscoverServicesInRange(kind, att::kHandleMin, att::kHandleMax, std::move(svc_callback),
+                            std::move(status_callback));
   }
 
-  void DiscoverServicesInternal(ServiceKind kind, att::Handle start, att::Handle end,
-                                ServiceCallback svc_callback, StatusCallback status_callback) {
+  void DiscoverServicesInRange(ServiceKind kind, att::Handle range_start, att::Handle range_end,
+                               ServiceCallback svc_callback,
+                               StatusCallback status_callback) override {
+    ZX_ASSERT(range_start <= range_end);
+
     auto pdu = NewPDU(sizeof(att::ReadByGroupTypeRequestParams16));
     if (!pdu) {
       status_callback(att::Status(HostError::kOutOfMemory));
@@ -198,16 +200,16 @@ class Impl final : public Client {
 
     att::PacketWriter writer(att::kReadByGroupTypeRequest, pdu.get());
     auto* params = writer.mutable_payload<att::ReadByGroupTypeRequestParams16>();
-    params->start_handle = htole16(start);
-    params->end_handle = htole16(end);
+    params->start_handle = htole16(range_start);
+    params->end_handle = htole16(range_end);
     params->type = htole16(kind == ServiceKind::PRIMARY ? types::kPrimaryService16
                                                         : types::kSecondaryService16);
 
     auto rsp_cb =
-        BindCallback([this, kind, svc_cb = std::move(svc_callback),
+        BindCallback([this, kind, range_end, svc_cb = std::move(svc_callback),
                       res_cb = status_callback.share()](const att::PacketReader& rsp) mutable {
           ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
-          TRACE_DURATION("bluetooth", "gatt::Client::DiscoverServicesInternal rsp_cb", "size",
+          TRACE_DURATION("bluetooth", "gatt::Client::DiscoverServicesInRange rsp_cb", "size",
                          rsp.size());
 
           if (rsp.payload_size() < sizeof(att::ReadByGroupTypeResponseParams)) {
@@ -243,7 +245,7 @@ class Impl final : public Client {
             return;
           }
 
-          att::Handle last_handle = att::kHandleMax;
+          att::Handle last_handle = range_end;
           while (attr_data_list.size()) {
             const auto& entry = attr_data_list.As<att::AttributeGroupDataEntry>();
 
@@ -270,14 +272,14 @@ class Impl final : public Client {
           }
 
           // The procedure is over if we have reached the end of the handle range.
-          if (last_handle == att::kHandleMax) {
+          if (last_handle == range_end) {
             res_cb(att::Status());
             return;
           }
 
           // Request the next batch.
-          DiscoverServicesInternal(kind, last_handle + 1, att::kHandleMax, std::move(svc_cb),
-                                   std::move(res_cb));
+          DiscoverServicesInRange(kind, last_handle + 1, range_end, std::move(svc_cb),
+                                  std::move(res_cb));
         });
 
     auto error_cb = BindErrorCallback(

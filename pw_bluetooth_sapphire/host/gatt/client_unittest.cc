@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "client.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
@@ -636,6 +635,86 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
 
   EXPECT_EQ(0x0008, services[2].range_start);
   EXPECT_EQ(0x0009, services[2].range_end);
+  EXPECT_EQ(kTestUuid3, services[2].type);
+}
+
+TEST_F(GATT_ClientTest, DiscoverServicesInRangeMultipleRequests) {
+  const att::Handle kRangeStart = 0x0010;
+  const att::Handle kRangeEnd = 0x0020;
+
+  const auto kExpectedRequest0 =
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
+                       0x00, 0x28  // type: primary service (0x2800)
+      );
+
+  const auto kResponse0 = StaticByteBuffer(0x11,        // opcode: read by group type response
+                                           0x06,        // data length: 6 (16-bit UUIDs)
+                                           0x10, 0x00,  // svc 0 start: 0x0010
+                                           0x11, 0x00,  // svc 0 end: 0x0011
+                                           0xAD, 0xDE,  // svc 0 uuid: 0xDEAD
+                                           0x12, 0x00,  // svc 1 start: 0x0012
+                                           0x13, 0x00,  // svc 1 end: 0x0013
+                                           0xEF, 0xBE   // svc 1 uuid: 0xBEEF
+  );
+  const auto kExpectedRequest1 =
+      StaticByteBuffer(0x10,        // opcode: read by group type request
+                       0x14, 0x00,  // start handle: 0x0014
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
+                       0x00, 0x28  // type: primary service (0x2800)
+      );
+  // Respond with one 128-bit service UUID.
+  const auto kResponse1 = StaticByteBuffer(0x11,        // opcode: read by group type response
+                                           0x14,        // data length: 20 (128-bit UUIDs)
+                                           0x14, 0x00,  // svc 2 start: 0x0014
+                                           0x15, 0x00,  // svc 2 end: 0x0015
+
+                                           // UUID matches |kTestUuid3| declared above.
+                                           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+  const auto kExpectedRequest2 =
+      StaticByteBuffer(0x10,        // opcode: read by group type request
+                       0x16, 0x00,  // start handle: 0x0016
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
+                       0x00, 0x28  // type: primary service (0x2800)
+      );
+  // Terminate the procedure with an error response.
+  const auto kNotFoundResponse2 = StaticByteBuffer(0x01,        // opcode: error response
+                                                   0x10,        // request: read by group type
+                                                   0x16, 0x00,  // start handle: 0x0016
+                                                   0x0A         // error: Attribute Not Found
+  );
+
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
+    client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest0));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
+  fake_chan()->Receive(kNotFoundResponse2);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(3u, services.size());
+
+  EXPECT_EQ(0x0010, services[0].range_start);
+  EXPECT_EQ(0x0011, services[0].range_end);
+  EXPECT_EQ(kTestUuid1, services[0].type);
+
+  EXPECT_EQ(0x0012, services[1].range_start);
+  EXPECT_EQ(0x0013, services[1].range_end);
+  EXPECT_EQ(kTestUuid2, services[1].type);
+
+  EXPECT_EQ(0x0014, services[2].range_start);
+  EXPECT_EQ(0x0015, services[2].range_end);
   EXPECT_EQ(kTestUuid3, services[2].type);
 }
 
