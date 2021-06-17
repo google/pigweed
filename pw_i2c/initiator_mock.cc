@@ -44,7 +44,7 @@ Status MockInitiator::DoWriteReadFor(
 
   ConstByteSpan expected_rx_buffer =
       expected_transactions_[expected_transaction_index_].read_buffer();
-  EXPECT_EQ(expected_rx_buffer.size(), rx_buffer.size());
+  PW_CHECK_INT_EQ(expected_rx_buffer.size(), rx_buffer.size());
 
   std::copy(
       expected_rx_buffer.begin(), expected_rx_buffer.end(), rx_buffer.begin());
