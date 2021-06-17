@@ -29,14 +29,30 @@ trust anchors, time and entropy. These are under construction.
   This module is under construction, not ready for use, and the documentation
   is incomplete.
 
-System Dependencies
-===================
+Prerequisites
+=============
 This module requires the following dependencies:
 
 1. Entropy
+-----------
 TLS requires an entropy source for generating random bytes. Users of this
 module should provide one by implementing a backend to the
 ``pw_tls_client:entropy`` facade.
+
+2. Chromium Verifier
+---------------------
+BoringSSL backend uses chromium verifier for certication verification. If the
+downstream project uses BoringSSL as the backend, the sources of the verifier,
+which is part of the chorimum sources, needs to be downloaded in order for
+``//third_party/chromium_verifier`` to build. It is recommended to use our
+support in pw_package for downloading compatible and tested version:
+
+.. code-block:: sh
+
+  pw package install chromium_verifier
+
+Then follow instruction for setting ``dir_pw_third_party_chromium_verifier`` to
+the path of the downloaded repo.
 
 Setup
 =====
