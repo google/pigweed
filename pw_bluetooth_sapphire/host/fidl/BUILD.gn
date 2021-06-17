@@ -26,6 +26,8 @@ static_library("fidl") {
     "server_base.h",
   ]
 
+  deps = [ "//sdk/fidl/fuchsia.bluetooth.le:hlcpp_measure_tape_for_peer" ]
+
   public_deps = [
     ":helpers",
     "//sdk/fidl/fuchsia.bluetooth",
@@ -94,6 +96,7 @@ source_set("tests") {
   deps = [
     ":adapter_test_fixture",
     ":fidl",
+    "//sdk/fidl/fuchsia.bluetooth.le:hlcpp_measure_tape_for_peer",
     "//sdk/lib/inspect/testing/cpp:cpp",
     "//src/connectivity/bluetooth/core/bt-host/gap:testing",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",

@@ -5,6 +5,9 @@
 #include "low_energy_central_server.h"
 
 #include <zircon/assert.h>
+#include <zircon/types.h>
+
+#include <measure_tape/hlcpp/hlcpp_measure_tape_for_peer.h>
 
 #include "gatt_client_server.h"
 #include "helpers.h"
@@ -18,6 +21,8 @@ using fuchsia::bluetooth::Status;
 using bt::sm::BondableMode;
 using fuchsia::bluetooth::gatt::Client;
 using fuchsia::bluetooth::le::ScanFilterPtr;
+namespace fble = fuchsia::bluetooth::le;
+namespace measure_fble = measure_tape::fuchsia::bluetooth::le;
 
 namespace bthost {
 
@@ -26,9 +31,16 @@ LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> ad
                                                fxl::WeakPtr<bt::gatt::GATT> gatt)
     : AdapterServerBase(adapter, this, std::move(request)),
       gatt_(gatt),
-      requesting_scan_(false),
+      requesting_scan_deprecated_(false),
       weak_ptr_factory_(this) {
   ZX_ASSERT(gatt_);
+}
+
+LowEnergyCentralServer::~LowEnergyCentralServer() {
+  if (scan_instance_) {
+    scan_instance_->Close(ZX_OK);
+    scan_instance_.reset();
+  }
 }
 
 std::optional<bt::gap::LowEnergyConnectionHandle*> LowEnergyCentralServer::FindConnectionForTesting(
@@ -38,6 +50,218 @@ std::optional<bt::gap::LowEnergyConnectionHandle*> LowEnergyCentralServer::FindC
     return conn_iter->second.get();
   }
   return std::nullopt;
+}
+
+LowEnergyCentralServer::ScanResultWatcherServer::ScanResultWatcherServer(
+    fxl::WeakPtr<bt::gap::Adapter> adapter,
+    fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> watcher,
+    fit::callback<void()> error_cb)
+    : ServerBase(this, std::move(watcher)),
+      adapter_(std::move(adapter)),
+      error_callback_(std::move(error_cb)) {
+  set_error_handler([this](auto) {
+    bt_log(DEBUG, "fidl", "ScanResultWatcher client closed, stopping scan");
+    ZX_ASSERT(error_callback_);
+    error_callback_();
+  });
+}
+
+void LowEnergyCentralServer::ScanResultWatcherServer::Close(zx_status_t epitaph) {
+  binding()->Close(epitaph);
+}
+
+void LowEnergyCentralServer::ScanResultWatcherServer::AddPeers(
+    std::unordered_set<bt::PeerId> peers) {
+  while (!peers.empty() && updated_peers_.size() < kMaxPendingScanResultWatcherPeers) {
+    updated_peers_.insert(peers.extract(peers.begin()));
+  }
+
+  if (!peers.empty()) {
+    bt_log(WARN, "fidl", "Maximum pending peers (%zu) reached, dropping %zu peers from results",
+           kMaxPendingScanResultWatcherPeers, peers.size());
+  }
+
+  MaybeSendPeers();
+}
+
+void LowEnergyCentralServer::ScanResultWatcherServer::Watch(WatchCallback callback) {
+  bt_log(TRACE, "fidl", "%s", __FUNCTION__);
+  if (watch_callback_) {
+    bt_log(WARN, "fidl", "%s: called before previous call completed", __FUNCTION__);
+    Close(ZX_ERR_CANCELED);
+    ZX_ASSERT(error_callback_);
+    error_callback_();
+    return;
+  }
+  watch_callback_ = std::move(callback);
+  MaybeSendPeers();
+}
+
+void LowEnergyCentralServer::ScanResultWatcherServer::MaybeSendPeers() {
+  if (updated_peers_.empty() || !watch_callback_) {
+    return;
+  }
+
+  // Send as many peers as will fit in the channel.
+  const size_t kVectorOverhead = sizeof(fidl_message_header_t) + sizeof(fidl_vector_t);
+  const size_t kMaxBytes = ZX_CHANNEL_MAX_MSG_BYTES - kVectorOverhead;
+  size_t bytes_used = 0;
+  std::vector<fble::Peer> peers;
+  while (!updated_peers_.empty()) {
+    bt::PeerId peer_id = *updated_peers_.begin();
+    bt::gap::Peer* peer = adapter_->peer_cache()->FindById(peer_id);
+    if (!peer) {
+      // The peer has been removed from the peer cache since it was queued, so the stale peer ID
+      // should not be sent to the client.
+      updated_peers_.erase(peer_id);
+      continue;
+    }
+
+    fble::Peer fidl_peer = fidl_helpers::PeerToFidlLe(*peer);
+    measure_fble::Size peer_size = measure_fble::Measure(fidl_peer);
+    ZX_ASSERT_MSG(peer_size.num_handles == 0,
+                  "Expected fuchsia.bluetooth.le/Peer to not have handles, but %zu handles found",
+                  peer_size.num_handles);
+    bytes_used += peer_size.num_bytes;
+    if (bytes_used > kMaxBytes) {
+      // Don't remove the peer that exceeded the size limit. It will be sent in the next batch.
+      break;
+    }
+
+    updated_peers_.erase(peer_id);
+    peers.emplace_back(std::move(fidl_peer));
+  }
+
+  // It is possible that all queued peers were stale, so there is nothing to send.
+  if (peers.empty()) {
+    return;
+  }
+
+  watch_callback_(std::move(peers));
+}
+
+LowEnergyCentralServer::ScanInstance::ScanInstance(
+    fxl::WeakPtr<bt::gap::Adapter> adapter, LowEnergyCentralServer* central_server,
+    std::vector<fuchsia::bluetooth::le::Filter> fidl_filters,
+    fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> watcher, ScanCallback cb)
+    : result_watcher_(adapter, std::move(watcher),
+                      /*error_cb=*/
+                      [this] {
+                        Close(ZX_OK);
+                        central_server_->ClearScan();
+                      }),
+      scan_complete_callback_(std::move(cb)),
+      central_server_(central_server),
+      adapter_(std::move(adapter)),
+      weak_ptr_factory_(this) {
+  std::transform(fidl_filters.begin(), fidl_filters.end(), std::back_inserter(filters_),
+                 fidl_helpers::DiscoveryFilterFromFidl);
+
+  // Send all current peers in peer cache that match filters.
+  std::unordered_set<bt::PeerId> initial_peers;
+  adapter_->peer_cache()->ForEach(
+      [&](const bt::gap::Peer& peer) { initial_peers.emplace(peer.identifier()); });
+  FilterAndAddPeers(std::move(initial_peers));
+
+  // Subscribe to updated peers.
+  peer_updated_callback_id_ = adapter_->peer_cache()->add_peer_updated_callback(
+      [this](const bt::gap::Peer& peer) { FilterAndAddPeers({peer.identifier()}); });
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  adapter_->le()->StartDiscovery(
+      /*active=*/true, [self](auto session) {
+        if (!self) {
+          bt_log(TRACE, "fidl", "ignoring LE discovery session for canceled Scan");
+          return;
+        }
+
+        if (!session) {
+          bt_log(WARN, "fidl", "failed to start LE discovery session");
+          self->Close(ZX_ERR_INTERNAL);
+          self->central_server_->ClearScan();
+          return;
+        }
+
+        session->set_error_callback([self] {
+          if (!self) {
+            bt_log(TRACE, "fidl", "ignoring LE discovery session error for canceled Scan");
+            return;
+          }
+
+          bt_log(DEBUG, "fidl", "canceling Scan due to LE discovery session error");
+          self->Close(ZX_ERR_INTERNAL);
+          self->central_server_->ClearScan();
+        });
+
+        self->scan_session_ = std::move(session);
+      });
+}
+
+LowEnergyCentralServer::ScanInstance::~ScanInstance() {
+  // If this scan instance has not already been closed with a more specific status, close with an
+  // error status.
+  Close(ZX_ERR_INTERNAL);
+}
+
+void LowEnergyCentralServer::ScanInstance::Close(zx_status_t status) {
+  if (scan_complete_callback_) {
+    result_watcher_.Close(status);
+    scan_complete_callback_();
+  }
+}
+
+void LowEnergyCentralServer::ScanInstance::FilterAndAddPeers(std::unordered_set<bt::PeerId> peers) {
+  // Remove peers that don't match any filters.
+  for (auto peers_iter = peers.begin(); peers_iter != peers.end();) {
+    bt::gap::Peer* peer = adapter_->peer_cache()->FindById(*peers_iter);
+    if (!peer || !peer->le()) {
+      peers_iter = peers.erase(peers_iter);
+      continue;
+    }
+    bool matches_any = false;
+    for (const bt::gap::DiscoveryFilter& filter : filters_) {
+      // TODO(fxbug.dev/36373): Match peer names that are not in advertising data.
+      // This might require implementing a new peer filtering class, as
+      // DiscoveryFilter only filters advertising data.
+      if (filter.MatchLowEnergyResult(peer->le()->advertising_data(), peer->connectable(),
+                                      peer->rssi())) {
+        matches_any = true;
+        break;
+      }
+    }
+    if (!matches_any) {
+      peers_iter = peers.erase(peers_iter);
+      continue;
+    }
+    peers_iter++;
+  }
+
+  result_watcher_.AddPeers(std::move(peers));
+}
+
+void LowEnergyCentralServer::Scan(
+    fuchsia::bluetooth::le::ScanOptions options,
+    fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> result_watcher,
+    ScanCallback callback) {
+  bt_log(DEBUG, "fidl", "%s", __FUNCTION__);
+
+  if (scan_instance_ || requesting_scan_deprecated_ || scan_session_deprecated_) {
+    bt_log(INFO, "fidl", "%s: scan already in progress", __FUNCTION__);
+    result_watcher.Close(ZX_ERR_ALREADY_EXISTS);
+    callback();
+    return;
+  }
+
+  if (!options.has_filters() || options.filters().empty()) {
+    bt_log(INFO, "fidl", "%s: no scan filters specified", __FUNCTION__);
+    result_watcher.Close(ZX_ERR_INVALID_ARGS);
+    callback();
+    return;
+  }
+
+  scan_instance_ = std::make_unique<ScanInstance>(adapter()->AsWeakPtr(), this,
+                                                  std::move(*options.mutable_filters()),
+                                                  std::move(result_watcher), std::move(callback));
 }
 
 void LowEnergyCentralServer::GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
@@ -55,7 +279,7 @@ void LowEnergyCentralServer::GetPeripheral(::std::string identifier,
 void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback callback) {
   bt_log(DEBUG, "fidl", "%s", __FUNCTION__);
 
-  if (requesting_scan_) {
+  if (requesting_scan_deprecated_) {
     bt_log(DEBUG, "fidl", "%s: scan request already in progress", __FUNCTION__);
     callback(fidl_helpers::NewFidlError(ErrorCode::IN_PROGRESS, "Scan request in progress"));
     return;
@@ -68,15 +292,15 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
     return;
   }
 
-  if (scan_session_) {
+  if (scan_session_deprecated_) {
     // A scan is already in progress. Update its filter and report success.
-    scan_session_->filter()->Reset();
-    fidl_helpers::PopulateDiscoveryFilter(*filter, scan_session_->filter());
+    scan_session_deprecated_->filter()->Reset();
+    fidl_helpers::PopulateDiscoveryFilter(*filter, scan_session_deprecated_->filter());
     callback(Status());
     return;
   }
 
-  requesting_scan_ = true;
+  requesting_scan_deprecated_ = true;
   adapter()->le()->StartDiscovery(/*active=*/true, [self = weak_ptr_factory_.GetWeakPtr(),
                                                     filter = std::move(filter),
                                                     callback = std::move(callback),
@@ -84,7 +308,7 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
     if (!self)
       return;
 
-    self->requesting_scan_ = false;
+    self->requesting_scan_deprecated_ = false;
 
     if (!session) {
       bt_log(WARN, "fidl", "%s: failed to start LE discovery session", func);
@@ -108,7 +332,7 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
       }
     });
 
-    self->scan_session_ = std::move(session);
+    self->scan_session_deprecated_ = std::move(session);
     self->NotifyScanStateChanged(true);
     callback(Status());
   });
@@ -117,12 +341,12 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
 void LowEnergyCentralServer::StopScan() {
   bt_log(DEBUG, "fidl", "StopScan()");
 
-  if (!scan_session_) {
+  if (!scan_session_deprecated_) {
     bt_log(DEBUG, "fidl", "%s: no active discovery session; nothing to do", __FUNCTION__);
     return;
   }
 
-  scan_session_ = nullptr;
+  scan_session_deprecated_ = nullptr;
   NotifyScanStateChanged(false);
 }
 

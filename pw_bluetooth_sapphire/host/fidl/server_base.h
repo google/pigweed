@@ -64,7 +64,8 @@ class ServerBase : public Server, public Interface {
   // Holds the channel from the FIDL client.
   ::fidl::Binding<Interface> binding_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServerBase);
+  // Binding cannot be copied or moved.
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ServerBase);
 };
 
 // Base template for GAP FIDL interface servers. The GAP profile is accessible
