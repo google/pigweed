@@ -33,18 +33,25 @@ An example echo RPC command:
 
 import argparse
 import glob
+from inspect import cleandoc
 import logging
 from pathlib import Path
 import sys
-from typing import Any, Collection, Iterable, Iterator
+from typing import Any, Collection, Iterable, Iterator, BinaryIO
 import socket
 
-import IPython  # type: ignore
 import serial  # type: ignore
 
-from pw_hdlc.rpc import HdlcRpcClient, default_channels, write_to_file
+import pw_cli.log
+from pw_console.console_app import embed
+from pw_console.__main__ import create_temp_log_file
+from pw_tokenizer import tokens
+from pw_tokenizer.database import LoadTokenDatabases
+from pw_tokenizer.detokenize import Detokenizer, detokenize_base64
+from pw_hdlc.rpc import HdlcRpcClient, default_channels
 
 _LOG = logging.getLogger(__name__)
+_DEVICE_LOG = logging.getLogger('rpc_device')
 
 PW_RPC_MAX_PACKET_SIZE = 256
 SOCKET_SERVER = 'localhost'
@@ -69,12 +76,18 @@ def _parse_args():
         default=sys.stdout.buffer,
         help=('The file to which to write device output (HDLC channel 1); '
               'provide - or omit for stdout.'))
+    parser.add_argument('--logfile', help='Console debug log file.')
     group.add_argument('-s',
                        '--socket-addr',
                        type=str,
                        help='use socket to connect to server, type default for\
             localhost:33000, or manually input the server address:port')
-    parser.add_argument('proto_globs',
+    parser.add_argument("--token-databases",
+                        metavar='elf_or_token_database',
+                        nargs="+",
+                        action=LoadTokenDatabases,
+                        help="Path to tokenizer database csv file(s).")
+    parser.add_argument('--proto-globs',
                         nargs='+',
                         help='glob pattern for .proto files')
     return parser.parse_args()
@@ -93,11 +106,26 @@ def _start_ipython_terminal(client: HdlcRpcClient) -> None:
         channel_client=client.client.channel(1),
         rpcs=client.client.channel(1).rpcs,
         protos=client.protos.packages,
+        # Include the active pane logger for creating logs in the repl.
+        LOG=_DEVICE_LOG,
     )
 
-    print(__doc__)  # Print the banner
-    IPython.terminal.embed.InteractiveShellEmbed().mainloop(
-        local_ns=local_variables, module=argparse.Namespace())
+    welcome_message = cleandoc("""
+        Welcome to the Pigweed Console!
+
+        Press F1 for help.
+        Example commands:
+
+          rpcs.pw.rpc.EchoService.Echo(msg='hello!')
+
+          LOG.warning('Message appears console log window.')
+    """)
+
+    embed(global_vars=local_variables,
+          local_vars=None,
+          loggers=[_DEVICE_LOG],
+          repl_startup_message=welcome_message,
+          help_text=__doc__)
 
 
 class SocketClientImpl:
@@ -122,11 +150,22 @@ class SocketClientImpl:
 
 
 def console(device: str, baudrate: int, proto_globs: Collection[str],
-            socket_addr: str, output: Any) -> int:
+            token_databases: Collection[tokens.Database], socket_addr: str,
+            logfile: str, output: Any) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
     if output is sys.stdout:
         output = sys.stdout.buffer
+
+    if not logfile:
+        # Create a temp logfile to prevent logs from appearing over stdout. This
+        # would corrupt the prompt toolkit UI.
+        logfile = create_temp_log_file()
+    pw_cli.log.install(logging.INFO, True, False, logfile)
+
+    if token_databases:
+        detokenizer = Detokenizer(tokens.Database.merged(*token_databases),
+                                  show_errors=False)
 
     if not proto_globs:
         proto_globs = ['**/*.proto']
@@ -156,9 +195,22 @@ def console(device: str, baudrate: int, proto_globs: Collection[str],
             return 1
 
     _start_ipython_terminal(
-        HdlcRpcClient(read, protos, default_channels(write),
-                      lambda data: write_to_file(data, output)))
+        HdlcRpcClient(
+            read, protos, default_channels(write),
+            lambda data: detokenize_and_write_to_output(
+                data, output, detokenizer)))
     return 0
+
+
+def detokenize_and_write_to_output(data: bytes,
+                                   unused_output: BinaryIO = sys.stdout.buffer,
+                                   detokenizer=None):
+    log_line = data
+    if detokenizer:
+        log_line = detokenize_base64(detokenizer, data)
+
+    for line in log_line.decode(errors="surrogateescape").splitlines():
+        _DEVICE_LOG.info(line)
 
 
 def main() -> int:
