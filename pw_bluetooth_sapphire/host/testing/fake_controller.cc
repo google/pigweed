@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::testing {
@@ -149,42 +148,6 @@ void FakeController::Settings::ApplyLEConfig() {
 
   SetBit(&le_features, hci::LESupportedFeature::kLEExtendedAdvertising);
 }
-
-FakeController::LEScanState::LEScanState()
-    : enabled(false),
-      scan_type(hci::LEScanType::kPassive),
-      scan_interval(0),
-      scan_window(0),
-      filter_duplicates(false),
-      filter_policy(hci::LEScanFilterPolicy::kNoWhiteList) {}
-
-FakeController::LEAdvertisingState::LEAdvertisingState()
-    : enabled(false),
-      adv_type(hci::LEAdvertisingType::kAdvInd),
-      own_address_type(hci::LEOwnAddressType::kPublic),
-      interval_min(0),
-      interval_max(0),
-      data_length(0),
-      scan_rsp_length(0) {
-  std::memset(data, 0, sizeof(data));
-  std::memset(scan_rsp_data, 0, sizeof(scan_rsp_data));
-}
-
-FakeController::FakeController()
-    : page_scan_type_(hci::PageScanType::kStandardScan),
-      page_scan_interval_(0x0800),
-      page_scan_window_(0x0012),
-      next_conn_handle_(0u),
-      le_connect_pending_(false),
-      next_le_sig_id_(1u),
-      respond_to_tx_power_read_(true),
-      data_callback_(nullptr),
-      data_dispatcher_(nullptr),
-      auto_completed_packets_event_enabled_(true),
-      auto_disconnection_complete_event_enabled_(true),
-      weak_ptr_factory_(this) {}
-
-FakeController::~FakeController() { Stop(); }
 
 void FakeController::SetDefaultCommandStatus(hci::OpCode opcode, hci::StatusCode status) {
   default_command_status_map_[opcode] = status;

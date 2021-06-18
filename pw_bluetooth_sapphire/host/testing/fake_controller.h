@@ -24,6 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 
 namespace bt::testing {
@@ -80,34 +81,30 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Current device low energy scan state.
   struct LEScanState final {
-    LEScanState();
-
-    bool enabled;
-    hci::LEScanType scan_type;
-    uint16_t scan_interval;
-    uint16_t scan_window;
-    bool filter_duplicates;
-    hci::LEOwnAddressType own_address_type;
-    hci::LEScanFilterPolicy filter_policy;
+    bool enabled = false;
+    hci::LEScanType scan_type = hci::LEScanType::kPassive;
+    uint16_t scan_interval = 0;
+    uint16_t scan_window = 0;
+    bool filter_duplicates = false;
+    hci::LEOwnAddressType own_address_type = hci::LEOwnAddressType::kPublic;
+    hci::LEScanFilterPolicy filter_policy = hci::LEScanFilterPolicy::kNoWhiteList;
   };
 
   // Current device basic advertising state
   struct LEAdvertisingState final {
-    LEAdvertisingState();
-
     BufferView advertised_view() const { return BufferView(data, data_length); }
     BufferView scan_rsp_view() const { return BufferView(scan_rsp_data, scan_rsp_length); }
 
-    bool enabled;
-    hci::LEAdvertisingType adv_type;
-    hci::LEOwnAddressType own_address_type;
-    uint16_t interval_min;
-    uint16_t interval_max;
+    bool enabled = false;
+    hci::LEAdvertisingType adv_type = hci::LEAdvertisingType::kAdvInd;
+    hci::LEOwnAddressType own_address_type = hci::LEOwnAddressType::kPublic;
+    uint16_t interval_min = 0;
+    uint16_t interval_max = 0;
 
-    uint8_t data_length;
-    uint8_t data[hci::kMaxLEAdvertisingDataLength];
-    uint8_t scan_rsp_length;
-    uint8_t scan_rsp_data[hci::kMaxLEAdvertisingDataLength];
+    uint8_t data_length = 0;
+    uint8_t data[hci::kMaxLEAdvertisingDataLength] = {0};
+    uint8_t scan_rsp_length = 0;
+    uint8_t scan_rsp_data[hci::kMaxLEAdvertisingDataLength] = {0};
   };
 
   // The parameters of the most recent low energy connection initiation request
@@ -120,8 +117,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Constructor initializes the controller with the minimal default settings (equivalent to calling
   // Settings::ApplyDefaults()).
-  FakeController();
-  ~FakeController() override;
+  FakeController() : weak_ptr_factory_(this) {}
+  ~FakeController() override { Stop(); }
 
   // Resets the controller settings.
   void set_settings(const Settings& settings) { settings_ = settings; }
@@ -465,9 +462,9 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Used for BR/EDR Scans
   uint8_t bredr_scan_state_;
-  hci::PageScanType page_scan_type_;
-  uint16_t page_scan_interval_;
-  uint16_t page_scan_window_;
+  hci::PageScanType page_scan_type_ = hci::PageScanType::kStandardScan;
+  uint16_t page_scan_interval_ = 0x800;
+  uint16_t page_scan_window_ = 0x0012;
 
   // The GAP local name, as written/read by HCI_(Read/Write)_Local_Name. While the aforementioned
   // HCI commands carry the name in a 248 byte buffer, |local_name_| contains the intended value.
@@ -478,10 +475,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Variables used for
   // HCI_LE_Create_Connection/HCI_LE_Create_Connection_Cancel.
-  uint16_t next_conn_handle_;
+  uint16_t next_conn_handle_ = 0u;
   fxl::CancelableClosure pending_le_connect_rsp_;
   std::optional<LEConnectParams> le_connect_params_;
-  bool le_connect_pending_;
+  bool le_connect_pending_ = false;
 
   // Variables used for
   // HCI_BREDR_Create_Connection/HCI_BREDR_Create_Connection_Cancel.
@@ -490,10 +487,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   fxl::CancelableClosure pending_bredr_connect_rsp_;
 
   // ID used for L2CAP LE signaling channel commands.
-  uint8_t next_le_sig_id_;
+  uint8_t next_le_sig_id_ = 1u;
 
   // Used to indicate whether to respond back to TX Power Level read or not.
-  bool respond_to_tx_power_read_;
+  bool respond_to_tx_power_read_ = true;
 
   // The Inquiry Mode that the controller is in.  Determines what types of
   // events are faked when a kInquiry is started.
@@ -530,11 +527,11 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   std::unordered_map<hci::OpCode, fit::function<void(fit::closure)>> paused_opcode_listeners_;
 
   // Called when ACL data packets received.
-  DataCallback data_callback_;
-  async_dispatcher_t* data_dispatcher_;
+  DataCallback data_callback_ = nullptr;
+  async_dispatcher_t* data_dispatcher_ = nullptr;
 
-  bool auto_completed_packets_event_enabled_;
-  bool auto_disconnection_complete_event_enabled_;
+  bool auto_completed_packets_event_enabled_ = true;
+  bool auto_disconnection_complete_event_enabled_ = true;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
