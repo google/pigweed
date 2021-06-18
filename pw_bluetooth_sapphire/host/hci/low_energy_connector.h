@@ -48,17 +48,11 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //  - |role|: The role that this device is operating in for this connection.
   //
-  //  - |local_address|: Some advertising modes (e.g. legacy advertising) support only a single
-  //    address set and don't return the local address in the LE_Connection_Complete event. As
-  //    such, the local_address parameter is optional to indicate whether we know the local address
-  //    or not (e.g. we do when using extended advertising).
-  //
   //  - |peer_address|: The address of the remote peer.
   //
   //  - |conn_params|: Connection related parameters.
   using IncomingConnectionDelegate = fit::function<void(
-      ConnectionHandle handle, Connection::Role role,
-      const std::optional<DeviceAddress> local_address, const DeviceAddress& peer_address,
+      ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
       const LEConnectionParameters& conn_params)>;
 
   // The constructor expects the following arguments:

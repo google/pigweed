@@ -254,17 +254,9 @@ bool LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                                                     std::optional<DeviceAddress> opt_local_address,
                                                      const DeviceAddress& peer_address,
                                                      const LEConnectionParameters& conn_params) {
   static DeviceAddress identity_address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
-
-  // Since legacy advertising supports only a single address set, the LE_Connection_Complete event
-  // doesn't include the local address. Consequently, LegacyLowEnergyAdvertiser is the only entity
-  // that knows the local address being advertised. As such, we ignore a potential value in
-  // opt_local_address since we already know what the local address should be.
-  ZX_ASSERT(!opt_local_address);
-
   // We use the identity address as the local address if we aren't advertising. If we aren't
   // advertising, this is obviously wrong. However, the link will be disconnected in that case
   // before it can propagate to higher layers.

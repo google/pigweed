@@ -159,7 +159,6 @@ class LowEnergyConnectionManagerTest : public TestingBase {
  private:
   // Called by |connector_| when a new remote initiated connection is received.
   void OnIncomingConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
-                            std::optional<DeviceAddress> opt_local_address,
                             const DeviceAddress& peer_address,
                             const hci::LEConnectionParameters& conn_params) {
     DeviceAddress local_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});

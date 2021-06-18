@@ -124,13 +124,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Callback for an incoming LE connection. This function should be called in reaction to any
   // connection that was not initiated locally. This object will determine if it was a result of an
   // active advertisement and route the connection accordingly.
-  //
-  // NOTE: some advertising modes (e.g. legacy advertising) support only a single address set and
-  // don't return the local address in the LE_Connection_Complete event. As such, the local_address
-  // parameter is optional to indicate whether we know the local address or not (e.g. we do when
-  // using extended advertising).
   virtual void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                                    std::optional<DeviceAddress> local_address,
                                     const DeviceAddress& peer_address,
                                     const LEConnectionParameters& conn_params) = 0;
 

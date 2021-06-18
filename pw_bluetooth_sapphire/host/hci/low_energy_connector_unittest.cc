@@ -71,7 +71,6 @@ class LowEnergyConnectorTest : public TestingBase {
 
  private:
   void OnIncomingConnectionCreated(ConnectionHandle handle, Connection::Role role,
-                                   std::optional<DeviceAddress> opt_local_address,
                                    const DeviceAddress& peer_address,
                                    const LEConnectionParameters& conn_params) {
     in_connections_.push_back(std::make_unique<testing::FakeConnection>(

@@ -43,7 +43,6 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   bool StopAdvertising(const DeviceAddress& address) override;
 
   void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                            std::optional<DeviceAddress> opt_local_address,
                             const DeviceAddress& peer_address,
                             const LEConnectionParameters& conn_params) override;
 
