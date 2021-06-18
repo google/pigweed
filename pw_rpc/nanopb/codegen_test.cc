@@ -215,12 +215,11 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
 
   PW_ENCODE_PB(
       pw_rpc_test_TestStreamResponse, response, .chunk = {}, .number = 11u);
-  context.SendResponse(OkStatus(), response);
+  context.SendServerStream(response);
   EXPECT_TRUE(result.active);
   EXPECT_EQ(result.response_value, 11);
 
-  context.SendPacket(internal::PacketType::SERVER_STREAM_END,
-                     Status::NotFound());
+  context.SendResponse(Status::NotFound());
   EXPECT_FALSE(result.active);
   EXPECT_EQ(result.stream_status, Status::NotFound());
 }

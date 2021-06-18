@@ -72,8 +72,16 @@ pw_add_module_library(pw_rpc.synchronized_channel_output
     pw_sync.mutex
 )
 
-add_library(pw_rpc.test_utils INTERFACE)
-target_include_directories(pw_rpc.test_utils INTERFACE .)
+pw_add_module_library(pw_rpc.test_utils
+  SOURCES
+    fake_channel_output.cc
+  PUBLIC_DEPS
+    pw_assert
+    pw_bytes
+    pw_rpc.client
+    pw_rpc.server
+)
+target_include_directories(pw_rpc.test_utils PUBLIC .)
 
 pw_proto_library(pw_rpc.protos
   SOURCES

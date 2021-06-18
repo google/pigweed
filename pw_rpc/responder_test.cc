@@ -112,14 +112,14 @@ TEST(ServerWriter, Finish_RemovesFromServer) {
   EXPECT_TRUE(writers.empty());
 }
 
-TEST(ServerWriter, Finish_SendsCancellationPacket) {
+TEST(ServerWriter, Finish_SendsResponse) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   EXPECT_EQ(OkStatus(), writer.Finish());
 
   const Packet& packet = context.output().sent_packet();
-  EXPECT_EQ(packet.type(), PacketType::SERVER_STREAM_END);
+  EXPECT_EQ(packet.type(), PacketType::RESPONSE);
   EXPECT_EQ(packet.channel_id(), context.channel_id());
   EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());
@@ -166,7 +166,7 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
   ASSERT_EQ(OkStatus(), writer.Write(data));
 
   byte encoded[64];
-  auto result = context.packet(data).Encode(encoded);
+  auto result = context.server_stream(data).Encode(encoded);
   ASSERT_EQ(OkStatus(), result.status());
 
   EXPECT_EQ(result.value().size(), context.output().sent_data().size());

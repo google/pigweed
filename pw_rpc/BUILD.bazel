@@ -44,14 +44,14 @@ pw_cc_library(
 pw_cc_library(
     name = "server",
     srcs = [
-        "responder.cc",
-        "public/pw_rpc/internal/responder.h",
         "public/pw_rpc/internal/call.h",
         "public/pw_rpc/internal/hash.h",
         "public/pw_rpc/internal/method.h",
         "public/pw_rpc/internal/method_lookup.h",
         "public/pw_rpc/internal/method_union.h",
+        "public/pw_rpc/internal/responder.h",
         "public/pw_rpc/internal/server.h",
+        "responder.cc",
         "server.cc",
         "service.cc",
     ],
@@ -115,8 +115,10 @@ pw_cc_library(
 
 pw_cc_library(
     name = "internal_test_utils",
+    srcs = ["fake_channel_output.cc"],
     hdrs = [
         "public/pw_rpc/internal/test_method.h",
+        "pw_rpc_private/fake_channel_output.h",
         "pw_rpc_private/internal_test_utils.h",
         "pw_rpc_private/method_impl_tester.h",
     ],
@@ -128,6 +130,8 @@ pw_cc_library(
     deps = [
         ":client",
         ":server",
+        "//pw_assert",
+        "//pw_bytes",
         "//pw_span",
     ],
 )

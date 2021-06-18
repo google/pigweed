@@ -118,6 +118,8 @@ struct MethodTraits<StatusWithSize (*)(
     ServerContext&, ConstByteSpan, ByteSpan)> {
   using Implementation = RawMethod;
   static constexpr MethodType kType = MethodType::kUnary;
+  static constexpr bool kServerStreaming = false;
+  static constexpr bool kClientStreaming = false;
 };
 
 // MethodTraits specialization for a raw unary method.
@@ -126,6 +128,8 @@ struct MethodTraits<StatusWithSize (T::*)(
     ServerContext&, ConstByteSpan, ByteSpan)> {
   using Implementation = RawMethod;
   static constexpr MethodType kType = MethodType::kUnary;
+  static constexpr bool kServerStreaming = false;
+  static constexpr bool kClientStreaming = false;
   using Service = T;
 };
 
@@ -134,6 +138,8 @@ template <>
 struct MethodTraits<void (*)(ServerContext&, ConstByteSpan, RawServerWriter&)> {
   using Implementation = RawMethod;
   static constexpr MethodType kType = MethodType::kServerStreaming;
+  static constexpr bool kServerStreaming = true;
+  static constexpr bool kClientStreaming = false;
 };
 
 // MethodTraits specialization for a raw server streaming method.
@@ -142,6 +148,8 @@ struct MethodTraits<void (T::*)(
     ServerContext&, ConstByteSpan, RawServerWriter&)> {
   using Implementation = RawMethod;
   static constexpr MethodType kType = MethodType::kServerStreaming;
+  static constexpr bool kServerStreaming = true;
+  static constexpr bool kClientStreaming = false;
   using Service = T;
 };
 

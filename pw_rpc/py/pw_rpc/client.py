@@ -247,26 +247,30 @@ class Services(descriptors.ServiceAccessor[ServiceClient]):
 
 
 def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
-    # Server streaming RPC packets never have a status; all other packets do.
-    if packet.type == PacketType.RESPONSE and rpc.method.server_streaming:
+    if packet.type == PacketType.SERVER_STREAM:
         return None
 
     try:
         return Status(packet.status)
     except ValueError:
         _LOG.warning('Illegal status code %d for %s', packet.status, rpc)
-
-    return None
+        return Status.UNKNOWN
 
 
 def _decode_payload(rpc: PendingRpc, packet):
-    if packet.type == PacketType.RESPONSE:
-        try:
-            return packets.decode_payload(packet, rpc.method.response_type)
-        except DecodeError as err:
-            _LOG.warning('Failed to decode %s response for %s: %s',
-                         rpc.method.response_type.DESCRIPTOR.full_name,
-                         rpc.method.full_name, err)
+    if packet.type == PacketType.SERVER_ERROR:
+        return None
+
+    # Server streaming RPCs do not send a payload with their RESPONSE packet.
+    if packet.type == PacketType.RESPONSE and rpc.method.server_streaming:
+        return None
+
+    try:
+        return packets.decode_payload(packet, rpc.method.response_type)
+    except DecodeError as err:
+        _LOG.warning('Failed to decode %s response for %s: %s',
+                     rpc.method.response_type.DESCRIPTOR.full_name,
+                     rpc.method.full_name, err)
     return None
 
 
@@ -324,6 +328,31 @@ class ChannelClient:
     def __repr__(self) -> str:
         return (f'ChannelClient(channel={self.channel.id}, '
                 f'services={[str(s) for s in self.services()]})')
+
+
+def _update_for_backwards_compatibility(rpc: PendingRpc,
+                                        packet: RpcPacket) -> None:
+    """Adapts server streaming RPC packets to the updated protocol if needed."""
+    # The protocol changes only affect server streaming RPCs.
+    if rpc.method.type is not Method.Type.SERVER_STREAMING:
+        return
+
+    # SERVER_STREAM_END packets are deprecated. They are equivalent to a
+    # RESPONSE packet.
+    if packet.type == PacketType.DEPRECATED_SERVER_STREAM_END:
+        packet.type = PacketType.RESPONSE
+        return
+
+    # Prior to the introduction of SERVER_STREAM packets, RESPONSE packets with
+    # a payload were used instead. If a non-zero payload is present, assume this
+    # RESPONSE is equivalent to a SERVER_STREAM packet.
+    #
+    # Note that the payload field is not 'optional', so an empty payload is
+    # equivalent to a payload that happens to encode to zero bytes. This would
+    # only affect server streaming RPCs on the old protocol that intentionally
+    # send empty payloads, which will not be an issue in practice.
+    if packet.type == PacketType.RESPONSE and packet.payload:
+        packet.type = PacketType.SERVER_STREAM
 
 
 class Client:
@@ -424,15 +453,15 @@ class Client:
             _LOG.warning('%s', err)
             return Status.OK
 
-        status = _decode_status(rpc, packet)
+        _update_for_backwards_compatibility(rpc, packet)
 
-        if packet.type not in (PacketType.RESPONSE,
-                               PacketType.SERVER_STREAM_END,
+        if packet.type not in (PacketType.RESPONSE, PacketType.SERVER_STREAM,
                                PacketType.SERVER_ERROR):
             _LOG.error('%s: unexpected PacketType %s', rpc, packet.type)
             _LOG.debug('Packet:\n%s', packet)
             return Status.OK
 
+        status = _decode_status(rpc, packet)
         payload = _decode_payload(rpc, packet)
 
         try:

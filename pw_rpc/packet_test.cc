@@ -55,11 +55,12 @@ constexpr auto kEncoded = bytes::Array<
     100,
     0,
     0,
-    0,
+    0
 
-    // Status
-    MakeKey(6, protobuf::WireType::kVarint),
-    0x00>();
+    // Status (not encoded if it is zero)
+    // MakeKey(6, protobuf::WireType::kVarint),
+    // 0x00
+    >();
 
 // Test that a default-constructed packet sets its members to the default
 // protobuf values.

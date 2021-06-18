@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
 #include "pw_preprocessor/arguments.h"
 #include "pw_rpc/channel.h"
@@ -25,6 +26,7 @@
 #include "pw_rpc/internal/nanopb_method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
+#include "pw_rpc_private/fake_channel_output.h"
 
 namespace pw::rpc {
 
@@ -77,7 +79,7 @@ namespace pw::rpc {
                                      ::pw::rpc::internal::Hash(#method), \
                                      ##__VA_ARGS__>
 template <typename Service,
-          auto method,
+          auto kMethod,
           uint32_t kMethodId,
           size_t kMaxResponse = 4,
           size_t kOutputSizeBytes = 128>
@@ -88,55 +90,46 @@ namespace internal::test::nanopb {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
 template <typename Response>
-class MessageOutput final : public ChannelOutput {
+class MessageOutput final : public FakeChannelOutput {
  public:
-  MessageOutput(const internal::NanopbMethod& method,
+  MessageOutput(const internal::NanopbMethod& kMethod,
                 Vector<Response>& responses,
-                std::span<std::byte> buffer)
-      : ChannelOutput("internal::test::nanopb::MessageOutput"),
-        method_(method),
-        responses_(responses),
-        buffer_(buffer) {
-    clear();
-  }
-
-  Status last_status() const { return last_status_; }
-  void set_last_status(Status status) { last_status_ = status; }
-
-  size_t total_responses() const { return total_responses_; }
-
-  bool stream_ended() const { return stream_ended_; }
-
-  void clear();
+                ByteSpan packet_buffer,
+                bool server_streaming)
+      : FakeChannelOutput(packet_buffer, server_streaming),
+        method_(kMethod),
+        responses_(responses) {}
 
  private:
-  std::span<std::byte> AcquireBuffer() override { return buffer_; }
+  void AppendResponse(ConstByteSpan response) override {
+    // If we run out of space, the back message is always the most recent.
+    responses_.emplace_back();
+    responses_.back() = {};
+    PW_ASSERT(method_.DecodeResponse(response, &responses_.back()));
+  }
 
-  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override;
+  void ClearResponses() override { responses_.clear(); }
 
   const internal::NanopbMethod& method_;
   Vector<Response>& responses_;
-  std::span<std::byte> buffer_;
-  size_t total_responses_;
-  bool stream_ended_;
-  Status last_status_;
 };
 
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
-          auto method,
+          auto kMethod,
           uint32_t kMethodId,
           size_t kMaxResponse,
           size_t kOutputSize>
 struct InvocationContext {
-  using Request = internal::Request<method>;
-  using Response = internal::Response<method>;
+  using Request = internal::Request<kMethod>;
+  using Response = internal::Response<kMethod>;
 
   template <typename... Args>
   InvocationContext(Args&&... args)
       : output(MethodLookup::GetNanopbMethod<Service, kMethodId>(),
                responses,
-               buffer),
+               buffer,
+               MethodTraits<decltype(kMethod)>::kServerStreaming),
         channel(Channel::Create<123>(&output)),
         server(std::span(&channel, 1)),
         service(std::forward<Args>(args)...),
@@ -158,10 +151,13 @@ struct InvocationContext {
 
 // Method invocation context for a unary RPC. Returns the status in call() and
 // provides the response through the response() method.
-template <typename Service, auto method, uint32_t kMethodId, size_t kOutputSize>
+template <typename Service,
+          auto kMethod,
+          uint32_t kMethodId,
+          size_t kOutputSize>
 class UnaryContext {
  private:
-  InvocationContext<Service, method, kMethodId, 1, kOutputSize> ctx_;
+  InvocationContext<Service, kMethod, kMethodId, 1, kOutputSize> ctx_;
 
  public:
   using Request = typename decltype(ctx_)::Request;
@@ -177,7 +173,7 @@ class UnaryContext {
     ctx_.output.clear();
     ctx_.responses.emplace_back();
     ctx_.responses.back() = {};
-    return CallMethodImplFunction<method>(
+    return CallMethodImplFunction<kMethod>(
         ctx_.call, request, ctx_.responses.back());
   }
 
@@ -190,13 +186,14 @@ class UnaryContext {
 
 // Method invocation context for a server streaming RPC.
 template <typename Service,
-          auto method,
+          auto kMethod,
           uint32_t kMethodId,
           size_t kMaxResponse,
           size_t kOutputSize>
 class ServerStreamingContext {
  private:
-  InvocationContext<Service, method, kMethodId, kMaxResponse, kOutputSize> ctx_;
+  InvocationContext<Service, kMethod, kMethodId, kMaxResponse, kOutputSize>
+      ctx_;
 
  public:
   using Request = typename decltype(ctx_)::Request;
@@ -211,7 +208,7 @@ class ServerStreamingContext {
   void call(const Request& request) {
     ctx_.output.clear();
     internal::Responder server_writer(ctx_.call);
-    return CallMethodImplFunction<method>(
+    return CallMethodImplFunction<kMethod>(
         ctx_.call,
         request,
         static_cast<ServerWriter<Response>&>(server_writer));
@@ -235,7 +232,7 @@ class ServerStreamingContext {
   size_t total_responses() const { return ctx_.output.total_responses(); }
 
   // True if the stream has terminated.
-  bool done() const { return ctx_.output.stream_ended(); }
+  bool done() const { return ctx_.output.done(); }
 
   // The status of the stream. Only valid if done() is true.
   Status status() const {
@@ -247,79 +244,41 @@ class ServerStreamingContext {
 // Alias to select the type of the context object to use based on which type of
 // RPC it is for.
 template <typename Service,
-          auto method,
+          auto kMethod,
           uint32_t kMethodId,
           size_t kMaxResponse,
           size_t kOutputSize>
 using Context = std::tuple_element_t<
-    static_cast<size_t>(internal::MethodTraits<decltype(method)>::kType),
-    std::tuple<UnaryContext<Service, method, kMethodId, kOutputSize>,
+    static_cast<size_t>(internal::MethodTraits<decltype(kMethod)>::kType),
+    std::tuple<UnaryContext<Service, kMethod, kMethodId, kOutputSize>,
                ServerStreamingContext<Service,
-                                      method,
+                                      kMethod,
                                       kMethodId,
                                       kMaxResponse,
                                       kOutputSize>
                // TODO(hepler): Support client and bidi streaming
                >>;
 
-template <typename Response>
-void MessageOutput<Response>::clear() {
-  responses_.clear();
-  total_responses_ = 0;
-  stream_ended_ = false;
-  last_status_ = Status::Unknown();
-}
-
-template <typename Response>
-Status MessageOutput<Response>::SendAndReleaseBuffer(
-    std::span<const std::byte> buffer) {
-  PW_ASSERT(!stream_ended_);
-  PW_ASSERT(buffer.data() == buffer_.data());
-
-  if (buffer.empty()) {
-    return OkStatus();
-  }
-
-  Result<internal::Packet> result = internal::Packet::FromBuffer(buffer);
-  PW_ASSERT(result.ok());
-
-  last_status_ = result.value().status();
-
-  switch (result.value().type()) {
-    case internal::PacketType::RESPONSE:
-      // If we run out of space, the back message is always the most recent.
-      responses_.emplace_back();
-      responses_.back() = {};
-      PW_ASSERT(
-          method_.DecodeResponse(result.value().payload(), &responses_.back()));
-      total_responses_ += 1;
-      break;
-    case internal::PacketType::SERVER_STREAM_END:
-      stream_ended_ = true;
-      break;
-    default:
-      pw_assert_HandleFailure();  // Unhandled PacketType
-  }
-  return OkStatus();
-}
-
 }  // namespace internal::test::nanopb
 
 template <typename Service,
-          auto method,
+          auto kMethod,
           uint32_t kMethodId,
           size_t kMaxResponse,
           size_t kOutputSizeBytes>
 class NanopbTestMethodContext
     : public internal::test::nanopb::
-          Context<Service, method, kMethodId, kMaxResponse, kOutputSizeBytes> {
+          Context<Service, kMethod, kMethodId, kMaxResponse, kOutputSizeBytes> {
  public:
   // Forwards constructor arguments to the service class.
   template <typename... ServiceArgs>
   NanopbTestMethodContext(ServiceArgs&&... service_args)
-      : internal::test::nanopb::
-            Context<Service, method, kMethodId, kMaxResponse, kOutputSizeBytes>(
-                std::forward<ServiceArgs>(service_args)...) {}
+      : internal::test::nanopb::Context<Service,
+                                        kMethod,
+                                        kMethodId,
+                                        kMaxResponse,
+                                        kOutputSizeBytes>(
+            std::forward<ServiceArgs>(service_args)...) {}
 };
 
 }  // namespace pw::rpc

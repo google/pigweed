@@ -84,8 +84,6 @@ class Responder : public IntrusiveList<Responder>::Item {
 
   void Close();
 
-  Packet ResponsePacket(std::span<const std::byte> payload = {}) const;
-
   ServerCall call_;
   Channel::OutputBuffer response_;
   enum { kClosed, kOpen } state_;

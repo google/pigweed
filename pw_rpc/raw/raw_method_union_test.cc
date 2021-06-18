@@ -107,7 +107,7 @@ TEST(RawMethodUnion, InvokesUnary) {
   const Method& method =
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
-  method.Invoke(context.get(), context.packet(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(encoder.Encode().value()));
 
   EXPECT_EQ(last_request.integer, 456);
   EXPECT_EQ(last_request.status_code, 7u);
@@ -133,7 +133,7 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
-  method.Invoke(context.get(), context.packet(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(encoder.Encode().value()));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(777, last_request.integer);

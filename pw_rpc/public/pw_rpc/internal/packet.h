@@ -88,6 +88,9 @@ class Packet {
   // Determines the space required to encode the packet proto fields for a
   // response, excluding the payload. This may be used to split the buffer into
   // reserved space and available space for the payload.
+  //
+  // This method allocates two bytes for the status. Status code 0 (OK) is not
+  // encoded since 0 is the default value.
   size_t MinEncodedSizeBytes() const;
 
   enum Destination : bool { kServer, kClient };

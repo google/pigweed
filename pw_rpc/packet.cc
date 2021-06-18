@@ -74,13 +74,20 @@ Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
   RpcPacket::Encoder rpc_packet(&encoder);
 
   // The payload is encoded first, as it may share the encode buffer.
-  rpc_packet.WritePayload(payload_);
+  if (!payload_.empty()) {
+    rpc_packet.WritePayload(payload_);
+  }
 
   rpc_packet.WriteType(type_);
   rpc_packet.WriteChannelId(channel_id_);
   rpc_packet.WriteServiceId(service_id_);
   rpc_packet.WriteMethodId(method_id_);
-  rpc_packet.WriteStatus(status_.code());
+
+  // Status code 0 is OK. In protobufs, 0 is the default int value, so skip
+  // encoding it to save two bytes in the output.
+  if (status_.code() != 0) {
+    rpc_packet.WriteStatus(status_.code());
+  }
 
   return encoder.Encode();
 }
@@ -96,7 +103,7 @@ size_t Packet::MinEncodedSizeBytes() const {
   // Packet type always takes two bytes to encode (varint key + varint enum).
   reserved_size += 2;
 
-  // Status field always takes two bytes to encode (varint key + varint status).
+  // Status field takes up to two bytes to encode (varint key + varint status).
   reserved_size += 2;
 
   // Payload field takes at least two bytes to encode (varint key + length).

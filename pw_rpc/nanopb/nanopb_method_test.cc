@@ -168,7 +168,7 @@ TEST(NanopbMethod, UnaryRpc_SendsResponse) {
   const NanopbMethod& method =
       std::get<1>(FakeService::kMethods).nanopb_method();
   ServerContextForTest<FakeService> context(method);
-  method.Invoke(context.get(), context.packet(request));
+  method.Invoke(context.get(), context.request(request));
 
   const Packet& response = context.output().sent_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
@@ -190,7 +190,7 @@ TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
   const NanopbMethod& method =
       std::get<0>(FakeService::kMethods).nanopb_method();
   ServerContextForTest<FakeService> context(method);
-  method.Invoke(context.get(), context.packet(bad_payload));
+  method.Invoke(context.get(), context.request(bad_payload));
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
@@ -208,10 +208,11 @@ TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
       std::get<1>(FakeService::kMethods).nanopb_method();
   // Output buffer is too small for the response, but can fit an error packet.
   ServerContextForTest<FakeService, 22> context(method);
-  ASSERT_LT(context.output().buffer_size(),
-            context.packet(request).MinEncodedSizeBytes() + request.size() + 1);
+  ASSERT_LT(
+      context.output().buffer_size(),
+      context.request(request).MinEncodedSizeBytes() + request.size() + 1);
 
-  method.Invoke(context.get(), context.packet(request));
+  method.Invoke(context.get(), context.request(request));
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
@@ -230,7 +231,7 @@ TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
       std::get<2>(FakeService::kMethods).nanopb_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet(request));
+  method.Invoke(context.get(), context.request(request));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(555, last_request.integer);
@@ -241,13 +242,13 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
       std::get<2>(FakeService::kMethods).nanopb_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Write({.value = 100}));
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, payload, .value = 100);
   std::array<byte, 128> encoded_response = {};
-  auto encoded = context.packet(payload).Encode(encoded_response);
+  auto encoded = context.server_stream(payload).Encode(encoded_response);
   ASSERT_EQ(OkStatus(), encoded.status());
 
   ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
@@ -262,7 +263,7 @@ TEST(NanopbMethod, ServerWriter_WriteWhenClosed_ReturnsFailedPrecondition) {
       std::get<2>(FakeService::kMethods).nanopb_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Finish());
   EXPECT_TRUE(last_writer.Write({.value = 100}).IsFailedPrecondition());
@@ -273,7 +274,7 @@ TEST(NanopbMethod, ServerWriter_WriteAfterMoved_ReturnsFailedPrecondition) {
       std::get<2>(FakeService::kMethods).nanopb_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
   ServerWriter<pw_rpc_test_TestResponse> new_writer = std::move(last_writer);
 
   EXPECT_EQ(OkStatus(), new_writer.Write({.value = 100}));
@@ -289,20 +290,20 @@ TEST(NanopbMethod,
   const NanopbMethod& method =
       std::get<2>(FakeService::kMethods).nanopb_method();
 
-  constexpr size_t kNoPayloadPacketSize = 2 /* type */ + 2 /* channel */ +
-                                          5 /* service */ + 5 /* method */ +
-                                          2 /* payload */ + 2 /* status */;
+  constexpr size_t kNoPayloadPacketSize =
+      2 /* type */ + 2 /* channel */ + 5 /* service */ + 5 /* method */ +
+      0 /* payload (when empty) */ + 0 /* status (when OK)*/;
 
   // Make the buffer barely fit a packet with no payload.
   ServerContextForTest<FakeService, kNoPayloadPacketSize> context(method);
 
   // Verify that the encoded size of a packet with an empty payload is correct.
   std::array<byte, 128> encoded_response = {};
-  auto encoded = context.packet({}).Encode(encoded_response);
+  auto encoded = context.request({}).Encode(encoded_response);
   ASSERT_EQ(OkStatus(), encoded.status());
   ASSERT_EQ(kNoPayloadPacketSize, encoded.value().size());
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Write({}));  // Barely fits
   EXPECT_EQ(Status::Internal(), last_writer.Write({.value = 1}));  // Too big

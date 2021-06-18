@@ -200,8 +200,6 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
     } else {
       callbacks_.InvokeRpcError(Status::DataLoss());
     }
-
-    Unregister();
   }
 
   void InvokeServerStreamingCallback(const internal::Packet& packet) {
@@ -210,12 +208,15 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
       return;
     }
 
-    if (packet.type() == internal::PacketType::SERVER_STREAM_END &&
-        callbacks_.stream_end) {
-      callbacks_.stream_end(packet.status());
+    if (packet.type() == internal::PacketType::RESPONSE) {
+      // The server sent the last packet; call the stream end callback.
+      if (callbacks_.stream_end) {
+        callbacks_.stream_end(packet.status());
+      }
       return;
     }
 
+    // Handle internal::PacketType::SERVER_STREAM packets.
     ResponseBuffer response_struct{};
 
     if (callbacks_.stream_response &&

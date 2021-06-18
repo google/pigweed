@@ -58,6 +58,10 @@ def _rpc(method_stub):
                              method_stub.method)
 
 
+def _message_bytes(msg) -> bytes:
+    return msg if isinstance(msg, bytes) else msg.SerializeToString()
+
+
 class CallbackClientImplTest(unittest.TestCase):
     """Tests the callback_client as used within a pw_rpc Client."""
     def setUp(self):
@@ -77,7 +81,7 @@ class CallbackClientImplTest(unittest.TestCase):
                           channel_id: int,
                           method=None,
                           status: Status = Status.OK,
-                          response=b'',
+                          payload=b'',
                           *,
                           ids: Tuple[int, int] = None,
                           process_status=Status.OK):
@@ -88,32 +92,27 @@ class CallbackClientImplTest(unittest.TestCase):
             assert ids is not None and method is None
             service_id, method_id = ids
 
-        if isinstance(response, bytes):
-            payload = response
-        else:
-            payload = response.SerializeToString()
+        self._next_packets.append((packet_pb2.RpcPacket(
+            type=packet_pb2.PacketType.RESPONSE,
+            channel_id=channel_id,
+            service_id=service_id,
+            method_id=method_id,
+            status=status.value,
+            payload=_message_bytes(payload)).SerializeToString(),
+                                   process_status))
 
-        self._next_packets.append(
-            (packet_pb2.RpcPacket(type=packet_pb2.PacketType.RESPONSE,
-                                  channel_id=channel_id,
-                                  service_id=service_id,
-                                  method_id=method_id,
-                                  status=status.value,
-                                  payload=payload).SerializeToString(),
-             process_status))
-
-    def _enqueue_stream_end(self,
-                            channel_id: int,
-                            method,
-                            status: Status = Status.OK,
-                            process_status=Status.OK):
-        self._next_packets.append(
-            (packet_pb2.RpcPacket(type=packet_pb2.PacketType.SERVER_STREAM_END,
-                                  channel_id=channel_id,
-                                  service_id=method.service.id,
-                                  method_id=method.id,
-                                  status=status.value).SerializeToString(),
-             process_status))
+    def _enqueue_server_stream(self,
+                               channel_id: int,
+                               method,
+                               response,
+                               process_status=Status.OK):
+        self._next_packets.append((packet_pb2.RpcPacket(
+            type=packet_pb2.PacketType.SERVER_STREAM,
+            channel_id=channel_id,
+            service_id=method.service.id,
+            method_id=method.id,
+            payload=_message_bytes(response)).SerializeToString(),
+                                   process_status))
 
     def _enqueue_error(self,
                        channel_id: int,
@@ -288,13 +287,42 @@ class CallbackClientImplTest(unittest.TestCase):
         rep2 = method.response_type(payload='?')
 
         for _ in range(3):
-            self._enqueue_response(1, method, response=rep1)
-            self._enqueue_response(1, method, response=rep2)
-            self._enqueue_stream_end(1, method, Status.ABORTED)
+            self._enqueue_server_stream(1, method, rep1)
+            self._enqueue_server_stream(1, method, rep2)
+            self._enqueue_response(1, method, Status.ABORTED)
 
             self.assertEqual(
                 [rep1, rep2],
                 list(self._service.SomeServerStreaming(magic_number=4)))
+
+            self.assertEqual(
+                4,
+                self._sent_payload(method.request_type).magic_number)
+
+    def test_invoke_server_streaming_with_deprecated_packet_format(self):
+        method = self._service.SomeServerStreaming.method
+
+        rep1 = method.response_type(payload='!!!')
+        rep2 = method.response_type(payload='?')
+
+        for _ in range(3):
+            # The original packet format used RESPONSE packets for the server
+            # stream and a SERVER_STREAM_END packet as the last packet. These
+            # are converted to SERVER_STREAM packets followed by a RESPONSE.
+            self._enqueue_response(1, method, payload=rep1)
+            self._enqueue_response(1, method, payload=rep2)
+
+            self._next_packets.append((packet_pb2.RpcPacket(
+                type=packet_pb2.PacketType.DEPRECATED_SERVER_STREAM_END,
+                channel_id=1,
+                service_id=method.service.id,
+                method_id=method.id,
+                status=Status.INVALID_ARGUMENT.value).SerializeToString(),
+                                       Status.OK))
+
+            call = self._service.SomeServerStreaming(magic_number=4)
+            self.assertEqual([rep1, rep2], list(call))
+            self.assertIs(call.status, Status.INVALID_ARGUMENT)
 
             self.assertEqual(
                 4,
@@ -307,9 +335,9 @@ class CallbackClientImplTest(unittest.TestCase):
         rep2 = method.response_type(payload='?')
 
         for _ in range(3):
-            self._enqueue_response(1, method, response=rep1)
-            self._enqueue_response(1, method, response=rep2)
-            self._enqueue_stream_end(1, method, Status.ABORTED)
+            self._enqueue_server_stream(1, method, rep1)
+            self._enqueue_server_stream(1, method, rep2)
+            self._enqueue_response(1, method, Status.ABORTED)
 
             callback = mock.Mock()
             self._service.SomeServerStreaming.invoke(
@@ -330,7 +358,7 @@ class CallbackClientImplTest(unittest.TestCase):
         stub = self._service.SomeServerStreaming
 
         resp = stub.method.response_type(payload='!!!')
-        self._enqueue_response(1, stub.method, response=resp)
+        self._enqueue_server_stream(1, stub.method, resp)
 
         callback = mock.Mock()
         call = stub.invoke(self._request(magic_number=3), callback)
@@ -344,8 +372,8 @@ class CallbackClientImplTest(unittest.TestCase):
         self.assertEqual(self._last_request.type, packet_pb2.PacketType.CANCEL)
 
         # Ensure the RPC can be called after being cancelled.
-        self._enqueue_response(1, stub.method, response=resp)
-        self._enqueue_stream_end(1, stub.method, Status.OK)
+        self._enqueue_server_stream(1, stub.method, resp)
+        self._enqueue_response(1, stub.method, Status.OK)
 
         call = stub.invoke(self._request(magic_number=3), callback, callback)
 

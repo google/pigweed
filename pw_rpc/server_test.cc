@@ -247,18 +247,12 @@ TEST_F(MethodPending, ProcessPacket_Cancel_ClosesServerWriter) {
   EXPECT_FALSE(writer_.open());
 }
 
-TEST_F(MethodPending, ProcessPacket_Cancel_SendsStreamEndPacket) {
+TEST_F(MethodPending, ProcessPacket_Cancel_SendsNoResponse) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100),
                                   output_));
 
-  const Packet& packet = output_.sent_packet();
-  EXPECT_EQ(packet.type(), PacketType::SERVER_STREAM_END);
-  EXPECT_EQ(packet.channel_id(), 1u);
-  EXPECT_EQ(packet.service_id(), 42u);
-  EXPECT_EQ(packet.method_id(), 100u);
-  EXPECT_TRUE(packet.payload().empty());
-  EXPECT_EQ(packet.status(), Status::Cancelled());
+  EXPECT_EQ(output_.packet_count(), 0u);
 }
 
 TEST_F(MethodPending,

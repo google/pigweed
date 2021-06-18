@@ -70,10 +70,10 @@ Status Client::ProcessPacket(ConstByteSpan data) {
     case PacketType::RESPONSE:
     case PacketType::SERVER_ERROR:
       call->HandleResponse(packet);
+      call->Unregister();
       break;
-    case PacketType::SERVER_STREAM_END:
+    case PacketType::SERVER_STREAM:
       call->HandleResponse(packet);
-      RemoveCall(*call);
       break;
     default:
       return Status::Unimplemented();

@@ -20,6 +20,30 @@
 #include "pw_rpc/internal/server.h"
 
 namespace pw::rpc::internal {
+namespace {
+
+Packet ResponsePacket(const ServerCall& call,
+                      uint32_t method_id,
+                      Status status) {
+  return Packet(PacketType::RESPONSE,
+                call.channel().id(),
+                call.service().id(),
+                method_id,
+                {},
+                status);
+}
+
+Packet StreamPacket(const ServerCall& call,
+                    uint32_t method_id,
+                    std::span<const std::byte> payload) {
+  return Packet(PacketType::SERVER_STREAM,
+                call.channel().id(),
+                call.service().id(),
+                method_id,
+                payload);
+}
+
+}  // namespace
 
 Responder::Responder(ServerCall& call) : call_(call), state_(kOpen) {
   call_.server().RegisterResponder(*this);
@@ -58,13 +82,8 @@ Status Responder::Finish(Status status) {
 
   Close();
 
-  // Send a control packet indicating that the stream (and RPC) has terminated.
-  return call_.channel().Send(Packet(PacketType::SERVER_STREAM_END,
-                                     call_.channel().id(),
-                                     call_.service().id(),
-                                     method().id(),
-                                     {},
-                                     status));
+  // Send a packet indicating that the RPC has terminated.
+  return call_.channel().Send(ResponsePacket(call_, method_id(), status));
 }
 
 std::span<std::byte> Responder::AcquirePayloadBuffer() {
@@ -75,12 +94,13 @@ std::span<std::byte> Responder::AcquirePayloadBuffer() {
     response_ = call_.channel().AcquireBuffer();
   }
 
-  return response_.payload(ResponsePacket());
+  return response_.payload(StreamPacket(call_, method_id(), {}));
 }
 
 Status Responder::ReleasePayloadBuffer(std::span<const std::byte> payload) {
   PW_DCHECK(open());
-  return call_.channel().Send(response_, ResponsePacket(payload));
+  return call_.channel().Send(response_,
+                              StreamPacket(call_, method_id(), payload));
 }
 
 Status Responder::ReleasePayloadBuffer() {
@@ -96,14 +116,6 @@ void Responder::Close() {
 
   call_.server().RemoveResponder(*this);
   state_ = kClosed;
-}
-
-Packet Responder::ResponsePacket(std::span<const std::byte> payload) const {
-  return Packet(PacketType::RESPONSE,
-                call_.channel().id(),
-                call_.service().id(),
-                method().id(),
-                payload);
 }
 
 }  // namespace pw::rpc::internal

@@ -149,7 +149,7 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
 
   const RawMethod& method = std::get<0>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
-  method.Invoke(context.get(), context.packet(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(encoder.Encode().value()));
 
   EXPECT_EQ(last_request.integer, 456);
   EXPECT_EQ(last_request.status_code, 7u);
@@ -174,7 +174,7 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(encoder.Encode().value()));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(777, last_request.integer);
@@ -187,7 +187,7 @@ TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   auto buffer = last_writer.PayloadBuffer();
 
@@ -197,7 +197,7 @@ TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
   EXPECT_EQ(last_writer.Write(buffer.first(data.size())), OkStatus());
 
   const internal::Packet& packet = context.output().sent_packet();
-  EXPECT_EQ(packet.type(), internal::PacketType::RESPONSE);
+  EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
   EXPECT_EQ(packet.channel_id(), context.channel_id());
   EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());
@@ -209,13 +209,13 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
   EXPECT_EQ(last_writer.Write(data), OkStatus());
 
   const internal::Packet& packet = context.output().sent_packet();
-  EXPECT_EQ(packet.type(), internal::PacketType::RESPONSE);
+  EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
   EXPECT_EQ(packet.channel_id(), context.channel_id());
   EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());
@@ -227,7 +227,7 @@ TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Finish());
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
@@ -238,7 +238,7 @@ TEST(RawServerWriter, Write_BufferTooSmall_ReturnsOutOfRange) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService, 16> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   constexpr auto data =
       bytes::Array<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>();
@@ -250,7 +250,7 @@ TEST(RawServerWriter,
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   {
     RawServerWriter writer = std::move(last_writer);
@@ -261,7 +261,7 @@ TEST(RawServerWriter,
 
   auto output = context.output();
   EXPECT_EQ(output.packet_count(), 1u);
-  EXPECT_EQ(output.sent_packet().type(), PacketType::SERVER_STREAM_END);
+  EXPECT_EQ(output.sent_packet().type(), PacketType::RESPONSE);
 }
 
 }  // namespace

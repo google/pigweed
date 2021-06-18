@@ -92,7 +92,7 @@ TEST(NanopbMethodUnion, Raw_CallsUnaryMethod) {
   const Method& method =
       std::get<0>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
-  method.Invoke(context.get(), context.packet({}));
+  method.Invoke(context.get(), context.request({}));
 
   const Packet& response = context.output().sent_packet();
   EXPECT_EQ(response.status(), Status::Unknown());
@@ -106,12 +106,11 @@ TEST(NanopbMethodUnion, Raw_CallsServerStreamingMethod) {
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
-  method.Invoke(context.get(), context.packet(request));
+  method.Invoke(context.get(), context.request(request));
 
   EXPECT_TRUE(last_raw_writer.open());
   EXPECT_EQ(OkStatus(), last_raw_writer.Finish());
-  EXPECT_EQ(context.output().sent_packet().type(),
-            PacketType::SERVER_STREAM_END);
+  EXPECT_EQ(context.output().sent_packet().type(), PacketType::RESPONSE);
 }
 
 TEST(NanopbMethodUnion, Nanopb_CallsUnaryMethod) {
@@ -121,7 +120,7 @@ TEST(NanopbMethodUnion, Nanopb_CallsUnaryMethod) {
   const Method& method =
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
-  method.Invoke(context.get(), context.packet(request));
+  method.Invoke(context.get(), context.request(request));
 
   const Packet& response = context.output().sent_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
@@ -146,14 +145,13 @@ TEST(NanopbMethodUnion, Nanopb_CallsServerStreamingMethod) {
       std::get<3>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
-  method.Invoke(context.get(), context.packet(request));
+  method.Invoke(context.get(), context.request(request));
 
   EXPECT_EQ(555, last_request.integer);
   EXPECT_TRUE(last_writer.open());
 
   EXPECT_EQ(OkStatus(), last_writer.Finish());
-  EXPECT_EQ(context.output().sent_packet().type(),
-            PacketType::SERVER_STREAM_END);
+  EXPECT_EQ(context.output().sent_packet().type(), PacketType::RESPONSE);
 }
 
 }  // namespace

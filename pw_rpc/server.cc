@@ -150,7 +150,7 @@ void Server::HandleCancelPacket(const Packet& packet,
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
     PW_LOG_WARN("Received CANCEL packet for method that is not pending");
   } else {
-    writer->Finish(Status::Cancelled());
+    writer->Close();
   }
 }
 

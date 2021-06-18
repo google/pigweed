@@ -37,10 +37,11 @@ TEST(ChannelOutput, Name) {
   EXPECT_EQ(nullptr, NameTester(nullptr).name());
 }
 
-constexpr Packet kTestPacket(PacketType::RESPONSE, 1, 42, 100);
+constexpr Packet kTestPacket(
+    PacketType::RESPONSE, 1, 42, 100, {}, Status::NotFound());
 const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
                              5 /* method */ + 2 /* payload key */ +
-                             2 /* status */;
+                             2 /* status (if not OK) */;
 
 enum class ChannelId {
   kOne = 1,
@@ -67,7 +68,7 @@ TEST(Channel, OutputBuffer_EmptyBuffer) {
 }
 
 TEST(Channel, OutputBuffer_TooSmall) {
-  TestOutput<kReservedSize - 1> output;
+  TestOutput<kReservedSize - 2 /* payload key & size */ - 1> output;
   internal::Channel channel(100, &output);
 
   Channel::OutputBuffer output_buffer = channel.AcquireBuffer();

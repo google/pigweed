@@ -19,7 +19,7 @@ from pw_status import Status
 from pw_rpc.internal import packet_pb2
 
 
-def decode(data: bytes):
+def decode(data: bytes) -> packet_pb2.RpcPacket:
     packet = packet_pb2.RpcPacket()
     packet.MergeFromString(data)
     return packet
@@ -73,5 +73,5 @@ def encode_cancel(rpc: tuple) -> bytes:
                                 method_id=method).SerializeToString()
 
 
-def for_server(packet):
+def for_server(packet: packet_pb2.RpcPacket) -> bool:
     return packet.type % 2 == 0

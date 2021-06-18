@@ -101,14 +101,31 @@ class ServerContextForTest {
     server_.RegisterService(service_);
   }
 
-  // Creates a response packet for this context's channel, service, and method.
-  internal::Packet packet(std::span<const std::byte> payload) const {
+  // Create packets for this context's channel, service, and method.
+  internal::Packet request(std::span<const std::byte> payload) const {
+    return internal::Packet(internal::PacketType::REQUEST,
+                            kChannelId,
+                            kServiceId,
+                            context_.method().id(),
+                            payload);
+  }
+
+  internal::Packet response(Status status,
+                            std::span<const std::byte> payload = {}) const {
     return internal::Packet(internal::PacketType::RESPONSE,
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
                             payload,
-                            OkStatus());
+                            status);
+  }
+
+  internal::Packet server_stream(std::span<const std::byte> payload) const {
+    return internal::Packet(internal::PacketType::SERVER_STREAM,
+                            kChannelId,
+                            kServiceId,
+                            context_.method().id(),
+                            payload);
   }
 
   internal::ServerCall& get() { return context_; }
@@ -156,8 +173,12 @@ class ClientContextForTest {
     return client_.ProcessPacket(result.value_or(ConstByteSpan()));
   }
 
-  Status SendResponse(Status status, std::span<const std::byte> payload) {
+  Status SendResponse(Status status, std::span<const std::byte> payload = {}) {
     return SendPacket(internal::PacketType::RESPONSE, status, payload);
+  }
+
+  Status SendServerStream(std::span<const std::byte> payload) {
+    return SendPacket(internal::PacketType::SERVER_STREAM, OkStatus(), payload);
   }
 
  private:

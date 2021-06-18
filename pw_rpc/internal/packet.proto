@@ -23,10 +23,11 @@ enum PacketType {
 
   // Client-to-server packets
 
-  // A request from a client for a service method.
+  // The client invokes an RPC. Always the first packet.
   REQUEST = 0;
 
-  // A message in a client stream.
+  // A message in a client stream. Always sent after a REQUEST and before a
+  // CLIENT_STREAM_END.
   CLIENT_STREAM = 2;
 
   // The client received a packet for an RPC it did not request.
@@ -40,14 +41,18 @@ enum PacketType {
 
   // Server-to-client packets
 
-  // A response from a server for a service method.
+  // The RPC has finished.
   RESPONSE = 1;
 
-  // A server streaming or bidirectional RPC has completed.
-  SERVER_STREAM_END = 3;
+  // Deprecated, do not use. Formerly was used as the last packet in a server
+  // stream.
+  DEPRECATED_SERVER_STREAM_END = 3;
 
   // The server was unable to process a request.
   SERVER_ERROR = 5;
+
+  // A message in a server stream.
+  SERVER_STREAM = 7;
 }
 
 message RpcPacket {
