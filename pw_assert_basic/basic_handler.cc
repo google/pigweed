@@ -17,6 +17,7 @@
 //#define PW_LOG_MODULE_NAME "ASRT"
 //#include "pw_log/log.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include "pw_assert/options.h"
@@ -138,16 +139,11 @@ extern "C" void pw_assert_basic_HandleFailure(const char* file_name,
   // now this is acceptable since no one is using this basic backend.
   if (!PW_ASSERT_BASIC_DISABLE_NORETURN) {
     if (PW_ASSERT_BASIC_ABORT) {
-      // Using exit() instead of abort() here because exit() allows for the
-      // destructors for the stdout buffers to be called. This addresses an
-      // issue that occurs when Bazel's execution wrapper binds stdout. This
-      // results in stdout going from a synchronized to a buffered file
-      // descriptor. In this case when abort() is called in a Bazel test the
-      // program exits before the stdout buffer can be synchronized with Bazel's
-      // execution wrapper, the resulting output from a test is an empty output
-      // buffer. Using exit() here allows the destructors to synchronized the
-      // stdout buffer before exiting.
-      exit(1);
+      // abort() doesn't flush stderr/stdout, so manually flush them before
+      // aborting. abort() is preferred to exit(1) because debuggers catch it.
+      std::fflush(stderr);
+      std::fflush(stdout);
+      std::abort();
     } else {
       WriteLine("");
       WriteLine(MAGENTA "  HANG TIME" RESET);
