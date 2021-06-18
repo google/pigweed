@@ -41,7 +41,6 @@ declare_args() {
   dir_pw_cpu_exception = get_path_info("pw_cpu_exception", "abspath")
   dir_pw_cpu_exception_cortex_m =
       get_path_info("pw_cpu_exception_cortex_m", "abspath")
-  dir_pw_transfer = get_path_info("pw_transfer", "abspath")
   dir_pw_docgen = get_path_info("pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("pw_doctor", "abspath")
   dir_pw_env_setup = get_path_info("pw_env_setup", "abspath")
@@ -111,6 +110,7 @@ declare_args() {
   dir_pw_toolchain = get_path_info("pw_toolchain", "abspath")
   dir_pw_trace = get_path_info("pw_trace", "abspath")
   dir_pw_trace_tokenized = get_path_info("pw_trace_tokenized", "abspath")
+  dir_pw_transfer = get_path_info("pw_transfer", "abspath")
   dir_pw_unit_test = get_path_info("pw_unit_test", "abspath")
   dir_pw_varint = get_path_info("pw_varint", "abspath")
   dir_pw_watch = get_path_info("pw_watch", "abspath")

@@ -191,12 +191,12 @@ pw_size_report("server_size") {
 pw_test_group("tests") {
   tests = [
     ":base_client_call_test",
-    ":base_server_writer_test",
     ":channel_test",
     ":client_test",
     ":client_server_test",
     ":ids_test",
     ":packet_test",
+    ":responder_test",
     ":server_test",
     ":service_test",
   ]
@@ -212,7 +212,7 @@ pw_proto_library("test_protos") {
   visibility = [ "./*" ]
 }
 
-pw_test("base_server_writer_test") {
+pw_test("responder_test") {
   deps = [
     ":server",
     ":test_utils",

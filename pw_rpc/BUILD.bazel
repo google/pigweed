@@ -158,7 +158,7 @@ filegroup(
 )
 
 pw_cc_test(
-    name = "base_server_writer_test",
+    name = "responder_test",
     srcs = [
         "responder_test.cc",
     ],
