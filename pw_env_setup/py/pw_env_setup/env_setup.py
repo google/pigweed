@@ -33,6 +33,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 # TODO(pwbug/67): Remove import hacks once the oxidized prebuilt binaries are
 # proven stable for first-time bootstrapping. For now, continue to support
@@ -129,8 +130,17 @@ class _Result:
     def ok(self):
         return self._status in {_Result.Status.DONE, _Result.Status.SKIPPED}
 
-    def status_str(self):
-        return self._status
+    def status_str(self, duration=None):
+        if not duration:
+            return self._status
+
+        duration_parts = []
+        if duration > 60:
+            minutes = int(duration // 60)
+            duration %= 60
+            duration_parts.append('{}m'.format(minutes))
+        duration_parts.append('{:.1f}s'.format(duration))
+        return '{} ({})'.format(self._status, ''.join(duration_parts))
 
     def messages(self):
         return self._messages
@@ -317,11 +327,13 @@ Then use `set +x` to go back to normal.
                 newline=False,
             )
 
+            start = time.time()
             spin = spinner.Spinner()
             with spin():
                 result = step(spin)
+            stop = time.time()
 
-            self._log(result.status_str())
+            self._log(result.status_str(stop - start))
 
             self._env.echo(result.status_str())
             for message in result.messages():
