@@ -805,7 +805,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
 
   // Explicitly respond to the first TX Power Level read command.
-  test_device()->SendTxPowerLevelReadResponse();
+  test_device()->OnLEReadAdvertisingChannelTxPower();
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);

@@ -304,8 +304,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   void clear_pause_listener_for_opcode(hci::OpCode code) { paused_opcode_listeners_.erase(code); }
 
-  // Send a HCI Read TX Power Level response.
-  void SendTxPowerLevelReadResponse();
+  // Called when a HCI_LE_Read_Advertising_Channel_Tx_Power command is received.
+  void OnLEReadAdvertisingChannelTxPower();
 
  private:
   // Returns the current thread's task dispatcher.
@@ -382,6 +382,117 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Called when a HCI_Disconnect command is received.
   void OnDisconnectCommandReceived(const hci::DisconnectCommandParams& params);
+
+  // Called when a HCI_LE_Write_Host_Support command is received.
+  void OnWriteLEHostSupportCommandReceived(const hci::WriteLEHostSupportCommandParams& params);
+
+  // Called when a HCI_Reset command is received.
+  void OnReset();
+
+  // Called when a HCI_Inquiry command is received.
+  void OnInquiry(const hci::InquiryCommandParams& params);
+
+  // Called when a HCI_LE_Set_Scan_Enable command is received.
+  void OnLESetScanEnable(const hci::LESetScanEnableCommandParams& params);
+
+  // Called when a HCI_LE_Set_Scan_Parameters command is received.
+  void OnLESetScanParamaters(const hci::LESetScanParametersCommandParams& params);
+
+  // Called when a HCI_Read_Local_Extended_Features command is received.
+  void OnReadLocalExtendedFeatures(const hci::ReadLocalExtendedFeaturesCommandParams& params);
+
+  // Called when a HCI_SetEventMask command is received.
+  void OnSetEventMask(const hci::SetEventMaskCommandParams& params);
+
+  // Called when a HCI_LE_Set_Event_Mask command is received.
+  void OnLESetEventMask(const hci::LESetEventMaskCommandParams& params);
+
+  // Called when a HCI_LE_Read_Buffer_Size command is received.
+  void OnLEReadBufferSize();
+
+  // Called when a HCI_LE_Read_Supported_States command is received.
+  void OnLEReadSupportedStates();
+
+  // Called when a HCI_LE_Read_Local_Supported_Features command is received.
+  void OnLEReadLocalSupportedFeatures();
+
+  // Called when a HCI_LE_Create_Connection_Cancel command is received.
+  void OnLECreateConnectionCancel();
+
+  // Called when a HCI_Write_Extended_Inquiry_Response command is received.
+  void OnWriteExtendedInquiryResponse(const hci::WriteExtendedInquiryResponseParams& params);
+
+  // Called when a HCI_Write_Simple_PairingMode command is received.
+  void OnWriteSimplePairingMode(const hci::WriteSimplePairingModeCommandParams& params);
+
+  // Called when a HCI_Read_Simple_Pairing_Mode command is received.
+  void OnReadSimplePairingMode();
+
+  // Called when a HCI_Write_Page_Scan_Type command is received.
+  void OnWritePageScanType(const hci::WritePageScanTypeCommandParams& params);
+
+  // Called when a HCI_Read_Page_Scan_Type command is received.
+  void OnReadPageScanType();
+
+  // Called when a HCI_Write_Inquiry_Mode command is received.
+  void OnWriteInquiryMode(const hci::WriteInquiryModeCommandParams& params);
+
+  // Called when a HCI_Read_Inquiry_Mode command is received.
+  void OnReadInquiryMode();
+
+  // Called when a HCI_Write_Class_OfDevice command is received.
+  void OnWriteClassOfDevice(const hci::WriteClassOfDeviceCommandParams& params);
+
+  // Called when a HCI_Write_Page_Scan_Activity command is received.
+  void OnWritePageScanActivity(const hci::WritePageScanActivityCommandParams& params);
+
+  // Called when a HCI_Read_Page_Scan_Activity command is received.
+  void OnReadPageScanActivity();
+
+  // Called when a HCI_Write_Scan_Enable command is received.
+  void OnWriteScanEnable(const hci::WriteScanEnableCommandParams& params);
+
+  // Called when a HCI_Read_Scan_Enable command is received.
+  void OnReadScanEnable();
+
+  // Called when a HCI_Read_Local_Name command is received.
+  void OnReadLocalName();
+
+  // Called when a HCI_Write_Local_Name command is received.
+  void OnWriteLocalName(const hci::WriteLocalNameCommandParams& params);
+
+  // Called when a HCI_Create_Connection_Cancel command is received.
+  void OnCreateConnectionCancel();
+
+  // Called when a HCI_Read_Buffer_Size command is received.
+  void OnReadBufferSize();
+
+  // Called when a HCI_Read_BRADDR command is received.
+  void OnReadBRADDR();
+
+  // Called when a HCI_LE_Set_Advertising_Enable command is received.
+  void OnLESetAdvertisingEnable(const hci::LESetAdvertisingEnableCommandParams& params);
+
+  // Called when a HCI_LE_Set_Scan_Response_Data command is received.
+  void OnLESetScanResponseData(const hci::LESetScanResponseDataCommandParams& params);
+
+  // Called when a HCI_LE_Set_Advertising_Data command is received.
+  void OnLESetAdvertisingData(const hci::LESetAdvertisingDataCommandParams& params);
+
+  // Called when a HCI_LE_Set_Advertising_Parameters command is received.
+  void OnLESetAdvertisingParameters(const hci::LESetAdvertisingParametersCommandParams& params);
+
+  // Called when a HCI_LE_Set_Random_Address command is received.
+  void OnLESetRandomAddress(const hci::LESetRandomAddressCommandParams& params);
+
+  // Called when a HCI_Read_Local_Supported_Features command is received.
+  void OnReadLocalSupportedFeatures();
+
+  // Called when a HCI_Read_Local_Supported_Commands command is received.
+  void OnReadLocalSupportedCommands();
+
+  // Called when a HCI_Read_Local_Version_Info command is received.
+  void OnReadLocalVersionInfo();
 
   // Interrogation command handlers:
 
