@@ -227,6 +227,10 @@ here.
   only installing Pigweed Python packages, use the location of the Pigweed
   submodule.
 
+``optional_submodules``
+  By default environment setup will check that all submodules are present in
+  the checkout. Any submodules in this list are excluded from that check.
+
 An example of a config file is below.
 
 .. code-block:: json
@@ -242,7 +246,11 @@ An example of a config file is below.
       "gn_targets": [
         ":python.install",
       ]
-    }
+    },
+    "optional_submodules": [
+      "optional/submodule/one",
+      "optional/submodule/two"
+    ]
   }
 
 In case the CIPD packages need to be referenced from other scripts, variables

@@ -161,6 +161,10 @@ class ConfigFileError(Exception):
     pass
 
 
+class MissingSubmodulesError(Exception):
+    pass
+
+
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
 # pylint: disable=too-many-instance-attributes
@@ -195,8 +199,11 @@ class EnvSetup(object):
         self._virtualenv_gn_targets = []
         self._optional_submodules = []
 
+        self._config_file_name = getattr(config_file, 'name', 'config file')
         if config_file:
             self._parse_config_file(config_file)
+
+        self._check_submodules()
 
         self._json_file = json_file
         if not self._json_file:
@@ -260,11 +267,48 @@ class EnvSetup(object):
         if virtualenv:
             raise ConfigFileError(
                 'unrecognized option in {}: "virtualenv.{}"'.format(
-                    config_file.name, next(iter(virtualenv))))
+                    self._config_file_name, next(iter(virtualenv))))
 
         if config:
             raise ConfigFileError('unrecognized option in {}: "{}"'.format(
-                config_file.name, next(iter(config))))
+                self._config_file_name, next(iter(config))))
+
+    def _check_submodules(self):
+        unitialized = set()
+
+        for line in subprocess.check_output(
+            ['git', 'submodule', 'status', '--recursive'],
+                cwd=self._project_root,
+        ).splitlines():
+            if isinstance(line, bytes):
+                line = line.decode()
+            # Anything but an initial '-' means the submodule is initialized.
+            if not line.startswith('-'):
+                continue
+            unitialized.add(line.split()[1])
+
+        missing = unitialized - set(self._optional_submodules)
+        if missing:
+            print(
+                'Not all submodules are initialized. Please run the '
+                'following commands.',
+                file=sys.stderr)
+            print('', file=sys.stderr)
+
+            for miss in missing:
+                print('    git submodule update --init {}'.format(miss),
+                      file=sys.stderr)
+            print('', file=sys.stderr)
+
+            print(
+                'If these submodules are not required, add them to the '
+                '"optional_submodules"',
+                file=sys.stderr)
+            print('list in the environment config JSON file:', file=sys.stderr)
+            print('    {}'.format(self._config_file_name), file=sys.stderr)
+            print('', file=sys.stderr)
+
+            raise MissingSubmodulesError(', '.join(sorted(missing)))
 
     def _log(self, *args, **kwargs):
         # Not using logging module because it's awkward to flush a log handler.
