@@ -44,8 +44,8 @@ import string
 import struct
 import sys
 import time
-from typing import (BinaryIO, Callable, Dict, List, Iterable, Iterator, Match,
-                    NamedTuple, Optional, Pattern, Tuple, Union)
+from typing import (AnyStr, BinaryIO, Callable, Dict, List, Iterable, Iterator,
+                    Match, NamedTuple, Optional, Pattern, Tuple, Union)
 
 try:
     from pw_tokenizer import database, decode, encode, tokens
@@ -216,9 +216,9 @@ class Detokenizer:
                                  self.show_errors)
 
     def detokenize_base64(self,
-                          data: bytes,
+                          data: AnyStr,
                           prefix: Union[str, bytes] = BASE64_PREFIX,
-                          recursion: int = DEFAULT_RECURSION) -> bytes:
+                          recursion: int = DEFAULT_RECURSION) -> AnyStr:
         """Decodes and replaces prefixed Base64 messages in the provided data.
 
         Args:
@@ -231,15 +231,18 @@ class Detokenizer:
         """
         output = io.BytesIO()
         self.detokenize_base64_to_file(data, output, prefix, recursion)
-        return output.getvalue()
+        result = output.getvalue()
+        return result.decode() if isinstance(data, str) else result
 
     def detokenize_base64_to_file(self,
-                                  data: bytes,
+                                  data: Union[str, bytes],
                                   output: BinaryIO,
                                   prefix: Union[str, bytes] = BASE64_PREFIX,
                                   recursion: int = DEFAULT_RECURSION) -> None:
         """Decodes prefixed Base64 messages in data; decodes to output file."""
+        data = data.encode() if isinstance(data, str) else data
         prefix = prefix.encode() if isinstance(prefix, str) else prefix
+
         output.write(
             _base64_message_regex(prefix).sub(
                 self._detokenize_prefixed_base64(prefix, recursion), data))
@@ -424,10 +427,12 @@ def _base64_message_regex(prefix: bytes) -> Pattern[bytes]:
             br'(?:[A-Za-z0-9+/\-_]{3}=|[A-Za-z0-9+/\-_]{2}==)?'))
 
 
+# TODO(hepler): Remove this unnecessary function.
 def detokenize_base64(detokenizer: Detokenizer,
                       data: bytes,
                       prefix: Union[str, bytes] = BASE64_PREFIX,
                       recursion: int = DEFAULT_RECURSION) -> bytes:
+    """Alias for detokenizer.detokenize_base64 for backwards compatibility."""
     return detokenizer.detokenize_base64(data, prefix, recursion)
 
 

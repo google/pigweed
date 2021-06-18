@@ -542,6 +542,11 @@ class DetokenizeBase64(unittest.TestCase):
             self.assertEqual(expected,
                              self.detok.detokenize_base64(data, b'$'))
 
+    def test_detokenize_base64_str(self):
+        for data, expected in self.TEST_CASES:
+            self.assertEqual(expected.decode(),
+                             self.detok.detokenize_base64(data.decode()))
+
 
 class DetokenizeBase64InfiniteRecursion(unittest.TestCase):
     """Tests that infinite Bas64 token recursion resolves."""
