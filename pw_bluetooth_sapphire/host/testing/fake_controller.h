@@ -30,15 +30,15 @@ namespace bt::testing {
 
 class FakePeer;
 
-// FakeController emulates a real Bluetooth controller. It can be configured to
-// respond to HCI commands in a predictable manner.
+// FakeController emulates a real Bluetooth controller. It can be configured to respond to HCI
+// commands in a predictable manner.
 class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<FakeController> {
  public:
-  // Global settings for the FakeController. These can be used to initialize a
-  // FakeController and/or to re-configure an existing one.
+  // Global settings for the FakeController. These can be used to initialize a FakeController and/or
+  // to re-configure an existing one.
   struct Settings final {
-    // The default constructor initializes all fields to 0, unless another
-    // default is specified below.
+    // The default constructor initializes all fields to 0, unless another default is specified
+    // below.
     Settings();
     ~Settings() = default;
 
@@ -50,8 +50,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     void AddBREDRSupportedCommands();
     void AddLESupportedCommands();
 
-    // The time elapsed from the receipt of a LE Create Connection command until
-    // the resulting LE Connection Complete event.
+    // The time elapsed from the receipt of a LE Create Connection command until the resulting LE
+    // Connection Complete event.
     zx::duration le_connection_delay;
 
     // HCI settings.
@@ -118,8 +118,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     DeviceAddress peer_address;
   };
 
-  // Constructor initializes the controller with the minimal default settings
-  // (equivalent to calling Settings::ApplyDefaults()).
+  // Constructor initializes the controller with the minimal default settings (equivalent to calling
+  // Settings::ApplyDefaults()).
   FakeController();
   ~FakeController() override;
 
@@ -130,8 +130,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   void SetDefaultCommandStatus(hci::OpCode opcode, hci::StatusCode status);
   void ClearDefaultCommandStatus(hci::OpCode opcode);
 
-  // Tells the FakeController to always respond to the given command opcode with
-  // a Command Complete event specifying the given HCI status code.
+  // Tells the FakeController to always respond to the given command opcode with a Command Complete
+  // event specifying the given HCI status code.
   void SetDefaultResponseStatus(hci::OpCode opcode, hci::StatusCode status);
   void ClearDefaultResponseStatus(hci::OpCode opcode);
 
@@ -152,8 +152,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Returns the current class of device.
   const DeviceClass& device_class() const { return device_class_; }
 
-  // Adds a fake remote peer. Returns false if a peer with the same address was previously
-  // added.
+  // Adds a fake remote peer. Returns false if a peer with the same address was previously added.
   bool AddPeer(std::unique_ptr<FakePeer> peer);
 
   // Removes a previously registered peer with the given device |address|. Does nothing if |address|
@@ -322,32 +321,36 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Returns the next available L2CAP signaling channel command ID.
   uint8_t NextL2CAPCommandId();
 
-  // Sends a HCI_Command_Complete event in response to the command with |opcode|
-  // and using the given data as the parameter payload.
+  // Sends a HCI_Command_Complete event with the given status in response to the command with
+  // |opcode|.
+  //
+  // NOTE: This method returns only a status field. Some HCI commands have multiple fields in their
+  // return message. In those cases, it's better (and clearer) to use the other
+  // RespondWithCommandComplete (ByteBuffer as second parameter) instead.
+  void RespondWithCommandComplete(hci::OpCode opcode, hci::StatusCode status);
+
+  // Sends a HCI_Command_Complete event in response to the command with |opcode| and using the given
+  // data as the parameter payload.
   void RespondWithCommandComplete(hci::OpCode opcode, const ByteBuffer& params);
 
-  // Sends a HCI_Command_Complete event with "Success" status in response to the
-  // command with |opcode|.
-  void RespondWithSuccess(hci::OpCode opcode);
-
-  // Sends a HCI_Command_Status event in response to the command with |opcode|
-  // and using the given data as the parameter payload.
+  // Sends a HCI_Command_Status event in response to the command with |opcode| and using the given
+  // data as the parameter payload.
   void RespondWithCommandStatus(hci::OpCode opcode, hci::StatusCode status);
 
   // If a default Command Status event status has been set for the given |opcode|, send a Command
   // Status event and returns true.
   bool MaybeRespondWithDefaultCommandStatus(hci::OpCode opcode);
 
-  // If a default status has been configured for the given opcode, sends back an
-  // error Command Complete event and returns true. Returns false if no response was set.
+  // If a default status has been configured for the given opcode, sends back an error Command
+  // Complete event and returns true. Returns false if no response was set.
   bool MaybeRespondWithDefaultStatus(hci::OpCode opcode);
 
   // Sends Inquiry Response reports for known BR/EDR devices.
   void SendInquiryResponses();
 
-  // Sends LE advertising reports for all known peers with advertising data, if a
-  // scan is currently enabled. If duplicate filtering is disabled then the reports are continued to
-  // be sent until scan is disabled.
+  // Sends LE advertising reports for all known peers with advertising data, if a scan is currently
+  // enabled. If duplicate filtering is disabled then the reports are continued to be sent until
+  // scan is disabled.
   void SendAdvertisingReports();
 
   // Sends a single LE advertising report for the given peer. May send an additional report if the
