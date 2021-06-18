@@ -88,6 +88,8 @@ class BaseNanopbClientCall : public BaseClientCall {
 };
 
 struct ErrorCallbacks {
+  ErrorCallbacks() = default;
+
   ErrorCallbacks(Function<void(Status)> error) : rpc_error(std::move(error)) {}
 
   void InvokeRpcError(Status status) {
@@ -104,6 +106,8 @@ struct UnaryCallbacks : public ErrorCallbacks {
   using Response = ResponseType;
   static constexpr MethodType kType = MethodType::kUnary;
 
+  UnaryCallbacks() = default;
+
   UnaryCallbacks(Function<void(const Response&, Status)> response,
                  Function<void(Status)> error)
       : ErrorCallbacks(std::move(error)), unary_response(std::move(response)) {}
@@ -115,6 +119,8 @@ template <typename ResponseType>
 struct ServerStreamingCallbacks : public ErrorCallbacks {
   using Response = ResponseType;
   static constexpr MethodType kType = MethodType::kServerStreaming;
+
+  ServerStreamingCallbacks() = default;
 
   ServerStreamingCallbacks(Function<void(const Response&)> response,
                            Function<void(Status)> end,

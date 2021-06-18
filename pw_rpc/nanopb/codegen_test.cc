@@ -143,6 +143,11 @@ TEST(NanopbCodegen, Client_GeneratesCallAliases) {
                          pw_rpc_test_TestStreamResponse>>>);
 }
 
+TEST(NanopbCodegen, ClientCall_DefaultConstructor) {
+  TestServiceClient::TestRpcCall unary_call;
+  TestServiceClient::TestStreamRpcCall server_streaming_call;
+}
+
 TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");
   constexpr uint32_t method_id = internal::Hash("TestRpc");
