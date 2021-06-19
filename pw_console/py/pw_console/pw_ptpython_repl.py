@@ -14,17 +14,17 @@
 """PwPtPythonPane class."""
 
 import asyncio
-import logging
+import functools
 import io
+import logging
 import sys
-from functools import partial
 from pathlib import Path
 
 from prompt_toolkit.buffer import Buffer
 import ptpython.repl  # type: ignore
 from ptpython.completer import CompletePrivateAttributes  # type: ignore
 
-from pw_console.helpers import remove_formatting
+import pw_console.helpers
 
 _LOG = logging.getLogger(__package__)
 
@@ -63,7 +63,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
 
     def _save_result(self, formatted_text):
         """Save the last repl execution result."""
-        unformatted_result = remove_formatting(formatted_text)
+        unformatted_result = pw_console.helpers.remove_formatting(
+            formatted_text)
         self._last_result = unformatted_result
 
     def clear_last_result(self):
@@ -110,7 +111,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
 
             if result_value is not None:
                 formatted_result = self._format_result_output(result_value)
-                result = remove_formatting(formatted_result)
+                result = pw_console.helpers.remove_formatting(formatted_result)
 
         # Job is finished, append the last result.
         self.repl_pane.append_result_to_executed_code(input_text, future,
@@ -175,7 +176,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
             # Using this asyncio event loop.
             self.repl_pane.application.user_code_loop)
         # Run user_code_complete_callback() when done.
-        done_callback = partial(self.user_code_complete_callback, buff.text)
+        done_callback = functools.partial(self.user_code_complete_callback,
+                                          buff.text)
         future.add_done_callback(done_callback)
 
         # Save the input text and future object.

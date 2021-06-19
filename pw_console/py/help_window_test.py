@@ -13,8 +13,8 @@
 # the License.
 """Tests for pw_console.console_app"""
 
+import inspect
 import unittest
-from inspect import cleandoc
 from unittest.mock import Mock
 
 from prompt_toolkit.key_binding import KeyBindings
@@ -93,7 +93,7 @@ class TestHelpWindow(unittest.TestCase):
 
         help_window = HelpWindow(app,
                                  preamble='Pigweed CLI v0.1',
-                                 additional_help_text=cleandoc("""
+                                 additional_help_text=inspect.cleandoc("""
                                      Welcome to the Pigweed Console!
                                      Please enjoy this extra help text.
                                  """))
@@ -102,37 +102,37 @@ class TestHelpWindow(unittest.TestCase):
         help_window.generate_help_text()
 
         self.assertIn(
-            cleandoc("""
-                Pigweed CLI v0.1
+            inspect.cleandoc("""
+            Pigweed CLI v0.1
 
-                ================================== Help =================================
+            ================================== Help =================================
 
-                Welcome to the Pigweed Console!
-                Please enjoy this extra help text.
+            Welcome to the Pigweed Console!
+            Please enjoy this extra help text.
             """),
             help_window.help_text,
         )
         self.assertIn(
-            cleandoc("""
+            inspect.cleandoc("""
             ============================== Global Keys ==============================
             """),
             help_window.help_text,
         )
         self.assertIn(
-            cleandoc("""
+            inspect.cleandoc("""
             Toggle help window. -----------------  F1
             Quit the application. ---------------  ControlQ, ControlW
             """),
             help_window.help_text,
         )
         self.assertIn(
-            cleandoc("""
+            inspect.cleandoc("""
             =============================== Focus Keys ==============================
             """),
             help_window.help_text,
         )
         self.assertIn(
-            cleandoc("""
+            inspect.cleandoc("""
             Move focus to the next widget. ------  BackTab, ControlDown, ControlRight
             Move focus to the previous widget. --  ControlLeft, ControlUp
             """),

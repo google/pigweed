@@ -16,7 +16,7 @@
 import builtins
 import asyncio
 import logging
-from functools import partial
+import functools
 from threading import Thread
 from typing import Iterable, Optional
 
@@ -43,12 +43,12 @@ from ptpython.key_bindings import (  # type: ignore
     load_python_bindings, load_sidebar_bindings,
 )
 
+import pw_console.key_bindings
+import pw_console.style
 from pw_console.help_window import HelpWindow
-from pw_console.key_bindings import create_key_bindings
 from pw_console.log_pane import LogPane
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.repl_pane import ReplPane
-from pw_console.style import generate_styles
 
 _LOG = logging.getLogger(__package__)
 
@@ -157,39 +157,41 @@ class ConsoleApp:
                                      handler=self.toggle_light_theme),
                             MenuItem('-'),
                             MenuItem('UI: Default',
-                                     handler=partial(self.load_theme, 'dark')),
+                                     handler=functools.partial(
+                                         self.load_theme, 'dark')),
                             MenuItem('UI: High Contrast',
-                                     handler=partial(self.load_theme,
-                                                     'high-contrast-dark')),
+                                     handler=functools.partial(
+                                         self.load_theme,
+                                         'high-contrast-dark')),
                             MenuItem('-'),
                             MenuItem(
                                 'Code: tomorrow-night',
-                                partial(
+                                functools.partial(
                                     self.pw_ptpython_repl.use_code_colorscheme,
                                     'tomorrow-night')),
                             MenuItem(
                                 'Code: tomorrow-night-bright',
-                                partial(
+                                functools.partial(
                                     self.pw_ptpython_repl.use_code_colorscheme,
                                     'tomorrow-night-bright')),
                             MenuItem(
                                 'Code: tomorrow-night-blue',
-                                partial(
+                                functools.partial(
                                     self.pw_ptpython_repl.use_code_colorscheme,
                                     'tomorrow-night-blue')),
                             MenuItem(
                                 'Code: tomorrow-night-eighties',
-                                partial(
+                                functools.partial(
                                     self.pw_ptpython_repl.use_code_colorscheme,
                                     'tomorrow-night-eighties')),
                             MenuItem(
                                 'Code: dracula',
-                                partial(
+                                functools.partial(
                                     self.pw_ptpython_repl.use_code_colorscheme,
                                     'dracula')),
                             MenuItem(
                                 'Code: zenburn',
-                                partial(
+                                functools.partial(
                                     self.pw_ptpython_repl.use_code_colorscheme,
                                     'zenburn')),
                         ],
@@ -211,7 +213,7 @@ class ConsoleApp:
         ]
 
         # Key bindings registry.
-        self.key_bindings = create_key_bindings(self)
+        self.key_bindings = pw_console.key_bindings.create_key_bindings(self)
 
         # Create help window text based global key_bindings and active panes.
         self._update_help_window()
@@ -275,7 +277,7 @@ class ConsoleApp:
 
     def load_theme(self, theme_name=None):
         """Regenerate styles for the current theme_name."""
-        self._current_theme = generate_styles(theme_name)
+        self._current_theme = pw_console.style.generate_styles(theme_name)
 
     def add_log_handler(self, logger_instance: logging.Logger):
         """Add the Log pane as a handler for this logger instance."""

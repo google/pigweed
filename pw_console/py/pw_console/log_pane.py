@@ -13,7 +13,7 @@
 # the License.
 """LogPane class."""
 
-from functools import partial
+import functools
 from typing import Any, List, Optional
 
 from prompt_toolkit.application.current import get_app
@@ -61,7 +61,7 @@ class LogPaneLineInfoBar(ConditionalContainer):
 
     def __init__(self, log_pane):
         info_bar_control = FormattedTextControl(
-            partial(LogPaneLineInfoBar.get_tokens, log_pane))
+            functools.partial(LogPaneLineInfoBar.get_tokens, log_pane))
         info_bar_window = Window(content=info_bar_control,
                                  align=WindowAlign.RIGHT,
                                  dont_extend_width=True)
@@ -117,8 +117,8 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         """Return toolbar indicator and title."""
 
         title = ' Logs '
-        mouse_handler = partial(LogPaneBottomToolbarBar.mouse_handler_focus,
-                                log_pane)
+        mouse_handler = functools.partial(
+            LogPaneBottomToolbarBar.mouse_handler_focus, log_pane)
         return get_pane_indicator(log_pane, title, mouse_handler)
 
     @staticmethod
@@ -127,12 +127,13 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         toolbar."""
 
         # Create mouse handler functions.
-        focus = partial(LogPaneBottomToolbarBar.mouse_handler_focus, log_pane)
-        toggle_wrap_lines = partial(
+        focus = functools.partial(LogPaneBottomToolbarBar.mouse_handler_focus,
+                                  log_pane)
+        toggle_wrap_lines = functools.partial(
             LogPaneBottomToolbarBar.mouse_handler_toggle_wrap_lines, log_pane)
-        clear_history = partial(
+        clear_history = functools.partial(
             LogPaneBottomToolbarBar.mouse_handler_clear_history, log_pane)
-        toggle_follow = partial(
+        toggle_follow = functools.partial(
             LogPaneBottomToolbarBar.mouse_handler_toggle_follow, log_pane)
 
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
@@ -162,8 +163,8 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         title_section_window = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                partial(LogPaneBottomToolbarBar.get_left_text_tokens,
-                        log_pane)),
+                functools.partial(LogPaneBottomToolbarBar.get_left_text_tokens,
+                                  log_pane)),
             align=WindowAlign.LEFT,
             dont_extend_width=True,
         )
@@ -171,8 +172,8 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         keybind_section_window = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                partial(LogPaneBottomToolbarBar.get_center_text_tokens,
-                        log_pane)),
+                functools.partial(
+                    LogPaneBottomToolbarBar.get_center_text_tokens, log_pane)),
             align=WindowAlign.LEFT,
             dont_extend_width=False,
         )
@@ -183,7 +184,7 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
                 keybind_section_window,
             ],
             height=LogPaneBottomToolbarBar.TOOLBAR_HEIGHT,
-            style=partial(get_toolbar_style, log_pane),
+            style=functools.partial(get_toolbar_style, log_pane),
             align=WindowAlign.LEFT,
         )
 
@@ -385,7 +386,7 @@ class LogPane:
             # wrapped.
             scroll_offsets=ScrollOffsets(top=0, bottom=0),
             allow_scroll_beyond_bottom=True,
-            get_line_prefix=partial(
+            get_line_prefix=functools.partial(
                 LogContentControl.indent_wrapped_pw_log_format_line, self),
             wrap_lines=Condition(lambda: self.wrap_lines),
             cursorline=False,
@@ -399,7 +400,7 @@ class LogPane:
             dont_extend_width=False,
             # Needed for log lines ANSI sequences that don't specify foreground
             # or background colors.
-            style=partial(get_pane_style, self),
+            style=functools.partial(get_pane_style, self),
         )
 
         # Root level container
@@ -415,7 +416,7 @@ class LogPane:
                 align=VerticalAlign.BOTTOM,
                 height=self.height,
                 width=self.width,
-                style=partial(get_pane_style, self),
+                style=functools.partial(get_pane_style, self),
             ),
             floats=[
                 # Floating LogPaneLineInfoBar

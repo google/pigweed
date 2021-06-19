@@ -14,9 +14,9 @@
 """ReplPane class."""
 
 import concurrent
+import functools
 import logging
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from typing import (
     Any,
@@ -90,7 +90,7 @@ class FocusOnClickFloatContainer(ConditionalContainer):
             # Text
             ' ',
             # Mouse handler
-            partial(mouse_focus_handler, repl_pane),
+            functools.partial(mouse_focus_handler, repl_pane),
         )])
 
         super().__init__(
@@ -106,7 +106,7 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         """Return toolbar indicator and title."""
 
         title = ' Python Input '
-        mouse_handler = partial(mouse_focus_handler, repl_pane)
+        mouse_handler = functools.partial(mouse_focus_handler, repl_pane)
         return get_pane_indicator(repl_pane, title, mouse_handler)
 
     @staticmethod
@@ -119,7 +119,7 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 # Text
                 '[FOCUSED] ',
                 # Mouse handler
-                partial(mouse_focus_handler, repl_pane),
+                functools.partial(mouse_focus_handler, repl_pane),
             ),
             ('class:keybind', 'enter'),
             ('class:keyhelp', ':Run code'),
@@ -131,7 +131,7 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
             # Text
             '[click to focus] ',
             # Mouse handler
-            partial(mouse_focus_handler, repl_pane),
+            functools.partial(mouse_focus_handler, repl_pane),
         )]
 
         if has_focus(repl_pane)():
@@ -154,8 +154,8 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         left_section_window = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                partial(ReplPaneBottomToolbarBar.get_left_text_tokens,
-                        repl_pane)),
+                functools.partial(
+                    ReplPaneBottomToolbarBar.get_left_text_tokens, repl_pane)),
             align=WindowAlign.LEFT,
             dont_extend_width=True,
         )
@@ -163,8 +163,9 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         center_section_window = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                partial(ReplPaneBottomToolbarBar.get_center_text_tokens,
-                        repl_pane)),
+                functools.partial(
+                    ReplPaneBottomToolbarBar.get_center_text_tokens,
+                    repl_pane)),
             # Center text is left justified to appear just right of the left
             # section text.
             align=WindowAlign.LEFT,
@@ -176,8 +177,9 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         right_section_window = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                partial(ReplPaneBottomToolbarBar.get_right_text_tokens,
-                        repl_pane)),
+                functools.partial(
+                    ReplPaneBottomToolbarBar.get_right_text_tokens,
+                    repl_pane)),
             # Right side text should appear at the far right of the toolbar
             align=WindowAlign.RIGHT,
             dont_extend_width=True,
@@ -190,7 +192,7 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 right_section_window,
             ],
             height=1,
-            style=partial(get_toolbar_style, repl_pane),
+            style=functools.partial(get_toolbar_style, repl_pane),
             align=WindowAlign.LEFT,
         )
 
@@ -267,14 +269,14 @@ class ReplPane:
                         [
                             Window(
                                 content=FormattedTextControl(
-                                    partial(get_pane_indicator, self,
-                                            ' Python Results ')),
+                                    functools.partial(get_pane_indicator, self,
+                                                      ' Python Results ')),
                                 align=WindowAlign.LEFT,
                                 dont_extend_width=True,
                                 height=1,
                             ),
                         ],
-                        style=partial(get_toolbar_style, self),
+                        style=functools.partial(get_toolbar_style, self),
                     ),
                     # 3. Repl Input
                     self.pw_ptpython_repl,
@@ -283,7 +285,7 @@ class ReplPane:
                 ],
                 height=self.height,
                 width=self.width,
-                style=partial(get_pane_style, self),
+                style=functools.partial(get_pane_style, self),
             ),
             floats=[
                 # Transparent float container that will focus on the repl_pane

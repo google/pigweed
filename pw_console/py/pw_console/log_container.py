@@ -13,12 +13,11 @@
 # the License.
 """LogLine and LogContainer."""
 
+import collections
 import logging
 import re
 import sys
 import time
-
-from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -31,7 +30,7 @@ from prompt_toolkit.formatted_text import (
 )
 
 import pw_cli.color
-from pw_console.helpers import get_line_height
+import pw_console.helpers
 from pw_log_tokenized import FormatStringWithMetadata
 
 _LOG = logging.getLogger(__package__)
@@ -91,7 +90,7 @@ class LogContainer(logging.Handler):
     def __init__(self):
         # Log storage deque for fast addition and deletion from the beginning
         # and end of the iterable.
-        self.logs: deque = deque()
+        self.logs: collections.deque = collections.deque()
         # Estimate of the logs in memory.
         self.byte_size: int = 0
 
@@ -160,7 +159,7 @@ class LogContainer(logging.Handler):
 
     def clear_logs(self):
         """Erase all stored pane lines."""
-        self.logs = deque()
+        self.logs = collections.deque()
         self.byte_size = 0
         self.channel_counts = {}
         self.channel_formatted_prefix_widths = {}
@@ -185,7 +184,8 @@ class LogContainer(logging.Handler):
     def get_last_log_line_index(self):
         """Last valid index of the logs."""
         # Subtract 1 since self.logs is zero indexed.
-        return len(self.logs) - 1
+        total = self.get_total_count()
+        return 0 if total < 0 else total - 1
 
     def get_channel_counts(self):
         """Return the seen channel log counts for this conatiner."""
@@ -383,7 +383,7 @@ class LogContainer(logging.Handler):
         # If we have no logs add one with at least a single space character for
         # the cursor to land on. Otherwise the cursor will be left on the line
         # above the log pane container.
-        if self.get_total_count() == 0:
+        if self.get_total_count() < 1:
             # No style specified.
             return [('', ' \n')]
 
@@ -391,7 +391,7 @@ class LogContainer(logging.Handler):
 
         window_width = self._window_width
         total_used_lines = 0
-        self._line_fragment_cache = deque()
+        self._line_fragment_cache = collections.deque()
         # Since range() is not inclusive use ending_index + 1.
         # for i in range(starting_index, ending_index + 1):
         # From the ending_index to the starting index in reverse:
@@ -407,7 +407,7 @@ class LogContainer(logging.Handler):
             # Get the line height respecting line wrapping.
             line_height = 1
             if self.wrap_lines_enabled() and (fragment_width > window_width):
-                line_height = get_line_height(
+                line_height = pw_console.helpers.get_line_height(
                     fragment_width, window_width,
                     self.longest_channel_prefix_width)
 

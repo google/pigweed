@@ -15,10 +15,10 @@
 
 import asyncio
 import builtins
+import inspect
 import platform
 import threading
 import unittest
-from inspect import cleandoc
 from unittest.mock import Mock, MagicMock
 
 from prompt_toolkit.application import create_app_session
@@ -59,7 +59,7 @@ class TestReplPane(unittest.TestCase):
         self.assertEqual(repl_pane, pw_ptpython_repl.repl_pane)
 
         # Define a function, should return nothing.
-        code = cleandoc("""
+        code = inspect.cleandoc("""
             def run():
                 print('The answer is ', end='')
                 return 1+1+4+16+20
@@ -98,7 +98,7 @@ class TestReplPane(unittest.TestCase):
                 wraps=pw_ptpython_repl.user_code_complete_callback)
             user_code_done = threading.Event()
 
-            code = cleandoc("""
+            code = inspect.cleandoc("""
                 import time
                 def run():
                     time.sleep(0.3)
