@@ -271,6 +271,7 @@ pw_finalize() {
 pw_cleanup() {
   unset _PW_BANNER
   unset _PW_BANNER_FUNC
+  unset PW_BANNER_FUNC
   unset _PW_ENV_SETUP
   unset _PW_NAME
   unset _PW_PYTHON
