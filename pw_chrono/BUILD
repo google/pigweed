@@ -91,6 +91,7 @@ pw_cc_library(
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_timer"],
+        "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_timer"],
         "//conditions:default": ["//pw_chrono_stl:system_timer"],
     }),
 )

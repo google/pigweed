@@ -7,8 +7,7 @@ pw_chrono_embos
 implemented using embOS v4 for 32bit targets.
 
 .. warning::
-  This module is under construction, not ready for use, and the documentation
-  is incomplete.
+  This module is still under construction, the API is not yet stable.
 
 SystemClock backend
 -------------------
@@ -22,6 +21,13 @@ for a future alternative backend for the SystemClock.
 The ``SystemClock::now()`` must be used more than once per overflow of the
 native embOS ``OS_GetTime32()`` overflow. Note that this duration may
 vary if ``OS_SUPPORT_TICKLESS`` is used.
+
+SystemTimer backend
+-------------------
+The embOS based ``system_timer`` backend implements the
+``pw_chrono:system_timer`` facade by using embOS's software timer API.
+``pw::chrono::SystemTimer`` instances use ``OS_TIMER_EX`` &
+``OS_CreateTimerEx``, dynamic memory allocation is never used.
 
 Build targets
 -------------

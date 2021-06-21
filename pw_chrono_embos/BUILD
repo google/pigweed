@@ -54,3 +54,40 @@ pw_cc_library(
         "//pw_chrono:system_clock_facade",
     ],
 )
+
+pw_cc_library(
+    name = "system_timer_headers",
+    hdrs = [
+        "public/pw_chrono_embos/system_timer_inline.h",
+        "public/pw_chrono_embos/system_timer_native.h",
+        "public_overrides/pw_chrono_backend/system_timer_inline.h",
+        "public_overrides/pw_chrono_backend/system_timer_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_function",
+        "//pw_chrono:system_timer_facade",
+        # TODO(pwbug/317): This should depend on embOS but our third parties
+        # currently do not have Bazel support.
+    ],
+)
+
+pw_cc_library(
+    name = "system_timer",
+    srcs = [
+        "system_timer.cc",
+    ],
+    deps = [
+        ":system_timer_headers",
+        "//pw_chrono:system_timer_facade",
+        ":system_clock",
+        "//pw_assert",
+        "//pw_interrupt:context",
+        # TODO(pwbug/317): This should depend on embOS but our third parties
+        # currently do not have Bazel support.
+    ],
+)
