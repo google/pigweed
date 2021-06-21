@@ -88,6 +88,8 @@ if (dir_pw_third_party_boringssl != "") {
     # Contains a faked "sysdeps/sys/socket.h"
     # Can be removed once posix socket layer in Pigweed is supported.
     include_dirs = [ "sysdeps" ]
+
+    public_deps = [ "$dir_pw_tls_client:time" ]
   }
 } else {
   group("boringssl") {

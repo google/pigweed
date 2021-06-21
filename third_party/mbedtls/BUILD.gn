@@ -159,7 +159,10 @@ if (dir_pw_third_party_mbedtls != "") {
       sources += [ "$dir_pw_third_party_mbedtls/" + source ]
     }
     public_configs = [ ":mbedtls_common_config" ]
-    public_deps = [ ":$pw_third_party_mbedtls_CONFIG" ]
+    public_deps = [
+      ":$pw_third_party_mbedtls_CONFIG",
+      "$dir_pw_tls_client:time",
+    ]
   }
 } else {
   group("mbedtls") {

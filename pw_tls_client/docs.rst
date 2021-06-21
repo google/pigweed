@@ -54,6 +54,19 @@ support in pw_package for downloading compatible and tested version:
 Then follow instruction for setting ``dir_pw_third_party_chromium_verifier`` to
 the path of the downloaded repo.
 
+3. Date time
+-------------
+TLS needs a trust-worthy source of wall clock time in order to check
+expiration. Provisioning of time source for TLS communication is very specific
+to the TLS library in use. However, common TLS libraires, such as BoringSSL
+and MbedTLS, support the use of C APIs ``time()`` and ``getimtofday()`` for
+obtaining date time. To accomodate the use of these libraries, a facade target
+``pw_tls_client:time`` is added that wraps these APIs. For gn build,
+specify the backend target with variable ``pw_tls_client_C_TIME_BACKEND``.
+
+If downstream project chooses to use other TLS libraires that handle time source
+differently, then it needs to be investigated separately.
+
 Setup
 =====
 This module requires the following setup:

@@ -23,6 +23,9 @@ declare_args() {
 
   # Backend for :tls_entropy
   pw_tls_client_ENTROPY_BACKEND = ""
+
+  # Backend for :time
+  pw_tls_client_TIME_BACKEND = ""
 }
 
 config("public_includes") {
@@ -54,6 +57,29 @@ pw_facade("tls_entropy") {
   public_deps = [
     "$dir_pw_bytes",
     "$dir_pw_status",
+  ]
+}
+
+# The ":time" target wraps the time() and gettimeofday(), which are
+# commonly used by TLS libraries for expiration check.
+config("time_wrap") {
+  # Link options that wrap C time calls.
+  ldflags = [
+    "-Wl,--wrap=time",
+    "-Wl,--wrap=gettimeofday",
+  ]
+}
+
+pw_facade("time") {
+  backend = pw_tls_client_TIME_BACKEND
+  public_configs = [ ":time_wrap" ]
+  public = []
+
+  # The target should only be used by TLS libraries to obtain date time
+  visibility = [
+    ":*",
+    "$dir_pw_third_party/boringssl",
+    "$dir_pw_third_party/mbedtls",
   ]
 }
 
