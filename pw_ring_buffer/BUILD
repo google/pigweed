@@ -35,6 +35,7 @@ pw_cc_library(
         "//pw_containers",
         "//pw_span",
         "//pw_status",
+        "//pw_result",
         "//pw_varint",
     ],
 )

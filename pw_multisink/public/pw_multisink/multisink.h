@@ -145,9 +145,78 @@ class MultiSink {
     virtual void OnNewEntryAvailable() = 0;
   };
 
+  class Iterator;
+
+  class iterator {
+   public:
+    iterator& operator++() {
+      it_++;
+      return *this;
+    }
+    iterator operator++(int) {
+      iterator original = *this;
+      ++*this;
+      return original;
+    }
+
+    ConstByteSpan& operator*() {
+      entry_ = (*it_).buffer;
+      return entry_;
+    }
+    ConstByteSpan* operator->() { return &operator*(); }
+
+    constexpr bool operator==(const iterator& rhs) const {
+      return it_ == rhs.it_;
+    }
+
+    constexpr bool operator!=(const iterator& rhs) const {
+      return it_ != rhs.it_;
+    }
+
+    Status status() const { return it_.status(); }
+
+   private:
+    friend class MultiSink;
+
+    iterator(ring_buffer::PrefixedEntryRingBufferMulti::Reader& reader)
+        : it_(reader) {}
+    iterator() {}
+
+    ring_buffer::PrefixedEntryRingBufferMulti::iterator it_;
+    ConstByteSpan entry_;
+    Status iteration_status_;
+  };
+
+  class UnsafeIterationWrapper {
+   public:
+    using element_type = ConstByteSpan;
+    using value_type = std::remove_cv_t<ConstByteSpan>;
+    using pointer = ConstByteSpan*;
+    using reference = ConstByteSpan&;
+    using const_iterator = iterator;  // Standard alias for iterable types.
+
+    iterator begin() const { return iterator(*reader_); }
+    iterator end() const { return iterator(); }
+    const_iterator cbegin() const { return begin(); }
+    const_iterator cend() const { return end(); }
+
+   private:
+    friend class MultiSink;
+    UnsafeIterationWrapper(
+        ring_buffer::PrefixedEntryRingBufferMulti::Reader& reader)
+        : reader_(&reader) {}
+    ring_buffer::PrefixedEntryRingBufferMulti::Reader* reader_;
+  };
+
+  UnsafeIterationWrapper UnsafeIteration() PW_NO_LOCK_SAFETY_ANALYSIS {
+    return UnsafeIterationWrapper(oldest_entry_reader_);
+  }
+
   // Constructs a multisink using a ring buffer backed by the provided buffer.
   MultiSink(ByteSpan buffer) : ring_buffer_(true), sequence_id_(0) {
     ring_buffer_.SetBuffer(buffer);
+    Status attach_status = ring_buffer_.AttachReader(oldest_entry_reader_);
+    PW_DASSERT(attach_status.ok());
   }
 
   // Write an entry to the multisink. If available space is less than the
@@ -223,6 +292,8 @@ class MultiSink {
 
   IntrusiveList<Listener> listeners_ PW_GUARDED_BY(lock_);
   ring_buffer::PrefixedEntryRingBufferMulti ring_buffer_ PW_GUARDED_BY(lock_);
+  ring_buffer::PrefixedEntryRingBufferMulti::Reader oldest_entry_reader_
+      PW_GUARDED_BY(lock_);
   uint32_t sequence_id_ PW_GUARDED_BY(lock_);
   LockType lock_;
 };

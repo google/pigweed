@@ -194,4 +194,50 @@ TEST_F(MultiSinkTest, TooSmallBuffer) {
   ExpectMessageAndDropCount(drains_[0], {}, 0u);
 }
 
+TEST_F(MultiSinkTest, Iterator) {
+  multisink_.AttachDrain(drains_[0]);
+
+  // Insert entries and consume them all.
+  multisink_.HandleEntry(kMessage);
+  multisink_.HandleEntry(kMessage);
+  multisink_.HandleEntry(kMessage);
+
+  ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
+  ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
+  ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
+
+  // Confirm that the iterator still observes the messages in the ring buffer.
+  size_t iterated_entries = 0;
+  for (ConstByteSpan entry : multisink_.UnsafeIteration()) {
+    EXPECT_EQ(memcmp(entry.data(), kMessage, sizeof(kMessage)), 0);
+    iterated_entries++;
+  }
+  EXPECT_EQ(iterated_entries, 3u);
+}
+
+TEST_F(MultiSinkTest, IteratorNoDrains) {
+  // Insert entries with no drains attached. Even though there are no consumers,
+  // iterators should still walk from the oldest entry.
+  multisink_.HandleEntry(kMessage);
+  multisink_.HandleEntry(kMessage);
+  multisink_.HandleEntry(kMessage);
+
+  // Confirm that the iterator still observes the messages in the ring buffer.
+  size_t iterated_entries = 0;
+  for (ConstByteSpan entry : multisink_.UnsafeIteration()) {
+    EXPECT_EQ(memcmp(entry.data(), kMessage, sizeof(kMessage)), 0);
+    iterated_entries++;
+  }
+  EXPECT_EQ(iterated_entries, 3u);
+}
+
+TEST_F(MultiSinkTest, IteratorNoEntries) {
+  // Attach a drain, but don't add any entries.
+  multisink_.AttachDrain(drains_[0]);
+  // Confirm that the iterator has no entries.
+  MultiSink::UnsafeIterationWrapper unsafe_iterator =
+      multisink_.UnsafeIteration();
+  EXPECT_EQ(unsafe_iterator.begin(), unsafe_iterator.end());
+}
+
 }  // namespace pw::multisink

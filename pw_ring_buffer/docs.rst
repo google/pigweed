@@ -12,6 +12,63 @@ Compatibility
 =============
 * C++11
 
+Iterator
+========
+In crash contexts, it may be useful to scan through a ring buffer that may
+have a mix of valid (yet to be read), stale (read), and invalid entries. The
+`PrefixedEntryRingBufferMulti::iterator` class can be used to walk through
+entries in the provided buffer.
+
+.. code-block:: cpp
+
+  // A test string to push into the buffer.
+  constexpr char kExampleEntry[] = "Example!";
+
+  // Setting up buffers and attaching a reader.
+  std::byte buffer[1024];
+  std::byte read_buffer[256];
+  PrefixedEntryRingBuffer ring_buffer(buffer);
+  PrefixedEntryRingBuffer::Reader reader;
+  ring_buffer.AttachReader(reader);
+
+  // Insert some entries and process some entries.
+  ring_buffer.PushBack(kExampleEntry);
+  ring_buffer.PushBack(kExampleEntry);
+  reader.PopFront();
+
+  // !! A function causes a crash before we've read out all entries.
+  FunctionThatCrashes();
+
+  // ... Crash Context ...
+
+  // You can use a range-based for-loop to walk through all entries.
+  for (auto entry : ring_buffer) {
+    PW_LOG_WARN("Read entry of size: %lu", entry.size());
+  }
+
+In cases where a crash has caused the ring buffer to have corrupted data, the
+iterator will progress until it sees the corrupted section and instead move to
+`iterator::end()`. The `iterator::status()` function returns a `pw::Status`
+indicating the reason the iterator reached it's end.
+
+.. code-block:: cpp
+
+   // ... Crash Context ...
+
+   using iterator = PrefixedEntryRingBufferMulti::iterator;
+
+   // Hold the iterator outside any loops to inspect it later.
+   iterator it = ring_buffer.begin();
+   for (; it != it.end(); ++it) {
+     PW_LOG_WARN("Read entry of size: %lu", it->size());
+   }
+
+   // Warn if there was a failure during iteration.
+   if (!it.status().ok()) {
+     PW_LOG_WARN("Iterator failed to read some entries!");
+   }
+
+
 Dependencies
 ============
 * ``pw_span``
