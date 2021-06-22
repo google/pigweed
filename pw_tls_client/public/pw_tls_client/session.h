@@ -65,8 +65,12 @@ class Session : public stream::ReaderWriter {
   static Result<Session*> Create(const SessionOptions& option);
 
  private:
+  Session() = delete;
+  Session(const Session&) = delete;
+  Session& operator=(const Session&) = delete;
+
   // A Session instance should only be created from Create().
-  Session();
+  Session(const SessionOptions& option);
 
   StatusWithSize DoRead(ByteSpan dest) override;
   Status DoWrite(ConstByteSpan data) override;

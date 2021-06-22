@@ -60,7 +60,10 @@ This module requires the following setup:
 
   1. Choose a ``pw_tls_client`` backend, or write one yourself.
   2. If using GN build, Specify the ``pw_tls_client_BACKEND`` GN build arg to
-     point the library that provides a ``pw_tls_client`` backend.
+     point the library that provides a ``pw_tls_client`` backend. To use the
+     MbedTLS backend, set variable ``pw_tls_client_BACKEND`` to
+     ``//pw_tls_client_mbedtls``. To use the BoringSSL backend, set it to
+     ``//pw_tls_client_boringssl``.
   3. Provide a `pw_tls_client:entropy` backend. If using GN build, specify the
      backend with variable ``pw_tls_client_ENTROPY_BACKEND``.
 
