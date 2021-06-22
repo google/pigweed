@@ -157,6 +157,7 @@ pw_source_set("interrupt_spin_lock") {
   sources = [ "interrupt_spin_lock.cc" ]
   deps = [
     "$dir_pw_assert",
+    "$dir_pw_interrupt:context",
     "$dir_pw_sync:interrupt_spin_lock.facade",
   ]
 }

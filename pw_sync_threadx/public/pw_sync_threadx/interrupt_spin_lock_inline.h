@@ -18,7 +18,9 @@
 namespace pw::sync {
 
 constexpr InterruptSpinLock::InterruptSpinLock()
-    : native_type_{.locked{false}, .saved_interrupt_mask = 0} {}
+    : native_type_{.state = backend::NativeInterruptSpinLock::State::kUnlocked,
+                   .saved_interrupt_mask = 0,
+                   .saved_preemption_threshold = 0} {}
 
 inline InterruptSpinLock::native_handle_type
 InterruptSpinLock::native_handle() {
