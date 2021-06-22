@@ -18,7 +18,7 @@
 namespace pw::sync {
 
 constexpr InterruptSpinLock::InterruptSpinLock()
-    : native_type_{.locked{false}} {}
+    : native_type_{.locked = false} {}
 
 inline InterruptSpinLock::native_handle_type
 InterruptSpinLock::native_handle() {
