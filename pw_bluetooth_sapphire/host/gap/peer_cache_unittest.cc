@@ -193,11 +193,11 @@ TEST_F(GAP_PeerCacheTest, LookUp) {
   // Adding a peer with the same address should return nullptr.
   EXPECT_FALSE(cache()->NewPeer(kAddrLePublic, true));
 
-  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData1);
+  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData1, zx::time());
   EXPECT_TRUE(ContainersEqual(kAdvData1, peer->le()->advertising_data()));
   EXPECT_EQ(kTestRSSI, peer->rssi());
 
-  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData0);
+  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData0, zx::time());
   EXPECT_TRUE(ContainersEqual(kAdvData0, peer->le()->advertising_data()));
   EXPECT_EQ(kTestRSSI, peer->rssi());
 }
@@ -356,7 +356,7 @@ TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWithAdvertisingData) {
   ASSERT_TRUE(peer()->bredr());
   ASSERT_FALSE(peer()->le());
 
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   EXPECT_TRUE(peer()->le());
   EXPECT_EQ(TechnologyType::kDualMode, peer()->technology());
 
@@ -921,7 +921,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreBondsForBothTech) {
   ASSERT_TRUE(peer()->temporary());
   ASSERT_FALSE(peer()->bonded());
 
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   ASSERT_EQ(TechnologyType::kDualMode, peer()->technology());
 
   // Without Secure Connections cross-transport key generation, bonding on one
@@ -1075,7 +1075,7 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
 
 TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
        SetAdvertisingDataTriggersUpdateCallbackOnNameSet) {
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   EXPECT_TRUE(was_called());
   ASSERT_TRUE(peer()->name());
   EXPECT_EQ("Test", *peer()->name());
@@ -1089,16 +1089,16 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
     EXPECT_TRUE(ContainersEqual(kAdvData, updated_peer.le()->advertising_data()));
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
   });
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
 }
 
 TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
        SetAdvertisingDataDoesNotTriggerUpdateCallbackOnSameName) {
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   ASSERT_TRUE(was_called());
 
   ClearWasCalled();
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   EXPECT_FALSE(was_called());
 }
 
@@ -1328,7 +1328,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdate
   // Calling MutLe again doesn't trigger additional callbacks.
   peer()->MutLe();
   EXPECT_EQ(call_count, 1U);
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   EXPECT_EQ(call_count, 2U);
 }
 
@@ -1541,7 +1541,7 @@ TEST_F(GAP_PeerCacheExpirationTest, ExpirationUpdatesAddressMap) {
 TEST_F(GAP_PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{});
+  GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{}, zx::time());
   RunLoopFor(zx::msec(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
 }

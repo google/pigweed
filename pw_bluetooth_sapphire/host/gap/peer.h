@@ -125,6 +125,7 @@ class Peer final {
     // Advertising (and optionally scan response) data obtained during
     // discovery.
     const ByteBuffer& advertising_data() const { return adv_data_buffer_; }
+    std::optional<zx::time> advertising_data_timestamp() const { return adv_timestamp_; }
 
     // Most recently used LE connection parameters. Has no value if the peer
     // has never been connected.
@@ -147,8 +148,8 @@ class Peer final {
     // Setters:
 
     // Overwrites the stored advertising and scan response data with the contents of |data|
-    // and updates the known RSSI with the given value.
-    void SetAdvertisingData(int8_t rssi, const ByteBuffer& data);
+    // and updates the known RSSI and timestamp with the given values.
+    void SetAdvertisingData(int8_t rssi, const ByteBuffer& data, zx::time timestamp);
 
     // Updates the connection state and notifies listeners if necessary.
     void SetConnectionState(ConnectionState state);
@@ -198,6 +199,8 @@ class Peer final {
     // duplicate entries are possible. It is OK to assume that fields repeated in scan response
     // data supercede those in the original advertising data when processing fields in order.
     DynamicByteBuffer adv_data_buffer_;
+    // Time when advertising data was last updated.
+    std::optional<zx::time> adv_timestamp_;
 
     BoolInspectable<std::optional<sm::PairingData>> bond_data_;
 

@@ -4,6 +4,7 @@
 
 #include "low_energy_discovery_manager.h"
 
+#include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
@@ -274,7 +275,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
     peer->set_connectable(true);
   }
 
-  peer->MutLe().SetAdvertisingData(result.rssi, data);
+  peer->MutLe().SetAdvertisingData(result.rssi, data, async::Now(async_get_default_dispatcher()));
 
   cached_scan_results_.insert(peer->identifier());
 

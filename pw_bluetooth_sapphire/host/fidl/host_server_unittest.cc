@@ -779,7 +779,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersHandlesNonEnumeratedAppearanceInPeer) {
   adv_data.SetAppearance(0xFFFFu);
   bt::DynamicByteBuffer write_buf(adv_data.CalculateBlockSize(/*include_flags=*/true));
   ASSERT_TRUE(adv_data.WriteBlock(&write_buf, bt::AdvFlag::kLEGeneralDiscoverableMode));
-  peer->MutLe().SetAdvertisingData(/*rssi=*/0, write_buf);
+  peer->MutLe().SetAdvertisingData(/*rssi=*/0, write_buf, zx::time());
 
   ResetHostServer();
 

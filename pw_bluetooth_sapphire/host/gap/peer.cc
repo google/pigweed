@@ -54,7 +54,7 @@ void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name)
   features_.AttachInspect(node_, LowEnergyData::kInspectFeaturesName);
 }
 
-void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv) {
+void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv, zx::time timestamp) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
 
@@ -64,6 +64,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv)
   // TODO(armansito): Validate that the advertising data is not malformed?
   adv_data_buffer_ = DynamicByteBuffer(adv.size());
   adv.Copy(&adv_data_buffer_);
+  adv_timestamp_ = timestamp;
 
   // Walk through the advertising data and update common fields.
   SupplementDataReader reader(adv);

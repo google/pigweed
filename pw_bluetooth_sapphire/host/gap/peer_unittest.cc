@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
-
 #include <lib/async/cpp/executor.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 
@@ -12,6 +10,7 @@
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 
 namespace bt::gap {
@@ -21,6 +20,10 @@ using namespace inspect::testing;
 
 constexpr uint16_t kManufacturer = 0x0001;
 constexpr uint16_t kSubversion = 0x0002;
+
+const auto kAdvData = StaticByteBuffer(0x05,  // Length
+                                       0x09,  // AD type: Complete Local Name
+                                       'T', 'e', 's', 't');
 
 class GAP_PeerTest : public ::gtest::TestLoopFixture {
  public:
@@ -182,7 +185,7 @@ TEST_F(GAP_PeerTest, LowEnergyDataSetAdvDataWithInvalidUtf8NameDoesNotUpdatePeer
                                   0xFF  // 0xFF should not appear in a valid UTF-8 string
   );
 
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData);
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time());
   EXPECT_TRUE(listener_notified);  // Fresh AD still results in an update
   EXPECT_FALSE(peer().name().has_value());
 }
@@ -220,6 +223,17 @@ TEST_F(GAP_PeerTest, SetNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
   peer().SetName(kName);
   EXPECT_FALSE(listener_notified);
   EXPECT_FALSE(peer().name().has_value());
+}
+
+TEST_F(GAP_PeerTest, LowEnergyAdvertisingDataTimestamp) {
+  EXPECT_FALSE(peer().MutLe().advertising_data_timestamp());
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(1));
+  ASSERT_TRUE(peer().MutLe().advertising_data_timestamp());
+  EXPECT_EQ(peer().MutLe().advertising_data_timestamp().value(), zx::time(1));
+
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData,zx::time(2));
+  ASSERT_TRUE(peer().MutLe().advertising_data_timestamp());
+  EXPECT_EQ(peer().MutLe().advertising_data_timestamp().value(), zx::time(2));
 }
 
 }  // namespace

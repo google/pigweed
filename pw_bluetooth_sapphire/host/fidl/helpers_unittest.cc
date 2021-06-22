@@ -551,7 +551,7 @@ TEST(FIDL_HelpersTest, PeerToFidlOptionalFields) {
   bt::gap::PeerCache cache;
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
-  peer->MutLe().SetAdvertisingData(kRssi, kAdv);
+  peer->MutLe().SetAdvertisingData(kRssi, kAdv, zx::time());
   peer->MutBrEdr().SetInquiryData(bt::hci::InquiryResult{
       bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci::PageScanRepetitionMode::kR0, 0, 0,
       bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
@@ -1204,7 +1204,7 @@ TEST(FIDL_HelpersTest, PeerToFidlLe) {
   auto adv_bytes = bt::StaticByteBuffer(
       // Uri: "https://abc.xyz"
       0x0B, bt::DataType::kURI, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
-  peer.MutLe().SetAdvertisingData(kRssi, adv_bytes);
+  peer.MutLe().SetAdvertisingData(kRssi, adv_bytes, zx::time());
 
   fble::Peer fidl_peer = PeerToFidlLe(peer);
   ASSERT_TRUE(fidl_peer.has_id());
