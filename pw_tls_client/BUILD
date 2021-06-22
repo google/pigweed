@@ -36,12 +36,12 @@ pw_cc_facade(
         "//pw_result",
         "//pw_status",
         "//pw_stream",
-    ]
+    ],
 )
 
 pw_cc_library(
     name = "pw_tls_client",
-    deps = [ ":pw_tls_client_facade" ],
+    deps = [":pw_tls_client_facade"],
 )
 
 # TODO(zyecheng): Add a "backend_multiplexer" target once BoringSSL/MbedTLS is
