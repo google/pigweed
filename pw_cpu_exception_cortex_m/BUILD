@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_binary",
     "pw_cc_library",
     "pw_cc_test",
 )
