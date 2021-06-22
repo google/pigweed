@@ -27,15 +27,15 @@ void InterruptSpinLock::lock() {
     taskENTER_CRITICAL();
   }
   // We can't deadlock here so crash instead.
-  PW_CHECK(!native_type_.locked.load(std::memory_order_relaxed),
+  PW_CHECK(!native_type_.locked,
            "Recursive InterruptSpinLock::lock() detected");
-  native_type_.locked.store(true, std::memory_order_relaxed);
+  native_type_.locked = true;
 }
 
 bool InterruptSpinLock::try_lock() {
   if (interrupt::InInterruptContext()) {
     UBaseType_t saved_interrupt_mask = taskENTER_CRITICAL_FROM_ISR();
-    if (native_type_.locked.load(std::memory_order_relaxed)) {
+    if (native_type_.locked) {
       // Already locked, restore interrupts and bail out.
       taskEXIT_CRITICAL_FROM_ISR(saved_interrupt_mask);
       return false;
@@ -43,18 +43,18 @@ bool InterruptSpinLock::try_lock() {
     native_type_.saved_interrupt_mask = saved_interrupt_mask;
   } else {  // Task context
     taskENTER_CRITICAL();
-    if (native_type_.locked.load(std::memory_order_relaxed)) {
+    if (native_type_.locked) {
       // ALready locked, restore interrupts and bail out.
       taskEXIT_CRITICAL();
       return false;
     }
   }
-  native_type_.locked.store(true, std::memory_order_relaxed);
+  native_type_.locked = true;
   return true;
 }
 
 void InterruptSpinLock::unlock() {
-  native_type_.locked.store(false, std::memory_order_relaxed);
+  native_type_.locked = false;
   if (interrupt::InInterruptContext()) {
     taskEXIT_CRITICAL_FROM_ISR(native_type_.saved_interrupt_mask);
   } else {  // Task context
