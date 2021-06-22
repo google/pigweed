@@ -79,7 +79,6 @@ targets.
 
 .. code::
 
-  # Prevent gn format from reordering this import.
   import("//build_overrides/pigweed.gni")
 
   import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
