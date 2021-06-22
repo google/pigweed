@@ -56,5 +56,5 @@ pw_cc_facade(
     deps = [
         "//pw_bytes",
         "//pw_status",
-    ]
+    ],
 )
