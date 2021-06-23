@@ -72,7 +72,10 @@ Responder& Responder::operator=(Responder&& other) {
 
   on_error_ = std::move(other.on_error_);
   on_next_ = std::move(other.on_next_);
+
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
   on_client_stream_end_ = std::move(other.on_client_stream_end_);
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
   return *this;
 }

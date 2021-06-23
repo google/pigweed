@@ -46,7 +46,10 @@ pw_source_set("config") {
 
 pw_source_set("server") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [ ":common" ]
+  public_deps = [
+    ":common",
+    ":config",
+  ]
   deps = [ dir_pw_log ]
   public = [
     "public/pw_rpc/server.h",

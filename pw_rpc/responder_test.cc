@@ -240,14 +240,17 @@ TEST(ServerReaderWriter, Move_MovesCallbacks) {
   int calls = 0;
   reader_writer.set_on_error([&calls](Status) { calls += 1; });
   reader_writer.set_on_next([&calls](ConstByteSpan) { calls += 1; });
+
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
   reader_writer.set_on_client_stream_end([&calls]() { calls += 1; });
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
   test::FakeServerReaderWriter destination(std::move(reader_writer));
   destination.as_responder().HandleClientStream({});
   destination.as_responder().EndClientStream();
   destination.as_responder().HandleError(Status::Unknown());
 
-  EXPECT_EQ(calls, 3);
+  EXPECT_EQ(calls, 2 + PW_RPC_CLIENT_STREAM_END_CALLBACK);
 }
 
 }  // namespace

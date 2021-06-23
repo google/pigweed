@@ -337,6 +337,8 @@ TEST_F(BidiMethod, ClientStream_CallsCallback) {
   EXPECT_STREQ(reinterpret_cast<const char*>(data.data()), "hello");
 }
 
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
+
 TEST_F(BidiMethod, ClientStreamEnd_CallsCallback) {
   bool called = false;
   responder_.set_on_client_stream_end([&called]() { called = true; });
@@ -362,6 +364,8 @@ TEST_F(BidiMethod, ClientStreamEnd_ErrorWhenClosed) {
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::FailedPrecondition());
 }
+
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
 class ServerStreamingMethod : public BasicServer {
  protected:

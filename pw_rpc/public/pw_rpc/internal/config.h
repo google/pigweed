@@ -16,6 +16,18 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
+
+// In client and bidirectional RPCs, pw_rpc clients may signal that they have
+// finished sending requests with a CLIENT_STREAM_END packet. While this can be
+// useful in some circumstances, it is often not necessary.
+//
+// This option controls whether or not include a callback that is called when
+// the client stream ends. The callback is included in all ServerReader/Writer
+// objects as a pw::Function, so may have a significant cost.
+#ifndef PW_RPC_CLIENT_STREAM_END_CALLBACK
+#define PW_RPC_CLIENT_STREAM_END_CALLBACK 0
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
 // The Nanopb-based pw_rpc implementation allocates memory to use for Nanopb
 // structs for the request and response protobufs. The template function that
@@ -33,12 +45,16 @@
 
 namespace pw::rpc::cfg {
 
+template <typename...>
+constexpr std::bool_constant<PW_RPC_CLIENT_STREAM_END_CALLBACK>
+    kClientStreamEndCallbackEnabled;
+
 inline constexpr size_t kNanopbStructMinBufferSize =
     PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE;
 
-}  // namespace pw::rpc::cfg
-
 #undef PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE
+
+}  // namespace pw::rpc::cfg
 
 // This option determines whether to allocate the Nanopb structs on the stack or
 // in a global variable. Globally allocated structs are NOT thread safe, but

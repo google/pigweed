@@ -21,6 +21,7 @@
 #include "pw_function/function.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_type.h"
 #include "pw_rpc/service.h"
@@ -84,9 +85,11 @@ class Responder : public IntrusiveList<Responder>::Item {
   void EndClientStream() {
     client_stream_state_ = kClientStreamClosed;
 
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
     if (on_client_stream_end_) {
       on_client_stream_end_();
     }
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
   }
 
   bool has_client_stream() const {
@@ -129,8 +132,19 @@ class Responder : public IntrusiveList<Responder>::Item {
     on_next_ = std::move(on_next);
   }
 
-  void set_on_client_stream_end(Function<void()> on_client_stream_end) {
+  // set_on_client_stream_end is templated so that it can be conditionally
+  // disabled with a helpful static_assert message.
+  template <typename UnusedType = void>
+  void set_on_client_stream_end(
+      [[maybe_unused]] Function<void()> on_client_stream_end) {
+    static_assert(
+        cfg::kClientStreamEndCallbackEnabled<UnusedType>,
+        "The client stream end callback is disabled, so "
+        "set_on_client_stream_end cannot be called. To enable the client end "
+        "callback, set PW_RPC_CLIENT_STREAM_END_CALLBACK to 1.");
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
     on_client_stream_end_ = std::move(on_client_stream_end);
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
   }
 
   constexpr const Channel::OutputBuffer& buffer() const { return response_; }
@@ -161,8 +175,10 @@ class Responder : public IntrusiveList<Responder>::Item {
   // The raw payload buffer is passed to the callback.
   Function<void(std::span<const std::byte> payload)> on_next_;
 
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
   // Called when a client stream completes.
   Function<void()> on_client_stream_end_;
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
   enum : bool { kClosed, kOpen } rpc_state_;
   HasClientStream has_client_stream_;
