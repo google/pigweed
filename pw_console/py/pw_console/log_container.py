@@ -30,8 +30,9 @@ from prompt_toolkit.formatted_text import (
 )
 
 import pw_cli.color
-import pw_console.helpers
 from pw_log_tokenized import FormatStringWithMetadata
+
+import pw_console.helpers
 
 _LOG = logging.getLogger(__package__)
 
@@ -43,6 +44,7 @@ class LogLine:
     """Class to hold a single log event."""
     record: logging.LogRecord
     formatted_log: str
+    ansi_stripped_log: str
 
     def __post_init__(self):
         self._metadata = None
@@ -51,11 +53,9 @@ class LogLine:
         """Return a datetime object for the log record."""
         return datetime.fromtimestamp(self.record.created)
 
-    # @property
-    # def metadata(self):
     def update_metadata(self):
         if self._metadata is None:
-            self._metadata = FormatStringWithMetadata(str(self.record.msg))
+            self._metadata = FormatStringWithMetadata(str(self.record.message))
             # Update the formatted log line
             self.formatted_log = self.formatted_log.replace(
                 self._metadata.raw_string, self._metadata.message)
@@ -193,15 +193,35 @@ class LogContainer(logging.Handler):
             f'{name}: {count}' for name, count in self.channel_counts.items()
         ])
 
-    def _update_log_prefix_width(self, record, formatted_log):
+    def get_line_wrap_prefix_width(self):
+        if self.wrap_lines_enabled():
+            return self.longest_channel_prefix_width
+        return 0
+
+    def _update_log_prefix_width(self, record: logging.LogRecord):
         """Save the formatted prefix width if this is a new logger channel
         name."""
-        if record.name not in self.channel_formatted_prefix_widths.keys():
+        if self.formatter and (
+                record.name
+                not in self.channel_formatted_prefix_widths.keys()):
+            # Find the width of the formatted timestamp and level
+            format_string = self.formatter._fmt  # pylint: disable=protected-access
+
+            # There may not be a _fmt defined.
+            if not format_string:
+                return
+
+            format_without_message = format_string.replace('%(message)s', '')
+            formatted_time_and_level = format_without_message % dict(
+                asctime=record.asctime, levelname=record.levelname)
+
             # Delete ANSI escape sequences.
-            ansi_stripped_log = _ANSI_SEQUENCE_REGEX.sub('', formatted_log)
-            # Save the width of the formatted portion of the log message.
-            self.channel_formatted_prefix_widths[
-                record.name] = len(ansi_stripped_log) - len(record.msg)
+            ansi_stripped_time_and_level = _ANSI_SEQUENCE_REGEX.sub(
+                '', formatted_time_and_level)
+
+            self.channel_formatted_prefix_widths[record.name] = len(
+                ansi_stripped_time_and_level)
+
             # Set the max width of all known formats so far.
             self.longest_channel_prefix_width = max(
                 self.channel_formatted_prefix_widths.values())
@@ -210,14 +230,18 @@ class LogContainer(logging.Handler):
         """Add a new log event."""
         # Format incoming log line.
         formatted_log = self.format(record)
+        ansi_stripped_log = _ANSI_SEQUENCE_REGEX.sub('', formatted_log)
         # Save this log.
-        self.logs.append(LogLine(record=record, formatted_log=formatted_log))
+        self.logs.append(
+            LogLine(record=record,
+                    formatted_log=formatted_log,
+                    ansi_stripped_log=ansi_stripped_log))
         # Increment this logger count
         self.channel_counts[record.name] = self.channel_counts.get(
             record.name, 0) + 1
 
         # Save prefix width of this log line.
-        self._update_log_prefix_width(record, formatted_log)
+        self._update_log_prefix_width(record)
 
         # Update estimated byte_size.
         self.byte_size += sys.getsizeof(self.logs[-1])
@@ -380,18 +404,23 @@ class LogContainer(logging.Handler):
 
     def draw(self) -> List:
         """Return log lines as a list of FormattedText tuples."""
+        # Reset _line_fragment_cache ( used in self.get_cursor_position )
+        self._line_fragment_cache = collections.deque()
+
         # If we have no logs add one with at least a single space character for
         # the cursor to land on. Otherwise the cursor will be left on the line
         # above the log pane container.
         if self.get_total_count() < 1:
             # No style specified.
-            return [('', ' \n')]
+            return [('[SetCursorPosition]', ''), ('', ' ')]
 
         starting_index, ending_index = self.get_log_window_indices()
 
         window_width = self._window_width
+
+        # Track used lines.
         total_used_lines = 0
-        self._line_fragment_cache = collections.deque()
+
         # Since range() is not inclusive use ending_index + 1.
         # for i in range(starting_index, ending_index + 1):
         # From the ending_index to the starting index in reverse:
@@ -409,14 +438,15 @@ class LogContainer(logging.Handler):
             if self.wrap_lines_enabled() and (fragment_width > window_width):
                 line_height = pw_console.helpers.get_line_height(
                     fragment_width, window_width,
-                    self.longest_channel_prefix_width)
+                    self.get_line_wrap_prefix_width())
 
             # Keep track of how many lines is used
             used_lines = 0
             used_lines += line_height
 
             # Count the number of line breaks included in the log line.
-            log_string = str(self.logs[i].record.msg)
+            log_string = str(self.logs[i].ansi_stripped_log)
+
             line_breaks = log_string.count('\n')
             used_lines += line_breaks
 
@@ -434,7 +464,7 @@ class LogContainer(logging.Handler):
                 if self.wrap_lines_enabled() and (fragment_width >
                                                   window_width):
                     total_width = line_height * window_width
-                    content_width = (self.longest_channel_prefix_width *
+                    content_width = (self.get_line_wrap_prefix_width() *
                                      (line_height - 1) + fragment_width)
                     empty_characters = total_width - content_width
 

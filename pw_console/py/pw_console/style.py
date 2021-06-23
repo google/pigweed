@@ -143,6 +143,9 @@ def generate_styles(theme_name='dark'):
         # Highlighted line styles
         'selected-log-line': 'bg:{}'.format(theme.line_highlight_bg),
         'cursor-line': 'bg:{} nounderline'.format(theme.line_highlight_bg),
+
+        # Messages like 'Window too small'
+        'warning-text': 'bg:{} {}'.format(theme.default_bg, theme.yellow_accent)
     } # yapf: disable
 
     return Style.from_dict(pw_console_styles)

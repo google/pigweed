@@ -201,15 +201,22 @@ class LogContentControl(FormattedTextControl):
     @staticmethod
     def indent_wrapped_pw_log_format_line(log_pane, line_number, wrap_count):
         """Indent wrapped lines to match pw_cli timestamp & level formatter."""
-        if wrap_count == 0:
+        prefix_width = log_pane.log_container.get_line_wrap_prefix_width()
+
+        # Return no prefix string if no wrapping is required. If the current log
+        # window is smaller than the prefix width then don't indent when
+        # wrapping lines.
+        if wrap_count == 0 or log_pane.current_log_pane_width <= prefix_width:
             return None
 
-        prefix = ' ' * log_pane.log_container.longest_channel_prefix_width
+        prefix_string = ' ' * prefix_width
 
         # If this line matches the selected log line, highlight it.
         if line_number == log_pane.log_container.get_cursor_position().y:
-            return to_formatted_text(prefix, style='class:selected-log-line')
-        return prefix
+            return to_formatted_text(prefix_string,
+                                     style='class:selected-log-line')
+
+        return prefix_string
 
     def create_content(self, width: int, height: Optional[int]) -> UIContent:
         # Save redered height

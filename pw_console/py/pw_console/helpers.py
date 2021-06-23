@@ -34,6 +34,10 @@ def get_line_height(text_width, screen_width, prefix_width):
     # One screen_width of characters has been displayed.
     remaining_width = text_width - screen_width
 
+    # Assume zero width prefix if it's >= width of the screen.
+    if prefix_width >= screen_width:
+        prefix_width = 0
+
     # While the remaining character count won't fit on the screen:
     while (remaining_width + prefix_width) > screen_width:
         remaining_width += prefix_width

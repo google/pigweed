@@ -34,6 +34,7 @@ pw_python_package("py") {
   tests = [
     "console_app_test.py",
     "help_window_test.py",
+    "helpers_test.py",
     "repl_pane_test.py",
   ]
   python_deps = [

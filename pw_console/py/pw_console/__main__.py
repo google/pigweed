@@ -35,7 +35,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument('-l',
                         '--loglevel',
                         type=pw_cli.argument_types.log_level,
-                        default=logging.INFO,
+                        default=logging.DEBUG,
                         help='Set the log level'
                         '(debug, info, warning, error, critical)')
 
