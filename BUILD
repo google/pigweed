@@ -18,7 +18,7 @@ load(
     "buildifier_test",
 )
 
-licenses(["notice"])  # Apache License 2.0
+licenses(["notice"])
 
 exports_files(
     ["tsconfig.json"],

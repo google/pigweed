@@ -16,7 +16,7 @@ load("//pw_build:pigweed.bzl", "pw_cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])  # Apache License 2.0
+licenses(["notice"])
 
 pw_cc_binary(
     name = "simple_base",

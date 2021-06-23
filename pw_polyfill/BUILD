@@ -25,7 +25,7 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])  # Apache License 2.0
+licenses(["notice"])
 
 cc_injected_toolchain_header_library(
     name = "toolchain_injected_headers",

@@ -17,7 +17,7 @@ load(
     "pw_cc_binary",
 )
 
-licenses(["notice"])  # Apache License 2.0
+licenses(["notice"])
 
 pw_cc_binary(
     name = "pw_tool",
