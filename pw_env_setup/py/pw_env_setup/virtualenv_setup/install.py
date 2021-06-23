@@ -18,6 +18,7 @@ from __future__ import print_function
 import datetime
 import glob
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -107,6 +108,10 @@ def _find_files_by_name(roots, name, allow_nesting=False):
 
 
 def _check_venv(python, version, venv_path, pyvenv_cfg):
+    # TODO(pwbug/400) Re-enable this check on Windows.
+    if platform.system().lower() == 'windows':
+        return
+
     # Check if the python location and version used for the existing virtualenv
     # is the same as the python we're using. If it doesn't match, we need to
     # delete the existing virtualenv and start again.
