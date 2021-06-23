@@ -12,32 +12,30 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("//build_overrides/pigweed.gni")
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
+    "pw_cc_library",
+)
 
-import("$dir_pw_build/facade.gni")
-import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
+package(default_visibility = ["//visibility:public"])
 
-declare_args() {
-  pw_crypto_SHA256_BACKEND = ""
-}
+licenses(["notice"])  # Apache License 2.0
 
-config("default_config") {
-  include_dirs = [ "public" ]
-  visibility = [ ":*" ]
-}
+pw_cc_facade(
+    name = "sha256_facade",
+    hdrs = [
+        "public/pw_crypto/sha256.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)
 
-pw_facade("sha256") {
-  backend = pw_crypto_SHA256_BACKEND
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_crypto/sha256.h" ]
-  public_deps = [
-    "$dir_pw_assert",
-    "$dir_pw_bytes",
-    "$dir_pw_status",
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}
+pw_cc_library(
+    name = "sha256",
+    deps = [":sha256_facade"],
+)
