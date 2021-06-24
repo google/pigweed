@@ -69,6 +69,31 @@ pw_source_set("system_clock") {
   ]
 }
 
+# This target provides the backend for pw::chrono::SystemTimer.
+pw_source_set("system_timer") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_chrono_freertos/system_timer_inline.h",
+    "public/pw_chrono_freertos/system_timer_native.h",
+    "public_overrides/pw_chrono_backend/system_timer_inline.h",
+    "public_overrides/pw_chrono_backend/system_timer_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_chrono:system_timer.facade",
+    "$dir_pw_third_party/freertos",
+  ]
+  deps = [
+    "$dir_pw_assert",
+    "$dir_pw_chrono_freertos:system_clock",
+  ]
+  allow_circular_includes_from = [ "$dir_pw_chrono:system_timer.facade" ]
+  sources = [ "system_timer.cc" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

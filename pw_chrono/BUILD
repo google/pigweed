@@ -90,6 +90,7 @@ pw_cc_library(
     name = "system_timer_backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
+        "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_timer"],
         "//conditions:default": ["//pw_chrono_stl:system_timer"],
     }),
 )

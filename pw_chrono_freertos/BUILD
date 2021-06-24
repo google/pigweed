@@ -56,3 +56,39 @@ pw_cc_library(
         # do not have Bazel support.
     ],
 )
+
+pw_cc_library(
+    name = "system_timer_headers",
+    hdrs = [
+        "public/pw_chrono_freertos/system_timer_inline.h",
+        "public/pw_chrono_freertos/system_timer_native.h",
+        "public_overrides/pw_chrono_backend/system_timer_inline.h",
+        "public_overrides/pw_chrono_backend/system_timer_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_function",
+        "//pw_chrono:system_timer_facade",
+        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+        # currently do not have Bazel support.
+    ],
+)
+
+pw_cc_library(
+    name = "system_timer",
+    srcs = [
+        "system_timer.cc",
+    ],
+    deps = [
+        ":system_timer_headers",
+        "//pw_chrono:system_timer_facade",
+        ":system_clock",
+        "//pw_assert",
+        # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+        # currently do not have Bazel support.
+    ],
+)
