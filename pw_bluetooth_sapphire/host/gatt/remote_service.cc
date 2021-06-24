@@ -753,8 +753,16 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
             values_accum.push_back(RemoteService::ReadByTypeResult{
                 CharacteristicHandle(error_handle), fit::error(status.protocol_error())});
 
+            // Do not attempt to read from the next handle if the error handle is the max handle, as
+            // this would cause an overflow.
+            if (error_handle == std::numeric_limits<att::Handle>::max()) {
+              ReportValues(att::Status(), std::move(values_accum), std::move(cb), dispatcher);
+              return;
+            }
+
             // Start next read right after attribute causing error.
             att::Handle start_next = error_handle + 1;
+
             self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb),
                                    dispatcher);
             return;
@@ -775,6 +783,13 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
       result.value.Copy(buffer.get());
       values_accum.push_back(
           ReadByTypeResult{CharacteristicHandle(result.handle), fit::ok(std::move(buffer))});
+    }
+
+    // Do not attempt to read from the next handle if the last value handle is the max handle, as
+    // this would cause an overflow.
+    if (values.back().handle == std::numeric_limits<att::Handle>::max()) {
+      ReportValues(att::Status(), std::move(values_accum), std::move(cb), dispatcher);
+      return;
     }
 
     // Start next read right after last returned attribute. Client already checks that value handles

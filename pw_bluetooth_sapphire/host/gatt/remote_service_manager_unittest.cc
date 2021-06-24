@@ -2970,5 +2970,70 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
   EXPECT_EQ(1, ccc_write_count);
 }
 
+TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeErrorOnLastHandleDoesNotOverflowHandle) {
+  constexpr att::Handle kStartHandle = 0xFFFE;
+  constexpr att::Handle kEndHandle = 0xFFFF;
+  auto service = SetUpFakeService(
+      ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
+
+  size_t read_count = 0;
+  fake_client()->set_read_by_type_request_callback(
+      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+        ASSERT_EQ(0u, read_count++);
+        EXPECT_EQ(kStartHandle, start);
+        callback(fit::error(
+            Client::ReadByTypeError{att::Status(att::ErrorCode::kReadNotPermitted), kEndHandle}));
+      });
+
+  std::optional<att::Status> status;
+  std::vector<RemoteService::ReadByTypeResult> results;
+  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto cb_results) {
+    status = cb_status;
+    results = std::move(cb_results);
+  });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
+  ASSERT_EQ(1u, results.size());
+  EXPECT_EQ(CharacteristicHandle(kEndHandle), results[0].handle);
+  ASSERT_TRUE(results[0].result.is_error());
+  EXPECT_EQ(results[0].result.error(), att::ErrorCode::kReadNotPermitted);
+}
+
+TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflowHandle) {
+  constexpr att::Handle kStartHandle = 0xFFFE;
+  constexpr att::Handle kEndHandle = 0xFFFF;
+  auto service = SetUpFakeService(
+      ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
+
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
+
+  constexpr att::Handle kHandle = kEndHandle;
+  const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
+  const std::vector<Client::ReadByTypeValue> kValues = {{kHandle, kValue.view()}};
+
+  size_t read_count = 0;
+  fake_client()->set_read_by_type_request_callback(
+      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+        ASSERT_EQ(0u, read_count++);
+        EXPECT_EQ(kStartHandle, start);
+        callback(fit::ok(kValues));
+      });
+
+  std::optional<att::Status> status;
+  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) {
+    status = cb_status;
+    ASSERT_EQ(1u, values.size());
+    EXPECT_EQ(CharacteristicHandle(kHandle), values[0].handle);
+    ASSERT_TRUE(values[0].result.is_ok());
+    EXPECT_TRUE(ContainersEqual(kValue, *values[0].result.value()));
+  });
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success()) << bt_str(status.value());
+}
+
 }  // namespace
 }  // namespace bt::gatt::internal
