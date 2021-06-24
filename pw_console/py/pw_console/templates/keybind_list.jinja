@@ -16,8 +16,8 @@ the License.
 {% set total_width = max_description_width + max_key_list_width + 5 %}
 {% if preamble %}
 {{ preamble }}
+
 {% endif %}
-{{ '\n' if preamble and additional_help_text -}} {# Add a single line break here with no trailing whitespace. #}
 {% if additional_help_text %}
 {{ ' Help '.format(section).center(total_width, '=') }}
 

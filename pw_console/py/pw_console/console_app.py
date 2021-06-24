@@ -73,11 +73,14 @@ class ConsoleApp:
     """The main ConsoleApp class containing the whole console."""
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self,
-                 global_vars=None,
-                 local_vars=None,
-                 repl_startup_message=None,
-                 help_text=None):
+    def __init__(
+        self,
+        global_vars=None,
+        local_vars=None,
+        repl_startup_message=None,
+        help_text=None,
+        app_title=None,
+    ):
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
         #   https://docs.python.org/3/library/functions.html#globals
@@ -94,11 +97,12 @@ class ConsoleApp:
         # Event loop for executing user repl code.
         self.user_code_loop = asyncio.new_event_loop()
 
+        self.app_title = app_title if app_title else 'Pigweed Console'
+
         # Top title message
-        # 'Pigweed CLI v0.1 | Mouse supported | F1:Help Ctrl-W:Quit.'
         self.message = [
-            ('class:logo', ' Pigweed CLI v0.1 '),
-            ('class:menu-bar', '| Mouse supported; click on pane to focus | '),
+            ('class:logo', self.app_title),
+            ('class:menu-bar', ' | '),
             ('class:keybind', 'F1'),
             ('class:keyhelp', ':Help '),
             ('class:keybind', 'Ctrl-W'),
@@ -303,9 +307,19 @@ class ConsoleApp:
 
     def _update_help_window(self):
         """Generate the help window text based on active pane keybindings."""
-        # Add global key bindings to the help text
+        # Add global mouse bindings to the help text.
+        mouse_functions = {
+            'Focus pane, menu or log line.': ['Click'],
+            'Scroll current window.': ['Scroll wheel'],
+        }
+
+        self.help_window.add_custom_keybinds_help_text('Global Mouse',
+                                                       mouse_functions)
+
+        # Add global key bindings to the help text.
         self.help_window.add_keybind_help_text('Global', self.key_bindings)
-        # Add activated plugin key bindings to the help text
+
+        # Add activated plugin key bindings to the help text.
         for pane in self.active_panes:
             for key_bindings in pane.get_all_key_bindings():
                 if isinstance(key_bindings, KeyBindings):
@@ -314,6 +328,7 @@ class ConsoleApp:
                 elif isinstance(key_bindings, dict):
                     self.help_window.add_custom_keybinds_help_text(
                         pane.__class__.__name__, key_bindings)
+
         self.help_window.generate_help_text()
 
     def _create_root_split(self):
@@ -433,6 +448,7 @@ def embed(
     test_mode=False,
     repl_startup_message: Optional[str] = None,
     help_text: Optional[str] = None,
+    app_title: Optional[str] = None,
 ) -> None:
     """Call this to embed pw console at the call point within your program.
     It's similar to `ptpython.embed` and `IPython.embed`. ::
@@ -447,6 +463,7 @@ def embed(
                   logging.getLogger(__package__),
                   logging.getLogger('device logs'),
               ],
+              app_title='My Awesome Console',
         )
 
     :param global_vars: Dictionary representing the desired global symbol
@@ -458,12 +475,21 @@ def embed(
     :param loggers: List of `logging.getLogger()` instances that should be shown
         in the pw console log pane user interface.
     :type loggers: list, optional
+    :param app_title: Custom title text displayed in the user interface.
+    :type app_title: str, optional
+    :param repl_startup_message: Custom text shown by default in the repl output
+        pane.
+    :type repl_startup_message: str, optional
+    :param help_text: Custom text shown at the top of the help window before
+        keyboard shortcuts.
+    :type help_text: str, optional
     """
     console_app = ConsoleApp(
         global_vars=global_vars,
         local_vars=local_vars,
         repl_startup_message=repl_startup_message,
         help_text=help_text,
+        app_title=app_title,
     )
 
     # Add loggers to the console app log pane.
