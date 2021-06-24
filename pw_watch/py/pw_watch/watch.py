@@ -152,11 +152,12 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     """Process filesystem events and launch builds if necessary."""
     def __init__(
         self,
+        build_commands: Sequence[BuildCommand],
         patterns: Sequence[str] = (),
         ignore_patterns: Sequence[str] = (),
-        build_commands: Sequence[BuildCommand] = (),
         charset: WatchCharset = _ASCII_CHARSET,
         restart: bool = True,
+        jobs: int = None,
     ):
         super().__init__()
 
@@ -167,6 +168,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         self.restart_on_changes = restart
         self._current_build: subprocess.Popen
+
+        self._extra_ninja_args = [] if jobs is None else [f'-j{jobs}']
 
         self.debouncer = Debouncer(self)
 
@@ -251,12 +254,14 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         env['PW_USE_COLOR'] = '1'
 
         for i, cmd in enumerate(self.build_commands, 1):
-            _LOG.info('[%d/%d] Starting build: %s', i, num_builds, cmd)
+            command = ['ninja', *self._extra_ninja_args, '-C', *cmd.args()]
+
+            _LOG.info('[%d/%d] Starting build: %s', i, num_builds,
+                      ' '.join(shlex.quote(arg) for arg in command))
 
             # Run the build. Put a blank before/after for visual separation.
             print()
-            self._current_build = subprocess.Popen(
-                ['ninja', '-C', *cmd.args()], env=env)
+            self._current_build = subprocess.Popen(command, env=env)
             returncode = self._current_build.wait()
             print()
 
@@ -391,6 +396,12 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
         help=('Specify a build directory and optionally targets to '
               'build. `pw watch -C out tgt` is equivalent to `ninja '
               '-C out tgt`'))
+
+    parser.add_argument(
+        '-j',
+        '--jobs',
+        type=int,
+        help="Number of cores to use; defaults to Ninja's default")
 
 
 def _exit(code: int) -> NoReturn:
@@ -545,7 +556,7 @@ def _find_build_dir(default_build_dir: Path = Path('out')) -> Optional[Path]:
 
 def watch(default_build_targets: List[str], build_directories: List[str],
           patterns: str, ignore_patterns_string: str, exclude_list: List[Path],
-          restart: bool):
+          restart: bool, jobs: Optional[int]):
     """Watches files and runs Ninja commands when they change."""
     _LOG.info('Starting Pigweed build watcher')
 
@@ -601,11 +612,12 @@ def watch(default_build_targets: List[str], build_directories: List[str],
         charset = _ASCII_CHARSET
 
     event_handler = PigweedBuildWatcher(
+        build_commands=build_commands,
         patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
         ignore_patterns=ignore_patterns,
-        build_commands=build_commands,
         charset=charset,
         restart=restart,
+        jobs=jobs,
     )
 
     try:

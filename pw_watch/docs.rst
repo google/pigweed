@@ -40,6 +40,9 @@ this behavior, provide the ``-C`` argument to ``pw watch``.
   # Find a directory and build python.tests, and build pw_apps in out/cmake
   pw watch python.tests -C out/cmake pw_apps
 
+  # Build the default target, but only run up to 8 jobs in parallel.
+  pw watch -j8
+
 ``pw watch`` only rebuilds when a file that is not ignored by Git changes.
 Adding exclusions to a ``.gitignore`` causes watch to ignore them, even if the
 files were forcibly added to a repo. By default, only files matching certain
@@ -53,6 +56,8 @@ watched. This decreases the number of files monitored with inotify in Linux.
 By default, ``pw watch`` automatically restarts an ongoing build when files
 change. This can be disabled with the ``--no-restart`` option. While running
 ``pw watch``, you may also press enter to immediately restart a build.
+
+See ``pw watch -h`` for the full list of command line arguments.
 
 Unit Test Integration
 =====================
