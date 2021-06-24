@@ -22,6 +22,7 @@ from pathlib import Path
 
 from prompt_toolkit.buffer import Buffer
 import ptpython.repl  # type: ignore
+from ptpython.layout import CompletionVisualisation  # type: ignore
 from ptpython.completer import CompletePrivateAttributes  # type: ignore
 
 import pw_console.helpers
@@ -48,6 +49,18 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         self.show_exit_confirmation = False
         self.complete_private_attributes = (
             CompletePrivateAttributes.IF_NO_PUBLIC)
+
+        # Function signature that shows args, kwargs, and types under the cursor
+        # of the input window.
+        self.show_signature: bool = True
+        # Docstring of the current completed function that appears at the bottom
+        # of the input window.
+        self.show_docstring: bool = False
+
+        # Turn off the completion menu in ptpython. The CompletionsMenu in
+        # ConsoleApp.root_container will handle this.
+        self.completion_visualisation: CompletionVisualisation = (
+            CompletionVisualisation.NONE)
 
         # Additional state variables.
         self.repl_pane = None

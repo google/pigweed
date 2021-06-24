@@ -20,6 +20,7 @@ import functools
 from threading import Thread
 from typing import Iterable, Optional
 
+from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.application import Application
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.styles import (
@@ -39,6 +40,7 @@ from prompt_toolkit.widgets import (
     MenuItem,
 )
 from prompt_toolkit.key_binding import KeyBindings, merge_key_bindings
+from ptpython.layout import CompletionVisualisation  # type: ignore
 from ptpython.key_bindings import (  # type: ignore
     load_python_bindings, load_sidebar_bindings,
 )
@@ -242,8 +244,39 @@ class ConsoleApp:
                     # Callable to get width
                     width=self.help_window.content_width,
                 ),
+                # Completion menu that can overlap other panes since it lives in
+                # the top level Float container.
+                Float(
+                    xcursor=True,
+                    ycursor=True,
+                    content=ConditionalContainer(
+                        content=CompletionsMenu(
+                            scroll_offset=(lambda: self.pw_ptpython_repl.
+                                           completion_menu_scroll_offset),
+                            max_height=16,
+                        ),
+                        # Only show our completion if ptpython's is disabled.
+                        filter=Condition(lambda: self.pw_ptpython_repl.
+                                         completion_visualisation ==
+                                         CompletionVisualisation.NONE),
+                    ),
+                ),
             ],
         )
+
+        # NOTE: ptpython stores it's completion menus in this HSplit:
+        #
+        # self.pw_ptpython_repl.__pt_container__()
+        #   .children[0].children[0].children[0].floats[0].content.children
+        #
+        # Index 1 is a CompletionsMenu and is shown when:
+        #   self.pw_ptpython_repl
+        #     .completion_visualisation == CompletionVisualisation.POP_UP
+        #
+        # Index 2 is a MultiColumnCompletionsMenu and is shown when:
+        #   self.pw_ptpython_repl
+        #     .completion_visualisation == CompletionVisualisation.MULTI_COLUMN
+        #
 
         # Setup the prompt_toolkit layout with the repl pane as the initially
         # focused element.

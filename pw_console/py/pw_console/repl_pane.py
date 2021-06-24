@@ -333,7 +333,10 @@ class ReplPane:
             self.interrupt_last_code_execution()
 
     def clear_input_buffer(self):
+        # Erase input buffer.
         self.pw_ptpython_repl.default_buffer.reset()
+        # Clear any displayed function signatures.
+        self.pw_ptpython_repl.on_reset()
 
     def interrupt_last_code_execution(self):
         code = self._get_currently_running_code()
