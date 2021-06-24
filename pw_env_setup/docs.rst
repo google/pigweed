@@ -198,6 +198,11 @@ here.
 
 .. _sample project: https://pigweed.googlesource.com/pigweed/sample_project/+/HEAD
 
+``root_variable``
+  Variable used to point to the root of the source tree. Optional, can always
+  use ``PW_PROJECT_ROOT`` instead. (That variable will be set regardless of
+  whether this is provided.)
+
 ``cipd_package_files``
   CIPD package file. JSON file consisting of a list of dictionaries with "path",
   "platforms", and "tags" keys. An example is below.
@@ -240,6 +245,7 @@ An example of a config file is below.
 .. code-block:: json
 
   {
+    "root_variable": "EXAMPLE_ROOT",
     "cipd_package_files": [
       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"

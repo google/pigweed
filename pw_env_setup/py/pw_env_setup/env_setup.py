@@ -199,6 +199,7 @@ class EnvSetup(object):
         self._virtualenv_gn_targets = []
         self._optional_submodules = []
         self._virtualenv_system_packages = False
+        self._root_variable = None
 
         self._config_file_name = getattr(config_file, 'name', 'config file')
         if config_file:
@@ -213,6 +214,8 @@ class EnvSetup(object):
         self._use_existing_cipd = use_existing_cipd
         self._virtualenv_gn_out_dir = virtualenv_gn_out_dir
 
+        if self._root_variable:
+            self._env.set(self._root_variable, project_root)
         self._env.set('PW_PROJECT_ROOT', project_root)
         self._env.set('PW_ROOT', pw_root)
         self._env.set('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
@@ -247,6 +250,8 @@ class EnvSetup(object):
 
     def _parse_config_file(self, config_file):
         config = json.load(config_file)
+
+        self._root_variable = config.pop('root_variable', None)
 
         self._optional_submodules.extend(config.pop('optional_submodules', ()))
 
