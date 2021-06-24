@@ -22,4 +22,9 @@ namespace pw::tls_client {
 // |dest| must contain full entropy. Backend should take care of the possible
 // conditioning in its implementation.
 Status GetRandomBytes(ByteSpan dest);
+
+// An overloaded variant for accomodating C API interfaces, i.e. mbed TLS.
+inline Status GetRandomBytes(std::span<unsigned char> dest) {
+  return GetRandomBytes(std::as_writable_bytes(dest));
+}
 }  // namespace pw::tls_client

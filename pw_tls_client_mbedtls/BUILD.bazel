@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -37,5 +38,15 @@ pw_cc_library(
     ],
     deps = [
         "//pw_tls_clent:pw_tls_client_facade",
+    ],
+)
+
+pw_cc_test(
+    name = "tls_client_mbedtls_test",
+    srcs = [
+        "tls_client_mbedtls_test.cc",
+    ],
+    deps = [
+        ":pw_tls_client_mbedtls",
     ],
 )

@@ -14,16 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
-
-declare_args() {
-  # If compiling backends with mbedtls, this variable is set to the path to the
-  # mbedtls source code. When set, a pw_source_set for the mbedtls library is
-  # created at "$dir_pw_third_party/mbedtls".
-  dir_pw_third_party_mbedtls = ""
-
-  # configuration for mbedtls. Can be one of |mbedtls_configs|
-  pw_third_party_mbedtls_CONFIG = "default"
-}
+import("mbedtls.gni")
 
 if (dir_pw_third_party_mbedtls != "") {
   # The list currently includes all source files for build.
@@ -130,15 +121,18 @@ if (dir_pw_third_party_mbedtls != "") {
       # Custom config file is specified by macro MBEDTLS_CONFIG_FILE
       # for MbedTLS
       defines = [ "MBEDTLS_CONFIG_FILE=\"${ele.config_header}\"" ]
-      include_dirs = [ "." ]
     }
 
-    pw_source_set(ele.name) {
+    srcset_name = ele.name + "_config_srcset"
+    pw_source_set(srcset_name) {
       public = [
         "configs/config_pigweed_common.h",
         ele.config_header,
       ]
-      public_configs = [ ":${config_name}" ]
+      public_configs = [
+        ":${config_name}",
+        ":mbedtls_common_config",
+      ]
     }
   }
 
@@ -146,6 +140,7 @@ if (dir_pw_third_party_mbedtls != "") {
     include_dirs = [
       "$dir_pw_third_party_mbedtls",
       "$dir_pw_third_party_mbedtls/include",
+      "$dir_pw_third_party/mbedtls",
     ]
     cflags = [
       "-Wno-error=cast-qual",
@@ -159,9 +154,8 @@ if (dir_pw_third_party_mbedtls != "") {
     foreach(source, mbedtls_sources) {
       sources += [ "$dir_pw_third_party_mbedtls/" + source ]
     }
-    public_configs = [ ":mbedtls_common_config" ]
     public_deps = [
-      ":$pw_third_party_mbedtls_CONFIG",
+      ":${pw_third_party_mbedtls_CONFIG}_config_srcset",
       "$dir_pw_tls_client:time",
     ]
   }

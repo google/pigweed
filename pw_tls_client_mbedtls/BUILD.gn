@@ -13,9 +13,11 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
-import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_third_party/mbedtls/mbedtls.gni")
+import("$dir_pw_tls_client/configs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 config("public_includes") {
   include_dirs = [ "public" ]
@@ -37,9 +39,23 @@ pw_source_set("pw_tls_client_mbedtls") {
   sources = [ "tls_client_mbedtls.cc" ]
   public_deps = [
     "$dir_pigweed/pw_tls_client:pw_tls_client.facade",
+    "$dir_pw_assert",
+    "$dir_pw_log",
+    "$dir_pw_stream",
     "$dir_pw_tls_client:tls_entropy",
     "//third_party/mbedtls",
   ]
+}
+
+pw_test("tls_client_mbedtls_test") {
+  enable_if =
+      pw_tls_client_ENTROPY_BACKEND != "" && dir_pw_third_party_mbedtls != ""
+  deps = [ ":pw_tls_client_mbedtls" ]
+  sources = [ "tls_client_mbedtls_test.cc" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":tls_client_mbedtls_test" ]
 }
 
 pw_doc_group("docs") {

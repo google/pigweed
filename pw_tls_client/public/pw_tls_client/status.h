@@ -20,6 +20,7 @@ namespace pw::tls_client {
 enum class TLSStatus {
   kOk,
   kUnknownError,
+  kEntropySourceFailed,
   // TODO(zyecheng): Expand the list as necessary when core TLS logic is being
   // implemented. This may include certificate verification error, expiration
   // check error, revocation check error etc.
