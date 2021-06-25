@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -36,6 +37,21 @@ pw_cc_facade(
 )
 
 pw_cc_library(
-    name = "sha256",
+    name = "sha256_mbedtls",
+    includes = ["public_overrides"],
+    hdrs = [
+      "public/pw_crypto/sha256_mbedtls.h",
+      "public_overrides/pw_crypto/sha256_backend.h",
+    ],
+    srcs = ["sha256_mbedtls.cc"],
     deps = [":sha256_facade"],
+)
+
+pw_cc_test(
+    name = "sha256_test",
+    srcs = [ "sha256_test.cc" ],
+    deps = [
+      ":sha256_facade",
+      "//pw_unit_test",
+    ]
 )

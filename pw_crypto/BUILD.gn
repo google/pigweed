@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
   pw_crypto_SHA256_BACKEND = ""
@@ -24,6 +25,11 @@ declare_args() {
 
 config("default_config") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+config("backend_config") {
+  include_dirs = [ "public_overrides" ]
   visibility = [ ":*" ]
 }
 
@@ -40,4 +46,27 @@ pw_facade("sha256") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":sha256_test" ]
+}
+
+pw_test("sha256_test") {
+  enable_if = pw_crypto_SHA256_BACKEND != ""
+  deps = [ ":sha256" ]
+  sources = [ "sha256_test.cc" ]
+}
+
+pw_source_set("sha256_mbedtls") {
+  public_configs = [ ":backend_config" ]
+  public = [
+    "public/pw_crypto/sha256_mbedtls.h",
+    "public_overrides/pw_crypto/sha256_backend.h",
+  ]
+  sources = [ "sha256_mbedtls.cc" ]
+  public_deps = [
+    ":sha256.facade",
+    "//third_party/mbedtls",
+  ]
 }

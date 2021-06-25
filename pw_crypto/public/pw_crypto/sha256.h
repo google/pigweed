@@ -17,6 +17,7 @@
 #include <cstdint>
 
 #include "pw_bytes/span.h"
+#include "pw_crypto/sha256_backend.h"
 #include "pw_status/status.h"
 
 namespace pw::crypto::sha256 {
@@ -28,6 +29,13 @@ constexpr uint32_t kDigestSizeBytes = 32;
 // messages.
 class Sha256 {
  public:
+  Sha256();
+  // Remove copy/move ctors
+  Sha256(const Sha256& other) = delete;
+  Sha256(Sha256&& other) = delete;
+  Sha256& operator=(const Sha256& other) = delete;
+  Sha256& operator=(Sha256&& other) = delete;
+
   // Update adds `data` to the running hasher.
   void Update(ConstByteSpan data);
 
