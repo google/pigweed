@@ -84,10 +84,20 @@ class RemoteServiceManager final {
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
   };
 
-  // Helper function to initiate service discovery.
-  // If |services| is non-empty, only discovers services with the given UUIDs.
-  void DiscoverServices(ServiceKind kind, std::vector<UUID> services,
-                        Client::ServiceCallback svc_cb, att::StatusCallback status_cb);
+  // Create a RemoteService and insert it into the services map, discarding duplicates.
+  void AddService(const ServiceData& service_data);
+
+  // Discover services of the indicated |kind|.
+  // If |service_uuids| is non-empty, only discovers services with the given UUIDs.
+  // |status_cb| will be called when the operation completes.
+  using ServiceCallback = fit::function<void(const ServiceData&)>;
+  void DiscoverServicesOfKind(ServiceKind kind, std::vector<UUID> service_uuids,
+                              att::StatusCallback status_cb);
+
+  // Discover primary and secondary services.
+  // If |service_uuids| is non-empty, only discovers services with the given UUIDs.
+  // |status_cb| will be called when the operation completes.
+  void DiscoverServices(std::vector<UUID> service_uuids, att::StatusCallback status_cb);
 
   // Shuts down and cleans up all services.
   void ClearServices();

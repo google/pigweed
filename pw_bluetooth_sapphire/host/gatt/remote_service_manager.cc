@@ -73,6 +73,8 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
 
   auto init_cb = [self, user_init_cb = std::move(cb)](att::Status status) {
     TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::Initialize::init_cb");
+
+    // The Client's Bearer may outlive this object.
     if (!self)
       return;
 
@@ -90,6 +92,7 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
   // Start out with the MTU exchange.
   client_->ExchangeMTU([self, init_cb = std::move(init_cb), services = std::move(services)](
                            att::Status status, uint16_t mtu) mutable {
+    // The Client's Bearer may outlive this object.
     if (!self) {
       init_cb(att::Status(HostError::kFailed));
       return;
@@ -100,88 +103,99 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
       return;
     }
 
-    Client::ServiceCallback svc_cb = [self](const ServiceData& service_data) {
-      if (!self) {
-        return;
-      }
-
-      att::Handle handle = service_data.range_start;
-      auto iter = self->services_.find(handle);
-      if (iter != self->services_.end()) {
-        bt_log(ERROR, "gatt", "found duplicate service attribute handle! (%#.4x)", handle);
-        return;
-      }
-
-      auto svc = fbl::AdoptRef(
-          new RemoteService(service_data, self->client_->AsWeakPtr(), self->gatt_dispatcher_));
-      if (!svc) {
-        bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
-        return;
-      }
-
-      self->services_[handle] = svc;
-    };
-
-    auto status_cb = [self, init_cb = std::move(init_cb)](att::Status status) {
-      TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::Initialize::MTUCallback::status_cb");
-      if (!self) {
-        init_cb(att::Status(HostError::kFailed));
-        return;
-      }
-
-      // Service discovery support is mandatory for servers (v5.0, Vol 3,
-      // Part G, 4.2).
-      if (bt_is_error(status, TRACE, "gatt", "failed to discover services")) {
-        // Clear services that were buffered so far.
-        self->ClearServices();
-      } else if (self->svc_watcher_) {
-        // Notify all discovered services here.
-        for (auto& iter : self->services_) {
-          TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::svc_watcher_");
-          self->svc_watcher_(iter.second);
-        }
-      }
-
-      init_cb(status);
-    };
-
-    auto primary_discov_cb = [self, services, status_cb = std::move(status_cb),
-                              svc_cb = svc_cb.share()](att::Status status) mutable {
-      if (!self || !status) {
-        status_cb(status);
-        return;
-      }
-
-      auto secondary_discov_cb = [cb = std::move(status_cb)](att::Status status) mutable {
-        // Not all GATT servers support the "secondary service" group type. We suppress the
-        // "Unsupported Group Type" error code and simply report no services instead of treating it
-        // as a fatal condition (errors propagated up the stack from here will cause the connection
-        // to be terminated).
-        if (status.is_protocol_error() &&
-            status.protocol_error() == att::ErrorCode::kUnsupportedGroupType) {
-          bt_log(DEBUG, "gatt", "peer does not support secondary services; ignoring ATT error");
-          status = att::Status();
-        }
-        cb(status);
-      };
-      self->DiscoverServices(ServiceKind::SECONDARY, std::move(services), std::move(svc_cb),
-                             std::move(secondary_discov_cb));
-    };
-
-    self->DiscoverServices(ServiceKind::PRIMARY, std::move(services), std::move(svc_cb),
-                           std::move(primary_discov_cb));
+    self->DiscoverServices(std::move(services), std::move(init_cb));
   });
 }
 
-void RemoteServiceManager::DiscoverServices(ServiceKind kind, std::vector<UUID> services,
-                                            Client::ServiceCallback svc_cb,
-                                            att::StatusCallback status_cb) {
-  if (!services.empty()) {
+void RemoteServiceManager::AddService(const ServiceData& service_data) {
+  att::Handle handle = service_data.range_start;
+  auto iter = services_.find(handle);
+  if (iter != services_.end()) {
+    bt_log(ERROR, "gatt", "found duplicate service attribute handle! (%#.4x)", handle);
+    return;
+  }
+
+  auto svc = fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr(), gatt_dispatcher_));
+  if (!svc) {
+    bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
+    return;
+  }
+
+  services_[handle] = std::move(svc);
+}
+
+void RemoteServiceManager::DiscoverServicesOfKind(ServiceKind kind, std::vector<UUID> service_uuids,
+                                                  att::StatusCallback status_cb) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  ServiceCallback svc_cb = [self](const ServiceData& service_data) {
+    // The Client's Bearer may outlive this object.
+    if (self) {
+      self->AddService(service_data);
+    }
+  };
+
+  if (!service_uuids.empty()) {
     client_->DiscoverServicesWithUuids(kind, std::move(svc_cb), std::move(status_cb),
-                                       std::move(services));
+                                       std::move(service_uuids));
   } else {
     client_->DiscoverServices(kind, std::move(svc_cb), std::move(status_cb));
   }
+}
+
+void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
+                                            att::StatusCallback status_cb) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto status_cb_wrapper = [self, status_cb = std::move(status_cb)](att::Status status) {
+    TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::DiscoverServices::status_cb_wrapper");
+
+    // The Client's Bearer may outlive this object.
+    if (!self) {
+      status_cb(att::Status(HostError::kFailed));
+      return;
+    }
+
+    // Service discovery support is mandatory for servers (v5.0, Vol 3, Part G, 4.2).
+    if (bt_is_error(status, TRACE, "gatt", "failed to discover services")) {
+      // Clear services that were buffered so far.
+      self->ClearServices();
+    } else if (self->svc_watcher_) {
+      // Notify all discovered services here.
+      for (auto& iter : self->services_) {
+        TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::svc_watcher_");
+        self->svc_watcher_(iter.second);
+      }
+    }
+
+    status_cb(status);
+  };
+
+  auto primary_discov_cb = [self, service_uuids, status_cb_wrapper = std::move(status_cb_wrapper)](
+                               att::Status status) mutable {
+    if (!self || !status) {
+      status_cb_wrapper(status);
+      return;
+    }
+
+    auto secondary_discov_cb = [cb = std::move(status_cb_wrapper)](att::Status status) mutable {
+      // Not all GATT servers support the "secondary service" group type. We suppress the
+      // "Unsupported Group Type" error code and simply report no services instead of treating it
+      // as a fatal condition (errors propagated up the stack from here will cause the connection
+      // to be terminated).
+      if (status.is_protocol_error() &&
+          status.protocol_error() == att::ErrorCode::kUnsupportedGroupType) {
+        bt_log(DEBUG, "gatt", "peer does not support secondary services; ignoring ATT error");
+        status = att::Status();
+      }
+
+      cb(status);
+    };
+
+    self->DiscoverServicesOfKind(ServiceKind::SECONDARY, std::move(service_uuids),
+                                 std::move(secondary_discov_cb));
+  };
+
+  DiscoverServicesOfKind(ServiceKind::PRIMARY, std::move(service_uuids),
+                         std::move(primary_discov_cb));
 }
 
 void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
