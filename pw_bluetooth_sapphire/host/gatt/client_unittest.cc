@@ -1052,6 +1052,88 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
   EXPECT_EQ(kTestUuid2, services[1].type);
 }
 
+TEST_F(GATT_ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
+  const att::Handle kRangeStart = 0x0002;
+  const att::Handle kRangeEnd = 0x0020;
+  const auto kExpectedRequest0 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
+                       0x00, 0x28,  // type: primary service (0x2800)
+                       0xAD, 0xDE   // kTestUuid1
+      );
+  const auto kResponse0 = StaticByteBuffer(0x07,        // opcode: find by type value response
+                                           0x02, 0x00,  // svc 0 start: 0x0002
+                                           0x05, 0x00   // svc 0 end: 0x0005
+  );
+  const auto kExpectedRequest1 =
+      StaticByteBuffer(0x06,        // opcode: find by type value request
+                       0x06, 0x00,  // start handle: 0x0006
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
+                       0x00, 0x28,  // type: primary service (0x2800)
+                       0xAD, 0xDE   // kTestUuid1
+      );
+  const auto kNotFoundResponse1 = StaticByteBuffer(0x01,        // opcode: error response
+                                                   0x06,        // request: find by type value
+                                                   0x06, 0x00,  // handle: 0x0006
+                                                   0x0A         // error: Attribute Not Found
+  );
+  const auto kExpectedRequest2 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
+                       0x00, 0x28,  // type: primary service (0x2800)
+                       0xEF, 0xBE   // kTestUuid2
+      );
+  const auto kResponse2 = StaticByteBuffer(0x07,        // opcode: find by type value response
+                                           0x06, 0x00,  // svc 1 start: 0x0006
+                                           0x09, 0x00   // svc 1 end: 0x0009
+  );
+  const auto kExpectedRequest3 =
+      StaticByteBuffer(0x06,        // opcode: find by type value request
+                       0x0A, 0x00,  // start handle: 0x000A
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
+                       0x00, 0x28,  // type: primary service (0x2800)
+                       0xEF, 0xBE   // kTestUuid2
+      );
+  const auto kNotFoundResponse3 = StaticByteBuffer(0x01,        // opcode: error response
+                                                   0x06,        // request: find by type value
+                                                   0x0A, 0x00,  // handle: 0x000A
+                                                   0x0A         // error: Attribute Not Found
+  );
+
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
+    client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
+                                               res_cb, {kTestUuid2, kTestUuid1});
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest0));
+
+  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
+  ASSERT_TRUE(ReceiveAndExpect(kNotFoundResponse1, kExpectedRequest2));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedRequest3));
+  fake_chan()->Receive(kNotFoundResponse3);
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(2u, services.size());
+
+  EXPECT_EQ(0x0002, services[0].range_start);
+  EXPECT_EQ(0x0005, services[0].range_end);
+  EXPECT_EQ(kTestUuid1, services[0].type);
+
+  EXPECT_EQ(0x0006, services[1].range_start);
+  EXPECT_EQ(0x0009, services[1].range_end);
+  EXPECT_EQ(kTestUuid2, services[1].type);
+}
+
 TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesEqual) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0001;

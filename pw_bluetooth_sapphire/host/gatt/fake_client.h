@@ -130,6 +130,10 @@ class FakeClient final : public Client {
   void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
                                  att::StatusCallback status_callback,
                                  std::vector<UUID> services) override;
+  void DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle start, att::Handle end,
+                                        ServiceCallback svc_callback,
+                                        att::StatusCallback status_callback,
+                                        std::vector<UUID> uuids) override {}
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                          ReadByTypeCallback callback) override;

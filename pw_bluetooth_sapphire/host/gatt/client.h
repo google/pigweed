@@ -96,6 +96,13 @@ class Client {
                                          att::StatusCallback status_callback,
                                          std::vector<UUID> uuids) = 0;
 
+  // Same as DiscoverServicesWithUuids, but only discovers services in the range [range_start,
+  // range_end]. |range_start| must be <= |range_end|.
+  virtual void DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle range_start,
+                                                att::Handle range_end, ServiceCallback svc_callback,
+                                                att::StatusCallback status_callback,
+                                                std::vector<UUID> uuids) = 0;
+
   // Performs the "Discover All Characteristics of a Service" procedure defined
   // in v5.0, Vol 3, Part G, 4.6.1.
   using CharacteristicCallback = fit::function<void(const CharacteristicData&)>;

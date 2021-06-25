@@ -300,12 +300,21 @@ class Impl final : public Client {
 
   void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_cb,
                                  att::StatusCallback status_cb, std::vector<UUID> uuids) override {
+    DiscoverServicesWithUuidsInRange(kind, att::kHandleMin, att::kHandleMax, std::move(svc_cb),
+                                     std::move(status_cb), std::move(uuids));
+  }
+
+  void DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle range_start,
+                                        att::Handle range_end, ServiceCallback svc_callback,
+                                        att::StatusCallback status_callback,
+                                        std::vector<UUID> uuids) override {
+    ZX_ASSERT(range_start <= range_end);
     ZX_ASSERT(!uuids.empty());
     UUID uuid = uuids.back();
     uuids.pop_back();
 
-    auto recursive_status_cb = [this, kind, svc_cb = svc_cb.share(),
-                                status_cb = std::move(status_cb),
+    auto recursive_status_cb = [this, range_start, range_end, kind, svc_cb = svc_callback.share(),
+                                status_cb = std::move(status_callback),
                                 remaining_uuids = std::move(uuids)](auto status) mutable {
       // Base case
       if (!status || remaining_uuids.empty()) {
@@ -314,23 +323,18 @@ class Impl final : public Client {
       }
 
       // Recursively discover with the remaining UUIDs.
-      DiscoverServicesWithUuids(kind, std::move(svc_cb), std::move(status_cb),
-                                std::move(remaining_uuids));
+      DiscoverServicesWithUuidsInRange(kind, range_start, range_end, std::move(svc_cb),
+                                       std::move(status_cb), std::move(remaining_uuids));
     };
 
     // Discover the last uuid in uuids.
-    DiscoverServicesByUuid(kind, std::move(svc_cb), std::move(recursive_status_cb), uuid);
+    DiscoverServicesByUuidInRange(kind, range_start, range_end, std::move(svc_callback),
+                                  std::move(recursive_status_cb), uuid);
   }
 
-  void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
-                              StatusCallback status_callback, UUID uuid) {
-    DiscoverServicesByUuidInternal(kind, att::kHandleMin, att::kHandleMax, std::move(svc_callback),
-                                   std::move(status_callback), uuid);
-  }
-
-  void DiscoverServicesByUuidInternal(ServiceKind kind, att::Handle start, att::Handle end,
-                                      ServiceCallback svc_callback, StatusCallback status_callback,
-                                      UUID uuid) {
+  void DiscoverServicesByUuidInRange(ServiceKind kind, att::Handle start, att::Handle end,
+                                     ServiceCallback svc_callback, StatusCallback status_callback,
+                                     UUID uuid) {
     size_t uuid_size_bytes = uuid.CompactSize(/* allow 32 bit UUIDs */ false);
     auto pdu = NewPDU(sizeof(att::FindByTypeValueRequestParams) + uuid_size_bytes);
     if (!pdu) {
@@ -347,8 +351,8 @@ class Impl final : public Client {
     MutableBufferView value_view(params->value, uuid_size_bytes);
     uuid.ToBytes(&value_view, /* allow 32 bit UUIDs */ false);
 
-    auto rsp_cb = BindCallback([this, kind, svc_cb = std::move(svc_callback),
-                                res_cb = status_callback.share(),
+    auto rsp_cb = BindCallback([this, kind, discovery_range_end = end,
+                                svc_cb = std::move(svc_callback), res_cb = status_callback.share(),
                                 uuid](const att::PacketReader& rsp) mutable {
       ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
 
@@ -364,7 +368,7 @@ class Impl final : public Client {
 
       BufferView handle_list = rsp.payload_data();
 
-      att::Handle last_handle = att::kHandleMax;
+      att::Handle last_handle = discovery_range_end;
       while (handle_list.size()) {
         const auto& entry = handle_list.As<att::HandlesInformationList>();
 
@@ -390,14 +394,14 @@ class Impl final : public Client {
       }
 
       // The procedure is over if we have reached the end of the handle range.
-      if (last_handle == att::kHandleMax) {
+      if (last_handle == discovery_range_end) {
         res_cb(att::Status());
         return;
       }
 
       // Request the next batch.
-      DiscoverServicesByUuidInternal(kind, last_handle + 1, att::kHandleMax, std::move(svc_cb),
-                                     std::move(res_cb), uuid);
+      DiscoverServicesByUuidInRange(kind, last_handle + 1, discovery_range_end, std::move(svc_cb),
+                                    std::move(res_cb), uuid);
     });
 
     auto error_cb = BindErrorCallback(
