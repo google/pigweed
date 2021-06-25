@@ -75,6 +75,12 @@ config("cortex_m7") {
   ldflags = cflags
 }
 
+config("cortex_m33") {
+  cflags = [ "-mcpu=cortex-m33" ]
+  asmflags = cflags
+  ldflags = cflags
+}
+
 config("cortex_software_fpu") {
   cflags = [ "-mfloat-abi=soft" ]
   asmflags = cflags
@@ -95,6 +101,16 @@ config("cortex_hardware_fpu_v5") {
   cflags = [
     "-mfloat-abi=hard",
     "-mfpu=fpv5-d16",
+  ]
+  asmflags = cflags
+  defines = [ "PW_ARMV7M_ENABLE_FPU=1" ]
+  ldflags = cflags
+}
+
+config("cortex_hardware_fpu_v5_sp") {
+  cflags = [
+    "-mfloat-abi=hard",
+    "-mfpu=fpv5-sp-d16",
   ]
   asmflags = cflags
   defines = [ "PW_ARMV7M_ENABLE_FPU=1" ]

@@ -64,6 +64,18 @@ _cortex_m7f = [
   "$dir_pw_toolchain/arm_gcc:cortex_hardware_fpu_v5",
 ]
 
+_cortex_m33 = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_m33",
+  "$dir_pw_toolchain/arm_gcc:cortex_software_fpu",
+]
+
+_cortex_m33f = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_m33",
+  "$dir_pw_toolchain/arm_gcc:cortex_hardware_fpu_v5_sp",
+]
+
 # Describes ARM GCC toolchains for specific targets.
 pw_toolchain_arm_gcc = {
   cortex_m0plus_debug = {
@@ -210,6 +222,54 @@ pw_toolchain_arm_gcc = {
           _arm_gcc + _cortex_m7f + [ "$dir_pw_build:optimize_size" ]
     }
   }
+  cortex_m33_debug = {
+    name = "arm_gcc_cortex_m33_debug"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m33 + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_m33_speed_optimized = {
+    name = "arm_gcc_cortex_m33_speed_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m33 + [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+  cortex_m33_size_optimized = {
+    name = "arm_gcc_cortex_m33_size_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m33 + [ "$dir_pw_build:optimize_size" ]
+    }
+  }
+  cortex_m33f_debug = {
+    name = "arm_gcc_cortex_m33f_debug"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m33f + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_m33f_speed_optimized = {
+    name = "arm_gcc_cortex_m33f_speed_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m33f + [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+  cortex_m33f_size_optimized = {
+    name = "arm_gcc_cortex_m33f_size_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m33f + [ "$dir_pw_build:optimize_size" ]
+    }
+  }
 }
 
 # This list just contains the members of the above scope for convenience to make
@@ -234,4 +294,10 @@ pw_toolchain_arm_gcc_list = [
   pw_toolchain_arm_gcc.cortex_m7f_debug,
   pw_toolchain_arm_gcc.cortex_m7f_speed_optimized,
   pw_toolchain_arm_gcc.cortex_m7f_size_optimized,
+  pw_toolchain_arm_gcc.cortex_m33_debug,
+  pw_toolchain_arm_gcc.cortex_m33_speed_optimized,
+  pw_toolchain_arm_gcc.cortex_m33_size_optimized,
+  pw_toolchain_arm_gcc.cortex_m33f_debug,
+  pw_toolchain_arm_gcc.cortex_m33f_speed_optimized,
+  pw_toolchain_arm_gcc.cortex_m33f_size_optimized,
 ]
