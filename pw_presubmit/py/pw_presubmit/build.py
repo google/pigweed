@@ -22,6 +22,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+from shutil import which
 from typing import (Collection, Container, Dict, Iterable, List, Mapping, Set,
                     Tuple, Union)
 
@@ -64,6 +65,10 @@ def gn_args(**kwargs) -> str:
         # Fall-back case handles integers as well as strings that already
         # contain double quotation marks, or look like scopes or lists.
         transformed_args.append(f'{arg}={val}')
+    # Use ccache if available for faster repeat presubmit runs.
+    if which('ccache'):
+        transformed_args.append('pw_command_launcher="ccache"')
+
     return '--args=' + ' '.join(transformed_args)
 
 
