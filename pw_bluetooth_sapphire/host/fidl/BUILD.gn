@@ -7,6 +7,8 @@ import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 static_library("fidl") {
   sources = [
+    "gatt2_remote_service_server.cc",
+    "gatt2_remote_service_server.h",
     "gatt_client_server.cc",
     "gatt_client_server.h",
     "gatt_remote_service_server.cc",
@@ -32,6 +34,7 @@ static_library("fidl") {
     ":helpers",
     "//sdk/fidl/fuchsia.bluetooth",
     "//sdk/fidl/fuchsia.bluetooth.gatt",
+    "//sdk/fidl/fuchsia.bluetooth.gatt2",
     "//sdk/fidl/fuchsia.bluetooth.le",
     "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host:stack",
@@ -84,6 +87,7 @@ source_set("tests") {
   testonly = true
 
   sources = [
+    "gatt2_remote_service_server_unittest.cc",
     "gatt_client_server_unittest.cc",
     "gatt_remote_service_server_unittest.cc",
     "helpers_unittest.cc",
