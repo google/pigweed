@@ -92,7 +92,6 @@ pw_python_action("generate_buid_time_header") {
 # The target provides a backend to :time that returns build time.
 pw_source_set("build_time") {
   time_injection_outputs = get_target_outputs(":generate_buid_time_header")
-  print(time_injection_outputs)
   include_dirs = [ get_path_info(time_injection_outputs[0], "dir") ]
   sources = [ "build_time.cc" ]
   deps = [
