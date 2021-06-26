@@ -3130,8 +3130,10 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess16BitUUID) {
     ASSERT_EQ(2u, values.size());
     EXPECT_EQ(kHandle0, values[0].handle);
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x00), values[0].value));
+    EXPECT_FALSE(values[0].maybe_truncated);
     EXPECT_EQ(kHandle1, values[1].handle);
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x01), values[1].value));
+    EXPECT_FALSE(values[1].maybe_truncated);
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -3486,6 +3488,69 @@ TEST_F(GATT_ClientTest, Indication) {
   const auto kConfirmation = StaticByteBuffer(0x1E);
   EXPECT_TRUE(ReceiveAndExpect(kIndication, kConfirmation));
   EXPECT_TRUE(called);
+}
+
+// Maxing out the length parameter of a Read By Type request is not possible with the current max
+// preferred MTU. If the max MTU is increased, this test will need to be updated to test that
+// ReadByTypeValue.maybe_truncated is true for read by type responses with values that max out the
+// length parameter.
+TEST_F(GATT_ClientTest, ReadByTypeRequestSuccessValueTruncatedByLengthParam) {
+  const uint16_t kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam =
+      sizeof(att::kReadByTypeResponse) + sizeof(att::ReadByTypeResponseParams) +
+      std::numeric_limits<decltype(att::ReadByTypeResponseParams::length)>::max();
+  EXPECT_LT(att()->preferred_mtu(), kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam);
+  EXPECT_LT(att::kLEMaxMTU, kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam);
+}
+
+TEST_F(GATT_ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
+  EXPECT_EQ(att()->mtu(), att::kLEMinMTU);
+
+  const UUID kUuid16(uint16_t{0xBEEF});
+  constexpr att::Handle kStartHandle = 0x0001;
+  constexpr att::Handle kEndHandle = 0xFFFF;
+  const auto kExpectedRequest =
+      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
+                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+                       // UUID
+                       0xEF, 0xBE);
+
+  constexpr att::Handle kHandle = 0x0002;
+  const uint8_t kMaxReadByTypeValueLengthWithMinMtu = att::kLEMinMTU - 4;
+  const auto kExpectedResponseHeader =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       sizeof(kHandle) + kMaxReadByTypeValueLengthWithMinMtu,  // pair length
+                       LowerBits(kHandle), UpperBits(kHandle)                  // attribute handle
+      );
+  DynamicByteBuffer expected_response(kExpectedResponseHeader.size() +
+                                      kMaxReadByTypeValueLengthWithMinMtu);
+  expected_response.Fill(0);
+  kExpectedResponseHeader.Copy(&expected_response);
+
+  att::Status status(HostError::kFailed);
+
+  bool cb_called = false;
+  auto cb = [&](Client::ReadByTypeResult result) {
+    cb_called = true;
+    ASSERT_TRUE(result.is_ok()) << bt_str(result.error().status);
+    const auto& values = result.value();
+    ASSERT_EQ(1u, values.size());
+    EXPECT_EQ(kHandle, values[0].handle);
+    EXPECT_EQ(values[0].value.size(), kMaxReadByTypeValueLengthWithMinMtu);
+    EXPECT_TRUE(values[0].maybe_truncated);
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] {
+    client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(expected_response);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cb_called);
+  EXPECT_FALSE(fake_chan()->link_error());
 }
 
 }  // namespace

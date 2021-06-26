@@ -43,7 +43,7 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
 
   void WriteDescriptor(::fuchsia::bluetooth::gatt2::Handle handle, ::std::vector<uint8_t> value,
                        ::fuchsia::bluetooth::gatt2::WriteOptions options,
-                       WriteDescriptorCallback callback) override{}
+                       WriteDescriptorCallback callback) override {}
 
   void RegisterCharacteristicNotifier(
       ::fuchsia::bluetooth::gatt2::Handle handle,

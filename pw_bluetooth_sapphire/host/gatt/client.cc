@@ -653,7 +653,7 @@ class Impl final : public Client {
       type.ToBytes(&type_view, /*allow_32bit=*/false);
     }
 
-    auto rsp_cb = BindCallback([callback = callback.share(), start_handle,
+    auto rsp_cb = BindCallback([this, callback = callback.share(), start_handle,
                                 end_handle](const att::PacketReader& rsp) {
       ZX_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
@@ -703,7 +703,17 @@ class Impl final : public Client {
         }
 
         auto value_view = pair_view.view(sizeof(att::Handle));
-        attributes.push_back(ReadByTypeValue{handle, value_view});
+
+        // The value may be truncated if it maxes out the length parameter or the MTU, whichever is
+        // smaller (Core Spec v5.2, Vol 3, Part F, Sec 3.4.4).
+        const size_t mtu_max_value_size = mtu() - sizeof(att::kReadByTypeResponse) -
+                                          sizeof(att::ReadByTypeResponseParams) -
+                                          sizeof(att::Handle);
+        bool maybe_truncated =
+            (value_view.size() ==
+             std::min(static_cast<size_t>(att::kMaxReadByTypeValueLength), mtu_max_value_size));
+
+        attributes.push_back(ReadByTypeValue{handle, value_view, maybe_truncated});
 
         // Advance list view to next pair (or end of list).
         attr_list_view = attr_list_view.view(pair_size);

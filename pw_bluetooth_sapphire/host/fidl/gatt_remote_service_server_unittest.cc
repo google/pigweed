@@ -75,7 +75,8 @@ TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeSuccess) {
 
   constexpr bt::att::Handle kHandle = kServiceStartHandle;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02);
-  const std::vector<bt::gatt::Client::ReadByTypeValue> kValues = {{kHandle, kValue.view()}};
+  const std::vector<bt::gatt::Client::ReadByTypeValue> kValues = {
+      {kHandle, kValue.view(), /*maybe_truncated=*/false}};
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(

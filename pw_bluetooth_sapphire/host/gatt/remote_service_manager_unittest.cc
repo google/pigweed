@@ -1501,11 +1501,13 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeN
 
   constexpr att::Handle kHandle0 = 2;
   const auto kValue0 = StaticByteBuffer(0x00, 0x01, 0x02);
-  const std::vector<Client::ReadByTypeValue> kValues0 = {{kHandle0, kValue0.view()}};
+  const std::vector<Client::ReadByTypeValue> kValues0 = {
+      {kHandle0, kValue0.view(), /*maybe_truncated=*/false}};
 
   constexpr att::Handle kHandle1 = 3;
   const auto kValue1 = StaticByteBuffer(0x03, 0x04, 0x05);
-  const std::vector<Client::ReadByTypeValue> kValues1 = {{kHandle1, kValue1.view()}};
+  const std::vector<Client::ReadByTypeValue> kValues1 = {
+      {kHandle1, kValue1.view(), /*maybe_truncated=*/true}};
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
@@ -1530,16 +1532,19 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeN
       });
 
   std::optional<att::Status> status;
-  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) {
-    status = cb_status;
-    ASSERT_EQ(2u, values.size());
-    EXPECT_EQ(CharacteristicHandle(kHandle0), values[0].handle);
-    ASSERT_TRUE(values[0].result.is_ok());
-    EXPECT_TRUE(ContainersEqual(kValue0, *values[0].result.value()));
-    EXPECT_EQ(CharacteristicHandle(kHandle1), values[1].handle);
-    ASSERT_TRUE(values[1].result.is_ok());
-    EXPECT_TRUE(ContainersEqual(kValue1, *values[1].result.value()));
-  });
+  service->ReadByType(
+      kCharUuid, [&](att::Status cb_status, std::vector<RemoteService::ReadByTypeResult> values) {
+        status = cb_status;
+        ASSERT_EQ(2u, values.size());
+        EXPECT_EQ(CharacteristicHandle(kHandle0), values[0].handle);
+        ASSERT_TRUE(values[0].result.is_ok());
+        EXPECT_TRUE(ContainersEqual(kValue0, *values[0].result.value()));
+        EXPECT_FALSE(values[0].maybe_truncated);
+        EXPECT_EQ(CharacteristicHandle(kHandle1), values[1].handle);
+        ASSERT_TRUE(values[1].result.is_ok());
+        EXPECT_TRUE(ContainersEqual(kValue1, *values[1].result.value()));
+        EXPECT_TRUE(values[1].maybe_truncated);
+      });
 
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
@@ -1557,7 +1562,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEnd
 
   constexpr att::Handle kHandle = kEndHandle;
   const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
-  const std::vector<Client::ReadByTypeValue> kValues = {{kHandle, kValue.view()}};
+  const std::vector<Client::ReadByTypeValue> kValues = {
+      {kHandle, kValue.view(), /*maybe_truncated=*/false}};
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
@@ -1614,6 +1620,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
       EXPECT_EQ(CharacteristicHandle(kStartHandle + i), values[i].handle);
       ASSERT_TRUE(values[i].result.is_error());
       EXPECT_EQ(errors[i], values[i].result.error());
+      EXPECT_FALSE(values[i].maybe_truncated);
     }
   });
 
@@ -1632,7 +1639,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
 
   constexpr att::Handle kHandle = kEndHandle;
   const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
-  const std::vector<Client::ReadByTypeValue> kValues = {{kHandle, kValue.view()}};
+  const std::vector<Client::ReadByTypeValue> kValues = {
+      {kHandle, kValue.view(), /*maybe_truncated=*/false}};
 
   const std::vector<std::pair<const char*, att::ErrorCode>> general_protocol_errors = {
       {"kRequestNotSupported", att::ErrorCode::kRequestNotSupported},
@@ -3011,7 +3019,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflo
 
   constexpr att::Handle kHandle = kEndHandle;
   const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
-  const std::vector<Client::ReadByTypeValue> kValues = {{kHandle, kValue.view()}};
+  const std::vector<Client::ReadByTypeValue> kValues = {{kHandle, kValue.view(), /*maybe_truncated=*/false}};
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(

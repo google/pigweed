@@ -130,8 +130,9 @@ class Client {
   // |end_handle| (inclusive), and returns a ReadByTypeResult containing either the handle-value
   // pairs successfully read, or an error status and related handle (if any).
   //
-  // Attribute values longer than 253 bytes will be truncated. ReadRequest() or ReadBlobRequest()
-  // should be used to read the complete values. (Core Spec v5.2, Vol 3, Part F, 3.4.4.2)
+  // Attribute values may be truncated, as indicated by ReadByTypeValue.maybe_truncated.
+  // ReadRequest() or ReadBlobRequest() should be used to read the complete values. (Core Spec v5.2,
+  // Vol 3, Part F, 3.4.4.2)
   //
   // The attributes returned will be the attributes with the lowest handles in the handle range in
   // ascending order, and may not include all matching attributes. To read all attributes, make
@@ -143,6 +144,8 @@ class Client {
     // The underlying value buffer is only valid for the duration of |callback|. Callers must make a
     // copy if they need to retain the buffer.
     BufferView value;
+    // True if |value| might be truncated.
+    bool maybe_truncated;
   };
   struct ReadByTypeError {
     att::Status status;

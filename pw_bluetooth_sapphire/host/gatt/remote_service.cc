@@ -751,7 +751,8 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
             }
 
             values_accum.push_back(RemoteService::ReadByTypeResult{
-                CharacteristicHandle(error_handle), fit::error(status.protocol_error())});
+                CharacteristicHandle(error_handle), fit::error(status.protocol_error()),
+                /*maybe_truncated=*/false});
 
             // Do not attempt to read from the next handle if the error handle is the max handle, as
             // this would cause an overflow.
@@ -772,7 +773,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
       return;
     }
 
-    const auto& values = result.value();
+    const std::vector<Client::ReadByTypeValue>& values = result.value();
     // Client already checks for invalid response where status is success but no values are
     // returned.
     ZX_ASSERT(!values.empty());
@@ -781,8 +782,8 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
     for (const auto& result : values) {
       auto buffer = NewSlabBuffer(result.value.size());
       result.value.Copy(buffer.get());
-      values_accum.push_back(
-          ReadByTypeResult{CharacteristicHandle(result.handle), fit::ok(std::move(buffer))});
+      values_accum.push_back(ReadByTypeResult{CharacteristicHandle(result.handle),
+                                              fit::ok(std::move(buffer)), result.maybe_truncated});
     }
 
     // Do not attempt to read from the next handle if the last value handle is the max handle, as

@@ -113,12 +113,13 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   // such as a service or characteristic declaration (the callback will be invoked with an error in
   // this case).
   //
-  // NOTE: The values returned are truncated to 253 bytes. ReadCharacteristic(),
-  // ReadLongCharacteristic(), ReadDescriptor(), and ReadLongDescriptor() should be used to read
-  // complete values.
+  // NOTE: The values returned may be truncated, as indicated by ReadByTypeResult.maybe_truncated.
+  // ReadCharacteristic(), ReadLongCharacteristic(), ReadDescriptor(), and ReadLongDescriptor()
+  // should be used to read complete values.
   struct ReadByTypeResult {
     CharacteristicHandle handle;
     fit::result<ByteBufferPtr, att::ErrorCode> result;
+    bool maybe_truncated;
   };
   using ReadByTypeCallback = fit::function<void(att::Status, std::vector<ReadByTypeResult>)>;
   void ReadByType(const UUID& type, ReadByTypeCallback callback,
