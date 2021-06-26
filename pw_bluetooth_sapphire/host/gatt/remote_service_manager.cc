@@ -89,6 +89,7 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
     }
   };
 
+  // Start out with the MTU exchange.
   client_->ExchangeMTU([self, init_cb = std::move(init_cb), services = std::move(services)](
                            att::Status status, uint16_t mtu) mutable {
     // The Client's Bearer may outlive this object.
@@ -97,186 +98,20 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
       return;
     }
 
-    if (bt_is_error(status, INFO, "gatt", "MTU exchange failed")) {
+    if (bt_is_error(status, TRACE, "gatt", "MTU exchange failed")) {
       init_cb(status);
       return;
     }
 
-    self->InitializeGattProfileService(
-        [self, init_cb = std::move(init_cb),
-         services = std::move(services)](att::Status status) mutable {
-          if (status.error() == HostError::kNotFound) {
-            // The GATT Profile service's Service Changed characteristic is optional. Its absence
-            // implies that the set of GATT services on the server is fixed, so the kNotFound error
-            // can be safely ignored.
-            bt_log(DEBUG, "gatt", "GATT Profile service not found. Assuming services are fixed.");
-          } else if (!status.is_success()) {
-            init_cb(status);
-            return;
-          }
-
-          self->DiscoverServices(std::move(services), std::move(init_cb));
-        });
+    self->DiscoverServices(std::move(services), std::move(init_cb));
   });
-}
-
-fbl::RefPtr<RemoteService> RemoteServiceManager::GattProfileService() {
-  auto service_iter = std::find_if(services_.begin(), services_.end(), [](auto& s) {
-    return s.second->uuid() == types::kGenericAttributeService;
-  });
-  return service_iter == services_.end() ? nullptr : service_iter->second;
-}
-
-void RemoteServiceManager::OnServiceChangedNotification(const ByteBuffer& value) {
-  // TODO(fxbug.dev/71986): Handle service changed notification.
-  bt_log(WARN, "gatt", "Ignoring service changed notification");
-}
-
-void RemoteServiceManager::ConfigureServiceChangedNotifications(
-    fbl::RefPtr<RemoteService> gatt_profile_service, att::StatusCallback callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  gatt_profile_service->DiscoverCharacteristics(
-      [self, callback = std::move(callback),
-       gatt_profile_service = std::move(gatt_profile_service)](
-          att::Status status, const CharacteristicMap& characteristics) mutable {
-        // The Client's Bearer may outlive this object.
-        if (!self) {
-          callback(att::Status(HostError::kFailed));
-          return;
-        }
-
-        if (bt_is_error(status, WARN, "gatt",
-                        "Error discovering GATT Profile service characteristics")) {
-          callback(status);
-          return;
-        }
-
-        auto svc_changed_char_iter =
-            std::find_if(characteristics.begin(), characteristics.end(),
-                         [](CharacteristicMap::const_reference c) {
-                           const CharacteristicData& data = c.second.first;
-                           return data.type == types::kServiceChangedCharacteristic;
-                         });
-
-        // The Service Changed characteristic is optional, and its absence implies that the set
-        // of GATT services on the server is fixed.
-        if (svc_changed_char_iter == characteristics.end()) {
-          callback(att::Status(HostError::kNotFound));
-          return;
-        }
-
-        const bt::gatt::CharacteristicHandle svc_changed_char_handle = svc_changed_char_iter->first;
-
-        auto notification_cb = [self](const ByteBuffer& value) {
-          // The Client's Bearer may outlive this object.
-          if (self) {
-            self->OnServiceChangedNotification(value);
-          }
-        };
-
-        // Don't save handler_id as notifications never need to be disabled.
-        auto status_cb = [self, callback = std::move(callback)](att::Status status,
-                                                                IdType /*handler_id*/) {
-          // The Client's Bearer may outlive this object.
-          if (!self) {
-            callback(att::Status(HostError::kFailed));
-            return;
-          }
-
-          // If the Service Changed characteristic exists, notification support is mandatory (Core
-          // Spec v5.2, Vol 3, Part G, Sec 7.1).
-          if (bt_is_error(status, WARN, "gatt",
-                          "Enabling notifications of Service Changed characteristic failed")) {
-            callback(status);
-            return;
-          }
-
-          callback(att::Status());
-        };
-
-        gatt_profile_service->EnableNotifications(svc_changed_char_handle,
-                                                  std::move(notification_cb), std::move(status_cb));
-      });
-}
-
-void RemoteServiceManager::InitializeGattProfileService(att::StatusCallback callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  DiscoverGattProfileService([self, callback = std::move(callback)](att::Status status) mutable {
-    // The Client's Bearer may outlive this object.
-    if (!self) {
-      callback(att::Status(HostError::kFailed));
-      return;
-    }
-
-    if (!status.is_success()) {
-      callback(status);
-      return;
-    }
-
-    fbl::RefPtr<RemoteService> gatt_svc = self->GattProfileService();
-    ZX_ASSERT(gatt_svc);
-    self->ConfigureServiceChangedNotifications(
-        std::move(gatt_svc), [self, callback = std::move(callback)](att::Status status) {
-          // The Client's Bearer may outlive this object.
-          if (!self) {
-            callback(att::Status(HostError::kFailed));
-            return;
-          }
-
-          callback(status);
-        });
-  });
-}
-
-void RemoteServiceManager::DiscoverGattProfileService(att::StatusCallback callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self, callback = std::move(callback)](att::Status status) {
-    if (!self) {
-      callback(status);
-      return;
-    }
-
-    if (bt_is_error(status, WARN, "gatt", "Error discovering GATT Profile service")) {
-      callback(status);
-      return;
-    }
-
-    // The GATT Profile service is optional, and its absence implies that the set of GATT services
-    // on the server is fixed.
-    if (self->services_.empty()) {
-      callback(att::Status(HostError::kNotFound));
-      return;
-    }
-
-    // At most one instance of the GATT Profile service may exist (Core Spec v5.2, Vol 3, Part G,
-    // Sec 7).
-    if (self->services_.size() > 1) {
-      bt_log(WARN, "gatt", "Discovered (%zu) GATT Profile services, expected 1",
-             self->services_.size());
-      callback(att::Status(HostError::kFailed));
-      return;
-    }
-
-    UUID uuid = self->services_.begin()->second->uuid();
-    // The service UUID is filled in by Client based on the service discovery request, so it should
-    // be the same as the requested UUID.
-    ZX_ASSERT(uuid == types::kGenericAttributeService);
-
-    callback(att::Status());
-  };
-  DiscoverServicesOfKind(ServiceKind::PRIMARY, {types::kGenericAttributeService},
-                         std::move(status_cb));
 }
 
 void RemoteServiceManager::AddService(const ServiceData& service_data) {
   att::Handle handle = service_data.range_start;
   auto iter = services_.find(handle);
   if (iter != services_.end()) {
-    // The GATT Profile service is discovered before general service discovery, so it may be
-    // discovered twice.
-    if (iter->second->uuid() != types::kGenericAttributeService) {
-      bt_log(WARN, "gatt", "found duplicate service attribute handle! (%#.4x)", handle);
-    }
+    bt_log(ERROR, "gatt", "found duplicate service attribute handle! (%#.4x)", handle);
     return;
   }
 

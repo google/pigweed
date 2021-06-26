@@ -111,6 +111,8 @@ class FakeClient final : public Client {
   fxl::WeakPtr<FakeClient> AsFakeWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
+                              att::StatusCallback status_callback, UUID uuid);
   // Client overrides:
   uint16_t mtu() const override;
   void ExchangeMTU(MTUCallback callback) override;

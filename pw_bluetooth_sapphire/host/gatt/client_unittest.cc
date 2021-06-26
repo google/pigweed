@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "client.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
