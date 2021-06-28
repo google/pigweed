@@ -532,8 +532,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
                                     AdvertisingInterval::FAST1, false,
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+            test_device()->legacy_advertising_state().own_address_type);
 
   // Enable privacy. The random address should not get configured while
   // advertising is in progress.
@@ -544,7 +545,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   // Stop advertising.
   adapter()->le()->StopAdvertising(instance.id());
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
   EXPECT_FALSE(test_device()->le_random_address());
 
   // Restart advertising. This should configure the LE random address and
@@ -554,8 +555,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_random_address());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_advertising_state().own_address_type);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->legacy_advertising_state().own_address_type);
 
   // Advance time to force the random address to refresh. The update should be
   // deferred while advertising.
@@ -569,8 +571,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
                                     AdvertisingInterval::FAST1, false,
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_advertising_state().own_address_type);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->legacy_advertising_state().own_address_type);
   EXPECT_TRUE(test_device()->le_random_address());
   EXPECT_NE(last_random_addr, test_device()->le_random_address());
 
@@ -582,8 +585,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
                                     AdvertisingInterval::FAST1, false,
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+            test_device()->legacy_advertising_state().own_address_type);
 }
 
 // Tests the interactions between the discovery manager and the local address

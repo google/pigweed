@@ -1139,23 +1139,26 @@ void FakeController::OnReadBRADDR() {
 
 void FakeController::OnLESetAdvertisingEnable(
     const hci::LESetAdvertisingEnableCommandParams& params) {
-  le_adv_state_.enabled = (params.advertising_enable == hci::GenericEnableParam::kEnable);
+  legacy_advertising_state_.enabled =
+      (params.advertising_enable == hci::GenericEnableParam::kEnable);
   RespondWithCommandComplete(hci::kLESetAdvertisingEnable, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnLESetScanResponseData(
     const hci::LESetScanResponseDataCommandParams& params) {
-  le_adv_state_.scan_rsp_length = params.scan_rsp_data_length;
-  std::memcpy(le_adv_state_.scan_rsp_data, params.scan_rsp_data, le_adv_state_.scan_rsp_length);
+  legacy_advertising_state_.scan_rsp_length = params.scan_rsp_data_length;
+  std::memcpy(legacy_advertising_state_.scan_rsp_data, params.scan_rsp_data,
+              legacy_advertising_state_.scan_rsp_length);
 
   RespondWithCommandComplete(hci::kLESetScanResponseData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnLESetAdvertisingData(const hci::LESetAdvertisingDataCommandParams& params) {
-  le_adv_state_.data_length = params.adv_data_length;
-  std::memcpy(le_adv_state_.data, params.adv_data, le_adv_state_.data_length);
+  legacy_advertising_state_.data_length = params.adv_data_length;
+  std::memcpy(legacy_advertising_state_.data, params.adv_data,
+              legacy_advertising_state_.data_length);
 
   RespondWithCommandComplete(hci::kLESetAdvertisingData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
@@ -1165,25 +1168,25 @@ void FakeController::OnLESetAdvertisingParameters(
     const hci::LESetAdvertisingParametersCommandParams& params) {
   // TODO(jamuraa): when we parse advertising params, return Invalid HCI
   // Command Parameters when apporopriate (Vol 2, Part E, 7.8.9 p1259)
-  if (le_adv_state_.enabled) {
+  if (legacy_advertising_state_.enabled) {
     RespondWithCommandComplete(hci::kLESetAdvertisingParameters,
                                hci::StatusCode::kCommandDisallowed);
     return;
   }
 
-  le_adv_state_.interval_min = le16toh(params.adv_interval_min);
-  le_adv_state_.interval_max = le16toh(params.adv_interval_max);
-  le_adv_state_.adv_type = params.adv_type;
-  le_adv_state_.own_address_type = params.own_address_type;
+  legacy_advertising_state_.interval_min = le16toh(params.adv_interval_min);
+  legacy_advertising_state_.interval_max = le16toh(params.adv_interval_max);
+  legacy_advertising_state_.adv_type = params.adv_type;
+  legacy_advertising_state_.own_address_type = params.own_address_type;
 
   bt_log(INFO, "fake-hci", "start advertising using address type: %hhd",
-         le_adv_state_.own_address_type);
+         legacy_advertising_state_.own_address_type);
   RespondWithCommandComplete(hci::kLESetAdvertisingParameters, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnLESetRandomAddress(const hci::LESetRandomAddressCommandParams& params) {
-  if (le_advertising_state().enabled || le_scan_state().enabled) {
+  if (legacy_advertising_state().enabled || le_scan_state().enabled) {
     bt_log(INFO, "fake-hci", "cannot set LE random address while scanning or advertising");
     RespondWithCommandComplete(hci::kLESetRandomAddress, hci::StatusCode::kCommandDisallowed);
     return;

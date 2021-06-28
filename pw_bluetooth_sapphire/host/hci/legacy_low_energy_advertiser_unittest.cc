@@ -182,14 +182,14 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
   // StopAdvertising() sends multiple HCI commands. We only check that the
   // first one succeeded. StartAdvertising cancels the rest of the sequence
   // below.
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // Restart advertising using kRandomAddress.
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, conn_cb,
                                  GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   // Accept a connection from kPublicAddress. The local and peer addresses
   // should get assigned correctly.
@@ -218,12 +218,12 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, RestartInConnectionCallback) {
                                  GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   bool enabled = true;
   std::vector<bool> adv_states;
   test_device()->set_advertising_state_callback([this, &adv_states, &enabled] {
-    bool new_enabled = test_device()->le_advertising_state().enabled;
+    bool new_enabled = test_device()->legacy_advertising_state().enabled;
     if (enabled != new_enabled) {
       adv_states.push_back(new_enabled);
       enabled = new_enabled;
@@ -318,11 +318,11 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAndStop) {
                                  GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   EXPECT_TRUE(advertiser()->StopAdvertising(kRandomAddress));
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 }
 
 // Tests that an advertisement is configured with the correct parameters.
@@ -342,7 +342,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisingParameters) {
   ad.WriteBlock(&expected_ad, flags);
 
   // Verify the fake controller state.
-  const auto& fake_adv_state = test_device()->le_advertising_state();
+  const FakeController::LEAdvertisingState& fake_adv_state =
+      test_device()->legacy_advertising_state();
   EXPECT_TRUE(fake_adv_state.enabled);
   EXPECT_EQ(kTestInterval.min(), fake_adv_state.interval_min);
   EXPECT_EQ(kTestInterval.max(), fake_adv_state.interval_max);
@@ -358,6 +359,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisingParameters) {
                                  GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
+
   EXPECT_TRUE(fake_adv_state.enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, fake_adv_state.own_address_type);
 }
@@ -421,7 +423,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange)
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
 
-  const auto& fake_adv_state = test_device()->le_advertising_state();
+  const FakeController::LEAdvertisingState& fake_adv_state =
+      test_device()->legacy_advertising_state();
   EXPECT_EQ(kLEAdvertisingIntervalMin, fake_adv_state.interval_min);
   EXPECT_EQ(kLEAdvertisingIntervalMax, fake_adv_state.interval_max);
 
@@ -449,14 +452,14 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStarting) {
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, false);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, old_options, nullptr, [](auto) {});
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // This call should override the previous call and succeed with the new parameters.
   advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(), test_device()->le_advertising_state().interval_max);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(new_interval.max(), test_device()->legacy_advertising_state().interval_max);
 }
 
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStopping) {
@@ -469,13 +472,13 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStopping) {
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   // Initiate a request to Stop and wait until it's partially in progress.
   bool enabled = true;
   bool was_disabled = false;
   auto adv_state_cb = [&] {
-    enabled = test_device()->le_advertising_state().enabled;
+    enabled = test_device()->legacy_advertising_state().enabled;
     if (!was_disabled && !enabled) {
       was_disabled = true;
 
@@ -491,7 +494,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStopping) {
   RunLoopUntilIdle();
   EXPECT_TRUE(was_disabled);
   EXPECT_TRUE(enabled);
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 }
 
 // - StopAdvertisement noops when the advertisement address is wrong
@@ -509,24 +512,24 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StopAdvertisingConditions) {
 
   EXPECT_TRUE(MoveLastStatus());
 
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
   EXPECT_FALSE(advertiser()->StopAdvertising(kPublicAddress));
 
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
 
   EXPECT_TRUE(advertiser()->StopAdvertising(kRandomAddress));
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(0u, test_device()->le_advertising_state().advertised_view().size());
-  EXPECT_EQ(0u, test_device()->le_advertising_state().scan_rsp_view().size());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(0u, test_device()->legacy_advertising_state().advertised_view().size());
+  EXPECT_EQ(0u, test_device()->legacy_advertising_state().scan_rsp_view().size());
 }
 
 // - Rejects StartAdvertising for a different address when Advertising already
@@ -540,13 +543,14 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_advertising_state().own_address_type);
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->legacy_advertising_state().own_address_type);
 
   uint16_t new_appearance = 0x6789;
   ad.SetAppearance(new_appearance);
@@ -555,11 +559,12 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   RunLoopUntilIdle();
 
   // Should still be using the random address.
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_advertising_state().own_address_type);
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->legacy_advertising_state().own_address_type);
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
 }
 
 // - Updates data and params for the same address when advertising already
@@ -573,16 +578,16 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertiseUpdate) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   // The expected advertising data payload, with the flags.
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
 
-  EXPECT_EQ(kTestInterval.min(), test_device()->le_advertising_state().interval_min);
-  EXPECT_EQ(kTestInterval.max(), test_device()->le_advertising_state().interval_max);
+  EXPECT_EQ(kTestInterval.min(), test_device()->legacy_advertising_state().interval_min);
+  EXPECT_EQ(kTestInterval.max(), test_device()->legacy_advertising_state().interval_max);
 
   uint16_t new_appearance = 0x6789;
   ad.SetAppearance(new_appearance);
@@ -594,15 +599,15 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertiseUpdate) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   DynamicByteBuffer expected_new_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_new_ad, kDefaultNoAdvFlags);
-  EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_new_ad));
+  EXPECT_TRUE(ContainersEqual(test_device()->legacy_advertising_state().advertised_view(),
+                              expected_new_ad));
 
-  EXPECT_EQ(new_interval.min(), test_device()->le_advertising_state().interval_min);
-  EXPECT_EQ(new_interval.max(), test_device()->le_advertising_state().interval_max);
+  EXPECT_EQ(new_interval.min(), test_device()->legacy_advertising_state().interval_min);
+  EXPECT_EQ(new_interval.max(), test_device()->legacy_advertising_state().interval_max);
 }
 
 // - Rejects anonymous advertisement (unsupported)
@@ -614,7 +619,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAnonymous) {
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
                                  GetErrorCallback());
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 }
 
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AllowsRandomAddressChange) {
@@ -627,23 +632,23 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AllowsRandomAddressChange) {
   // The random address cannot be changed while starting to advertise.
   advertiser()->StartAdvertising(kRandomAddress, GetExampleData(), scan_rsp, options, nullptr,
                                  GetSuccessCallback());
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
   EXPECT_FALSE(advertiser()->AllowsRandomAddressChange());
 
   // The random address cannot be changed while advertising is enabled.
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_FALSE(advertiser()->AllowsRandomAddressChange());
 
   // The advertiser allows changing the address while advertising is getting
   // stopped.
   advertiser()->StopAdvertising(kRandomAddress);
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_TRUE(advertiser()->AllowsRandomAddressChange());
 
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
   EXPECT_TRUE(advertiser()->AllowsRandomAddressChange());
 }
 
@@ -659,7 +664,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
                                  GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
 
   // Verify the advertising and scan response data contains the newly populated TX Power Level.
   // See |../testing/fake_controller.cc:1585| for return value.
@@ -667,17 +672,17 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
 
   scan_data.SetTxPower(0x9);
   DynamicByteBuffer expected_scan_rsp(ad.CalculateBlockSize(/*include_flags=*/false));
   scan_data.WriteBlock(&expected_scan_rsp, std::nullopt);
-  EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().scan_rsp_view(), expected_scan_rsp));
+  EXPECT_TRUE(ContainersEqual(test_device()->legacy_advertising_state().scan_rsp_view(),
+                              expected_scan_rsp));
 
   EXPECT_TRUE(advertiser()->StopAdvertising(kRandomAddress));
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 }
 
 // Tests sending a second StartAdvertising command while the first one is outstanding,
@@ -693,14 +698,14 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // This call should override the previous call and succeed with the new parameters.
   advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(), test_device()->le_advertising_state().interval_max);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(new_interval.max(), test_device()->legacy_advertising_state().interval_max);
 
   // Verify the advertising data contains the newly populated TX Power Level.
   // Since the scan response data is empty, it's power level should not be populated.
@@ -709,9 +714,9 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
-  EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().scan_rsp_view(), DynamicByteBuffer()));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
+  EXPECT_TRUE(ContainersEqual(test_device()->legacy_advertising_state().scan_rsp_view(),
+                              DynamicByteBuffer()));
 }
 
 // Test that the second StartAdvertising call (with no TX Power requested) successfully supercedes
@@ -728,20 +733,20 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingTxPowerRequestedThen
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, false);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // This call should override the previous call and succeed with the new parameters.
   advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(), test_device()->le_advertising_state().interval_max);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(new_interval.max(), test_device()->legacy_advertising_state().interval_max);
 
   // Verify the advertising data doesn't contain a new TX Power Level.
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
 }
 
 // Test that the second StartAdvertising call (with TX Power requested) successfully supercedes
@@ -758,23 +763,23 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartingWhileStartingTxPowerNotRequest
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   // This call should override the previous call and succeed with the new parameters.
   advertiser()->StartAdvertising(addr, ad, scan_data, new_options, nullptr, GetSuccessCallback());
   RunLoopUntilIdle();
   EXPECT_TRUE(MoveLastStatus());
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(), test_device()->le_advertising_state().interval_max);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(new_interval.max(), test_device()->legacy_advertising_state().interval_max);
 
   // Verify the advertising data doesn't contain a new TX Power Level.
   ad.SetTxPower(0x9);
   DynamicByteBuffer expected_ad(ad.CalculateBlockSize(/*include_flags=*/true));
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().advertised_view(), expected_ad));
-  EXPECT_TRUE(
-      ContainersEqual(test_device()->le_advertising_state().scan_rsp_view(), DynamicByteBuffer()));
+      ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
+  EXPECT_TRUE(ContainersEqual(test_device()->legacy_advertising_state().scan_rsp_view(),
+                              DynamicByteBuffer()));
 }
 
 // Tests that advertising gets enabled successfully with the updated parameters if
@@ -793,7 +798,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   test_device()->set_tx_power_level_read_response_flag(/*respond=*/false);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, GetErrorCallback());
-  EXPECT_FALSE(test_device()->le_advertising_state().enabled);
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
 
   RunLoopUntilIdle();
   // At this point in time, the first StartAdvertising call is still waiting on the TX Power Level
@@ -808,8 +813,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   test_device()->OnLEReadAdvertisingChannelTxPower();
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->le_advertising_state().enabled);
-  EXPECT_EQ(new_interval.max(), test_device()->le_advertising_state().interval_max);
+  EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
+  EXPECT_EQ(new_interval.max(), test_device()->legacy_advertising_state().interval_max);
 }
 
 // Tests that advertising does not get enabled if the TX Power read fails.

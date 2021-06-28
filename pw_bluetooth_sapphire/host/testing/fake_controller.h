@@ -135,8 +135,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Returns the current LE scan state.
   const LEScanState& le_scan_state() const { return le_scan_state_; }
 
-  // Returns the current LE advertising state.
-  const LEAdvertisingState& le_advertising_state() const { return le_adv_state_; }
+  // Returns the current LE advertising state for legacy advertising
+  const LEAdvertisingState& legacy_advertising_state() const { return legacy_advertising_state_; }
 
   // Returns the most recent LE connection request parameters.
   const std::optional<LEConnectParams>& le_connect_params() const { return le_connect_params_; }
@@ -565,7 +565,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   Settings settings_;
   LEScanState le_scan_state_;
-  LEAdvertisingState le_adv_state_;
+  LEAdvertisingState legacy_advertising_state_;
 
   // Used for Advertising, Create Connection, and Active Scanning
   // Set by HCI_LE_Set_Random_Address
