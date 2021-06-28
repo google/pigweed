@@ -40,8 +40,7 @@ setuptools.setup(
         'ipython',
         'jinja2',
         'prompt_toolkit',
-        # Required features are not yet in https://pypi.org/project/ptpython/
-        'ptpython @ git+https://github.com/prompt-toolkit/ptpython.git@b74af76',
+        'ptpython>=3.0.18',
         'pw_cli',
         'pw_tokenizer',
         'pygments',
