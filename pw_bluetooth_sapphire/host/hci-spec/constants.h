@@ -242,13 +242,20 @@ enum class SupportedCommand : uint8_t {
   // Octet 3
   kReadClockOffset = (1 << 0),
   kReadLMPHandle   = (1 << 1),
+  // kReserved     = (1 << 2),
+  // kReserved     = (1 << 3),
+  // kReserved     = (1 << 4),
+  // kReserved     = (1 << 5),
+  // kReserved     = (1 << 6),
+  // kReserved     = (1 << 7),
 
   // Octet 4
+  // kReserved   = (1 << 0),
   kHoldMode      = (1 << 1),
   kSniffMode     = (1 << 2),
   kExitSniffMode = (1 << 3),
-  kParkState     = (1 << 4),  // Reserved in 5.0
-  kExitParkState = (1 << 5),  // Reserved in 5.0
+  kParkState     = (1 << 4),  // reserved in 5.0
+  kExitParkState = (1 << 5),  // reserved in 5.0
   kQOSSetup      = (1 << 6),
   kRoleDiscovery = (1 << 7),
 
@@ -267,7 +274,7 @@ enum class SupportedCommand : uint8_t {
   kFlush                = (1 << 1),
   kReadPINType          = (1 << 2),
   kWritePINType         = (1 << 3),
-  kCreateNewUnitKey     = (1 << 4),
+  kCreateNewUnitKey     = (1 << 4),  // reserved in 5.0
   kReadStoredLinkKey    = (1 << 5),
   kWriteStoredLinkKey   = (1 << 6),
   kDeletedStoredLinkKey = (1 << 7),
@@ -325,6 +332,8 @@ enum class SupportedCommand : uint8_t {
   // Octet 12
   kWritePageScanMode               = (1 << 0),  // deprecated
   kSetAFHHostChannelClassification = (1 << 1),
+  // kReserved                     = (1 << 2),
+  // kReserved                     = (1 << 3),
   kReadInquiryScanType             = (1 << 4),
   kWriteInquiryScanType            = (1 << 5),
   kReadInquiryMode                 = (1 << 6),
@@ -335,9 +344,17 @@ enum class SupportedCommand : uint8_t {
   kWritePageScanType             = (1 << 1),
   kReadAFHChannelAssessmentMode  = (1 << 2),
   kWriteAFHChannelAssessmentMode = (1 << 3),
+  // kReserved                   = (1 << 4),
+  // kReserved                   = (1 << 5),
+  // kReserved                   = (1 << 6),
+  // kReserved                   = (1 << 7),
 
   // Octet 14
+  // kReserved                 = (1 << 0),
+  // kReserved                 = (1 << 1),
+  // kReserved                 = (1 << 2),
   kReadLocalVersionInformation = (1 << 3),
+  // kReserved                 = (1 << 4),
   kReadLocalSupportedFeatures  = (1 << 5),
   kReadLocalExtendedFeatures   = (1 << 6),
   kReadBufferSize              = (1 << 7),
@@ -359,11 +376,14 @@ enum class SupportedCommand : uint8_t {
   kSetupSynchronousConnectionRequest  = (1 << 3),
   kAcceptSynchronousConnectionRequest = (1 << 4),
   kRejectSynchronousConnectionRequest = (1 << 5),
+  // kReserved                        = (1 << 6),
+  // kReserved                        = (1 << 7),
 
   // Octet 17
   kReadExtendedInquiryResponse  = (1 << 0),
   kWriteExtendedInquiryResponse = (1 << 1),
   kRefreshEncryptionKey         = (1 << 2),
+  // kReserved                  = (1 << 3),
   kSniffSubrating               = (1 << 4),
   kReadSimplePairingMode        = (1 << 5),
   kWriteSimplePairingMode       = (1 << 6),
@@ -374,6 +394,9 @@ enum class SupportedCommand : uint8_t {
   kWriteInquiryTransmitPowerLevel        = (1 << 1),
   kReadDefaultErroneousDataReporting     = (1 << 2),
   kWriteDefaultErroneousDataReporting    = (1 << 3),
+  // kReserved                           = (1 << 4),
+  // kReserved                           = (1 << 5),
+  // kReserved                           = (1 << 6),
   kIOCapabilityRequestReply              = (1 << 7),
 
   // Octet 19
@@ -387,9 +410,14 @@ enum class SupportedCommand : uint8_t {
   kRemoteOOBDataRequestNegativeReply    = (1 << 7),
 
   // Octet 20
+  // kReserved                      = (1 << 0),
+  // kReserved                      = (1 << 1),
   kSendKeypressNotification         = (1 << 2),
   kIOCapabilityRequestNegativeReply = (1 << 3),
   kReadEncryptionKeySize            = (1 << 4),
+  // kReserved                      = (1 << 5),
+  // kReserved                      = (1 << 6),
+  // kReserved                      = (1 << 7),
 
   // Octet 21
   kCreatePhysicalLink     = (1 << 0),
@@ -415,22 +443,27 @@ enum class SupportedCommand : uint8_t {
   kReadFlowControlMode      = (1 << 0),
   kWriteFlowControlMode     = (1 << 1),
   kReadDataBlockSize        = (1 << 2),
+  // kReserved              = (1 << 3),
+  // kReserved              = (1 << 4),
   kEnableAMPReceiverReports = (1 << 5),
   kAMPTestEnd               = (1 << 6),
   kAMPTest                  = (1 << 7),
 
   // Octet 24
   kReadEnhancedTransmitPowerLevel = (1 << 0),
+  // kReserved                    = (1 << 1),
   kReadBestEffortFlushTimeout     = (1 << 2),
   kWriteBestEffortFlushTimeout    = (1 << 3),
   kShortRangeMode                 = (1 << 4),
   kReadLEHostSupported            = (1 << 5),
   kWriteLEHostSupport             = (1 << 6),
+  // kReserved                    = (1 << 7),
 
   // Octet 25
   kLESetEventMask                  = (1 << 0),
-  kLEReadBufferSize                = (1 << 1),
+  kLEReadBufferSizeV1              = (1 << 1),
   kLEReadLocalSupportedFeatures    = (1 << 2),
+  // kReserved                     = (1 << 3),
   kLESetRandomAddress              = (1 << 4),
   kLESetAdvertisingParameters      = (1 << 5),
   kLEReadAdvertisingChannelTXPower = (1 << 6),
@@ -461,11 +494,15 @@ enum class SupportedCommand : uint8_t {
   kLELongTermKeyRequestReply         = (1 << 1),
   kLELongTermKeyRequestNegativeReply = (1 << 2),
   kLEReadSupportedStates             = (1 << 3),
-  kLEReceiverTest                    = (1 << 4),
-  kLETransmitterTest                 = (1 << 5),
+  kLEReceiverTestV1                  = (1 << 4),
+  kLETransmitterTestV1               = (1 << 5),
   kLETestEnd                         = (1 << 6),
+  // kReserved                       = (1 << 7),
 
   // Octet 29
+  // kReserved                         = (1 << 0),
+  // kReserved                         = (1 << 1),
+  // kReserved                         = (1 << 2),
   kEnhancedSetupSynchronousConnection  = (1 << 3),
   kEnhancedAcceptSynchronousConnection = (1 << 4),
   kReadLocalSupportedCodecs            = (1 << 5),
@@ -515,7 +552,7 @@ enum class SupportedCommand : uint8_t {
   // Octet 34
   kLEWriteSuggestedDefaultDataLength = (1 << 0),
   kLEReadLocalP256PublicKey          = (1 << 1),
-  kLEGenerateDHKey                   = (1 << 2),
+  kLEGenerateDHKeyV1                 = (1 << 2),
   kLEAddDeviceToResolvingList        = (1 << 3),
   kLERemoveDeviceFromResolvingList   = (1 << 4),
   kLEClearResolvingList              = (1 << 5),
@@ -527,47 +564,110 @@ enum class SupportedCommand : uint8_t {
   kLESetAddressResolutionEnable         = (1 << 1),
   kLESetResolvablePrivateAddressTimeout = (1 << 2),
   kLEReadMaximumDataLength              = (1 << 3),
-
-  // Added in 5.0 (octet 35 cont'd)
-  kLEReadPHYCommand                     = (1 << 4),
-  kLESetDefaultPHYCommand               = (1 << 5),
-  kLESetPHYCommand                      = (1 << 6),
-  kLEEnhancedReceiverTestCommand        = (1 << 7),
+  kLEReadPHY                            = (1 << 4),
+  kLESetDefaultPHY                      = (1 << 5),
+  kLESetPHY                             = (1 << 6),
+  kLEEnhancedReceiverTestV2             = (1 << 7),
 
   // Octet 36
-  kLEEnhancedTransmitterTestCommand              = (1 << 0),
-  kLESetAdvertisingSetRandomAddressCommand       = (1 << 1),
-  kLESetExtendedAdvertisingParametersCommand     = (1 << 2),
-  kLESetExtendedAdvertisingDataCommand           = (1 << 3),
-  kLESetExtendedScanResponseDataCommand          = (1 << 4),
-  kLESetExtendedAdvertisingEnableCommand         = (1 << 5),
-  kLEReadMaximumAdvertisingDataLengthCommand     = (1 << 6),
-  kLEReadNumberOfSupportedAdvertisingSetsCommand = (1 << 7),
+  kLEEnhancedTransmitterTestV2              = (1 << 0),
+  kLESetAdvertisingSetRandomAddress       = (1 << 1),
+  kLESetExtendedAdvertisingParameters     = (1 << 2),
+  kLESetExtendedAdvertisingData           = (1 << 3),
+  kLESetExtendedScanResponseData          = (1 << 4),
+  kLESetExtendedAdvertisingEnable         = (1 << 5),
+  kLEReadMaximumAdvertisingDataLength     = (1 << 6),
+  kLEReadNumberOfSupportedAdvertisingSets = (1 << 7),
 
   // Octet 37
-  kLERemoveAdvertisingSetCommand             = (1 << 0),
-  kLEClearAdvertisingSetsCommand             = (1 << 1),
-  kLESetPeriodicAdvertisingParametersCommand = (1 << 2),
-  kLESetPeriodicAdvertisingDataCommand       = (1 << 3),
-  kLESetPeriodicAdvertisingEnableCommand     = (1 << 4),
-  kLESetExtendedScanParametersCommand        = (1 << 5),
-  kLESetExtendedScanEnableCommand            = (1 << 6),
-  kLEExtendedCreateConnectionCommand         = (1 << 7),
+  kLERemoveAdvertisingSet             = (1 << 0),
+  kLEClearAdvertisingSets             = (1 << 1),
+  kLESetPeriodicAdvertisingParameters = (1 << 2),
+  kLESetPeriodicAdvertisingData       = (1 << 3),
+  kLESetPeriodicAdvertisingEnable     = (1 << 4),
+  kLESetExtendedScanParameters        = (1 << 5),
+  kLESetExtendedScanEnable            = (1 << 6),
+  kLEExtendedCreateConnection         = (1 << 7),
 
   // Octet 38
-  kLEPeriodicAdvertisingCreateSyncCommand          = (1 << 0),
-  kLEPeriodicAdvertisingCreateSyncCancelCommand    = (1 << 1),
-  kLEPeriodicAdvertisingTerminateSyncCommand       = (1 << 2),
-  kLEAddDeviceToPeriodicAdvertiserListCommand      = (1 << 3),
-  kLERemoveDeviceFromPeriodicAdvertiserListCommand = (1 << 4),
-  kLEClearPeriodicAdvertiserListCommand            = (1 << 5),
-  kLEReadPeriodicAdvertiserListSizeCommand         = (1 << 6),
-  kLEReadTransmitPowerCommand                      = (1 << 7),
+  kLEPeriodicAdvertisingCreateSync          = (1 << 0),
+  kLEPeriodicAdvertisingCreateSyncCancel    = (1 << 1),
+  kLEPeriodicAdvertisingTerminateSync       = (1 << 2),
+  kLEAddDeviceToPeriodicAdvertiserList      = (1 << 3),
+  kLERemoveDeviceFromPeriodicAdvertiserList = (1 << 4),
+  kLEClearPeriodicAdvertiserList            = (1 << 5),
+  kLEReadPeriodicAdvertiserListSize         = (1 << 6),
+  kLEReadTransmitPower                      = (1 << 7),
 
   // Octet 39
-  kLEReadRFPathCompensationCommand   = (1 << 0),
-  kLEWriteRFPathCompensationCommand  = (1 << 1),
-  kLESetPrivacyMode                  = (1 << 2),
+  kLEReadRFPathCompensation                 = (1 << 0),
+  kLEWriteRFPathCompensation                = (1 << 1),
+  kLESetPrivacyMode                         = (1 << 2),
+  kLEReceiverTestV3                         = (1 << 3),
+  kLETransmitterTestV3                      = (1 << 4),
+  kLESetConnectionlessCTETransmitParameters = (1 << 5),
+  kLESetConnectionlessCTETransmitEnable     = (1 << 6),
+  kLESetConnectionlessIQSamplingEnable      = (1 << 7),
+
+  // Octet 40
+  kLESetConnectionCTEReceiveParameters   = (1 << 0),
+  kLESetConnectionCTETransmitParameters  = (1 << 1),
+  kLEConnectionCTERequestEnable          = (1 << 2),
+  kLEConnectionCTEResponseEnable         = (1 << 3),
+  kLEReadAntennaInformation              = (1 << 4),
+  kLESetPeriodicAdvertisingReceiveEnable = (1 << 5),
+  kLEPeriodicAdvertisingSyncTransfer     = (1 << 6),
+  kLEPeriodicAdvertisingSetInfoTransfer  = (1 << 7),
+
+  // Octet 41
+  kLESetPeriodicAdvertisingSyncTransferParameters        = (1 << 0),
+  kLESetDefaultPeriodicAdvertisingSyncTransferParameters = (1 << 1),
+  kLEGenerateDHKeyV3                                     = (1 << 2),
+  kReadLocalSimplePairingOptions                         = (1 << 3),
+  kLEModifySleepClockAccuracy                            = (1 << 4),
+  kLEReadBufferSizeV2                                    = (1 << 5),
+  kLEReadISOTXSync                                       = (1 << 6),
+  kLESetCIGParameters                                    = (1 << 7),
+
+  // Octet 42
+  kLESetCIGParametersTest = (1 << 0),
+  kLECreateCIS            = (1 << 1),
+  kLERemoveCIG            = (1 << 2),
+  kLEAcceptCISRequest     = (1 << 3),
+  kLERejectCISRequest     = (1 << 4),
+  kLECreateBIG            = (1 << 5),
+  kLECreateBIGTest        = (1 << 6),
+  kLETerminateBIG         = (1 << 7),
+
+  // Octet 43
+  kLEBIGCreateSync       = (1 << 0),
+  kLEBIGTerminateSync    = (1 << 1),
+  kLERequestPeerSCA      = (1 << 2),
+  kLESetupISODataPath    = (1 << 3),
+  kLERemoveISODataPath   = (1 << 4),
+  kLEISOTransmitTest     = (1 << 5),
+  kLEISOReceiveTest      = (1 << 6),
+  kLEISOReadTestCounters = (1 << 7),
+
+  // Octet 44
+  kLEISOTestEnd                      = (1 << 0),
+  kLESetHostFeature                  = (1 << 1),
+  kLEReadISOLinkQuality              = (1 << 2),
+  kLEEnhancedReadTransmitPowerLevel  = (1 << 3),
+  kLEReadRemoteTransmitPowerLevel    = (1 << 4),
+  kLESetPathLossReportingParameters  = (1 << 5),
+  kLESetPathLossReportingEnable      = (1 << 6),
+  kLESetTransmitPowerReportingEnable = (1 << 7),
+
+  // Octet 45
+  kLETransmitterTestV4                 = (1 << 0),
+  kSetEcosystemBaseInterval            = (1 << 1),
+  kReadLocalSupportedCodecsV2          = (1 << 2),
+  kReadLocalSupportedCodecCapabilities = (1 << 3),
+  kReadLocalSupportedControllerDelay   = (1 << 4),
+  kConfigureDataPath                   = (1 << 5),
+  // kReserved                         = (1 << 6),
+  // kReserved                         = (1 << 7),
 };
 
 // Bitmask of 8-octet LE supported features field. See Core Spec

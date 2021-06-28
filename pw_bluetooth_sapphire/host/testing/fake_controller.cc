@@ -120,7 +120,7 @@ void FakeController::Settings::AddLESupportedCommands() {
   SetBit(supported_commands + 14, hci::SupportedCommand::kReadLocalExtendedFeatures);
   SetBit(supported_commands + 24, hci::SupportedCommand::kWriteLEHostSupport);
   SetBit(supported_commands + 25, hci::SupportedCommand::kLESetEventMask);
-  SetBit(supported_commands + 25, hci::SupportedCommand::kLEReadBufferSize);
+  SetBit(supported_commands + 25, hci::SupportedCommand::kLEReadBufferSizeV1);
   SetBit(supported_commands + 25, hci::SupportedCommand::kLEReadLocalSupportedFeatures);
   SetBit(supported_commands + 25, hci::SupportedCommand::kLESetRandomAddress);
   SetBit(supported_commands + 25, hci::SupportedCommand::kLESetAdvertisingParameters);
