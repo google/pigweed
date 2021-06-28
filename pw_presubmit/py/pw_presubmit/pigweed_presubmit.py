@@ -445,6 +445,9 @@ def copyright_notice(ctx: PresubmitContext):
         if path.stat().st_size == 0:
             continue  # Skip empty files
 
+        if path.is_dir():
+            continue  # Skip submodules which are included in ctx.paths.
+
         with path.open() as file:
             (comment, end_block_comment,
              line) = copyright_read_first_line(file)
