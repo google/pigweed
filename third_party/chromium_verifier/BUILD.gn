@@ -17,6 +17,16 @@ import("$dir_pw_build/target_types.gni")
 import("chromium_verifier.gni")
 
 if (dir_pw_third_party_chromium_verifier != "") {
+  # A pthread definition layer for systems without POSIX thread implementation.
+  config("pthread_config") {
+    include_dirs = [ "public/chromium_verifier/pthread" ]
+  }
+
+  pw_source_set("pthread") {
+    public_configs = [ ":pthread_config" ]
+    public = [ "public/chromium_verifier/pthread/pthread.h" ]
+  }
+
   # TODO(pwbug/394): Add build support for chromium verifier.
   # TODO(pwbug/394): Port related chromium native unittests. Then add instruction
   # for rolling.

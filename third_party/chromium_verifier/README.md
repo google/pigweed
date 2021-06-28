@@ -20,3 +20,11 @@ It's too complicated to accomodate for embedded target.
 
 However we do build a full version including the metric feature on Linux host
 platform for running native unittest, as a criterion for rolling.
+
+Certain chromium sources include header `pthread.h` and use data type and
+functions such as `pthread_t`, `pthread_mutex_lock` etc. Although the code
+the verifier executes has no reference to them, they are still needed for
+compilation. If the target platform does not have a native POSIX thread
+implementation, we provide a `pthread.h` that declares the needed data types
+and functions for build. For GN builds, simply set
+`pw_third_party_chromium_verifier_HAS_NATIVE_PTHREAD` to false.
