@@ -23,7 +23,10 @@ import("freertos.gni")
 # will be available in GN at "$dir_pw_third_party/freertos".
 if (dir_pw_third_party_freertos != "") {
   config("disable_warnings") {
-    cflags = [ "-Wno-error=unused-parameter" ]
+    cflags = [
+      "-Wno-error=unused-parameter",
+      "-Wno-error=cast-qual",
+    ]
     visibility = [ ":*" ]
   }
 
