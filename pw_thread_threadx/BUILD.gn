@@ -139,6 +139,33 @@ pw_source_set("yield") {
   deps = [ "$dir_pw_thread:yield.facade" ]
 }
 
+pw_source_set("util") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_third_party/threadx",
+    dir_pw_function,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_thread_threadx/util.h" ]
+  sources = [ "util.cc" ]
+}
+
+pw_source_set("snapshot") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_third_party/threadx",
+    "$dir_pw_thread:protos.pwpb",
+    "$dir_pw_thread:snapshot",
+    dir_pw_bytes,
+    dir_pw_function,
+    dir_pw_protobuf,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_thread_threadx/snapshot.h" ]
+  sources = [ "snapshot.cc" ]
+  deps = [ ":util" ]
+}
+
 pw_test_group("tests") {
   tests = [ ":thread_backend_test" ]
 }

@@ -220,3 +220,24 @@ function without arguments. For example:
   Because the thread may start after the pw::Thread creation, an object which
   implements the ThreadCore MUST meet or exceed the lifetime of its thread of
   execution!
+
+-----------------------
+pw_snapshot integration
+-----------------------
+``pw_thread`` provides some light, optional integration with pw_snapshot through
+helper functions for populating a ``pw::thread::Thread`` proto. Some of these
+are directly integrated into the RTOS thread backends to simplify the thread
+state capturing for snapshots.
+
+SnapshotStack()
+===============
+The ``SnapshotStack()`` helper captures stack metadata (stack pointer and
+bounds) into a ``pw::thread::Thread`` proto. After the stack bounds are
+captured, execution is passed off to the thread stack collection callback to
+capture a backtrace or stack dump. Note that this function does NOT capture the
+thread name: that metadata is only required in cases where a stack overflow or
+underflow is detected.
+
+.. Warning::
+  Snapshot integration is a work-in-progress and may see significant API
+  changes.

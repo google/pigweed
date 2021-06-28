@@ -164,6 +164,25 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "snapshot",
+    hdrs = [
+        "public/pw_thread/snapshot.h"
+    ],
+    srcs = [
+        "snapshot.cc"
+    ],
+    deps = [
+        ":util",
+        "//pw_thread:protos",
+        "//pw_bytes",
+        "//pw_function",
+        "//pw_protobuf",
+        "//pw_status",
+        "//pw_log",
+    ],
+)
+
+pw_cc_library(
     name = "test_threads_header",
     hdrs = [
         "public/pw_thread/test_threads.h",

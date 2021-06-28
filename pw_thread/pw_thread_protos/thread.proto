@@ -76,12 +76,27 @@ message Thread {
   // limitations.
   bytes raw_stack = 6;
 
-  // Thread stack related information. Helpful for identifying stack overflows.
-  uint64 stack_size = 7;
-  uint64 stack_start_pointer = 8;
+  // The address this thread's stack pointer began at. For descending stacks,
+  // this is the highest address of the stack bounds. For ascending stacks, this
+  // is the lowest address of the stack bounds.
+  uint64 stack_start_pointer = 7;
+
+  // The furthest permitted address from where this thread's stack pointer
+  // began. For descending stacks, this is the lowest address of the stack
+  // bounds. For ascending stacks, this is the highest address of the stack
+  // bounds.
+  uint64 stack_end_pointer = 8;
+
+  // The current stack pointer of this thread.
   uint64 stack_pointer = 9;
 
   // CPU usage info. This is the percentage of CPU time the thread has been
   // active in hundredths of a percent. (e.g. 5.00% = 500u)
   uint32 cpu_usage_hundredths = 10;
+}
+
+// This message overlays the pw.snapshot.Snapshot proto. It's valid to encode
+// this message to the same sink that a Snapshot proto is being written to.
+message SnapshotThreadInfo {
+  repeated pw.thread.Thread threads = 18;
 }

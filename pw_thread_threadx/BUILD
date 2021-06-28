@@ -159,3 +159,39 @@ pw_cc_library(
         "//pw_thread:yield_facade",
     ],
 )
+
+pw_cc_library(
+    name = "util",
+    hdrs = [
+        "public/pw_thread_threadx/util.h"
+    ],
+    srcs = [
+        "util.cc"
+    ],
+    deps = [
+        "//pw_function",
+        "//pw_status",
+    ],
+    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # currently do not have Bazel support.
+)
+
+pw_cc_library(
+    name = "snapshot",
+    hdrs = [
+        "public/pw_thread_threadx/snapshot.h"
+    ],
+    srcs = [
+        "snapshot.cc"
+    ],
+    deps = [
+        ":util",
+        "//pw_thread:protos",
+        "//pw_bytes",
+        "//pw_function",
+        "//pw_protobuf",
+        "//pw_status",
+    ],
+    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # currently do not have Bazel support.
+)

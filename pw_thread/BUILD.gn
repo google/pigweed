@@ -70,6 +70,20 @@ pw_facade("yield") {
   sources = [ "yield.cc" ]
 }
 
+pw_source_set("snapshot") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_thread:protos.pwpb",
+    dir_pw_bytes,
+    dir_pw_function,
+    dir_pw_protobuf,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_thread/snapshot.h" ]
+  sources = [ "snapshot.cc" ]
+  deps = [ dir_pw_log ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":id_facade_test",
