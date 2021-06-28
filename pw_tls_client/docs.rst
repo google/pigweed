@@ -37,7 +37,8 @@ This module requires the following dependencies:
 -----------
 TLS requires an entropy source for generating random bytes. Users of this
 module should provide one by implementing a backend to the
-``pw_tls_client:entropy`` facade.
+``pw_tls_client:entropy`` facade. The backend defaults to
+``pw_tls_client:fake_entropy`` that does nothing.
 
 2. Chromium Verifier
 ---------------------

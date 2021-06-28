@@ -50,6 +50,14 @@ pw_facade("tls_entropy") {
   ]
 }
 
+# A fake entropy source that does nothing. It should only be used for
+# demo and test purpose only. Production code shall not use it.
+pw_source_set("fake_entropy") {
+  public_deps = [ ":tls_entropy.facade" ]
+  sources = [ "fake_entropy.cc" ]
+  deps = [ "$dir_pw_log" ]
+}
+
 # The ":time" target wraps the time() and gettimeofday(), which are
 # commonly used by TLS libraries for expiration check.
 config("time_wrap") {

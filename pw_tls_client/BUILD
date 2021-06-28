@@ -48,7 +48,7 @@ pw_cc_library(
 # ready.
 
 pw_cc_facade(
-    name = "pw_tls_client_entropy_facade",
+    name = "entropy_facade",
     hdrs = [
         "public/pw_tls_client/entropy.h",
     ],
@@ -56,6 +56,14 @@ pw_cc_facade(
     deps = [
         "//pw_bytes",
         "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "fake_entropy",
+    srcs = [ "fake_entropy.cc" ],
+    deps = [
+        ":entropy_facade"
     ],
 )
 
