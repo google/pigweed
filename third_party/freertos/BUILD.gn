@@ -28,7 +28,7 @@ if (dir_pw_third_party_freertos != "") {
   }
 
   config("public_includes") {
-    include_dirs = [ "Source/include" ]
+    include_dirs = [ "$dir_pw_third_party_freertos/Source/include" ]
     visibility = [ ":*" ]
   }
 
