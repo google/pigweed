@@ -97,7 +97,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
     bool enabled = false;
     hci::LEAdvertisingType adv_type = hci::LEAdvertisingType::kAdvInd;
+
+    std::optional<DeviceAddress> random_address;
     hci::LEOwnAddressType own_address_type = hci::LEOwnAddressType::kPublic;
+
     uint16_t interval_min = 0;
     uint16_t interval_max = 0;
 
@@ -140,8 +143,6 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Returns the most recent LE connection request parameters.
   const std::optional<LEConnectParams>& le_connect_params() const { return le_connect_params_; }
-
-  const std::optional<DeviceAddress>& le_random_address() const { return le_random_address_; }
 
   // Returns the current local name set in the controller
   const std::string& local_name() const { return local_name_; }
@@ -566,10 +567,6 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   Settings settings_;
   LEScanState le_scan_state_;
   LEAdvertisingState legacy_advertising_state_;
-
-  // Used for Advertising, Create Connection, and Active Scanning
-  // Set by HCI_LE_Set_Random_Address
-  std::optional<DeviceAddress> le_random_address_;
 
   // Used for BR/EDR Scans
   uint8_t bredr_scan_state_;

@@ -540,13 +540,13 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   // advertising is in progress.
   adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_random_address());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Stop advertising.
   adapter()->le()->StopAdvertising(instance.id());
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_FALSE(test_device()->le_random_address());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Restart advertising. This should configure the LE random address and
   // advertise using it.
@@ -554,16 +554,16 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
                                     AdvertisingInterval::FAST1, false,
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->le_random_address());
+  EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kRandom,
             test_device()->legacy_advertising_state().own_address_type);
 
   // Advance time to force the random address to refresh. The update should be
   // deferred while advertising.
-  auto last_random_addr = *test_device()->le_random_address();
+  auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
   RunLoopFor(kPrivateAddressTimeout);
-  EXPECT_EQ(last_random_addr, *test_device()->le_random_address());
+  EXPECT_EQ(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 
   // Restarting advertising should refresh the controller address.
   adapter()->le()->StopAdvertising(instance.id());
@@ -574,8 +574,8 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kRandom,
             test_device()->legacy_advertising_state().own_address_type);
-  EXPECT_TRUE(test_device()->le_random_address());
-  EXPECT_NE(last_random_addr, test_device()->le_random_address());
+  EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
+  EXPECT_NE(last_random_addr, test_device()->legacy_advertising_state().random_address);
 
   // Disable privacy. The next time advertising gets started it should use a
   // public address.
@@ -617,13 +617,13 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
   // is in progress.
   adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_random_address());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Stop discovery.
   session = nullptr;
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
-  EXPECT_FALSE(test_device()->le_random_address());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Restart discovery. This should configure the LE random address and scan
   // using it.
@@ -635,18 +635,18 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
 
   // Advance time to force the random address to refresh. The update should be
   // deferred while still scanning.
-  ASSERT_TRUE(test_device()->le_random_address());
-  auto last_random_addr = *test_device()->le_random_address();
+  ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
+  auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
   RunLoopFor(kPrivateAddressTimeout);
-  EXPECT_EQ(last_random_addr, *test_device()->le_random_address());
+  EXPECT_EQ(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 
   // Let the scan period expire. This should restart scanning and refresh the
   // random address.
   RunLoopFor(kTestDelay);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
-  ASSERT_TRUE(test_device()->le_random_address());
-  EXPECT_NE(last_random_addr, test_device()->le_random_address());
+  ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
+  EXPECT_NE(last_random_addr, test_device()->legacy_advertising_state().random_address);
 
   // Disable privacy. The next time scanning gets started it should use a
   // public address.
@@ -680,7 +680,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   // connection attempt is in progress.
   adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_random_address());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
   ASSERT_TRUE(conn_ref);
   ASSERT_TRUE(test_device()->le_connect_params());
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
@@ -690,7 +690,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   conn_ref = nullptr;
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->le_random_address());
+  EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   ASSERT_TRUE(conn_ref);
   ASSERT_TRUE(test_device()->le_connect_params());
 
@@ -751,7 +751,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   // connection request is outstanding.
   adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
-  EXPECT_FALSE(test_device()->le_random_address());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Let the connection request timeout.
   RunLoopFor(kTestTimeout);
@@ -763,7 +763,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
-  ASSERT_TRUE(test_device()->le_random_address());
+  ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
@@ -771,9 +771,9 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   // Advance the time to cause the random address to refresh. The update should
   // be deferred while a connection request is outstanding.
-  auto last_random_addr = *test_device()->le_random_address();
+  auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
   RunLoopFor(kPrivateAddressTimeout);
-  EXPECT_EQ(last_random_addr, *test_device()->le_random_address());
+  EXPECT_EQ(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
 
@@ -787,7 +787,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   adapter()->le()->Connect(peer->identifier(), std::move(noop_connect_cb),
                            LowEnergyConnectionOptions());
   RunLoopUntilIdle();
-  EXPECT_NE(last_random_addr, *test_device()->le_random_address());
+  EXPECT_NE(last_random_addr, *test_device()->legacy_advertising_state().random_address);
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
@@ -822,11 +822,11 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
 
   // Expire the private address. The address should refresh without interference
   // from the ongoing connection.
-  ASSERT_TRUE(test_device()->le_random_address());
-  auto last_random_addr = *test_device()->le_random_address();
+  ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
+  auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
   RunLoopFor(kPrivateAddressTimeout);
-  ASSERT_TRUE(test_device()->le_random_address());
-  EXPECT_NE(last_random_addr, *test_device()->le_random_address());
+  ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
+  EXPECT_NE(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 }
 
 TEST_F(GAP_AdapterTest, IsDiscoverableLowEnergy) {

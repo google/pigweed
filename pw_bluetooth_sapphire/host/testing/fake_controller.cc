@@ -1192,7 +1192,8 @@ void FakeController::OnLESetRandomAddress(const hci::LESetRandomAddressCommandPa
     return;
   }
 
-  le_random_address_ = DeviceAddress(DeviceAddress::Type::kLERandom, params.random_address);
+  legacy_advertising_state_.random_address =
+      DeviceAddress(DeviceAddress::Type::kLERandom, params.random_address);
   RespondWithCommandComplete(hci::kLESetRandomAddress, hci::StatusCode::kSuccess);
 }
 
