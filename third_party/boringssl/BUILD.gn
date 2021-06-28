@@ -33,6 +33,7 @@ if (dir_pw_third_party_boringssl != "") {
     cflags = [
       "-Wno-cast-qual",
       "-Wno-ignored-qualifiers",
+      "-w",
     ]
 
     # This can be removed once boringssl threading primitives are implemented,

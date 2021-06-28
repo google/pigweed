@@ -150,6 +150,7 @@ if (dir_pw_third_party_mbedtls != "") {
     cflags = [
       "-Wno-error=cast-qual",
       "-Wno-error=redundant-decls",
+      "-w",
     ]
   }
 
