@@ -62,6 +62,11 @@ Pigweed build against it. This is controlled by the build variable
 ``pw_executable_config.target_type``, specifying the name of the executable
 template for a project.
 
+In some uncommon cases, a project's ``pw_executable`` template definition may
+need to stamp out some ``pw_source_set``s. Since a pw_executable template can't
+import ``$dir_pw_build/target_types.gni`` due to circular imports, it should
+import ``$dir_pw_build/cc_library.gni`` instead.
+
 .. tip::
 
   Prefer to use ``pw_executable`` over plain ``executable`` targets to allow
