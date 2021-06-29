@@ -79,3 +79,17 @@ def get_pane_indicator(pt_container, title, mouse_handler=None):
     if has_focus(pt_container.__pt_container__())():
         return [active_indicator, active_title]
     return [inactive_indicator, inactive_title]
+
+
+def to_checkbox(checked: bool, mouse_handler=None):
+    default_style = 'class:checkbox'
+    checked_style = 'class:checkbox-checked'
+    text = '[x] ' if checked else '[ ] '
+    style = checked_style if checked else default_style
+    if mouse_handler:
+        return (style, text, mouse_handler)
+    return (style, text)
+
+
+def to_checkbox_text(checked: bool):
+    return to_checkbox(checked)[1]

@@ -86,7 +86,7 @@ class FocusOnClickFloatContainer(ConditionalContainer):
 
         empty_text = FormattedTextControl([(
             # Style
-            'class:default',
+            'class:pane_inactive',
             # Text
             ' ',
             # Mouse handler
@@ -117,7 +117,7 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 # Style
                 '',
                 # Text
-                '[FOCUSED] ',
+                ' ',
                 # Mouse handler
                 functools.partial(mouse_focus_handler, repl_pane),
             ),
@@ -226,7 +226,7 @@ class ReplPane:
         python_repl: PwPtPythonRepl,
         # TODO(tonymd): Make the height of input+output windows match the log
         # pane height. (Using minimum output height of 5 for now).
-        output_height: Optional[AnyDimension] = Dimension(preferred=5),
+        output_height: Optional[AnyDimension] = Dimension(min=5, weight=70),
         # TODO(tonymd): Figure out how to resize ptpython input field.
         _input_height: Optional[AnyDimension] = None,
         # Default width and height to 50% of the screen
@@ -236,6 +236,7 @@ class ReplPane:
     ) -> None:
         self.height = height
         self.width = width
+        self.show_pane = True
 
         self.executed_code: List = []
         self.application = application
@@ -258,49 +259,67 @@ class ReplPane:
         self.bottom_toolbar = ReplPaneBottomToolbarBar(self)
 
         # ReplPane root container
-        self.container = FloatContainer(
-            # Horizontal split of all Repl pane sections.
-            HSplit(
-                [
-                    # 1. Repl Output
-                    self.output_field,
-                    # 2. Static separator toolbar.
-                    VSplit(
-                        [
-                            Window(
-                                content=FormattedTextControl(
-                                    functools.partial(get_pane_indicator, self,
-                                                      ' Python Results ')),
-                                align=WindowAlign.LEFT,
-                                dont_extend_width=True,
-                                height=1,
+        self.container = ConditionalContainer(
+            FloatContainer(
+                # Horizontal split of all Repl pane sections.
+                HSplit(
+                    [
+                        HSplit([
+                            # 1. Repl Output
+                            self.output_field,
+                            # 2. Static separator toolbar.
+                            VSplit(
+                                [
+                                    Window(
+                                        content=FormattedTextControl(
+                                            functools.partial(
+                                                get_pane_indicator, self,
+                                                ' Python Results ')),
+                                        align=WindowAlign.LEFT,
+                                        dont_extend_width=True,
+                                        height=1,
+                                    ),
+                                ],
+                                style=functools.partial(
+                                    get_toolbar_style, self),
                             ),
-                        ],
-                        style=functools.partial(get_toolbar_style, self),
-                    ),
-                    # 3. Repl Input
-                    self.pw_ptpython_repl,
-                    # 4. Bottom toolbar
-                    self.bottom_toolbar,
-                ],
-                height=self.height,
-                width=self.width,
-                style=functools.partial(get_pane_style, self),
-            ),
-            floats=[
-                # Transparent float container that will focus on the repl_pane
-                # when clicked. It is hidden if already in focus.
-                Float(
-                    # This is drawn as the full size of the ReplPane
-                    FocusOnClickFloatContainer(self),
-                    transparent=True,
-                    # Draw the empty space in the bottom right corner.
-                    right=1,
-                    left=0,
-                    top=0,
-                    bottom=1,
+                        ]),
+                        HSplit([
+                            # 3. Repl Input
+                            self.pw_ptpython_repl,
+                            # 4. Bottom toolbar
+                            self.bottom_toolbar,
+                        ]),
+                    ],
+                    height=self.height,
+                    width=self.width,
+                    style=functools.partial(get_pane_style, self),
                 ),
-            ])
+                floats=[
+                    # Transparent float container that will focus on the
+                    # repl_pane when clicked. It is hidden if already in focus.
+                    Float(
+                        # This is drawn as the full size of the ReplPane
+                        FocusOnClickFloatContainer(self),
+                        transparent=True,
+                        # Draw the empty space in the bottom right corner.
+                        # Distance to the right edge
+                        right=1,
+                        # Distance to the bottom edge
+                        bottom=1,
+                        # Don't specify left or top to 0, it would override
+                        # right+bottom and move it to the top left.
+                        #   left=0,
+                        #   top=0,
+                    ),
+                ]),
+            filter=Condition(lambda: self.show_pane))
+
+    def pane_title(self):  # pylint: disable=no-self-use
+        return 'Python Repl'
+
+    def pane_subtitle(self):  # pylint: disable=no-self-use
+        return ''
 
     def __pt_container__(self):
         """Return the prompt_toolkit container for this ReplPane."""

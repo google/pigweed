@@ -13,6 +13,7 @@
 # the License.
 """ConsoleApp control class."""
 
+import collections
 import builtins
 import asyncio
 import logging
@@ -46,6 +47,7 @@ from ptpython.key_bindings import (  # type: ignore
 )
 
 import pw_console.key_bindings
+import pw_console.helpers
 import pw_console.style
 from pw_console.help_window import HelpWindow
 from pw_console.log_pane import LogPane
@@ -122,9 +124,6 @@ class ConsoleApp:
         # Used for tracking which pane was in focus before showing help window.
         self.last_focused_pane = None
 
-        # Create one log pane.
-        self.log_pane = LogPane(application=self)
-
         # Create a ptpython repl instance.
         self.pw_ptpython_repl = PwPtPythonRepl(
             get_globals=lambda: global_vars,
@@ -138,85 +137,15 @@ class ConsoleApp:
         )
 
         # List of enabled panes.
-        self.active_panes = [
-            self.log_pane,
-            self.repl_pane,
-        ]
+        self.active_panes: collections.deque = collections.deque()
+        self.active_panes.append(self.repl_pane)
+
+        # Reference to the current prompt_toolkit window split for the current
+        # set of active_panes.
+        self.active_pane_split = None
 
         # Top of screen menu items
-        self.menu_items = [
-            # File menu
-            MenuItem(
-                '[File] ',
-                children=[
-                    MenuItem('Exit', handler=self.exit_console),
-                ],
-            ),
-            # View menu
-            MenuItem(
-                '[View] ',
-                children=[
-                    MenuItem(
-                        'Themes',
-                        children=[
-                            MenuItem('Toggle Light/Dark',
-                                     handler=self.toggle_light_theme),
-                            MenuItem('-'),
-                            MenuItem('UI: Default',
-                                     handler=functools.partial(
-                                         self.load_theme, 'dark')),
-                            MenuItem('UI: High Contrast',
-                                     handler=functools.partial(
-                                         self.load_theme,
-                                         'high-contrast-dark')),
-                            MenuItem('-'),
-                            MenuItem(
-                                'Code: tomorrow-night',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night')),
-                            MenuItem(
-                                'Code: tomorrow-night-bright',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night-bright')),
-                            MenuItem(
-                                'Code: tomorrow-night-blue',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night-blue')),
-                            MenuItem(
-                                'Code: tomorrow-night-eighties',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night-eighties')),
-                            MenuItem(
-                                'Code: dracula',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'dracula')),
-                            MenuItem(
-                                'Code: zenburn',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'zenburn')),
-                        ],
-                    ),
-                    MenuItem('Toggle Vertical/Horizontal Split',
-                             handler=self.toggle_vertical_split),
-                    MenuItem('-'),
-                    MenuItem('Toggle Log line Wrapping',
-                             handler=self.toggle_log_line_wrapping),
-                ],
-            ),
-            # Info / Help
-            MenuItem(
-                '[Help] ',
-                children=[
-                    MenuItem('Keyboard Shortcuts', handler=self.toggle_help),
-                ],
-            ),
-        ]
+        self.menu_items = self._create_menu_items()
 
         # Key bindings registry.
         self.key_bindings = pw_console.key_bindings.create_key_bindings(self)
@@ -306,6 +235,146 @@ class ConsoleApp:
             mouse_support=True,
         )
 
+    def _update_menu_items(self):
+        self.root_container.menu_items = self._create_menu_items()
+
+    def _create_menu_items(self):
+        menu_items = [
+            # File menu
+            MenuItem(
+                '[File]',
+                children=[
+                    MenuItem('Exit', handler=self.exit_console),
+                ],
+            ),
+            # View menu
+            MenuItem(
+                '[View]',
+                children=[
+                    MenuItem(
+                        'Themes',
+                        children=[
+                            MenuItem('Toggle Light/Dark',
+                                     handler=self.toggle_light_theme),
+                            MenuItem('-'),
+                            MenuItem('UI: Default',
+                                     handler=functools.partial(
+                                         self.load_theme, 'dark')),
+                            MenuItem('UI: High Contrast',
+                                     handler=functools.partial(
+                                         self.load_theme,
+                                         'high-contrast-dark')),
+                            MenuItem('-'),
+                            MenuItem(
+                                'Code: tomorrow-night',
+                                functools.partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night')),
+                            MenuItem(
+                                'Code: tomorrow-night-bright',
+                                functools.partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night-bright')),
+                            MenuItem(
+                                'Code: tomorrow-night-blue',
+                                functools.partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night-blue')),
+                            MenuItem(
+                                'Code: tomorrow-night-eighties',
+                                functools.partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'tomorrow-night-eighties')),
+                            MenuItem(
+                                'Code: dracula',
+                                functools.partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'dracula')),
+                            MenuItem(
+                                'Code: zenburn',
+                                functools.partial(
+                                    self.pw_ptpython_repl.use_code_colorscheme,
+                                    'zenburn')),
+                        ],
+                    ),
+                    MenuItem('-'),
+                    MenuItem('Toggle Log line Wrapping',
+                             handler=self.toggle_log_line_wrapping),
+                ],
+            ),
+            # Info / Help
+            MenuItem(
+                '[Window]',
+                children=[
+                    MenuItem('{check} Vertical Window Spliting'.format(
+                        check=pw_console.helpers.to_checkbox_text(
+                            self.vertical_split)),
+                             handler=self.toggle_vertical_split),
+                    MenuItem('-'),
+                ] + [
+                    MenuItem('{check} {index}: {title} {subtitle}'.format(
+                        check=pw_console.helpers.to_checkbox_text(
+                            pane.show_pane),
+                        index=index + 1,
+                        title=pane.pane_title(),
+                        subtitle=pane.pane_subtitle()),
+                             handler=functools.partial(self.toggle_pane, pane))
+                    for index, pane in enumerate(self.active_panes)
+                ] + [
+                    MenuItem('-'),
+                    MenuItem('Rotate Window Order', handler=self.rotate_panes),
+                ]),
+            # Info / Help
+            MenuItem(
+                '[Help]',
+                children=[
+                    MenuItem('Keyboard Shortcuts', handler=self.toggle_help),
+                ],
+            ),
+        ]
+
+        return menu_items
+
+    def rotate_panes(self, steps=1):
+        self.active_panes.rotate(steps)
+        self._update_menu_items()
+        self._update_root_container_body()
+
+    def toggle_pane(self, pane):
+        """Toggle a pane on or off."""
+        pane.show_pane = not pane.show_pane
+        self._update_menu_items()
+        self._update_root_container_body()
+
+        # Set focus to the top level menu. This has the effect of keeping the
+        # menu open if it's already open.
+        self.focus_main_menu()
+
+    def focus_main_menu(self):
+        """Set application focus to the main menu."""
+        self.application.layout.focus(self.root_container.window)
+
+    def focus_on_container(self, pane):
+        """Set application focus to a specific container."""
+        self.application.layout.focus(pane)
+
+    def focus_next_visible_pane(self, pane):
+        """Focus on the next visible window pane if possible."""
+        try:
+            hidden_pane_index = self.active_panes.index(pane)
+        except ValueError:
+            # If pane can't be found, focus on the main menu.
+            self.application.layout.focus(self.root_container.window)
+            return
+
+        for i in range(1, len(self.active_panes)):
+            next_pane_index = (hidden_pane_index + i) % len(self.active_panes)
+            next_pane = self.active_panes[next_pane_index]
+            if next_pane.show_pane:
+                next_visible_pane = next_pane
+                self.application.layout.focus(next_visible_pane)
+                return
+
     def toggle_light_theme(self):
         """Toggle light and dark theme colors."""
         # Use ptpython's style_transformation to swap dark and light colors.
@@ -316,9 +385,32 @@ class ConsoleApp:
         """Regenerate styles for the current theme_name."""
         self._current_theme = pw_console.style.generate_styles(theme_name)
 
-    def add_log_handler(self, logger_instance: logging.Logger):
+    def _create_log_pane(self):
+        # Create one log pane.
+        self.active_panes.appendleft(LogPane(application=self))
+        return self.active_panes[0]
+
+    def add_log_handler(self,
+                        logger_instance: logging.Logger,
+                        separate_log_panes=False):
         """Add the Log pane as a handler for this logger instance."""
-        logger_instance.addHandler(self.log_pane.log_container)
+        existing_log_pane = None
+        # Find an existing LogPane
+        for pane in self.active_panes:
+            if isinstance(pane, LogPane):
+                existing_log_pane = pane
+                break
+        if not existing_log_pane or separate_log_panes:
+            existing_log_pane = self._create_log_pane()
+
+        logger_instance.addHandler(
+            existing_log_pane.log_container  # type: ignore
+        )
+        existing_log_pane.append_pane_subtitle(  # type: ignore
+            logger_instance.name)
+        self._update_root_container_body()
+        self._update_menu_items()
+        self._update_help_window()
 
     def _user_code_thread_entry(self):
         """Entry point for the user code thread."""
@@ -355,21 +447,20 @@ class ConsoleApp:
         # Add activated plugin key bindings to the help text.
         for pane in self.active_panes:
             for key_bindings in pane.get_all_key_bindings():
+                help_section_title = pane.__class__.__name__
                 if isinstance(key_bindings, KeyBindings):
                     self.help_window.add_keybind_help_text(
-                        pane.__class__.__name__, key_bindings)
+                        help_section_title, key_bindings)
                 elif isinstance(key_bindings, dict):
                     self.help_window.add_custom_keybinds_help_text(
-                        pane.__class__.__name__, key_bindings)
+                        help_section_title, key_bindings)
 
         self.help_window.generate_help_text()
 
-    def _create_root_split(self):
-        """Create a vertical or horizontal split container for all active
-        panes."""
+    def _update_split_orientation(self):
         if self.vertical_split:
             self.active_pane_split = VSplit(
-                self.active_panes,
+                list(pane for pane in self.active_panes if pane.show_pane),
                 # Add a vertical separator between each active window pane.
                 padding=1,
                 padding_char='│',
@@ -378,21 +469,31 @@ class ConsoleApp:
         else:
             self.active_pane_split = HSplit(self.active_panes)
 
+    def _create_root_split(self):
+        """Create a vertical or horizontal split container for all active
+        panes."""
+        self._update_split_orientation()
         return HSplit([
             self.active_pane_split,
         ])
 
+    def _update_root_container_body(self):
+        # Replace the root MenuContainer body with the new split.
+        self.root_container.container.content.children[
+            1] = self._create_root_split()
+
     def toggle_log_line_wrapping(self):
         """Menu item handler to toggle line wrapping of the first log pane."""
-        self.log_pane.toggle_wrap_lines()
+        for pane in self.active_panes:
+            if isinstance(pane, LogPane):
+                pane.toggle_wrap_lines()
 
     def toggle_vertical_split(self):
         """Toggle visibility of the help window."""
         self.vertical_split = not self.vertical_split
 
-        # Replace the root MenuContainer body with the new split.
-        self.root_container.container.content.children[
-            1] = self._create_root_split()
+        self._update_menu_items()
+        self._update_root_container_body()
 
         self.redraw_ui()
 
@@ -482,6 +583,7 @@ def embed(
     repl_startup_message: Optional[str] = None,
     help_text: Optional[str] = None,
     app_title: Optional[str] = None,
+    separate_log_panes=False,
 ) -> None:
     """Call this to embed pw console at the call point within your program.
     It's similar to `ptpython.embed` and `IPython.embed`. ::
@@ -516,6 +618,9 @@ def embed(
     :param help_text: Custom text shown at the top of the help window before
         keyboard shortcuts.
     :type help_text: str, optional
+    :param separate_log_panes: If True create separate log window panes for each
+        logger instance passed in via the `loggers` param, defaults to False.
+    :type separate_log_panes: bool, optional
     """
     console_app = ConsoleApp(
         global_vars=global_vars,
@@ -528,7 +633,7 @@ def embed(
     # Add loggers to the console app log pane.
     if loggers:
         for logger in loggers:
-            console_app.add_log_handler(logger)
+            console_app.add_log_handler(logger, separate_log_panes)
 
     # Start a thread for running user code.
     console_app.start_user_code_thread()

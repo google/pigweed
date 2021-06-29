@@ -118,7 +118,7 @@ class LogContainer(logging.Handler):
 
         # Max frequency in seconds of prompt_toolkit UI redraws triggered by new
         # log lines.
-        self._ui_update_frequency = 0.3
+        self._ui_update_frequency = 0.1
         self._last_ui_update_time = time.time()
 
         # Erase existing logs.

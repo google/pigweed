@@ -22,7 +22,10 @@ from pathlib import Path
 
 from prompt_toolkit.buffer import Buffer
 import ptpython.repl  # type: ignore
-from ptpython.layout import CompletionVisualisation  # type: ignore
+from ptpython.layout import (  # type: ignore
+    CompletionVisualisation, Dimension,
+)
+
 from ptpython.completer import CompletePrivateAttributes  # type: ignore
 
 import pw_console.helpers
@@ -40,7 +43,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
             history_filename=(Path.home() / '.pw_console_history').as_posix(),
             # Use python_toolkit default color depth.
             # color_depth=ColorDepth.DEPTH_8_BIT,  # 256 Colors
-            _input_buffer_height=8,
+            _input_buffer_height=Dimension(min=5, weight=30),
             **kwargs)
 
         # Change some ptpython.repl defaults.

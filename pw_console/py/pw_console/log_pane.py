@@ -40,12 +40,8 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
+import pw_console.helpers
 from pw_console.log_container import LogContainer
-from pw_console.helpers import (
-    get_pane_indicator,
-    get_pane_style,
-    get_toolbar_style,
-)
 
 
 class LogPaneLineInfoBar(ConditionalContainer):
@@ -116,10 +112,11 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
     def get_left_text_tokens(log_pane):
         """Return toolbar indicator and title."""
 
-        title = ' Logs '
+        title = ' {} '.format(log_pane.pane_title())
         mouse_handler = functools.partial(
             LogPaneBottomToolbarBar.mouse_handler_focus, log_pane)
-        return get_pane_indicator(log_pane, title, mouse_handler)
+        return pw_console.helpers.get_pane_indicator(log_pane, title,
+                                                     mouse_handler)
 
     @staticmethod
     def get_center_text_tokens(log_pane):
@@ -142,12 +139,14 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         # If the log_pane is in focus, show keybinds in the toolbar.
         if has_focus(log_pane.__pt_container__())():
             return [
-                ('', '[FOCUSED]'),
                 separator_text,
-                # TODO(tonymd): Indicate toggle status with a checkbox?
+                pw_console.helpers.to_checkbox(log_pane.wrap_lines,
+                                               toggle_wrap_lines),
                 ('class:keybind', 'w', toggle_wrap_lines),
                 ('class:keyhelp', ':Wrap', toggle_wrap_lines),
                 separator_text,
+                pw_console.helpers.to_checkbox(log_pane.log_container.follow,
+                                               toggle_follow),
                 ('class:keybind', 'f', toggle_follow),
                 ('class:keyhelp', ':Follow', toggle_follow),
                 separator_text,
@@ -158,6 +157,11 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         return [
             ('class:keyhelp', '[click to focus] ', focus),
         ]
+
+    @staticmethod
+    def get_right_text_tokens(log_pane):
+        """Return formatted text tokens for display."""
+        return [('', ' {} '.format(log_pane.pane_subtitle()))]
 
     def __init__(self, log_pane):
         title_section_window = Window(
@@ -178,13 +182,25 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
             dont_extend_width=False,
         )
 
+        log_source_name = Window(
+            content=FormattedTextControl(
+                # Callable to get formatted text tuples.
+                functools.partial(
+                    LogPaneBottomToolbarBar.get_right_text_tokens, log_pane)),
+            # Right side text should appear at the far right of the toolbar
+            align=WindowAlign.RIGHT,
+            dont_extend_width=True,
+        )
+
         toolbar_vsplit = VSplit(
             [
                 title_section_window,
                 keybind_section_window,
+                log_source_name,
             ],
             height=LogPaneBottomToolbarBar.TOOLBAR_HEIGHT,
-            style=functools.partial(get_toolbar_style, log_pane),
+            style=functools.partial(pw_console.helpers.get_toolbar_style,
+                                    log_pane),
             align=WindowAlign.LEFT,
         )
 
@@ -349,6 +365,7 @@ class LogPane:
             show_bottom_toolbar=True,
             show_line_info=True,
             wrap_lines=True,
+            pane_title: Optional[str] = None,
             # Default width and height to 50% of the screen
             height: Optional[AnyDimension] = Dimension(weight=50),
             width: Optional[AnyDimension] = Dimension(weight=50),
@@ -359,6 +376,9 @@ class LogPane:
         self.wrap_lines = wrap_lines
         self.height = height
         self.width = width
+        self.show_pane = True
+        self._pane_title = pane_title
+        self._pane_subtitle = None
 
         # Create the log container which stores and handles incoming logs.
         self.log_container = LogContainer()
@@ -407,31 +427,51 @@ class LogPane:
             dont_extend_width=False,
             # Needed for log lines ANSI sequences that don't specify foreground
             # or background colors.
-            style=functools.partial(get_pane_style, self),
+            style=functools.partial(pw_console.helpers.get_pane_style, self),
         )
 
         # Root level container
-        self.container = FloatContainer(
-            # Horizonal split containing the log lines and the toolbar.
-            LogLineHSplit(
-                self,  # LogPane reference
-                [
-                    self.log_display_window,
-                    self.bottom_toolbar,
-                ],
-                # Align content with the bottom of the container.
-                align=VerticalAlign.BOTTOM,
-                height=self.height,
-                width=self.width,
-                style=functools.partial(get_pane_style, self),
-            ),
-            floats=[
-                # Floating LogPaneLineInfoBar
-                Float(top=0,
-                      right=0,
-                      height=1,
-                      content=LogPaneLineInfoBar(self)),
-            ])
+        self.container = ConditionalContainer(
+            FloatContainer(
+                # Horizonal split containing the log lines and the toolbar.
+                LogLineHSplit(
+                    self,  # LogPane reference
+                    [
+                        self.log_display_window,
+                        self.bottom_toolbar,
+                    ],
+                    # Align content with the bottom of the container.
+                    align=VerticalAlign.BOTTOM,
+                    height=self.height,
+                    width=self.width,
+                    style=functools.partial(pw_console.helpers.get_pane_style,
+                                            self),
+                ),
+                floats=[
+                    # Floating LogPaneLineInfoBar
+                    Float(top=0,
+                          right=0,
+                          height=1,
+                          content=LogPaneLineInfoBar(self)),
+                ]),
+            filter=Condition(lambda: self.show_pane))
+
+    def pane_title(self):
+        title = self._pane_title
+        if not title:
+            title = 'Logs'
+        return title
+
+    def append_pane_subtitle(self, text):
+        if not self._pane_subtitle:
+            self._pane_subtitle = text
+        else:
+            self._pane_subtitle = self._pane_subtitle + ', ' + text
+
+    def pane_subtitle(self):
+        if not self._pane_subtitle:
+            return ', '.join(self.log_container.channel_counts.keys())
+        return self._pane_subtitle
 
     def update_log_pane_size(self, width, height):
         """Save width and height of the log pane for the current UI render

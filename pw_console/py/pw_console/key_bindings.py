@@ -55,6 +55,16 @@ def create_key_bindings(console_app):
         """Toggle horizontal and vertical window splitting."""
         console_app.toggle_vertical_split()
 
+    @bindings.add('c-s-left')
+    def rotate_panes(event):
+        """Rotate position of visible backward."""
+        console_app.rotate_panes(-1)
+
+    @bindings.add('c-s-right')
+    def rotate_panes(event):
+        """Rotate position of visible forward."""
+        console_app.rotate_panes()
+
     @bindings.add('c-w')
     @bindings.add('c-q')
     def exit_(event):

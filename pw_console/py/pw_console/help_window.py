@@ -123,9 +123,9 @@ class HelpWindow(ConditionalContainer):
     def add_keybind_help_text(self, section_name, key_bindings: KeyBindings):
         """Append formatted key binding text to this help window."""
 
-        # Create a new keybind section
-        if section_name not in self.help_text_sections:
-            self.help_text_sections[section_name] = {}
+        # Create a new keybind section, erasing any old section with thesame
+        # title.
+        self.help_text_sections[section_name] = {}
 
         # Loop through passed in prompt_toolkit key_bindings.
         for binding in key_bindings.bindings:
