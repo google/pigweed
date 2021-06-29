@@ -62,7 +62,7 @@ def _message_bytes(msg) -> bytes:
     return msg if isinstance(msg, bytes) else msg.SerializeToString()
 
 
-class CallbackClientImplTest(unittest.TestCase):
+class CallbackClientImplTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests the callback_client as used within a pw_rpc Client."""
     def setUp(self):
         self._protos = python_protos.Library.from_strings(TEST_PROTO_1)
@@ -381,6 +381,183 @@ class CallbackClientImplTest(unittest.TestCase):
             mock.call(_rpc(stub), stub.method.response_type(payload='!!!')),
             mock.call(_rpc(stub), Status.OK),
         ])
+
+    def test_invoke_client_streaming(self):
+        """Tests a successful client streaming RPC ended by the server."""
+        method = self._service.SomeClientStreaming.method
+
+        payload_1 = method.response_type(payload='-_-')
+
+        for _ in range(3):
+            stream = self._service.SomeClientStreaming()
+            self.assertFalse(stream.complete())
+
+            stream.send(magic_number=31)
+            self.assertIs(packet_pb2.PacketType.CLIENT_STREAM,
+                          self._last_request.type)
+            self.assertEqual(
+                31,
+                self._sent_payload(method.request_type).magic_number)
+            self.assertFalse(stream.complete())
+
+            # Enqueue the server response to be sent after the next message.
+            self._enqueue_response(1, method, Status.OK, payload_1)
+
+            stream.send(magic_number=32)
+            self.assertIs(packet_pb2.PacketType.CLIENT_STREAM,
+                          self._last_request.type)
+            self.assertEqual(
+                32,
+                self._sent_payload(method.request_type).magic_number)
+
+            self.assertTrue(stream.complete())
+            self.assertIs(Status.OK, stream.status)
+            self.assertIsNone(stream.error)
+            self.assertEqual(payload_1, stream.response)
+
+    def test_invoke_client_streaming_with_finish(self):
+        """Tests a client streaming RPC ended by the client."""
+        method = self._service.SomeClientStreaming.method
+
+        payload_1 = method.response_type(payload='-_-')
+
+        for _ in range(3):
+            stream = self._service.SomeClientStreaming()
+            self.assertFalse(stream.complete())
+
+            stream.send(magic_number=37)
+            self.assertIs(packet_pb2.PacketType.CLIENT_STREAM,
+                          self._last_request.type)
+            self.assertEqual(
+                37,
+                self._sent_payload(method.request_type).magic_number)
+            self.assertFalse(stream.complete())
+
+            # Enqueue the server response to be sent after the next message.
+            self._enqueue_response(1, method, Status.OK, payload_1)
+
+            stream.finish_and_wait()
+            self.assertIs(packet_pb2.PacketType.CLIENT_STREAM_END,
+                          self._last_request.type)
+
+            self.assertTrue(stream.complete())
+            self.assertIs(Status.OK, stream.status)
+            self.assertIsNone(stream.error)
+            self.assertEqual(payload_1, stream.response)
+
+    def test_invoke_client_streaming_cancel(self):
+        for _ in range(3):
+            stream = self._service.SomeClientStreaming()
+            stream.send(magic_number=37)
+
+            self.assertTrue(stream.cancel())
+            self.assertIs(packet_pb2.PacketType.CANCEL,
+                          self._last_request.type)
+            self.assertFalse(stream.cancel())
+
+            self.assertTrue(stream.complete())
+            self.assertIs(stream.error.status, Status.CANCELLED)
+
+    def test_invoke_client_streaming_server_error(self):
+        method = self._service.SomeClientStreaming.method
+
+        for _ in range(3):
+            stream = self._service.SomeClientStreaming()
+
+            self._enqueue_error(1, method, Status.INVALID_ARGUMENT)
+            stream.send(magic_number=2**32 - 1)
+
+            with self.assertRaises(callback_client.RpcError) as context:
+                stream.finish_and_wait()
+
+            self.assertIs(context.exception.status, Status.INVALID_ARGUMENT)
+
+    def test_invoke_client_streaming_server_error_after_stream_end(self):
+        method = self._service.SomeClientStreaming.method
+
+        for _ in range(3):
+            stream = self._service.SomeClientStreaming()
+
+            # Error will be sent in response to the CLIENT_STREAM_END packet.
+            self._enqueue_error(1, method, Status.INVALID_ARGUMENT)
+
+            with self.assertRaises(callback_client.RpcError) as context:
+                stream.finish_and_wait()
+
+            self.assertIs(context.exception.status, Status.INVALID_ARGUMENT)
+
+    def test_invoke_bidirectional_streaming(self):
+        """Tests a bidirectional streaming RPC ended by the server."""
+        method = self._service.SomeBidiStreaming.method
+
+        rep1 = method.response_type(payload='!!!')
+        rep2 = method.response_type(payload='?')
+
+        for _ in range(3):
+            responses = []
+            stream = self._service.SomeBidiStreaming(
+                lambda _, res, responses=responses: responses.append(res))
+            self.assertFalse(stream.complete())
+
+            stream.send(magic_number=55)
+            self.assertIs(packet_pb2.PacketType.CLIENT_STREAM,
+                          self._last_request.type)
+            self.assertEqual(
+                55,
+                self._sent_payload(method.request_type).magic_number)
+            self.assertFalse(stream.complete())
+            self.assertEqual([], responses)
+
+            self._enqueue_server_stream(1, method, rep1)
+            self._enqueue_server_stream(1, method, rep2)
+
+            stream.send(magic_number=66)
+            self.assertIs(packet_pb2.PacketType.CLIENT_STREAM,
+                          self._last_request.type)
+            self.assertEqual(
+                66,
+                self._sent_payload(method.request_type).magic_number)
+            self.assertFalse(stream.complete())
+            self.assertEqual([rep1, rep2], responses)
+
+            self._enqueue_response(1, method, Status.OK)
+
+            stream.send(magic_number=77)
+            self.assertTrue(stream.complete())
+            self.assertEqual([rep1, rep2], responses)
+
+            self.assertIs(Status.OK, stream.status)
+            self.assertIsNone(stream.error)
+
+    def test_invoke_bidirectional_streaming_error(self):
+        method = self._service.SomeBidiStreaming.method
+
+        rep1 = method.response_type(payload='!!!')
+
+        for _ in range(3):
+            responses = []
+            stream = self._service.SomeBidiStreaming(
+                lambda _, res, responses=responses: responses.append(res))
+            self.assertFalse(stream.complete())
+
+            self._enqueue_server_stream(1, method, rep1)
+
+            stream.send(magic_number=55)
+            self.assertFalse(stream.complete())
+            self.assertEqual([rep1], responses)
+
+            self._enqueue_error(1, method, Status.OUT_OF_RANGE)
+
+            stream.send(magic_number=99999)
+            self.assertTrue(stream.complete())
+            self.assertEqual([rep1], responses)
+
+            self.assertIsNone(stream.status)
+            self.assertIs(Status.OUT_OF_RANGE, stream.error.status)
+
+            with self.assertRaises(callback_client.RpcError) as context:
+                stream.finish_and_wait()
+            self.assertIs(context.exception.status, Status.OUT_OF_RANGE)
 
     def test_ignore_bad_packets_with_pending_rpc(self):
         method = self._service.SomeUnary.method

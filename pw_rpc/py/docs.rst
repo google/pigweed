@@ -14,7 +14,7 @@ pw_rpc.client
 
 pw_rpc.callback_client
 ======================
-.. autoclass:: pw_rpc.callback_client.Impl
+.. automodule:: pw_rpc.callback_client
   :members:
 
 pw_rpc.console_tools

@@ -98,6 +98,22 @@ class PendingRpcs:
             raise Error(f'Sent request for {rpc}, but it is already pending! '
                         'Cancel the RPC before invoking it again')
 
+    def send_client_stream(self, rpc: PendingRpc, message: Any) -> None:
+        if rpc not in self._pending:
+            raise Error(
+                f'Attempt to send client stream for inactive RPC {rpc}')
+
+        rpc.channel.output(  # type: ignore
+            packets.encode_client_stream(rpc, message))
+
+    def send_client_stream_end(self, rpc: PendingRpc) -> None:
+        if rpc not in self._pending:
+            raise Error(
+                f'Attempt to send client stream end for inactive RPC {rpc}')
+
+        rpc.channel.output(  # type: ignore
+            packets.encode_client_stream_end(rpc))
+
     def cancel(self, rpc: PendingRpc) -> Optional[bytes]:
         """Cancels the RPC. Returns the CANCEL packet to send.
 
