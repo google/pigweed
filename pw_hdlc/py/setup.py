@@ -26,6 +26,7 @@ setuptools.setup(
     zip_safe=False,
     install_requires=[
         'ipython',
+        'pw_console',
         'pw_protobuf_compiler',
         'pw_rpc',
     ],

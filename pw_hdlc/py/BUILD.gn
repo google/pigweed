@@ -31,6 +31,7 @@ pw_python_package("py") {
     "encode_test.py",
   ]
   python_deps = [
+    "$dir_pw_console/py",
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_rpc/py",
   ]
