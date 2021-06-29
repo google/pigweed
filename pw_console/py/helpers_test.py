@@ -24,51 +24,71 @@ class TestHelperFunctions(unittest.TestCase):
     @parameterized.expand([
         (
             'with short prefix height 2',
-            len('LINE that should be wrapped'),
-            len('|                |'),
-            len('--->'),
-            ('LINE that should b\n'
-             '--->e wrapped     \n').count('\n'),
+            len('LINE that should be wrapped'),  # text_width
+            len('|                |'),  # screen_width
+            len('--->'),  # prefix_width
+            (   'LINE that should b\n'
+                '--->e wrapped     \n').count('\n'),  # expected_height
+            len(             '_____'),  # expected_trailing_characters
         ),
         (
             'with short prefix height 3',
-            len('LINE that should be wrapped three times.'),
-            len('|                |'),
-            len('--->'),
-            ('LINE that should b\n'
-             '--->e wrapped thre\n'
-             '--->e times.      \n').count('\n'),
+            len('LINE that should be wrapped three times.'),  # text_width
+            len('|                |'),  # screen_width
+            len('--->'),  # prefix_width
+            (   'LINE that should b\n'
+                '--->e wrapped thre\n'
+                '--->e times.      \n').count('\n'),  # expected_height
+            len(            '______'),  # expected_trailing_characters
+        ),
+        (
+            'with short prefix height 4',
+            len('LINE that should be wrapped even more times, say four.'),
+            len('|                |'),  # screen_width
+            len('--->'),  # prefix_width
+            (   'LINE that should b\n'
+                '--->e wrapped even\n'
+                '---> more times, s\n'
+                '--->ay four.      \n').count('\n'),  # expected_height
+            len(            '______'),  # expected_trailing_characters
         ),
         (
             'no wrapping needed',
-            len('LINE wrapped'),
-            len('|                |'),
-            len('--->'),
-            'LINE wrapped\n'.count('\n'),
+            len('LINE wrapped'),  # text_width
+            len('|                |'),  # screen_width
+            len('--->'),  # prefix_width
+            (   'LINE wrapped      \n').count('\n'),  # expected_height
+            len(            '______'),  # expected_trailing_characters
         ),
         (
             'prefix is > screen width',
-            len('LINE that should be wrapped'),
-            len('|                |'),
-            len('------------------>'),
-            ('LINE that should b\n'
-             'e wrapped         \n').count('\n'),
+            len('LINE that should be wrapped'),  # text_width
+            len('|                |'),  # screen_width
+            len('------------------>'),  # prefix_width
+            (   'LINE that should b\n'
+                'e wrapped         \n').count('\n'),  # expected_height
+            len(         '_________'),  # expected_trailing_characters
         ),
         (
             'prefix is == screen width',
-            len('LINE that should be wrapped'),
-            len('|                |'),
-            len('----------------->'),
-            ('LINE that should b\n'
-             'e wrapped         \n').count('\n'),
+            len('LINE that should be wrapped'),  # text_width
+            len('|                |'),  # screen_width
+            len('----------------->'),  # prefix_width
+            (   'LINE that should b\n'
+                'e wrapped         \n').count('\n'),  # expected_height
+            len(         '_________'),  # expected_trailing_characters
+
         ),
-    ])
+    ]) # yapf: disable
+
     def test_get_line_height(self, _name, text_width, screen_width,
-                             prefix_width, expected_height) -> None:
+                             prefix_width, expected_height,
+                             expected_trailing_characters) -> None:
         """Test line height calculations."""
-        self.assertEqual(
-            get_line_height(text_width, screen_width, prefix_width),
-            expected_height)
+        height, remaining_width = get_line_height(text_width, screen_width,
+                                                  prefix_width)
+        self.assertEqual(height, expected_height)
+        self.assertEqual(remaining_width, expected_trailing_characters)
 
 
 if __name__ == '__main__':

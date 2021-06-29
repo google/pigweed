@@ -25,27 +25,32 @@ def get_line_height(text_width, screen_width, prefix_width):
     """Calculates line height for a string with line wrapping enabled."""
     if text_width == 0:
         return 0
-    # If text will fit on the screen without wrapping.
-    if text_width < screen_width:
-        return 1
 
-    # Start with height of 1 row.
-    total_height = 1
-    # One screen_width of characters has been displayed.
-    remaining_width = text_width - screen_width
+    # If text will fit on the screen without wrapping.
+    if text_width <= screen_width:
+        return 1, screen_width - text_width
 
     # Assume zero width prefix if it's >= width of the screen.
     if prefix_width >= screen_width:
         prefix_width = 0
 
-    # While the remaining character count won't fit on the screen:
-    while (remaining_width + prefix_width) > screen_width:
+    # Start with height of 1 row.
+    total_height = 1
+
+    # One screen_width of characters (with no prefix) is displayed first.
+    remaining_width = text_width - screen_width
+
+    # While we have caracters remaining to be displayed
+    while remaining_width > 0:
+        # Add the new indentation prefix
         remaining_width += prefix_width
+        # Display this line
         remaining_width -= screen_width
+        # Add a line break
         total_height += 1
 
-    # Add one for the last line that is < screen_width
-    return total_height + 1
+    # Remaining characters is what's left below zero.
+    return (total_height, abs(remaining_width))
 
 
 def get_toolbar_style(pt_container) -> str:

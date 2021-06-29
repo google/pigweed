@@ -435,10 +435,12 @@ class LogContainer(logging.Handler):
             fragment_width = fragment_list_width(line_fragments)
             # Get the line height respecting line wrapping.
             line_height = 1
+            remaining_width = 0
             if self.wrap_lines_enabled() and (fragment_width > window_width):
-                line_height = pw_console.helpers.get_line_height(
-                    fragment_width, window_width,
-                    self.get_line_wrap_prefix_width())
+                line_height, remaining_width = (
+                    pw_console.helpers.get_line_height(
+                        fragment_width, window_width,
+                        self.get_line_wrap_prefix_width()))
 
             # Keep track of how many lines is used
             used_lines = 0
@@ -446,7 +448,6 @@ class LogContainer(logging.Handler):
 
             # Count the number of line breaks included in the log line.
             log_string = str(self.logs[i].ansi_stripped_log)
-
             line_breaks = log_string.count('\n')
             used_lines += line_breaks
 
@@ -459,14 +460,9 @@ class LogContainer(logging.Handler):
                 # Calculate the number of spaces to add at the end.
                 empty_characters = window_width - fragment_width
 
-                # If wrapping is enabled the width of the line prefix needs to
-                # be accounted for.
                 if self.wrap_lines_enabled() and (fragment_width >
                                                   window_width):
-                    total_width = line_height * window_width
-                    content_width = (self.get_line_wrap_prefix_width() *
-                                     (line_height - 1) + fragment_width)
-                    empty_characters = total_width - content_width
+                    empty_characters = remaining_width
 
                 if empty_characters > 0:
                     line_fragments[-1] = ('', ' ' * empty_characters + '\n')
