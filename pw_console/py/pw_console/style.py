@@ -68,14 +68,14 @@ class DarkColors:
     line_highlight_bg = '#1e1e1e'
     dialog_bg = '#3c3c3c'
 
-    blue_accent = '#51afef'
-    cyan_accent = '#46d9ff'
+    blue_accent = '#6699cc'
+    cyan_accent = '#66cccc'
     green_accent = '#98be65'
     magenta_accent = '#c678dd'
     orange_accent = '#da8548'
     purple_accent = '#a9a1e1'
     red_accent = '#ff6c6b'
-    yellow_accent = '#ecbe7b'
+    yellow_accent = '#ffcc66'
 
 
 _THEME_NAME_MAPPING = {
@@ -146,7 +146,31 @@ def generate_styles(theme_name='dark'):
         'cursor-line': 'bg:{} nounderline'.format(theme.line_highlight_bg),
 
         # Messages like 'Window too small'
-        'warning-text': 'bg:{} {}'.format(theme.default_bg, theme.yellow_accent)
+        'warning-text': 'bg:{} {}'.format(theme.default_bg,
+                                          theme.yellow_accent),
+
+        'log-time': 'bg:{} {}'.format(theme.default_fg,
+                                      theme.default_bg),
+
+        # Apply foreground only for level and column values. This way the text
+        # can inherit the background color of the parent window pane or line
+        # selection.
+        'log-level-{}'.format(logging.CRITICAL): '{} bold'.format(
+            theme.red_accent),
+        'log-level-{}'.format(logging.ERROR): '{}'.format(theme.red_accent),
+        'log-level-{}'.format(logging.WARNING): '{}'.format(
+            theme.yellow_accent),
+        'log-level-{}'.format(logging.INFO): '{}'.format(theme.purple_accent),
+        'log-level-{}'.format(logging.DEBUG): '{}'.format(theme.blue_accent),
+
+        'log-table-column-0': '{}'.format(theme.magenta_accent),
+        'log-table-column-1': '{}'.format(theme.purple_accent),
+        'log-table-column-2': '{}'.format(theme.blue_accent),
+        'log-table-column-3': '{}'.format(theme.cyan_accent),
+        'log-table-column-4': '{}'.format(theme.green_accent),
+        'log-table-column-5': '{}'.format(theme.yellow_accent),
+        'log-table-column-6': '{}'.format(theme.orange_accent),
+        'log-table-column-7': '{}'.format(theme.red_accent),
     } # yapf: disable
 
     return Style.from_dict(pw_console_styles)

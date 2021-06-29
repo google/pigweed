@@ -25,6 +25,7 @@ pw_python_package("py") {
     "pw_console/help_window.py",
     "pw_console/key_bindings.py",
     "pw_console/log_container.py",
+    "pw_console/log_line.py",
     "pw_console/log_pane.py",
     "pw_console/mouse.py",
     "pw_console/pw_ptpython_repl.py",
@@ -34,11 +35,13 @@ pw_python_package("py") {
     "pw_console/widgets/__init__.py",
     "pw_console/widgets/checkbox.py",
     "pw_console/widgets/focus_on_click_overlay.py",
+    "pw_console/widgets/table.py",
   ]
   tests = [
     "console_app_test.py",
     "help_window_test.py",
     "repl_pane_test.py",
+    "table_test.py",
     "text_formatting_test.py",
   ]
   python_deps = [

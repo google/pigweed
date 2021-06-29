@@ -73,6 +73,25 @@ class LogPaneLineInfoBar(ConditionalContainer):
             filter=Condition(lambda: not log_pane.log_container.follow))
 
 
+class LogPaneTableToolbar(ConditionalContainer):
+    """One line toolbar for showing table headers."""
+    def __init__(self, log_pane):
+        # FormattedText of the table column headers.
+        table_header_bar_control = FormattedTextControl(
+            log_pane.log_container.render_table_header)
+        # Left justify the header content.
+        table_header_bar_window = Window(content=table_header_bar_control,
+                                         align=WindowAlign.LEFT,
+                                         dont_extend_width=True)
+        super().__init__(VSplit([table_header_bar_window],
+                                height=1,
+                                style=functools.partial(
+                                    pw_console.style.get_toolbar_style,
+                                    log_pane),
+                                align=WindowAlign.LEFT),
+                         filter=Condition(lambda: log_pane.table_view))
+
+
 class LogPaneBottomToolbarBar(ConditionalContainer):
     """One line toolbar for display at the bottom of the LogPane."""
     TOOLBAR_HEIGHT = 1
@@ -82,6 +101,14 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         """Focus this pane on click."""
         if mouse_event.event_type == MouseEventType.MOUSE_UP:
             log_pane.application.application.layout.focus(log_pane)
+            return None
+        return NotImplemented
+
+    @staticmethod
+    def mouse_handler_toggle_table_view(log_pane, mouse_event: MouseEvent):
+        """Toggle table view on click."""
+        if mouse_event.event_type == MouseEventType.MOUSE_UP:
+            log_pane.toggle_table_view()
             return None
         return NotImplemented
 
@@ -133,12 +160,19 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
             LogPaneBottomToolbarBar.mouse_handler_clear_history, log_pane)
         toggle_follow = functools.partial(
             LogPaneBottomToolbarBar.mouse_handler_toggle_follow, log_pane)
+        toggle_table_view = functools.partial(
+            LogPaneBottomToolbarBar.mouse_handler_toggle_table_view, log_pane)
 
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
-        separator_text = ('', '  ')  # 2 space of separaton between keybinds.
+        separator_text = ('', '  ')  # 2 spaces of separaton between keybinds.
 
-        # Show the click to focus button if log pane isn't in focus.
         return [
+            separator_text,
+            pw_console.widgets.checkbox.to_checkbox(log_pane.table_view,
+                                                    toggle_table_view,
+                                                    end=''),
+            ('class:keyhelp', 'Table:', toggle_table_view),
+            ('class:keybind', 't', toggle_table_view),
             separator_text,
             pw_console.widgets.checkbox.to_checkbox(log_pane.wrap_lines,
                                                     toggle_wrap_lines,
@@ -256,6 +290,11 @@ class LogContentControl(FormattedTextControl):
             """Toggle log line wrapping."""
             self.log_pane.toggle_wrap_lines()
 
+        @key_bindings.add('t')
+        def _toggle_table_view(_event: KeyPressEvent) -> None:
+            """Toggle log line wrapping."""
+            self.log_pane.toggle_table_view()
+
         @key_bindings.add('C')
         def _clear_history(_event: KeyPressEvent) -> None:
             """Toggle log line wrapping."""
@@ -367,18 +406,16 @@ class LogPane:
     def __init__(
             self,
             application: Any,
-            show_bottom_toolbar=True,
-            show_line_info=True,
-            wrap_lines=True,
             pane_title: Optional[str] = None,
             # Default width and height to 50% of the screen
             height: Optional[AnyDimension] = Dimension(weight=50),
             width: Optional[AnyDimension] = Dimension(weight=50),
     ):
         self.application = application
-        self.show_bottom_toolbar = show_bottom_toolbar
-        self.show_line_info = show_line_info
-        self.wrap_lines = wrap_lines
+        self.show_bottom_toolbar = True
+        # TODO(tonymd): Read these settings from a project (or user) config.
+        self.wrap_lines = False
+        self.table_view = True
         self.height = height
         self.width = width
         self.show_pane = True
@@ -401,10 +438,12 @@ class LogPane:
         # Create the bottom toolbar for the whole log pane.
         self.bottom_toolbar = LogPaneBottomToolbarBar(self)
 
+        self.table_header_toolbar = LogPaneTableToolbar(self)
+
         self.log_content_control = LogContentControl(
             self,  # parent LogPane
             # FormattedTextControl args:
-            self.log_container.draw,
+            self.log_container.render_content,
             # Hide the cursor, use cursorline=True in self.log_display_window to
             # indicate currently selected line.
             show_cursor=False,
@@ -442,6 +481,7 @@ class LogPane:
                 LogLineHSplit(
                     self,  # LogPane reference
                     [
+                        self.table_header_toolbar,
                         self.log_display_window,
                         self.bottom_toolbar,
                     ],
@@ -494,13 +534,18 @@ class LogPane:
         """Trigger a prompt_toolkit UI redraw."""
         self.application.redraw_ui()
 
+    def toggle_table_view(self):
+        """Enable or disable table view."""
+        self.table_view = not self.table_view
+        self.redraw_ui()
+
     def toggle_wrap_lines(self):
-        """Toggle line wraping/truncation."""
+        """Enable or disable line wraping/truncation."""
         self.wrap_lines = not self.wrap_lines
         self.redraw_ui()
 
     def toggle_follow(self):
-        """Toggle following log lines."""
+        """Enable or disable following log lines."""
         self.log_container.toggle_follow()
         self.redraw_ui()
 

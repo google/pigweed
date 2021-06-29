@@ -14,6 +14,10 @@
 """Text formatting functions."""
 
 import re
+from typing import Iterable
+
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
 
 _ANSI_SEQUENCE_REGEX = re.compile(r'\x1b[^m]*m')
 
@@ -21,6 +25,55 @@ _ANSI_SEQUENCE_REGEX = re.compile(r'\x1b[^m]*m')
 def strip_ansi(text: str):
     """Strip out ANSI escape sequences."""
     return _ANSI_SEQUENCE_REGEX.sub('', text)
+
+
+def fill_character_width(line_fragments: StyleAndTextTuples,
+                         fragment_width: int,
+                         window_width: int,
+                         remaining_width: int,
+                         line_wrapping: bool,
+                         add_cursor: bool = False) -> StyleAndTextTuples:
+    """Fill line to the width of the window using spaces."""
+    if add_cursor:
+        # Add a cursor to this line by adding SetCursorPosition fragment.
+        line_fragments_remainder = line_fragments
+        line_fragments = [('[SetCursorPosition]', '')]
+        # Use extend to keep types happy.
+        line_fragments.extend(line_fragments_remainder)
+
+    # Calculate the number of spaces to add at the end.
+    empty_characters = window_width - fragment_width
+    # If wrapping is on, use remaining_width
+    if line_wrapping and (fragment_width > window_width):
+        empty_characters = remaining_width
+
+    if empty_characters > 0:
+        # Replace line ending tuple ('', '\n') with additional empty
+        # spaces to inherit the selected line background.
+        line_fragments[-1] = ('', ' ' * empty_characters + '\n')
+
+    return line_fragments
+
+
+def flatten_formatted_text_tuples(
+        lines: Iterable[StyleAndTextTuples]) -> StyleAndTextTuples:
+    """Flatten a list of lines of FormattedTextTuples
+
+    This function will also remove trailing newlines to avoid displaying extra
+    empty lines in prompt_toolkit containers.
+    """
+    fragments: StyleAndTextTuples = []
+    for line_fragments in lines:
+        # Append all FormattedText tuples for this line.
+        for fragment in line_fragments:
+            fragments.append(fragment)
+
+    # Strip off any trailing line breaks
+    last_fragment: OneStyleAndTextTuple = fragments[-1]
+    style = last_fragment[0]
+    text = last_fragment[1].rstrip('\n')
+    fragments[-1] = (style, text)
+    return fragments
 
 
 def remove_formatting(formatted_text):

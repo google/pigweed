@@ -11,79 +11,36 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""LogLine and LogContainer."""
+"""LogContainer storage class."""
 
 import collections
 import logging
 import sys
 import time
-from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Optional
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import (
-    ANSI,
     to_formatted_text,
     fragment_list_width,
+    StyleAndTextTuples,
 )
 
 import pw_cli.color
-from pw_log_tokenized import FormatStringWithMetadata
 
 import pw_console.text_formatting
+from pw_console.log_line import LogLine
+from pw_console.widgets.table import TableView
 
 _LOG = logging.getLogger(__package__)
-
-
-@dataclass
-class LogLine:
-    """Class to hold a single log event."""
-    record: logging.LogRecord
-    formatted_log: str
-    ansi_stripped_log: str
-
-    def __post_init__(self):
-        self._metadata = None
-
-    def time(self):
-        """Return a datetime object for the log record."""
-        return datetime.fromtimestamp(self.record.created)
-
-    def update_metadata(self):
-        if self._metadata is None:
-            self._metadata = FormatStringWithMetadata(str(self.record.message))
-            # Update the formatted log line
-            self.formatted_log = self.formatted_log.replace(
-                self._metadata.raw_string, self._metadata.message)
-        return self._metadata
-
-    def get_fragments(self) -> List:
-        """Return this log line as a list of FormattedText tuples."""
-        # Manually make a FormattedText tuple, wrap in a list
-        # return [('class:toolbar_active', self.record.msg)]
-        # Use ANSI, returns a list of FormattedText tuples.
-
-        # fragments = [('[SetCursorPosition]', '')]
-        # fragments += ANSI(self.formatted_log).__pt_formatted_text__()
-        # return fragments
-
-        # Parse metadata if any.
-        self.update_metadata()
-
-        # Add a trailing linebreak
-        return ANSI(self.formatted_log + '\n').__pt_formatted_text__()
-
-
-def create_empty_log_message():
-    """Create an empty LogLine instance."""
-    return LogLine(record=logging.makeLogRecord({}), formatted_log='')
 
 
 class LogContainer(logging.Handler):
     """Class to hold many log events."""
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
+
     def __init__(self):
         # Log storage deque for fast addition and deletion from the beginning
         # and end of the iterable.
@@ -108,6 +65,8 @@ class LogContainer(logging.Handler):
         self._last_end_index = 0
         self._current_start_index = 0
         self._current_end_index = 0
+
+        self.table = TableView()
 
         # LogPane prompt_toolkit container render size.
         self._window_height = 20
@@ -143,12 +102,17 @@ class LogContainer(logging.Handler):
         """Setup log formatting."""
         # Copy of pw_cli log formatter
         colors = pw_cli.color.colors(True)
-        timestamp_fmt = colors.black_on_white('%(asctime)s') + ' '
-        formatter = logging.Formatter(
-            timestamp_fmt + '%(levelname)s %(message)s', '%Y%m%d %H:%M:%S')
+        timestamp_prefix = colors.black_on_white('%(asctime)s') + ' '
+        timestamp_format = '%Y%m%d %H:%M:%S'
+        format_string = timestamp_prefix + '%(levelname)s %(message)s'
+        formatter = logging.Formatter(format_string, timestamp_format)
 
         self.setLevel(logging.DEBUG)
         self.setFormatter(formatter)
+
+        # Update log time character width.
+        example_time_string = datetime.now().strftime(timestamp_format)
+        self.table.column_width_time = len(example_time_string)
 
     def get_current_line(self):
         """Return the currently selected log event index."""
@@ -192,6 +156,8 @@ class LogContainer(logging.Handler):
 
     def get_line_wrap_prefix_width(self):
         if self.wrap_lines_enabled():
+            if self.log_pane.table_view:
+                return self.table.column_width_prefix_total
             return self.longest_channel_prefix_width
         return 0
 
@@ -224,7 +190,7 @@ class LogContainer(logging.Handler):
             self.longest_channel_prefix_width = max(
                 self.channel_formatted_prefix_widths.values())
 
-    def _append_log(self, record):
+    def _append_log(self, record: logging.LogRecord):
         """Add a new log event."""
         # Format incoming log line.
         formatted_log = self.format(record)
@@ -241,6 +207,12 @@ class LogContainer(logging.Handler):
 
         # Save prefix width of this log line.
         self._update_log_prefix_width(record)
+
+        # Parse metadata fields
+        self.logs[-1].update_metadata()
+
+        # Check for bigger column widths.
+        self.table.update_metadata_column_widths(self.logs[-1])
 
         # Update estimated byte_size.
         self.byte_size += sys.getsizeof(self.logs[-1])
@@ -401,88 +373,95 @@ class LogContainer(logging.Handler):
 
         return starting_index, ending_index
 
-    def draw(self) -> List:
-        """Return log lines as a list of FormattedText tuples."""
+    def render_table_header(self):
+        """Get pre-formatted table header."""
+        return self.table.formatted_header()
+
+    def render_content(self) -> List:
+        """Return log lines as a list of FormattedText tuples.
+
+        This function handles selecting the lines that should be displayed for
+        the current log line position and the given window size. It also sets
+        the cursor position depending on which line is selected.
+        """
         # Reset _line_fragment_cache ( used in self.get_cursor_position )
         self._line_fragment_cache = collections.deque()
+
+        # Track used lines.
+        total_used_lines = 0
 
         # If we have no logs add one with at least a single space character for
         # the cursor to land on. Otherwise the cursor will be left on the line
         # above the log pane container.
         if self.get_total_count() < 1:
-            # No style specified.
-            return [('[SetCursorPosition]', ''), ('', ' ')]
+            return [(
+                '[SetCursorPosition]', '\n' * self._window_height
+                # LogContentControl.mouse_handler will handle focusing the log
+                # pane on click.
+            )]
 
+        # Get indicies of stored logs that will fit on screen.
         starting_index, ending_index = self.get_log_window_indices()
 
-        window_width = self._window_width
-
-        # Track used lines.
-        total_used_lines = 0
-
-        # Since range() is not inclusive use ending_index + 1.
-        # for i in range(starting_index, ending_index + 1):
+        # NOTE: Since range() is not inclusive use ending_index + 1.
+        #
+        # Build up log lines from the bottom of the window working up.
+        #
         # From the ending_index to the starting index in reverse:
         for i in range(ending_index, starting_index - 1, -1):
-            # If we are past the last valid index.
-            if i > self.get_last_log_line_index():
+            # Stop if we have used more lines than available.
+            if total_used_lines > self._window_height:
                 break
 
-            line_fragments = self.logs[i].get_fragments()
+            # Grab the rendered log line using the table or standard view.
+            line_fragments: StyleAndTextTuples = (self.table.formatted_row(
+                self.logs[i]) if self.log_pane.table_view else
+                                                  self.logs[i].get_fragments())
 
-            # Get the width of this line.
+            # Get the width, height and remaining width.
             fragment_width = fragment_list_width(line_fragments)
-            # Get the line height respecting line wrapping.
             line_height = 1
             remaining_width = 0
-            if self.wrap_lines_enabled() and (fragment_width > window_width):
+            # Get the line height respecting line wrapping.
+            if self.wrap_lines_enabled() and (fragment_width >
+                                              self._window_width):
                 line_height, remaining_width = (
                     pw_console.text_formatting.get_line_height(
-                        fragment_width, window_width,
+                        fragment_width, self._window_width,
                         self.get_line_wrap_prefix_width()))
 
-            # Keep track of how many lines is used
-            used_lines = 0
-            used_lines += line_height
+            # Keep track of how many lines are used.
+            used_lines = line_height
 
-            # Count the number of line breaks included in the log line.
-            log_string = str(self.logs[i].ansi_stripped_log)
-            line_breaks = log_string.count('\n')
+            # Count the number of line breaks are included in the log line.
+            line_breaks = self.logs[i].ansi_stripped_log.count('\n')
             used_lines += line_breaks
 
             # If this is the selected line apply a style class for highlighting.
             if i == self.line_index:
-                # Set the cursor to this line
-                line_fragments = [('[SetCursorPosition]', '')] + line_fragments
-                # Compute the number of trailing empty characters
+                line_fragments = (
+                    pw_console.text_formatting.fill_character_width(
+                        line_fragments,
+                        fragment_width,
+                        self._window_width,
+                        remaining_width,
+                        self.wrap_lines_enabled(),
+                        add_cursor=True))
 
-                # Calculate the number of spaces to add at the end.
-                empty_characters = window_width - fragment_width
-
-                if self.wrap_lines_enabled() and (fragment_width >
-                                                  window_width):
-                    empty_characters = remaining_width
-
-                if empty_characters > 0:
-                    line_fragments[-1] = ('', ' ' * empty_characters + '\n')
-
+                # Apply the selected-log-line background color
                 line_fragments = to_formatted_text(
                     line_fragments, style='class:selected-log-line')
 
+            # Save this line to the beginning of the cache.
             self._line_fragment_cache.appendleft(line_fragments)
             total_used_lines += used_lines
-            # If we have used more lines than available, stop adding new ones.
-            if total_used_lines > self._window_height:
-                break
 
-        fragments = []
-        for line_fragments in self._line_fragment_cache:
-            # Append all FormattedText tuples for this line.
-            for fragment in line_fragments:
-                fragments.append(fragment)
+        # Pad empty lines above current lines if the window isn't filled. This
+        # will push the table header to the top.
+        if total_used_lines < self._window_height:
+            empty_line_count = self._window_height - total_used_lines
+            self._line_fragment_cache.appendleft([('', '\n' * empty_line_count)
+                                                  ])
 
-        # Strip off any trailing line breaks
-        last_fragment = fragments[-1]
-        fragments[-1] = (last_fragment[0], last_fragment[1].rstrip('\n'))
-
-        return fragments
+        return pw_console.text_formatting.flatten_formatted_text_tuples(
+            self._line_fragment_cache)

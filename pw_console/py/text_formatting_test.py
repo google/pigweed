@@ -19,8 +19,8 @@ from parameterized import parameterized  # type: ignore
 from pw_console.text_formatting import get_line_height
 
 
-class TestHelperFunctions(unittest.TestCase):
-    """Tests for helper functions."""
+class TestTextFormatting(unittest.TestCase):
+    """Tests for text_formatting functions."""
     @parameterized.expand([
         (
             'with short prefix height 2',
@@ -77,7 +77,6 @@ class TestHelperFunctions(unittest.TestCase):
             (   'LINE that should b\n'
                 'e wrapped         \n').count('\n'),  # expected_height
             len(         '_________'),  # expected_trailing_characters
-
         ),
     ]) # yapf: disable
 
