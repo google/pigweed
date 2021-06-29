@@ -210,7 +210,7 @@ def install(
 
     def install_packages(gn_target):
         if gn_out_dir is None:
-            build_dir = os.path.join(project_root, 'out')
+            build_dir = os.path.join(venv_path, 'gn-install-dir')
         else:
             build_dir = gn_out_dir
 
