@@ -15,7 +15,6 @@
 
 import collections
 import logging
-import re
 import sys
 import time
 from dataclasses import dataclass
@@ -32,11 +31,9 @@ from prompt_toolkit.formatted_text import (
 import pw_cli.color
 from pw_log_tokenized import FormatStringWithMetadata
 
-import pw_console.helpers
+import pw_console.text_formatting
 
 _LOG = logging.getLogger(__package__)
-
-_ANSI_SEQUENCE_REGEX = re.compile(r'\x1b[^m]*m')
 
 
 @dataclass
@@ -216,8 +213,9 @@ class LogContainer(logging.Handler):
                 asctime=record.asctime, levelname=record.levelname)
 
             # Delete ANSI escape sequences.
-            ansi_stripped_time_and_level = _ANSI_SEQUENCE_REGEX.sub(
-                '', formatted_time_and_level)
+            ansi_stripped_time_and_level = (
+                pw_console.text_formatting.strip_ansi(formatted_time_and_level)
+            )
 
             self.channel_formatted_prefix_widths[record.name] = len(
                 ansi_stripped_time_and_level)
@@ -230,7 +228,8 @@ class LogContainer(logging.Handler):
         """Add a new log event."""
         # Format incoming log line.
         formatted_log = self.format(record)
-        ansi_stripped_log = _ANSI_SEQUENCE_REGEX.sub('', formatted_log)
+        ansi_stripped_log = pw_console.text_formatting.strip_ansi(
+            formatted_log)
         # Save this log.
         self.logs.append(
             LogLine(record=record,
@@ -438,7 +437,7 @@ class LogContainer(logging.Handler):
             remaining_width = 0
             if self.wrap_lines_enabled() and (fragment_width > window_width):
                 line_height, remaining_width = (
-                    pw_console.helpers.get_line_height(
+                    pw_console.text_formatting.get_line_height(
                         fragment_width, window_width,
                         self.get_line_wrap_prefix_width()))
 

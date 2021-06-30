@@ -11,12 +11,12 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Tests for pw_console.console_app"""
+"""Tests for pw_console.text_formatting"""
 
 import unittest
 from parameterized import parameterized  # type: ignore
 
-from pw_console.helpers import get_line_height
+from pw_console.text_formatting import get_line_height
 
 
 class TestHelperFunctions(unittest.TestCase):

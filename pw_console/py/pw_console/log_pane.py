@@ -40,7 +40,8 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
-import pw_console.helpers
+import pw_console.widgets.checkbox
+import pw_console.style
 from pw_console.log_container import LogContainer
 
 
@@ -115,8 +116,8 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
         title = ' {} '.format(log_pane.pane_title())
         mouse_handler = functools.partial(
             LogPaneBottomToolbarBar.mouse_handler_focus, log_pane)
-        return pw_console.helpers.get_pane_indicator(log_pane, title,
-                                                     mouse_handler)
+        return pw_console.style.get_pane_indicator(log_pane, title,
+                                                   mouse_handler)
 
     @staticmethod
     def get_center_text_tokens(log_pane):
@@ -134,34 +135,38 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
             LogPaneBottomToolbarBar.mouse_handler_toggle_follow, log_pane)
 
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
-        separator_text = ('', ' ')  # 1 space of separaton between keybinds.
+        separator_text = ('', '  ')  # 2 space of separaton between keybinds.
 
-        # If the log_pane is in focus, show keybinds in the toolbar.
-        if has_focus(log_pane.__pt_container__())():
-            return [
-                separator_text,
-                pw_console.helpers.to_checkbox(log_pane.wrap_lines,
-                                               toggle_wrap_lines),
-                ('class:keybind', 'w', toggle_wrap_lines),
-                ('class:keyhelp', ':Wrap', toggle_wrap_lines),
-                separator_text,
-                pw_console.helpers.to_checkbox(log_pane.log_container.follow,
-                                               toggle_follow),
-                ('class:keybind', 'f', toggle_follow),
-                ('class:keyhelp', ':Follow', toggle_follow),
-                separator_text,
-                ('class:keybind', 'C', clear_history),
-                ('class:keyhelp', ':Clear', clear_history),
-            ]
         # Show the click to focus button if log pane isn't in focus.
         return [
-            ('class:keyhelp', '[click to focus] ', focus),
+            separator_text,
+            pw_console.widgets.checkbox.to_checkbox(log_pane.wrap_lines,
+                                                    toggle_wrap_lines,
+                                                    end=''),
+            ('class:keyhelp', 'Wrap:', toggle_wrap_lines),
+            ('class:keybind', 'w', toggle_wrap_lines),
+            separator_text,
+            pw_console.widgets.checkbox.to_checkbox(
+                log_pane.log_container.follow, toggle_follow, end=''),
+            ('class:keyhelp', 'Follow:', toggle_follow),
+            ('class:keybind', 'f', toggle_follow),
+            separator_text,
+            ('class:keyhelp', 'Clear:', clear_history),
+            ('class:keybind', 'C', clear_history),
+            # Remaining whitespace should focus on click.
+            ('class:keybind', ' ', focus),
         ]
 
     @staticmethod
     def get_right_text_tokens(log_pane):
         """Return formatted text tokens for display."""
-        return [('', ' {} '.format(log_pane.pane_subtitle()))]
+        focus = functools.partial(LogPaneBottomToolbarBar.mouse_handler_focus,
+                                  log_pane)
+        fragments = []
+        if not has_focus(log_pane.__pt_container__())():
+            fragments.append(('class:keyhelp', '[click to focus] ', focus))
+        fragments.append(('', ' {} '.format(log_pane.pane_subtitle())))
+        return fragments
 
     def __init__(self, log_pane):
         title_section_window = Window(
@@ -199,7 +204,7 @@ class LogPaneBottomToolbarBar(ConditionalContainer):
                 log_source_name,
             ],
             height=LogPaneBottomToolbarBar.TOOLBAR_HEIGHT,
-            style=functools.partial(pw_console.helpers.get_toolbar_style,
+            style=functools.partial(pw_console.style.get_toolbar_style,
                                     log_pane),
             align=WindowAlign.LEFT,
         )
@@ -427,7 +432,7 @@ class LogPane:
             dont_extend_width=False,
             # Needed for log lines ANSI sequences that don't specify foreground
             # or background colors.
-            style=functools.partial(pw_console.helpers.get_pane_style, self),
+            style=functools.partial(pw_console.style.get_pane_style, self),
         )
 
         # Root level container
@@ -444,7 +449,7 @@ class LogPane:
                     align=VerticalAlign.BOTTOM,
                     height=self.height,
                     width=self.width,
-                    style=functools.partial(pw_console.helpers.get_pane_style,
+                    style=functools.partial(pw_console.style.get_pane_style,
                                             self),
                 ),
                 floats=[

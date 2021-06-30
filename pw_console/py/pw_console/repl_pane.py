@@ -32,13 +32,11 @@ from prompt_toolkit.filters import (
     has_focus,
 )
 from prompt_toolkit.document import Document
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.layout import (
     ConditionalContainer,
     Dimension,
-    Float,
     FloatContainer,
     FormattedTextControl,
     HSplit,
@@ -49,11 +47,9 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.lexers import PygmentsLexer  # type: ignore
 from pygments.lexers.python import PythonLexer  # type: ignore
 
-from pw_console.helpers import (
-    get_pane_indicator,
-    get_pane_style,
-    get_toolbar_style,
-)
+import pw_console.mouse
+import pw_console.style
+import pw_console.widgets.focus_on_click_overlay
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 
 _LOG = logging.getLogger(__package__)
@@ -67,38 +63,6 @@ with _OUTPUT_TEMPLATE_PATH.open() as tmpl:
     OUTPUT_TEMPLATE = tmpl.read()
 
 
-def mouse_focus_handler(repl_pane, mouse_event: MouseEvent):
-    """Focus the repl_pane on click."""
-    if not has_focus(repl_pane)():
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            repl_pane.application.application.layout.focus(repl_pane)
-            return None
-    return NotImplemented
-
-
-class FocusOnClickFloatContainer(ConditionalContainer):
-    """Empty container rendered if the repl_pane is not in focus.
-
-    This container should be rendered with transparent=True so nothing is shown
-    to the user. Container is not rendered if the repl_pane is already in focus.
-    """
-    def __init__(self, repl_pane):
-
-        empty_text = FormattedTextControl([(
-            # Style
-            'class:pane_inactive',
-            # Text
-            ' ',
-            # Mouse handler
-            functools.partial(mouse_focus_handler, repl_pane),
-        )])
-
-        super().__init__(
-            Window(empty_text),
-            filter=Condition(lambda: not has_focus(repl_pane)()),
-        )
-
-
 class ReplPaneBottomToolbarBar(ConditionalContainer):
     """Repl pane bottom toolbar."""
     @staticmethod
@@ -106,8 +70,10 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         """Return toolbar indicator and title."""
 
         title = ' Python Input '
-        mouse_handler = functools.partial(mouse_focus_handler, repl_pane)
-        return get_pane_indicator(repl_pane, title, mouse_handler)
+        mouse_handler = functools.partial(pw_console.mouse.focus_handler,
+                                          repl_pane)
+        return pw_console.style.get_pane_indicator(repl_pane, title,
+                                                   mouse_handler)
 
     @staticmethod
     def get_center_text_tokens(repl_pane):
@@ -119,24 +85,15 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 # Text
                 ' ',
                 # Mouse handler
-                functools.partial(mouse_focus_handler, repl_pane),
+                functools.partial(pw_console.mouse.focus_handler, repl_pane),
             ),
             ('class:keybind', 'enter'),
             ('class:keyhelp', ':Run code'),
         ]
 
-        out_of_focus_text = [(
-            # Style
-            'class:keyhelp',
-            # Text
-            '[click to focus] ',
-            # Mouse handler
-            functools.partial(mouse_focus_handler, repl_pane),
-        )]
-
         if has_focus(repl_pane)():
             return focused_text
-        return out_of_focus_text
+        return [('', '')]
 
     @staticmethod
     def get_right_text_tokens(repl_pane):
@@ -148,7 +105,15 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 ('class:keybind', 'F3'),
                 ('class:keyhelp', ':History '),
             ]
-        return []
+
+        return [(
+            # Style
+            'class:keyhelp',
+            # Text
+            '[click to focus] ',
+            # Mouse handler
+            functools.partial(pw_console.mouse.focus_handler, repl_pane),
+        )]
 
     def __init__(self, repl_pane):
         left_section_window = Window(
@@ -192,7 +157,8 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 right_section_window,
             ],
             height=1,
-            style=functools.partial(get_toolbar_style, repl_pane),
+            style=functools.partial(pw_console.style.get_toolbar_style,
+                                    repl_pane),
             align=WindowAlign.LEFT,
         )
 
@@ -273,6 +239,7 @@ class ReplPane:
                                     Window(
                                         content=FormattedTextControl(
                                             functools.partial(
+                                                pw_console.style.
                                                 get_pane_indicator, self,
                                                 ' Python Results ')),
                                         align=WindowAlign.LEFT,
@@ -281,7 +248,7 @@ class ReplPane:
                                     ),
                                 ],
                                 style=functools.partial(
-                                    get_toolbar_style, self),
+                                    pw_console.style.get_toolbar_style, self),
                             ),
                         ]),
                         HSplit([
@@ -293,25 +260,14 @@ class ReplPane:
                     ],
                     height=self.height,
                     width=self.width,
-                    style=functools.partial(get_pane_style, self),
+                    style=functools.partial(pw_console.style.get_pane_style,
+                                            self),
                 ),
                 floats=[
-                    # Transparent float container that will focus on the
-                    # repl_pane when clicked. It is hidden if already in focus.
-                    Float(
-                        # This is drawn as the full size of the ReplPane
-                        FocusOnClickFloatContainer(self),
-                        transparent=True,
-                        # Draw the empty space in the bottom right corner.
-                        # Distance to the right edge
-                        right=1,
-                        # Distance to the bottom edge
-                        bottom=1,
-                        # Don't specify left or top to 0, it would override
-                        # right+bottom and move it to the top left.
-                        #   left=0,
-                        #   top=0,
-                    ),
+                    # Transparent float container that will focus on this
+                    # ReplPane when clicked.
+                    pw_console.widgets.focus_on_click_overlay.create_overlay(
+                        self),
                 ]),
             filter=Condition(lambda: self.show_pane))
 

@@ -28,7 +28,7 @@ from ptpython.layout import (  # type: ignore
 
 from ptpython.completer import CompletePrivateAttributes  # type: ignore
 
-import pw_console.helpers
+import pw_console.text_formatting
 
 _LOG = logging.getLogger(__package__)
 
@@ -79,7 +79,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
 
     def _save_result(self, formatted_text):
         """Save the last repl execution result."""
-        unformatted_result = pw_console.helpers.remove_formatting(
+        unformatted_result = pw_console.text_formatting.remove_formatting(
             formatted_text)
         self._last_result = unformatted_result
 
@@ -127,7 +127,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
 
             if result_value is not None:
                 formatted_result = self._format_result_output(result_value)
-                result = pw_console.helpers.remove_formatting(formatted_result)
+                result = pw_console.text_formatting.remove_formatting(
+                    formatted_result)
 
         # Job is finished, append the last result.
         self.repl_pane.append_result_to_executed_code(input_text, future,

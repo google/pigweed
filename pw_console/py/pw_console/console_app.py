@@ -47,7 +47,7 @@ from ptpython.key_bindings import (  # type: ignore
 )
 
 import pw_console.key_bindings
-import pw_console.helpers
+import pw_console.widgets.checkbox
 import pw_console.style
 from pw_console.help_window import HelpWindow
 from pw_console.log_pane import LogPane
@@ -307,13 +307,13 @@ class ConsoleApp:
                 '[Window]',
                 children=[
                     MenuItem('{check} Vertical Window Spliting'.format(
-                        check=pw_console.helpers.to_checkbox_text(
+                        check=pw_console.widgets.checkbox.to_checkbox_text(
                             self.vertical_split)),
                              handler=self.toggle_vertical_split),
                     MenuItem('-'),
                 ] + [
                     MenuItem('{check} {index}: {title} {subtitle}'.format(
-                        check=pw_console.helpers.to_checkbox_text(
+                        check=pw_console.widgets.checkbox.to_checkbox_text(
                             pane.show_pane),
                         index=index + 1,
                         title=pane.pane_title(),
