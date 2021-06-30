@@ -49,9 +49,13 @@ def _generate_method_descriptor(method: ProtoServiceMethod, method_id: int,
     output.write_line(f'    0x{method_id:08x}),  // Hash of "{method.name()}"')
 
 
-def _generate_server_writer_alias(output: OutputFile) -> None:
+def _generate_aliases(output: OutputFile) -> None:
     output.write_line(
         f'using RawServerWriter = {RPC_NAMESPACE}::RawServerWriter;')
+    output.write_line(
+        f'using RawServerReader = {RPC_NAMESPACE}::RawServerReader;')
+    output.write_line('using RawServerReaderWriter = '
+                      f'{RPC_NAMESPACE}::RawServerReaderWriter;')
 
 
 def _generate_code_for_client(unused_service: ProtoService,
@@ -64,7 +68,7 @@ def _generate_code_for_client(unused_service: ProtoService,
 def _generate_code_for_service(service: ProtoService, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ base class for a raw RPC service."""
-    codegen.service_class(service, root, output, _generate_server_writer_alias,
+    codegen.service_class(service, root, output, _generate_aliases,
                           'RawMethodUnion', _generate_method_descriptor)
 
 
@@ -95,6 +99,16 @@ class StubGenerator(codegen.StubGenerator):
 
         return (f'void {prefix}{method.name()}(ServerContext&, '
                 'pw::ConstByteSpan request, RawServerWriter& writer)')
+
+    def client_streaming_signature(self, method: ProtoServiceMethod,
+                                   prefix: str) -> str:
+        return (f'void {prefix}{method.name()}(ServerContext&, '
+                'RawServerReader& reader)')
+
+    def bidirectional_streaming_signature(self, method: ProtoServiceMethod,
+                                          prefix: str) -> str:
+        return (f'void {prefix}{method.name()}(ServerContext&, '
+                'RawServerReaderWriter& reader_writer)')
 
 
 def process_proto_file(proto_file) -> Iterable[OutputFile]:

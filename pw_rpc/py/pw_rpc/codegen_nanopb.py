@@ -58,16 +58,24 @@ def _generate_method_descriptor(method: ProtoServiceMethod, method_id: int,
         output.write_line(f'{res_fields}),')
 
 
-def _generate_server_writer_alias(output: OutputFile) -> None:
-    output.write_line('template <typename T>')
+def _generate_aliases(output: OutputFile) -> None:
+    output.write_line('template <typename Response>')
     output.write_line(
-        f'using ServerWriter = {RPC_NAMESPACE}::ServerWriter<T>;')
+        f'using ServerWriter = {RPC_NAMESPACE}::NanopbServerWriter<Response>;')
+    output.write_line('template <typename Request, typename Response>')
+    output.write_line(
+        'using ServerReader = '
+        f'{RPC_NAMESPACE}::NanopbServerReader<Request, Response>;')
+    output.write_line('template <typename Request, typename Response>')
+    output.write_line(
+        'using ServerReaderWriter = '
+        f'{RPC_NAMESPACE}::NanopbServerReaderWriter<Request, Response>;')
 
 
 def _generate_code_for_service(service: ProtoService, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ derived class for a nanopb RPC service."""
-    codegen.service_class(service, root, output, _generate_server_writer_alias,
+    codegen.service_class(service, root, output, _generate_aliases,
                           'NanopbMethodUnion', _generate_method_descriptor)
 
 
@@ -114,8 +122,14 @@ def _generate_code_for_client_method(method: ProtoServiceMethod,
             rpc_error,
         ]
     else:
-        raise NotImplementedError(
-            'Only unary and server streaming RPCs are currently supported')
+        output.write_line(f'// Skipping {method.name()}!')
+        output.write_line('// Nanopb RPC clients for '
+                          f'{method.type().name.lower().replace("_", " ")} '
+                          'methods are not yet supported.')
+        output.write_line('// See pwbug/428 (http://bugs.pigweed.dev/428).')
+        output.write_line()
+        # TODO(pwbug/428): Support client and bidirectional streaming clients.
+        return
 
     call_alias = f'{method.name()}Call'
 
@@ -205,6 +219,7 @@ def _generate_code_for_package(proto_file, package: ProtoNode,
 
 
 class StubGenerator(codegen.StubGenerator):
+    """Generates Nanopb RPC stubs."""
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
         return (f'::pw::Status {prefix}{method.name()}(ServerContext&, '
                 f'const {method.request_type().nanopb_name()}& request, '
@@ -224,6 +239,18 @@ class StubGenerator(codegen.StubGenerator):
             f'void {prefix}{method.name()}(ServerContext&, '
             f'const {method.request_type().nanopb_name()}& request, '
             f'ServerWriter<{method.response_type().nanopb_name()}>& writer)')
+
+    def client_streaming_signature(self, method: ProtoServiceMethod,
+                                   prefix: str) -> str:
+        return (f'void {prefix}{method.name()}(ServerContext&, '
+                f'ServerReader<{method.request_type().nanopb_name()}, '
+                f'{method.response_type().nanopb_name()}>& reader)')
+
+    def bidirectional_streaming_signature(self, method: ProtoServiceMethod,
+                                          prefix: str) -> str:
+        return (f'void {prefix}{method.name()}(ServerContext&, '
+                f'ServerReaderWriter<{method.request_type().nanopb_name()}, '
+                f'{method.response_type().nanopb_name()}>& reader_writer)')
 
 
 def process_proto_file(proto_file) -> Iterable[OutputFile]:

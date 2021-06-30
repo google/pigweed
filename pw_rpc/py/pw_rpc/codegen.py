@@ -35,8 +35,14 @@ STUB_RESPONSE_TODO = (
 STUB_WRITER_TODO = (
     '// TODO: Send responses with the writer as appropriate for your '
     'application')
+STUB_READER_TODO = (
+    '// TODO: Set the client stream callback and send a response as '
+    'appropriate for your application')
+STUB_READER_WRITER_TODO = (
+    '// TODO: Set the client stream callback and send responses as '
+    'appropriate for your application')
 
-ServerWriterGenerator = Callable[[OutputFile], None]
+AliasGenerator = Callable[[OutputFile], None]
 MethodGenerator = Callable[[ProtoServiceMethod, int, OutputFile], None]
 ServiceGenerator = Callable[[ProtoService, ProtoNode, OutputFile], None]
 IncludesGenerator = Callable[[Any, ProtoNode], Iterable[str]]
@@ -87,10 +93,9 @@ def package(file_descriptor_proto, proto_package: ProtoNode,
 
 
 def service_class(service: ProtoService, root: ProtoNode, output: OutputFile,
-                  server_writer_alias: ServerWriterGenerator,
-                  method_union: str,
+                  declare_aliases: AliasGenerator, method_union: str,
                   method_descriptor: MethodGenerator) -> None:
-    """Generates a C++ derived class for a nanopb RPC service."""
+    """Generates a C++ class for an RPC service."""
 
     output.write_line('namespace generated {')
 
@@ -103,7 +108,7 @@ def service_class(service: ProtoService, root: ProtoNode, output: OutputFile,
     with output.indent():
         output.write_line(
             f'using ServerContext = {RPC_NAMESPACE}::ServerContext;')
-        server_writer_alias(output)
+        declare_aliases(output)
         output.write_line()
 
         output.write_line(f'constexpr {service.name()}()')
@@ -172,6 +177,7 @@ def _method_lookup_table(service: ProtoService, output: OutputFile) -> None:
 
 
 class StubGenerator(abc.ABC):
+    """Generates stub method implementations that can be copied-and-pasted."""
     @abc.abstractmethod
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
         """Returns the signature of this unary method."""
@@ -195,6 +201,30 @@ class StubGenerator(abc.ABC):
         output.write_line(STUB_WRITER_TODO)
         output.write_line('static_cast<void>(writer);')
 
+    @abc.abstractmethod
+    def client_streaming_signature(self, method: ProtoServiceMethod,
+                                   prefix: str) -> str:
+        """Returns the signature of this client streaming method."""
+
+    def client_streaming_stub(  # pylint: disable=no-self-use
+            self, unused_method: ProtoServiceMethod,
+            output: OutputFile) -> None:
+        """Returns the stub for this client streaming method."""
+        output.write_line(STUB_READER_TODO)
+        output.write_line('static_cast<void>(reader);')
+
+    @abc.abstractmethod
+    def bidirectional_streaming_signature(self, method: ProtoServiceMethod,
+                                          prefix: str) -> str:
+        """Returns the signature of this bidirectional streaming method."""
+
+    def bidirectional_streaming_stub(  # pylint: disable=no-self-use
+            self, unused_method: ProtoServiceMethod,
+            output: OutputFile) -> None:
+        """Returns the stub for this bidirectional streaming method."""
+        output.write_line(STUB_READER_WRITER_TODO)
+        output.write_line('static_cast<void>(reader_writer);')
+
 
 def _select_stub_methods(generator: StubGenerator, method: ProtoServiceMethod):
     if method.type() is ProtoServiceMethod.Type.UNARY:
@@ -204,8 +234,15 @@ def _select_stub_methods(generator: StubGenerator, method: ProtoServiceMethod):
         return (generator.server_streaming_signature,
                 generator.server_streaming_stub)
 
-    raise NotImplementedError(
-        'Client and bidirectional streaming not yet implemented')
+    if method.type() is ProtoServiceMethod.Type.CLIENT_STREAMING:
+        return (generator.client_streaming_signature,
+                generator.client_streaming_stub)
+
+    if method.type() is ProtoServiceMethod.Type.BIDIRECTIONAL_STREAMING:
+        return (generator.bidirectional_streaming_signature,
+                generator.bidirectional_streaming_stub)
+
+    raise NotImplementedError(f'Unrecognized method type {method.type()}')
 
 
 _STUBS_COMMENT = r'''
