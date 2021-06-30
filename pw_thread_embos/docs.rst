@@ -148,3 +148,82 @@ Thread Yield Backend
 A backend for ``pw::thread::yield()`` is offered using via ``OS_Yield()``.
 It uses ``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only
 from a thread.
+
+---------
+Utilities
+---------
+``ForEachThread()``
+===================
+In cases where an operation must be performed for every thread,
+``ForEachThread()`` can be used to iterate over all the created thread TCBs.
+Note that it's only safe to use this while the scheduler is suspended, and this
+should only be used after ``OS_Start()`` has been called. Calling this before
+the scheduler has started is non-fatal, but will result in no action and a
+``FailedPrecondition`` error code.
+
+Return values
+-------------
+
+* ``FailedPrecondition``: Returned when ``ForEachThread()`` is run before the OS
+  has been initialized.
+* ``OkStatus``: The callback has been successfully run with every thread.
+* Other: The callback returned an error status on a thread, triggering an early
+  abort.
+
+--------------------
+Snapshot Integration
+--------------------
+This ``pw_thread`` backend provides helper functions that capture embOS thread
+info to a ``pw::thread::Thread`` proto.
+
+SnapshotThread()/SnapshotThreads()
+==================================
+``SnapshotThread()`` captures the thread name, state, and stack information for
+the provided embOS TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
+the most up-to-date information is captured, the stack pointer for the currently
+running thread must be provided for cases where the running thread is being
+captured. For ARM Cortex-M CPUs, you can do something like this:
+
+.. Code:: cpp
+
+  // Capture PSP.
+  void* stack_ptr = 0;
+  asm volatile("mrs %0, psp\n" : "=r"(stack_ptr));
+  pw::thread::ProcessThreadStackCallback cb =
+      [](pw::thread::Thread::StreamEncoder& encoder,
+         pw::ConstByteSpan stack) -> pw::Status {
+    return encoder.WriteRawStack(stack);
+  };
+  pw::thread::embos::SnapshotThread(my_thread, stack_ptr,
+                                    snapshot_encoder, cb);
+
+``SnapshotThreads()`` wraps the singular thread capture to instead captures
+all created threads to a ``pw::thread::SnapshotThreadInfo`` message. This proto
+message overlays a snapshot, so it is safe to static cast a
+``pw::snapshot::Snapshot::StreamEncoder`` to a
+``pw::thread::SnapshotThreadInfo::StreamEncoder`` when calling this function.
+
+Thread Name Capture
+-------------------
+In order to capture thread names when snapshotting a thread, embOS must have
+``OS_TRACKNAME`` enabled. If ``OS_TRACKNAME`` is disabled, no thread name
+is captured. Enabling this is strongly recommended for debugability.
+
+Thread State Capture
+--------------------
+embOS thread state is not part of embOS's public API. Despite this, the
+snapshot integration captures thread state based on information on how the
+thread state is represented from
+`Segger's public forum <https://forum.segger.com/index.php/Thread/6548-ABANDONED-Task-state-values/?postID=23963#post23963>`_.
+This has been tested on embOS 4.22, and was initially
+reported for embOS 5.06. The logic Pigweed uses to interpret thread state may
+be incorrect for other versions of embOS.
+
+Thread Stack Capture
+--------------------
+Full thread stack information capture is dependent on embOS tracking the stack
+bounds for each task. When either ``OS_SUPPORT_MPU`` or ``OS_CHECKSTACK`` are
+enabled, stack bounds are tracked and the callback for thread stack dumping
+will be called. If both of these options are disabled, ``stack_start_pointer``
+and ``stack_end_pointer`` will not be captured, and the
+``ProcessThreadStackCallback`` will not be called.
