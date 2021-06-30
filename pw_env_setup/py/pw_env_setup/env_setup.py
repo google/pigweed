@@ -214,8 +214,8 @@ class EnvSetup(object):
         self._use_existing_cipd = use_existing_cipd
         self._virtualenv_gn_out_dir = virtualenv_gn_out_dir
 
-        if self._root_variable:
-            self._env.set(self._root_variable, project_root)
+        # if self._root_variable:
+        #     self._env.set(self._root_variable, project_root)
         self._env.set('PW_PROJECT_ROOT', project_root)
         self._env.set('PW_ROOT', pw_root)
         self._env.set('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
