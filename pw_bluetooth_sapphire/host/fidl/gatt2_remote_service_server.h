@@ -27,7 +27,7 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
   // fuchsia::bluetooth::gatt2::RemoteService overrides:
   void DiscoverCharacteristics(DiscoverCharacteristicsCallback callback) override;
 
-  void ReadByType(::fuchsia::bluetooth::Uuid uuid, ReadByTypeCallback callback) override {}
+  void ReadByType(::fuchsia::bluetooth::Uuid uuid, ReadByTypeCallback callback) override;
 
   void ReadCharacteristic(::fuchsia::bluetooth::gatt2::Handle handle,
                           ::fuchsia::bluetooth::gatt2::ReadOptions options,
@@ -52,6 +52,11 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
 
   // The remote GATT service that backs this service.
   fbl::RefPtr<bt::gatt::RemoteService> service_;
+
+  // The peer that is serving this service.
+  bt::PeerId peer_id_;
+
+  fxl::WeakPtrFactory<Gatt2RemoteServiceServer> weak_ptr_factory_;
 };
 
 }  // namespace bthost

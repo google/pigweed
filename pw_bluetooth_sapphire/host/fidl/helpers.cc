@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "helpers.h"
+
 #include <endian.h>
 
 #include <algorithm>
@@ -9,7 +11,6 @@
 #include <unordered_set>
 
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
-#include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
@@ -445,6 +446,35 @@ fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> 
       }
     default:
       return fuchsia::bluetooth::gatt::Error::FAILURE;
+  }
+}
+
+fuchsia::bluetooth::gatt2::Error AttStatusToGattFidlError(bt::Status<bt::att::ErrorCode> status) {
+  ZX_ASSERT(!status.is_success());
+  switch (status.error()) {
+    case bt::HostError::kPacketMalformed:
+      return fuchsia::bluetooth::gatt2::Error::INVALID_RESPONSE;
+    case bt::HostError::kInvalidParameters:
+      return fuchsia::bluetooth::gatt2::Error::INVALID_PARAMETERS;
+    case bt::HostError::kProtocolError:
+      switch (status.protocol_error()) {
+        case bt::att::ErrorCode::kInsufficientAuthorization:
+          return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_AUTHORIZATION;
+        case bt::att::ErrorCode::kInsufficientAuthentication:
+          return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_AUTHENTICATION;
+        case bt::att::ErrorCode::kInsufficientEncryptionKeySize:
+          return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+        case bt::att::ErrorCode::kInsufficientEncryption:
+          return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_ENCRYPTION;
+        case bt::att::ErrorCode::kReadNotPermitted:
+          return fuchsia::bluetooth::gatt2::Error::READ_NOT_PERMITTED;
+        case bt::att::ErrorCode::kInvalidHandle:
+          return fuchsia::bluetooth::gatt2::Error::INVALID_HANDLE;
+        default:
+          return fuchsia::bluetooth::gatt2::Error::FAILURE;
+      }
+    default:
+      return fuchsia::bluetooth::gatt2::Error::FAILURE;
   }
 }
 

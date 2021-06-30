@@ -27,6 +27,7 @@ namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 namespace fbg = fuchsia::bluetooth::gatt;
+namespace fbg2 = fuchsia::bluetooth::gatt2;
 namespace fbredr = fuchsia::bluetooth::bredr;
 namespace faudio = fuchsia::hardware::audio;
 
@@ -100,6 +101,32 @@ TEST(FIDL_HelpersTest, GattStatusToFidl) {
             GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kReadNotPermitted)));
   EXPECT_EQ(fbg::Error::FAILURE,
             GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
+}
+
+
+TEST(FIDL_HelpersTest, AttStatusToGattFidlError) {
+  // Host errors
+  EXPECT_EQ(fbg2::Error::INVALID_RESPONSE,
+            AttStatusToGattFidlError(bt::att::Status(bt::HostError::kPacketMalformed)));
+  EXPECT_EQ(fbg2::Error::INVALID_PARAMETERS,
+            AttStatusToGattFidlError(bt::att::Status(bt::HostError::kInvalidParameters)));
+  EXPECT_EQ(fbg2::Error::FAILURE, AttStatusToGattFidlError(bt::att::Status(bt::HostError::kTimedOut)));
+
+  // Protocol errors
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHORIZATION,
+            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthorization)));
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHENTICATION,
+            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthentication)));
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
+            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientEncryptionKeySize)));
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION,
+            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientEncryption)));
+  EXPECT_EQ(fbg2::Error::READ_NOT_PERMITTED,
+            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kReadNotPermitted)));
+  EXPECT_EQ(fbg2::Error::INVALID_HANDLE,
+            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInvalidHandle)));
+  EXPECT_EQ(fbg2::Error::FAILURE,
+            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
 }
 
 TEST(FIDL_HelpersTest, AddressBytesFrommString) {

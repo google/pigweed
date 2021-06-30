@@ -4,7 +4,10 @@
 
 #include "gatt2_remote_service_server.h"
 
+#include <algorithm>
+
 #include "gtest/gtest.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 
@@ -16,7 +19,7 @@ namespace fbg = fuchsia::bluetooth::gatt2;
 constexpr bt::PeerId kPeerId(1);
 
 constexpr bt::att::Handle kServiceStartHandle = 0x0001;
-constexpr bt::att::Handle kServiceEndHandle = 0x000F;
+constexpr bt::att::Handle kServiceEndHandle = 0xFFFE;
 const bt::UUID kServiceUuid(uint16_t{0x180D});
 
 class FIDL_Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
@@ -137,6 +140,167 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverCharacteristicsWithNoDescripto
   ASSERT_EQ(fidl_characteristics->size(), 1u);
   const fbg::Characteristic& fidl_characteristic = fidl_characteristics->front();
   EXPECT_FALSE(fidl_characteristic.has_descriptors());
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeSuccess) {
+  constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
+
+  constexpr bt::att::Handle kHandle = kServiceStartHandle;
+  const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02);
+  const std::vector<bt::gatt::Client::ReadByTypeValue> kValues = {
+      {kHandle, kValue.view(), /*maybe_truncated=*/false}};
+
+  size_t read_count = 0;
+  fake_client()->set_read_by_type_request_callback(
+      [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
+        switch (read_count++) {
+          case 0:
+            callback(fit::ok(kValues));
+            break;
+          case 1:
+            callback(fit::error(bt::gatt::Client::ReadByTypeError{
+                bt::att::Status(bt::att::ErrorCode::kAttributeNotFound), start}));
+            break;
+          default:
+            FAIL();
+        }
+      });
+
+  std::optional<fbg::RemoteService_ReadByType_Result> fidl_result;
+  service_proxy()->ReadByType(fuchsia::bluetooth::Uuid{kCharUuid.value()},
+                              [&](auto cb_result) { fidl_result = std::move(cb_result); });
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_response());
+  const auto& response = fidl_result->response();
+  ASSERT_EQ(1u, response.results.size());
+  const fbg::ReadByTypeResult& result0 = response.results[0];
+  ASSERT_TRUE(result0.has_handle());
+  EXPECT_EQ(result0.handle().value, static_cast<uint64_t>(kHandle));
+
+  EXPECT_FALSE(result0.has_error());
+
+  ASSERT_TRUE(result0.has_value());
+  const fbg::ReadValue& read_value = result0.value();
+  ASSERT_TRUE(read_value.has_handle());
+  EXPECT_EQ(read_value.handle().value, static_cast<uint64_t>(kHandle));
+  ASSERT_TRUE(read_value.has_maybe_truncated());
+  EXPECT_FALSE(read_value.maybe_truncated());
+
+  ASSERT_TRUE(read_value.has_value());
+  const std::vector<uint8_t>& value = read_value.value();
+  EXPECT_TRUE(ContainersEqual(bt::BufferView(value.data(), value.size()), kValue));
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeResultPermissionError) {
+  constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
+
+  size_t read_count = 0;
+  fake_client()->set_read_by_type_request_callback(
+      [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
+        ASSERT_EQ(0u, read_count++);
+        callback(fit::error(bt::gatt::Client::ReadByTypeError{
+            bt::att::Status(bt::att::ErrorCode::kInsufficientAuthorization), kServiceEndHandle}));
+      });
+
+  std::optional<fbg::RemoteService_ReadByType_Result> fidl_result;
+  service_proxy()->ReadByType(fuchsia::bluetooth::Uuid{kCharUuid.value()},
+                              [&](auto cb_result) { fidl_result = std::move(cb_result); });
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_response());
+  const auto& response = fidl_result->response();
+  ASSERT_EQ(1u, response.results.size());
+  const fbg::ReadByTypeResult& result0 = response.results[0];
+  ASSERT_TRUE(result0.has_handle());
+  EXPECT_EQ(result0.handle().value, static_cast<uint64_t>(kServiceEndHandle));
+  EXPECT_FALSE(result0.has_value());
+  ASSERT_TRUE(result0.has_error());
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_AUTHORIZATION, result0.error());
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
+  constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
+
+  size_t read_count = 0;
+  fake_client()->set_read_by_type_request_callback(
+      [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
+        switch (read_count++) {
+          case 0:
+            callback(fit::error(bt::gatt::Client::ReadByTypeError{
+                bt::att::Status(bt::HostError::kPacketMalformed), std::nullopt}));
+            break;
+          default:
+            FAIL();
+        }
+      });
+
+  std::optional<fbg::RemoteService_ReadByType_Result> fidl_result;
+  service_proxy()->ReadByType(fuchsia::bluetooth::Uuid{kCharUuid.value()},
+                              [&](auto cb_result) { fidl_result = std::move(cb_result); });
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_err());
+  const auto& err = fidl_result->err();
+  EXPECT_EQ(fbg::Error::FAILURE, err);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeInvalidUuid) {
+  constexpr bt::UUID kCharUuid = bt::gatt::types::kCharacteristicDeclaration;
+
+  fake_client()->set_read_by_type_request_callback([&](const bt::UUID& type, bt::att::Handle start,
+                                                       bt::att::Handle end,
+                                                       auto callback) { FAIL(); });
+
+  std::optional<fbg::RemoteService_ReadByType_Result> fidl_result;
+  service_proxy()->ReadByType(fuchsia::bluetooth::Uuid{kCharUuid.value()},
+                              [&](auto cb_result) { fidl_result = std::move(cb_result); });
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_err());
+  const auto& err = fidl_result->err();
+  EXPECT_EQ(fbg::Error::INVALID_PARAMETERS, err);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
+  constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
+  const auto value = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06);
+
+  size_t read_count = 0;
+  fake_client()->set_read_by_type_request_callback(
+      [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
+        read_count++;
+
+        // Ensure that more results are received than can fit in a channel. Each result is larger
+        // than the value payload, so receiving as many values as will fit in a channel is
+        // guaranteed to fill the channel and then some.
+        const size_t max_value_count = static_cast<size_t>(ZX_CHANNEL_MAX_MSG_BYTES) / value.size();
+        if (read_count == max_value_count) {
+          callback(fit::error(bt::gatt::Client::ReadByTypeError{
+              bt::att::Status(bt::att::ErrorCode::kAttributeNotFound), start}));
+          return;
+        }
+
+        // Dispatch callback to prevent recursing too deep and breaking the stack.
+        async::PostTask(dispatcher(), [start, cb = std::move(callback), &value = value]() {
+          std::vector<bt::gatt::Client::ReadByTypeValue> values = {
+              {start, value.view(), /*maybe_truncated=*/false}};
+          cb(fit::ok(values));
+        });
+      });
+
+  std::optional<fbg::RemoteService_ReadByType_Result> fidl_result;
+  service_proxy()->ReadByType(fuchsia::bluetooth::Uuid{kCharUuid.value()},
+                              [&](auto cb_result) { fidl_result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_err());
+  const auto& err = fidl_result->err();
+  EXPECT_EQ(fbg::Error::TOO_MANY_RESULTS, err);
 }
 
 }  // namespace

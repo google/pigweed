@@ -3019,7 +3019,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflo
 
   constexpr att::Handle kHandle = kEndHandle;
   const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
-  const std::vector<Client::ReadByTypeValue> kValues = {{kHandle, kValue.view(), /*maybe_truncated=*/false}};
+  const std::vector<Client::ReadByTypeValue> kValues = {
+      {kHandle, kValue.view(), /*maybe_truncated=*/false}};
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
