@@ -131,6 +131,11 @@ class _VariableAction(_Action):
 
 class Set(_VariableAction):
     """Set a variable."""
+    def __init__(self, *args, **kwargs):
+        deactivate = kwargs.pop('deactivate', True)
+        super(Set, self).__init__(*args, **kwargs)
+        self.deactivate = deactivate
+
     def accept(self, visitor):
         visitor.visit_set(self)
 
@@ -326,11 +331,11 @@ class Environment(object):
     # A newline is printed after each high-level operation. Top-level
     # operations should not invoke each other (this is why _remove() exists).
 
-    def set(self, name, value):
+    def set(self, name, value, deactivate=True):
         """Set a variable."""
         assert not self._finalized
         name = self.normalize_key(name)
-        self._actions.append(Set(name, value))
+        self._actions.append(Set(name, value, deactivate=deactivate))
         self._blankline()
 
     def clear(self, name):

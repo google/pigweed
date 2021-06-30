@@ -161,7 +161,8 @@ class DeactivateShellVisitor(_BaseShellVisitor):
             self._outs = None
 
     def visit_set(self, set):  # pylint: disable=redefined-builtin
-        self._outs.write('unset {name}\n'.format(name=set.name))
+        if set.deactivate:
+            self._outs.write('unset {name}\n'.format(name=set.name))
 
     def visit_clear(self, clear):
         pass  # Not relevant.
