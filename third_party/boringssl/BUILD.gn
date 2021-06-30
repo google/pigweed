@@ -14,13 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
-
-declare_args() {
-  # If compiling backends with boringssl, this variable is set to the path to the
-  # boringssl source code. When set, a pw_source_set for the boringssl library is
-  # created at "$dir_pw_third_party/boringssl".
-  dir_pw_third_party_boringssl = ""
-}
+import("boringssl.gni")
 
 if (dir_pw_third_party_boringssl != "") {
   import("$dir_pw_third_party_boringssl/BUILD.generated.gni")

@@ -139,6 +139,7 @@ group("module_docs") {
     "$dir_pw_thread_stl:docs",
     "$dir_pw_thread_threadx:docs",
     "$dir_pw_tls_client:docs",
+    "$dir_pw_tls_client_boringssl:docs",
     "$dir_pw_tls_client_mbedtls:docs",
     "$dir_pw_tokenizer:docs",
     "$dir_pw_toolchain:docs",

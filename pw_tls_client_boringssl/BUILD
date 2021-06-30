@@ -1,0 +1,50 @@
+# Copyright 2021 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
+
+pw_cc_library(
+    name = "pw_tls_client_boringssl",
+    hdrs = [
+        "public/pw_tls_client_boringssl/backend_types.h",
+        "public_overrides/pw_tls_client_backends/backend_types.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    srcs = [ "tls_client_boringssl.cc" ],
+    deps = [
+        "//pw_tls_clent:pw_tls_client_facade",
+    ]
+)
+
+pw_cc_test(
+    name = "tls_boringssl_client_test",
+    srcs = [
+        "tls_client_boringssl_test.cc",
+    ],
+    deps = [
+        ":pw_tls_client_boringssl",
+    ],
+)
+
