@@ -1275,6 +1275,86 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobs) {
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
+// Simulates a peer that rejects a read blob request with a kAttributeNotLong error. The initial
+// read request completes successfully and contains the entire value. The specification implies that
+// the peer can either respond with an empty buffer or a kAttributeNotLong error for the second
+// request.
+TEST_F(GATT_RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErrorIgnored) {
+  constexpr uint16_t kOffset = 0;
+  constexpr size_t kMaxBytes = 1000;
+  constexpr int kExpectedBlobCount = 2;
+
+  auto service = SetupServiceWithChrcs(
+      ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
+      {ReadableChrc()});
+
+  StaticByteBuffer<att::kLEMinMTU - 1> expected_value;
+  for (size_t i = 0; i < expected_value.size(); ++i) {
+    expected_value[i] = i;
+  }
+
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    callback(att::Status(), expected_value.view(), /*maybe_truncated=*/true);
+  });
+
+  fake_client()->set_read_blob_request_callback(
+      [&](att::Handle handle, uint16_t offset, auto callback) {
+        read_count++;
+        EXPECT_EQ(read_count, 2);
+        callback(att::Status(att::ErrorCode::kAttributeNotLong), BufferView(),
+                 /*maybe_truncated=*/false);
+      });
+
+  att::Status status(HostError::kFailed);
+  service->ReadLongCharacteristic(
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+        status = cb_status;
+        EXPECT_TRUE(ContainersEqual(expected_value, value));
+        EXPECT_FALSE(maybe_truncated);
+      });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
+}
+
+TEST_F(GATT_RemoteServiceManagerTest,
+       ReadLongCharacteristicAttributeNotLongErrorOnFirstReadRequest) {
+  constexpr uint16_t kOffset = 0;
+  constexpr size_t kMaxBytes = 1000;
+  constexpr int kExpectedBlobCount = 1;
+
+  auto service = SetupServiceWithChrcs(
+      ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
+      {ReadableChrc()});
+
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    callback(att::Status(att::ErrorCode::kAttributeNotLong), BufferView(),
+             /*maybe_truncated=*/false);
+  });
+  fake_client()->set_read_blob_request_callback([&](auto, auto, auto) { FAIL(); });
+
+  att::Status status;
+  service->ReadLongCharacteristic(
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+        status = cb_status;
+        EXPECT_FALSE(maybe_truncated);
+      });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status.is_protocol_error());
+  EXPECT_EQ(status.protocol_error(), att::ErrorCode::kAttributeNotLong);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
+}
+
 // Same as ReadLongMultipleBlobs except the characteristic value has a size that
 // is a multiple of (ATT_MTU - 1), so that the last read blob request returns 0
 // bytes.

@@ -686,9 +686,19 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
       return;
     }
 
-    // TODO(fxbug.dev/79898): If the status is kAttributeNotLong, return the current buffer instead
-    // of failing.
     if (!status) {
+      // "If the Characteristic Value is not longer than (ATT_MTU – 1) an ATT_ERROR_RSP PDU with the
+      // error code set to kAttributeNotLong shall be received on the first ATT_READ_BLOB_REQ PDU."
+      // (Core Spec v5.2, Vol 3, Part G, Sec 4.8.3).
+      // Report the short value read in the previous ATT_READ_REQ in this case.
+      if (status.is_protocol_error() &&
+          status.protocol_error() == att::ErrorCode::kAttributeNotLong &&
+          offset == self->client_->mtu() - sizeof(att::OpCode)) {
+        ReportValue(att::Status(), buffer->view(0, bytes_read),
+                    /*maybe_truncated=*/false, std::move(cb), dispatcher);
+        return;
+      }
+
       ReportReadValueError(status, std::move(cb), dispatcher);
       return;
     }
