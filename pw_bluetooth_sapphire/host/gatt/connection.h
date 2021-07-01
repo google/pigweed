@@ -47,10 +47,6 @@ class Connection final {
              async_dispatcher_t* gatt_dispatcher);
   ~Connection() = default;
 
-  Connection() = default;
-  Connection(Connection&&) = default;
-  Connection& operator=(Connection&&) = default;
-
   Server* server() const { return server_.get(); }
   RemoteServiceManager* remote_service_manager() const { return remote_service_manager_.get(); }
 
@@ -65,6 +61,8 @@ class Connection final {
   fxl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
   std::unique_ptr<RemoteServiceManager> remote_service_manager_;
+
+  fxl::WeakPtrFactory<Connection> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };

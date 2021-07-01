@@ -76,10 +76,12 @@ class Impl final : public GATT {
       return;
     }
 
-    connections_[peer_id] =
-        internal::Connection(peer_id, att_bearer, local_services_->database(),
-                             std::bind(&Impl::OnServiceAdded, this, peer_id, std::placeholders::_1),
-                             async_get_default_dispatcher());
+    connections_.try_emplace(
+        peer_id, peer_id, att_bearer, local_services_->database(),
+        [this, peer_id](auto added_service) {
+          this->OnServiceAdded(peer_id, std::move(added_service));
+        },
+        async_get_default_dispatcher());
 
     if (retrieve_service_changed_ccc_callback_) {
       auto optional_service_changed_ccc_data = retrieve_service_changed_ccc_callback_(peer_id);

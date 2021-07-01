@@ -69,6 +69,7 @@ source_set("fake_controller") {
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/att:definitions",
     "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/gap",
     "//src/connectivity/bluetooth/core/bt-host/gatt:definitions",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",

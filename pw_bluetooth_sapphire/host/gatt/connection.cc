@@ -18,7 +18,7 @@ namespace bt::gatt::internal {
 Connection::Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
                        fxl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
                        async_dispatcher_t* gatt_dispatcher)
-    : att_(att_bearer) {
+    : att_(att_bearer), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(att_bearer);
   ZX_DEBUG_ASSERT(local_db);
   ZX_DEBUG_ASSERT(svc_watcher);
@@ -34,10 +34,15 @@ void Connection::Initialize(std::vector<UUID> service_uuids) {
   ZX_ASSERT(remote_service_manager_);
 
   auto uuids_count = service_uuids.size();
-  auto status_cb = [att = att_, uuids_count](att::Status status) {
+  // status_cb must not capture att_ in order to prevent reference cycle.
+  auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(), uuids_count](att::Status status) {
+    if (!self) {
+      return;
+    }
+
     if (bt_is_error(status, ERROR, "gatt", "client setup failed")) {
       // Signal a link error.
-      att->ShutDown();
+      self->att_->ShutDown();
     } else if (uuids_count > 0) {
       bt_log(DEBUG, "gatt", "primary service discovery complete for (%zu) service uuids",
              uuids_count);

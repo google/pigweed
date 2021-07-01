@@ -45,10 +45,12 @@ class RemoteServiceManager final {
     svc_watcher_ = std::move(watcher);
   }
 
-  // Initiates the Exchange MTU procedure followed by primary service
-  // discovery. |callback| is called to notify the result of the procedure.
+  // Initiates the Exchange MTU procedure followed by service discovery.
+  // |callback| is called to notify the result of the procedure.
   // If |services| is empty, discover all services.
   // If |services| is not empty, only discover services that match the UUIDs in |services|.
+  // TODO(fxbug.dev/65592): Support initiating multiple service discoveries for different service
+  // UUIDs.
   void Initialize(att::StatusCallback callback, std::vector<UUID> services = {});
 
   // Returns a vector containing discovered services that match any of the given
@@ -83,6 +85,24 @@ class RemoteServiceManager final {
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
   };
+
+  fbl::RefPtr<RemoteService> GattProfileService();
+
+  void OnServiceChangedNotification(const ByteBuffer& value);
+
+  // Attempt to discover the GATT Profile service. This method must complete before discovery of
+  // other services. Notifies |callback| with a status of HostError::kNotFound if the GATT Profile
+  // service is not found.
+  void DiscoverGattProfileService(att::StatusCallback callback);
+
+  // Discovers characteristics of |gatt_profile_service| and enables notifications of the Service
+  // Changed characteristic. Notifies |callback| with a status of HostError::kNotFound if the GATT
+  // Profile service's Service Changed characteristic is not found.
+  void ConfigureServiceChangedNotifications(fbl::RefPtr<RemoteService> gatt_profile_service,
+                                            att::StatusCallback callback);
+
+  // Discover the GATT Profile service and configure the Service Changed characteristic therein.
+  void InitializeGattProfileService(att::StatusCallback callback);
 
   // Create a RemoteService and insert it into the services map, discarding duplicates.
   void AddService(const ServiceData& service_data);
