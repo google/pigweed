@@ -43,7 +43,10 @@ pw_source_set("pw_tls_client_boringssl") {
 
 pw_test("tls_client_boringssl_test") {
   enable_if = dir_pw_third_party_boringssl != ""
-  deps = [ ":pw_tls_client_boringssl" ]
+  deps = [
+    ":pw_tls_client_boringssl",
+    "$dir_pw_tls_client:test_data",
+  ]
   sources = [ "tls_client_boringssl_test.cc" ]
 }
 

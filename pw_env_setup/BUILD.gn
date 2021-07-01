@@ -46,6 +46,7 @@ pw_python_group("python") {
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
     "$dir_pw_stm32cube_build/py",
+    "$dir_pw_tls_client/py",
     "$dir_pw_tokenizer/py",
     "$dir_pw_toolchain/py",
     "$dir_pw_trace/py",
