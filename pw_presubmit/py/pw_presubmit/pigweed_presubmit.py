@@ -152,6 +152,20 @@ def gn_nanopb_build(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_crypto_mbedtls_build(ctx: PresubmitContext):
+    build.install_package(ctx.package_root, 'mbedtls')
+    build.gn_gen(
+        ctx.root,
+        ctx.output_dir,
+        dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
+        pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
+                                               'pw_crypto:sha256_mbedtls'),
+        pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
+                                              'pw_crypto:ecdsa_mbedtls'))
+    build.ninja(ctx.output_dir)
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_teensy_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'teensy')
     build.gn_gen(ctx.root,
@@ -667,6 +681,7 @@ OTHER_CHECKS = (
     cmake_tests,
     gn_boringssl_build,
     gn_nanopb_build,
+    gn_crypto_mbedtls_build,
     gn_full_build_check,
     gn_full_qemu_check,
     gn_clang_build,
