@@ -1193,12 +1193,13 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongSingleBlob) {
 
   const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
-  fake_client()->set_read_blob_request_callback(
-      [&](att::Handle handle, uint16_t offset, auto callback) {
-        EXPECT_EQ(kDefaultChrcValueHandle, handle);
-        EXPECT_EQ(kOffset, offset);
-        callback(att::Status(), kValue, /*maybe_truncated=*/false);
-      });
+  int request_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    request_count++;
+    EXPECT_EQ(request_count, 1);
+    EXPECT_EQ(kDefaultChrcValueHandle, handle);
+    callback(att::Status(), kValue, /*maybe_truncated=*/false);
+  });
 
   att::Status status(HostError::kFailed);
   service->ReadLongCharacteristic(
@@ -1233,16 +1234,25 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobs) {
     expected_value[i] = i;
   }
 
-  int read_blob_count = 0;
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    EXPECT_EQ(kDefaultChrcValueHandle, handle);
+    auto blob = expected_value.view(0, att::kLEMinMTU - 1);
+    callback(att::Status(), blob, /*maybe_truncated=*/true);
+  });
+
   fake_client()->set_read_blob_request_callback(
       [&](att::Handle handle, uint16_t offset, auto callback) {
+        read_count++;
+        EXPECT_GT(read_count, 1);
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
-        read_blob_count++;
         bool maybe_truncated = true;
 
         // Return a blob at the given offset with at most MTU - 1 bytes.
         auto blob = expected_value.view(offset, att::kLEMinMTU - 1);
-        if (read_blob_count == kExpectedBlobCount) {
+        if (read_count == kExpectedBlobCount) {
           // The final blob should contain 3 bytes.
           EXPECT_EQ(3u, blob.size());
           maybe_truncated = false;
@@ -1262,7 +1272,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobs) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
-  EXPECT_EQ(kExpectedBlobCount, read_blob_count);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
 // Same as ReadLongMultipleBlobs except the characteristic value has a size that
@@ -1288,16 +1298,25 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
     expected_value[i] = i;
   }
 
-  int read_blob_count = 0;
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    EXPECT_EQ(kDefaultChrcValueHandle, handle);
+    auto blob = expected_value.view(0, att::kLEMinMTU - 1);
+    callback(att::Status(), blob, /*maybe_truncated=*/true);
+  });
+
   fake_client()->set_read_blob_request_callback(
       [&](att::Handle handle, uint16_t offset, auto callback) {
+        read_count++;
+        EXPECT_GT(read_count, 1);
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
-        read_blob_count++;
         bool maybe_truncated = true;
 
         // Return a blob at the given offset with at most MTU - 1 bytes.
         auto blob = expected_value.view(offset, att::kLEMinMTU - 1);
-        if (read_blob_count == kExpectedBlobCount) {
+        if (read_count == kExpectedBlobCount) {
           // The final blob should be empty.
           EXPECT_EQ(0u, blob.size());
           maybe_truncated = false;
@@ -1317,7 +1336,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
-  EXPECT_EQ(kExpectedBlobCount, read_blob_count);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
 // Same as ReadLongMultipleBlobs but a maximum size is given that is smaller
@@ -1340,11 +1359,20 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
     expected_value[i] = i;
   }
 
-  int read_blob_count = 0;
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    EXPECT_EQ(kDefaultChrcValueHandle, handle);
+    BufferView blob = expected_value.view(0, att::kLEMinMTU - 1);
+    callback(att::Status(), blob, /*maybe_truncated=*/true);
+  });
+
   fake_client()->set_read_blob_request_callback(
       [&](att::Handle handle, uint16_t offset, auto callback) {
+        read_count++;
+        EXPECT_GT(read_count, 1);
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
-        read_blob_count++;
         BufferView blob = expected_value.view(offset, att::kLEMinMTU - 1);
         callback(att::Status(), blob, /*maybe_truncated=*/true);
       });
@@ -1360,7 +1388,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
-  EXPECT_EQ(kExpectedBlobCount, read_blob_count);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
 // Same as ReadLongMultipleBlobs but a non-zero offset is given.
@@ -1463,17 +1491,21 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongError) {
   // request.
   StaticByteBuffer<att::kLEMinMTU - 1> first_blob;
 
-  int read_blob_count = 0;
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    EXPECT_EQ(kDefaultChrcValueHandle, handle);
+    callback(att::Status(), first_blob, /*maybe_truncated=*/true);
+  });
+
   fake_client()->set_read_blob_request_callback(
       [&](att::Handle handle, uint16_t offset, auto callback) {
+        read_count++;
+        EXPECT_EQ(read_count, 2);
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
-        read_blob_count++;
-        if (read_blob_count == kExpectedBlobCount) {
-          callback(att::Status(att::ErrorCode::kInvalidOffset), BufferView(),
-                   /*maybe_truncated=*/false);
-        } else {
-          callback(att::Status(), first_blob, /*maybe_truncated=*/true);
-        }
+        callback(att::Status(att::ErrorCode::kInvalidOffset), BufferView(),
+                 /*maybe_truncated=*/false);
       });
 
   att::Status status;
@@ -1487,7 +1519,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongError) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(att::ErrorCode::kInvalidOffset, status.protocol_error());
-  EXPECT_EQ(kExpectedBlobCount, read_blob_count);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
 // The service is shut down just before the first read blob response. The
@@ -1503,15 +1535,14 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
 
   StaticByteBuffer<att::kLEMinMTU - 1> first_blob;
 
-  int read_blob_count = 0;
-  fake_client()->set_read_blob_request_callback(
-      [&](att::Handle handle, uint16_t offset, auto callback) {
-        EXPECT_EQ(kDefaultChrcValueHandle, handle);
-        read_blob_count++;
-
-        service->ShutDown();
-        callback(att::Status(), first_blob, /*maybe_truncated=*/true);
-      });
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(kDefaultChrcValueHandle, handle);
+    service->ShutDown();
+    callback(att::Status(), first_blob, /*maybe_truncated=*/true);
+  });
+  fake_client()->set_read_blob_request_callback([&](auto, auto, auto) { FAIL(); });
 
   att::Status status;
   service->ReadLongCharacteristic(
@@ -1524,7 +1555,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(HostError::kCanceled, status.error());
-  EXPECT_EQ(kExpectedBlobCount, read_blob_count);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeNotFound) {
@@ -2249,16 +2280,25 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescriptor) {
     expected_value[i] = i;
   }
 
-  int read_blob_count = 0;
+  int read_count = 0;
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    EXPECT_EQ(kDescrHandle, handle);
+    auto blob = expected_value.view(0, att::kLEMinMTU - 1);
+    callback(att::Status(), blob, /*maybe_truncated=*/true);
+  });
+
   fake_client()->set_read_blob_request_callback(
       [&](att::Handle handle, uint16_t offset, auto callback) {
+        read_count++;
+        EXPECT_GT(read_count, 1);
         EXPECT_EQ(kDescrHandle, handle);
-        read_blob_count++;
         bool maybe_truncated = true;
 
         // Return a blob at the given offset with at most MTU - 1 bytes.
         auto blob = expected_value.view(offset, att::kLEMinMTU - 1);
-        if (read_blob_count == kExpectedBlobCount) {
+        if (read_count == kExpectedBlobCount) {
           // The final blob should contain 3 bytes.
           EXPECT_EQ(3u, blob.size());
           maybe_truncated = false;
@@ -2277,7 +2317,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescriptor) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
-  EXPECT_EQ(kExpectedBlobCount, read_blob_count);
+  EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, WriteDescAfterShutDown) {

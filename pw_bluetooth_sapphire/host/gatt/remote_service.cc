@@ -677,16 +677,17 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
 
   // Capture a reference so that this object is alive when the callback runs.
   auto self = fbl::RefPtr(this);
-  auto read_blob_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
-                       cb = std::move(callback),
-                       dispatcher](att::Status status, const ByteBuffer& blob,
-                                   bool maybe_truncated_by_mtu) mutable {
+  auto read_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
+                  cb = std::move(callback), dispatcher](att::Status status, const ByteBuffer& blob,
+                                                        bool maybe_truncated_by_mtu) mutable {
     if (self->shut_down_) {
       // The service was removed. Report an error.
       ReportReadValueError(att::Status(HostError::kCanceled), std::move(cb), dispatcher);
       return;
     }
 
+    // TODO(fxbug.dev/79898): If the status is kAttributeNotLong, return the current buffer instead
+    // of failing.
     if (!status) {
       ReportReadValueError(status, std::move(cb), dispatcher);
       return;
@@ -714,7 +715,15 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
                          std::move(cb), dispatcher);
   };
 
-  client_->ReadBlobRequest(value_handle, offset, std::move(read_blob_cb));
+  // "To read the complete Characteristic Value an ATT_READ_REQ PDU should be used for the first
+  // part of the value and ATT_READ_BLOB_REQ PDUs shall used for the rest." (Core Spec v5.2, Vol 3,
+  // part G, Sec 4.8.3).
+  if (offset == 0) {
+    client_->ReadRequest(value_handle, std::move(read_cb));
+    return;
+  }
+
+  client_->ReadBlobRequest(value_handle, offset, std::move(read_cb));
 }
 
 void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::Handle end,
