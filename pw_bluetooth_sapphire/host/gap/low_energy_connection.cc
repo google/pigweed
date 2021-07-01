@@ -159,6 +159,12 @@ void LowEnergyConnection::UpgradeSecurity(sm::SecurityLevel level, sm::BondableM
 // new I/O capabilities for future pairing procedures.
 void LowEnergyConnection::ResetSecurityManager(sm::IOCapability ioc) { sm_->Reset(ioc); }
 
+void LowEnergyConnection::OnInterrogationComplete() {
+  ZX_ASSERT(!interrogation_completed_);
+  interrogation_completed_ = true;
+  MaybeUpdateConnectionParameters();
+}
+
 void LowEnergyConnection::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_node_ = parent.CreateChild(name);
   inspect_properties_.peer_id =
@@ -188,38 +194,35 @@ void LowEnergyConnection::RegisterEventHandlers() {
       });
 }
 
-// Should be called as soon as connection is established.
-// Calls |conn_pause_peripheral_callback_| after kLEConnectionPausePeripheral.
+// Connection parameter updates by the peripheral are not allowed until the central has been idle
+// for kLEConnectionPauseCentral and kLEConnectionPausePeripheral has passed since the connection
+// was established (Core Spec v5.2, Vol 3, Part C, Sec 9.3.12).
+// TODO(fxbug.dev/79491): Wait to update connection parameters until all initialization
+// procedures have completed.
 void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
   ZX_ASSERT(!conn_pause_peripheral_timeout_.has_value());
   conn_pause_peripheral_timeout_.emplace([this]() {
-    // "The peripheral device should not perform a connection parameter update procedure within
-    // kLEConnectionPausePeripheral after establishing a connection." (Core Spec v5.2, Vol 3, Part
-    // C, Sec 9.3.12).
-    RequestConnectionParameterUpdate(kDefaultPreferredConnectionParameters);
+    // Destroying this task will invalidate the capture list, so we need to save a self pointer.
+    auto self = this;
+    conn_pause_peripheral_timeout_.reset();
+    self->MaybeUpdateConnectionParameters();
   });
   conn_pause_peripheral_timeout_->PostDelayed(async_get_default_dispatcher(),
                                               kLEConnectionPausePeripheral);
 }
 
+// Connection parameter updates by the central are not allowed until the central is idle and the
+// peripheral has been idle for kLEConnectionPauseCentral (Core Spec v5.2, Vol 3, Part
+// C, Sec 9.3.12).
+// TODO(fxbug.dev/79491): Wait to update connection parameters until all initialization
+// procedures have completed.
 void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
   ZX_ASSERT(!conn_pause_central_timeout_.has_value());
   conn_pause_central_timeout_.emplace([this]() {
-    ZX_ASSERT(peer_);
-
-    // "After the Central device has no further pending actions to perform and the
-    // Peripheral device has not initiated any other actions within kLEConnectionPauseCentral, then
-    // the Central device should update the connection parameters to either the Peripheral Preferred
-    // Connection Parameters or self-determined values." (Core Spec v5.2, Vol 3, Part C,
-    // Sec 9.3.12).
-    //
-    // If the GAP service preferred connection parameters characteristic has not been read by now,
-    // just use the default parameters.
-    // TODO(fxbug.dev/66031): Wait for preferred connections to be read.
-    auto conn_params = peer_->le()->preferred_connection_parameters().value_or(
-        kDefaultPreferredConnectionParameters);
-
-    UpdateConnectionParams(conn_params);
+    // Destroying this task will invalidate the capture list, so we need to save a self pointer.
+    auto self = this;
+    conn_pause_central_timeout_.reset();
+    self->MaybeUpdateConnectionParameters();
   });
   conn_pause_central_timeout_->PostDelayed(async_get_default_dispatcher(),
                                            kLEConnectionPauseCentral);
@@ -441,6 +444,27 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
 
   ZX_ASSERT(peer_);
   peer_->MutLe().SetConnectionParameters(params);
+}
+
+void LowEnergyConnection::MaybeUpdateConnectionParameters() {
+  if (connection_parameters_update_requested_ || conn_pause_central_timeout_ ||
+      conn_pause_peripheral_timeout_ || !interrogation_completed_) {
+    return;
+  }
+
+  connection_parameters_update_requested_ = true;
+
+  if (link_->role() == hci::Connection::Role::kMaster) {
+    // If the GAP service preferred connection parameters characteristic has not been read by now,
+    // just use the default parameters.
+    // TODO(fxbug.dev/66031): Wait for preferred connection parameters to be read.
+    ZX_ASSERT(peer_);
+    auto conn_params = peer_->le()->preferred_connection_parameters().value_or(
+        kDefaultPreferredConnectionParameters);
+    UpdateConnectionParams(conn_params);
+  } else {
+    RequestConnectionParameterUpdate(kDefaultPreferredConnectionParameters);
+  }
 }
 
 void LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att,

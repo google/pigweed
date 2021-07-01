@@ -79,6 +79,10 @@ class LowEnergyConnection final : public sm::Delegate {
   // new I/O capabilities for future pairing procedures.
   void ResetSecurityManager(sm::IOCapability ioc);
 
+  // Must be called when interrogation has completed. May update connection parameters if all
+  // initialization procedures have completed.
+  void OnInterrogationComplete();
+
   // Attach connection as child node of |parent| with specified |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
@@ -210,6 +214,12 @@ class LowEnergyConnection final : public sm::Delegate {
   // command handler. (See Core Spec v5.2, Vol 6, Part B, Sec 5.1.7.1).
   void OnLEConnectionUpdateComplete(const hci::EventPacket& event);
 
+  // Updates or requests an update of the connection parameters, for central and peripheral roles
+  // respectively, if interrogation has completed.
+  // TODO(fxbug.dev/79491): Wait to update connection parameters until all initialization
+  // procedures have completed.
+  void MaybeUpdateConnectionParameters();
+
   // Registers the peer with GATT and initiates service discovery. If |service_uuid| is specified,
   // only discover the indicated service and the GAP service.
   void InitializeGatt(fbl::RefPtr<l2cap::Channel> att, std::optional<UUID> service_uuid);
@@ -278,6 +288,11 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Called after kLEConnectionPauseCentral.
   std::optional<async::TaskClosure> conn_pause_central_timeout_;
+
+  // Set to true when a request to update the connection parameters has been sent.
+  bool connection_parameters_update_requested_ = false;
+
+  bool interrogation_completed_ = false;
 
   // LowEnergyConnectionManager is responsible for making sure that these
   // pointers are always valid.

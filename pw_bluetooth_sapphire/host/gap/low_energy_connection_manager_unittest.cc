@@ -3322,6 +3322,110 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   EXPECT_TRUE(peer->connected());
 }
 
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       ConnectSinglePeerWithInterrogationLongerThanCentralPauseTimeout) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Cause interrogation to stall so that we can expire the central pause timeout.
+  fit::closure send_read_remote_features_rsp;
+  test_device()->pause_responses_for_opcode(hci::kLEReadRemoteFeatures, [&](fit::closure unpause) {
+    send_read_remote_features_rsp = std::move(unpause);
+  });
+
+  size_t hci_update_conn_param_count = 0;
+  test_device()->set_le_connection_parameters_callback(
+      [&](auto address, auto parameters) { hci_update_conn_param_count++; });
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  auto callback = [&conn_handle](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_handle = result.take_value();
+    EXPECT_TRUE(conn_handle->active());
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, connected_peers().size());
+  EXPECT_EQ(1u, connected_peers().count(kAddress0));
+  EXPECT_FALSE(conn_handle);
+  EXPECT_EQ(hci_update_conn_param_count, 0u);
+
+  RunLoopFor(kLEConnectionPausePeripheral);
+  EXPECT_FALSE(conn_handle);
+  EXPECT_EQ(hci_update_conn_param_count, 0u);
+
+  // Allow interrogation to complete.
+  send_read_remote_features_rsp();
+  RunLoopUntilIdle();
+  EXPECT_EQ(hci_update_conn_param_count, 1u);
+  ASSERT_TRUE(conn_handle);
+  EXPECT_TRUE(conn_handle->active());
+  EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       RegisterRemoteInitiatedLinkWithInterrogationLongerThanPeripheralPauseTimeout) {
+  // A FakePeer does not support the HCI connection parameter update procedure by default, so the
+  // L2CAP procedure will be used.
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  // Cause interrogation to stall so that we can expire the peripheral pause timeout.
+  fit::closure send_read_remote_features_rsp;
+  test_device()->pause_responses_for_opcode(hci::kLEReadRemoteFeatures, [&](fit::closure unpause) {
+    send_read_remote_features_rsp = std::move(unpause);
+  });
+
+  size_t l2cap_conn_param_update_count = 0;
+  fake_l2cap()->set_connection_parameter_update_request_responder([&](auto, auto) {
+    l2cap_conn_param_update_count++;
+    return true;
+  });
+
+  // First create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0);
+  RunLoopUntilIdle();
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
+                                          [&](auto result) {
+                                            ASSERT_TRUE(result.is_ok());
+                                            conn_handle = result.take_value();
+                                          });
+
+  // A Peer should now exist in the cache.
+  auto* peer = peer_cache()->FindByAddress(kAddress0);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->le()->connection_state(), Peer::ConnectionState::kInitializing);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, connected_peers().size());
+  EXPECT_EQ(1u, connected_peers().count(kAddress0));
+  EXPECT_FALSE(conn_handle);
+  EXPECT_EQ(l2cap_conn_param_update_count, 0u);
+
+  RunLoopFor(kLEConnectionPausePeripheral);
+  EXPECT_FALSE(conn_handle);
+  EXPECT_EQ(l2cap_conn_param_update_count, 0u);
+
+  // Allow interrogation to complete.
+  send_read_remote_features_rsp();
+  RunLoopUntilIdle();
+  EXPECT_EQ(l2cap_conn_param_update_count, 1u);
+  ASSERT_TRUE(conn_handle);
+  EXPECT_TRUE(conn_handle->active());
+  EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
+}
+
 // Tests for assertions that enforce invariants.
 class GAP_LowEnergyConnectionManagerDeathTest : public LowEnergyConnectionManagerTest {};
 

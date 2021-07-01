@@ -356,6 +356,7 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
     return;
   }
 
+  connection_->OnInterrogationComplete();
   NotifySuccess();
 }
 
