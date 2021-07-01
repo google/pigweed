@@ -160,16 +160,20 @@ pw_deactivate() {
   _NEW_PW_ROOT="$PW_ROOT"
   _NEW_PW_PROJECT_ROOT="$PW_PROJECT_ROOT"
 
-  # Find deactivate script and run it.
+  # Find deactivate script, run it, and then delete it. This way if the
+  # deactivate script is doing something wrong subsequent bootstraps still
+  # have a chance to pass.
   _PW_DEACTIVATE_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/deactivate.sh"
   if [ -f "$_PW_DEACTIVATE_SH" ]; then
     . "$_PW_DEACTIVATE_SH"
+    rm -f "$_PW_DEACTIVATE_SH" &> /dev/null
   fi
 
   # If there's a _pw_deactivate function run it. Redirect output to /dev/null
-  # in case _pw_deactivate doesn't exist.
+  # in case _pw_deactivate doesn't exist. Remove _pw_deactivate when complete.
   if [ -n "$(command -v _pw_deactivate)" ]; then
     _pw_deactivate > /dev/null 2> /dev/null
+    unset -f _pw_deactivate
   fi
 
   # Restore.
