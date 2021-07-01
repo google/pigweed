@@ -3019,11 +3019,12 @@ TEST_F(GATT_ClientTest, ReadRequestEmptyResponse) {
   );
 
   att::Status status(HostError::kFailed);
-  auto cb = [&status](att::Status cb_status, const ByteBuffer& value) {
+  auto cb = [&status](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
     EXPECT_EQ(0u, value.size());
+    EXPECT_FALSE(maybe_truncated);
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -3051,9 +3052,10 @@ TEST_F(GATT_ClientTest, ReadRequestSuccess) {
   );
 
   att::Status status(HostError::kFailed);
-  auto cb = [&](att::Status cb_status, const ByteBuffer& value) {
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
     status = cb_status;
     EXPECT_TRUE(ContainersEqual(kExpectedResponse.view(1), value));
+    EXPECT_FALSE(maybe_truncated);
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -3069,6 +3071,93 @@ TEST_F(GATT_ClientTest, ReadRequestSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
+TEST_F(GATT_ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
+  constexpr att::Handle kHandle = 0x0001;
+  const auto kExpectedRequest = StaticByteBuffer(0x0A,  // opcode: read request
+                                                 LowerBits(kHandle), UpperBits(kHandle)  // handle
+  );
+
+  DynamicByteBuffer expected_response(att()->mtu());
+  expected_response.Fill(0);
+  expected_response.WriteObj(att::kReadResponse);  // opcode: read response
+
+  att::Status status(HostError::kFailed);
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
+    status = cb_status;
+    EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
+    EXPECT_TRUE(maybe_truncated);
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] { client()->ReadRequest(kHandle, cb); });
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(expected_response);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+TEST_F(GATT_ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
+  constexpr uint16_t kPreferredMTU = att::kMaxAttributeValueLength + sizeof(att::OpCode);
+  att()->set_preferred_mtu(kPreferredMTU);
+  constexpr uint16_t kServerRxMTU = kPreferredMTU;
+
+  const auto kExpectedMtuRequest =
+      StaticByteBuffer(0x02,                                               // opcode: exchange MTU
+                       LowerBits(kPreferredMTU), UpperBits(kPreferredMTU)  // client rx mtu
+      );
+
+  uint16_t final_mtu = 0;
+  att::Status mtu_status;
+  auto mtu_cb = [&](att::Status cb_status, uint16_t val) {
+    final_mtu = val;
+    mtu_status = cb_status;
+  };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, mtu_cb] { client()->ExchangeMTU(mtu_cb); });
+
+  ASSERT_TRUE(Expect(kExpectedMtuRequest));
+  ASSERT_EQ(att::kLEMinMTU, att()->mtu());
+
+  fake_chan()->Receive(StaticByteBuffer(0x03,  // opcode: exchange MTU response
+                                        LowerBits(kServerRxMTU),
+                                        UpperBits(kServerRxMTU)  // server rx mtu
+                                        ));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(mtu_status);
+  EXPECT_EQ(kPreferredMTU, final_mtu);
+  EXPECT_EQ(kPreferredMTU, att()->mtu());
+
+  constexpr att::Handle kHandle = 0x0001;
+  const auto kExpectedReadRequest =
+      StaticByteBuffer(0x0A,                                   // opcode: read request
+                       LowerBits(kHandle), UpperBits(kHandle)  // handle
+      );
+
+  DynamicByteBuffer expected_response(att()->mtu());
+  expected_response.Fill(0);
+  expected_response.WriteObj(att::kReadResponse);  // opcode: read response
+
+  att::Status status(HostError::kFailed);
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
+    status = cb_status;
+    EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
+    EXPECT_FALSE(maybe_truncated);
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] { client()->ReadRequest(kHandle, cb); });
+  ASSERT_TRUE(Expect(kExpectedReadRequest));
+
+  fake_chan()->Receive(expected_response);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
 TEST_F(GATT_ClientTest, ReadRequestError) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x0A,       // opcode: read request
@@ -3076,11 +3165,12 @@ TEST_F(GATT_ClientTest, ReadRequestError) {
   );
 
   att::Status status;
-  auto cb = [&](att::Status cb_status, const ByteBuffer& value) {
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
     status = cb_status;
 
     // Value should be empty due to the error.
     EXPECT_EQ(0u, value.size());
+    EXPECT_FALSE(maybe_truncated);
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -3339,11 +3429,12 @@ TEST_F(GATT_ClientTest, ReadBlobRequestEmptyResponse) {
   );
 
   att::Status status(HostError::kFailed);
-  auto cb = [&](att::Status cb_status, const ByteBuffer& value) {
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
     EXPECT_EQ(0u, value.size());
+    EXPECT_FALSE(maybe_truncated);
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -3372,11 +3463,12 @@ TEST_F(GATT_ClientTest, ReadBlobRequestSuccess) {
   );
 
   att::Status status(HostError::kFailed);
-  auto cb = [&](att::Status cb_status, const ByteBuffer& value) {
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
     EXPECT_TRUE(ContainersEqual(kExpectedResponse.view(1), value));
+    EXPECT_FALSE(maybe_truncated);
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -3390,6 +3482,66 @@ TEST_F(GATT_ClientTest, ReadBlobRequestSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
+TEST_F(GATT_ClientTest, ReadBlobRequestMaybeTruncated) {
+  constexpr att::Handle kHandle = 0x0001;
+  constexpr uint16_t kOffset = 5;
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x0C,                                    // opcode: read blob request
+                             LowerBits(kHandle), UpperBits(kHandle),  // handle
+                             LowerBits(kOffset), UpperBits(kOffset)   // offset
+      );
+
+  DynamicByteBuffer expected_response(att()->mtu());
+  expected_response.Fill(0);
+  expected_response.WriteObj(att::kReadBlobResponse);  // opcode: read blob response
+
+  att::Status status(HostError::kFailed);
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
+    status = cb_status;
+    EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
+    EXPECT_TRUE(maybe_truncated);
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] { client()->ReadBlobRequest(kHandle, kOffset, cb); });
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(expected_response);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+TEST_F(GATT_ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxValueLength) {
+  constexpr att::Handle kHandle = 0x0001;
+  const uint16_t kOffset = att::kMaxAttributeValueLength - (att()->mtu() - sizeof(att::OpCode));
+  const auto kExpectedRequest = StaticByteBuffer(0x0C,  // opcode: read blob request
+                                                 LowerBits(kHandle), UpperBits(kHandle),  // handle
+                                                 LowerBits(kOffset), UpperBits(kOffset)   // offset
+  );
+
+  // The blob should both max out the MTU and max out the value length.
+  DynamicByteBuffer expected_response(att()->mtu());
+  expected_response.Fill(0);
+  expected_response.WriteObj(att::kReadBlobResponse);  // opcode: read blob response
+
+  att::Status status(HostError::kFailed);
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
+    status = cb_status;
+    EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
+    EXPECT_FALSE(maybe_truncated);
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] { client()->ReadBlobRequest(kHandle, kOffset, cb); });
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(expected_response);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
 TEST_F(GATT_ClientTest, ReadBlobRequestError) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;
@@ -3399,11 +3551,12 @@ TEST_F(GATT_ClientTest, ReadBlobRequestError) {
   );
 
   att::Status status(HostError::kFailed);
-  auto cb = [&](att::Status cb_status, const ByteBuffer& value) {
+  auto cb = [&](att::Status cb_status, const ByteBuffer& value, bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
     EXPECT_EQ(0u, value.size());
+    EXPECT_FALSE(maybe_truncated);
   };
 
   // Initiate the request in a loop task, as Expect() below blocks

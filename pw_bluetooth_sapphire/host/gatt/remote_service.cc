@@ -37,10 +37,10 @@ void ReportStatus(Status status, StatusCallback callback, async_dispatcher_t* di
   RunOrPost([status, cb = std::move(callback)] { cb(status); }, dispatcher);
 }
 
-void ReportValue(att::Status status, const ByteBuffer& value,
+void ReportValue(att::Status status, const ByteBuffer& value, bool maybe_truncated,
                  RemoteService::ReadValueCallback callback, async_dispatcher_t* dispatcher) {
   if (!dispatcher) {
-    callback(status, value);
+    callback(status, value, maybe_truncated);
     return;
   }
 
@@ -50,9 +50,14 @@ void ReportValue(att::Status status, const ByteBuffer& value,
   auto buffer = NewSlabBuffer(value.size());
   value.Copy(buffer.get());
 
-  async::PostTask(dispatcher, [status, callback = std::move(callback), val = std::move(buffer)] {
-    callback(status, *val);
-  });
+  async::PostTask(dispatcher,
+                  [status, maybe_truncated, callback = std::move(callback),
+                   val = std::move(buffer)] { callback(status, *val, maybe_truncated); });
+}
+
+void ReportReadValueError(att::Status status, RemoteService::ReadValueCallback callback,
+                          async_dispatcher_t* dispatcher) {
+  ReportValue(status, BufferView(), /*maybe_truncated=*/false, std::move(callback), dispatcher);
 }
 
 void ReportValues(att::Status status, std::vector<RemoteService::ReadByTypeResult> values,
@@ -191,20 +196,20 @@ bool RemoteService::IsDiscovered() const {
   return HasCharacteristics();
 }
 
-void RemoteService::ReadCharacteristic(CharacteristicHandle id, ReadValueCallback cb,
+void RemoteService::ReadCharacteristic(CharacteristicHandle id, ReadValueCallback callback,
                                        async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, cb = std::move(cb), dispatcher]() mutable {
+  RunGattTask([this, id, cb = std::move(callback), dispatcher]() mutable {
     RemoteCharacteristic* chrc;
     att::Status status = att::Status(GetCharacteristic(id, &chrc));
     ZX_DEBUG_ASSERT(chrc || !status);
     if (!status) {
-      ReportValue(status, BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(status, std::move(cb), dispatcher);
       return;
     }
 
     if (!(chrc->info().properties & Property::kRead)) {
       bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
-      ReportValue(att::Status(HostError::kNotSupported), BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(att::Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
     }
 
@@ -213,34 +218,33 @@ void RemoteService::ReadCharacteristic(CharacteristicHandle id, ReadValueCallbac
 }
 
 void RemoteService::ReadLongCharacteristic(CharacteristicHandle id, uint16_t offset,
-                                           size_t max_bytes, ReadValueCallback cb,
+                                           size_t max_bytes, ReadValueCallback callback,
                                            async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, offset, max_bytes, cb = std::move(cb), dispatcher]() mutable {
+  RunGattTask([this, id, offset, max_bytes, cb = std::move(callback), dispatcher]() mutable {
     RemoteCharacteristic* chrc;
     att::Status status = att::Status(GetCharacteristic(id, &chrc));
     ZX_DEBUG_ASSERT(chrc || !status);
     if (!status) {
-      ReportValue(status, BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(status, std::move(cb), dispatcher);
       return;
     }
 
     if (!(chrc->info().properties & Property::kRead)) {
       bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
-      ReportValue(att::Status(HostError::kNotSupported), BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(att::Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
     }
 
     if (max_bytes == 0) {
       bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
-      ReportValue(att::Status(HostError::kInvalidParameters), BufferView(), std::move(cb),
-                  dispatcher);
+      ReportReadValueError(att::Status(HostError::kInvalidParameters), std::move(cb), dispatcher);
       return;
     }
 
     // Set up the buffer in which we'll accumulate the blobs.
     auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
     if (!buffer) {
-      ReportValue(att::Status(HostError::kOutOfMemory), BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(att::Status(HostError::kOutOfMemory), std::move(cb), dispatcher);
       return;
     }
 
@@ -345,7 +349,7 @@ void RemoteService::ReadDescriptor(DescriptorHandle id, ReadValueCallback cb,
     att::Status status = att::Status(GetDescriptor(id, &desc));
     ZX_DEBUG_ASSERT(desc || !status);
     if (!status) {
-      ReportValue(status, BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(status, std::move(cb), dispatcher);
       return;
     }
 
@@ -360,21 +364,20 @@ void RemoteService::ReadLongDescriptor(DescriptorHandle id, uint16_t offset, siz
     att::Status status = att::Status(GetDescriptor(id, &desc));
     ZX_DEBUG_ASSERT(desc || !status);
     if (!status) {
-      ReportValue(status, BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(status, std::move(cb), dispatcher);
       return;
     }
 
     if (max_bytes == 0) {
       bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
-      ReportValue(att::Status(HostError::kInvalidParameters), BufferView(), std::move(cb),
-                  dispatcher);
+      ReportReadValueError(att::Status(HostError::kInvalidParameters), std::move(cb), dispatcher);
       return;
     }
 
     // Set up the buffer in which we'll accumulate the blobs.
     auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
     if (!buffer) {
-      ReportValue(att::Status(HostError::kOutOfMemory), BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(att::Status(HostError::kOutOfMemory), std::move(cb), dispatcher);
       return;
     }
 
@@ -625,10 +628,11 @@ void RemoteService::CompleteCharacteristicDiscovery(att::Status status) {
 
 void RemoteService::SendReadRequest(att::Handle handle, ReadValueCallback cb,
                                     async_dispatcher_t* dispatcher) {
-  client_->ReadRequest(
-      handle, [cb = std::move(cb), dispatcher](att::Status status, const auto& value) mutable {
-        ReportValue(status, value, std::move(cb), dispatcher);
-      });
+  client_->ReadRequest(handle,
+                       [cb = std::move(cb), dispatcher](att::Status status, const auto& value,
+                                                        bool maybe_truncated) mutable {
+                         ReportValue(status, value, maybe_truncated, std::move(cb), dispatcher);
+                       });
 }
 
 void RemoteService::SendWriteRequest(att::Handle handle, const ByteBuffer& value, StatusCallback cb,
@@ -675,30 +679,33 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
   auto self = fbl::RefPtr(this);
   auto read_blob_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
                        cb = std::move(callback),
-                       dispatcher](att::Status status, const ByteBuffer& blob) mutable {
+                       dispatcher](att::Status status, const ByteBuffer& blob,
+                                   bool maybe_truncated_by_mtu) mutable {
     if (self->shut_down_) {
       // The service was removed. Report an error.
-      ReportValue(att::Status(HostError::kCanceled), BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(att::Status(HostError::kCanceled), std::move(cb), dispatcher);
       return;
     }
 
     if (!status) {
-      ReportValue(status, BufferView(), std::move(cb), dispatcher);
+      ReportReadValueError(status, std::move(cb), dispatcher);
       return;
     }
 
     // Copy the blob into our |buffer|. |blob| may be truncated depending on the
     // size of |buffer|.
-    ZX_DEBUG_ASSERT(bytes_read < buffer->size());
+    ZX_ASSERT(bytes_read < buffer->size());
     size_t copy_size = std::min(blob.size(), buffer->size() - bytes_read);
+    bool truncated_by_max_bytes = (blob.size() != copy_size);
     buffer->Write(blob.view(0, copy_size), bytes_read);
     bytes_read += copy_size;
 
-    // We are done if the blob is smaller than (ATT_MTU - 1) or we have read the
-    // maximum number of bytes requested.
-    ZX_DEBUG_ASSERT(bytes_read <= buffer->size());
-    if (blob.size() < (self->client_->mtu() - 1) || bytes_read == buffer->size()) {
-      ReportValue(att::Status(), buffer->view(0, bytes_read), std::move(cb), dispatcher);
+    // We are done if the read was not truncated by the MTU or we have read the maximum number
+    // of bytes requested.
+    ZX_ASSERT(bytes_read <= buffer->size());
+    if (!maybe_truncated_by_mtu || bytes_read == buffer->size()) {
+      ReportValue(att::Status(), buffer->view(0, bytes_read),
+                  maybe_truncated_by_mtu || truncated_by_max_bytes, std::move(cb), dispatcher);
       return;
     }
 

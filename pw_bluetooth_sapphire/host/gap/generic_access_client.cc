@@ -48,7 +48,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
 
     self->service_->ReadCharacteristic(*conn_params_value_handle, [self, cb = std::move(cb)](
                                                                       auto status,
-                                                                      auto& buffer) mutable {
+                                                                      auto& buffer, auto) mutable {
       if (!self) {
         return;
       }

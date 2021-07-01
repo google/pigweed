@@ -301,7 +301,7 @@ void GattRemoteServiceDevice::BtGattSvcStop() {
 
 void GattRemoteServiceDevice::BtGattSvcReadCharacteristic(
     bt_gatt_id_t id, bt_gatt_svc_read_characteristic_callback read_cb, void* cookie) {
-  auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff) {
+  auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff, auto) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
@@ -316,7 +316,7 @@ void GattRemoteServiceDevice::BtGattSvcReadCharacteristic(
 void GattRemoteServiceDevice::BtGattSvcReadLongCharacteristic(
     bt_gatt_id_t id, uint16_t offset, size_t max_bytes,
     bt_gatt_svc_read_characteristic_callback read_cb, void* cookie) {
-  auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff) {
+  auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff, auto) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };

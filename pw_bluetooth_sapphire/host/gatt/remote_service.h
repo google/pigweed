@@ -86,9 +86,11 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
 
   // Sends a read request to the characteristic with the given identifier. Fails
   // if characteristics have not been discovered.
+  // |maybe_truncated| indicates whether the full value might be longer than the reported value.
   //
   // NOTE: Providing a |dispatcher| results in a copy of the resulting value.
-  using ReadValueCallback = fit::function<void(att::Status, const ByteBuffer&)>;
+  using ReadValueCallback =
+      fit::function<void(att::Status, const ByteBuffer&, bool maybe_truncated)>;
   void ReadCharacteristic(CharacteristicHandle id, ReadValueCallback callback,
                           async_dispatcher_t* dispatcher = nullptr);
 
@@ -98,6 +100,9 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   //
   // The read will start at |offset| and will return at most |max_bytes| octets.
   // The resulting value will be returned via |callback|.
+  // The value of |maybe_truncated| reported to the callback indicates whether the full value may be
+  // larger than the reported value. This is only possible if |max_bytes| are read, and |max_bytes|
+  // is less than att::kMaxAttributeValueLength.
   void ReadLongCharacteristic(CharacteristicHandle id, uint16_t offset, size_t max_bytes,
                               ReadValueCallback callback, async_dispatcher_t* dispatcher = nullptr);
 
@@ -146,11 +151,16 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
 
   // Performs the "Read Characteristic Descriptors" procedure (v5.0, Vol 3, Part
   // G, 4.12.1).
+  // The callback parameter |maybe_truncated| indicates whether the full value might be longer than
+  // the reported value.
   void ReadDescriptor(DescriptorHandle id, ReadValueCallback callback,
                       async_dispatcher_t* dispatcher = nullptr);
 
   // Performs the "Read Long Characteristic Descriptors" procedure (v5.0, Vol 3,
   // Part G, 4.12.2).
+  // The callback parameter |maybe_truncated| indicates whether the full value may be
+  // larger than the reported value. This is only possible if |max_bytes| are read, and |max_bytes|
+  // is less than att::kMaxAttributeValueLength.
   void ReadLongDescriptor(DescriptorHandle id, uint16_t offset, size_t max_bytes,
                           ReadValueCallback callback, async_dispatcher_t* dispatcher = nullptr);
 

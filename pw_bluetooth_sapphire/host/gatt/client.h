@@ -123,7 +123,10 @@ class Client {
   //
   // Reports the status of the procedure and the resulting value in |callback|.
   // Returns an empty buffer if the status is an error.
-  using ReadCallback = fit::function<void(att::Status, const ByteBuffer&)>;
+  // If the attribute value might be longer than the reported value, |maybe_truncated| will be true.
+  // This can happen if the MTU is too small to read the complete value. ReadBlobRequest() should be
+  // used to read the complete value.
+  using ReadCallback = fit::function<void(att::Status, const ByteBuffer&, bool maybe_truncated)>;
   virtual void ReadRequest(att::Handle handle, ReadCallback callback) = 0;
 
   // Sends an ATT Read by Type Request with the requested attribute handle range |start_handle| to
@@ -161,7 +164,9 @@ class Client {
 
   // Sends an ATT Read Blob request with the requested attribute |handle| and
   // returns the result value in |callback|. This can be called multiple times
-  // to read the value of a characteristic that is larger than the ATT_MTU.
+  // to read the value of a characteristic that is larger than (ATT_MTU - 1).
+  // If the attribute value might be longer than the reported value, the |maybe_truncated| callback
+  // parameter will be true.
   // (Vol 3, Part G, 4.8.3)
   virtual void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) = 0;
 

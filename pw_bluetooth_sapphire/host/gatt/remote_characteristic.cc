@@ -178,7 +178,8 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     // If the characteristic contains the ExtendedProperties descriptor, perform a Read operation
     // to get the extended properties before notifying the callback.
     if (self->ext_prop_handle_ != att::kInvalidHandle) {
-      auto read_cb = [self, cb = std::move(cb)](att::Status status, const ByteBuffer& data) {
+      auto read_cb = [self, cb = std::move(cb)](att::Status status, const ByteBuffer& data,
+                                                bool /*maybe_truncated*/) {
         if (!status) {
           cb(status);
           return;

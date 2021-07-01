@@ -1651,7 +1651,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   service_client->set_read_request_callback(
       [char_value_handle, char_value](att::Handle handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(att::Status(), char_value);
+          read_cb(att::Status(), char_value, /*maybe_truncated=*/false);
         }
       });
 
@@ -1705,7 +1705,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   service_client->set_read_request_callback(
       [char_value_handle, invalid_char_value](auto handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(att::Status(), invalid_char_value);
+          read_cb(att::Status(), invalid_char_value, /*maybe_truncated=*/false);
         }
       });
 

@@ -603,7 +603,7 @@ class Impl final : public Client {
   void ReadRequest(att::Handle handle, ReadCallback callback) override {
     auto pdu = NewPDU(sizeof(att::ReadRequestParams));
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory), BufferView());
+      callback(att::Status(HostError::kOutOfMemory), BufferView(), /*maybe_truncated=*/false);
       return;
     }
 
@@ -611,20 +611,22 @@ class Impl final : public Client {
     auto params = writer.mutable_payload<att::ReadRequestParams>();
     params->handle = htole16(handle);
 
-    auto rsp_cb = BindCallback([callback = callback.share()](const att::PacketReader& rsp) {
+    auto rsp_cb = BindCallback([this, callback = callback.share()](const att::PacketReader& rsp) {
       ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
-      callback(att::Status(), rsp.payload_data());
+      bool maybe_truncated = (rsp.payload_size() != att::kMaxAttributeValueLength) &&
+                             (rsp.payload_size() == (mtu() - sizeof(rsp.opcode())));
+      callback(att::Status(), rsp.payload_data(), maybe_truncated);
     });
 
     auto error_cb =
         BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
           bt_log(DEBUG, "gatt", "read request failed: %s, handle %#.4x", status.ToString().c_str(),
                  handle);
-          callback(status, BufferView());
+          callback(status, BufferView(), /*maybe_truncated=*/false);
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed), BufferView());
+      callback(att::Status(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
     }
   }
 
@@ -741,7 +743,7 @@ class Impl final : public Client {
   void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) override {
     auto pdu = NewPDU(sizeof(att::ReadBlobRequestParams));
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory), BufferView());
+      callback(att::Status(HostError::kOutOfMemory), BufferView(), /*maybe_truncated=*/false);
       return;
     }
 
@@ -750,20 +752,24 @@ class Impl final : public Client {
     params->handle = htole16(handle);
     params->offset = htole16(offset);
 
-    auto rsp_cb = BindCallback([callback = callback.share()](const att::PacketReader& rsp) {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
-      callback(att::Status(), rsp.payload_data());
-    });
+    auto rsp_cb =
+        BindCallback([this, offset, callback = callback.share()](const att::PacketReader& rsp) {
+          ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
+          bool maybe_truncated =
+              (static_cast<size_t>(offset) + rsp.payload_size() != att::kMaxAttributeValueLength) &&
+              (rsp.payload_data().size() == (mtu() - sizeof(att::OpCode)));
+          callback(att::Status(), rsp.payload_data(), maybe_truncated);
+        });
 
     auto error_cb =
         BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
           bt_log(DEBUG, "gatt", "read blob request failed: %s, handle: %#.4x",
                  status.ToString().c_str(), handle);
-          callback(status, BufferView());
+          callback(status, BufferView(), /*maybe_truncated=*/false);
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed), BufferView());
+      callback(att::Status(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
     }
   }
 

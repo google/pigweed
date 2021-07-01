@@ -94,7 +94,7 @@ void GattRemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCal
 }
 
 void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -115,7 +115,7 @@ void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristic
 void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offset,
                                                      uint16_t max_bytes,
                                                      ReadLongCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -165,7 +165,7 @@ void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(uint64_t id,
 }
 
 void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -185,7 +185,7 @@ void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback
 
 void GattRemoteServiceServer::ReadLongDescriptor(uint64_t id, uint16_t offset, uint16_t max_bytes,
                                                  ReadLongDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 

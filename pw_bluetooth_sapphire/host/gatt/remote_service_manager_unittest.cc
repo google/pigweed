@@ -794,7 +794,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesS
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDesc1, handle);
-    callback(att::Status(), kExtendedPropValue);
+    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
@@ -845,7 +845,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSe
   // Callback should not be executed.
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
-    callback(att::Status(), kExtendedPropValue);
+    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
@@ -892,7 +892,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropert
 
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
-    callback(att::Status(), kExtendedPropValue);
+    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
@@ -932,7 +932,8 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadD
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDesc1, handle);
-    callback(att::Status(att::ErrorCode::kReadNotPermitted), BufferView());
+    callback(att::Status(att::ErrorCode::kReadNotPermitted), BufferView(),
+             /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
@@ -969,7 +970,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadD
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDesc1, handle);
-    callback(att::Status(), BufferView());  // Invalid return buf
+    callback(att::Status(), BufferView(), /*maybe_truncated=*/false);  // Invalid return buf
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
@@ -1017,8 +1018,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic,
-                              [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+                                                          auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1029,8 +1030,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic,
-                              [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+                                                          auto) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_EQ(HostError::kNotReady, status.error());
@@ -1040,8 +1041,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
   att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic,
-                              [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+                                                          auto) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_EQ(HostError::kNotFound, status.error());
@@ -1051,8 +1052,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotSupported) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {UnreadableChrc()});
   att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic,
-                              [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+                                                          auto) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_EQ(HostError::kNotSupported, status.error());
@@ -1067,14 +1068,15 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequest) {
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    callback(att::Status(), kValue);
+    callback(att::Status(), kValue, /*maybe_truncated=*/false);
   });
 
   att::Status status(HostError::kFailed);
   service->ReadCharacteristic(kDefaultCharacteristic,
-                              [&](att::Status cb_status, const auto& value) {
+                              [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
                                 status = cb_status;
                                 EXPECT_TRUE(ContainersEqual(kValue, value));
+                                EXPECT_FALSE(maybe_truncated);
                               });
 
   RunLoopUntilIdle();
@@ -1091,15 +1093,16 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequestWithDispatcher) {
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    callback(att::Status(), kValue);
+    callback(att::Status(), kValue, /*maybe_truncated=*/false);
   });
 
   att::Status status(HostError::kFailed);
   service->ReadCharacteristic(
       CharacteristicHandle(kDefaultChrcValueHandle),
-      [&](att::Status cb_status, const auto& value) {
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(kValue, value));
+        EXPECT_FALSE(maybe_truncated);
       },
       dispatcher());
 
@@ -1114,8 +1117,9 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->ReadLongCharacteristic(CharacteristicHandle(0), 0, 512,
-                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(
+      CharacteristicHandle(0), 0, 512,
+      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1126,8 +1130,9 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
-  service->ReadLongCharacteristic(CharacteristicHandle(0), 0, 512,
-                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(
+      CharacteristicHandle(0), 0, 512,
+      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1139,8 +1144,9 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotFound) {
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
   att::Status status;
-  service->ReadLongCharacteristic(CharacteristicHandle(0), 0, 512,
-                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(
+      CharacteristicHandle(0), 0, 512,
+      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1152,8 +1158,9 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotSupported) {
                                        {UnreadableChrc()});
 
   att::Status status;
-  service->ReadLongCharacteristic(kDefaultCharacteristic, 0, 512,
-                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(
+      kDefaultCharacteristic, 0, 512,
+      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1166,8 +1173,9 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMaxSizeZero) {
                                        {ReadableChrc()});
 
   att::Status status;
-  service->ReadLongCharacteristic(kDefaultCharacteristic, 0, 0,
-                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(
+      kDefaultCharacteristic, 0, 0,
+      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1189,15 +1197,17 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongSingleBlob) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         EXPECT_EQ(kOffset, offset);
-        callback(att::Status(), kValue);
+        callback(att::Status(), kValue, /*maybe_truncated=*/false);
       });
 
   att::Status status(HostError::kFailed);
-  service->ReadLongCharacteristic(kDefaultCharacteristic, kOffset, kMaxBytes,
-                                  [&](att::Status cb_status, const auto& value) {
-                                    status = cb_status;
-                                    EXPECT_TRUE(ContainersEqual(kValue, value));
-                                  });
+  service->ReadLongCharacteristic(
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+        status = cb_status;
+        EXPECT_TRUE(ContainersEqual(kValue, value));
+        EXPECT_FALSE(maybe_truncated);
+      });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1228,23 +1238,27 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobs) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         read_blob_count++;
+        bool maybe_truncated = true;
 
         // Return a blob at the given offset with at most MTU - 1 bytes.
         auto blob = expected_value.view(offset, att::kLEMinMTU - 1);
         if (read_blob_count == kExpectedBlobCount) {
           // The final blob should contain 3 bytes.
           EXPECT_EQ(3u, blob.size());
+          maybe_truncated = false;
         }
 
-        callback(att::Status(), blob);
+        callback(att::Status(), blob, maybe_truncated);
       });
 
   att::Status status(HostError::kFailed);
-  service->ReadLongCharacteristic(kDefaultCharacteristic, kOffset, kMaxBytes,
-                                  [&](att::Status cb_status, const auto& value) {
-                                    status = cb_status;
-                                    EXPECT_TRUE(ContainersEqual(expected_value, value));
-                                  });
+  service->ReadLongCharacteristic(
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+        status = cb_status;
+        EXPECT_TRUE(ContainersEqual(expected_value, value));
+        EXPECT_FALSE(maybe_truncated);
+      });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1279,23 +1293,27 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         read_blob_count++;
+        bool maybe_truncated = true;
 
         // Return a blob at the given offset with at most MTU - 1 bytes.
         auto blob = expected_value.view(offset, att::kLEMinMTU - 1);
         if (read_blob_count == kExpectedBlobCount) {
           // The final blob should be empty.
           EXPECT_EQ(0u, blob.size());
+          maybe_truncated = false;
         }
 
-        callback(att::Status(), blob);
+        callback(att::Status(), blob, maybe_truncated);
       });
 
   att::Status status(HostError::kFailed);
-  service->ReadLongCharacteristic(kDefaultCharacteristic, kOffset, kMaxBytes,
-                                  [&](att::Status cb_status, const auto& value) {
-                                    status = cb_status;
-                                    EXPECT_TRUE(ContainersEqual(expected_value, value));
-                                  });
+  service->ReadLongCharacteristic(
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+        status = cb_status;
+        EXPECT_TRUE(ContainersEqual(expected_value, value));
+        EXPECT_FALSE(maybe_truncated);
+      });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1313,6 +1331,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
       {ReadableChrc()});
 
+  // Reads will return 22 + 22 bytes across 2 requests, but only 18 bytes of the second read will be
+  // reported to ReadLongCharacteristic (the value will be truncated).
   StaticByteBuffer<att::kLEMinMTU * 3> expected_value;
 
   // Initialize the contents.
@@ -1325,14 +1345,17 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         read_blob_count++;
-        callback(att::Status(), expected_value.view(offset, att::kLEMinMTU - 1));
+        BufferView blob = expected_value.view(offset, att::kLEMinMTU - 1);
+        callback(att::Status(), blob, /*maybe_truncated=*/true);
       });
 
   att::Status status(HostError::kFailed);
   service->ReadLongCharacteristic(
-      kDefaultCharacteristic, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value.view(0, kMaxBytes), value));
+        EXPECT_TRUE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
@@ -1364,14 +1387,18 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffset) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         read_blob_count++;
-        callback(att::Status(), expected_value.view(offset, att::kLEMinMTU - 1));
+        BufferView blob = expected_value.view(offset, att::kLEMinMTU - 1);
+        bool maybe_truncated = (read_blob_count != kExpectedBlobCount);
+        callback(att::Status(), blob, maybe_truncated);
       });
 
   att::Status status(HostError::kFailed);
   service->ReadLongCharacteristic(
-      kDefaultCharacteristic, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
+        EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
@@ -1389,14 +1416,15 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffsetWithMaxBytes) {
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
       {ReadableChrc()});
 
-  // Size: 69. 4 bytes will be read in a single request starting at index 30.
-  // Reads starting at offset 10 will return 12 + 22 bytes across 2 requests. A
-  // third read blob should not be sent since this should satisfy |kMaxBytes|.
+  // Size: 69.
+  // Reads starting at offset 10 will return 22 + 22 bytes across 2 requests, but the second read
+  // value will be truncated to 12 bytes by RemoteService due to |kMaxBytes|. A third read blob
+  // should not be sent since this should satisfy |kMaxBytes|.
   StaticByteBuffer<att::kLEMinMTU * 3> expected_value;
 
   // Initialize the contents.
   for (size_t i = 0; i < expected_value.size(); ++i) {
-    expected_value[i] = i;
+    expected_value[i] = static_cast<uint8_t>(i);
   }
 
   int read_blob_count = 0;
@@ -1404,14 +1432,17 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffsetWithMaxBytes) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         read_blob_count++;
-        callback(att::Status(), expected_value.view(offset, att::kLEMinMTU - 1));
+        BufferView blob = expected_value.view(offset, att::kLEMinMTU - 1);
+        callback(att::Status(), blob, /*maybe_truncated=*/true);
       });
 
   att::Status status(HostError::kFailed);
   service->ReadLongCharacteristic(
-      kDefaultCharacteristic, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
+        EXPECT_TRUE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
@@ -1438,17 +1469,20 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongError) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         read_blob_count++;
         if (read_blob_count == kExpectedBlobCount) {
-          callback(att::Status(att::ErrorCode::kInvalidOffset), BufferView());
+          callback(att::Status(att::ErrorCode::kInvalidOffset), BufferView(),
+                   /*maybe_truncated=*/false);
         } else {
-          callback(att::Status(), first_blob);
+          callback(att::Status(), first_blob, /*maybe_truncated=*/true);
         }
       });
 
   att::Status status;
   service->ReadLongCharacteristic(
-      kDefaultCharacteristic, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_EQ(0u, value.size());  // No value should be returned on error.
+        EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
@@ -1456,7 +1490,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongError) {
   EXPECT_EQ(kExpectedBlobCount, read_blob_count);
 }
 
-// The service is shut down while before the first read blob response. The
+// The service is shut down just before the first read blob response. The
 // operation should get canceled.
 TEST_F(GATT_RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
   constexpr uint16_t kOffset = 0;
@@ -1476,14 +1510,16 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
         read_blob_count++;
 
         service->ShutDown();
-        callback(att::Status(), first_blob);
+        callback(att::Status(), first_blob, /*maybe_truncated=*/true);
       });
 
   att::Status status;
   service->ReadLongCharacteristic(
-      kDefaultCharacteristic, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
+      kDefaultCharacteristic, kOffset, kMaxBytes,
+      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_EQ(0u, value.size());  // No value should be returned on error.
+        EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
@@ -1961,7 +1997,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongReliableWrite) {
   // The callback should be triggered once to read the value of the descriptor containing
   // the ExtendedProperties bitfield.
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
-    callback(att::Status(), kExtendedPropValue);
+    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
 
@@ -2062,7 +2098,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2073,7 +2109,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
-  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2085,7 +2121,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescriptorNotFound) {
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
   att::Status status;
-  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2113,12 +2149,12 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequest) {
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDescrHandle, handle);
-    callback(att::Status(), kValue);
+    callback(att::Status(), kValue, /*maybe_truncated=*/false);
   });
 
   att::Status status(HostError::kFailed);
   service->ReadDescriptor(DescriptorHandle(kDescrHandle),
-                          [&](att::Status cb_status, const auto& value) {
+                          [&](att::Status cb_status, const auto& value, auto) {
                             status = cb_status;
                             EXPECT_TRUE(ContainersEqual(kValue, value));
                           });
@@ -2143,13 +2179,13 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDescrHandle, handle);
-    callback(att::Status(), kValue);
+    callback(att::Status(), kValue, /*maybe_truncated=*/false);
   });
 
   att::Status status(HostError::kFailed);
   service->ReadDescriptor(
       DescriptorHandle(kDescrHandle),
-      [&](att::Status cb_status, const auto& value) {
+      [&](att::Status cb_status, const auto& value, auto) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(kValue, value));
       },
@@ -2164,8 +2200,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
-  service->ReadLongDescriptor(0, 0, 512,
-                              [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongDescriptor(
+      0, 0, 512, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2177,8 +2213,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescNotFound) {
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
   att::Status status;
-  service->ReadLongDescriptor(0, 0, 512,
-                              [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongDescriptor(
+      0, 0, 512, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2218,22 +2254,25 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescriptor) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kDescrHandle, handle);
         read_blob_count++;
+        bool maybe_truncated = true;
 
         // Return a blob at the given offset with at most MTU - 1 bytes.
         auto blob = expected_value.view(offset, att::kLEMinMTU - 1);
         if (read_blob_count == kExpectedBlobCount) {
           // The final blob should contain 3 bytes.
           EXPECT_EQ(3u, blob.size());
+          maybe_truncated = false;
         }
 
-        callback(att::Status(), blob);
+        callback(att::Status(), blob, maybe_truncated);
       });
 
   att::Status status(HostError::kFailed);
   service->ReadLongDescriptor(DescriptorHandle(kDescrHandle), kOffset, kMaxBytes,
-                              [&](att::Status cb_status, const auto& value) {
+                              [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
                                 status = cb_status;
                                 EXPECT_TRUE(ContainersEqual(expected_value, value));
+                                EXPECT_FALSE(maybe_truncated);
                               });
 
   RunLoopUntilIdle();
