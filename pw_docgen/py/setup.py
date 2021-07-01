@@ -27,7 +27,8 @@ setuptools.setup(
     install_requires=[
         'sphinx >3',
         'sphinx-rtd-theme',
-
+        # Pillow 8.3.0 is broken on Windows.
+        'Pillow >=6.2.2, <=8.2.0',
         # Diagram generation modules.
         'sphinxcontrib-actdiag',
         'sphinxcontrib-blockdiag',
