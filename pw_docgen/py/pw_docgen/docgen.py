@@ -78,12 +78,6 @@ def build_docs(src_dir: str, dst_dir: str) -> int:
     return subprocess.call(command)
 
 
-def mkdir(dirname: str, exist_ok: bool = False) -> None:
-    """Wrapper around os.makedirs that prints the operation."""
-    print(f'MKDIR {dirname}')
-    os.makedirs(dirname, exist_ok=exist_ok)
-
-
 def copy_doc_tree(args: argparse.Namespace) -> None:
     """Copies doc source and input files into a build tree."""
     def build_path(path):
@@ -98,7 +92,7 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
     source_files = json.load(args.metadata)
     copy_paths = [build_path(f) for f in source_files]
 
-    mkdir(args.sphinx_build_dir)
+    os.makedirs(args.sphinx_build_dir)
     for source_path in args.sources:
         os.link(source_path,
                 f'{args.sphinx_build_dir}/{Path(source_path).name}')
@@ -112,7 +106,7 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
         dirs[dirname].append((source_file, copy_path))
 
     for directory, file_pairs in dirs.items():
-        mkdir(directory, exist_ok=True)
+        os.makedirs(directory, exist_ok=True)
         for src, dst in file_pairs:
             os.link(src, dst)
 
