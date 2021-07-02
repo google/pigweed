@@ -1010,7 +1010,8 @@ fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(const bt::Advert
   return output;
 }
 
-fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::AdvertisingData& input) {
+fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::AdvertisingData& input,
+                                                               zx::time timestamp) {
   // Reuse bt::AdvertisingData -> fble::AdvertisingData utility, since most fields are the same as
   // fble::ScanData.
   fble::AdvertisingData fidl_adv_data = AdvertisingDataToFidl(input);
@@ -1033,6 +1034,7 @@ fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::Adverti
   if (fidl_adv_data.has_uris()) {
     out.set_uris(std::move(*fidl_adv_data.mutable_uris()));
   }
+  out.set_timestamp(timestamp.get());
   return out;
 }
 
@@ -1050,12 +1052,13 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   if (peer.le()->advertising_data().size() != 0u) {
     std::optional<bt::AdvertisingData> advertising_data =
         bt::AdvertisingData::FromBytes(peer.le()->advertising_data());
+    std::optional<zx::time> timestamp = peer.le()->advertising_data_timestamp();
 
     // We populate |output|'s AdvertisingData & ScanData fields if we can parse the payload. We
     // leave them blank otherwise.
     if (advertising_data) {
       output.set_advertising_data(AdvertisingDataToFidl(advertising_data.value()));
-      output.set_data(AdvertisingDataToFidlScanData(advertising_data.value()));
+      output.set_data(AdvertisingDataToFidlScanData(advertising_data.value(), timestamp.value()));
     }
   }
 

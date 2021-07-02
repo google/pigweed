@@ -2,22 +2,23 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "helpers.h"
+
 #include <algorithm>
 #include <iterator>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "adapter_test_fixture.h"
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
-#include "helpers.h"
 #include "lib/fidl/cpp/comparison.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
@@ -103,22 +104,25 @@ TEST(FIDL_HelpersTest, GattStatusToFidl) {
             GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
 }
 
-
 TEST(FIDL_HelpersTest, AttStatusToGattFidlError) {
   // Host errors
   EXPECT_EQ(fbg2::Error::INVALID_RESPONSE,
             AttStatusToGattFidlError(bt::att::Status(bt::HostError::kPacketMalformed)));
   EXPECT_EQ(fbg2::Error::INVALID_PARAMETERS,
             AttStatusToGattFidlError(bt::att::Status(bt::HostError::kInvalidParameters)));
-  EXPECT_EQ(fbg2::Error::FAILURE, AttStatusToGattFidlError(bt::att::Status(bt::HostError::kTimedOut)));
+  EXPECT_EQ(fbg2::Error::FAILURE,
+            AttStatusToGattFidlError(bt::att::Status(bt::HostError::kTimedOut)));
 
   // Protocol errors
-  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHORIZATION,
-            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthorization)));
-  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHENTICATION,
-            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthentication)));
+  EXPECT_EQ(
+      fbg2::Error::INSUFFICIENT_AUTHORIZATION,
+      AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthorization)));
+  EXPECT_EQ(
+      fbg2::Error::INSUFFICIENT_AUTHENTICATION,
+      AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthentication)));
   EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
-            AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientEncryptionKeySize)));
+            AttStatusToGattFidlError(
+                bt::att::Status(bt::att::ErrorCode::kInsufficientEncryptionKeySize)));
   EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION,
             AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInsufficientEncryption)));
   EXPECT_EQ(fbg2::Error::READ_NOT_PERMITTED,
@@ -1162,13 +1166,15 @@ TEST(FIDL_HelpersTest, DiscoveryFilterFromFidlFilter) {
 
 TEST(FIDL_HelpersTest, EmptyAdvertisingDataToFidlScanData) {
   bt::AdvertisingData input;
-  fble::ScanData output = AdvertisingDataToFidlScanData(input);
+  fble::ScanData output = AdvertisingDataToFidlScanData(input, zx::time(1));
   EXPECT_FALSE(output.has_tx_power());
   EXPECT_FALSE(output.has_appearance());
   EXPECT_FALSE(output.has_service_uuids());
   EXPECT_FALSE(output.has_service_data());
   EXPECT_FALSE(output.has_manufacturer_data());
   EXPECT_FALSE(output.has_uris());
+  ASSERT_TRUE(output.has_timestamp());
+  EXPECT_EQ(output.timestamp(), zx::time(1).get());
 }
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanData) {
@@ -1190,12 +1196,14 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanData) {
   const char* const kUri = "http://fuchsia.cl/461435";
   EXPECT_TRUE(input.AddUri(kUri));
 
-  fble::ScanData output = AdvertisingDataToFidlScanData(input);
+  fble::ScanData output = AdvertisingDataToFidlScanData(input, zx::time(1));
   EXPECT_EQ(4, output.tx_power());
   EXPECT_EQ(fbt::Appearance{kAppearance}, output.appearance());
   ASSERT_EQ(1u, output.service_uuids().size());
   EXPECT_EQ(kServiceUuid, UuidFromFidl(output.service_uuids().front()));
   ASSERT_EQ(1u, output.service_data().size());
+  ASSERT_TRUE(output.has_timestamp());
+  EXPECT_EQ(output.timestamp(), zx::time(1).get());
   auto service_data = output.service_data().front();
   EXPECT_EQ(kServiceUuid, UuidFromFidl(service_data.uuid));
   EXPECT_TRUE(ContainersEqual(bt::BufferView(service_bytes), service_data.data));
@@ -1212,15 +1220,15 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanDataOmitsNonEnumeratedAppearance
   bt::AdvertisingData input;
   input.SetAppearance(kNonEnumeratedAppearance);
 
-  EXPECT_FALSE(AdvertisingDataToFidlScanData(input).has_appearance());
+  EXPECT_FALSE(AdvertisingDataToFidlScanData(input, zx::time()).has_appearance());
 
   const uint16_t kKnownAppearance = 832u;  // HEART_RATE_SENSOR
   input.SetAppearance(kKnownAppearance);
 
-  EXPECT_TRUE(AdvertisingDataToFidlScanData(input).has_appearance());
+  EXPECT_TRUE(AdvertisingDataToFidlScanData(input, zx::time()).has_appearance());
 }
 
-TEST(FIDL_HelpersTest, PeerToFidlLe) {
+TEST(FIDL_HelpersTest, PeerToFidlLeWithAllFields) {
   const bt::PeerId kPeerId(1);
   const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
   bt::gap::PeerMetrics metrics;
@@ -1231,7 +1239,7 @@ TEST(FIDL_HelpersTest, PeerToFidlLe) {
   auto adv_bytes = bt::StaticByteBuffer(
       // Uri: "https://abc.xyz"
       0x0B, bt::DataType::kURI, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
-  peer.MutLe().SetAdvertisingData(kRssi, adv_bytes, zx::time());
+  peer.MutLe().SetAdvertisingData(kRssi, adv_bytes, zx::time(1));
 
   fble::Peer fidl_peer = PeerToFidlLe(peer);
   ASSERT_TRUE(fidl_peer.has_id());
@@ -1244,6 +1252,27 @@ TEST(FIDL_HelpersTest, PeerToFidlLe) {
   EXPECT_EQ(fidl_peer.rssi(), kRssi);
   ASSERT_TRUE(fidl_peer.has_data());
   EXPECT_THAT(fidl_peer.data().uris(), ::testing::ElementsAre("https://abc.xyz"));
+  EXPECT_FALSE(fidl_peer.has_last_updated());
+  ASSERT_TRUE(fidl_peer.data().has_timestamp());
+  EXPECT_EQ(fidl_peer.data().timestamp(), zx::time(1).get());
+}
+
+TEST(FIDL_HelpersTest, PeerToFidlLeWithoutAdvertisingData) {
+  const bt::PeerId kPeerId(1);
+  const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
+  bt::gap::PeerMetrics metrics;
+  bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, kPeerId, kAddr,
+                     /*connectable=*/true, &metrics);
+
+  fble::Peer fidl_peer = PeerToFidlLe(peer);
+  ASSERT_TRUE(fidl_peer.has_id());
+  EXPECT_EQ(fidl_peer.id().value, kPeerId.value());
+  ASSERT_TRUE(fidl_peer.has_bonded());
+  EXPECT_FALSE(fidl_peer.bonded());
+  EXPECT_FALSE(fidl_peer.has_name());
+  EXPECT_FALSE(fidl_peer.has_rssi());
+  EXPECT_FALSE(fidl_peer.has_data());
+  EXPECT_FALSE(fidl_peer.has_last_updated());
 }
 
 }  // namespace
