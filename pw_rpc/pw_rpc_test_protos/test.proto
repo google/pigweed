@@ -32,6 +32,9 @@ message TestStreamResponse {
 message Empty {}
 
 service TestService {
-  rpc TestRpc(TestRequest) returns (TestResponse) {}
-  rpc TestStreamRpc(TestRequest) returns (stream TestStreamResponse) {}
+  rpc TestRpc(TestRequest) returns (TestResponse);
+  rpc TestStreamRpc(TestRequest) returns (stream TestStreamResponse);
+  rpc TestClientStreamRpc(stream TestRequest) returns (TestStreamResponse);
+  rpc TestBidirectionalStreamRpc(stream TestRequest)
+      returns (stream TestStreamResponse);
 }

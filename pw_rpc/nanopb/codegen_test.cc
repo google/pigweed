@@ -41,6 +41,19 @@ class TestService final : public generated::TestService<TestService> {
 
     writer.Finish(static_cast<Status::Code>(request.status_code));
   }
+
+  void TestClientStreamRpc(
+      ServerContext&,
+      ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>&) {
+    // TODO(pwbug/428): Test Nanopb client streaming.
+  }
+
+  void TestBidirectionalStreamRpc(
+      ServerContext&,
+      ServerReaderWriter<pw_rpc_test_TestRequest,
+                         pw_rpc_test_TestStreamResponse>&) {
+    // TODO(pwbug/428): Test Nanopb bidirectional streaming.
+  }
 };
 
 }  // namespace test

@@ -20,6 +20,33 @@
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
 
 namespace pw::rpc {
+namespace {
+
+Vector<std::byte, 64> EncodeRequest(int integer, Status status) {
+  Vector<std::byte, 64> buffer(64);
+  test::TestRequest::RamEncoder test_request(buffer);
+
+  test_request.WriteInteger(integer);
+  test_request.WriteStatusCode(status.code());
+
+  EXPECT_EQ(OkStatus(), test_request.status());
+  buffer.resize(test_request.size());
+  return buffer;
+}
+
+Vector<std::byte, 64> EncodeResponse(int number) {
+  Vector<std::byte, 64> buffer(64);
+  test::TestStreamResponse::RamEncoder test_response(buffer);
+
+  test_response.WriteNumber(number);
+
+  EXPECT_EQ(OkStatus(), test_response.status());
+  buffer.resize(test_response.size());
+  return buffer;
+}
+
+}  // namespace
+
 namespace test {
 
 class TestService final : public generated::TestService<TestService> {
@@ -59,7 +86,49 @@ class TestService final : public generated::TestService<TestService> {
     writer.Finish(status);
   }
 
+  void TestClientStreamRpc(ServerContext&, RawServerReader& reader) {
+    last_reader_ = std::move(reader);
+
+    last_reader_.set_on_next([this](ConstByteSpan payload) {
+      last_reader_.Finish(EncodeResponse(ReadInteger(payload)),
+                          Status::Unauthenticated());
+    });
+  }
+
+  void TestBidirectionalStreamRpc(ServerContext&,
+                                  RawServerReaderWriter& reader_writer) {
+    last_reader_writer_ = std::move(reader_writer);
+
+    last_reader_writer_.set_on_next([this](ConstByteSpan payload) {
+      last_reader_writer_.Write(EncodeResponse(ReadInteger(payload)));
+      last_reader_writer_.Finish(Status::NotFound());
+    });
+  }
+
+ protected:
+  RawServerReader last_reader_;
+  RawServerReaderWriter last_reader_writer_;
+
  private:
+  static uint32_t ReadInteger(ConstByteSpan request) {
+    uint32_t integer = 0;
+
+    protobuf::Decoder decoder(request);
+    while (decoder.Next().ok()) {
+      switch (static_cast<TestRequest::Fields>(decoder.FieldNumber())) {
+        case TestRequest::Fields::INTEGER:
+          EXPECT_EQ(OkStatus(), decoder.ReadUint32(&integer));
+          break;
+        case TestRequest::Fields::STATUS_CODE:
+          break;
+        default:
+          ADD_FAILURE();
+      }
+    }
+
+    return integer;
+  }
+
   static bool DecodeRequest(ConstByteSpan request,
                             int64_t& integer,
                             Status& status) {
@@ -104,13 +173,7 @@ TEST(RawCodegen, CompilesProperly) {
 TEST(RawCodegen, Server_InvokeUnaryRpc) {
   PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
 
-  std::byte buffer[64];
-  protobuf::NestedEncoder encoder(buffer);
-  test::TestRequest::Encoder test_request(&encoder);
-  test_request.WriteInteger(123);
-  test_request.WriteStatusCode(OkStatus().code());
-
-  auto sws = context.call(encoder.Encode().value());
+  auto sws = context.call(EncodeRequest(123, OkStatus()));
   EXPECT_EQ(OkStatus(), sws.status());
 
   protobuf::Decoder decoder(context.response());
@@ -130,13 +193,7 @@ TEST(RawCodegen, Server_InvokeUnaryRpc) {
 TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
   PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
 
-  std::byte buffer[64];
-  protobuf::NestedEncoder encoder(buffer);
-  test::TestRequest::Encoder test_request(&encoder);
-  test_request.WriteInteger(5);
-  test_request.WriteStatusCode(Status::Unauthenticated().code());
-
-  context.call(encoder.Encode().value());
+  context.call(EncodeRequest(5, Status::Unauthenticated()));
   EXPECT_TRUE(context.done());
   EXPECT_EQ(Status::Unauthenticated(), context.status());
   EXPECT_EQ(context.total_responses(), 5u);
@@ -156,6 +213,50 @@ TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
         break;
     }
   }
+}
+
+int32_t ReadResponseNumber(ConstByteSpan data) {
+  int32_t value = -1;
+  protobuf::Decoder decoder(data);
+  while (decoder.Next().ok()) {
+    switch (
+        static_cast<test::TestStreamResponse::Fields>(decoder.FieldNumber())) {
+      case test::TestStreamResponse::Fields::NUMBER: {
+        decoder.ReadInt32(&value);
+        break;
+      }
+      default:
+        ADD_FAILURE();
+        break;
+    }
+  }
+
+  return value;
+}
+
+TEST(RawCodegen, Server_InvokeClientStreamingRpc) {
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestClientStreamRpc) ctx;
+
+  ctx.call();
+  ctx.SendClientStream(EncodeRequest(123, OkStatus()));
+
+  ASSERT_TRUE(ctx.done());
+  EXPECT_EQ(Status::Unauthenticated(), ctx.status());
+  EXPECT_EQ(ctx.total_responses(), 1u);
+  EXPECT_EQ(ReadResponseNumber(ctx.responses().back()), 123);
+}
+
+TEST(RawCodegen, Server_InvokeBidirectionalStreamingRpc) {
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestBidirectionalStreamRpc)
+  ctx;
+
+  ctx.call();
+  ctx.SendClientStream(EncodeRequest(456, OkStatus()));
+
+  ASSERT_TRUE(ctx.done());
+  EXPECT_EQ(Status::NotFound(), ctx.status());
+  ASSERT_EQ(ctx.total_responses(), 1u);
+  EXPECT_EQ(ReadResponseNumber(ctx.responses().back()), 456);
 }
 
 }  // namespace

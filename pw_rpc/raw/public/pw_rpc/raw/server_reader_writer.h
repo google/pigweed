@@ -30,6 +30,10 @@ namespace test::raw {
 
 template <typename, auto, uint32_t, size_t, size_t>
 class ServerStreamingContext;
+template <typename, auto, uint32_t, size_t, size_t>
+class ClientStreamingContext;
+template <typename, auto, uint32_t, size_t, size_t>
+class BidirectionalStreamingContext;
 
 }  // namespace test::raw
 }  // namespace internal
@@ -81,6 +85,9 @@ class RawServerReaderWriter : private internal::Responder {
 
  private:
   friend class internal::RawMethod;
+
+  template <typename, auto, uint32_t, size_t, size_t>
+  friend class internal::test::raw::BidirectionalStreamingContext;
 };
 
 // The RawServerReader is used to receive messages and send a response in a
@@ -106,6 +113,9 @@ class RawServerReader : private RawServerReaderWriter {
 
  private:
   friend class internal::RawMethod;  // Needed for conversions from ReaderWriter
+
+  template <typename, auto, uint32_t, size_t, size_t>
+  friend class internal::test::raw::ClientStreamingContext;
 
   using RawServerReaderWriter::HasClientStream;
 

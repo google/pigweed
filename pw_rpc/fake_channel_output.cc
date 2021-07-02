@@ -51,6 +51,8 @@ Status FakeChannelOutput::SendAndReleaseBuffer(
       }
       done_ = true;
       break;
+    case PacketType::SERVER_ERROR:
+      PW_CRASH("Server error: %s", result.value().status().str());
     case PacketType::SERVER_STREAM:
       ProcessResponse(result.value().payload());
       break;

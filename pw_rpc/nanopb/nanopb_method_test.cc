@@ -304,5 +304,9 @@ TEST(NanopbMethod,
   EXPECT_EQ(Status::Internal(), last_writer.Write({.value = 1}));  // Too big
 }
 
+// TODO(pwbug/428): Test NanopbServerReader / NanopbServerReaderWriter. In
+//     particular, test that the client stream callback correctly decodes
+//     incoming messages with Nanopb.
+
 }  // namespace
 }  // namespace pw::rpc::internal

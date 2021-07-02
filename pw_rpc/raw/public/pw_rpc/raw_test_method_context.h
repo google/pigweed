@@ -23,6 +23,7 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/raw_method.h"
 #include "pw_rpc/internal/server.h"
+#include "pw_rpc/internal/test_method_context.h"
 #include "pw_rpc_private/fake_channel_output.h"
 
 namespace pw::rpc {
@@ -65,7 +66,7 @@ namespace pw::rpc {
 //
 // PW_RAW_TEST_METHOD_CONTEXT takes two optional arguments:
 //
-//   size_t kMaxResponse: maximum responses to store; ignored unless streaming
+//   size_t kMaxResponses: maximum responses to store; ignored unless streaming
 //   size_t kOutputSizeBytes: buffer size; must be large enough for a packet
 //
 // Example:
@@ -81,7 +82,7 @@ namespace pw::rpc {
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponse = 4,
+          size_t kMaxResponses = 4,
           size_t kOutputSizeBytes = 128>
 class RawTestMethodContext;
 
@@ -89,69 +90,78 @@ class RawTestMethodContext;
 namespace internal::test::raw {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
-template <size_t kOutputSize>
+template <size_t kOutputSize, size_t kMaxResponses>
 class MessageOutput final : public FakeChannelOutput {
  public:
-  using ResponseBuffer = std::array<std::byte, kOutputSize>;
+  MessageOutput(bool server_streaming)
+      : FakeChannelOutput(packet_buffer_, server_streaming) {}
 
-  MessageOutput(Vector<ByteSpan>& responses,
-                Vector<ResponseBuffer>& buffers,
-                ByteSpan packet_buffer,
-                bool server_streaming)
-      : FakeChannelOutput(packet_buffer, server_streaming),
-        responses_(responses),
-        buffers_(buffers) {}
+  const Vector<ByteSpan>& responses() const { return responses_; }
+
+  // Allocates a response buffer and returns a reference to the response span
+  // for it.
+  ByteSpan& AllocateResponse() {
+    // If we run out of space, the back message is always the most recent.
+    response_buffers_.emplace_back();
+    response_buffers_.back() = {};
+
+    responses_.emplace_back();
+    responses_.back() = {response_buffers_.back().data(),
+                         response_buffers_.back().size()};
+    return responses_.back();
+  }
 
  private:
   void AppendResponse(ConstByteSpan response) override {
-    // If we run out of space, the back message is always the most recent.
-    buffers_.emplace_back();
-    buffers_.back() = {};
-    std::memcpy(&buffers_.back(), response.data(), response.size());
-    responses_.emplace_back();
-    responses_.back() = {buffers_.back().data(), response.size()};
+    ByteSpan& response_span = AllocateResponse();
+    PW_ASSERT(response.size() <= response_span.size());
+
+    std::memcpy(response_span.data(), response.data(), response.size());
+    response_span = response_span.first(response.size());
   }
 
   void ClearResponses() override {
     responses_.clear();
-    buffers_.clear();
+    response_buffers_.clear();
   }
 
-  Vector<ByteSpan>& responses_;
-  Vector<ResponseBuffer>& buffers_;
+  std::array<std::byte, kOutputSize> packet_buffer_;
+  Vector<ByteSpan, kMaxResponses> responses_;
+  Vector<std::array<std::byte, kOutputSize>, kMaxResponses> response_buffers_;
 };
 
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponse,
+          size_t kMaxResponses,
           size_t kOutputSize>
-struct InvocationContext {
+class RawInvocationContext : public InvocationContext<Service, kMethodId> {
+ public:
+  // Returns the responses that have been recorded. The maximum number of
+  // responses is responses().max_size(). responses().back() is always the most
+  // recent response, even if total_responses() > responses().max_size().
+  const Vector<ByteSpan>& responses() const { return output_.responses(); }
+
+  // Gives access to the RPC's most recent response.
+  ConstByteSpan response() const {
+    PW_ASSERT(!responses().empty());
+    return responses().back();
+  }
+
+ protected:
   template <typename... Args>
-  InvocationContext(Args&&... args)
-      : output(responses,
-               buffers,
-               packet_buffer,
-               MethodTraits<decltype(kMethod)>::kServerStreaming),
-        channel(Channel::Create<123>(&output)),
-        server(std::span(&channel, 1)),
-        service(std::forward<Args>(args)...),
-        call(static_cast<internal::Server&>(server),
-             static_cast<internal::Channel&>(channel),
-             service,
-             MethodLookup::GetRawMethod<Service, kMethodId>()) {}
+  RawInvocationContext(Args&&... args)
+      : InvocationContext<Service, kMethodId>(
+            MethodLookup::GetRawMethod<Service, kMethodId>(),
+            output_,
+            std::forward<Args>(args)...),
+        output_(MethodTraits<decltype(kMethod)>::kServerStreaming) {}
 
-  using ResponseBuffer = std::array<std::byte, kOutputSize>;
+  MessageOutput<kOutputSize, kMaxResponses>& output() { return output_; }
 
-  MessageOutput<kOutputSize> output;
-  rpc::Channel channel;
-  rpc::Server server;
-  Service service;
-  Vector<ByteSpan, kMaxResponse> responses;
-  Vector<ResponseBuffer, kMaxResponse> buffers;
-  std::array<std::byte, kOutputSize> packet_buffer = {};
-  internal::ServerCall call;
+ private:
+  MessageOutput<kOutputSize, kMaxResponses> output_;
 };
 
 // Method invocation context for a unary RPC. Returns the status in call() and
@@ -160,35 +170,23 @@ template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kOutputSize>
-class UnaryContext {
- private:
-  using Context =
-      InvocationContext<Service, kMethod, kMethodId, 1, kOutputSize>;
-  Context ctx_;
+class UnaryContext
+    : public RawInvocationContext<Service, kMethod, kMethodId, 1, kOutputSize> {
+  using Base =
+      RawInvocationContext<Service, kMethod, kMethodId, 1, kOutputSize>;
 
  public:
   template <typename... Args>
-  UnaryContext(Args&&... args) : ctx_(std::forward<Args>(args)...) {}
-
-  Service& service() { return ctx_.service; }
+  UnaryContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
 
   // Invokes the RPC with the provided request. Returns RPC's StatusWithSize.
   StatusWithSize call(ConstByteSpan request) {
-    ctx_.output.clear();
-    ctx_.buffers.emplace_back();
-    ctx_.buffers.back() = {};
-    ctx_.responses.emplace_back();
-    auto& response = ctx_.responses.back();
-    response = {ctx_.buffers.back().data(), ctx_.buffers.back().size()};
-    auto sws = CallMethodImplFunction<kMethod>(ctx_.call, request, response);
+    Base::output().clear();
+    ByteSpan& response = Base::output().AllocateResponse();
+    auto sws =
+        CallMethodImplFunction<kMethod>(Base::server_call(), request, response);
     response = response.first(sws.size());
     return sws;
-  }
-
-  // Gives access to the RPC's response.
-  ConstByteSpan response() const {
-    PW_ASSERT(ctx_.responses.size() > 0u);
-    return ctx_.responses.back();
   }
 };
 
@@ -196,51 +194,118 @@ class UnaryContext {
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponse,
+          size_t kMaxResponses,
           size_t kOutputSize>
-class ServerStreamingContext {
- private:
-  using Context =
-      InvocationContext<Service, kMethod, kMethodId, kMaxResponse, kOutputSize>;
-  Context ctx_;
+class ServerStreamingContext : public RawInvocationContext<Service,
+                                                           kMethod,
+                                                           kMethodId,
+                                                           kMaxResponses,
+                                                           kOutputSize> {
+  using Base = RawInvocationContext<Service,
+                                    kMethod,
+                                    kMethodId,
+                                    kMaxResponses,
+                                    kOutputSize>;
 
  public:
   template <typename... Args>
-  ServerStreamingContext(Args&&... args) : ctx_(std::forward<Args>(args)...) {}
-
-  Service& service() { return ctx_.service; }
+  ServerStreamingContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
 
   // Invokes the RPC with the provided request.
   void call(ConstByteSpan request) {
-    ctx_.output.clear();
-    RawServerWriter server_writer(ctx_.call);
-    return CallMethodImplFunction<kMethod>(ctx_.call, request, server_writer);
+    Base::output().clear();
+    RawServerWriter writer(Base::server_call());
+    return CallMethodImplFunction<kMethod>(
+        Base::server_call(), request, writer);
   }
 
   // Returns a server writer which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
   RawServerWriter writer() {
-    ctx_.output.clear();
-    return RawServerWriter(ctx_.call);
+    Base::output().clear();
+    return RawServerWriter(Base::server_call());
+  }
+};
+
+// Method invocation context for a client streaming RPC.
+template <typename Service,
+          auto kMethod,
+          uint32_t kMethodId,
+          size_t kMaxResponses,
+          size_t kOutputSize>
+class ClientStreamingContext : public RawInvocationContext<Service,
+                                                           kMethod,
+                                                           kMethodId,
+                                                           kMaxResponses,
+                                                           kOutputSize> {
+  using Base = RawInvocationContext<Service,
+                                    kMethod,
+                                    kMethodId,
+                                    kMaxResponses,
+                                    kOutputSize>;
+
+ public:
+  template <typename... Args>
+  ClientStreamingContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
+
+  // Invokes the RPC.
+  void call() {
+    Base::output().clear();
+    RawServerReader reader_writer(Base::server_call());
+    return CallMethodImplFunction<kMethod>(Base::server_call(), reader_writer);
   }
 
-  // Returns the responses that have been recorded. The maximum number of
-  // responses is responses().max_size(). responses().back() is always the most
-  // recent response, even if total_responses() > responses().max_size().
-  const Vector<ByteSpan>& responses() const { return ctx_.responses; }
-
-  // The total number of responses sent, which may be larger than
-  // responses.max_size().
-  size_t total_responses() const { return ctx_.output.total_responses(); }
-
-  // True if the stream has terminated.
-  bool done() const { return ctx_.output.done(); }
-
-  // The status of the stream. Only valid if done() is true.
-  Status status() const {
-    PW_ASSERT(done());
-    return ctx_.output.last_status();
+  // Returns a reader/writer which writes responses into the context's buffer.
+  // This should not be called alongside call(); use one or the other.
+  RawServerReader reader() {
+    Base::output().clear();
+    return RawServerReader(Base::server_call());
   }
+
+  // Allow sending client streaming packets.
+  using Base::SendClientStream;
+  using Base::SendClientStreamEnd;
+};
+
+// Method invocation context for a bidirectional streaming RPC.
+template <typename Service,
+          auto kMethod,
+          uint32_t kMethodId,
+          size_t kMaxResponses,
+          size_t kOutputSize>
+class BidirectionalStreamingContext : public RawInvocationContext<Service,
+                                                                  kMethod,
+                                                                  kMethodId,
+                                                                  kMaxResponses,
+                                                                  kOutputSize> {
+  using Base = RawInvocationContext<Service,
+                                    kMethod,
+                                    kMethodId,
+                                    kMaxResponses,
+                                    kOutputSize>;
+
+ public:
+  template <typename... Args>
+  BidirectionalStreamingContext(Args&&... args)
+      : Base(std::forward<Args>(args)...) {}
+
+  // Invokes the RPC.
+  void call() {
+    Base::output().clear();
+    RawServerReaderWriter reader_writer(Base::server_call());
+    return CallMethodImplFunction<kMethod>(Base::server_call(), reader_writer);
+  }
+
+  // Returns a reader/writer which writes responses into the context's buffer.
+  // This should not be called alongside call(); use one or the other.
+  RawServerReaderWriter reader_writer() {
+    Base::output().clear();
+    return RawServerReaderWriter(Base::server_call());
+  }
+
+  // Allow sending client streaming packets.
+  using Base::SendClientStream;
+  using Base::SendClientStreamEnd;
 };
 
 // Alias to select the type of the context object to use based on which type of
@@ -248,7 +313,7 @@ class ServerStreamingContext {
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponse,
+          size_t kMaxResponses,
           size_t kOutputSize>
 using Context = std::tuple_element_t<
     static_cast<size_t>(MethodTraits<decltype(kMethod)>::kType),
@@ -256,21 +321,32 @@ using Context = std::tuple_element_t<
                ServerStreamingContext<Service,
                                       kMethod,
                                       kMethodId,
-                                      kMaxResponse,
-                                      kOutputSize>
-               // TODO(hepler): Support client and bidi streaming
-               >>;
+                                      kMaxResponses,
+                                      kOutputSize>,
+               ClientStreamingContext<Service,
+                                      kMethod,
+                                      kMethodId,
+                                      kMaxResponses,
+                                      kOutputSize>,
+               BidirectionalStreamingContext<Service,
+                                             kMethod,
+                                             kMethodId,
+                                             kMaxResponses,
+                                             kOutputSize>>>;
 
 }  // namespace internal::test::raw
 
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponse,
+          size_t kMaxResponses,
           size_t kOutputSizeBytes>
 class RawTestMethodContext
-    : public internal::test::raw::
-          Context<Service, kMethod, kMethodId, kMaxResponse, kOutputSizeBytes> {
+    : public internal::test::raw::Context<Service,
+                                          kMethod,
+                                          kMethodId,
+                                          kMaxResponses,
+                                          kOutputSizeBytes> {
  public:
   // Forwards constructor arguments to the service class.
   template <typename... ServiceArgs>
@@ -278,7 +354,7 @@ class RawTestMethodContext
       : internal::test::raw::Context<Service,
                                      kMethod,
                                      kMethodId,
-                                     kMaxResponse,
+                                     kMaxResponses,
                                      kOutputSizeBytes>(
             std::forward<ServiceArgs>(service_args)...) {}
 };
