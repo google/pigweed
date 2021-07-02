@@ -7,9 +7,9 @@ import("//build/components.gni")
 import("//build/config/fuchsia/rules.gni")
 import("//build/fuzzing/fuzzer.gni")
 
-bind_rules("bt_host_bind") {
+driver_bind_rules("bt_host_bind") {
   rules = "bt_host.bind"
-  output = "bt_host_bind.h"
+  header_output = "bt_host_bind.h"
   tests = "tests.json"
   deps = [ "//src/devices/bind/fuchsia.bluetooth" ]
 }
