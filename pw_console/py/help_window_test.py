@@ -57,7 +57,7 @@ class TestHelpWindow(unittest.TestCase):
             help_window.help_text_sections,
             {
                 'Global': {
-                    'Quit the application.': ['ControlQ', 'ControlW'],
+                    'Quit the application.': ['Ctrl-Q', 'Ctrl-W'],
                     'Toggle help window.': ['F1'],
                 }
             },
@@ -105,7 +105,7 @@ class TestHelpWindow(unittest.TestCase):
             inspect.cleandoc("""
             Pigweed CLI v0.1
 
-            ================================== Help =================================
+            ================================ Help ===============================
 
             Welcome to the Pigweed Console!
             Please enjoy this extra help text.
@@ -114,27 +114,27 @@ class TestHelpWindow(unittest.TestCase):
         )
         self.assertIn(
             inspect.cleandoc("""
-            ============================== Global Keys ==============================
+            ============================ Global Keys ============================
             """),
             help_window.help_text,
         )
         self.assertIn(
             inspect.cleandoc("""
             Toggle help window. -----------------  F1
-            Quit the application. ---------------  ControlQ, ControlW
+            Quit the application. ---------------  Ctrl-Q, Ctrl-W
             """),
             help_window.help_text,
         )
         self.assertIn(
             inspect.cleandoc("""
-            =============================== Focus Keys ==============================
+            ============================= Focus Keys ============================
             """),
             help_window.help_text,
         )
         self.assertIn(
             inspect.cleandoc("""
-            Move focus to the next widget. ------  BackTab, ControlDown, ControlRight
-            Move focus to the previous widget. --  ControlLeft, ControlUp
+            Move focus to the next widget. ------  BackTab, Ctrl-Down, Ctrl-Right
+            Move focus to the previous widget. --  Ctrl-Left, Ctrl-Up
             """),
             help_window.help_text,
         )

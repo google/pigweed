@@ -292,12 +292,12 @@ class LogContentControl(FormattedTextControl):
 
         @key_bindings.add('t')
         def _toggle_table_view(_event: KeyPressEvent) -> None:
-            """Toggle log line wrapping."""
+            """Toggle table view."""
             self.log_pane.toggle_table_view()
 
         @key_bindings.add('C')
         def _clear_history(_event: KeyPressEvent) -> None:
-            """Toggle log line wrapping."""
+            """Clear log pane history."""
             self.log_pane.clear_history()
 
         @key_bindings.add('g')
@@ -404,20 +404,20 @@ class LogPane:
 
     # pylint: disable=too-many-instance-attributes
     def __init__(
-            self,
-            application: Any,
-            pane_title: Optional[str] = None,
-            # Default width and height to 50% of the screen
-            height: Optional[AnyDimension] = Dimension(weight=50),
-            width: Optional[AnyDimension] = Dimension(weight=50),
+        self,
+        application: Any,
+        pane_title: Optional[str] = None,
+        # Default width and height to 50% of the screen
+        height: Optional[AnyDimension] = None,
+        width: Optional[AnyDimension] = None,
     ):
         self.application = application
         self.show_bottom_toolbar = True
         # TODO(tonymd): Read these settings from a project (or user) config.
         self.wrap_lines = False
         self.table_view = True
-        self.height = height
-        self.width = width
+        self.height = height if height else Dimension(weight=50)
+        self.width = width if width else Dimension(weight=50)
         self.show_pane = True
         self._pane_title = pane_title
         self._pane_subtitle = None
@@ -487,8 +487,8 @@ class LogPane:
                     ],
                     # Align content with the bottom of the container.
                     align=VerticalAlign.BOTTOM,
-                    height=self.height,
-                    width=self.width,
+                    height=lambda: self.height,
+                    width=lambda: self.width,
                     style=functools.partial(pw_console.style.get_pane_style,
                                             self),
                 ),
@@ -516,7 +516,12 @@ class LogPane:
     def pane_subtitle(self):
         if not self._pane_subtitle:
             return ', '.join(self.log_container.channel_counts.keys())
-        return self._pane_subtitle
+        logger_names = self._pane_subtitle.split(', ')
+        additional_text = ''
+        if len(logger_names) > 1:
+            additional_text = ' + {} more'.format(len(logger_names))
+
+        return logger_names[0] + additional_text
 
     def update_log_pane_size(self, width, height):
         """Save width and height of the log pane for the current UI render

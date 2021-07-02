@@ -196,12 +196,12 @@ class ReplPane:
         # TODO(tonymd): Figure out how to resize ptpython input field.
         _input_height: Optional[AnyDimension] = None,
         # Default width and height to 50% of the screen
-        height: Optional[AnyDimension] = Dimension(weight=50),
-        width: Optional[AnyDimension] = Dimension(weight=50),
+        height: Optional[AnyDimension] = None,
+        width: Optional[AnyDimension] = None,
         startup_message: Optional[str] = None,
     ) -> None:
-        self.height = height
-        self.width = width
+        self.height = height if height else Dimension(weight=50)
+        self.width = width if width else Dimension(weight=50)
         self.show_pane = True
 
         self.executed_code: List = []
@@ -258,8 +258,8 @@ class ReplPane:
                             self.bottom_toolbar,
                         ]),
                     ],
-                    height=self.height,
-                    width=self.width,
+                    height=lambda: self.height,
+                    width=lambda: self.width,
                     style=functools.partial(pw_console.style.get_pane_style,
                                             self),
                 ),
@@ -289,11 +289,11 @@ class ReplPane:
 
         # Hand-crafted bindings for display in the HelpWindow:
         return [{
-            'Erase input buffer.': ['ControlC'],
-            'Show ptpython settings.': ['F2'],
-            'Show ptpython history.': ['F3'],
-            'Execute code': ['Enter', 'OptionEnter', 'MetaEnter'],
-            'Reverse search history': ['ControlR'],
+            'Execute code': ['Enter', 'Option-Enter', 'Meta-Enter'],
+            'Reverse search history': ['Ctrl-R'],
+            'Erase input buffer.': ['Ctrl-C'],
+            'Show settings.': ['F2'],
+            'Show history.': ['F3'],
         }]
 
     def after_render_hook(self):

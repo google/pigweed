@@ -16,14 +16,16 @@
 import asyncio
 import builtins
 import inspect
-import platform
 import threading
 import unittest
 from unittest.mock import Mock, MagicMock
 
 from prompt_toolkit.application import create_app_session
-# inclusive-language: ignore
-from prompt_toolkit.output import DummyOutput as FakeOutput
+from prompt_toolkit.output import (
+    ColorDepth,
+    # inclusive-language: ignore
+    DummyOutput as FakeOutput,
+)
 
 from pw_console.console_app import ConsoleApp
 from pw_console.repl_pane import ReplPane
@@ -35,9 +37,6 @@ class TestReplPane(unittest.TestCase):
     def test_repl_code_return_values(self) -> None:
         """Test stdout, return values, and exceptions can be returned from
         running user repl code."""
-        # TODO(tonymd): Find out why this fails on windows.
-        if platform.system() in ['Windows']:
-            return
         app = Mock()
 
         global_vars = {
@@ -47,10 +46,9 @@ class TestReplPane(unittest.TestCase):
             '__builtins__': builtins,
         }
 
-        pw_ptpython_repl = PwPtPythonRepl(
-            get_globals=lambda: global_vars,
-            get_locals=lambda: global_vars,
-        )
+        pw_ptpython_repl = PwPtPythonRepl(get_globals=lambda: global_vars,
+                                          get_locals=lambda: global_vars,
+                                          color_depth=ColorDepth.DEPTH_8_BIT)
         repl_pane = ReplPane(
             application=app,
             python_repl=pw_ptpython_repl,
@@ -83,12 +81,8 @@ class TestReplPane(unittest.TestCase):
 
     def test_user_thread(self) -> None:
         """Test user code thread."""
-        # TODO(tonymd): Find out why create_app_session isn't working here on
-        # windows.
-        if platform.system() in ['Windows']:
-            return
         with create_app_session(output=FakeOutput()):
-            app = ConsoleApp()
+            app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
             app.start_user_code_thread()
 
             pw_ptpython_repl = app.pw_ptpython_repl

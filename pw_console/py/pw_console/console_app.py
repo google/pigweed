@@ -14,22 +14,24 @@
 """ConsoleApp control class."""
 
 import collections
+import collections.abc
 import builtins
 import asyncio
 import logging
 import functools
 from threading import Thread
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Union
 
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.application import Application
-from prompt_toolkit.filters import Condition
+from prompt_toolkit.filters import Condition, has_focus
 from prompt_toolkit.styles import (
     DynamicStyle,
     merge_styles,
 )
 from prompt_toolkit.layout import (
     ConditionalContainer,
+    Dimension,
     Float,
     HSplit,
     Layout,
@@ -73,6 +75,23 @@ class FloatingMessageBar(ConditionalContainer):
                 lambda: application.message and application.message != ''))
 
 
+def _add_log_handler_to_pane(logger: Union[str, logging.Logger], pane):
+    """A log pane handler for a given logger instance."""
+    if isinstance(logger, logging.Logger):
+        logger_instance = logger
+    elif isinstance(logger, str):
+        logger_instance = logging.getLogger(logger)
+
+    logger_instance.addHandler(pane.log_container  # type: ignore
+                               )
+    pane.append_pane_subtitle(  # type: ignore
+        logger_instance.name)
+
+
+# Weighted amount for adjusting window dimensions when enlarging and shrinking.
+_WINDOW_SIZE_ADJUST = 2
+
+
 class ConsoleApp:
     """The main ConsoleApp class containing the whole console."""
 
@@ -84,6 +103,7 @@ class ConsoleApp:
         repl_startup_message=None,
         help_text=None,
         app_title=None,
+        color_depth=None,
     ):
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
@@ -128,6 +148,7 @@ class ConsoleApp:
         self.pw_ptpython_repl = PwPtPythonRepl(
             get_globals=lambda: global_vars,
             get_locals=lambda: local_vars,
+            color_depth=color_depth,
         )
 
         self.repl_pane = ReplPane(
@@ -233,7 +254,7 @@ class ConsoleApp:
             enable_page_navigation_bindings=True,
             full_screen=True,
             mouse_support=True,
-        )
+            color_depth=color_depth)
 
     def _update_menu_items(self):
         self.root_container.menu_items = self._create_menu_items()
@@ -335,7 +356,82 @@ class ConsoleApp:
 
         return menu_items
 
+    def _get_current_active_pane(self):
+        """Return the current active window pane."""
+        focused_pane = None
+        for pane in self.active_panes:
+            if has_focus(pane)():
+                focused_pane = pane
+                break
+        return focused_pane
+
+    def enlarge_pane(self):
+        """Enlarge the currently focused window pane."""
+        pane = self._get_current_active_pane()
+        if pane:
+            self.adjust_pane_size(pane, _WINDOW_SIZE_ADJUST)
+
+    def shrink_pane(self):
+        """Shrink the currently focused window pane."""
+        pane = self._get_current_active_pane()
+        if pane:
+            self.adjust_pane_size(pane, -_WINDOW_SIZE_ADJUST)
+
+    def adjust_pane_size(self, pane, diff: int = _WINDOW_SIZE_ADJUST):
+        """Increase or decrease a given pane's width or height weight."""
+        # Placeholder next_pane value to allow setting width and height without
+        # any consequences if there is no next visible pane.
+        next_pane = HSplit([],
+                           height=Dimension(weight=50),
+                           width=Dimension(weight=50))  # type: ignore
+        # Try to get the next visible pane to subtract a weight value from.
+        next_visible_pane = self._get_next_visible_pane_after(pane)
+        if next_visible_pane:
+            next_pane = next_visible_pane
+
+        # If the last pane is selected, and there are at least 2 panes, make
+        # next_pane the previous pane.
+        try:
+            if len(self.active_panes) >= 2 and (self.active_panes.index(pane)
+                                                == len(self.active_panes) - 1):
+                next_pane = self.active_panes[-2]
+        except ValueError:
+            pass
+
+        # Get current weight values
+        if self.vertical_split:
+            old_weight = pane.width.weight
+            next_old_weight = next_pane.width.weight  # type: ignore
+        else:  # Horizontal split
+            old_weight = pane.height.weight
+            next_old_weight = next_pane.height.weight  # type: ignore
+
+        # Add to the current pane
+        new_weight = old_weight + diff
+        if new_weight <= 0:
+            new_weight = old_weight
+
+        # Subtract from the next pane
+        next_new_weight = next_old_weight - diff
+        if next_new_weight <= 0:
+            next_new_weight = next_old_weight
+
+        # Set new weight values
+        if self.vertical_split:
+            pane.width.weight = new_weight
+            next_pane.width.weight = next_new_weight  # type: ignore
+        else:  # Horizontal split
+            pane.height.weight = new_weight
+            next_pane.height.weight = next_new_weight  # type: ignore
+
+    def reset_pane_sizes(self):
+        """Reset all active pane width and height to 50%"""
+        for pane in self.active_panes:
+            pane.height = Dimension(weight=50)
+            pane.width = Dimension(weight=50)
+
     def rotate_panes(self, steps=1):
+        """Rotate the order of all active window panes."""
         self.active_panes.rotate(steps)
         self._update_menu_items()
         self._update_root_container_body()
@@ -358,22 +454,29 @@ class ConsoleApp:
         """Set application focus to a specific container."""
         self.application.layout.focus(pane)
 
-    def focus_next_visible_pane(self, pane):
-        """Focus on the next visible window pane if possible."""
+    def _get_next_visible_pane_after(self, target_pane):
+        """Return the next visible pane that appears after the target pane."""
         try:
-            hidden_pane_index = self.active_panes.index(pane)
+            target_pane_index = self.active_panes.index(target_pane)
         except ValueError:
             # If pane can't be found, focus on the main menu.
-            self.application.layout.focus(self.root_container.window)
-            return
+            return None
 
+        # Loop through active panes (not including the target_pane).
         for i in range(1, len(self.active_panes)):
-            next_pane_index = (hidden_pane_index + i) % len(self.active_panes)
+            next_pane_index = (target_pane_index + i) % len(self.active_panes)
             next_pane = self.active_panes[next_pane_index]
             if next_pane.show_pane:
-                next_visible_pane = next_pane
-                self.application.layout.focus(next_visible_pane)
-                return
+                return next_pane
+        return None
+
+    def focus_next_visible_pane(self, pane):
+        """Focus on the next visible window pane if possible."""
+        next_visible_pane = self._get_next_visible_pane_after(pane)
+        if next_visible_pane:
+            self.application.layout.focus(next_visible_pane)
+            return
+        self.focus_main_menu()
 
     def toggle_light_theme(self):
         """Toggle light and dark theme colors."""
@@ -391,7 +494,7 @@ class ConsoleApp:
         return self.active_panes[0]
 
     def add_log_handler(self,
-                        logger_instance: logging.Logger,
+                        logger: Union[str, logging.Logger, Iterable],
                         separate_log_panes=False):
         """Add the Log pane as a handler for this logger instance."""
         existing_log_pane = None
@@ -403,11 +506,12 @@ class ConsoleApp:
         if not existing_log_pane or separate_log_panes:
             existing_log_pane = self._create_log_pane()
 
-        logger_instance.addHandler(
-            existing_log_pane.log_container  # type: ignore
-        )
-        existing_log_pane.append_pane_subtitle(  # type: ignore
-            logger_instance.name)
+        if isinstance(logger, collections.abc.Iterable):
+            for this_logger in logger:
+                _add_log_handler_to_pane(this_logger, existing_log_pane)
+        else:
+            _add_log_handler_to_pane(logger, existing_log_pane)
+
         self._update_root_container_body()
         self._update_menu_items()
         self._update_help_window()
@@ -578,7 +682,7 @@ class ConsoleApp:
 def embed(
     global_vars=None,
     local_vars=None,
-    loggers: Optional[Iterable[logging.Logger]] = None,
+    loggers: Optional[Iterable[Union[str, logging.Logger, Iterable]]] = None,
     test_mode=False,
     repl_startup_message: Optional[str] = None,
     help_text: Optional[str] = None,
@@ -601,15 +705,33 @@ def embed(
               app_title='My Awesome Console',
         )
 
+    You can also create multiple Log window panes on startup with the
+    `separate_log_panes` param. Loggers can be grouped into lists to have more
+    than one log to a given log pane. ::
+
+        embed(global_vars=globals(),
+              local_vars=locals(),
+              loggers=[
+                  # Log window pane 1:
+                  ['log1', 'log2'],
+                  # Log window pane 2:
+                  ['log3', 'log4', 'log5'],
+              ],
+              separate_log_panes=True,
+              app_title='My Awesome Console',
+        )
+
     :param global_vars: Dictionary representing the desired global symbol
         table. Similar to what is returned by `globals()`.
     :type global_vars: dict, optional
     :param local_vars: Dictionary representing the desired local symbol
         table. Similar to what is returned by `locals()`.
     :type local_vars: dict, optional
-    :param loggers: List of `logging.getLogger()` instances that should be shown
-        in the pw console log pane user interface.
-    :type loggers: list, optional
+    :param loggers: List of `logging.getLogger()` instances or logger string
+        names that should be shown in the pw console log pane user
+        interface. Loggers can be grouped in lists to attach more than one
+        logger to a single pane.
+    :type loggers: Iterable[Union[str, logging.Logger, Iterable]], optional
     :param app_title: Custom title text displayed in the user interface.
     :type app_title: str, optional
     :param repl_startup_message: Custom text shown by default in the repl output

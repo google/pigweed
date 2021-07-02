@@ -150,6 +150,8 @@ class HelpWindow(ConditionalContainer):
 
             # Save the name of the key e.g. F1, q, ControlQ, ControlUp
             key_name = getattr(binding.keys[0], 'name', str(binding.keys[0]))
+            key_name = key_name.replace('Control', 'Ctrl-')
+            key_name = key_name.replace('Shift', 'Shift-')
             key_list.append(key_name)
 
             key_list_width = len(', '.join(key_list))

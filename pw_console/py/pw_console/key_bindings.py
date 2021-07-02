@@ -57,13 +57,28 @@ def create_key_bindings(console_app):
 
     @bindings.add('c-s-left')
     def rotate_panes(event):
-        """Rotate position of visible backward."""
+        """Rotate window positions backward."""
         console_app.rotate_panes(-1)
 
     @bindings.add('c-s-right')
     def rotate_panes(event):
-        """Rotate position of visible forward."""
+        """Rotate window positions forward."""
         console_app.rotate_panes()
+
+    @bindings.add('c-j')
+    def enlarge_pane(event):
+        """Enlarge the active window pane."""
+        console_app.enlarge_pane()
+
+    @bindings.add('c-k')
+    def shrink_pane(event):
+        """Shrink the active window pane."""
+        console_app.shrink_pane()
+
+    @bindings.add('c-u')
+    def balance_window_panes(event):
+        """Balance all window pane sizes."""
+        console_app.reset_pane_sizes()
 
     @bindings.add('c-w')
     @bindings.add('c-q')

@@ -63,6 +63,11 @@ def flatten_formatted_text_tuples(
     empty lines in prompt_toolkit containers.
     """
     fragments: StyleAndTextTuples = []
+
+    # Return empty list if lines is empty.
+    if not lines:
+        return fragments
+
     for line_fragments in lines:
         # Append all FormattedText tuples for this line.
         for fragment in line_fragments:
