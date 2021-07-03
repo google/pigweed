@@ -95,9 +95,9 @@ git_repository(
 )
 
 http_archive(
-    name = "build_bazel_rules_nodejs",
-    sha256 = "4952ef879704ab4ad6729a29007e7094aef213ea79e9f2e94cbe1c9a753e63ef",
-    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/2.2.0/rules_nodejs-2.2.0.tar.gz"],
+name = "build_bazel_rules_nodejs",
+    sha256 = "8f5f192ba02319254aaf2cdcca00ec12eaafeb979a80a1e946773c520ae0a2c9",
+    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.7.0/rules_nodejs-3.7.0.tar.gz"],
 )
 
 # Get the latest LTS version of Node.
@@ -114,11 +114,6 @@ yarn_install(
     package_json = "//:package.json",
     yarn_lock = "//:yarn.lock",
 )
-
-# Set up Karma.
-load("@npm//@bazel/karma:package.bzl", "npm_bazel_karma_dependencies")
-
-npm_bazel_karma_dependencies()
 
 http_archive(
     name = "io_bazel_rules_webtesting",

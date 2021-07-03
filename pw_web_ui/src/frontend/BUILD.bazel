@@ -12,9 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@npm//@bazel/concatjs:index.bzl", "concatjs_devserver")
+
 package(default_visibility = ["//visibility:public"])
 
-load("@npm//@bazel/typescript:index.bzl", "ts_devserver", "ts_library")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
 load("//pw_web_ui:web_bundle.bzl", "web_bundle")
 
 ts_library(
@@ -41,7 +43,7 @@ web_bundle(
     ],
 )
 
-ts_devserver(
+concatjs_devserver(
     # TODO(msoulanille): Use the devserver's bundler
     # instead of serving the production bundle.
     name = "devserver",
@@ -51,7 +53,7 @@ ts_devserver(
     ],
 )
 
-ts_devserver(
+concatjs_devserver(
     # Bundles and serves the production bundle for testing.
     # Should NOT be used for serving in production.
     name = "prodserver",
