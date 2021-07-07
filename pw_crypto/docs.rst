@@ -86,7 +86,7 @@ Usage
     // handle errors.
   }
 
-  bool valid = pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature);
+  bool valid = pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature).ok();
 
 2. Verifying a digital signature signed with ECDSA over the NIST P256 curve, with a long and/or non-contiguous message.
 
@@ -102,4 +102,4 @@ Usage
   }
 
   auto status = h.Final(digest);
-  bool valid = status.ok() && pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature);
+  bool valid = status.ok() && pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature).ok();

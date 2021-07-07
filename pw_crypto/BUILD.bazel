@@ -55,3 +55,15 @@ pw_cc_test(
       "//pw_unit_test",
     ]
 )
+
+pw_cc_facade(
+    name = "ecdsa_facade",
+    hdrs = [
+        "public/pw_crypto/ecdsa.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)

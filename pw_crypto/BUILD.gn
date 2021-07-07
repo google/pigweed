@@ -21,6 +21,7 @@ import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
   pw_crypto_SHA256_BACKEND = ""
+  pw_crypto_ECDSA_BACKEND = ""
 }
 
 config("default_config") {
@@ -68,5 +69,15 @@ pw_source_set("sha256_mbedtls") {
   public_deps = [
     ":sha256.facade",
     "//third_party/mbedtls",
+  ]
+}
+
+pw_facade("ecdsa") {
+  backend = pw_crypto_ECDSA_BACKEND
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_crypto/ecdsa.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_status",
   ]
 }
