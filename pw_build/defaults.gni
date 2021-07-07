@@ -39,6 +39,7 @@ _pw_build_defaults = {
     "$dir_pw_build:reduced_size",
     "$dir_pw_build:strict_warnings",
     "$dir_pw_build:cpp17",
+    "$dir_pw_build:relative_paths",
   ]
   public_deps += [ "$dir_pw_polyfill:overrides" ]
 }

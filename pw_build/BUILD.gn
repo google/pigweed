@@ -122,6 +122,17 @@ config("cpp17") {
   ]
 }
 
+# Removes system-dependent prefixes from macros like __FILE__ and debug symbols.
+config("relative_paths") {
+  cflags = [
+    # Remove absolute paths to the repo root.
+    "-ffile-prefix-map=" + rebase_path("//") + "=",
+
+    # Remove relative paths from the build directory to the source tree.
+    "-ffile-prefix-map=" + rebase_path("//", root_build_dir) + "=",
+  ]
+}
+
 # This group is linked into all pw_executable, pw_static_library, and
 # pw_shared_library targets. This makes it possible to ensure symbols are
 # defined without a dependency on them.

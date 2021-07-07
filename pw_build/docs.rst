@@ -49,10 +49,11 @@ Target types
 
 Pigweed defines wrappers around the four basic GN binary types ``source_set``,
 ``executable``, ``static_library``, and ``shared_library``. These wrappers apply
-default arguments to each target as specified in the ``default_configs`` and
-``default_public_deps`` build args. Additionally, they allow defaults to be
-removed on a per-target basis using ``remove_configs`` and
-``remove_public_deps`` variables, respectively.
+default arguments to each target, as defined in ``pw_build/default.gni``.
+Arguments may be added or removed globally using the ``default_configs``,
+``default_public_deps``, and ``remove_default_configs`` build args.
+Additionally, arguments may be removed on a per-target basis with the
+``remove_configs`` and ``remove_public_deps`` variables.
 
 The ``pw_executable`` template provides additional functionality around building
 complete binaries. As Pigweed is a collection of libraries, it does not know how
