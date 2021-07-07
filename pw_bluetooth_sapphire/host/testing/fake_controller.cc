@@ -112,7 +112,7 @@ void FakeController::Settings::AddBREDRSupportedCommands() {
 }
 
 void FakeController::Settings::AddLESupportedCommands() {
-  SetBit(supported_commands, hci::SupportedCommand::kDisconnect);
+  SetBit(supported_commands + 0, hci::SupportedCommand::kDisconnect);
   SetBit(supported_commands + 5, hci::SupportedCommand::kSetEventMask);
   SetBit(supported_commands + 5, hci::SupportedCommand::kReset);
   SetBit(supported_commands + 14, hci::SupportedCommand::kReadLocalVersionInformation);
@@ -147,6 +147,15 @@ void FakeController::Settings::ApplyLEConfig() {
   ApplyLEOnlyDefaults();
 
   SetBit(&le_features, hci::LESupportedFeature::kLEExtendedAdvertising);
+  SetBit(supported_commands + 36, hci::SupportedCommand::kLESetAdvertisingSetRandomAddress);
+  SetBit(supported_commands + 36, hci::SupportedCommand::kLESetExtendedAdvertisingParameters);
+  SetBit(supported_commands + 36, hci::SupportedCommand::kLESetExtendedAdvertisingData);
+  SetBit(supported_commands + 36, hci::SupportedCommand::kLESetExtendedScanResponseData);
+  SetBit(supported_commands + 36, hci::SupportedCommand::kLESetExtendedAdvertisingEnable);
+  SetBit(supported_commands + 36, hci::SupportedCommand::kLEReadMaximumAdvertisingDataLength);
+  SetBit(supported_commands + 36, hci::SupportedCommand::kLEReadNumberOfSupportedAdvertisingSets);
+  SetBit(supported_commands + 37, hci::SupportedCommand::kLERemoveAdvertisingSet);
+  SetBit(supported_commands + 37, hci::SupportedCommand::kLEClearAdvertisingSets);
 }
 
 void FakeController::SetDefaultCommandStatus(hci::OpCode opcode, hci::StatusCode status) {
@@ -1139,8 +1148,7 @@ void FakeController::OnReadBRADDR() {
 
 void FakeController::OnLESetAdvertisingEnable(
     const hci::LESetAdvertisingEnableCommandParams& params) {
-  legacy_advertising_state_.enabled =
-      (params.advertising_enable == hci::GenericEnableParam::kEnable);
+  legacy_advertising_state_.enabled = params.advertising_enable == hci::GenericEnableParam::kEnable;
   RespondWithCommandComplete(hci::kLESetAdvertisingEnable, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
@@ -1166,21 +1174,53 @@ void FakeController::OnLESetAdvertisingData(const hci::LESetAdvertisingDataComma
 
 void FakeController::OnLESetAdvertisingParameters(
     const hci::LESetAdvertisingParametersCommandParams& params) {
-  // TODO(jamuraa): when we parse advertising params, return Invalid HCI
-  // Command Parameters when apporopriate (Vol 2, Part E, 7.8.9 p1259)
   if (legacy_advertising_state_.enabled) {
+    bt_log(INFO, "fake-hci", "cannot set advertising parameters while advertising enabled");
     RespondWithCommandComplete(hci::kLESetAdvertisingParameters,
                                hci::StatusCode::kCommandDisallowed);
     return;
   }
 
-  legacy_advertising_state_.interval_min = le16toh(params.adv_interval_min);
-  legacy_advertising_state_.interval_max = le16toh(params.adv_interval_max);
+  uint16_t interval_min = le16toh(params.adv_interval_min);
+  uint16_t interval_max = le16toh(params.adv_interval_max);
+
+  // Core Spec Volume 4, Part E, Section 7.8.5: For high duty cycle directed advertising, the
+  // Advertising_Interval_Min and Advertising_Interval_Max parameters are not used and shall be
+  // ignored.
+  if (params.adv_type != hci::LEAdvertisingType::kAdvDirectIndHighDutyCycle) {
+    if (interval_min >= interval_max) {
+      bt_log(INFO, "fake-hci", "advertising interval min (%d) not strictly less than max (%d)",
+             interval_min, interval_max);
+      RespondWithCommandComplete(hci::kLESetAdvertisingParameters,
+                                 hci::StatusCode::kUnsupportedFeatureOrParameter);
+      return;
+    }
+
+    if (interval_min < hci::kLEAdvertisingIntervalMin) {
+      bt_log(INFO, "fake-hci", "advertising interval min (%d) less than spec min (%d)",
+             interval_min, hci::kLEAdvertisingIntervalMin);
+      RespondWithCommandComplete(hci::kLESetAdvertisingParameters,
+                                 hci::StatusCode::kUnsupportedFeatureOrParameter);
+      return;
+    }
+
+    if (interval_max > hci::kLEAdvertisingIntervalMax) {
+      bt_log(INFO, "fake-hci", "advertising interval max (%d) greater than spec max (%d)",
+             interval_max, hci::kLEAdvertisingIntervalMax);
+      RespondWithCommandComplete(hci::kLESetAdvertisingParameters,
+                                 hci::StatusCode::kUnsupportedFeatureOrParameter);
+      return;
+    }
+  }
+
+  legacy_advertising_state_.interval_min = interval_min;
+  legacy_advertising_state_.interval_max = interval_max;
   legacy_advertising_state_.adv_type = params.adv_type;
   legacy_advertising_state_.own_address_type = params.own_address_type;
 
   bt_log(INFO, "fake-hci", "start advertising using address type: %hhd",
          legacy_advertising_state_.own_address_type);
+
   RespondWithCommandComplete(hci::kLESetAdvertisingParameters, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
@@ -1496,6 +1536,445 @@ void FakeController::OnLEStartEncryptionCommand(const hci::LEStartEncryptionComm
   SendEncryptionChangeEvent(params.connection_handle, hci::kSuccess, hci::EncryptionStatus::kOn);
 }
 
+void FakeController::OnLESetAdvertisingSetRandomAddress(
+    const hci::LESetAdvertisingSetRandomAddressCommandParams& params) {
+  hci::AdvertisingHandle handle = params.adv_handle;
+
+  if (extended_advertising_states_.count(handle) == 0) {
+    bt_log(INFO, "fake-hci",
+           "unknown advertising handle (%d), "
+           "use HCI_LE_Set_Extended_Advertising_Parameters to create one first",
+           handle);
+    RespondWithCommandComplete(hci::kLESetAdvertisingSetRandomAddress,
+                               hci::StatusCode::kCommandDisallowed);
+    return;
+  }
+
+  LEAdvertisingState& state = extended_advertising_states_[handle];
+  if (state.enabled) {
+    bt_log(INFO, "fake-hci", "cannot set LE random address while advertising enabled");
+    RespondWithCommandComplete(hci::kLESetAdvertisingSetRandomAddress,
+                               hci::StatusCode::kCommandDisallowed);
+    return;
+  }
+
+  state.random_address = DeviceAddress(DeviceAddress::Type::kLERandom, params.adv_random_address);
+  RespondWithCommandComplete(hci::kLESetAdvertisingSetRandomAddress, hci::StatusCode::kSuccess);
+}
+
+// TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
+// future, we should generalize this logic and make a uint24_t type that makes it easier to work
+// with these types of conversions.
+uint32_t FakeController::DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]) {
+  uint32_t result = 0;
+
+  BufferView input_view(input, sizeof(input));
+  MutableBufferView result_view(&result, sizeof(result));
+
+  // Core spec Volume 6, Part B, Section 1.2: Link layer order is little endian, convert to little
+  // endian if host order is big endian
+  if (__BYTE_ORDER == __BIG_ENDIAN) {
+    result_view[0] = input_view[2];
+    result_view[1] = input_view[1];
+    result_view[2] = input_view[0];
+  } else {
+    result_view[0] = input_view[0];
+    result_view[1] = input_view[1];
+    result_view[2] = input_view[2];
+  }
+
+  result_view[3] = 0;
+  return result;
+}
+
+void FakeController::OnLESetExtendedAdvertisingParameters(
+    const hci::LESetExtendedAdvertisingParametersCommandParams& params) {
+  hci::AdvertisingHandle handle = params.adv_handle;
+
+  // ensure we can allocate memory for this advertising set if not already present
+  if (extended_advertising_states_.count(handle) == 0 &&
+      extended_advertising_states_.size() >= num_supported_advertising_sets()) {
+    bt_log(INFO, "fake-hci", "no available memory for new advertising set, handle: %d", handle);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kMemoryCapacityExceeded);
+    return;
+  }
+
+  // for backwards compatibility, we only support legacy pdus
+  constexpr uint16_t legacy_pdu = hci::kLEAdvEventPropBitUseLegacyPDUs;
+  if ((params.adv_event_properties & legacy_pdu) == 0) {
+    bt_log(INFO, "fake-hci", "only legacy PDUs are supported, extended PDUs are not supported yet");
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  // ensure we have a valid bit combination in the advertising event properties
+  constexpr uint16_t prop_bits_adv_ind =
+      legacy_pdu | hci::kLEAdvEventPropBitConnectable | hci::kLEAdvEventPropBitScannable;
+  constexpr uint16_t prop_bits_adv_direct_ind_low_duty_cycle =
+      legacy_pdu | hci::kLEAdvEventPropBitConnectable | hci::kLEAdvEventPropBitDirected;
+  constexpr uint16_t prop_bits_adv_direct_ind_high_duty_cycle =
+      prop_bits_adv_direct_ind_low_duty_cycle |
+      hci::kLEAdvEventPropBitHighDutyCycleDirectedConnectable;
+  constexpr uint16_t prop_bits_adv_scan_ind = legacy_pdu | hci::kLEAdvEventPropBitScannable;
+  constexpr uint16_t prop_bits_adv_nonconn_ind = legacy_pdu;
+
+  hci::LEAdvertisingType adv_type;
+  switch (params.adv_event_properties) {
+    case prop_bits_adv_ind:
+      adv_type = hci::LEAdvertisingType::kAdvInd;
+      __FALLTHROUGH;
+    case prop_bits_adv_direct_ind_high_duty_cycle:
+      adv_type = hci::LEAdvertisingType::kAdvDirectIndHighDutyCycle;
+      __FALLTHROUGH;
+    case prop_bits_adv_direct_ind_low_duty_cycle:
+      adv_type = hci::LEAdvertisingType::kAdvDirectIndLowDutyCycle;
+      __FALLTHROUGH;
+    case prop_bits_adv_scan_ind:
+      adv_type = hci::LEAdvertisingType::kAdvScanInd;
+      __FALLTHROUGH;
+    case prop_bits_adv_nonconn_ind:
+      adv_type = hci::LEAdvertisingType::kAdvNonConnInd;
+      break;
+    default:
+      bt_log(INFO, "fake-hci", "invalid bit combination: %d", params.adv_event_properties);
+      RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                                 hci::StatusCode::kInvalidHCICommandParameters);
+      return;
+  }
+
+  // In case there is an error below, we want to reject all parameters instead of storing a dead
+  // state and taking up an advertising handle. Avoid creating the LEAdvertisingState directly in
+  // the map and add it in only once we have made sure all is good.
+  LEAdvertisingState state;
+  if (extended_advertising_states_.count(handle) != 0) {
+    state = extended_advertising_states_[handle];
+  }
+
+  uint32_t interval_min = DecodeExtendedAdvertisingInterval(params.primary_adv_interval_min);
+  uint32_t interval_max = DecodeExtendedAdvertisingInterval(params.primary_adv_interval_max);
+
+  if (interval_min >= interval_max) {
+    bt_log(INFO, "fake-hci", "advertising interval min (%d) not strictly less than max (%d)",
+           interval_min, interval_max);
+    RespondWithCommandComplete(hci::kLESetAdvertisingParameters,
+                               hci::StatusCode::kUnsupportedFeatureOrParameter);
+    return;
+  }
+
+  if (interval_min < hci::kLEExtendedAdvertisingIntervalMin) {
+    bt_log(INFO, "fake-hci", "advertising interval min (%d) less than spec min (%d)", interval_min,
+           hci::kLEAdvertisingIntervalMin);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kUnsupportedFeatureOrParameter);
+    return;
+  }
+
+  if (interval_max > hci::kLEExtendedAdvertisingIntervalMax) {
+    bt_log(INFO, "fake-hci", "advertising interval max (%d) greater than spec max (%d)",
+           interval_max, hci::kLEAdvertisingIntervalMax);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kUnsupportedFeatureOrParameter);
+    return;
+  }
+
+  if (params.primary_adv_channel_map == 0) {
+    bt_log(INFO, "fake-hci", "at least one bit must be set in primary advertising channel map");
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  if (params.adv_tx_power < hci::kLEAdvertisingTxPowerMin ||
+      params.adv_tx_power > hci::kLEAdvertisingTxPowerMax) {
+    bt_log(INFO, "fake-hci", "advertising tx power out of range: %d", params.adv_tx_power);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  // TODO(fxbug.dev/80049): Core spec Volume 4, Part E, Section 7.8.53: if legacy advertising PDUs
+  // are being used, the Primary_Advertising_PHY shall indicate the LE 1M PHY.
+  if (params.primary_adv_phy != hci::LEPHY::kLE1M) {
+    bt_log(INFO, "fake-hci", "only legacy pdus are supported, requires advertising on 1M PHY");
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kUnsupportedFeatureOrParameter);
+    return;
+  }
+
+  if (state.enabled) {
+    bt_log(INFO, "fake-hci", "cannot set parameters while advertising set is enabled");
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kCommandDisallowed);
+    return;
+  }
+
+  // all errors checked, set parameters that we care about
+  state.adv_type = adv_type;
+  state.own_address_type = params.own_address_type;
+  state.interval_min = interval_min;
+  state.interval_max = interval_max;
+
+  // write full state back only at the end (we don't have a reference because we only want to write
+  // if there are no errors)
+  extended_advertising_states_[handle] = state;
+
+  bt_log(INFO, "fake-hci", "start advertising using address type: %hhd", state.own_address_type);
+  RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters, hci::StatusCode::kSuccess);
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnLESetExtendedAdvertisingData(
+    const hci::LESetExtendedAdvertisingDataCommandParams& params) {
+  // controller currently doesn't support fragmented advertising, assert so we fail if we ever use
+  // it in host code without updating the controller for tests
+  ZX_ASSERT(params.operation == hci::LESetExtendedAdvDataOp::kComplete);
+  ZX_ASSERT(params.fragment_preference == hci::LEExtendedAdvFragmentPreference::kShouldNotFragment);
+
+  hci::AdvertisingHandle handle = params.adv_handle;
+  if (extended_advertising_states_.count(handle) == 0) {
+    bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData,
+                               hci::StatusCode::kUnknownAdvertisingIdentifier);
+    return;
+  }
+
+  LEAdvertisingState& state = extended_advertising_states_[handle];
+
+  // removing advertising data entirely doesn't require us to check for error conditions
+  if (params.adv_data_length == 0) {
+    state.data_length = 0;
+    std::memset(state.data, 0, sizeof(state.data));
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData, hci::StatusCode::kSuccess);
+    NotifyAdvertisingState();
+    return;
+  }
+
+  // directed advertising doesn't support advertising data
+  if (state.IsDirectedAdvertising()) {
+    bt_log(INFO, "fake-hci", "cannot provide advertising data when using directed advertising");
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  // For backwards compatibility with older devices, the host currently uses legacy advertising
+  // PDUs. The scan response data cannot exceed the legacy advertising PDU limit.
+  if (params.adv_data_length > hci::kMaxLEAdvertisingDataLength) {
+    bt_log(INFO, "fake-hci", "data length (%d bytes) larger than legacy PDU size limit",
+           params.adv_data_length);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  state.data_length = params.adv_data_length;
+  std::memcpy(state.data, params.adv_data, params.adv_data_length);
+  RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData, hci::StatusCode::kSuccess);
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnLESetExtendedScanResponseData(
+    const hci::LESetExtendedScanResponseDataCommandParams& params) {
+  // controller currently doesn't support fragmented advertising, assert so we fail if we ever use
+  // it in host code without updating the controller for tests
+  ZX_ASSERT(params.operation == hci::LESetExtendedAdvDataOp::kComplete);
+  ZX_ASSERT(params.fragment_preference == hci::LEExtendedAdvFragmentPreference::kShouldNotFragment);
+
+  hci::AdvertisingHandle handle = params.adv_handle;
+  if (extended_advertising_states_.count(handle) == 0) {
+    bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
+    RespondWithCommandComplete(hci::kLESetExtendedScanResponseData,
+                               hci::StatusCode::kUnknownAdvertisingIdentifier);
+    return;
+  }
+
+  LEAdvertisingState& state = extended_advertising_states_[handle];
+
+  // removing scan response data entirely doesn't require us to check for error conditions
+  if (params.scan_rsp_data_length == 0) {
+    state.scan_rsp_length = 0;
+    std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
+    RespondWithCommandComplete(hci::kLESetExtendedScanResponseData, hci::StatusCode::kSuccess);
+    NotifyAdvertisingState();
+    return;
+  }
+
+  // adding or changing scan response data, check for error conditions
+  if (!state.IsScannableAdvertising()) {
+    bt_log(INFO, "fake-hci", "cannot provide scan response data for unscannable advertising types");
+    RespondWithCommandComplete(hci::kLESetExtendedScanResponseData,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  // For backwards compatibility with older devices, the host currently uses legacy advertising
+  // PDUs. The scan response data cannot exceed the legacy advertising PDU limit.
+  if (params.scan_rsp_data_length > hci::kMaxLEAdvertisingDataLength) {
+    bt_log(INFO, "fake-hci", "data length (%d bytes) larger than legacy PDU size limit",
+           params.scan_rsp_data_length);
+    RespondWithCommandComplete(hci::kLESetExtendedScanResponseData,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  state.scan_rsp_length = params.scan_rsp_data_length;
+  std::memcpy(state.scan_rsp_data, params.scan_rsp_data, state.scan_rsp_length);
+  RespondWithCommandComplete(hci::kLESetExtendedScanResponseData, hci::StatusCode::kSuccess);
+  NotifyAdvertisingState();
+}
+void FakeController::OnLESetExtendedAdvertisingEnable(
+    const hci::LESetExtendedAdvertisingEnableCommandParams& params) {
+  // do some preliminary checks before making any state changes
+  if (params.number_of_sets != 0) {
+    std::unordered_set<hci::AdvertisingHandle> handles;
+
+    for (uint8_t i = 0; i < params.number_of_sets; i++) {
+      hci::AdvertisingHandle handle = params.data[i].adv_handle;
+
+      // cannot have two array entries for the same advertising handle
+      if (handles.count(handle) != 0) {
+        bt_log(INFO, "fake-hci", "cannot refer to handle more than once (handle: %d)", handle);
+        RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
+                                   hci::StatusCode::kInvalidHCICommandParameters);
+        return;
+      }
+      handles.insert(handle);
+
+      // cannot have instructions for an advertising handle we don't know about
+      if (extended_advertising_states_.count(handle) == 0) {
+        bt_log(INFO, "fake-hci", "cannot enable an unknown handle (handle: %d)", handle);
+        RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
+                                   hci::StatusCode::kUnknownAdvertisingIdentifier);
+        return;
+      }
+    }
+  }
+
+  if (params.enable == hci::GenericEnableParam::kDisable) {
+    if (params.number_of_sets == 0) {
+      // if params.enable == kDisable and params.number_of_sets == 0, spec asks we disable all
+      for (auto& element : extended_advertising_states_) {
+        element.second.enabled = false;
+      }
+    } else {
+      for (int i = 0; i < params.number_of_sets; i++) {
+        hci::AdvertisingHandle handle = params.data[i].adv_handle;
+        extended_advertising_states_[handle].enabled = false;
+      }
+    }
+
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable, hci::StatusCode::kSuccess);
+    NotifyAdvertisingState();
+    return;
+  }
+
+  // rest of the function deals with enabling advertising for a given set of advertising sets
+  ZX_ASSERT(params.enable == hci::GenericEnableParam::kEnable);
+
+  if (params.number_of_sets == 0) {
+    bt_log(INFO, "fake-hci", "cannot enable with an empty advertising set list");
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
+  for (uint8_t i = 0; i < params.number_of_sets; i++) {
+    // FakeController currently doesn't support testing with duration and max events. When those are
+    // used in the host, these checks will fail and remind us to add the necessary code to
+    // FakeController.
+    ZX_ASSERT(params.data[i].duration == 0);
+    ZX_ASSERT(params.data[i].max_extended_adv_events == 0);
+
+    hci::AdvertisingHandle handle = params.data[i].adv_handle;
+    LEAdvertisingState& state = extended_advertising_states_[handle];
+
+    if (state.IsDirectedAdvertising() && state.data_length == 0) {
+      bt_log(INFO, "fake-hci", "cannot enable type requiring advertising data without setting it");
+      RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
+                                 hci::StatusCode::kCommandDisallowed);
+      return;
+    }
+
+    if (state.IsScannableAdvertising() && state.scan_rsp_length == 0) {
+      bt_log(INFO, "fake-hci", "cannot enable, requires scan response data but hasn't been set");
+      RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
+                                 hci::StatusCode::kCommandDisallowed);
+      return;
+    }
+
+    if (state.own_address_type == hci::LEOwnAddressType::kRandom && !state.random_address) {
+      bt_log(INFO, "fake-hci", "cannot enable, address type is random address but hasn't been set");
+      RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
+                                 hci::StatusCode::kInvalidHCICommandParameters);
+      return;
+    }
+
+    state.enabled = true;
+  }
+
+  RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable, hci::StatusCode::kSuccess);
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnLEReadMaximumAdvertisingDataLength() {
+  hci::LEReadMaxAdvertisingDataLengthReturnParams params;
+  params.status = hci::StatusCode::kSuccess;
+
+  // TODO(fxbug.dev/77476): Extended advertising supports sending larger amounts of data, but they
+  // have to be fragmented across multiple commands to the controller. This is not yet supported in
+  // this implementation. We should support larger than kMaxLEExtendedAdvertisingDataLength
+  // advertising data with fragmentation.
+  params.max_adv_data_length = htole16(hci::kMaxLEAdvertisingDataLength);
+  RespondWithCommandComplete(hci::kLEReadMaxAdvertisingDataLength,
+                             BufferView(&params, sizeof(params)));
+}
+void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
+  hci::LEReadNumSupportedAdvertisingSetsReturnParams params;
+  params.status = hci::StatusCode::kSuccess;
+  params.num_supported_adv_sets = htole16(num_supported_advertising_sets_);
+  RespondWithCommandComplete(hci::kLEReadNumSupportedAdvertisingSets,
+                             BufferView(&params, sizeof(params)));
+}
+
+void FakeController::OnLERemoveAdvertisingSet(
+    const hci::LERemoveAdvertisingSetCommandParams& params) {
+  hci::AdvertisingHandle handle = params.adv_handle;
+
+  if (extended_advertising_states_.count(handle) == 0) {
+    bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
+    RespondWithCommandComplete(hci::kLERemoveAdvertisingSet,
+                               hci::StatusCode::kUnknownAdvertisingIdentifier);
+    return;
+  }
+
+  if (extended_advertising_states_[handle].enabled) {
+    bt_log(INFO, "fake-hci", "cannot remove enabled advertising set (handle: %d)", handle);
+    RespondWithCommandComplete(hci::kLERemoveAdvertisingSet, hci::StatusCode::kCommandDisallowed);
+    return;
+  }
+
+  extended_advertising_states_.erase(handle);
+  RespondWithCommandComplete(hci::kLERemoveAdvertisingSet, hci::StatusCode::kSuccess);
+  NotifyAdvertisingState();
+}
+
+void FakeController::OnLEClearAdvertisingSets() {
+  for (const auto& element : extended_advertising_states_) {
+    if (element.second.enabled) {
+      bt_log(INFO, "fake-hci", "cannot remove currently enabled advertising set (handle: %d)",
+             element.second.enabled);
+      RespondWithCommandComplete(hci::kLEClearAdvertisingSets, hci::StatusCode::kCommandDisallowed);
+      return;
+    }
+  }
+
+  extended_advertising_states_.clear();
+  RespondWithCommandComplete(hci::kLEClearAdvertisingSets, hci::StatusCode::kSuccess);
+  NotifyAdvertisingState();
+}
+
 void FakeController::OnVendorCommand(const PacketView<hci::CommandHeader>& command_packet) {
   auto opcode = le16toh(command_packet.header().opcode);
   auto status = hci::StatusCode::kUnknownCommand;
@@ -1593,6 +2072,52 @@ void FakeController::HandleReceivedCommandPacket(
     case hci::kLESetAdvertisingEnable: {
       const auto& params = command_packet.payload<hci::LESetAdvertisingEnableCommandParams>();
       OnLESetAdvertisingEnable(params);
+      break;
+    }
+    case hci::kLESetAdvertisingSetRandomAddress: {
+      const auto& params =
+          command_packet.payload<hci::LESetAdvertisingSetRandomAddressCommandParams>();
+      OnLESetAdvertisingSetRandomAddress(params);
+      break;
+    }
+    case hci::kLESetExtendedAdvertisingParameters: {
+      const auto& params =
+          command_packet.payload<hci::LESetExtendedAdvertisingParametersCommandParams>();
+      OnLESetExtendedAdvertisingParameters(params);
+      break;
+    }
+    case hci::kLESetExtendedAdvertisingData: {
+      const auto& params = command_packet.payload<hci::LESetExtendedAdvertisingDataCommandParams>();
+      OnLESetExtendedAdvertisingData(params);
+      break;
+    }
+    case hci::kLESetExtendedScanResponseData: {
+      const auto& params =
+          command_packet.payload<hci::LESetExtendedScanResponseDataCommandParams>();
+      OnLESetExtendedScanResponseData(params);
+      break;
+    }
+    case hci::kLESetExtendedAdvertisingEnable: {
+      const auto& params =
+          command_packet.payload<hci::LESetExtendedAdvertisingEnableCommandParams>();
+      OnLESetExtendedAdvertisingEnable(params);
+      break;
+    }
+    case hci::kLERemoveAdvertisingSet: {
+      const auto& params = command_packet.payload<hci::LERemoveAdvertisingSetCommandParams>();
+      OnLERemoveAdvertisingSet(params);
+      break;
+    }
+    case hci::kLEReadMaxAdvertisingDataLength: {
+      OnLEReadMaximumAdvertisingDataLength();
+      break;
+    }
+    case hci::kLEReadNumSupportedAdvertisingSets: {
+      OnLEReadNumberOfSupportedAdvertisingSets();
+      break;
+    }
+    case hci::kLEClearAdvertisingSets: {
+      OnLEClearAdvertisingSets();
       break;
     }
     case hci::kReadBDADDR: {
@@ -1875,6 +2400,16 @@ void FakeController::ClearDataCallback() {
   // Leave dispatcher set (if already set) to preserve its write-once-ness (this catches bugs with
   // setting multiple data callbacks in class hierarchies).
   data_callback_ = nullptr;
+}
+
+bool FakeController::LEAdvertisingState::IsDirectedAdvertising() const {
+  return adv_type == hci::LEAdvertisingType::kAdvDirectIndHighDutyCycle ||
+         adv_type == hci::LEAdvertisingType::kAdvDirectIndLowDutyCycle;
+}
+
+bool FakeController::LEAdvertisingState::IsScannableAdvertising() const {
+  return adv_type == hci::LEAdvertisingType::kAdvInd ||
+         adv_type == hci::LEAdvertisingType::kAdvScanInd;
 }
 
 }  // namespace bt::testing

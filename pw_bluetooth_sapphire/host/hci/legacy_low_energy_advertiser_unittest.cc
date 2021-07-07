@@ -448,7 +448,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStarting) {
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
   AdvertisingOptions old_options(old_interval, false, kDefaultNoAdvFlags, false);
-  const AdvertisingIntervalRange new_interval(kTestInterval.min(), kTestInterval.min());
+  const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, false);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, old_options, nullptr, [](auto) {});
@@ -694,7 +694,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
   AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, true);
-  const AdvertisingIntervalRange new_interval(kTestInterval.min(), kTestInterval.min());
+  const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
@@ -729,7 +729,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingTxPowerRequestedThen
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
   AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, true);
-  const AdvertisingIntervalRange new_interval(kTestInterval.min(), kTestInterval.min());
+  const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, false);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
@@ -759,7 +759,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartingWhileStartingTxPowerNotRequest
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
   AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, false);
-  const AdvertisingIntervalRange new_interval(kTestInterval.min(), kTestInterval.min());
+  const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
 
   advertiser()->StartAdvertising(addr, ad, scan_data, options, nullptr, [](auto) {});
@@ -791,7 +791,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
 
   const AdvertisingIntervalRange old_interval = kTestInterval;
   AdvertisingOptions options(old_interval, false, kDefaultNoAdvFlags, true);
-  const AdvertisingIntervalRange new_interval(kTestInterval.min(), kTestInterval.min());
+  const AdvertisingIntervalRange new_interval(kTestInterval.min() + 1, kTestInterval.max() - 1);
   AdvertisingOptions new_options(new_interval, false, kDefaultNoAdvFlags, true);
 
   // Hold off on responding to the first TX Power Level Read command.

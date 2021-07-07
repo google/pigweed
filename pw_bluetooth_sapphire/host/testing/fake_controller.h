@@ -95,14 +95,17 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     BufferView advertised_view() const { return BufferView(data, data_length); }
     BufferView scan_rsp_view() const { return BufferView(scan_rsp_data, scan_rsp_length); }
 
+    bool IsDirectedAdvertising() const;
+    bool IsScannableAdvertising() const;
+
     bool enabled = false;
     hci::LEAdvertisingType adv_type = hci::LEAdvertisingType::kAdvInd;
 
     std::optional<DeviceAddress> random_address;
     hci::LEOwnAddressType own_address_type = hci::LEOwnAddressType::kPublic;
 
-    uint16_t interval_min = 0;
-    uint16_t interval_max = 0;
+    uint32_t interval_min = 0;
+    uint32_t interval_max = 0;
 
     uint8_t data_length = 0;
     uint8_t data[hci::kMaxLEAdvertisingDataLength] = {0};
@@ -308,7 +311,19 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Called when a HCI_LE_Read_Advertising_Channel_Tx_Power command is received.
   void OnLEReadAdvertisingChannelTxPower();
 
+  // The maximum number of advertising sets supported by the controller. Core Spec Volume 4, Part E,
+  // Section 7.8.58: the memory used to store advertising sets can also be used for other purposes.
+  // This value can change over time.
+  uint8_t num_supported_advertising_sets() const { return num_supported_advertising_sets_; }
+  void set_num_supported_advertising_sets(uint8_t value) {
+    ZX_ASSERT(value >= extended_advertising_states_.size());
+    num_supported_advertising_sets_ = value;
+  }
+
  private:
+  // Convert an extended advertising interval to a legacy advertising interval
+  static uint32_t DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]);
+
   // Returns the current thread's task dispatcher.
   async_dispatcher_t* dispatcher() const { return async_get_default_dispatcher(); }
 
@@ -486,6 +501,37 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Called when a HCI_LE_Set_Random_Address command is received.
   void OnLESetRandomAddress(const hci::LESetRandomAddressCommandParams& params);
 
+  // Called when a HCI_LE_Set_Advertising_Set_Random_Address command is received.
+  void OnLESetAdvertisingSetRandomAddress(
+      const hci::LESetAdvertisingSetRandomAddressCommandParams& params);
+
+  // Called when a HCI_LE_Set_Extended_Advertising_Data command is received.
+  void OnLESetExtendedAdvertisingParameters(
+      const hci::LESetExtendedAdvertisingParametersCommandParams& params);
+
+  // Called when a HCI_LE_Set_Extended_Advertising_Data command is received.
+  void OnLESetExtendedAdvertisingData(const hci::LESetExtendedAdvertisingDataCommandParams& params);
+
+  // Called when a HCI_LE_Set_Extended_Scan_Response_Data command is received.
+  void OnLESetExtendedScanResponseData(
+      const hci::LESetExtendedScanResponseDataCommandParams& params);
+
+  // Called when a HCI_LE_Set_Extended_Advertising_Enable command is received.
+  void OnLESetExtendedAdvertisingEnable(
+      const hci::LESetExtendedAdvertisingEnableCommandParams& params);
+
+  // Called when a HCI_LE_Read_Maximum_Advertising_Data_Length command is received.
+  void OnLEReadMaximumAdvertisingDataLength();
+
+  // Called when a HCI_LE_Read_Number_of_Supported_Advertising_Sets command is received.
+  void OnLEReadNumberOfSupportedAdvertisingSets();
+
+  // Called when a HCI_LE_Remove_Advertising_Set command is received.
+  void OnLERemoveAdvertisingSet(const hci::LERemoveAdvertisingSetCommandParams& params);
+
+  // Called when a HCI_LE_Clear_Advertising_Sets command is received.
+  void OnLEClearAdvertisingSets();
+
   // Called when a HCI_Read_Local_Supported_Features command is received.
   void OnReadLocalSupportedFeatures();
 
@@ -567,6 +613,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   Settings settings_;
   LEScanState le_scan_state_;
   LEAdvertisingState legacy_advertising_state_;
+  std::unordered_map<hci::AdvertisingHandle, LEAdvertisingState> extended_advertising_states_;
 
   // Used for BR/EDR Scans
   uint8_t bredr_scan_state_;
@@ -603,6 +650,9 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // The Inquiry Mode that the controller is in.  Determines what types of
   // events are faked when a kInquiry is started.
   hci::InquiryMode inquiry_mode_;
+
+  // The maximum number of advertising sets supported by the controller
+  uint8_t num_supported_advertising_sets_ = 1;
 
   // The number of results left in Inquiry Mode operation.
   // If negative, no limit has been set.

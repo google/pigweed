@@ -1324,6 +1324,12 @@ constexpr size_t kMaxACLPayloadSize = 1024;
 // 7.8.56.
 constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
 
+// The minimum advertising tx power value. See Core Spec v5.0 Vol 4, Part E, 7.8.6.
+constexpr int8_t kLEAdvertisingTxPowerMin = -127;
+
+// The maximum advertising tx power value. See Core Spec v5.0 Vol 4, Part E, 7.8.6.
+constexpr int8_t kLEAdvertisingTxPowerMax = 20;
+
 // Values that can be used in HCI Read|WriteFlowControlMode commands.
 enum class FlowControlMode : uint8_t {
   // Packet based data flow control mode (default for a Primary Controller)
