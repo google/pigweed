@@ -35,13 +35,13 @@ service Transfer {
 //   X ← Means server sending data to the client.
 message Chunk {
   // Represents the source or destination of the data. May be ephemeral or
-  // stable depending on the implementation. Only ever sent by the client in the
-  // first request.
+  // stable depending on the implementation. Sent in every request to identify
+  // the transfer target.
   //
   //  Read → ID of transfer
-  //  Read ← Omitted
+  //  Read ← ID of transfer
   // Write → ID of transfer
-  // Write ← Omitted
+  // Write ← ID of transfer
   uint32 transfer_id = 1;
 
   // Used by the receiver to indicate how many bytes it can accept. The
@@ -89,7 +89,7 @@ message Chunk {
   // Write ← N/A
   bytes data = 6;
 
-  // Estimated bytes remaining to read/write. Optional except for the last
+  // Estimated bytes remaining to read/write. Optional except for the last data
   // chunk, for which remaining_bytes must be set to 0.
   //
   // The sender can set remaining_bytes at the beginning of a read/write so that
@@ -103,4 +103,20 @@ message Chunk {
   //         0 for the last chunk.
   // Write ← N/A
   optional uint64 remaining_bytes = 7;
+
+  // Pigweed status code indicating the completion of a transfer. This is only
+  // present in the final packet sent by either the transmitter or receiver.
+  //
+  // The possible status codes and their meanings are listed below:
+  //
+  //   OK: Transfer completed successfully.
+  //   DATA_LOSS: Transfer data could not be read/written (e.g. corruption).
+  //   NOT_FOUND: The requested transfer ID is not registered (read/write).
+  //   OUT_OF_RANGE: The requested offset is larger than the data (read/write).
+  //
+  //  Read → Transfer complete.
+  //  Read ← Transfer complete.
+  // Write → Transfer complete.
+  // Write ← Transfer complete.
+  optional uint32 status = 8;
 }

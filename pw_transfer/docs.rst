@@ -34,29 +34,25 @@ Server to client transfer (read)
     client <-- server [
         noactivate,
         label = "requested bytes\n(zero or more chunks)",
-        rightnote = "offset\ndata\n(remaining_bytes)"
+        rightnote = "transfer_id\noffset\ndata\n(remaining_bytes)"
     ];
 
     client --> server [
         noactivate,
         label = "update transfer parameters\n(as needed)",
-        leftnote = "offset\npending_bytes\n(max_chunk_size)\n(chunk_delay)"
+        leftnote = "transfer_id\noffset\npending_bytes\n(max_chunk_size)\n(chunk_delay)"
     ];
 
     client <- server [
         noactivate,
         label = "final chunk",
-        rightnote = "offset\ndata\nremaining_bytes=0"
+        rightnote = "transfer_id\noffset\ndata\nremaining_bytes=0"
     ];
 
     client -> server [
         noactivate,
-        label = "received final chunk",
-        leftnote = "pending_bytes=0"
-    ];
-
-    client <- server [
-        label = "done"
+        label = "acknowledge completion",
+        leftnote = "transfer_id\nstatus=OK"
     ];
   }
 
@@ -76,31 +72,38 @@ Client to server transfer (write)
     client <- server [
         noactivate,
         label = "set transfer parameters",
-        rightnote = "offset\npending_bytes\nmax_chunk_size\nchunk_delay"
+        rightnote = "transfer_id\noffset\npending_bytes\nmax_chunk_size\nchunk_delay"
     ];
 
     client --> server [
         noactivate,
         label = "requested bytes\n(zero or more chunks)",
-        leftnote = "offset\ndata\n(remaining_bytes)"
+        leftnote = "transfer_id\noffset\ndata\n(remaining_bytes)"
     ];
 
     client <-- server [
         noactivate,
         label = "update transfer parameters\n(as needed)",
-        rightnote = "offset\npending_bytes\n(max_chunk_size)\n(chunk_delay)"
+        rightnote = "transfer_id\noffset\npending_bytes\n(max_chunk_size)\n(chunk_delay)"
     ];
 
     client -> server [
         noactivate,
         label = "final chunk",
-        leftnote = "offset\ndata\nremaining_bytes=0"
+        leftnote = "transfer_id\noffset\ndata\nremaining_bytes=0"
     ];
 
     client <- server [
-        label = "done"
+        noactivate,
+        label = "acknowledge completion",
+        rightnote = "transfer_id\nstatus=OK"
     ];
   }
+
+Errors
+======
+At any point, either the client or server may terminate the transfer by sending
+an error chunk with the transfer ID and a non-OK status.
 
 Transmitter flow
 ================
