@@ -11,14 +11,12 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""LogContainer storage class."""
+"""LogView maintains a log pane's scrolling and searching state."""
 
 import collections
 import logging
-import sys
 import time
-from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import (
@@ -27,37 +25,27 @@ from prompt_toolkit.formatted_text import (
     StyleAndTextTuples,
 )
 
-import pw_cli.color
-
 import pw_console.text_formatting
-from pw_console.log_line import LogLine
-from pw_console.widgets.table import TableView
+from pw_console.log_store import LogStore
+
+if TYPE_CHECKING:
+    from pw_console.log_pane import LogPane
 
 _LOG = logging.getLogger(__package__)
 
 
-class LogContainer(logging.Handler):
-    """Class to hold many log events."""
+class LogView:
+    """Viewing window into a LogStore."""
 
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
-    def __init__(self):
-        # Log storage deque for fast addition and deletion from the beginning
-        # and end of the iterable.
-        self.logs: collections.deque = collections.deque()
-        # Estimate of the logs in memory.
-        self.byte_size: int = 0
-
-        # Only allow this many log lines in memory.
-        self.max_history_size: int = 1000000
-
-        # Counts of logs per python logger name
-        self.channel_counts: Dict[str, int] = {}
-        # Widths of each logger prefix string. For example: the character length
-        # of the timestamp string.
-        self.channel_formatted_prefix_widths: Dict[str, int] = {}
-        # Longest of the above prefix widths.
-        self.longest_channel_prefix_width = 0
+    def __init__(self,
+                 log_pane: 'LogPane',
+                 log_store: Optional[LogStore] = None):
+        # Parent LogPane reference. Updated by calling `set_log_pane()`.
+        self.log_pane = log_pane
+        self.log_store = log_store if log_store else LogStore()
+        self.log_store.register_viewer(self)
 
         # Current log line index state variables:
         self.line_index = 0
@@ -65,8 +53,6 @@ class LogContainer(logging.Handler):
         self._last_end_index = 0
         self._current_start_index = 0
         self._current_end_index = 0
-
-        self.table = TableView()
 
         # LogPane prompt_toolkit container render size.
         self._window_height = 20
@@ -77,54 +63,28 @@ class LogContainer(logging.Handler):
         self._ui_update_frequency = 0.1
         self._last_ui_update_time = time.time()
 
-        # Erase existing logs.
-        self.clear_logs()
-        # New logs have arrived flag.
-        self.has_new_logs = True
-
         # Should new log lines be tailed?
         self.follow = True
 
-        # Parent LogPane reference. Updated by calling `set_log_pane()`.
-        self.log_pane = None
-
         # Cache of formatted text tuples used in the last UI render.  Used after
         # rendering by `get_cursor_position()`.
-        self._line_fragment_cache = None
-
-        super().__init__()
+        self._line_fragment_cache: collections.deque = collections.deque()
 
     def set_log_pane(self, log_pane):
         """Set the parent LogPane instance."""
         self.log_pane = log_pane
 
-    def set_formatting(self):
-        """Setup log formatting."""
-        # Copy of pw_cli log formatter
-        colors = pw_cli.color.colors(True)
-        timestamp_prefix = colors.black_on_white('%(asctime)s') + ' '
-        timestamp_format = '%Y%m%d %H:%M:%S'
-        format_string = timestamp_prefix + '%(levelname)s %(message)s'
-        formatter = logging.Formatter(format_string, timestamp_format)
-
-        self.setLevel(logging.DEBUG)
-        self.setFormatter(formatter)
-
-        # Update log time character width.
-        example_time_string = datetime.now().strftime(timestamp_format)
-        self.table.column_width_time = len(example_time_string)
-
     def get_current_line(self):
         """Return the currently selected log event index."""
         return self.line_index
 
+    def get_total_count(self):
+        """Total size of the logs store."""
+        return self.log_store.get_total_count()
+
     def clear_logs(self):
         """Erase all stored pane lines."""
-        self.logs = collections.deque()
-        self.byte_size = 0
-        self.channel_counts = {}
-        self.channel_formatted_prefix_widths = {}
-        self.line_index = 0
+        # TODO(tonymd): Should the LogStore be erased?
 
     def wrap_lines_enabled(self):
         """Get the parent log pane wrap lines setting."""
@@ -138,93 +98,19 @@ class LogContainer(logging.Handler):
         if self.follow:
             self.scroll_to_bottom()
 
-    def get_total_count(self):
-        """Total size of the logs container."""
-        return len(self.logs)
-
-    def get_last_log_line_index(self):
-        """Last valid index of the logs."""
-        # Subtract 1 since self.logs is zero indexed.
-        total = self.get_total_count()
-        return 0 if total < 0 else total - 1
-
-    def get_channel_counts(self):
-        """Return the seen channel log counts for this conatiner."""
-        return ', '.join([
-            f'{name}: {count}' for name, count in self.channel_counts.items()
-        ])
-
     def get_line_wrap_prefix_width(self):
         if self.wrap_lines_enabled():
             if self.log_pane.table_view:
-                return self.table.column_width_prefix_total
-            return self.longest_channel_prefix_width
+                return self.log_store.table.column_width_prefix_total
+            return self.log_store.longest_channel_prefix_width
         return 0
 
-    def _update_log_prefix_width(self, record: logging.LogRecord):
-        """Save the formatted prefix width if this is a new logger channel
-        name."""
-        if self.formatter and (
-                record.name
-                not in self.channel_formatted_prefix_widths.keys()):
-            # Find the width of the formatted timestamp and level
-            format_string = self.formatter._fmt  # pylint: disable=protected-access
-
-            # There may not be a _fmt defined.
-            if not format_string:
-                return
-
-            format_without_message = format_string.replace('%(message)s', '')
-            formatted_time_and_level = format_without_message % dict(
-                asctime=record.asctime, levelname=record.levelname)
-
-            # Delete ANSI escape sequences.
-            ansi_stripped_time_and_level = (
-                pw_console.text_formatting.strip_ansi(formatted_time_and_level)
-            )
-
-            self.channel_formatted_prefix_widths[record.name] = len(
-                ansi_stripped_time_and_level)
-
-            # Set the max width of all known formats so far.
-            self.longest_channel_prefix_width = max(
-                self.channel_formatted_prefix_widths.values())
-
-    def _append_log(self, record: logging.LogRecord):
-        """Add a new log event."""
-        # Format incoming log line.
-        formatted_log = self.format(record)
-        ansi_stripped_log = pw_console.text_formatting.strip_ansi(
-            formatted_log)
-        # Save this log.
-        self.logs.append(
-            LogLine(record=record,
-                    formatted_log=formatted_log,
-                    ansi_stripped_log=ansi_stripped_log))
-        # Increment this logger count
-        self.channel_counts[record.name] = self.channel_counts.get(
-            record.name, 0) + 1
-
-        # Save prefix width of this log line.
-        self._update_log_prefix_width(record)
-
-        # Parse metadata fields
-        self.logs[-1].update_metadata()
-
-        # Check for bigger column widths.
-        self.table.update_metadata_column_widths(self.logs[-1])
-
-        # Update estimated byte_size.
-        self.byte_size += sys.getsizeof(self.logs[-1])
-        # If the total log lines is > max_history_size, delete the oldest line.
-        if self.get_total_count() > self.max_history_size:
-            self.byte_size -= sys.getsizeof(self.logs.popleft())
-
-        # Set the has_new_logs flag.
-        self.has_new_logs = True
-        # If follow is on, scroll to the last line.
+    def new_logs_arrived(self):
         if self.follow:
             self.scroll_to_bottom()
+
+        # Trigger a UI update
+        self._update_prompt_toolkit_ui()
 
     def _update_prompt_toolkit_ui(self):
         """Update Prompt Toolkit UI if a certain amount of time has passed."""
@@ -240,10 +126,6 @@ class LogContainer(logging.Handler):
                 # Thread safe way of sending a repaint trigger to the input
                 # event loop.
                 console_app.application.invalidate()
-
-    def log_content_changed(self):
-        """Return True if new log lines have appeared since the last render."""
-        return self.has_new_logs
 
     def get_cursor_position(self) -> Optional[Point]:
         """Return the position of the cursor."""
@@ -266,16 +148,6 @@ class LogContainer(logging.Handler):
                 column += len(text)
         return Point(0, 0)
 
-    def emit(self, record):
-        """Process a new log record.
-
-        This defines the logging.Handler emit() fuction which is called by
-        logging.Handler.handle() We don't implement handle() as it is done in
-        the parent class with thread safety and filters applied.
-        """
-        self._append_log(record)
-        self._update_prompt_toolkit_ui()
-
     def scroll_to_top(self):
         """Move selected index to the beginning."""
         # Stop following so cursor doesn't jump back down to the bottom.
@@ -285,7 +157,7 @@ class LogContainer(logging.Handler):
     def scroll_to_bottom(self):
         """Move selected index to the end."""
         # Don't change following state like scroll_to_top.
-        self.line_index = max(0, self.get_last_log_line_index())
+        self.line_index = max(0, self.log_store.get_last_log_line_index())
 
     def scroll(self, lines):
         """Scroll up or down by plus or minus lines.
@@ -298,8 +170,8 @@ class LogContainer(logging.Handler):
         # If scrolling to an index below zero, set to zero.
         new_line_index = max(0, self.line_index + lines)
         # If past the end, set to the last index of self.logs.
-        if new_line_index >= self.get_total_count():
-            new_line_index = self.get_last_log_line_index()
+        if new_line_index >= self.log_store.get_total_count():
+            new_line_index = self.log_store.get_last_log_line_index()
         # Set the new selected line index.
         self.line_index = new_line_index
 
@@ -363,19 +235,18 @@ class LogContainer(logging.Handler):
             # Use the current_window_height if line_index is less
             ending_index = max(self.line_index, max_window_row_index)
 
-        if ending_index > self.get_last_log_line_index():
-            ending_index = self.get_last_log_line_index()
+        if ending_index > self.log_store.get_last_log_line_index():
+            ending_index = self.log_store.get_last_log_line_index()
 
         # Save start and end index.
         self._current_start_index = starting_index
         self._current_end_index = ending_index
-        self.has_new_logs = False
 
         return starting_index, ending_index
 
     def render_table_header(self):
         """Get pre-formatted table header."""
-        return self.table.formatted_header()
+        return self.log_store.table.formatted_header()
 
     def render_content(self) -> List:
         """Return log lines as a list of FormattedText tuples.
@@ -393,7 +264,7 @@ class LogContainer(logging.Handler):
         # If we have no logs add one with at least a single space character for
         # the cursor to land on. Otherwise the cursor will be left on the line
         # above the log pane container.
-        if self.get_total_count() < 1:
+        if self.log_store.get_total_count() < 1:
             return [(
                 '[SetCursorPosition]', '\n' * self._window_height
                 # LogContentControl.mouse_handler will handle focusing the log
@@ -414,9 +285,10 @@ class LogContainer(logging.Handler):
                 break
 
             # Grab the rendered log line using the table or standard view.
-            line_fragments: StyleAndTextTuples = (self.table.formatted_row(
-                self.logs[i]) if self.log_pane.table_view else
-                                                  self.logs[i].get_fragments())
+            line_fragments: StyleAndTextTuples = (
+                self.log_store.table.formatted_row(self.log_store.logs[i])
+                if self.log_pane.table_view else
+                self.log_store.logs[i].get_fragments())
 
             # Get the width, height and remaining width.
             fragment_width = fragment_list_width(line_fragments)
@@ -434,7 +306,7 @@ class LogContainer(logging.Handler):
             used_lines = line_height
 
             # Count the number of line breaks are included in the log line.
-            line_breaks = self.logs[i].ansi_stripped_log.count('\n')
+            line_breaks = self.log_store.logs[i].ansi_stripped_log.count('\n')
             used_lines += line_breaks
 
             # If this is the selected line apply a style class for highlighting.

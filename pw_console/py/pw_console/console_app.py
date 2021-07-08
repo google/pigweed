@@ -75,14 +75,18 @@ class FloatingMessageBar(ConditionalContainer):
                 lambda: application.message and application.message != ''))
 
 
-def _add_log_handler_to_pane(logger: Union[str, logging.Logger], pane):
+def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
+                             pane: 'LogPane'):
     """A log pane handler for a given logger instance."""
+    if not pane:
+        return
+
     if isinstance(logger, logging.Logger):
         logger_instance = logger
     elif isinstance(logger, str):
         logger_instance = logging.getLogger(logger)
 
-    logger_instance.addHandler(pane.log_container  # type: ignore
+    logger_instance.addHandler(pane.log_view.log_store  # type: ignore
                                )
     pane.append_pane_subtitle(  # type: ignore
         logger_instance.name)
@@ -488,7 +492,7 @@ class ConsoleApp:
         """Regenerate styles for the current theme_name."""
         self._current_theme = pw_console.style.generate_styles(theme_name)
 
-    def _create_log_pane(self):
+    def _create_log_pane(self) -> 'LogPane':
         # Create one log pane.
         self.active_panes.appendleft(LogPane(application=self))
         return self.active_panes[0]
@@ -503,7 +507,7 @@ class ConsoleApp:
             if isinstance(pane, LogPane):
                 existing_log_pane = pane
                 break
-        if not existing_log_pane or separate_log_panes:
+        if separate_log_panes or not existing_log_pane:
             existing_log_pane = self._create_log_pane()
 
         if isinstance(logger, collections.abc.Iterable):
@@ -587,7 +591,7 @@ class ConsoleApp:
             1] = self._create_root_split()
 
     def toggle_log_line_wrapping(self):
-        """Menu item handler to toggle line wrapping of the first log pane."""
+        """Menu item handler to toggle line wrapping of all log pane."""
         for pane in self.active_panes:
             if isinstance(pane, LogPane):
                 pane.toggle_wrap_lines()
