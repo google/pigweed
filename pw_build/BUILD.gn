@@ -125,11 +125,22 @@ config("cpp17") {
 # Removes system-dependent prefixes from macros like __FILE__ and debug symbols.
 config("relative_paths") {
   cflags = [
+    # Remap absolute paths to the build directory to "out", in case absolute
+    # paths to files in the build directory are created.
+    #
+    # Clang and GCC apply these flags in opposite order. The build directory is
+    # often nested under //. To ensure that both compilers removed it before
+    # removing the absolute path to //, apply the option both first and last.
+    "-ffile-prefix-map=" + rebase_path(root_build_dir) + "=out",
+
     # Remove absolute paths to the repo root.
     "-ffile-prefix-map=" + rebase_path("//") + "=",
 
     # Remove relative paths from the build directory to the source tree.
     "-ffile-prefix-map=" + rebase_path("//", root_build_dir) + "=",
+
+    # Repeat option to remap absolute paths to the build directory.
+    "-ffile-prefix-map=" + rebase_path(root_build_dir) + "=out",
   ]
 }
 
