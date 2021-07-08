@@ -37,6 +37,8 @@ pw_source_set("pw_transfer") {
 
 pw_proto_library("proto") {
   sources = [ "transfer.proto" ]
+  python_package = "py"
+  prefix = "pw_transfer"
 }
 
 pw_test_group("tests") {

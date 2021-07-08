@@ -8,6 +8,41 @@ pw_transfer
 
   ``pw_transfer`` is under construction and so is its documentation.
 
+-----
+Usage
+-----
+
+Python
+======
+.. automodule:: pw_transfer.transfer
+  :members: Manager, Error
+
+**Example**
+
+.. code-block:: python
+
+  from pw_transfer import transfer
+
+  # Initialize a Pigweed RPC client; see pw_rpc docs for more info.
+  rpc_client = CustomRpcClient()
+  rpcs = rpc_client.channel(1).rpcs
+
+  transfer_service = rpcs.pw.transfer.Transfer
+  transfer_manager = transfer.Manager(transfer_service)
+
+  try:
+    # Read transfer_id 3 from the server.
+    data = transfer_manager.read(3)
+  except transfer.Error as err:
+    print('Failed to read:', err.status)
+
+  try:
+    # Send some data to the server. The transfer manager does not have to be
+    # reinitialized.
+    transfer_manager.write(2, b'hello, world')
+  except transfer.Error as err:
+    print('Failed to write:', err.status)
+
 --------
 Protocol
 --------
