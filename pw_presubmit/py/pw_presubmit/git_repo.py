@@ -86,8 +86,21 @@ def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
         repo = Path.cwd()
 
     # Refresh the Git index so that the diff-index command will be accurate.
-    log_run(['git', '-C', repo, 'update-index', '-q', '--refresh'], check=True)
-
+    # The `git update-index` command isn't reliable when run in parallel with
+    # other processes that may touch files in the repo directory, so retry a
+    # few times before giving up. The hallmark of this failure mode is the lack
+    # of an error message on stderr, so if we see something there we can assume
+    # it's some other issue and raise.
+    retries = 6
+    for i in range(retries):
+        try:
+            log_run(['git', '-C', repo, 'update-index', '-q', '--refresh'],
+                    capture_output=True,
+                    check=True)
+        except subprocess.CalledProcessError as err:
+            if err.stderr or i == retries - 1:
+                raise
+            continue
     # diff-index exits with 1 if there are uncommitted changes.
     return log_run(['git', '-C', repo, 'diff-index', '--quiet', 'HEAD',
                     '--']).returncode == 1
