@@ -654,8 +654,10 @@ TEST_F(GAP_PeerCacheTest, AddBondedPeerWithIrkButWithoutIdentityAddressPanics) {
   data.local_ltk = kLTK;
   data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
 
-  EXPECT_DEATH_IF_SUPPORTED(cache()->AddBondedPeer(
-      BondingData{.identifier = kId, .address = kAddrLeRandom, .le_pairing_data = data}), ".*identity_address.*");
+  EXPECT_DEATH_IF_SUPPORTED(
+      cache()->AddBondedPeer(
+          BondingData{.identifier = kId, .address = kAddrLeRandom, .le_pairing_data = data}),
+      ".*identity_address.*");
 }
 
 TEST_F(GAP_PeerCacheTest, StoreLowEnergyBondWithIrkButWithoutIdentityAddressPanics) {
@@ -1093,13 +1095,13 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
 }
 
 TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
-       SetAdvertisingDataDoesNotTriggerUpdateCallbackOnSameName) {
+       SetAdvertisingDataTriggersUpdateCallbackOnSameNameAndRssi) {
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   ASSERT_TRUE(was_called());
 
   ClearWasCalled();
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
-  EXPECT_FALSE(was_called());
+  EXPECT_TRUE(was_called());
 }
 
 TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
@@ -1541,6 +1543,10 @@ TEST_F(GAP_PeerCacheExpirationTest, ExpirationUpdatesAddressMap) {
 TEST_F(GAP_PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
+  GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{}, zx::time());
+  RunLoopFor(kCacheTimeout - zx::msec(1));
+  EXPECT_TRUE(IsDefaultPeerPresent());
+  // Setting advertising data with the same rssi & name should also update the expiry.
   GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{}, zx::time());
   RunLoopFor(zx::msec(1));
   EXPECT_TRUE(IsDefaultPeerPresent());

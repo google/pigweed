@@ -54,38 +54,34 @@ void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name)
   features_.AttachInspect(node_, LowEnergyData::kInspectFeaturesName);
 }
 
-void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv, zx::time timestamp) {
+void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data,
+                                             zx::time timestamp) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
 
-  bool notify_listeners = peer_->SetRssiInternal(rssi);
+  peer_->SetRssiInternal(rssi);
 
   // Update the advertising data
   // TODO(armansito): Validate that the advertising data is not malformed?
-  adv_data_buffer_ = DynamicByteBuffer(adv.size());
-  adv.Copy(&adv_data_buffer_);
+  adv_data_buffer_ = DynamicByteBuffer(data.size());
+  data.Copy(&adv_data_buffer_);
   adv_timestamp_ = timestamp;
 
   // Walk through the advertising data and update common fields.
-  SupplementDataReader reader(adv);
+  SupplementDataReader reader(data);
   DataType type;
-  BufferView data;
-  while (reader.GetNextField(&type, &data)) {
+  BufferView view;
+  while (reader.GetNextField(&type, &view)) {
     if (type == DataType::kCompleteLocalName || type == DataType::kShortenedLocalName) {
       // TODO(armansito): Parse more advertising data fields, such as preferred
       // connection parameters.
       // TODO(fxbug.dev/793): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.
-      if (peer_->SetNameInternal(data.ToString())) {
-        notify_listeners = true;
-      }
+      peer_->SetNameInternal(view.ToString());
     }
   }
 
-  if (notify_listeners) {
-    peer_->UpdateExpiry();
-    peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
-  }
+  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
