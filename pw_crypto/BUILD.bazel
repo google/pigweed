@@ -67,3 +67,19 @@ pw_cc_facade(
         "//pw_status",
     ],
 )
+
+
+pw_cc_library(
+    name = "ecdsa_mbedtls",
+    srcs = ["ecdsa_mbedtls.cc"],
+    deps = [":ecdsa_facade"],
+)
+
+pw_cc_test(
+    name = "ecdsa_test",
+    srcs = [ "ecdsa_test.cc" ],
+    deps = [
+      ":ecdsa_facade",
+      "//pw_unit_test",
+    ]
+)

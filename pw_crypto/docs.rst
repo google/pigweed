@@ -17,10 +17,6 @@ The following crypto services are provided by this module.
 SHA256
 ------
 
-.. attention::
-
-  The SHA256 crypto service is under construction.
-
 Usage
 ^^^^^
 
@@ -48,27 +44,8 @@ Usage
 
   Status status = h.Final(digest);
 
-Configuration
-^^^^^^^^^^^^^
-
-The SHA256 crypto service can be backed by a few different crypto libraries as configured below.
-
-EmbedTLS
-
-.. code-block:: sh
-
-  # Install and configure MbedTLS
-  pw package install mbedtls
-  gn gen out --args='dir_pw_third_party_mbedtls="//.environment/packages/mbedtls" pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls"'
-
-  ninja -C out
-
 ECDSA
 -----
-
-.. attention::
-
-  The ECDSA crypto service is under construction.
 
 Usage
 ^^^^^
@@ -103,3 +80,18 @@ Usage
 
   auto status = h.Final(digest);
   bool valid = status.ok() && pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature).ok();
+
+Configuration
+-------------
+
+The crypto services offered by pw_crypto can be backed by different backend crypto libraries. For now only Mbed TLS is supported, others are under construction.
+
+Mbed TLS
+
+.. code-block:: sh
+
+  # Install and configure MbedTLS
+  pw package install mbedtls
+  gn gen out --args='dir_pw_third_party_mbedtls="//.environment/packages/mbedtls" pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls" pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls"'
+
+  ninja -C out

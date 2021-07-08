@@ -39,10 +39,10 @@ pw_facade("sha256") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_crypto/sha256.h" ]
   public_deps = [
-    "$dir_pw_assert",
     "$dir_pw_bytes",
     "$dir_pw_status",
   ]
+  deps = [ "$dir_pw_assert" ]
 }
 
 pw_doc_group("docs") {
@@ -50,7 +50,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":sha256_test" ]
+  tests = [
+    ":sha256_test",
+    ":ecdsa_test",
+  ]
 }
 
 pw_test("sha256_test") {
@@ -80,4 +83,20 @@ pw_facade("ecdsa") {
     "$dir_pw_bytes",
     "$dir_pw_status",
   ]
+}
+
+pw_source_set("ecdsa_mbedtls") {
+  sources = [ "ecdsa_mbedtls.cc" ]
+  deps = [
+    "$dir_pw_function",
+    "$dir_pw_log",
+    "//third_party/mbedtls",
+  ]
+  public_deps = [ ":ecdsa.facade" ]
+}
+
+pw_test("ecdsa_test") {
+  enable_if = pw_crypto_ECDSA_BACKEND != ""
+  deps = [ ":ecdsa" ]
+  sources = [ "ecdsa_test.cc" ]
 }

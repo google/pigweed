@@ -165,6 +165,9 @@ typedef enum {
   // the authentication and try again.
   PW_STATUS_UNAUTHENTICATED = 16,  // Use Status::Unauthenticated() in C++
 
+  // Digital signature failed verification.
+  PW_STATUS_INVALID_SIGNATURE = 17,  // Use Status::InvalidSignature() in C++
+
   // NOTE: this error code entry should not be used and you should not rely on
   // its value, which may change.
   //
@@ -241,6 +244,9 @@ class _PW_STATUS_NO_DISCARD Status {
   [[nodiscard]] static constexpr Status Unauthenticated() {
     return PW_STATUS_UNAUTHENTICATED;
   }
+  [[nodiscard]] static constexpr Status InvalidSignature() {
+    return PW_STATUS_INVALID_SIGNATURE;
+  }
   // clang-format on
 
   // Statuses are created with a Status::Code.
@@ -303,6 +309,9 @@ class _PW_STATUS_NO_DISCARD Status {
   }
   [[nodiscard]] constexpr bool IsUnauthenticated() const {
     return code_ == PW_STATUS_UNAUTHENTICATED;
+  }
+  [[nodiscard]] constexpr bool IsInvalidSignature() const {
+    return code_ == PW_STATUS_INVALID_SIGNATURE;
   }
 
   // Updates this Status to the provided Status IF this status is OK. This is

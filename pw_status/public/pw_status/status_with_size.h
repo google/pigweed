@@ -95,6 +95,9 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
   static constexpr StatusWithSize DataLoss(size_t size = 0) {
     return StatusWithSize(Status::DataLoss(), size);
   }
+  static constexpr StatusWithSize InvalidSignature(size_t size = 0) {
+    return StatusWithSize(Status::InvalidSignature(), size);
+  }
 
   // Creates a StatusWithSize with OkStatus() and a size of 0.
   explicit constexpr StatusWithSize() : size_(0) {}
@@ -181,6 +184,9 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
   }
   [[nodiscard]] constexpr bool IsUnauthenticated() const {
     return status().IsUnauthenticated();
+  }
+  [[nodiscard]] constexpr bool IsInvalidSignature() const {
+    return status().IsInvalidSignature();
   }
 
  private:
