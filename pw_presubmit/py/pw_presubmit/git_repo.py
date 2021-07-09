@@ -252,3 +252,14 @@ def python_packages_containing(
 
 def commit_message(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
     return git_stdout('log', '--format=%B', '-n1', commit, repo=repo)
+
+
+def commit_hash(rev: str = 'HEAD',
+                short: bool = True,
+                repo: PathOrStr = '.') -> str:
+    """Returns the commit hash of the revision."""
+    args = ['rev-parse']
+    if short:
+        args += ['--short']
+    args += [rev]
+    return git_stdout(*args, repo=repo)
