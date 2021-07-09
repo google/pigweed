@@ -15,6 +15,7 @@
 #include "pw_chrono/system_timer.h"
 
 #include <algorithm>
+#include <mutex>
 
 #include "FreeRTOS.h"
 #include "pw_assert/check.h"
@@ -27,13 +28,19 @@ namespace {
 
 using State = backend::NativeSystemTimer::State;
 
+// Instead of adding targeted locks to each instance, simply use the global
+// scheduler critical section lock.
+class SchedulerLock {
+ public:
+  static void lock() { vTaskSuspendAll(); }
+  static void unlock() { xTaskResumeAll(); }
+};
+SchedulerLock global_timer_lock;
+
 void HandleTimerCallback(TimerHandle_t timer_handle) {
-  // NOTE: FreeRTOS invokes all timer callbacks inside of a context where the
-  // scheduler is suspended (vTaskSuspendAll & xTaskResumeAll). Ergo we do not
-  // add a redundant unnecessary layer doing the exact same thing here.
-  PW_DCHECK_UINT_EQ(xTaskGetSchedulerState(),
-                    taskSCHEDULER_SUSPENDED,
-                    "Scheduler must be suspended during the timer callback");
+  // The FreeRTOS timer service is always handled by a thread, ergo to ensure
+  // this API is threadsafe we simply disable task switching.
+  std::unique_lock lock(global_timer_lock);
 
   // Because the timer control block, AKA what the timer handle points at, is
   // the first member of the NativeSystemTimer struct we play a trick to cheaply
@@ -57,6 +64,9 @@ void HandleTimerCallback(TimerHandle_t timer_handle) {
     // callback. Note we cannot update the state later as the user's callback
     // may alter the desired state through the Invoke*() API.
     native_type.state = State::kCancelled;
+
+    // Release the scheduler lock once we won't modify native_state any further.
+    lock.unlock();
     native_type.user_callback(native_type.expiry_deadline);
     return;
   }
@@ -132,7 +142,7 @@ SystemTimer::~SystemTimer() {
 void SystemTimer::InvokeAt(SystemClock::time_point timestamp) {
   // The FreeRTOS timer service is always handled by a thread, ergo to ensure
   // this API is threadsafe we simply disable task switching.
-  vTaskSuspendAll();
+  std::lock_guard lock(global_timer_lock);
 
   // We don't want to call Cancel which would enqueue a stop command instead of
   // synchronously updating the state. Instead we update the expiry deadline
@@ -163,14 +173,12 @@ void SystemTimer::InvokeAt(SystemClock::time_point timestamp) {
                      "Timer command queue overflowed");
     native_type_.state = State::kScheduled;
   }
-
-  xTaskResumeAll();  // Leave the critical section.
 }
 
 void SystemTimer::Cancel() {
   // The FreeRTOS timer service is always handled by a thread, ergo to ensure
   // this API is threadsafe we simply disable task switching.
-  vTaskSuspendAll();
+  std::lock_guard lock(global_timer_lock);
 
   // The stop command may not be executed until later in case we're in a
   // critical section. For this reason update the internal state in case the
@@ -185,8 +193,6 @@ void SystemTimer::Cancel() {
   PW_CHECK_UINT_EQ(xTimerStop(&native_type_.tcb, 0),
                    pdPASS,
                    "Timer command queue overflowed");
-
-  xTaskResumeAll();  // Leave the critical section.
 }
 
 }  // namespace pw::chrono
