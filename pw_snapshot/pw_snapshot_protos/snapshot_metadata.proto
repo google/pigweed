@@ -15,6 +15,8 @@ syntax = "proto3";
 
 package pw.snapshot;
 
+import "pw_tokenizer/proto/options.proto";
+
 option java_package = "pw.snapshot.proto";
 option java_outer_classname = "Snapshot";
 
@@ -36,14 +38,14 @@ message Metadata {
   //   Null-pointer dereference
   //   [main.cc:22] True is not false!
   //   STACK_OVERFLOW
-  bytes reason = 1;
+  bytes reason = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // Whether or not the snapshot was captured due to a crash of some kind.
   bool fatal = 2;
 
   // Project name to assist in identifying where to redirect this snapshot. A
   // single project might have multiple devices that can produce snapshots.
-  bytes project_name = 3;
+  bytes project_name = 3 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // Version characters must be alphanumeric, punctuation, and space. This
   // string is case-sensitive. This should either be human readable text, or
@@ -52,7 +54,7 @@ message Metadata {
   // Examples:
   //   "codename-local-[build_id]"
   //   "codename-release-193"
-  bytes software_version = 4;
+  string software_version = 4;
 
   // UUID associated with the build for the software version.
   bytes software_build_uuid = 5;
@@ -67,7 +69,7 @@ message Metadata {
   //   "propellerhat-evk"
   //   "gshoe-sensor-core-pvt"
   //   "alarm-clock-dsp-p1"
-  bytes device_name = 6;
+  bytes device_name = 6 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // 128-bit UUID for this snapshot, used to help with de-duplication.
   bytes snapshot_uuid = 7;

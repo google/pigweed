@@ -296,5 +296,33 @@ service.
 ----------------------
 Snapshot Tooling Setup
 ----------------------
-Pigweed will provide Python tooling to dump snapshot protos as human-readable
-text dumps. This section will be updated as this functionality is introduced.
+When using the upstream ``Snapshot`` proto, you can directly use
+``pw_snapshot.process`` to process snapshots into human-readable dumps. If
+you've opted to extend Pigweed's snapshot proto, you'll likely want to extend
+the processing tooling to handle custom project data as well. This can be done
+by creating a light wrapper around
+``pw_snapshot.processor.process_snapshots()``.
+
+.. code-block:: python
+
+  def _process_hw_failures(serialized_snapshot: bytes) -> str:
+      """Custom handler that checks wheel state."""
+      wheel_state = wheel_state_pb2.WheelStateSnapshot()
+      output = []
+      wheel_state.ParseFromString(serialized_snapshot)
+
+      if len(wheel_state.wheels) != 2:
+          output.append(f'Expected 2 wheels, found {len(wheel_state.wheels)}')
+
+      if len(wheel_state.wheels) < 2:
+          output.append('Wheels fell off!')
+
+      # And more...
+
+      return '\n'.join(output)
+
+
+  def process_my_snapshots(serialized_snapshot: bytes) -> str:
+      """Runs the snapshot processor with a custom callback."""
+      return pw_snaphsot.processor.process_snapshots(
+          serialized_snapshot, user_processing_callback=_process_hw_failures)

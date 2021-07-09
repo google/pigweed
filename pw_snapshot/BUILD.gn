@@ -31,6 +31,7 @@ pw_proto_library("metadata_proto") {
   sources = [ "pw_snapshot_protos/snapshot_metadata.proto" ]
   strip_prefix = "pw_snapshot_protos"
   prefix = "pw_snapshot_metadata_proto"
+  deps = [ "$dir_pw_tokenizer:proto" ]
 }
 
 # This proto provides the complete "Snapshot" proto, which depends on various

@@ -89,3 +89,42 @@ The upstream snapshot tooling will ignore any project-specific proto data,
 the proto data can be decoded a second time using a project-specific proto. At
 that point, any handling logic of the project-specific data would have to be
 done as part of project-specific tooling.
+
+-------------------
+Analyzing Snapshots
+-------------------
+Snapshots can be processed for analysis using the ``pw_snapshot.process`` python
+tool. This tool turns a binary snapshot proto into human readable, actionable
+information. As some snapshot fields may optionally be tokenized, a
+pw_tokenizer database or ELF file with embedded pw_tokenizer tokens may
+optionally be passed to the tool to detokenize applicable fields.
+
+.. code-block:: sh
+
+  # Example invocation, which dumps to stdout by default.
+  $ python -m pw_snapshot.processor path/to/serialized_snapshot.bin
+
+
+          ____ _       __    _____ _   _____    ____  _____ __  ______  ______
+         / __ \ |     / /   / ___// | / /   |  / __ \/ ___// / / / __ \/_  __/
+        / /_/ / | /| / /    \__ \/  |/ / /| | / /_/ /\__ \/ /_/ / / / / / /
+       / ____/| |/ |/ /    ___/ / /|  / ___ |/ ____/___/ / __  / /_/ / / /
+      /_/     |__/|__/____/____/_/ |_/_/  |_/_/    /____/_/ /_/\____/ /_/
+                    /_____/
+
+
+                              ▪▄▄▄ ▄▄▄· ▄▄▄▄▄ ▄▄▄· ▄ ·
+                              █▄▄▄▐█ ▀█ • █▌ ▐█ ▀█ █
+                              █ ▪ ▄█▀▀█   █. ▄█▀▀█ █
+                              ▐▌ .▐█ ▪▐▌ ▪▐▌·▐█ ▪▐▌▐▌
+                              ▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀
+
+  Device crash cause:
+      Assert failed: 1+1 == 42
+
+  Project name:      gShoe
+  Device:            GSHOE-QUANTUM_CORE-REV_0.1
+  Device FW version: QUANTUM_CORE-0.1.325-e4a84b1a
+  FW build UUID:     ad2d39258c1bc487f07ca7e04991a836fdf7d0a0
+  Snapshot UUID:     8481bb12a162164f5c74855f6d94ea1a
+
