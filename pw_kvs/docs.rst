@@ -71,17 +71,19 @@ addresses due to partition encryption, sector headers, etc.
 
 Writes to flash must have a start address that is a multiple of the flash
 write alignment. Write size must also be a multiple of flash write alignment.
-Write alignment varies by flash device and partition type. FlashPartitions may
-have a different alignment than the FlashMemory they are part of, so long as
-the partition's alignment is a multiple of the alignment for the FlashMemory.
-Reads from flash do not have any address or size alignment requirement - reads
-always have a minimum alignment of 1.
+Write alignment varies by flash device and partition type. Reads from flash do
+not have any address or size alignment requirement - reads always have a
+minimum alignment of 1.
 
-Flash sectors are the minimum erase size for both FlashMemory and
-FlashPartition. FlashPartitions may have a different logical sector size than
-the FlashMemory they are part of. Partition logical sectors may be smaller due
-to partition overhead (encryption, wear tracking, etc) or larger due to
-combining raw sectors into larger logical sectors.
+FlashPartitions may have a different alignment than the FlashMemory they are
+part of, so long as the partition's alignment is a multiple of the alignment
+for the FlashMemory.
+
+Sectors are the minimum erase size for both FlashMemory and FlashPartition.
+FlashPartitions may have a different logical sector size than the FlashMemory
+they are part of. Partition logical sectors may be smaller due to partition
+overhead (encryption, wear tracking, etc) or larger due to combining raw
+sectors into larger logical sectors.
 
 Size report
 -----------

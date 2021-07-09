@@ -25,3 +25,12 @@ pw_auto_add_simple_module(pw_kvs
     pw_log
     pw_string
 )
+
+target_compile_definitions(
+  pw_kvs
+  PUBLIC PW_FLASH_TEST_SECTORS=6
+  PUBLIC PW_FLASH_TEST_SECTOR_SIZE=4096
+  PUBLIC PW_FLASH_TEST_ALIGNMENT=1
+  PUBLIC PW_FLASH_TEST_ITERATIONS=2
+  PUBLIC PW_FLASH_TEST_WRITE_SIZE=256
+)

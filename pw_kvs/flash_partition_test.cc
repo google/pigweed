@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <algorithm>
 #include <span>
 
 #include "gtest/gtest.h"
@@ -23,11 +24,16 @@
 namespace pw::kvs::PartitionTest {
 namespace {
 
-#ifndef PW_FLASH_TEST_ITERATIONS
-#define PW_FLASH_TEST_ITERATIONS 2
+#if !defined(PW_FLASH_TEST_ITERATIONS) || (PW_FLASH_TEST_ITERATIONS <= 0)
+#error PW_FLASH_TEST_ITERATIONS must be defined and > 0
 #endif  // PW_FLASH_TEST_ITERATIONS
 
+#if !defined(PW_FLASH_TEST_WRITE_SIZE) || (PW_FLASH_TEST_WRITE_SIZE <= 0)
+#error PW_FLASH_TEST_WRITE_SIZE must be defined and > 0
+#endif  // PW_FLASH_TEST_WRITE_SIZE
+
 constexpr size_t kTestIterations = PW_FLASH_TEST_ITERATIONS;
+constexpr size_t kTestWriteSize = PW_FLASH_TEST_WRITE_SIZE;
 
 size_t error_count = 0;
 
@@ -35,15 +41,16 @@ void WriteData(FlashPartition& partition, uint8_t fill_byte) {
   uint8_t test_data[kMaxFlashAlignment];
   memset(test_data, fill_byte, sizeof(test_data));
 
-  const size_t alignment = partition.alignment_bytes();
+  const size_t write_size =
+      std::max(kTestWriteSize, partition.alignment_bytes());
 
   ASSERT_EQ(OkStatus(), partition.Erase(0, partition.sector_count()));
 
-  const size_t chunks_per_sector = partition.sector_size_bytes() / alignment;
+  const size_t chunks_per_sector = partition.sector_size_bytes() / write_size;
 
   // Fill partition sector by sector. Fill the sector with an integer number
-  // of alignment-size chunks. If the sector is not evenly divisible by
-  // alignment-size, the remainder is not written.
+  // of write_size-size chunks. If the sector is not evenly divisible by
+  // write_size-size, the remainder is not written.
   for (size_t sector_index = 0; sector_index < partition.sector_count();
        sector_index++) {
     FlashPartition::Address address =
@@ -52,10 +59,10 @@ void WriteData(FlashPartition& partition, uint8_t fill_byte) {
     for (size_t chunk_index = 0; chunk_index < chunks_per_sector;
          chunk_index++) {
       StatusWithSize status =
-          partition.Write(address, as_bytes(std::span(test_data, alignment)));
+          partition.Write(address, as_bytes(std::span(test_data, write_size)));
       ASSERT_EQ(OkStatus(), status.status());
-      ASSERT_EQ(alignment, status.size());
-      address += alignment;
+      ASSERT_EQ(write_size, status.size());
+      address += write_size;
     }
   }
 
@@ -69,20 +76,20 @@ void WriteData(FlashPartition& partition, uint8_t fill_byte) {
     for (size_t chunk_index = 0; chunk_index < chunks_per_sector;
          chunk_index++) {
       memset(test_data, 0, sizeof(test_data));
-      StatusWithSize status = partition.Read(address, alignment, test_data);
+      StatusWithSize status = partition.Read(address, write_size, test_data);
 
       EXPECT_EQ(OkStatus(), status.status());
-      EXPECT_EQ(alignment, status.size());
-      if (!status.ok() || (alignment != status.size())) {
+      EXPECT_EQ(write_size, status.size());
+      if (!status.ok() || (write_size != status.size())) {
         error_count++;
         PW_LOG_DEBUG("   Read Error [%s], %u of %u",
                      status.status().str(),
                      unsigned(status.size()),
-                     unsigned(alignment));
+                     unsigned(write_size));
         continue;
       }
 
-      for (size_t i = 0; i < alignment; i++) {
+      for (size_t i = 0; i < write_size; i++) {
         if (test_data[i] != fill_byte) {
           error_count++;
           PW_LOG_DEBUG(
@@ -95,7 +102,7 @@ void WriteData(FlashPartition& partition, uint8_t fill_byte) {
         }
       }
 
-      address += alignment;
+      address += write_size;
     }
   }
 
@@ -185,9 +192,14 @@ TEST(FlashPartitionTest, AlignmentCheck) {
   const size_t alignment = test_partition.alignment_bytes();
   const size_t sector_size_bytes = test_partition.sector_size_bytes();
 
+  EXPECT_LE(kTestWriteSize, kMaxFlashAlignment);
+  EXPECT_GT(kTestWriteSize, 0u);
+  EXPECT_EQ(kMaxFlashAlignment % kTestWriteSize, 0U);
+
   EXPECT_LE(alignment, kMaxFlashAlignment);
   EXPECT_GT(alignment, 0u);
   EXPECT_EQ(kMaxFlashAlignment % alignment, 0U);
+
   EXPECT_LE(kMaxFlashAlignment, sector_size_bytes);
   EXPECT_LE(sector_size_bytes % kMaxFlashAlignment, 0U);
 }
@@ -237,7 +249,8 @@ TEST(FlashPartitionTest, BadEraseAddressAlignment) {
 
 TEST(FlashPartitionTest, IsErased) {
   FlashPartition& test_partition = FlashTestPartition();
-  const size_t alignment = test_partition.alignment_bytes();
+  const size_t write_size =
+      std::max(kTestWriteSize, test_partition.alignment_bytes());
 
   // Make sure the partition is big enough to do this test.
   ASSERT_GE(test_partition.size_bytes(), 3 * kMaxFlashAlignment);
@@ -254,7 +267,7 @@ TEST(FlashPartitionTest, IsErased) {
   auto data_span = std::span(test_data);
 
   // Write the chunk with fill byte.
-  StatusWithSize status = test_partition.Write(alignment, as_bytes(data_span));
+  StatusWithSize status = test_partition.Write(write_size, as_bytes(data_span));
   ASSERT_EQ(OkStatus(), status.status());
   ASSERT_EQ(data_span.size_bytes(), status.size());
 
@@ -264,18 +277,18 @@ TEST(FlashPartitionTest, IsErased) {
   // Check the chunk that was written.
   EXPECT_EQ(OkStatus(),
             test_partition.IsRegionErased(
-                alignment, data_span.size_bytes(), &is_erased));
+                write_size, data_span.size_bytes(), &is_erased));
   EXPECT_EQ(false, is_erased);
 
   // Check a region that starts erased but later has been written.
   EXPECT_EQ(OkStatus(),
-            test_partition.IsRegionErased(0, 2 * alignment, &is_erased));
+            test_partition.IsRegionErased(0, 2 * write_size, &is_erased));
   EXPECT_EQ(false, is_erased);
 
   // Check erased for a region smaller than kMaxFlashAlignment. This has been a
   // bug in the past.
   EXPECT_EQ(OkStatus(),
-            test_partition.IsRegionErased(0, alignment, &is_erased));
+            test_partition.IsRegionErased(0, write_size, &is_erased));
   EXPECT_EQ(true, is_erased);
 }
 
