@@ -13,7 +13,6 @@
 // the License.
 #pragma once
 
-#include <atomic>
 #include <memory>
 #include <mutex>
 
@@ -23,9 +22,6 @@
 namespace pw::chrono::backend {
 
 struct NativeSystemTimer {
-  // The mutex is only used to ensure the public API is threadsafe.
-  std::mutex api_mutex;
-
   // Instead of using a more complex blocking timer cleanup, a shared_pointer is
   // used so that the heap allocation is still valid for the detached threads
   // even after the NativeSystemTimer has been destructed. Note this is shared
@@ -35,17 +31,18 @@ struct NativeSystemTimer {
         : callback(std::move(cb)) {}
 
     const Function<void(SystemClock::time_point expired_deadline)> callback;
-    // This mutex is used to ensure only one expiry callback is executed at a
-    // time. This way there's no risk that a callback function attempting to
-    // reschedule the timer is immediately preempted by that callback.
-    //
-    // Note this is required by the facade API contract.
-    std::mutex callback_mutex;
+
+    // The mutex is used both to ensure the public API is threadsafe and to
+    // ensure that only one expiry callback is executed at time.
+    // A recurisve mutex is used as the timer callback must be able to invoke
+    // its own public API.
+    std::recursive_mutex mutex;
   };
   std::shared_ptr<CallbackContext> callback_context;
 
-  // This is only shared with the last active timer if there is one.
-  std::shared_ptr<std::atomic<bool>> active_timer_enabled;
+  // This is only shared with the last active timer if there is one. Note that
+  // this is guarded by the callback_context's mutex.
+  std::shared_ptr<bool> active_timer_enabled;
 };
 
 using NativeSystemTimerHandle = NativeSystemTimer&;
