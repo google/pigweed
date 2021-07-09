@@ -124,6 +124,20 @@ def stm32f429i(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_boringssl_build(ctx: PresubmitContext):
+    build.install_package(ctx.package_root, 'boringssl')
+    build.gn_gen(ctx.root,
+                 ctx.output_dir,
+                 dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
+                                                            'boringssl'))
+    build.ninja(
+        ctx.output_dir,
+        *_at_all_optimization_levels('stm32f429i'),
+        *_at_all_optimization_levels('host_clang'),
+    )
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_nanopb_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
     build.gn_gen(ctx.root,
@@ -650,6 +664,7 @@ OTHER_CHECKS = (
     # TODO(pwbug/346): Enable all Bazel tests when they're fixed.
     bazel_test,
     cmake_tests,
+    gn_boringssl_build,
     gn_nanopb_build,
     gn_full_build_check,
     gn_full_qemu_check,
