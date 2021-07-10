@@ -17,9 +17,6 @@ The following crypto services are provided by this module.
 SHA256
 ------
 
-Usage
-^^^^^
-
 1. Obtaining a oneshot digest.
 
 .. code-block:: cpp
@@ -46,9 +43,6 @@ Usage
 
 ECDSA
 -----
-
-Usage
-^^^^^
 
 1. Verifying a digital signature signed with ECDSA over the NIST P256 curve.
 
@@ -95,3 +89,11 @@ Mbed TLS
   gn gen out --args='dir_pw_third_party_mbedtls="//.environment/packages/mbedtls" pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls" pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls"'
 
   ninja -C out
+
+
+Size Reports
+------------
+
+Below are size reports for each crypto service. These may vary from across different configurations.
+
+.. include:: size_report
