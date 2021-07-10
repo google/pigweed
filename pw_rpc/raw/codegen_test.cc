@@ -15,7 +15,7 @@
 #include "gtest/gtest.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_rpc/internal/hash.h"
-#include "pw_rpc/raw_test_method_context.h"
+#include "pw_rpc/raw/test_method_context.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
 

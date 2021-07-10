@@ -14,7 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/nanopb_test_method_context.h"
-#include "pw_rpc/raw_test_method_context.h"
+#include "pw_rpc/raw/test_method_context.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 
 namespace pw::rpc {

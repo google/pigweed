@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_log/log.h"
-#include "pw_rpc/raw_test_method_context.h"
+#include "pw_rpc/raw/test_method_context.h"
 
 namespace pw::log_rpc {
 namespace {

@@ -25,11 +25,11 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "method",
     srcs = [
-        "raw_method.cc",
+        "method.cc",
         "server_reader_writer.cc",
     ],
     hdrs = [
-        "public/pw_rpc/internal/raw_method.h",
+        "public/pw_rpc/raw/internal/method.h",
         "public/pw_rpc/raw/server_reader_writer.h",
     ],
     includes = ["public"],
@@ -43,7 +43,7 @@ pw_cc_library(
 pw_cc_library(
     name = "method_union",
     hdrs = [
-        "public/pw_rpc/internal/raw_method_union.h",
+        "public/pw_rpc/raw/internal/method_union.h",
     ],
     deps = [
         ":method",
@@ -53,6 +53,7 @@ pw_cc_library(
 pw_cc_library(
     name = "test_method_context",
     hdrs = [
+        "public/pw_rpc/raw/test_method_context.h",
         "public/pw_rpc/raw_test_method_context.h",
     ],
     deps = [
@@ -76,9 +77,9 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "raw_method_test",
+    name = "method_test",
     srcs = [
-        "raw_method_test.cc",
+        "method_test.cc",
     ],
     deps = [
         ":method_union",
@@ -89,9 +90,9 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "raw_method_union_test",
+    name = "method_union_test",
     srcs = [
-        "raw_method_union_test.cc",
+        "method_union_test.cc",
     ],
     deps = [
         ":method_union",

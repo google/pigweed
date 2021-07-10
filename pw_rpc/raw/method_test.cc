@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/raw_method.h"
+#include "pw_rpc/raw/internal/method.h"
 
 #include <array>
 
@@ -20,7 +20,7 @@
 #include "pw_bytes/array.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
-#include "pw_rpc/internal/raw_method_union.h"
+#include "pw_rpc/raw/internal/method_union.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/internal_test_utils.h"

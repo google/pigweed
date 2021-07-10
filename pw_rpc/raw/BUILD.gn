@@ -26,11 +26,11 @@ config("public") {
 pw_source_set("method") {
   public_configs = [ ":public" ]
   public = [
-    "public/pw_rpc/internal/raw_method.h",
+    "public/pw_rpc/raw/internal/method.h",
     "public/pw_rpc/raw/server_reader_writer.h",
   ]
   sources = [
-    "raw_method.cc",
+    "method.cc",
     "server_reader_writer.cc",
   ]
   public_deps = [
@@ -42,13 +42,16 @@ pw_source_set("method") {
 
 pw_source_set("method_union") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/internal/raw_method_union.h" ]
+  public = [ "public/pw_rpc/raw/internal/method_union.h" ]
   public_deps = [ ":method" ]
 }
 
 pw_source_set("test_method_context") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/raw_test_method_context.h" ]
+  public = [
+    "public/pw_rpc/raw/test_method_context.h",
+    "public/pw_rpc/raw_test_method_context.h",
+  ]
   public_deps = [
     ":method",
     "..:test_utils",
@@ -60,8 +63,8 @@ pw_source_set("test_method_context") {
 pw_test_group("tests") {
   tests = [
     ":codegen_test",
-    ":raw_method_test",
-    ":raw_method_union_test",
+    ":method_test",
+    ":method_union_test",
     ":stub_generation_test",
   ]
 }
@@ -76,7 +79,7 @@ pw_test("codegen_test") {
   sources = [ "codegen_test.cc" ]
 }
 
-pw_test("raw_method_test") {
+pw_test("method_test") {
   deps = [
     ":method",
     ":method_union",
@@ -85,17 +88,17 @@ pw_test("raw_method_test") {
     "..:test_utils",
     dir_pw_protobuf,
   ]
-  sources = [ "raw_method_test.cc" ]
+  sources = [ "method_test.cc" ]
 }
 
-pw_test("raw_method_union_test") {
+pw_test("method_union_test") {
   deps = [
     ":method_union",
     "..:test_protos.pwpb",
     "..:test_utils",
     dir_pw_protobuf,
   ]
-  sources = [ "raw_method_union_test.cc" ]
+  sources = [ "method_union_test.cc" ]
 }
 
 pw_test("stub_generation_test") {

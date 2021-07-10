@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/raw_method_union.h"
+#include "pw_rpc/raw/internal/method_union.h"
 
 #include <array>
 

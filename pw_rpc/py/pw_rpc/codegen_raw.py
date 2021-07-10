@@ -75,7 +75,7 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
 def _generate_code_for_package(proto_file, package: ProtoNode,
                                output: OutputFile) -> None:
     """Generates code for a header file corresponding to a .proto file."""
-    includes = lambda *_: ['#include "pw_rpc/internal/raw_method_union.h"']
+    includes = lambda *_: ['#include "pw_rpc/raw/internal/method_union.h"']
 
     codegen.package(proto_file, package, output, includes,
                     _generate_code_for_service, _generate_code_for_client)
