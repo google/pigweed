@@ -14,7 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/hash.h"
-#include "pw_rpc/nanopb_test_method_context.h"
+#include "pw_rpc/nanopb/test_method_context.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"

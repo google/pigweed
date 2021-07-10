@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/nanopb_common.h"
+#include "pw_rpc/nanopb/internal/common.h"
 
 #include "pb_decode.h"
 #include "pb_encode.h"

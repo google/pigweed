@@ -15,7 +15,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/internal/method_union.h"
-#include "pw_rpc/internal/nanopb_method.h"
+#include "pw_rpc/nanopb/internal/method.h"
 #include "pw_rpc/raw/internal/method_union.h"
 
 namespace pw::rpc::internal {

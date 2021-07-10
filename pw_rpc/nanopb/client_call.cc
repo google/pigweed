@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/nanopb_client_call.h"
+#include "pw_rpc/nanopb/client_call.h"
 
 namespace pw::rpc {
 namespace internal {

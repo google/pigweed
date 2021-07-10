@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_library(pw_rpc.nanopb.method
   SOURCES
-    nanopb_method.cc
+    method.cc
   PUBLIC_DEPS
     pw_rpc.nanopb.common
     pw_rpc.server
@@ -35,7 +35,7 @@ pw_add_module_library(pw_rpc.nanopb.method_union
 
 pw_add_module_library(pw_rpc.nanopb.client
   SOURCES
-    nanopb_client_call.cc
+    client_call.cc
   PUBLIC_DEPS
     pw_function
     pw_rpc.nanopb.common
@@ -44,7 +44,7 @@ pw_add_module_library(pw_rpc.nanopb.client
 
 pw_add_module_library(pw_rpc.nanopb.common
   SOURCES
-    nanopb_common.cc
+    common.cc
   PUBLIC_DEPS
     pw_bytes
     pw_rpc.common

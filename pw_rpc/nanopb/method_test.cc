@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/nanopb_method.h"
+#include "pw_rpc/nanopb/internal/method.h"
 
 #include <array>
 
 #include "gtest/gtest.h"
-#include "pw_rpc/internal/nanopb_method_union.h"
+#include "pw_rpc/nanopb/internal/method_union.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"

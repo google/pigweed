@@ -19,7 +19,7 @@
 #include "pw_function/function.h"
 #include "pw_rpc/internal/base_client_call.h"
 #include "pw_rpc/internal/method_type.h"
-#include "pw_rpc/internal/nanopb_common.h"
+#include "pw_rpc/nanopb/internal/common.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {

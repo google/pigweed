@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/nanopb_method_union.h"
+#include "pw_rpc/nanopb/internal/method_union.h"
 
 #include <array>
 

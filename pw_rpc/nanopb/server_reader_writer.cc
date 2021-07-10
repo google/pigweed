@@ -14,7 +14,7 @@
 
 #include "pw_rpc/nanopb/server_reader_writer.h"
 
-#include "pw_rpc/internal/nanopb_method.h"
+#include "pw_rpc/nanopb/internal/method.h"
 
 namespace pw::rpc::internal {
 

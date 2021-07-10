@@ -27,11 +27,11 @@ config("public") {
 pw_source_set("method") {
   public_configs = [ ":public" ]
   public = [
-    "public/pw_rpc/internal/nanopb_method.h",
+    "public/pw_rpc/nanopb/internal/method.h",
     "public/pw_rpc/nanopb/server_reader_writer.h",
   ]
   sources = [
-    "nanopb_method.cc",
+    "method.cc",
     "server_reader_writer.cc",
   ]
   public_deps = [
@@ -45,7 +45,7 @@ pw_source_set("method") {
 
 pw_source_set("method_union") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/internal/nanopb_method_union.h" ]
+  public = [ "public/pw_rpc/nanopb/internal/method_union.h" ]
   public_deps = [
     ":method",
     "$dir_pw_rpc/raw:method_union",
@@ -59,15 +59,15 @@ pw_source_set("client") {
     "..:client",
     dir_pw_function,
   ]
-  public = [ "public/pw_rpc/nanopb_client_call.h" ]
-  sources = [ "nanopb_client_call.cc" ]
+  public = [ "public/pw_rpc/nanopb/client_call.h" ]
+  sources = [ "client_call.cc" ]
 }
 
 pw_source_set("common") {
   public_deps = [ dir_pw_bytes ]
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/internal/nanopb_common.h" ]
-  sources = [ "nanopb_common.cc" ]
+  public = [ "public/pw_rpc/nanopb/internal/common.h" ]
+  sources = [ "common.cc" ]
 
   if (dir_pw_third_party_nanopb != "") {
     public_deps += [ "$dir_pw_third_party/nanopb" ]
@@ -76,7 +76,10 @@ pw_source_set("common") {
 
 pw_source_set("test_method_context") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/nanopb_test_method_context.h" ]
+  public = [
+    "public/pw_rpc/nanopb/test_method_context.h",
+    "public/pw_rpc/nanopb_test_method_context.h",
+  ]
   public_deps = [
     ":method",
     "..:test_utils",
@@ -109,8 +112,8 @@ pw_test_group("tests") {
     ":codegen_test",
     ":echo_service_test",
     ":method_lookup_test",
-    ":nanopb_method_test",
-    ":nanopb_method_union_test",
+    ":method_test",
+    ":method_union_test",
     ":stub_generation_test",
   ]
 }
@@ -122,7 +125,7 @@ pw_test("client_call_test") {
     "..:test_protos.nanopb",
     "..:test_utils",
   ]
-  sources = [ "nanopb_client_call_test.cc" ]
+  sources = [ "client_call_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
@@ -139,7 +142,7 @@ pw_test("codegen_test") {
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
-pw_test("nanopb_method_test") {
+pw_test("method_test") {
   deps = [
     ":internal_test_utils",
     ":method_union",
@@ -147,7 +150,7 @@ pw_test("nanopb_method_test") {
     "..:test_protos.nanopb",
     "..:test_utils",
   ]
-  sources = [ "nanopb_method_test.cc" ]
+  sources = [ "method_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
@@ -163,14 +166,14 @@ pw_test("method_lookup_test") {
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
-pw_test("nanopb_method_union_test") {
+pw_test("method_union_test") {
   deps = [
     ":internal_test_utils",
     ":method_union",
     "..:test_protos.nanopb",
     "..:test_utils",
   ]
-  sources = [ "nanopb_method_union_test.cc" ]
+  sources = [ "method_union_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
 

@@ -200,8 +200,8 @@ def _generate_code_for_client(service: ProtoService, root: ProtoNode,
 
 
 def includes(proto_file, unused_package: ProtoNode) -> Iterator[str]:
-    yield '#include "pw_rpc/internal/nanopb_method_union.h"'
-    yield '#include "pw_rpc/nanopb_client_call.h"'
+    yield '#include "pw_rpc/nanopb/internal/method_union.h"'
+    yield '#include "pw_rpc/nanopb/client_call.h"'
 
     # Include the corresponding nanopb header file for this proto file, in which
     # the file's messages and enums are generated. All other files imported from

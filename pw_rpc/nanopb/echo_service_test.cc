@@ -14,7 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/echo_service_nanopb.h"
-#include "pw_rpc/nanopb_test_method_context.h"
+#include "pw_rpc/nanopb/test_method_context.h"
 
 namespace pw::rpc {
 namespace {
