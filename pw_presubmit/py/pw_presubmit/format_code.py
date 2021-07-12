@@ -267,7 +267,7 @@ GN_FORMAT: CodeFormat = CodeFormat('GN', ('.gn', '.gni'), (), check_gn_format,
                                    fix_gn_format)
 
 # TODO(pwbug/191): Add real code formatting support for Bazel and CMake
-BAZEL_FORMAT: CodeFormat = CodeFormat('Bazel', ('BUILD', ), (),
+BAZEL_FORMAT: CodeFormat = CodeFormat('Bazel', ('BUILD', '.bazel', '.bzl'), (),
                                       check_trailing_space, fix_trailing_space)
 
 CMAKE_FORMAT: CodeFormat = CodeFormat('CMake', ('CMakeLists.txt', '.cmake'),
