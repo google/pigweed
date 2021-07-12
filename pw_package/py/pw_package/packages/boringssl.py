@@ -43,7 +43,7 @@ class BoringSSL(pw_package.package_manager.Package):
 
         # Check that necessary build files are generated.
         build_files = ['BUILD.generated.gni', 'err_data.c']
-        return all([os.path.exists(path / file) for file in build_files])
+        return all(os.path.exists(path / file) for file in build_files)
 
     def install(self, path: pathlib.Path) -> None:
         # Checkout the library

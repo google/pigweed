@@ -31,16 +31,21 @@ _LOG = logging.getLogger('pw_trace')
 
 
 class TraceType(Enum):
-    Invalid = 0
-    Instantaneous = 1
-    InstantaneousGroup = 2
-    AsyncStart = 3
-    AsyncStep = 4
-    AsyncEnd = 5
-    DurationStart = 6
-    DurationEnd = 7
-    DurationGroupStart = 8
-    DurationGroupEnd = 9
+    INVALID = 0
+    INSTANTANEOUS = 1
+    INSTANTANEOUS_GROUP = 2
+    ASYNC_START = 3
+    ASYNC_STEP = 4
+    ASYNC_END = 5
+    DURATION_START = 6
+    DURATION_END = 7
+    DURATION_GROUP_START = 8
+    DURATION_GROUP_END = 9
+
+    # TODO(hepler): Remove these aliases for the original style-incompliant
+    #     names when users have migrated.
+    DurationStart = 6  # pylint: disable=invalid-name
+    DurationEnd = 7  # pylint: disable=invalid-name
 
 
 class TraceEvent(NamedTuple):
@@ -78,40 +83,40 @@ def generate_trace_json(events: Iterable[TraceEvent]):
             "name": (event.label),
             "ts": event.timestamp_us
         }
-        if event.event_type == TraceType.DurationStart:
+        if event.event_type == TraceType.DURATION_START:
             line["ph"] = "B"
             line["tid"] = event.label
-        elif event.event_type == TraceType.DurationEnd:
+        elif event.event_type == TraceType.DURATION_END:
             line["ph"] = "E"
             line["tid"] = event.label
-        elif event.event_type == TraceType.DurationGroupStart:
+        elif event.event_type == TraceType.DURATION_GROUP_START:
             line["ph"] = "B"
             line["tid"] = event.group
-        elif event.event_type == TraceType.DurationGroupEnd:
+        elif event.event_type == TraceType.DURATION_GROUP_END:
             line["ph"] = "E"
             line["tid"] = event.group
-        elif event.event_type == TraceType.Instantaneous:
+        elif event.event_type == TraceType.INSTANTANEOUS:
             line["ph"] = "I"
             line["s"] = "p"
-        elif event.event_type == TraceType.InstantaneousGroup:
+        elif event.event_type == TraceType.INSTANTANEOUS_GROUP:
             line["ph"] = "I"
             line["s"] = "t"
             line["tid"] = event.group
-        elif event.event_type == TraceType.AsyncStart:
+        elif event.event_type == TraceType.ASYNC_START:
             line["ph"] = "b"
             line["scope"] = event.group
             line["tid"] = event.group
             line["cat"] = event.module
             line["id"] = event.trace_id
             line["args"] = {"id": line["id"]}
-        elif event.event_type == TraceType.AsyncStep:
+        elif event.event_type == TraceType.ASYNC_STEP:
             line["ph"] = "n"
             line["scope"] = event.group
             line["tid"] = event.group
             line["cat"] = event.module
             line["id"] = event.trace_id
             line["args"] = {"id": line["id"]}
-        elif event.event_type == TraceType.AsyncEnd:
+        elif event.event_type == TraceType.ASYNC_END:
             line["ph"] = "e"
             line["scope"] = event.group
             line["tid"] = event.group

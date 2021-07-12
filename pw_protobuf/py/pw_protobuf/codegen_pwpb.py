@@ -21,7 +21,7 @@ import sys
 from typing import Dict, Iterable, List, Tuple
 from typing import cast
 
-import google.protobuf.descriptor_pb2 as descriptor_pb2
+from google.protobuf import descriptor_pb2
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoEnum, ProtoMessage, ProtoMessageField

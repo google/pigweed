@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from typing import Dict, List
 
-import pw_arduino_build.file_operations as file_operations
+from pw_arduino_build import file_operations
 
 _LOG = logging.getLogger(__name__)
 

@@ -64,6 +64,7 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=bad-continuation,  # Rely on yapf for formatting
+        consider-using-with,
         fixme,
         subprocess-run-check,
         raise-missing-from,

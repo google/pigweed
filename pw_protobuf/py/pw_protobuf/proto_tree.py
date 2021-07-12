@@ -20,7 +20,7 @@ import enum
 from typing import Callable, Dict, Iterator, List, Optional, Tuple, TypeVar
 from typing import cast
 
-import google.protobuf.descriptor_pb2 as descriptor_pb2
+from google.protobuf import descriptor_pb2
 
 T = TypeVar('T')  # pylint: disable=invalid-name
 

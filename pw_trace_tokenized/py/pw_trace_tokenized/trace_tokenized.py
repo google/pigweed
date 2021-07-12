@@ -48,60 +48,60 @@ def varint_decode(encoded):
     return None
 
 
-# Token string: "event_type|flag|module|group|label|<optional data_fmt>"
+# Token string: "event_type|flag|module|group|label|<optional DATA_FMT>"
 class TokenIdx(IntEnum):
-    EventType = 0
-    Flag = 1
-    Module = 2
-    Group = 3
-    Label = 4
-    data_fmt = 5  # optional
+    EVENT_TYPE = 0
+    FLAG = 1
+    MODULE = 2
+    GROUP = 3
+    LABEL = 4
+    DATA_FMT = 5  # optional
 
 
 def get_trace_type(type_str):
     if type_str == "PW_TRACE_EVENT_TYPE_INSTANT":
-        return trace.TraceType.Instantaneous
+        return trace.TraceType.INSTANTANEOUS
     if type_str == "PW_TRACE_EVENT_TYPE_INSTANT_GROUP":
-        return trace.TraceType.InstantaneousGroup
+        return trace.TraceType.INSTANTANEOUS_GROUP
     if type_str == "PW_TRACE_EVENT_TYPE_ASYNC_START":
-        return trace.TraceType.AsyncStart
+        return trace.TraceType.ASYNC_START
     if type_str == "PW_TRACE_EVENT_TYPE_ASYNC_STEP":
-        return trace.TraceType.AsyncStep
+        return trace.TraceType.ASYNC_STEP
     if type_str == "PW_TRACE_EVENT_TYPE_ASYNC_END":
-        return trace.TraceType.AsyncEnd
+        return trace.TraceType.ASYNC_END
     if type_str == "PW_TRACE_EVENT_TYPE_DURATION_START":
-        return trace.TraceType.DurationStart
+        return trace.TraceType.DURATION_START
     if type_str == "PW_TRACE_EVENT_TYPE_DURATION_END":
-        return trace.TraceType.DurationEnd
+        return trace.TraceType.DURATION_END
     if type_str == "PW_TRACE_EVENT_TYPE_DURATION_GROUP_START":
-        return trace.TraceType.DurationGroupStart
+        return trace.TraceType.DURATION_GROUP_START
     if type_str == "PW_TRACE_EVENT_TYPE_DURATION_GROUP_END":
-        return trace.TraceType.DurationGroupEnd
-    return trace.TraceType.Invalid
+        return trace.TraceType.DURATION_GROUP_END
+    return trace.TraceType.INVALID
 
 
 def has_trace_id(token_string):
     token_values = token_string.split("|")
-    return trace.event_has_trace_id(token_values[TokenIdx.EventType])
+    return trace.event_has_trace_id(token_values[TokenIdx.EVENT_TYPE])
 
 
 def has_data(token_string):
     token_values = token_string.split("|")
-    return len(token_values) > TokenIdx.data_fmt
+    return len(token_values) > TokenIdx.DATA_FMT
 
 
 def create_trace_event(token_string, timestamp_us, trace_id, data):
     token_values = token_string.split("|")
     return trace.TraceEvent(event_type=get_trace_type(
-        token_values[TokenIdx.EventType]),
-                            module=token_values[TokenIdx.Module],
-                            label=token_values[TokenIdx.Label],
+        token_values[TokenIdx.EVENT_TYPE]),
+                            module=token_values[TokenIdx.MODULE],
+                            label=token_values[TokenIdx.LABEL],
                             timestamp_us=timestamp_us,
-                            group=token_values[TokenIdx.Group],
+                            group=token_values[TokenIdx.GROUP],
                             trace_id=trace_id,
-                            flags=token_values[TokenIdx.Flag],
+                            flags=token_values[TokenIdx.FLAG],
                             has_data=has_data(token_string),
-                            data_fmt=(token_values[TokenIdx.data_fmt]
+                            data_fmt=(token_values[TokenIdx.DATA_FMT]
                                       if has_data(token_string) else ""),
                             data=data if has_data(token_string) else b'')
 

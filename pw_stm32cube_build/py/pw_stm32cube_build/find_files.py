@@ -237,9 +237,8 @@ def get_sources_and_headers(
         'template' not in f, files)
 
     header_files = filter(
-        lambda f: (any([f.startswith(dir)
-                        for dir in _INCLUDE_DIRS])) and f.endswith('.h'),
-        files)
+        lambda f: (any(f.startswith(dir)
+                       for dir in _INCLUDE_DIRS)) and f.endswith('.h'), files)
 
     rebase_path = lambda f: str(stm32cube_path / f)
     return list(map(rebase_path,

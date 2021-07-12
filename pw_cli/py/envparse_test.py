@@ -16,7 +16,7 @@
 import math
 import unittest
 
-import pw_cli.envparse as envparse
+from pw_cli import envparse
 
 # pylint: disable=no-member
 

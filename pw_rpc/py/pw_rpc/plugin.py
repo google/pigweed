@@ -16,10 +16,10 @@
 import enum
 import sys
 
-import google.protobuf.compiler.plugin_pb2 as plugin_pb2
+from google.protobuf.compiler import plugin_pb2
 
-import pw_rpc.codegen_nanopb as codegen_nanopb
-import pw_rpc.codegen_raw as codegen_raw
+from pw_rpc import codegen_nanopb
+from pw_rpc import codegen_raw
 
 
 class Codegen(enum.Enum):

@@ -21,15 +21,16 @@ import unittest
 from pw_trace import trace
 
 test_events = [
-    trace.TraceEvent(trace.TraceType.Instantaneous, "m1", "L1", 1),
-    trace.TraceEvent(trace.TraceType.InstantaneousGroup, "m2", "L2", 2, "G2"),
-    trace.TraceEvent(trace.TraceType.AsyncStep, "m3", "L3", 3, "G3", 103),
-    trace.TraceEvent(trace.TraceType.DurationStart, "m4", "L4", 4),
-    trace.TraceEvent(trace.TraceType.DurationGroupStart, "m5", "L5", 5, "G5"),
-    trace.TraceEvent(trace.TraceType.AsyncStart, "m6", "L6", 6, "G6", 106),
-    trace.TraceEvent(trace.TraceType.DurationEnd, "m7", "L7", 7),
-    trace.TraceEvent(trace.TraceType.DurationGroupEnd, "m8", "L8", 8, "G8"),
-    trace.TraceEvent(trace.TraceType.AsyncEnd, "m9", "L9", 9, "G9", 109)
+    trace.TraceEvent(trace.TraceType.INSTANTANEOUS, "m1", "L1", 1),
+    trace.TraceEvent(trace.TraceType.INSTANTANEOUS_GROUP, "m2", "L2", 2, "G2"),
+    trace.TraceEvent(trace.TraceType.ASYNC_STEP, "m3", "L3", 3, "G3", 103),
+    trace.TraceEvent(trace.TraceType.DURATION_START, "m4", "L4", 4),
+    trace.TraceEvent(trace.TraceType.DURATION_GROUP_START, "m5", "L5", 5,
+                     "G5"),
+    trace.TraceEvent(trace.TraceType.ASYNC_START, "m6", "L6", 6, "G6", 106),
+    trace.TraceEvent(trace.TraceType.DURATION_END, "m7", "L7", 7),
+    trace.TraceEvent(trace.TraceType.DURATION_GROUP_END, "m8", "L8", 8, "G8"),
+    trace.TraceEvent(trace.TraceType.ASYNC_END, "m9", "L9", 9, "G9", 109)
 ]
 
 test_json = [
@@ -51,7 +52,7 @@ test_json = [
 class TestTraceGenerateJson(unittest.TestCase):
     """Tests generate json with various events."""
     def test_generate_single_json_event(self):
-        event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
+        event = trace.TraceEvent(event_type=trace.TraceType.INSTANTANEOUS,
                                  module="module",
                                  label="label",
                                  timestamp_us=10)
@@ -73,7 +74,7 @@ class TestTraceGenerateJson(unittest.TestCase):
 
     def test_generate_json_data_arg_label(self):
         event = trace.TraceEvent(
-            event_type=trace.TraceType.Instantaneous,
+            event_type=trace.TraceType.INSTANTANEOUS,
             module="module",
             label="",  # Is replaced by data string
             timestamp_us=10,
@@ -91,13 +92,14 @@ class TestTraceGenerateJson(unittest.TestCase):
         })
 
     def test_generate_json_data_arg_group(self):
-        event = trace.TraceEvent(event_type=trace.TraceType.InstantaneousGroup,
-                                 module="module",
-                                 label="label",
-                                 timestamp_us=10,
-                                 has_data=True,
-                                 data_fmt="@pw_arg_group",
-                                 data=bytes("arg", "utf-8"))
+        event = trace.TraceEvent(
+            event_type=trace.TraceType.INSTANTANEOUS_GROUP,
+            module="module",
+            label="label",
+            timestamp_us=10,
+            has_data=True,
+            data_fmt="@pw_arg_group",
+            data=bytes("arg", "utf-8"))
         json_lines = trace.generate_trace_json([event])
         self.assertEqual(1, len(json_lines))
         self.assertEqual(
@@ -111,7 +113,7 @@ class TestTraceGenerateJson(unittest.TestCase):
             })
 
     def test_generate_json_data_counter(self):
-        event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
+        event = trace.TraceEvent(event_type=trace.TraceType.INSTANTANEOUS,
                                  module="module",
                                  label="counter",
                                  timestamp_us=10,
@@ -133,7 +135,7 @@ class TestTraceGenerateJson(unittest.TestCase):
             })
 
     def test_generate_json_data_struct_fmt_single(self):
-        event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
+        event = trace.TraceEvent(event_type=trace.TraceType.INSTANTANEOUS,
                                  module="module",
                                  label="counter",
                                  timestamp_us=10,
@@ -155,7 +157,7 @@ class TestTraceGenerateJson(unittest.TestCase):
             })
 
     def test_generate_json_data_struct_fmt_multi(self):
-        event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
+        event = trace.TraceEvent(event_type=trace.TraceType.INSTANTANEOUS,
                                  module="module",
                                  label="counter",
                                  timestamp_us=10,

@@ -274,43 +274,36 @@ class ArduinoBuilder:
         # TODO(tonymd): Make sure these variables are replaced in recipe lines
         # even if they are None: build_path, project_path, project_source_path,
         # build_project_name
-        for current_board_name in self.board.keys():
+        for current_board in self.board.values():
             if self.build_path:
-                self.board[current_board_name]["build.path"] = self.build_path
+                current_board["build.path"] = self.build_path
             if self.build_project_name:
-                self.board[current_board_name][
-                    "build.project_name"] = self.build_project_name
+                current_board["build.project_name"] = self.build_project_name
                 # {archive_file} is the final *.elf
                 archive_file = "{}.elf".format(self.build_project_name)
-                self.board[current_board_name]["archive_file"] = archive_file
+                current_board["archive_file"] = archive_file
                 # {archive_file_path} is the final core.a archive
                 if self.build_path:
-                    self.board[current_board_name][
-                        "archive_file_path"] = os.path.join(
-                            self.build_path, "core.a")
+                    current_board["archive_file_path"] = os.path.join(
+                        self.build_path, "core.a")
             if self.project_source_path:
-                self.board[current_board_name][
-                    "build.source.path"] = self.project_source_path
+                current_board["build.source.path"] = self.project_source_path
 
-            self.board[current_board_name]["extra.time.local"] = str(
-                int(time.time()))
-            self.board[current_board_name]["runtime.ide.version"] = "10812"
-            self.board[current_board_name][
-                "runtime.hardware.path"] = self.hardware_path
+            current_board["extra.time.local"] = str(int(time.time()))
+            current_board["runtime.ide.version"] = "10812"
+            current_board["runtime.hardware.path"] = self.hardware_path
 
             # Copy {runtime.tools.TOOL_NAME.path} vars
-            self._set_tools_variables(self.board[current_board_name])
+            self._set_tools_variables(current_board)
 
-            self.board[current_board_name][
-                "runtime.platform.path"] = self.package_path
+            current_board["runtime.platform.path"] = self.package_path
             if self.platform["name"] == "Teensyduino":
                 # Teensyduino is installed into the arduino IDE folder
                 # rather than ~/.arduino15/packages/
-                self.board[current_board_name][
-                    "runtime.hardware.path"] = os.path.join(
-                        self.hardware_path, "teensy")
+                current_board["runtime.hardware.path"] = os.path.join(
+                    self.hardware_path, "teensy")
 
-            self.board[current_board_name]["build.system.path"] = os.path.join(
+            current_board["build.system.path"] = os.path.join(
                 self.package_path, "system")
 
             # Set the {build.core.path} variable that pointing to a sub-core
@@ -319,16 +312,15 @@ class ArduinoBuilder:
             # it's typically just the 'arduino' folder. For example:
             # 'arduino-samd/hardware/samd/1.8.8/cores/arduino'
             core_path = Path(self.package_path) / "cores"
-            core_path /= self.board[current_board_name].get(
-                "build.core", self.sub_core_folders[0])
-            self.board[current_board_name][
-                "build.core.path"] = core_path.as_posix()
+            core_path /= current_board.get("build.core",
+                                           self.sub_core_folders[0])
+            current_board["build.core.path"] = core_path.as_posix()
 
-            self.board[current_board_name]["build.arch"] = self.build_arch
+            current_board["build.arch"] = self.build_arch
 
-            for name, var in self.board[current_board_name].items():
-                self.board[current_board_name][name] = var.replace(
-                    "{build.core.path}", core_path.as_posix())
+            for name, var in current_board.items():
+                current_board[name] = var.replace("{build.core.path}",
+                                                  core_path.as_posix())
 
     def load_board_definitions(self):
         """Loads Arduino boards.txt and platform.txt files into dictionaries.
@@ -363,7 +355,7 @@ class ArduinoBuilder:
                     b_match["name"]] = OrderedDict()
 
             # Get all board variables, e.g. teensy40.*
-            for current_board_name in self.board.keys():
+            for current_board_name, current_board in self.board.items():
                 board_line_matches = re.finditer(
                     fr"^\s*{current_board_name}\."
                     fr"(?P<key>[^#=]+)=(?P<value>.*)$", board_file,
@@ -375,8 +367,7 @@ class ArduinoBuilder:
                     ArduinoBuilder.save_default_menu_option(
                         current_board_name, b_match["key"], b_match["value"],
                         self.menu_options)
-                    self.board[current_board_name][
-                        b_match["key"]] = b_match["value"].strip()
+                    current_board[b_match["key"]] = b_match["value"].strip()
 
             self._set_global_arduino_variables()
 
