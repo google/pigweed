@@ -23,7 +23,7 @@ setuptools.setup(
     description='Presubmit tools and a presubmit script for Pigweed',
     install_requires=[
         'scan-build==2.0.19',
-        'yapf==0.30.0',
+        'yapf==0.31.0',
         'pw_cli',
         'pw_package',
     ],

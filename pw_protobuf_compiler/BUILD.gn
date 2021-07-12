@@ -51,6 +51,7 @@ pw_proto_library("test_protos") {
 
 # PyPI Requirements needed to install Python protobuf packages.
 pw_python_requirements("protobuf_requirements") {
-  # mypy-protobuf 1.24 is required to support optional fields in proto3.
-  requirements = [ "mypy-protobuf>=2.2" ]
+  # mypy-protobuf 2.7 requires protoc >= 3.17.3, python-protobuf >= 3.17.3, and
+  # mypy >= 0.910. Stay on 2.6 until protoc and mypy are updated.
+  requirements = [ "mypy-protobuf==2.6" ]
 }

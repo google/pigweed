@@ -156,7 +156,7 @@ group("empty") {
 pw_python_requirements("python_lint") {
   requirements = [
     "build",
-    "mypy==0.800",
+    "mypy==0.812",
     "pylint==2.9.3",
   ]
 }
