@@ -45,7 +45,7 @@ pw_proto_library(pw_third_party.nanopb.proto
 # Generates nanopb_pb2.py, which is needed to compile protobufs with Nanopb.
 add_custom_command(
   COMMAND
-    python "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py" "${dir_pw_third_party_nanopb}"
+    python3 "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py" "${dir_pw_third_party_nanopb}"
   OUTPUT
     "${dir_pw_third_party_nanopb}/generator/proto/nanopb_pb2.py"
 )
