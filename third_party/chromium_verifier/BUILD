@@ -20,7 +20,7 @@ load(
 pw_cc_library(
     name = "pthread",
     hdrs = [
-        "public/chromium_verifier/pthread/pthread.h"
+        "public/chromium_verifier/pthread/pthread.h",
     ],
-    includes = [ "public/chromium_verifier/pthread" ],
+    includes = ["public/chromium_verifier/pthread"],
 )

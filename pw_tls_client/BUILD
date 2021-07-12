@@ -61,9 +61,9 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "fake_entropy",
-    srcs = [ "fake_entropy.cc" ],
+    srcs = ["fake_entropy.cc"],
     deps = [
-        ":entropy_facade"
+        ":entropy_facade",
     ],
 )
 

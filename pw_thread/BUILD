@@ -165,20 +165,20 @@ pw_cc_library(
 
 pw_cc_library(
     name = "snapshot",
-    hdrs = [
-        "public/pw_thread/snapshot.h"
-    ],
     srcs = [
-        "snapshot.cc"
+        "snapshot.cc",
+    ],
+    hdrs = [
+        "public/pw_thread/snapshot.h",
     ],
     deps = [
         ":util",
-        "//pw_thread:protos",
         "//pw_bytes",
         "//pw_function",
+        "//pw_log",
         "//pw_protobuf",
         "//pw_status",
-        "//pw_log",
+        "//pw_thread:protos",
     ],
 )
 

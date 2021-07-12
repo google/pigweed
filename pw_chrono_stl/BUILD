@@ -65,8 +65,8 @@ pw_cc_library(
     ],
     deps = [
         "//pw_chrono:system_clock",
-        "//pw_function",
         "//pw_chrono:system_timer_facade",
+        "//pw_function",
     ],
 )
 

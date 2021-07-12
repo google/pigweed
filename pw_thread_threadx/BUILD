@@ -162,11 +162,11 @@ pw_cc_library(
 
 pw_cc_library(
     name = "util",
-    hdrs = [
-        "public/pw_thread_threadx/util.h"
-    ],
     srcs = [
-        "util.cc"
+        "util.cc",
+    ],
+    hdrs = [
+        "public/pw_thread_threadx/util.h",
     ],
     deps = [
         "//pw_function",
@@ -178,19 +178,19 @@ pw_cc_library(
 
 pw_cc_library(
     name = "snapshot",
-    hdrs = [
-        "public/pw_thread_threadx/snapshot.h"
-    ],
     srcs = [
-        "snapshot.cc"
+        "snapshot.cc",
+    ],
+    hdrs = [
+        "public/pw_thread_threadx/snapshot.h",
     ],
     deps = [
         ":util",
-        "//pw_thread:protos",
         "//pw_bytes",
         "//pw_function",
         "//pw_protobuf",
         "//pw_status",
+        "//pw_thread:protos",
     ],
     # TODO(pwbug/317): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.

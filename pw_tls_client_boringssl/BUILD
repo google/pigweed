@@ -24,6 +24,7 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_tls_client_boringssl",
+    srcs = ["tls_client_boringssl.cc"],
     hdrs = [
         "public/pw_tls_client_boringssl/backend_types.h",
         "public_overrides/pw_tls_client_backends/backend_types.h",
@@ -32,10 +33,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    srcs = [ "tls_client_boringssl.cc" ],
     deps = [
         "//pw_tls_clent:pw_tls_client_facade",
-    ]
+    ],
 )
 
 pw_cc_test(
@@ -47,4 +47,3 @@ pw_cc_test(
         ":pw_tls_client_boringssl",
     ],
 )
-

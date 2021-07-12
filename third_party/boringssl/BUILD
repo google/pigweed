@@ -31,13 +31,13 @@ pw_cc_library(
 # TODO(zyecheng): Add boringssl library dependency once its build recipe is ready.
 pw_cc_library(
     name = "test_server",
-    hdrs = [ "public/boringssl/test/test_server.h" ],
-    srcs = [ "test_server.cc" ],
-    includes = [ "public" ],
+    srcs = ["test_server.cc"],
+    hdrs = ["public/boringssl/test/test_server.h"],
+    includes = ["public"],
 )
 
 pw_cc_test(
     name = "test_server_test",
-    srcs = [ "test_server_test.cc" ],
-    deps = [ ":test_server" ],
+    srcs = ["test_server_test.cc"],
+    deps = [":test_server"],
 )

@@ -67,15 +67,15 @@ pw_cc_library(
 )
 
 pw_cc_library(
-  name = "system_timer_facade",
-  hdrs = [
-      "public/pw_chrono/system_timer.h"
-  ],
-  includes = ["public"],
-  deps = [
-      ":system_clock",
-      "//pw_function",
-  ],
+    name = "system_timer_facade",
+    hdrs = [
+        "public/pw_chrono/system_timer.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":system_clock",
+        "//pw_function",
+    ],
 )
 
 pw_cc_library(
