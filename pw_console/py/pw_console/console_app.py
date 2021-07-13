@@ -20,7 +20,7 @@ import asyncio
 import logging
 import functools
 from threading import Thread
-from typing import Iterable, Optional, Union
+from typing import Dict, Iterable, Optional, Union
 
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.application import Application
@@ -76,7 +76,7 @@ class FloatingMessageBar(ConditionalContainer):
 
 
 def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
-                             pane: 'LogPane'):
+                             pane: 'LogPane') -> None:
     """A log pane handler for a given logger instance."""
     if not pane:
         return
@@ -492,28 +492,29 @@ class ConsoleApp:
         """Regenerate styles for the current theme_name."""
         self._current_theme = pw_console.style.generate_styles(theme_name)
 
-    def _create_log_pane(self) -> 'LogPane':
+    def _create_log_pane(self, title=None) -> 'LogPane':
         # Create one log pane.
-        self.active_panes.appendleft(LogPane(application=self))
+        self.active_panes.appendleft(
+            LogPane(application=self, pane_title=title))
         return self.active_panes[0]
 
     def add_log_handler(self,
-                        logger: Union[str, logging.Logger, Iterable],
+                        window_title: str,
+                        logger_instances: Iterable[logging.Logger],
                         separate_log_panes=False):
         """Add the Log pane as a handler for this logger instance."""
+
         existing_log_pane = None
-        # Find an existing LogPane
+        # Find an existing LogPane with the same window_title.
         for pane in self.active_panes:
-            if isinstance(pane, LogPane):
+            if isinstance(pane, LogPane) and pane.pane_title() == window_title:
                 existing_log_pane = pane
                 break
-        if separate_log_panes or not existing_log_pane:
-            existing_log_pane = self._create_log_pane()
 
-        if isinstance(logger, collections.abc.Iterable):
-            for this_logger in logger:
-                _add_log_handler_to_pane(this_logger, existing_log_pane)
-        else:
+        if not existing_log_pane or separate_log_panes:
+            existing_log_pane = self._create_log_pane(title=window_title)
+
+        for logger in logger_instances:
             _add_log_handler_to_pane(logger, existing_log_pane)
 
         self._update_root_container_body()
@@ -591,7 +592,7 @@ class ConsoleApp:
             1] = self._create_root_split()
 
     def toggle_log_line_wrapping(self):
-        """Menu item handler to toggle line wrapping of all log pane."""
+        """Menu item handler to toggle line wrapping of all log panes."""
         for pane in self.active_panes:
             if isinstance(pane, LogPane):
                 pane.toggle_wrap_lines()
@@ -684,14 +685,16 @@ class ConsoleApp:
 
 
 def embed(
-    global_vars=None,
-    local_vars=None,
-    loggers: Optional[Iterable[Union[str, logging.Logger, Iterable]]] = None,
-    test_mode=False,
-    repl_startup_message: Optional[str] = None,
-    help_text: Optional[str] = None,
-    app_title: Optional[str] = None,
-    separate_log_panes=False,
+        global_vars=None,
+        local_vars=None,
+        loggers: Optional[Union[Dict[str, Iterable[logging.Logger]],
+                                Iterable]] = None,
+        test_mode=False,
+        repl_startup_message: Optional[str] = None,
+        help_text: Optional[str] = None,
+        app_title: Optional[str] = None,
+        # TODO(tonymd): Remove this unused arg when it will not break users.
+        separate_log_panes=False,  # pylint: disable=unused-argument
 ) -> None:
     """Call this to embed pw console at the call point within your program.
     It's similar to `ptpython.embed` and `IPython.embed`. ::
@@ -702,26 +705,15 @@ def embed(
 
         embed(global_vars=globals(),
               local_vars=locals(),
-              loggers=[
-                  logging.getLogger(__package__),
-                  logging.getLogger('device logs'),
-              ],
-              app_title='My Awesome Console',
-        )
-
-    You can also create multiple Log window panes on startup with the
-    `separate_log_panes` param. Loggers can be grouped into lists to have more
-    than one log to a given log pane. ::
-
-        embed(global_vars=globals(),
-              local_vars=locals(),
-              loggers=[
-                  # Log window pane 1:
-                  ['log1', 'log2'],
-                  # Log window pane 2:
-                  ['log3', 'log4', 'log5'],
-              ],
-              separate_log_panes=True,
+              loggers={
+                  'Host Logs': [
+                      logging.getLogger(__package__),
+                      logging.getLogger(__file__)
+                  ],
+                  'Device Logs': [
+                      logging.getLogger('usb_gadget')
+                  ],
+              },
               app_title='My Awesome Console',
         )
 
@@ -731,11 +723,10 @@ def embed(
     :param local_vars: Dictionary representing the desired local symbol
         table. Similar to what is returned by `locals()`.
     :type local_vars: dict, optional
-    :param loggers: List of `logging.getLogger()` instances or logger string
-        names that should be shown in the pw console log pane user
-        interface. Loggers can be grouped in lists to attach more than one
-        logger to a single pane.
-    :type loggers: Iterable[Union[str, logging.Logger, Iterable]], optional
+    :param loggers: Dict with keys of log window titles and values of
+        `logging.getLogger()` instances in lists. Each key that should be shown
+        in the pw console user interface.
+    :type loggers: Dict[str, Iterable[logging.Logger]], optional
     :param app_title: Custom title text displayed in the user interface.
     :type app_title: str, optional
     :param repl_startup_message: Custom text shown by default in the repl output
@@ -744,9 +735,6 @@ def embed(
     :param help_text: Custom text shown at the top of the help window before
         keyboard shortcuts.
     :type help_text: str, optional
-    :param separate_log_panes: If True create separate log window panes for each
-        logger instance passed in via the `loggers` param, defaults to False.
-    :type separate_log_panes: bool, optional
     """
     console_app = ConsoleApp(
         global_vars=global_vars,
@@ -758,8 +746,18 @@ def embed(
 
     # Add loggers to the console app log pane.
     if loggers:
-        for logger in loggers:
-            console_app.add_log_handler(logger, separate_log_panes)
+        # TODO(tonymd): Remove this backward compatible isinstance check when it
+        # won't break user builds.
+        if isinstance(loggers, list):
+            if separate_log_panes:
+                for i, logger_instance in enumerate(loggers):
+                    console_app.add_log_handler('Logs {}'.format(i + 1),
+                                                [logger_instance])
+            else:
+                console_app.add_log_handler('Logs', loggers)
+        elif isinstance(loggers, dict):
+            for window_title, logger_instances in loggers.items():
+                console_app.add_log_handler(window_title, logger_instances)
 
     # Start a thread for running user code.
     console_app.start_user_code_thread()

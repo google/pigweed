@@ -39,13 +39,15 @@ class TestConsoleApp(unittest.TestCase):
         with create_app_session(output=FakeOutput()):
             console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
 
-            console_app.add_log_handler(logging.getLogger('test_log1'),
-                                        separate_log_panes=True)
-            console_app.add_log_handler(logging.getLogger('test_log2'),
-                                        separate_log_panes=True)
-            console_app.add_log_handler(logging.getLogger('test_log3'),
-                                        separate_log_panes=True)
+            loggers = {
+                'Log1': [logging.getLogger('test_log1')],
+                'Log2': [logging.getLogger('test_log2')],
+                'Log3': [logging.getLogger('test_log3')],
+            }
+            for window_title, logger_instances in loggers.items():
+                console_app.add_log_handler(window_title, logger_instances)
 
+            # 4 panes, 3 for the loggers and 1 for the repl.
             self.assertEqual(len(console_app.active_panes), 4)
 
             # Bypass prompt_toolkit has_focus()
@@ -87,12 +89,15 @@ class TestConsoleApp(unittest.TestCase):
         with create_app_session(output=FakeOutput()):
             console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
 
-            console_app.add_log_handler(logging.getLogger('test_log1'),
-                                        separate_log_panes=False)
-            console_app.add_log_handler(logging.getLogger('test_log2'),
-                                        separate_log_panes=False)
-            console_app.add_log_handler(logging.getLogger('test_log3'),
-                                        separate_log_panes=False)
+            loggers = {
+                'Logs': [
+                    logging.getLogger('test_log1'),
+                    logging.getLogger('test_log2'),
+                    logging.getLogger('test_log3'),
+                ]
+            }
+            for window_title, logger_instances in loggers.items():
+                console_app.add_log_handler(window_title, logger_instances)
 
             # Two panes, one for the loggers and one for the repl.
             self.assertEqual(len(console_app.active_panes), 2)
