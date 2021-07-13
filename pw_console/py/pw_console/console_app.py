@@ -260,11 +260,16 @@ class ConsoleApp:
             mouse_support=True,
             color_depth=color_depth)
 
+    def _run_pane_menu_option(self, function_to_run):
+        function_to_run()
+        self._update_menu_items()
+        self.focus_main_menu()
+
     def _update_menu_items(self):
         self.root_container.menu_items = self._create_menu_items()
 
     def _create_menu_items(self):
-        menu_items = [
+        file_and_view_menu = [
             # File menu
             MenuItem(
                 '[File]',
@@ -276,6 +281,12 @@ class ConsoleApp:
             MenuItem(
                 '[View]',
                 children=[
+                    MenuItem('{check} Vertical Window Spliting'.format(
+                        check=pw_console.widgets.checkbox.to_checkbox_text(
+                            self.vertical_split)),
+                             handler=self.toggle_vertical_split),
+                    MenuItem('Rotate Window Order', handler=self.rotate_panes),
+                    MenuItem('-'),
                     MenuItem(
                         'Themes',
                         children=[
@@ -322,33 +333,40 @@ class ConsoleApp:
                                     'zenburn')),
                         ],
                     ),
-                    MenuItem('-'),
-                    MenuItem('Toggle Log line Wrapping',
-                             handler=self.toggle_log_line_wrapping),
                 ],
             ),
-            # Info / Help
+        ]
+
+        window_menu = [
+            # Window pane menu
             MenuItem(
-                '[Window]',
+                '[Windows]',
                 children=[
-                    MenuItem('{check} Vertical Window Spliting'.format(
-                        check=pw_console.widgets.checkbox.to_checkbox_text(
-                            self.vertical_split)),
-                             handler=self.toggle_vertical_split),
-                    MenuItem('-'),
-                ] + [
-                    MenuItem('{check} {index}: {title} {subtitle}'.format(
-                        check=pw_console.widgets.checkbox.to_checkbox_text(
-                            pane.show_pane),
-                        index=index + 1,
-                        title=pane.pane_title(),
-                        subtitle=pane.pane_subtitle()),
-                             handler=functools.partial(self.toggle_pane, pane))
-                    for index, pane in enumerate(self.active_panes)
-                ] + [
-                    MenuItem('-'),
-                    MenuItem('Rotate Window Order', handler=self.rotate_panes),
-                ]),
+                    MenuItem(
+                        '{index}: {title} {subtitle}'.format(
+                            index=index + 1,
+                            title=pane.pane_title(),
+                            subtitle=pane.pane_subtitle()),
+                        children=[
+                            MenuItem(
+                                '{check} Show Window'.format(
+                                    check=pw_console.widgets.checkbox.
+                                    to_checkbox_text(pane.show_pane, end='')),
+                                handler=functools.partial(
+                                    self.toggle_pane, pane),
+                            ),
+                        ] + [
+                            MenuItem(text,
+                                     handler=functools.partial(
+                                         self._run_pane_menu_option, handler))
+                            for text, handler in pane.get_all_menu_options()
+                        ],
+                    ) for index, pane in enumerate(self.active_panes)
+                ],
+            )
+        ]
+
+        help_menu = [
             # Info / Help
             MenuItem(
                 '[Help]',
@@ -358,7 +376,7 @@ class ConsoleApp:
             ),
         ]
 
-        return menu_items
+        return file_and_view_menu + window_menu + help_menu
 
     def _get_current_active_pane(self):
         """Return the current active window pane."""
@@ -368,6 +386,51 @@ class ConsoleApp:
                 focused_pane = pane
                 break
         return focused_pane
+
+    def add_pane(self, new_pane, existing_pane=None):
+        existing_pane_index = None
+        if existing_pane:
+            try:
+                existing_pane_index = self.active_panes.index(existing_pane)
+            except ValueError:
+                # Ignore ValueError which can be raised by the self.active_panes
+                # deque if existing_pane can't be found.
+                pass
+        if existing_pane_index:
+            self.active_panes.insert(new_pane, existing_pane_index + 1)
+        else:
+            self.active_panes.append(new_pane)
+
+        self._update_menu_items()
+        self._update_root_container_body()
+
+        self.redraw_ui()
+
+    def remove_pane(self, existing_pane):
+        existing_pane_index = 0
+        if not existing_pane:
+            return
+        try:
+            existing_pane_index = self.active_panes.index(existing_pane)
+            self.active_panes.remove(existing_pane)
+        except ValueError:
+            # Ignore ValueError which can be raised by the self.active_panes
+            # deque if existing_pane can't be found.
+            pass
+
+        self._update_menu_items()
+        self._update_root_container_body()
+        if len(self.active_panes) > 0:
+            existing_pane_index -= 1
+            try:
+                self.focus_on_container(self.active_panes[existing_pane_index])
+            except ValueError:
+                # ValueError will be raised if the the pane at
+                # existing_pane_index can't be accessed.
+                # Focus on the main menu if the existing pane is hidden.
+                self.focus_main_menu()
+
+        self.redraw_ui()
 
     def enlarge_pane(self):
         """Enlarge the currently focused window pane."""
@@ -400,6 +463,7 @@ class ConsoleApp:
                                                 == len(self.active_panes) - 1):
                 next_pane = self.active_panes[-2]
         except ValueError:
+            # Ignore ValueError raised if self.active_panes[-2] doesn't exist.
             pass
 
         # Get current weight values
@@ -631,10 +695,15 @@ class ConsoleApp:
 
     def redraw_ui(self):
         """Redraw the prompt_toolkit UI."""
-        self.application.invalidate()
+        if hasattr(self, 'application'):
+            # Thread safe way of sending a repaint trigger to the input event
+            # loop.
+            self.application.invalidate()
 
     async def run(self, test_mode=False):
         """Start the prompt_toolkit UI."""
+        self.reset_pane_sizes()
+
         if test_mode:
             background_log_task = asyncio.create_task(self.log_forever())
 

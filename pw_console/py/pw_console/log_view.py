@@ -13,11 +13,16 @@
 # the License.
 """LogView maintains a log pane's scrolling and searching state."""
 
+from __future__ import annotations
+import asyncio
 import collections
 import logging
+import re
 import time
 from typing import List, Optional, TYPE_CHECKING
 
+from prompt_toolkit.formatted_text.utils import fragment_list_to_text
+from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -33,6 +38,8 @@ if TYPE_CHECKING:
 
 _LOG = logging.getLogger(__package__)
 
+_UPPERCASE_REGEX = re.compile(r'[A-Z]')
+
 
 class LogView:
     """Viewing window into a LogStore."""
@@ -46,6 +53,19 @@ class LogView:
         self.log_pane = log_pane
         self.log_store = log_store if log_store else LogStore()
         self.log_store.register_viewer(self)
+
+        # Search variables
+        self.search_text = None
+        self.search_re_flags = None
+        self.search_regex = None
+        self.search_highlight = False
+
+        # Filter
+        self.filtering_on = False
+        self.filter_text = None
+        self.filter_regex = None
+        self.filtered_logs: collections.deque = collections.deque()
+        self.filter_existing_logs_task = None
 
         # Current log line index state variables:
         self.line_index = 0
@@ -70,7 +90,100 @@ class LogView:
         # rendering by `get_cursor_position()`.
         self._line_fragment_cache: collections.deque = collections.deque()
 
-    def set_log_pane(self, log_pane):
+    def _set_match_position(self, position: int):
+        self.follow = False
+        self.line_index = position
+        self.log_pane.application.redraw_ui()
+
+    def search_forwards(self):
+        if not self.search_regex:
+            return
+        self.search_highlight = True
+
+        starting_index = self.get_current_line() + 1
+        if starting_index > self.log_store.get_last_log_line_index():
+            starting_index = 0
+
+        # From current position +1 and down
+        for i in range(starting_index,
+                       self.log_store.get_last_log_line_index() + 1):
+            if self.search_regex.search(
+                    self.log_store.logs[i].ansi_stripped_log):
+                self._set_match_position(i)
+                return
+
+        # From the beginning to the original start
+        for i in range(0, starting_index):
+            if self.search_regex.search(
+                    self.log_store.logs[i].ansi_stripped_log):
+                self._set_match_position(i)
+                return
+
+    def search_backwards(self):
+        if not self.search_regex:
+            return
+        self.search_highlight = True
+
+        starting_index = self.get_current_line() - 1
+        if starting_index < 0:
+            starting_index = self.log_store.get_last_log_line_index()
+
+        # From current position - 1 and up
+        for i in range(starting_index, -1, -1):
+            if self.search_regex.search(
+                    self.log_store.logs[i].ansi_stripped_log):
+                self._set_match_position(i)
+                return
+
+        # From the end to the original start
+        for i in range(self.log_store.get_last_log_line_index(),
+                       starting_index, -1):
+            if self.search_regex.search(
+                    self.log_store.logs[i].ansi_stripped_log):
+                self._set_match_position(i)
+                return
+
+    def _set_search_regex(self, text):
+        # Reset search text
+        self.search_text = text
+        self.search_highlight = True
+
+        # Ignorecase unless the text has capital letters in it.
+        if _UPPERCASE_REGEX.search(text):
+            self.search_re_flags = re.RegexFlag(0)
+        else:
+            self.search_re_flags = re.IGNORECASE
+
+        self.search_regex = re.compile(re.escape(self.search_text),
+                                       self.search_re_flags)
+
+    def new_search(self, text):
+        """Start a new search for the given text."""
+        self._set_search_regex(text)
+        # Default search direction when hitting enter in the search bar.
+        self.search_backwards()
+
+    def disable_search_highlighting(self):
+        self.log_pane.log_view.search_highlight = False
+
+    def apply_filter(self, text=None):
+        """Set a filter."""
+        if not text:
+            text = self.search_text
+        self._set_search_regex(text)
+        self.filter_text = text
+        self.filter_regex = self.search_regex
+        self.search_highlight = False
+
+        self.filter_existing_logs_task = asyncio.create_task(
+            self.filter_logs())
+
+    async def filter_logs(self):
+        """Filter"""
+        # TODO(tonymd): Filter existing lines here.
+        await asyncio.sleep(.3)
+
+    def set_log_pane(self, log_pane: 'LogPane'):
         """Set the parent LogPane instance."""
         self.log_pane = log_pane
 
@@ -82,8 +195,8 @@ class LogView:
         """Total size of the logs store."""
         return self.log_store.get_total_count()
 
-    def clear_logs(self):
-        """Erase all stored pane lines."""
+    def clear_scrollback(self):
+        """Hide log lines before the max length of the stored logs."""
         # TODO(tonymd): Should the LogStore be erased?
 
     def wrap_lines_enabled(self):
@@ -106,6 +219,8 @@ class LogView:
         return 0
 
     def new_logs_arrived(self):
+        # If follow is on, scroll to the last line.
+        # TODO(tonymd): Filter new lines here.
         if self.follow:
             self.scroll_to_bottom()
 
@@ -121,13 +236,9 @@ class LogView:
             self._last_ui_update_time = emit_time
 
             # Trigger Prompt Toolkit UI redraw.
-            console_app = self.log_pane.application
-            if hasattr(console_app, 'application'):
-                # Thread safe way of sending a repaint trigger to the input
-                # event loop.
-                console_app.application.invalidate()
+            self.log_pane.application.redraw_ui()
 
-    def get_cursor_position(self) -> Optional[Point]:
+    def get_cursor_position(self) -> Point:
         """Return the position of the cursor."""
         # This implementation is based on get_cursor_position from
         # prompt_toolkit's FormattedTextControl class.
@@ -144,7 +255,9 @@ class LogView:
                 # If [SetCursorPosition] is in the style set the cursor position
                 # to this row and column.
                 if fragment in style_str:
-                    return Point(x=column, y=row)
+                    return Point(x=column +
+                                 self.log_pane.get_horizontal_scroll_amount(),
+                                 y=row)
                 column += len(text)
         return Point(0, 0)
 
@@ -246,7 +359,7 @@ class LogView:
 
     def render_table_header(self):
         """Get pre-formatted table header."""
-        return self.log_store.table.formatted_header()
+        return self.log_store.render_table_header()
 
     def render_content(self) -> List:
         """Return log lines as a list of FormattedText tuples.
@@ -310,7 +423,8 @@ class LogView:
             used_lines += line_breaks
 
             # If this is the selected line apply a style class for highlighting.
-            if i == self.line_index:
+            selected = i == self.line_index
+            if selected:
                 line_fragments = (
                     pw_console.text_formatting.fill_character_width(
                         line_fragments,
@@ -318,11 +432,20 @@ class LogView:
                         self._window_width,
                         remaining_width,
                         self.wrap_lines_enabled(),
+                        horizontal_scroll_amount=(
+                            self.log_pane.get_horizontal_scroll_amount()),
                         add_cursor=True))
 
                 # Apply the selected-log-line background color
                 line_fragments = to_formatted_text(
                     line_fragments, style='class:selected-log-line')
+
+            # Apply search term highlighting.
+            if self.search_regex and self.search_highlight and (
+                    self.search_regex.search(
+                        self.log_store.logs[i].ansi_stripped_log)):
+                line_fragments = self._highlight_search_matches(
+                    line_fragments, selected)
 
             # Save this line to the beginning of the cache.
             self._line_fragment_cache.appendleft(line_fragments)
@@ -337,3 +460,25 @@ class LogView:
 
         return pw_console.text_formatting.flatten_formatted_text_tuples(
             self._line_fragment_cache)
+
+    def _highlight_search_matches(self, line_fragments, selected=False):
+        """Highlight search matches in the current line_fragment."""
+        line_text = fragment_list_to_text(line_fragments)
+        exploded_fragments = explode_text_fragments(line_fragments)
+
+        # Loop through each non-overlapping search match.
+        for match in self.search_regex.finditer(line_text):
+            for fragment_i in range(match.start(), match.end()):
+                # Expand all fragments and apply the highlighting style.
+                old_style, _text, *_ = exploded_fragments[fragment_i]
+                if selected:
+                    exploded_fragments[fragment_i] = (
+                        old_style + ' class:search.current ',
+                        exploded_fragments[fragment_i][1],
+                    )
+                else:
+                    exploded_fragments[fragment_i] = (
+                        old_style + ' class:search ',
+                        exploded_fragments[fragment_i][1],
+                    )
+        return exploded_fragments

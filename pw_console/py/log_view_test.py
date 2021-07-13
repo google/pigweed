@@ -209,6 +209,9 @@ class TestLogView(unittest.TestCase):
                 datetime(2021, 7, 13, 0, 0, 0).timetuple()))
         with patch('time.time', new=mock_time):
             log_view, log_pane = self._create_log_view_with_logs(log_count=4)
+
+        # Mock needed LogPane functions that pull info from prompt_toolkit.
+        log_pane.get_horizontal_scroll_amount = MagicMock(return_value=0)
         log_pane.current_log_pane_width = 30
         log_pane.current_log_pane_height = 10
 

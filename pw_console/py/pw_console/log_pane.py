@@ -17,6 +17,7 @@ import functools
 from typing import Any, List, Optional
 
 from prompt_toolkit.application.current import get_app
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import (
     Condition,
     has_focus,
@@ -44,6 +45,7 @@ from pw_console.log_view import LogView
 from pw_console.log_pane_toolbars import (
     BottomToolbarBar,
     LineInfoBar,
+    SearchToolbar,
     TableToolbar,
 )
 
@@ -51,7 +53,8 @@ from pw_console.log_pane_toolbars import (
 class LogContentControl(FormattedTextControl):
     """LogPane prompt_toolkit UIControl for displaying LogContainer lines."""
     @staticmethod
-    def indent_wrapped_pw_log_format_line(log_pane, line_number, wrap_count):
+    def indent_wrapped_pw_log_format_line(log_pane: 'LogPane', line_number,
+                                          wrap_count):
         """Indent wrapped lines to match pw_cli timestamp & level formatter."""
         prefix_width = log_pane.log_view.get_line_wrap_prefix_width()
 
@@ -64,7 +67,8 @@ class LogContentControl(FormattedTextControl):
         prefix_string = ' ' * prefix_width
 
         # If this line matches the selected log line, highlight it.
-        if line_number == log_pane.log_view.get_cursor_position().y:
+        cursor: Point = log_pane.log_view.get_cursor_position()
+        if cursor and line_number == cursor.y:
             return to_formatted_text(prefix_string,
                                      style='class:selected-log-line')
 
@@ -76,7 +80,7 @@ class LogContentControl(FormattedTextControl):
             self.log_pane.last_log_content_height += height
         return super().create_content(width, height)
 
-    def __init__(self, log_pane, *args, **kwargs):
+    def __init__(self, log_pane: 'LogPane', *args, **kwargs) -> None:
         self.log_pane = log_pane
 
         # Key bindings.
@@ -91,6 +95,19 @@ class LogContentControl(FormattedTextControl):
         def _toggle_table_view(_event: KeyPressEvent) -> None:
             """Toggle table view."""
             self.log_pane.toggle_table_view()
+
+        # TODO(tonymd): Make this a menu option instead of a keybind.
+        @key_bindings.add('insert')
+        def _duplicate(_event: KeyPressEvent) -> None:
+            """Duplicate this log pane."""
+            self.log_pane.duplicate()
+
+        # TODO(tonymd): Make this a menu option instead of a keybind.
+        @key_bindings.add('delete')
+        def _delete(_event: KeyPressEvent) -> None:
+            """Remove log pane."""
+            if self.log_pane.is_a_duplicate:
+                self.log_pane.application.remove_pane(self.log_pane)
 
         @key_bindings.add('C')
         def _clear_history(_event: KeyPressEvent) -> None:
@@ -111,6 +128,23 @@ class LogContentControl(FormattedTextControl):
         def _toggle_follow(_event: KeyPressEvent) -> None:
             """Toggle log line following."""
             self.log_pane.toggle_follow()
+
+        @key_bindings.add('home')
+        @key_bindings.add('^')
+        @key_bindings.add('0')
+        def _horizontal_scroll_beginning(_event: KeyPressEvent) -> None:
+            """Scroll all the way to the left."""
+            self.log_pane.horizontal_scroll_beginning()
+
+        @key_bindings.add('right')
+        def _horizontal_scroll_right(_event: KeyPressEvent) -> None:
+            """Scroll to the right."""
+            self.log_pane.horizontal_scroll_right()
+
+        @key_bindings.add('left')
+        def _horizontal_scroll_left(_event: KeyPressEvent) -> None:
+            """Scroll to the left."""
+            self.log_pane.horizontal_scroll_left()
 
         @key_bindings.add('up')
         @key_bindings.add('k')
@@ -134,7 +168,28 @@ class LogContentControl(FormattedTextControl):
             """Scroll the logs down by one page."""
             self.log_pane.log_view.scroll_down_one_page()
 
-        super().__init__(*args, key_bindings=key_bindings, **kwargs)
+        @key_bindings.add('/')
+        def _start_search(_event: KeyPressEvent) -> None:
+            """Start searching."""
+            self.log_pane.start_search()
+
+        @key_bindings.add('n')
+        def _next_search(_event: KeyPressEvent) -> None:
+            """Repeat the last search."""
+            self.log_pane.log_view.search_forwards()
+
+        @key_bindings.add('N')
+        def _previous_search(_event: KeyPressEvent) -> None:
+            """Repeat the last search in the opposite direction."""
+            self.log_pane.log_view.search_backwards()
+
+        @key_bindings.add('c-l')
+        def _clear_search_highlight(_event: KeyPressEvent) -> None:
+            """Remove search highlighting."""
+            self.log_pane.log_view.search_highlight = False
+
+        kwargs['key_bindings'] = key_bindings
+        super().__init__(*args, **kwargs)
 
     def mouse_handler(self, mouse_event: MouseEvent):
         """Mouse handler for this control."""
@@ -173,7 +228,7 @@ class LogLineHSplit(HSplit):
     """PromptToolkit HSplit class with a write_to_screen function that saves the
     width and height of the container to be rendered.
     """
-    def __init__(self, log_pane, *args, **kwargs):
+    def __init__(self, log_pane: 'LogPane', *args, **kwargs):
         # Save a reference to the parent LogPane.
         self.log_pane = log_pane
         super().__init__(*args, **kwargs)
@@ -212,12 +267,15 @@ class LogPane:
         self.show_bottom_toolbar = True
         # TODO(tonymd): Read these settings from a project (or user) config.
         self.wrap_lines = False
-        self.table_view = True
+        self._table_view = True
         self.height = height if height else Dimension(weight=50)
         self.width = width if width else Dimension(weight=50)
         self.show_pane = True
         self._pane_title = pane_title
         self._pane_subtitle = None
+        self.is_a_duplicate = False
+
+        self.horizontal_scroll_amount = 0
 
         # Create the log container which stores and handles incoming logs.
         self.log_view: LogView = LogView(self)
@@ -230,10 +288,15 @@ class LogPane:
         self.last_log_pane_height = 0
         self.last_log_content_height = 0
 
+        # Search tracking
+        self.search_bar_active = False
+        self.search_toolbar = SearchToolbar(self)
+
+        # Table header bar, only shown if table view is active.
+        self.table_header_toolbar = TableToolbar(self)
+
         # Create the bottom toolbar for the whole log pane.
         self.bottom_toolbar = BottomToolbarBar(self)
-
-        self.table_header_toolbar = TableToolbar(self)
 
         self.log_content_control = LogContentControl(
             self,  # parent LogPane
@@ -267,6 +330,8 @@ class LogPane:
             # Needed for log lines ANSI sequences that don't specify foreground
             # or background colors.
             style=functools.partial(pw_console.style.get_pane_style, self),
+            # get_vertical_scroll=self.get_horizontal_scroll_amount,
+            get_horizontal_scroll=self.get_horizontal_scroll_amount,
         )
 
         # Root level container
@@ -278,6 +343,7 @@ class LogPane:
                     [
                         self.table_header_toolbar,
                         self.log_display_window,
+                        self.search_toolbar,
                         self.bottom_toolbar,
                     ],
                     # Align content with the bottom of the container.
@@ -292,6 +358,29 @@ class LogPane:
                     Float(top=0, right=0, height=1, content=LineInfoBar(self)),
                 ]),
             filter=Condition(lambda: self.show_pane))
+
+    @property
+    def table_view(self):
+        return self._table_view
+
+    @table_view.setter
+    def table_view(self, table_view):
+        self._table_view = table_view
+
+    def get_horizontal_scroll_amount(self, *_args):
+        return self.horizontal_scroll_amount
+
+    def horizontal_scroll_left(self):
+        if self.horizontal_scroll_amount > 0:
+            self.horizontal_scroll_amount -= 1
+
+    def horizontal_scroll_beginning(self):
+        self.horizontal_scroll_amount = 0
+
+    def horizontal_scroll_right(self):
+        if self.wrap_lines:
+            self.toggle_wrap_lines()
+        self.horizontal_scroll_amount += 1
 
     def pane_title(self):
         title = self._pane_title
@@ -315,6 +404,19 @@ class LogPane:
 
         return logger_names[0] + additional_text
 
+    def start_search(self):
+        """Show the search bar to begin a search."""
+        # Show the search bar
+        self.search_bar_active = True
+        # Focus on the search bar
+        self.application.focus_on_container(self.search_toolbar)
+
+    def apply_search(self, text: str):
+        self.log_view.new_search(text)
+
+    def apply_filter(self):
+        self.log_view.apply_filter()
+
     def update_log_pane_size(self, width, height):
         """Save width and height of the log pane for the current UI render
         pass."""
@@ -322,10 +424,12 @@ class LogPane:
             self.last_log_pane_width = self.current_log_pane_width
             self.current_log_pane_width = width
         if height:
-            # Subtract the height of the LogPaneBottomToolbarBar
+            # Subtract the height of the BottomToolbarBar
             height -= BottomToolbarBar.TOOLBAR_HEIGHT
-            if self.table_view:
+            if self._table_view:
                 height -= TableToolbar.TOOLBAR_HEIGHT
+            if self.search_bar_active:
+                height -= SearchToolbar.TOOLBAR_HEIGHT
             self.last_log_pane_height = self.current_log_pane_height
             self.current_log_pane_height = height
 
@@ -335,12 +439,14 @@ class LogPane:
 
     def toggle_table_view(self):
         """Enable or disable table view."""
-        self.table_view = not self.table_view
+        self._table_view = not self._table_view
         self.redraw_ui()
 
     def toggle_wrap_lines(self):
         """Enable or disable line wraping/truncation."""
         self.wrap_lines = not self.wrap_lines
+        if self.wrap_lines:
+            self.horizontal_scroll_beginning()
         self.redraw_ui()
 
     def toggle_follow(self):
@@ -350,18 +456,65 @@ class LogPane:
 
     def clear_history(self):
         """Erase stored log lines."""
-        self.log_view.clear_logs()
+        self.log_view.clear_scrollback()
         self.redraw_ui()
 
     def __pt_container__(self):
         """Return the prompt_toolkit root container for this log pane."""
         return self.container
 
-    # pylint: disable=no-self-use
     def get_all_key_bindings(self) -> List:
         """Return all keybinds for this pane."""
         # Return log content control keybindings
         return [self.log_content_control.get_key_bindings()]
+
+    def get_all_menu_options(self) -> List:
+        """Return all menu options for the log pane."""
+
+        options = [
+            # Menu separator
+            ('-', None),
+            (
+                '{check} Line wrapping'.format(
+                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                        self.wrap_lines, end='')),
+                self.toggle_wrap_lines,
+            ),
+            (
+                '{check} Table view'.format(
+                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                        self._table_view, end='')),
+                self.toggle_table_view,
+            ),
+            (
+                '{check} Follow'.format(
+                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                        self.log_view.follow, end='')),
+                self.toggle_follow,
+            ),
+            (
+                "Remove search highlighting",
+                self.log_view.disable_search_highlighting,
+            ),
+            # Menu separator
+            ('-', None),
+            (
+                "Clear history",
+                self.clear_history,
+            ),
+            (
+                "Duplicate pane",
+                self.duplicate,
+            ),
+        ]
+
+        if self.is_a_duplicate:
+            options += [(
+                "Remove pane",
+                functools.partial(self.application.remove_pane, self),
+            )]
+
+        return options
 
     def after_render_hook(self):
         """Run tasks after the last UI render."""
@@ -373,3 +526,25 @@ class LogPane:
 
     def log_content_control_get_cursor_position(self):
         return self.log_view.get_cursor_position()
+
+    def duplicate(self):
+        """Create a duplicate of this LogView."""
+        new_pane = LogPane(self.application, pane_title=self.pane_title())
+        # Set the log_store
+        log_store = self.log_view.log_store
+        new_pane.log_view.log_store = log_store
+        # Register the duplicate pane as a viewer
+        log_store.register_viewer(new_pane.log_view)
+
+        # Set any existing search state.
+        new_pane.log_view.search_text = self.log_view.search_text
+        new_pane.log_view.search_re_flags = self.log_view.search_re_flags
+        new_pane.log_view.search_regex = self.log_view.search_regex
+        new_pane.log_view.search_highlight = self.log_view.search_highlight
+
+        # Mark new pane as a duplicate so it can be deleted.
+        new_pane.is_a_duplicate = True
+
+        # Add the new pane.
+        self.application.add_pane(new_pane)
+        return new_pane

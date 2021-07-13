@@ -25,5 +25,5 @@ def to_checkbox(checked: bool, mouse_handler=None, end=' '):
     return (style, text)
 
 
-def to_checkbox_text(checked: bool):
-    return to_checkbox(checked)[1]
+def to_checkbox_text(checked: bool, end=' '):
+    return to_checkbox(checked, end=end)[1]

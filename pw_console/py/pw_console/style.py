@@ -99,6 +99,12 @@ def generate_styles(theme_name='dark'):
         'toolbar_active': 'bg:{} {}'.format(theme.active_bg, theme.active_fg),
         'toolbar_inactive': 'bg:{} {}'.format(theme.inactive_bg,
                                               theme.inactive_fg),
+
+        # Dimmer toolbar.
+        'toolbar_dim_active': 'bg:{} {}'.format(theme.active_bg,
+                                                theme.active_fg),
+        'toolbar_dim_inactive': 'bg:{} {}'.format(theme.default_bg,
+                                                  theme.inactive_fg),
         # Used for pane titles
         'toolbar_accent': theme.cyan_accent,
 
@@ -141,6 +147,11 @@ def generate_styles(theme_name='dark'):
         'pane_separator': 'bg:{} {}'.format(theme.default_bg,
                                             theme.purple_accent),
 
+        # Search matches
+        'search': 'bg:{} {}'.format(theme.cyan_accent, theme.default_bg),
+        'search.current': 'bg:{} {}'.format(theme.yellow_accent,
+                                            theme.default_bg),
+
         # Highlighted line styles
         'selected-log-line': 'bg:{}'.format(theme.line_highlight_bg),
         'cursor-line': 'bg:{} nounderline'.format(theme.line_highlight_bg),
@@ -176,11 +187,11 @@ def generate_styles(theme_name='dark'):
     return Style.from_dict(pw_console_styles)
 
 
-def get_toolbar_style(pt_container) -> str:
+def get_toolbar_style(pt_container, dim=False) -> str:
     """Return the style class for a toolbar if pt_container is in focus."""
     if has_focus(pt_container.__pt_container__())():
-        return 'class:toolbar_active'
-    return 'class:toolbar_inactive'
+        return 'class:toolbar_dim_active' if dim else 'class:toolbar_active'
+    return 'class:toolbar_dim_inactive' if dim else 'class:toolbar_inactive'
 
 
 def get_pane_style(pt_container) -> str:

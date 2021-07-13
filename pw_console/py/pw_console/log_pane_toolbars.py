@@ -17,10 +17,12 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.filters import (
     Condition,
     has_focus,
 )
+from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout import (
     ConditionalContainer,
     FormattedTextControl,
@@ -30,6 +32,8 @@ from prompt_toolkit.layout import (
     HorizontalAlign,
 )
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.widgets import TextArea
+from prompt_toolkit.data_structures import Point
 
 import pw_console.widgets.checkbox
 import pw_console.style
@@ -73,16 +77,22 @@ class TableToolbar(ConditionalContainer):
     def __init__(self, log_pane: 'LogPane'):
         # FormattedText of the table column headers.
         table_header_bar_control = FormattedTextControl(
-            log_pane.log_view.render_table_header)
+            log_pane.log_view.render_table_header,
+            get_cursor_position=lambda: Point(
+                log_pane.get_horizontal_scroll_amount(), 0))
         # Left justify the header content.
-        table_header_bar_window = Window(content=table_header_bar_control,
-                                         align=WindowAlign.LEFT,
-                                         dont_extend_width=False)
+        table_header_bar_window = Window(
+            content=table_header_bar_control,
+            align=WindowAlign.LEFT,
+            dont_extend_width=False,
+            get_horizontal_scroll=log_pane.get_horizontal_scroll_amount,
+        )
         super().__init__(VSplit([table_header_bar_window],
                                 height=1,
                                 style=functools.partial(
                                     pw_console.style.get_toolbar_style,
-                                    log_pane),
+                                    log_pane,
+                                    dim=True),
                                 align=HorizontalAlign.LEFT),
                          filter=Condition(lambda: log_pane.table_view))
 
@@ -246,3 +256,70 @@ class BottomToolbarBar(ConditionalContainer):
             toolbar_vsplit,
             filter=Condition(lambda: log_pane.show_bottom_toolbar),
         )
+
+
+class SearchToolbar(ConditionalContainer):
+    """One line toolbar for entering search text."""
+
+    TOOLBAR_HEIGHT = 1
+
+    def close_search_bar(self):
+        """Close search bar."""
+        self.log_pane.search_bar_active = False
+        # Focus on the log_pane.
+        self.log_pane.application.focus_on_container(self.log_pane)
+        self.log_pane.redraw_ui()
+
+    def __init__(self, log_pane: 'LogPane'):
+        self.log_pane = log_pane
+
+        # FormattedText of the search column headers.
+        self.input_field = TextArea(
+            prompt=[('class:logo', '/')],
+            focusable=True,
+            scrollbar=False,
+            multiline=False,
+            height=1,
+            dont_extend_height=True,
+            dont_extend_width=False,
+            accept_handler=self._search_accept_handler,
+        )
+
+        # Additional keybindings for the text area.
+        key_bindings = KeyBindings()
+
+        @key_bindings.add('escape')
+        @key_bindings.add('c-c')
+        @key_bindings.add('c-d')
+        @key_bindings.add('c-g')
+        def _close_search_bar(_event: KeyPressEvent) -> None:
+            """Close search bar."""
+            self.close_search_bar()
+
+        @key_bindings.add('c-f')
+        def _apply_filter(_event: KeyPressEvent) -> None:
+            """Apply search as a filter."""
+            self.log_pane.apply_filter()
+
+        self.input_field.control.key_bindings = key_bindings
+
+        super().__init__(VSplit([self.input_field],
+                                height=1,
+                                style=functools.partial(
+                                    pw_console.style.get_toolbar_style,
+                                    log_pane),
+                                align=HorizontalAlign.LEFT),
+                         filter=Condition(lambda: log_pane.search_bar_active))
+
+    def _search_accept_handler(self, buff: Buffer) -> bool:
+        """Function run when hitting Enter in the search bar."""
+        # Always close the search bar.
+        self.close_search_bar()
+
+        if len(buff.text) == 0:
+            # Don't apply an empty search.
+            return False
+
+        self.log_pane.apply_search(buff.text)
+        # Erase existing search text.
+        return False

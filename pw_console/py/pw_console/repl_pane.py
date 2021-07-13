@@ -296,6 +296,9 @@ class ReplPane:
             'Show history.': ['F3'],
         }]
 
+    def get_all_menu_options(self):
+        return []
+
     def after_render_hook(self):
         """Run tasks after the last UI render."""
 

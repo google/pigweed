@@ -32,6 +32,7 @@ def fill_character_width(line_fragments: StyleAndTextTuples,
                          window_width: int,
                          remaining_width: int,
                          line_wrapping: bool,
+                         horizontal_scroll_amount: int = 0,
                          add_cursor: bool = False) -> StyleAndTextTuples:
     """Fill line to the width of the window using spaces."""
     if add_cursor:
@@ -46,6 +47,8 @@ def fill_character_width(line_fragments: StyleAndTextTuples,
     # If wrapping is on, use remaining_width
     if line_wrapping and (fragment_width > window_width):
         empty_characters = remaining_width
+
+    empty_characters += horizontal_scroll_amount
 
     if empty_characters > 0:
         # Replace line ending tuple ('', '\n') with additional empty
