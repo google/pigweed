@@ -227,7 +227,6 @@ class MultiSink {
   //
   // Precondition: If PW_MULTISINK_LOCK_INTERRUPT_SAFE is disabled, this
   // function must not be called from an interrupt context.
-  // Precondition: entry.size() > 0
   // Precondition: entry.size() <= `ring_buffer_` size
   void HandleEntry(ConstByteSpan entry) PW_LOCKS_EXCLUDED(lock_);
 

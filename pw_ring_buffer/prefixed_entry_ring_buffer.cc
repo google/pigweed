@@ -84,9 +84,6 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
   if (buffer_ == nullptr) {
     return Status::FailedPrecondition();
   }
-  if (data.size_bytes() == 0) {
-    return Status::InvalidArgument();
-  }
 
   // Prepare a single buffer that can hold both the user preamble and entry
   // length.

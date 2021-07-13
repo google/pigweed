@@ -283,7 +283,6 @@ class PrefixedEntryRingBufferMulti {
   //
   // Return values:
   // OK - Data successfully written to the ring buffer.
-  // INVALID_ARGUMENT - Size of data to write is zero bytes
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - Size of data is greater than buffer size.
   Status PushBack(std::span<const std::byte> data,

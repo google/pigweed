@@ -91,9 +91,6 @@ void SingleEntryWriteReadTest(bool user_data) {
   EXPECT_EQ(ring.EntryCount(), 0u);
   EXPECT_EQ(ring.PopFront(), Status::OutOfRange());
   EXPECT_EQ(ring.EntryCount(), 0u);
-  EXPECT_EQ(ring.PushBack(std::span(single_entry_data, 0u)),
-            Status::InvalidArgument());
-  EXPECT_EQ(ring.EntryCount(), 0u);
   EXPECT_EQ(
       ring.PushBack(std::span(single_entry_data, sizeof(test_buffer) + 5)),
       Status::OutOfRange());
@@ -446,6 +443,45 @@ T GetEntry(std::span<const std::byte> lhs) {
   } aliased;
   std::memcpy(aliased.buffer.data(), lhs.data(), lhs.size_bytes());
   return aliased.item;
+}
+
+void EmptyDataPushBackTest(bool user_data) {
+  PrefixedEntryRingBuffer ring(user_data);
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+
+  // Push back an empty span and a non-empty span.
+  EXPECT_EQ(ring.PushBack(std::span<std::byte>(), 1u), OkStatus());
+  EXPECT_EQ(ring.EntryCount(), 1u);
+  EXPECT_EQ(ring.PushBack(single_entry_data, 2u), OkStatus());
+  EXPECT_EQ(ring.EntryCount(), 2u);
+
+  // Confirm that both entries can be read back.
+  byte entry_buffer[kTestBufferSize];
+  uint32_t user_preamble = 0;
+  size_t bytes_read = 0;
+  // Read empty span.
+  EXPECT_EQ(ring.PeekFrontWithPreamble(entry_buffer, user_preamble, bytes_read),
+            OkStatus());
+  EXPECT_EQ(user_preamble, user_data ? 1u : 0u);
+  EXPECT_EQ(bytes_read, 0u);
+  EXPECT_EQ(ring.PopFront(), OkStatus());
+  EXPECT_EQ(ring.EntryCount(), 1u);
+  // Read non-empty span.
+  EXPECT_EQ(ring.PeekFrontWithPreamble(entry_buffer, user_preamble, bytes_read),
+            OkStatus());
+  EXPECT_EQ(user_preamble, user_data ? 2u : 0u);
+  ASSERT_EQ(bytes_read, sizeof(single_entry_data));
+  EXPECT_EQ(memcmp(entry_buffer, single_entry_data, bytes_read), 0);
+  EXPECT_EQ(ring.PopFront(), OkStatus());
+  EXPECT_EQ(ring.EntryCount(), 0u);
+}
+
+TEST(PrefixedEntryRingBuffer, EmptyDataPushBackTestWithPreamble) {
+  EmptyDataPushBackTest(true);
+}
+TEST(PrefixedEntryRingBuffer, EmptyDataPushBackTestNoPreamble) {
+  EmptyDataPushBackTest(false);
 }
 
 TEST(PrefixedEntryRingBuffer, TryPushBack) {

@@ -14,6 +14,8 @@
 
 #include "pw_multisink/multisink.h"
 
+#include <optional>
+
 #include "gtest/gtest.h"
 
 namespace pw::multisink {
@@ -44,18 +46,20 @@ class MultiSinkTest : public ::testing::Test {
   MultiSinkTest() : multisink_(buffer_) {}
 
   void ExpectMessageAndDropCount(Drain& drain,
-                                 std::span<const std::byte> expected_message,
+                                 std::optional<ConstByteSpan> expected_message,
                                  uint32_t expected_drop_count) {
     uint32_t drop_count = 0;
     Result<ConstByteSpan> result = drain.GetEntry(entry_buffer_, drop_count);
-    if (expected_message.empty()) {
+    if (!expected_message.has_value()) {
       EXPECT_EQ(Status::OutOfRange(), result.status());
     } else {
       ASSERT_TRUE(result.ok());
-      EXPECT_EQ(memcmp(result.value().data(),
-                       expected_message.data(),
-                       expected_message.size_bytes()),
-                0);
+      if (!expected_message.value().empty()) {
+        EXPECT_EQ(memcmp(result.value().data(),
+                         expected_message.value().data(),
+                         expected_message.value().size_bytes()),
+                  0);
+      }
     }
     EXPECT_EQ(drop_count, expected_drop_count);
   }
@@ -82,6 +86,11 @@ TEST_F(MultiSinkTest, SingleDrain) {
   ExpectNotificationCount(listeners_[0], 1u);
   ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
 
+  // Single empty entry push and pop.
+  multisink_.HandleEntry(ConstByteSpan());
+  ExpectNotificationCount(listeners_[0], 1u);
+  ExpectMessageAndDropCount(drains_[0], ConstByteSpan(), 0u);
+
   // Multiple entries with intermittent drops.
   multisink_.HandleEntry(kMessage);
   multisink_.HandleDropped();
@@ -93,11 +102,11 @@ TEST_F(MultiSinkTest, SingleDrain) {
   // Send drops only.
   multisink_.HandleDropped();
   ExpectNotificationCount(listeners_[0], 1u);
-  ExpectMessageAndDropCount(drains_[0], {}, 1u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 1u);
 
   // Confirm out-of-range if no entries are expected.
   ExpectNotificationCount(listeners_[0], 0u);
-  ExpectMessageAndDropCount(drains_[0], {}, 0u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 0u);
 }
 
 TEST_F(MultiSinkTest, MultipleDrain) {
@@ -118,8 +127,8 @@ TEST_F(MultiSinkTest, MultipleDrain) {
   ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
   ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
   ExpectMessageAndDropCount(drains_[0], kMessage, 1u);
-  ExpectMessageAndDropCount(drains_[0], {}, 1u);
-  ExpectMessageAndDropCount(drains_[0], {}, 0u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 1u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 0u);
 
   // Confirm the other drain can be drained separately.
   ExpectNotificationCount(listeners_[0], 0u);
@@ -127,8 +136,8 @@ TEST_F(MultiSinkTest, MultipleDrain) {
   ExpectMessageAndDropCount(drains_[1], kMessage, 0u);
   ExpectMessageAndDropCount(drains_[1], kMessage, 0u);
   ExpectMessageAndDropCount(drains_[1], kMessage, 1u);
-  ExpectMessageAndDropCount(drains_[1], {}, 1u);
-  ExpectMessageAndDropCount(drains_[1], {}, 0u);
+  ExpectMessageAndDropCount(drains_[1], std::nullopt, 1u);
+  ExpectMessageAndDropCount(drains_[1], std::nullopt, 0u);
 }
 
 TEST_F(MultiSinkTest, LateDrainRegistration) {
@@ -145,7 +154,7 @@ TEST_F(MultiSinkTest, LateDrainRegistration) {
   multisink_.HandleEntry(kMessage);
   ExpectNotificationCount(listeners_[0], 1u);
   ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
-  ExpectMessageAndDropCount(drains_[0], {}, 0u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 0u);
 }
 
 TEST_F(MultiSinkTest, DynamicDrainRegistration) {
@@ -167,12 +176,12 @@ TEST_F(MultiSinkTest, DynamicDrainRegistration) {
   multisink_.AttachDrain(drains_[0]);
   multisink_.AttachListener(listeners_[0]);
   ExpectNotificationCount(listeners_[0], 0u);
-  ExpectMessageAndDropCount(drains_[0], {}, 0u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 0u);
 
   multisink_.HandleEntry(kMessage);
   ExpectNotificationCount(listeners_[0], 1u);
   ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
-  ExpectMessageAndDropCount(drains_[0], {}, 0u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 0u);
 }
 
 TEST_F(MultiSinkTest, TooSmallBuffer) {
@@ -191,7 +200,7 @@ TEST_F(MultiSinkTest, TooSmallBuffer) {
   // Verify that the multisink does not move the handled sequence ID counter
   // forward and provides this data on the next call.
   ExpectMessageAndDropCount(drains_[0], kMessage, 1u);
-  ExpectMessageAndDropCount(drains_[0], {}, 0u);
+  ExpectMessageAndDropCount(drains_[0], std::nullopt, 0u);
 }
 
 TEST_F(MultiSinkTest, Iterator) {
