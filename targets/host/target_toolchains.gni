@@ -67,6 +67,7 @@ _host_common = {
   # Configure backends for pw_thread's facades.
   pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
+  pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
 
   pw_build_LINK_DEPS = []  # Explicit list overwrite required by GN
@@ -100,19 +101,11 @@ _win_config = {
   pw_unit_test_AUTOMATIC_RUNNER = get_path_info("run_test.bat", "abspath")
 }
 
-# TODO(ewout): figure out why MingGW's sleep doesn't work correctly or provide
-# a wrapper which sleeps until our contract is met.
-_win_incompatible_config = {
-  pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
-}
-
 _os_specific_config = {
   if (host_os == "linux") {
     forward_variables_from(_linux_config, "*")
-    forward_variables_from(_win_incompatible_config, "*")
   } else if (host_os == "mac") {
     forward_variables_from(_mac_config, "*")
-    forward_variables_from(_win_incompatible_config, "*")
   } else if (host_os == "win") {
     forward_variables_from(_win_config, "*")
   }

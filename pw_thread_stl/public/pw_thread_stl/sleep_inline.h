@@ -27,7 +27,14 @@ inline void sleep_for(chrono::SystemClock::duration for_at_least) {
   if (for_at_least == chrono::SystemClock::duration::zero()) {
     return std::this_thread::yield();
   }
+#if defined(_WIN32)
+  // For some reason MinGW's implementation for sleep_for doesn't work
+  // correctly, however sleep_until does.
+  return std::this_thread::sleep_until(
+      chrono::SystemClock::TimePointAfterAtLeast(for_at_least));
+#else
   return std::this_thread::sleep_for(for_at_least);
+#endif  // defined(_WIN32)
 }
 
 inline void sleep_until(chrono::SystemClock::time_point until_at_least) {
