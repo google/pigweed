@@ -12,6 +12,59 @@ pw_transfer
 Usage
 -----
 
+C++
+===
+The transfer service is defined and registered with an RPC server like any other
+RPC service.
+
+To know how to read data from or write data to device, a ``TransferHandler``
+interface is defined (``pw_transfer/public/pw_transfer/handler.h``). Transfer
+handlers wrap a stream reader and/or writer with initialization and completion
+code. Custom transfer handler implementations should derive from
+``ReadOnlyHandler``, ``WriteOnlyHandler``, or ``ReadWriteHandler`` as
+appropriate and override Prepare and Finalize methods if necessary.
+
+A transfer handler should be implemented and instantiated for each unique data
+transfer to or from a device. These handlers are then registered with the
+transfer service using their transfer IDs.
+
+**Example**
+
+.. code-block:: cpp
+
+  #include "pw_transfer/transfer.h"
+
+  namespace {
+
+  // Simple transfer handler which reads data from an in-memory buffer.
+  class SimpleBufferReadHandler : public pw::transfer::ReadOnlyHandler {
+   public:
+    SimpleReadTransfer(uint32_t transfer_id, pw::ConstByteSpan data)
+        : ReadOnlyHandler(transfer_id), reader_(data) {
+      set_reader(reader_);
+    }
+
+   private:
+    pw::stream::MemoryReader reader_;
+  };
+
+  // Instantiate a static transfer service.
+  pw::transfer::TransferService transfer_service;
+
+  // Instantiate a handler for the the data to be transferred.
+  constexpr uint32_t kBufferTransferId = 1;
+  char buffer_to_transfer[256] = { /* ... */ };
+  SimpleBufferReadHandler buffer_handler(kBufferTransferId, buffer_to_transfer);
+
+  }  // namespace
+
+  void InitTransfer() {
+    // Register the handler with the transfer service, then the transfer service
+    // with an RPC server.
+    transfer_service.RegisterHandler(buffer_handler);
+    GetSystemRpcServer().RegisterService(transfer_service);
+  }
+
 Python
 ======
 .. automodule:: pw_transfer.transfer

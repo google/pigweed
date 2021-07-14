@@ -296,7 +296,6 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_tokenizer:tests",
       "$dir_pw_trace:tests",
       "$dir_pw_trace_tokenized:tests",
-      "$dir_pw_transfer:tests",
       "$dir_pw_unit_test:tests",
       "$dir_pw_varint:tests",
     ]
@@ -312,6 +311,11 @@ if (current_toolchain != default_toolchain) {
       # Checking for pw_build_host_tools (which is only set by the host) is a
       # temporary fix until the problem can be properly solved.
       group_deps += [ "$dir_pw_kvs:tests" ]
+
+      if (host_os != "win") {
+        # TODO(pwbug/441): Fix transfer tests on Windows.
+        group_deps += [ "$dir_pw_transfer:tests" ]
+      }
     }
 
     if (host_os != "win") {

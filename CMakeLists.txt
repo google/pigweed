@@ -63,6 +63,7 @@ add_subdirectory(pw_sys_io EXCLUDE_FROM_ALL)
 add_subdirectory(pw_sys_io_stdio EXCLUDE_FROM_ALL)
 add_subdirectory(pw_tokenizer EXCLUDE_FROM_ALL)
 add_subdirectory(pw_trace EXCLUDE_FROM_ALL)
+add_subdirectory(pw_transfer EXCLUDE_FROM_ALL)
 add_subdirectory(pw_unit_test EXCLUDE_FROM_ALL)
 add_subdirectory(pw_varint EXCLUDE_FROM_ALL)
 

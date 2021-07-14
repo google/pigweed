@@ -69,6 +69,8 @@ class Handler : public IntrusiveList<Handler>::Item {
   void set_writer(stream::Writer& writer) { writer_ = &writer; }
 
  private:
+  friend class Context;
+
   // Only valid after a PrepareRead() call that returns OK.
   stream::Reader& reader() const {
     PW_DASSERT(reader_ != nullptr);
@@ -100,6 +102,8 @@ class ReadOnlyHandler : public internal::Handler {
   constexpr ReadOnlyHandler(uint32_t transfer_id, stream::Reader& reader)
       : internal::Handler(transfer_id, &reader) {}
 
+  virtual ~ReadOnlyHandler() = default;
+
   Status PrepareRead() override { return OkStatus(); }
 
   // Writes are not supported.
@@ -115,6 +119,8 @@ class WriteOnlyHandler : public internal::Handler {
 
   constexpr WriteOnlyHandler(uint32_t transfer_id, stream::Writer& writer)
       : internal::Handler(transfer_id, &writer) {}
+
+  virtual ~WriteOnlyHandler() = default;
 
   // Reads are not supported.
   Status PrepareRead() final { return Status::Unimplemented(); }
@@ -132,6 +138,8 @@ class ReadWriteHandler : public internal::Handler {
                              stream::ReaderWriter& reader_writer)
       : internal::Handler(transfer_id,
                           static_cast<stream::Reader*>(&reader_writer)) {}
+
+  virtual ~ReadWriteHandler() = default;
 
   // Both reads and writes are supported.
   Status PrepareRead() override { return OkStatus(); }

@@ -26,11 +26,20 @@ pw_cc_library(
     name = "pw_transfer",
     hdrs = [
         "public/pw_transfer/handler.h",
+        "public/pw_transfer/transfer.h",
+    ],
+    srcs = [
+        "chunk.cc",
+        "pw_transfer_private/chunk.h",
+        "transfer.cc"
     ],
     includes = ["public"],
     deps = [
         "//pw_assert",
+        "//pw_bytes",
         "//pw_containers:intrusive_list",
+        "//pw_log",
+        "//pw_result",
         "//pw_status",
         "//pw_stream",
     ],
@@ -41,6 +50,16 @@ pw_cc_test(
     srcs = ["handler_test.cc"],
     deps = [
         ":pw_transfer",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "transfer_test",
+    srcs = ["transfer_test.cc"],
+    deps = [
+        ":pw_transfer",
+        "//pw_rpc/raw:test_method_context",
         "//pw_unit_test",
     ],
 )

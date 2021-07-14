@@ -111,8 +111,12 @@ message Chunk {
   //
   //   OK: Transfer completed successfully.
   //   DATA_LOSS: Transfer data could not be read/written (e.g. corruption).
+  //   INVALID_ARGUMENT: Received malformed chunk.
   //   NOT_FOUND: The requested transfer ID is not registered (read/write).
   //   OUT_OF_RANGE: The requested offset is larger than the data (read/write).
+  //   RESOURCE_EXHAUSTED: Concurrent transfer limit reached.
+  //   UNIMPLEMENTED: Transfer ID does not support requested operation (e.g.
+  //       trying to write to a read-only transfer).
   //
   //  Read → Transfer complete.
   //  Read ← Transfer complete.

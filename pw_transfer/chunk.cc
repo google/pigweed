@@ -1,0 +1,111 @@
+// Copyright 2021 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#include "pw_transfer_private/chunk.h"
+
+#include "pw_protobuf/decoder.h"
+#include "pw_transfer/transfer.pwpb.h"
+
+namespace pw::transfer::internal {
+
+namespace ProtoChunk = transfer::Chunk;
+
+Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
+  protobuf::Decoder decoder(message);
+  Status status;
+  uint32_t value;
+
+  chunk = {};
+
+  while ((status = decoder.Next()).ok()) {
+    ProtoChunk::Fields field =
+        static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
+
+    switch (field) {
+      case ProtoChunk::Fields::TRANSFER_ID:
+        PW_TRY(decoder.ReadUint32(&chunk.transfer_id));
+        break;
+
+      case ProtoChunk::Fields::PENDING_BYTES:
+        PW_TRY(decoder.ReadUint32(&value));
+        chunk.pending_bytes = value;
+        break;
+
+      case ProtoChunk::Fields::MAX_CHUNK_SIZE_BYTES:
+        PW_TRY(decoder.ReadUint32(&value));
+        chunk.max_chunk_size_bytes = value;
+        break;
+
+      case ProtoChunk::Fields::MIN_DELAY_MICROSECONDS:
+        PW_TRY(decoder.ReadUint32(&value));
+        chunk.min_delay_microseconds = value;
+        break;
+
+      case ProtoChunk::Fields::OFFSET:
+        PW_TRY(decoder.ReadUint32(&chunk.offset));
+        break;
+
+      case ProtoChunk::Fields::DATA:
+        PW_TRY(decoder.ReadBytes(&chunk.data));
+        break;
+
+      case ProtoChunk::Fields::REMAINING_BYTES: {
+        uint64_t remaining;
+        PW_TRY(decoder.ReadUint64(&remaining));
+        chunk.remaining_bytes = remaining;
+        break;
+      }
+
+      case ProtoChunk::Fields::STATUS:
+        PW_TRY(decoder.ReadUint32(&value));
+        chunk.status = static_cast<Status::Code>(value);
+        break;
+    }
+  }
+
+  return status.IsOutOfRange() ? OkStatus() : status;
+}
+
+Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
+  ProtoChunk::RamEncoder encoder(buffer);
+
+  encoder.WriteTransferId(chunk.transfer_id);
+
+  if (chunk.pending_bytes.has_value()) {
+    encoder.WritePendingBytes(chunk.pending_bytes.value());
+  }
+  if (chunk.max_chunk_size_bytes.has_value()) {
+    encoder.WriteMaxChunkSizeBytes(chunk.max_chunk_size_bytes.value());
+  }
+  if (chunk.min_delay_microseconds.has_value()) {
+    encoder.WriteMinDelayMicroseconds(chunk.min_delay_microseconds.value());
+  }
+  if (chunk.offset != 0) {
+    encoder.WriteOffset(chunk.offset);
+  }
+  if (!chunk.data.empty()) {
+    encoder.WriteData(chunk.data);
+  }
+  if (chunk.remaining_bytes.has_value()) {
+    encoder.WriteRemainingBytes(chunk.remaining_bytes.value());
+  }
+  if (chunk.status.has_value()) {
+    encoder.WriteStatus(chunk.status.value().code());
+  }
+
+  PW_TRY(encoder.status());
+  return ConstByteSpan(encoder);
+}
+
+}  // namespace pw::transfer::internal

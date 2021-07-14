@@ -60,6 +60,9 @@ class RawServerReaderWriter : private internal::Responder {
   // Returns a buffer in which a response payload can be built.
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
 
+  // Releases a buffer acquired from PayloadBuffer() without sending any data.
+  void ReleaseBuffer() { ReleasePayloadBuffer(); }
+
   // Sends a response packet with the given raw payload. The payload can either
   // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary
   // external buffer.
@@ -137,6 +140,7 @@ class RawServerWriter : private RawServerReaderWriter {
 
   using RawServerReaderWriter::Finish;
   using RawServerReaderWriter::PayloadBuffer;
+  using RawServerReaderWriter::ReleaseBuffer;
   using RawServerReaderWriter::Write;
 
  private:

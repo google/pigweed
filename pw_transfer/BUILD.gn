@@ -24,15 +24,30 @@ config("public_include_path") {
 }
 
 pw_source_set("pw_transfer") {
-  public = [ "public/pw_transfer/handler.h" ]
-  visibility = [ ":*" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":proto.raw_rpc",
     "$dir_pw_containers:intrusive_list",
     dir_pw_assert,
+    dir_pw_bytes,
+    dir_pw_result,
     dir_pw_status,
     dir_pw_stream,
   ]
+  deps = [
+    ":proto.pwpb",
+    dir_pw_log,
+  ]
+  public = [
+    "public/pw_transfer/handler.h",
+    "public/pw_transfer/transfer.h",
+  ]
+  sources = [
+    "chunk.cc",
+    "pw_transfer_private/chunk.h",
+    "transfer.cc",
+  ]
+  friend = [ ":*" ]
 }
 
 pw_proto_library("proto") {
@@ -42,12 +57,24 @@ pw_proto_library("proto") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":handler_test" ]
+  tests = [
+    ":handler_test",
+    ":transfer_test",
+  ]
 }
 
 pw_test("handler_test") {
   sources = [ "handler_test.cc" ]
   deps = [ ":pw_transfer" ]
+}
+
+pw_test("transfer_test") {
+  sources = [ "transfer_test.cc" ]
+  deps = [
+    ":proto.pwpb",
+    ":pw_transfer",
+    "$dir_pw_rpc/raw:test_method_context",
+  ]
 }
 
 pw_doc_group("docs") {
