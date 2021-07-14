@@ -195,7 +195,7 @@ class AclDataChannel {
   // Attempts to set the ACL |priority| of the connection indicated by |handle|. |callback| will be
   // called with the result of the request.
   virtual void RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
-                                  fit::callback<void(fit::result<>)> callback) = 0;
+                                  fit::callback<void(fpromise::result<>)> callback) = 0;
 
   // Sets an automatic flush timeout with duration |flush_timeout| for the connection indicated by
   // |handle|. |callback| will be called with the result of the operation.
@@ -206,7 +206,7 @@ class AclDataChannel {
   // |callback|.
   virtual void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout, hci::ConnectionHandle handle,
-      fit::callback<void(fit::result<void, StatusCode>)> callback) = 0;
+      fit::callback<void(fpromise::result<void, StatusCode>)> callback) = 0;
 };
 
 }  // namespace bt::hci

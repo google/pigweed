@@ -2,14 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "host_server.h"
+
 #include <fuchsia/mem/cpp/fidl.h>
-#include <lib/fit/result.h>
+#include <lib/fpromise/result.h>
 #include <lib/syslog/cpp/macros.h>
 #include <zircon/assert.h>
 
 #include "gatt_server_server.h"
 #include "helpers.h"
-#include "host_server.h"
 #include "low_energy_central_server.h"
 #include "low_energy_peripheral_server.h"
 #include "profile_server.h"
@@ -164,7 +165,7 @@ void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback cal
 void HostServer::SetDeviceClass(fbt::DeviceClass device_class, SetDeviceClassCallback callback) {
   // Device Class values must only contain data in the lower 3 bytes.
   if (device_class.value >= 1 << 24) {
-    callback(fit::error(fsys::Error::INVALID_ARGUMENTS));
+    callback(fpromise::error(fsys::Error::INVALID_ARGUMENTS));
     return;
   }
   bt::DeviceClass dev_class(device_class.value);
@@ -174,7 +175,7 @@ void HostServer::SetDeviceClass(fbt::DeviceClass device_class, SetDeviceClassCal
 
 void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
   if (!adapter()->le()) {
-    callback(fit::error(fsys::Error::FAILED));
+    callback(fpromise::error(fsys::Error::FAILED));
     return;
   }
   adapter()->le()->StartDiscovery(
@@ -183,18 +184,18 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
         // End the new session if this AdapterServer got destroyed in the
         // meantime (e.g. because the client disconnected).
         if (!self) {
-          callback(fit::error(fsys::Error::FAILED));
+          callback(fpromise::error(fsys::Error::FAILED));
           return;
         }
 
         if (!self->requesting_discovery_) {
-          callback(fit::error(fsys::Error::CANCELED));
+          callback(fpromise::error(fsys::Error::CANCELED));
           return;
         }
 
         if (!session) {
           bt_log(ERROR, "fidl", "failed to start active LE discovery session");
-          callback(fit::error(fsys::Error::FAILED));
+          callback(fpromise::error(fsys::Error::FAILED));
           self->bredr_discovery_session_ = nullptr;
           self->requesting_discovery_ = false;
           return;
@@ -212,7 +213,7 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
         // Send the adapter state update.
         self->NotifyInfoChange();
 
-        callback(fit::ok());
+        callback(fpromise::ok());
       });
 }
 
@@ -222,7 +223,7 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
 
   if (le_discovery_session_ || requesting_discovery_) {
     bt_log(DEBUG, "fidl", "discovery already in progress");
-    callback(fit::error(fsys::Error::IN_PROGRESS));
+    callback(fpromise::error(fsys::Error::IN_PROGRESS));
     return;
   }
 
@@ -236,23 +237,23 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback), func = __FUNCTION__](
           bt::hci::Status status, auto session) mutable {
         if (!self) {
-          callback(fit::error(fsys::Error::FAILED));
+          callback(fpromise::error(fsys::Error::FAILED));
           return;
         }
 
         if (!self->requesting_discovery_) {
-          callback(fit::error(fsys::Error::CANCELED));
+          callback(fpromise::error(fsys::Error::CANCELED));
           return;
         }
 
         if (!status || !session) {
           bt_log(ERROR, "fidl", "%s: failed to start BR/EDR discovery session", func);
 
-          fit::result<void, fsys::Error> result;
+          fpromise::result<void, fsys::Error> result;
           if (!status) {
             result = StatusToFidl(status);
           } else {
-            result = fit::error(fsys::Error::FAILED);
+            result = fpromise::error(fsys::Error::FAILED);
           }
           self->requesting_discovery_ = false;
           callback(std::move(result));
@@ -283,7 +284,7 @@ void HostServer::SetConnectable(bool connectable, SetConnectableCallback callbac
 
   auto classic = adapter()->bredr();
   if (!classic) {
-    callback(fit::error(fsys::Error::NOT_SUPPORTED));
+    callback(fpromise::error(fsys::Error::NOT_SUPPORTED));
     return;
   }
   classic->SetConnectable(connectable, [callback = std::move(callback)](const auto& status) {
@@ -375,39 +376,39 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
   if (!discoverable) {
     bredr_discoverable_session_ = nullptr;
     NotifyInfoChange();
-    callback(fit::ok());
+    callback(fpromise::ok());
     return;
   }
   if (discoverable && requesting_discoverable_) {
     bt_log(DEBUG, "fidl", "%s already in progress", __FUNCTION__);
-    callback(fit::error(fsys::Error::IN_PROGRESS));
+    callback(fpromise::error(fsys::Error::IN_PROGRESS));
     return;
   }
   requesting_discoverable_ = true;
   if (!adapter()->bredr()) {
-    callback(fit::error(fsys::Error::FAILED));
+    callback(fpromise::error(fsys::Error::FAILED));
     return;
   }
   adapter()->bredr()->RequestDiscoverable(
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback), func = __FUNCTION__](
           bt::hci::Status status, auto session) {
         if (!self) {
-          callback(fit::error(fsys::Error::FAILED));
+          callback(fpromise::error(fsys::Error::FAILED));
           return;
         }
 
         if (!self->requesting_discoverable_) {
-          callback(fit::error(fsys::Error::CANCELED));
+          callback(fpromise::error(fsys::Error::CANCELED));
           return;
         }
 
         if (!status || !session) {
           bt_log(ERROR, "fidl", "%s: failed (status: %s)", func, bt_str(status));
-          fit::result<void, fsys::Error> result;
+          fpromise::result<void, fsys::Error> result;
           if (!status) {
             result = StatusToFidl(status);
           } else {
-            result = fit::error(fsys::Error::FAILED);
+            result = fpromise::error(fsys::Error::FAILED);
           }
           self->requesting_discoverable_ = false;
           callback(std::move(result));
@@ -417,7 +418,7 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
         self->bredr_discoverable_session_ = std::move(session);
         self->requesting_discoverable_ = false;
         self->NotifyInfoChange();
-        callback(fit::ok());
+        callback(fpromise::ok());
       });
 }
 
@@ -514,7 +515,7 @@ void HostServer::Connect(fbt::PeerId peer_id, ConnectCallback callback) {
   if (!peer) {
     // We don't support connecting to peers that are not in our cache
     bt_log(WARN, "fidl", "%s: peer not found in peer cache (peer: %s)", __FUNCTION__, bt_str(id));
-    callback(fit::error(fsys::Error::PEER_NOT_FOUND));
+    callback(fpromise::error(fsys::Error::PEER_NOT_FOUND));
     return;
   }
 
@@ -541,10 +542,10 @@ void HostServer::Disconnect(fbt::PeerId peer_id, DisconnectCallback callback) {
                         ? adapter()->bredr()->Disconnect(id, bt::gap::DisconnectReason::kApiRequest)
                         : true;
   if (le_disc && bredr_disc) {
-    callback(fit::ok());
+    callback(fpromise::ok());
   } else {
     bt_log(WARN, "fidl", "%s: failed (peer: %s)", __FUNCTION__, bt_str(id));
-    callback(fit::error(fsys::Error::FAILED));
+    callback(fpromise::error(fsys::Error::FAILED));
   }
 }
 
@@ -555,7 +556,7 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
     if (result.is_error()) {
       bt_log(INFO, "fidl", "%s: failed to connect LE transport to peer (peer: %s)", func,
              bt_str(peer_id));
-      callback(fit::error(HostErrorToFidl(result.error())));
+      callback(fpromise::error(HostErrorToFidl(result.error())));
       return;
     }
 
@@ -564,7 +565,7 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
     ZX_ASSERT(connection);
     ZX_ASSERT(peer_id == connection->peer_identifier());
 
-    callback(fit::ok());
+    callback(fpromise::ok());
 
     if (self)
       self->RegisterLowEnergyConnection(std::move(connection), false);
@@ -582,7 +583,7 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
       ZX_ASSERT(!connection);
       bt_log(INFO, "fidl", "%s: failed to connect BR/EDR transport to peer (peer: %s)", func,
              bt_str(peer_id));
-      callback(fit::error(HostErrorToFidl(status.error())));
+      callback(fpromise::error(HostErrorToFidl(status.error())));
       return;
     }
 
@@ -590,13 +591,13 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
     ZX_ASSERT(connection);
     ZX_ASSERT(peer_id == connection->peer_id());
 
-    callback(fit::ok());
+    callback(fpromise::ok());
   };
 
   if (!adapter()->bredr()->Connect(peer_id, std::move(on_complete))) {
     bt_log(INFO, "fidl", "%s: failed to initiate BR/EDR transport connection to peer (peer: %s)",
            __FUNCTION__, bt_str(peer_id));
-    callback(fit::error(fsys::Error::FAILED));
+    callback(fpromise::error(fsys::Error::FAILED));
   }
 }
 
@@ -605,7 +606,7 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
   auto peer = adapter()->peer_cache()->FindById(id);
   if (!peer) {
     bt_log(DEBUG, "fidl", "peer %s to forget wasn't found", bt_str(id));
-    callback(fit::ok());
+    callback(fpromise::ok());
     return;
   }
 
@@ -620,10 +621,10 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
     const auto message =
         fxl::StringPrintf("link(s) failed to close:%s%s", le_disconnected ? "" : " LE",
                           bredr_disconnected ? "" : " BR/EDR");
-    callback(fit::error(fsys::Error::FAILED));
+    callback(fpromise::error(fsys::Error::FAILED));
   } else {
     ZX_ASSERT(peer_removed);
-    callback(fit::ok());
+    callback(fpromise::ok());
   }
 }
 
@@ -633,7 +634,7 @@ void HostServer::Pair(fbt::PeerId id, fsys::PairingOptions options, PairCallback
   if (!peer) {
     bt_log(WARN, "fidl", "%s: unknown peer %s", __FUNCTION__, bt_str(peer_id));
     // We don't support pairing to peers that are not in our cache
-    callback(fit::error(fsys::Error::PEER_NOT_FOUND));
+    callback(fpromise::error(fsys::Error::PEER_NOT_FOUND));
     return;
   }
   // If options specifies a transport preference for LE or BR/EDR, we use that. Otherwise, we use
@@ -657,7 +658,7 @@ void HostServer::PairLowEnergy(PeerId peer_id, fsys::PairingOptions options,
     if (!security_level.has_value()) {
       bt_log(WARN, "fidl", "%s: pairing options missing LE security level (peer: %s)", __FUNCTION__,
              bt_str(peer_id));
-      callback(fit::error(fsys::Error::INVALID_ARGUMENTS));
+      callback(fpromise::error(fsys::Error::INVALID_ARGUMENTS));
       return;
     }
   } else {
@@ -671,9 +672,9 @@ void HostServer::PairLowEnergy(PeerId peer_id, fsys::PairingOptions options,
                       func = __FUNCTION__](bt::sm::Status status) {
     if (!status) {
       bt_log(WARN, "fidl", "%s: failed to pair (peer: %s)", func, bt_str(peer_id));
-      callback(fit::error(HostErrorToFidl(status.error())));
+      callback(fpromise::error(HostErrorToFidl(status.error())));
     } else {
-      callback(fit::ok());
+      callback(fpromise::ok());
     }
   };
   ZX_ASSERT(adapter()->le());
@@ -685,9 +686,9 @@ void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
                       func = __FUNCTION__](bt::hci::Status status) {
     if (!status) {
       bt_log(WARN, "fidl", "%s: failed to pair (peer: %s)", func, bt_str(peer_id));
-      callback(fit::error(HostErrorToFidl(status.error())));
+      callback(fpromise::error(HostErrorToFidl(status.error())));
     } else {
-      callback(fit::ok());
+      callback(fpromise::ok());
     }
   };
   // TODO(fxbug.dev/57991): Add security parameter to Pair and use that here instead of hardcoding

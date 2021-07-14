@@ -123,7 +123,7 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   // should be used to read complete values.
   struct ReadByTypeResult {
     CharacteristicHandle handle;
-    fit::result<ByteBufferPtr, att::ErrorCode> result;
+    fpromise::result<ByteBufferPtr, att::ErrorCode> result;
     bool maybe_truncated;
   };
   using ReadByTypeCallback = fit::function<void(att::Status, std::vector<ReadByTypeResult>)>;

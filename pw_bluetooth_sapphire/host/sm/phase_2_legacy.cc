@@ -320,7 +320,7 @@ ErrorCode Phase2Legacy::CanReceivePairingRandom() const {
 }
 
 void Phase2Legacy::OnRxBFrame(ByteBufferPtr sdu) {
-  fit::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
     Abort(maybe_reader.error());
     return;

@@ -80,9 +80,9 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
 
   // Called to complete a feature exchange. Returns the resulting PairingFeatures if the parameters
   // should be accepted, or an error code if the parameters are rejected and pairing should abort.
-  fit::result<PairingFeatures, ErrorCode> ResolveFeatures(bool local_initiator,
-                                                          const PairingRequestParams& preq,
-                                                          const PairingResponseParams& pres);
+  fpromise::result<PairingFeatures, ErrorCode> ResolveFeatures(bool local_initiator,
+                                                               const PairingRequestParams& preq,
+                                                               const PairingResponseParams& pres);
 
   // Called for SMP commands sent by the peer.
   void OnPairingResponse(const PairingResponseParams& response_params);

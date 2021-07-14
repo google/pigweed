@@ -155,10 +155,10 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeSuccess) {
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         switch (read_count++) {
           case 0:
-            callback(fit::ok(kValues));
+            callback(fpromise::ok(kValues));
             break;
           case 1:
-            callback(fit::error(bt::gatt::Client::ReadByTypeError{
+            callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
                 bt::att::Status(bt::att::ErrorCode::kAttributeNotFound), start}));
             break;
           default:
@@ -200,7 +200,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeResultPermissionError) {
   fake_client()->set_read_by_type_request_callback(
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
-        callback(fit::error(bt::gatt::Client::ReadByTypeError{
+        callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
             bt::att::Status(bt::att::ErrorCode::kInsufficientAuthorization), kServiceEndHandle}));
       });
 
@@ -229,7 +229,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         switch (read_count++) {
           case 0:
-            callback(fit::error(bt::gatt::Client::ReadByTypeError{
+            callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
                 bt::att::Status(bt::HostError::kPacketMalformed), std::nullopt}));
             break;
           default:
@@ -280,7 +280,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
         // guaranteed to fill the channel and then some.
         const size_t max_value_count = static_cast<size_t>(ZX_CHANNEL_MAX_MSG_BYTES) / value.size();
         if (read_count == max_value_count) {
-          callback(fit::error(bt::gatt::Client::ReadByTypeError{
+          callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
               bt::att::Status(bt::att::ErrorCode::kAttributeNotFound), start}));
           return;
         }
@@ -289,7 +289,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
         async::PostTask(dispatcher(), [start, cb = std::move(callback), &value = value]() {
           std::vector<bt::gatt::Client::ReadByTypeValue> values = {
               {start, value.view(), /*maybe_truncated=*/false}};
-          cb(fit::ok(values));
+          cb(fpromise::ok(values));
         });
       });
 

@@ -135,7 +135,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCr
   fble::AdvertisingParameters params1, params2, params3;
   FidlAdvHandle token1, token2, token3;
 
-  std::optional<fit::result<void, fble::PeripheralError>> result1, result2, result3;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result1, result2, result3;
   server()->StartAdvertising(std::move(params1), token1.NewRequest(),
                              [&](auto result) { result1 = std::move(result); });
   server()->StartAdvertising(std::move(params2), token2.NewRequest(),
@@ -162,7 +162,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest,
   fble::AdvertisingParameters params1, params2, params3, params4;
   FidlAdvHandle token1, token2, token3, token4;
 
-  std::optional<fit::result<void, fble::PeripheralError>> result1, result2, result3, result4;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result1, result2, result3, result4;
   server()->StartAdvertising(std::move(params1), token1.NewRequest(),
                              [&](auto result) { result1 = std::move(result); });
   server()->StartAdvertising(std::move(params2), token2.NewRequest(),
@@ -203,7 +203,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseWhilePendingDoesNotCrashWith
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_3;
   FakeAdvertisedPeripheral adv_peripheral_server_3(adv_peripheral_handle_3.NewRequest());
 
-  std::optional<fit::result<void, fble::PeripheralError>> result1, result2, result3, result4;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result1, result2, result3, result4;
   server()->Advertise(std::move(params1), std::move(adv_peripheral_handle_1),
                       [&](auto result) { result1 = std::move(result); });
   server()->Advertise(std::move(params2), std::move(adv_peripheral_handle_2),
@@ -250,7 +250,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingNoConnectionRelatedPa
 
   FidlAdvHandle token;
 
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->StartAdvertising(std::move(params), token.NewRequest(),
                              [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -269,7 +269,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseNoConnectionRelatedParamsNoC
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
   fble::AdvertisingParameters params;
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -301,7 +301,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest,
 
   FidlAdvHandle token;
 
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->StartAdvertising(std::move(params), token.NewRequest(),
                              [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -340,7 +340,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingEmptyConnectionOption
 
   FidlAdvHandle token;
 
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->StartAdvertising(std::move(params), token.NewRequest(),
                              [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -370,7 +370,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseEmptyConnectionOptionsConnec
   fble::ConnectionOptions conn_opts;
   params.set_connection_options(std::move(conn_opts));
 
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -403,7 +403,7 @@ TEST_P(BoolParam, AdvertiseBondableOrNonBondableConnectsBondableOrNonBondable) {
   conn_opts.set_bondable_mode(bondable);
   params.set_connection_options(std::move(conn_opts));
 
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -445,7 +445,7 @@ TEST_P(BoolParam, StartAdvertisingBondableOrNonBondableConnectsBondableOrNonBond
 
   FidlAdvHandle token;
 
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->StartAdvertising(std::move(params), token.NewRequest(),
                              [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -483,7 +483,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest,
 
   fble::AdvertisingParameters params;
   params.set_connectable(true);
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->StartAdvertising(std::move(params), first_token.NewRequest(),
                              [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -548,7 +548,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeep
 
   fble::AdvertisingParameters params;
   params.set_connectable(true);
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle_0),
                       [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -637,7 +637,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseWithIncludeTxPow
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
 
-  std::optional<fit::result<void, fble::PeripheralError>> result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -659,7 +659,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseInvalidAdvData) 
   fidl::InterfaceRequest<fble::AdvertisedPeripheral> advertised_peripheral_server =
       advertised_peripheral_client.NewRequest();
 
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result;
   server()->Advertise(std::move(params), std::move(advertised_peripheral_client),
                       [&](auto result) { adv_result = std::move(result); });
   RunLoopUntilIdle();
@@ -679,7 +679,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseInvalidScanRespo
   fidl::InterfaceRequest<fble::AdvertisedPeripheral> advertised_peripheral_server =
       advertised_peripheral_client.NewRequest();
 
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result;
   server()->Advertise(std::move(params), std::move(advertised_peripheral_client),
                       [&](auto result) { adv_result = std::move(result); });
   RunLoopUntilIdle();
@@ -697,7 +697,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseAndReceiveTwoConnections) {
   fble::ConnectionOptions conn_opts;
   params.set_connection_options(std::move(conn_opts));
 
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { adv_result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -733,7 +733,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseCanceledBeforeAdvertisingSta
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
 
   fble::AdvertisingParameters params;
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { adv_result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -757,7 +757,7 @@ TEST_P(BoolParam, AdvertiseTwiceCausesSecondToFail) {
   fble::ConnectionOptions conn_opts;
   params_0.set_connection_options(std::move(conn_opts));
 
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result_0;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result_0;
   server()->Advertise(std::move(params_0), std::move(adv_peripheral_handle_0),
                       [&](auto cb_result) { adv_result_0 = std::move(cb_result); });
 
@@ -773,7 +773,7 @@ TEST_P(BoolParam, AdvertiseTwiceCausesSecondToFail) {
   bool adv_peripheral_server_1_closed = false;
   adv_peripheral_server_1.set_error_handler([&](auto) { adv_peripheral_server_1_closed = true; });
   fble::AdvertisingParameters params_1;
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result_1;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result_1;
   server()->Advertise(std::move(params_1), std::move(adv_peripheral_handle_1),
                       [&](auto cb_result) { adv_result_1 = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -800,7 +800,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, CallAdvertiseTwiceSequentiallyBothSuc
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_0;
   FakeAdvertisedPeripheral adv_peripheral_server_0(adv_peripheral_handle_0.NewRequest());
   fble::AdvertisingParameters params_0;
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result_0;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result_0;
   server()->Advertise(std::move(params_0), std::move(adv_peripheral_handle_0),
                       [&](auto cb_result) { adv_result_0 = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -818,7 +818,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, CallAdvertiseTwiceSequentiallyBothSuc
   fble::ConnectionOptions conn_opts;
   params_1.set_connection_options(std::move(conn_opts));
 
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result_1;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result_1;
   server()->Advertise(std::move(params_1), std::move(adv_peripheral_handle_1),
                       [&](auto cb_result) { adv_result_1 = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -844,7 +844,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, PeerDisconnectClosesConnection) {
   fble::ConnectionOptions conn_opts;
   params.set_connection_options(std::move(conn_opts));
 
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { adv_result = std::move(cb_result); });
   RunLoopUntilIdle();
@@ -880,7 +880,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, IncomingConnectionFailureContinuesAdv
   fble::ConnectionOptions conn_opts;
   params.set_connection_options(std::move(conn_opts));
 
-  std::optional<fit::result<void, fble::PeripheralError>> adv_result;
+  std::optional<fpromise::result<void, fble::PeripheralError>> adv_result;
   server()->Advertise(std::move(params), std::move(adv_peripheral_handle),
                       [&](auto cb_result) { adv_result = std::move(cb_result); });
   RunLoopUntilIdle();

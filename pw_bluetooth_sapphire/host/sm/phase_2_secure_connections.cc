@@ -117,7 +117,7 @@ void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_ke
 void Phase2SecureConnections::StartAuthenticationStage1() {
   ZX_ASSERT(peer_ecdh_);
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto complete_cb = [self](fit::result<ScStage1::Output, ErrorCode> res) {
+  auto complete_cb = [self](fpromise::result<ScStage1::Output, ErrorCode> res) {
     if (self) {
       self->OnAuthenticationStage1Complete(res);
     }
@@ -143,7 +143,7 @@ void Phase2SecureConnections::StartAuthenticationStage1() {
 }
 
 void Phase2SecureConnections::OnAuthenticationStage1Complete(
-    fit::result<ScStage1::Output, ErrorCode> result) {
+    fpromise::result<ScStage1::Output, ErrorCode> result) {
   ZX_ASSERT(peer_ecdh_.has_value());
   ZX_ASSERT(stage_1_);
   ZX_ASSERT(!ltk_.has_value());
@@ -295,7 +295,7 @@ void Phase2SecureConnections::OnPairingRandom(PairingRandomValue rand) {
 }
 
 void Phase2SecureConnections::OnRxBFrame(ByteBufferPtr sdu) {
-  fit::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fpromise::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
     Abort(maybe_reader.error());
     return;

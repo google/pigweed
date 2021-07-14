@@ -49,7 +49,7 @@ class ScoConnectionManager final {
   // |kCanceled| if a connection was never attempted, or |kFailed| if establishing a connection
   // failed. Returns a handle that will cancel the request when dropped (if connection establishment
   // has not started).
-  using ConnectionResult = fit::result<fbl::RefPtr<ScoConnection>, HostError>;
+  using ConnectionResult = fpromise::result<fbl::RefPtr<ScoConnection>, HostError>;
   using ConnectionCallback = fit::callback<void(ConnectionResult)>;
   RequestHandle OpenConnection(hci::SynchronousConnectionParameters parameters,
                                ConnectionCallback callback);
@@ -74,7 +74,7 @@ class ScoConnectionManager final {
     ~ConnectionRequest() {
       if (callback) {
         bt_log(DEBUG, "sco", "Cancelling SCO connection request (id: %zu)", id);
-        callback(fit::error(HostError::kCanceled));
+        callback(fpromise::error(HostError::kCanceled));
       }
     }
 

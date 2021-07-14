@@ -4,7 +4,7 @@
 
 #include "logical_link.h"
 
-#include <lib/fit/bridge.h>
+#include <lib/fpromise/bridge.h>
 #include <zircon/assert.h>
 
 #include <functional>
@@ -14,7 +14,7 @@
 #include "channel.h"
 #include "fbl/ref_ptr.h"
 #include "le_signaling_channel.h"
-#include "lib/fit/promise.h"
+#include "lib/fpromise/promise.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -58,7 +58,7 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 
 // static
 fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle, bt::LinkType type,
-                                          hci::Connection::Role role, fit::executor* executor,
+                                          hci::Connection::Role role, fpromise::executor* executor,
                                           size_t max_acl_payload_size,
                                           QueryServiceCallback query_service_cb,
                                           hci::AclDataChannel* acl_data_channel,
@@ -70,7 +70,7 @@ fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle, bt::Link
 }
 
 LogicalLink::LogicalLink(hci::ConnectionHandle handle, bt::LinkType type,
-                         hci::Connection::Role role, fit::executor* executor,
+                         hci::Connection::Role role, fpromise::executor* executor,
                          size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel)
     : handle_(handle),
@@ -323,25 +323,25 @@ bool LogicalLink::AllowsFixedChannel(ChannelId id) {
   return (type_ == bt::LinkType::kLE) ? IsValidLEFixedChannel(id) : IsValidBREDRFixedChannel(id);
 }
 
-fit::promise<> LogicalLink::RemoveChannel(Channel* chan) {
+fpromise::promise<> LogicalLink::RemoveChannel(Channel* chan) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(chan);
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignore RemoveChannel() on closed link");
-    return fit::make_ok_promise();
+    return fpromise::make_ok_promise();
   }
 
   const ChannelId id = chan->id();
   auto iter = channels_.find(id);
   if (iter == channels_.end()) {
-    return fit::make_ok_promise();
+    return fpromise::make_ok_promise();
   }
 
   // Ignore if the found channel doesn't match the requested one (even though
   // their IDs are the same).
   if (iter->second.get() != chan) {
-    return fit::make_ok_promise();
+    return fpromise::make_ok_promise();
   }
 
   pending_pdus_.erase(id);
@@ -364,15 +364,16 @@ fit::promise<> LogicalLink::RemoveChannel(Channel* chan) {
     // async::Wait.
     //
     // Note that completing a bridge seems to always produce a new task for fulfilling dependent
-    // consumer promises, which for fit::executor means posting the consumer onto its dispatcher.
-    fit::bridge<> bridge;
+    // consumer promises, which for fpromise::executor means posting the consumer onto its
+    // dispatcher.
+    fpromise::bridge<> bridge;
     dynamic_registry_->CloseChannel(id, bridge.completer.bind());
 
     // promise_or converts completer abandonment (e.g. destroyed in an early error branch) to a
     // promise that yields a result.
-    return bridge.consumer.promise_or(fit::ok());
+    return bridge.consumer.promise_or(fpromise::ok());
   }
-  return fit::make_ok_promise();
+  return fpromise::make_ok_promise();
 }
 
 void LogicalLink::SignalError() {
@@ -385,7 +386,7 @@ void LogicalLink::SignalError() {
 
   bt_log(INFO, "l2cap", "Upper layer error on link %#.4x; closing all channels", handle());
 
-  std::vector<fit::promise<>> channel_closures;
+  std::vector<fpromise::promise<>> channel_closures;
   for (auto channel_iter = channels_.begin(); channel_iter != channels_.end();) {
     auto& [id, channel] = *channel_iter++;
 
@@ -401,9 +402,9 @@ void LogicalLink::SignalError() {
     channel_closures.emplace_back(RemoveChannel(channel.get()));
   }
 
-  fit::promise<> error_signaler =
-      fit::join_promise_vector(std::move(channel_closures))
-          .and_then([this](const std::vector<fit::result<>>& results) {
+  fpromise::promise<> error_signaler =
+      fpromise::join_promise_vector(std::move(channel_closures))
+          .and_then([this](const std::vector<fpromise::result<>>& results) {
             bt_log(TRACE, "l2cap", "Channels on link %#.4x closed; passing error to lower layer",
                    handle());
 
@@ -411,7 +412,7 @@ void LogicalLink::SignalError() {
             link_error_cb_();
 
             // Link is expected to be closed by its owner.
-            return fit::ok();
+            return fpromise::ok();
           });
   executor_->schedule_task(std::move(error_signaler));
 }
@@ -585,7 +586,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
 }
 
 void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority,
-                                     fit::callback<void(fit::result<>)> callback) {
+                                     fit::callback<void(fpromise::result<>)> callback) {
   ZX_ASSERT(channel);
   auto iter = channels_.find(channel->id());
   ZX_ASSERT(iter != channels_.end());
@@ -599,10 +600,11 @@ void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority
 }
 
 void LogicalLink::SetBrEdrAutomaticFlushTimeout(
-    zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
+    zx::duration flush_timeout,
+    fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) {
   if (type_ != bt::LinkType::kACL) {
     bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
-    callback(fit::error(hci::StatusCode::kInvalidHCICommandParameters));
+    callback(fpromise::error(hci::StatusCode::kInvalidHCICommandParameters));
     return;
   }
 
@@ -662,7 +664,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Prevent closed channels with queued requests from upgrading channel priority.
   if (channels_.find(request.channel->id()) == channels_.end() &&
       request.priority != hci::AclPriority::kNormal) {
-    request.callback(fit::error());
+    request.callback(fpromise::error());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
     return;
@@ -671,7 +673,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Skip sending command if desired priority is already set. Do this here instead of Channel in
   // case Channel queues up multiple requests.
   if (request.channel->requested_acl_priority() == request.priority) {
-    request.callback(fit::ok());
+    request.callback(fpromise::ok());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
     return;
@@ -688,7 +690,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
       // command and just report success.
       if (request.priority == hci::AclPriority::kNormal ||
           request.priority == chan->requested_acl_priority()) {
-        request.callback(fit::ok());
+        request.callback(fpromise::ok());
         break;
       }
 
@@ -696,7 +698,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
       // (e.g. sink vs. source), report an error.
       if (request.priority != hci::AclPriority::kNormal &&
           request.priority != chan->requested_acl_priority()) {
-        request.callback(fit::error());
+        request.callback(fpromise::error());
         break;
       }
     }

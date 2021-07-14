@@ -3136,7 +3136,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDi
       RunLoopUntilIdle();
     }
     // Remote-initiated connection attempts that fail should not disable the auto-connect flag.
-    ASSERT_EQ(fit::result_state::error, result.state());
+    ASSERT_EQ(fpromise::result_state::error, result.state());
     EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
     EXPECT_TRUE(peer->le()->should_auto_connect());
     // Allow successful interrogation later in the test
@@ -3152,7 +3152,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDi
     conn_mgr()->Connect(peer->identifier(), failure_cb, kNotAutoConnectOptions);
     RunLoopUntilIdle();
 
-    ASSERT_EQ(fit::result_state::error, result.state());
+    ASSERT_EQ(fpromise::result_state::error, result.state());
     EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
     EXPECT_TRUE(peer->le()->should_auto_connect());
 
@@ -3167,7 +3167,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDi
 
     RunLoopUntilIdle();
 
-    ASSERT_EQ(fit::result_state::error, result.state());
+    ASSERT_EQ(fpromise::result_state::error, result.state());
     EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
     EXPECT_FALSE(peer->le()->should_auto_connect());
   }

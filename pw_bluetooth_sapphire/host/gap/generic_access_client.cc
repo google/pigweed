@@ -24,7 +24,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
     }
 
     if (!status) {
-      cb(fit::error(status));
+      cb(fpromise::error(status));
       return;
     }
 
@@ -42,13 +42,13 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
              "GAP service does not have peripheral preferred connection parameters characteristic "
              "(peer: %s)",
              bt_str(self->peer_id_));
-      cb(fit::error(att::Status(HostError::kNotFound)));
+      cb(fpromise::error(att::Status(HostError::kNotFound)));
       return;
     }
 
     self->service_->ReadCharacteristic(*conn_params_value_handle, [self, cb = std::move(cb)](
-                                                                      auto status,
-                                                                      auto& buffer, auto) mutable {
+                                                                      auto status, auto& buffer,
+                                                                      auto) mutable {
       if (!self) {
         return;
       }
@@ -57,7 +57,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
               status, DEBUG, "gap-le",
               "error reading peripheral preferred connection parameters characteristic (peer: %s)",
               bt_str(self->peer_id_))) {
-        cb(fit::error(status));
+        cb(fpromise::error(status));
         return;
       }
 
@@ -66,7 +66,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
                "peripheral preferred connection parameters characteristic has invalid value size "
                "(peer: %s)",
                bt_str(self->peer_id_));
-        cb(fit::error(att::Status(HostError::kPacketMalformed)));
+        cb(fpromise::error(att::Status(HostError::kPacketMalformed)));
         return;
       }
 
@@ -76,7 +76,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
           letoh16(char_value.min_interval), letoh16(char_value.max_interval),
           letoh16(char_value.max_latency), letoh16(char_value.supervision_timeout));
 
-      cb(fit::ok(params));
+      cb(fpromise::ok(params));
     });
   });
 }

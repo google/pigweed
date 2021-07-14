@@ -23,7 +23,7 @@
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 
-#include "lib/fit/result.h"
+#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
@@ -181,7 +181,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // Requests may fail if the controller does not support changing the ACL priority or the indicated
   // priority conflicts with another channel.
   virtual void RequestAclPriority(hci::AclPriority priority,
-                                  fit::callback<void(fit::result<>)> callback) = 0;
+                                  fit::callback<void(fpromise::result<>)> callback) = 0;
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
@@ -190,7 +190,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // flushable, but there will be no automatic flush timeout).
   virtual void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout,
-      fit::callback<void(fit::result<void, hci::StatusCode>)> callback) = 0;
+      fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) = 0;
 
   // Attach this channel as a child node of |parent| with the given |name|.
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
@@ -271,10 +271,10 @@ class ChannelImpl : public Channel {
   void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                        async_dispatcher_t* dispatcher) override;
   void RequestAclPriority(hci::AclPriority priority,
-                          fit::callback<void(fit::result<>)> callback) override;
+                          fit::callback<void(fpromise::result<>)> callback) override;
   void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout,
-      fit::callback<void(fit::result<void, hci::StatusCode>)> callback) override;
+      fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
 
  private:

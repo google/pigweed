@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CLIENT_H_
 
 #include <lib/fit/function.h>
-#include <lib/fit/result.h>
+#include <lib/fpromise/result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
@@ -157,7 +157,7 @@ class Client {
     // Part F, 3.4.4.1).
     std::optional<att::Handle> handle;
   };
-  using ReadByTypeResult = fit::result<std::vector<ReadByTypeValue>, ReadByTypeError>;
+  using ReadByTypeResult = fpromise::result<std::vector<ReadByTypeValue>, ReadByTypeError>;
   using ReadByTypeCallback = fit::function<void(ReadByTypeResult)>;
   virtual void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                                  ReadByTypeCallback callback) = 0;

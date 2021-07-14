@@ -9,7 +9,7 @@
 #include <fuchsia/hardware/bt/hci/c/banjo.h>
 #include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/fit/function.h>
-#include <lib/fit/result.h>
+#include <lib/fpromise/result.h>
 #include <lib/zx/channel.h>
 #include <zircon/status.h>
 #include <zircon/types.h>
@@ -39,9 +39,9 @@ class DeviceWrapper {
 
   virtual bt_vendor_features_t GetVendorFeatures() = 0;
 
-  virtual fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
-                                                             bt_vendor_params_t& params) {
-    return fit::error();
+  virtual fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                                  bt_vendor_params_t& params) {
+    return fpromise::error();
   };
 };
 
@@ -78,8 +78,8 @@ class DdkDeviceWrapper : public DeviceWrapper {
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
   bt_vendor_features_t GetVendorFeatures() override;
-  fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
-                                                     bt_vendor_params_t& params) override;
+  fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                          bt_vendor_params_t& params) override;
 
  private:
   bt_hci_protocol_t hci_proto_;
@@ -96,7 +96,7 @@ class DummyDeviceWrapper : public DeviceWrapper {
   // them when asked for them. |vendor_features| will be returned by GetVendorFeatures() and calls
   // to EncodeVendorCommand() are forwarded to |vendor_encode_cb|.
   using EncodeCallback =
-      fit::function<fit::result<DynamicByteBuffer>(bt_vendor_command_t, bt_vendor_params_t)>;
+      fit::function<fpromise::result<DynamicByteBuffer>(bt_vendor_command_t, bt_vendor_params_t)>;
   DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_data_channel,
                      bt_vendor_features_t vendor_features = 0,
                      EncodeCallback vendor_encode_cb = nullptr);
@@ -110,8 +110,8 @@ class DummyDeviceWrapper : public DeviceWrapper {
   zx::channel GetACLDataChannel() override;
 
   bt_vendor_features_t GetVendorFeatures() override { return vendor_features_; }
-  fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
-                                                     bt_vendor_params_t& params) override;
+  fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                          bt_vendor_params_t& params) override;
 
  private:
   zx::channel cmd_channel_;

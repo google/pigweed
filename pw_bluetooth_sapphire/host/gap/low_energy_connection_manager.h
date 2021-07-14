@@ -95,7 +95,7 @@ class LowEnergyConnectionManager final {
   //
   // The status of the procedure is reported in |callback| in the case of an
   // error.
-  using ConnectionResult = fit::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>;
+  using ConnectionResult = fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>;
   using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
   void Connect(PeerId peer_id, ConnectionResultCallback callback,
                LowEnergyConnectionOptions connection_options);
@@ -190,16 +190,16 @@ class LowEnergyConnectionManager final {
 
   // Called by internal::LowEnergyConnector to indicate the result of a local connect request.
   void OnLocalInitiatedConnectResult(
-      fit::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
+      fpromise::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
 
   // Called by internal::LowEnergyConnector to indicate the result of a remote connect request.
   void OnRemoteInitiatedConnectResult(
       PeerId peer_id,
-      fit::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
+      fpromise::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
 
   // Either report an error to clients or initialize the connection and report success to clients.
   void ProcessConnectResult(
-      fit::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result,
+      fpromise::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result,
       internal::LowEnergyConnectionRequest request);
 
   // Finish setting up connection, adding to |connections_| map, and notifying clients.

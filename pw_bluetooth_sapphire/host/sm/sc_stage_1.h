@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_H_
 
 #include <lib/fit/function.h>
-#include <lib/fit/result.h>
+#include <lib/fpromise/result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -51,7 +51,7 @@ class ScStage1 {
 
   // Used by Stage 1 classes to notify their owning class that they have finished. A successful
   // Stage 1 notifies its owner with `Output`, or that it has failed due to `ErrorCode`.
-  using Stage1CompleteCallback = fit::function<void(fit::result<Output, ErrorCode>)>;
+  using Stage1CompleteCallback = fit::function<void(fpromise::result<Output, ErrorCode>)>;
 
   virtual void Run() = 0;
   virtual void OnPairingConfirm(PairingConfirmValue) = 0;

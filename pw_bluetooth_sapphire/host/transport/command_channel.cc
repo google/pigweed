@@ -105,15 +105,15 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   };
 }
 
-fit::result<std::unique_ptr<CommandChannel>> CommandChannel::Create(
+fpromise::result<std::unique_ptr<CommandChannel>> CommandChannel::Create(
     Transport* transport, zx::channel hci_command_channel) {
   auto channel = std::unique_ptr<CommandChannel>(
       new CommandChannel(transport, std::move(hci_command_channel)));
 
   if (!channel->is_initialized_) {
-    return fit::error();
+    return fpromise::error();
   }
-  return fit::ok(std::move(channel));
+  return fpromise::ok(std::move(channel));
 }
 
 CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)

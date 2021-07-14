@@ -311,7 +311,7 @@ std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::
   if (!conn_pair) {
     bt_log(WARN, "gap-bredr", "Can't open SCO connection to unconnected peer (peer: %s)",
            bt_str(peer_id));
-    callback(fit::error(HostError::kNotFound));
+    callback(fpromise::error(HostError::kNotFound));
     return std::nullopt;
   };
 

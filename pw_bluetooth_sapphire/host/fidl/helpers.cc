@@ -1104,14 +1104,14 @@ bt::gatt::DescriptorHandle DescriptorHandleFromFidl(uint64_t fidl_gatt_id) {
   return bt::gatt::DescriptorHandle(static_cast<bt::att::Handle>(fidl_gatt_id));
 }
 
-fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefinitionToServiceRecord(
-    const fuchsia::bluetooth::bredr::ServiceDefinition& definition) {
+fpromise::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode>
+ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinition& definition) {
   bt::sdp::ServiceRecord rec;
   std::vector<bt::UUID> classes;
 
   if (!definition.has_service_class_uuids()) {
     bt_log(WARN, "fidl", "Advertised service contains no Service UUIDs");
-    return fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+    return fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
   }
 
   for (auto& uuid : definition.service_class_uuids()) {
@@ -1126,7 +1126,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
     if (!AddProtocolDescriptorList(&rec, bt::sdp::ServiceRecord::kPrimaryProtocolList,
                                    definition.protocol_descriptor_list())) {
       bt_log(ERROR, "fidl", "Failed to add protocol descriptor list");
-      return fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+      return fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
     }
   }
 
@@ -1140,7 +1140,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
     for (const auto& descriptor_list : definition.additional_protocol_descriptor_lists()) {
       if (!AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list)) {
         bt_log(ERROR, "fidl", "Failed to add additional protocol descriptor list");
-        return fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+        return fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
       }
       protocol_list_id++;
     }
@@ -1158,7 +1158,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
   if (definition.has_information()) {
     for (const auto& info : definition.information()) {
       if (!info.has_language()) {
-        return fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+        return fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
       }
       std::string language = info.language();
       std::string name, description, provider;
@@ -1187,7 +1187,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
       }
     }
   }
-  return fit::ok(std::move(rec));
+  return fpromise::ok(std::move(rec));
 }
 
 bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
@@ -1255,15 +1255,15 @@ bt::hci::VendorCodingFormat FidlToScoCodingFormat(const fbredr::CodingFormat for
   return out;
 }
 
-fit::result<bt::hci::PcmDataFormat> FidlToPcmDataFormat(const faudio::SampleFormat& format) {
+fpromise::result<bt::hci::PcmDataFormat> FidlToPcmDataFormat(const faudio::SampleFormat& format) {
   switch (format) {
     case faudio::SampleFormat::PCM_SIGNED:
-      return fit::ok(bt::hci::PcmDataFormat::k2sComplement);
+      return fpromise::ok(bt::hci::PcmDataFormat::k2sComplement);
     case faudio::SampleFormat::PCM_UNSIGNED:
-      return fit::ok(bt::hci::PcmDataFormat::kUnsigned);
+      return fpromise::ok(bt::hci::PcmDataFormat::kUnsigned);
     default:
       // Other sample formats are not supported by SCO.
-      return fit::error();
+      return fpromise::error();
   }
 }
 
@@ -1281,13 +1281,13 @@ bt::hci::ScoDataPath FidlToScoDataPath(const fbredr::DataPath& path) {
   }
 }
 
-fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
+fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
     const fbredr::ScoConnectionParameters& params) {
   bt::hci::SynchronousConnectionParameters out;
 
   if (!params.has_parameter_set()) {
     bt_log(WARN, "fidl", "SCO parameters missing parameter_set");
-    return fit::error();
+    return fpromise::error();
   }
   auto param_set = FidlToScoParameterSet(params.parameter_set());
 
@@ -1296,7 +1296,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
 
   if (!params.has_air_coding_format()) {
     bt_log(WARN, "fidl", "SCO parameters missing air_coding_format");
-    return fit::error();
+    return fpromise::error();
   }
   auto air_coding_format = FidlToScoCodingFormat(params.air_coding_format());
   out.transmit_coding_format = air_coding_format;
@@ -1304,28 +1304,28 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
 
   if (!params.has_air_frame_size()) {
     bt_log(WARN, "fidl", "SCO parameters missing air_frame_size");
-    return fit::error();
+    return fpromise::error();
   }
   out.transmit_codec_frame_size_bytes = params.air_frame_size();
   out.receive_codec_frame_size_bytes = out.transmit_codec_frame_size_bytes;
 
   if (!params.has_io_bandwidth()) {
     bt_log(WARN, "fidl", "SCO parameters missing io_bandwidth");
-    return fit::error();
+    return fpromise::error();
   }
   out.input_bandwidth = params.io_bandwidth();
   out.output_bandwidth = out.input_bandwidth;
 
   if (!params.has_io_coding_format()) {
     bt_log(WARN, "fidl", "SCO parameters missing io_coding_format");
-    return fit::error();
+    return fpromise::error();
   }
   out.input_coding_format = FidlToScoCodingFormat(params.io_coding_format());
   out.output_coding_format = out.input_coding_format;
 
   if (!params.has_io_frame_size()) {
     bt_log(WARN, "fidl", "SCO parameters missing io_frame_size");
-    return fit::error();
+    return fpromise::error();
   }
   out.input_coded_data_size_bits = params.io_frame_size();
   out.output_coded_data_size_bits = out.input_coded_data_size_bits;
@@ -1335,7 +1335,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
     auto io_pcm_format = FidlToPcmDataFormat(params.io_pcm_data_format());
     if (io_pcm_format.is_error()) {
       bt_log(WARN, "fidl", "Unsupported IO PCM data format in SCO parameters");
-      return fit::error();
+      return fpromise::error();
     }
     out.input_pcm_data_format = io_pcm_format.value();
     out.output_pcm_data_format = out.input_pcm_data_format;
@@ -1343,7 +1343,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   } else if (out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
     bt_log(WARN, "fidl",
            "SCO parameters missing io_pcm_data_format (required for linear PCM IO coding format)");
-    return fit::error();
+    return fpromise::error();
   } else {
     out.input_pcm_data_format = bt::hci::PcmDataFormat::kNotApplicable;
     out.output_pcm_data_format = out.input_pcm_data_format;
@@ -1360,7 +1360,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
 
   if (!params.has_path()) {
     bt_log(WARN, "fidl", "SCO parameters missing data path");
-    return fit::error();
+    return fpromise::error();
   }
   out.input_data_path = FidlToScoDataPath(params.path());
   out.output_data_path = out.input_data_path;
@@ -1376,7 +1376,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   out.packet_types = param_set.packet_types;
   out.retransmission_effort = param_set.retransmission_effort;
 
-  return fit::ok(out);
+  return fpromise::ok(out);
 }
 
 }  // namespace bthost::fidl_helpers

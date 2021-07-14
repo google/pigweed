@@ -21,12 +21,12 @@ constexpr uint8_t kTestEventParam = 3u;
 template <bool DecodeSucceeds>
 struct TestEvent {
   uint8_t test_param;
-  static fit::result<TestEvent, HostError> Decode(const EventPacket& packet) {
+  static fpromise::result<TestEvent, HostError> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fit::error(HostError::kPacketMalformed);
+      return fpromise::error(HostError::kPacketMalformed);
     }
 
-    return fit::ok(TestEvent{.test_param = kTestEventParam});
+    return fpromise::ok(TestEvent{.test_param = kTestEventParam});
   }
 
   static constexpr EventCode kEventCode = kInquiryCompleteEventCode;
@@ -44,12 +44,12 @@ template <bool DecodeSucceeds>
 struct TestCommandCompleteEvent {
   uint8_t test_param;
 
-  static fit::result<TestCommandCompleteEvent, HostError> Decode(const EventPacket& packet) {
+  static fpromise::result<TestCommandCompleteEvent, HostError> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fit::error(HostError::kPacketMalformed);
+      return fpromise::error(HostError::kPacketMalformed);
     }
 
-    return fit::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
+    return fpromise::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
   }
 
   static constexpr EventCode kEventCode = kCommandCompleteEventCode;

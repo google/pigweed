@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_REQUEST_H_
 
 #include <lib/fit/function.h>
-#include <lib/fit/result.h>
+#include <lib/fpromise/result.h>
 #include <lib/sys/inspect/cpp/component.h>
 
 #include "low_energy_connection_handle.h"
@@ -41,7 +41,7 @@ namespace internal {
 // completed.
 class LowEnergyConnectionRequest final {
  public:
-  using ConnectionResult = fit::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>;
+  using ConnectionResult = fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>;
   using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
 
   LowEnergyConnectionRequest(PeerId peer_id, ConnectionResultCallback first_callback,
@@ -56,7 +56,7 @@ class LowEnergyConnectionRequest final {
   // Notifies all elements in |callbacks| with |status| and the result of
   // |func|.
   using RefFunc = fit::function<std::unique_ptr<LowEnergyConnectionHandle>()>;
-  void NotifyCallbacks(fit::result<RefFunc, HostError> result);
+  void NotifyCallbacks(fpromise::result<RefFunc, HostError> result);
 
   // Attach request inspect node as a child node of |parent| with the name |name|.
   void AttachInspect(inspect::Node& parent, std::string name);

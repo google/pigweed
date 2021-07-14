@@ -9,8 +9,8 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/result.h>
 #include <lib/fit/thread_checker.h>
+#include <lib/fpromise/result.h>
 #include <lib/trace/event.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
@@ -46,8 +46,8 @@ class CommandChannel final {
   // implemented by the underlying Bluetooth HCI device driver.
   //
   // |transport| is the Transport instance that owns this CommandChannel.
-  static fit::result<std::unique_ptr<CommandChannel>> Create(Transport* transport,
-                                                             zx::channel hci_command_channel);
+  static fpromise::result<std::unique_ptr<CommandChannel>> Create(Transport* transport,
+                                                                  zx::channel hci_command_channel);
 
   ~CommandChannel();
 

@@ -66,14 +66,14 @@ LowEnergyPeripheralServer::AdvertisementInstance::AdvertisementInstance(
   ZX_ASSERT(advertise_complete_cb_);
   advertised_peripheral_.Bind(std::move(handle));
   advertised_peripheral_.set_error_handler([this, peripheral_server, id](zx_status_t /*status*/) {
-    CloseWith(fit::ok());
+    CloseWith(fpromise::ok());
     peripheral_server->RemoveAdvertisingInstance(id);
   });
 }
 
 LowEnergyPeripheralServer::AdvertisementInstance::~AdvertisementInstance() {
   if (advertise_complete_cb_) {
-    CloseWith(fit::error(fble::PeripheralError::ABORTED));
+    CloseWith(fpromise::error(fble::PeripheralError::ABORTED));
   }
 }
 
@@ -88,7 +88,7 @@ void LowEnergyPeripheralServer::AdvertisementInstance::StartAdvertising() {
 
     if (!status) {
       bt_log(WARN, LOG_TAG, "failed to start advertising (status: %s)", bt_str(status));
-      self->CloseWith(fit::error(FidlErrorFromStatus(status)));
+      self->CloseWith(fpromise::error(FidlErrorFromStatus(status)));
       self->peripheral_server_->RemoveAdvertisingInstance(self->id_);
       return;
     }
@@ -112,42 +112,43 @@ void LowEnergyPeripheralServer::AdvertisementInstance::OnConnected(
   ZX_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_conn = [self, link_str = link->ToString()](
-                     fit::result<std::unique_ptr<bt::gap::LowEnergyConnectionHandle>, bt::HostError>
-                         result) mutable {
-    if (!self) {
-      return;
-    }
+  auto on_conn =
+      [self, link_str = link->ToString()](
+          fpromise::result<std::unique_ptr<bt::gap::LowEnergyConnectionHandle>, bt::HostError>
+              result) mutable {
+        if (!self) {
+          return;
+        }
 
-    // HCI advertising ends when a connection is received (even for error results), so clear the
-    // stale advertisement handle.
-    self->instance_.reset();
+        // HCI advertising ends when a connection is received (even for error results), so clear the
+        // stale advertisement handle.
+        self->instance_.reset();
 
-    if (result.is_error()) {
-      bt_log(INFO, LOG_TAG, "incoming connection rejected (link: %s)", link_str.c_str());
-      self->StartAdvertising();
-      return;
-    }
+        if (result.is_error()) {
+          bt_log(INFO, LOG_TAG, "incoming connection rejected (link: %s)", link_str.c_str());
+          self->StartAdvertising();
+          return;
+        }
 
-    auto conn = result.take_value();
-    auto peer_id = conn->peer_identifier();
-    auto* peer = self->peripheral_server_->adapter()->peer_cache()->FindById(peer_id);
-    ZX_ASSERT(peer);
+        auto conn = result.take_value();
+        auto peer_id = conn->peer_identifier();
+        auto* peer = self->peripheral_server_->adapter()->peer_cache()->FindById(peer_id);
+        ZX_ASSERT(peer);
 
-    bt_log(INFO, LOG_TAG, "central connected (peer: %s)", bt_str(peer->identifier()));
+        bt_log(INFO, LOG_TAG, "central connected (peer: %s)", bt_str(peer->identifier()));
 
-    fidl::InterfaceHandle<fble::Connection> conn_handle =
-        self->peripheral_server_->CreateConnectionServer(std::move(conn));
+        fidl::InterfaceHandle<fble::Connection> conn_handle =
+            self->peripheral_server_->CreateConnectionServer(std::move(conn));
 
-    // Restart advertising after the client acknowledges the connection.
-    auto on_connected_cb = [self] {
-      if (self) {
-        self->StartAdvertising();
-      }
-    };
-    self->advertised_peripheral_->OnConnected(fidl_helpers::PeerToFidlLe(*peer),
-                                              std::move(conn_handle), std::move(on_connected_cb));
-  };
+        // Restart advertising after the client acknowledges the connection.
+        auto on_connected_cb = [self] {
+          if (self) {
+            self->StartAdvertising();
+          }
+        };
+        self->advertised_peripheral_->OnConnected(
+            fidl_helpers::PeerToFidlLe(*peer), std::move(conn_handle), std::move(on_connected_cb));
+      };
 
   // TODO(fxbug.dev/648): The conversion from hci::Connection to
   // gap::LowEnergyConnectionHandle should be performed by a gap library object
@@ -157,7 +158,7 @@ void LowEnergyPeripheralServer::AdvertisementInstance::OnConnected(
 }
 
 void LowEnergyPeripheralServer::AdvertisementInstance::CloseWith(
-    fit::result<void, fuchsia::bluetooth::le::PeripheralError> result) {
+    fpromise::result<void, fuchsia::bluetooth::le::PeripheralError> result) {
   if (advertise_complete_cb_) {
     advertised_peripheral_.Unbind();
     advertise_complete_cb_(std::move(result));
@@ -210,7 +211,7 @@ void LowEnergyPeripheralServer::Advertise(
     AdvertiseCallback callback) {
   // Advertise and StartAdvertising may not be used simultaneously.
   if (advertisement_deprecated_.has_value()) {
-    callback(fit::error(fble::PeripheralError::FAILED));
+    callback(fpromise::error(fble::PeripheralError::FAILED));
     return;
   }
 
@@ -220,7 +221,7 @@ void LowEnergyPeripheralServer::Advertise(
   // NOTE: This is insufficient  when there are multiple Peripheral clients advertising, but that is
   // the status quo with `StartAdvertising` anyway (the last advertiser wins).
   if (!advertisements_.empty()) {
-    callback(fit::error(fble::PeripheralError::FAILED));
+    callback(fpromise::error(fble::PeripheralError::FAILED));
     return;
   }
 

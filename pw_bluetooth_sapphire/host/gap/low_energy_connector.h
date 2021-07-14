@@ -17,7 +17,7 @@ namespace bt::gap::internal {
 class LowEnergyConnector final {
  public:
   using ResultCallback =
-      fit::callback<void(fit::result<std::unique_ptr<LowEnergyConnection>, hci::Status>)>;
+      fit::callback<void(fpromise::result<std::unique_ptr<LowEnergyConnection>, hci::Status>)>;
 
   // Initiate an outbound connection to |peer_id|. |cb| will be called with the result of the
   // procedure.

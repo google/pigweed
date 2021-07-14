@@ -4,7 +4,7 @@
 
 #include "sc_stage_1_just_works_numeric_comparison.h"
 
-#include "lib/fit/result.h"
+#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
@@ -40,7 +40,7 @@ void ScStage1JustWorksNumericComparison::Run() {
         util::F4(local_public_key_x_, peer_public_key_x_, local_rand_, 0);
     if (!maybe_confirm.has_value()) {
       bt_log(WARN, "sm", "unable to calculate confirm value in SC Phase 1");
-      on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+      on_complete_(fpromise::error(ErrorCode::kUnspecifiedReason));
       return;
     }
     responder_confirm_ = *maybe_confirm;
@@ -54,13 +54,13 @@ void ScStage1JustWorksNumericComparison::OnPairingConfirm(PairingConfirmValue co
   if (role_ == Role::kResponder) {
     bt_log(WARN, "sm",
            "cannot accept pairing confirm in SC Numeric Comparison/Just Works responder mode");
-    on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+    on_complete_(fpromise::error(ErrorCode::kUnspecifiedReason));
     return;
   }
   if (responder_confirm_.has_value()) {
     bt_log(WARN, "sm",
            "received multiple Pairing Confirm values in SC Numeric Comparison/Just Works");
-    on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+    on_complete_(fpromise::error(ErrorCode::kUnspecifiedReason));
     return;
   }
   responder_confirm_ = confirm;
@@ -86,12 +86,12 @@ void ScStage1JustWorksNumericComparison::SendPairingRandom() {
 void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand) {
   if (!responder_confirm_.has_value()) {
     bt_log(WARN, "sm", "received Pairing Random before the confirm value was exchanged");
-    on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+    on_complete_(fpromise::error(ErrorCode::kUnspecifiedReason));
     return;
   }
   if (peer_rand_.has_value()) {
     bt_log(WARN, "sm", "received multiple Pairing Random values from peer");
-    on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+    on_complete_(fpromise::error(ErrorCode::kUnspecifiedReason));
     return;
   }
   peer_rand_ = rand;
@@ -102,19 +102,19 @@ void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand
   // Otherwise, we're the initiator & we must validate the |responder_confirm_| with |rand|.
   if (!sent_local_rand_) {
     bt_log(WARN, "sm", "received peer random before sending our own as initiator");
-    on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+    on_complete_(fpromise::error(ErrorCode::kUnspecifiedReason));
     return;
   }
   std::optional<UInt128> maybe_confirm_check =
       util::F4(peer_public_key_x_, local_public_key_x_, rand, 0);
   if (!maybe_confirm_check.has_value()) {
     bt_log(WARN, "sm", "unable to calculate SC confirm check value");
-    on_complete_(fit::error(ErrorCode::kConfirmValueFailed));
+    on_complete_(fpromise::error(ErrorCode::kConfirmValueFailed));
     return;
   }
   if (*maybe_confirm_check != *responder_confirm_) {
     bt_log(WARN, "sm", "peer SC confirm value did not match check, aborting");
-    on_complete_(fit::error(ErrorCode::kConfirmValueFailed));
+    on_complete_(fpromise::error(ErrorCode::kConfirmValueFailed));
     return;
   }
   CompleteStage1();
@@ -137,7 +137,7 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
         util::G2(initiator_pub_key_x, responder_pub_key_x, initiator_rand, responder_rand);
     if (!g2_result.has_value()) {
       bt_log(WARN, "sm", "unable to calculate numeric comparison user check");
-      on_complete_(fit::error(ErrorCode::kNumericComparisonFailed));
+      on_complete_(fpromise::error(ErrorCode::kNumericComparisonFailed));
       return;
     }
 
@@ -149,8 +149,9 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
           bt_log(INFO, "sm", "PairingDelegate %s SC numeric display pairing",
                  passkey_confirmed ? "accepted" : "rejected");
           if (self) {
-            passkey_confirmed ? self->on_complete_(fit::ok(results))
-                              : self->on_complete_(fit::error(ErrorCode::kNumericComparisonFailed));
+            passkey_confirmed
+                ? self->on_complete_(fpromise::ok(results))
+                : self->on_complete_(fpromise::error(ErrorCode::kNumericComparisonFailed));
           }
         });
   } else {  // method == kJustWorks
@@ -158,8 +159,8 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
       bt_log(INFO, "sm", "PairingDelegate %s SC just works pairing",
              user_confirmed ? "accepted" : "rejected");
       if (self) {
-        user_confirmed ? self->on_complete_(fit::ok(results))
-                       : self->on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+        user_confirmed ? self->on_complete_(fpromise::ok(results))
+                       : self->on_complete_(fpromise::error(ErrorCode::kUnspecifiedReason));
       }
     });
   }

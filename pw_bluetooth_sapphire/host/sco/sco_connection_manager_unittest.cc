@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 #include "sco_connection_manager.h"
+
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -309,7 +310,7 @@ TEST_F(SCO_ScoConnectionManagerTest, HandleReuse) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle),
                         &disconn_status_packet, &disconn_complete);
   conn->Deactivate();
-  conn_result = fit::pending();
+  conn_result = fpromise::pending();
 
   EXPECT_CMD_PACKET_OUT(
       test_device(),

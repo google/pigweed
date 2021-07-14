@@ -62,7 +62,7 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   // protocols to prove who they are to each other in Stage 1. (SMP Section 2.3.5.6.2-3).
   // TODO(fxbug.dev/601): Implement Stage 1 OOB pairing (SMP Section 2.3.6.5.4).
   void StartAuthenticationStage1();
-  void OnAuthenticationStage1Complete(fit::result<ScStage1::Output, ErrorCode> result);
+  void OnAuthenticationStage1Complete(fpromise::result<ScStage1::Output, ErrorCode> result);
 
   void OnPairingConfirm(PairingConfirmValue confirm);
   void OnPairingRandom(PairingRandomValue rand);

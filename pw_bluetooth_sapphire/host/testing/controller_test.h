@@ -139,11 +139,11 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     status = zx::channel::create(0, &acl0, &acl1_);
     ZX_DEBUG_ASSERT(ZX_OK == status);
 
-    auto vendor_encode_cb = [this](auto cmd, auto params) -> fit::result<DynamicByteBuffer> {
+    auto vendor_encode_cb = [this](auto cmd, auto params) -> fpromise::result<DynamicByteBuffer> {
       if (vendor_encode_cb_) {
         return vendor_encode_cb_(cmd, params);
       }
-      return fit::error();
+      return fpromise::error();
     };
     auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(
         std::move(cmd0), std::move(acl0), vendor_features_, std::move(vendor_encode_cb));

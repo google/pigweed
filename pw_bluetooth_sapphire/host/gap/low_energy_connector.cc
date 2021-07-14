@@ -414,14 +414,14 @@ void LowEnergyConnector::NotifySuccess() {
     ZX_PANIC("connection error without handler set (peer: %s)", bt_str(peer_id));
   });
 
-  result_cb_(fit::ok(std::move(connection_)));
+  result_cb_(fpromise::ok(std::move(connection_)));
 }
 
 void LowEnergyConnector::NotifyFailure(hci::Status status) {
   state_.Set(State::kFailed);
   // The result callback must only be called once, so extraneous failures should be ignored.
   if (result_cb_) {
-    result_cb_(fit::error(status));
+    result_cb_(fpromise::error(status));
   }
 }
 

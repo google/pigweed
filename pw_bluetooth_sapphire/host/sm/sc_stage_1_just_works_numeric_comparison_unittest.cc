@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "lib/async/default.h"
-#include "lib/fit/result.h"
+#include "lib/fpromise/result.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -60,7 +60,7 @@ class SMP_ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeCh
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
         listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
         sm_chan_->GetWeakPtr(),
-        [this](fit::result<ScStage1::Output, ErrorCode> out) { last_results_ = out; });
+        [this](fpromise::result<ScStage1::Output, ErrorCode> out) { last_results_ = out; });
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random) const {
@@ -86,7 +86,7 @@ class SMP_ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeCh
   ScStage1JustWorksNumericComparison* stage_1() { return stage_1_.get(); }
   FakeListener* listener() { return listener_.get(); }
   std::optional<ValidPacketReader> last_packet() const { return last_packet_; }
-  std::optional<fit::result<ScStage1::Output, ErrorCode>> last_results() const {
+  std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results() const {
     return last_results_;
   }
 
@@ -99,7 +99,7 @@ class SMP_ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeCh
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
   // To store the last sent SDU so that the last_packet_ PacketReader points at valid data.
   ByteBufferPtr last_packet_internal_;
-  std::optional<fit::result<ScStage1::Output, ErrorCode>> last_results_ = std::nullopt;
+  std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results_ = std::nullopt;
 };
 
 using SMP_ScStage1JustWorksNumericComparisonDeathTest = SMP_ScStage1JustWorksNumericComparisonTest;

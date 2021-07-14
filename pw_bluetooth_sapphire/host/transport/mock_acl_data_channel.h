@@ -25,13 +25,14 @@ class MockAclDataChannel final : public AclDataChannel {
 
   using RequestAclPriorityCallback =
       fit::function<void(hci::AclPriority priority, hci::ConnectionHandle handle,
-                         fit::callback<void(fit::result<>)> callback)>;
+                         fit::callback<void(fpromise::result<>)> callback)>;
   void set_request_acl_priority_cb(RequestAclPriorityCallback cb) {
     request_acl_priority_cb_ = std::move(cb);
   }
 
-  using SetBrEdrAutomaticFlushTimeoutCallback = fit::function<void(
-      zx::duration, hci::ConnectionHandle, fit::callback<void(fit::result<void, StatusCode>)>)>;
+  using SetBrEdrAutomaticFlushTimeoutCallback =
+      fit::function<void(zx::duration, hci::ConnectionHandle,
+                         fit::callback<void(fpromise::result<void, StatusCode>)>)>;
   void set_set_bredr_automatic_flush_timeout_cb(SetBrEdrAutomaticFlushTimeoutCallback callback) {
     flush_timeout_cb_ = std::move(callback);
   }
@@ -63,7 +64,7 @@ class MockAclDataChannel final : public AclDataChannel {
   const DataBufferInfo& GetBufferInfo() const override { return bredr_buffer_info_; }
   const DataBufferInfo& GetLeBufferInfo() const override { return le_buffer_info_; }
   void RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
-                          fit::callback<void(fit::result<>)> callback) override {
+                          fit::callback<void(fpromise::result<>)> callback) override {
     if (request_acl_priority_cb_) {
       request_acl_priority_cb_(priority, handle, std::move(callback));
     }
@@ -71,7 +72,7 @@ class MockAclDataChannel final : public AclDataChannel {
 
   void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout, hci::ConnectionHandle handle,
-      fit::callback<void(fit::result<void, StatusCode>)> callback) override {
+      fit::callback<void(fpromise::result<void, StatusCode>)> callback) override {
     if (flush_timeout_cb_) {
       flush_timeout_cb_(flush_timeout, handle, std::move(callback));
     }

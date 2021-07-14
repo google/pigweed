@@ -80,7 +80,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
 
     // End the advertisement with a result. Idempotent.
     // This object should be destroyed immediately after calling this method.
-    void CloseWith(fit::result<void, fuchsia::bluetooth::le::PeripheralError> result);
+    void CloseWith(fpromise::result<void, fuchsia::bluetooth::le::PeripheralError> result);
 
     LowEnergyPeripheralServer* peripheral_server_;
     AdvertisementInstanceId id_;

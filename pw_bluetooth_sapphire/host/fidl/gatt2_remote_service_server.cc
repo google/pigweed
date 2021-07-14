@@ -97,10 +97,10 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
           case bt::HostError::kInvalidParameters:
             bt_log(WARN, "fidl", "%s: called with invalid parameters (peer: %s)", func,
                    bt_str(self->peer_id_));
-            cb(fit::error(fbg::Error::INVALID_PARAMETERS));
+            cb(fpromise::error(fbg::Error::INVALID_PARAMETERS));
             return;
           default:
-            cb(fit::error(fbg::Error::FAILURE));
+            cb(fpromise::error(fbg::Error::FAILURE));
             return;
         }
 
@@ -130,14 +130,14 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
           bytes_used += result_size.num_bytes;
 
           if (bytes_used > kMaxBytes) {
-            cb(fit::error(fuchsia::bluetooth::gatt2::Error::TOO_MANY_RESULTS));
+            cb(fpromise::error(fuchsia::bluetooth::gatt2::Error::TOO_MANY_RESULTS));
             return;
           }
 
           fidl_results.push_back(std::move(fidl_result));
         }
 
-        cb(fit::ok(std::move(fidl_results)));
+        cb(fpromise::ok(std::move(fidl_results)));
       });
 }
 

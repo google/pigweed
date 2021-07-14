@@ -1662,15 +1662,15 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeN
         switch (read_count++) {
           case 0:
             EXPECT_EQ(kStartHandle, start);
-            callback(fit::ok(kValues0));
+            callback(fpromise::ok(kValues0));
             break;
           case 1:
             EXPECT_EQ(kHandle0 + 1, start);
-            callback(fit::ok(kValues1));
+            callback(fpromise::ok(kValues1));
             break;
           case 2:
             EXPECT_EQ(kHandle1 + 1, start);
-            callback(fit::error(
+            callback(fpromise::error(
                 Client::ReadByTypeError{att::Status(att::ErrorCode::kAttributeNotFound), start}));
             break;
           default:
@@ -1717,7 +1717,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEnd
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         EXPECT_EQ(kStartHandle, start);
         EXPECT_EQ(0u, read_count++);
-        callback(fit::ok(kValues));
+        callback(fpromise::ok(kValues));
       });
 
   std::optional<att::Status> status;
@@ -1748,15 +1748,15 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
       att::ErrorCode::kReadNotPermitted};
 
   size_t read_count = 0;
-  fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
-        if (read_count < errors.size()) {
-          EXPECT_EQ(kStartHandle + read_count, start);
-          callback(fit::error(Client::ReadByTypeError{att::Status(errors[read_count++]), start}));
-        } else {
-          FAIL();
-        }
-      });
+  fake_client()->set_read_by_type_request_callback([&](const UUID& type, att::Handle start,
+                                                       att::Handle end, auto callback) {
+    if (read_count < errors.size()) {
+      EXPECT_EQ(kStartHandle + read_count, start);
+      callback(fpromise::error(Client::ReadByTypeError{att::Status(errors[read_count++]), start}));
+    } else {
+      FAIL();
+    }
+  });
 
   std::optional<att::Status> status;
   service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) {
@@ -1802,10 +1802,10 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
           ASSERT_EQ(0u, read_count++);
           switch (read_count++) {
             case 0:
-              callback(fit::ok(kValues));
+              callback(fpromise::ok(kValues));
               break;
             case 1:
-              callback(fit::error(Client::ReadByTypeError{att::Status(code), std::nullopt}));
+              callback(fpromise::error(Client::ReadByTypeError{att::Status(code), std::nullopt}));
               break;
             default:
               FAIL();
@@ -1838,7 +1838,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandl
   fake_client()->set_read_by_type_request_callback(
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
-        callback(fit::error(
+        callback(fpromise::error(
             Client::ReadByTypeError{att::Status(att::ErrorCode::kReadNotPermitted), std::nullopt}));
       });
 
@@ -1863,8 +1863,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHa
   fake_client()->set_read_by_type_request_callback(
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
-        callback(fit::error(Client::ReadByTypeError{att::Status(att::ErrorCode::kReadNotPermitted),
-                                                    kEndHandle + 1}));
+        callback(fpromise::error(Client::ReadByTypeError{
+            att::Status(att::ErrorCode::kReadNotPermitted), kEndHandle + 1}));
       });
 
   std::optional<att::Status> status;
@@ -3149,7 +3149,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeErrorOnLastHandleDoesNotOverflow
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         EXPECT_EQ(kStartHandle, start);
-        callback(fit::error(
+        callback(fpromise::error(
             Client::ReadByTypeError{att::Status(att::ErrorCode::kReadNotPermitted), kEndHandle}));
       });
 
@@ -3186,7 +3186,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflo
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         EXPECT_EQ(kStartHandle, start);
-        callback(fit::ok(kValues));
+        callback(fpromise::ok(kValues));
       });
 
   std::optional<att::Status> status;

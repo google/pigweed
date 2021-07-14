@@ -112,7 +112,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   if (bt_is_error(status, INFO, "gap-sco", "SCO connection failed to be established (peer: %s)",
                   bt_str(peer_id_))) {
     if (in_progress_request_) {
-      CompleteRequest(fit::error(HostError::kFailed));
+      CompleteRequest(fpromise::error(HostError::kFailed));
     }
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
@@ -142,7 +142,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   ZX_ASSERT_MSG(success, "SCO connection already exists with handle %#.4x (peer: %s)",
                 connection_handle, bt_str(peer_id_));
 
-  CompleteRequest(fit::ok(std::move(conn)));
+  CompleteRequest(fpromise::ok(std::move(conn)));
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
@@ -196,7 +196,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
           return;
         }
         bt_is_error(status, DEBUG, "sco", "SCO accept connection command failed");
-        self->CompleteRequest(fit::error(HostError::kFailed));
+        self->CompleteRequest(fpromise::error(HostError::kFailed));
       });
 
   in_progress_request_->received_request = true;
@@ -251,7 +251,7 @@ void ScoConnectionManager::TryCreateNextConnection() {
         return;
       }
       bt_is_error(status, DEBUG, "sco", "SCO setup connection command failed");
-      self->CompleteRequest(fit::error(HostError::kFailed));
+      self->CompleteRequest(fpromise::error(HostError::kFailed));
     };
 
     SendCommandWithStatusCallback(std::move(packet), std::move(status_cb));
@@ -292,7 +292,7 @@ void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
   if (in_progress_request_ && in_progress_request_->id == id && !in_progress_request_->initiator &&
       !in_progress_request_->received_request) {
     bt_log(TRACE, "gap-sco", "Cancelling in progress request (id: %zu)", id);
-    CompleteRequest(fit::error(HostError::kCanceled));
+    CompleteRequest(fpromise::error(HostError::kCanceled));
   }
 }
 

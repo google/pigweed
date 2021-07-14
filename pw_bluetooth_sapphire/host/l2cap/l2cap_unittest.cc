@@ -669,7 +669,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   set_encode_vendor_command_cb([&](auto command, auto params) {
     encode_vendor_command = command;
     encode_vendor_command_params = params;
-    return fit::ok(DynamicByteBuffer(kEncodedCommand));
+    return fpromise::ok(DynamicByteBuffer(kEncodedCommand));
   });
 
   QueueAclConnection(kLinkHandle);

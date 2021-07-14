@@ -15,14 +15,14 @@ LowEnergyConnectionRequest::LowEnergyConnectionRequest(
   callbacks_.Mutable()->push_back(std::move(first_callback));
 }
 
-void LowEnergyConnectionRequest::NotifyCallbacks(fit::result<RefFunc, HostError> result) {
+void LowEnergyConnectionRequest::NotifyCallbacks(fpromise::result<RefFunc, HostError> result) {
   for (const auto& callback : *callbacks_) {
     if (result.is_error()) {
-      callback(fit::error(result.error()));
+      callback(fpromise::error(result.error()));
       continue;
     }
     auto conn_ref = result.value()();
-    callback(fit::ok(std::move(conn_ref)));
+    callback(fpromise::ok(std::move(conn_ref)));
   }
 }
 

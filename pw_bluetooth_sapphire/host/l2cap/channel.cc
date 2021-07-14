@@ -188,10 +188,10 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
 }
 
 void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
-                                     fit::callback<void(fit::result<>)> callback) {
+                                     fit::callback<void(fpromise::result<>)> callback) {
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring ACL priority request on inactive channel");
-    callback(fit::error());
+    callback(fpromise::error());
     return;
   }
 
@@ -205,20 +205,21 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
 }
 
 void ChannelImpl::SetBrEdrAutomaticFlushTimeout(
-    zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
+    zx::duration flush_timeout,
+    fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) {
   ZX_ASSERT(link_type_ == bt::LinkType::kACL);
 
   // Channel may be inactive if this method is called before activation.
   if (!link_) {
     bt_log(DEBUG, "l2cap", "Ignoring %s on closed channel", __FUNCTION__);
-    callback(fit::error(hci::StatusCode::kCommandDisallowed));
+    callback(fpromise::error(hci::StatusCode::kCommandDisallowed));
     return;
   }
 
   auto cb_wrapper = [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback),
                      flush_timeout](auto result) mutable {
     if (!self) {
-      cb(fit::error(hci::StatusCode::kUnspecifiedError));
+      cb(fpromise::error(hci::StatusCode::kUnspecifiedError));
       return;
     }
 

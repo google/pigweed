@@ -335,8 +335,8 @@ void Engine::SendPdu(PendingPdu* pdu) {
   send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
-fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
-                                            bool set_is_poll_response) {
+fpromise::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
+                                                 bool set_is_poll_response) {
   // The receive engine should have cleared the remote busy condition before
   // calling any method that would cause us (the transmit engine) to retransmit
   // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
@@ -372,7 +372,7 @@ fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq
       ZX_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
                     max_transmissions_);
       connection_failure_callback_();
-      return fit::error();
+      return fpromise::error();
     }
 
     if (set_is_poll_response) {
@@ -389,7 +389,7 @@ fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq
     cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
   }
 
-  return fit::ok();
+  return fpromise::ok();
 }
 
 }  // namespace bt::l2cap::internal

@@ -7,8 +7,8 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/promise.h>
 #include <lib/fit/thread_checker.h>
+#include <lib/fpromise/promise.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
 #include <zircon/compiler.h>
@@ -21,7 +21,7 @@
 #include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 
-#include "lib/fit/result.h"
+#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
@@ -65,7 +65,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, bt::LinkType type,
-                                      hci::Connection::Role role, fit::executor* executor,
+                                      hci::Connection::Role role, fpromise::executor* executor,
                                       size_t max_payload_size,
                                       QueryServiceCallback query_service_cb,
                                       hci::AclDataChannel* acl_data_channel,
@@ -137,7 +137,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   //
   // Requests are queued and handled sequentially in order to prevent race conditions.
   void RequestAclPriority(Channel* channel, hci::AclPriority priority,
-                          fit::callback<void(fit::result<>)> callback);
+                          fit::callback<void(fpromise::result<>)> callback);
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
@@ -145,7 +145,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic flush),
   // the default.
   void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback);
+      zx::duration flush_timeout,
+      fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback);
 
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
@@ -181,7 +182,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   friend fbl::RefPtr<LogicalLink>;
 
   LogicalLink(hci::ConnectionHandle handle, bt::LinkType type, hci::Connection::Role role,
-              fit::executor* executor, size_t max_acl_payload_size,
+              fpromise::executor* executor, size_t max_acl_payload_size,
               QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
@@ -198,8 +199,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   bool AllowsFixedChannel(ChannelId id);
 
   // Called by ChannelImpl::Deactivate(). Removes the channel from the given link. Returned promise
-  // yields fit::ok when channel no longer exists.
-  fit::promise<> RemoveChannel(Channel* chan);
+  // yields fpromise::ok when channel no longer exists.
+  fpromise::promise<> RemoveChannel(Channel* chan);
 
   // Called by ChannelImpl::SignalLinkError() to disconnect all channels then signal an error to the
   // lower layers (usually GAP, to request a link disconnection). Has no effect if the link is
@@ -295,7 +296,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   struct PendingAclRequest {
     fbl::RefPtr<ChannelImpl> channel;
     hci::AclPriority priority;
-    fit::callback<void(fit::result<>)> callback;
+    fit::callback<void(fpromise::result<>)> callback;
   };
   std::queue<PendingAclRequest> pending_acl_requests_;
 
@@ -316,7 +317,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   };
   InspectProperties inspect_properties_;
 
-  fit::executor* const executor_;
+  fpromise::executor* const executor_;
 
   fit::thread_checker thread_checker_;
 

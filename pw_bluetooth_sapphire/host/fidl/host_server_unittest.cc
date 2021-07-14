@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/connectivity/bluetooth/core/bt-host/fidl/host_server.h"
+
 #include <fuchsia/bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl_test_base.h>
@@ -18,7 +20,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/fidl/host_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
@@ -195,7 +196,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
     return peer;
   }
 
-  using ConnectResult = fit::result<void, fsys::Error>;
+  using ConnectResult = fpromise::result<void, fsys::Error>;
   std::optional<ConnectResult> ConnectFakePeer(bt::PeerId id) {
     std::optional<ConnectResult> result;
     host_client()->Connect(fbt::PeerId{id.value()},
@@ -641,7 +642,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
   };
   fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
-  std::optional<fit::result<void, fsys::Error>> pair_result;
+  std::optional<fpromise::result<void, fsys::Error>> pair_result;
   fsys::PairingOptions opts;
   host_client()->Pair(fbt::PeerId{peer()->identifier().value()}, std::move(opts),
                       [&](auto result) { pair_result = std::move(result); });
@@ -675,7 +676,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
   };
   fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
-  std::optional<fit::result<void, fsys::Error>> pair_result;
+  std::optional<fpromise::result<void, fsys::Error>> pair_result;
   fsys::PairingOptions opts;
   opts.set_le_security_level(fsys::PairingSecurityLevel::ENCRYPTED);
   host_client()->Pair(fbt::PeerId{peer()->identifier().value()}, std::move(opts),
@@ -712,7 +713,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingNonBondableLe) {
   };
   fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
-  std::optional<fit::result<void, fsys::Error>> pair_result;
+  std::optional<fpromise::result<void, fsys::Error>> pair_result;
   fsys::PairingOptions opts;
   opts.set_bondable_mode(fsys::BondableMode::NON_BONDABLE);
   host_client()->Pair(fbt::PeerId{peer()->identifier().value()}, std::move(opts),
@@ -732,7 +733,7 @@ TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
   ASSERT_TRUE(fake_chan);
   ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
 
-  std::optional<fit::result<void, fsys::Error>> pair_result;
+  std::optional<fpromise::result<void, fsys::Error>> pair_result;
   fsys::PairingOptions opts;
   // Set pairing option with classic
   opts.set_transport(fsys::TechnologyType::CLASSIC);

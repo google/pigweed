@@ -1134,7 +1134,7 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
   set_encode_vendor_command_cb([&](auto command, auto params) {
     encode_vendor_command = command;
     encode_vendor_command_params = params;
-    return fit::ok(DynamicByteBuffer(kEncodedCommand));
+    return fpromise::ok(DynamicByteBuffer(kEncodedCommand));
   });
 
   auto cmd_complete = testing::CommandCompletePacket(
@@ -1180,7 +1180,7 @@ TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeFails) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
-  set_encode_vendor_command_cb([&](auto command, auto params) { return fit::error(); });
+  set_encode_vendor_command_cb([&](auto command, auto params) { return fpromise::error(); });
 
   size_t request_cb_count = 0;
   acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {
@@ -1197,7 +1197,7 @@ TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
   set_encode_vendor_command_cb([&](auto command, auto params) {
-    return fit::ok(DynamicByteBuffer(StaticByteBuffer(0x00)));
+    return fpromise::ok(DynamicByteBuffer(StaticByteBuffer(0x00)));
   });
 
   size_t request_cb_count = 0;
@@ -1215,7 +1215,7 @@ TEST_F(HCI_ACLDataChannelTest, SetAutomaticFlushTimeout) {
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
   acl_data_channel()->RegisterLink(kLinkHandle, bt::LinkType::kACL);
 
-  std::optional<fit::result<void, hci::StatusCode>> cb_status;
+  std::optional<fpromise::result<void, hci::StatusCode>> cb_status;
   auto result_cb = [&](auto status) { cb_status = status; };
 
   // Test command complete error

@@ -16,7 +16,7 @@
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
-#include "lib/fit/result.h"
+#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
@@ -79,14 +79,15 @@ fuchsia::bluetooth::Status StatusToFidlDeprecated(const bt::Status<ProtocolError
 // HostError::kNoError is not allowed.
 fuchsia::bluetooth::sys::Error HostErrorToFidl(bt::HostError error);
 
-// Convert any bt::Status to a fit::result that uses the fuchsia.bluetooth.sys library error codes.
+// Convert any bt::Status to a fpromise::result that uses the fuchsia.bluetooth.sys library error
+// codes.
 template <typename ProtocolErrorCode>
-fit::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
+fpromise::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
     bt::Status<ProtocolErrorCode> status) {
   if (status) {
-    return fit::ok();
+    return fpromise::ok();
   } else {
-    return fit::error(HostErrorToFidl(status.error()));
+    return fpromise::error(HostErrorToFidl(status.error()));
   }
 }
 
@@ -160,13 +161,13 @@ bt::gatt::CharacteristicHandle CharacteristicHandleFromFidl(uint64_t fidl_gatt_i
 bt::gatt::DescriptorHandle DescriptorHandleFromFidl(uint64_t fidl_gatt_id);
 
 // Constructs a sdp::ServiceRecord from a FIDL ServiceDefinition |definition|
-fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefinitionToServiceRecord(
-    const fuchsia::bluetooth::bredr::ServiceDefinition& definition);
+fpromise::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode>
+ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinition& definition);
 
 bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
     const fuchsia::bluetooth::bredr::ChannelParameters& fidl);
 
-fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
+fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
     const fuchsia::bluetooth::bredr::ScoConnectionParameters& params);
 
 }  // namespace bthost::fidl_helpers

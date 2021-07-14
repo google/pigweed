@@ -97,10 +97,10 @@ bt_vendor_features_t DdkDeviceWrapper::GetVendorFeatures() {
   return bt_vendor_get_features(&vendor_proto_.value());
 };
 
-fit::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(bt_vendor_command_t command,
-                                                                     bt_vendor_params_t& params) {
+fpromise::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(
+    bt_vendor_command_t command, bt_vendor_params_t& params) {
   if (!vendor_proto_) {
-    return fit::error();
+    return fpromise::error();
   }
 
   auto buffer = std::unique_ptr<uint8_t[]>(new uint8_t[BT_VENDOR_MAX_COMMAND_BUFFER_LEN]);
@@ -109,10 +109,10 @@ fit::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(bt_vendor_c
                                          BT_VENDOR_MAX_COMMAND_BUFFER_LEN, &actual);
   if (status != ZX_OK || !actual || actual > BT_VENDOR_MAX_COMMAND_BUFFER_LEN) {
     bt_log(DEBUG, "hci", "Failed to encode vendor command: %s", zx_status_get_string(status));
-    return fit::error();
+    return fpromise::error();
   }
 
-  return fit::ok(DynamicByteBuffer(actual, std::move(buffer)));
+  return fpromise::ok(DynamicByteBuffer(actual, std::move(buffer)));
 };
 
 // ================= DummyDeviceWrapper =================
@@ -129,12 +129,12 @@ zx::channel DummyDeviceWrapper::GetCommandChannel() { return std::move(cmd_chann
 
 zx::channel DummyDeviceWrapper::GetACLDataChannel() { return std::move(acl_data_channel_); }
 
-fit::result<DynamicByteBuffer> DummyDeviceWrapper::EncodeVendorCommand(bt_vendor_command_t command,
-                                                                       bt_vendor_params_t& params) {
+fpromise::result<DynamicByteBuffer> DummyDeviceWrapper::EncodeVendorCommand(
+    bt_vendor_command_t command, bt_vendor_params_t& params) {
   if (vendor_encode_cb_) {
     return vendor_encode_cb_(command, params);
   }
-  return fit::error();
+  return fpromise::error();
 }
 
 }  // namespace bt::hci

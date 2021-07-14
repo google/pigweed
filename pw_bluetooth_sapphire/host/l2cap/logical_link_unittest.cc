@@ -5,7 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/logical_link.h"
 
 #include "fbl/ref_ptr.h"
-#include "lib/fit/single_threaded_executor.h"
+#include "lib/fpromise/single_threaded_executor.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -46,7 +46,7 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
 
  private:
   fbl::RefPtr<LogicalLink> link_;
-  fit::single_threaded_executor executor_;
+  fpromise::single_threaded_executor executor_;
   hci::testing::MockAclDataChannel acl_data_channel_;
 };
 
@@ -115,7 +115,7 @@ TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
       [&](auto timeout, auto handle, auto cb) {
         EXPECT_EQ(timeout, kTimeout);
         EXPECT_EQ(handle, link()->handle());
-        cb(fit::ok());
+        cb(fpromise::ok());
       });
 
   bool cb_called = false;

@@ -48,7 +48,7 @@ class HostDevice final : public HostDeviceType {
   void OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
                                 fbl::RefPtr<bt::gatt::RemoteService> service);
 
-  fit::result<bt_vendor_protocol_t, zx_status_t> GetVendorProtocol();
+  fpromise::result<bt_vendor_protocol_t, zx_status_t> GetVendorProtocol();
 
   // Guards access to members below.
   std::mutex mtx_;

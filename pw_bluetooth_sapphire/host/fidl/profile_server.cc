@@ -7,7 +7,7 @@
 #include <zircon/status.h>
 
 #include "helpers.h"
-#include "lib/fit/result.h"
+#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
@@ -206,7 +206,7 @@ ProfileServer::~ProfileServer() {
     // Unregister anything that we have registered.
     for (const auto& it : current_advertised_) {
       adapter()->bredr()->UnregisterService(it.second.registration_handle);
-      it.second.disconnection_cb(fit::ok());
+      it.second.disconnection_cb(fpromise::ok());
     }
     for (const auto& it : searches_) {
       adapter()->bredr()->RemoveServiceSearch(it.second.search_id);
@@ -258,7 +258,7 @@ void ProfileServer::Advertise(
     if (rec.is_error()) {
       bt_log(WARN, "fidl", "%s: Failed to create service record from service defintion",
              __FUNCTION__);
-      callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
+      callback(fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
       return;
     }
     registering.emplace_back(std::move(rec.value()));
@@ -277,7 +277,7 @@ void ProfileServer::Advertise(
 
   if (!registration_handle) {
     bt_log(WARN, "fidl", "%s: Failed to register service", __FUNCTION__);
-    callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
+    callback(fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
   };
 
@@ -329,7 +329,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   if (!connection.is_l2cap()) {
     bt_log(WARN, "fidl", "%s: non-l2cap connections are not supported (is_rfcomm: %d, peer: %s)",
            __FUNCTION__, connection.is_rfcomm(), bt_str(id));
-    callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
+    callback(fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
   }
 
@@ -337,7 +337,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   auto l2cap_params = std::move(connection.l2cap());
   if (!l2cap_params.has_psm()) {
     bt_log(WARN, "fidl", "%s: missing l2cap psm (peer: %s)", __FUNCTION__, bt_str(id));
-    callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
+    callback(fpromise::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
   }
   uint16_t psm = l2cap_params.psm();
@@ -349,18 +349,18 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
     if (!chan) {
       bt_log(INFO, "fidl", "%s: Channel socket is empty, returning failed. (peer: %s)", func,
              bt_str(id));
-      cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
+      cb(fpromise::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
     }
 
     if (!self) {
-      cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
+      cb(fpromise::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
     }
 
     auto fidl_chan = self->ChannelToFidl(std::move(chan));
 
-    cb(fit::ok(std::move(fidl_chan)));
+    cb(fpromise::ok(std::move(fidl_chan)));
   };
   ZX_DEBUG_ASSERT(adapter());
 
@@ -445,7 +445,7 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status
   }
 
   adapter()->bredr()->UnregisterService(it->second.registration_handle);
-  it->second.disconnection_cb(fit::ok());
+  it->second.disconnection_cb(fpromise::ok());
 
   current_advertised_.erase(it);
 }
@@ -620,11 +620,11 @@ void ProfileServer::AudioDirectionExt::SetPriority(
   channel_->RequestAclPriority(FidlToAclPriority(priority),
                                [cb = std::move(callback)](auto result) {
                                  if (result.is_ok()) {
-                                   cb(fit::ok());
+                                   cb(fpromise::ok());
                                    return;
                                  }
                                  bt_log(DEBUG, "fidl", "ACL priority request failed");
-                                 cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
+                                 cb(fpromise::error(fuchsia::bluetooth::ErrorCode::FAILED));
                                });
 }
 

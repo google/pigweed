@@ -14,13 +14,13 @@
 
 namespace bt::hci {
 
-fit::result<std::unique_ptr<Transport>> Transport::Create(
+fpromise::result<std::unique_ptr<Transport>> Transport::Create(
     std::unique_ptr<DeviceWrapper> hci_device) {
   auto transport = std::unique_ptr<Transport>(new Transport(std::move(hci_device)));
   if (!transport->command_channel()) {
-    return fit::error();
+    return fpromise::error();
   }
-  return fit::ok(std::move(transport));
+  return fpromise::ok(std::move(transport));
 }
 
 Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
@@ -87,8 +87,8 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
 
 bt_vendor_features_t Transport::GetVendorFeatures() { return hci_device_->GetVendorFeatures(); }
 
-fit::result<DynamicByteBuffer> Transport::EncodeVendorCommand(bt_vendor_command_t command,
-                                                              bt_vendor_params_t& params) {
+fpromise::result<DynamicByteBuffer> Transport::EncodeVendorCommand(bt_vendor_command_t command,
+                                                                   bt_vendor_params_t& params) {
   return hci_device_->EncodeVendorCommand(command, params);
 }
 

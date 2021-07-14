@@ -10,8 +10,8 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
-#include <lib/fit/result.h>
 #include <lib/fit/thread_checker.h>
+#include <lib/fpromise/result.h>
 
 #include <atomic>
 #include <memory>
@@ -44,7 +44,8 @@ class Transport final {
   // NOTE: The ACLDataChannel will be left uninitialized. The ACLDataChannel must be
   // initialized after available data buffer information has been obtained from
   // the controller (via HCI_Read_Buffer_Size and HCI_LE_Read_Buffer_Size).
-  static fit::result<std::unique_ptr<Transport>> Create(std::unique_ptr<DeviceWrapper> hci_device);
+  static fpromise::result<std::unique_ptr<Transport>> Create(
+      std::unique_ptr<DeviceWrapper> hci_device);
 
   // TODO(armansito): hci::Transport::~Transport() should send a shutdown message
   // to the bt-hci device, which would be responsible for sending HCI_Reset upon
@@ -59,8 +60,8 @@ class Transport final {
 
   bt_vendor_features_t GetVendorFeatures();
 
-  fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
-                                                     bt_vendor_params_t& params);
+  fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                          bt_vendor_params_t& params);
 
   // Returns a pointer to the HCI command and event flow control handler.
   CommandChannel* command_channel() const { return command_channel_.get(); }

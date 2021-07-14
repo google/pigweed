@@ -17,25 +17,25 @@ PacketReader::PacketReader(const ByteBuffer* buffer)
 
 ValidPacketReader::ValidPacketReader(const ByteBuffer* buffer) : PacketReader(buffer) {}
 
-fit::result<ValidPacketReader, sm::ErrorCode> ValidPacketReader::ParseSdu(
+fpromise::result<ValidPacketReader, sm::ErrorCode> ValidPacketReader::ParseSdu(
     const ByteBufferPtr& sdu) {
   ZX_ASSERT(sdu);
   size_t length = sdu->size();
   if (length < sizeof(Header)) {
     bt_log(DEBUG, "sm", "PDU too short!");
-    return fit::error(ErrorCode::kInvalidParameters);
+    return fpromise::error(ErrorCode::kInvalidParameters);
   }
   auto reader = PacketReader(sdu.get());
   auto expected_payload_size = kCodeToPayloadSize.find(reader.code());
   if (expected_payload_size == kCodeToPayloadSize.end()) {
     bt_log(DEBUG, "sm", "smp code not recognized: %#.2X", reader.code());
-    return fit::error(ErrorCode::kCommandNotSupported);
+    return fpromise::error(ErrorCode::kCommandNotSupported);
   }
   if (reader.payload_size() != expected_payload_size->second) {
     bt_log(DEBUG, "sm", "malformed packet with code %#.2X", reader.code());
-    return fit::error(ErrorCode::kInvalidParameters);
+    return fpromise::error(ErrorCode::kInvalidParameters);
   }
-  return fit::ok(ValidPacketReader(sdu.get()));
+  return fpromise::ok(ValidPacketReader(sdu.get()));
 }
 
 PacketWriter::PacketWriter(Code code, MutableByteBuffer* buffer)

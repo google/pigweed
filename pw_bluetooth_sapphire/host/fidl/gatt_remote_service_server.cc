@@ -94,7 +94,8 @@ void GattRemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCal
 }
 
 void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+                                             auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -115,7 +116,8 @@ void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristic
 void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offset,
                                                      uint16_t max_bytes,
                                                      ReadLongCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+                                             auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -165,7 +167,8 @@ void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(uint64_t id,
 }
 
 void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+                                             auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -185,7 +188,8 @@ void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback
 
 void GattRemoteServiceServer::ReadLongDescriptor(uint64_t id, uint16_t offset, uint16_t max_bytes,
                                                  ReadLongDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value, auto) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+                                             auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -242,12 +246,12 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
             self->binding()->Close(ZX_ERR_INVALID_ARGS);
             return;
           default:
-            cb(fit::error(fidl_helpers::GattStatusToFidl(status)));
+            cb(fpromise::error(fidl_helpers::GattStatusToFidl(status)));
             return;
         }
 
         if (results.size() > fuchsia::bluetooth::gatt::MAX_READ_BY_TYPE_RESULTS) {
-          cb(fit::error(fuchsia::bluetooth::gatt::Error::TOO_MANY_RESULTS));
+          cb(fpromise::error(fuchsia::bluetooth::gatt::Error::TOO_MANY_RESULTS));
           return;
         }
 
@@ -266,7 +270,7 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
           fidl_results.push_back(std::move(fidl_result));
         }
 
-        cb(fit::ok(std::move(fidl_results)));
+        cb(fpromise::ok(std::move(fidl_results)));
       });
 }
 
