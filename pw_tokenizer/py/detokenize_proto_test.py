@@ -14,12 +14,13 @@
 # the License.
 """Tests decoding a proto with tokenized fields."""
 
+import base64
 import unittest
 
 from pw_tokenizer_tests.detokenize_proto_test_pb2 import TheMessage
 
 from pw_tokenizer import detokenize, encode, tokens
-from pw_tokenizer.proto import detokenize_fields
+from pw_tokenizer.proto import detokenize_fields, decode_optionally_tokenized
 
 _DATABASE = tokens.Database(
     [tokens.TokenizedStringEntry(0xAABBCCDD, "Luke, we're gonna have %s")])
@@ -39,14 +40,14 @@ class TestDetokenizeProtoFields(unittest.TestCase):
         self.assertEqual(proto.message, b"Luke, we're gonna have company")
 
     def test_base64(self) -> None:
-        base64 = encode.prefixed_base64(b'\xDD\xCC\xBB\xAA\x07company')
-        proto = TheMessage(message=base64.encode())
+        base64_msg = encode.prefixed_base64(b'\xDD\xCC\xBB\xAA\x07company')
+        proto = TheMessage(message=base64_msg.encode())
         detokenize_fields(_DETOKENIZER, proto)
         self.assertEqual(proto.message, b"Luke, we're gonna have company")
 
     def test_plain_text_with_prefixed_base64(self) -> None:
-        base64 = encode.prefixed_base64(b'\xDD\xCC\xBB\xAA\x09pancakes!')
-        proto = TheMessage(message=f'Good morning, {base64}'.encode())
+        base64_msg = encode.prefixed_base64(b'\xDD\xCC\xBB\xAA\x09pancakes!')
+        proto = TheMessage(message=f'Good morning, {base64_msg}'.encode())
         detokenize_fields(_DETOKENIZER, proto)
         self.assertEqual(proto.message,
                          b"Good morning, Luke, we're gonna have pancakes!")
@@ -62,6 +63,49 @@ class TestDetokenizeProtoFields(unittest.TestCase):
         detokenize_fields(_DETOKENIZER, proto)
         self.assertEqual(proto.message.decode(),
                          encode.prefixed_base64(b'\1\2\3\4'))
+
+
+class TestDecodeOptionallyTokenized(unittest.TestCase):
+    """Tests optional detokenization directly."""
+    def setUp(self):
+        self.detok = detokenize.Detokenizer(
+            tokens.Database([
+                tokens.TokenizedStringEntry(0, 'cheese'),
+                tokens.TokenizedStringEntry(1, 'on pizza'),
+                tokens.TokenizedStringEntry(2, 'is quite good'),
+                tokens.TokenizedStringEntry(3, 'they say'),
+            ]))
+
+    def test_found_binary_token(self):
+        self.assertEqual(
+            'on pizza',
+            decode_optionally_tokenized(self.detok, b'\x01\x00\x00\x00'))
+
+    def test_missing_binary_token(self):
+        self.assertEqual(
+            '$' + base64.b64encode(b'\xD5\x8A\xF9\x2A\x8A').decode(),
+            decode_optionally_tokenized(self.detok, b'\xD5\x8A\xF9\x2A\x8A'))
+
+    def test_found_b64_token(self):
+        b64_bytes = b'$' + base64.b64encode(b'\x03\x00\x00\x00')
+        self.assertEqual('they say',
+                         decode_optionally_tokenized(self.detok, b64_bytes))
+
+    def test_missing_b64_token(self):
+        b64_bytes = b'$' + base64.b64encode(b'\xD5\x8A\xF9\x2A\x8A')
+        self.assertEqual(b64_bytes.decode(),
+                         decode_optionally_tokenized(self.detok, b64_bytes))
+
+    def test_found_alternate_prefix(self):
+        b64_bytes = b'~' + base64.b64encode(b'\x00\x00\x00\x00')
+        self.assertEqual(
+            'cheese', decode_optionally_tokenized(self.detok, b64_bytes, b'~'))
+
+    def test_missing_alternate_prefix(self):
+        b64_bytes = b'~' + base64.b64encode(b'\x02\x00\x00\x00')
+        self.assertEqual(
+            b64_bytes.decode(),
+            decode_optionally_tokenized(self.detok, b64_bytes, b'^'))
 
 
 if __name__ == '__main__':

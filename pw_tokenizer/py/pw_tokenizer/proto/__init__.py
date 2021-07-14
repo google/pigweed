@@ -31,7 +31,8 @@ def _tokenized_fields(proto: Message) -> Iterator[FieldDescriptor]:
 
 
 def decode_optionally_tokenized(detokenizer: detokenize.Detokenizer,
-                                data: bytes) -> str:
+                                data: bytes,
+                                prefix: str = encode.BASE64_PREFIX) -> str:
     """Decodes data that may be plain text or binary / Base64 tokenized text."""
     # Try detokenizing as binary.
     result = detokenizer.detokenize(data)
@@ -43,10 +44,10 @@ def decode_optionally_tokenized(detokenizer: detokenize.Detokenizer,
         text = data.decode()
     except UnicodeDecodeError:
         # Not UTF-8. Assume the token is unknown or the data is corrupt.
-        return encode.prefixed_base64(data)
+        return encode.prefixed_base64(data, prefix)
 
     # See if the string is prefixed Base64 or contains prefixed Base64.
-    detokenized = detokenize.detokenize_base64(detokenizer, data)
+    detokenized = detokenize.detokenize_base64(detokenizer, data, prefix)
     if detokenized != data:  # If anything detokenized successfully, use that.
         return detokenized.decode()
 
@@ -56,11 +57,12 @@ def decode_optionally_tokenized(detokenizer: detokenize.Detokenizer,
         return text
 
     # Assume this field is tokenized data that could not be decoded.
-    return encode.prefixed_base64(data)
+    return encode.prefixed_base64(data, prefix)
 
 
 def detokenize_fields(detokenizer: detokenize.Detokenizer,
-                      proto: Message) -> None:
+                      proto: Message,
+                      prefix: str = encode.BASE64_PREFIX) -> None:
     """Detokenizes fields annotated as tokenized in the given proto.
 
     The fields are replaced with their detokenized version in the proto.
@@ -69,5 +71,6 @@ def detokenize_fields(detokenizer: detokenize.Detokenizer,
     """
     for field in _tokenized_fields(proto):
         decoded = decode_optionally_tokenized(detokenizer,
-                                              getattr(proto, field.name))
+                                              getattr(proto, field.name),
+                                              prefix)
         setattr(proto, field.name, decoded.encode())

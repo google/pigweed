@@ -791,6 +791,13 @@ class, which can be used in place of the standard ``Detokenizer``. This class
 monitors database files for changes and automatically reloads them when they
 change. This is helpful for long-running tools that use detokenization.
 
+For messages that are optionally tokenized and may be encoded as binary,
+Base64, or plaintext UTF-8, use
+:func:`pw_tokenizer.proto.decode_optionally_tokenized`. This will attempt to
+determine the correct method to detokenize and always provide a printable
+string. For more information on this feature, see
+:ref:`module-pw_tokenizer-proto`.
+
 C++
 ---
 The C++ detokenization libraries can be used in C++ or any language that can
