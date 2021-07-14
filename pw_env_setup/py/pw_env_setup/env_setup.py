@@ -198,6 +198,7 @@ class EnvSetup(object):
         self._virtualenv_requirements = []
         self._virtualenv_gn_targets = []
         self._optional_submodules = []
+        self._required_submodules = []
         self._virtualenv_system_packages = False
         self._root_variable = None
 
@@ -254,6 +255,13 @@ class EnvSetup(object):
         self._root_variable = config.pop('root_variable', None)
 
         self._optional_submodules.extend(config.pop('optional_submodules', ()))
+        self._required_submodules.extend(config.pop('required_submodules', ()))
+
+        if self._optional_submodules and self._required_submodules:
+            raise ValueError(
+                '{} contains both "optional_submodules" and '
+                '"required_submodules", but these options are mutually '
+                'exclusive'.format(self._config_file_name))
 
         self._cipd_package_file.extend(
             os.path.join(self._project_root, x)
@@ -285,10 +293,10 @@ class EnvSetup(object):
     def _check_submodules(self):
         unitialized = set()
 
+        cmd = ['git', 'submodule', 'status', '--recursive']
+
         for line in subprocess.check_output(
-            ['git', 'submodule', 'status', '--recursive'],
-                cwd=self._project_root,
-        ).splitlines():
+                cmd, cwd=self._project_root).splitlines():
             if isinstance(line, bytes):
                 line = line.decode()
             # Anything but an initial '-' means the submodule is initialized.
@@ -297,6 +305,9 @@ class EnvSetup(object):
             unitialized.add(line.split()[1])
 
         missing = unitialized - set(self._optional_submodules)
+        if self._required_submodules:
+            missing = set(self._required_submodules) & unitialized
+
         if missing:
             print(
                 'Not all submodules are initialized. Please run the '
@@ -309,10 +320,18 @@ class EnvSetup(object):
                       file=sys.stderr)
             print('', file=sys.stderr)
 
-            print(
-                'If these submodules are not required, add them to the '
-                '"optional_submodules"',
-                file=sys.stderr)
+            if self._required_submodules:
+                print(
+                    'If these submodules are not required, remove them from '
+                    'the "required_submodules"',
+                    file=sys.stderr)
+
+            else:
+                print(
+                    'If these submodules are not required, add them to the '
+                    '"optional_submodules"',
+                    file=sys.stderr)
+
             print('list in the environment config JSON file:', file=sys.stderr)
             print('    {}'.format(self._config_file_name), file=sys.stderr)
             print('', file=sys.stderr)

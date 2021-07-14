@@ -240,6 +240,11 @@ here.
   By default environment setup will check that all submodules are present in
   the checkout. Any submodules in this list are excluded from that check.
 
+``required_submodules``
+  If this is specified instead of ``optional_submodules`` bootstrap will only
+  complain if one of the required submodules is not present. Combining this
+  with ``optional_submodules`` is not supported.
+
 An example of a config file is below.
 
 .. code-block:: json
