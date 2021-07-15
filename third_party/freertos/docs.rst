@@ -26,6 +26,30 @@ In order to use this you are expected to configure the following variables from
 After this is done a ``pw_source_set`` for the FreeRTOS library is created at
 ``$dir_pw_third_party/freertos``.
 
+Linking against FreeRTOS kernel's static internals
+==================================================
+In order to link against internal kernel data structures through the use of
+extern "C", statics can be optionally disabled for the tasks.c source file
+to enable use of things like pw_thread_freertos/util.h's ``ForEachThread``.
+
+To facilitate this, Pigweed offers an opt-in option which can be enabled by
+configuring the following GN
+through ``pw_third_party_freertos_DISABLE_TASKS_STATICS = true``. This redefines
+``static`` to nothing for the ``Source/tasks.c`` FreeRTOS source file
+when building through ``$dir_pw_third_party/freertos``.
+
+.. attention:: If you use this, make sure that your FreeRTOSConfig.h and port
+  does not rely on any statics inside of tasks.c. For example, you cannot use
+  ``PW_CHECK`` for ``configASSERT`` when this is enabled.
+
+As a helper ``PW_THIRD_PARTY_FREERTOS_NO_STATICS=1`` is defined when statics are
+disabled to help manage conditional configuration.
+
+We highly recommend
+:ref:`our configASSERT wrapper <third_party-freertos_config_assert>` when  using
+this configuration, which correctly sets ``configASSERT`` to use ``PW_CHECK` and
+``PW_ASSERT`` for you.
+
 -----------------------------
 OS Abstraction Layers Support
 -----------------------------
@@ -35,6 +59,8 @@ FreeRTOS via the following modules:
 * :ref:`module-pw_chrono_freertos`
 * :ref:`module-pw_sync_freertos`
 * :ref:`module-pw_thread_freertos`
+
+.. _third_party-freertos_config_assert:
 
 --------------------------
 configASSERT and pw_assert

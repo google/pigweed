@@ -19,10 +19,15 @@
 extern "C++" {
 #endif  // __cplusplus
 
+#if defined(PW_THIRD_PARTY_FREERTOS_NO_STATICS) && \
+    PW_THIRD_PARTY_FREERTOS_NO_STATICS == 1
+#include "pw_assert/assert.h"
+#define configASSERT PW_ASSERT
+#else
 #include "pw_assert/check.h"
+#define configASSERT PW_CHECK
+#endif  // PW_THIRD_PARTY_FREERTOS_NO_STATICS == 1
 
 #ifdef __cplusplus
 }  // extern "C++"
 #endif  // __cplusplus
-
-#define configASSERT PW_CHECK

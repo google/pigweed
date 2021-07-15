@@ -38,7 +38,10 @@ if (dir_pw_third_party_freertos != "") {
 
   pw_source_set("freertos") {
     public_configs = [ ":public_includes" ]
-    allow_circular_includes_from = [ pw_third_party_freertos_PORT ]
+    allow_circular_includes_from = [
+      pw_third_party_freertos_PORT,
+      ":freertos_tasks",
+    ]
     public_deps = [
       pw_third_party_freertos_CONFIG,
       pw_third_party_freertos_PORT,
@@ -69,8 +72,32 @@ if (dir_pw_third_party_freertos != "") {
       "$dir_pw_third_party_freertos/Source/list.c",
       "$dir_pw_third_party_freertos/Source/queue.c",
       "$dir_pw_third_party_freertos/Source/stream_buffer.c",
-      "$dir_pw_third_party_freertos/Source/tasks.c",
       "$dir_pw_third_party_freertos/Source/timers.c",
+    ]
+    deps = [ ":freertos_tasks" ]
+  }
+
+  # In order to link against internal kernel data structures through the use of
+  # extern "C", statics can be optionally disabled for the tasks.c source file
+  # to enable use of things like pw_thread_freertos/util.h's ForEachThread.
+  config("disable_statics") {
+    cflags = [
+      "-Dstatic=",
+      "-DPW_THIRD_PARTY_FREERTOS_NO_STATICS=1",
+    ]
+    visibility = [ ":*" ]
+  }
+
+  pw_source_set("freertos_tasks") {
+    public_configs = [ ":public_includes" ]
+    configs = [ ":disable_warnings" ]
+    if (pw_third_party_freertos_DISABLE_TASKS_STATICS) {
+      configs += [ ":disable_statics" ]
+    }
+    sources = [ "$dir_pw_third_party_freertos/Source/tasks.c" ]
+    deps = [
+      pw_third_party_freertos_CONFIG,
+      pw_third_party_freertos_PORT,
     ]
   }
 } else {
