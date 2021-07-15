@@ -51,6 +51,23 @@ load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
+# Sets up host hermetic host toolchain.
+# Required by: All cc targets.
+# Used in modules: All cc targets.
+git_repository(
+    name = "rules_cc_toolchain",
+    commit = "dd9265e3ce0daa444911040430bd716076869b34",
+    remote = "https://github.com/silvergasp/rules_cc_toolchain.git",
+)
+
+load("@rules_cc_toolchain//:rules_cc_toolchain_deps.bzl", "rules_cc_toolchain_deps")
+
+rules_cc_toolchain_deps()
+
+load("@rules_cc_toolchain//cc_toolchain:cc_toolchain.bzl", "register_cc_toolchains")
+
+register_cc_toolchains()
+
 # Set up protobuf rules
 # Required by: pigweed, com_github_bazelbuild_buildtools.
 # Used in modules: //pw_protobuf.
@@ -95,7 +112,7 @@ git_repository(
 )
 
 http_archive(
-name = "build_bazel_rules_nodejs",
+    name = "build_bazel_rules_nodejs",
     sha256 = "8f5f192ba02319254aaf2cdcca00ec12eaafeb979a80a1e946773c520ae0a2c9",
     urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.7.0/rules_nodejs-3.7.0.tar.gz"],
 )
@@ -183,23 +200,6 @@ load(
 )
 
 register_gcc_arm_none_toolchain()
-
-# Fetch LLVM/Clang host compiler and register for toolchain resolution.
-load(
-    "@bazel_embedded//toolchains/compilers/llvm:llvm_repository.bzl",
-    "llvm_repository",
-)
-
-llvm_repository(
-    name = "com_llvm_compiler",
-)
-
-load(
-    "@bazel_embedded//toolchains/clang:clang_toolchain.bzl",
-    "register_clang_toolchain",
-)
-
-register_clang_toolchain()
 
 # Registers platforms for use with toolchain resolution
 register_execution_platforms("//pw_build/platforms:all")

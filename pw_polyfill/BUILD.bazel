@@ -17,22 +17,13 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
-load(
-    "@bazel_embedded//toolchains/tools/include_tools:defs.bzl",
-    "cc_injected_toolchain_header_library",
-    "cc_polyfill_toolchain_library",
-)
+load("@rules_cc_toolchain//cc_toolchain:cc_toolchain_import.bzl", "cc_toolchain_import")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-cc_injected_toolchain_header_library(
-    name = "toolchain_injected_headers",
-    hdrs = ["language_features.h"],
-)
-
-cc_polyfill_toolchain_library(
+cc_toolchain_import(
     name = "toolchain_polyfill_overrides",
     hdrs = [
         "language_features.h",
@@ -52,11 +43,12 @@ cc_polyfill_toolchain_library(
         "standard_library_public/pw_polyfill/standard_library/type_traits.h",
         "standard_library_public/pw_polyfill/standard_library/utility.h",
     ],
-    system_includes = [
-        "public_overrides",
+    includes = [
         "public",
+        "public_overrides",
         "standard_library_public",
     ],
+    injected_hdrs = ["language_features.h"],
 )
 
 pw_cc_library(

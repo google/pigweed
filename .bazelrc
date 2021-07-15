@@ -30,3 +30,6 @@ build:asan-libfuzzer \
 build:asan-libfuzzer \
     --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
 build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
+
+# Configures toolchain with polyfill headers.
+build --@rules_cc_toolchain_config//:user_defined=//pw_polyfill:toolchain_polyfill_overrides
