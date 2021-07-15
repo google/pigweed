@@ -47,6 +47,8 @@ import threading
 from typing import (Iterable, List, NamedTuple, NoReturn, Optional, Sequence,
                     Tuple)
 
+import httpwatcher  # type: ignore
+
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
@@ -396,7 +398,28 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
         help=('Specify a build directory and optionally targets to '
               'build. `pw watch -C out tgt` is equivalent to `ninja '
               '-C out tgt`'))
+    parser.add_argument(
+        '--serve-docs',
+        dest='serve_docs',
+        action='store_true',
+        default=False,
+        help='Start a webserver for docs on localhost. The port for this '
+        ' webserver can be set with the --serve-docs-port option. '
+        ' Defaults to http://127.0.0.1:8000')
+    parser.add_argument(
+        '--serve-docs-port',
+        dest='serve_docs_port',
+        type=int,
+        default=8000,
+        help='Set the port for the docs webserver. Default to 8000.')
 
+    parser.add_argument(
+        '--serve-docs-path',
+        dest='serve_docs_path',
+        type=Path,
+        default="docs/gen/docs",
+        help='Set the path for the docs to serve. Default to docs/gen/docs'
+        ' in the build directory.')
     parser.add_argument(
         '-j',
         '--jobs',
@@ -554,9 +577,11 @@ def _find_build_dir(default_build_dir: Path = Path('out')) -> Optional[Path]:
     return None
 
 
+# pylint: disable=R0914 # too many local variables
 def watch(default_build_targets: List[str], build_directories: List[str],
           patterns: str, ignore_patterns_string: str, exclude_list: List[Path],
-          restart: bool, jobs: Optional[int]):
+          restart: bool, jobs: Optional[int], serve_docs: bool,
+          serve_docs_port: int, serve_docs_path: Path):
     """Watches files and runs Ninja commands when they change."""
     _LOG.info('Starting Pigweed build watcher')
 
@@ -595,6 +620,21 @@ def watch(default_build_targets: List[str], build_directories: List[str],
                       build_target)
 
     _LOG.debug('Patterns: %s', patterns)
+
+    if serve_docs:
+
+        def _serve_docs():
+            # Disable logs from httpwatcher and deps
+            logging.getLogger('httpwatcher').setLevel(logging.CRITICAL)
+            logging.getLogger('tornado').setLevel(logging.CRITICAL)
+
+            docs_path = build_dir.joinpath(serve_docs_path.joinpath('html'))
+            httpwatcher.watch(docs_path,
+                              host="127.0.0.1",
+                              port=serve_docs_port)
+
+        # Spin up an httpwatcher in a new thread since it blocks
+        threading.Thread(None, _serve_docs, "httpwatcher").start()
 
     # Try to make a short display path for the watched directory that has
     # "$HOME" instead of the full home directory. This is nice for users

@@ -43,6 +43,12 @@ this behavior, provide the ``-C`` argument to ``pw watch``.
   # Build the default target, but only run up to 8 jobs in parallel.
   pw watch -j8
 
+  # Build the default target and start a docs server on http://127.0.0.1:8000
+  pw watch --serve-docs
+
+  # Build the default target and start a docs server on http://127.0.0.1:5555
+  pw watch --serve-docs --serve-docs-port=5555
+
 ``pw watch`` only rebuilds when a file that is not ignored by Git changes.
 Adding exclusions to a ``.gitignore`` causes watch to ignore them, even if the
 files were forcibly added to a repo. By default, only files matching certain

@@ -25,6 +25,7 @@ setuptools.setup(
     package_data={'pw_watch': ['py.typed']},
     zip_safe=False,
     install_requires=[
+        'httpwatcher',
         'pw_cli',
         # Versions of watchdog after 0.10.3 but before 2.1.0 ignore the
         # 'recursive' argument on MacOS. This was causing us to trigger on any
