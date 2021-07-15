@@ -36,9 +36,9 @@ const PairingFeatures kDefaultFeatures(
     true,   // will_bond
     std::optional<CrossTransportKeyAlgo>{std::nullopt},
     PairingMethod::kJustWorks,
-    kMaxEncryptionKeySize,    // encryption_key_size
-    KeyDistGen::kIdKey,       // local_key_distribution
-    0u                        // remote_key_distribution
+    kMaxEncryptionKeySize, // encryption_key_size
+    KeyDistGen::kEncKey,   // local_key_distribution; kEncKey because it lets Phase 3 "just work"
+    0u                     // remote_key_distribution
 );
 
 const SecurityProperties kDefaultProperties(
@@ -805,6 +805,17 @@ TEST_F(SMP_Phase3Test, MalformedCommand) {
   ASSERT_EQ(1, listener()->pairing_error_count());
   ASSERT_TRUE(listener()->last_error().is_protocol_error());
   ASSERT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
+}
+
+TEST_F(SMP_Phase3Test, UnexpectedOpCode) {
+  phase_3()->Start();
+  // The Security Request is not expected during Phase 3.
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
+                                                                   ErrorCode::kUnspecifiedReason};
+  ReceiveAndExpect(StaticByteBuffer{kSecurityRequest, AuthReq::kBondingFlag}, kExpectedFailure);
+  ASSERT_EQ(1, listener()->pairing_error_count());
+  ASSERT_TRUE(listener()->last_error().is_protocol_error());
+  ASSERT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
 }
 
 }  // namespace

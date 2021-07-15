@@ -2538,11 +2538,6 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   EXPECT_EQ(stk, fake_link()->ltk()->value());
   EXPECT_EQ(1, pairing_request_count());
 
-  // Receiving a security request now should have no effect since pairing is
-  // still in progress.
-  ReceiveSecurityRequest();
-  EXPECT_EQ(1, pairing_request_count());
-
   // Receive EncKey and wait until the link is encrypted with the LTK.
   UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
   uint64_t kRand = 5;

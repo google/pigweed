@@ -346,7 +346,7 @@ void Phase3::OnRxBFrame(ByteBufferPtr sdu) {
       break;
     default:
       bt_log(INFO, "sm", "received unexpected code %d when in Pairing Phase 3", smp_code);
-      sm_chan().SendMessage(kPairingFailed, ErrorCode::kUnspecifiedReason);
+      Abort(ErrorCode::kUnspecifiedReason);
   }
 }
 
