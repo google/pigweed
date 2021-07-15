@@ -653,9 +653,9 @@ TEST(PrefixedEntryRingBufferMulti, ReaderAddRemove) {
   EXPECT_EQ(ring.AttachReader(reader), OkStatus());
 
   // Fill up the ring buffer with a constant value.
-  int total_items = 0;
+  size_t total_items = 0;
   while (true) {
-    Status status = TryPushBack<int>(ring, 5);
+    Status status = TryPushBack<size_t>(ring, total_items);
     if (status.ok()) {
       total_items++;
     } else {
@@ -663,21 +663,30 @@ TEST(PrefixedEntryRingBufferMulti, ReaderAddRemove) {
       break;
     }
   }
-  EXPECT_EQ(reader.EntryCount(), static_cast<size_t>(total_items));
+  EXPECT_EQ(reader.EntryCount(), total_items);
 
   // Add new reader after filling the buffer.
   EXPECT_EQ(ring.AttachReader(transient_reader), OkStatus());
+  EXPECT_EQ(transient_reader.EntryCount(), total_items);
+
+  // Confirm that the transient reader observes all values, even though it was
+  // attached after entries were pushed.
+  for (size_t i = 0; i < total_items; i++) {
+    EXPECT_EQ(PeekFront<size_t>(transient_reader), i);
+    EXPECT_EQ(transient_reader.PopFront(), OkStatus());
+  }
   EXPECT_EQ(transient_reader.EntryCount(), 0u);
 
-  // Push a value into the buffer and confirm the transient reader
-  // sees that value, and only that value.
-  EXPECT_EQ(PushBack<int>(ring, 1), OkStatus());
-  EXPECT_EQ(PeekFront<int>(transient_reader), 1);
-  EXPECT_EQ(transient_reader.EntryCount(), 1u);
-
-  // Confirm that detaching and attaching a reader resets its state.
+  // Confirm that re-attaching the reader resets it back to the oldest
+  // available entry.
   EXPECT_EQ(ring.DetachReader(transient_reader), OkStatus());
   EXPECT_EQ(ring.AttachReader(transient_reader), OkStatus());
+  EXPECT_EQ(transient_reader.EntryCount(), total_items);
+
+  for (size_t i = 0; i < total_items; i++) {
+    EXPECT_EQ(PeekFront<size_t>(transient_reader), i);
+    EXPECT_EQ(transient_reader.PopFront(), OkStatus());
+  }
   EXPECT_EQ(transient_reader.EntryCount(), 0u);
 }
 

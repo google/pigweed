@@ -25,6 +25,65 @@ more details.
   Disabling this will alter the entry precondition of the multisink,
   requiring that it not be called from an interrupt context.
 
+Late Drain Attach
+=================
+It is possible to push entries or inform the multisink of drops before any
+drains are attached to it, allowing you to defer the creation of the drain
+further into an application. The multisink maintains the location and drop
+count of the oldest drain and will set drains to match on attachment. This
+permits drains that are attached late to still consume any entries that were
+pushed into the ring buffer, so long as those entries have not yet been evicted
+by newer entries. This may be particularly useful in early-boot scenarios where
+drain consumers may need time to initialize their output paths.
+
+.. code-block:: cpp
+
+  // Create a multisink during global construction.
+  std::byte buffer[1024];
+  MultiSink multisink(buffer);
+
+  int main() {
+    // Do some initialization work for the application that pushes information
+    // into the multisink.
+    multisink.HandleEntry("Booting up!");
+    Initialize();
+
+    multisink.HandleEntry("Prepare I/O!");
+    PrepareIO();
+
+    // Start a thread to process logs in multisink.
+    StartLoggingThread();
+  }
+
+  void StartLoggingThread() {
+    MultiSink::Drain drain;
+    multisink.AttachDrain(drain);
+
+    std::byte read_buffer[512];
+    uint32_t drop_count = 0;
+    do {
+      Result<ConstByteSpan> entry = multisink.GetEntry(read_buffer, drop_count);
+      if (drop_count > 0) {
+        StringBuilder<32> sb;
+        sb.Format("Dropped %d entries.", drop_count);
+        // Note: PrintByteArray is not a provided utility function.
+        PrintByteArray(sb.as_bytes());
+      }
+
+      // Iterate through the entries, this will print out:
+      //   "Booting up!"
+      //   "Prepare I/O!"
+      //
+      // Even though the drain was attached after entries were pushed into the
+      // multisink, this drain will still be able to consume those entries.
+      //
+      // Note: PrintByteArray is not a provided utility function.
+      if (entry.status().ok()) {
+        PrintByteArray(read_buffer);
+      }
+    } while (true);
+  }
+
 Iterator
 ========
 It may be useful to access the entries in the underlying buffer when no drains

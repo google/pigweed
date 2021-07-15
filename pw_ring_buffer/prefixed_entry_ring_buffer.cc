@@ -58,10 +58,15 @@ Status PrefixedEntryRingBufferMulti::AttachReader(Reader& reader) {
   }
   reader.buffer_ = this;
 
-  // Note that a newly attached reader sees the buffer as empty,
-  // and is not privy to entries pushed before being attached.
-  reader.read_idx_ = write_idx_;
-  reader.entry_count_ = 0;
+  if (readers_.size() == 0) {
+    reader.read_idx_ = write_idx_;
+    reader.entry_count_ = 0;
+  } else {
+    const Reader& slowest_reader = GetSlowestReader();
+    reader.read_idx_ = slowest_reader.read_idx_;
+    reader.entry_count_ = slowest_reader.entry_count_;
+  }
+
   readers_.push_back(reader);
   return OkStatus();
 }

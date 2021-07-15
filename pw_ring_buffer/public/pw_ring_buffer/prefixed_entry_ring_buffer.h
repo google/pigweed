@@ -45,8 +45,11 @@ class PrefixedEntryRingBufferMulti {
   // A reader that provides a single-reader interface into the multi-reader ring
   // buffer it has been attached to via AttachReader(). Readers maintain their
   // read position in the ring buffer as well as the remaining count of entries
-  // from that position. Readers are only able to consume entries that were
-  // pushed after the attach operation.
+  // from that position.
+  //
+  // If no readers are currently attached, the reader starts at the current
+  // write head. If readers are currently attached, the reader is set to the
+  // location and entry count of the slowest reader in the set.
   //
   // Readers can peek and pop entries similar to the single-reader interface.
   // When popping entries, although the reader moves forward and drops the

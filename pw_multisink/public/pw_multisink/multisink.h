@@ -209,14 +209,13 @@ class MultiSink {
   };
 
   UnsafeIterationWrapper UnsafeIteration() PW_NO_LOCK_SAFETY_ANALYSIS {
-    return UnsafeIterationWrapper(oldest_entry_reader_);
+    return UnsafeIterationWrapper(oldest_entry_drain_.reader_);
   }
 
   // Constructs a multisink using a ring buffer backed by the provided buffer.
   MultiSink(ByteSpan buffer) : ring_buffer_(true), sequence_id_(0) {
     ring_buffer_.SetBuffer(buffer);
-    Status attach_status = ring_buffer_.AttachReader(oldest_entry_reader_);
-    PW_DASSERT(attach_status.ok());
+    AttachDrain(oldest_entry_drain_);
   }
 
   // Write an entry to the multisink. If available space is less than the
@@ -238,9 +237,9 @@ class MultiSink {
   void HandleDropped(uint32_t drop_count = 1) PW_LOCKS_EXCLUDED(lock_);
 
   // Attach a drain to the multisink. Drains may not be associated with more
-  // than one multisink at a time. Entries pushed before the drain was attached
-  // are not seen by the drain, so drains should be attached before entries
-  // are pushed.
+  // than one multisink at a time. Drains can consume entries pushed before
+  // the drain was attached, so long as they have not yet been evicted from
+  // the underlying ring buffer.
   //
   // Precondition: The drain must not be attached to a multisink.
   void AttachDrain(Drain& drain) PW_LOCKS_EXCLUDED(lock_);
@@ -291,8 +290,7 @@ class MultiSink {
 
   IntrusiveList<Listener> listeners_ PW_GUARDED_BY(lock_);
   ring_buffer::PrefixedEntryRingBufferMulti ring_buffer_ PW_GUARDED_BY(lock_);
-  ring_buffer::PrefixedEntryRingBufferMulti::Reader oldest_entry_reader_
-      PW_GUARDED_BY(lock_);
+  Drain oldest_entry_drain_ PW_GUARDED_BY(lock_);
   uint32_t sequence_id_ PW_GUARDED_BY(lock_);
   LockType lock_;
 };

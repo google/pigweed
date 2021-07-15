@@ -84,8 +84,14 @@ void MultiSink::AttachDrain(Drain& drain) {
   std::lock_guard lock(lock_);
   PW_DCHECK_PTR_EQ(drain.multisink_, nullptr);
   drain.multisink_ = this;
-  drain.last_handled_sequence_id_ = sequence_id_ - 1;
+
   PW_CHECK_OK(ring_buffer_.AttachReader(drain.reader_));
+  if (&drain == &oldest_entry_drain_) {
+    drain.last_handled_sequence_id_ = sequence_id_ - 1;
+    return;
+  }
+  drain.last_handled_sequence_id_ =
+      oldest_entry_drain_.last_handled_sequence_id_;
 }
 
 void MultiSink::DetachDrain(Drain& drain) {

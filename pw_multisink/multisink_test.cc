@@ -141,15 +141,15 @@ TEST_F(MultiSinkTest, MultipleDrain) {
 }
 
 TEST_F(MultiSinkTest, LateDrainRegistration) {
-  // Confirm that entries pushed before attaching a drain or listener are not
-  // seen by either.
+  // Drains attached after entries are pushed should still observe those entries
+  // if they have not been evicted from the ring buffer.
   multisink_.HandleEntry(kMessage);
 
-  // The drain does not observe 'drops' as it did not see entries, and only sees
-  // the one entry that was added after attach.
   multisink_.AttachDrain(drains_[0]);
   multisink_.AttachListener(listeners_[0]);
   ExpectNotificationCount(listeners_[0], 0u);
+  ExpectMessageAndDropCount(drains_[0], kMessage, 0u);
+  ExpectMessageAndDropCount(drains_[0], {}, 0u);
 
   multisink_.HandleEntry(kMessage);
   ExpectNotificationCount(listeners_[0], 1u);
@@ -172,10 +172,14 @@ TEST_F(MultiSinkTest, DynamicDrainRegistration) {
   multisink_.DetachDrain(drains_[0]);
   multisink_.DetachListener(listeners_[0]);
 
-  // Reattach the drain and confirm that you only see events after attaching.
+  // Re-attaching the drain should reproduce the last observed message. Note
+  // that notifications are not expected, nor are drops observed before the
+  // first valid message in the buffer.
   multisink_.AttachDrain(drains_[0]);
   multisink_.AttachListener(listeners_[0]);
   ExpectNotificationCount(listeners_[0], 0u);
+  ExpectMessageAndDropCount(drains_[0], kMessage, 1u);
+  ExpectMessageAndDropCount(drains_[0], kMessage, 1u);
   ExpectMessageAndDropCount(drains_[0], std::nullopt, 0u);
 
   multisink_.HandleEntry(kMessage);
