@@ -155,3 +155,67 @@ Thread Yield Backend
 A backend for ``pw::thread::yield()`` is offered using via ``taskYIELD()``.
 It uses ``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only
 from a thread.
+
+---------
+utilities
+---------
+In cases where an operation must be performed for every thread,
+``ForEachThread()`` can be used to iterate over all the created thread TCBs.
+Note that it's only safe to use this while the scheduler and interrupts are
+disabled.
+
+.. Note:: This uses an unsupported method to iterate the threads in a more
+   efficient manner while also supporting interrupt contexts. This requires
+   linking against internal statics from the FreeRTOS kernel,
+   :ref:`pw_third_party_freertos_DISABLE_TASKS_STATICS <third_party-freertos_disable_task_statics>`
+   must be used.
+
+--------------------
+Snapshot integration
+--------------------
+This ``pw_thread`` backend provides helper functions that capture FreeRTOS
+thread state to a ``pw::thread::Thread`` proto.
+
+FreeRTOS tskTCB facade
+======================
+Unfortunately FreeRTOS entirely hides the contents of the TCB inside of
+``Source/tasks.c``, but it's necessary for snapshot processing in order to
+access the stack limits from interrupt contexts. For this reason, FreeRTOS
+snapshot integration relies on the ``pw_thread_freertos:freertos_tsktcb`` facade
+to provide the ``tskTCB`` definition.
+
+The selected backend is expected to provide the ``struct tskTCB`` definition
+through ``pw_thread_freertos_backend/freertos_tsktcb.h``. The facade asserts
+that this definition matches the size of FreeRTOS's ``StaticTask_T`` which is
+the public opaque TCB type.
+
+SnapshotThread()/SnapshotThreads()
+==================================
+``SnapshotThread()`` captures the thread name, state, and stack information for
+the provided TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
+the most up-to-date information is captured, the stack pointer for the currently
+running thread must be provided for cases where the running thread is being
+captured. For ARM Cortex-M CPUs, you can do something like this:
+
+.. Code:: cpp
+
+  // Capture PSP.
+  void* stack_ptr = 0;
+  asm volatile("mrs %0, psp\n" : "=r"(stack_ptr));
+  pw::thread::ProcessThreadStackCallback cb =
+      [](pw::thread::Thread::StreamEncoder& encoder,
+         pw::ConstByteSpan stack) -> pw::Status {
+    return encoder.WriteRawStack(stack);
+  };
+  pw::thread::threadx::SnapshotThread(my_thread, thread_state, stack_ptr,
+                                      snapshot_encoder, cb);
+
+``SnapshotThreads()`` wraps the singular thread capture to instead captures
+all created threads to a ``pw::thread::SnapshotThreadInfo`` message which also
+captures the thread state for you. This proto
+message overlays a snapshot, so it is safe to static cast a
+``pw::snapshot::Snapshot::StreamEncoder`` to a
+``pw::thread::SnapshotThreadInfo::StreamEncoder`` when calling this function.
+
+.. Note:: ``SnapshotThreads()`` is only safe to use this while the scheduler and
+   interrupts are disabled as it relies on ``ForEachThread()``.

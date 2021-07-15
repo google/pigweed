@@ -26,6 +26,8 @@ In order to use this you are expected to configure the following variables from
 After this is done a ``pw_source_set`` for the FreeRTOS library is created at
 ``$dir_pw_third_party/freertos``.
 
+.. _third_party-freertos_disable_task_statics:
+
 Linking against FreeRTOS kernel's static internals
 ==================================================
 In order to link against internal kernel data structures through the use of
