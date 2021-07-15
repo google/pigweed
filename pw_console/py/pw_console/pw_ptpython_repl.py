@@ -186,6 +186,10 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         if len(buff.text) == 0:
             return False
 
+        # Exit if quit or exit
+        if buff.text.strip() in ['quit', 'quit()', 'exit', 'exit()']:
+            self.repl_pane.application.application.exit()
+
         # Execute the repl code in the the separate user_code thread loop.
         future = asyncio.run_coroutine_threadsafe(
             # This function will be executed in a separate thread.
