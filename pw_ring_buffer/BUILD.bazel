@@ -33,9 +33,9 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_containers",
+        "//pw_result",
         "//pw_span",
         "//pw_status",
-        "//pw_result",
         "//pw_varint",
     ],
 )
