@@ -14,24 +14,22 @@
 
 #pragma once
 
-#include "mbedtls/md.h"
+#include "mbedtls/sha256.h"
 
 namespace pw::crypto::sha256::backend {
 
 enum Sha256State {
-  // --> kInitialized upon construction, without fail.
+  // Successfully initialized (during contruction).
   kInitialized,
-  // kInitialized --> kStarted upon the first Update() call.
-  kStarted,
-  // kStarted --> kFinalized upon the first Final() call.
+  // Finalized as a result of the first Final() call.
   kFinalized,
-  // --> kError upon any unexpected failure.
+  // Invalid/unrecoverable state.
   kError,
 };
 
 struct Sha256Context {
   Sha256State state;
-  mbedtls_md_context_t native_context;
+  mbedtls_sha256_context native_context;
 };
 
 }  // namespace pw::crypto::sha256::backend

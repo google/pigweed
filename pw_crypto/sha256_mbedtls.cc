@@ -18,35 +18,24 @@
 namespace pw::crypto::sha256 {
 
 Sha256::Sha256() {
-  // mbedtsl_md_init() never fails (returns void).
-  mbedtls_md_init(&ctx_.native_context);
+  // mbedtsl_sha256_init() never fails (returns void).
+  mbedtls_sha256_init(&ctx_.native_context);
+
   ctx_.state = backend::Sha256State::kInitialized;
+  if (mbedtls_sha256_starts_ret(&ctx_.native_context, /* is224 = */ 0)) {
+    ctx_.state = backend::Sha256State::kError;
+  }
 }
 
 void Sha256::Update(ConstByteSpan data) {
-  if (ctx_.state == backend::Sha256State::kInitialized) {
-    if (mbedtls_md_setup(&ctx_.native_context,
-                         mbedtls_md_info_from_type(MBEDTLS_MD_SHA256),
-                         /* hmac = */ 0)) {
-      ctx_.state = backend::Sha256State::kError;
-      return;
-    }
-
-    if (mbedtls_md_starts(&ctx_.native_context)) {
-      ctx_.state = backend::Sha256State::kError;
-      return;
-    }
-
-    ctx_.state = backend::Sha256State::kStarted;
-  }
-
-  if (ctx_.state != backend::Sha256State::kStarted) {
+  if (ctx_.state != backend::Sha256State::kInitialized) {
     return;
   }
 
-  if (mbedtls_md_update(&ctx_.native_context,
-                        reinterpret_cast<const unsigned char*>(data.data()),
-                        data.size())) {
+  if (mbedtls_sha256_update_ret(
+          &ctx_.native_context,
+          reinterpret_cast<const unsigned char*>(data.data()),
+          data.size())) {
     ctx_.state = backend::Sha256State::kError;
     return;
   }
@@ -60,17 +49,13 @@ Status Sha256::Final(ByteSpan out_digest) {
     return Status::InvalidArgument();
   }
 
-  if (ctx_.state == backend::Sha256State::kInitialized) {
-    // It is OK for users to forget or skip Update().
-    Update({});
-  }
-
-  if (ctx_.state != backend::Sha256State::kStarted) {
+  if (ctx_.state != backend::Sha256State::kInitialized) {
     return Status::FailedPrecondition();
   }
 
-  if (mbedtls_md_finish(&ctx_.native_context,
-                        reinterpret_cast<unsigned char*>(out_digest.data()))) {
+  if (mbedtls_sha256_finish_ret(
+          &ctx_.native_context,
+          reinterpret_cast<unsigned char*>(out_digest.data()))) {
     ctx_.state = backend::Sha256State::kError;
     return Status::Internal();
   }
