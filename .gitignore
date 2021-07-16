@@ -3,6 +3,7 @@ compile_commands.json
 out/
 bazel-*
 .presubmit/
+docs/_build
 
 # Editors
 .idea/
