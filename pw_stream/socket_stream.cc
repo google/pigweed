@@ -13,10 +13,17 @@
 // the License.
 
 #include "pw_stream/socket_stream.h"
-namespace pw::stream {
 
-static constexpr uint32_t kMaxConcurrentUser = 1;
-static constexpr char kLocalhostAddress[] = "127.0.0.1";
+#include <arpa/inet.h>
+#include <unistd.h>
+
+namespace pw::stream {
+namespace {
+
+constexpr uint32_t kMaxConcurrentUser = 1;
+constexpr const char* kLocalhostAddress = "127.0.0.1";
+
+}  // namespace
 
 SocketStream::~SocketStream() { Close(); }
 
@@ -32,6 +39,15 @@ Status SocketStream::Serve(uint16_t port) {
   addr.sin_family = AF_INET;
   addr.sin_port = htons(listen_port_);
   addr.sin_addr.s_addr = INADDR_ANY;
+
+  // Configure the socket to allow reusing the address. Closing a socket does
+  // not immediately close it. Instead, the socket waits for some period of time
+  // before it is actually closed. Setting SO_REUSEADDR allows this socket to
+  // bind to an address that may still be in use by a recently closed socket.
+  // Without this option, running a program multiple times in series may fail
+  // unexpectedly.
+  constexpr int value = 1;
+  setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
 
   int result =
       bind(socket_fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
