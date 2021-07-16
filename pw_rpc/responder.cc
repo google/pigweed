@@ -54,6 +54,7 @@ Responder::Responder(ServerCall& call, HasClientStream has_client_stream)
 }
 
 Responder& Responder::operator=(Responder&& other) {
+  // If this RPC was running, complete it before moving in the other RPC.
   CloseAndSendResponse(OkStatus()).IgnoreError();
 
   // Move the state variables, which may change when the other client closes.

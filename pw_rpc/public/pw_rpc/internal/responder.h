@@ -48,7 +48,7 @@ class Responder : public IntrusiveList<Responder>::Item {
  public:
   Responder(const Responder&) = delete;
 
-  ~Responder() { CloseAndSendResponse(OkStatus()); }
+  ~Responder() { CloseAndSendResponse(OkStatus()).IgnoreError(); }
 
   Responder& operator=(const Responder&) = delete;
 

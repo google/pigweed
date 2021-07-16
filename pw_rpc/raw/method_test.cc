@@ -234,6 +234,23 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
   EXPECT_EQ(packet.status(), OkStatus());
 }
 
+TEST(RawServerWriter, Write_EmptyBuffer) {
+  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService> context(method);
+
+  method.Invoke(context.get(), context.request({}));
+
+  ASSERT_EQ(last_writer.Write({}), OkStatus());
+
+  const internal::Packet& packet = context.output().sent_packet();
+  EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
+  EXPECT_EQ(packet.channel_id(), context.channel_id());
+  EXPECT_EQ(packet.service_id(), context.service_id());
+  EXPECT_EQ(packet.method_id(), context.get().method().id());
+  EXPECT_TRUE(packet.payload().empty());
+  EXPECT_EQ(packet.status(), OkStatus());
+}
+
 TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);

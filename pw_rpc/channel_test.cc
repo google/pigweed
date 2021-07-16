@@ -124,5 +124,37 @@ TEST(Channel, OutputBuffer_ReturnsStatusFromChannelOutputSend) {
   EXPECT_EQ(Status::Aborted(), channel.Send(output_buffer, kTestPacket));
 }
 
+TEST(Channel, OutputBuffer_Contains_FalseWhenEmpty) {
+  Channel::OutputBuffer buffer;
+  EXPECT_FALSE(buffer.Contains({}));
+
+  std::byte data[1];
+  EXPECT_FALSE(buffer.Contains(data));
+}
+
+TEST(Channel, OutputBuffer_Contains_TrueIfContained) {
+  TestOutput<16> output;
+  internal::Channel channel(100, &output);
+
+  Channel::OutputBuffer buffer = channel.AcquireBuffer();
+  EXPECT_TRUE(buffer.Contains(output.buffer()));
+
+  channel.Release(buffer);
+}
+
+TEST(Channel, OutputBuffer_Contains_FalseIfOutside) {
+  TestOutput<16> output;
+  internal::Channel channel(100, &output);
+
+  Channel::OutputBuffer buffer = channel.AcquireBuffer();
+  std::span before(output.buffer().data() - 1, 5);
+  EXPECT_FALSE(buffer.Contains(before));
+
+  std::span after(output.buffer().data() + output.buffer().size() - 1, 2);
+  EXPECT_FALSE(buffer.Contains(after));
+
+  channel.Release(buffer);
+}
+
 }  // namespace
 }  // namespace pw::rpc::internal
