@@ -19,6 +19,16 @@ workspace(
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
+
+# Setup CIPD client and packages.
+# Required by: pigweed.
+# Used by modules: all.
+pigweed_deps()
+
+load("@cipd_deps//:cipd_init.bzl", "cipd_init")
+
+cipd_init()
 
 # Setup python support.
 # Required by: rules_fuzzing.

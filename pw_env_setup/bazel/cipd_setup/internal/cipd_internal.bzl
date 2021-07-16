@@ -12,6 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    ":cipd_repository_list_templates.bzl",
+    "CIPD_INIT_BZL_TEMPLATE",
+    "CIPD_REPOSITORY_TEMPLATE",
+)
+
 _CIPD_HOST = "https://chrome-infra-packages.appspot.com"
 
 def platform_normalized(rctx):
@@ -120,4 +126,61 @@ def cipd_repository_base(rctx):
 
 def cipd_repository_impl(rctx):
     cipd_repository_base(rctx)
-    rctx.file("BUILD", "exports_files(glob([\"**/*\"]))")
+    rctx.file("BUILD", """
+exports_files(glob([\"**/*\"]))
+
+filegroup(
+    name = "all",
+    srcs = glob(["**/*"]),
+    visibility = ["//visibility:public"],
+)
+""")
+
+def _cipd_path_to_repository_name(path, platform):
+    """ Converts a cipd path to a repository name
+
+    Args:
+        path: The cipd path.
+        platform: The cipd platform name.
+
+    Example:
+        print(_cipd_path_to_repository_name(
+            "infra/3pp/tools/cpython3/windows-amd64",
+            "linux-amd64"
+        ))
+        >> cipd_infra_3pp_tools_cpython3_windows_amd64
+    """
+    return "cipd_" + \
+           path.replace("/", "_") \
+               .replace("${platform}", platform) \
+               .replace("-", "_")
+
+def _cipd_dep_to_cipd_repositories_str(dep, indent):
+    """ Converts a CIPD dependency to a CIPD repositories string
+
+    Args:
+        dep: The CIPD dependency.
+        indent: The indentation to use.
+    """
+    return "\n".join([CIPD_REPOSITORY_TEMPLATE.format(
+        name = _cipd_path_to_repository_name(dep["path"], platform),
+        path = dep["path"].replace("${platform}", platform),
+        tag = dep["tags"][0],
+        indent = indent,
+    ) for platform in dep["platforms"]])
+
+def cipd_deps_impl(repository_ctx):
+    """ Generates a CIPD dependencies file """
+    pigweed_deps = json.decode(
+        repository_ctx.read(repository_ctx.attr._pigweed_packages_json),
+    ) + json.decode(
+        repository_ctx.read(repository_ctx.attr._python_packages_json),
+    )
+    repository_ctx.file("BUILD", "exports_files(glob([\"**/*\"]))\n")
+
+    repository_ctx.file("cipd_init.bzl", CIPD_INIT_BZL_TEMPLATE.format(
+        cipd_deps = "\n".join([
+            _cipd_dep_to_cipd_repositories_str(dep, indent = "    ")
+            for dep in pigweed_deps
+        ]),
+    ))

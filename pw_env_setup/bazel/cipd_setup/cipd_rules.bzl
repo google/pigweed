@@ -15,6 +15,7 @@
 load(
     "//pw_env_setup/bazel/cipd_setup/internal:cipd_internal.bzl",
     _cipd_client_impl = "cipd_client_impl",
+    _cipd_deps_impl = "cipd_deps_impl",
     _cipd_repository_impl = "cipd_repository_impl",
 )
 
@@ -71,3 +72,31 @@ Example:
     )
 """,
 )
+
+_pigweed_deps = repository_rule(
+    _cipd_deps_impl,
+    attrs = {
+        "_pigweed_packages_json": attr.label(
+            default = "@pigweed//pw_env_setup:py/pw_env_setup/cipd_setup/pigweed.json",
+        ),
+        "_python_packages_json": attr.label(
+            default = "@pigweed//pw_env_setup:py/pw_env_setup/cipd_setup/python.json",
+        ),
+    },
+)
+
+def pigweed_deps():
+    """Configures Pigweeds Bazel dependencies
+
+    Example:
+        load("@pigweed//pw_env_setup:pigweed_deps.bzl", "pigweed_deps")
+
+        pigweed_deps()
+
+        load("@cipd_deps//:cipd_init.bzl", "cipd_init")
+
+        cipd_init()
+"""
+    _pigweed_deps(
+        name = "cipd_deps",
+    )

@@ -101,27 +101,38 @@ rather than using `bootstrap.sh`. e.g.
 
   # WORKSPACE
 
-  load(
-      "@pigweed//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
-      "cipd_client_repository",
-      "cipd_repository",
-  )
+  load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
 
-  # Must be called before cipd_repository
-  cipd_client_repository()
+  # Setup CIPD client and packages.
+  # Required by: pigweed.
+  # Used by modules: all.
+  pigweed_deps()
 
-  cipd_repository(
-      name = "bloaty",
-      path = "pigweed/third_party/bloaty-embedded/${os=linux,mac}-${arch=amd64}",
-      tag = "git_revision:2d87d204057b419f5290f8d38b61b9c2c5b4fb52-2",
-  )
+  load("@cipd_deps//:cipd_init.bzl", "cipd_init")
 
-From here it is possible to get access to the Bloaty binaries using the
-following command.
+  cipd_init()
+
+
+This will make the entire set of Pigweeds remote repositories available
+to your project. Though these repositories will only be donwloaded if
+you use them. To get a full list of the remote repositories that this
+configures, run:
 
 .. code:: sh
 
-  bazel run @bloaty//:bloaty -- --help
+  bazel query //external:all | grep cipd_
+
+All files and executables in each CIPD remote repository is exported
+and visible either directely (`@cipd_<dep>//:<file>`) or from 'all' filegroup
+(`@cipd_<dep>//:all`).
+
+From here it is possible to get access to the Bloaty binaries using the
+following command. For example;
+
+.. code:: sh
+
+  bazel run @cipd_pigweed_third_party_bloaty_embedded_linux_amd64//:bloaty \
+   -- --help
 
 User-Friendliness
 -----------------

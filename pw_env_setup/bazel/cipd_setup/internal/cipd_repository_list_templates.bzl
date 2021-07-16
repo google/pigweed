@@ -12,7 +12,20 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-exports_files([
-    "py/pw_env_setup/cipd_setup/.cipd_version",
-    "py/pw_env_setup/cipd_setup/.cipd_version.digests",
-] + glob(["py/**/*.json"]))
+CIPD_REPOSITORY_TEMPLATE = """
+{indent}cipd_repository(
+{indent}    name = "{name}",
+{indent}    path = "{path}",
+{indent}    tag = "{tag}",
+{indent})"""
+
+CIPD_INIT_BZL_TEMPLATE = """
+load("@pigweed//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
+    "cipd_repository",
+    "cipd_client_repository",
+)
+
+def cipd_init():
+    cipd_client_repository()
+{cipd_deps}
+"""
