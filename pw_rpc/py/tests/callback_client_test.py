@@ -529,6 +529,17 @@ class CallbackClientImplTest(unittest.TestCase):  # pylint: disable=too-many-pub
             self.assertIs(Status.OK, stream.status)
             self.assertIsNone(stream.error)
 
+    @mock.patch('pw_rpc.callback_client._default_response')
+    def test_invoke_bidirectional_streaming_default_callback(self, callback):
+        """Tests a bidirectional streaming RPC ended by the server."""
+        method = self._service.SomeBidiStreaming.method
+        reply = method.response_type(payload='This is the payload!')
+        self._enqueue_server_stream(1, method, reply)
+
+        self._service.SomeBidiStreaming()
+
+        callback.assert_called_once_with(mock.ANY, reply)
+
     def test_invoke_bidirectional_streaming_error(self):
         method = self._service.SomeBidiStreaming.method
 

@@ -21,6 +21,7 @@ pw_python_package("py") {
   generate_setup = {
     name = "pw_rpc"
     version = "0.0.1"
+    install_requires = [ "protobuf" ]
   }
 
   sources = [

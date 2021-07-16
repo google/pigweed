@@ -70,7 +70,7 @@ def encode_client_stream(rpc: tuple, request: message.Message) -> bytes:
         payload=request.SerializeToString()).SerializeToString()
 
 
-def encode_client_error(packet, status: Status) -> bytes:
+def encode_client_error(packet: packet_pb2.RpcPacket, status: Status) -> bytes:
     return packet_pb2.RpcPacket(type=packet_pb2.PacketType.CLIENT_ERROR,
                                 channel_id=packet.channel_id,
                                 service_id=packet.service_id,

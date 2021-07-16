@@ -19,7 +19,7 @@ import logging
 from typing import (Any, Collection, Dict, Iterable, Iterator, NamedTuple,
                     Optional)
 
-from google.protobuf.message import DecodeError
+from google.protobuf.message import DecodeError, Message
 from pw_status import Status
 
 from pw_rpc import descriptors, packets
@@ -44,7 +44,7 @@ class PendingRpc(NamedTuple):
 
 
 class _PendingRpcMetadata:
-    def __init__(self, context: Any, keep_open: bool):
+    def __init__(self, context: object, keep_open: bool):
         self.context = context
         self.keep_open = keep_open
 
@@ -56,8 +56,8 @@ class PendingRpcs:
 
     def request(self,
                 rpc: PendingRpc,
-                request,
-                context,
+                request: Optional[Message],
+                context: object,
                 override_pending: bool = True,
                 keep_open: bool = False) -> bytes:
         """Starts the provided RPC and returns the encoded packet to send."""
@@ -68,8 +68,8 @@ class PendingRpcs:
 
     def send_request(self,
                      rpc: PendingRpc,
-                     request,
-                     context,
+                     request: Optional[Message],
+                     context: object,
                      override_pending: bool = False,
                      keep_open: bool = False) -> None:
         """Calls request and sends the resulting packet to the channel."""
@@ -80,7 +80,7 @@ class PendingRpcs:
 
     def open(self,
              rpc: PendingRpc,
-             context,
+             context: object,
              override_pending: bool = False,
              keep_open: bool = False) -> None:
         """Creates a context for an RPC, but does not invoke it.
@@ -98,7 +98,7 @@ class PendingRpcs:
             raise Error(f'Sent request for {rpc}, but it is already pending! '
                         'Cancel the RPC before invoking it again')
 
-    def send_client_stream(self, rpc: PendingRpc, message: Any) -> None:
+    def send_client_stream(self, rpc: PendingRpc, message: Message) -> None:
         if rpc not in self._pending:
             raise Error(
                 f'Attempt to send client stream for inactive RPC {rpc}')

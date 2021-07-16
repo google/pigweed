@@ -54,6 +54,7 @@ from typing import Any, Callable, Iterator, List, NamedTuple, Union, Optional
 
 from pw_protobuf_compiler.python_protos import proto_repr
 from pw_status import Status
+from google.protobuf.message import Message
 
 from pw_rpc import client, descriptors
 from pw_rpc.client import PendingRpc, PendingRpcs
@@ -115,7 +116,7 @@ class _MethodClient:
         return self._rpc.service
 
     def invoke(self,
-               request: Any,
+               request: Optional[Message],
                response: ResponseCallback = _default_response,
                completion: CompletionCallback = _default_completion,
                error: ErrorCallback = _default_error,
@@ -130,26 +131,23 @@ class _MethodClient:
                                 keep_open=keep_open)
         return _AsyncCall(self._rpcs, self._rpc)
 
-    def send_client_stream(self, request: Any) -> None:
+    def _send_client_stream(self, request: Message) -> None:
         self._rpcs.send_client_stream(self._rpc, request)
 
-    def send_client_stream_end(self) -> None:
+    def _send_client_stream_end(self) -> None:
         self._rpcs.send_client_stream_end(self._rpc)
 
     def __repr__(self) -> str:
         return self.help()
 
-    def __call__(self):
-        raise NotImplementedError('Implemented by derived classes')
-
     def help(self) -> str:
         """Returns a help message about this RPC."""
         function_call = self.method.full_name + '('
 
-        docstring = inspect.getdoc(self.__call__)
+        docstring = inspect.getdoc(self.__call__)  # type: ignore[operator] # pylint: disable=no-member
         assert docstring is not None
 
-        annotation = inspect.Signature.from_callable(self).return_annotation
+        annotation = inspect.Signature.from_callable(self).return_annotation  # type: ignore[arg-type] # pylint: disable=line-too-long
         if isinstance(annotation, type):
             annotation = annotation.__name__
 
@@ -277,21 +275,28 @@ a request protobuf as a positional argument.
 '''
 
 
-def _update_function_signature(method: Method, function: Callable) -> None:
+def _update_call_method(method: Method, function: Callable) -> None:
     """Updates the name, docstring, and parameters to match a method."""
     function.__name__ = method.full_name
     function.__doc__ = _function_docstring(method)
+    _apply_protobuf_signature(method, function)
 
-    # In order to have good tab completion and help messages, update the
-    # function signature to accept only keyword arguments for the proto message
-    # fields. This doesn't actually change the function signature -- it just
-    # updates how it appears when inspected.
+
+def _apply_protobuf_signature(method: Method, function: Callable) -> None:
+    """Update a function signature to accept proto arguments.
+
+    In order to have good tab completion and help messages, update the function
+    signature to accept only keyword arguments for the proto message fields.
+    This doesn't actually change the function signature -- it just updates how
+    it appears when inspected.
+    """
     sig = inspect.signature(function)
 
     params = [next(iter(sig.parameters.values()))]  # Get the "self" parameter
     params += method.request_parameters()
     params.append(
         inspect.Parameter('pw_rpc_timeout_s', inspect.Parameter.KEYWORD_ONLY))
+
     function.__signature__ = sig.replace(  # type: ignore[attr-defined]
         parameters=params)
 
@@ -339,7 +344,8 @@ class _UnaryResponseHandler:
 class ClientStream:
     """Tracks the state of an ongoing client streaming RPC call."""
     def __init__(self, method_client: _MethodClient,
-                 default_timeout_s: OptionalTimeout):
+                 default_timeout_s: OptionalTimeout) -> None:
+        """Sends out the initial request (no payload) to start the stream."""
         self.status: Optional[Status] = None
         self.response: Any = None
         self.error: Optional[RpcError] = None
@@ -353,19 +359,16 @@ class ClientStream:
         else:
             self._default_timeout_s = default_timeout_s
 
-    def _invoke(self) -> 'ClientStream':
-        """Sends out the initial request (no payload) to start the stream."""
         self._call = self._method_client.invoke(None, self._on_response,
                                                 self._on_completion,
                                                 self._on_error)
-        return self
 
     def complete(self) -> bool:
         return self.status is not None or self.error is not None
 
     def send(self, _rpc_request_proto=None, **request_fields) -> None:
         """Sends a message to the server in the client stream."""
-        self._method_client.send_client_stream(
+        self._method_client._send_client_stream(  # pylint: disable=protected-access
             self._method_client.method.get_request(_rpc_request_proto,
                                                    request_fields))
 
@@ -380,7 +383,7 @@ class ClientStream:
         if timeout_s is UseDefault.VALUE:
             timeout_s = self._default_timeout_s
 
-        self._method_client.send_client_stream_end()
+        self._method_client._send_client_stream_end()  # pylint: disable=protected-access
 
         self._event.wait(timeout_s)
         assert self.complete()
@@ -413,24 +416,21 @@ class ClientStream:
         return f'{type(self).__name__}({self._method_client.method})'
 
 
-_ResponseHandler = Callable[['BidirectionalStream', Any], None]
+_ResponseHandler = Callable[['BidirectionalStream', Any], Any]
 
 
 class BidirectionalStream(ClientStream):
     """Tracks the state of an ongoing bidirectional streaming RPC call."""
     def __init__(self, method_client: _MethodClient,
                  default_timeout_s: OptionalTimeout,
-                 response_handler: _ResponseHandler):
-        super().__init__(method_client, default_timeout_s)
-
+                 response_handler: _ResponseHandler) -> None:
+        """Sends the initial request (no payload) to start the stream."""
         self.response_handler = response_handler
         self.responses: List[Any] = []
 
-    def _invoke(self) -> 'BidirectionalStream':
-        """Sends out the initial request (no payload) to start the stream."""
-        self._method_client.invoke(None, self._on_response,
-                                   self._on_completion, self._on_error)
-        return self
+        # Invoke the base __init__ after setting member variables since it
+        # invokes the RPC.
+        super().__init__(method_client, default_timeout_s)
 
     def _on_response(self, _: PendingRpc, response: Any) -> None:
         # TODO(frolv): self.responses could grow very large for persistent
@@ -463,7 +463,7 @@ def _unary_method_client(client_impl: 'Impl', rpcs: PendingRpcs,
 
         return handler.wait(pw_rpc_timeout_s)
 
-    _update_function_signature(method, call)
+    _update_call_method(method, call)
 
     # The MethodClient class is created dynamically so that the __call__ method
     # can be configured differently for each method.
@@ -491,7 +491,7 @@ def _server_streaming_method_client(client_impl: 'Impl', rpcs: PendingRpcs,
             lambda rpc, status: responses.put(RpcError(rpc, status)))
         return StreamingResponses(self, responses, pw_rpc_timeout_s)
 
-    _update_function_signature(method, call)
+    _update_call_method(method, call)
 
     # The MethodClient class is created dynamically so that the __call__ method
     # can be configured differently for each method type.
@@ -502,43 +502,52 @@ def _server_streaming_method_client(client_impl: 'Impl', rpcs: PendingRpcs,
                               default_timeout)
 
 
-def _client_streaming_method_client(client_impl: 'Impl', rpcs: PendingRpcs,
-                                    channel: Channel, method: Method,
-                                    default_timeout: Optional[float]):
-    def call(self: _MethodClient,
-             pw_rpc_timeout_s=UseDefault.VALUE) -> ClientStream:
-        return ClientStream(self, pw_rpc_timeout_s)._invoke()  # pylint: disable=protected-access
+# Since __call__ doesn't need to be overridden, declare regular classes.
+class _ClientStreamingMethodClient(_MethodClient):
+    def __call__(
+            self,
+            pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE
+    ) -> ClientStream:
+        return _create_client_stream(False, self, pw_rpc_timeout_s)
 
-    _update_function_signature(method, call)
 
-    # The MethodClient class is created dynamically so that the __call__ method
-    # can be configured differently for each method type.
-    method_client_type = type(
-        f'{method.name}_ClientStreamingMethodClient', (_MethodClient, ),
-        dict(__call__=call, __doc__=_method_client_docstring(method)))
+class _BidirectionalStreamingMethodClient(_MethodClient):
+    def __call__(
+        self,
+        response_handler: _ResponseHandler = None,
+        pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE
+    ) -> BidirectionalStream:
+        if response_handler is None:
+            response_handler = lambda _, rep: _default_response(self._rpc, rep)
+
+        return _create_client_stream(True, self, pw_rpc_timeout_s,
+                                     response_handler)
+
+
+def _create_client_stream(bidirectional: bool, method_client: _MethodClient,
+                          pw_rpc_timeout_s: OptionalTimeout, *args,
+                          **kwargs) -> BidirectionalStream:
+    """Creates the object that represents a client or bidirectional stream."""
+    base = BidirectionalStream if bidirectional else ClientStream
+
+    def send(self, _rpc_request_proto=None, **request_fields) -> None:
+        ClientStream.send(self, _rpc_request_proto, **request_fields)
+
+    _apply_protobuf_signature(method_client.method, send)
+
+    client_stream_type = type(f'{method_client.method.name}_{base.__name__}',
+                              (base, ), dict(send=send))
+    return client_stream_type(method_client, pw_rpc_timeout_s, *args, **kwargs)
+
+
+def _create_method_client(base: type, client_impl: 'Impl', rpcs: PendingRpcs,
+                          channel: Channel, method: Method,
+                          default_timeout_s: Optional[float]):
+    """Creates the method client for a client or bidirectional stream RPC."""
+    method_client_type = type(f'{method.name}_{base.__name__}', (base, ),
+                              dict(__doc__=_method_client_docstring(method)))
     return method_client_type(client_impl, rpcs, channel, method,
-                              default_timeout)
-
-
-def _bidirectional_streaming_method_client(client_impl: 'Impl',
-                                           rpcs: PendingRpcs, channel: Channel,
-                                           method: Method,
-                                           default_timeout: Optional[float]):
-    def call(self: _MethodClient,
-             response_handler: _ResponseHandler,
-             pw_rpc_timeout_s=UseDefault.VALUE) -> BidirectionalStream:
-        return BidirectionalStream(  # pylint: disable=protected-access
-            self, pw_rpc_timeout_s, response_handler)._invoke()
-
-    _update_function_signature(method, call)
-
-    # The MethodClient class is created dynamically so that the __call__ method
-    # can be configured differently for each method type.
-    method_client_type = type(
-        f'{method.name}_BidirectionalStreamingMethodClient', (_MethodClient, ),
-        dict(__call__=call, __doc__=_method_client_docstring(method)))
-    return method_client_type(client_impl, rpcs, channel, method,
-                              default_timeout)
+                              default_timeout_s)
 
 
 class Impl(client.ClientImpl):
@@ -571,13 +580,14 @@ class Impl(client.ClientImpl):
                 self.default_stream_timeout_s)
 
         if method.type is Method.Type.CLIENT_STREAMING:
-            return _client_streaming_method_client(
-                self, self.rpcs, channel, method, self.default_unary_timeout_s)
+            return _create_method_client(_ClientStreamingMethodClient, self,
+                                         self.rpcs, channel, method,
+                                         self.default_unary_timeout_s)
 
         if method.type is Method.Type.BIDIRECTIONAL_STREAMING:
-            return _bidirectional_streaming_method_client(
-                self, self.rpcs, channel, method,
-                self.default_stream_timeout_s)
+            return _create_method_client(_BidirectionalStreamingMethodClient,
+                                         self, self.rpcs, channel, method,
+                                         self.default_stream_timeout_s)
 
         raise AssertionError(f'Unknown method type {method.type}')
 
