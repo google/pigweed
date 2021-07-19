@@ -39,11 +39,14 @@ def _build_argument_parser() -> argparse.ArgumentParser:
                         help='Set the log level'
                         '(debug, info, warning, error, critical)')
 
-    parser.add_argument('--logfile', help='Pigweed Console debug log file.')
+    parser.add_argument('--logfile', help='Pigweed Console log file.')
 
     parser.add_argument('--test-mode',
                         action='store_true',
                         help='Enable fake log messages for testing purposes.')
+
+    parser.add_argument('--console-debug-log-file',
+                        help='Log file to send console debug messages to.')
 
     return parser
 
@@ -78,7 +81,18 @@ def main() -> int:
         # would corrupt the prompt toolkit UI.
         args.logfile = create_temp_log_file()
 
-    pw_cli.log.install(args.loglevel, True, False, args.logfile)
+    pw_cli.log.install(level=args.loglevel,
+                       use_color=True,
+                       hide_timestamp=False,
+                       log_file=args.logfile)
+
+    if args.console_debug_log_file:
+        pw_cli.log.install(level=args.loglevel,
+                           use_color=True,
+                           hide_timestamp=False,
+                           log_file=args.console_debug_log_file,
+                           logger=logging.getLogger(__package__))
+        logging.getLogger(__package__).propagate = False
 
     global_vars = None
     default_loggers: List = []
