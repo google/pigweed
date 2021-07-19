@@ -108,6 +108,11 @@ def generate_styles(theme_name='dark'):
         # Used for pane titles
         'toolbar_accent': theme.cyan_accent,
 
+        'toolbar-setting-active': 'bg:{} {}'.format(
+            theme.green_accent,
+            theme.active_bg,
+        ),
+
         # prompt_toolkit scrollbar styles:
         'scrollbar.background': 'bg:{} {}'.format(theme.default_bg,
                                                   theme.default_fg),

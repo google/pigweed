@@ -130,12 +130,13 @@ class ConsoleApp:
         # Top title message
         self.message = [
             ('class:logo', self.app_title),
-            ('class:menu-bar', ' | '),
-            ('class:keybind', 'F1'),
-            ('class:keyhelp', ':Help '),
-            ('class:keybind', 'Ctrl-W'),
-            ('class:keyhelp', ':Quit '),
+            ('class:menu-bar', '  '),
         ]
+        self.message.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator('F1', 'Help '))
+        self.message.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Ctrl-W', 'Quit '))
 
         # Top level UI state toggles.
         self.show_help_window = False
@@ -717,19 +718,13 @@ class ConsoleApp:
     async def log_forever(self):
         """Test mode async log generator coroutine that runs forever."""
         message_count = 0
-        # Sample log lines:
-        # Log message [=         ] # 291
-        # Log message [ =        ] # 292
-        # Log message [  =       ] # 293
-        # Log message [   =      ] # 294
-        # Log message [    =     ] # 295
-        # Log message [     =    ] # 296
-        # Log message [      =   ] # 297
-        # Log message [       =  ] # 298
-        # Log message [        = ] # 299
-        # Log message [         =] # 300
+        # Sample log line format:
+        # Log message [=         ] # 100
+
+        # Fake module column names.
+        module_names = ['APP', 'RADIO', 'BAT', 'USB', 'CPU']
         while True:
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             bar_size = 10
             position = message_count % bar_size
             bar_content = " " * (bar_size - position - 1) + "="
@@ -749,8 +744,11 @@ class ConsoleApp:
             #                     time.sleep(s)
             #                     return 't({}) seconds done'.format(s)""")
 
+            module_name = module_names[message_count % len(module_names)]
+            _FAKE_DEVICE_LOG.info(
+                new_log_line,
+                extra=dict(extra_metadata_fields=dict(module=module_name)))
             message_count += 1
-            _FAKE_DEVICE_LOG.info(new_log_line)
 
 
 def embed(

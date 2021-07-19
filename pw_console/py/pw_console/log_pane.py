@@ -527,6 +527,10 @@ class LogPane:
     def log_content_control_get_cursor_position(self):
         return self.log_view.get_cursor_position()
 
+    def focus_self(self):
+        """Switch prompt_toolkit focus to this LogPane."""
+        self.application.application.layout.focus(self)
+
     def duplicate(self):
         """Create a duplicate of this LogView."""
         new_pane = LogPane(self.application, pane_title=self.pane_title())

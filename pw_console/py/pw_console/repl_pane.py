@@ -87,9 +87,10 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 # Mouse handler
                 functools.partial(pw_console.mouse.focus_handler, repl_pane),
             ),
-            ('class:keybind', 'enter'),
-            ('class:keyhelp', ':Run code'),
         ]
+
+        focused_text.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator('Enter', 'Run'))
 
         if has_focus(repl_pane)():
             return focused_text
@@ -98,22 +99,26 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
     @staticmethod
     def get_right_text_tokens(repl_pane):
         """Return right toolbar text."""
+        fragments = []
+        separator_text = [('', ' ')]
         if has_focus(repl_pane)():
-            return [
-                ('class:keybind', 'F2'),
-                ('class:keyhelp', ':Settings '),
-                ('class:keybind', 'F3'),
-                ('class:keyhelp', ':History '),
-            ]
-
-        return [(
-            # Style
-            'class:keyhelp',
-            # Text
-            '[click to focus] ',
-            # Mouse handler
-            functools.partial(pw_console.mouse.focus_handler, repl_pane),
-        )]
+            fragments.extend(
+                pw_console.widgets.checkbox.to_keybind_indicator(
+                    'F2', 'Settings'))
+            fragments.extend(separator_text)
+            fragments.extend(
+                pw_console.widgets.checkbox.to_keybind_indicator(
+                    'F3', 'History'))
+        else:
+            fragments.append((
+                # Style
+                'class:keyhelp',
+                # Text
+                '[click to focus] ',
+                # Mouse handler
+                functools.partial(pw_console.mouse.focus_handler, repl_pane),
+            ))
+        return fragments
 
     def __init__(self, repl_pane):
         left_section_window = Window(

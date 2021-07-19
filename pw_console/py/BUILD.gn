@@ -37,6 +37,7 @@ pw_python_package("py") {
     "pw_console/widgets/__init__.py",
     "pw_console/widgets/checkbox.py",
     "pw_console/widgets/focus_on_click_overlay.py",
+    "pw_console/widgets/mouse_handlers.py",
     "pw_console/widgets/table.py",
   ]
   tests = [

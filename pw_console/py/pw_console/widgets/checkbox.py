@@ -13,11 +13,17 @@
 # the License.
 """Functions to create checkboxes for menus and toolbars."""
 
+from typing import Iterable, Optional
+
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+
+_KEY_SEPARATOR = ' → '
+
 
 def to_checkbox(checked: bool, mouse_handler=None, end=' '):
     default_style = 'class:checkbox'
     checked_style = 'class:checkbox-checked'
-    text = '[x]' if checked else '[ ]'
+    text = '[✓]' if checked else '[ ]'
     text += end
     style = checked_style if checked else default_style
     if mouse_handler:
@@ -27,3 +33,58 @@ def to_checkbox(checked: bool, mouse_handler=None, end=' '):
 
 def to_checkbox_text(checked: bool, end=' '):
     return to_checkbox(checked, end=end)[1]
+
+
+def to_setting(
+    checked: bool,
+    text: str,
+    active_style='class:toolbar-setting-active',
+    inactive_style='',
+    mouse_handler=None,
+):
+    """Apply a style to text if checked is True."""
+    style = active_style if checked else inactive_style
+    if mouse_handler:
+        return (style, text, mouse_handler)
+    return (style, text)
+
+
+def to_checkbox_with_keybind_indicator(checked: bool,
+                                       key: str,
+                                       description: str,
+                                       mouse_handler=None):
+    """Create a clickable keybind indicator with checkbox for toolbars."""
+    if mouse_handler:
+        return to_keybind_indicator(
+            key,
+            description,
+            mouse_handler,
+            extra_fragments=[to_checkbox(checked, mouse_handler)])
+    return to_keybind_indicator(key,
+                                description,
+                                extra_fragments=[to_checkbox(checked)])
+
+
+def to_keybind_indicator(key: str,
+                         description: str,
+                         mouse_handler=None,
+                         extra_fragments: Optional[Iterable] = None):
+    """Create a clickable keybind indicator for toolbars."""
+    fragments: StyleAndTextTuples = []
+
+    if mouse_handler:
+        fragments.append(('class:keybind', key, mouse_handler))
+        fragments.append(('class:keyhelp', _KEY_SEPARATOR, mouse_handler))
+    else:
+        fragments.append(('class:keybind', key))
+        fragments.append(('class:keyhelp', _KEY_SEPARATOR))
+
+    if extra_fragments:
+        for fragment in extra_fragments:
+            fragments.append(fragment)
+
+    if mouse_handler:
+        fragments.append(('class:keyhelp', description, mouse_handler))
+    else:
+        fragments.append(('class:keyhelp', description))
+    return fragments

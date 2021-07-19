@@ -31,11 +31,11 @@ from prompt_toolkit.layout import (
     WindowAlign,
     HorizontalAlign,
 )
-from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.data_structures import Point
 
 import pw_console.widgets.checkbox
+import pw_console.widgets.mouse_handlers
 import pw_console.style
 
 if TYPE_CHECKING:
@@ -63,7 +63,9 @@ class LineInfoBar(ConditionalContainer):
         super().__init__(
             VSplit([info_bar_window],
                    height=1,
-                   style='class:toolbar_active',
+                   style=functools.partial(pw_console.style.get_toolbar_style,
+                                           log_pane,
+                                           dim=True),
                    align=HorizontalAlign.RIGHT),
             # Only show current/total line info if not auto-following
             # logs. Similar to tmux behavior.
@@ -87,135 +89,107 @@ class TableToolbar(ConditionalContainer):
             dont_extend_width=False,
             get_horizontal_scroll=log_pane.get_horizontal_scroll_amount,
         )
-        super().__init__(VSplit([table_header_bar_window],
-                                height=1,
-                                style=functools.partial(
-                                    pw_console.style.get_toolbar_style,
-                                    log_pane,
-                                    dim=True),
-                                align=HorizontalAlign.LEFT),
-                         filter=Condition(lambda: log_pane.table_view))
+        super().__init__(
+            VSplit([table_header_bar_window],
+                   height=1,
+                   style=functools.partial(pw_console.style.get_toolbar_style,
+                                           log_pane,
+                                           dim=True),
+                   align=HorizontalAlign.LEFT),
+            filter=Condition(lambda: log_pane.table_view and log_pane.log_view.
+                             get_total_count() > 0))
 
 
 class BottomToolbarBar(ConditionalContainer):
     """One line toolbar for display at the bottom of the LogPane."""
     TOOLBAR_HEIGHT = 1
 
-    @staticmethod
-    def mouse_handler_focus(log_pane: 'LogPane', mouse_event: MouseEvent):
-        """Focus this pane on click."""
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            log_pane.application.application.layout.focus(log_pane)
-            return None
-        return NotImplemented
-
-    @staticmethod
-    def mouse_handler_toggle_table_view(log_pane: 'LogPane',
-                                        mouse_event: MouseEvent):
-        """Toggle table view on click."""
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            log_pane.toggle_table_view()
-            return None
-        return NotImplemented
-
-    @staticmethod
-    def mouse_handler_toggle_wrap_lines(log_pane: 'LogPane',
-                                        mouse_event: MouseEvent):
-        """Toggle wrap lines on click."""
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            log_pane.toggle_wrap_lines()
-            return None
-        return NotImplemented
-
-    @staticmethod
-    def mouse_handler_clear_history(log_pane: 'LogPane',
-                                    mouse_event: MouseEvent):
-        """Clear history on click."""
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            log_pane.clear_history()
-            return None
-        return NotImplemented
-
-    @staticmethod
-    def mouse_handler_toggle_follow(log_pane: 'LogPane',
-                                    mouse_event: MouseEvent):
-        """Toggle follow on click."""
-        if mouse_event.event_type == MouseEventType.MOUSE_UP:
-            log_pane.toggle_follow()
-            return None
-        return NotImplemented
-
-    @staticmethod
-    def get_left_text_tokens(log_pane: 'LogPane'):
+    def get_left_text_tokens(self):
         """Return toolbar indicator and title."""
 
-        title = ' {} '.format(log_pane.pane_title())
-        mouse_handler = functools.partial(BottomToolbarBar.mouse_handler_focus,
-                                          log_pane)
-        return pw_console.style.get_pane_indicator(log_pane, title,
-                                                   mouse_handler)
+        title = ' {} '.format(self.log_pane.pane_title())
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.log_pane.focus_self)
+        return pw_console.style.get_pane_indicator(self.log_pane, title, focus)
 
-    @staticmethod
-    def get_center_text_tokens(log_pane: 'LogPane'):
+    def get_center_text_tokens(self):
         """Return formatted text tokens for display in the center part of the
         toolbar."""
 
         # Create mouse handler functions.
-        focus = functools.partial(BottomToolbarBar.mouse_handler_focus,
-                                  log_pane)
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.log_pane.focus_self)
         toggle_wrap_lines = functools.partial(
-            BottomToolbarBar.mouse_handler_toggle_wrap_lines, log_pane)
+            pw_console.widgets.mouse_handlers.on_click,
+            self.log_pane.toggle_wrap_lines)
         clear_history = functools.partial(
-            BottomToolbarBar.mouse_handler_clear_history, log_pane)
+            pw_console.widgets.mouse_handlers.on_click,
+            self.log_pane.clear_history)
         toggle_follow = functools.partial(
-            BottomToolbarBar.mouse_handler_toggle_follow, log_pane)
+            pw_console.widgets.mouse_handlers.on_click,
+            self.log_pane.toggle_follow)
         toggle_table_view = functools.partial(
-            BottomToolbarBar.mouse_handler_toggle_table_view, log_pane)
+            pw_console.widgets.mouse_handlers.on_click,
+            self.log_pane.toggle_table_view)
+        start_search = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click,
+            self.log_pane.start_search)
 
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
-        separator_text = ('', '  ')  # 2 spaces of separaton between keybinds.
+        separator_text = [('', '  ', focus)
+                          ]  # 2 spaces of separaton between keybinds.
 
-        return [
-            separator_text,
-            pw_console.widgets.checkbox.to_checkbox(log_pane.table_view,
-                                                    toggle_table_view),
-            ('class:keybind', 't', toggle_table_view),
-            ('class:keyhelp', ': Table', toggle_table_view),
-            separator_text,
-            pw_console.widgets.checkbox.to_checkbox(log_pane.wrap_lines,
-                                                    toggle_wrap_lines),
-            ('class:keybind', 'w', toggle_wrap_lines),
-            ('class:keyhelp', ': Wrap', toggle_wrap_lines),
-            separator_text,
-            pw_console.widgets.checkbox.to_checkbox(log_pane.log_view.follow,
-                                                    toggle_follow),
-            ('class:keybind', 'f', toggle_follow),
-            ('class:keyhelp', ': Follow', toggle_follow),
-            separator_text,
-            ('class:keybind', 'C', clear_history),
-            ('class:keyhelp', ': Clear', clear_history),
-
-            # Remaining whitespace should focus on click.
-            ('class:keybind', ' ', focus),
-        ]
-
-    @staticmethod
-    def get_right_text_tokens(log_pane: 'LogPane'):
-        """Return formatted text tokens for display."""
-        focus = functools.partial(BottomToolbarBar.mouse_handler_focus,
-                                  log_pane)
         fragments = []
-        if not has_focus(log_pane.__pt_container__())():
+        fragments.extend(separator_text)
+
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                '/', 'Search', start_search))
+        fragments.extend(separator_text)
+
+        fragments.extend(
+            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+                self.log_pane.log_view.follow, 'f', 'Follow', toggle_follow))
+        fragments.extend(separator_text)
+
+        fragments.extend(
+            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+                self.log_pane.table_view, 't', 'Table', toggle_table_view))
+        fragments.extend(separator_text)
+
+        fragments.extend(
+            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+                self.log_pane.wrap_lines, 'w', 'Wrap', toggle_wrap_lines))
+        fragments.extend(separator_text)
+
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'C', 'Clear', clear_history))
+        fragments.extend(separator_text)
+
+        # Remaining whitespace should focus on click.
+        fragments.append(('', ' ', focus))
+
+        return fragments
+
+    def get_right_text_tokens(self):
+        """Return formatted text tokens for display."""
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.log_pane.focus_self)
+        fragments = []
+        if not has_focus(self.log_pane.__pt_container__())():
             fragments.append(('class:keyhelp', '[click to focus] ', focus))
-        fragments.append(('', ' {} '.format(log_pane.pane_subtitle()), focus))
+        fragments.append(
+            ('', ' {} '.format(self.log_pane.pane_subtitle()), focus))
         return fragments
 
     def __init__(self, log_pane: 'LogPane'):
+        self.log_pane = log_pane
+
         title_section_window = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                functools.partial(BottomToolbarBar.get_left_text_tokens,
-                                  log_pane)),
+                self.get_left_text_tokens),
             align=WindowAlign.LEFT,
             dont_extend_width=True,
         )
@@ -223,8 +197,7 @@ class BottomToolbarBar(ConditionalContainer):
         keybind_section_window = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                functools.partial(BottomToolbarBar.get_center_text_tokens,
-                                  log_pane)),
+                self.get_center_text_tokens),
             align=WindowAlign.LEFT,
             dont_extend_width=False,
         )
@@ -232,8 +205,7 @@ class BottomToolbarBar(ConditionalContainer):
         log_source_name = Window(
             content=FormattedTextControl(
                 # Callable to get formatted text tuples.
-                functools.partial(BottomToolbarBar.get_right_text_tokens,
-                                  log_pane)),
+                self.get_right_text_tokens),
             # Right side text should appear at the far right of the toolbar
             align=WindowAlign.RIGHT,
             dont_extend_width=True,
