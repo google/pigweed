@@ -137,6 +137,15 @@ Python
   address = 123
   ser.write(encode.ui_frame(address, b'your data here!'))
 
+Typescript
+^^^^^^^^^^
+
+.. js:method:: uiFrame(address, data)
+
+    :param number address: frame address.
+    :param Uint8Array data: frame data.
+    :returns: Uint8Array containing a complete HDLC frame.
+
 Decoder
 -------
 The decoder class unescapes received bytes and adds them to a buffer. Complete,
