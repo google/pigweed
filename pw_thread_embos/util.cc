@@ -16,7 +16,6 @@
 #include "RTOS.h"
 #include "pw_function/function.h"
 #include "pw_status/status.h"
-#include "pw_status/try.h"
 
 namespace pw::thread::embos {
 
@@ -31,7 +30,10 @@ Status ForEachThread(const OS_TASK& starting_thread, ThreadCallback& cb) {
 
   const OS_TASK* thread = &starting_thread;
   while (thread != nullptr) {
-    PW_TRY(cb(*thread));
+    if (!cb(*thread)) {
+      // Early-terminate iteration if requested by the callback.
+      return Status::Aborted();
+    }
     thread = thread->pNext;
   }
 

@@ -19,20 +19,22 @@
 
 namespace pw::thread::embos {
 
-// A callback that is executed for each thread when using ForEachThread().
-using ThreadCallback = pw::Function<Status(const OS_TASK&)>;
+// A callback that is executed for each thread when using ForEachThread(). The
+// callback should return true if thread iteration should continue. When this
+// callback returns false, ForEachThread() will cease iteration of threads and
+// return an `Aborted` error code.
+using ThreadCallback = pw::Function<bool(const OS_TASK&)>;
 
 // Iterates through all threads that haven't been deleted, calling the provided
-// callback on each thread. If the callback fails on one thread, the iteration
-// stops.
+// callback on each thread.
 //
 // Precondition:
 //   OS_Start() must be called prior to using this function.
 //
 // Returns:
 //   FailedPrecondition - The scheduler has not yet been initialized.
+//   Aborted - The callback requested an early-termination of thread iteration.
 //   OkStatus - Successfully iterated over all threads.
-//   Other statuses may be returned by the ThreadCallback.
 //
 // Warning: This is only safe to use when the scheduler is disabled.
 Status ForEachThread(ThreadCallback& cb);

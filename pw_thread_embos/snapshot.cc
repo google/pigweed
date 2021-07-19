@@ -72,20 +72,29 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
     void* running_thread_stack_pointer;
     SnapshotThreadInfo::StreamEncoder* encoder;
     ProcessThreadStackCallback* stack_dumper;
+    Status thread_capture_status;
   } ctx;
   ctx.running_thread_stack_pointer = running_thread_stack_pointer;
   ctx.encoder = &encoder;
   ctx.stack_dumper = &stack_dumper;
 
-  ThreadCallback thread_capture_cb([&ctx](const OS_TASK& thread) -> Status {
+  ThreadCallback thread_capture_cb([&ctx](const OS_TASK& thread) -> bool {
     Thread::StreamEncoder thread_encoder = ctx.encoder->GetThreadsEncoder();
-    return SnapshotThread(thread,
-                          ctx.running_thread_stack_pointer,
-                          thread_encoder,
-                          *ctx.stack_dumper);
+    ctx.thread_capture_status.Update(
+        SnapshotThread(thread,
+                       ctx.running_thread_stack_pointer,
+                       thread_encoder,
+                       *ctx.stack_dumper));
+    // Always iterate all threads.
+    return true;
   });
 
-  return ForEachThread(thread_capture_cb);
+  if (Status status = ForEachThread(thread_capture_cb); !status.ok()) {
+    PW_LOG_ERROR("Failed to iterate threads during snapshot capture: %d",
+                 static_cast<int>(status.code()));
+  }
+
+  return ctx.thread_capture_status;
 }
 
 Status SnapshotThread(const OS_TASK& thread,

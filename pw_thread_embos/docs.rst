@@ -161,14 +161,16 @@ should only be used after ``OS_Start()`` has been called. Calling this before
 the scheduler has started is non-fatal, but will result in no action and a
 ``FailedPrecondition`` error code.
 
+An ``Aborted`` error status is returned if the provided callback returns
+``false`` to request an early termination of thread iteration.
+
 Return values
 -------------
 
 * ``FailedPrecondition``: Returned when ``ForEachThread()`` is run before the OS
   has been initialized.
+* ``Aborted``: The callback requested an early-termination of thread iteration.
 * ``OkStatus``: The callback has been successfully run with every thread.
-* Other: The callback returned an error status on a thread, triggering an early
-  abort.
 
 --------------------
 Snapshot Integration
