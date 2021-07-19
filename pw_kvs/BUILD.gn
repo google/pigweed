@@ -162,10 +162,6 @@ pw_source_set("fake_flash_16_aligned_partition") {
   ]
 }
 
-group("fake_flash_small_partition") {
-  public_deps = [ ":fake_flash_16_aligned_partition" ]
-}
-
 pw_source_set("fake_flash_64_aligned_partition") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
