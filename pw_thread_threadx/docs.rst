@@ -33,6 +33,15 @@ In cases where an operation must be performed for every thread,
 ``ForEachThread()`` can be used to iterate over all the created thread TCBs.
 Note that it's only safe to use this while the scheduler is disabled.
 
+An ``Aborted`` error status is returned if the provided callback returns
+``false`` to request an early termination of thread iteration.
+
+Return values
+=============
+
+* ``Aborted``: The callback requested an early-termination of thread iteration.
+* ``OkStatus``: The callback has been successfully run with every thread.
+
 --------------------
 Snapshot integration
 --------------------
@@ -42,7 +51,7 @@ state to a ``pw::thread::Thread`` proto.
 SnapshotThread()/SnapshotThreads()
 ==================================
 ``SnapshotThread()`` captures the thread name, state, and stack information for
-the provided RTX TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
+the provided ThreadX TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
 the most up-to-date information is captured, the stack pointer for the currently
 running thread must be provided for cases where the running thread is being
 captured. For ARM Cortex-M CPUs, you can do something like this:

@@ -158,6 +158,7 @@ pw_source_set("snapshot") {
     "$dir_pw_thread:snapshot",
     dir_pw_bytes,
     dir_pw_function,
+    dir_pw_log,
     dir_pw_protobuf,
     dir_pw_status,
   ]

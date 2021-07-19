@@ -15,7 +15,6 @@
 
 #include "pw_function/function.h"
 #include "pw_status/status.h"
-#include "pw_status/try.h"
 #include "tx_api.h"
 #include "tx_thread.h"
 
@@ -24,11 +23,14 @@ namespace pw::thread::threadx {
 namespace internal {
 
 // Iterates through all threads that haven't been deleted, calling the provided
-// call
+// callback.
 Status ForEachThread(const TX_THREAD& starting_thread, ThreadCallback& cb) {
   const TX_THREAD* thread = &starting_thread;
   do {
-    PW_TRY(cb(*thread));
+    if (!cb(*thread)) {
+      // Early-terminate iteration if requested by the callback.
+      return Status::Aborted();
+    }
     thread = thread->tx_thread_created_next;
   } while (thread != &starting_thread);
 
