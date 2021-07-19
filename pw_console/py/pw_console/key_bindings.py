@@ -22,6 +22,8 @@ from prompt_toolkit.filters import (
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 
+import pw_console.pw_ptpython_repl
+
 __all__ = ('create_key_bindings', )
 
 _LOG = logging.getLogger(__package__)
@@ -109,11 +111,16 @@ def create_key_bindings(console_app):
         """Reset the python repl on Ctrl-c"""
         console_app.repl_pane.ctrl_c()
 
-    @bindings.add('c-d', filter=has_focus(console_app.pw_ptpython_repl))
+    @bindings.add('c-d',
+                  filter=console_app.pw_ptpython_repl.
+                  has_focus_and_input_empty_condition())
     def handle_ctrl_d_hidden(event):
         """Do nothing on ctrl-d."""
-        # TODO(tonymd): Allow ctrl-d to quit the whole app with confirmation
-        # like ipython.
+        # TODO(tonymd): Ctrl-d should quit the whole app with confirmation.
+        # Ctrl-d in ptpython repl prompts y/n to quit if the input is empty. If
+        # not empty, it deletes forward characters. This binding should block
+        # ctrl-d if the input is empty. The quit confirmation dialog breaks the
+        # ptpython state and further repl invocations.
         pass
 
     return bindings

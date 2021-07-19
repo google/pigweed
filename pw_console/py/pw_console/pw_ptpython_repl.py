@@ -21,6 +21,10 @@ import sys
 from pathlib import Path
 
 from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.filters import (
+    Condition,
+    has_focus,
+)
 import ptpython.repl  # type: ignore
 from ptpython.layout import (  # type: ignore
     CompletionVisualisation, Dimension,
@@ -210,3 +214,12 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         # TODO(tonymd): Return True if exception is found?
         # Don't keep input for now. Return True to keep input text.
         return False
+
+    def has_focus_and_input_empty_condition(self) -> Condition:
+        @Condition
+        def test() -> bool:
+            if has_focus(self)() and len(self.default_buffer.text) == 0:
+                return True
+            return False
+
+        return test
