@@ -27,5 +27,5 @@ int main() {
 
   std::byte digest[32];
 
-  return pw::crypto::sha256::Digest(STR_TO_BYTES(MESSAGE), digest).ok() ? 0 : 1;
+  return pw::crypto::sha256::Hash(STR_TO_BYTES(MESSAGE), digest).ok() ? 0 : 1;
 }

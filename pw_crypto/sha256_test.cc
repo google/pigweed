@@ -37,30 +37,30 @@ namespace {
   "\xe3\xb0\xc4\x42\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99\x6f\xb9\x24" \
   "\x27\xae\x41\xe4\x64\x9b\x93\x4c\xa4\x95\x99\x1b\x78\x52\xb8\x55"
 
-TEST(Digest, ComputesCorrectDigest) {
+TEST(Hash, ComputesCorrectDigest) {
   std::byte digest[kDigestSizeBytes];
 
-  ASSERT_OK(Digest(STR_TO_BYTES("Hello, Pigweed!"), digest));
+  ASSERT_OK(Hash(STR_TO_BYTES("Hello, Pigweed!"), digest));
   ASSERT_EQ(0,
             std::memcmp(digest, SHA256_HASH_OF_HELLO_PIGWEED, sizeof(digest)));
 }
 
-TEST(Digest, ComputesCorrectDigestOnEmptyMessage) {
+TEST(Hash, ComputesCorrectDigestOnEmptyMessage) {
   std::byte digest[kDigestSizeBytes];
 
-  ASSERT_OK(Digest({}, digest));
+  ASSERT_OK(Hash({}, digest));
   ASSERT_EQ(0,
             std::memcmp(digest, SHA256_HASH_OF_EMPTY_STRING, sizeof(digest)));
 }
 
-TEST(Digest, DigestBufferTooSmall) {
+TEST(Hash, DigestBufferTooSmall) {
   std::array<std::byte, 31> digest = {};
-  ASSERT_FAIL(Digest({}, digest));
+  ASSERT_FAIL(Hash({}, digest));
 }
 
-TEST(Digest, AcceptsLargerDigestBuffer) {
+TEST(Hash, AcceptsLargerDigestBuffer) {
   std::array<std::byte, 33> digest = {};
-  ASSERT_OK(Digest({}, digest));
+  ASSERT_OK(Hash({}, digest));
 }
 
 TEST(Sha256, AllowsSkippedUpdate) {

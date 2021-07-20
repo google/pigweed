@@ -10,7 +10,7 @@ A set of safe (read: easy to use, hard to misuse) crypto APIs.
 
 The following crypto services are provided by this module.
 
-1. Digesting a message with `SHA256`_.
+1. Hashing a message with `SHA256`_.
 2. Verifying a digital signature signed with `ECDSA`_ over the NIST P256 curve.
 3. Many more to come ...
 
@@ -24,9 +24,9 @@ SHA256
   #include "pw_crypto/sha256.h"
 
   std::byte digest[32];
-  Status status = pw::crypto::sha256::Digest(message, digest);
+  Status status = pw::crypto::sha256::Hash(message, digest);
 
-2. Digesting a long, potentially non-contiguous message.
+2. Hashing a long, potentially non-contiguous message.
 
 .. code-block:: cpp
 
@@ -51,7 +51,7 @@ ECDSA
   #include "pw_crypto/sha256.h"
 
   std::byte digest[32];
-  auto status = pw::crypto::sha256::Digest(message, digest);
+  auto status = pw::crypto::sha256::Hash(message, digest);
 
   if (!status.ok()) {
     // handle errors.

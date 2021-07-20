@@ -47,9 +47,9 @@ class Sha256 {
   backend::Sha256Context ctx_;
 };
 
-// Digest calculates the SHA256 digest of `message` and stores the result
+// Hash calculates the SHA256 digest of `message` and stores the result
 // in `out_digest`. `out_digest` must be at least `kDigestSizeBytes` long.
-inline Status Digest(ConstByteSpan message, ByteSpan out_digest) {
+inline Status Hash(ConstByteSpan message, ByteSpan out_digest) {
   Sha256 h;
   h.Update(message);
   return h.Final(out_digest);
