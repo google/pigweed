@@ -68,6 +68,7 @@ group("module_docs") {
     "$dir_pw_boot:docs",
     "$dir_pw_boot_cortex_m:docs",
     "$dir_pw_build:docs",
+    "$dir_pw_build_info:docs",
     "$dir_pw_bytes:docs",
     "$dir_pw_checksum:docs",
     "$dir_pw_chrono:docs",
