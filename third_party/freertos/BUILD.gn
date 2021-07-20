@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
 import("freertos.gni")
 
 # This file defines a GN source_set for an external installation of freertos.
@@ -75,4 +76,19 @@ if (dir_pw_third_party_freertos != "") {
 } else {
   group("freertos") {
   }
+}
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("config_assert") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ dir_pw_assert ]
+  public = [ "public/pw_third_party/freertos/config_assert.h" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }

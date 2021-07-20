@@ -21,6 +21,7 @@
   FAQ <docs/faq>
   docs/module_structure
   module_guides
+  third_party_support
 
 =======
 Pigweed
