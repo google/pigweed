@@ -5,6 +5,7 @@
 import("//build/bind/bind.gni")
 import("//build/components.gni")
 import("//build/config/fuchsia/rules.gni")
+import("//build/drivers/fuchsia_driver_component.gni")
 import("//build/fuzzing/fuzzer.gni")
 
 driver_bind_rules("bt_host_bind") {
@@ -14,7 +15,7 @@ driver_bind_rules("bt_host_bind") {
   deps = [ "//src/devices/bind/fuchsia.bluetooth" ]
 }
 
-driver_module("driver") {
+driver_module("driver_module") {
   output_name = "bt-host"
 
   sources = [ "driver.cc" ]
@@ -24,6 +25,11 @@ driver_module("driver") {
     ":sources",
     "//sdk/lib/syslog/cpp:backend_legacy",
   ]
+}
+
+fuchsia_driver_component("driver") {
+  component_name = "bt-host"
+  deps = [ ":driver_module" ]
 }
 
 source_set("sources") {
