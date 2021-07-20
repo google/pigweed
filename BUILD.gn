@@ -266,7 +266,6 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_i2c:tests",
       "$dir_pw_libc:tests",
       "$dir_pw_log:tests",
-      "$dir_pw_log_multisink:tests",
       "$dir_pw_log_null:tests",
       "$dir_pw_log_rpc:tests",
       "$dir_pw_log_tokenized:tests",

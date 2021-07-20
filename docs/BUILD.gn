@@ -95,7 +95,6 @@ group("module_docs") {
     "$dir_pw_libc:docs",
     "$dir_pw_log:docs",
     "$dir_pw_log_basic:docs",
-    "$dir_pw_log_multisink:docs",
     "$dir_pw_log_null:docs",
     "$dir_pw_log_rpc:docs",
     "$dir_pw_log_tokenized:docs",

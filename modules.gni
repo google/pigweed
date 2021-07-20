@@ -57,7 +57,6 @@ declare_args() {
   dir_pw_libc = get_path_info("pw_libc", "abspath")
   dir_pw_log = get_path_info("pw_log", "abspath")
   dir_pw_log_basic = get_path_info("pw_log_basic", "abspath")
-  dir_pw_log_multisink = get_path_info("pw_log_multisink", "abspath")
   dir_pw_log_null = get_path_info("pw_log_null", "abspath")
   dir_pw_log_rpc = get_path_info("pw_log_rpc", "abspath")
   dir_pw_log_tokenized = get_path_info("pw_log_tokenized", "abspath")
