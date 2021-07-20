@@ -100,6 +100,7 @@ message NestingMessage {
 
 
 class TestCompileAndImport(unittest.TestCase):
+    """Test compiling and importing."""
     def setUp(self):
         self._proto_dir = tempfile.TemporaryDirectory(prefix='proto_test')
         self._protos = []

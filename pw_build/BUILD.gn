@@ -157,7 +157,7 @@ pw_python_requirements("python_lint") {
   requirements = [
     "build",
     "mypy==0.800",
-    "pylint==2.6.0",
+    "pylint==2.9.3",
   ]
 }
 

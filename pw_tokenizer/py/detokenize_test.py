@@ -242,34 +242,38 @@ class DetokenizeTest(unittest.TestCase):
         self.assertEqual(str(detok.detokenize(b'\0\0\0\0')), '')
 
     def test_decode_from_elf_file(self):
+        """Test decoding from an elf file."""
         detok = detokenize.Detokenizer(io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
         expected_tokens = frozenset(detok.database.token_to_entries.keys())
 
-        elf = tempfile.NamedTemporaryFile('wb', delete=False)
-        try:
-            elf.write(ELF_WITH_TOKENIZER_SECTIONS)
-            elf.close()
+        with tempfile.NamedTemporaryFile('wb', delete=False) as elf:
+            try:
+                elf.write(ELF_WITH_TOKENIZER_SECTIONS)
+                elf.close()
 
-            # Open ELF by file object
-            with open(elf.name, 'rb') as fd:
-                detok = detokenize.Detokenizer(fd)
+                # Open ELF by file object
+                with open(elf.name, 'rb') as fd:
+                    detok = detokenize.Detokenizer(fd)
 
-            self.assertEqual(expected_tokens,
-                             frozenset(detok.database.token_to_entries.keys()))
+                self.assertEqual(
+                    expected_tokens,
+                    frozenset(detok.database.token_to_entries.keys()))
 
-            # Open ELF by path
-            detok = detokenize.Detokenizer(elf.name)
-            self.assertEqual(expected_tokens,
-                             frozenset(detok.database.token_to_entries.keys()))
+                # Open ELF by path
+                detok = detokenize.Detokenizer(elf.name)
+                self.assertEqual(
+                    expected_tokens,
+                    frozenset(detok.database.token_to_entries.keys()))
 
-            # Open ELF by elf_reader.Elf
-            with open(elf.name, 'rb') as fd:
-                detok = detokenize.Detokenizer(elf_reader.Elf(fd))
+                # Open ELF by elf_reader.Elf
+                with open(elf.name, 'rb') as fd:
+                    detok = detokenize.Detokenizer(elf_reader.Elf(fd))
 
-            self.assertEqual(expected_tokens,
-                             frozenset(detok.database.token_to_entries.keys()))
-        finally:
-            os.unlink(elf.name)
+                self.assertEqual(
+                    expected_tokens,
+                    frozenset(detok.database.token_to_entries.keys()))
+            finally:
+                os.unlink(elf.name)
 
     def test_decode_from_csv_file(self):
         detok = detokenize.Detokenizer(io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
@@ -278,24 +282,26 @@ class DetokenizeTest(unittest.TestCase):
         csv_database = str(detok.database)
         self.assertEqual(len(csv_database.splitlines()), TOKENS_IN_ELF)
 
-        csv_file = tempfile.NamedTemporaryFile('w', delete=False)
-        try:
-            csv_file.write(csv_database)
-            csv_file.close()
+        with tempfile.NamedTemporaryFile('w', delete=False) as csv_file:
+            try:
+                csv_file.write(csv_database)
+                csv_file.close()
 
-            # Open CSV by path
-            detok = detokenize.Detokenizer(csv_file.name)
-            self.assertEqual(expected_tokens,
-                             frozenset(detok.database.token_to_entries.keys()))
+                # Open CSV by path
+                detok = detokenize.Detokenizer(csv_file.name)
+                self.assertEqual(
+                    expected_tokens,
+                    frozenset(detok.database.token_to_entries.keys()))
 
-            # Open CSV by file object
-            with open(csv_file.name) as fd:
-                detok = detokenize.Detokenizer(fd)
+                # Open CSV by file object
+                with open(csv_file.name) as fd:
+                    detok = detokenize.Detokenizer(fd)
 
-            self.assertEqual(expected_tokens,
-                             frozenset(detok.database.token_to_entries.keys()))
-        finally:
-            os.unlink(csv_file.name)
+                self.assertEqual(
+                    expected_tokens,
+                    frozenset(detok.database.token_to_entries.keys()))
+            finally:
+                os.unlink(csv_file.name)
 
     def test_create_detokenizer_with_token_database(self):
         detok = detokenize.Detokenizer(io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
@@ -403,20 +409,20 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
 
         mock_getmtime.side_effect = move_back_time_if_file_exists
 
-        file = tempfile.NamedTemporaryFile('wb', delete=False)
-        try:
-            file.close()
+        with tempfile.NamedTemporaryFile('wb', delete=False) as file:
+            try:
+                file.close()
 
-            detok = detokenize.AutoUpdatingDetokenizer(file.name,
-                                                       min_poll_period_s=0)
-            self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+                detok = detokenize.AutoUpdatingDetokenizer(file.name,
+                                                           min_poll_period_s=0)
+                self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
-            with open(file.name, 'wb') as fd:
-                tokens.write_binary(db, fd)
+                with open(file.name, 'wb') as fd:
+                    tokens.write_binary(db, fd)
 
-            self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
-        finally:
-            os.unlink(file.name)
+                self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+            finally:
+                os.unlink(file.name)
 
         # The database stays around if the file is deleted.
         self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
@@ -424,29 +430,29 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
     def test_no_update_if_time_is_same(self, mock_getmtime):
         mock_getmtime.return_value = 100
 
-        file = tempfile.NamedTemporaryFile('wb', delete=False)
-        try:
-            tokens.write_csv(
-                database.load_token_database(
-                    io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)), file)
-            file.close()
+        with tempfile.NamedTemporaryFile('wb', delete=False) as file:
+            try:
+                tokens.write_csv(
+                    database.load_token_database(
+                        io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)), file)
+                file.close()
 
-            detok = detokenize.AutoUpdatingDetokenizer(file,
-                                                       min_poll_period_s=0)
-            self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+                detok = detokenize.AutoUpdatingDetokenizer(file,
+                                                           min_poll_period_s=0)
+                self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
-            # Empty the database, but keep the mock modified time the same.
-            with open(file.name, 'wb'):
-                pass
+                # Empty the database, but keep the mock modified time the same.
+                with open(file.name, 'wb'):
+                    pass
 
-            self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
-            self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+                self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+                self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
-            # Move back time so the now-empty file is reloaded.
-            mock_getmtime.return_value = 50
-            self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
-        finally:
-            os.unlink(file.name)
+                # Move back time so the now-empty file is reloaded.
+                mock_getmtime.return_value = 50
+                self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+            finally:
+                os.unlink(file.name)
 
 
 def _next_char(message: bytes) -> bytes:
