@@ -115,6 +115,19 @@ For optimal code size and/or performance, the Mbed TLS library needs to be confi
    #define MBEDTLS_ECP_NO_INTERNAL_RNG
    #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 
+BoringSSL
+^^^^^^^^^
+
+To select the BoringSSL backend, the BoringSSL library needs to be installed and configured.
+
+.. code-block:: sh
+
+  # Install and configure BoringSSL
+  pw package install boringssl
+  gn gen out --args='dir_pw_third_party_boringssl="//.environment/packages/boringssl" pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_boringssl"'
+
+  ninja -C out
+
 Size Reports
 ------------
 

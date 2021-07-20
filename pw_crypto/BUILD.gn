@@ -30,11 +30,6 @@ config("default_config") {
   visibility = [ ":*" ]
 }
 
-config("backend_config") {
-  include_dirs = [ "public_overrides" ]
-  visibility = [ ":*" ]
-}
-
 pw_facade("sha256") {
   backend = pw_crypto_SHA256_BACKEND
   public_configs = [ ":default_config" ]
@@ -98,16 +93,39 @@ pw_test("sha256_test") {
   sources = [ "sha256_test.cc" ]
 }
 
+config("mbedtls_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "public_overrides/mbedtls" ]
+}
+
 pw_source_set("sha256_mbedtls") {
-  public_configs = [ ":backend_config" ]
+  public_configs = [ ":mbedtls_config" ]
   public = [
     "public/pw_crypto/sha256_mbedtls.h",
-    "public_overrides/pw_crypto/sha256_backend.h",
+    "public_overrides/mbedtls/pw_crypto/sha256_backend.h",
   ]
   sources = [ "sha256_mbedtls.cc" ]
   public_deps = [
     ":sha256.facade",
     "//third_party/mbedtls",
+  ]
+}
+
+config("boringssl_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "public_overrides/boringssl" ]
+}
+
+pw_source_set("sha256_boringssl") {
+  public_configs = [ ":boringssl_config" ]
+  public = [
+    "public/pw_crypto/sha256_boringssl.h",
+    "public_overrides/boringssl/pw_crypto/sha256_backend.h",
+  ]
+  sources = [ "sha256_boringssl.cc" ]
+  public_deps = [
+    ":sha256.facade",
+    "//third_party/boringssl",
   ]
 }
 

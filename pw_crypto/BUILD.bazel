@@ -41,7 +41,18 @@ pw_cc_library(
     srcs = ["sha256_mbedtls.cc"],
     hdrs = [
         "public/pw_crypto/sha256_mbedtls.h",
-        "public_overrides/pw_crypto/sha256_backend.h",
+        "public_overrides/mbedtls/pw_crypto/sha256_backend.h",
+    ],
+    includes = ["public_overrides"],
+    deps = [":sha256_facade"],
+)
+
+pw_cc_library(
+    name = "sha256_boringssl",
+    srcs = ["sha256_boringssl.cc"],
+    hdrs = [
+        "public/pw_crypto/sha256_boringssl.h",
+        "public_overrides/boringssl/pw_crypto/sha256_backend.h",
     ],
     includes = ["public_overrides"],
     deps = [":sha256_facade"],
