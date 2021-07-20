@@ -352,6 +352,8 @@ _WATCH_PATTERNS = (
     '*.proto',
     '*.py',
     '*.rst',
+    '*.s',
+    '*.S',
 )
 
 
