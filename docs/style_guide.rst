@@ -407,9 +407,7 @@ type.
 
 Prefer storing references over storing pointers. Pointers are required when the
 pointer can change its target or may be ``nullptr``. Otherwise, a reference or
-const reference should be used. In accordance with the Google C++ style guide,
-only const references are permitted as function arguments; pointers must be used
-in place of mutable references when passed as function arguments.
+const reference should be used.
 
 Preprocessor macros
 ===================
