@@ -44,9 +44,8 @@ class PendingRpc(NamedTuple):
 
 
 class _PendingRpcMetadata:
-    def __init__(self, context: object, keep_open: bool):
+    def __init__(self, context: object):
         self.context = context
-        self.keep_open = keep_open
 
 
 class PendingRpcs:
@@ -58,11 +57,10 @@ class PendingRpcs:
                 rpc: PendingRpc,
                 request: Optional[Message],
                 context: object,
-                override_pending: bool = True,
-                keep_open: bool = False) -> bytes:
+                override_pending: bool = True) -> bytes:
         """Starts the provided RPC and returns the encoded packet to send."""
         # Ensure that every context is a unique object by wrapping it in a list.
-        self.open(rpc, context, override_pending, keep_open)
+        self.open(rpc, context, override_pending)
         _LOG.debug('Starting %s', rpc)
         return packets.encode_request(rpc, request)
 
@@ -70,26 +68,24 @@ class PendingRpcs:
                      rpc: PendingRpc,
                      request: Optional[Message],
                      context: object,
-                     override_pending: bool = False,
-                     keep_open: bool = False) -> None:
+                     override_pending: bool = False) -> None:
         """Calls request and sends the resulting packet to the channel."""
         # TODO(hepler): Remove `type: ignore` on this and similar lines when
         #     https://github.com/python/mypy/issues/5485 is fixed
         rpc.channel.output(  # type: ignore
-            self.request(rpc, request, context, override_pending, keep_open))
+            self.request(rpc, request, context, override_pending))
 
     def open(self,
              rpc: PendingRpc,
              context: object,
-             override_pending: bool = False,
-             keep_open: bool = False) -> None:
+             override_pending: bool = False) -> None:
         """Creates a context for an RPC, but does not invoke it.
 
         open() can be used to receive streaming responses to an RPC that was not
         invoked by this client. For example, a server may stream logs with a
         server streaming RPC prior to any clients invoking it.
         """
-        metadata = _PendingRpcMetadata(context, keep_open)
+        metadata = _PendingRpcMetadata(context)
 
         if override_pending:
             self._pending[rpc] = metadata
@@ -146,10 +142,6 @@ class PendingRpcs:
     def get_pending(self, rpc: PendingRpc, status: Optional[Status]):
         """Gets the pending RPC's context. If status is set, clears the RPC."""
         if status is None:
-            return self._pending[rpc].context
-
-        if self._pending[rpc].keep_open:
-            _LOG.debug('%s finished with status %s; keeping open', rpc, status)
             return self._pending[rpc].context
 
         _LOG.debug('%s finished with status %s', rpc, status)
@@ -273,7 +265,7 @@ def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
         return Status.UNKNOWN
 
 
-def _decode_payload(rpc: PendingRpc, packet):
+def _decode_payload(rpc: PendingRpc, packet) -> Optional[Message]:
     if packet.type == PacketType.SERVER_ERROR:
         return None
 
@@ -281,13 +273,7 @@ def _decode_payload(rpc: PendingRpc, packet):
     if packet.type == PacketType.RESPONSE and rpc.method.server_streaming:
         return None
 
-    try:
-        return packets.decode_payload(packet, rpc.method.response_type)
-    except DecodeError as err:
-        _LOG.warning('Failed to decode %s response for %s: %s',
-                     rpc.method.response_type.DESCRIPTOR.full_name,
-                     rpc.method.full_name, err)
-    return None
+    return packets.decode_payload(packet, rpc.method.response_type)
 
 
 @dataclass(frozen=True, eq=False)
@@ -464,8 +450,7 @@ class Client:
         try:
             rpc = self._look_up_service_and_method(packet, channel_client)
         except ValueError as err:
-            channel_client.channel.output(  # type: ignore
-                packets.encode_client_error(packet, Status.NOT_FOUND))
+            _send_client_error(channel_client, packet, Status.NOT_FOUND)
             _LOG.warning('%s', err)
             return Status.OK
 
@@ -478,14 +463,25 @@ class Client:
             return Status.OK
 
         status = _decode_status(rpc, packet)
-        payload = _decode_payload(rpc, packet)
+
+        try:
+            payload = _decode_payload(rpc, packet)
+        except DecodeError as err:
+            _send_client_error(channel_client, packet, Status.DATA_LOSS)
+            _LOG.warning('Failed to decode %s response for %s: %s',
+                         rpc.method.response_type.DESCRIPTOR.full_name,
+                         rpc.method.full_name, err)
+            _LOG.debug('Raw payload: %s', packet.payload)
+
+            # Make this an error packet so the error handler is called.
+            packet.type = PacketType.SERVER_ERROR
+            status = Status.DATA_LOSS
 
         try:
             context = self._impl.rpcs.get_pending(rpc, status)
         except KeyError:
-            channel_client.channel.output(  # type: ignore
-                packets.encode_client_error(packet,
-                                            Status.FAILED_PRECONDITION))
+            _send_client_error(channel_client, packet,
+                               Status.FAILED_PRECONDITION)
             _LOG.debug('Discarding response for %s, which is not pending', rpc)
             return Status.OK
 
@@ -533,3 +529,9 @@ class Client:
     def __repr__(self) -> str:
         return (f'pw_rpc.Client(channels={list(self._channels_by_id)}, '
                 f'services={[s.full_name for s in self.services]})')
+
+
+def _send_client_error(client: ChannelClient, packet: RpcPacket,
+                       error: Status) -> None:
+    client.channel.output(  # type: ignore
+        packets.encode_client_error(packet, error))

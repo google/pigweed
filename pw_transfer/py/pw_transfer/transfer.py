@@ -19,7 +19,7 @@ import logging
 import threading
 from typing import Any, Callable, Dict, Optional
 
-from pw_rpc.callback_client import BidirectionalStream
+from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
 from pw_transfer.transfer_pb2 import Chunk
 
@@ -317,8 +317,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         # RPC streams for read and write transfers. These are shareable by
         # multiple transfers of the same type.
-        self._read_stream: Optional[BidirectionalStream] = None
-        self._write_stream: Optional[BidirectionalStream] = None
+        self._read_stream: Optional[BidirectionalStreamingCall] = None
+        self._write_stream: Optional[BidirectionalStreamingCall] = None
 
         self._loop = asyncio.new_event_loop()
 
@@ -482,7 +482,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._read_transfers[transfer.id] = transfer
 
         if not self._read_stream:
-            self._read_stream = self._service.Read(
+            self._read_stream = self._service.Read.invoke(
                 lambda _, chunk: self._loop.call_soon_threadsafe(
                     self._read_chunk_queue.put_nowait, chunk))
 
@@ -513,7 +513,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         if not self._write_stream:
             # TODO(frolv): Make the actual RPC call.
-            self._write_stream = self._service.Write(
+            self._write_stream = self._service.Write.invoke(
                 lambda _, chunk: self._loop.call_soon_threadsafe(
                     self._write_chunk_queue.put_nowait, chunk))
 

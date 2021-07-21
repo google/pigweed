@@ -415,6 +415,7 @@ status codes result in the same action by the server: aborting the RPC.
   recognize.
 * ``FAILED_PRECONDITION`` -- Received a packet for a service method that the
   client did not invoke.
+* ``DATA_LOSS`` -- Received a corrupt packet for a pending service method.
 
 Server-to-client packets
 ^^^^^^^^^^^^^^^^^^^^^^^^
