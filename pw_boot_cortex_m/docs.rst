@@ -31,8 +31,10 @@ pseudo-code invocation of the user-implemented functions:
 .. code:: cpp
 
   void pw_boot_Entry() {  // Boot entry point.
+    // Interrupts disabled.
     pw_boot_PreStaticMemoryInit();  // User-implemented function.
     // Static memory initialization.
+    // Interrupts enabled.
     pw_boot_PreStaticConstructorInit();  // User-implemented function.
     // C++ static constructors are invoked.
     pw_boot_PreMainInit();  // User-implemented function.
@@ -67,6 +69,7 @@ module:
    should set up any early initialization that should be done before static
    memory is initialized, such as:
 
+   - Setup the interrupt vector table and VTOR if required.
    - Enabling the FPU or other coprocessors.
    - Opting into extra restrictions such as disabling unaligned access to ensure
      the restrictions are active during static RAM initialization.
@@ -80,6 +83,8 @@ module:
      Code running in this hook is violating the C spec as static values are not
      yet initialized, meaning they have not been loaded (.data) nor
      zero-initialized (.bss).
+
+     Interrupts are disabled until after this function returns.
 
  - ``void pw_boot_PreStaticConstructorInit()``: This function executes just
    before C++ static constructors are called. At this point, other static memory

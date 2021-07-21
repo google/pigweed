@@ -95,6 +95,19 @@ void StaticMemoryInit(void) {
 // This function runs immediately at boot because it is at index 1 of the
 // interrupt vector table.
 void pw_boot_Entry() {
+  // Disable interrupts.
+  //
+  // Until pw_boot_PreStaticMemoryInit() has completed, depending on the
+  // bootloader (or lack thereof), there is no guarantee that the vector
+  // table has been correctly set up, so it's not safe to run interrupts
+  // until after this function returns.
+  //
+  // Until StaticMemoryInit() has completed, interrupt handlers cannot use
+  // either statically initialized RAM or zero initialized RAM. Since most
+  // interrupt handlers need one or the other to change system state, it's
+  // not safe to run handlers until after this function returns.
+  asm volatile("cpsid i");
+
 #ifdef PW_BOOT_CORTEX_M_ARMV8M
   // Configure MSP and MSPLIM.
   asm volatile(
@@ -119,6 +132,13 @@ void pw_boot_Entry() {
   // zero-initialized). Be EXTREMELY careful when running code before this
   // function finishes static memory initialization.
   StaticMemoryInit();
+
+  // Reenable interrupts.
+  //
+  // Care is still required since C++ static constructors have not yet been
+  // initialized, however it's a lot less likely that an interrupt handler
+  // (which are small and focused) will have an issue there.
+  asm volatile("cpsie i");
 
   // Run any init that must be done before C++ static constructors.
   pw_boot_PreStaticConstructorInit();

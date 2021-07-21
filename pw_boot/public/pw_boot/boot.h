@@ -58,6 +58,8 @@ PW_NO_RETURN void pw_boot_Entry(void);
 // violates the C spec in several ways as .bss has not yet been zero-initialized
 // and static values have not yet been loaded into memory. This function should
 // NOT be implemented by a pw_boot backend.
+//
+// Interrupts are disabled until after this function returns.
 void pw_boot_PreStaticMemoryInit(void);
 
 // pw_boot hook: Before C++ static constructors are invoked (user supplied).
