@@ -128,6 +128,13 @@ pw_source_set("synchronized_channel_output") {
   public = [ "public/pw_rpc/synchronized_channel_output.h" ]
 }
 
+pw_source_set("benchmark") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":protos.raw_rpc" ]
+  public = [ "public/pw_rpc/benchmark.h" ]
+  sources = [ "benchmark.cc" ]
+}
+
 pw_source_set("test_utils") {
   public = [
     "public/pw_rpc/internal/test_method.h",
@@ -158,17 +165,23 @@ config("private_includes") {
 
 pw_proto_library("protos") {
   sources = [
+    "benchmark.proto",
     "echo.proto",
     "internal/packet.proto",
   ]
   inputs = [ "echo.options" ]
+  deps = [ "$dir_pw_protobuf:common_protos" ]
   python_package = "py"
   prefix = "pw_rpc"
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "benchmark.rst",
+    "docs.rst",
+  ]
   inputs = [
+    "benchmark.proto",
     "echo.proto",
     "internal/packet.proto",
   ]

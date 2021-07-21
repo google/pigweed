@@ -325,8 +325,20 @@ For example, in C++ with nanopb:
   static pw::rpc::EchoService echo_service;
 
   void Init() {
-    server.RegisterService(&echo_service);
+    server.RegisterService(echo_service);
   }
+
+Benchmarking and stress testing
+-------------------------------
+
+.. toctree::
+  :maxdepth: 1
+  :hidden:
+
+  benchmark
+
+``pw_rpc`` provides an RPC service and Python module for stress testing and
+benchmarking a ``pw_rpc`` deployment. See :ref:`module-pw_rpc-benchmark`.
 
 Protocol description
 ====================

@@ -70,6 +70,15 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "benchmark",
+    srcs = ["benchmark.cc"],
+    # TODO(hepler): Pull in the raw RPC generated headers.
+    # deps = [ ":protos.raw_rpc" ],
+    hdrs = ["public/pw_rpc/benchmark.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "client_server",
     srcs = ["client_server.cc"],
     hdrs = ["public/pw_rpc/client_server.h"],
