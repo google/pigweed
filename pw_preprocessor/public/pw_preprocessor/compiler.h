@@ -151,3 +151,23 @@
 // Expands to a _Pragma with the contents as a string. _Pragma must take a
 // single string literal; this can be used to construct a _Pragma argument.
 #define PW_PRAGMA(contents) _Pragma(#contents)
+
+// Marks a function or object as weak, allowing the definition to be overriden.
+//
+// This can be useful when supporting third-party SDKs which may conditionally
+// compile in code, for example:
+//
+//   PW_WEAK void SysTick_Handler(void) {
+//     // Default interrupt handler that might be overriden.
+//   }
+#define PW_WEAK __attribute__((weak))
+
+// Marks a weak function as an alias to another, allowing the definition to
+// be given a default and overriden.
+//
+// This can be useful when supporting third-party SDKs which may conditionally
+// compile in code, for example:
+//
+//   // Driver handler replaced with default unless overridden.
+//   void USART_DriverHandler(void) PW_ALIAS(DefaultDriverHandler);
+#define PW_ALIAS(aliased_to) __attribute__((weak, alias(#aliased_to)))
