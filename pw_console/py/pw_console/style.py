@@ -187,6 +187,18 @@ def generate_styles(theme_name='dark'):
         'log-table-column-5': '{}'.format(theme.yellow_accent),
         'log-table-column-6': '{}'.format(theme.orange_accent),
         'log-table-column-7': '{}'.format(theme.red_accent),
+
+        'search-bar-title': 'bg:{} {}'.format(theme.cyan_accent,
+                                              theme.default_bg),
+        'search-bar-setting': '{}'.format(theme.cyan_accent),
+        'search-bar': 'bg:{}'.format(theme.inactive_bg),
+
+        'filter-bar-title': 'bg:{} {}'.format(theme.red_accent,
+                                              theme.default_bg),
+        'filter-bar-setting': '{}'.format(theme.cyan_accent),
+        'filter-bar-delete': '{}'.format(theme.red_accent),
+        'filter-bar': 'bg:{}'.format(theme.inactive_bg),
+        'filter-bar-delimiter': '{}'.format(theme.purple_accent),
     } # yapf: disable
 
     return Style.from_dict(pw_console_styles)

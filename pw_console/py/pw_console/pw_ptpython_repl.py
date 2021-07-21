@@ -18,7 +18,6 @@ import functools
 import io
 import logging
 import sys
-from pathlib import Path
 
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.filters import (
@@ -44,7 +43,6 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         super().__init__(
             *args,
             create_app=False,
-            history_filename=(Path.home() / '.pw_console_history').as_posix(),
             # Use python_toolkit default color depth.
             # color_depth=ColorDepth.DEPTH_8_BIT,  # 256 Colors
             _input_buffer_height=Dimension(min=5, weight=30),

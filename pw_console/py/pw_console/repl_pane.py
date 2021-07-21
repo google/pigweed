@@ -279,6 +279,10 @@ class ReplPane:
     def pane_title(self):  # pylint: disable=no-self-use
         return 'Python Repl'
 
+    def menu_title(self):
+        """Return the title to display in the Window menu."""
+        return self.pane_title()
+
     def pane_subtitle(self):  # pylint: disable=no-self-use
         return ''
 

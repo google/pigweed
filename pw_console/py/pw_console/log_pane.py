@@ -45,9 +45,10 @@ from pw_console.log_view import LogView
 from pw_console.log_pane_toolbars import (
     BottomToolbarBar,
     LineInfoBar,
-    SearchToolbar,
     TableToolbar,
 )
+from pw_console.search_toolbar import SearchToolbar
+from pw_console.filter_toolbar import FilterToolbar
 
 
 class LogContentControl(FormattedTextControl):
@@ -81,6 +82,7 @@ class LogContentControl(FormattedTextControl):
         return super().create_content(width, height)
 
     def __init__(self, log_pane: 'LogPane', *args, **kwargs) -> None:
+        # pylint: disable=too-many-locals
         self.log_pane = log_pane
 
         # Key bindings.
@@ -169,24 +171,38 @@ class LogContentControl(FormattedTextControl):
             self.log_pane.log_view.scroll_down_one_page()
 
         @key_bindings.add('/')
+        @key_bindings.add('c-f')
         def _start_search(_event: KeyPressEvent) -> None:
             """Start searching."""
             self.log_pane.start_search()
 
         @key_bindings.add('n')
+        @key_bindings.add('c-s')
+        @key_bindings.add('c-g')
         def _next_search(_event: KeyPressEvent) -> None:
-            """Repeat the last search."""
+            """Next search match."""
             self.log_pane.log_view.search_forwards()
 
         @key_bindings.add('N')
+        @key_bindings.add('c-r')
         def _previous_search(_event: KeyPressEvent) -> None:
-            """Repeat the last search in the opposite direction."""
+            """Previous search match."""
             self.log_pane.log_view.search_backwards()
 
         @key_bindings.add('c-l')
         def _clear_search_highlight(_event: KeyPressEvent) -> None:
             """Remove search highlighting."""
             self.log_pane.log_view.search_highlight = False
+
+        @key_bindings.add('escape', 'c-f')  # Alt-Ctrl-f
+        def _apply_filter(_event: KeyPressEvent) -> None:
+            """Apply current search as a filter."""
+            self.log_pane.log_view.apply_filter()
+
+        @key_bindings.add('escape', 'c-r')  # Alt-Ctrl-r
+        def _clear_filter(_event: KeyPressEvent) -> None:
+            """Reset / erase active filters."""
+            self.log_pane.log_view.clear_filters()
 
         kwargs['key_bindings'] = key_bindings
         super().__init__(*args, **kwargs)
@@ -199,8 +215,12 @@ class LogContentControl(FormattedTextControl):
         # If not in focus, change forus to the log pane and do nothing else.
         if not has_focus(self)():
             if mouse_event.event_type == MouseEventType.MOUSE_UP:
-                # Focus buffer when clicked.
-                get_app().layout.focus(self)
+                # Focus the search bar if it is open.
+                if self.log_pane.search_bar_active:
+                    get_app().layout.focus(self.log_pane.search_toolbar)
+                # Otherwise focus on the log pane content.
+                else:
+                    get_app().layout.focus(self)
                 # Mouse event handled, return None.
                 return None
 
@@ -291,6 +311,7 @@ class LogPane:
         # Search tracking
         self.search_bar_active = False
         self.search_toolbar = SearchToolbar(self)
+        self.filter_toolbar = FilterToolbar(self)
 
         # Table header bar, only shown if table view is active.
         self.table_header_toolbar = TableToolbar(self)
@@ -343,6 +364,7 @@ class LogPane:
                     [
                         self.table_header_toolbar,
                         self.log_display_window,
+                        self.filter_toolbar,
                         self.search_toolbar,
                         self.bottom_toolbar,
                     ],
@@ -388,6 +410,20 @@ class LogPane:
             title = 'Logs'
         return title
 
+    def menu_title(self):
+        """Return the title to display in the Window menu."""
+        title = self.pane_title()
+
+        # List active filters
+        if self.log_view.filtering_on:
+            title += ' (FILTERS: '
+            title += ' '.join([
+                log_filter.pattern()
+                for log_filter in self.log_view.filters.values()
+            ])
+            title += ')'
+        return title
+
     def append_pane_subtitle(self, text):
         if not self._pane_subtitle:
             self._pane_subtitle = text
@@ -411,12 +447,6 @@ class LogPane:
         # Focus on the search bar
         self.application.focus_on_container(self.search_toolbar)
 
-    def apply_search(self, text: str):
-        self.log_view.new_search(text)
-
-    def apply_filter(self):
-        self.log_view.apply_filter()
-
     def update_log_pane_size(self, width, height):
         """Save width and height of the log pane for the current UI render
         pass."""
@@ -430,6 +460,8 @@ class LogPane:
                 height -= TableToolbar.TOOLBAR_HEIGHT
             if self.search_bar_active:
                 height -= SearchToolbar.TOOLBAR_HEIGHT
+            if self.log_view.filtering_on:
+                height -= FilterToolbar.TOOLBAR_HEIGHT
             self.last_log_pane_height = self.current_log_pane_height
             self.current_log_pane_height = height
 
@@ -492,27 +524,40 @@ class LogPane:
                         self.log_view.follow, end='')),
                 self.toggle_follow,
             ),
-            (
-                "Remove search highlighting",
-                self.log_view.disable_search_highlighting,
-            ),
             # Menu separator
             ('-', None),
             (
-                "Clear history",
+                'Clear history',
                 self.clear_history,
             ),
             (
-                "Duplicate pane",
+                'Duplicate pane',
                 self.duplicate,
             ),
         ]
-
         if self.is_a_duplicate:
             options += [(
-                "Remove pane",
+                'Remove pane',
                 functools.partial(self.application.remove_pane, self),
             )]
+
+        # Search / Filter section
+        options += [
+            # Menu separator
+            ('-', None),
+            (
+                'Hide search highlighting',
+                self.log_view.disable_search_highlighting,
+            ),
+            (
+                'Create filter from search results',
+                self.log_view.apply_filter,
+            ),
+            (
+                'Reset active filters',
+                self.log_view.clear_filters,
+            ),
+        ]
 
         return options
 
@@ -542,8 +587,8 @@ class LogPane:
 
         # Set any existing search state.
         new_pane.log_view.search_text = self.log_view.search_text
-        new_pane.log_view.search_re_flags = self.log_view.search_re_flags
-        new_pane.log_view.search_regex = self.log_view.search_regex
+        new_pane.log_view.search_filter = self.log_view.search_filter
+        new_pane.log_view.search_matcher = self.log_view.search_matcher
         new_pane.log_view.search_highlight = self.log_view.search_highlight
 
         # Mark new pane as a duplicate so it can be deleted.

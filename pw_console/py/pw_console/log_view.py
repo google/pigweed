@@ -217,6 +217,8 @@ class LogView:
         # Reset existing search
         self.clear_search()
 
+        # Trigger a main menu update to set log window menu titles.
+        self.log_pane.application.update_menu_items()
         # Redraw the UI
         self.log_pane.application.redraw_ui()
 

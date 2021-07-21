@@ -43,6 +43,12 @@ class TableView:
         # Width of all columns except the final message
         self.column_width_prefix_total = 0
 
+    def all_column_names(self):
+        columns_names = [
+            name for name, _width in self._ordered_column_widths()
+        ]
+        return columns_names + ['message', 'lvl', 'time']
+
     def _width_of_justified_fields(self):
         """Calculate the width of all columns except LAST_TABLE_COLUMN_NAMES."""
         padding_width = len(TableView.COLUMN_PADDING)

@@ -19,6 +19,7 @@ import builtins
 import asyncio
 import logging
 import functools
+from pathlib import Path
 from threading import Thread
 from typing import Dict, Iterable, Optional, Union
 
@@ -43,6 +44,11 @@ from prompt_toolkit.widgets import (
     MenuItem,
 )
 from prompt_toolkit.key_binding import KeyBindings, merge_key_bindings
+from prompt_toolkit.history import (
+    FileHistory,
+    History,
+    ThreadedHistory,
+)
 from ptpython.layout import CompletionVisualisation  # type: ignore
 from ptpython.key_bindings import (  # type: ignore
     load_python_bindings, load_sidebar_bindings,
@@ -122,6 +128,13 @@ class ConsoleApp:
 
         local_vars = local_vars or global_vars
 
+        # TODO(tonymd): Make these configurable per project.
+        self.repl_history_filename = Path.home() / '.pw_console_history'
+        self.search_history_filename = Path.home() / '.pw_console_search'
+        # History instance for search toolbars.
+        self.search_history: History = ThreadedHistory(
+            FileHistory(self.search_history_filename))
+
         # Event loop for executing user repl code.
         self.user_code_loop = asyncio.new_event_loop()
 
@@ -154,7 +167,9 @@ class ConsoleApp:
             get_globals=lambda: global_vars,
             get_locals=lambda: local_vars,
             color_depth=color_depth,
+            history_filename=self.repl_history_filename,
         )
+        self.input_history = self.pw_ptpython_repl.history
 
         self.repl_pane = ReplPane(
             application=self,
@@ -263,10 +278,10 @@ class ConsoleApp:
 
     def _run_pane_menu_option(self, function_to_run):
         function_to_run()
-        self._update_menu_items()
+        self.update_menu_items()
         self.focus_main_menu()
 
-    def _update_menu_items(self):
+    def update_menu_items(self):
         self.root_container.menu_items = self._create_menu_items()
 
     def _create_menu_items(self):
@@ -346,7 +361,7 @@ class ConsoleApp:
                     MenuItem(
                         '{index}: {title} {subtitle}'.format(
                             index=index + 1,
-                            title=pane.pane_title(),
+                            title=pane.menu_title(),
                             subtitle=pane.pane_subtitle()),
                         children=[
                             MenuItem(
@@ -402,7 +417,7 @@ class ConsoleApp:
         else:
             self.active_panes.append(new_pane)
 
-        self._update_menu_items()
+        self.update_menu_items()
         self._update_root_container_body()
 
         self.redraw_ui()
@@ -419,7 +434,7 @@ class ConsoleApp:
             # deque if existing_pane can't be found.
             pass
 
-        self._update_menu_items()
+        self.update_menu_items()
         self._update_root_container_body()
         if len(self.active_panes) > 0:
             existing_pane_index -= 1
@@ -502,13 +517,13 @@ class ConsoleApp:
     def rotate_panes(self, steps=1):
         """Rotate the order of all active window panes."""
         self.active_panes.rotate(steps)
-        self._update_menu_items()
+        self.update_menu_items()
         self._update_root_container_body()
 
     def toggle_pane(self, pane):
         """Toggle a pane on or off."""
         pane.show_pane = not pane.show_pane
-        self._update_menu_items()
+        self.update_menu_items()
         self._update_root_container_body()
 
         # Set focus to the top level menu. This has the effect of keeping the
@@ -583,7 +598,7 @@ class ConsoleApp:
             _add_log_handler_to_pane(logger, existing_log_pane)
 
         self._update_root_container_body()
-        self._update_menu_items()
+        self.update_menu_items()
         self._update_help_window()
 
     def _user_code_thread_entry(self):
@@ -666,7 +681,7 @@ class ConsoleApp:
         """Toggle visibility of the help window."""
         self.vertical_split = not self.vertical_split
 
-        self._update_menu_items()
+        self.update_menu_items()
         self._update_root_container_body()
 
         self.redraw_ui()
