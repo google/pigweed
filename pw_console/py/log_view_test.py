@@ -268,6 +268,96 @@ class TestLogView(unittest.TestCase):
                  ),
             expected_line_cache)
 
+    def test_clear_scrollback(self) -> None:
+        """Test various functions with clearing log scrollback history."""
+        # pylint: disable=protected-access
+        # Create log_view with 4 logs
+        starting_log_count = 4
+        log_view, _pane = self._create_log_view_with_logs(
+            log_count=starting_log_count)
+
+        # Check setup is correct
+        self.assertTrue(log_view.follow)
+        self.assertEqual(log_view.get_current_line(), 3)
+        self.assertEqual(log_view.get_total_count(), 4)
+        self.assertEqual(
+            list(log.record.message
+                 for log in log_view._get_visible_log_lines()),
+            ['Test log 0', 'Test log 1', 'Test log 2', 'Test log 3'])
+        self.assertEqual(
+            log_view.get_log_window_indices(available_width=80,
+                                            available_height=10), (0, 3))
+
+        # Clear scrollback
+        log_view.clear_scrollback()
+        # Follow is still on
+        self.assertTrue(log_view.follow)
+        self.assertEqual(log_view.hidden_line_count(), 4)
+        # Current line index should stay the same
+        self.assertEqual(log_view.get_current_line(), 3)
+        # Total count should stay the same
+        self.assertEqual(log_view.get_total_count(), 4)
+        # No lines returned
+        self.assertEqual(
+            list(log.record.message
+                 for log in log_view._get_visible_log_lines()), [])
+        self.assertEqual(
+            log_view.get_log_window_indices(available_width=80,
+                                            available_height=10), (4, 3))
+
+        # Add Log 4 more lines
+        test_log = logging.getLogger('log_view.test')
+        with self.assertLogs(test_log, level='DEBUG') as _log_context:
+            test_log.addHandler(log_view.log_store)
+            for i in range(4):
+                test_log.debug('Test log %s', i + starting_log_count)
+
+        # Current line
+        self.assertEqual(log_view.hidden_line_count(), 4)
+        self.assertEqual(log_view.get_last_log_line_index(), 7)
+        self.assertEqual(log_view.get_current_line(), 7)
+        self.assertEqual(log_view.get_total_count(), 8)
+        # Only the last 4 logs should appear
+        self.assertEqual(
+            list(log.record.message
+                 for log in log_view._get_visible_log_lines()),
+            ['Test log 4', 'Test log 5', 'Test log 6', 'Test log 7'])
+        # Window height == 2
+        self.assertEqual(
+            log_view.get_log_window_indices(available_width=80,
+                                            available_height=2), (6, 7))
+        # Window height == 10
+        self.assertEqual(
+            log_view.get_log_window_indices(available_width=80,
+                                            available_height=10), (4, 7))
+
+        log_view.scroll_to_top()
+        self.assertEqual(log_view.get_current_line(), 4)
+        log_view.scroll_to_bottom()
+        self.assertEqual(log_view.get_current_line(), 7)
+        # Turn follow back on
+        log_view.toggle_follow()
+
+        log_view.undo_clear_scrollback()
+        # Current line and total are the same
+        self.assertEqual(log_view.get_current_line(), 7)
+        self.assertEqual(log_view.get_total_count(), 8)
+        # All logs should appear
+        self.assertEqual(
+            list(log.record.message
+                 for log in log_view._get_visible_log_lines()), [
+                     'Test log 0', 'Test log 1', 'Test log 2', 'Test log 3',
+                     'Test log 4', 'Test log 5', 'Test log 6', 'Test log 7'
+                 ])
+        self.assertEqual(
+            log_view.get_log_window_indices(available_width=80,
+                                            available_height=10), (0, 7))
+
+        log_view.scroll_to_top()
+        self.assertEqual(log_view.get_current_line(), 0)
+        log_view.scroll_to_bottom()
+        self.assertEqual(log_view.get_current_line(), 7)
+
 
 if _PYTHON_3_8:
     # pylint: disable=no-name-in-module

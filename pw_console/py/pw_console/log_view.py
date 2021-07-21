@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import collections
 import copy
+import itertools
 import logging
 import re
 import time
@@ -80,6 +81,7 @@ class LogView:
         self._last_end_index = 0
         self._current_start_index = 0
         self._current_end_index = 0
+        self._scrollback_start_index = 0
 
         # LogPane prompt_toolkit container render size.
         self._window_height = 20
@@ -127,9 +129,11 @@ class LogView:
             return
         self.search_highlight = True
 
+        log_beginning_index = self.hidden_line_count()
+
         starting_index = self.line_index + 1
         if starting_index > self.get_last_log_line_index():
-            starting_index = 0
+            starting_index = log_beginning_index
 
         logs = self._get_log_lines()
 
@@ -140,7 +144,7 @@ class LogView:
                 return
 
         # From the beginning to the original start
-        for i in range(0, starting_index):
+        for i in range(log_beginning_index, starting_index):
             if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
@@ -150,6 +154,8 @@ class LogView:
             return
         self.search_highlight = True
 
+        log_beginning_index = self.hidden_line_count()
+
         starting_index = self.line_index - 1
         if starting_index < 0:
             starting_index = self.get_last_log_line_index()
@@ -157,7 +163,7 @@ class LogView:
         logs = self._get_log_lines()
 
         # From current position - 1 and up
-        for i in range(starting_index, -1, -1):
+        for i in range(starting_index, log_beginning_index - 1, -1):
             if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
@@ -209,6 +215,8 @@ class LogView:
 
         # Reset filtered logs.
         self.filtered_logs.clear()
+        # Reset scrollback start
+        self._scrollback_start_index = 0
 
         # Start filtering existing log lines.
         self.filter_existing_logs_task = asyncio.create_task(
@@ -239,9 +247,17 @@ class LogView:
         self.search_highlight = False
 
     def _get_log_lines(self):
+        logs = self.log_store.logs
         if self.filtering_on:
-            return self.filtered_logs
-        return self.log_store.logs
+            logs = self.filtered_logs
+        return logs
+
+    def _get_visible_log_lines(self):
+        logs = self._get_log_lines()
+        if self._scrollback_start_index > 0:
+            return collections.deque(
+                itertools.islice(logs, self.hidden_line_count(), len(logs)))
+        return logs
 
     def delete_filter(self, filter_text):
         if filter_text not in self.filters:
@@ -265,6 +281,8 @@ class LogView:
         self.filters: 'collections.OrderedDict[str, re.Pattern]' = (
             collections.OrderedDict())
         self.filtered_logs.clear()
+        # Reset scrollback start
+        self._scrollback_start_index = 0
         if not self.follow:
             self.toggle_follow()
 
@@ -294,9 +312,8 @@ class LogView:
 
     def get_total_count(self):
         """Total size of the logs store."""
-        if self.filtering_on:
-            return len(self.filtered_logs)
-        return self.log_store.get_total_count()
+        return (len(self.filtered_logs)
+                if self.filtering_on else self.log_store.get_total_count())
 
     def get_last_log_line_index(self):
         total = self.get_total_count()
@@ -304,7 +321,17 @@ class LogView:
 
     def clear_scrollback(self):
         """Hide log lines before the max length of the stored logs."""
-        # TODO(tonymd): Should the LogStore be erased?
+        self._scrollback_start_index = self.line_index
+
+    def hidden_line_count(self):
+        """Return the number of hidden lines."""
+        if self._scrollback_start_index > 0:
+            return self._scrollback_start_index + 1
+        return 0
+
+    def undo_clear_scrollback(self):
+        """Reset the current scrollback start index."""
+        self._scrollback_start_index = 0
 
     def wrap_lines_enabled(self):
         """Get the parent log pane wrap lines setting."""
@@ -393,7 +420,8 @@ class LogView:
         """Move selected index to the beginning."""
         # Stop following so cursor doesn't jump back down to the bottom.
         self.follow = False
-        self.line_index = 0
+        log_beginning_index = self.hidden_line_count()
+        self.line_index = log_beginning_index
 
     def scroll_to_bottom(self):
         """Move selected index to the end."""
@@ -412,8 +440,10 @@ class LogView:
 
         last_index = self.get_last_log_line_index()
 
+        log_beginning_index = self.hidden_line_count()
+
         # If scrolling to an index below zero, set to zero.
-        new_line_index = max(0, self.line_index + lines)
+        new_line_index = max(log_beginning_index, self.line_index + lines)
         # If past the end, set to the last index of self.logs.
         if new_line_index >= self.get_total_count():
             new_line_index = last_index
@@ -464,7 +494,8 @@ class LogView:
         self._last_start_index = self._current_start_index
         self._last_end_index = self._current_end_index
 
-        starting_index = 0
+        log_beginning_index = self.hidden_line_count()
+        starting_index = log_beginning_index
         ending_index = self.line_index
 
         self._window_width = self.log_pane.current_log_pane_width
@@ -479,9 +510,17 @@ class LogView:
             # Window lines are zero indexed so subtract 1 from the height.
             max_window_row_index = self._window_height - 1
 
-            starting_index = max(0, self.line_index - max_window_row_index)
+            starting_index = max(log_beginning_index,
+                                 self.line_index - max_window_row_index)
             # Use the current_window_height if line_index is less
             ending_index = max(self.line_index, max_window_row_index)
+
+            # If log scrollback is cleared we may end up with only 1 visible log
+            # line. Compare the total line_count with the available window
+            # height.
+            line_count = ending_index + 1 - starting_index
+            if self._window_height > line_count:
+                ending_index += self._window_height - line_count
 
         if ending_index > self.get_last_log_line_index():
             ending_index = self.get_last_log_line_index()
@@ -522,7 +561,7 @@ class LogView:
                 # pane on click.
             )]
 
-        # Get indicies of stored logs that will fit on screen.
+        # Get indices of stored logs that will fit on screen.
         starting_index, ending_index = self.get_log_window_indices()
 
         # NOTE: Since range() is not inclusive use ending_index + 1.
