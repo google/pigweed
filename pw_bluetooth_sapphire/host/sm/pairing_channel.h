@@ -46,6 +46,14 @@ class PairingChannel {
   // Wrapper which encapsulates some of the boilerplate involved in sending an SMP object.
   template <typename PayloadType>
   void SendMessage(Code message_code, const PayloadType& payload) {
+    SendMessageNoTimerReset(message_code, payload);
+    reset_timer_();
+  }
+
+  // This method exists for situations when we send messages while not pairing (e.g. rejection of
+  // pairing), where we do not want to reset the SMP timer upon transmission.
+  template <typename PayloadType>
+  void SendMessageNoTimerReset(Code message_code, const PayloadType& payload) {
     auto kExpectedSize = kCodeToPayloadSize.find(message_code);
     ZX_ASSERT(kExpectedSize != kCodeToPayloadSize.end());
     ZX_ASSERT(sizeof(PayloadType) == kExpectedSize->second);
@@ -53,7 +61,6 @@ class PairingChannel {
     PacketWriter writer(message_code, pdu.get());
     *writer.mutable_payload<PayloadType>() = payload;
     chan_->Send(std::move(pdu));
-    reset_timer_();
   }
 
   fxl::WeakPtr<PairingChannel> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }

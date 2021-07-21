@@ -2570,6 +2570,23 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   EXPECT_TRUE(params.auth_req & AuthReq::kMITM);
 }
 
+TEST_F(SMP_InitiatorPairingTest, ReceiveMITMSecurityRequestLocalIoCapNoInputNoOutput) {
+  SetUpSecurityManager(IOCapability::kNoInputNoOutput);
+  ReceiveSecurityRequest(AuthReq::kMITM);
+  // We should notify the peer that we cannot complete the security request due to
+  // authentication requirements.
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, received_error_code());
+
+  // When we receive a Security Request, we start a timer. Run the loop to ensure that when we can't
+  // fulfill the Security Request, we stop the timer before it expires as we never started pairing.
+  RunLoopFor(kPairingTimeout + zx::sec(1));
+  // Double check we haven't sent any more Pairing Failed messages
+  EXPECT_EQ(1, pairing_failed_count());
+  // We should not notify local clients of any pairing completion, because no pairing ever started.
+  EXPECT_EQ(0, pairing_complete_count());
+}
+
 TEST_F(SMP_InitiatorPairingTest, PairingTimeoutWorks) {
   UpgradeSecurity(SecurityLevel::kEncrypted);
   RunLoopUntilIdle();

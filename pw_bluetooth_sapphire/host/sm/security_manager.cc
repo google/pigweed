@@ -79,6 +79,12 @@ class SecurityManagerImpl final : public SecurityManager,
   // |level| by either sending a Pairing Request as initiator or a Security Request as responder.
   void UpgradeSecurityInternal();
 
+  // Creates the pairing phase responsible for sending the security upgrade request to the peer
+  // (a PairingRequest if we are initiator, otherwise a SecurityRequest). Returns ErrorCode::
+  // kAuthenticationRequirements if the local IOCapabilities are insufficient for SecurityLevel,
+  // otherwise returns kNoError.
+  [[nodiscard]] ErrorCode RequestSecurityUpgrade(SecurityLevel level);
+
   // Called when the feature exchange (Phase 1) completes and the relevant features of both sides
   // have been resolved into `features`. `preq` and `pres` need to be retained for cryptographic
   // calculations in Phase 2. Causes a state transition from Phase 1 to Phase 2
@@ -241,7 +247,7 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
   ZX_ASSERT(!SecurityUpgradeInProgress());
 
   if (role_ != Role::kInitiator) {
-    bt_log(DEBUG, "sm", "Received spurious Security Request while not acting as SM initiator");
+    bt_log(INFO, "sm", "Received spurious Security Request while not acting as SM initiator");
     return;
   }
 
@@ -267,10 +273,14 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
   // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Security Request command, the
   // Security Manager Timer shall be [...] restarted."
   StartNewTimer();
-  // Initiate pairing.
-  UpgradeSecurity(requested_level, [](Status status, const auto& security) {
-    bt_log(DEBUG, "sm", "security request resolved - %s %s", bt_str(status), bt_str(security));
-  });
+  ErrorCode code = RequestSecurityUpgrade(requested_level);
+  if (code != ErrorCode::kNoError) {
+    // Per v5.3 Vol. 3 Part H 2.4.6, "When a Central receives a Security Request command it may
+    // [...] reject the request.", which we do here as we know we are unable to fulfill it.
+    sm_chan_->SendMessageNoTimerReset(kPairingFailed, code);
+    // If we fail to start pairing, we need to stop the timer.
+    StopTimer();
+  }
 }
 
 void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level, PairingCallback callback) {
@@ -331,33 +341,35 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
   ZX_ASSERT_MSG(!SecurityUpgradeInProgress(),
                 "cannot upgrade security while security upgrade already in progress!");
   const PendingRequest& next_req = request_queue_.front();
-  if (next_req.level >= SecurityLevel::kAuthenticated &&
-      io_cap_ == IOCapability::kNoInputNoOutput) {
-    bt_log(WARN, "sm",
-           "cannot fulfill authenticated security request as IOCapabilities are NoInputNoOutput");
-    next_req.callback(Status(ErrorCode::kAuthenticationRequirements), security());
+  ErrorCode code = RequestSecurityUpgrade(next_req.level);
+  if (code != ErrorCode::kNoError) {
+    next_req.callback(Status(code), security());
     request_queue_.pop();
     if (!request_queue_.empty()) {
       UpgradeSecurityInternal();
     }
-    return;
+  }
+}
+
+ErrorCode SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel level) {
+  if (level >= SecurityLevel::kAuthenticated && io_cap_ == IOCapability::kNoInputNoOutput) {
+    bt_log(WARN, "sm",
+           "cannot fulfill authenticated security request as IOCapabilities are NoInputNoOutput");
+    return ErrorCode::kAuthenticationRequirements;
   }
 
-  // V5.1 Vol. 3 Part H Section 3.4: "Upon transmission of the Pairing Request command [...] the
-  // [SM] Timer shall be [..] started" and "Upon transmission of the Security Request command [...]
-  // the [SM] Timer shall be reset and restarted".
-  StartNewTimer();
   if (role_ == Role::kInitiator) {
     current_phase_ = Phase1::CreatePhase1Initiator(
-        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), io_cap_, bondable_mode(),
-        next_req.level, fit::bind_member(this, &SecurityManagerImpl::OnFeatureExchange));
+        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), io_cap_, bondable_mode(), level,
+        fit::bind_member(this, &SecurityManagerImpl::OnFeatureExchange));
     std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
   } else {
     current_phase_.emplace<SecurityRequestPhase>(
-        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), next_req.level, bondable_mode(),
+        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), level, bondable_mode(),
         fit::bind_member(this, &SecurityManagerImpl::OnPairingRequest));
     std::get<SecurityRequestPhase>(current_phase_).Start();
   }
+  return ErrorCode::kNoError;
 }
 
 void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,
