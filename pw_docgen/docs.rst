@@ -54,7 +54,7 @@ reStructuredText files including:
   <https://pypi.org/project/sphinxcontrib-mermaid/>`_ package.
 
 Documentation source and asset files are placed alongside code within a module
-and registered as a ``pw_docgen_group`` target within a ``BUILD.gn`` file. These
+and registered as a ``pw_doc_group`` target within a ``BUILD.gn`` file. These
 groups become available for import within a special documentation generation
 target, which accumulates all of them and renders the resulting HTML. This
 system can either be used directly within Pigweed, or integrated into a
