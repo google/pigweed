@@ -44,6 +44,7 @@ group("default") {
     ":docs",
     ":fuzzers",
     ":host",
+    ":integration_tests",
     ":stm32f429i",
     "$dir_pw_env_setup:python.install",
     "$dir_pw_env_setup:python.lint",
@@ -123,6 +124,20 @@ _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
 
 group("docs") {
   deps = [ "$dir_pigweed/docs($dir_pigweed/targets/docs)" ]
+}
+
+_default_toolchain = _default_toolchain_prefix + pw_default_optimization_level
+
+# Tests that larger than unit tests, that are typically run in a specific
+# configuration.
+group("integration_tests") {
+  deps = []
+
+  if (host_os != "windows") {
+    deps += [ "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_toolchain)" ]
+  } else {
+    not_needed([ "_default_toolchain" ])
+  }
 }
 
 # OSS-Fuzz uses this target to build fuzzers alone.

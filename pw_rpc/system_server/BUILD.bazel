@@ -33,7 +33,10 @@ pw_cc_library(
 
 pw_cc_library(
     name = "system_server",
-    hdrs = ["public/pw_rpc_system_server/rpc_server.h"],
+    hdrs = [
+        "public/pw_rpc_system_server/rpc_server.h",
+        "public/pw_rpc_system_server/socket.h",
+    ],
     deps = [
         ":facade",
         "//pw_span",

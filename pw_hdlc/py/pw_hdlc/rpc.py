@@ -14,12 +14,15 @@
 """Utilities for using HDLC with pw_rpc."""
 
 from concurrent.futures import ThreadPoolExecutor
+import io
 import logging
 import sys
 import threading
 import time
+import socket
+import subprocess
 from typing import (Any, BinaryIO, Callable, Dict, Iterable, List, NoReturn,
-                    Optional, Union)
+                    Optional, Sequence, Union)
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc
@@ -119,12 +122,15 @@ def default_channels(write: Callable[[bytes], Any]) -> List[pw_rpc.Channel]:
     return [pw_rpc.Channel(1, channel_output(write))]
 
 
+PathsModulesOrProtoLibrary = Union[Iterable[python_protos.PathOrModule],
+                                   python_protos.Library]
+
+
 class HdlcRpcClient:
     """An RPC client configured to run over HDLC."""
     def __init__(self,
                  read: Callable[[], bytes],
-                 paths_or_modules: Union[Iterable[python_protos.PathOrModule],
-                                         python_protos.Library],
+                 paths_or_modules: PathsModulesOrProtoLibrary,
                  channels: Iterable[pw_rpc.Channel],
                  output: Callable[[bytes], Any] = write_to_file,
                  client_impl: pw_rpc.client.ClientImpl = None):
@@ -172,3 +178,50 @@ class HdlcRpcClient:
     def _handle_rpc_packet(self, frame: Frame) -> None:
         if not self.client.process_packet(frame.data):
             _LOG.error('Packet not handled by RPC client: %s', frame.data)
+
+
+class SocketSubprocess:
+    """Executes a subprocess and connects to it with a socket."""
+    def __init__(self, command: Sequence, port: int) -> None:
+        self._server_process = subprocess.Popen(command, stdin=subprocess.PIPE)
+        self.stdin = self._server_process.stdin
+
+        try:
+            # Delay a bit to ensure the process has time to initialize.
+            time.sleep(0.01)
+
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect(('localhost', port))
+        except:
+            self._server_process.terminate()
+            self._server_process.wait()
+            raise
+
+    def close(self) -> None:
+        try:
+            self.socket.close()
+        finally:
+            self._server_process.terminate()
+            self._server_process.wait()
+
+    def __enter__(self) -> 'SocketSubprocess':
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()
+
+
+class HdlcRpcLocalServerAndClient:
+    """Runs an RPC server in a subprocess and connects to it over a socket.
+
+    This can be used to run a local RPC server in an integration test.
+    """
+    def __init__(self, server_command: Sequence, port: int,
+                 protos: PathsModulesOrProtoLibrary) -> None:
+        self.server = SocketSubprocess(server_command, port)
+
+        self.output = io.BytesIO()
+        self.client = HdlcRpcClient(
+            lambda: self.server.socket.recv(4096), protos,
+            default_channels(self.server.socket.sendall),
+            self.output.write).client

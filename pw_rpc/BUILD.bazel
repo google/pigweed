@@ -78,6 +78,16 @@ pw_cc_library(
     includes = ["public"],
 )
 
+cc_binary(
+    name = "test_rpc_server",
+    srcs = ["test_rpc_server.cc"],
+    deps = [
+        "system_server",
+        ":benchmark",
+        "//pw_log",
+    ],
+)
+
 pw_cc_library(
     name = "client_server",
     srcs = ["client_server.cc"],

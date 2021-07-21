@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -44,6 +44,7 @@ pw_python_package("py") {
     "pw_rpc/plugin.py",
     "pw_rpc/plugin_nanopb.py",
     "pw_rpc/plugin_raw.py",
+    "pw_rpc/testing.py",
   ]
   tests = [
     "tests/callback_client_test.py",
@@ -68,4 +69,15 @@ pw_python_package("py") {
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   other_deps = [ ":py" ]
+}
+
+pw_python_script("python_client_cpp_server_test") {
+  sources = [ "tests/python_client_cpp_server_test.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+
+  action = {
+    args = [ "<TARGET_FILE(..:test_rpc_server)>" ]
+    deps = [ "..:test_rpc_server" ]
+    stamp = true
+  }
 }

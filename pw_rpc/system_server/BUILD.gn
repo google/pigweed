@@ -32,3 +32,9 @@ pw_facade("system_server") {
   ]
   public = [ "public/pw_rpc_system_server/rpc_server.h" ]
 }
+
+pw_source_set("socket") {
+  public_configs = [ ":public_includes" ]
+  public = [ "public/pw_rpc_system_server/socket.h" ]
+  deps = [ ":system_server" ]
+}

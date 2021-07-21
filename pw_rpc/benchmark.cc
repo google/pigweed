@@ -16,6 +16,8 @@
 
 #include <algorithm>
 
+#include "pw_rpc/internal/config.h"
+
 namespace pw::rpc {
 namespace {
 

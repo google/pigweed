@@ -12,19 +12,24 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-syntax = "proto3";
+#include "pw_log/log.h"
+#include "pw_rpc/benchmark.h"
+#include "pw_rpc_system_server/rpc_server.h"
+#include "pw_rpc_system_server/socket.h"
 
-package pw.rpc;
+namespace {
 
-service Benchmark {
-  // The server responds with the payload the client sent.
-  rpc UnaryEcho(Payload) returns (Payload);
+pw::rpc::BenchmarkService benchmark_service;
 
-  // The server responds to each request payload the client sends. The client
-  // stops the RPC by cancelling it.
-  rpc BidirectionalEcho(stream Payload) returns (stream Payload);
-}
+}  // namespace
 
-message Payload {
-  bytes payload = 1;
+int main() {
+  pw::rpc::system_server::set_socket_port(33000);
+  pw::rpc::system_server::Init();
+  pw::rpc::system_server::Server().RegisterService(benchmark_service);
+
+  PW_LOG_INFO("Starting pw_rpc server");
+  pw::rpc::system_server::Start();
+
+  return 0;
 }

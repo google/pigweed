@@ -11,20 +11,13 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-syntax = "proto3";
+#include <cstdint>
 
-package pw.rpc;
+namespace pw::rpc::system_server {
 
-service Benchmark {
-  // The server responds with the payload the client sent.
-  rpc UnaryEcho(Payload) returns (Payload);
+// Sets the port to use for pw::rpc::system_server backends that use sockets.
+void set_socket_port(uint16_t port);
 
-  // The server responds to each request payload the client sends. The client
-  // stops the RPC by cancelling it.
-  rpc BidirectionalEcho(stream Payload) returns (stream Payload);
-}
-
-message Payload {
-  bytes payload = 1;
-}
+}  // namespace pw::rpc::system_server

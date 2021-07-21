@@ -158,6 +158,16 @@ pw_source_set("test_utils") {
   visibility = [ "./*" ]
 }
 
+pw_executable("test_rpc_server") {
+  sources = [ "test_rpc_server.cc" ]
+  deps = [
+    ":benchmark",
+    "system_server",
+    "system_server:socket",
+    dir_pw_log,
+  ]
+}
+
 config("private_includes") {
   include_dirs = [ "." ]
   visibility = [ ":*" ]

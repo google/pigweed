@@ -228,6 +228,9 @@ HdlcRpcClient
 .. autoclass:: pw_hdlc.rpc.HdlcRpcClient
   :members:
 
+.. autoclass:: pw_hdlc.rpc.HdlcRpcLocalServerAndClient
+  :members:
+
 Roadmap
 =======
 - **Expanded protocol support** - ``pw_hdlc`` currently only supports
