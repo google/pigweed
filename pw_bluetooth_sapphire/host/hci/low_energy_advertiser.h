@@ -47,11 +47,6 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Get the current limit in bytes of the advertisement data supported.
   virtual size_t GetSizeLimit() const = 0;
 
-  // Get the current limit of number of advertising sets supported, including currently enabled
-  // ones.  This can change when the state of advertising changes.  It should be checked before
-  // trying to add an advertisement.
-  virtual size_t GetMaxAdvertisements() const = 0;
-
   // TODO(armansito): The |address| parameter of this function doesn't always correspond to the
   // advertised device address as the local address for an advertisement cannot always be configured
   // by the advertiser. This is the case especially in the following conditions:

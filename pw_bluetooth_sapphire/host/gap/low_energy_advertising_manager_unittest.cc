@@ -27,7 +27,6 @@ namespace gap {
 namespace {
 using TestingBase = bt::testing::ControllerTest<FakeController>;
 
-constexpr size_t kDefaultMaxAds = 1;
 constexpr size_t kDefaultMaxAdSize = 23;
 constexpr size_t kDefaultFakeAdSize = 20;
 constexpr AdvertisingInterval kTestInterval = AdvertisingInterval::FAST1;
@@ -47,25 +46,19 @@ struct AdvertisementStatus {
 };
 
 // LowEnergyAdvertiser for testing purposes:
-//  - Reports max_ads supported
 //  - Reports mas_ad_size supported
 //  - Actually just accepts all ads and stores them in ad_store
 class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
  public:
-  FakeLowEnergyAdvertiser(fxl::WeakPtr<hci::Transport> hci, size_t max_ads, size_t max_ad_size,
+  FakeLowEnergyAdvertiser(fxl::WeakPtr<hci::Transport> hci, size_t max_ad_size,
                           std::unordered_map<DeviceAddress, AdvertisementStatus>* ad_store)
-      : hci::LowEnergyAdvertiser(std::move(hci)),
-        max_ads_(max_ads),
-        max_ad_size_(max_ad_size),
-        ads_(ad_store) {
+      : hci::LowEnergyAdvertiser(std::move(hci)), max_ad_size_(max_ad_size), ads_(ad_store) {
     ZX_ASSERT(ads_);
   }
 
   ~FakeLowEnergyAdvertiser() override = default;
 
   size_t GetSizeLimit() const override { return max_ad_size_; }
-
-  size_t GetMaxAdvertisements() const override { return max_ads_; }
 
   bool AllowsRandomAddressChange() const override { return true; }
 
@@ -153,7 +146,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return nullptr;
   }
 
-  size_t max_ads_, max_ad_size_;
+  size_t max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Status pending_error_;
 
@@ -212,9 +205,9 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
     };
   }
 
-  void MakeFakeAdvertiser(size_t max_ads = kDefaultMaxAds, size_t max_ad_size = kDefaultMaxAdSize) {
-    advertiser_ = std::make_unique<FakeLowEnergyAdvertiser>(transport()->WeakPtr(), max_ads,
-                                                            max_ad_size, &ad_store_);
+  void MakeFakeAdvertiser(size_t max_ad_size = kDefaultMaxAdSize) {
+    advertiser_ =
+        std::make_unique<FakeLowEnergyAdvertiser>(transport()->WeakPtr(), max_ad_size, &ad_store_);
   }
 
   void MakeAdvertisingManager() {
@@ -300,9 +293,6 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, DataSize) {
 //    (and stops the right address)
 //  - Stopping an advertisement that isn't registered retuns false
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, RegisterUnregister) {
-  MakeFakeAdvertiser(2 /* ads available */);
-  MakeAdvertisingManager();
-
   EXPECT_FALSE(adv_mgr()->StopAdvertising(kInvalidAdvertisementId));
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
