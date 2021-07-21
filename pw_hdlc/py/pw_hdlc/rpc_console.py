@@ -163,6 +163,7 @@ def console(device: str, baudrate: int, proto_globs: Collection[str],
         logfile = create_temp_log_file()
     pw_cli.log.install(logging.INFO, True, False, logfile)
 
+    detokenizer = None
     if token_databases:
         detokenizer = Detokenizer(tokens.Database.merged(*token_databases),
                                   show_errors=False)
