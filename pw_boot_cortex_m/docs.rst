@@ -206,6 +206,10 @@ the MCU to operate as expected.
 ``PW_BOOT_VECTOR_TABLE_SIZE`` (required):
 Number of bytes to reserve for the ARMv7-M vector table.
 
+Alternatively the linker script can be replaced by setting
+``pw_boot_cortex_m_LINKER_SCRIPT`` to a valid ``pw_linker_script`` target
+as part of a Pigweed target configuration.
+
 Dependencies
 ============
   * ``pw_preprocessor`` module

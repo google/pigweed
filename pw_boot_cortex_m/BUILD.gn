@@ -23,6 +23,9 @@ declare_args() {
   # This list should contain the necessary defines for setting pw_boot linker
   # script memory regions.
   pw_boot_cortex_m_LINK_CONFIG_DEFINES = []
+
+  # The pw_linker_script that should be used for the target.
+  pw_boot_cortex_m_LINKER_SCRIPT = ":cortex_m_linker_script"
 }
 
 if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m" ||
@@ -46,8 +49,8 @@ if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m") {
     public = [ "public/pw_boot_cortex_m/boot.h" ]
     public_deps = [ "$dir_pw_preprocessor" ]
     deps = [
-      ":cortex_m_linker_script",
       "$dir_pw_boot:facade",
+      pw_boot_cortex_m_LINKER_SCRIPT,
     ]
     sources = [ "core_init.c" ]
   }
@@ -60,8 +63,8 @@ if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv8m") {
     public = [ "public/pw_boot_cortex_m/boot.h" ]
     public_deps = [ "$dir_pw_preprocessor" ]
     deps = [
-      ":cortex_m_linker_script",
       "$dir_pw_boot:facade",
+      pw_boot_cortex_m_LINKER_SCRIPT,
     ]
     sources = [ "core_init.c" ]
   }
