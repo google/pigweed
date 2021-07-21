@@ -87,7 +87,7 @@ def main() -> int:
                        log_file=args.logfile)
 
     if args.console_debug_log_file:
-        pw_cli.log.install(level=args.loglevel,
+        pw_cli.log.install(level=logging.DEBUG,
                            use_color=True,
                            hide_timestamp=False,
                            log_file=args.console_debug_log_file,

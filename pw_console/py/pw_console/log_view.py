@@ -16,13 +16,12 @@
 from __future__ import annotations
 import asyncio
 import collections
+import copy
 import logging
 import re
 import time
 from typing import List, Optional, TYPE_CHECKING
 
-from prompt_toolkit.formatted_text.utils import fragment_list_to_text
-from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
@@ -32,13 +31,19 @@ from prompt_toolkit.formatted_text import (
 
 import pw_console.text_formatting
 from pw_console.log_store import LogStore
+from pw_console.log_filter import (
+    DEFAULT_SEARCH_MATCHER,
+    LogFilter,
+    RegexValidator,
+    SearchMatcher,
+    preprocess_search_regex,
+)
 
 if TYPE_CHECKING:
+    from pw_console.log_line import LogLine
     from pw_console.log_pane import LogPane
 
 _LOG = logging.getLogger(__package__)
-
-_UPPERCASE_REGEX = re.compile(r'[A-Z]')
 
 
 class LogView:
@@ -56,19 +61,21 @@ class LogView:
 
         # Search variables
         self.search_text = None
-        self.search_re_flags = None
-        self.search_regex = None
+        self.search_filter = None
         self.search_highlight = False
+        self.search_matcher = DEFAULT_SEARCH_MATCHER
+        self.search_validator = RegexValidator()
 
         # Filter
         self.filtering_on = False
-        self.filter_text = None
-        self.filter_regex = None
+        self.filters: 'collections.OrderedDict[str, LogFilter]' = (
+            collections.OrderedDict())
         self.filtered_logs: collections.deque = collections.deque()
         self.filter_existing_logs_task = None
 
         # Current log line index state variables:
-        self.line_index = 0
+        self._line_index = 0
+        self._filtered_line_index = 0
         self._last_start_index = 0
         self._last_end_index = 0
         self._current_start_index = 0
@@ -82,6 +89,7 @@ class LogView:
         # log lines.
         self._ui_update_frequency = 0.1
         self._last_ui_update_time = time.time()
+        self._last_log_store_index = 0
 
         # Should new log lines be tailed?
         self.follow = True
@@ -90,98 +98,189 @@ class LogView:
         # rendering by `get_cursor_position()`.
         self._line_fragment_cache: collections.deque = collections.deque()
 
+    @property
+    def line_index(self):
+        if self.filtering_on:
+            return self._filtered_line_index
+        return self._line_index
+
+    @line_index.setter
+    def line_index(self, line_index):
+        if self.filtering_on:
+            self._filtered_line_index = line_index
+        else:
+            self._line_index = line_index
+
     def _set_match_position(self, position: int):
         self.follow = False
         self.line_index = position
         self.log_pane.application.redraw_ui()
 
+    def select_next_search_matcher(self):
+        matchers = list(SearchMatcher)
+        index = matchers.index(self.search_matcher)
+        new_index = (index + 1) % len(matchers)
+        self.search_matcher = matchers[new_index]
+
     def search_forwards(self):
-        if not self.search_regex:
+        if not self.search_filter:
             return
         self.search_highlight = True
 
-        starting_index = self.get_current_line() + 1
-        if starting_index > self.log_store.get_last_log_line_index():
+        starting_index = self.line_index + 1
+        if starting_index > self.get_last_log_line_index():
             starting_index = 0
 
+        logs = self._get_log_lines()
+
         # From current position +1 and down
-        for i in range(starting_index,
-                       self.log_store.get_last_log_line_index() + 1):
-            if self.search_regex.search(
-                    self.log_store.logs[i].ansi_stripped_log):
+        for i in range(starting_index, self.get_last_log_line_index() + 1):
+            if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
 
         # From the beginning to the original start
         for i in range(0, starting_index):
-            if self.search_regex.search(
-                    self.log_store.logs[i].ansi_stripped_log):
+            if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
 
     def search_backwards(self):
-        if not self.search_regex:
+        if not self.search_filter:
             return
         self.search_highlight = True
 
-        starting_index = self.get_current_line() - 1
+        starting_index = self.line_index - 1
         if starting_index < 0:
-            starting_index = self.log_store.get_last_log_line_index()
+            starting_index = self.get_last_log_line_index()
+
+        logs = self._get_log_lines()
 
         # From current position - 1 and up
         for i in range(starting_index, -1, -1):
-            if self.search_regex.search(
-                    self.log_store.logs[i].ansi_stripped_log):
+            if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
 
         # From the end to the original start
-        for i in range(self.log_store.get_last_log_line_index(),
-                       starting_index, -1):
-            if self.search_regex.search(
-                    self.log_store.logs[i].ansi_stripped_log):
+        for i in range(self.get_last_log_line_index(), starting_index, -1):
+            if self.search_filter.matches(logs[i]):
                 self._set_match_position(i)
                 return
 
-    def _set_search_regex(self, text):
-        # Reset search text
-        self.search_text = text
+    def _set_search_regex(self, text, invert, field):
+        regex_text, regex_flags = preprocess_search_regex(
+            text, matcher=self.search_matcher)
+
+        try:
+            compiled_regex = re.compile(regex_text, regex_flags)
+            self.search_filter = LogFilter(
+                regex=compiled_regex,
+                input_text=text,
+                invert=invert,
+                field=field,
+            )
+        except re.error as error:
+            _LOG.debug(error)
+            return False
+
         self.search_highlight = True
+        self.search_text = regex_text
+        return True
 
-        # Ignorecase unless the text has capital letters in it.
-        if _UPPERCASE_REGEX.search(text):
-            self.search_re_flags = re.RegexFlag(0)
-        else:
-            self.search_re_flags = re.IGNORECASE
-
-        self.search_regex = re.compile(re.escape(self.search_text),
-                                       self.search_re_flags)
-
-    def new_search(self, text):
+    def new_search(self,
+                   text,
+                   invert=False,
+                   field: Optional[str] = None) -> bool:
         """Start a new search for the given text."""
-        self._set_search_regex(text)
-        # Default search direction when hitting enter in the search bar.
-        self.search_backwards()
+        if self._set_search_regex(text, invert, field):
+            # Default search direction when hitting enter in the search bar.
+            self.search_backwards()
+            return True
+        return False
 
     def disable_search_highlighting(self):
         self.log_pane.log_view.search_highlight = False
 
-    def apply_filter(self, text=None):
-        """Set a filter."""
-        if not text:
-            text = self.search_text
-        self._set_search_regex(text)
-        self.filter_text = text
-        self.filter_regex = self.search_regex
+    def _restart_filtering(self):
+        # Turn on follow
+        if not self.follow:
+            self.toggle_follow()
+
+        # Reset filtered logs.
+        self.filtered_logs.clear()
+
+        # Start filtering existing log lines.
+        self.filter_existing_logs_task = asyncio.create_task(
+            self.filter_past_logs())
+
+        # Reset existing search
+        self.clear_search()
+
+        # Redraw the UI
+        self.log_pane.application.redraw_ui()
+
+    def apply_filter(self):
+        """Set a filter using the current search_regex."""
+        if not self.search_filter:
+            return
         self.search_highlight = False
 
-        self.filter_existing_logs_task = asyncio.create_task(
-            self.filter_logs())
+        self.filtering_on = True
+        self.filters[self.search_text] = copy.deepcopy(self.search_filter)
 
-    async def filter_logs(self):
-        """Filter"""
-        # TODO(tonymd): Filter existing lines here.
-        await asyncio.sleep(.3)
+        self._restart_filtering()
+
+    def clear_search(self):
+        self.search_text = None
+        self.search_filter = None
+        self.search_highlight = False
+
+    def _get_log_lines(self):
+        if self.filtering_on:
+            return self.filtered_logs
+        return self.log_store.logs
+
+    def delete_filter(self, filter_text):
+        if filter_text not in self.filters:
+            return
+
+        # Delete this filter
+        del self.filters[filter_text]
+
+        # If no filters left, stop filtering.
+        if len(self.filters) == 0:
+            self.clear_filters()
+        else:
+            # Erase existing filtered lines.
+            self._restart_filtering()
+
+    def clear_filters(self):
+        if not self.filtering_on:
+            return
+        self.clear_search()
+        self.filtering_on = False
+        self.filters: 'collections.OrderedDict[str, re.Pattern]' = (
+            collections.OrderedDict())
+        self.filtered_logs.clear()
+        if not self.follow:
+            self.toggle_follow()
+
+    async def filter_past_logs(self):
+        """Filter past log lines."""
+        starting_index = self.log_store.get_last_log_line_index()
+        ending_index = -1
+
+        # From the end of the log store to the beginning.
+        for i in range(starting_index, ending_index, -1):
+            # Is this log a match?
+            if self.filter_scan(self.log_store.logs[i]):
+                # Add to the beginning of the deque.
+                self.filtered_logs.appendleft(self.log_store.logs[i])
+            # TODO(tonymd): Tune these values.
+            # Pause every 100 lines or so
+            if i % 100 == 0:
+                await asyncio.sleep(.1)
 
     def set_log_pane(self, log_pane: 'LogPane'):
         """Set the parent LogPane instance."""
@@ -193,7 +292,13 @@ class LogView:
 
     def get_total_count(self):
         """Total size of the logs store."""
+        if self.filtering_on:
+            return len(self.filtered_logs)
         return self.log_store.get_total_count()
+
+    def get_last_log_line_index(self):
+        total = self.get_total_count()
+        return 0 if total < 0 else total - 1
 
     def clear_scrollback(self):
         """Hide log lines before the max length of the stored logs."""
@@ -218,9 +323,30 @@ class LogView:
             return self.log_store.longest_channel_prefix_width
         return 0
 
+    def filter_scan(self, log: 'LogLine'):
+        filter_match_count = 0
+        for _filter_text, log_filter in self.filters.items():
+            if log_filter.matches(log):
+                filter_match_count += 1
+            else:
+                break
+
+        if filter_match_count == len(self.filters):
+            return True
+        return False
+
     def new_logs_arrived(self):
         # If follow is on, scroll to the last line.
-        # TODO(tonymd): Filter new lines here.
+        latest_total = self.log_store.get_total_count()
+
+        if self.filtering_on:
+            # Scan newly arived log lines
+            for i in range(self._last_log_store_index, latest_total):
+                if self.filter_scan(self.log_store.logs[i]):
+                    self.filtered_logs.append(self.log_store.logs[i])
+
+        self._last_log_store_index = latest_total
+
         if self.follow:
             self.scroll_to_bottom()
 
@@ -270,7 +396,9 @@ class LogView:
     def scroll_to_bottom(self):
         """Move selected index to the end."""
         # Don't change following state like scroll_to_top.
-        self.line_index = max(0, self.log_store.get_last_log_line_index())
+        self.line_index = max(0, self.get_last_log_line_index())
+        # Sticky follow mode
+        self.follow = True
 
     def scroll(self, lines):
         """Scroll up or down by plus or minus lines.
@@ -280,13 +408,18 @@ class LogView:
         # If the user starts scrolling, stop auto following.
         self.follow = False
 
+        last_index = self.get_last_log_line_index()
+
         # If scrolling to an index below zero, set to zero.
         new_line_index = max(0, self.line_index + lines)
         # If past the end, set to the last index of self.logs.
-        if new_line_index >= self.log_store.get_total_count():
-            new_line_index = self.log_store.get_last_log_line_index()
+        if new_line_index >= self.get_total_count():
+            new_line_index = last_index
         # Set the new selected line index.
         self.line_index = new_line_index
+        # Sticky follow mode
+        if self.line_index == last_index:
+            self.follow = True
 
     def scroll_to_position(self, mouse_position: Point):
         """Set the selected log line to the mouse_position."""
@@ -348,8 +481,8 @@ class LogView:
             # Use the current_window_height if line_index is less
             ending_index = max(self.line_index, max_window_row_index)
 
-        if ending_index > self.log_store.get_last_log_line_index():
-            ending_index = self.log_store.get_last_log_line_index()
+        if ending_index > self.get_last_log_line_index():
+            ending_index = self.get_last_log_line_index()
 
         # Save start and end index.
         self._current_start_index = starting_index
@@ -368,8 +501,11 @@ class LogView:
         the current log line position and the given window size. It also sets
         the cursor position depending on which line is selected.
         """
+
+        logs = self._get_log_lines()
+
         # Reset _line_fragment_cache ( used in self.get_cursor_position )
-        self._line_fragment_cache = collections.deque()
+        self._line_fragment_cache.clear()
 
         # Track used lines.
         total_used_lines = 0
@@ -377,7 +513,7 @@ class LogView:
         # If we have no logs add one with at least a single space character for
         # the cursor to land on. Otherwise the cursor will be left on the line
         # above the log pane container.
-        if self.log_store.get_total_count() < 1:
+        if self.get_total_count() < 1:
             return [(
                 '[SetCursorPosition]', '\n' * self._window_height
                 # LogContentControl.mouse_handler will handle focusing the log
@@ -399,9 +535,8 @@ class LogView:
 
             # Grab the rendered log line using the table or standard view.
             line_fragments: StyleAndTextTuples = (
-                self.log_store.table.formatted_row(self.log_store.logs[i])
-                if self.log_pane.table_view else
-                self.log_store.logs[i].get_fragments())
+                self.log_store.table.formatted_row(logs[i])
+                if self.log_pane.table_view else logs[i].get_fragments())
 
             # Get the width, height and remaining width.
             fragment_width = fragment_list_width(line_fragments)
@@ -419,7 +554,7 @@ class LogView:
             used_lines = line_height
 
             # Count the number of line breaks are included in the log line.
-            line_breaks = self.log_store.logs[i].ansi_stripped_log.count('\n')
+            line_breaks = logs[i].ansi_stripped_log.count('\n')
             used_lines += line_breaks
 
             # If this is the selected line apply a style class for highlighting.
@@ -441,10 +576,9 @@ class LogView:
                     line_fragments, style='class:selected-log-line')
 
             # Apply search term highlighting.
-            if self.search_regex and self.search_highlight and (
-                    self.search_regex.search(
-                        self.log_store.logs[i].ansi_stripped_log)):
-                line_fragments = self._highlight_search_matches(
+            if self.search_filter and self.search_highlight and (
+                    self.search_filter.matches(logs[i])):
+                line_fragments = self.search_filter.highlight_search_matches(
                     line_fragments, selected)
 
             # Save this line to the beginning of the cache.
@@ -460,25 +594,3 @@ class LogView:
 
         return pw_console.text_formatting.flatten_formatted_text_tuples(
             self._line_fragment_cache)
-
-    def _highlight_search_matches(self, line_fragments, selected=False):
-        """Highlight search matches in the current line_fragment."""
-        line_text = fragment_list_to_text(line_fragments)
-        exploded_fragments = explode_text_fragments(line_fragments)
-
-        # Loop through each non-overlapping search match.
-        for match in self.search_regex.finditer(line_text):
-            for fragment_i in range(match.start(), match.end()):
-                # Expand all fragments and apply the highlighting style.
-                old_style, _text, *_ = exploded_fragments[fragment_i]
-                if selected:
-                    exploded_fragments[fragment_i] = (
-                        old_style + ' class:search.current ',
-                        exploded_fragments[fragment_i][1],
-                    )
-                else:
-                    exploded_fragments[fragment_i] = (
-                        old_style + ' class:search ',
-                        exploded_fragments[fragment_i][1],
-                    )
-        return exploded_fragments

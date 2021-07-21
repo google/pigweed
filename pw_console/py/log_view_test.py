@@ -15,15 +15,20 @@
 
 import logging
 import time
+import sys
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 from parameterized import parameterized  # type: ignore
-
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import FormattedText
 
 from pw_console.log_view import LogView
+
+_PYTHON_3_8 = sys.version_info >= (
+    3,
+    8,
+)
 
 
 def _create_log_view():
@@ -262,6 +267,102 @@ class TestLogView(unittest.TestCase):
             list(log_view._line_fragment_cache  # pylint: disable=protected-access
                  ),
             expected_line_cache)
+
+
+if _PYTHON_3_8:
+    # pylint: disable=no-name-in-module
+    from unittest import IsolatedAsyncioTestCase  # type: ignore
+
+    class TestLogViewFiltering(IsolatedAsyncioTestCase):  # pylint: disable=undefined-variable
+        """Test LogView log filtering capabilities."""
+        def _create_log_view_from_list(self, log_messages):
+            log_view, log_pane = _create_log_view()
+
+            test_log = logging.getLogger('log_view.test')
+            with self.assertLogs(test_log, level='DEBUG') as _log_context:
+                test_log.addHandler(log_view.log_store)
+                for log, extra_arg in log_messages:
+                    test_log.debug('%s', log, extra=extra_arg)
+
+            return log_view, log_pane
+
+        @parameterized.expand([
+            (
+                'regex filter',
+                'log.*item',
+                [
+                    ('Log some item', dict()),
+                    ('Log another item', dict()),
+                    ('Some exception', dict()),
+                ],
+                [
+                    'Log some item',
+                    'Log another item',
+                ],
+                None,  # field
+                False,  # invert
+            ),
+            (
+                'regex filter with field',
+                'earth',
+                [
+                    ('Log some item',
+                    dict(extra_metadata_fields={'planet': 'Jupiter'})),
+                    ('Log another item',
+                    dict(extra_metadata_fields={'planet': 'Earth'})),
+                    ('Some exception',
+                    dict(extra_metadata_fields={'planet': 'Earth'})),
+                ],
+                [
+                    'Log another item',
+                    'Some exception',
+                ],
+                'planet',  # field
+                False,  # invert
+            ),
+            (
+                'regex filter with field inverted',
+                'earth',
+                [
+                    ('Log some item',
+                    dict(extra_metadata_fields={'planet': 'Jupiter'})),
+                    ('Log another item',
+                    dict(extra_metadata_fields={'planet': 'Earth'})),
+                    ('Some exception',
+                    dict(extra_metadata_fields={'planet': 'Earth'})),
+                ],
+                [
+                    'Log some item',
+                ],
+                'planet',  # field
+                True,  # invert
+            ),
+        ]) # yapf: disable
+        async def test_log_filtering(
+            self,
+            _name,
+            input_text,
+            input_lines,
+            expected_matched_lines,
+            field=None,
+            invert=False,
+        ) -> None:
+            """Test run log view filtering."""
+            log_view, _log_pane = self._create_log_view_from_list(input_lines)
+            self.assertEqual(log_view.get_total_count(), len(input_lines))
+
+            log_view.new_search(input_text, invert=invert, field=field)
+            log_view.apply_filter()
+            await log_view.filter_existing_logs_task
+
+            self.assertEqual(log_view.get_total_count(),
+                             len(expected_matched_lines))
+            self.assertEqual(
+                [log.record.message for log in log_view.filtered_logs],
+                expected_matched_lines)
+
+            log_view.clear_filters()
+            self.assertEqual(log_view.get_total_count(), len(input_lines))
 
 
 if __name__ == '__main__':
