@@ -95,6 +95,19 @@ void StaticMemoryInit(void) {
 // This function runs immediately at boot because it is at index 1 of the
 // interrupt vector table.
 void pw_boot_Entry() {
+#ifdef PW_BOOT_CORTEX_M_ARMV8M
+  // Configure MSP and MSPLIM.
+  asm volatile(
+      "msr msp, %0    \n"
+      "msr msplim, %1 \n"
+      // clang-format off
+      : /*output=*/
+      : /*input=*/ "r"(&pw_boot_stack_high_addr), "r"(&pw_boot_stack_low_addr)
+      : /*clobbers=*/
+      // clang-format on
+  );
+#endif
+
   // Run any init that must be done before static init of RAM which preps the
   // .data (static values not yet loaded into ram) and .bss sections (not yet
   // zero-initialized).

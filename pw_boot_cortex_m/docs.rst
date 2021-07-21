@@ -51,7 +51,10 @@ in use.
 
  - ``pw_boot_cortex_m:armv7m`` for ARMv7-M cores.
 
- - ``pw_boot_cortex_m:armv8m`` for ARMv8-M cores.
+ - ``pw_boot_cortex_m:armv8m`` for ARMv8-M cores. This sets the MSPLIM register
+   so that the main stack pointer (MSP) cannot descend outside the bounds of the
+   main stack defined in the linker script. The MSP of the entry point is also
+   adjusted to be within the bounds.
 
 User-Implemented Functions
 --------------------------
