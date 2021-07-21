@@ -25,6 +25,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_boot_backend",
+    build_setting_default = "@pigweed//pw_boot:backend_multiplexer",
+)
+
+label_flag(
     name = "pw_chrono_system_clock_backend",
     build_setting_default = "@pigweed//pw_chrono:system_clock_backend_multiplexer",
 )

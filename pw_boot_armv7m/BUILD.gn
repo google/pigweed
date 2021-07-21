@@ -14,14 +14,12 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_boot/backend.gni")
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 
 declare_args() {
-  # TODO(frolv): Move this into pw_boot module when it is created.
-  pw_boot_BACKEND = ""
-
   # This list should contain the necessary defines for setting pw_boot linker
   # script memory regions.
   pw_boot_armv7m_LINK_CONFIG_DEFINES = []
@@ -43,7 +41,10 @@ if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_boot_armv7m/boot.h" ]
     public_deps = [ "$dir_pw_preprocessor" ]
-    deps = [ ":armv7m_linker_script" ]
+    deps = [
+      ":armv7m_linker_script",
+      "$dir_pw_boot:facade",
+    ]
     sources = [ "core_init.c" ]
   }
 }

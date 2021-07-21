@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,24 +12,23 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
+import("//build_overrides/pigweed.gni")
 
-package(default_visibility = ["//visibility:public"])
+import("$dir_pw_boot/backend.gni")
+import("$dir_pw_build/facade.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
-licenses(["notice"])
+config("default_config") {
+  include_dirs = [ "public" ]
+}
 
-pw_cc_library(
-    name = "pre_init",
-    srcs = [
-        "boot.cc",
-        "vector_table.c",
-    ],
-    deps = [
-        "//pw_boot",
-        "//pw_preprocessor",
-        "//pw_sys_io_baremetal_lm3s6965evb",
-    ],
-)
+pw_facade("pw_boot") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_boot/boot.h" ]
+  backend = pw_boot_BACKEND
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

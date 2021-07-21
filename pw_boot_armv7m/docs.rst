@@ -25,7 +25,7 @@ a bootloader, as it's relatively opinionated regarding where code is stored.
 Sequence
 ========
 
-The high level pw_boot_armv7m boot sequence looks like the following psuedo-code
+The high level pw_boot_armv7m boot sequence looks like the following pseudo-code
 invocation of the user-implemented functions:
 
 .. code:: cpp

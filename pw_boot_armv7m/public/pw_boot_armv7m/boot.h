@@ -43,6 +43,7 @@
 
 #include <stdint.h>
 
+#include "pw_boot/boot.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
@@ -74,55 +75,5 @@ extern uint8_t pw_boot_heap_high_addr;
 // The address that denotes the beginning of the .vector_table section. This
 // can be used to set VTOR (vector table offset register) by the bootloader.
 extern uint8_t pw_boot_vector_table_addr;
-
-// Forward declaration of main. Pigweed applications are expected to implement
-// this function. An implementation of main() is NOT provided by this module.
-int main(void);
-
-// Reset handler or boot entry point.
-//
-// For this module to work as expected, index 1 of the ARMv7-M vector table
-// (which usually points to Reset_Handler) must be set to point to this
-// function. This function is implemented by pw_boot_armv7m, and does early
-// memory initialization.
-PW_NO_RETURN void pw_boot_Entry(void);
-
-// pw_boot hook: Before static memory is initialized (user supplied)
-//
-// This is a hook function that users of pw_boot must supply. It is called
-// immediately upon entry to pw_boot_Entry() and before zero initialization of
-// RAM (.bss) and loading values into static memory (commonly labeled as the
-// .data section in an ELF file).
-// WARNING: Be EXTREMELY careful when in the context of this function as it
-// violates the C spec in several ways as .bss has not yet been zero-initialized
-// and static values have not yet been loaded into memory. This function is NOT
-// implemented by pw_boot_armv7m.
-void pw_boot_PreStaticMemoryInit(void);
-
-// pw_boot hook: Before C++ static constructors are invoked (user supplied).
-//
-// This is a hook function that users of pw_boot must supply. It is called just
-// after zero initialization of RAM and loading values into static memory
-// (commonly labeled as the .data section in an ELF file). Per the naming, this
-// function is called just before C++ static constructors are invoked. It is
-// safe to run C code, but NOT safe to call out to any C++ code. This function
-// is NOT implemented by pw_boot_armv7m.
-void pw_boot_PreStaticConstructorInit(void);
-
-// pw_boot hook: Before main is invoked (user supplied).
-//
-// This is a hook function that users of pw_boot must supply. It is called by
-// pw_boot_Entry() after memory initialization but before main. This allows
-// targets to have pre-main initialization of the device and seamlessly swap out
-// the main() implementation. This function is NOT implemented by
-// pw_boot_armv7m.
-void pw_boot_PreMainInit(void);
-
-// pw_boot hook: After main returned (user supplied).
-//
-// This is a hook function that users of pw_boot must supply. It is called by
-// pw_boot_Entry() after main() has returned. This function must not return!
-// This function is NOT implemented by pw_boot_armv7m.
-PW_NO_RETURN void pw_boot_PostMain(void);
 
 PW_EXTERN_C_END

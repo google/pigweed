@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_boot_armv7m/boot.h"
+#include "pw_boot/boot.h"
 
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_baremetal_lm3s6965evb/init.h"
