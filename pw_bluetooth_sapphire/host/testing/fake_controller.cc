@@ -1157,7 +1157,7 @@ void FakeController::OnLESetScanResponseData(
     const hci::LESetScanResponseDataCommandParams& params) {
   legacy_advertising_state_.scan_rsp_length = params.scan_rsp_data_length;
   std::memcpy(legacy_advertising_state_.scan_rsp_data, params.scan_rsp_data,
-              legacy_advertising_state_.scan_rsp_length);
+              params.scan_rsp_data_length);
 
   RespondWithCommandComplete(hci::kLESetScanResponseData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
@@ -1165,8 +1165,7 @@ void FakeController::OnLESetScanResponseData(
 
 void FakeController::OnLESetAdvertisingData(const hci::LESetAdvertisingDataCommandParams& params) {
   legacy_advertising_state_.data_length = params.adv_data_length;
-  std::memcpy(legacy_advertising_state_.data, params.adv_data,
-              legacy_advertising_state_.data_length);
+  std::memcpy(legacy_advertising_state_.data, params.adv_data, params.adv_data_length);
 
   RespondWithCommandComplete(hci::kLESetAdvertisingData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
@@ -1844,7 +1843,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
 
       // cannot have instructions for an advertising handle we don't know about
       if (extended_advertising_states_.count(handle) == 0) {
-        bt_log(INFO, "fake-hci", "cannot enable an unknown handle (handle: %d)", handle);
+        bt_log(INFO, "fake-hci", "cannot enable/disable an unknown handle (handle: %d)", handle);
         RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
                                    hci::StatusCode::kUnknownAdvertisingIdentifier);
         return;

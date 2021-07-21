@@ -257,6 +257,7 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Co
                                                      const DeviceAddress& peer_address,
                                                      const LEConnectionParameters& conn_params) {
   static DeviceAddress identity_address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+
   // We use the identity address as the local address if we aren't advertising. If we aren't
   // advertising, this is obviously wrong. However, the link will be disconnected in that case
   // before it can propagate to higher layers.

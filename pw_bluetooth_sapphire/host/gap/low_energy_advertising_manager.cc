@@ -136,8 +136,9 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
       [self, data = std::move(data), scan_rsp = std::move(scan_rsp), options,
        connect_cb = std::move(connect_callback),
        status_cb = std::move(status_callback)](const auto& address) mutable {
-        if (!self)
+        if (!self) {
           return;
+        }
 
         auto ad_ptr = std::make_unique<ActiveAdvertisement>(address);
         hci::LowEnergyAdvertiser::ConnectionCallback adv_conn_cb;
@@ -145,8 +146,9 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
           adv_conn_cb = [self, id = ad_ptr->id(), connect_cb = std::move(connect_cb)](auto link) {
             bt_log(DEBUG, "gap-le", "received new connection");
 
-            if (!self)
+            if (!self) {
               return;
+            }
 
             // remove the advertiser because advertising has stopped
             self->advertisements_.erase(id);
@@ -155,8 +157,9 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
         }
         auto status_cb_wrapper = [self, ad_ptr = std::move(ad_ptr),
                                   status_cb = std::move(status_cb)](hci::Status status) mutable {
-          if (!self)
+          if (!self) {
             return;
+          }
 
           if (!status) {
             status_cb(AdvertisementInstance(), status);
@@ -176,8 +179,9 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
 
 bool LowEnergyAdvertisingManager::StopAdvertising(AdvertisementId advertisement_id) {
   auto it = advertisements_.find(advertisement_id);
-  if (it == advertisements_.end())
+  if (it == advertisements_.end()) {
     return false;
+  }
 
   advertiser_->StopAdvertising(it->second->address());
   advertisements_.erase(it);
