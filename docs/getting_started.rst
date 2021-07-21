@@ -130,10 +130,15 @@ from macOS, you will need to install OpenOCD. Install
 
 **Windows**
 
-To start using Pigweed on Windows, you'll need to install `Git
-<https://git-scm.com/download/win>`_ and `Python
-<https://www.python.org/downloads/windows/>`_. We recommend you install Git to
-run from the command line and third party software.
+To start using Pigweed on Windows, you'll need to do the following:
+
+* Install `Git <https://git-scm.com/download/win>`_. Git must be installed to
+  run from the command line and third-party software or be added to ``PATH``.
+  Also, ensure that the **Enable symbolic links** option is selected.
+* Install `Python <https://www.python.org/downloads/windows/>`_.
+* Ensure that `Developer Mode
+  <https://docs.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development>`_
+  is enabled.
 
 If you plan to flash devices with firmware, you'll need to install OpenOCD and
 ensure it's on your system path.
