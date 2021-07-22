@@ -57,9 +57,11 @@ ECDSA
     // handle errors.
   }
 
-  bool valid = pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature).ok();
+  bool valid = pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
+      signature).ok();
 
-2. Verifying a digital signature signed with ECDSA over the NIST P256 curve, with a long and/or non-contiguous message.
+2. Verifying a digital signature signed with ECDSA over the NIST P256 curve,
+   with a long and/or non-contiguous message.
 
 .. code-block:: cpp
 
@@ -73,35 +75,47 @@ ECDSA
   }
 
   auto status = h.Final(digest);
-  bool valid = status.ok() && pw::crypto::ecdsa::VerifyP256Signature(public_key, digest, signature).ok();
+  bool valid = status.ok() && pw::crypto::ecdsa::VerifyP256Signature(public_key,
+      digest, signature).ok();
 
 Configuration
 -------------
 
-The crypto services offered by pw_crypto can be backed by different backend crypto libraries. For now only Mbed TLS is supported, others are under construction.
+The crypto services offered by pw_crypto can be backed by different backend
+crypto libraries.
 
 Mbed TLS
 ^^^^^^^^
 
-To select the Mbed TLS backend, the MbedTLS library needs to be installed and configured.
+To select the Mbed TLS backend, the MbedTLS library needs to be installed and
+configured.
 
 .. code-block:: sh
 
   # Install and configure MbedTLS
   pw package install mbedtls
-  gn gen out --args='dir_pw_third_party_mbedtls="//.environment/packages/mbedtls" pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls" pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls"'
+  gn gen out \
+      --args='dir_pw_third_party_mbedtls="//.environment/packages/mbedtls" \
+      pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls" \
+      pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls"'
 
   ninja -C out
 
-For optimal code size and/or performance, the Mbed TLS library needs to be configured per product. Mbed TLS configuration is achieved by turning on and off MBEDTLS_* options in a config.h file. See //third_party/mbedtls for how this is done.
+For optimal code size and/or performance, the Mbed TLS library can be configured
+per product. Mbed TLS configuration is achieved by turning on and off MBEDTLS_*
+options in a config.h file. See //third_party/mbedtls for how this is done.
 
-``pw::crypto::sha256`` does not need any special configuration as it uses the mbedtls_sha256_* APIs directly. However you can optionally turn on ``MBEDTLS_SHA256_SMALLER`` to further reduce the code size to from 3KiB to ~1.8KiB at a ~30% slowdown cost (Cortex-M4).
+``pw::crypto::sha256`` does not need any special configuration as it uses the
+mbedtls_sha256_* APIs directly. However you can optionally turn on
+``MBEDTLS_SHA256_SMALLER`` to further reduce the code size to from 3KiB to
+~1.8KiB at a ~30% slowdown cost (Cortex-M4).
 
 .. code-block:: c
 
    #define MBEDTLS_SHA256_SMALLER
 
-``pw::crypto::ecdsa`` requires the following minimum configurations which yields a code size of ~12KiB.
+``pw::crypto::ecdsa`` requires the following minimum configurations which yields
+a code size of ~12KiB.
 
 .. code-block:: c
 
@@ -118,19 +132,27 @@ For optimal code size and/or performance, the Mbed TLS library needs to be confi
 BoringSSL
 ^^^^^^^^^
 
-To select the BoringSSL backend, the BoringSSL library needs to be installed and configured.
+To select the BoringSSL backend, the BoringSSL library needs to be installed and
+configured.
 
 .. code-block:: sh
 
   # Install and configure BoringSSL
   pw package install boringssl
-  gn gen out --args='dir_pw_third_party_boringssl="//.environment/packages/boringssl" pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_boringssl"'
+  gn gen out \
+      --args='dir_pw_third_party_boringssl="//.environment/packages/boringssl" \
+      pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_boringssl" \
+      pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_boringssl"'
 
   ninja -C out
+
+BoringSSL does not provide a public configuration interface to reduce the code
+size.
 
 Size Reports
 ------------
 
-Below are size reports for each crypto service. These vary across configurations.
+Below are size reports for each crypto service. These vary across
+configurations.
 
 .. include:: size_report

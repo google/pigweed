@@ -114,10 +114,9 @@ TEST(EcdsaP256, MalformedPublicKeyMissingHeader) {
 }
 
 TEST(EcdsaP256, MalformedPublicKeyWrongHeader) {
-  ASSERT_EQ(Status::InvalidArgument(),
-            VerifyP256Signature(STR_TO_BYTES(MALFORMED_PUBKEY_WRONG_HEADER),
-                                STR_TO_BYTES(TEST_DIGEST),
-                                STR_TO_BYTES(TEST_SIGNATURE)));
+  ASSERT_FAIL(VerifyP256Signature(STR_TO_BYTES(MALFORMED_PUBKEY_WRONG_HEADER),
+                                  STR_TO_BYTES(TEST_DIGEST),
+                                  STR_TO_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, TamperedSignature) {
@@ -156,10 +155,9 @@ TEST(EcdsaP256, TamperedDigest) {
 }
 
 TEST(EcdsaP256, TamperedPubkey) {
-  ASSERT_EQ(Status::Unauthenticated(),
-            VerifyP256Signature(STR_TO_BYTES(TAMPERED_PUBKEY),
-                                STR_TO_BYTES(TEST_DIGEST),
-                                STR_TO_BYTES(TEST_SIGNATURE)));
+  ASSERT_FAIL(VerifyP256Signature(STR_TO_BYTES(TAMPERED_PUBKEY),
+                                  STR_TO_BYTES(TEST_DIGEST),
+                                  STR_TO_BYTES(TEST_SIGNATURE)));
 }
 
 }  // namespace

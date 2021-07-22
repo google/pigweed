@@ -77,13 +77,13 @@ Status VerifyP256Signature(ConstByteSpan public_key,
   // Load the public key.
   if (mbedtls_ecp_point_read_binary(
           &ctx.grp, &ctx.Q, public_key_data, public_key.size())) {
-    PW_LOG_ERROR("Bad public key format.");
+    PW_LOG_ERROR("Bad public key format");
     return Status::InvalidArgument();
   }
 
   // Load the signature.
   if (signature.size() != kP256CurveOrderBytes * 2) {
-    PW_LOG_ERROR("Bad signature format.");
+    PW_LOG_ERROR("Bad signature format");
     return Status::InvalidArgument();
   }
 
@@ -102,7 +102,7 @@ Status VerifyP256Signature(ConstByteSpan public_key,
   // Verify the signature.
   if (mbedtls_ecdsa_verify(
           &ctx.grp, digest_data, digest.size(), &ctx.Q, &ctx.r, &ctx.s)) {
-    PW_LOG_ERROR("Digital signature failed verification.");
+    PW_LOG_ERROR("Digital signature failed verification");
     return Status::Unauthenticated();
   }
 

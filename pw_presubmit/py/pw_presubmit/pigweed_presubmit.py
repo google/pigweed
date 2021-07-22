@@ -162,12 +162,16 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'boringssl')
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
-                                                            'boringssl'),
-                 pw_crypto_SHA256_BACKEND='"{}"'.format(
-                     ctx.root / 'pw_crypto:sha256_boringssl'))
+    build.gn_gen(
+        ctx.root,
+        ctx.output_dir,
+        dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
+                                                   'boringssl'),
+        pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
+                                               'pw_crypto:sha256_boringssl'),
+        pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
+                                              'pw_crypto:ecdsa_boringssl'),
+    )
     build.ninja(ctx.output_dir)
 
 
