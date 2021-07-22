@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "boringssl/test/test_server.h"
+#include "pw_tls_client/test/test_server.h"
 
 #include <span>
 #include <string>
@@ -26,10 +26,11 @@
 
 #define ASSERT_OK(expr) ASSERT_EQ(pw::OkStatus(), expr)
 
+namespace pw::tls_client::test {
 namespace {
 
 int TestClientBioRead(BIO* bio, char* out, int outl) {
-  auto read_writer = static_cast<pw::stream::ReaderWriter*>(bio->ptr);
+  auto read_writer = static_cast<stream::ReaderWriter*>(bio->ptr);
   auto res = read_writer->Read(out, outl);
   if (!res.ok()) {
     return -1;
@@ -42,7 +43,7 @@ int TestClientBioRead(BIO* bio, char* out, int outl) {
 }
 
 int TestClientBioWrite(BIO* bio, const char* in, int inl) {
-  auto read_writer = static_cast<pw::stream::ReaderWriter*>(bio->ptr);
+  auto read_writer = static_cast<stream::ReaderWriter*>(bio->ptr);
   auto res = read_writer->Write(in, inl);
   if (!res.ok()) {
     return -1;
@@ -79,7 +80,7 @@ std::array<std::byte, 512> server_receive_buffer;
 // Create a raw BoringSSL client and load test trust anchors.
 void CreateSSLClient(bssl::UniquePtr<SSL_CTX>* ctx,
                      bssl::UniquePtr<SSL>* client,
-                     pw::stream::ReaderWriter* read_writer) {
+                     stream::ReaderWriter* read_writer) {
   *ctx = bssl::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_method()));
   ASSERT_NE(*ctx, nullptr);
   *client = bssl::UniquePtr<SSL>(SSL_new(ctx->get()));
@@ -92,7 +93,7 @@ void CreateSSLClient(bssl::UniquePtr<SSL_CTX>* ctx,
   X509_VERIFY_PARAM_clear_flags(store->param, X509_V_FLAG_USE_CHECK_TIME);
   const pw::ConstByteSpan kTrustAnchors[] = {kRootACert, kRootBCert};
   for (auto cert : kTrustAnchors) {
-    auto res = pw::boringssl::ParseDerCertificate(cert);
+    auto res = ParseDerCertificate(cert);
     ASSERT_OK(res.status());
     ASSERT_EQ(X509_STORE_add_cert(store, res.value()), 1);
     X509_free(res.value());
@@ -102,8 +103,6 @@ void CreateSSLClient(bssl::UniquePtr<SSL_CTX>* ctx,
 }
 
 }  // namespace
-
-namespace pw::boringssl {
 
 TEST(InMemoryTestServer, NormalConnectionSucceed) {
   InMemoryTestServer server(server_receive_buffer, server_send_buffer);
@@ -156,4 +155,4 @@ TEST(InMemoryTestServer, BufferTooSmallErrorsOut) {
   ASSERT_EQ(server.GetLastBioStatus(), Status::ResourceExhausted());
 }
 
-}  // namespace pw::boringssl
+}  // namespace pw::tls_client::test

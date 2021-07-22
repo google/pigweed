@@ -23,7 +23,7 @@
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
-namespace pw::boringssl {
+namespace pw::tls_client::test {
 
 class FixedSizeFIFOBuffer : public stream::ReaderWriter {
  public:
@@ -112,4 +112,4 @@ class InMemoryTestServer : public stream::ReaderWriter {
 // A helper function to parse a DER format certificate.
 pw::Result<X509*> ParseDerCertificate(pw::ConstByteSpan cert);
 
-}  // namespace pw::boringssl
+}  // namespace pw::tls_client::test

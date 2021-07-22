@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -85,4 +86,17 @@ pw_cc_library(
     deps = [
         "//pw_bytes",
     ],
+)
+
+pw_cc_library(
+    name = "test_server",
+    srcs = ["test_server.cc"],
+    hdrs = ["public/pw_tls_client/test/test_server.h"],
+    includes = ["public"],
+)
+
+pw_cc_test(
+    name = "test_server_test",
+    srcs = ["test_server_test.cc"],
+    deps = [":test_server"],
 )

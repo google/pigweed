@@ -16,7 +16,9 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_third_party/boringssl/boringssl.gni")
 import("$dir_pw_tls_client/configs.gni")
+import("$dir_pw_unit_test/test.gni")
 
 config("public_includes") {
   include_dirs = [ "public" ]
@@ -116,6 +118,49 @@ pw_source_set("crlset") {
   public = [ "public/pw_tls_client/crlset.h" ]
 
   # TODO(pwbug/396): Add sources generated from a CRLSet file to build.
+}
+
+pw_source_set("test_server") {
+  sources = [ "test_server.cc" ]
+  public_configs = [ ":public_includes" ]
+  public = [ "public/pw_tls_client/test/test_server.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_stream",
+    "$dir_pw_third_party/boringssl",
+  ]
+}
+
+pw_test("test_server_test") {
+  enable_if = dir_pw_third_party_boringssl != ""
+  public_deps = [
+    ":test_data",
+    ":test_server",
+  ]
+  sources = [ "test_server_test.cc" ]
+}
+
+pw_python_action("generate_test_data") {
+  header_output = "$target_gen_dir/$target_name/test_certs_and_keys.h"
+  script = "py/pw_tls_client/generate_test_data.py"
+  python_deps = [ "py" ]
+  outputs = [ header_output ]
+  args = [ rebase_path(header_output) ]
+}
+
+config("test_data_includes") {
+  test_header_out = get_target_outputs(":generate_test_data")
+  include_dirs = [ get_path_info(test_header_out[0], "dir") ]
+}
+
+group("test_data") {
+  public_deps = [ ":generate_test_data" ]
+  public_configs = [ ":test_data_includes" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":test_server_test" ]
 }
 
 pw_doc_group("docs") {

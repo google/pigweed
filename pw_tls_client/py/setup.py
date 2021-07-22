@@ -11,15 +11,18 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Python scripts for pw_tls_client"""
 
-import("//build_overrides/pigweed.gni")
-import("$dir_pw_build/python.gni")
+import setuptools  # type: ignore
 
-pw_python_package("py") {
-  setup = [ "setup.py" ]
-  sources = [
-    "boringssl/__init__.py",
-    "boringssl/generate_test_data.py",
-  ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-}
+setuptools.setup(
+    name='pw_tls_client',
+    version='0.0.1',
+    author='Pigweed Authors',
+    author_email='pigweed-developers@googlegroups.com',
+    description='pw_tls_client python package',
+    packages=setuptools.find_packages(),
+    package_data={'pw_tls_client': ['py.typed']},
+    zip_safe=False,
+    install_requires=['cryptography'],
+)

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "boringssl/test/test_server.h"
+#include "pw_tls_client/test/test_server.h"
 
 #include <openssl/bio.h>
 #include <openssl/pem.h>
@@ -38,7 +38,7 @@ int TestBioFree(BIO*) { return 1; }
 
 }  // namespace
 
-namespace pw::boringssl {
+namespace pw::tls_client::test {
 
 Result<X509*> ParseDerCertificate(ConstByteSpan cert) {
   BIO* bio = BIO_new_mem_buf(cert.data(), cert.size());
@@ -83,7 +83,7 @@ InMemoryTestServer::InMemoryTestServer(ByteSpan input_buffer,
     : input_buffer_(input_buffer), output_buffer_(output_buffer) {}
 
 int InMemoryTestServer::BioRead(BIO* bio, char* out, int out_length) {
-  auto server = static_cast<boringssl::InMemoryTestServer*>(bio->ptr);
+  auto server = static_cast<InMemoryTestServer*>(bio->ptr);
   auto read = server->input_buffer_.Read(
       std::as_writable_bytes(std::span{out, static_cast<size_t>(out_length)}));
   if (!read.ok()) {
@@ -100,7 +100,7 @@ int InMemoryTestServer::BioRead(BIO* bio, char* out, int out_length) {
 int InMemoryTestServer::BioWrite(BIO* bio,
                                  const char* input,
                                  int input_length) {
-  auto server = static_cast<boringssl::InMemoryTestServer*>(bio->ptr);
+  auto server = static_cast<InMemoryTestServer*>(bio->ptr);
   if (auto status = server->output_buffer_.Write(
           std::as_bytes(std::span{input, static_cast<size_t>(input_length)}));
       !status.ok()) {
@@ -293,4 +293,4 @@ Status InMemoryTestServer::DoWrite(ConstByteSpan data) {
   return ProcessPackets();
 }
 
-}  // namespace pw::boringssl
+}  // namespace pw::tls_client::test
