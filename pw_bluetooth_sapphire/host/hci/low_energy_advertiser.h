@@ -25,7 +25,7 @@ class AdvertisingIntervalRange final {
   constexpr AdvertisingIntervalRange(uint16_t min, uint16_t max)
       : min_(std::max(min, kLEAdvertisingIntervalMin)),
         max_(std::min(max, kLEAdvertisingIntervalMax)) {
-    ZX_ASSERT(min <= max);
+    ZX_ASSERT(min < max);
   }
 
   uint16_t min() const { return min_; }
