@@ -19,7 +19,7 @@ fbg::Characteristic CharacteristicToFidl(
     const bt::gatt::CharacteristicData& characteristic,
     const std::map<bt::gatt::DescriptorHandle, bt::gatt::DescriptorData>& descriptors) {
   fbg::Characteristic fidl_char;
-  fidl_char.set_handle(fbg::Handle{characteristic.handle});
+  fidl_char.set_handle(fbg::Handle{characteristic.value_handle});
   fidl_char.set_type(fuchsia::bluetooth::Uuid{characteristic.type.value()});
 
   // The FIDL property bitfield combines the properties and extended properties bits.
@@ -139,6 +139,45 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
 
         cb(fpromise::ok(std::move(fidl_results)));
       });
+}
+
+void Gatt2RemoteServiceServer::ReadCharacteristic(fbg::Handle fidl_handle, fbg::ReadOptions options,
+                                                  ReadCharacteristicCallback callback) {
+  if (fidl_handle.value > std::numeric_limits<bt::att::Handle>::max()) {
+    bt_log(ERROR, "fidl", "Invalid 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX)",
+           fidl_handle.value);
+    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    return;
+  }
+
+  bt::gatt::CharacteristicHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
+
+  bt::gatt::RemoteService::ReadValueCallback read_cb =
+      [peer_id = peer_id_, fidl_handle, callback = std::move(callback), func = __FUNCTION__](
+          bt::att::Status status, const bt::ByteBuffer& value, bool maybe_truncated) {
+        if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", func,
+                        bt_str(peer_id), fidl_handle.value)) {
+          callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
+          return;
+        }
+
+        fbg::ReadValue fidl_value;
+        fidl_value.set_handle(fidl_handle);
+        fidl_value.set_value(value.ToVector());
+        fidl_value.set_maybe_truncated(maybe_truncated);
+        callback(fit::ok(std::move(fidl_value)));
+      };
+
+  if (options.is_short_read()) {
+    service_->ReadCharacteristic(handle, std::move(read_cb));
+    return;
+  }
+
+  const fbg::LongReadOptions& long_options = options.long_read();
+  size_t max_bytes = long_options.has_max_bytes() ? static_cast<size_t>(long_options.max_bytes())
+                                                  : bt::att::kMaxAttributeValueLength;
+  uint16_t offset = long_options.has_offset() ? long_options.offset() : 0;
+  service_->ReadLongCharacteristic(handle, offset, max_bytes, std::move(read_cb));
 }
 
 }  // namespace bthost

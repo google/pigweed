@@ -96,7 +96,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverCharacteristics) {
   const fbg::Characteristic& fidl_characteristic = fidl_characteristics->front();
 
   ASSERT_TRUE(fidl_characteristic.has_handle());
-  EXPECT_EQ(fidl_characteristic.handle().value, static_cast<uint64_t>(kCharacteristicHandle));
+  EXPECT_EQ(fidl_characteristic.handle().value, static_cast<uint64_t>(kCharacteristicValueHandle));
 
   ASSERT_TRUE(fidl_characteristic.has_type());
   EXPECT_EQ(fidl_characteristic.type().value, kCharacteristicUuid.value());
@@ -301,6 +301,121 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
   ASSERT_TRUE(fidl_result->is_err());
   const auto& err = fidl_result->err();
   EXPECT_EQ(fbg::Error::TOO_MANY_RESULTS, err);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadShortCharacteristic) {
+  constexpr bt::att::Handle kHandle = 3;
+  constexpr bt::att::Handle kValueHandle = kHandle + 1;
+  const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
+
+  bt::gatt::CharacteristicData char_data(bt::gatt::Property::kRead, std::nullopt, kHandle,
+                                         kValueHandle, kServiceUuid);
+  fake_client()->set_characteristics({char_data});
+
+  std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+  service_proxy()->DiscoverCharacteristics(
+      [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_characteristics.has_value());
+  ASSERT_EQ(fidl_characteristics->size(), 1u);
+  const fbg::Characteristic& fidl_char = fidl_characteristics->front();
+  ASSERT_TRUE(fidl_char.has_handle());
+
+  size_t read_count = 0;
+  fake_client()->set_read_request_callback(
+      [&](bt::att::Handle handle, bt::gatt::Client::ReadCallback callback) {
+        read_count++;
+        EXPECT_EQ(handle, kValueHandle);
+        callback(bt::att::Status(), kValue, /*maybe_truncated=*/false);
+      });
+  fake_client()->set_read_blob_request_callback([](auto, auto, auto) { FAIL(); });
+
+  fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadCharacteristic(fidl_char.handle(), std::move(options),
+                                      [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  EXPECT_EQ(read_count, 1u);
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_ok()) << static_cast<uint32_t>(fidl_result->error());
+  const fbg::ReadValue& read_value = fidl_result->value();
+  EXPECT_TRUE(ContainersEqual(kValue, read_value.value()));
+  EXPECT_FALSE(read_value.maybe_truncated());
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadLongCharacteristicWithOffsetAndMaxBytes) {
+  constexpr bt::att::Handle kHandle = 3;
+  constexpr bt::att::Handle kValueHandle = kHandle + 1;
+  const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04, 0x05);
+  constexpr uint16_t kOffset = 1;
+  constexpr uint16_t kMaxBytes = 3;
+
+  bt::gatt::CharacteristicData char_data(bt::gatt::Property::kRead, std::nullopt, kHandle,
+                                         kValueHandle, kServiceUuid);
+  fake_client()->set_characteristics({char_data});
+
+  std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+  service_proxy()->DiscoverCharacteristics(
+      [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_characteristics.has_value());
+  ASSERT_EQ(fidl_characteristics->size(), 1u);
+  const fbg::Characteristic& fidl_char = fidl_characteristics->front();
+  ASSERT_TRUE(fidl_char.has_handle());
+
+  fbg::LongReadOptions long_options;
+  long_options.set_offset(kOffset);
+  long_options.set_max_bytes(kMaxBytes);
+  fbg::ReadOptions read_options;
+  read_options.set_long_read(std::move(long_options));
+
+  size_t read_count = 0;
+  fake_client()->set_read_request_callback([](auto, auto) { FAIL(); });
+  fake_client()->set_read_blob_request_callback(
+      [&](bt::att::Handle handle, uint16_t offset, bt::gatt::Client::ReadCallback cb) {
+        read_count++;
+        EXPECT_EQ(handle, kValueHandle);
+        EXPECT_EQ(offset, kOffset);
+        cb(bt::att::Status(), kValue.view(offset), /*maybe_truncated=*/false);
+      });
+
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadCharacteristic(fidl_char.handle(), std::move(read_options),
+                                      [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  EXPECT_EQ(read_count, 1u);
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_ok()) << static_cast<uint32_t>(fidl_result->error());
+  const fbg::ReadValue& read_value = fidl_result->value();
+  EXPECT_TRUE(ContainersEqual(kValue.view(kOffset, kMaxBytes), read_value.value()));
+  EXPECT_TRUE(read_value.maybe_truncated());
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadCharacteristicHandleTooLarge) {
+  fbg::Handle handle;
+  handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
+
+  fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadCharacteristic(handle, std::move(options),
+                                      [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_error());
+  EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_HANDLE);
+}
+
+// Trying to read a characteristic that doesn't exist should return a FAILURE error.
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadCharacteristicFailure) {
+  constexpr bt::att::Handle kHandle = 3;
+  fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadCharacteristic(fbg::Handle{kHandle}, std::move(options),
+                                      [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_error());
+  EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
 }
 
 }  // namespace

@@ -31,7 +31,7 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
 
   void ReadCharacteristic(::fuchsia::bluetooth::gatt2::Handle handle,
                           ::fuchsia::bluetooth::gatt2::ReadOptions options,
-                          ReadCharacteristicCallback callback) override {}
+                          ReadCharacteristicCallback callback) override;
 
   void WriteCharacteristic(::fuchsia::bluetooth::gatt2::Handle handle, ::std::vector<uint8_t> value,
                            ::fuchsia::bluetooth::gatt2::WriteOptions options,
