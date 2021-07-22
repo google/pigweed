@@ -69,8 +69,16 @@ constexpr uint32_t kCfsrUnalignedMask = (kCfsrUsageFaultStart << 8);
 constexpr uint32_t kCfsrDivbyzeroMask = (kCfsrUsageFaultStart << 9);
 
 // Bit masks for an exception return value. (ARMv7-M Section B1.5.8)
-constexpr uint32_t kExcReturnStackMask = 0x1u << 2;
+constexpr uint32_t kExcReturnStackMask = 0x1u << 2;  // 0=MSP, 1=PSP
+constexpr uint32_t kExcReturnModeMask = 0x1u << 3;   // 0=Handler, 1=Thread
 constexpr uint32_t kExcReturnBasicFrameMask = 0x1u << 4;
+
+// Mask for the IPSR, bits 8:0, of the xPSR register.
+constexpr uint32_t kXpsrIpsrMask = 0b1'1111'1111;
+
+// Bit masks for the control register. (ARMv7-M Section B1.4.4)
+// The SPSEL bit is only valid while in Thread Mode:
+constexpr uint32_t kControlThreadModeStackMask = 0x1u << 1;  // 0=MSP, 1=PSP
 
 // Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
 // TODO(pwbug/316): Only some of these are supported on ARMv6-M.

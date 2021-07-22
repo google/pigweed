@@ -73,6 +73,26 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "snapshot",
+    hdrs = ["public/pw_cpu_exception_cortex_m/snapshot.h"],
+    srcs = [
+        "snapshot.cc",
+    ],
+    deps = [
+        ":cpu_state_protos",
+        ":proto_dump_armv7m",
+        ":support_armv7m",
+        # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
+        "//pw_cpu_exception",
+        "//pw_log",
+        "//pw_protobuf",
+        "//pw_status",
+        "//pw_thread:protos",
+        "//pw_thread:snapshot",
+    ],
+)
+
 pw_cc_test(
     name = "cpu_exception_entry_test",
     srcs = [

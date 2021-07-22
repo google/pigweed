@@ -20,13 +20,13 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
 }
 
 pw_source_set("support_armv7m") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_cpu_exception:support.facade",
     dir_pw_preprocessor,
@@ -60,7 +60,7 @@ pw_proto_library("cpu_state_protos") {
 # patches for complete correctness. Add *_armv8m targets that use the same files
 # but provide preprocessor defines to enable/disable architecture specific code.
 pw_source_set("cpu_exception_armv7m") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":proto_dump_armv7m",
     ":support_armv7m",
@@ -71,6 +71,27 @@ pw_source_set("cpu_exception_armv7m") {
   sources = [
     "entry.cc",
     "pw_cpu_exception_cortex_m_private/cortex_m_constants.h",
+  ]
+}
+
+pw_source_set("snapshot") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":cpu_state_protos.pwpb",
+    ":support_armv7m",
+    "$dir_pw_thread:protos.pwpb",
+    "$dir_pw_thread:snapshot",
+    dir_pw_protobuf,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_cpu_exception_cortex_m/snapshot.h" ]
+  sources = [
+    "pw_cpu_exception_cortex_m_private/cortex_m_constants.h",
+    "snapshot.cc",
+  ]
+  deps = [
+    ":proto_dump_armv7m",
+    dir_pw_log,
   ]
 }
 

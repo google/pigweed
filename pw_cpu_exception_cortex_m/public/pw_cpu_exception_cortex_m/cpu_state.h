@@ -19,6 +19,17 @@
 
 namespace pw::cpu_exception {
 
+// The PC, LR, and PSR registers are not captured when the program stack
+// pointer is in an MPU-protected or otherwise invalid memory region. In
+// these situations, the registers are set to 0xFFFF'FFFF to indicate they
+// are invalid.
+//
+// 0xFFFFFFFF is an illegal LR value, which is why it was selected for
+// this purpose. PC and PSR values of 0xFFFFFFFF are dubious too, so this
+// constant is clear enough at suggesting that the registers weren't
+// properly captured.
+constexpr uintptr_t kUndefinedPcLrOrPsrRegValue = 0xFFFF'FFFF;
+
 // This is dictated by ARMv7-M architecture. Do not change.
 PW_PACKED(struct) CortexMExceptionRegisters {
   uint32_t r0;
@@ -26,9 +37,9 @@ PW_PACKED(struct) CortexMExceptionRegisters {
   uint32_t r2;
   uint32_t r3;
   uint32_t r12;
-  uint32_t lr;   // Link register.
-  uint32_t pc;   // Program counter.
-  uint32_t psr;  // Program status register.
+  uint32_t lr;   // Link register, note this may be invalid.
+  uint32_t pc;   // Program counter, note this may be invalid.
+  uint32_t psr;  // Program status register, note this may be invalid.
 };
 
 // This is dictated by ARMv7-M architecture. Do not change.

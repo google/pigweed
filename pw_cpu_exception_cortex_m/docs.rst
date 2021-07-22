@@ -84,12 +84,17 @@ Expected Behavior
 -----------------
 In most cases, the CPU state captured by the exception handler will contain the
 ARMv7-M basic register frame in addition to an extended set of registers (see
-``cpu_state.h``). The exception to this is when the program stack pointer is in
-an MPU-protected or otherwise invalid memory region when the CPU attempts to
-push the exception register frame to it. In this situation, the PC, LR, and PSR
-registers will NOT be captured and will be marked with 0xFFFFFFFF to indicate
-they are invalid. This backend will still be able to capture all the other
-registers though.
+``cpu_state.h``).
+
+The exception to this is when the program stack pointer is in an MPU-protected
+or otherwise invalid memory region when the CPU attempts to push the exception
+register frame to it. In this situation, the PC, LR, and PSR registers will NOT
+be captured and will be marked with ``0xFFFFFFFF`` to indicate they are invalid.
+This backend will still be able to capture all the other registers though.
+
+``0xFFFFFFFF`` is an illegal LR value, which is why it was selected for this
+purpose. PC and PSR values of 0xFFFFFFFF are dubious too, so this constant is
+clear enough at suggesting that the registers weren't properly captured.
 
 In the situation where the main stack pointer is in a memory protected or
 otherwise invalid region and fails to push CPU context, behavior is undefined.
@@ -152,3 +157,30 @@ For example:
 
 .. note::
   The CFSR is not supported on ARMv6-M CPUs (Cortex M0, M0+, M1).
+
+--------------------
+Snapshot integration
+--------------------
+This ``pw_cpu_exception`` backend provides helper functions that capture CPU
+exception state to snapshot protos.
+
+SnapshotCpuState()
+==================
+``SnapshotCpuState()`` captures the ``pw_cpu_exception_State`` to a
+``pw.cpu_exception.cortex_m.ArmV7mCpuState`` protobuf encoder.
+
+
+SnapshotMainStackThread()
+=========================
+``SnapshotMainStackThread()`` captures the main stack's execution thread state
+if active either from a given ``pw_cpu_exception_State`` or from the current
+running context. It captures the thread name depending on the processor mode,
+either ``Main Stack (Handler Mode)`` or ``Main Stack (Thread Mode)``. The stack
+limits must be provided along with a stack processing callback. All of this
+information is captured by a ``pw::thread::Thread`` protobuf encoder.
+
+.. note::
+  We recommend providing the ``pw_cpu_exception_State``, for example through
+  ``pw_cpu_exception_DefaultHandler()`` instead of using the current running
+  context to capture the main stack to minimize how much of the snapshot
+  handling is captured in the stack.
