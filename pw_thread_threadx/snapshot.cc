@@ -45,14 +45,17 @@ void CaptureThreadState(const TX_THREAD& thread,
 
   switch (thread.tx_thread_state) {
     case TX_READY:
+      PW_LOG_INFO("Thread state: READY");
       encoder.WriteState(ThreadState::Enum::READY);
       break;
     case TX_COMPLETED:
     case TX_TERMINATED:
+      PW_LOG_INFO("Thread state: INACTIVE");
       encoder.WriteState(ThreadState::Enum::INACTIVE);
       break;
     case TX_SUSPENDED:
     case TX_SLEEP:
+      PW_LOG_INFO("Thread state: SUSPENDED");
       encoder.WriteState(ThreadState::Enum::SUSPENDED);
       break;
     case TX_QUEUE_SUSP:
@@ -64,9 +67,11 @@ void CaptureThreadState(const TX_THREAD& thread,
     case TX_FILE:
     case TX_TCP_IP:
     case TX_MUTEX_SUSP:
+      PW_LOG_INFO("Thread state: BLOCKED");
       encoder.WriteState(ThreadState::Enum::BLOCKED);
       break;
     default:
+      PW_LOG_INFO("Thread state: UNKNOWN");
       encoder.WriteState(ThreadState::Enum::UNKNOWN);
   }
 }

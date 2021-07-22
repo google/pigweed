@@ -188,6 +188,7 @@ pw_cc_library(
         ":util",
         "//pw_bytes",
         "//pw_function",
+        "//pw_log",
         "//pw_protobuf",
         "//pw_status",
         "//pw_thread:protos",

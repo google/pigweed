@@ -164,7 +164,10 @@ pw_source_set("snapshot") {
   ]
   public = [ "public/pw_thread_threadx/snapshot.h" ]
   sources = [ "snapshot.cc" ]
-  deps = [ ":util" ]
+  deps = [
+    ":util",
+    dir_pw_log,
+  ]
 }
 
 pw_test_group("tests") {

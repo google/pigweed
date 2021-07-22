@@ -31,6 +31,16 @@ Status SnapshotStack(const StackContext& stack,
   encoder.WriteStackStartPointer(stack.stack_high_addr);
   encoder.WriteStackEndPointer(stack.stack_low_addr);
   encoder.WriteStackPointer(stack.stack_pointer);
+  PW_LOG_INFO("Active stack: 0x%08x-0x%08x (%ld bytes)",
+              stack.stack_high_addr,
+              stack.stack_pointer,
+              static_cast<long>(stack.stack_high_addr) -
+                  static_cast<long>(stack.stack_pointer));
+  PW_LOG_INFO("Stack Limits: 0x%08x-0x%08x (%ld bytes)",
+              stack.stack_low_addr,
+              stack.stack_high_addr,
+              static_cast<long>(stack.stack_high_addr) -
+                  static_cast<long>(stack.stack_low_addr));
 
   if (stack.stack_pointer > stack.stack_high_addr) {
     PW_LOG_ERROR("%s's stack underflowed by %lu bytes",

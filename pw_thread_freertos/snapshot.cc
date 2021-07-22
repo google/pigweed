@@ -34,33 +34,33 @@ void CaptureThreadState(eTaskState thread_state,
                         Thread::StreamEncoder& encoder) {
   switch (thread_state) {
     case eRunning:
-      PW_LOG_INFO("Thread State: RUNNING");
+      PW_LOG_INFO("Thread state: RUNNING");
       encoder.WriteState(ThreadState::Enum::RUNNING);
       return;
 
     case eReady:
-      PW_LOG_INFO("Thread State: READY");
+      PW_LOG_INFO("Thread state: READY");
       encoder.WriteState(ThreadState::Enum::READY);
       return;
 
     case eBlocked:
-      PW_LOG_INFO("Thread State: BLOCKED");
+      PW_LOG_INFO("Thread state: BLOCKED");
       encoder.WriteState(ThreadState::Enum::BLOCKED);
       return;
 
     case eSuspended:
-      PW_LOG_INFO("Thread State: SUSPENDED");
+      PW_LOG_INFO("Thread state: SUSPENDED");
       encoder.WriteState(ThreadState::Enum::SUSPENDED);
       return;
 
     case eDeleted:
-      PW_LOG_INFO("Thread State: INACTIVE");
+      PW_LOG_INFO("Thread state: INACTIVE");
       encoder.WriteState(ThreadState::Enum::INACTIVE);
       return;
 
     case eInvalid:
     default:
-      PW_LOG_INFO("Thread State: UNKNOWN");
+      PW_LOG_INFO("Thread state: UNKNOWN");
       encoder.WriteState(ThreadState::Enum::UNKNOWN);
       return;
   }

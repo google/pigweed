@@ -35,6 +35,7 @@ inline bool ThreadIsRunning(const OS_TASK& thread) {
 
 void CaptureThreadState(const OS_TASK& thread, Thread::StreamEncoder& encoder) {
   if (ThreadIsRunning(thread)) {
+    PW_LOG_INFO("Thread state: RUNNING");
     encoder.WriteState(ThreadState::Enum::RUNNING);
     return;
   }
@@ -55,10 +56,13 @@ void CaptureThreadState(const OS_TASK& thread, Thread::StreamEncoder& encoder) {
 #endif  // OS_VERSION_GENERIC < 42200 || OS_VERSION_GENERIC > 50600
 
   if ((thread.Stat & 0x3) != 0) {
+    PW_LOG_INFO("Thread state: SUSPENDED");
     encoder.WriteState(ThreadState::Enum::SUSPENDED);
   } else if ((thread.Stat & 0xf8) == 0) {
+    PW_LOG_INFO("Thread state: READY");
     encoder.WriteState(ThreadState::Enum::READY);
   } else {
+    PW_LOG_INFO("Thread state: BLOCKED");
     encoder.WriteState(ThreadState::Enum::BLOCKED);
   }
 }
@@ -125,6 +129,7 @@ Status SnapshotThread(const OS_TASK& thread,
 
   return SnapshotStack(thread_ctx, encoder, thread_stack_callback);
 #else
+  PW_LOG_INFO("Stack pointer: 0x%08x", running_thread_stack_pointer);
   encoder.WriteStackPointer(reinterpret_cast<uintptr_t>(
       ThreadIsRunning(thread) ? running_thread_stack_pointer : thread.pStack));
   return encoder.status();
