@@ -26,8 +26,8 @@ pw_cc_library(
     hdrs = [
         "public/pw_third_party/freertos/config_assert.h",
     ],
-		includes = ["public"],
-		deps = [
+    includes = ["public"],
+    deps = [
         "//pw_assert",
-		]
+    ],
 )
