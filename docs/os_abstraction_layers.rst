@@ -464,7 +464,7 @@ before any other embOS API.
 .. Note::
   To get around this one should invoke these initialization functions earlier
   and/or delay the static C++ constructors to meet this ordering requirement. As
-  an example if you were using :ref:`module-pw_boot_armv7m`, then
+  an example if you were using :ref:`module-pw_boot_cortex_m`, then
   ``pw_boot_PreStaticConstructorInit()`` would be a great place to invoke kernel
   initialization.
 

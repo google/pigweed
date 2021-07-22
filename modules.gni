@@ -27,7 +27,7 @@ declare_args() {
   dir_pw_bloat = get_path_info("pw_bloat", "abspath")
   dir_pw_blob_store = get_path_info("pw_blob_store", "abspath")
   dir_pw_boot = get_path_info("pw_boot", "abspath")
-  dir_pw_boot_armv7m = get_path_info("pw_boot_armv7m", "abspath")
+  dir_pw_boot_cortex_m = get_path_info("pw_boot_cortex_m", "abspath")
   dir_pw_build = get_path_info("pw_build", "abspath")
   dir_pw_bytes = get_path_info("pw_bytes", "abspath")
   dir_pw_checksum = get_path_info("pw_checksum", "abspath")

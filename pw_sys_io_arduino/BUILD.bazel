@@ -26,7 +26,6 @@ pw_cc_library(
     srcs = ["sys_io_arduino.cc"],
     hdrs = ["public/pw_sys_io_arduino/init.h"],
     deps = [
-        "//pw_boot_armv7m",
         "//pw_preprocessor",
         "//pw_sys_io",
     ],

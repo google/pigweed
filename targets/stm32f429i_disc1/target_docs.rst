@@ -198,7 +198,7 @@ file. This should produce output similar to the following:
   Type "apropos word" to search for commands related to "word"...
   Reading symbols from out/stm32f429i_disc1_debug/obj/pw_assert//test/assert_facade_test.elf...
   Remote debugging using :3333
-  pw_BootEntry () at ../pw_boot_armv7m/core_init.c:117
+  pw_BootEntry () at ../pw_boot_cortex_m/core_init.c:117
   117	  }
 
 Step 3: Flash, run, and debug

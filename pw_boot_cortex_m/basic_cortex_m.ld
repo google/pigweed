@@ -14,44 +14,45 @@
  * the License.
  */
 
-/* This relatively simplified linker script will work with many ARMv7-M cores
- * that have on-board memory-mapped RAM and FLASH. For more complex projects and
- * devices, it's possible this linker script will not be sufficient as-is.
+/* This relatively simplified linker script will work with many ARMv7-M and
+ * ARMv8-M cores that have on-board memory-mapped RAM and FLASH. For more
+ * complex projects and devices, it's possible this linker script will not be
+ * sufficient as-is.
  *
  * This linker script is likely not suitable for a project with a bootloader.
  */
 
 /* Provide useful error messages when required configurations are not set. */
 #ifndef PW_BOOT_VECTOR_TABLE_BEGIN
-#error "PW_BOOT_VECTOR_TABLE_BEGIN is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_VECTOR_TABLE_BEGIN is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_VECTOR_TABLE_BEGIN
 
 #ifndef PW_BOOT_VECTOR_TABLE_SIZE
-#error "PW_BOOT_VECTOR_TABLE_SIZE is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_VECTOR_TABLE_SIZE is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_VECTOR_TABLE_SIZE
 
 #ifndef PW_BOOT_FLASH_BEGIN
-#error "PW_BOOT_FLASH_BEGIN is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_FLASH_BEGIN is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_FLASH_BEGIN
 
 #ifndef PW_BOOT_FLASH_SIZE
-#error "PW_BOOT_FLASH_SIZE is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_FLASH_SIZE is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_FLASH_SIZE
 
 #ifndef PW_BOOT_RAM_BEGIN
-#error "PW_BOOT_RAM_BEGIN is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_RAM_BEGIN is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_RAM_BEGIN
 
 #ifndef PW_BOOT_RAM_SIZE
-#error "PW_BOOT_RAM_SIZE is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_RAM_SIZE is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_RAM_SIZE
 
 #ifndef PW_BOOT_HEAP_SIZE
-#error "PW_BOOT_HEAP_SIZE is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_HEAP_SIZE is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_HEAP_SIZE
 
 #ifndef PW_BOOT_MIN_STACK_SIZE
-#error "PW_BOOT_MIN_STACK_SIZE is not defined, and is required to use pw_boot_armv7m"
+#error "PW_BOOT_MIN_STACK_SIZE is not defined, and is required to use pw_boot_cortex_m"
 #endif  // PW_BOOT_MIN_STACK_SIZE
 
 

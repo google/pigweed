@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_boot_armv7m/boot.h"
+#include "pw_boot_cortex_m/boot.h"
 
 #include "pw_malloc/malloc.h"
 #include "pw_preprocessor/compiler.h"

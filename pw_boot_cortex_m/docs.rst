@@ -1,12 +1,12 @@
-.. _module-pw_boot_armv7m:
+.. _module-pw_boot_cortex_m:
 
---------------
-pw_boot_armv7m
---------------
+----------------
+pw_boot_cortex_m
+----------------
 
-The ARMv7-M boot module provides a linker script and some early initialization
-of static memory regions and C++ constructors. This is enough to get many
-ARMv7-M cores booted and ready to run C++ code.
+The ARM Cortex-M boot module provides a linker script and some early
+initialization of static memory regions and C++ constructors. This is enough to
+get many ARMv7-M and ARMv8-M cores booted and ready to run C++ code.
 
 This module is currently designed to support a very minimal device memory layout
 configuration:
@@ -25,8 +25,8 @@ a bootloader, as it's relatively opinionated regarding where code is stored.
 Sequence
 ========
 
-The high level pw_boot_armv7m boot sequence looks like the following pseudo-code
-invocation of the user-implemented functions:
+The high level pw_boot_cortex_m boot sequence looks like the following
+pseudo-code invocation of the user-implemented functions:
 
 .. code:: cpp
 
@@ -43,6 +43,13 @@ invocation of the user-implemented functions:
 
 Setup
 =====
+
+Processor Selection
+-------------------
+Set the ``pw_boot_BACKEND`` variable to the appropriate target for the processor
+in use.
+
+ - ``pw_boot_cortex_m:armv7m`` for ARMv7-M cores.
 
 User-Implemented Functions
 --------------------------
@@ -101,14 +108,11 @@ error.
 Required Configs
 ----------------
 This module has a number of required configuration options that mold the linker
-script to fit to a wide variety of ARMv7-M SoCs. The ``pw_boot_armv7m_config``
-GN variable has a ``defines`` member that can be used to modify these linker
-script options. See the documentation section on configuration for information
-regarding which configuration options are required.
+script to fit to a wide variety of ARM Cortex-M SoCs.
 
 Vector Table
 ------------
-Targets using ``pw_boot_armv7m`` will need to provide an ARMv7-M interrupt
+Targets using ``pw_boot_cortex_m`` will need to provide an ARMv7-M interrupt
 vector table (ARMv7-M Architecture Reference Manual DDI 0403E.b section B1.5.2
 and B1.5.3). This is done by storing an array into the ``.vector_table``
 section, and properly configuring ``PW_BOOT_VECTOR_TABLE_*`` preprocessor
@@ -167,7 +171,7 @@ stack. This might not be the only stack in the system.
 Configuration
 =============
 These configuration options can be controlled by appending list items to
-``pw_boot_armv7m_LINK_CONFIG_DEFINES`` as part of a Pigweed target
+``pw_boot_cortex_m_LINK_CONFIG_DEFINES`` as part of a Pigweed target
 configuration.
 
 ``PW_BOOT_HEAP_SIZE`` (required):

@@ -31,13 +31,13 @@ _target_config = {
       get_path_info("lm3s6965evb_executable.gni", "abspath")
 
   # Path to the bloaty config file for the output binaries.
-  pw_bloat_BLOATY_CONFIG = "$dir_pw_boot_armv7m/bloaty_config.bloaty"
+  pw_bloat_BLOATY_CONFIG = "$dir_pw_boot_cortex_m/bloaty_config.bloaty"
 
   pw_unit_test_AUTOMATIC_RUNNER = get_path_info(_test_runner_script, "abspath")
 
   # Facade backends
   pw_assert_BACKEND = dir_pw_assert_basic
-  pw_boot_BACKEND = dir_pw_boot_armv7m
+  pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
   pw_log_BACKEND = dir_pw_log_basic
   pw_sys_io_BACKEND = dir_pw_sys_io_baremetal_lm3s6965evb
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
@@ -51,7 +51,7 @@ _target_config = {
   # pw_cpu_exception_ENTRY_BACKEND =
   #     "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv7m
 
-  pw_boot_armv7m_LINK_CONFIG_DEFINES = [
+  pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
     "PW_BOOT_FLASH_BEGIN=0x00000200",
     "PW_BOOT_FLASH_SIZE=255K",
     "PW_BOOT_HEAP_SIZE=0",

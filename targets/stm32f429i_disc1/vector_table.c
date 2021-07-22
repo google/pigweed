@@ -14,7 +14,7 @@
 
 #include <stdbool.h>
 
-#include "pw_boot_armv7m/boot.h"
+#include "pw_boot_cortex_m/boot.h"
 
 // Default handler to insert into the ARMv7-M vector table (below).
 // This function exists for convenience. If a device isn't doing what you
@@ -27,7 +27,7 @@ static void DefaultFaultHandler(void) {
 
 // This is the device's interrupt vector table. It's not referenced in any
 // code because the platform (STM32F4xx) expects this table to be present at the
-// beginning of flash. The exact address is specified in the pw_boot_armv7m
+// beginning of flash. The exact address is specified in the pw_boot_cortex_m
 // configuration as part of the target config.
 //
 // For more information, see ARMv7-M Architecture Reference Manual DDI 0403E.b

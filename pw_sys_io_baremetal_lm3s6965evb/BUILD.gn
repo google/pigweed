@@ -25,7 +25,7 @@ pw_source_set("pw_sys_io_baremetal_lm3s6965evb") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_sys_io_baremetal_lm3s6965evb/init.h" ]
   public_deps = [
-    "$dir_pw_boot_armv7m",
+    "$dir_pw_boot_cortex_m:armv7m",
     "$dir_pw_preprocessor",
   ]
   deps = [

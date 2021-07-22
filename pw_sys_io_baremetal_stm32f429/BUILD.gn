@@ -25,7 +25,7 @@ pw_source_set("pw_sys_io_baremetal_stm32f429") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_sys_io_baremetal_stm32f429/init.h" ]
   public_deps = [
-    "$dir_pw_boot_armv7m",
+    "$dir_pw_boot_cortex_m:armv7m",
     "$dir_pw_preprocessor",
   ]
   deps = [

@@ -32,7 +32,7 @@ _target_config = {
       get_path_info("arduino_executable.gni", "abspath")
 
   # Path to the bloaty config file for the output binaries.
-  pw_bloat_BLOATY_CONFIG = "$dir_pw_boot_armv7m/bloaty_config.bloaty"
+  pw_bloat_BLOATY_CONFIG = "$dir_pw_boot_cortex_m/bloaty_config.bloaty"
 
   if (pw_arduino_use_test_server) {
     _test_runner_script =

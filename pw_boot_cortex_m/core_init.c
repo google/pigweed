@@ -55,7 +55,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "pw_boot_armv7m/boot.h"
+#include "pw_boot_cortex_m/boot.h"
 #include "pw_preprocessor/compiler.h"
 
 // Extern symbols provided by linker script.
@@ -113,8 +113,8 @@ void pw_boot_Entry() {
   // Call static constructors.
   __libc_init_array();
 
-  // This function is not provided by pw_boot_armv7m, a platform layer, project,
-  // or application is expected to implement it.
+  // This function is not provided by pw_boot_cortex_m, a platform layer,
+  // project, or application is expected to implement it.
   pw_boot_PreMainInit();
 
   // Run main.

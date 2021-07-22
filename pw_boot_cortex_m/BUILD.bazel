@@ -21,10 +21,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "pw_boot_armv7m",
+    name = "armv7m",
     srcs = [
         "core_init.c",
-        "public/pw_boot_armv7m/boot.h",
+        "public/pw_boot_cortex_m/boot.h",
     ],
     includes = ["public"],
     target_compatible_with = select({
