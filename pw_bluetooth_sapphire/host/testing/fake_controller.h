@@ -324,6 +324,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Convert an extended advertising interval to a legacy advertising interval
   static uint32_t DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]);
 
+  static bool IsValidAdvertisingHandle(hci::AdvertisingHandle handle) {
+    return handle <= hci::kAdvertisingHandleMax;
+  }
+
   // Returns the current thread's task dispatcher.
   async_dispatcher_t* dispatcher() const { return async_get_default_dispatcher(); }
 

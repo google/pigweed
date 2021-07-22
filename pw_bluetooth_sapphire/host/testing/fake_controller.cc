@@ -1539,6 +1539,13 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
     const hci::LESetAdvertisingSetRandomAddressCommandParams& params) {
   hci::AdvertisingHandle handle = params.adv_handle;
 
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+    RespondWithCommandComplete(hci::kLESetAdvertisingSetRandomAddress,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
   if (extended_advertising_states_.count(handle) == 0) {
     bt_log(INFO, "fake-hci",
            "unknown advertising handle (%d), "
@@ -1589,6 +1596,13 @@ uint32_t FakeController::DecodeExtendedAdvertisingInterval(const uint8_t (&input
 void FakeController::OnLESetExtendedAdvertisingParameters(
     const hci::LESetExtendedAdvertisingParametersCommandParams& params) {
   hci::AdvertisingHandle handle = params.adv_handle;
+
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
 
   // ensure we can allocate memory for this advertising set if not already present
   if (extended_advertising_states_.count(handle) == 0 &&
@@ -1732,6 +1746,14 @@ void FakeController::OnLESetExtendedAdvertisingData(
   ZX_ASSERT(params.fragment_preference == hci::LEExtendedAdvFragmentPreference::kShouldNotFragment);
 
   hci::AdvertisingHandle handle = params.adv_handle;
+
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+    RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
   if (extended_advertising_states_.count(handle) == 0) {
     bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
     RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData,
@@ -1782,6 +1804,14 @@ void FakeController::OnLESetExtendedScanResponseData(
   ZX_ASSERT(params.fragment_preference == hci::LEExtendedAdvFragmentPreference::kShouldNotFragment);
 
   hci::AdvertisingHandle handle = params.adv_handle;
+
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+    RespondWithCommandComplete(hci::kLESetExtendedScanResponseData,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
+
   if (extended_advertising_states_.count(handle) == 0) {
     bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
     RespondWithCommandComplete(hci::kLESetExtendedScanResponseData,
@@ -1831,6 +1861,13 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
 
     for (uint8_t i = 0; i < params.number_of_sets; i++) {
       hci::AdvertisingHandle handle = params.data[i].adv_handle;
+
+      if (!IsValidAdvertisingHandle(handle)) {
+        bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+        RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
+                                   hci::StatusCode::kInvalidHCICommandParameters);
+        return;
+      }
 
       // cannot have two array entries for the same advertising handle
       if (handles.count(handle) != 0) {
@@ -1940,6 +1977,13 @@ void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
 void FakeController::OnLERemoveAdvertisingSet(
     const hci::LERemoveAdvertisingSetCommandParams& params) {
   hci::AdvertisingHandle handle = params.adv_handle;
+
+  if (!IsValidAdvertisingHandle(handle)) {
+    bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
+    RespondWithCommandComplete(hci::kLERemoveAdvertisingSet,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+    return;
+  }
 
   if (extended_advertising_states_.count(handle) == 0) {
     bt_log(INFO, "fake-hci", "advertising handle (%d) maps to an unknown advertising set", handle);
