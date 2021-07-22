@@ -41,7 +41,13 @@ using AdvFlags = uint8_t;
 constexpr uint8_t kDefaultNoAdvFlags = 0;
 
 // The TLV size of the Flags datatype.
-constexpr size_t kFlagsSize = 3;
+constexpr size_t kTLVFlagsSize = 3;
+
+// The TLV size of the TX power data type
+constexpr size_t kTLVTxPowerLevelSize = 3;
+
+// The TLV size of the appearance data type
+constexpr size_t kTLVAppearanceSize = 4;
 
 // Constants for the expected size (in octets) of an
 // advertising/EIR/scan-response data field.

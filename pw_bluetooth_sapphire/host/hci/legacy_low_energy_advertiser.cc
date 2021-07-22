@@ -8,6 +8,7 @@
 #include <lib/async/default.h>
 #include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
@@ -15,9 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
-
-// The size, in bytes, of the serialized TX Power Level.
-constexpr size_t kTxPowerLevelTLVSize = 3;
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address, GenericEnableParam enable) {
@@ -129,7 +127,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
   // If the TX Power Level is requested, ensure both buffers have enough space.
   size_t size_limit = GetSizeLimit();
   if (adv_options.include_tx_power_level) {
-    size_limit -= kTxPowerLevelTLVSize;
+    size_limit -= kTLVTxPowerLevelSize;
   }
 
   size_t data_size = data.CalculateBlockSize(/*include_flags=*/true);

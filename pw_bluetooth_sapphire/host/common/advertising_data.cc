@@ -437,14 +437,21 @@ std::optional<uint16_t> AdvertisingData::appearance() const { return appearance_
 
 size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
   size_t len = 0;
-  if (include_flags)
-    len += kFlagsSize;
-  if (tx_power_)
-    len += 3;
-  if (appearance_)
-    len += 4;
-  if (local_name_)
+  if (include_flags) {
+    len += kTLVFlagsSize;
+  }
+
+  if (tx_power_) {
+    len += kTLVTxPowerLevelSize;
+  }
+
+  if (appearance_) {
+    len += kTLVAppearanceSize;
+  }
+
+  if (local_name_) {
     len += 2 + local_name_->size();
+  }
 
   for (const auto& manuf_pair : manufacturer_data_) {
     len += 2 + 2 + manuf_pair.second.size();
@@ -478,26 +485,27 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
 
   size_t pos = 0;
   if (flags) {
-    (*buffer)[pos++] = 2;
+    (*buffer)[pos++] = kTLVFlagsSize - 1;  // size variable includes current field, subtract 1
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kFlags);
     (*buffer)[pos++] = static_cast<uint8_t>(flags.value());
   }
 
   if (tx_power_) {
-    (*buffer)[pos++] = 2;
+    (*buffer)[pos++] =
+        kTLVTxPowerLevelSize - 1;  // size variable includes current field, subtract 1
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kTxPowerLevel);
     (*buffer)[pos++] = static_cast<uint8_t>(tx_power_.value());
   }
 
   if (appearance_) {
-    (*buffer)[pos++] = 3;
+    (*buffer)[pos++] = kTLVAppearanceSize - 1;  // size variable includes current field, subtract 1
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kAppearance);
     pos += BufferWrite(buffer, pos, appearance_.value());
   }
 
   if (local_name_) {
     ZX_ASSERT(local_name_->size() <= kMaxNameLength);
-    (*buffer)[pos++] = static_cast<uint8_t>(local_name_->size()) + 1;
+    (*buffer)[pos++] = static_cast<uint8_t>(local_name_->size()) + 1;  // 1 for null char
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kCompleteLocalName);
     buffer->Write(reinterpret_cast<const uint8_t*>(local_name_->c_str()), local_name_->size(), pos);
     pos += local_name_->size();
@@ -518,7 +526,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
     size_t encoded_service_data_size =
         EncodedServiceDataSize(uuid, service_data_pair.second.view());
     ZX_ASSERT(encoded_service_data_size <= kMaxEncodedServiceDataLength);
-    (*buffer)[pos++] = 1 + static_cast<uint8_t>(encoded_service_data_size);
+    (*buffer)[pos++] = 1 + static_cast<uint8_t>(encoded_service_data_size);  // 1 for type
     (*buffer)[pos++] = static_cast<uint8_t>(ServiceDataTypeForUuidSize(uuid.CompactSize()));
     auto target = buffer->mutable_view(pos);
     pos += service_data_pair.first.ToBytes(&target);
@@ -529,7 +537,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   for (const auto& uri : uris_) {
     std::string s = EncodeUri(uri);
     ZX_ASSERT(s.size() <= kMaxEncodedUriLength);
-    (*buffer)[pos++] = 1 + static_cast<uint8_t>(s.size());
+    (*buffer)[pos++] = 1 + static_cast<uint8_t>(s.size());  // 1 for type
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kURI);
     buffer->Write(reinterpret_cast<const uint8_t*>(s.c_str()), s.length(), pos);
     pos += s.size();
@@ -539,6 +547,8 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
     if (bounded_uuids.set().empty()) {
       continue;
     }
+
+    // 1 for type
     ZX_ASSERT(1 + uuid_width * bounded_uuids.set().size() <= std::numeric_limits<uint8_t>::max());
     (*buffer)[pos++] = 1 + uuid_width * static_cast<uint8_t>(bounded_uuids.set().size());
     (*buffer)[pos++] =
