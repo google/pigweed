@@ -36,4 +36,24 @@ pw_cc_library(
         "//pw_boot:facade",
         "//pw_preprocessor",
     ],
+    defines = ["PW_BOOT_CORTEX_M_ARMV7M"],
+)
+
+pw_cc_library(
+    name = "armv8m",
+    srcs = [
+        "core_init.c",
+        "public/pw_boot_cortex_m/boot.h",
+    ],
+    includes = ["public"],
+    target_compatible_with = select({
+        "@platforms//cpu:armv8e-m": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//pw_boot:facade",
+        "//pw_preprocessor",
+    ],
+    defines = ["PW_BOOT_CORTEX_M_ARMV8M"],
 )

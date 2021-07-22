@@ -25,7 +25,8 @@ declare_args() {
   pw_boot_cortex_m_LINK_CONFIG_DEFINES = []
 }
 
-if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m") {
+if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m" ||
+    pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv8m") {
   config("default_config") {
     include_dirs = [ "public" ]
   }
@@ -36,8 +37,25 @@ if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m") {
     defines = pw_boot_cortex_m_LINK_CONFIG_DEFINES
     linker_script = "basic_cortex_m.ld"
   }
+}
 
+if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m") {
   pw_source_set("armv7m") {
+    defines = [ "PW_BOOT_CORTEX_M_ARMV7M" ]
+    public_configs = [ ":default_config" ]
+    public = [ "public/pw_boot_cortex_m/boot.h" ]
+    public_deps = [ "$dir_pw_preprocessor" ]
+    deps = [
+      ":cortex_m_linker_script",
+      "$dir_pw_boot:facade",
+    ]
+    sources = [ "core_init.c" ]
+  }
+}
+
+if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv8m") {
+  pw_source_set("armv8m") {
+    defines = [ "PW_BOOT_CORTEX_M_ARMV8M" ]
     public_configs = [ ":default_config" ]
     public = [ "public/pw_boot_cortex_m/boot.h" ]
     public_deps = [ "$dir_pw_preprocessor" ]

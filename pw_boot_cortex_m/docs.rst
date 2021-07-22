@@ -51,6 +51,8 @@ in use.
 
  - ``pw_boot_cortex_m:armv7m`` for ARMv7-M cores.
 
+ - ``pw_boot_cortex_m:armv8m`` for ARMv8-M cores.
+
 User-Implemented Functions
 --------------------------
 This module expects all of these extern "C" functions to be defined outside this
