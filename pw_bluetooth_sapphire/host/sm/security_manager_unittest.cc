@@ -2587,6 +2587,23 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveMITMSecurityRequestLocalIoCapNoInputNoOu
   EXPECT_EQ(0, pairing_complete_count());
 }
 
+TEST_F(SMP_InitiatorPairingTest, RejectPairingRequest) {
+  // Although we are the initiator, set the peer_initiator=true for this test so that we emulate
+  // reception of the Pairing Request command, not the Pairing Response command.
+  ReceivePairingFeatures(IOCapability::kDisplayYesNo, AuthReqField{0}, kMaxEncryptionKeySize,
+                         /*peer_initiator=*/true);
+  RunLoopUntilIdle();
+  // We should reject the security request with CommandNotSupported as initiator.
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(ErrorCode::kCommandNotSupported, received_error_code());
+
+  // Run for the full pairing timeout to ensure we do not timeout due to sending a message.
+  RunLoopFor(kPairingTimeout + zx::sec(1));
+  // No pairing occurred, as we rejected the security request command.
+  EXPECT_EQ(0, pairing_complete_count());
+  EXPECT_EQ(1, pairing_failed_count());
+}
+
 TEST_F(SMP_InitiatorPairingTest, PairingTimeoutWorks) {
   UpgradeSecurity(SecurityLevel::kEncrypted);
   RunLoopUntilIdle();
@@ -3303,12 +3320,17 @@ TEST_F(SMP_ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   ASSERT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 }
 
-// As responder, we ignore security requests and don't send a Pairing Request or encrypt the link
-// in response.
-TEST_F(SMP_ResponderPairingTest, ReceiveSecurityRequest) {
+// As responder, we reject security requests, as the initiator should never send them.
+TEST_F(SMP_ResponderPairingTest, RejectSecurityRequest) {
   ReceiveSecurityRequest();
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(ErrorCode::kCommandNotSupported, received_error_code());
+
+  // Run for the full pairing timeout to ensure we do not timeout due to sending a message.
+  RunLoopFor(kPairingTimeout + zx::sec(1));
   EXPECT_EQ(0, pairing_request_count());
   EXPECT_EQ(0, fake_link()->start_encryption_count());
+  EXPECT_EQ(1, pairing_failed_count());
 }
 
 // Test that LTK is generated and passed up to SecurityManager when both sides request bonding

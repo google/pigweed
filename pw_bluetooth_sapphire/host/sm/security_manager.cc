@@ -248,6 +248,7 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
 
   if (role_ != Role::kInitiator) {
     bt_log(INFO, "sm", "Received spurious Security Request while not acting as SM initiator");
+    sm_chan_->SendMessageNoTimerReset(kPairingFailed, ErrorCode::kCommandNotSupported);
     return;
   }
 
@@ -312,8 +313,8 @@ void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level, PairingCallback c
 void SecurityManagerImpl::OnPairingRequest(const PairingRequestParams& req_params) {
   // Only the initiator may send the Pairing Request (V5.0 Vol. 3 Part H 3.5.1).
   if (role_ != Role::kResponder) {
-    bt_log(DEBUG, "sm", "rejecting \"Pairing Request\" as initiator");
-    sm_chan_->SendMessage(kPairingFailed, ErrorCode::kCommandNotSupported);
+    bt_log(INFO, "sm", "rejecting \"Pairing Request\" as initiator");
+    sm_chan_->SendMessageNoTimerReset(kPairingFailed, ErrorCode::kCommandNotSupported);
     return;
   }
   // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Pairing Request command, the
