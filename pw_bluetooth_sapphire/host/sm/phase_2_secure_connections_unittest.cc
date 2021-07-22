@@ -333,6 +333,29 @@ TEST_F(SMP_Phase2SecureConnectionsTest, RejectsPublicKeyOffCurve) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
+TEST_F(SMP_Phase2SecureConnectionsTest, RejectsPublicKeyIdenticalToLocalKey) {
+  // Read local key sent to peer
+  fake_chan()->SetSendCallback(
+      [this](ByteBufferPtr sdu) {
+        auto reader = ValidPacketReader::ParseSdu(sdu).value();
+        if (reader.code() == kPairingPublicKey) {
+          mut_local_key() = EcdhKey::ParseFromPublicKey(reader.payload<PairingPublicKeyParams>());
+        }
+      },
+      dispatcher());
+
+  phase_2_sc()->Start();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(local_key().has_value());
+
+  // Mirror back local key as the peer's public key
+  const auto kPairingPublicKeyCmd =
+      MakeCmd(kPairingPublicKey, local_key()->GetSerializedPublicKey());
+  const StaticByteBuffer kExpectedFailure{kPairingFailed, ErrorCode::kInvalidParameters};
+  EXPECT_TRUE(ReceiveAndExpect(kPairingPublicKeyCmd, kExpectedFailure));
+  EXPECT_EQ(1, listener()->pairing_error_count());
+}
+
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceivePeerPublicKeyTwice) {
   phase_2_sc()->Start();
   const auto kPairingPublicKeyCmd = MakeCmd(kPairingPublicKey, peer_key().GetSerializedPublicKey());

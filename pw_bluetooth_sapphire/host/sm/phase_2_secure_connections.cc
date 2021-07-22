@@ -104,8 +104,22 @@ void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_ke
     Abort(ErrorCode::kInvalidParameters);
     return;
   }
+
   EcdhKey peer_key = std::move(*maybe_peer_key);
+  ZX_ASSERT(local_ecdh_.has_value());
+  if (peer_key.GetPublicKeyX() == local_ecdh_->GetPublicKeyX() &&
+      peer_key.GetPublicKeyY() == local_ecdh_->GetPublicKeyY()) {
+    // NOTE(fxbug.dev/80650): When passkey entry is used, the non-initiating device can reflect
+    // our public key (which we send in plaintext). The inputs to the hash that we disclose bit-
+    // by-bit in ScStage1Passkey are the two public keys, our nonce, and one bit of our passkey, so
+    // if the peer uses the same public key then it can easily brute force for the passkey bit.
+    bt_log(WARN, "sm", "peer public ECDH key mirrors local public ECDH key (sent_local_ecdh_: %d)",
+           sent_local_ecdh_);
+    Abort(ErrorCode::kInvalidParameters);
+    return;
+  }
   peer_ecdh_ = std::move(peer_key);
+
   if (role() == Role::kResponder) {
     SendLocalPublicKey();
   } else {
