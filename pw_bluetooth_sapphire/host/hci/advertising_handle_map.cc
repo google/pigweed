@@ -15,7 +15,7 @@ std::optional<AdvertisingHandle> AdvertisingHandleMap::MapHandle(const DeviceAdd
     return std::nullopt;
   }
 
-  std::optional<AdvertisingHandle> handle = NextAvailable();
+  std::optional<AdvertisingHandle> handle = NextHandle();
   ZX_ASSERT(handle);
 
   addr_to_handle_[address] = handle.value();
@@ -62,22 +62,31 @@ bool AdvertisingHandleMap::Empty() const {
 }
 
 void AdvertisingHandleMap::Clear() {
-  next_advertising_handle_ = 0;
+  last_handle_ = 0;
   addr_to_handle_.clear();
   handle_to_addr_.clear();
 }
 
-std::optional<AdvertisingHandle> AdvertisingHandleMap::NextAvailable() {
+std::optional<AdvertisingHandle> AdvertisingHandleMap::PeekNextHandle() const {
   if (Size() >= kMaxElements) {
     return std::nullopt;
   }
 
-  AdvertisingHandle handle = next_advertising_handle_;
-  while (handle_to_addr_.count(handle) != 0) {
+  AdvertisingHandle handle = last_handle_;
+  do {
     handle = (handle + 1) % kMaxElements;
+  } while (handle_to_addr_.count(handle) != 0);
+
+  return handle;
+}
+
+std::optional<AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
+  std::optional<AdvertisingHandle> handle = PeekNextHandle();
+  if (!handle) {
+    return std::nullopt;
   }
 
-  next_advertising_handle_ = (handle + 1) % kMaxElements;
+  last_handle_ = (handle.value() + 1) % kMaxElements;
   return handle;
 }
 

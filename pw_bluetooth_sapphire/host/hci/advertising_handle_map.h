@@ -51,6 +51,11 @@ class AdvertisingHandleMap {
   // new mapping with a new AdvertisingHandle.
   void RemoveAddress(const DeviceAddress& address);
 
+  // Get the value of the next advertising handle that will be used. If the container holds >=
+  // kMaxAdvertisingHandles, returns std:nullopt to indicate there are no more valid
+  // AdvertisingHandles.
+  std::optional<AdvertisingHandle> PeekNextHandle() const;
+
   // Get the number of unique mappings in the container
   std::size_t Size() const;
 
@@ -64,9 +69,12 @@ class AdvertisingHandleMap {
   // Generate the next valid, available, and within range AdvertisingHandle. This function may fail
   // if there are already kMaxAdvertisingHandles in the container: there are no more valid
   // AdvertisingHandles.
-  std::optional<AdvertisingHandle> NextAvailable();
+  std::optional<AdvertisingHandle> NextHandle();
 
-  AdvertisingHandle next_advertising_handle_ = 0;
+  // The last generated advertising handle used as a hint to generate the next handle; defaults to
+  // 0xFF if no handles have been generated yet.
+  AdvertisingHandle last_handle_ = 0xFF;
+
   std::unordered_map<DeviceAddress, AdvertisingHandle> addr_to_handle_;
   std::unordered_map<AdvertisingHandle, DeviceAddress> handle_to_addr_;
 };
