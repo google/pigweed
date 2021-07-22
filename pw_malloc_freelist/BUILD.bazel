@@ -41,7 +41,6 @@ pw_cc_library(
         ":headers",
         "//pw_allocator:block",
         "//pw_allocator:freelist_heap",
-        "//pw_boot_armv7m",
         "//pw_malloc:facade",
         "//pw_preprocessor",
     ],

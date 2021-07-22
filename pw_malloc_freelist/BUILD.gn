@@ -29,7 +29,6 @@ pw_source_set("pw_malloc_freelist") {
   deps = [
     "$dir_pw_allocator:block",
     "$dir_pw_allocator:freelist_heap",
-    "$dir_pw_boot_armv7m",
     "$dir_pw_malloc:facade",
     "$dir_pw_preprocessor",
   ]
