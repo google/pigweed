@@ -26,7 +26,10 @@ pw_python_package("py") {
 
   sources = [
     "pw_rpc/__init__.py",
-    "pw_rpc/callback_client.py",
+    "pw_rpc/callback_client/__init__.py",
+    "pw_rpc/callback_client/call.py",
+    "pw_rpc/callback_client/errors.py",
+    "pw_rpc/callback_client/impl.py",
     "pw_rpc/client.py",
     "pw_rpc/codegen.py",
     "pw_rpc/codegen_nanopb.py",

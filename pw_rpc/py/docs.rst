@@ -16,6 +16,12 @@ pw_rpc.callback_client
 ======================
 .. automodule:: pw_rpc.callback_client
   :members:
+    UnaryResponse,
+    StreamResponse,
+    UnaryCall,
+    ServerStreamingCall,
+    ClientStreamingCall,
+    BidirectionalStreamingCall,
 
 pw_rpc.console_tools
 ====================
