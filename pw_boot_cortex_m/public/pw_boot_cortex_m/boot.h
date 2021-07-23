@@ -43,7 +43,6 @@
 
 #include <stdint.h>
 
-#include "pw_boot/boot.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 

@@ -55,6 +55,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "pw_boot/boot.h"
 #include "pw_boot_cortex_m/boot.h"
 #include "pw_preprocessor/compiler.h"
 

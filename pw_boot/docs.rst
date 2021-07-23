@@ -3,7 +3,6 @@
 -------
 pw_boot
 -------
-
 Pigweed's boot module should provide a linker script and some early
 initialization of static memory regions and C++ constructors. This is enough to
 get many targets booted and ready to run C++ code.
@@ -19,7 +18,6 @@ This module is split into two components:
 
 Sequence
 ========
-
 The high level pw_boot boot sequence looks like the following pseudo-code
 invocation of the user-implemented functions:
 

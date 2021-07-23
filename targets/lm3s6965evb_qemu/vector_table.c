@@ -14,6 +14,7 @@
 
 #include <stdbool.h>
 
+#include "pw_boot/boot.h"
 #include "pw_boot_cortex_m/boot.h"
 
 // Default handler to insert into the ARMv7-M vector table (below).
