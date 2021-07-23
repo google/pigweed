@@ -24,12 +24,12 @@ licenses(["notice"])
 pw_cc_library(
     name = "uuid",
     hdrs = [
-       "public/pw_snapshot/uuid.h",
+        "public/pw_snapshot/uuid.h",
     ],
+    includes = ["public"],
     deps = [
         "//pw_bytes",
     ],
-    includes = ["public"],
 )
 
 proto_library(
