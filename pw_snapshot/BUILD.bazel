@@ -12,9 +12,25 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+pw_cc_library(
+    name = "uuid",
+    hdrs = [
+       "public/pw_snapshot/uuid.h",
+    ],
+    deps = [
+        "//pw_bytes",
+    ],
+    includes = ["public"],
+)
 
 proto_library(
     name = "metadata_proto",
