@@ -4,10 +4,6 @@ pw_crypto
 =========
 A set of safe (read: easy to use, hard to misuse) crypto APIs.
 
-.. attention::
-
-  This module is under construction.
-
 The following crypto services are provided by this module.
 
 1. Hashing a message with `SHA256`_.
@@ -148,6 +144,19 @@ configured.
 
 BoringSSL does not provide a public configuration interface to reduce the code
 size.
+
+Micro ECC
+^^^^^^^^^
+
+To select Micro ECC, the library needs to be installed and configured.
+
+.. code-block:: sh
+
+  # Install and configure Micro ECC
+  pw package install micro-ecc
+  gn gen out --args='dir_pw_third_party_micro_ecc="//.environment/packages/micro-ecc" pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc"'
+
+Note Micro-ECC does not implement any hashing functions, so you will need to use other backends for SHA256 functionality if needed.
 
 Size Reports
 ------------

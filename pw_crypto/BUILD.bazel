@@ -91,6 +91,15 @@ pw_cc_library(
     deps = [":ecdsa_facade"],
 )
 
+pw_cc_library(
+    name = "ecdsa_uecc",
+    srcs = [
+        "ecdsa_uecc.cc",
+        "micro-ecc/uEDD.c",
+    ],
+    deps = [":ecdsa_facade"],
+)
+
 pw_cc_test(
     name = "ecdsa_test",
     srcs = ["ecdsa_test.cc"],
