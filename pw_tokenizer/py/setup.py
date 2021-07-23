@@ -15,19 +15,8 @@
 
 Installing pw_tokenizer with this setup.py does not include the
 pw_tokenizer.proto package, since it contains a generated protobuf module. To
-access pw_tokenizer.proto, install pw_tokenizer from GN.
-"""
+access pw_tokenizer.proto, install pw_tokenizer from GN."""
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='pw_tokenizer',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Tools for working with tokenized strings',
-    packages=['pw_tokenizer'],
-    package_data={'pw_tokenizer': ['py.typed']},
-    zip_safe=False,
-    extra_requires=['serial'],
-)
+setuptools.setup()  # Package definition in setup.cfg

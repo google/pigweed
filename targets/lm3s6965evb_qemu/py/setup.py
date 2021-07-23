@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,21 +15,4 @@
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='lm3s6965evb_qemu_utils',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description=
-    'Target-specific python scripts for the lm3s6965evb-qemu target',
-    packages=setuptools.find_packages(),
-    package_data={'lm3s6965evb_qemu_utils': ['py.typed']},
-    zip_safe=False,
-    entry_points={
-        'console_scripts': [
-            'lm3s6965evb_qemu_unit_test_runner = '
-            '    lm3s6965evb_qemu_utils.unit_test_runner:main',
-        ]
-    },
-    install_requires=['coloredlogs'],
-)
+setuptools.setup()  # Package definition in setup.cfg

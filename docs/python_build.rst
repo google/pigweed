@@ -176,11 +176,15 @@ modules. A module's Python package is nested under a ``py/`` directory (see
 :ref:`docs-module-structure`).
 
 .. code-block::
+  :caption: Example layout of a Pigweed Python package.
+  :name: python-file-tree
 
   module_name/
   ├── py/
   │   ├── BUILD.gn
+  │   ├── setup.cfg
   │   ├── setup.py
+  │   ├── pyproject.toml
   │   ├── package_name/
   │   │   ├── module_a.py
   │   │   ├── module_b.py
@@ -194,6 +198,37 @@ modules. A module's Python package is nested under a ``py/`` directory (see
 
 The ``BUILD.gn`` declares this package in GN. For upstream Pigweed, a presubmit
 check in ensures that all Python files are listed in a ``BUILD.gn``.
+
+Pigweed prefers to define Python packages using ``setup.cfg`` files. In the
+above file tree ``setup.py`` and ``pyproject.toml`` files are stubs with the
+following content:
+
+.. code-block::
+  :caption: setup.py
+  :name: setup-py-stub
+
+  import setuptools  # type: ignore
+  setuptools.setup()  # Package definition in setup.cfg
+
+.. code-block::
+  :caption: pyproject.toml
+  :name: pyproject-toml-stub
+
+  [build-system]
+  requires = ['setuptools', 'wheel']
+  build-backend = 'setuptools.build_meta'
+
+The stub ``setup.py`` file is there to support running ``pip install --editable``.
+
+Each ``pyproject.toml`` file is required to specify which build system should be
+used for the given Python package. In Pigweed's case it always specifies using
+setuptools.
+
+.. seealso::
+
+   - ``setup.cfg`` examples at `Configuring setup() using setup.cfg files`_
+   - ``pyproject.toml`` background at `Build System Support - How to use it?`_
+
 
 .. _module-pw_build-python-target:
 
@@ -314,3 +349,6 @@ See also
   - :ref:`module-pw_build-python`
   - :ref:`module-pw_build`
   - :ref:`docs-build-system`
+
+.. _Configuring setup() using setup.cfg files: https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding
+.. _Build System Support - How to use it?: https://setuptools.readthedocs.io/en/latest/build_meta.html?highlight=pyproject.toml#how-to-use-it

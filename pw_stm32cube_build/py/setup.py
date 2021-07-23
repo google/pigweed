@@ -15,18 +15,4 @@
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='pw_stm32cube_build',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Python scripts for stm32cube targets',
-    packages=setuptools.find_packages(),
-    package_data={'pw_stm32cube_build': ['py.typed']},
-    zip_safe=False,
-    entry_points={
-        'console_scripts': [
-            'stm32cube_builder = pw_stm32cube_build.__main__:main',
-        ]
-    },
-    install_requires=[])
+setuptools.setup()  # Package definition in setup.cfg

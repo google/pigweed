@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,25 +15,4 @@
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='pw_docgen',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Generate Sphinx documentation',
-    packages=setuptools.find_packages(),
-    package_data={'pw_docgen': ['py.typed']},
-    zip_safe=False,
-    install_requires=[
-        'sphinx >3',
-        'sphinx-rtd-theme',
-        # Pillow 8.3.0 is broken on Windows.
-        'Pillow >=6.2.2, <=8.2.0',
-        # Diagram generation modules.
-        'sphinxcontrib-actdiag',
-        'sphinxcontrib-blockdiag',
-        'sphinxcontrib-nwdiag',
-        'sphinxcontrib-seqdiag',
-        'sphinxcontrib-mermaid >=0.7.1',
-    ],
-)
+setuptools.setup()  # Package definition in setup.cfg

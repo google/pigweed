@@ -15,14 +15,4 @@
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='pw_tls_client',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='pw_tls_client python package',
-    packages=setuptools.find_packages(),
-    package_data={'pw_tls_client': ['py.typed']},
-    zip_safe=False,
-    install_requires=['cryptography'],
-)
+setuptools.setup()  # Package definition in setup.cfg

@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,35 +15,4 @@
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='pw_arduino_build',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Target-specific python scripts for the arduino target',
-    packages=setuptools.find_packages(),
-    package_data={
-        'pw_arduino_build': [
-            'core_patches/teensy/01-teensyduino_1.53-cpp17.diff',
-            'core_patches/teensy/02-teensy4_nonstatic_flash_functions.diff',
-            'py.typed',
-        ]
-    },
-    zip_safe=False,
-    entry_points={
-        'console_scripts': [
-            'arduino_builder = pw_arduino_build.__main__:main',
-            'teensy_detector = pw_arduino_build.teensy_detector:main',
-            'arduino_unit_test_runner = '
-            '    pw_arduino_build.unit_test_runner:main',
-            'arduino_test_server = '
-            '    pw_arduino_build.unit_test_server:main',
-            'arduino_test_client = '
-            '    pw_arduino_build.unit_test_client:main',
-        ]
-    },
-    install_requires=[
-        'pyserial>=3.5,<4.0',
-        'coloredlogs',
-        'parameterized',
-    ])
+setuptools.setup()  # Package definition in setup.cfg

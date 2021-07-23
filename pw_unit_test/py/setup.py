@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,18 +15,4 @@
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='pw_unit_test',
-    version='0.1.0',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Unit tests for Pigweed projects',
-    packages=setuptools.find_packages(),
-    package_data={'pw_unit_test': ['py.typed']},
-    zip_safe=False,
-    install_requires=[
-        'pw_cli',
-        'pw_rpc',
-        'pw_unit_test_proto',
-    ],
-)
+setuptools.setup()  # Package definition in setup.cfg

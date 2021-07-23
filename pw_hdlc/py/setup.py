@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,20 +15,4 @@
 
 import setuptools  # type: ignore
 
-setuptools.setup(
-    name='pw_hdlc',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Tools for Encoding/Decoding data using the HDLC protocol',
-    packages=setuptools.find_packages(),
-    package_data={'pw_hdlc': ['py.typed']},
-    zip_safe=False,
-    install_requires=[
-        'ipython',
-        'pw_console',
-        'pw_protobuf_compiler',
-        'pw_rpc',
-    ],
-    tests_require=['pw_build'],
-)
+setuptools.setup()  # Package definition in setup.cfg
