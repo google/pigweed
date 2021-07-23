@@ -8,23 +8,15 @@ The Pigweed Console provides a Python repl (read eval print loop) using
 `ptpython`_ and a log message viewer in a single-window terminal based
 interface. It is designed to be a replacement for `IPython's embed()`_ function.
 
-.. warning::
-   The Pigweed Console is under heavy development. A user manual and usage
-   information will be documented as features near completion.
-
-Goals
-=====
-
-``pw_console`` is a complete solution for interacting with hardware devices
-using :ref:`module-pw_rpc` over a :ref:`module-pw_hdlc` transport.
-
-The repl allows interactive RPC sending while the log viewer provides immediate
-feedback on device status.
-
 Features
-^^^^^^^^
+========
 
-- Interactive Python repl and log viewer in a single terminal window.
+``pw_console`` aims to be a complete solution for interacting with hardware
+devices using :ref:`module-pw_rpc` over a :ref:`module-pw_hdlc` transport.
+
+- Interactive Python repl and log viewer in a single terminal window. This
+  provides interactive RPC sending while the log viewer provides immediate
+  feedback on device status.
 
 - Easily embeddable within a project's own custom console. This should allow
   users to define their own transport layer.
@@ -46,6 +38,7 @@ Guides
 .. toctree::
   :maxdepth: 1
 
+  py/pw_console/docs/user_guide
   embedding
   testing
   internals

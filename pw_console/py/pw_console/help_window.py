@@ -21,14 +21,17 @@ from typing import Dict
 from jinja2 import Template
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout import (
     ConditionalContainer,
     DynamicContainer,
     HSplit,
 )
 from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.widgets import Box, Frame, TextArea
+
+from pygments.lexers.markup import RstLexer  # type: ignore
 
 _LOG = logging.getLogger(__package__)
 
@@ -37,25 +40,55 @@ with HELP_TEMPLATE_PATH.open() as tmpl:
     KEYBIND_TEMPLATE = tmpl.read()
 
 
+def _longest_line_length(text):
+    """Return the longest line in the given text."""
+    max_line_length = 0
+    for line in text.splitlines():
+        if len(line) > max_line_length:
+            max_line_length = len(line)
+    return max_line_length
+
+
 class HelpWindow(ConditionalContainer):
     """Help window container for displaying keybindings."""
+    def _create_help_text_area(self, **kwargs):
+        help_text_area = TextArea(
+            focusable=True,
+            focus_on_click=True,
+            scrollbar=True,
+            style='class:help_window_content',
+            **kwargs,
+        )
+
+        # Additional keybindings for the text area.
+        key_bindings = KeyBindings()
+
+        @key_bindings.add('q')
+        def _close_window(_event: KeyPressEvent) -> None:
+            """Close the current dialog window."""
+            self.toggle_display()
+
+        help_text_area.control.key_bindings = key_bindings
+        return help_text_area
+
     def __init__(self, application, preamble='', additional_help_text=''):
         # Dict containing key = section title and value = list of key bindings.
+        self.application = application
+        self.show_window = False
         self.help_text_sections = {}
-        self.max_description_width = 0
-        self.max_key_list_width = 0
-        self.max_line_length = 0
 
         # Generated keybinding text
         self.preamble = preamble
         self.additional_help_text = additional_help_text
         self.help_text = ''
 
-        self.help_text_area = TextArea(
-            focusable=True,
-            scrollbar=True,
-            style='class:help_window_content',
-        )
+        self.max_additional_help_text_width = (_longest_line_length(
+            self.additional_help_text) if additional_help_text else 0)
+        self.max_description_width = 0
+        self.max_key_list_width = 0
+        self.max_line_length = 0
+
+        self.help_text_area = self._create_help_text_area()
 
         frame = Frame(
             body=Box(
@@ -69,8 +102,25 @@ class HelpWindow(ConditionalContainer):
 
         super().__init__(
             HSplit([frame]),
-            filter=Condition(lambda: application.show_help_window),
+            filter=Condition(lambda: self.show_window),
         )
+
+    def toggle_display(self):
+        """Toggle visibility of this help window."""
+        # Toggle state variable.
+        self.show_window = not self.show_window
+
+        # Set the help window in focus.
+        if self.show_window:
+            self.application.last_focused_pane = (
+                self.application.focused_window())
+            self.application.layout.focus(self.help_text_area)
+        # Restore original focus.
+        else:
+            if self.application.last_focused_pane:
+                self.application.layout.focus(
+                    self.application.last_focused_pane)
+            self.application.last_focused_pane = None
 
     def content_width(self) -> int:
         """Return total width of help window."""
@@ -86,6 +136,22 @@ class HelpWindow(ConditionalContainer):
                                        right_side_frame_and_padding_width +
                                        scrollbar_padding + scrollbar_width)
 
+    def load_user_guide(self):
+        rstdoc = Path(__file__).parent / 'docs/user_guide.rst'
+        max_line_length = 0
+        rst_text = ''
+        with rstdoc.open() as rstfile:
+            for line in rstfile.readlines():
+                if 'https://' not in line and len(line) > max_line_length:
+                    max_line_length = len(line)
+                rst_text += line
+        self.max_line_length = max_line_length
+
+        self.help_text_area = self._create_help_text_area(
+            lexer=PygmentsLexer(RstLexer),
+            text=rst_text,
+        )
+
     def generate_help_text(self):
         """Generate help text based on added key bindings."""
 
@@ -98,6 +164,7 @@ class HelpWindow(ConditionalContainer):
 
         self.help_text = template.render(
             sections=self.help_text_sections,
+            max_additional_help_text_width=self.max_additional_help_text_width,
             max_description_width=self.max_description_width,
             max_key_list_width=self.max_key_list_width,
             preamble=self.preamble,
@@ -105,10 +172,7 @@ class HelpWindow(ConditionalContainer):
         )
 
         # Find the longest line in the rendered template.
-        self.max_line_length = 0
-        for line in self.help_text.splitlines():
-            if len(line) > self.max_line_length:
-                self.max_line_length = len(line)
+        self.max_line_length = _longest_line_length(self.help_text)
 
         # Replace the TextArea content.
         self.help_text_area.buffer.document = Document(text=self.help_text,

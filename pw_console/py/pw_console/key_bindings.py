@@ -39,15 +39,11 @@ def create_key_bindings(console_app):
 
     bindings = KeyBindings()
 
-    @bindings.add('f1')
+    @bindings.add(
+        'f1', filter=Condition(lambda: not console_app.modal_window_is_open()))
     def show_help(event):
-        """Toggle help window."""
-        console_app.toggle_help()
-
-    @bindings.add('q', filter=Condition(lambda: console_app.show_help_window))
-    def close_help_window(event):
-        """Hide help window."""
-        console_app.toggle_help()
+        """Toggle user guide window."""
+        console_app.user_guide_window.toggle_display()
 
     # F2 is ptpython settings
     # F3 is ptpython history

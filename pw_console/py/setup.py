@@ -24,6 +24,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={
         'pw_console': [
+            'docs/user_guide.rst',
             'py.typed',
             'templates/keybind_list.jinja',
             'templates/repl_output.jinja',

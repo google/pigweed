@@ -14,6 +14,7 @@
 """Pigweed Console - Warning: This is a work in progress."""
 
 import argparse
+import inspect
 import logging
 import sys
 import tempfile
@@ -105,9 +106,27 @@ def main() -> int:
         # Give access to adding log messages from the repl via: `LOG.warning()`
         global_vars = dict(LOG=default_loggers[0])
 
-    pw_console.console_app.embed(global_vars=global_vars,
-                                 loggers=default_loggers,
-                                 test_mode=args.test_mode)
+    help_text = None
+    app_title = None
+    if args.test_mode:
+        app_title = 'Console Test Mode'
+        help_text = inspect.cleandoc("""
+            Welcome to the Pigweed Console Test Mode!
+
+            Example commands:
+
+              rpcs.pw.rpc.EchoService.Echo(msg='hello!')
+
+              LOG.warning('Message appears console log window.')
+        """)
+
+    pw_console.console_app.embed(
+        global_vars=global_vars,
+        loggers=default_loggers,
+        test_mode=args.test_mode,
+        help_text=help_text,
+        app_title=app_title,
+    )
 
     if args.logfile:
         print(f'Logs saved to: {args.logfile}')

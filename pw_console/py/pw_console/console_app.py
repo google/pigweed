@@ -152,13 +152,21 @@ class ConsoleApp:
                 'Ctrl-W', 'Quit '))
 
         # Top level UI state toggles.
-        self.show_help_window = False
         self.vertical_split = False
         self.load_theme()
 
-        self.help_window = HelpWindow(self,
-                                      preamble='Pigweed CLI v0.1',
-                                      additional_help_text=help_text)
+        # Pigweed upstream RST user guide
+        self.user_guide_window = HelpWindow(self)
+        self.user_guide_window.load_user_guide()
+
+        # Auto-generated keybindings list for all active panes
+        self.keybind_help_window = HelpWindow(self)
+
+        # Downstream project specific help text
+        self.app_help_text = help_text if help_text else None
+        self.app_help_window = HelpWindow(self, additional_help_text=help_text)
+        self.app_help_window.generate_help_text()
+
         # Used for tracking which pane was in focus before showing help window.
         self.last_focused_pane = None
 
@@ -206,13 +214,27 @@ class ConsoleApp:
                     right=0,
                     height=1,
                 ),
-                # Centered floating Help Window
+                # Centered floating help windows
                 Float(
-                    content=self.help_window,
+                    content=self.app_help_window,
                     top=2,
                     bottom=2,
                     # Callable to get width
-                    width=self.help_window.content_width,
+                    width=self.app_help_window.content_width,
+                ),
+                Float(
+                    content=self.user_guide_window,
+                    top=2,
+                    bottom=2,
+                    # Callable to get width
+                    width=self.user_guide_window.content_width,
+                ),
+                Float(
+                    content=self.keybind_help_window,
+                    top=2,
+                    bottom=2,
+                    # Callable to get width
+                    width=self.keybind_help_window.content_width,
                 ),
                 # Completion menu that can overlap other panes since it lives in
                 # the top level Float container.
@@ -382,13 +404,25 @@ class ConsoleApp:
             )
         ]
 
+        help_menu_items = [
+            MenuItem('User Guide',
+                     handler=self.user_guide_window.toggle_display),
+            MenuItem('Keyboard Shortcuts',
+                     handler=self.keybind_help_window.toggle_display),
+        ]
+
+        if self.app_help_text:
+            help_menu_items.extend([
+                MenuItem('-'),
+                MenuItem(self.app_title + ' Help',
+                         handler=self.app_help_window.toggle_display)
+            ])
+
         help_menu = [
             # Info / Help
             MenuItem(
                 '[Help]',
-                children=[
-                    MenuItem('Keyboard Shortcuts', handler=self.toggle_help),
-                ],
+                children=help_menu_items,
             ),
         ]
 
@@ -627,24 +661,25 @@ class ConsoleApp:
             'Scroll current window.': ['Scroll wheel'],
         }
 
-        self.help_window.add_custom_keybinds_help_text('Global Mouse',
-                                                       mouse_functions)
+        self.keybind_help_window.add_custom_keybinds_help_text(
+            'Global Mouse', mouse_functions)
 
         # Add global key bindings to the help text.
-        self.help_window.add_keybind_help_text('Global', self.key_bindings)
+        self.keybind_help_window.add_keybind_help_text('Global',
+                                                       self.key_bindings)
 
         # Add activated plugin key bindings to the help text.
         for pane in self.active_panes:
             for key_bindings in pane.get_all_key_bindings():
                 help_section_title = pane.__class__.__name__
                 if isinstance(key_bindings, KeyBindings):
-                    self.help_window.add_keybind_help_text(
+                    self.keybind_help_window.add_keybind_help_text(
                         help_section_title, key_bindings)
                 elif isinstance(key_bindings, dict):
-                    self.help_window.add_custom_keybinds_help_text(
+                    self.keybind_help_window.add_custom_keybinds_help_text(
                         help_section_title, key_bindings)
 
-        self.help_window.generate_help_text()
+        self.keybind_help_window.generate_help_text()
 
     def _update_split_orientation(self):
         if self.vertical_split:
@@ -690,20 +725,13 @@ class ConsoleApp:
         """Return the currently focused window."""
         return self.application.layout.current_window
 
-    def toggle_help(self):
-        """Toggle visibility of the help window."""
-        # Toggle state variable.
-        self.show_help_window = not self.show_help_window
-
-        # Set the help window in focus.
-        if self.show_help_window:
-            self.last_focused_pane = self.focused_window()
-            self.application.layout.focus(self.help_window)
-        # Restore original focus.
-        else:
-            if self.last_focused_pane:
-                self.application.layout.focus(self.last_focused_pane)
-            self.last_focused_pane = None
+    def modal_window_is_open(self):
+        if self.app_help_text:
+            return (self.app_help_window.show_window
+                    or self.keybind_help_window.show_window
+                    or self.user_guide_window.show_window)
+        return (self.keybind_help_window.show_window
+                or self.user_guide_window.show_window)
 
     def exit_console(self):
         """Quit the console prompt_toolkit application UI."""

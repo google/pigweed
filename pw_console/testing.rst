@@ -185,7 +185,51 @@ Run the console in test mode:
        | Only logs with Modules other than ``BAT`` appear.
      - |checkbox|
 
-3. Add note to the commit message
+3. Test Help Windows
+^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - Click the :guilabel:`Help > User Guide`
+     - | Window appears showing the user guide with
+       | RST formatting and syntax highlighting
+     - |checkbox|
+
+   * - 2
+     - Press :guilabel:`q`
+     - Window is hidden
+     - |checkbox|
+
+   * - 3
+     - Click the :guilabel:`Help > Keyboard Shortcuts`
+     - Window appears showing the keybind list
+     - |checkbox|
+
+   * - 4
+     - Press :guilabel:`q`
+     - Window is hidden
+     - |checkbox|
+
+   * - 5
+     - Click the :guilabel:`Help > Console Test Mode Help`
+     - | Window appears showing help with content
+       | ``Welcome to the Pigweed Console Test Mode!``
+     - |checkbox|
+
+   * - 6
+     - Press :guilabel:`q`
+     - Window is hidden
+     - |checkbox|
+
+4. Add note to the commit message
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Add a ``Testing:`` line to your commit message and mention the steps

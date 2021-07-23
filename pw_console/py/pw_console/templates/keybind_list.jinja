@@ -13,7 +13,7 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 #}
-{% set total_width = max_description_width + max_key_list_width + 5 %}
+{% set total_width = [max_description_width + max_key_list_width + 5, max_additional_help_text_width]|max %}
 {% if preamble %}
 {{ preamble }}
 
