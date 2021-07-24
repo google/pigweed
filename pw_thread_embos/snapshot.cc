@@ -93,7 +93,8 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
     return true;
   });
 
-  if (Status status = ForEachThread(thread_capture_cb); !status.ok()) {
+  if (Status status = ForEachThread(thread_capture_cb);
+      !status.ok() && !status.IsFailedPrecondition()) {
     PW_LOG_ERROR("Failed to iterate threads during snapshot capture: %d",
                  static_cast<int>(status.code()));
   }

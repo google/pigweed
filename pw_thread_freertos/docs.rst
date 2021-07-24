@@ -164,6 +164,20 @@ In cases where an operation must be performed for every thread,
 Note that it's only safe to use this while the scheduler and interrupts are
 disabled.
 
+Calling this before the scheduler has started, via ``vTaskStartScheduler()``, is
+non-fatal but will result in no action and a ``FailedPrecondition`` error code.
+
+An ``Aborted`` error status is returned if the provided callback returns
+``false`` to request an early termination of thread iteration.
+
+Return values
+=============
+
+* ``FailedPrecondition``: Returned when ``ForEachThread()`` is run before the OS
+  has been initialized.
+* ``Aborted``: The callback requested an early-termination of thread iteration.
+* ``OkStatus``: The callback has been successfully run with every thread.
+
 .. Note:: This uses an unsupported method to iterate the threads in a more
    efficient manner while also supporting interrupt contexts. This requires
    linking against internal statics from the FreeRTOS kernel,

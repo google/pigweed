@@ -37,7 +37,11 @@ using ThreadCallback = pw::Function<bool(TaskHandle_t, eTaskState)>;
 // linking against internal statics from theFreeRTOS kernel,
 // pw_third_party_freertos_DISABLE_TASKS_STATICS must be used.
 //
+// Precondition:
+//   vTaskStartScheduler() must be called prior to using this function.
+//
 // Returns:
+//   FailedPrecondition - The scheduler has not yet been initialized.
 //   Aborted - The callback requested an early-termination of thread iteration.
 //   OkStatus - Successfully iterated over all threads.
 //

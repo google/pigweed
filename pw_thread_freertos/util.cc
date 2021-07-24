@@ -25,6 +25,8 @@
 // FreeRTOS/Source/tasks.c needed in order to iterate through all of the threads
 // from interrupts which the native APIs do not permit.
 
+extern "C" PRIVILEGED_DATA volatile BaseType_t xSchedulerRunning;
+
 extern "C" PRIVILEGED_DATA TaskHandle_t volatile pxCurrentTCB;
 
 // Prioritised ready tasks.
@@ -79,6 +81,10 @@ Status ForEachThreadInList(List_t* list,
 }  // namespace
 
 Status ForEachThread(ThreadCallback& cb) {
+  if (xSchedulerRunning == pdFALSE) {
+    return Status::FailedPrecondition();
+  }
+
   for (size_t i = configMAX_PRIORITIES - 1; i > tskIDLE_PRIORITY; --i) {
     PW_TRY(ForEachThreadInList(&pxReadyTasksLists[i], eReady, cb));
   }

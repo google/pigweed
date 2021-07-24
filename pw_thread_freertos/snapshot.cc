@@ -93,7 +93,8 @@ Status SnapshotThreads(void* running_thread_stack_pointer,
                            *ctx.stack_dumper));
         return true;  // Iterate through all threads.
       });
-  if (const Status status = ForEachThread(thread_capture_cb); !status.ok()) {
+  if (const Status status = ForEachThread(thread_capture_cb);
+      !status.ok() && !status.IsFailedPrecondition()) {
     PW_LOG_ERROR("Failed to iterate threads during snapshot capture: %d",
                  status.code());
   }
