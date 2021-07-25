@@ -1557,8 +1557,8 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
   }
 
   LEAdvertisingState& state = extended_advertising_states_[handle];
-  if (state.enabled) {
-    bt_log(INFO, "fake-hci", "cannot set LE random address while advertising enabled");
+  if (state.IsConnectableAdvertising() && state.enabled) {
+    bt_log(INFO, "fake-hci", "cannot set LE random address while connectable advertising enabled");
     RespondWithCommandComplete(hci::kLESetAdvertisingSetRandomAddress,
                                hci::StatusCode::kCommandDisallowed);
     return;
@@ -1637,16 +1637,16 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   switch (params.adv_event_properties) {
     case prop_bits_adv_ind:
       adv_type = hci::LEAdvertisingType::kAdvInd;
-      __FALLTHROUGH;
+      break;
     case prop_bits_adv_direct_ind_high_duty_cycle:
       adv_type = hci::LEAdvertisingType::kAdvDirectIndHighDutyCycle;
-      __FALLTHROUGH;
+      break;
     case prop_bits_adv_direct_ind_low_duty_cycle:
       adv_type = hci::LEAdvertisingType::kAdvDirectIndLowDutyCycle;
-      __FALLTHROUGH;
+      break;
     case prop_bits_adv_scan_ind:
       adv_type = hci::LEAdvertisingType::kAdvScanInd;
-      __FALLTHROUGH;
+      break;
     case prop_bits_adv_nonconn_ind:
       adv_type = hci::LEAdvertisingType::kAdvNonConnInd;
       break;
@@ -1699,8 +1699,9 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
     return;
   }
 
-  if (params.adv_tx_power < hci::kLEAdvertisingTxPowerMin ||
-      params.adv_tx_power > hci::kLEAdvertisingTxPowerMax) {
+  if (params.adv_tx_power != hci::kLEAdvertisingTxPowerNoPreference &&
+      (params.adv_tx_power < hci::kLEAdvertisingTxPowerMin ||
+       params.adv_tx_power > hci::kLEAdvertisingTxPowerMax)) {
     bt_log(INFO, "fake-hci", "advertising tx power out of range: %d", params.adv_tx_power);
     RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
                                hci::StatusCode::kInvalidHCICommandParameters);
@@ -1733,8 +1734,11 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   // if there are no errors)
   extended_advertising_states_[handle] = state;
 
-  bt_log(INFO, "fake-hci", "start advertising using address type: %hhd", state.own_address_type);
-  RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters, hci::StatusCode::kSuccess);
+  hci::LESetExtendedAdvertisingParametersReturnParams return_params;
+  return_params.status = hci::StatusCode::kSuccess;
+  return_params.selected_tx_power = hci::kLEAdvertisingTxPowerMax;
+  RespondWithCommandComplete(hci::kLESetExtendedAdvertisingParameters,
+                             BufferView(&return_params, sizeof(return_params)));
   NotifyAdvertisingState();
 }
 
@@ -2455,4 +2459,9 @@ bool FakeController::LEAdvertisingState::IsScannableAdvertising() const {
          adv_type == hci::LEAdvertisingType::kAdvScanInd;
 }
 
+bool FakeController::LEAdvertisingState::IsConnectableAdvertising() const {
+  return adv_type == hci::LEAdvertisingType::kAdvInd ||
+         adv_type == hci::LEAdvertisingType::kAdvDirectIndHighDutyCycle ||
+         adv_type == hci::LEAdvertisingType::kAdvDirectIndLowDutyCycle;
+}
 }  // namespace bt::testing

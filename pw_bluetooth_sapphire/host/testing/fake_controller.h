@@ -97,6 +97,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
     bool IsDirectedAdvertising() const;
     bool IsScannableAdvertising() const;
+    bool IsConnectableAdvertising() const;
 
     bool enabled = false;
     hci::LEAdvertisingType adv_type = hci::LEAdvertisingType::kAdvInd;

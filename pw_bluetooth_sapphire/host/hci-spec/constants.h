@@ -1330,6 +1330,10 @@ constexpr int8_t kLEAdvertisingTxPowerMin = -127;
 // The maximum advertising tx power value. See Core Spec v5.0 Vol 4, Part E, 7.8.6.
 constexpr int8_t kLEAdvertisingTxPowerMax = 20;
 
+// Host has no preference on the advertising tx power, the controller is free to choose the
+// advertising tx power. See Core Spec v5.0 Vol 4, Part E, 7.8.53.
+constexpr int8_t kLEAdvertisingTxPowerNoPreference = 0x7F;
+
 // Values that can be used in HCI Read|WriteFlowControlMode commands.
 enum class FlowControlMode : uint8_t {
   // Packet based data flow control mode (default for a Primary Controller)
