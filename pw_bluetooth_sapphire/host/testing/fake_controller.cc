@@ -1148,6 +1148,8 @@ void FakeController::OnReadBRADDR() {
 
 void FakeController::OnLESetAdvertisingEnable(
     const hci::LESetAdvertisingEnableCommandParams& params) {
+  // TODO(fxbug.dev/81444): if own address type is random, check that a random address is set
+
   legacy_advertising_state_.enabled = params.advertising_enable == hci::GenericEnableParam::kEnable;
   RespondWithCommandComplete(hci::kLESetAdvertisingEnable, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
@@ -1944,13 +1946,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
       return;
     }
 
-    if (state.own_address_type == hci::LEOwnAddressType::kRandom && !state.random_address) {
-      bt_log(INFO, "fake-hci", "cannot enable, address type is random address but hasn't been set");
-      RespondWithCommandComplete(hci::kLESetExtendedAdvertisingEnable,
-                                 hci::StatusCode::kInvalidHCICommandParameters);
-      return;
-    }
-
+    // TODO(fxbug.dev/81444): if own address type is random, check that a random address is set
     state.enabled = true;
   }
 
