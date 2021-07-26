@@ -28,7 +28,6 @@ pw_cc_library(
         "encoder.cc",
         "public/pw_hdlc/internal/encoder.h",
         "public/pw_hdlc/internal/protocol.h",
-        "rpc_packets.cc",
     ],
     hdrs = [
         "public/pw_hdlc/decoder.h",

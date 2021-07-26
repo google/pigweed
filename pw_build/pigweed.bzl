@@ -110,14 +110,36 @@ def _add_cc_and_c_targets(target, kwargs):
 
     target(**cc_kwargs)
 
+def _has_pw_assert_dep(deps):
+    pw_assert_targets = ["//pw_assert", "//pw_assert:pw_assert"]
+    pw_assert_targets.append(["@pigweed" + t for t in pw_assert_targets])
+    for dep in deps:
+        if dep in pw_assert_targets:
+            return True
+    return False
+
 def pw_cc_binary(**kwargs):
+    kwargs["deps"] = kwargs.get("deps", [])
+
+    # TODO(pwbug/440): Remove this implicit dependency once we have a better
+    # way to handle the facades without introducing a circular dependency into
+    # the build.
+    if not _has_pw_assert_dep(kwargs["deps"]):
+        kwargs["deps"].append("@pigweed//pw_assert")
     _add_cc_and_c_targets(native.cc_binary, kwargs)
 
 def pw_cc_library(**kwargs):
     _add_cc_and_c_targets(native.cc_library, kwargs)
 
 def pw_cc_test(**kwargs):
-    kwargs["deps"] = kwargs.get("deps", []) + ["//pw_unit_test:main"]
+    kwargs["deps"] = kwargs.get("deps", []) + \
+                     ["//pw_unit_test:main"]
+
+    # TODO(pwbug/440): Remove this implicit dependency once we have a better
+    # way to handle the facades without introducing a circular dependency into
+    # the build.
+    if not _has_pw_assert_dep(kwargs["deps"]):
+        kwargs["deps"].append("@pigweed//pw_assert")
     _add_cc_and_c_targets(native.cc_test, kwargs)
 
 def pw_cc_facade(**kwargs):

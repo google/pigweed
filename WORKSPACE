@@ -30,7 +30,7 @@ load("@cipd_deps//:cipd_init.bzl", "cipd_init")
 
 cipd_init()
 
-# Setup python support.
+# Set up Python support.
 # Required by: rules_fuzzing.
 # Used in modules: None.
 http_archive(
@@ -42,7 +42,7 @@ http_archive(
     ],
 )
 
-# Set up Starlark library
+# Set up Starlark library.
 # Required by: io_bazel_rules_go, com_google_protobuf.
 # Used in modules: None.
 # This must be instantiated before com_google_protobuf as protobuf_deps() pulls
@@ -61,7 +61,20 @@ load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
-# Sets up host hermetic host toolchain.
+# Set up upstream googletest and googlemock.
+# Required by: Pigweed.
+# Used in modules: //pw_analog, //pw_i2c.
+http_archive(
+    name = "com_google_googletest",
+    sha256 = "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb",
+    strip_prefix = "googletest-release-1.10.0",
+    urls = [
+        "https://mirror.bazel.build/github.com/google/googletest/archive/release-1.10.0.tar.gz",
+        "https://github.com/google/googletest/archive/release-1.10.0.tar.gz",
+    ],
+)
+
+# Set up host hermetic host toolchain.
 # Required by: All cc targets.
 # Used in modules: All cc targets.
 git_repository(
@@ -78,7 +91,7 @@ load("@rules_cc_toolchain//cc_toolchain:cc_toolchain.bzl", "register_cc_toolchai
 
 register_cc_toolchains()
 
-# Set up protobuf rules
+# Set up Protobuf rules.
 # Required by: pigweed, com_github_bazelbuild_buildtools.
 # Used in modules: //pw_protobuf.
 http_archive(
@@ -92,9 +105,9 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
 
-# Setup tools to build custom grpc rules.
+# Set up tools to build custom GRPC rules.
 # Required by: pigweed.
-# Used in modules: //pw_protobuf
+# Used in modules: //pw_protobuf.
 http_archive(
     name = "rules_proto_grpc",
     sha256 = "5f0f2fc0199810c65a2de148a52ba0aff14d631d4e8202f41aff6a9d590a471b",
@@ -112,15 +125,18 @@ rules_proto_grpc_toolchains()
 
 rules_proto_grpc_repos()
 
-# Set up build_bazel_rules_nodejs.
+# Set up Bazel platforms.
 # Required by: pigweed.
-# Used in modules: //pw_web_ui.
+# Used in modules: //pw_build, (Assorted modules via select statements).
 git_repository(
     name = "platforms",
     commit = "d4c9d7f51a7c403814b60f66d20eeb425fbaaacb",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
+# Set up NodeJs rules.
+# Required by: pigweed.
+# Used in modules: //pw_web_ui.
 http_archive(
     name = "build_bazel_rules_nodejs",
     sha256 = "8f5f192ba02319254aaf2cdcca00ec12eaafeb979a80a1e946773c520ae0a2c9",
@@ -142,6 +158,9 @@ yarn_install(
     yarn_lock = "//:yarn.lock",
 )
 
+# Set up web-testing rules.
+# Required by: pigweed.
+# Used in modules: //pw_web_ui.
 http_archive(
     name = "io_bazel_rules_webtesting",
     sha256 = "9bb461d5ef08e850025480bab185fd269242d4e533bca75bfb748001ceb343c3",
@@ -162,7 +181,7 @@ browser_repositories(
     firefox = True,
 )
 
-# Setup embedded C/C++ toolchains.
+# Set up embedded C/C++ toolchains.
 # Required by: pigweed.
 # Used in modules: //pw_polyfill, //pw_build (all pw_cc* targets).
 git_repository(
@@ -214,7 +233,7 @@ register_gcc_arm_none_toolchain()
 # Registers platforms for use with toolchain resolution
 register_execution_platforms("//pw_build/platforms:all")
 
-# Setup Golang toolchain rules
+# Set up Golang toolchain rules.
 # Required by: bazel_gazelle, com_github_bazelbuild_buildtools.
 # Used in modules: None.
 http_archive(
@@ -236,9 +255,9 @@ go_rules_dependencies()
 
 go_register_toolchains()
 
-# Setup bazel package manager for golang
+# Set up bazel package manager for golang.
 # Required by: com_github_bazelbuild_buildtools.
-# Used in modules: None
+# Used in modules: None.
 http_archive(
     name = "bazel_gazelle",
     sha256 = "b85f48fa105c4403326e9525ad2b2cc437babaa6e15a3fc0b1dbab0ab064bc7c",
@@ -252,8 +271,8 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies()
 
-# Setup bazel buildtools (bazel linter and formatter)
-# Required by: pigweed
+# Set up bazel buildtools (bazel linter and formatter).
+# Required by: pigweed.
 # Used in modules: //:all (bazel specific tools).
 http_archive(
     name = "com_github_bazelbuild_buildtools",
@@ -270,9 +289,9 @@ pigweed_config(
     build_file = "//targets:default_config.BUILD",
 )
 
-# Setup rules_fuzzing for fuzz tests.
+# Set up rules for fuzz testing.
 # Required by: pigweed.
-# Used in modules: pw_protobuf, pw_tokenizer, pw_fuzzer.
+# Used in modules: //pw_protobuf, //pw_tokenizer, //pw_fuzzer.
 http_archive(
     name = "rules_fuzzing",
     sha256 = "94f25c7a18db0502ace26a3ef7d0a25fd7c195c4e9770ddd1b1ec718e8936091",

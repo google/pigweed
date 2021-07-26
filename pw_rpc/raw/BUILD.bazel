@@ -56,6 +56,7 @@ pw_cc_library(
         "public/pw_rpc/raw/test_method_context.h",
         "public/pw_rpc/raw_test_method_context.h",
     ],
+    includes = ["public"],
     deps = [
         ":method_union",
         "//pw_assert",
@@ -72,6 +73,7 @@ pw_cc_test(
         ":method_union",
         ":test_method_context",
         "//pw_protobuf",
+        "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
     ],
 )

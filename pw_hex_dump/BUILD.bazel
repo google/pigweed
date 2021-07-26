@@ -35,6 +35,7 @@ pw_cc_library(
         "//pw_bytes",
         "//pw_span",
         "//pw_status",
+        "//pw_string",
     ],
 )
 
@@ -45,6 +46,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_hex_dump",
+        "//pw_log",
         "//pw_unit_test",
     ],
 )

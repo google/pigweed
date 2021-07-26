@@ -65,6 +65,7 @@ pw_cc_library(
         ":common",
         ":internal_packet_pwpb",
         "//pw_containers",
+        "//pw_rpc/system_server",
     ],
 )
 

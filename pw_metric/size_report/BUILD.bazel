@@ -38,7 +38,7 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
-        "//pw_metric",
+        "//pw_metric:metric",
     ],
 )
 
@@ -49,7 +49,7 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
-        "//pw_metric",
+        "//pw_metric:metric",
     ],
 )
 
@@ -60,6 +60,6 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
-        "//pw_metric",
+        "//pw_metric:metric",
     ],
 )

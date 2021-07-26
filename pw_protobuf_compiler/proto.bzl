@@ -83,6 +83,9 @@ def pw_proto_library(**kwargs):
     name_pb = kwargs.get("name") + "_pb"
     _cc_proto_compile(
         name = name_pb,
+        # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains
+        # are supported with Bazel.
+        tags = ["manual", "needs-python3.6+"],
         # Forward deps and verbose tags to implementation
         **{k: v for (k, v) in kwargs.items() if k in ("deps", "verbose")}
     )
@@ -98,4 +101,7 @@ def pw_proto_library(**kwargs):
         strip_include_prefix = ".",
         visibility = kwargs.get("visibility"),
         linkstatic = 1,
+        # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains
+        # are supported with Bazel.
+        tags = ["manual", "needs-python3.6+"],
     )

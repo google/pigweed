@@ -33,7 +33,10 @@ pw_cc_library(
         "public/pw_checksum/crc32.h",
     ],
     includes = ["public"],
-    deps = ["//pw_span"],
+    deps = [
+        "//pw_bytes",
+        "//pw_span",
+    ],
 )
 
 pw_cc_test(

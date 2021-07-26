@@ -41,6 +41,7 @@ pw_cc_test(
         "logs_rpc_test.cc",
     ],
     deps = [
+        ":pw_log_queue",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],

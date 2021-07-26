@@ -26,11 +26,12 @@ pw_cc_library(
     name = "static_router",
     srcs = ["static_router.cc"],
     hdrs = ["public/pw_router/static_router.h"],
+    includes = ["public"],
     deps = [
         ":egress",
         ":packet_parser",
         "//pw_log",
-        "//pw_metric",
+        "//pw_metric:metric",
         "//pw_sync:mutex",
     ],
 )
@@ -38,7 +39,10 @@ pw_cc_library(
 pw_cc_library(
     name = "egress",
     hdrs = ["public/pw_router/egress.h"],
-    deps = ["//pw_bytes"],
+    deps = [
+        "//pw_bytes",
+        "//pw_function",
+    ],
 )
 
 pw_cc_library(

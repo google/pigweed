@@ -63,7 +63,7 @@ pw_cc_test(
     ],
     deps = [
         ":facade",
-        ":pw_assert",
+        "//pw_assert",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_string",
@@ -78,7 +78,7 @@ pw_cc_test(
         "assert_backend_compile_test_c.c",
     ],
     deps = [
-        ":pw_assert",
+        "//pw_assert",
         "//pw_unit_test",
     ],
 )

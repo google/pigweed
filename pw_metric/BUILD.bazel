@@ -35,7 +35,7 @@ pw_cc_library(
         "//pw_containers",
         "//pw_log",
         "//pw_span",
-        "//pw_tokenizer",
+        "//pw_tokenizer:base64",
     ],
 )
 

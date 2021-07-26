@@ -82,7 +82,7 @@ pw_cc_test(
         "test.cc",
     ],
     deps = [
-        ":pw_minimal_cpp_stdlib_isolated_test",
+        ":minimal_cpp_stdlib_isolated_test",
         "//pw_unit_test",
     ],
 )

@@ -51,6 +51,7 @@ pw_cc_test(
         "multisink_test.cc",
     ],
     deps = [
+        ":pw_multisink",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],

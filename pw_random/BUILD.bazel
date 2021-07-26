@@ -36,6 +36,7 @@ pw_cc_test(
     srcs = ["xor_shift_test.cc"],
     deps = [
         ":pw_random",
+        "//pw_bytes",
         "//pw_unit_test",
     ],
 )

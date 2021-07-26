@@ -32,9 +32,11 @@ pw_cc_library(
     deps = [
         "//pw_checksum",
         "//pw_containers",
+        "//pw_kvs",
         "//pw_log",
         "//pw_span",
         "//pw_status",
+        "//pw_stream",
     ],
 )
 
@@ -49,7 +51,6 @@ pw_cc_test(
         "//pw_kvs:fake_flash",
         "//pw_kvs:fake_flash_test_key_value_store",
         "//pw_log",
-        "//pw_random",
         "//pw_unit_test",
     ],
 )

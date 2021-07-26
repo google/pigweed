@@ -61,6 +61,7 @@ pw_cc_binary(
     name = "pointer_read",
     srcs = ["pointer_read.cc"],
     deps = [
+        "//pw_bytes",
         "//pw_log",
         "//pw_result",
         "//pw_span",
@@ -71,6 +72,7 @@ pw_cc_binary(
     name = "result_read",
     srcs = ["result_read.cc"],
     deps = [
+        "//pw_bytes",
         "//pw_log",
         "//pw_result",
         "//pw_span",

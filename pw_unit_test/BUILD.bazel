@@ -17,6 +17,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -93,6 +94,23 @@ pw_cc_library(
     ],
 )
 
+proto_library(
+    name = "unit_test_proto",
+    srcs = ["pw_unit_test_proto/unit_test.proto"],
+    strip_import_prefix = "//pw_unit_test",
+)
+
+pw_proto_library(
+    name = "unit_test_pwpb",
+    # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains are
+    # supported with Bazel.
+    tags = [
+        "manual",
+        "needs-python3.6",
+    ],
+    deps = [":unit_test_proto"],
+)
+
 pw_cc_library(
     name = "rpc_service",
     srcs = [
@@ -103,9 +121,15 @@ pw_cc_library(
         "public/pw_unit_test/internal/rpc_event_handler.h",
         "public/pw_unit_test/unit_test_service.h",
     ],
+    # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains are
+    # supported with Bazel.
+    tags = ["manual"],
     deps = [
         ":pw_unit_test",
+        ":unit_test_pwpb",
         "//pw_log",
+        "//pw_rpc:server",
+        "//pw_rpc/raw:method_union",
     ],
 )
 
@@ -114,6 +138,9 @@ pw_cc_library(
     srcs = [
         "rpc_main.cc",
     ],
+    # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains are
+    # supported with Bazel.
+    tags = ["manual"],
     deps = [
         ":pw_unit_test",
         ":rpc_service",

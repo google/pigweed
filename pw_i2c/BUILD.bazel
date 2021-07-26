@@ -89,7 +89,6 @@ pw_cc_test(
     ],
     deps = [
         ":address",
-        "//pw_assert",
         "//pw_unit_test",
     ],
 )
@@ -115,8 +114,8 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        "$dir_pw_third_party/googletest",
         ":initiator",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -150,7 +149,6 @@ pw_cc_test(
     ],
     deps = [
         ":register_device",
-        "//pw_assert",
         "//pw_unit_test",
     ],
 )

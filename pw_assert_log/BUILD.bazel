@@ -35,6 +35,7 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        "//pw_log",
         "//pw_preprocessor",
     ],
 )
