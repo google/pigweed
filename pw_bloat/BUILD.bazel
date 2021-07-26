@@ -20,7 +20,7 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])  # Apache License 2.0
+licenses(["notice"])
 
 # Library which uses standard C/C++ functions such as memcpy to prevent them
 # from showing up within bloat diff reports.

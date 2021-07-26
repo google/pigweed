@@ -16,7 +16,7 @@ load("@rules_python//python:defs.bzl", "py_library")
 
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])  # Apache License 2.0
+licenses(["notice"])
 
 py_library(
     name = "pw_protobuf_compiler",
