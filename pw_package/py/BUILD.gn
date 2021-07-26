@@ -28,6 +28,7 @@ pw_python_package("py") {
     "pw_package/packages/chromium_verifier.py",
     "pw_package/packages/crlset.py",
     "pw_package/packages/mbedtls.py",
+    "pw_package/packages/micro_ecc.py",
     "pw_package/packages/nanopb.py",
     "pw_package/packages/stm32cube.py",
     "pw_package/pigweed_packages.py",
