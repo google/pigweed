@@ -39,6 +39,7 @@ inline bool ThreadIsRunning(const TX_THREAD& thread) {
 void CaptureThreadState(const TX_THREAD& thread,
                         Thread::StreamEncoder& encoder) {
   if (ThreadIsRunning(thread)) {
+    PW_LOG_INFO("Thread state: RUNNING");
     encoder.WriteState(ThreadState::Enum::RUNNING);
     return;
   }
@@ -114,6 +115,7 @@ Status SnapshotThread(const TX_THREAD& thread,
                       void* running_thread_stack_pointer,
                       Thread::StreamEncoder& encoder,
                       ProcessThreadStackCallback& thread_stack_callback) {
+  PW_LOG_INFO("Capturing thread info for %s", thread.tx_thread_name);
   encoder.WriteName(
       std::as_bytes(std::span(std::string_view(thread.tx_thread_name))));
 
