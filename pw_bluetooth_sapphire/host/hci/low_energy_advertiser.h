@@ -192,4 +192,4 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 }  // namespace hci
 }  // namespace bt
 
-#endif
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_ADVERTISER_H_
