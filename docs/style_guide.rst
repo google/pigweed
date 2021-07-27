@@ -24,7 +24,7 @@ projects that use Pigweed or to the third-party code included with Pigweed.
 Non-Pigweed code is free to use features restricted by Pigweed, such as dynamic
 memory allocation and the entirety of the C++ Standard Library.
 
-Recommendations in the :doc:`embedded_cpp_guide` are considered part of the
+Recommendations in the `embedded_cpp_guide <https://github.com/google/pigweed/blob/main/docs/embedded_cpp_guide.rst>`_ are considered part of the
 Pigweed style guide, but are separated out since it covers more general
 embedded development beyond just C++ style.
 
