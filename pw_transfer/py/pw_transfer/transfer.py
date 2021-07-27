@@ -63,31 +63,39 @@ class _Transfer(abc.ABC):
     """
     def __init__(self, transfer_id: int, data: bytes,
                  send_chunk: Callable[[Chunk], None],
-                 end_transfer: Callable[['_Transfer', Status], None]):
+                 end_transfer: Callable[['_Transfer'],
+                                        None], response_timer: _Timer):
         self.id = transfer_id
         self.status = Status.OK
         self.data = data
         self.done = threading.Event()
+
         self._send_chunk = send_chunk
         self._end_transfer = end_transfer
+        self._response_timer = response_timer
 
     @abc.abstractmethod
     async def begin(self) -> None:
         """Sends the initial chunk to notify the sever of the transfer."""
 
     @abc.abstractmethod
-    async def handle_chunk(self, chunk: Chunk) -> bool:
+    async def handle_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
-
-        Returns True if the transfer is complete or False otherwise.
 
         Only called for non-terminating chunks (i.e. those without a status).
         """
 
+    def finish(self, status: Status) -> None:
+        """Ends the transfer with the specified status."""
+        self._response_timer.stop()
+        self.status = status
+        self.done.set()
+        self._end_transfer(self)
+
     def _send_error(self, error: Status) -> None:
-        """Sends an error chunk to the server. Should only be called once."""
-        self.status = error
+        """Sends an error chunk to the server and finishes the transfer."""
         self._send_chunk(Chunk(transfer_id=self.id, status=error.value))
+        self.finish(error)
 
 
 class _WriteTransfer(_Transfer):
@@ -97,14 +105,14 @@ class _WriteTransfer(_Transfer):
         transfer_id: int,
         data: bytes,
         send_chunk: Callable[[Chunk], None],
-        end_transfer: Callable[[_Transfer, Status], None],
+        end_transfer: Callable[[_Transfer], None],
         response_timeout_s: float,
     ):
-        super().__init__(transfer_id, data, send_chunk, end_transfer)
+        super().__init__(transfer_id, data, send_chunk, end_transfer,
+                         _Timer(lambda: self.finish(Status.DEADLINE_EXCEEDED)))
+
         self._offset = 0
         self._response_timeout_s = response_timeout_s
-        self._response_timer = _Timer(
-            lambda: self._end_transfer(self, Status.DEADLINE_EXCEEDED))
 
         self._max_bytes_to_send = 0
         self._max_chunk_size = 0
@@ -115,7 +123,7 @@ class _WriteTransfer(_Transfer):
         self._send_chunk(Chunk(transfer_id=self.id))
         self._response_timer.start(self._response_timeout_s)
 
-    async def handle_chunk(self, chunk: Chunk) -> bool:
+    async def handle_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
 
         In a write transfer, the server only sends transfer parameter updates
@@ -140,7 +148,7 @@ class _WriteTransfer(_Transfer):
                 self.id, self._offset, len(self.data))
 
             self._send_error(Status.OUT_OF_RANGE)
-            return True
+            return
 
         self._max_bytes_to_send = min(chunk.pending_bytes,
                                       len(self.data) - self._offset)
@@ -161,7 +169,6 @@ class _WriteTransfer(_Transfer):
                 await asyncio.sleep(self._chunk_delay_us / 1e6)
 
         self._response_timer.start(self._response_timeout_s)
-        return False
 
     def _next_chunk(self) -> Chunk:
         """Returns the next Chunk message to send in the data transfer."""
@@ -188,16 +195,16 @@ class _ReadTransfer(_Transfer):
     def __init__(self,
                  transfer_id: int,
                  send_chunk: Callable[[Chunk], None],
-                 end_transfer: Callable[[_Transfer, Status], None],
+                 end_transfer: Callable[[_Transfer], None],
                  response_timeout_s: float,
                  max_retries: int = 3,
                  max_bytes_to_receive: int = 8192,
                  max_chunk_size: int = 1024,
                  chunk_delay_us: int = None):
-        super().__init__(transfer_id, bytes(), send_chunk, end_transfer)
+        super().__init__(transfer_id, bytes(), send_chunk, end_transfer,
+                         _Timer(self._on_timeout))
 
         self._response_timeout_s = response_timeout_s
-        self._response_timer = _Timer(self._on_timeout)
         self._chunk_timeout_count = 0
         self._max_retries = max_retries
 
@@ -213,7 +220,7 @@ class _ReadTransfer(_Transfer):
         """Sends the initial transfer parameters for the read transfer."""
         self._send_transfer_parameters()
 
-    async def handle_chunk(self, chunk: Chunk) -> bool:
+    async def handle_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
 
         In a read transfer, the client receives data chunks from the server.
@@ -229,7 +236,7 @@ class _ReadTransfer(_Transfer):
             # retransmit from the previous offset.
             self._pending_bytes = 0
             self._send_transfer_parameters()
-            return False
+            return
 
         self.data += chunk.data
         self._pending_bytes -= len(chunk.data)
@@ -240,7 +247,8 @@ class _ReadTransfer(_Transfer):
                 # No more data to read. Acknowledge receipt and finish.
                 self._send_chunk(
                     Chunk(transfer_id=self.id, status=Status.OK.value))
-                return True
+                self.finish(Status.OK)
+                return
 
             # The server may optionally indicate that it has a known size of
             # data available. This is not yet used.
@@ -254,8 +262,6 @@ class _ReadTransfer(_Transfer):
         else:
             # Wait for the next pending chunk.
             self._response_timer.start(self._response_timeout_s)
-
-        return False
 
     def _send_transfer_parameters(self):
         """Sends an updated transfer parameters chunk to the server."""
@@ -286,7 +292,7 @@ class _ReadTransfer(_Transfer):
         self._chunk_timeout_count += 1
 
         if self._chunk_timeout_count > self._max_retries:
-            self._end_transfer(self, Status.DEADLINE_EXCEEDED)
+            self.finish(Status.DEADLINE_EXCEEDED)
         else:
             self._send_transfer_parameters()
 
@@ -429,7 +435,6 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             if read_chunk in done:
                 self._loop.create_task(
                     self._handle_chunk(self._read_transfers,
-                                       self._end_read_transfer,
                                        read_chunk.result()))
                 read_chunk = self._loop.create_task(
                     self._read_chunk_queue.get())
@@ -437,7 +442,6 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             if write_chunk in done:
                 self._loop.create_task(
                     self._handle_chunk(self._write_transfers,
-                                       self._end_write_transfer,
                                        write_chunk.result()))
                 write_chunk = self._loop.create_task(
                     self._write_chunk_queue.get())
@@ -445,11 +449,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._loop.stop()
 
     @staticmethod
-    async def _handle_chunk(
-        transfers: _TransferDict,
-        completion: Callable[[_Transfer, Status], None],
-        chunk: Chunk,
-    ) -> None:
+    async def _handle_chunk(transfers: _TransferDict, chunk: Chunk) -> None:
         """Processes an incoming chunk from a stream.
 
         The chunk is dispatched to an active transfer based on its ID. If the
@@ -466,15 +466,66 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             # TODO(frolv): What should be done here, if anything?
             return
 
-        should_exit = False
-
         # Status chunks are only used to terminate a transfer. They do not
         # contain any data that requires processing.
         if not chunk.HasField('status'):
-            should_exit = await transfer.handle_chunk(chunk)
+            await transfer.handle_chunk(chunk)
+        else:
+            transfer.finish(Status(chunk.status))
 
-        if should_exit or chunk.HasField('status'):
-            completion(transfer, Status(chunk.status))
+    def _open_read_stream(self) -> None:
+        self._read_stream = self._service.Read.invoke(
+            lambda _, chunk: self._loop.call_soon_threadsafe(
+                self._read_chunk_queue.put_nowait, chunk),
+            on_error=lambda _, status: self._on_read_error(status))
+
+    def _on_read_error(self, status: Status) -> None:
+        """Callback for an RPC error in the read stream."""
+
+        if status is Status.FAILED_PRECONDITION:
+            # FAILED_PRECONDITION indicates that the stream packet was not
+            # recognized as the stream is not open. This could occur if the
+            # server resets during an active transfer. Re-open the stream to
+            # allow pending transfers to continue.
+            self._open_read_stream()
+        else:
+            # Other errors are unrecoverable. Clear the stream and cancel any
+            # pending transfers with an INTERNAL status as this is a system
+            # error.
+            self._read_stream = None
+
+            for _, transfer in self._read_transfers.items():
+                transfer.finish(Status.INTERNAL)
+            self._read_transfers = {}
+
+            _LOG.error('Read stream shut down: %s', status)
+
+    def _open_write_stream(self) -> None:
+        self._write_stream = self._service.Write.invoke(
+            lambda _, chunk: self._loop.call_soon_threadsafe(
+                self._write_chunk_queue.put_nowait, chunk),
+            on_error=lambda _, status: self._on_write_error(status))
+
+    def _on_write_error(self, status: Status) -> None:
+        """Callback for an RPC error in the write stream."""
+
+        if status is Status.FAILED_PRECONDITION:
+            # FAILED_PRECONDITION indicates that the stream packet was not
+            # recognized as the stream is not open. This could occur if the
+            # server resets during an active transfer. Re-open the stream to
+            # allow pending transfers to continue.
+            self._open_write_stream()
+        else:
+            # Other errors are unrecoverable. Clear the stream and cancel any
+            # pending transfers with an INTERNAL status as this is a system
+            # error.
+            self._write_stream = None
+
+            for _, transfer in self._write_transfers.items():
+                transfer.finish(Status.INTERNAL)
+            self._write_transfers = {}
+
+            _LOG.error('Write stream shut down: %s', status)
 
     def _start_read_transfer(self, transfer: _Transfer) -> None:
         """Begins a new read transfer, opening the stream if it isn't."""
@@ -482,29 +533,25 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._read_transfers[transfer.id] = transfer
 
         if not self._read_stream:
-            self._read_stream = self._service.Read.invoke(
-                lambda _, chunk: self._loop.call_soon_threadsafe(
-                    self._read_chunk_queue.put_nowait, chunk))
+            self._open_read_stream()
 
         _LOG.debug('Starting new read transfer %d', transfer.id)
         self._loop.call_soon_threadsafe(self._new_transfer_queue.put_nowait,
                                         transfer)
 
-    def _end_read_transfer(self, transfer: _Transfer, status: Status) -> None:
+    def _end_read_transfer(self, transfer: _Transfer) -> None:
         """Completes a read transfer."""
         del self._read_transfers[transfer.id]
 
-        if not status.ok():
+        if not transfer.status.ok():
             _LOG.error('Read transfer %d terminated with status %s',
-                       transfer.id, status)
-            transfer.status = status
+                       transfer.id, transfer.status)
 
+        # TODO(frolv): This doesn't seem to work. Investigate why.
         # If no more transfers are using the read stream, close it.
-        if not self._read_transfers and self._read_stream:
-            self._read_stream.cancel()
-            self._read_stream = None
-
-        transfer.done.set()
+        # if not self._read_transfers and self._read_stream:
+        #     self._read_stream.cancel()
+        #     self._read_stream = None
 
     def _start_write_transfer(self, transfer: _Transfer) -> None:
         """Begins a new write transfer, opening the stream if it isn't."""
@@ -512,30 +559,25 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._write_transfers[transfer.id] = transfer
 
         if not self._write_stream:
-            # TODO(frolv): Make the actual RPC call.
-            self._write_stream = self._service.Write.invoke(
-                lambda _, chunk: self._loop.call_soon_threadsafe(
-                    self._write_chunk_queue.put_nowait, chunk))
+            self._open_write_stream()
 
         _LOG.debug('Starting new write transfer %d', transfer.id)
         self._loop.call_soon_threadsafe(self._new_transfer_queue.put_nowait,
                                         transfer)
 
-    def _end_write_transfer(self, transfer: _Transfer, status: Status) -> None:
+    def _end_write_transfer(self, transfer: _Transfer) -> None:
         """Completes a write transfer."""
         del self._write_transfers[transfer.id]
 
-        if not status.ok():
+        if not transfer.status.ok():
             _LOG.error('Write transfer %d terminated with status %s',
-                       transfer.id, status)
-            transfer.status = status
+                       transfer.id, transfer.status)
 
+        # TODO(frolv): This doesn't seem to work. Investigate why.
         # If no more transfers are using the write stream, close it.
-        if not self._write_transfers and self._write_stream:
-            self._write_stream.cancel()
-            self._write_stream = None
-
-        transfer.done.set()
+        # if not self._write_transfers and self._write_stream:
+        #     self._write_stream.cancel()
+        #     self._write_stream = None
 
 
 class Error(Exception):

@@ -61,6 +61,15 @@ class TransferManagerTest(unittest.TestCase):
                     SerializeToString())
             self._packets_to_send.append(serialized_group)
 
+    def _enqueue_server_error(self, method: _Method, error: Status) -> None:
+        self._packets_to_send.append([
+            packet_pb2.RpcPacket(type=packet_pb2.PacketType.SERVER_ERROR,
+                                 channel_id=1,
+                                 service_id=_TRANSFER_SERVICE_ID,
+                                 method_id=method.value,
+                                 status=error.value).SerializeToString()
+        ])
+
     def _handle_request(self, data: bytes) -> None:
         packet = packets.decode(data)
         if packet.type is not packet_pb2.PacketType.CLIENT_STREAM:
@@ -211,6 +220,19 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.transfer_id, 31)
         self.assertEqual(exception.status, Status.NOT_FOUND)
 
+    def test_read_transfer_server_error(self):
+        manager = transfer.Manager(self._service,
+                                   default_response_timeout_s=0.3)
+
+        self._enqueue_server_error(_Method.READ, Status.NOT_FOUND)
+
+        with self.assertRaises(transfer.Error) as context:
+            manager.read(31)
+
+        exception = context.exception
+        self.assertEqual(exception.transfer_id, 31)
+        self.assertEqual(exception.status, Status.INTERNAL)
+
     def test_write_transfer_basic(self):
         manager = transfer.Manager(self._service,
                                    default_response_timeout_s=0.3)
@@ -360,6 +382,19 @@ class TransferManagerTest(unittest.TestCase):
         exception = context.exception
         self.assertEqual(exception.transfer_id, 21)
         self.assertEqual(exception.status, Status.UNAVAILABLE)
+
+    def test_write_transfer_server_error(self):
+        manager = transfer.Manager(self._service,
+                                   default_response_timeout_s=0.3)
+
+        self._enqueue_server_error(_Method.WRITE, Status.NOT_FOUND)
+
+        with self.assertRaises(transfer.Error) as context:
+            manager.write(21, b'server error')
+
+        exception = context.exception
+        self.assertEqual(exception.transfer_id, 21)
+        self.assertEqual(exception.status, Status.INTERNAL)
 
     def test_write_transfer_timeout(self):
         manager = transfer.Manager(self._service,
