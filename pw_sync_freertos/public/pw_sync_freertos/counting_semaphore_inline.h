@@ -28,23 +28,24 @@ inline CountingSemaphore::CountingSemaphore() : native_type_() {
       xSemaphoreCreateCountingStatic(max(), 0, &native_type_);
   // This should never fail since the pointer provided was not null and it
   // should return a pointer to the StaticSemaphore_t.
-  PW_DASSERT(handle == &native_type_);
+  PW_DASSERT(handle == reinterpret_cast<SemaphoreHandle_t>(&native_type_));
 }
 
 inline CountingSemaphore::~CountingSemaphore() {
-  vSemaphoreDelete(&native_type_);
+  vSemaphoreDelete(reinterpret_cast<SemaphoreHandle_t>(&native_type_));
 }
 
 inline void CountingSemaphore::acquire() {
   PW_ASSERT(!interrupt::InInterruptContext());
 #if INCLUDE_vTaskSuspend == 1  // This means portMAX_DELAY is indefinite.
-  const BaseType_t result = xSemaphoreTake(&native_type_, portMAX_DELAY);
+  const BaseType_t result = xSemaphoreTake(
+      reinterpret_cast<SemaphoreHandle_t>(&native_type_), portMAX_DELAY);
   PW_DASSERT(result == pdTRUE);
 #else
   // In case we need to block for longer than the FreeRTOS delay can represent
   // repeatedly hit take until success.
-  while (xSemaphoreTake(&native_type_, chrono::freertos::kMaxTimeout.count()) ==
-         pdFALSE) {
+  while (xSemaphoreTake(reinterpret_cast<SemaphoreHandle_t>(&native_type_),
+                        chrono::freertos::kMaxTimeout.count()) == pdFALSE) {
   }
 #endif  // INCLUDE_vTaskSuspend
 }
@@ -52,14 +53,16 @@ inline void CountingSemaphore::acquire() {
 inline bool CountingSemaphore::try_acquire() noexcept {
   if (interrupt::InInterruptContext()) {
     BaseType_t woke_higher_task = pdFALSE;
-    const bool success =
-        xSemaphoreTakeFromISR(&native_type_, &woke_higher_task) == pdTRUE;
+    const bool success = xSemaphoreTakeFromISR(
+                             reinterpret_cast<SemaphoreHandle_t>(&native_type_),
+                             &woke_higher_task) == pdTRUE;
     portYIELD_FROM_ISR(woke_higher_task);
     return success;
   }
 
   // Task Context
-  return xSemaphoreTake(&native_type_, 0) == pdTRUE;
+  return xSemaphoreTake(reinterpret_cast<SemaphoreHandle_t>(&native_type_),
+                        0) == pdTRUE;
 }
 
 inline bool CountingSemaphore::try_acquire_until(

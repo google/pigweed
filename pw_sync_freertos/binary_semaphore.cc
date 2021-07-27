@@ -46,14 +46,14 @@ bool BinarySemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
-    if (xSemaphoreTake(&native_type_,
+    if (xSemaphoreTake(reinterpret_cast<SemaphoreHandle_t>(&native_type_),
                        static_cast<TickType_t>(kMaxTimeoutMinusOne.count())) ==
         pdTRUE) {
       return true;
     }
     for_at_least -= kMaxTimeoutMinusOne;
   }
-  return xSemaphoreTake(&native_type_,
+  return xSemaphoreTake(reinterpret_cast<SemaphoreHandle_t>(&native_type_),
                         static_cast<TickType_t>(for_at_least.count() + 1)) ==
          pdTRUE;
 }
