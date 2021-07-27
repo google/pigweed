@@ -66,14 +66,18 @@ class AdvertisingHandleMap {
   void Clear();
 
  private:
+  // Although not in the range of valid advertising handles (0x00 to 0xEF), kStartHandle is chosen
+  // to be 0xFF because adding one to it will overflow to 0, the first valid advertising handle.
+  constexpr static AdvertisingHandle kStartHandle = 0xFF;
+
   // Generate the next valid, available, and within range AdvertisingHandle. This function may fail
   // if there are already kMaxAdvertisingHandles in the container: there are no more valid
   // AdvertisingHandles.
   std::optional<AdvertisingHandle> NextHandle();
 
   // The last generated advertising handle used as a hint to generate the next handle; defaults to
-  // 0xFF if no handles have been generated yet.
-  AdvertisingHandle last_handle_ = 0xFF;
+  // kStartHandle if no handles have been generated yet.
+  AdvertisingHandle last_handle_ = kStartHandle;
 
   std::unordered_map<DeviceAddress, AdvertisingHandle> addr_to_handle_;
   std::unordered_map<AdvertisingHandle, DeviceAddress> handle_to_addr_;

@@ -62,7 +62,7 @@ bool AdvertisingHandleMap::Empty() const {
 }
 
 void AdvertisingHandleMap::Clear() {
-  last_handle_ = 0;
+  last_handle_ = kStartHandle;
   addr_to_handle_.clear();
   handle_to_addr_.clear();
 }
@@ -86,7 +86,7 @@ std::optional<AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
     return std::nullopt;
   }
 
-  last_handle_ = (handle.value() + 1) % kMaxElements;
+  last_handle_ = handle.value();
   return handle;
 }
 
