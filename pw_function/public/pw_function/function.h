@@ -43,31 +43,105 @@ namespace pw {
 //     return All(items, IsEven);
 //   }
 //
-template <typename T>
-using Function = function_internal::Function<T>;
+template <typename Callable>
+class Function;
 
-// A Closure is a function that does not take any arguments and returns nothing.
 using Closure = Function<void()>;
+
+template <typename Return, typename... Args>
+class Function<Return(Args...)> {
+ public:
+  constexpr Function() = default;
+  constexpr Function(std::nullptr_t) : Function() {}
+
+  template <typename Callable>
+  Function(Callable callable) {
+    if (function_internal::IsNull(callable)) {
+      holder_.InitializeNullTarget();
+    } else {
+      holder_.InitializeInlineTarget(std::move(callable));
+    }
+  }
+
+  Function(Function&& other) {
+    holder_.MoveInitializeTargetFrom(other.holder_);
+    other.holder_.InitializeNullTarget();
+  }
+
+  Function& operator=(Function&& other) {
+    holder_.DestructTarget();
+    holder_.MoveInitializeTargetFrom(other.holder_);
+    other.holder_.InitializeNullTarget();
+    return *this;
+  }
+
+  Function& operator=(std::nullptr_t) {
+    holder_.DestructTarget();
+    holder_.InitializeNullTarget();
+    return *this;
+  }
+
+  template <typename Callable>
+  Function& operator=(Callable callable) {
+    holder_.DestructTarget();
+    InitializeTarget(std::move(callable));
+    return *this;
+  }
+
+  ~Function() { holder_.DestructTarget(); }
+
+  Return operator()(Args... args) const { return holder_.target()(args...); };
+
+  explicit operator bool() const { return !holder_.target().IsNull(); }
+
+ private:
+  // TODO(frolv): This is temporarily private while the API is worked out.
+  template <typename Callable, size_t kSizeBytes>
+  Function(Callable&& callable,
+           function_internal::FunctionStorage<kSizeBytes>& storage)
+      : Function(callable, &storage) {
+    static_assert(sizeof(Callable) <= kSizeBytes,
+                  "pw::Function callable does not fit into provided storage");
+  }
+
+  // Constructs a function that stores its callable at the provided location.
+  // Public constructors wrapping this must ensure that the memory region is
+  // capable of storing the callable in terms of both size and alignment.
+  template <typename Callable>
+  Function(Callable&& callable, void* storage) {
+    if (function_internal::IsNull(callable)) {
+      holder_.InitializeNullTarget();
+    } else {
+      holder_.InitializeMemoryTarget(std::move(callable), storage);
+    }
+  }
+
+  function_internal::FunctionTargetHolder<
+      function_internal::config::kInlineCallableSize,
+      Return,
+      Args...>
+      holder_;
+};
 
 // nullptr comparisions for functions.
 template <typename T>
 bool operator==(const Function<T>& f, std::nullptr_t) {
-  return !f;
+  return !static_cast<bool>(f);
 }
 
 template <typename T>
 bool operator!=(const Function<T>& f, std::nullptr_t) {
-  return !!f;
+  return static_cast<bool>(f);
 }
 
 template <typename T>
 bool operator==(std::nullptr_t, const Function<T>& f) {
-  return !f;
+  return !static_cast<bool>(f);
 }
 
 template <typename T>
 bool operator!=(std::nullptr_t, const Function<T>& f) {
-  return !!f;
+  return static_cast<bool>(f);
 }
 
 }  // namespace pw
