@@ -117,8 +117,12 @@ class _Call:
         """True if the RPC call has completed, successfully or from an error."""
         return self.status is not None or self.error is not None
 
-    def _send_client_stream(self, request_proto, request_fields: dict) -> None:
-        """Sends a client to the server in the client stream."""
+    def _send_client_stream(self, request_proto: Optional[Message],
+                            request_fields: dict) -> None:
+        """Sends a client to the server in the client stream.
+
+        Sending a client stream packet on a closed RPC raises an exception.
+        """
         if self.error:
             raise self.error
 
