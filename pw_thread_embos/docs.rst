@@ -26,11 +26,20 @@ can be created as follows:
 .. code-block:: cpp
 
   #include "pw_thread/detached_thread.h"
+  #include "pw_thread_embos/config.h"
   #include "pw_thread_embos/context.h"
   #include "pw_thread_embos/options.h"
   #include "RTOS.h"  // For the embOS types.
 
-  pw::thread::embos::ContextWithStack<42> example_thread_context;
+  constexpr OS_PRIO kFooPriority =
+      pw::thread::embos::config::kDefaultPriority;
+  constexpr OS_UINT kFooTimeSliceInterval =
+      pw::thread::embos::config::kDefaultTimeSliceInterval;
+  constexpr size_t kFooStackSizeWords =
+      pw::thread::embos::config::kDefaultStackSizeWords;
+
+  pw::thread::embos::ContextWithStack<kFooStackSizeWords>
+      example_thread_context;
   void StartExampleThread() {
     pw::thread::DetachedThread(
         pw::thread::embos::Options()

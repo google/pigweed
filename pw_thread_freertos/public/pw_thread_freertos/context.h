@@ -96,7 +96,7 @@ class Context {
 //
 // Example usage:
 //
-//   std::array<StackType_t, 42> example_thread_stack;
+//   std::array<StackType_t, kFooStackSizeWords> example_thread_stack;
 //   pw::thread::freertos::Context example_thread_context(example_thread_stack);
 //   void StartExampleThread() {
 //      pw::thread::Thread(
@@ -125,7 +125,8 @@ class StaticContext : public Context {
 //
 // Example usage:
 //
-//   pw::thread::freertos::ContextWithStack<42> example_thread_context;
+//   pw::thread::freertos::ContextWithStack<kFooStackSizeWords>
+//       example_thread_context;
 //   void StartExampleThread() {
 //      pw::thread::Thread(
 //        pw::thread::freertos::Options()

@@ -28,10 +28,17 @@ follows:
 
   #include "FreeRTOS.h"
   #include "pw_thread/detached_thread.h"
+  #include "pw_thread_freertos/config.h"
   #include "pw_thread_freertos/context.h"
   #include "pw_thread_freertos/options.h"
 
-  pw::thread::freertos::StaticContextWithStack<42> example_thread_context;
+  constexpr UBaseType_t kFooPriority =
+      pw::thread::freertos::config::kDefaultPriority;
+  constexpr size_t kFooStackSizeWords =
+      pw::thread::freertos::config::kDefaultStackSizeWords;
+
+  pw::thread::freertos::StaticContextWithStack<kFooStackSizeWords>
+      example_thread_context;
   void StartExampleThread() {
     pw::thread::DetachedThread(
         pw::thread::freertos::Options()
@@ -49,15 +56,21 @@ be done as follows:
 
   #include "FreeRTOS.h"
   #include "pw_thread/detached_thread.h"
+  #include "pw_thread_freertos/config.h"
   #include "pw_thread_freertos/context.h"
   #include "pw_thread_freertos/options.h"
+
+  constexpr UBaseType_t kFooPriority =
+      pw::thread::freertos::config::kDefaultPriority;
+  constexpr size_t kFooStackSizeWords =
+      pw::thread::freertos::config::kDefaultStackSizeWords;
 
   void StartExampleThread() {
     pw::thread::DetachedThread(
         pw::thread::freertos::Options()
             .set_name("dyanmic_example_thread")
             .set_priority(kFooPriority)
-            .set_stack_size(42),
+            .set_stack_size(kFooStackSizeWords),
         example_thread_function)
   }
 

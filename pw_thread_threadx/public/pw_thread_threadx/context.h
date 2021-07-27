@@ -35,7 +35,7 @@ namespace pw::thread::threadx {
 //
 // Example usage:
 //
-//   std::array<ULONG, 42> example_thread_stack;
+//   std::array<ULONG, kFooStackSizeWords> example_thread_stack;
 //   pw::thread::threadx::Context example_thread_context(example_thread_stack);
 //   void StartExampleThread() {
 //      pw::thread::Thread(
@@ -108,7 +108,8 @@ class Context {
 //
 // Example usage:
 //
-//   pw::thread::threadx::ContextWithStack<42> example_thread_context;
+//   pw::thread::threadx::ContextWithStack<kFooStackSizeWords>
+//       example_thread_context;
 //   void StartExampleThread() {
 //      pw::thread::Thread(
 //        pw::thread::threadx::Options()

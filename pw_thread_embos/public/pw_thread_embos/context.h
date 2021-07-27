@@ -33,7 +33,7 @@ namespace pw::thread::embos {
 //
 // Example usage:
 //
-//   std::array<ULONG, 42> example_thread_stack;
+//   std::array<ULONG, kFooStackSizeWords> example_thread_stack;
 //   pw::thread::embos::Context example_thread_context(example_thread_stack);
 //   void StartExampleThread() {
 //      pw::thread::DetachedThread(
@@ -106,7 +106,8 @@ class Context {
 //
 // Example usage:
 //
-//   pw::thread::embos::ContextWithStack<42> example_thread_context;
+//   pw::thread::embos::ContextWithStack<kFooStackSizeWords>
+//       example_thread_context;
 //   void StartExampleThread() {
 //      pw::thread::DetachedThread(
 //        pw::thread::embos::Options()

@@ -79,7 +79,7 @@ inline constexpr size_t kDefaultStackSizeWords =
 inline constexpr OS_PRIO kMinimumPriority = PW_THREAD_EMBOS_CONFIG_MIN_PRIORITY;
 inline constexpr OS_PRIO kDefaultPriority =
     PW_THREAD_EMBOS_CONFIG_DEFAULT_PRIORITY;
-inline constexpr OS_PRIO kDefaultTimeSliceInterval =
+inline constexpr OS_UINT kDefaultTimeSliceInterval =
     PW_THREAD_EMBOS_CONFIG_DEFAULT_TIME_SLICE_INTERVAL;
 
 }  // namespace pw::thread::embos::config
