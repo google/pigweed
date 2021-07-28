@@ -238,6 +238,12 @@ capture a backtrace or stack dump. Note that this function does NOT capture the
 thread name: that metadata is only required in cases where a stack overflow or
 underflow is detected.
 
+Python processor
+================
+Threads captured as a Thread proto message can be dumped or further analyzed
+using using ``pw_thread``'s Python module. This is directly integrated into
+pw_snapshot's processor tool to automatically provide rich thread state dumps.
+
 .. Warning::
   Snapshot integration is a work-in-progress and may see significant API
   changes.

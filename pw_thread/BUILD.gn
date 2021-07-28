@@ -149,6 +149,7 @@ pw_test("yield_facade_test") {
 
 pw_proto_library("protos") {
   sources = [ "pw_thread_protos/thread.proto" ]
+  deps = [ "$dir_pw_tokenizer:proto" ]
 }
 
 pw_doc_group("docs") {

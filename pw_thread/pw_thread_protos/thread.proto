@@ -15,6 +15,8 @@ syntax = "proto3";
 
 package pw.thread;
 
+import "pw_tokenizer/proto/options.proto";
+
 option java_package = "pw.thread.proto";
 option java_outer_classname = "Thread";
 
@@ -46,7 +48,7 @@ message Thread {
   // Thread names must be unique; this allows extensions of Snapshot to augment
   // threads with additional data. This should either be human readable text, or
   // tokenized data (e.g. base-64 encoded or binary data).
-  bytes name = 1;
+  bytes name = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // Whether or not this thread is the thread is the currently active context
   // at the time of capture. For multi-thread dumps, this field should only be
@@ -79,20 +81,20 @@ message Thread {
   // The address this thread's stack pointer began at. For descending stacks,
   // this is the highest address of the stack bounds. For ascending stacks, this
   // is the lowest address of the stack bounds.
-  uint64 stack_start_pointer = 7;
+  optional uint64 stack_start_pointer = 7;
 
   // The furthest permitted address from where this thread's stack pointer
   // began. For descending stacks, this is the lowest address of the stack
   // bounds. For ascending stacks, this is the highest address of the stack
   // bounds.
-  uint64 stack_end_pointer = 8;
+  optional uint64 stack_end_pointer = 8;
 
   // The current stack pointer of this thread.
-  uint64 stack_pointer = 9;
+  optional uint64 stack_pointer = 9;
 
   // CPU usage info. This is the percentage of CPU time the thread has been
   // active in hundredths of a percent. (e.g. 5.00% = 500u)
-  uint32 cpu_usage_hundredths = 10;
+  optional uint32 cpu_usage_hundredths = 10;
 }
 
 // This message overlays the pw.snapshot.Snapshot proto. It's valid to encode
