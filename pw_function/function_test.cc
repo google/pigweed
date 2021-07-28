@@ -228,3 +228,26 @@ TEST(Function, MoveAssign_CustomObject) {
 
 }  // namespace
 }  // namespace pw
+
+namespace obscure_different_namespace_which_should_never_collide {
+namespace {
+
+TEST(Function, Null_OperatorEquals_DifferentNamespace) {
+  pw::Closure implicit_null;
+  pw::Closure explicit_null(nullptr);
+  pw::Closure assigned_null = nullptr;
+  pw::Closure not_null([]() {});
+
+  EXPECT_TRUE(implicit_null == nullptr);
+  EXPECT_TRUE(explicit_null == nullptr);
+  EXPECT_TRUE(assigned_null == nullptr);
+  EXPECT_TRUE(not_null != nullptr);
+
+  EXPECT_FALSE(implicit_null != nullptr);
+  EXPECT_FALSE(explicit_null != nullptr);
+  EXPECT_FALSE(assigned_null != nullptr);
+  EXPECT_FALSE(not_null == nullptr);
+}
+
+}  // namespace
+}  // namespace obscure_different_namespace_which_should_never_collide
