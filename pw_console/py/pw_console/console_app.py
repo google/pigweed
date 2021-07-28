@@ -13,8 +13,6 @@
 # the License.
 """ConsoleApp control class."""
 
-import collections
-import collections.abc
 import builtins
 import asyncio
 import logging
@@ -25,18 +23,15 @@ from typing import Iterable, Union
 
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.application import Application
-from prompt_toolkit.filters import Condition, has_focus
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.styles import (
     DynamicStyle,
     merge_styles,
 )
 from prompt_toolkit.layout import (
     ConditionalContainer,
-    Dimension,
     Float,
-    HSplit,
     Layout,
-    VSplit,
 )
 from prompt_toolkit.widgets import FormattedTextToolbar
 from prompt_toolkit.widgets import (
@@ -61,6 +56,7 @@ from pw_console.help_window import HelpWindow
 from pw_console.log_pane import LogPane
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.repl_pane import ReplPane
+from pw_console.window_manager import WindowManager
 
 _LOG = logging.getLogger(__package__)
 
@@ -96,10 +92,6 @@ def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
                                )
     pane.append_pane_subtitle(  # type: ignore
         logger_instance.name)
-
-
-# Weighted amount for adjusting window dimensions when enlarging and shrinking.
-_WINDOW_SIZE_ADJUST = 2
 
 
 class ConsoleApp:
@@ -153,7 +145,6 @@ class ConsoleApp:
                 'Ctrl-W', 'Quit '))
 
         # Top level UI state toggles.
-        self.vertical_split = False
         self.load_theme()
 
         # Pigweed upstream RST user guide
@@ -187,13 +178,9 @@ class ConsoleApp:
             startup_message=repl_startup_message,
         )
 
-        # List of enabled panes.
-        self.active_panes: collections.deque = collections.deque()
-        self.active_panes.append(self.repl_pane)
-
-        # Reference to the current prompt_toolkit window split for the current
-        # set of active_panes.
-        self.active_pane_split = None
+        # Window panes are added via the window_manager
+        self.window_manager = WindowManager(self)
+        self.window_manager.add_window(self.repl_pane)
 
         # Top of screen menu items
         self.menu_items = self._create_menu_items()
@@ -206,7 +193,7 @@ class ConsoleApp:
 
         # prompt_toolkit root container.
         self.root_container = MenuContainer(
-            body=self._create_root_split(),
+            body=self.window_manager.create_root_split(),
             menu_items=self.menu_items,
             floats=[
                 # Top message bar
@@ -321,11 +308,13 @@ class ConsoleApp:
             MenuItem(
                 '[View]',
                 children=[
-                    MenuItem('{check} Vertical Window Spliting'.format(
-                        check=pw_console.widgets.checkbox.to_checkbox_text(
-                            self.vertical_split)),
-                             handler=self.toggle_vertical_split),
-                    MenuItem('Rotate Window Order', handler=self.rotate_panes),
+                    MenuItem(
+                        '{check} Vertical Window Spliting'.format(
+                            check=pw_console.widgets.checkbox.to_checkbox_text(
+                                self.window_manager.vertical_split)),
+                        handler=self.window_manager.toggle_vertical_split),
+                    MenuItem('Rotate Window Order',
+                             handler=self.window_manager.rotate_panes),
                     MenuItem('-'),
                     MenuItem(
                         'Themes',
@@ -393,7 +382,7 @@ class ConsoleApp:
                                     check=pw_console.widgets.checkbox.
                                     to_checkbox_text(pane.show_pane, end='')),
                                 handler=functools.partial(
-                                    self.toggle_pane, pane),
+                                    self.window_manager.toggle_pane, pane),
                             ),
                         ] + [
                             MenuItem(text,
@@ -401,7 +390,8 @@ class ConsoleApp:
                                          self._run_pane_menu_option, handler))
                             for text, handler in pane.get_all_menu_options()
                         ],
-                    ) for index, pane in enumerate(self.active_panes)
+                    ) for index, pane in enumerate(
+                        self.window_manager.active_panes)
                 ],
             )
         ]
@@ -430,142 +420,6 @@ class ConsoleApp:
 
         return file_and_view_menu + window_menu + help_menu
 
-    def _get_current_active_pane(self):
-        """Return the current active window pane."""
-        focused_pane = None
-        for pane in self.active_panes:
-            if has_focus(pane)():
-                focused_pane = pane
-                break
-        return focused_pane
-
-    def add_pane(self, new_pane, existing_pane=None):
-        existing_pane_index = None
-        if existing_pane:
-            try:
-                existing_pane_index = self.active_panes.index(existing_pane)
-            except ValueError:
-                # Ignore ValueError which can be raised by the self.active_panes
-                # deque if existing_pane can't be found.
-                pass
-        if existing_pane_index:
-            self.active_panes.insert(new_pane, existing_pane_index + 1)
-        else:
-            self.active_panes.append(new_pane)
-
-        self.update_menu_items()
-        self._update_root_container_body()
-
-        self.redraw_ui()
-
-    def remove_pane(self, existing_pane):
-        existing_pane_index = 0
-        if not existing_pane:
-            return
-        try:
-            existing_pane_index = self.active_panes.index(existing_pane)
-            self.active_panes.remove(existing_pane)
-        except ValueError:
-            # Ignore ValueError which can be raised by the self.active_panes
-            # deque if existing_pane can't be found.
-            pass
-
-        self.update_menu_items()
-        self._update_root_container_body()
-        if len(self.active_panes) > 0:
-            existing_pane_index -= 1
-            try:
-                self.focus_on_container(self.active_panes[existing_pane_index])
-            except ValueError:
-                # ValueError will be raised if the the pane at
-                # existing_pane_index can't be accessed.
-                # Focus on the main menu if the existing pane is hidden.
-                self.focus_main_menu()
-
-        self.redraw_ui()
-
-    def enlarge_pane(self):
-        """Enlarge the currently focused window pane."""
-        pane = self._get_current_active_pane()
-        if pane:
-            self.adjust_pane_size(pane, _WINDOW_SIZE_ADJUST)
-
-    def shrink_pane(self):
-        """Shrink the currently focused window pane."""
-        pane = self._get_current_active_pane()
-        if pane:
-            self.adjust_pane_size(pane, -_WINDOW_SIZE_ADJUST)
-
-    def adjust_pane_size(self, pane, diff: int = _WINDOW_SIZE_ADJUST):
-        """Increase or decrease a given pane's width or height weight."""
-        # Placeholder next_pane value to allow setting width and height without
-        # any consequences if there is no next visible pane.
-        next_pane = HSplit([],
-                           height=Dimension(weight=50),
-                           width=Dimension(weight=50))  # type: ignore
-        # Try to get the next visible pane to subtract a weight value from.
-        next_visible_pane = self._get_next_visible_pane_after(pane)
-        if next_visible_pane:
-            next_pane = next_visible_pane
-
-        # If the last pane is selected, and there are at least 2 panes, make
-        # next_pane the previous pane.
-        try:
-            if len(self.active_panes) >= 2 and (self.active_panes.index(pane)
-                                                == len(self.active_panes) - 1):
-                next_pane = self.active_panes[-2]
-        except ValueError:
-            # Ignore ValueError raised if self.active_panes[-2] doesn't exist.
-            pass
-
-        # Get current weight values
-        if self.vertical_split:
-            old_weight = pane.width.weight
-            next_old_weight = next_pane.width.weight  # type: ignore
-        else:  # Horizontal split
-            old_weight = pane.height.weight
-            next_old_weight = next_pane.height.weight  # type: ignore
-
-        # Add to the current pane
-        new_weight = old_weight + diff
-        if new_weight <= 0:
-            new_weight = old_weight
-
-        # Subtract from the next pane
-        next_new_weight = next_old_weight - diff
-        if next_new_weight <= 0:
-            next_new_weight = next_old_weight
-
-        # Set new weight values
-        if self.vertical_split:
-            pane.width.weight = new_weight
-            next_pane.width.weight = next_new_weight  # type: ignore
-        else:  # Horizontal split
-            pane.height.weight = new_weight
-            next_pane.height.weight = next_new_weight  # type: ignore
-
-    def reset_pane_sizes(self):
-        """Reset all active pane width and height to 50%"""
-        for pane in self.active_panes:
-            pane.height = Dimension(weight=50)
-            pane.width = Dimension(weight=50)
-
-    def rotate_panes(self, steps=1):
-        """Rotate the order of all active window panes."""
-        self.active_panes.rotate(steps)
-        self.update_menu_items()
-        self._update_root_container_body()
-
-    def toggle_pane(self, pane):
-        """Toggle a pane on or off."""
-        pane.show_pane = not pane.show_pane
-        self.update_menu_items()
-        self._update_root_container_body()
-
-        # Set focus to the top level menu. This has the effect of keeping the
-        # menu open if it's already open.
-        self.focus_main_menu()
-
     def focus_main_menu(self):
         """Set application focus to the main menu."""
         self.application.layout.focus(self.root_container.window)
@@ -573,30 +427,6 @@ class ConsoleApp:
     def focus_on_container(self, pane):
         """Set application focus to a specific container."""
         self.application.layout.focus(pane)
-
-    def _get_next_visible_pane_after(self, target_pane):
-        """Return the next visible pane that appears after the target pane."""
-        try:
-            target_pane_index = self.active_panes.index(target_pane)
-        except ValueError:
-            # If pane can't be found, focus on the main menu.
-            return None
-
-        # Loop through active panes (not including the target_pane).
-        for i in range(1, len(self.active_panes)):
-            next_pane_index = (target_pane_index + i) % len(self.active_panes)
-            next_pane = self.active_panes[next_pane_index]
-            if next_pane.show_pane:
-                return next_pane
-        return None
-
-    def focus_next_visible_pane(self, pane):
-        """Focus on the next visible window pane if possible."""
-        next_visible_pane = self._get_next_visible_pane_after(pane)
-        if next_visible_pane:
-            self.application.layout.focus(next_visible_pane)
-            return
-        self.focus_main_menu()
 
     def toggle_light_theme(self):
         """Toggle light and dark theme colors."""
@@ -610,9 +440,9 @@ class ConsoleApp:
 
     def _create_log_pane(self, title=None) -> 'LogPane':
         # Create one log pane.
-        self.active_panes.appendleft(
-            LogPane(application=self, pane_title=title))
-        return self.active_panes[0]
+        log_pane = LogPane(application=self, pane_title=title)
+        self.window_manager.add_pane(log_pane, add_at_beginning=True)
+        return log_pane
 
     def add_log_handler(self,
                         window_title: str,
@@ -622,7 +452,7 @@ class ConsoleApp:
 
         existing_log_pane = None
         # Find an existing LogPane with the same window_title.
-        for pane in self.active_panes:
+        for pane in self.window_manager.active_panes:
             if isinstance(pane, LogPane) and pane.pane_title() == window_title:
                 existing_log_pane = pane
                 break
@@ -633,7 +463,7 @@ class ConsoleApp:
         for logger in logger_instances:
             _add_log_handler_to_pane(logger, existing_log_pane)
 
-        self._update_root_container_body()
+        self.window_manager.update_root_container_body()
         self.update_menu_items()
         self._update_help_window()
 
@@ -644,7 +474,7 @@ class ConsoleApp:
 
     def run_after_render_hooks(self, *unused_args, **unused_kwargs):
         """Run each active pane's `after_render_hook` if defined."""
-        for pane in self.active_panes:
+        for pane in self.window_manager.active_panes:
             if hasattr(pane, 'after_render_hook'):
                 pane.after_render_hook()
 
@@ -671,7 +501,7 @@ class ConsoleApp:
                                                        self.key_bindings)
 
         # Add activated plugin key bindings to the help text.
-        for pane in self.active_panes:
+        for pane in self.window_manager.active_panes:
             for key_bindings in pane.get_all_key_bindings():
                 help_section_title = pane.__class__.__name__
                 if isinstance(key_bindings, KeyBindings):
@@ -683,45 +513,11 @@ class ConsoleApp:
 
         self.keybind_help_window.generate_help_text()
 
-    def _update_split_orientation(self):
-        if self.vertical_split:
-            self.active_pane_split = VSplit(
-                list(pane for pane in self.active_panes if pane.show_pane),
-                # Add a vertical separator between each active window pane.
-                padding=1,
-                padding_char='│',
-                padding_style='class:pane_separator',
-            )
-        else:
-            self.active_pane_split = HSplit(self.active_panes)
-
-    def _create_root_split(self):
-        """Create a vertical or horizontal split container for all active
-        panes."""
-        self._update_split_orientation()
-        return HSplit([
-            self.active_pane_split,
-        ])
-
-    def _update_root_container_body(self):
-        # Replace the root MenuContainer body with the new split.
-        self.root_container.container.content.children[
-            1] = self._create_root_split()
-
     def toggle_log_line_wrapping(self):
         """Menu item handler to toggle line wrapping of all log panes."""
-        for pane in self.active_panes:
+        for pane in self.window_manager.active_panes:
             if isinstance(pane, LogPane):
                 pane.toggle_wrap_lines()
-
-    def toggle_vertical_split(self):
-        """Toggle visibility of the help window."""
-        self.vertical_split = not self.vertical_split
-
-        self.update_menu_items()
-        self._update_root_container_body()
-
-        self.redraw_ui()
 
     def focused_window(self):
         """Return the currently focused window."""
@@ -748,7 +544,7 @@ class ConsoleApp:
 
     async def run(self, test_mode=False):
         """Start the prompt_toolkit UI."""
-        self.reset_pane_sizes()
+        self.window_manager.reset_pane_sizes()
 
         if test_mode:
             background_log_task = asyncio.create_task(self.log_forever())

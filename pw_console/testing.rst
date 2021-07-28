@@ -229,7 +229,78 @@ Run the console in test mode:
      - Window is hidden
      - |checkbox|
 
-4. Add note to the commit message
+4. Test Window Management
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - Click the :guilabel:`View > [ ] Vertical Window Spliting`
+     - | Log pane appears on the left
+       | Repl pane appears on the right
+     - |checkbox|
+
+   * - 2
+     - Click the :guilabel:`View > [x] Vertical Window Spliting`
+     - | Log pane appears on the top
+       | Repl pane appears on the bottom
+     - |checkbox|
+
+   * - 3
+     - | Click the :guilabel:`Logs`
+       | window title
+     - Log pane is focused
+     - |checkbox|
+
+   * - 4
+     - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
+       | Click :guilabel:`Duplicate pane`
+     - | 3 panes are visible:
+       | Log pane on top
+       | Repl pane in the middle
+       | Log pane on the bottom
+     - |checkbox|
+
+   * - 5
+     - Click the :guilabel:`View > Rotate Window Order`
+     - | 3 panes are visible:
+       | Log pane on top
+       | Log pane in the middle
+       | Repl pane on the bottom
+     - |checkbox|
+
+   * - 6
+     - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
+       | Click :guilabel:`Remove pane`
+     - | 2 panes are visible:
+       | Log pane on top
+       | Repl pane in the middle
+     - |checkbox|
+
+   * - 7
+     - | Click the :guilabel:`Logs`
+       | window title
+     - Log pane is focused
+     - |checkbox|
+
+   * - 8
+     - Hold the keys :guilabel:`Ctrl-j`
+     - Log pane is enlarged
+     - |checkbox|
+
+   * - 9
+     - Hold the keys :guilabel:`Ctrl-k`
+     - Log pane shrinks
+     - |checkbox|
+
+5. Add note to the commit message
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Add a ``Testing:`` line to your commit message and mention the steps

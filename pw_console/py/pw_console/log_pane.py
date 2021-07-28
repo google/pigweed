@@ -98,18 +98,17 @@ class LogContentControl(FormattedTextControl):
             """Toggle table view."""
             self.log_pane.toggle_table_view()
 
-        # TODO(tonymd): Make this a menu option instead of a keybind.
         @key_bindings.add('insert')
         def _duplicate(_event: KeyPressEvent) -> None:
             """Duplicate this log pane."""
             self.log_pane.duplicate()
 
-        # TODO(tonymd): Make this a menu option instead of a keybind.
         @key_bindings.add('delete')
         def _delete(_event: KeyPressEvent) -> None:
             """Remove log pane."""
             if self.log_pane.is_a_duplicate:
-                self.log_pane.application.remove_pane(self.log_pane)
+                self.log_pane.application.window_manager.remove_pane(
+                    self.log_pane)
 
         @key_bindings.add('C')
         def _clear_history(_event: KeyPressEvent) -> None:
@@ -538,7 +537,8 @@ class LogPane:
         if self.is_a_duplicate:
             options += [(
                 'Remove pane',
-                functools.partial(self.application.remove_pane, self),
+                functools.partial(self.application.window_manager.remove_pane,
+                                  self),
             )]
 
         # Search / Filter section
@@ -595,5 +595,5 @@ class LogPane:
         new_pane.is_a_duplicate = True
 
         # Add the new pane.
-        self.application.add_pane(new_pane)
+        self.application.window_manager.add_pane(new_pane)
         return new_pane

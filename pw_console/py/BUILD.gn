@@ -43,6 +43,7 @@ pw_python_package("py") {
     "pw_console/widgets/focus_on_click_overlay.py",
     "pw_console/widgets/mouse_handlers.py",
     "pw_console/widgets/table.py",
+    "pw_console/window_manager.py",
   ]
   tests = [
     "console_app_test.py",

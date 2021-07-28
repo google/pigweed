@@ -51,32 +51,32 @@ def create_key_bindings(console_app):
     @bindings.add('f4')
     def toggle_vertical_split(event):
         """Toggle horizontal and vertical window splitting."""
-        console_app.toggle_vertical_split()
+        console_app.window_manager.toggle_vertical_split()
 
     @bindings.add('c-s-left')
     def rotate_panes(event):
         """Rotate window positions backward."""
-        console_app.rotate_panes(-1)
+        console_app.window_manager.rotate_panes(-1)
 
     @bindings.add('c-s-right')
     def rotate_panes(event):
         """Rotate window positions forward."""
-        console_app.rotate_panes()
+        console_app.window_manager.rotate_panes()
 
     @bindings.add('c-j')
     def enlarge_pane(event):
         """Enlarge the active window pane."""
-        console_app.enlarge_pane()
+        console_app.window_manager.enlarge_pane()
 
     @bindings.add('c-k')
     def shrink_pane(event):
         """Shrink the active window pane."""
-        console_app.shrink_pane()
+        console_app.window_manager.shrink_pane()
 
     @bindings.add('c-u')
     def balance_window_panes(event):
         """Balance all window pane sizes."""
-        console_app.reset_pane_sizes()
+        console_app.window_manager.reset_pane_sizes()
 
     @bindings.add('c-w')
     @bindings.add('c-q')

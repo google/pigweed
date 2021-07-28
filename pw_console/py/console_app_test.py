@@ -48,40 +48,47 @@ class TestConsoleApp(unittest.TestCase):
                 console_app.add_log_handler(window_title, logger_instances)
 
             # 4 panes, 3 for the loggers and 1 for the repl.
-            self.assertEqual(len(console_app.active_panes), 4)
+            self.assertEqual(len(console_app.window_manager.active_panes), 4)
 
             # Bypass prompt_toolkit has_focus()
-            console_app._get_current_active_pane = MagicMock(  # type: ignore
-                return_value=console_app.active_panes[0])
+            console_app.window_manager._get_current_active_pane = (
+                MagicMock(  # type: ignore
+                    return_value=console_app.window_manager.active_panes[0]))
 
             # Shrink the first pane
-            console_app.shrink_pane()
-            self.assertEqual(
-                [pane.height.weight for pane in console_app.active_panes],
-                [48, 52, 50, 50])
+            console_app.window_manager.shrink_pane()
+            self.assertEqual([
+                pane.height.weight
+                for pane in console_app.window_manager.active_panes
+            ], [48, 52, 50, 50])
 
             # Reset pane sizes
-            console_app.reset_pane_sizes()
-            self.assertEqual(
-                [pane.height.weight for pane in console_app.active_panes],
-                [50, 50, 50, 50])
+            console_app.window_manager.reset_pane_sizes()
+            self.assertEqual([
+                pane.height.weight
+                for pane in console_app.window_manager.active_panes
+            ], [50, 50, 50, 50])
 
             # Shrink last pane
-            console_app._get_current_active_pane = MagicMock(  # type: ignore
-                return_value=console_app.active_panes[3])
-            console_app.shrink_pane()
-            self.assertEqual(
-                [pane.height.weight for pane in console_app.active_panes],
-                [50, 50, 52, 48])
+            console_app.window_manager._get_current_active_pane = (
+                MagicMock(  # type: ignore
+                    return_value=console_app.window_manager.active_panes[3]))
+            console_app.window_manager.shrink_pane()
+            self.assertEqual([
+                pane.height.weight
+                for pane in console_app.window_manager.active_panes
+            ], [50, 50, 52, 48])
 
             # Enlarge second pane
-            console_app._get_current_active_pane = MagicMock(  # type: ignore
-                return_value=console_app.active_panes[1])
-            console_app.enlarge_pane()
-            console_app.enlarge_pane()
-            self.assertEqual(
-                [pane.height.weight for pane in console_app.active_panes],
-                [50, 54, 48, 48])
+            console_app.window_manager._get_current_active_pane = (
+                MagicMock(  # type: ignore
+                    return_value=console_app.window_manager.active_panes[1]))
+            console_app.window_manager.enlarge_pane()
+            console_app.window_manager.enlarge_pane()
+            self.assertEqual([
+                pane.height.weight
+                for pane in console_app.window_manager.active_panes
+            ], [50, 54, 48, 48])
 
     def test_multiple_loggers_in_one_pane(self) -> None:
         """Test window resizing."""
@@ -100,13 +107,17 @@ class TestConsoleApp(unittest.TestCase):
                 console_app.add_log_handler(window_title, logger_instances)
 
             # Two panes, one for the loggers and one for the repl.
-            self.assertEqual(len(console_app.active_panes), 2)
+            self.assertEqual(len(console_app.window_manager.active_panes), 2)
 
-            self.assertEqual(console_app.active_panes[0].pane_title(), 'Logs')
-            self.assertEqual(console_app.active_panes[0]._pane_subtitle,
-                             'test_log1, test_log2, test_log3')
-            self.assertEqual(console_app.active_panes[0].pane_subtitle(),
-                             'test_log1 + 3 more')
+            self.assertEqual(
+                console_app.window_manager.active_panes[0].pane_title(),
+                'Logs')
+            self.assertEqual(
+                console_app.window_manager.active_panes[0]._pane_subtitle,
+                'test_log1, test_log2, test_log3')
+            self.assertEqual(
+                console_app.window_manager.active_panes[0].pane_subtitle(),
+                'test_log1 + 3 more')
 
 
 if __name__ == '__main__':
