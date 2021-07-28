@@ -19,6 +19,7 @@ from typing import Optional, BinaryIO, TextIO, Callable
 import pw_tokenizer
 from pw_snapshot_metadata import metadata
 from pw_snapshot_protos import snapshot_pb2
+from pw_thread import thread_analyzer
 
 _BRANDING = """
         ____ _       __    _____ _   _____    ____  _____ __  ______  ______
@@ -42,6 +43,11 @@ def process_snapshot(
                                                   detokenizer)
     if captured_metadata:
         output.append(captured_metadata)
+
+    thread_info = thread_analyzer.process_snapshot(serialized_snapshot,
+                                                   detokenizer)
+    if thread_info:
+        output.append(thread_info)
 
     # Check and emit the number of related snapshots embedded in this snapshot.
     snapshot = snapshot_pb2.Snapshot()

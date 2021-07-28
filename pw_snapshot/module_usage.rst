@@ -128,3 +128,16 @@ optionally be passed to the tool to detokenize applicable fields.
   FW build UUID:     ad2d39258c1bc487f07ca7e04991a836fdf7d0a0
   Snapshot UUID:     8481bb12a162164f5c74855f6d94ea1a
 
+  Thread State
+    2 threads running, Main/Handler active at the time of capture.
+                       ~~~~~~~~~~~~
+
+  Thread (INTERRUPT_HANDLER): Main Stack (Handler Mode) <-- [ACTIVE]
+  Stack info
+    Stack used:   0x2001b000 - 0x2001ae20 (480 bytes)
+    Stack limits: 0x2001b000 - 0x???????? (size unknown)
+
+  Thread (RUNNING): Idle
+  Stack info
+    Stack used:   0x2001ac00 - 0x2001ab0c (244 bytes, 47.66%)
+    Stack limits: 0x2001ac00 - 0x2001aa00 (512 bytes)

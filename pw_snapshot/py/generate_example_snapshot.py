@@ -19,6 +19,29 @@ import sys
 from typing import TextIO
 from pw_snapshot_protos import snapshot_pb2
 from pw_snapshot import processor
+from pw_thread_protos import thread_pb2
+
+
+def _add_threads(snapshot: snapshot_pb2.Snapshot) -> snapshot_pb2.Snapshot:
+    # Build example idle thread.
+    thread = thread_pb2.Thread()
+    thread.name = 'Idle'.encode()
+    thread.stack_start_pointer = 0x2001ac00
+    thread.stack_end_pointer = 0x2001aa00
+    thread.stack_pointer = 0x2001ab0c
+    thread.state = thread_pb2.ThreadState.Enum.RUNNING
+    snapshot.threads.append(thread)
+
+    # Build example interrupt handler thread.
+    thread = thread_pb2.Thread()
+    thread.name = 'Main Stack (Handler Mode)'.encode()
+    thread.active = True
+    thread.stack_start_pointer = 0x2001b000
+    thread.stack_pointer = 0x2001ae20
+    thread.state = thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER
+    snapshot.threads.append(thread)
+
+    return snapshot
 
 
 def _main(out_file: TextIO):
@@ -36,6 +59,9 @@ def _main(out_file: TextIO):
         'utf-8')
     snapshot.metadata.snapshot_uuid = (b'\x84\x81\xBB\x12\xA1\x62\x16\x4F'
                                        b'\x5C\x74\x85\x5F\x6D\x94\xEA\x1A')
+
+    # Add some thread-related info.
+    snapshot = _add_threads(snapshot)
 
     serialized_snapshot = snapshot.SerializeToString()
     out_file.write(processor.process_snapshots(serialized_snapshot))
