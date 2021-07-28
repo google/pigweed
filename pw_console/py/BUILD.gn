@@ -43,6 +43,7 @@ pw_python_package("py") {
     "pw_console/widgets/focus_on_click_overlay.py",
     "pw_console/widgets/mouse_handlers.py",
     "pw_console/widgets/table.py",
+    "pw_console/window_list.py",
     "pw_console/window_manager.py",
   ]
   tests = [
@@ -54,6 +55,7 @@ pw_python_package("py") {
     "repl_pane_test.py",
     "table_test.py",
     "text_formatting_test.py",
+    "window_manager_test.py",
   ]
   python_deps = [
     "$dir_pw_cli/py",

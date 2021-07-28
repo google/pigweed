@@ -180,7 +180,7 @@ class ConsoleApp:
 
         # Window panes are added via the window_manager
         self.window_manager = WindowManager(self)
-        self.window_manager.add_window(self.repl_pane)
+        self.window_manager.add_pane_no_checks(self.repl_pane)
 
         # Top of screen menu items
         self.menu_items = self._create_menu_items()
@@ -193,7 +193,7 @@ class ConsoleApp:
 
         # prompt_toolkit root container.
         self.root_container = MenuContainer(
-            body=self.window_manager.create_root_split(),
+            body=self.window_manager.create_root_container(),
             menu_items=self.menu_items,
             floats=[
                 # Top message bar
@@ -287,7 +287,7 @@ class ConsoleApp:
             mouse_support=True,
             color_depth=color_depth)
 
-    def _run_pane_menu_option(self, function_to_run):
+    def run_pane_menu_option(self, function_to_run):
         function_to_run()
         self.update_menu_items()
         self.focus_main_menu()
@@ -296,7 +296,7 @@ class ConsoleApp:
         self.root_container.menu_items = self._create_menu_items()
 
     def _create_menu_items(self):
-        file_and_view_menu = [
+        file_menu = [
             # File menu
             MenuItem(
                 '[File]',
@@ -304,99 +304,109 @@ class ConsoleApp:
                     MenuItem('Exit', handler=self.exit_console),
                 ],
             ),
+        ]
+
+        themes_submenu = [
+            MenuItem('Toggle Light/Dark', handler=self.toggle_light_theme),
+            MenuItem('-'),
+            MenuItem('UI: Default',
+                     handler=functools.partial(self.load_theme, 'dark')),
+            MenuItem('UI: High Contrast',
+                     handler=functools.partial(self.load_theme,
+                                               'high-contrast-dark')),
+            MenuItem('-'),
+            MenuItem(
+                'Code: tomorrow-night',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'tomorrow-night')),
+            MenuItem(
+                'Code: tomorrow-night-bright',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'tomorrow-night-bright')),
+            MenuItem(
+                'Code: tomorrow-night-blue',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'tomorrow-night-blue')),
+            MenuItem(
+                'Code: tomorrow-night-eighties',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'tomorrow-night-eighties')),
+            MenuItem(
+                'Code: dracula',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'dracula')),
+            MenuItem(
+                'Code: zenburn',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'zenburn')),
+        ]
+
+        view_menu = [
             # View menu
             MenuItem(
                 '[View]',
                 children=[
-                    MenuItem(
-                        '{check} Vertical Window Spliting'.format(
-                            check=pw_console.widgets.checkbox.to_checkbox_text(
-                                self.window_manager.vertical_split)),
-                        handler=self.window_manager.toggle_vertical_split),
-                    MenuItem('Move Window Up',
-                             handler=self.window_manager.move_pane_up),
-                    MenuItem('Move Window Down',
-                             handler=self.window_manager.move_pane_down),
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Move Window Up         Ctrl-Alt-k',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.move_pane_up)),
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Move Window Down       Ctrl-Alt-j',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.move_pane_down)),
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Move Window Left       Ctrl-Alt-h',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.move_pane_left)),
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Move Window Right      Ctrl-Alt-l',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.move_pane_right)),
+                    MenuItem('-'),
+
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Enlarge Window Height       Alt-=',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.enlarge_pane)),
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Shrink Window Height    Alt-Minus',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.shrink_pane)),
+                    MenuItem('-'),
+
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Enlarge Column Split        Alt-.',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.enlarge_split)),
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Shrink Column Split         Alt-,',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.shrink_split)),
+                    MenuItem('-'),
+
+                    #         [Menu Item            ][Keybind  ]
+                    MenuItem('Balance Window Sizes       Ctrl-u',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.balance_window_sizes)),
                     MenuItem('-'),
                     MenuItem(
                         'Themes',
-                        children=[
-                            MenuItem('Toggle Light/Dark',
-                                     handler=self.toggle_light_theme),
-                            MenuItem('-'),
-                            MenuItem('UI: Default',
-                                     handler=functools.partial(
-                                         self.load_theme, 'dark')),
-                            MenuItem('UI: High Contrast',
-                                     handler=functools.partial(
-                                         self.load_theme,
-                                         'high-contrast-dark')),
-                            MenuItem('-'),
-                            MenuItem(
-                                'Code: tomorrow-night',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night')),
-                            MenuItem(
-                                'Code: tomorrow-night-bright',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night-bright')),
-                            MenuItem(
-                                'Code: tomorrow-night-blue',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night-blue')),
-                            MenuItem(
-                                'Code: tomorrow-night-eighties',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'tomorrow-night-eighties')),
-                            MenuItem(
-                                'Code: dracula',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'dracula')),
-                            MenuItem(
-                                'Code: zenburn',
-                                functools.partial(
-                                    self.pw_ptpython_repl.use_code_colorscheme,
-                                    'zenburn')),
-                        ],
+                        children=themes_submenu,
                     ),
                 ],
             ),
         ]
 
-        window_menu = [
-            # Window pane menu
-            MenuItem(
-                '[Windows]',
-                children=[
-                    MenuItem(
-                        '{index}: {title} {subtitle}'.format(
-                            index=index + 1,
-                            title=pane.menu_title(),
-                            subtitle=pane.pane_subtitle()),
-                        children=[
-                            MenuItem(
-                                '{check} Show Window'.format(
-                                    check=pw_console.widgets.checkbox.
-                                    to_checkbox_text(pane.show_pane, end='')),
-                                handler=functools.partial(
-                                    self.window_manager.toggle_pane, pane),
-                            ),
-                        ] + [
-                            MenuItem(text,
-                                     handler=functools.partial(
-                                         self._run_pane_menu_option, handler))
-                            for text, handler in pane.get_all_menu_options()
-                        ],
-                    ) for index, pane in enumerate(
-                        self.window_manager.active_panes)
-                ],
-            )
-        ]
+        window_menu = self.window_manager.create_window_menu()
 
         help_menu_items = [
             MenuItem('User Guide',
@@ -420,7 +430,7 @@ class ConsoleApp:
             ),
         ]
 
-        return file_and_view_menu + window_menu + help_menu
+        return file_menu + view_menu + window_menu + help_menu
 
     def focus_main_menu(self):
         """Set application focus to the main menu."""
@@ -443,7 +453,7 @@ class ConsoleApp:
     def _create_log_pane(self, title=None) -> 'LogPane':
         # Create one log pane.
         log_pane = LogPane(application=self, pane_title=title)
-        self.window_manager.add_pane(log_pane, add_at_beginning=True)
+        self.window_manager.add_pane(log_pane)
         return log_pane
 
     def add_log_handler(self,
@@ -454,7 +464,7 @@ class ConsoleApp:
 
         existing_log_pane = None
         # Find an existing LogPane with the same window_title.
-        for pane in self.window_manager.active_panes:
+        for pane in self.window_manager.active_panes():
             if isinstance(pane, LogPane) and pane.pane_title() == window_title:
                 existing_log_pane = pane
                 break
@@ -476,7 +486,7 @@ class ConsoleApp:
 
     def run_after_render_hooks(self, *unused_args, **unused_kwargs):
         """Run each active pane's `after_render_hook` if defined."""
-        for pane in self.window_manager.active_panes:
+        for pane in self.window_manager.active_panes():
             if hasattr(pane, 'after_render_hook'):
                 pane.after_render_hook()
 
@@ -503,7 +513,7 @@ class ConsoleApp:
                                                        self.key_bindings)
 
         # Add activated plugin key bindings to the help text.
-        for pane in self.window_manager.active_panes:
+        for pane in self.window_manager.active_panes():
             for key_bindings in pane.get_all_key_bindings():
                 help_section_title = pane.__class__.__name__
                 if isinstance(key_bindings, KeyBindings):
@@ -517,7 +527,7 @@ class ConsoleApp:
 
     def toggle_log_line_wrapping(self):
         """Menu item handler to toggle line wrapping of all log panes."""
-        for pane in self.window_manager.active_panes:
+        for pane in self.window_manager.active_panes():
             if isinstance(pane, LogPane):
                 pane.toggle_wrap_lines()
 

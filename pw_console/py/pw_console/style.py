@@ -149,6 +149,11 @@ def generate_styles(theme_name='dark'):
         'pane_title_active': '{} bold'.format(theme.magenta_accent),
         'pane_title_inactive': '{}'.format(theme.purple_accent),
 
+        'window-tab-active': 'bg:{} {}'.format(theme.active_bg,
+                                               theme.cyan_accent),
+        'window-tab-inactive': 'bg:{} {}'.format(theme.inactive_bg,
+                                                 theme.inactive_fg),
+
         'pane_separator': 'bg:{} {}'.format(theme.default_bg,
                                             theme.purple_accent),
 

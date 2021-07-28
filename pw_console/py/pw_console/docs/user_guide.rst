@@ -48,7 +48,7 @@ On startup the console will display multiple windows one on top of the other.
   |                                                     |
   |                                                     |
   | Python Results                                      |
-  +-----------------------------------------------------+
+  +- - - - - - - - - - - - - - - - - - - - - - - - - - -+
   |                                                     |
   | Python Input                                        |
   +-----------------------------------------------------+
@@ -211,7 +211,7 @@ Move to the previous search result            :guilabel:`N`
                                               :guilabel:`Ctrl-r`
 Removes search highlighting                   :guilabel:`Ctrl-l`
 Creates a filter using the active search      :guilabel:`Ctrl-Alt-f`
-Deletes all active filters.                   :guilabel:`Ctrl-Alt-r`
+Reset all active filters.                     :guilabel:`Ctrl-Alt-r`
 ============================================  =====================
 
 
@@ -387,22 +387,53 @@ which OS. Here's how on various platforms:
 Window Management
 ~~~~~~~~~~~~~~~~~
 
-Any window can be hidden by clicking the checkbox in the
-:guilabel:`[x] Show Window` submenu
+Any window can be hidden by clicking the :guilabel:`[x] Show Window` checkbox
+under the :guilabel:`[Window]` menu.
+
+The active window can be moved and resized with the following keys. There are
+also menu options under :guilabel:`[View]` for the same actions.
 
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Enlarge the currently focused window          :guilabel:`Ctrl-j`
-Shrink the currently focused window           :guilabel:`Ctrl-k`
+Enlarge window height                         :guilabel:`Alt-=`
+Shrink window height                          :guilabel:`Alt--`
+                                              (`Alt` and `Minus`)
+Enlarge vertical split width                  :guilabel:`Alt-,`
+Shrink vertical split width                   :guilabel:`Alt-.`
 Reset window sizes                            :guilabel:`Ctrl-u`
 
-Move current window up                        :guilabel:`Ctrl-Alt-k`
-Move current window down                      :guilabel:`Ctrl-Alt-j`
-
-Use vertical window splitting                 :guilabel:`F4`
+Move window up                                :guilabel:`Ctrl-Alt-k`
+Move window down                              :guilabel:`Ctrl-Alt-j`
+Move window left                              :guilabel:`Ctrl-Alt-h`
+Move window right                             :guilabel:`Ctrl-Alt-l`
 ============================================  =====================
 
+Moving windows left and right will create a new vertical splits. Each vertical
+stack can contain multiple windows and show windows as a stack or tabbed
+view.
+
+For example here we have 3 window panes in a single stack. If you focus on Log
+Window 1 and move it to the right a new stack is formed in a vertical
+split. This can be done repeatedly to form additional window stacks.
+
+::
+
+  +----------------------------------+     +----------------------------------+
+  | [File] [View] [Window]   Console |     | [File] [View] [Window]   Console |
+  +==================================+     +================+=================+
+  | Log Window 1                     |     | Log Window 2   | Log Window 1    |
+  |                                  |     |                |                 |
+  +==================================+     |                |                 |
+  | Log Window 2                     |     |                |                 |
+  |                                  |     |                |                 |
+  +==================================+     +================+                 |
+  |                                  |     |                |                 |
+  |                                  |     |                |                 |
+  | Python Results                   |     | Python Results |                 |
+  |                                  |     |                |                 |
+  | Python Input                     |     | Python Input   |                 |
+  +----------------------------------+     +----------------+-----------------+
 
 Color Depth
 -----------

@@ -8,20 +8,23 @@ completely test in an automated fashion. Unit tests that don't depend on the
 user interface are preferred but not always possible. For those situations
 manual tests should be added here to validate expected behavior.
 
-Testing Steps
--------------
+.. contents::
+  :local:
 
-1. Run in Test Mode
-^^^^^^^^^^^^^^^^^^^
+Run in Test Mode
+----------------
 
-Run the console in test mode:
+Begin each section below by running the console in test mode:
 
 .. code-block:: shell
 
   pw console --test-mode
 
-2. Test the Log Pane
-^^^^^^^^^^^^^^^^^^^^
+Test Sections
+-------------
+
+Log Pane: Basic Actions
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :widths: 5 45 45 5
@@ -63,8 +66,8 @@ Run the console in test mode:
      - Line wrapping is enabled
      - |checkbox|
 
-2. Test Log Pane Search and Filtering
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Log Pane: Search and Filtering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :widths: 5 45 45 5
@@ -185,8 +188,8 @@ Run the console in test mode:
        | Only logs with Modules other than ``BAT`` appear.
      - |checkbox|
 
-3. Test Help Windows
-^^^^^^^^^^^^^^^^^^^^
+Help Windows
+^^^^^^^^^^^^
 
 .. list-table::
    :widths: 5 45 45 5
@@ -229,8 +232,8 @@ Run the console in test mode:
      - Window is hidden
      - |checkbox|
 
-4. Test Window Management
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Window Management
+^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :widths: 5 45 45 5
@@ -242,23 +245,11 @@ Run the console in test mode:
      - ✅
 
    * - 1
-     - Click the :guilabel:`View > [ ] Vertical Window Spliting`
-     - | Log pane appears on the left
-       | Repl pane appears on the right
-     - |checkbox|
-
-   * - 2
-     - Click the :guilabel:`View > [x] Vertical Window Spliting`
-     - | Log pane appears on the top
-       | Repl pane appears on the bottom
-     - |checkbox|
-
-   * - 3
      - | Click the :guilabel:`Logs` window title
      - Log pane is focused
      - |checkbox|
 
-   * - 4
+   * - 2
      - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
        | Click :guilabel:`Duplicate pane`
      - | 3 panes are visible:
@@ -267,12 +258,12 @@ Run the console in test mode:
        | Log pane on the bottom
      - |checkbox|
 
-   * - 5
+   * - 3
      - | Click the :guilabel:`Python Input` window title
      - Python Input pane is focused
      - |checkbox|
 
-   * - 6
+   * - 4
      - Click the :guilabel:`View > Move Window Down`
      - | 3 panes are visible:
        | Log pane on top
@@ -280,13 +271,13 @@ Run the console in test mode:
        | Repl pane on the bottom
      - |checkbox|
 
-   * - 7
+   * - 5
      - Click the :guilabel:`View > Move Window Down` again
      - | Nothing changes
        | Windows remain in the same order
      - |checkbox|
 
-   * - 8
+   * - 6
      - Click the :guilabel:`View > Move Window Up`
      - | 3 panes are visible:
        | Log pane on top
@@ -294,32 +285,74 @@ Run the console in test mode:
        | Log pane on the bottom
      - |checkbox|
 
-   * - 9
-     - | Click the menu :guilabel:`Windows > 3: Logs fake_device.1`
+   * - 7
+     - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
        | Click :guilabel:`Remove pane`
      - | 2 panes are visible:
-       | Log pane on top
-       | Repl pane in the middle
+       | Repl pane on the top
+       | Log pane on bottom
+     - |checkbox|
+
+   * - 8
+     - | Click the :guilabel:`Python Input`
+       | window title
+     - Repl pane is focused
+     - |checkbox|
+
+   * - 9
+     - | Hold the keys :guilabel:`Alt- -`
+       | `Alt` and `Minus`
+     - Repl pane shrinks
      - |checkbox|
 
    * - 10
-     - | Click the :guilabel:`Logs`
-       | window title
-     - Log pane is focused
+     - Hold the keys :guilabel:`Alt-=`
+     - Repl pane enlarges
      - |checkbox|
 
    * - 11
-     - Hold the keys :guilabel:`Ctrl-j`
-     - Log pane is enlarged
+     - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
+       | Click :guilabel:`Duplicate pane`
+     - | 3 panes are visible:
+       | 2 Log panes on the left
+       | Repl pane on the right
      - |checkbox|
 
    * - 12
-     - Hold the keys :guilabel:`Ctrl-k`
-     - Log pane shrinks
+     - | Click the left top :guilabel:`Logs` window title
+     - Log pane is focused
      - |checkbox|
 
-5. Add note to the commit message
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   * - 13
+     - Click the :guilabel:`View > Move Window Right`
+     - | 3 panes are visible:
+       | 1 Log panes on the left
+       | 1 Log and Repl pane on the right
+     - |checkbox|
+
+   * - 14
+     - | Click the menu :guilabel:`Windows > Column 2 View Modes`
+       | Then click :guilabel:`[ ] Tabbed Windows`
+     - | 2 panes are visible:
+       | 1 Log panes on the left
+       | 1 Log panes on the right
+       | A tab bar on the top of the right side
+       | `Logs fake_device.1` is highlighted
+     - |checkbox|
+
+   * - 15
+     - | On the right side tab bar
+       | Click :guilabel:`Python Repl`
+     - | 2 panes are visible:
+       | 1 Log pane on the left
+       | 1 Repl pane on the right
+       | `Python Repl` is highlighted
+       | on the tab bar
+     - |checkbox|
+
+
+Add note to the commit message
+------------------------------
 
 Add a ``Testing:`` line to your commit message and mention the steps
 executed. For example:
