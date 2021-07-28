@@ -1,0 +1,85 @@
+---
+Checks: >
+    clang-diagnostic-*,
+    -clang-analyzer-*,
+    modernize-*,
+    -modernize-avoid-c-arrays,
+    -modernize-concat-nested-namespaces,
+    -modernize-deprecated-headers,
+    -modernize-loop-convert,
+    -modernize-pass-by-value,
+    -modernize-raw-string-literal,
+    -modernize-redundant-void-arg,
+    -modernize-return-braced-init-list,
+    -modernize-unary-static-assert,
+    -modernize-use-auto,
+    -modernize-use-bool-literals,
+    -modernize-use-default-member-init,
+    -modernize-use-emplace,
+    -modernize-use-equals-default,
+    -modernize-use-nodiscard,
+    -modernize-use-override,
+    -modernize-use-trailing-return-type,
+    -modernize-use-using,
+WarningsAsErrors: >
+    *,
+    -clang-diagnostic-unused-command-line-argument
+HeaderFilterRegex: '.*'
+...
+
+# Disable checks:
+#
+# clang-analyzer-*:
+#   The clang static analyzer checks take too much time to be
+#   run as part of the presubmit checks; the static analysis is
+#   instead performed by the 'static_analysis' step in
+#   'other_checks'
+#
+# performance-*
+# bugprone-*
+# cert-*
+# misc-*
+# readability-*
+#
+# Checks marked with @ should be reenabled first
+# (the effort is minimal).
+#
+# modernize-avoid-c-arrays:
+# @ modernize-concat-nested-namespaces:
+#   Note: added in c++17
+# modernize-deprecated-headers:
+#   Advises to use <cheader> instead of <header.h> for
+#   legacy headers
+# modernize-loop-convert:
+# @ modernize-pass-by-value:
+# @ modernize-raw-string-literal:
+#   Note: added in c++11
+# @ modernize-redundant-void-arg:
+# modernize-return-braced-init-list:
+# @ modernize-unary-static-assert:
+#   Note: added in c++17
+#   The message argument can be omitted when it is empty
+# @ modernize-use-auto:
+#   Advises to use auto when initializing with a cast to
+#   avoid duplicating the type name
+# @ modernize-use-bool-literals:
+# modernize-use-default-member-init:
+#   Note: added in c++11
+#   Advises to use a default initializer in
+#   member declarations
+# @ modernize-use-emplace:
+# @ modernize-use-equals-default:
+#   Note: added in c++11
+#   Advises to use '= default' for empty constructors or
+#   destructors '{}'
+# modernize-use-nodiscard:
+#   Note: added in c++17
+# @ modernize-use-override:
+# modernize-use-trailing-return-type:
+#   Note: added in c++11
+#   Used to delay the writing of the return type
+#   to after the function parameters; does not make
+#   sense to generalise its use.
+# modernize-use-using:
+#   Note: added in c++11
+#   Advises to use 'using' instead of 'typedef'

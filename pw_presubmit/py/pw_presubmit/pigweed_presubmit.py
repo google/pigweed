@@ -16,13 +16,15 @@
 """Runs the local presubmit checks for the Pigweed repository."""
 
 import argparse
+import json
 import logging
 import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import sys
-from typing import Sequence, IO, Tuple, Optional
+from typing import Sequence, IO, Tuple, Optional, Callable, List
 
 try:
     import pw_presubmit
@@ -380,33 +382,103 @@ def bazel_build(ctx: PresubmitContext):
 # General presubmit checks
 #
 
-# TODO(pwbug/45) Probably want additional checks.
-_CLANG_TIDY_CHECKS = ('modernize-use-override', )
+
+def _clang_system_include_paths(lang: str) -> List[str]:
+    """Generate default system header paths.
+
+    Returns the list of system include paths used by the host
+    clang installation.
+    """
+    # Dump system include paths with preprocessor verbose.
+    command = [
+        'clang++', '-Xpreprocessor', '-v', '-x', f'{lang}', f'{os.devnull}',
+        '-fsyntax-only'
+    ]
+    process = subprocess.run(command,
+                             check=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+
+    # Parse the command output to retrieve system include paths.
+    # The paths are listed one per line.
+    output = process.stdout.decode(errors='backslashreplace')
+    include_paths: List[str] = []
+    for line in output.splitlines():
+        path = line.strip()
+        if os.path.exists(path):
+            include_paths.append(f'-isystem{path}')
+
+    return include_paths
 
 
-@filter_paths(endswith=format_code.C_FORMAT.extensions)
+def edit_compile_commands(in_path: Path, out_path: Path,
+                          func: Callable[[str, str, str], str]) -> None:
+    """Edit the selected compile command file.
+
+    Calls the input callback on all triplets (file, directory, command) in
+    the input compile commands database. The return value replaces the old
+    compile command in the output database.
+    """
+    with open(in_path) as in_file:
+        compile_commands = json.load(in_file)
+        for item in compile_commands:
+            item['command'] = func(item['file'], item['directory'],
+                                   item['command'])
+    with open(out_path, 'w') as out_file:
+        json.dump(compile_commands, out_file, indent=2)
+
+
+@filter_paths(endswith=('.c', '.cc', '.cpp'), exclude=(r'^third_party/', ))
 def clang_tidy(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, '--export-compile-commands')
-    build.ninja(ctx.output_dir)
-    build.ninja(ctx.output_dir, '-t', 'compdb', 'objcxx', 'cxx')
+    """Run clang-tidy on source c and c++ files.
 
-    run_clang_tidy = None
-    for var in ('PW_PIGWEED_CIPD_INSTALL_DIR', 'PW_CIPD_INSTALL_DIR'):
-        if var in os.environ:
-            possibility = os.path.join(os.environ[var],
-                                       'share/clang/run-clang-tidy.py')
-            if os.path.isfile(possibility):
-                run_clang_tidy = possibility
-                break
+    Header files are indirectly analyzed when included. Source files will
+    only be analyzed if built indirectly by the host_clang_debug target.
+    """
+    c_cpp_system_include_paths = ' '.join(_clang_system_include_paths('c++'))
+    tested_files = set()
 
-    checks = ','.join(_CLANG_TIDY_CHECKS)
-    call(
-        run_clang_tidy,
-        f'-p={ctx.output_dir}',
-        f'-checks={checks}',
-        # TODO(pwbug/45) not sure if this is needed.
-        # f'-extra-arg-before=-warnings-as-errors={checks}',
-        *ctx.paths)
+    # The compile commands are modified to explicitely specify the system
+    # include paths, as clang-tidy is sometimes unable to find some standard
+    # headers.
+    # While the correct paths would be those produced by the invocation of the
+    # command (which change based on toolchain and options flags), we are using
+    # the default clang++ system paths instead to save on execution time.
+    # This should not cause any issue with host_clang_debug while clang-analyzer
+    # checks are disabled,.
+    def _append_system_include_paths(file_path: str, _directory: str,
+                                     command: str) -> str:
+        tested_files.add(ctx.output_dir.joinpath(file_path).resolve())
+        if '-nostdinc' in command:  # catches -nostdinc and -nostdinc++
+            return command
+        return command + ' ' + c_cpp_system_include_paths
+
+    _LOG.info('Generating compile commands')
+    compile_commands = ctx.output_dir.joinpath('compile_commands.json')
+    compile_commands_gn = ctx.output_dir.joinpath('compile_commands.gn.json')
+    compile_commands_clang_tidy = ctx.output_dir.joinpath(
+        'compile_commands.clang-tidy.json')
+
+    build.gn_gen(ctx.root, ctx.output_dir,
+                 '--export-compile-commands=host_clang_debug')
+    shutil.copyfile(compile_commands, compile_commands_gn)
+    edit_compile_commands(compile_commands_gn, compile_commands_clang_tidy,
+                          _append_system_include_paths)
+    shutil.copyfile(compile_commands_clang_tidy, compile_commands)
+
+    # Note: this step is reauired in case the built files depend on
+    # generated dependencies.
+    _LOG.info('Building host_clang_debug')
+    build.ninja(ctx.output_dir, 'host_clang_debug')
+
+    _LOG.info('Running clang-tidy')
+    untested_files = frozenset([*ctx.paths]) - tested_files
+    if len(untested_files) > 0:
+        _LOG.warning('The following %d files will not be tested:\n  %s',
+                     len(untested_files),
+                     '\n  '.join(str(f) for f in untested_files))
+    call('run-clang-tidy', f'-p={ctx.output_dir}', '-export-fixes',
+         ctx.output_dir.joinpath('fixes.yaml'), *ctx.paths)
 
 
 # The first line must be regex because of the '20\d\d' date
