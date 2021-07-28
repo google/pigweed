@@ -390,14 +390,18 @@ Window Management
 Any window can be hidden by clicking the checkbox in the
 :guilabel:`[x] Show Window` submenu
 
--  To enlarge or shrink the currently focused window use :guilabel:`Ctrl-j` or
-   :guilabel:`Ctrl-k`.
--  Reset window sizes with :guilabel:`Ctrl-u`.
+============================================  =====================
+Function                                      Keys
+============================================  =====================
+Enlarge the currently focused window          :guilabel:`Ctrl-j`
+Shrink the currently focused window           :guilabel:`Ctrl-k`
+Reset window sizes                            :guilabel:`Ctrl-u`
 
+Move current window up                        :guilabel:`Ctrl-Alt-k`
+Move current window down                      :guilabel:`Ctrl-Alt-j`
 
--  Use vertical window splitting with :guilabel:`F4`.
--  Rotate window order with :guilabel:`Ctrl-Shift-Left` and
-   :guilabel:`Ctrl-Shift-Right`.
+Use vertical window splitting                 :guilabel:`F4`
+============================================  =====================
 
 
 Color Depth

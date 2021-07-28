@@ -53,15 +53,19 @@ def create_key_bindings(console_app):
         """Toggle horizontal and vertical window splitting."""
         console_app.window_manager.toggle_vertical_split()
 
-    @bindings.add('c-s-left')
-    def rotate_panes(event):
-        """Rotate window positions backward."""
-        console_app.window_manager.rotate_panes(-1)
+    # NOTE: c-up and c-down seem swapped in prompt_toolkit
+    @bindings.add('escape', 'c-up')  # Alt-Ctrl-up
+    @bindings.add('escape', 'c-j')  # Alt-Ctrl-j
+    def move_pane_down(event):
+        """Move window pane down."""
+        console_app.window_manager.move_pane_down()
 
-    @bindings.add('c-s-right')
-    def rotate_panes(event):
-        """Rotate window positions forward."""
-        console_app.window_manager.rotate_panes()
+    # NOTE: c-up and c-down seem swapped in prompt_toolkit
+    @bindings.add('escape', 'c-down')  # Alt-Ctrl-down
+    @bindings.add('escape', 'c-k')  # Alt-Ctrl-k
+    def move_pane_up(event):
+        """Move window pane up."""
+        console_app.window_manager.move_pane_up()
 
     @bindings.add('c-j')
     def enlarge_pane(event):

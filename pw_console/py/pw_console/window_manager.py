@@ -28,9 +28,10 @@ _WINDOW_SIZE_ADJUST = 2
 
 
 class WindowManager:
-    """The main ConsoleApp class containing the whole console."""
+    """WindowManager class
 
-    # pylint: disable=too-many-instance-attributes
+    This class handles adding/removing/resizing windows and rendering the
+    prompt_toolkit split layout."""
     def __init__(
         self,
         application: Any,
@@ -92,15 +93,18 @@ class WindowManager:
         self.application.root_container.container.content.children[
             1] = self.create_root_split()
 
+    def _pane_index(self, pane):
+        pane_index = None
+        try:
+            pane_index = self.active_panes.index(pane)
+        except ValueError:
+            # Ignore ValueError which can be raised by the self.active_panes
+            # deque if existing_pane can't be found.
+            pass
+        return pane_index
+
     def add_pane(self, new_pane, existing_pane=None, add_at_beginning=False):
-        existing_pane_index = None
-        if existing_pane:
-            try:
-                existing_pane_index = self.active_panes.index(existing_pane)
-            except ValueError:
-                # Ignore ValueError which can be raised by the self.active_panes
-                # deque if existing_pane can't be found.
-                pass
+        existing_pane_index = self._pane_index(existing_pane)
         if existing_pane_index:
             self.active_panes.insert(new_pane, existing_pane_index + 1)
         else:
@@ -115,19 +119,15 @@ class WindowManager:
         self.application.redraw_ui()
 
     def remove_pane(self, existing_pane):
-        existing_pane_index = 0
-        if not existing_pane:
+        existing_pane_index = self._pane_index(existing_pane)
+        if not existing_pane_index:
             return
-        try:
-            existing_pane_index = self.active_panes.index(existing_pane)
-            self.active_panes.remove(existing_pane)
-        except ValueError:
-            # Ignore ValueError which can be raised by the self.active_panes
-            # deque if existing_pane can't be found.
-            pass
 
+        self.active_panes.remove(existing_pane)
         self.application.update_menu_items()
         self.update_root_container_body()
+
+        # Set focus to the previous window pane
         if len(self.active_panes) > 0:
             existing_pane_index -= 1
             try:
@@ -207,9 +207,34 @@ class WindowManager:
             pane.height = Dimension(weight=50)
             pane.width = Dimension(weight=50)
 
-    def rotate_panes(self, steps=1):
-        """Rotate the order of all active window panes."""
-        self.active_panes.rotate(steps)
+    def move_pane_up(self):
+        pane = self._get_current_active_pane()
+        pane_index = self._pane_index(pane)
+        if pane_index is None or pane_index <= 0:
+            # Already at the beginning
+            return
+
+        # Swap with the previous pane
+        previous_pane = self.active_panes[pane_index - 1]
+        self.active_panes[pane_index - 1] = pane
+        self.active_panes[pane_index] = previous_pane
+
+        self.application.update_menu_items()
+        self.update_root_container_body()
+
+    def move_pane_down(self):
+        pane = self._get_current_active_pane()
+        pane_index = self._pane_index(pane)
+        pane_count = len(self.active_panes)
+        if pane_index is None or pane_index + 1 >= pane_count:
+            # Already at the end
+            return
+
+        # Swap with the next pane
+        next_pane = self.active_panes[pane_index + 1]
+        self.active_panes[pane_index + 1] = pane
+        self.active_panes[pane_index] = next_pane
+
         self.application.update_menu_items()
         self.update_root_container_body()
 

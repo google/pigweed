@@ -254,8 +254,7 @@ Run the console in test mode:
      - |checkbox|
 
    * - 3
-     - | Click the :guilabel:`Logs`
-       | window title
+     - | Click the :guilabel:`Logs` window title
      - Log pane is focused
      - |checkbox|
 
@@ -269,33 +268,52 @@ Run the console in test mode:
      - |checkbox|
 
    * - 5
-     - Click the :guilabel:`View > Rotate Window Order`
+     - | Click the :guilabel:`Python Input` window title
+     - Python Input pane is focused
+     - |checkbox|
+
+   * - 6
+     - Click the :guilabel:`View > Move Window Down`
      - | 3 panes are visible:
        | Log pane on top
        | Log pane in the middle
        | Repl pane on the bottom
      - |checkbox|
 
-   * - 6
-     - | Click the menu :guilabel:`Windows > 1: Logs fake_device.1`
+   * - 7
+     - Click the :guilabel:`View > Move Window Down` again
+     - | Nothing changes
+       | Windows remain in the same order
+     - |checkbox|
+
+   * - 8
+     - Click the :guilabel:`View > Move Window Up`
+     - | 3 panes are visible:
+       | Log pane on top
+       | Repl pane in the middle
+       | Log pane on the bottom
+     - |checkbox|
+
+   * - 9
+     - | Click the menu :guilabel:`Windows > 3: Logs fake_device.1`
        | Click :guilabel:`Remove pane`
      - | 2 panes are visible:
        | Log pane on top
        | Repl pane in the middle
      - |checkbox|
 
-   * - 7
+   * - 10
      - | Click the :guilabel:`Logs`
        | window title
      - Log pane is focused
      - |checkbox|
 
-   * - 8
+   * - 11
      - Hold the keys :guilabel:`Ctrl-j`
      - Log pane is enlarged
      - |checkbox|
 
-   * - 9
+   * - 12
      - Hold the keys :guilabel:`Ctrl-k`
      - Log pane shrinks
      - |checkbox|

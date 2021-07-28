@@ -313,8 +313,10 @@ class ConsoleApp:
                             check=pw_console.widgets.checkbox.to_checkbox_text(
                                 self.window_manager.vertical_split)),
                         handler=self.window_manager.toggle_vertical_split),
-                    MenuItem('Rotate Window Order',
-                             handler=self.window_manager.rotate_panes),
+                    MenuItem('Move Window Up',
+                             handler=self.window_manager.move_pane_up),
+                    MenuItem('Move Window Down',
+                             handler=self.window_manager.move_pane_down),
                     MenuItem('-'),
                     MenuItem(
                         'Themes',
