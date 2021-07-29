@@ -141,3 +141,38 @@ optionally be passed to the tool to detokenize applicable fields.
   Stack info
     Stack used:   0x2001ac00 - 0x2001ab0c (244 bytes, 47.66%)
     Stack limits: 0x2001ac00 - 0x2001aa00 (512 bytes)
+
+---------------------
+Symbolizing Addresses
+---------------------
+The snapshot processor tool has built-in support for symbolization of some data
+embedded into snapshots. Taking advantage of this requires the use of a
+project-provided ``ElfMatcher`` callback. This is used by the snapshot processor
+to understand which ELF file should be used to symbolize which snapshot in cases
+where a snapshot has related snapshots embedded inside of it.
+
+Here's an example implementation that uses the device name:
+
+.. code-block:: py
+
+  # Given a firmware bundle directory, determine the ELF file associated with
+  # the provided snapshot.
+  def _snapshot_elf_matcher(fw_bundle_dir: Path,
+                            snapshot: snapshot_pb2.Snapshot) -> Optional[Path]:
+      metadata = MetadataProcessor(snapshot.metadata, DETOKENIZER)
+      if metadata.device_name().startswith('GSHOE_MAIN_CORE'):
+          return fw_bundle_dir / 'main.elf'
+      if metadata.device_name().startswith('GSHOE_SENSOR_CORE'):
+          return fw_bundle_dir / 'sensors.elf'
+      return None
+
+
+  # A project specific wrapper to decode snapshots that provides a detokenizer
+  # and ElfMatcher.
+  def decode_snapshots(snapshot: bytes, fw_bundle_dir: Path) -> str:
+
+      # This is the actual ElfMatcher, which wraps the helper in a lambda that
+      # captures the passed firmware artifacts directory.
+      matcher: processor.ElfMatcher = lambda snapshot: _snapshot_elf_matcher(
+          fw_bundle_dir, snapshot)
+      return processor.process_snapshots(snapshot, DETOKENIZER, matcher)

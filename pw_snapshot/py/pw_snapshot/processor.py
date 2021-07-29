@@ -15,10 +15,12 @@
 
 import argparse
 import sys
+from pathlib import Path
 from typing import Optional, BinaryIO, TextIO, Callable
 import pw_tokenizer
 from pw_snapshot_metadata import metadata
 from pw_snapshot_protos import snapshot_pb2
+from pw_symbolizer import LlvmSymbolizer
 from pw_thread import thread_analyzer
 
 _BRANDING = """
@@ -31,10 +33,19 @@ _BRANDING = """
 
 """
 
+# ELF files are useful for symbolizing addresses in snapshots. As a single
+# snapshot may contain embedded snapshots from multiple devices, there's a need
+# to match ELF files to the correct snapshot to correctly symbolize addresses.
+#
+# An ElfMatcher is a function that takes a snapshot and investigates its
+# metadata (often build ID, device name, or the version string) to determine
+# whether a suitable ELF file can be provided for symbolization.
+ElfMatcher = Callable[[snapshot_pb2.Snapshot], Optional[Path]]
 
-def process_snapshot(
-        serialized_snapshot: bytes,
-        detokenizer: Optional[pw_tokenizer.Detokenizer] = None) -> str:
+
+def process_snapshot(serialized_snapshot: bytes,
+                     detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
+                     elf_matcher: Optional[ElfMatcher] = None) -> str:
     """Processes a single snapshot."""
 
     output = [_BRANDING]
@@ -44,14 +55,20 @@ def process_snapshot(
     if captured_metadata:
         output.append(captured_metadata)
 
+    # Open a symbolizer.
+    snapshot = snapshot_pb2.Snapshot()
+    snapshot.ParseFromString(serialized_snapshot)
+    if elf_matcher is not None:
+        symbolizer = LlvmSymbolizer(elf_matcher(snapshot))
+    else:
+        symbolizer = LlvmSymbolizer()
+
     thread_info = thread_analyzer.process_snapshot(serialized_snapshot,
-                                                   detokenizer)
+                                                   detokenizer, symbolizer)
     if thread_info:
         output.append(thread_info)
 
     # Check and emit the number of related snapshots embedded in this snapshot.
-    snapshot = snapshot_pb2.Snapshot()
-    snapshot.ParseFromString(serialized_snapshot)
     if snapshot.related_snapshots:
         snapshot_count = len(snapshot.related_snapshots)
         plural = 's' if snapshot_count > 1 else ''
@@ -66,12 +83,14 @@ def process_snapshot(
 def process_snapshots(
         serialized_snapshot: bytes,
         detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
+        elf_matcher: Optional[ElfMatcher] = None,
         user_processing_callback: Optional[Callable[[bytes],
                                                     str]] = None) -> str:
     """Processes a snapshot that may have multiple embedded snapshots."""
     output = []
     # Process the top-level snapshot.
-    output.append(process_snapshot(serialized_snapshot, detokenizer))
+    output.append(
+        process_snapshot(serialized_snapshot, detokenizer, elf_matcher))
 
     # If the user provided a custom processing callback, call it on each
     # snapshot.
@@ -86,7 +105,7 @@ def process_snapshots(
         output.append(
             str(
                 process_snapshots(nested_snapshot.SerializeToString(),
-                                  detokenizer)))
+                                  detokenizer, elf_matcher)))
 
     return '\n'.join(output)
 

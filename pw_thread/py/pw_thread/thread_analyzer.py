@@ -30,13 +30,17 @@ THREAD_STATE_TO_STRING: Mapping[int, str] = {
 }
 
 
-def process_snapshot(serialized_snapshot: bytes,
-                     tokenizer_db: Optional[pw_tokenizer.Detokenizer]) -> str:
+def process_snapshot(
+    serialized_snapshot: bytes,
+    tokenizer_db: Optional[pw_tokenizer.Detokenizer],
+    symbolizer: LlvmSymbolizer = LlvmSymbolizer()
+) -> str:
     """Processes snapshot threads, producing a multi-line string."""
     captured_threads = thread_pb2.SnapshotThreadInfo()
     captured_threads.ParseFromString(serialized_snapshot)
 
-    return str(ThreadSnapshotAnalyzer(captured_threads, tokenizer_db))
+    return str(
+        ThreadSnapshotAnalyzer(captured_threads, tokenizer_db, symbolizer))
 
 
 class StackInfo:
