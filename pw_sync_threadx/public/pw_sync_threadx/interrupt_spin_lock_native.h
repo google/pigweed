@@ -19,9 +19,9 @@ namespace pw::sync::backend {
 
 struct NativeInterruptSpinLock {
   enum class State {
-    kUnlocked = 1,
-    kLockedFromInterrupt = 2,
-    kLockedFromThread = 3,
+    kUnlocked = 0,
+    kLockedFromInterrupt = 1,
+    kLockedFromThread = 2,
   };
   State state;  // Used to detect recursion and interrupt context escapes.
   UINT saved_interrupt_mask;
