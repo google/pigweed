@@ -18,7 +18,7 @@ import functools
 import io
 import logging
 import sys
-from typing import Iterable, Optional
+from typing import Iterable, Optional, TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.completion import merge_completers
@@ -35,6 +35,9 @@ from ptpython.layout import (  # type: ignore
 )
 
 import pw_console.text_formatting
+
+if TYPE_CHECKING:
+    from pw_console.repl_pane import ReplPane
 
 _LOG = logging.getLogger(__package__)
 
@@ -79,7 +82,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         self.enable_dictionary_completion = True
 
         # Change some ptpython.repl defaults.
-        self.use_code_colorscheme('tomorrow-night-bright')
+        self.use_code_colorscheme('pigweed-code')
         self.show_status_bar = False
         self.show_exit_confirmation = False
         self.complete_private_attributes = (
@@ -98,7 +101,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
             CompletionVisualisation.NONE)
 
         # Additional state variables.
-        self.repl_pane = None
+        self.repl_pane: 'Optional[ReplPane]' = None
         self._last_result = None
 
     def __pt_container__(self):
@@ -118,9 +121,6 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
     def clear_last_result(self):
         """Erase the last repl execution result."""
         self._last_result = None
-
-    def _update_output_buffer(self):
-        self.repl_pane.update_output_buffer()
 
     def show_result(self, result):
         """Format and save output results.
@@ -168,12 +168,13 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
                                                       stderr_contents)
 
         # Rebuild output buffer.
-        self._update_output_buffer()
+        self.repl_pane.update_output_buffer(
+            'pw_ptpython_repl.user_code_complete_callback')
 
         # Trigger a prompt_toolkit application redraw.
         self.repl_pane.application.application.invalidate()
 
-    async def _run_user_code(self, text):
+    async def _run_user_code(self, text, stdout_proxy, stdin_proxy):
         """Run user code and capture stdout+err.
 
         This fuction should be run in a separate thread from the main
@@ -187,11 +188,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         original_stdout = sys.stdout
         original_stderr = sys.stderr
 
-        temp_out = io.StringIO()
-        temp_err = io.StringIO()
-
-        sys.stdout = temp_out
-        sys.stderr = temp_err
+        sys.stdout = stdout_proxy
+        sys.stderr = stdin_proxy
 
         # Run user repl code
         try:
@@ -202,8 +200,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
             sys.stderr = original_stderr
 
         # Save the captured output
-        stdout_contents = temp_out.getvalue()
-        stderr_contents = temp_err.getvalue()
+        stdout_contents = stdout_proxy.getvalue()
+        stderr_contents = stdin_proxy.getvalue()
 
         return {
             'stdout': stdout_contents,
@@ -217,27 +215,35 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         # Do nothing if no text is entered.
         if len(buff.text) == 0:
             return False
+        if self.repl_pane is None:
+            return False
 
         # Exit if quit or exit
         if buff.text.strip() in ['quit', 'quit()', 'exit', 'exit()']:
             self.repl_pane.application.application.exit()  # type: ignore
 
+        # Create stdout and stderr proxies
+        temp_stdout = io.StringIO()
+        temp_stderr = io.StringIO()
+
         # Execute the repl code in the the separate user_code thread loop.
         future = asyncio.run_coroutine_threadsafe(
             # This function will be executed in a separate thread.
-            self._run_user_code(buff.text),
+            self._run_user_code(buff.text, temp_stdout, temp_stderr),
             # Using this asyncio event loop.
             self.repl_pane.application.user_code_loop)  # type: ignore
+
+        # Save the input text and future object.
+        self.repl_pane.append_executed_code(buff.text, future, temp_stdout,
+                                            temp_stderr)  # type: ignore
+
         # Run user_code_complete_callback() when done.
         done_callback = functools.partial(self.user_code_complete_callback,
                                           buff.text)
         future.add_done_callback(done_callback)
 
-        # Save the input text and future object.
-        self.repl_pane.append_executed_code(buff.text, future)  # type: ignore
-
         # Rebuild the parent ReplPane output buffer.
-        self._update_output_buffer()
+        self.repl_pane.update_output_buffer('pw_ptpython_repl._accept_handler')
 
         # TODO(tonymd): Return True if exception is found?
         # Don't keep input for now. Return True to keep input text.

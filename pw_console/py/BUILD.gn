@@ -33,6 +33,7 @@ pw_python_package("py") {
     "pw_console/log_store.py",
     "pw_console/log_view.py",
     "pw_console/mouse.py",
+    "pw_console/pigweed_code_style.py",
     "pw_console/pw_ptpython_repl.py",
     "pw_console/repl_pane.py",
     "pw_console/search_toolbar.py",

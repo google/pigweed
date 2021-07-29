@@ -21,6 +21,7 @@ from pathlib import Path
 from threading import Thread
 from typing import Iterable, Union
 
+from jinja2 import Environment, PackageLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.application import Application
@@ -121,6 +122,18 @@ class ConsoleApp:
             }
 
         local_vars = local_vars or global_vars
+
+        # Setup the Jinja environment
+        self.jinja_env = Environment(
+            # Load templates automatically from pw_console/templates
+            loader=PackageLoader(__package__),
+            # Raise errors if variables are undefined in templates
+            undefined=make_logging_undefined(
+                logger=logging.getLogger(__package__), ),
+            # Trim whitespace in templates
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
 
         # TODO(tonymd): Make these configurable per project.
         self.repl_history_filename = Path.home() / '.pw_console_history'
@@ -290,6 +303,9 @@ class ConsoleApp:
             clipboard=PyperclipClipboard(),
         )
 
+    def get_template(self, file_name: str):
+        return self.jinja_env.get_template(file_name)
+
     def run_pane_menu_option(self, function_to_run):
         function_to_run()
         self.update_menu_items()
@@ -333,6 +349,22 @@ class ConsoleApp:
                      handler=functools.partial(self.load_theme,
                                                'high-contrast-dark')),
             MenuItem('-'),
+            MenuItem(
+                'Code: pigweed-code',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'pigweed-code')),
+            MenuItem(
+                'Code: material',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'material')),
+            MenuItem(
+                'Code: gruvbox-light',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'gruvbox-light')),
+            MenuItem(
+                'Code: gruvbox-dark',
+                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                                  'gruvbox-dark')),
             MenuItem(
                 'Code: tomorrow-night',
                 functools.partial(self.pw_ptpython_repl.use_code_colorscheme,

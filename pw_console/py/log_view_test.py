@@ -360,8 +360,7 @@ class TestLogView(unittest.TestCase):
 
 
 if _PYTHON_3_8:
-    # pylint: disable=no-name-in-module
-    from unittest import IsolatedAsyncioTestCase  # type: ignore
+    from unittest import IsolatedAsyncioTestCase  # type: ignore # pylint: disable=no-name-in-module
 
     class TestLogViewFiltering(IsolatedAsyncioTestCase):  # pylint: disable=undefined-variable
         """Test LogView log filtering capabilities."""

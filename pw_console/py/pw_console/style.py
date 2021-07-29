@@ -22,9 +22,9 @@ from prompt_toolkit.filters import has_focus
 _LOG = logging.getLogger(__package__)
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
 class HighContrastDarkColors:
+    # pylint: disable=too-many-instance-attributes
     default_bg = '#100f10'
     default_fg = '#ffffff'
 
@@ -50,9 +50,9 @@ class HighContrastDarkColors:
     yellow_accent = '#d2e580'
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
 class DarkColors:
+    # pylint: disable=too-many-instance-attributes
     default_bg = '#2e2e2e'
     default_fg = '#bbc2cf'
 

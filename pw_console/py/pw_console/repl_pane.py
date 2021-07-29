@@ -13,11 +13,11 @@
 # the License.
 """ReplPane class."""
 
+import asyncio
 import concurrent
 import functools
 import logging
 from dataclasses import dataclass
-from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -26,7 +26,6 @@ from typing import (
     Optional,
 )
 
-from jinja2 import Template
 from prompt_toolkit.filters import (
     Condition,
     has_focus,
@@ -46,7 +45,9 @@ from prompt_toolkit.layout import (
     WindowAlign,
 )
 from prompt_toolkit.lexers import PygmentsLexer  # type: ignore
-from pygments.lexers.python import PythonLexer  # type: ignore
+from pygments.lexers.python import PythonConsoleLexer  # type: ignore
+# Alternative Formatting
+# from IPython.lib.lexers import IPythonConsoleLexer  # type: ignore
 
 import pw_console.mouse
 import pw_console.style
@@ -57,11 +58,6 @@ _LOG = logging.getLogger(__package__)
 
 _Namespace = Dict[str, Any]
 _GetNamespace = Callable[[], _Namespace]
-
-_OUTPUT_TEMPLATE_PATH = (Path(__file__).parent / 'templates' /
-                         'repl_output.jinja')
-with _OUTPUT_TEMPLATE_PATH.open() as tmpl:
-    OUTPUT_TEMPLATE = tmpl.read()
 
 
 class ReplPaneBottomToolbarBar(ConditionalContainer):
@@ -204,10 +200,19 @@ class UserCodeExecution:
     output: str
     stdout: str
     stderr: str
+    output_check_task: Optional[concurrent.futures.Future] = None
 
     @property
     def is_running(self):
         return not self.future.done()
+
+    def update_stdout(self, text: Optional[str]):
+        if text:
+            self.stdout = text
+
+    def update_stderr(self, text: Optional[str]):
+        if text:
+            self.stderr = text
 
 
 class ReplPane:
@@ -249,7 +254,7 @@ class ReplPane:
             focus_on_click=True,
             scrollbar=True,
             wrap_lines=False,
-            lexer=PygmentsLexer(PythonLexer),
+            lexer=PygmentsLexer(PythonConsoleLexer),
         )
 
         # Additional keybindings for the text area.
@@ -442,7 +447,7 @@ class ReplPane:
             code.future.cancel()
             code.output = 'Canceled'
         self.pw_ptpython_repl.clear_last_result()
-        self.update_output_buffer()
+        self.update_output_buffer('repl_pane.interrupt_last_code_execution')
 
     def _get_currently_running_code(self):
         for code in self.executed_code:
@@ -461,12 +466,31 @@ class ReplPane:
         text = self.get_output_buffer_text([code], show_index=False)
         _LOG.debug('[PYTHON] %s\n%s', prefix, text)
 
-    def append_executed_code(self, text, future):
+    async def periodically_check_stdout(self, user_code: UserCodeExecution,
+                                        stdout_proxy, stderr_proxy):
+        while not user_code.future.done():
+            await asyncio.sleep(0.3)
+            stdout_text_so_far = stdout_proxy.getvalue()
+            stderr_text_so_far = stderr_proxy.getvalue()
+            if stdout_text_so_far:
+                user_code.update_stdout(stdout_text_so_far)
+            if stderr_text_so_far:
+                user_code.update_stderr(stderr_text_so_far)
+
+            # if stdout_text_so_far or stderr_text_so_far:
+            self.update_output_buffer('repl_pane.periodic_check')
+
+    def append_executed_code(self, text, future, temp_stdout, temp_stderr):
         user_code = UserCodeExecution(input=text,
                                       future=future,
                                       output=None,
                                       stdout=None,
                                       stderr=None)
+
+        background_stdout_check = asyncio.create_task(
+            self.periodically_check_stdout(user_code, temp_stdout,
+                                           temp_stderr))
+        user_code.output_check_task = background_stdout_check
         self.executed_code.append(user_code)
         self._log_executed_code(user_code, prefix='START')
 
@@ -476,23 +500,21 @@ class ReplPane:
                                        result_text,
                                        stdout_text='',
                                        stderr_text=''):
+
         code = self._get_executed_code(future)
         if code:
             code.output = result_text
             code.stdout = stdout_text
             code.stderr = stderr_text
         self._log_executed_code(code, prefix='FINISH')
-        self.update_output_buffer()
+        self.update_output_buffer('repl_pane.append_result_to_executed_code')
 
     def get_output_buffer_text(self, code_items=None, show_index=True):
         executed_code = code_items or self.executed_code
-        template = Template(OUTPUT_TEMPLATE,
-                            trim_blocks=True,
-                            lstrip_blocks=True)
-        return template.render(code_items=executed_code,
-                               show_index=show_index).strip()
+        template = self.application.get_template('repl_output.jinja')
+        return template.render(code_items=executed_code, show_index=show_index)
 
-    def update_output_buffer(self):
+    def update_output_buffer(self, *unused_args):
         text = self.get_output_buffer_text()
         # Add an extra line break so the last cursor position is in column 0
         # instead of the end of the last line.

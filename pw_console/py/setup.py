@@ -34,7 +34,11 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'pw-console = pw_console.__main__:main',
-        ]
+        ],
+        'pygments.styles': [
+            'pigweed-code = '
+            'pw_console.pigweed_code_style:PigweedCodeStyle',
+        ],
     },
     install_requires=[
         'ipython',

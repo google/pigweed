@@ -14,12 +14,28 @@
 """Tests for pw_console.console_app"""
 
 import inspect
+import logging
 import unittest
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
+from jinja2 import Environment, PackageLoader, make_logging_undefined
 from prompt_toolkit.key_binding import KeyBindings
 
-from pw_console.help_window import HelpWindow, KEYBIND_TEMPLATE
+from pw_console.help_window import HelpWindow
+
+_jinja_env = Environment(
+    loader=PackageLoader('pw_console'),
+    undefined=make_logging_undefined(logger=logging.getLogger('pw_console')),
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
+
+
+def _create_app_mock():
+    template = _jinja_env.get_template('keybind_list.jinja')
+    mock_app = MagicMock()
+    mock_app.get_template = MagicMock(return_value=template)
+    return mock_app
 
 
 class TestHelpWindow(unittest.TestCase):
@@ -28,12 +44,9 @@ class TestHelpWindow(unittest.TestCase):
         self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_instantiate(self) -> None:
-        app = Mock()
+        app = _create_app_mock()
         help_window = HelpWindow(app)
         self.assertIsNotNone(help_window)
-
-    def test_template_loads(self) -> None:
-        self.assertIn('{%', KEYBIND_TEMPLATE)
 
     # pylint: disable=unused-variable,unused-argument
     def test_add_keybind_help_text(self) -> None:
@@ -48,7 +61,7 @@ class TestHelpWindow(unittest.TestCase):
         def exit_(event):
             """Quit the application."""
 
-        app = Mock()
+        app = _create_app_mock()
 
         help_window = HelpWindow(app)
         help_window.add_keybind_help_text('Global', bindings)
@@ -89,14 +102,16 @@ class TestHelpWindow(unittest.TestCase):
         def app_focus_previous(event):
             """Move focus to the previous widget."""
 
-        app = Mock()
+        app = _create_app_mock()
 
-        help_window = HelpWindow(app,
-                                 preamble='Pigweed CLI v0.1',
-                                 additional_help_text=inspect.cleandoc("""
-                                     Welcome to the Pigweed Console!
-                                     Please enjoy this extra help text.
-                                 """))
+        help_window = HelpWindow(
+            app,
+            preamble='Pigweed CLI v0.1',
+            additional_help_text=inspect.cleandoc("""
+                Welcome to the Pigweed Console!
+                Please enjoy this extra help text.
+            """),
+        )
         help_window.add_keybind_help_text('Global', global_bindings)
         help_window.add_keybind_help_text('Focus', focus_bindings)
         help_window.generate_help_text()

@@ -18,7 +18,6 @@ import inspect
 from pathlib import Path
 from typing import Dict
 
-from jinja2 import Template
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
@@ -34,10 +33,6 @@ from prompt_toolkit.widgets import Box, Frame, TextArea
 from pygments.lexers.markup import RstLexer  # type: ignore
 
 _LOG = logging.getLogger(__package__)
-
-HELP_TEMPLATE_PATH = Path(__file__).parent / "templates" / "keybind_list.jinja"
-with HELP_TEMPLATE_PATH.open() as tmpl:
-    KEYBIND_TEMPLATE = tmpl.read()
 
 
 def _longest_line_length(text):
@@ -155,12 +150,7 @@ class HelpWindow(ConditionalContainer):
     def generate_help_text(self):
         """Generate help text based on added key bindings."""
 
-        # pylint: disable=line-too-long
-        template = Template(
-            KEYBIND_TEMPLATE,
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
+        template = self.application.get_template('keybind_list.jinja')
 
         self.help_text = template.render(
             sections=self.help_text_sections,

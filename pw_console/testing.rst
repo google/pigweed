@@ -426,6 +426,33 @@ Copy Paste
      - Python Input is focused
      - |checkbox|
 
+Incremental Stdout
+^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Click the :guilabel:`Python Input` window title
+     - Python Input pane is focused
+     - |checkbox|
+
+   * - 2
+     - | Enter the following text and hit enter twice
+       | ``import time``
+       | ``for i in range(10):``
+       | ``print(i); time.sleep(1)``
+     - | ``Running...`` should appear in the python with
+       | increasing integers incrementally appearing above
+       | (not all at once after a delay).
+     - |checkbox|
+
 Add note to the commit message
 ------------------------------
 
