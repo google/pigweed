@@ -111,6 +111,8 @@ config("flags") {
     "-Wno-sign-compare",
     "-Wno-old-style-declaration",
     "-Wno-maybe-uninitialized",
+    "-Wno-undef",
+    "-Wno-implicit-function-declaration",
   ]
   defines = [
     "USE_HAL_DRIVER",
