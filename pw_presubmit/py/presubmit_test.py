@@ -31,7 +31,7 @@ class ProgramsTest(unittest.TestCase):
     """Tests the presubmit Programs abstraction."""
     def setUp(self):
         self._programs = presubmit.Programs(
-            first=[_fake_function_1, (), [(_fake_function_1, )]],
+            first=[_fake_function_1, (), [(_fake_function_2, )]],
             second=[_fake_function_2],
         )
 
@@ -40,7 +40,7 @@ class ProgramsTest(unittest.TestCase):
 
     def test_access_present_members(self):
         self.assertEqual('first', self._programs['first'].name)
-        self.assertEqual((_fake_function_1, _fake_function_1),
+        self.assertEqual((_fake_function_1, _fake_function_2),
                          tuple(self._programs['first']))
 
         self.assertEqual('second', self._programs['second'].name)

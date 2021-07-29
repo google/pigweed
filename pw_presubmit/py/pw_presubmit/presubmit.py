@@ -129,7 +129,7 @@ class Program(collections.abc.Sequence):
     """A sequence of presubmit checks; basically a tuple with a name."""
     def __init__(self, name: str, steps: Iterable[Callable]):
         self.name = name
-        self._steps = tuple(tools.flatten(steps))
+        self._steps = tuple({s: None for s in tools.flatten(steps)})
 
     def __getitem__(self, i):
         return self._steps[i]
