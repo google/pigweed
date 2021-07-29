@@ -127,6 +127,7 @@ Log Window View Options
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
+Copy visible log lines to the clipboard.      :guilabel:`Ctrl-c`
 Toggle line following.                        :guilabel:`f`
 Toggle table view.                            :guilabel:`t`
 Toggle line wrapping.                         :guilabel:`w`
@@ -291,6 +292,8 @@ Running Code in the Python Repl
 -  :guilabel:`Up` / :guilabel:`Down` Navigate command history
 -  :guilabel:`Ctrl-r` Start reverse history searching
 -  :guilabel:`Ctrl-c` Erase the input buffer
+-  :guilabel:`Ctrl-v` Paste text from the clipboard to the input buffer
+-  :guilabel:`Ctrl-Alt-c` Copy the Python Output to the system clipboard
 
    -  If the input buffer is empty:
       :guilabel:`Ctrl-c` cancels any currently running Python commands.
@@ -322,8 +325,24 @@ Copy & Pasting
 Copying Text
 ^^^^^^^^^^^^
 
-At the moment there is no built-in copy/paste function. As a workaround use your
-terminal built in selection:
+Text can be copied from the Log and Python windows when they are in focus with
+these keybindings.
+
+============================================  =====================
+Function                                      Keys
+============================================  =====================
+Copy Logs from the focused log window         :guilabel:`Ctrl-c`
+Copy Python Output if window is focused       :guilabel:`Ctrl-Alt-c`
+============================================  =====================
+
+Text will be put in the host computer's system clipboard using the
+`pyperclip package <https://pypi.org/project/pyperclip/>`__.
+
+The above functions can also be accessed by clicking on the toolbar help text or
+accessed under the :guilabel:`[Edit]` menu.
+
+If you need to copy text from any other part of the UI you will have to use your
+terminal's built in text selection:
 
 - **Linux**
 
@@ -355,9 +374,14 @@ terminal built in selection:
 Pasting Text
 ^^^^^^^^^^^^
 
-Currently you must paste text using your terminal emulator's paste
-function. How to do this depends on what terminal you are using and on
-which OS. Here's how on various platforms:
+Text can be pasted into the Python Input window from the system clipboard with
+:guilabel:`Ctrl-v`.
+
+If you are using the console on a separate machine (over an ssh connection for
+example) then pasting will use that machine's clipboard. This may not be the
+computer where you copied the text. In that case you will need to use your
+terminal emulator's paste function. How to do this depends on what terminal you
+are using and on which OS. Here's how on various platforms:
 
 - **Linux**
 

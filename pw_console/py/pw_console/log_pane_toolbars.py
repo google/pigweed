@@ -131,6 +131,9 @@ class BottomToolbarBar(ConditionalContainer):
         start_search = functools.partial(
             pw_console.widgets.mouse_handlers.on_click,
             self.log_pane.start_search)
+        copy_lines = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click,
+            self.log_pane.log_view.copy_visible_lines)
 
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
         separator_text = [('', '  ', focus)
@@ -142,6 +145,11 @@ class BottomToolbarBar(ConditionalContainer):
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
                 '/', 'Search', start_search))
+        fragments.extend(separator_text)
+
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Ctrl-c', 'Copy Lines', copy_lines))
         fragments.extend(separator_text)
 
         fragments.extend(

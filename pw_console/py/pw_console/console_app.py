@@ -21,6 +21,7 @@ from pathlib import Path
 from threading import Thread
 from typing import Iterable, Union
 
+from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.application import Application
 from prompt_toolkit.filters import Condition
@@ -263,7 +264,7 @@ class ConsoleApp:
         # focused element.
         self.layout: Layout = Layout(
             self.root_container,
-            focused_element=self.repl_pane,
+            focused_element=self.pw_ptpython_repl,
         )
 
         # Create the prompt_toolkit Application instance.
@@ -285,7 +286,9 @@ class ConsoleApp:
             enable_page_navigation_bindings=True,
             full_screen=True,
             mouse_support=True,
-            color_depth=color_depth)
+            color_depth=color_depth,
+            clipboard=PyperclipClipboard(),
+        )
 
     def run_pane_menu_option(self, function_to_run):
         function_to_run()
@@ -302,6 +305,21 @@ class ConsoleApp:
                 '[File]',
                 children=[
                     MenuItem('Exit', handler=self.exit_console),
+                ],
+            ),
+        ]
+
+        edit_menu = [
+            MenuItem(
+                '[Edit]',
+                children=[
+                    MenuItem('Copy visible lines from active window',
+                             handler=functools.partial(
+                                 self.window_manager.run_action_on_active_pane,
+                                 'copy_text')),
+                    MenuItem('Paste to Python Input',
+                             handler=self.repl_pane.
+                             paste_system_clipboard_to_input_buffer),
                 ],
             ),
         ]
@@ -342,7 +360,6 @@ class ConsoleApp:
         ]
 
         view_menu = [
-            # View menu
             MenuItem(
                 '[View]',
                 children=[
@@ -430,7 +447,7 @@ class ConsoleApp:
             ),
         ]
 
-        return file_menu + view_menu + window_menu + help_menu
+        return file_menu + edit_menu + view_menu + window_menu + help_menu
 
     def focus_main_menu(self):
         """Set application focus to the main menu."""

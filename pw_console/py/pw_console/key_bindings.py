@@ -138,4 +138,17 @@ def create_key_bindings(console_app):
         # ptpython state and further repl invocations.
         pass
 
+    @bindings.add('c-v', filter=has_focus(console_app.pw_ptpython_repl))
+    def paste_into_repl(event):
+        """Reset the python repl on Ctrl-c"""
+        console_app.repl_pane.paste_system_clipboard_to_input_buffer()
+
+    @bindings.add(
+        'escape',
+        'c-c',  # Alt-Ctrl-c
+        filter=console_app.repl_pane.input_or_output_has_focus())
+    def paste_into_repl(event):
+        """Copy all Python output to the system clipboard."""
+        console_app.repl_pane.copy_text()
+
     return bindings

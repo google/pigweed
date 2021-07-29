@@ -26,6 +26,7 @@ from typing import List, Optional, TYPE_CHECKING
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import (
     to_formatted_text,
+    fragment_list_to_text,
     fragment_list_width,
     StyleAndTextTuples,
 )
@@ -99,6 +100,8 @@ class LogView:
         # Cache of formatted text tuples used in the last UI render.  Used after
         # rendering by `get_cursor_position()`.
         self._line_fragment_cache: collections.deque = collections.deque()
+        self._line_fragment_cache_flattened: Optional[
+            StyleAndTextTuples] = None
 
     @property
     def line_index(self):
@@ -633,5 +636,16 @@ class LogView:
             self._line_fragment_cache.appendleft([('', '\n' * empty_line_count)
                                                   ])
 
-        return pw_console.text_formatting.flatten_formatted_text_tuples(
-            self._line_fragment_cache)
+        self._line_fragment_cache_flattened = (
+            pw_console.text_formatting.flatten_formatted_text_tuples(
+                self._line_fragment_cache))
+
+        return self._line_fragment_cache_flattened
+
+    def copy_visible_lines(self):
+        """Copy the currently visible log lines to the system clipboard."""
+        if self._line_fragment_cache_flattened is None:
+            return
+        text = fragment_list_to_text(self._line_fragment_cache_flattened)
+        text = text.strip()
+        self.log_pane.application.application.clipboard.set_text(text)

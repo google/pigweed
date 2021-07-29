@@ -203,6 +203,11 @@ class LogContentControl(FormattedTextControl):
             """Reset / erase active filters."""
             self.log_pane.log_view.clear_filters()
 
+        @key_bindings.add('c-c')
+        def _copy_log_lines(_event: KeyPressEvent) -> None:
+            """Copy visible log lines to the system clipboard."""
+            self.log_pane.copy_text()
+
         kwargs['key_bindings'] = key_bindings
         super().__init__(*args, **kwargs)
 
@@ -438,6 +443,10 @@ class LogPane:
             additional_text = ' + {} more'.format(len(logger_names))
 
         return logger_names[0] + additional_text
+
+    def copy_text(self):
+        """Copy visible text in this window pane to the system clipboard."""
+        self.log_view.copy_visible_lines()
 
     def start_search(self):
         """Show the search bar to begin a search."""

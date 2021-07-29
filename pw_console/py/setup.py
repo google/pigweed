@@ -37,7 +37,6 @@ setuptools.setup(
         ]
     },
     install_requires=[
-        'ipdb',
         'ipython',
         'jinja2',
         'prompt_toolkit',
@@ -47,5 +46,6 @@ setuptools.setup(
         'pygments',
         'pygments-style-dracula',
         'pygments-style-tomorrow',
+        'pyperclip',
     ],
 )

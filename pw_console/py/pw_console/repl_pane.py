@@ -32,6 +32,7 @@ from prompt_toolkit.filters import (
     has_focus,
 )
 from prompt_toolkit.document import Document
+from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.layout import (
@@ -71,30 +72,52 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
 
         title = ' Python Input '
         mouse_handler = functools.partial(pw_console.mouse.focus_handler,
-                                          repl_pane)
-        return pw_console.style.get_pane_indicator(repl_pane, title,
-                                                   mouse_handler)
+                                          repl_pane.pw_ptpython_repl)
+        return pw_console.style.get_pane_indicator(repl_pane.pw_ptpython_repl,
+                                                   title, mouse_handler)
 
     @staticmethod
     def get_center_text_tokens(repl_pane):
         """Return toolbar text showing if the ReplPane is in focus or not."""
-        focused_text = [
+        focus = functools.partial(pw_console.mouse.focus_handler,
+                                  repl_pane.pw_ptpython_repl)
+        paste_text = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click,
+            repl_pane.paste_system_clipboard_to_input_buffer)
+        clear_text = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click,
+            repl_pane.clear_input_buffer)
+        run_code = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, repl_pane.run_code)
+
+        fragments = [
             (
                 # Style
                 '',
                 # Text
                 ' ',
                 # Mouse handler
-                functools.partial(pw_console.mouse.focus_handler, repl_pane),
+                focus,
             ),
         ]
+        separator = [('', '  ', focus)]
 
-        focused_text.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator('Enter', 'Run'))
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Ctrl-v', 'Paste', paste_text))
+        fragments.extend(separator)
 
-        if has_focus(repl_pane)():
-            return focused_text
-        return [('', '')]
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Ctrl-c', 'Clear', clear_text))
+        fragments.extend(separator)
+
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Enter', 'Run', run_code))
+        fragments.extend(separator)
+
+        return fragments
 
     @staticmethod
     def get_right_text_tokens(repl_pane):
@@ -222,13 +245,26 @@ class ReplPane:
         self.output_field = TextArea(
             height=output_height,
             text=self.startup_message,
-            focusable=False,
+            focusable=True,
+            focus_on_click=True,
             scrollbar=True,
+            wrap_lines=False,
             lexer=PygmentsLexer(PythonLexer),
         )
 
+        # Additional keybindings for the text area.
+        key_bindings = KeyBindings()
+
+        @key_bindings.add('c-c')
+        def _copy_selection(_event: KeyPressEvent) -> None:
+            """Copy selected text."""
+            self.copy_output_selection()
+
+        self.output_field.control.key_bindings = key_bindings
+
         self.bottom_toolbar = ReplPaneBottomToolbarBar(self)
 
+        self.results_toolbar = self._create_output_toolbar()
         # ReplPane root container
         self.container = ConditionalContainer(
             FloatContainer(
@@ -239,22 +275,7 @@ class ReplPane:
                             # 1. Repl Output
                             self.output_field,
                             # 2. Static separator toolbar.
-                            VSplit(
-                                [
-                                    Window(
-                                        content=FormattedTextControl(
-                                            functools.partial(
-                                                pw_console.style.
-                                                get_pane_indicator, self,
-                                                ' Python Results ')),
-                                        align=WindowAlign.LEFT,
-                                        dont_extend_width=True,
-                                        height=1,
-                                    ),
-                                ],
-                                style=functools.partial(
-                                    pw_console.style.get_toolbar_style, self),
-                            ),
+                            self.results_toolbar,
                         ]),
                         HSplit([
                             # 3. Repl Input
@@ -272,9 +293,77 @@ class ReplPane:
                     # Transparent float container that will focus on this
                     # ReplPane when clicked.
                     pw_console.widgets.focus_on_click_overlay.create_overlay(
-                        self),
+                        self.pw_ptpython_repl,
+                        self.output_field,
+                    ),
                 ]),
             filter=Condition(lambda: self.show_pane))
+
+    def _get_output_toolbar_fragments(self):
+        toolbar_fragments = []
+
+        focus = functools.partial(pw_console.mouse.focus_handler,
+                                  self.output_field)
+        copy_output = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.copy_text)
+        copy_selection = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click,
+            self.copy_output_selection)
+
+        separator = [('', '  ', focus)]
+
+        # Title
+        toolbar_fragments.extend(
+            pw_console.style.get_pane_indicator(self.output_field,
+                                                ' Python Results ', focus))
+        toolbar_fragments.extend(separator)
+
+        # Keybinds and functions
+
+        toolbar_fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Ctrl-Alt-c', 'Copy All Output', copy_output))
+        toolbar_fragments.extend(separator)
+
+        if has_focus(self.output_field)():
+            toolbar_fragments.extend(
+                pw_console.widgets.checkbox.to_keybind_indicator(
+                    'Ctrl-c', 'Copy Selected Text', copy_selection))
+            toolbar_fragments.extend(separator)
+
+            toolbar_fragments.extend(
+                pw_console.widgets.checkbox.to_keybind_indicator(
+                    'Shift+Arrows / Mouse Drag', 'Select Text'))
+        else:
+            toolbar_fragments.append((
+                # Style
+                'class:keyhelp',
+                # Text
+                '[click to focus] ',
+                # Mouse handler
+                functools.partial(pw_console.mouse.focus_handler,
+                                  self.output_field),
+            ))
+        toolbar_fragments.extend(separator)
+
+        return toolbar_fragments
+
+    def _create_output_toolbar(self):
+        toolbar_control = FormattedTextControl(
+            self._get_output_toolbar_fragments)
+
+        container = VSplit(
+            [
+                Window(
+                    content=toolbar_control,
+                    align=WindowAlign.LEFT,
+                    dont_extend_width=False,
+                    height=1,
+                ),
+            ],
+            style=functools.partial(pw_console.style.get_toolbar_style, self),
+        )
+        return container
 
     def pane_title(self):  # pylint: disable=no-self-use
         return 'Python Repl'
@@ -289,6 +378,17 @@ class ReplPane:
     def __pt_container__(self):
         """Return the prompt_toolkit container for this ReplPane."""
         return self.container
+
+    def copy_output_selection(self):
+        """Copy the highlighted text the python output buffer to the system
+        clipboard."""
+        clipboard_data = self.output_field.buffer.copy_selection()
+        self.application.application.clipboard.set_data(clipboard_data)
+
+    def copy_text(self):
+        """Copy visible text in this window pane to the system clipboard."""
+        self.application.application.clipboard.set_text(
+            self.output_field.buffer.text)
 
     # pylint: disable=no-self-use
     def get_all_key_bindings(self) -> List:
@@ -311,6 +411,10 @@ class ReplPane:
     def after_render_hook(self):
         """Run tasks after the last UI render."""
 
+    def run_code(self):
+        """Trigger a repl code execution."""
+        self.pw_ptpython_repl.default_buffer.validate_and_handle()
+
     def ctrl_c(self):
         """Ctrl-C keybinding behavior."""
         # If there is text in the input buffer, clear it.
@@ -318,6 +422,13 @@ class ReplPane:
             self.clear_input_buffer()
         else:
             self.interrupt_last_code_execution()
+
+    def paste_system_clipboard_to_input_buffer(self, erase_buffer=False):
+        if erase_buffer:
+            self.clear_input_buffer()
+
+        clip_data = self.application.application.clipboard.get_data()
+        self.pw_ptpython_repl.default_buffer.paste_clipboard_data(clip_data)
 
     def clear_input_buffer(self):
         # Erase input buffer.
@@ -383,6 +494,20 @@ class ReplPane:
 
     def update_output_buffer(self):
         text = self.get_output_buffer_text()
-        self.output_field.buffer.document = Document(text=text,
-                                                     cursor_position=len(text))
+        # Add an extra line break so the last cursor position is in column 0
+        # instead of the end of the last line.
+        text += '\n'
+        self.output_field.buffer.set_document(
+            Document(text=text, cursor_position=len(text)))
+
         self.application.redraw_ui()
+
+    def input_or_output_has_focus(self) -> Condition:
+        @Condition
+        def test() -> bool:
+            if has_focus(self.output_field)() or has_focus(
+                    self.pw_ptpython_repl)():
+                return True
+            return False
+
+        return test

@@ -98,6 +98,15 @@ class WindowManager:
             pass
         return index
 
+    def run_action_on_active_pane(self, function_name):
+        _active_window_list, active_pane = (
+            self._get_active_window_list_and_pane())
+        if not hasattr(active_pane, function_name):
+            return
+        method_to_call = getattr(active_pane, function_name)
+        method_to_call()
+        return
+
     def move_pane_left(self):
         active_window_list, active_pane = (
             self._get_active_window_list_and_pane())

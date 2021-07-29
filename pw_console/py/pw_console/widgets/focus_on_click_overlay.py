@@ -36,8 +36,13 @@ class FocusOnClickFloatContainer(ConditionalContainer):
     This container should be rendered with transparent=True so nothing is shown
     to the user. Container is not rendered if the repl_pane is already in focus.
     """
-    def __init__(self, target_container):
+    def __init__(self, target_container, target_container2=None):
 
+        display_condition = Condition(lambda: not has_focus(target_container)
+                                      ())
+        if target_container2:
+            display_condition = Condition(lambda: not (has_focus(
+                target_container)() or has_focus(target_container2)()))
         empty_text = FormattedTextControl([(
             'class:pane_inactive',  # Style
             # Text here must be a printable character or the mouse handler won't
@@ -56,11 +61,11 @@ class FocusOnClickFloatContainer(ConditionalContainer):
                 dont_extend_width=False,
                 dont_extend_height=False,
             ),
-            filter=Condition(lambda: not has_focus(target_container)()),
+            filter=display_condition,
         )
 
 
-def create_overlay(target_container):
+def create_overlay(target_container, target_container2=None):
     """Create a transparent FocusOnClickFloatContainer.
 
     The target_container will be focused when clicked. The overlay float will be
@@ -68,7 +73,7 @@ def create_overlay(target_container):
     """
     return Float(
         # This is drawn as the full size of the ReplPane
-        FocusOnClickFloatContainer(target_container),
+        FocusOnClickFloatContainer(target_container, target_container2),
         transparent=True,
         # Draw the empty space in the bottom right corner.
         # Distance to each edge, fill the whole container.

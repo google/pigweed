@@ -350,6 +350,81 @@ Window Management
        | on the tab bar
      - |checkbox|
 
+Copy Paste
+^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Click the :guilabel:`Logs` window title
+     - Log pane is focused
+     - |checkbox|
+
+   * - 2
+     - | Click the menu
+       | :guilabel:`[Edit] > Copy visible lines from active window`
+       | Try pasting into a separate text editor
+     - | Log lines like this:
+       | ``20210729 18:31:32  INF  USB Log message ...``
+       | Are in the system clipboard
+     - |checkbox|
+
+   * - 3
+     - | Copy this text in your browser or
+       | text editor to the system clipboard:
+       | ``print('copy paste test!')``
+     - | Click the :guilabel:`Python Input` window title
+       | Press :guilabel:`Ctrl-v`
+       | ``print('copy paste test!')`` appears
+       | after the prompt.
+     - |checkbox|
+
+   * - 4
+     - Press :guilabel:`Enter`
+     - | This appears in Python Results:
+       | ``In [1]: print('copy paste test!')``
+       | ``copy paste test!``
+     - |checkbox|
+
+   * - 5
+     - | Click :guilabel:`Ctrl-Alt-c -> Copy Output`
+       | on the Python Results toolbar
+       | Try pasting into a separate text editor
+     - | The contents of the Python Results
+       | are in the system clipboard.
+     - |checkbox|
+
+   * - 6
+     - Click the :guilabel:`Python Results` window title
+     - | Python Results is focused with cursor
+       | appearing below the last line
+     - |checkbox|
+
+   * - 7
+     - | Click and drag over ``copy paste text``
+       | highlighting won't appear until
+       | after the mouse button is released
+     - | ``copy paste text`` is highlighted
+     - |checkbox|
+
+   * - 8
+     - | Press :guilabel:`Ctrl-c`
+       | Try pasting into a separate text editor
+     - | ``copy paste text`` should appear (and is
+       | in the system clipboard)
+     - |checkbox|
+
+   * - 9
+     - Click the :guilabel:`Python Input` window title
+     - Python Input is focused
+     - |checkbox|
 
 Add note to the commit message
 ------------------------------
@@ -359,7 +434,7 @@ executed. For example:
 
 .. code-block:: text
 
-   Testing: Log Pane: Manual steps 1-6
+   Testing: Log Pane Steps 1-6
 
 .. |checkbox| raw:: html
 
