@@ -214,6 +214,22 @@ Below is an example using the decoder class to decode data read from serial:
       for frame in decoder.process_valid_frames(ser.read()):
           # Handle the decoded frame
 
+Typescript
+^^^^^^^^^^
+
+Decodes one or more HDLC frames from a stream of data.
+
+.. js:method:: process(data)
+
+    :param Uint8Array data: bytes to be decoded.
+    :yields: HDLC frames, including corrupt frames.
+      The Frame.ok() method whether the frame is valid.
+
+.. js:method:: processValidFrames(data)
+
+    :param Uint8Array data: bytes to be decoded.
+    :yields: Valid HDLC frames, logging any errors.
+
 Additional features
 ===================
 

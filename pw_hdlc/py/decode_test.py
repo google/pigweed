@@ -218,6 +218,57 @@ _CPP_FOOTER = """\
 }  // namespace
 }  // namespace pw::hdlc"""
 
+_TS_HEADER = """\
+import 'jasmine';
+
+import {Buffer} from 'buffer';
+
+import {Decoder, FrameStatus} from './decoder'
+import * as protocol from './protocol'
+import * as util from './util'
+
+class Expected {
+  address: number
+  control: Uint8Array
+  data: Uint8Array
+  status: FrameStatus
+
+  constructor(
+      address: number,
+      control: Uint8Array,
+      data: Uint8Array,
+      status: FrameStatus) {
+    this.address = address;
+    this.control = control;
+    this.data = data;
+    this.status = status;
+  }
+}
+
+class ExpectedRaw {
+  raw: Uint8Array
+  status: FrameStatus
+
+  constructor(raw: Uint8Array, status: FrameStatus) {
+    this.status = status;
+    this.raw = raw;
+  }
+}
+
+describe('Decoder', () => {
+  let decoder: Decoder;
+  let textEncoder: TextEncoder;
+
+  beforeEach(() => {
+    decoder = new Decoder();
+    textEncoder = new TextEncoder();
+  });
+
+"""
+_TS_FOOTER = """\
+});
+"""
+
 
 def _cpp_test(ctx: Context) -> Iterator[str]:
     """Generates a C++ test for the provided test data."""
@@ -284,7 +335,6 @@ def _define_py_test(ctx: Context) -> PyTest:
         self.assertEqual(expected_frames,
                          list(FrameDecoder().process(data)),
                          msg=f'{ctx.group}: {data!r}')
-
         # Decode byte-by-byte
         decoder = FrameDecoder()
         decoded_frames: List[Frame] = []
@@ -298,6 +348,65 @@ def _define_py_test(ctx: Context) -> PyTest:
     return test
 
 
+def _ts_byte_array(data: bytes) -> str:
+    return '[' + ', '.join(rf'0x{byte:02x}' for byte in data) + ']'
+
+
+def _ts_test(ctx: Context) -> Iterator[str]:
+    """Generates a TS test for the provided test data."""
+    data, _ = ctx.test_case
+    frames = list(FrameDecoder().process(data))
+    data_bytes = _ts_byte_array(data)
+
+    yield f'  it(\'{ctx.ts_name()}\', () => {{'
+    yield f'    const data = new Uint8Array({data_bytes});'
+
+    yield '    const expectedFrames = ['
+    for frame in frames:
+        control_bytes = _ts_byte_array(frame.control)
+        frame_bytes = _ts_byte_array(frame.data)
+
+        if frame is Expected:
+            yield (f'      new Expected({frame.address}, '
+                   f'new Uint8Array({control_bytes}), '
+                   f'new Uint8Array({frame_bytes}), {frame.status}),')
+        else:
+            raw = _ts_byte_array(frame.raw_encoded)
+            yield (
+                f'      new ExpectedRaw(new Uint8Array({raw}), {frame.status}),'
+            )
+
+    yield '    ].values();\n'
+
+    yield """\
+    const result = decoder.process(data);
+
+    while (true) {
+      const expectedFrame = expectedFrames.next();
+      const actualFrame = result.next();
+      if (expectedFrame.done && actualFrame.done) {
+        break;
+      }
+      expect(expectedFrame.done).toBeFalse();
+      expect(actualFrame.done).toBeFalse();
+
+      const expected = expectedFrame.value;
+      const actual = actualFrame.value;
+      if (expected instanceof Expected) {
+        expect(actual.address).toEqual(expected.address);
+        expect(actual.control).toEqual(expected.control);
+        expect(actual.data).toEqual(expected.data);
+        expect(actual.status).toEqual(expected.status);
+      } else {
+        // Expected Raw
+        expect(actual.rawEncoded).toEqual(expected.raw);
+        expect(actual.status).toEqual(expected.status);
+      }
+    }
+  });
+"""
+
+
 # Class that tests all cases in TEST_CASES.
 DecoderTest = _TESTS.python_tests('DecoderTest', _define_py_test)
 
@@ -306,5 +415,8 @@ if __name__ == '__main__':
     if args.generate_cc_test:
         _TESTS.cc_tests(args.generate_cc_test, _cpp_test, _CPP_HEADER,
                         _CPP_FOOTER)
+    elif args.generate_ts_test:
+        _TESTS.ts_tests(args.generate_ts_test, _ts_test, _TS_HEADER,
+                        _TS_FOOTER)
     else:
         unittest.main()
