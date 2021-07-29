@@ -13,7 +13,6 @@ Checks: >
     -modernize-return-braced-init-list,
     -modernize-unary-static-assert,
     -modernize-use-auto,
-    -modernize-use-bool-literals,
     -modernize-use-default-member-init,
     -modernize-use-emplace,
     -modernize-use-equals-default,
@@ -62,7 +61,6 @@ HeaderFilterRegex: '.*'
 # @ modernize-use-auto:
 #   Advises to use auto when initializing with a cast to
 #   avoid duplicating the type name
-# @ modernize-use-bool-literals:
 # modernize-use-default-member-init:
 #   Note: added in c++11
 #   Advises to use a default initializer in

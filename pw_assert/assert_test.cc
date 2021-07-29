@@ -40,13 +40,13 @@ TEST(Assert, DebugAssertTrue) {
 // then disable the test.
 
 TEST(Assert, AssertFalse) {
-  if (0) {
+  if (false) {
     PW_ASSERT(false);
   }
 }
 
 TEST(Assert, DebugAssertFalse) {
-  if (0) {
+  if (false) {
     PW_DASSERT(false);
   }
 }
