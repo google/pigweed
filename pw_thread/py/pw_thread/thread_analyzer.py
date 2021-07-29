@@ -15,6 +15,7 @@
 
 from typing import Optional, List, Mapping
 import pw_tokenizer
+from pw_symbolizer import LlvmSymbolizer
 from pw_tokenizer import proto as proto_detokenizer
 from pw_thread_protos import thread_pb2
 
@@ -132,10 +133,13 @@ class ThreadSnapshotAnalyzer:
     """This class simplifies dumping contents of a snapshot Metadata message."""
     def __init__(self,
                  threads: thread_pb2.SnapshotThreadInfo,
-                 tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None):
+                 tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
+                 symbolizer: LlvmSymbolizer = LlvmSymbolizer()):
         self._threads = threads.threads
         self._tokenizer_db = (tokenizer_db if tokenizer_db is not None else
                               pw_tokenizer.Detokenizer(None))
+        self._symbolizer = symbolizer
+
         for thread in self._threads:
             proto_detokenizer.detokenize_fields(self._tokenizer_db, thread)
 
@@ -191,6 +195,9 @@ class ThreadSnapshotAnalyzer:
                 thread_headline += ' <-- [ACTIVE]'
             output.append(thread_headline)
             output.append(str(StackInfo(thread)))
+            if thread.raw_backtrace:
+                output.append(
+                    self._symbolizer.dump_stack_trace(thread.raw_backtrace))
             # Blank line between threads for nicer formatting.
             output.append('')
 

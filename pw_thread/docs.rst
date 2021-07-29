@@ -244,6 +244,9 @@ Threads captured as a Thread proto message can be dumped or further analyzed
 using using ``pw_thread``'s Python module. This is directly integrated into
 pw_snapshot's processor tool to automatically provide rich thread state dumps.
 
+The ``ThreadSnapshotAnalyzer`` class may also be used directly to identify the
+currently running thread and produce symbolized thread dumps.
+
 .. Warning::
   Snapshot integration is a work-in-progress and may see significant API
   changes.

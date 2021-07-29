@@ -29,6 +29,7 @@ pw_python_package("py") {
   ]
   tests = [ "thread_analyzer_test.py" ]
   python_deps = [
+    "$dir_pw_symbolizer/py",
     "$dir_pw_tokenizer/py",
     "..:protos.python",
   ]
