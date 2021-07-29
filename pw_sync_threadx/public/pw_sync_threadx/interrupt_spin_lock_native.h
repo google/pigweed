@@ -19,7 +19,7 @@ namespace pw::sync::backend {
 
 struct NativeInterruptSpinLock {
   enum class State {
-    kUnlocked = 0,
+    kUnlocked = 0,  // This must be 0 to ensure it is bss eligible.
     kLockedFromInterrupt = 1,
     kLockedFromThread = 2,
   };
