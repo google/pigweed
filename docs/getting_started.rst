@@ -114,7 +114,8 @@ via the App Store, then install the relevant tools from the command line.
   $ xcode-select --install
 
 On macOS you may get SSL certificate errors with the system Python
-installation. Run ``sudo pip install certifi`` to fix this. If you get SSL
+installation. Run ``/Applications/Python <default_py_version>/Install Certificates.command``
+to fix this. If you get SSL
 errors with the Python from `Homebrew <https://brew.sh>`_ try running the
 following commands to ensure Python knows how to use OpenSSL.
 
