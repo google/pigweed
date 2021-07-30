@@ -67,27 +67,25 @@ void AdvertisingHandleMap::Clear() {
   handle_to_addr_.clear();
 }
 
-std::optional<AdvertisingHandle> AdvertisingHandleMap::PeekNextHandle() const {
+std::optional<AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
   if (Size() >= kMaxElements) {
     return std::nullopt;
   }
 
   AdvertisingHandle handle = last_handle_;
   do {
-    handle = (handle + 1) % kMaxElements;
+    handle = uint8_t(handle + 1) % kMaxElements;
   } while (handle_to_addr_.count(handle) != 0);
 
+  last_handle_ = handle;
   return handle;
 }
 
-std::optional<AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
-  std::optional<AdvertisingHandle> handle = PeekNextHandle();
-  if (!handle) {
+std::optional<AdvertisingHandle> AdvertisingHandleMap::LastUsedHandleForTesting() const {
+  if (last_handle_ > kMaxAdvertisingHandle) {
     return std::nullopt;
   }
 
-  last_handle_ = handle.value();
-  return handle;
+  return last_handle_;
 }
-
 }  // namespace bt::hci

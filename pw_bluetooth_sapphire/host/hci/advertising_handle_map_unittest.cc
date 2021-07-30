@@ -158,17 +158,6 @@ TEST(AdvertisingHandleMap, RemoveAddressNonExistent) {
   EXPECT_TRUE(handle);
 }
 
-TEST(AdvertisingHandleMap, PeekNextHandle) {
-  AdvertisingHandleMap handle_map;
-  std::optional<hci::AdvertisingHandle> next_handle = handle_map.PeekNextHandle();
-  EXPECT_TRUE(next_handle);
-
-  handle_map.MapHandle(DeviceAddress(DeviceAddress::Type::kLEPublic, {0}));
-  std::optional<DeviceAddress> address = handle_map.GetAddress(next_handle.value());
-  EXPECT_TRUE(address);
-  EXPECT_NE(next_handle, handle_map.PeekNextHandle());
-}
-
 TEST(AdvertisingHandleMap, Clear) {
   AdvertisingHandleMap handle_map;
   std::optional<AdvertisingHandle> handle =

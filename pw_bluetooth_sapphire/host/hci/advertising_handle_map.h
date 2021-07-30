@@ -51,10 +51,10 @@ class AdvertisingHandleMap {
   // new mapping with a new AdvertisingHandle.
   void RemoveAddress(const DeviceAddress& address);
 
-  // Get the value of the next advertising handle that will be used. If the container holds >=
-  // kMaxAdvertisingHandles, returns std:nullopt to indicate there are no more valid
-  // AdvertisingHandles.
-  std::optional<AdvertisingHandle> PeekNextHandle() const;
+  // Retrieve the advertising handle that was most recently generated. This function is primarily
+  // used by unit tests so as to avoid hardcoding values or making assumptions about the starting
+  // point or ordering of advertising handle generation.
+  std::optional<AdvertisingHandle> LastUsedHandleForTesting() const;
 
   // Get the number of unique mappings in the container
   std::size_t Size() const;
