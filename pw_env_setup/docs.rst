@@ -233,6 +233,9 @@ here.
     ]
   }
 
+``virtualenv.gn_args``
+  Any necessary GN args to be used when installing Python packages.
+
 ``virtualenv.gn_targets``
   Target for installing Python packages. Downstream projects will need to
   create targets to install their packages or only use Pigweed Python packages.

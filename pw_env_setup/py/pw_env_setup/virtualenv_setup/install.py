@@ -132,6 +132,7 @@ def install(
     venv_path,
     full_envsetup=True,
     requirements=(),
+    gn_args=(),
     gn_targets=(),
     gn_out_dir=None,
     python=sys.executable,
@@ -233,10 +234,9 @@ def install(
             with open(gn_log_path, 'w') as outs:
                 gn_cmd = ['gn', 'gen', build_dir]
 
-                # Only set dir_pigweed if we don't have an existing build
-                # directory.
-                if not os.path.isdir(build_dir):
-                    gn_cmd.append('--args=dir_pigweed="{}"'.format(pw_root))
+                args = list(gn_args)
+                args.append('dir_pigweed="{}"'.format(pw_root))
+                gn_cmd.append('--args={}'.format(' '.join(args)))
 
                 print(gn_cmd, file=outs)
                 subprocess.check_call(gn_cmd,
