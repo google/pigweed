@@ -13,7 +13,9 @@
 // the License.
 #pragma once
 
-#ifndef __cplusplus
+#ifdef __cplusplus
+#include <type_traits>
+#else
 #include <stddef.h>
 #endif  // __cplusplus
 
@@ -248,6 +250,29 @@
                                           type_fmt,              \
                                           __VA_ARGS__)
 
+// Use a static_cast in C++ to avoid accidental comparisons between e.g. an
+// integer and the CHECK message const char*.
+#if defined(__cplusplus) && __cplusplus >= 201703L
+
+template <typename T, typename U>
+constexpr const void* ConvertToType(U* value) {
+  if constexpr (std::is_function<U>()) {
+    return reinterpret_cast<const void*>(value);
+  } else {
+    return static_cast<const void*>(value);
+  }
+}
+
+template <typename T, typename U>
+constexpr T ConvertToType(const U& value) {
+  return static_cast<T>(value);
+}
+
+#define _PW_CHECK_CONVERT(type, name, arg) type name = ConvertToType<type>(arg)
+#else
+#define _PW_CHECK_CONVERT(type, name, arg) type name = (type)(arg)
+#endif  // __cplusplus
+
 // For the binary assertions, this private macro is re-used for almost all of
 // the variants. Due to limitations of C formatting, it is necessary to have
 // separate macros for the types.
@@ -255,15 +280,15 @@
 // The macro avoids evaluating the arguments multiple times at the cost of some
 // macro complexity.
 #define _PW_CHECK_BINARY_CMP_IMPL(                                       \
-    argument_a, comparison_op, argument_b, type_decl, type_fmt, ...)     \
+    arg_a, comparison_op, arg_b, type_decl, type_fmt, ...)               \
   do {                                                                   \
-    type_decl evaluated_argument_a = (type_decl)(argument_a);            \
-    type_decl evaluated_argument_b = (type_decl)(argument_b);            \
+    _PW_CHECK_CONVERT(type_decl, evaluated_argument_a, arg_a);           \
+    _PW_CHECK_CONVERT(type_decl, evaluated_argument_b, arg_b);           \
     if (!(evaluated_argument_a comparison_op evaluated_argument_b)) {    \
-      _PW_CHECK_BINARY_COMPARISON_SELECT_MACRO(#argument_a,              \
+      _PW_CHECK_BINARY_COMPARISON_SELECT_MACRO(#arg_a,                   \
                                                evaluated_argument_a,     \
                                                #comparison_op,           \
-                                               #argument_b,              \
+                                               #arg_b,                   \
                                                evaluated_argument_b,     \
                                                type_fmt,                 \
                                                PW_HAS_ARGS(__VA_ARGS__), \

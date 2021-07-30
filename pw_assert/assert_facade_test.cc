@@ -194,38 +194,91 @@ TEST_F(AssertPass, UintGe3) { PW_CHECK_UINT_GE(2, 1); }
 // Test comparison boundaries.
 
 // PTR <
-TEST_F(AssertPass, PtrLt1) { PW_CHECK_PTR_LT(0xa, 0xb); }
-TEST_F(AssertFail, PtrLt2) { PW_CHECK_PTR_LT(0xb, 0xb); }
-TEST_F(AssertFail, PtrLt3) { PW_CHECK_PTR_LT(0xb, 0xa); }
+TEST_F(AssertPass, PtrLt1) {
+  PW_CHECK_PTR_LT(reinterpret_cast<void*>(0xa), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertFail, PtrLt2) {
+  PW_CHECK_PTR_LT(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertFail, PtrLt3) {
+  PW_CHECK_PTR_LT(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xa));
+}
 
 // PTR <=
-TEST_F(AssertPass, PtrLe1) { PW_CHECK_PTR_LE(0xa, 0xb); }
-TEST_F(AssertPass, PtrLe2) { PW_CHECK_PTR_LE(0xb, 0xb); }
-TEST_F(AssertFail, PtrLe3) { PW_CHECK_PTR_LE(0xb, 0xa); }
+TEST_F(AssertPass, PtrLe1) {
+  PW_CHECK_PTR_LE(reinterpret_cast<void*>(0xa), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertPass, PtrLe2) {
+  PW_CHECK_PTR_LE(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertFail, PtrLe3) {
+  PW_CHECK_PTR_LE(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xa));
+}
 
 // PTR ==
-TEST_F(AssertFail, PtrEq1) { PW_CHECK_PTR_EQ(0xa, 0xb); }
-TEST_F(AssertPass, PtrEq2) { PW_CHECK_PTR_EQ(0xb, 0xb); }
-TEST_F(AssertFail, PtrEq3) { PW_CHECK_PTR_EQ(0xb, 0xa); }
+TEST_F(AssertFail, PtrEq1) {
+  PW_CHECK_PTR_EQ(reinterpret_cast<void*>(0xa), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertPass, PtrEq2) {
+  PW_CHECK_PTR_EQ(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertFail, PtrEq3) {
+  PW_CHECK_PTR_EQ(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xa));
+}
 
 // PTR !=
-TEST_F(AssertPass, PtrNe1) { PW_CHECK_PTR_NE(0xa, 0xb); }
-TEST_F(AssertFail, PtrNe2) { PW_CHECK_PTR_NE(0xb, 0xb); }
-TEST_F(AssertPass, PtrNe3) { PW_CHECK_PTR_NE(0xb, 0xa); }
+TEST_F(AssertPass, PtrNe1) {
+  PW_CHECK_PTR_NE(reinterpret_cast<void*>(0xa), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertFail, PtrNe2) {
+  PW_CHECK_PTR_NE(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertPass, PtrNe3) {
+  PW_CHECK_PTR_NE(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xa));
+}
 
 // PTR >
-TEST_F(AssertFail, PtrGt1) { PW_CHECK_PTR_GT(0xa, 0xb); }
-TEST_F(AssertFail, PtrGt2) { PW_CHECK_PTR_GT(0xb, 0xb); }
-TEST_F(AssertPass, PtrGt3) { PW_CHECK_PTR_GT(0xb, 0xa); }
+TEST_F(AssertFail, PtrGt1) {
+  PW_CHECK_PTR_GT(reinterpret_cast<void*>(0xa), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertFail, PtrGt2) {
+  PW_CHECK_PTR_GT(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertPass, PtrGt3) {
+  PW_CHECK_PTR_GT(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xa));
+}
 
 // PTR >=
-TEST_F(AssertFail, PtrGe1) { PW_CHECK_PTR_GE(0xa, 0xb); }
-TEST_F(AssertPass, PtrGe2) { PW_CHECK_PTR_GE(0xb, 0xb); }
-TEST_F(AssertPass, PtrGe3) { PW_CHECK_PTR_GE(0xb, 0xa); }
+TEST_F(AssertFail, PtrGe1) {
+  PW_CHECK_PTR_GE(reinterpret_cast<void*>(0xa), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertPass, PtrGe2) {
+  PW_CHECK_PTR_GE(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xb));
+}
+TEST_F(AssertPass, PtrGe3) {
+  PW_CHECK_PTR_GE(reinterpret_cast<void*>(0xb), reinterpret_cast<void*>(0xa));
+}
 
 // NOTNULL
-TEST_F(AssertPass, PtrNotNull) { PW_CHECK_NOTNULL(0xa); }
-TEST_F(AssertFail, PtrNotNull) { PW_CHECK_NOTNULL(0x0); }
+TEST_F(AssertPass, PtrNotNull) {
+  PW_CHECK_NOTNULL(reinterpret_cast<void*>(0xa));
+}
+TEST_F(AssertFail, PtrNotNull) {
+  PW_CHECK_NOTNULL(reinterpret_cast<void*>(0x0));
+}
+
+[[maybe_unused]] void Function1() {}
+[[maybe_unused]] bool Function2(int) { return false; }
+
+// NOTNULL for function poionters
+TEST_F(AssertPass, FunctionPtrNotNull) {
+  PW_CHECK_NOTNULL(&Function1);
+  PW_CHECK_NOTNULL(&Function2);
+}
+TEST_F(AssertFail, FunctionPtrNotNull) {
+  void (*const function)() = nullptr;
+  PW_CHECK_NOTNULL(function);
+}
 
 // Note: Due to platform inconsistencies, the below test for the NOTNULL
 // message doesn't work. Some platforms print NULL formatted as %p as "(nil)",
