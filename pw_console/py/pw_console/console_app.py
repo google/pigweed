@@ -114,6 +114,7 @@ class ConsoleApp:
         help_text=None,
         app_title=None,
         color_depth=None,
+        extra_completers=None,
     ):
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
@@ -176,6 +177,7 @@ class ConsoleApp:
             get_locals=lambda: local_vars,
             color_depth=color_depth,
             history_filename=self.repl_history_filename,
+            extra_completers=extra_completers,
         )
         self.input_history = self.pw_ptpython_repl.history
 

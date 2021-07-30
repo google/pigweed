@@ -18,18 +18,21 @@ import functools
 import io
 import logging
 import sys
+from typing import Iterable, Optional
 
 from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.completion import merge_completers
 from prompt_toolkit.filters import (
     Condition,
     has_focus,
+)
+from ptpython.completer import (  # type: ignore
+    CompletePrivateAttributes, PythonCompleter,
 )
 import ptpython.repl  # type: ignore
 from ptpython.layout import (  # type: ignore
     CompletionVisualisation, Dimension,
 )
-
-from ptpython.completer import CompletePrivateAttributes  # type: ignore
 
 import pw_console.text_formatting
 
@@ -39,14 +42,41 @@ _LOG = logging.getLogger(__package__)
 class PwPtPythonRepl(ptpython.repl.PythonRepl):
     """A ptpython repl class with changes to code execution and output related
     methods."""
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        # pw_console specific kwargs
+        extra_completers: Optional[Iterable] = None,
+        **ptpython_kwargs,
+    ):
+
+        completer = None
+        if extra_completers:
+            # Create the default python completer used by
+            # ptpython.repl.PythonRepl
+            python_completer = PythonCompleter(
+                # No self.get_globals yet so this must be a lambda
+                # pylint: disable=unnecessary-lambda
+                lambda: self.get_globals(),
+                lambda: self.get_locals(),
+                lambda: self.enable_dictionary_completion,  # type: ignore
+            )
+
+            all_completers = [python_completer]
+            all_completers.extend(extra_completers)
+            # Merge default Python completer with the new custom one.
+            completer = merge_completers(all_completers)
+
         super().__init__(
             *args,
             create_app=False,
             # Use python_toolkit default color depth.
             # color_depth=ColorDepth.DEPTH_8_BIT,  # 256 Colors
             _input_buffer_height=Dimension(min=5, weight=30),
-            **kwargs)
+            _completer=completer,
+            **ptpython_kwargs)
+
+        self.enable_dictionary_completion = True
 
         # Change some ptpython.repl defaults.
         self.use_code_colorscheme('tomorrow-night-bright')
@@ -190,21 +220,21 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
 
         # Exit if quit or exit
         if buff.text.strip() in ['quit', 'quit()', 'exit', 'exit()']:
-            self.repl_pane.application.application.exit()
+            self.repl_pane.application.application.exit()  # type: ignore
 
         # Execute the repl code in the the separate user_code thread loop.
         future = asyncio.run_coroutine_threadsafe(
             # This function will be executed in a separate thread.
             self._run_user_code(buff.text),
             # Using this asyncio event loop.
-            self.repl_pane.application.user_code_loop)
+            self.repl_pane.application.user_code_loop)  # type: ignore
         # Run user_code_complete_callback() when done.
         done_callback = functools.partial(self.user_code_complete_callback,
                                           buff.text)
         future.add_done_callback(done_callback)
 
         # Save the input text and future object.
-        self.repl_pane.append_executed_code(buff.text, future)
+        self.repl_pane.append_executed_code(buff.text, future)  # type: ignore
 
         # Rebuild the parent ReplPane output buffer.
         self._update_output_buffer()

@@ -109,6 +109,41 @@ class ClientInfo(NamedTuple):
     rpc_client: pw_rpc.Client
 
 
+def flattened_rpc_completions(
+    client_info_list: Collection[ClientInfo], ) -> Dict[str, str]:
+    """Create a flattened list of rpc commands for repl auto-completion.
+
+    This gathers all rpc commands from a set of ClientInfo variables and
+    produces a flattened list of valid rpc commands to run in an RPC
+    console. This is useful for passing into
+    prompt_toolkit.completion.WordCompleter.
+
+    Args:
+      client_info_list: List of ClientInfo variables
+
+    Returns:
+      Dict of flattened rpc commands as keys, and 'RPC' as values.
+      For example: ::
+
+        {
+            'device.rpcs.pw.rpc.EchoService.Echo': 'RPC,
+            'device.rpcs.pw.rpc.BatteryService.GetBatteryStatus': 'RPC',
+        }
+    """
+    rpc_list = list(
+        chain.from_iterable([
+            '{}.rpcs.{}'.format(c.name, a.full_name)
+            for a in c.rpc_client.methods()
+        ] for c in client_info_list))
+
+    # Dict should contain completion text as keys and descriptions as values.
+    custom_word_completions = {
+        flattened_rpc_name: 'RPC'
+        for flattened_rpc_name in rpc_list
+    }
+    return custom_word_completions
+
+
 class Context:
     """The Context class is used to set up an interactive RPC console.
 
@@ -181,6 +216,10 @@ class Context:
 
         # Call set_target to set up for the default target.
         self.set_target(self.current_client)
+
+    def flattened_rpc_completions(self):
+        """Create a flattened list of rpc commands for repl auto-completion."""
+        return flattened_rpc_completions(self.client_info)
 
     def variables(self) -> Dict[str, Any]:
         """Returns a mapping of names to variables for use in an RPC console."""

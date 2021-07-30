@@ -15,7 +15,9 @@
 
 import asyncio
 import logging
-from typing import Dict, Iterable, Optional, Union
+from typing import Dict, List, Iterable, Optional, Union
+
+from prompt_toolkit.completion import WordCompleter
 
 from pw_console.console_app import ConsoleApp
 
@@ -34,7 +36,8 @@ class PwConsoleEmbed:
         app_title: Optional[str] = None,
     ) -> None:
         """Call this to embed pw console at the call point within your program.
-        It's similar to `ptpython.embed` and `IPython.embed`. ::
+
+        Example usage: ::
 
             import logging
 
@@ -54,6 +57,13 @@ class PwConsoleEmbed:
                     ],
                 },
                 app_title='My Awesome Console',
+            )
+            # Optional: Add custom completions
+            console.add_sentence_completer(
+                {
+                    'some_function', 'Function',
+                    'some_variable', 'Variable',
+                }
             )
             # Then run the console with:
             console.embed()
@@ -82,6 +92,33 @@ class PwConsoleEmbed:
         self.app_title = app_title
 
         self.console_app = None
+        self.extra_completers: List = []
+
+    def add_sentence_completer(self,
+                               word_meta_dict: Dict[str, str],
+                               ignore_case=True):
+        """Include a custom completer that matches on the entire repl input.
+
+        Args:
+            word_meta_dict: Dictionary representing the sentence completions
+                and descriptions. Keys are completion text, values are
+                descriptions.
+        """
+
+        # Don't modify completion if empty.
+        if len(word_meta_dict) == 0:
+            return
+
+        sentences: List[str] = list(word_meta_dict.keys())
+        word_completer = WordCompleter(
+            sentences,
+            meta_dict=word_meta_dict,
+            ignore_case=ignore_case,
+            # Whole input field should match
+            sentence=True,
+        )
+
+        self.extra_completers.append(word_completer)
 
     def _setup_log_panes(self):
         """Add loggers to the console app log pane(s)."""
@@ -103,8 +140,8 @@ class PwConsoleEmbed:
             repl_startup_message=self.repl_startup_message,
             help_text=self.help_text,
             app_title=self.app_title,
+            extra_completers=self.extra_completers,
         )
-
         self._setup_log_panes()
 
         # Start a thread for running user code.

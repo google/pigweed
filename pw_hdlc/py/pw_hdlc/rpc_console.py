@@ -49,6 +49,7 @@ from pw_tokenizer import tokens
 from pw_tokenizer.database import LoadTokenDatabases
 from pw_tokenizer.detokenize import Detokenizer, detokenize_base64
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
+from pw_rpc.console_tools.console import ClientInfo, flattened_rpc_completions
 
 _LOG = logging.getLogger(__name__)
 _DEVICE_LOG = logging.getLogger('rpc_device')
@@ -103,7 +104,7 @@ def _start_ipython_terminal(client: HdlcRpcClient) -> None:
     """Starts an interactive IPython terminal with preset variables."""
     local_variables = dict(
         client=client,
-        channel_client=client.client.channel(1),
+        device=client.client.channel(1),
         rpcs=client.client.channel(1).rpcs,
         protos=client.protos.packages,
         # Include the active pane logger for creating logs in the repl.
@@ -116,10 +117,14 @@ def _start_ipython_terminal(client: HdlcRpcClient) -> None:
         Press F1 for help.
         Example commands:
 
-          rpcs.pw.rpc.EchoService.Echo(msg='hello!')
+          device.rpcs.pw.rpc.EchoService.Echo(msg='hello!')
 
           LOG.warning('Message appears console log window.')
     """)
+
+    client_info = ClientInfo('device',
+                             client.client.channel(1).rpcs, client.client)
+    completions = flattened_rpc_completions([client_info])
 
     interactive_console = PwConsoleEmbed(
         global_vars=local_variables,
@@ -128,6 +133,7 @@ def _start_ipython_terminal(client: HdlcRpcClient) -> None:
         repl_startup_message=welcome_message,
         help_text=__doc__,
     )
+    interactive_console.add_sentence_completer(completions)
     interactive_console.embed()
 
 

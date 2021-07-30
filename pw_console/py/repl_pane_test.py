@@ -77,7 +77,7 @@ class TestReplPane(unittest.TestCase):
         # Check for repl exception
         result = asyncio.run(pw_ptpython_repl._run_user_code('return "blah"'))
         self.assertIn("SyntaxError: 'return' outside function",
-                      pw_ptpython_repl._last_result)
+                      pw_ptpython_repl._last_result)  # type: ignore
 
     def test_user_thread(self) -> None:
         """Test user code thread."""
