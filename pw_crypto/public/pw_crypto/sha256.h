@@ -25,34 +25,99 @@ namespace pw::crypto::sha256 {
 // Size in bytes of a SHA256 digest.
 constexpr uint32_t kDigestSizeBytes = 32;
 
+// State machine of a hashing session.
+enum class Sha256State {
+  // Initialized and accepting input (via Update()).
+  kReady = 1,
+
+  // Finalized by Final(). Any additional requests, Update() or Final(), will
+  // trigger a transition to kError.
+  kFinalized = 2,
+
+  // In an unrecoverable error state.
+  kError = 3,
+};
+
+namespace backend {
+// Primitive operations to be implemented by backends.
+Status DoInit(NativeSha256Context& ctx);
+Status DoUpdate(NativeSha256Context& ctx, ConstByteSpan data);
+Status DoFinal(NativeSha256Context& ctx, ByteSpan out_digest);
+}  // namespace backend
+
 // Sha256 computes the SHA256 digest of potentially long, non-contiguous input
 // messages.
+//
+// Usage:
+//
+// if (!Sha256().Update(message).Update(more_message).Final(out_digest).ok()) {
+//   // Error handling.
+// }
 class Sha256 {
  public:
-  Sha256();
-  // Remove copy/move ctors
-  Sha256(const Sha256& other) = delete;
-  Sha256(Sha256&& other) = delete;
-  Sha256& operator=(const Sha256& other) = delete;
-  Sha256& operator=(Sha256&& other) = delete;
+  Sha256() {
+    if (!backend::DoInit(native_ctx_).ok()) {
+      state_ = Sha256State::kError;
+      return;
+    }
 
-  // Update adds `data` to the running hasher.
-  void Update(ConstByteSpan data);
+    state_ = Sha256State::kReady;
+  }
 
-  // Final outputs the digest in `out_digest` and resets the hasher state.
-  // `out_digest` must be at least `kDigestSizeBytes` long.
-  Status Final(ByteSpan out_digest);
+  // Update feeds `data` to the running hasher. The feeding can involve zero
+  // or more `Update()` calls and the order matters.
+  Sha256& Update(ConstByteSpan data) {
+    if (state_ != Sha256State::kReady) {
+      return *this;
+    }
+
+    if (!backend::DoUpdate(native_ctx_, data).ok()) {
+      state_ = Sha256State::kError;
+      return *this;
+    }
+
+    return *this;
+  }
+
+  // Final wraps up the hashing session and outputs the final digest in the
+  // first `kDigestSizeBytes` of `out_digest`. `out_digest` must be at least
+  // `kDigestSizeBytes` long.
+  //
+  // Final locks down the Sha256 instance from any additional use.
+  //
+  // Any error, including those occurr inside `Init()` or `Update()` will be
+  // reflected in the return value of Final();
+  Status Final(ByteSpan out_digest) {
+    if (out_digest.size() < kDigestSizeBytes) {
+      state_ = Sha256State::kError;
+      return Status::InvalidArgument();
+    }
+
+    if (state_ != Sha256State::kReady) {
+      return Status::FailedPrecondition();
+    }
+
+    auto status = backend::DoFinal(native_ctx_, out_digest);
+    if (!status.ok()) {
+      state_ = Sha256State::kError;
+      return status;
+    }
+
+    state_ = Sha256State::kFinalized;
+    return OkStatus();
+  }
 
  private:
-  backend::Sha256Context ctx_;
+  // Common hasher state. Tracked by the front-end.
+  Sha256State state_;
+  // Backend-specific context.
+  backend::NativeSha256Context native_ctx_;
 };
 
 // Hash calculates the SHA256 digest of `message` and stores the result
 // in `out_digest`. `out_digest` must be at least `kDigestSizeBytes` long.
 inline Status Hash(ConstByteSpan message, ByteSpan out_digest) {
-  Sha256 h;
-  h.Update(message);
-  return h.Final(out_digest);
+  return Sha256().Update(message).Final(out_digest);
 }
 
 }  // namespace pw::crypto::sha256

@@ -18,18 +18,6 @@
 
 namespace pw::crypto::sha256::backend {
 
-enum Sha256State {
-  // Successfully initialized (during contruction).
-  kInitialized,
-  // Finalized as a result of the first Final() call.
-  kFinalized,
-  // Invalid/unrecoverable state.
-  kError,
-};
-
-struct Sha256Context {
-  Sha256State state;
-  mbedtls_sha256_context native_context;
-};
+typedef mbedtls_sha256_context NativeSha256Context;
 
 }  // namespace pw::crypto::sha256::backend

@@ -14,10 +14,21 @@
 
 #pragma once
 
-#include "openssl/sha.h"
-
 namespace pw::crypto::sha256::backend {
 
-typedef SHA256_CTX NativeSha256Context;
+// Not used.
+typedef struct empty {
+} NativeSha256Context;
+
+enum class ErrorKind {
+  kNone = 0,
+  kInit = 1,
+  kUpdate = 2,
+  kFinal = 3,
+};
+
+void InjectError(const ErrorKind err);
+
+inline void ClearError(void) { InjectError(ErrorKind::kNone); }
 
 }  // namespace pw::crypto::sha256::backend

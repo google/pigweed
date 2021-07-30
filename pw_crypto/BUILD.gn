@@ -83,14 +83,42 @@ pw_size_report("size_report") {
 pw_test_group("tests") {
   tests = [
     ":sha256_test",
+    ":sha256_mock_test",
     ":ecdsa_test",
   ]
 }
 
+# Sha256 tests against the selected real backend.
 pw_test("sha256_test") {
   enable_if = pw_crypto_SHA256_BACKEND != ""
   deps = [ ":sha256" ]
   sources = [ "sha256_test.cc" ]
+}
+
+config("mock_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "public_overrides/mock" ]
+}
+
+pw_source_set("sha256_mock") {
+  public_configs = [ ":mock_config" ]
+  public = [
+    "public/pw_crypto/sha256_mock.h",
+    "public_overrides/mock/pw_crypto/sha256_backend.h",
+  ]
+  sources = [ "sha256_mock.cc" ]
+  public_deps = [ ":sha256.facade" ]
+}
+
+# Sha256 frontend tests against a mocked backend.
+pw_test("sha256_mock_test") {
+  # Depend on ":sha256.facade" instead of ":sha256" to bypass normal backend
+  # selection via `pw_crypto_SHA256_BACKEND`.
+  deps = [
+    ":sha256.facade",
+    ":sha256_mock",
+  ]
+  sources = [ "sha256_mock_test.cc" ]
 }
 
 config("mbedtls_config") {
@@ -107,7 +135,7 @@ pw_source_set("sha256_mbedtls") {
   sources = [ "sha256_mbedtls.cc" ]
   public_deps = [
     ":sha256.facade",
-    "//third_party/mbedtls",
+    "$dir_pw_third_party/mbedtls",
   ]
 }
 
@@ -125,7 +153,7 @@ pw_source_set("sha256_boringssl") {
   sources = [ "sha256_boringssl.cc" ]
   public_deps = [
     ":sha256.facade",
-    "//third_party/boringssl",
+    "$dir_pw_third_party/boringssl",
   ]
 }
 
@@ -144,7 +172,7 @@ pw_source_set("ecdsa_mbedtls") {
   deps = [
     "$dir_pw_function",
     "$dir_pw_log",
-    "//third_party/mbedtls",
+    "$dir_pw_third_party/mbedtls",
   ]
   public_deps = [ ":ecdsa.facade" ]
 }
@@ -153,14 +181,14 @@ pw_source_set("ecdsa_boringssl") {
   sources = [ "ecdsa_boringssl.cc" ]
   deps = [
     "$dir_pw_log",
-    "//third_party/boringssl",
+    "$dir_pw_third_party/boringssl",
   ]
   public_deps = [ ":ecdsa.facade" ]
 }
 
 pw_source_set("ecdsa_uecc") {
   sources = [ "ecdsa_uecc.cc" ]
-  deps = [ "//third_party/micro_ecc" ]
+  deps = [ "$dir_pw_third_party/micro_ecc" ]
   public_deps = [ ":ecdsa.facade" ]
 }
 

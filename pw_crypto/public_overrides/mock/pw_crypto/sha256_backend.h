@@ -14,10 +14,4 @@
 
 #pragma once
 
-#include "openssl/sha.h"
-
-namespace pw::crypto::sha256::backend {
-
-typedef SHA256_CTX NativeSha256Context;
-
-}  // namespace pw::crypto::sha256::backend
+#include "pw_crypto/sha256_mock.h"

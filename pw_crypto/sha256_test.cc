@@ -24,7 +24,7 @@ namespace {
 #define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
 #define ASSERT_FAIL(expr) ASSERT_NE(OkStatus(), expr)
 
-#define STR_TO_BYTES(s) std::as_bytes(std::span(s, std::strlen(s)))
+#define AS_BYTES(s) std::as_bytes(std::span(s, sizeof(s) - 1))
 
 // Generated in Python 3 with:
 // `hashlib.sha256('Hello, Pigweed!'.encode('ascii')).hexdigest()`.
@@ -40,7 +40,7 @@ namespace {
 TEST(Hash, ComputesCorrectDigest) {
   std::byte digest[kDigestSizeBytes];
 
-  ASSERT_OK(Hash(STR_TO_BYTES("Hello, Pigweed!"), digest));
+  ASSERT_OK(Hash(AS_BYTES("Hello, Pigweed!"), digest));
   ASSERT_EQ(0,
             std::memcmp(digest, SHA256_HASH_OF_HELLO_PIGWEED, sizeof(digest)));
 }
@@ -65,30 +65,25 @@ TEST(Hash, AcceptsLargerDigestBuffer) {
 
 TEST(Sha256, AllowsSkippedUpdate) {
   std::byte digest[kDigestSizeBytes];
-  auto h = Sha256();
 
-  ASSERT_OK(h.Final(digest));
+  ASSERT_OK(Sha256().Final(digest));
   ASSERT_EQ(0,
             std::memcmp(digest, SHA256_HASH_OF_EMPTY_STRING, sizeof(digest)));
 }
 
 TEST(Sha256, AllowsEmptyUpdate) {
   std::byte digest[kDigestSizeBytes];
-  auto h = Sha256();
-
-  h.Update({});
-  ASSERT_OK(h.Final(digest));
+  ASSERT_OK(Sha256().Update({}).Final(digest));
   ASSERT_EQ(0,
             std::memcmp(digest, SHA256_HASH_OF_EMPTY_STRING, sizeof(digest)));
 }
 
 TEST(Sha256, AllowsMultipleUpdates) {
   std::byte digest[kDigestSizeBytes];
-  auto h = Sha256();
-
-  h.Update(STR_TO_BYTES("Hello, "));
-  h.Update(STR_TO_BYTES("Pigweed!"));
-  ASSERT_OK(h.Final(digest));
+  ASSERT_OK(Sha256()
+                .Update(AS_BYTES("Hello, "))
+                .Update(AS_BYTES("Pigweed!"))
+                .Final(digest));
   ASSERT_EQ(0,
             std::memcmp(digest, SHA256_HASH_OF_HELLO_PIGWEED, sizeof(digest)));
 }
@@ -99,6 +94,14 @@ TEST(Sha256, NoFinalAfterFinal) {
 
   ASSERT_OK(h.Final(digest));
   ASSERT_FAIL(h.Final(digest));
+}
+
+TEST(Sha256, NoUpdateAfterFinal) {
+  std::byte digest[kDigestSizeBytes];
+  auto h = Sha256();
+
+  ASSERT_OK(h.Final(digest));
+  ASSERT_FAIL(h.Update(AS_BYTES("blah")).Final(digest));
 }
 
 }  // namespace

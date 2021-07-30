@@ -67,6 +67,27 @@ pw_cc_test(
     ],
 )
 
+pw_cc_library(
+    name = "sha256_mock",
+    srcs = ["sha256_mock.cc"],
+    hdrs = [
+        "public/pw_crypto/sha256_mock.h",
+        "public_overrides/mock/pw_crypto/sha256_backend.h",
+    ],
+    includes = ["public_overrides"],
+    deps = [":sha256_facade"],
+)
+
+pw_cc_test(
+    name = "sha256_mock_test",
+    srcs = ["sha256_mock_test.cc"],
+    deps = [
+        ":sha256_facade",
+        ":sha256_mock",
+        "//pw_unit_test",
+    ],
+)
+
 pw_cc_facade(
     name = "ecdsa_facade",
     hdrs = [

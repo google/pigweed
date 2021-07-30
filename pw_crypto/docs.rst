@@ -20,7 +20,9 @@ SHA256
   #include "pw_crypto/sha256.h"
 
   std::byte digest[32];
-  Status status = pw::crypto::sha256::Hash(message, digest);
+  if (!pw::crypto::sha256::Hash(message, digest).ok()) {
+    // Handle errors.
+  }
 
 2. Hashing a long, potentially non-contiguous message.
 
@@ -29,13 +31,12 @@ SHA256
   #include "pw_crypto/sha256.h"
 
   std::byte digest[32];
-  auto h = pw::crypto::sha256::Sha256();
 
-  while (/* chunk ← Get next chunk of message */) {
-    h.Update(chunk);
+  if (!pw::crypto::sha256::Sha256()
+      .Update(chunk1).Update(chunk2).Update(chunk...)
+      .Final().ok()) {
+    // Handle errors.
   }
-
-  Status status = h.Final(digest);
 
 ECDSA
 -----
@@ -47,14 +48,14 @@ ECDSA
   #include "pw_crypto/sha256.h"
 
   std::byte digest[32];
-  auto status = pw::crypto::sha256::Hash(message, digest);
-
-  if (!status.ok()) {
+  if (!pw::crypto::sha256::Hash(message, digest).ok()) {
     // handle errors.
   }
 
-  bool valid = pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
-      signature).ok();
+  if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
+                                              signature).ok()) {
+    // handle errors.
+  }
 
 2. Verifying a digital signature signed with ECDSA over the NIST P256 curve,
    with a long and/or non-contiguous message.
@@ -64,15 +65,17 @@ ECDSA
   #include "pw_crypto/sha256.h"
 
   std::byte digest[32];
-  auto h = pw::crypto::sha256::Sha256();
 
-  while (/* chunk ← Get the next chunk of message */) {
-    h.Update(chunk);
+  if (!pw::crypto::sha256::Sha256()
+      .Update(chunk1).Update(chunk2).Update(chunkN)
+      .Final(digest).ok()) {
+      // Handle errors.
   }
 
-  auto status = h.Final(digest);
-  bool valid = status.ok() && pw::crypto::ecdsa::VerifyP256Signature(public_key,
-      digest, signature).ok();
+  if (!pw::crypto::ecdsa::VerifyP256Signature(public_key, digest,
+                                              signature).ok()) {
+      // Handle errors.
+  }
 
 Configuration
 -------------

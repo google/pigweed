@@ -17,35 +17,25 @@
 
 namespace pw::crypto::sha256::backend {
 
-Status DoInit(NativeSha256Context& ctx) {
-  // mbedtsl_sha256_init() never fails (returns void).
-  mbedtls_sha256_init(&ctx);
+namespace {
+ErrorKind g_injected_error = ErrorKind::kNone;
+}  // namespace
 
-  if (mbedtls_sha256_starts_ret(&ctx, /* is224 = */ 0)) {
-    return Status::Internal();
-  }
+void InjectError(const ErrorKind err) { g_injected_error = err; }
 
-  return OkStatus();
+Status DoInit(NativeSha256Context&) {
+  return (g_injected_error == ErrorKind::kInit) ? Status::Internal()
+                                                : OkStatus();
 }
 
-Status DoUpdate(NativeSha256Context& ctx, ConstByteSpan data) {
-  if (mbedtls_sha256_update_ret(
-          &ctx,
-          reinterpret_cast<const unsigned char*>(data.data()),
-          data.size())) {
-    return Status::Internal();
-  }
-
-  return OkStatus();
+Status DoUpdate(NativeSha256Context&, ConstByteSpan) {
+  return (g_injected_error == ErrorKind::kUpdate) ? Status::Internal()
+                                                  : OkStatus();
 }
 
-Status DoFinal(NativeSha256Context& ctx, ByteSpan out_digest) {
-  if (mbedtls_sha256_finish_ret(
-          &ctx, reinterpret_cast<unsigned char*>(out_digest.data()))) {
-    return Status::Internal();
-  }
-
-  return OkStatus();
+Status DoFinal(NativeSha256Context&, ByteSpan) {
+  return (g_injected_error == ErrorKind::kFinal) ? Status::Internal()
+                                                 : OkStatus();
 }
 
 }  // namespace pw::crypto::sha256::backend

@@ -58,7 +58,7 @@ Status VerifyP256Signature(ConstByteSpan public_key,
                    digest.size(),
                    signature_bytes,
                    curve)) {
-    return Status::InvalidSignature();
+    return Status::Unauthenticated();
   }
 
   return OkStatus();

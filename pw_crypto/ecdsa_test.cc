@@ -21,7 +21,7 @@
 namespace pw::crypto::ecdsa {
 namespace {
 
-#define STR_TO_BYTES(s) std::as_bytes(std::span(s, sizeof(s) - 1))
+#define AS_BYTES(s) std::as_bytes(std::span(s, sizeof(s) - 1))
 
 #define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
 #define ASSERT_FAIL(expr) ASSERT_NE(OkStatus(), expr)
@@ -95,69 +95,68 @@ namespace {
   "\xCD\x23\x00\x3F\xF9\xD9\x75\x46\xFF\x58\xE9\xBE\xC3\x74\x13\xB9"
 
 TEST(EcdsaP256, ValidSignature) {
-  ASSERT_OK(VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
-                                STR_TO_BYTES(TEST_DIGEST),
-                                STR_TO_BYTES(TEST_SIGNATURE)));
+  ASSERT_OK(VerifyP256Signature(
+      AS_BYTES(TEST_PUBKEY), AS_BYTES(TEST_DIGEST), AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, LongerDigestGetsTruncated) {
-  ASSERT_OK(VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
-                                STR_TO_BYTES(TEST_DIGEST "extra stuff"),
-                                STR_TO_BYTES(TEST_SIGNATURE)));
+  ASSERT_OK(VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
+                                AS_BYTES(TEST_DIGEST "extra stuff"),
+                                AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, MalformedPublicKeyMissingHeader) {
   ASSERT_EQ(Status::InvalidArgument(),
-            VerifyP256Signature(STR_TO_BYTES(MALFORMED_PUBKEY_MISSING_HEADER),
-                                STR_TO_BYTES(TEST_DIGEST),
-                                STR_TO_BYTES(TEST_SIGNATURE)));
+            VerifyP256Signature(AS_BYTES(MALFORMED_PUBKEY_MISSING_HEADER),
+                                AS_BYTES(TEST_DIGEST),
+                                AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, MalformedPublicKeyWrongHeader) {
-  ASSERT_FAIL(VerifyP256Signature(STR_TO_BYTES(MALFORMED_PUBKEY_WRONG_HEADER),
-                                  STR_TO_BYTES(TEST_DIGEST),
-                                  STR_TO_BYTES(TEST_SIGNATURE)));
+  ASSERT_FAIL(VerifyP256Signature(AS_BYTES(MALFORMED_PUBKEY_WRONG_HEADER),
+                                  AS_BYTES(TEST_DIGEST),
+                                  AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, TamperedSignature) {
   ASSERT_EQ(Status::Unauthenticated(),
-            VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
-                                STR_TO_BYTES(TEST_DIGEST),
-                                STR_TO_BYTES(TAMPERED_SIGNATURE)));
+            VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
+                                AS_BYTES(TEST_DIGEST),
+                                AS_BYTES(TAMPERED_SIGNATURE)));
 }
 
 TEST(EcdsaP256, SignatureTooLong) {
   ASSERT_EQ(Status::InvalidArgument(),
-            VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
-                                STR_TO_BYTES(TEST_DIGEST),
-                                STR_TO_BYTES(TEST_SIGNATURE "extra stuff")));
+            VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
+                                AS_BYTES(TEST_DIGEST),
+                                AS_BYTES(TEST_SIGNATURE "extra stuff")));
 }
 
 TEST(EcdsaP256, SignatureTooShort) {
   ASSERT_EQ(Status::InvalidArgument(),
-            VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
-                                STR_TO_BYTES(TEST_DIGEST),
-                                STR_TO_BYTES(SHORT_SIGNATURE)));
+            VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
+                                AS_BYTES(TEST_DIGEST),
+                                AS_BYTES(SHORT_SIGNATURE)));
 }
 
 TEST(EcdsaP256, DigestTooShort) {
   ASSERT_EQ(Status::InvalidArgument(),
-            VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
-                                STR_TO_BYTES(SHORT_DIGEST),
-                                STR_TO_BYTES(TEST_SIGNATURE)));
+            VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
+                                AS_BYTES(SHORT_DIGEST),
+                                AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, TamperedDigest) {
   ASSERT_EQ(Status::Unauthenticated(),
-            VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
-                                STR_TO_BYTES(TAMPERED_DIGEST),
-                                STR_TO_BYTES(TEST_SIGNATURE)));
+            VerifyP256Signature(AS_BYTES(TEST_PUBKEY),
+                                AS_BYTES(TAMPERED_DIGEST),
+                                AS_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, TamperedPubkey) {
-  ASSERT_FAIL(VerifyP256Signature(STR_TO_BYTES(TAMPERED_PUBKEY),
-                                  STR_TO_BYTES(TEST_DIGEST),
-                                  STR_TO_BYTES(TEST_SIGNATURE)));
+  ASSERT_FAIL(VerifyP256Signature(AS_BYTES(TAMPERED_PUBKEY),
+                                  AS_BYTES(TEST_DIGEST),
+                                  AS_BYTES(TEST_SIGNATURE)));
 }
 
 }  // namespace
