@@ -40,6 +40,22 @@ TEST(Result, ValueOr) {
   EXPECT_EQ(bad.value_or(42), 42);
 }
 
+TEST(Result, Deref) {
+  struct Tester {
+    constexpr bool True() { return true; };
+    constexpr bool False() { return false; };
+  };
+
+  auto tester = Result(Tester());
+  EXPECT_TRUE(tester.ok());
+  EXPECT_TRUE(tester->True());
+  EXPECT_FALSE(tester->False());
+  EXPECT_TRUE((*tester).True());
+  EXPECT_FALSE((*tester).False());
+  EXPECT_EQ(tester.value().True(), tester->True());
+  EXPECT_EQ(tester.value().False(), tester->False());
+}
+
 TEST(Result, ConstructType) {
   struct Point {
     Point(int a, int b) : x(a), y(b) {}

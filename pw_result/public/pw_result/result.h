@@ -69,6 +69,36 @@ class [[nodiscard]] Result {
     return std::move(value_);
   }
 
+  constexpr T& operator*() const& {
+    PW_ASSERT(status_.ok());
+    return value_;
+  }
+
+  T& operator*() & {
+    PW_ASSERT(status_.ok());
+    return value_;
+  }
+
+  constexpr T&& operator*() const&& {
+    PW_ASSERT(status_.ok());
+    return std::move(value_);
+  }
+
+  T&& operator*() && {
+    PW_ASSERT(status_.ok());
+    return std::move(value_);
+  }
+
+  constexpr T* operator->() const {
+    PW_ASSERT(status_.ok());
+    return &value_;
+  }
+
+  T* operator->() {
+    PW_ASSERT(status_.ok());
+    return &value_;
+  }
+
   template <typename U>
   constexpr T value_or(U&& default_value) const& {
     if (ok()) {

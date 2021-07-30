@@ -44,6 +44,27 @@ types or references to larger results.
     return pw::OkStatus();
   }
 
+``pw::Result`` can be used to directly access the contained type:
+
+.. code-block:: cpp
+
+  #include "pw_result/result.h"
+
+  pw::Result<Foo> foo = TryCreateFoo();
+  if (foo.ok()) {
+    foo->DoBar();
+  }
+
+or in C++17:
+
+.. code-block:: cpp
+
+  if (pw::Result<Foo> foo = TryCreateFoo(); foo.ok()) {
+    foo->DoBar();
+  }
+
+See `Abseil's StatusOr <https://abseil.io/tips/181>`_ for guidance on using a
+similar type.
 
 .. warning::
 
