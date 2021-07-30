@@ -58,6 +58,7 @@ group("module_docs") {
     "$dir_docker:docs",
     "$dir_pw_allocator:docs",
     "$dir_pw_analog:docs",
+    "$dir_pw_android_toolchain:docs",
     "$dir_pw_arduino_build:docs",
     "$dir_pw_assert:docs",
     "$dir_pw_assert_basic:docs",
