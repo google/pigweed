@@ -343,6 +343,11 @@ stm32f429i-disc1 target.
   # on-device unit tests.
   pw_use_test_server = true
 
+**Note:** There are several additional dependencies required to test on device:
+libusb-compat, libftdi, and hidapi at the time of writing. On MacOS, these
+dependencies should be installed to the default homebrew location:
+``/usr/local/opt/``.
+
 Done!
 -----
 Whenever you make code changes and trigger a build, all the affected unit tests
