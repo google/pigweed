@@ -45,6 +45,7 @@ pw_doc_group("core_docs") {
 # Documentation for upstream Pigweed targets.
 group("target_docs") {
   deps = [
+    "$dir_pigweed/targets/android:target_docs",
     "$dir_pigweed/targets/arduino:target_docs",
     "$dir_pigweed/targets/docs:target_docs",
     "$dir_pigweed/targets/host:target_docs",
