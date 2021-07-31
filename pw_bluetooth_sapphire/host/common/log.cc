@@ -97,7 +97,7 @@ void LogMessage(const char* file, int line, LogSeverity severity, const char* ta
     std::string msg = fxl::StringPrintf("[%s]%s%s %s", tag, FormattedLogContexts().c_str(),
                                         FormattedLogScopes().c_str(), fmt);
 
-    zxlogvf_etc(LogSeverityToDdkLog(severity), file, line, msg.c_str(), args);
+    zxlogvf_etc(LogSeverityToDdkLog(severity), nullptr, file, line, msg.c_str(), args);
   }
   va_end(args);
 }
