@@ -16,7 +16,7 @@
 import inspect
 import logging
 import textwrap
-from typing import Callable, Iterable, Optional, Type
+from typing import Any, Callable, Dict, Iterable, Optional, Type
 
 from pw_status import Status
 from google.protobuf.message import Message
@@ -65,6 +65,16 @@ class _MethodClient:
     @property
     def service(self) -> Service:
         return self._rpc.service
+
+    @property
+    def request(self) -> type:
+        """Returns the request proto class."""
+        return self.method.request_type
+
+    @property
+    def response(self) -> type:
+        """Returns the response proto class."""
+        return self.method.response_type
 
     def __repr__(self) -> str:
         return self.help()
@@ -161,10 +171,12 @@ class _UnaryMethodClient(_MethodClient):
                on_completed: OnCompletedCallback = None,
                on_error: OnErrorCallback = None,
                *,
+               request_args: Dict[str, Any] = None,
                timeout_s: OptionalTimeout = UseDefault.VALUE) -> UnaryCall:
         """Invokes the unary RPC and returns a call object."""
-        return self._start_call(UnaryCall, request, timeout_s, on_next,
-                                on_completed, on_error)
+        return self._start_call(UnaryCall,
+                                self.method.get_request(request, request_args),
+                                timeout_s, on_next, on_completed, on_error)
 
 
 class _ServerStreamingMethodClient(_MethodClient):
@@ -175,11 +187,13 @@ class _ServerStreamingMethodClient(_MethodClient):
             on_completed: OnCompletedCallback = None,
             on_error: OnErrorCallback = None,
             *,
+            request_args: Dict[str, Any] = None,
             timeout_s: OptionalTimeout = UseDefault.VALUE
     ) -> ServerStreamingCall:
         """Invokes the server streaming RPC and returns a call object."""
-        return self._start_call(ServerStreamingCall, request, timeout_s,
-                                on_next, on_completed, on_error)
+        return self._start_call(ServerStreamingCall,
+                                self.method.get_request(request, request_args),
+                                timeout_s, on_next, on_completed, on_error)
 
 
 class _ClientStreamingMethodClient(_MethodClient):

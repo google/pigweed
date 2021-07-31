@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -61,6 +61,10 @@ class MethodTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, r'either'):
             self._method.get_request(self._method.request_type(),
                                      {'magic_number': 1})
+
+    def test_get_request_neither_message_nor_kwargs(self):
+        self.assertEqual(self._method.request_type(),
+                         self._method.get_request(None, None))
 
     def test_get_request_with_wrong_type(self):
         with self.assertRaisesRegex(TypeError, r'pw\.test1\.SomeMessage'):

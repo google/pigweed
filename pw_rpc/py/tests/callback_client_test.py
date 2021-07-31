@@ -237,6 +237,14 @@ class CallbackClientImplTest(_CallbackClientImplTestBase):
             rpcs.pw.test1.PublicService.SomeBidiStreaming.default_timeout_s,
             100)
 
+    def test_rpc_provides_request_type(self) -> None:
+        self.assertIs(self._service.SomeUnary.request,
+                      self._service.SomeUnary.method.request_type)
+
+    def test_rpc_provides_response_type(self) -> None:
+        self.assertIs(self._service.SomeUnary.request,
+                      self._service.SomeUnary.method.request_type)
+
 
 class UnaryTest(_CallbackClientImplTestBase):
     """Tests for invoking a unary RPC."""
@@ -305,6 +313,11 @@ class UnaryTest(_CallbackClientImplTestBase):
             self.assertFalse(self.requests)
 
         callback.assert_not_called()
+
+    def test_nonblocking_with_request_args(self) -> None:
+        self.rpc.invoke(request_args=dict(magic_number=1138))
+        self.assertEqual(
+            self._sent_payload(self.rpc.request).magic_number, 1138)
 
     def test_blocking_timeout_as_argument(self) -> None:
         with self.assertRaises(callback_client.RpcTimeout):
@@ -418,6 +431,11 @@ class ServerStreamingTest(_CallbackClientImplTestBase):
             mock.call(call, self.method.response_type(payload='!!!')),
             mock.call(call, Status.OK),
         ])
+
+    def test_nonblocking_with_request_args(self) -> None:
+        self.rpc.invoke(request_args=dict(magic_number=1138))
+        self.assertEqual(
+            self._sent_payload(self.rpc.request).magic_number, 1138)
 
     def test_blocking_timeout(self) -> None:
         with self.assertRaises(callback_client.RpcTimeout):

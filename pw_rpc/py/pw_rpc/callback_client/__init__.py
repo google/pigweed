@@ -44,7 +44,7 @@ a timeout passed in through the pw_rpc_timeout_s argument. A timeout of None
 means to wait indefinitely for a response.
 
 Asynchronous invocations immediately return a call object. Callbacks may be
-provided for the three types of RPC events:
+provided for the three RPC events:
 
   * on_next(call_object, response) - called for each response
   * on_completed(call_object, status) - called when the RPC completes
@@ -52,15 +52,21 @@ provided for the three types of RPC events:
 
 If no callbacks are provided, the events are simply logged.
 
+Unary and client streaming RPCs are invoked asynchronously by calling invoke on
+the method object. invoke takes the callbacks. The request may be provided
+either as a constructed protobuf or as a dict of proto fields in the
+request_args parameter.
+
 .. code-block:: python
 
-  # Custom callbacks are called for each event.
-  call = client.channel(1).call.MyService.MyServerStreaming.invoke(
-      the_request, on_next_cb, on_completed_cb, on_error_cb):
+  # Pass the request as a protobuf and provide callbacks for all RPC events.
+  rpc = client.channel(1).call.MyService.MyServerStreaming
+  call = rpc.invoke(rpc.request(a=1), on_next_cb, on_completed_cb, on_error_cb)
 
-  # A callback is called for the response. Other events are logged.
+  # Create the request from the provided keyword args. Provide a callback for
+  # responses, but simply log the other RPC events.
   call = client.channel(1).call.MyServer.MyUnary.invoke(
-      the_request, lambda _, reply: process_this(reply))
+      request_args=dict(a=1, b=2), on_next=lambda _, reply: process_this(reply))
 
 For client and bidirectional streaming RPCs, requests are sent with the send
 method. The finish_and_wait method finishes the client stream. It optionally
@@ -69,7 +75,7 @@ takes an iterable for responses to send before closing the stream.
 .. code-block:: python
 
   # Start the call using callbacks.
-  call = client.channel(1).call.MyServer.MyClientStream.invoke(on_error=err_cb)
+  call = client.channel(1).rpcs.MyServer.MyClientStream.invoke(on_error=err_cb)
 
   # Send a single client stream request.
   call.send(some_field=123)
