@@ -81,3 +81,13 @@ pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   inputs = [ "transfer.proto" ]
 }
+
+pw_executable("test_rpc_server") {
+  sources = [ "test_rpc_server.cc" ]
+  deps = [
+    ":pw_transfer",
+    "$dir_pw_rpc/system_server",
+    "$dir_pw_rpc/system_server:socket",
+    dir_pw_log,
+  ]
+}

@@ -134,7 +134,10 @@ group("integration_tests") {
   deps = []
 
   if (host_os != "windows") {
-    deps += [ "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_toolchain)" ]
+    deps += [
+      "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_toolchain)",
+      "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_toolchain)",
+    ]
   } else {
     not_needed([ "_default_toolchain" ])
   }

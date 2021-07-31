@@ -62,6 +62,7 @@ pw_python_group("python") {
     "$dir_pw_hdlc/rpc_example:example_script",
     "$dir_pw_rpc/py:python_client_cpp_server_test",
     "$dir_pw_third_party/nanopb:generate_nanopb_proto",
+    "$dir_pw_transfer/py:python_cpp_transfer_test",
 
     # Python requirements for CIPD packages that don't have dedicated modules.
     ":renode_requirements",

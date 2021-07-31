@@ -23,7 +23,7 @@ pw_python_package("py") {
     version = "0.0.1"
   }
   sources = [ "pw_transfer/transfer.py" ]
-  tests = [ "transfer_test.py" ]
+  tests = [ "tests/transfer_test.py" ]
   python_deps = [
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
@@ -31,4 +31,15 @@ pw_python_package("py") {
   python_test_deps = [ "$dir_pw_build/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
   proto_library = "..:proto"
+}
+
+pw_python_script("python_cpp_transfer_test") {
+  sources = [ "tests/python_cpp_transfer_test.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+
+  action = {
+    args = [ "<TARGET_FILE(..:test_rpc_server)>" ]
+    deps = [ "..:test_rpc_server" ]
+    stamp = true
+  }
 }
