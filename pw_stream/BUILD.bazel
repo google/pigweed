@@ -47,7 +47,8 @@ pw_cc_library(
     srcs = ["socket_stream.cc"],
     hdrs = ["public/pw_stream/socket_stream.h"],
     deps = [
-        "//pw_stream",
+        ":pw_stream",
+        "//pw_log",
         "//pw_sys_io",
     ],
 )

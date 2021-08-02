@@ -34,6 +34,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_rpc:synchronized_channel_output",
       "$dir_pw_rpc/system_server:facade",
       "$dir_pw_stream:socket_stream",
+      dir_pw_assert,
       dir_pw_log,
     ]
     sources = [ "system_rpc_server.cc" ]

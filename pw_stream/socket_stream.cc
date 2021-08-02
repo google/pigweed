@@ -17,6 +17,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include "pw_log/log.h"
+
 namespace pw::stream {
 namespace {
 
@@ -25,17 +27,16 @@ constexpr const char* kLocalhostAddress = "127.0.0.1";
 
 }  // namespace
 
-SocketStream::~SocketStream() { Close(); }
-
 // Listen to the port and return after a client is connected
 Status SocketStream::Serve(uint16_t port) {
   listen_port_ = port;
   socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd_ == kInvalidFd) {
-    return Status::Internal();
+    PW_LOG_ERROR("Failed to create socket: %s", std::strerror(errno));
+    return Status::Unknown();
   }
 
-  struct sockaddr_in addr;
+  struct sockaddr_in addr = {};
   addr.sin_family = AF_INET;
   addr.sin_port = htons(listen_port_);
   addr.sin_addr.s_addr = INADDR_ANY;
@@ -47,17 +48,24 @@ Status SocketStream::Serve(uint16_t port) {
   // Without this option, running a program multiple times in series may fail
   // unexpectedly.
   constexpr int value = 1;
-  setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
 
-  int result =
-      bind(socket_fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
-  if (result < 0) {
-    return Status::Internal();
+  if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int)) <
+      0) {
+    PW_LOG_WARN("Failed to set SO_REUSEADDR: %s", std::strerror(errno));
   }
 
-  result = listen(socket_fd_, kMaxConcurrentUser);
-  if (result < 0) {
-    return Status::Internal();
+  if (bind(socket_fd_,
+           reinterpret_cast<struct sockaddr*>(&addr),
+           sizeof(addr)) < 0) {
+    PW_LOG_ERROR("Failed to bind socket to localhost:%hu: %s",
+                 listen_port_,
+                 std::strerror(errno));
+    return Status::Unknown();
+  }
+
+  if (listen(socket_fd_, kMaxConcurrentUser) < 0) {
+    PW_LOG_ERROR("Failed to listen to socket: %s", std::strerror(errno));
+    return Status::Unknown();
   }
 
   socklen_t len = sizeof(sockaddr_client_);
@@ -65,7 +73,7 @@ Status SocketStream::Serve(uint16_t port) {
   conn_fd_ =
       accept(socket_fd_, reinterpret_cast<sockaddr*>(&sockaddr_client_), &len);
   if (conn_fd_ < 0) {
-    return Status::Internal();
+    return Status::Unknown();
   }
   return OkStatus();
 }
@@ -109,8 +117,8 @@ void SocketStream::Close() {
 Status SocketStream::DoWrite(std::span<const std::byte> data) {
   ssize_t bytes_sent = send(conn_fd_, data.data(), data.size_bytes(), 0);
 
-  if (bytes_sent < 0 || static_cast<uint64_t>(bytes_sent) != data.size()) {
-    return Status::Internal();
+  if (bytes_sent < 0 || static_cast<size_t>(bytes_sent) != data.size()) {
+    return Status::Unknown();
   }
   return OkStatus();
 }
@@ -118,7 +126,7 @@ Status SocketStream::DoWrite(std::span<const std::byte> data) {
 StatusWithSize SocketStream::DoRead(ByteSpan dest) {
   ssize_t bytes_rcvd = recv(conn_fd_, dest.data(), dest.size_bytes(), 0);
   if (bytes_rcvd < 0) {
-    return StatusWithSize::Internal();
+    return StatusWithSize::Unknown();
   }
   return StatusWithSize(bytes_rcvd);
 }
