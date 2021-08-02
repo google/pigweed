@@ -24,7 +24,7 @@ from typing import List
 import pw_cli.log
 import pw_cli.argument_types
 
-import pw_console.console_app
+import pw_console
 
 _LOG = logging.getLogger(__package__)
 
@@ -120,13 +120,14 @@ def main() -> int:
               LOG.warning('Message appears console log window.')
         """)
 
-    pw_console.console_app.embed(
+    console = pw_console.PwConsoleEmbed(
         global_vars=global_vars,
         loggers=default_loggers,
         test_mode=args.test_mode,
         help_text=help_text,
         app_title=app_title,
     )
+    console.embed()
 
     if args.logfile:
         print(f'Logs saved to: {args.logfile}')

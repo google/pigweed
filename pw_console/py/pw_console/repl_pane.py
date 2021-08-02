@@ -346,8 +346,9 @@ class ReplPane:
         return None
 
     def _log_executed_code(self, code, prefix=''):
+        """Log repl command input text along with a prefix string."""
         text = self.get_output_buffer_text([code], show_index=False)
-        _LOG.info('[PYTHON] %s\n%s', prefix, text)
+        _LOG.debug('[PYTHON] %s\n%s', prefix, text)
 
     def append_executed_code(self, text, future):
         user_code = UserCodeExecution(input=text,

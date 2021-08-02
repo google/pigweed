@@ -6,11 +6,11 @@ Embedding Guide
 Using embed()
 -------------
 
-``pw console`` is invoked by calling the ``embed()`` function in your own
-Python script.
+``pw console`` is invoked by calling ``PwConsoleEmbed().embed()`` in your
+own Python script.
 
-.. automodule:: pw_console.console_app
-    :members: embed
+.. automodule:: pw_console.embed
+    :members: PwConsoleEmbed
     :undoc-members:
     :show-inheritance:
 

@@ -21,7 +21,7 @@ import logging
 import functools
 from pathlib import Path
 from threading import Thread
-from typing import Dict, Iterable, Optional, Union
+from typing import Iterable, Union
 
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.application import Application
@@ -103,7 +103,7 @@ _WINDOW_SIZE_ADJUST = 2
 
 
 class ConsoleApp:
-    """The main ConsoleApp class containing the whole console."""
+    """The main ConsoleApp class that glues everything together."""
 
     # pylint: disable=too-many-instance-attributes
     def __init__(
@@ -794,83 +794,13 @@ class ConsoleApp:
             message_count += 1
 
 
+# TODO(tonymd): Remove this alias when not used by downstream projects.
 def embed(
-        global_vars=None,
-        local_vars=None,
-        loggers: Optional[Union[Dict[str, Iterable[logging.Logger]],
-                                Iterable]] = None,
-        test_mode=False,
-        repl_startup_message: Optional[str] = None,
-        help_text: Optional[str] = None,
-        app_title: Optional[str] = None,
-        # TODO(tonymd): Remove this unused arg when it will not break users.
-        separate_log_panes=False,  # pylint: disable=unused-argument
+    *args,
+    **kwargs,
 ) -> None:
-    """Call this to embed pw console at the call point within your program.
-    It's similar to `ptpython.embed` and `IPython.embed`. ::
-
-        import logging
-
-        from pw_console.console_app import embed
-
-        embed(global_vars=globals(),
-              local_vars=locals(),
-              loggers={
-                  'Host Logs': [
-                      logging.getLogger(__package__),
-                      logging.getLogger(__file__)
-                  ],
-                  'Device Logs': [
-                      logging.getLogger('usb_gadget')
-                  ],
-              },
-              app_title='My Awesome Console',
-        )
-
-    :param global_vars: Dictionary representing the desired global symbol
-        table. Similar to what is returned by `globals()`.
-    :type global_vars: dict, optional
-    :param local_vars: Dictionary representing the desired local symbol
-        table. Similar to what is returned by `locals()`.
-    :type local_vars: dict, optional
-    :param loggers: Dict with keys of log window titles and values of
-        `logging.getLogger()` instances in lists. Each key that should be shown
-        in the pw console user interface.
-    :type loggers: Dict[str, Iterable[logging.Logger]], optional
-    :param app_title: Custom title text displayed in the user interface.
-    :type app_title: str, optional
-    :param repl_startup_message: Custom text shown by default in the repl output
-        pane.
-    :type repl_startup_message: str, optional
-    :param help_text: Custom text shown at the top of the help window before
-        keyboard shortcuts.
-    :type help_text: str, optional
-    """
-    console_app = ConsoleApp(
-        global_vars=global_vars,
-        local_vars=local_vars,
-        repl_startup_message=repl_startup_message,
-        help_text=help_text,
-        app_title=app_title,
-    )
-
-    # Add loggers to the console app log pane.
-    if loggers:
-        # TODO(tonymd): Remove this backward compatible isinstance check when it
-        # won't break user builds.
-        if isinstance(loggers, list):
-            if separate_log_panes:
-                for i, logger_instance in enumerate(loggers):
-                    console_app.add_log_handler('Logs {}'.format(i + 1),
-                                                [logger_instance])
-            else:
-                console_app.add_log_handler('Logs', loggers)
-        elif isinstance(loggers, dict):
-            for window_title, logger_instances in loggers.items():
-                console_app.add_log_handler(window_title, logger_instances)
-
-    # Start a thread for running user code.
-    console_app.start_user_code_thread()
-
-    # Start the prompt_toolkit UI app.
-    asyncio.run(console_app.run(test_mode=test_mode), debug=test_mode)
+    """PwConsoleEmbed().embed() alias."""
+    # Import here to avoid circular dependency
+    from pw_console.embed import PwConsoleEmbed  # pylint: disable=import-outside-toplevel
+    console = PwConsoleEmbed(*args, **kwargs)
+    console.embed()

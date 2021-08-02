@@ -12,3 +12,5 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """Pigweed interactive console."""
+
+from pw_console.embed import PwConsoleEmbed

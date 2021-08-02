@@ -43,7 +43,7 @@ import socket
 import serial  # type: ignore
 
 import pw_cli.log
-from pw_console.console_app import embed
+from pw_console import PwConsoleEmbed
 from pw_console.__main__ import create_temp_log_file
 from pw_tokenizer import tokens
 from pw_tokenizer.database import LoadTokenDatabases
@@ -121,11 +121,14 @@ def _start_ipython_terminal(client: HdlcRpcClient) -> None:
           LOG.warning('Message appears console log window.')
     """)
 
-    embed(global_vars=local_variables,
-          local_vars=None,
-          loggers=[_DEVICE_LOG],
-          repl_startup_message=welcome_message,
-          help_text=__doc__)
+    interactive_console = PwConsoleEmbed(
+        global_vars=local_variables,
+        local_vars=None,
+        loggers=[_DEVICE_LOG],
+        repl_startup_message=welcome_message,
+        help_text=__doc__,
+    )
+    interactive_console.embed()
 
 
 class SocketClientImpl:
