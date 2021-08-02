@@ -35,8 +35,7 @@ class UnitTestService final : public generated::UnitTest<UnitTestService> {
   template <typename WriteFunction>
   void WriteEvent(WriteFunction event_writer) {
     Event::MemoryEncoder event(writer_.PayloadBuffer());
-    event_writer(static_cast<Event::StreamEncoder&>(
-        *static_cast<pw::protobuf::StreamEncoder*>(&event)));
+    event_writer(event);
     if (event.status().ok()) {
       writer_.Write(event);
     }

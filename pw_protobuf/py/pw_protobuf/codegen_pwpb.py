@@ -563,6 +563,15 @@ def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
         output.write_line(f'constexpr {encoder_name}({base_class}&& parent) '
                           f': {base_class}(std::move(parent)) {{}}')
 
+        # Allow MemoryEncoder& to be converted to StreamEncoder&.
+        if encoder_type == EncoderType.MEMORY:
+            stream_type = (f'{message.cpp_namespace()}::'
+                           f'{EncoderType.STREAMING.codegen_class_name()}')
+            output.write_line(
+                f'operator {stream_type}&() '
+                f' {{ return static_cast<{stream_type}&>('
+                f'*static_cast<pw::protobuf::StreamEncoder*>(this));}}')
+
         # Generate methods for each of the message's fields.
         for field in message.fields():
             for method_class in PROTO_FIELD_METHODS[field.type()]:
