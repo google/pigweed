@@ -24,7 +24,7 @@ namespace {
 
 Vector<std::byte, 64> EncodeRequest(int integer, Status status) {
   Vector<std::byte, 64> buffer(64);
-  test::TestRequest::RamEncoder test_request(buffer);
+  test::TestRequest::MemoryEncoder test_request(buffer);
 
   test_request.WriteInteger(integer);
   test_request.WriteStatusCode(status.code());
@@ -36,7 +36,7 @@ Vector<std::byte, 64> EncodeRequest(int integer, Status status) {
 
 Vector<std::byte, 64> EncodeResponse(int number) {
   Vector<std::byte, 64> buffer(64);
-  test::TestStreamResponse::RamEncoder test_response(buffer);
+  test::TestStreamResponse::MemoryEncoder test_response(buffer);
 
   test_response.WriteNumber(number);
 
@@ -61,8 +61,7 @@ class TestService final : public generated::TestService<TestService> {
       return StatusWithSize::DataLoss();
     }
 
-    // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
-    TestResponse::RamEncoder test_response(response);
+    TestResponse::MemoryEncoder test_response(response);
     test_response.WriteValue(integer + 1);
 
     return StatusWithSize(status, test_response.size());
@@ -78,8 +77,7 @@ class TestService final : public generated::TestService<TestService> {
     for (int i = 0; i < integer; ++i) {
       ByteSpan buffer = writer.PayloadBuffer();
 
-      // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
-      TestStreamResponse::RamEncoder test_stream_response(buffer);
+      TestStreamResponse::MemoryEncoder test_stream_response(buffer);
       test_stream_response.WriteNumber(i);
       writer.Write(test_stream_response);
     }

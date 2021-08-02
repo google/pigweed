@@ -70,8 +70,7 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
 }
 
 Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
-  // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
-  RpcPacket::RamEncoder rpc_packet(buffer);
+  RpcPacket::MemoryEncoder rpc_packet(buffer);
 
   // The payload is encoded first, as it may share the encode buffer.
   if (!payload_.empty()) {

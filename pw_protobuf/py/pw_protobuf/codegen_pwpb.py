@@ -44,7 +44,7 @@ class EncoderType(enum.Enum):
     def base_class_name(self) -> str:
         """Returns the base class used by this encoder type."""
         if self is self.STREAMING:
-            return 'StreamingEncoder'
+            return 'StreamEncoder'
         if self is self.MEMORY:
             return 'MemoryEncoder'
 
@@ -55,8 +55,7 @@ class EncoderType(enum.Enum):
         if self is self.STREAMING:
             return 'StreamEncoder'
         if self is self.MEMORY:
-            # TODO(pwbug/384): Make this the 'Encoder'
-            return 'RamEncoder'
+            return 'MemoryEncoder'
 
         raise ValueError('Unknown encoder type')
 
@@ -558,13 +557,11 @@ def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
 
     with output.indent():
         # Inherit the constructors from the base encoder.
-        output.write_line(f'using {base_class_name}::{base_class_name};')
+        output.write_line(f'using {base_class}::{base_class_name};')
 
         # Declare a move constructor that takes a base encoder.
-        output.write_line(
-            f'constexpr {encoder_name}({base_class_name}&& parent) '\
-            f': {base_class_name}(std::move(parent)) {{}}'
-        )
+        output.write_line(f'constexpr {encoder_name}({base_class}&& parent) '
+                          f': {base_class}(std::move(parent)) {{}}')
 
         # Generate methods for each of the message's fields.
         for field in message.fields():
@@ -647,7 +644,7 @@ def forward_declare(node: ProtoMessage, root: ProtoNode,
     # Declare the message's encoder class and all of its enums.
     output.write_line()
     output.write_line('class StreamEncoder;')
-    output.write_line('class RamEncoder;')
+    output.write_line('class MemoryEncoder;')
 
     for child in node.children():
         if child.type() == ProtoNode.Type.ENUM:

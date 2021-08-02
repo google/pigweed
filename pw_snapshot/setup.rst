@@ -219,7 +219,7 @@ Snapshot Capture Setup
 
 .. note::
 
-  These instructions do not yet use the ``pw::protobuf::StreamingEncoder``.
+  These instructions do not yet use the ``pw::protobuf::StreamEncoder``.
 
 Capturing a snapshot is as simple as encoding any other proto message. Some
 modules provide helper functions that will populate parts of a Snapshot, which

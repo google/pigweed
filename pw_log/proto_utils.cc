@@ -26,7 +26,7 @@ Result<ConstByteSpan> EncodeTokenizedLog(pw::log_tokenized::Metadata metadata,
                                          int64_t ticks_since_epoch,
                                          ByteSpan encode_buffer) {
   // Encode message to the LogEntry protobuf.
-  LogEntry::RamEncoder encoder(encode_buffer);
+  LogEntry::MemoryEncoder encoder(encode_buffer);
 
   encoder.WriteMessage(tokenized_data);
   encoder.WriteLineLevel(

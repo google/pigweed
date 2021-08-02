@@ -34,10 +34,9 @@ class UnitTestService final : public generated::UnitTest<UnitTestService> {
   // migrated to it.
   template <typename WriteFunction>
   void WriteEvent(WriteFunction event_writer) {
-    // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
-    Event::RamEncoder event(writer_.PayloadBuffer());
+    Event::MemoryEncoder event(writer_.PayloadBuffer());
     event_writer(static_cast<Event::StreamEncoder&>(
-        *static_cast<pw::protobuf::StreamingEncoder*>(&event)));
+        *static_cast<pw::protobuf::StreamEncoder*>(&event)));
     if (event.status().ok()) {
       writer_.Write(event);
     }

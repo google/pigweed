@@ -26,10 +26,9 @@ TEST(Encoder, SizeTypeIsConfigured) {
 TEST(Encoder, NestedWriteSmallerThanVarintSize) {
   std::array<std::byte, 256> buffer;
 
-  // TODO(pwbug/384): Use Encoder when MemoryEncoder is renamed.
   MemoryEncoder encoder(buffer);
 
-  StreamingEncoder nested = encoder.GetNestedEncoder(1);
+  StreamEncoder nested = encoder.GetNestedEncoder(1);
   // 1 byte key + 1 byte size + 125 byte value = 127 byte nested length.
   EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<125>(0xaa)), OkStatus());
   nested.Finalize();
@@ -40,11 +39,10 @@ TEST(Encoder, NestedWriteSmallerThanVarintSize) {
 TEST(Encoder, NestedWriteLargerThanVarintSizeReturnsResourceExhausted) {
   std::array<std::byte, 256> buffer;
 
-  // TODO(pwbug/384): Use Encoder when MemoryEncoder is renamed.
   MemoryEncoder encoder(buffer);
 
   // Try to write a larger nested message than the max nested varint value.
-  StreamingEncoder nested = encoder.GetNestedEncoder(1);
+  StreamEncoder nested = encoder.GetNestedEncoder(1);
   // 1 byte key + 1 byte size + 126 byte value = 128 byte nested length.
   EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<126>(0xaa)),
             Status::ResourceExhausted());
@@ -57,12 +55,11 @@ TEST(Encoder, NestedWriteLargerThanVarintSizeReturnsResourceExhausted) {
 TEST(Encoder, NestedMessageLargerThanVarintSizeReturnsResourceExhausted) {
   std::array<std::byte, 256> buffer;
 
-  // TODO(pwbug/384): Use Encoder when MemoryEncoder is renamed.
   MemoryEncoder encoder(buffer);
 
   // Try to write a larger nested message than the max nested varint value as
   // multiple smaller writes.
-  StreamingEncoder nested = encoder.GetNestedEncoder(1);
+  StreamEncoder nested = encoder.GetNestedEncoder(1);
   EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<60>(0xaa)), OkStatus());
   EXPECT_EQ(nested.WriteBytes(3, bytes::Initialized<60>(0xaa)), OkStatus());
   EXPECT_EQ(nested.WriteBytes(4, bytes::Initialized<60>(0xaa)),

@@ -24,8 +24,7 @@ namespace {
 // TODO(prashanthsw): Handle dropped messages.
 // Result<ConstByteSpan> GenerateDroppedEntryMessage(ByteSpan encode_buffer,
 //                                                   size_t dropped_entries) {
-//   // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
-//   pw::log::LogEntry::RamEncoder encoder(encode_buffer);
+//   pw::log::LogEntry::MemoryEncoder encoder(encode_buffer);
 //   encoder.WriteDropped(dropped_entries);
 //   if (encoder.status().ok()) {
 //     return ConstByteSpan(encoder);

@@ -35,11 +35,11 @@
 namespace pw::protobuf {
 
 // Provides a size estimate to help with sizing buffers passed to
-// StreamingEncoder and MemoryEncoder objects.
+// StreamEncoder and MemoryEncoder objects.
 //
 // Args:
 //   max_message_size: For MemoryEncoder objects, this is the max expected size
-//     of the final proto. For StreamingEncoder objects, this should be the max
+//     of the final proto. For StreamEncoder objects, this should be the max
 //     size of any nested proto submessage that will be built with this encoder
 //     (recursively accumulating the size from the root submessage). If your
 //     proto will encode many large submessages, this value should just be the
@@ -51,42 +51,42 @@ static constexpr size_t MaxScratchBufferSize(size_t max_message_size,
   return max_message_size + max_nested_depth * config::kMaxVarintSize;
 }
 
-// Forward declaration. StreamingEncoder and MemoryEncoder are very tightly
+// Forward declaration. StreamEncoder and MemoryEncoder are very tightly
 // coupled.
 class MemoryEncoder;
 
 // A protobuf encoder that encodes serialized proto data to a
 // pw::stream::Writer.
-class StreamingEncoder {
+class StreamEncoder {
  public:
-  // The StreamingEncoder will serialize proto data to the pw::stream::Writer
+  // The StreamEncoder will serialize proto data to the pw::stream::Writer
   // provided through the constructor. The scratch buffer provided is for
   // internal use ONLY and should not be considered valid proto data.
   //
-  // If a StreamingEncoder object will be writing nested proto messages, it must
+  // If a StreamEncoder object will be writing nested proto messages, it must
   // provide a scratch buffer large enough to hold the largest submessage some
   // additional overhead incurred by the encoder's implementation. It's a good
   // idea to be generous when sizing this buffer. MaxScratchBufferSize() can be
   // helpful in providing an estimated size for this buffer. The scratch buffer
-  // must exist for the lifetime of the StreamingEncoder object.
+  // must exist for the lifetime of the StreamEncoder object.
   //
-  // StreamingEncoder objects that do not write nested proto messages can
+  // StreamEncoder objects that do not write nested proto messages can
   // provide a zero-length scratch buffer.
-  constexpr StreamingEncoder(stream::Writer& writer, ByteSpan scratch_buffer)
+  constexpr StreamEncoder(stream::Writer& writer, ByteSpan scratch_buffer)
       : writer_(writer),
         status_(OkStatus()),
         parent_(nullptr),
         nested_field_number_(0),
         memory_writer_(scratch_buffer) {}
-  ~StreamingEncoder() { Finalize(); }
+  ~StreamEncoder() { Finalize(); }
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
-  StreamingEncoder& operator=(const StreamingEncoder& other) = delete;
-  StreamingEncoder(const StreamingEncoder& other) = delete;
+  StreamEncoder& operator=(const StreamEncoder& other) = delete;
+  StreamEncoder(const StreamEncoder& other) = delete;
 
   // It's not safe to move an encoder as it could cause another encoder's
   // parent_ pointer to become invalid.
-  StreamingEncoder& operator=(StreamingEncoder&& other) = delete;
+  StreamEncoder& operator=(StreamEncoder&& other) = delete;
 
   // Forwards the conservative write limit of the underlying pw::stream::Writer.
   //
@@ -101,7 +101,7 @@ class StreamingEncoder {
   // nested encoder is finalized (either explicitly or through destruction).
   //
   // Precondition: Encoder has no active child encoder.
-  StreamingEncoder GetNestedEncoder(uint32_t field_number);
+  StreamEncoder GetNestedEncoder(uint32_t field_number);
 
   // Closes the proto encoder. If this encoder is a nested one, the parent is
   // unlocked and proto encoding may resume on the parent. This is automatically
@@ -370,7 +370,7 @@ class StreamingEncoder {
 
  protected:
   // We need this for codegen.
-  constexpr StreamingEncoder(StreamingEncoder&& other)
+  constexpr StreamEncoder(StreamEncoder&& other)
       : writer_(&other.writer_ == &other.memory_writer_ ? memory_writer_
                                                         : other.writer_),
         status_(other.status_),
@@ -392,7 +392,7 @@ class StreamingEncoder {
     kZigZag,
   };
 
-  constexpr StreamingEncoder(StreamingEncoder& parent, ByteSpan scratch_buffer)
+  constexpr StreamEncoder(StreamEncoder& parent, ByteSpan scratch_buffer)
       : writer_(memory_writer_),
         status_(scratch_buffer.empty() ? Status::ResourceExhausted()
                                        : OkStatus()),
@@ -405,7 +405,7 @@ class StreamingEncoder {
   // Finalization logic for nested encoders that call Finalize(). While
   // Finalize() is called on the child encoder, FinalizeNestedMessage() is
   // called on the parent encoder.
-  Status FinalizeNestedMessage(StreamingEncoder& nested);
+  Status FinalizeNestedMessage(StreamEncoder& nested);
 
   // Implementation for encoding all varint field types.
   Status WriteVarintField(uint32_t field_number, uint64_t value);
@@ -500,7 +500,7 @@ class StreamingEncoder {
   // For user-created MemoryEncoders, parent_ points to this object as an
   // optimization for the MemoryEncoder and nested encoders to use the same
   // underlying buffer.
-  StreamingEncoder* parent_;
+  StreamEncoder* parent_;
 
   // If an encoder has a child encoder open, this is the field number of that
   // submessage. Otherwise, this is 0 to indicate no child encoder is open.
@@ -526,12 +526,10 @@ class StreamingEncoder {
 //   }
 //
 // Note: Avoid using a MemoryEncoder reference as an argument for a function.
-// The StreamingEncoder is more generic.
-//
-// TODO(pwbug/384): Rename this class to `Encoder`.
-class MemoryEncoder : public StreamingEncoder {
+// The StreamEncoder is more generic.
+class MemoryEncoder : public StreamEncoder {
  public:
-  constexpr MemoryEncoder(ByteSpan dest) : StreamingEncoder(*this, dest) {}
+  constexpr MemoryEncoder(ByteSpan dest) : StreamEncoder(*this, dest) {}
   ~MemoryEncoder() { Finalize(); }
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.

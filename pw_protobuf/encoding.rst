@@ -27,9 +27,9 @@ A MemoryEncoder directly encodes a proto to an in-memory buffer.
     return StatusWithSize(encoder.status(), encoder.size());
   }
 
-StreamingEncoder
-----------------
-pw_protobuf's StreamingEncoder class operates on pw::stream::Writer objects to
+StreamEncoder
+-------------
+pw_protobuf's StreamEncoder class operates on pw::stream::Writer objects to
 serialized proto data. This means you can directly encode a proto to something
 like pw::sys_io without needing to build the complete message in memory first.
 
@@ -40,14 +40,14 @@ like pw::sys_io without needing to build the complete message in memory first.
   #include "pw_bytes/span.h"
 
   pw::stream::SysIoWriter sys_io_writer;
-  pw::protobuf::StreamingEncoder my_proto_encoder(sys_io_writer,
+  pw::protobuf::StreamEncoder my_proto_encoder(sys_io_writer,
                                                   pw::ByteSpan());
 
   // Once this line returns, the field has been written to the Writer.
   my_proto_encoder.WriteInt64(kTimestampFieldNumber, system::GetUnixEpoch());
 
   // There's no intermediate buffering when writing a string directly to a
-  // StreamingEncoder.
+  // StreamEncoder.
   my_proto_encoder.WriteString(kWelcomeMessageFieldNumber,
                                "Welcome to Pigweed!");
   if (!my_proto_encoder.status().ok()) {
@@ -83,14 +83,14 @@ space to allocate to account for nested submessage encoding overhead.
 
   // Provide the scratch buffer to the proto encoder. The buffer's lifetime must
   // match the lifetime of the encoder.
-  pw::protobuf::StreamingEncoder my_proto_encoder(sys_io_writer,
+  pw::protobuf::StreamEncoder my_proto_encoder(sys_io_writer,
                                                   submessage_scratch_buffer);
 
-  StreamingEncoder nested_encoder =
+  StreamEncoder nested_encoder =
       my_proto_encoder.GetNestedEncoder(kPetsFieldNumber);
 
   // There's no intermediate buffering when writing a string directly to a
-  // StreamingEncoder.
+  // StreamEncoder.
   nested_encoder.WriteString(kNameFieldNumber, "Spot");
   nested_encoder.WriteString(kPetTypeFieldNumber, "dog");
   // Since this message is only nested one deep, the submessage is serialized to
@@ -98,7 +98,7 @@ space to allocate to account for nested submessage encoding overhead.
   PW_CHECK_OK(nested_encoder.Finalize());
 
   {  // If a nested_encoder is destroyed it will silently Finalize().
-    StreamingEncoder nested_encoder_2 =
+    StreamEncoder nested_encoder_2 =
         my_proto_encoder.GetNestedEncoder(kPetsFieldNumber);
     nested_encoder_2.WriteString(kNameFieldNumber, "Slippers");
     nested_encoder_2.WriteString(kPetTypeFieldNumber, "rabbit");
@@ -119,7 +119,7 @@ Error Handling
 --------------
 While individual write calls on a proto encoder return pw::Status objects, the
 encoder tracks all status returns and "latches" onto the first error
-encountered. This status can be accessed via ``StreamingEncoder::status()``.
+encountered. This status can be accessed via ``StreamEncoder::status()``.
 
 Codegen
 -------
@@ -193,7 +193,7 @@ Example ``example_client.cc``:
 
   pw::stream::SysIoWriter sys_io_writer;
   std::byte submessage_scratch_buffer[64];
-  // The constructor is the same as a pw::protobuf::StreamingEncoder.
+  // The constructor is the same as a pw::protobuf::StreamEncoder.
   fuzzy_friends::Client::StreamEncoder client(sys_io_writer,
                                               submessage_scratch_buffer);
 

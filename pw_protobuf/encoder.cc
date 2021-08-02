@@ -29,7 +29,7 @@
 
 namespace pw::protobuf {
 
-StreamingEncoder StreamingEncoder::GetNestedEncoder(uint32_t field_number) {
+StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number) {
   PW_CHECK(!nested_encoder_open());
   nested_field_number_ = field_number;
 
@@ -54,10 +54,10 @@ StreamingEncoder StreamingEncoder::GetNestedEncoder(uint32_t field_number) {
   } else {
     nested_buffer = ByteSpan();
   }
-  return StreamingEncoder(*this, nested_buffer);
+  return StreamEncoder(*this, nested_buffer);
 }
 
-Status StreamingEncoder::Finalize() {
+Status StreamEncoder::Finalize() {
   // If an encoder has no parent, finalize is a no-op.
   if (parent_ == nullptr) {
     return OkStatus();
@@ -76,7 +76,7 @@ Status StreamingEncoder::Finalize() {
   return parent_->FinalizeNestedMessage(*this);
 }
 
-Status StreamingEncoder::FinalizeNestedMessage(StreamingEncoder& nested) {
+Status StreamEncoder::FinalizeNestedMessage(StreamEncoder& nested) {
   PW_DCHECK_PTR_EQ(
       nested.parent_,
       this,
@@ -108,8 +108,7 @@ Status StreamingEncoder::FinalizeNestedMessage(StreamingEncoder& nested) {
   return status_;
 }
 
-Status StreamingEncoder::WriteVarintField(uint32_t field_number,
-                                          uint64_t value) {
+Status StreamEncoder::WriteVarintField(uint32_t field_number, uint64_t value) {
   PW_TRY(UpdateStatusForWrite(
       field_number, WireType::kVarint, varint::EncodedSize(value)));
 
@@ -117,8 +116,8 @@ Status StreamingEncoder::WriteVarintField(uint32_t field_number,
   return WriteVarint(value);
 }
 
-Status StreamingEncoder::WriteLengthDelimitedField(uint32_t field_number,
-                                                   ConstByteSpan data) {
+Status StreamEncoder::WriteLengthDelimitedField(uint32_t field_number,
+                                                ConstByteSpan data) {
   PW_TRY(UpdateStatusForWrite(field_number, WireType::kDelimited, data.size()));
   WriteVarint(MakeKey(field_number, WireType::kDelimited));
   WriteVarint(data.size_bytes());
@@ -128,7 +127,7 @@ Status StreamingEncoder::WriteLengthDelimitedField(uint32_t field_number,
   return status_;
 }
 
-Status StreamingEncoder::WriteFixed(uint32_t field_number, ConstByteSpan data) {
+Status StreamEncoder::WriteFixed(uint32_t field_number, ConstByteSpan data) {
   WireType type =
       data.size() == sizeof(uint32_t) ? WireType::kFixed32 : WireType::kFixed64;
 
@@ -144,7 +143,7 @@ Status StreamingEncoder::WriteFixed(uint32_t field_number, ConstByteSpan data) {
 // Encodes a base-128 varint to the buffer. This function assumes the caller
 // has already checked UpdateStatusForWrite() to ensure the writer's
 // conservative write limit indicates the Writer has sufficient buffer space.
-Status StreamingEncoder::WriteVarint(uint64_t value) {
+Status StreamEncoder::WriteVarint(uint64_t value) {
   if (!status_.ok()) {
     return status_;
   }
@@ -163,9 +162,9 @@ Status StreamingEncoder::WriteVarint(uint64_t value) {
   return OkStatus();
 }
 
-Status StreamingEncoder::WritePackedFixed(uint32_t field_number,
-                                          std::span<const std::byte> values,
-                                          size_t elem_size) {
+Status StreamEncoder::WritePackedFixed(uint32_t field_number,
+                                       std::span<const std::byte> values,
+                                       size_t elem_size) {
   if (values.empty()) {
     return status_;
   }
@@ -194,9 +193,9 @@ Status StreamingEncoder::WritePackedFixed(uint32_t field_number,
   return status_;
 }
 
-Status StreamingEncoder::UpdateStatusForWrite(uint32_t field_number,
-                                              WireType type,
-                                              size_t data_size) {
+Status StreamEncoder::UpdateStatusForWrite(uint32_t field_number,
+                                           WireType type,
+                                           size_t data_size) {
   PW_CHECK(!nested_encoder_open());
   if (!status_.ok()) {
     return status_;

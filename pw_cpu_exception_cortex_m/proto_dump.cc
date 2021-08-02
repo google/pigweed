@@ -18,7 +18,7 @@
 
 namespace pw::cpu_exception {
 
-Status DumpCpuStateProto(protobuf::StreamingEncoder& dest,
+Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
                          const pw_cpu_exception_State& cpu_state) {
   cortex_m::ArmV7mCpuState::StreamEncoder& state_encoder =
       *static_cast<cortex_m::ArmV7mCpuState::StreamEncoder*>(&dest);

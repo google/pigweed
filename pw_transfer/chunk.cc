@@ -78,7 +78,7 @@ Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
 }
 
 Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
-  ProtoChunk::RamEncoder encoder(buffer);
+  ProtoChunk::MemoryEncoder encoder(buffer);
 
   encoder.WriteTransferId(chunk.transfer_id);
 

@@ -125,8 +125,7 @@ StatusWithSize AddFive(ServerContext&,
                        ByteSpan response) {
   DecodeRawTestRequest(request);
 
-  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
-  TestResponse::RamEncoder test_response(response);
+  TestResponse::MemoryEncoder test_response(response);
   test_response.WriteValue(last_request.integer + 5);
   ConstByteSpan payload(test_response);
 
@@ -152,7 +151,6 @@ class FakeService : public Service {
 
 TEST(RawMethod, UnaryRpc_SendsResponse) {
   std::byte buffer[16];
-  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
   test_request.WriteInteger(456);
@@ -177,7 +175,6 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
 
 TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   std::byte buffer[16];
-  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
   test_request.WriteInteger(777);

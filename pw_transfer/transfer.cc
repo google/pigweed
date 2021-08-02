@@ -89,7 +89,7 @@ bool TransferService::SendNextReadChunk(internal::Context& context) {
 
   // Begin by doing a partial encode of all the metadata fields, leaving the
   // buffer with usable space for the chunk data at the end.
-  Chunk::RamEncoder encoder(buffer);
+  Chunk::MemoryEncoder encoder(buffer);
   encoder.WriteTransferId(context.transfer_id());
   encoder.WriteOffset(context.offset());
 

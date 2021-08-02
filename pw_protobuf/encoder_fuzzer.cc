@@ -130,7 +130,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   size_t poisoned_length = sizeof(buffer) - unpoisoned_length;
   ASAN_POISON_MEMORY_REGION(poisoned, poisoned_length);
 
-  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
   pw::protobuf::MemoryEncoder encoder(unpoisoned);
 
   // Storage for generated spans

@@ -62,7 +62,7 @@ constexpr uint32_t kNestedProtoPairField = 3;
 constexpr uint32_t kDoubleNestedProtoKeyField = 1;
 constexpr uint32_t kDoubleNestedProtoValueField = 2;
 
-TEST(StreamingEncoder, EncodePrimitives) {
+TEST(StreamEncoder, EncodePrimitives) {
   // TestProto tp;
   // tp.magic_number = 42;
   // tp.ziggy = -13;
@@ -94,7 +94,7 @@ TEST(StreamingEncoder, EncodePrimitives) {
   // a stream interface. Use a MemoryEncoder when encoding a proto directly to
   // an in-memory buffer.
   MemoryWriter writer(dest_buffer);
-  StreamingEncoder encoder(writer, encode_buffer);
+  StreamEncoder encoder(writer, encode_buffer);
 
   EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), OkStatus());
   EXPECT_EQ(writer.bytes_written(), 2u);
@@ -112,7 +112,7 @@ TEST(StreamingEncoder, EncodePrimitives) {
             0);
 }
 
-TEST(StreamingEncoder, EncodeInsufficientSpace) {
+TEST(StreamEncoder, EncodeInsufficientSpace) {
   std::byte encode_buffer[12];
   MemoryEncoder encoder(encode_buffer);
 
@@ -131,7 +131,7 @@ TEST(StreamingEncoder, EncodeInsufficientSpace) {
   ASSERT_EQ(encoder.status(), Status::ResourceExhausted());
 }
 
-TEST(StreamingEncoder, EncodeInvalidArguments) {
+TEST(StreamEncoder, EncodeInvalidArguments) {
   std::byte encode_buffer[12];
   MemoryEncoder encoder(encode_buffer);
 
@@ -151,7 +151,7 @@ TEST(StreamingEncoder, EncodeInvalidArguments) {
   ASSERT_EQ(encoder.status(), Status::InvalidArgument());
 }
 
-TEST(StreamingEncoder, Nested) {
+TEST(StreamEncoder, Nested) {
   // This is the largest complete submessage in this test.
   constexpr size_t kLargestSubmessageSize = 0x30;
   constexpr size_t kScratchBufferSize =
@@ -159,7 +159,7 @@ TEST(StreamingEncoder, Nested) {
   std::byte encode_buffer[kScratchBufferSize];
   std::byte dest_buffer[128];
   MemoryWriter writer(dest_buffer);
-  StreamingEncoder encoder(writer, encode_buffer);
+  StreamEncoder encoder(writer, encode_buffer);
 
   // TestProto test_proto;
   // test_proto.magic_number = 42;
@@ -167,7 +167,7 @@ TEST(StreamingEncoder, Nested) {
 
   {
     // NestedProto& nested_proto = test_proto.nested;
-    StreamingEncoder nested_proto =
+    StreamEncoder nested_proto =
         encoder.GetNestedEncoder(kTestProtoNestedField);
     // nested_proto.hello = "world";
     EXPECT_EQ(nested_proto.WriteString(kNestedProtoHelloField, "world"),
@@ -175,7 +175,7 @@ TEST(StreamingEncoder, Nested) {
 
     {
       // DoubleNestedProto& double_nested_proto = nested_proto.append_pair();
-      StreamingEncoder double_nested_proto =
+      StreamEncoder double_nested_proto =
           nested_proto.GetNestedEncoder(kNestedProtoPairField);
       // double_nested_proto.key = "version";
       EXPECT_EQ(double_nested_proto.WriteString(kDoubleNestedProtoKeyField,
@@ -194,7 +194,7 @@ TEST(StreamingEncoder, Nested) {
 
     {
       // DoubleNestedProto& double_nested_proto = nested_proto.append_pair();
-      StreamingEncoder double_nested_proto =
+      StreamEncoder double_nested_proto =
           nested_proto.GetNestedEncoder(kNestedProtoPairField);
       // double_nested_proto.key = "device";
       EXPECT_EQ(
@@ -247,7 +247,7 @@ TEST(StreamingEncoder, Nested) {
             0);
 }
 
-TEST(StreamingEncoder, RepeatedField) {
+TEST(StreamEncoder, RepeatedField) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);
 
@@ -267,7 +267,7 @@ TEST(StreamingEncoder, RepeatedField) {
             0);
 }
 
-TEST(StreamingEncoder, PackedVarint) {
+TEST(StreamEncoder, PackedVarint) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);
 
@@ -286,7 +286,7 @@ TEST(StreamingEncoder, PackedVarint) {
             0);
 }
 
-TEST(StreamingEncoder, PackedVarintInsufficientSpace) {
+TEST(StreamEncoder, PackedVarintInsufficientSpace) {
   std::byte encode_buffer[8];
   MemoryEncoder encoder(encode_buffer);
 
@@ -296,7 +296,7 @@ TEST(StreamingEncoder, PackedVarintInsufficientSpace) {
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
 }
 
-TEST(StreamingEncoder, PackedFixed) {
+TEST(StreamEncoder, PackedFixed) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);
 
@@ -320,7 +320,7 @@ TEST(StreamingEncoder, PackedFixed) {
             0);
 }
 
-TEST(StreamingEncoder, PackedZigzag) {
+TEST(StreamEncoder, PackedZigzag) {
   std::byte encode_buffer[32];
   MemoryEncoder encoder(encode_buffer);
 
@@ -338,28 +338,28 @@ TEST(StreamingEncoder, PackedZigzag) {
             0);
 }
 
-TEST(StreamingEncoder, ParentUnavailable) {
+TEST(StreamEncoder, ParentUnavailable) {
   std::byte encode_buffer[32];
   MemoryEncoder parent(encode_buffer);
   {
-    StreamingEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
+    StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
     ASSERT_EQ(parent.status(), Status::Unavailable());
     ASSERT_EQ(child.status(), OkStatus());
   }
   ASSERT_EQ(parent.status(), OkStatus());
 }
 
-TEST(StreamingEncoder, NestedEncoderRequiresBuffer) {
+TEST(StreamEncoder, NestedEncoderRequiresBuffer) {
   MemoryEncoder parent((ByteSpan()));
   {
-    StreamingEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
+    StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
 
     ASSERT_EQ(child.status(), Status::ResourceExhausted());
   }
   ASSERT_EQ(parent.status(), Status::ResourceExhausted());
 }
 
-TEST(StreamingEncoder, WriteTooBig) {
+TEST(StreamEncoder, WriteTooBig) {
   constexpr size_t kTempBufferSize = 32;
   constexpr size_t kWriteSize = 2;
   std::byte encode_buffer[32];
@@ -372,10 +372,10 @@ TEST(StreamingEncoder, WriteTooBig) {
   ASSERT_EQ(encoder.WriteUint32(1, 12), Status::ResourceExhausted());
 }
 
-TEST(StreamingEncoder, EmptyChildWrites) {
+TEST(StreamEncoder, EmptyChildWrites) {
   std::byte encode_buffer[32];
   MemoryEncoder parent(encode_buffer);
-  { StreamingEncoder child = parent.GetNestedEncoder(kTestProtoNestedField); }
+  { StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField); }
   ASSERT_EQ(parent.status(), OkStatus());
   const size_t kExpectedSize =
       varint::EncodedSize(
@@ -384,21 +384,21 @@ TEST(StreamingEncoder, EmptyChildWrites) {
   ASSERT_EQ(parent.size(), kExpectedSize);
 }
 
-TEST(StreamingEncoder, ChildUnavailableAfterFinalize) {
+TEST(StreamEncoder, ChildUnavailableAfterFinalize) {
   std::byte encode_buffer[32];
   MemoryEncoder parent(encode_buffer);
   {
-    StreamingEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
+    StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
     child.Finalize();
     ASSERT_EQ(child.status(), Status::Unavailable());
   }
 }
 
-TEST(StreamingEncoder, NestedStatusPropagates) {
+TEST(StreamEncoder, NestedStatusPropagates) {
   std::byte encode_buffer[32];
   MemoryEncoder parent(encode_buffer);
   {
-    StreamingEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
+    StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
     ASSERT_EQ(child.WriteUint32(0, 0), Status::InvalidArgument());
   }
   ASSERT_EQ(parent.status(), Status::InvalidArgument());

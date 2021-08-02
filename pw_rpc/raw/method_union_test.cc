@@ -64,8 +64,7 @@ class FakeGeneratedServiceImpl
                          ByteSpan response) {
     DecodeRawTestRequest(request);
 
-    // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
-    TestResponse::RamEncoder test_response(response);
+    TestResponse::MemoryEncoder test_response(response);
     test_response.WriteValue(last_request.integer + 5);
     ConstByteSpan payload(test_response);
 
@@ -102,8 +101,7 @@ class FakeGeneratedServiceImpl
 TEST(RawMethodUnion, InvokesUnary) {
   std::byte buffer[16];
 
-  // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
-  TestRequest::RamEncoder test_request(buffer);
+  TestRequest::MemoryEncoder test_request(buffer);
   test_request.WriteInteger(456);
   test_request.WriteStatusCode(7);
 
@@ -128,8 +126,7 @@ TEST(RawMethodUnion, InvokesUnary) {
 TEST(RawMethodUnion, InvokesServerStreaming) {
   std::byte buffer[16];
 
-  // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
-  TestRequest::RamEncoder test_request(buffer);
+  TestRequest::MemoryEncoder test_request(buffer);
   test_request.WriteInteger(777);
   test_request.WriteStatusCode(2);
 

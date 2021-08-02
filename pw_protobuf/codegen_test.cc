@@ -184,8 +184,7 @@ TEST(Codegen, Codegen) {
 TEST(Codegen, RecursiveSubmessage) {
   std::byte encode_buffer[512];
 
-  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
-  Crate::RamEncoder biggest_crate(encode_buffer);
+  Crate::MemoryEncoder biggest_crate(encode_buffer);
   biggest_crate.WriteName("Huge crate");
 
   {
@@ -230,7 +229,6 @@ TEST(Codegen, RecursiveSubmessage) {
 TEST(CodegenRepeated, NonPackedScalar) {
   std::byte encode_buffer[32];
 
-  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   for (int i = 0; i < 4; ++i) {
@@ -250,7 +248,6 @@ TEST(CodegenRepeated, NonPackedScalar) {
 TEST(CodegenRepeated, PackedScalar) {
   std::byte encode_buffer[32];
 
-  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   constexpr uint32_t values[] = {0, 16, 32, 48};
@@ -267,7 +264,6 @@ TEST(CodegenRepeated, PackedScalar) {
 TEST(CodegenRepeated, NonScalar) {
   std::byte encode_buffer[32];
 
-  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   constexpr const char* strings[] = {"the", "quick", "brown", "fox"};
@@ -288,8 +284,7 @@ TEST(CodegenRepeated, NonScalar) {
 TEST(CodegenRepeated, Message) {
   std::byte encode_buffer[64];
 
-  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
-  RepeatedTest::RamEncoder repeated_test(encode_buffer);
+  RepeatedTest::MemoryEncoder repeated_test(encode_buffer);
   for (int i = 0; i < 3; ++i) {
     auto structs = repeated_test.GetStructsEncoder();
     structs.WriteOne(i * 1);
@@ -312,8 +307,7 @@ TEST(CodegenRepeated, Message) {
 TEST(Codegen, Proto2) {
   std::byte encode_buffer[64];
 
-  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
-  Foo::RamEncoder foo(encode_buffer);
+  Foo::MemoryEncoder foo(encode_buffer);
   foo.WriteInt(3);
 
   {
@@ -336,8 +330,7 @@ TEST(Codegen, Proto2) {
 TEST(Codegen, Import) {
   std::byte encode_buffer[64];
 
-  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
-  Period::RamEncoder period(encode_buffer);
+  Period::MemoryEncoder period(encode_buffer);
   {
     imported::Timestamp::StreamEncoder start = period.GetStartEncoder();
     start.WriteSeconds(1589501793);
@@ -357,7 +350,6 @@ TEST(Codegen, NonPigweedPackage) {
   using namespace non::pigweed::package::name;
   std::byte encode_buffer[64];
   std::array<const int64_t, 2> repeated = {0, 1};
-  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
   stream::MemoryWriter writer(encode_buffer);
   Packed::StreamEncoder packed(writer, ByteSpan());
   packed.WriteRep(std::span<const int64_t>(repeated));
