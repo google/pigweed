@@ -26,14 +26,16 @@ namespace internal {
 Status Context::Start(Type type, Handler& handler) {
   PW_DCHECK(!active());
 
+  if (type == kRead) {
+    PW_TRY(handler.PrepareRead());
+  } else {
+    PW_TRY(handler.PrepareWrite());
+  }
+
   type_ = type;
   handler_ = &handler;
   offset_ = 0;
-
-  if (type == kRead) {
-    return handler_->PrepareRead();
-  }
-  return handler_->PrepareWrite();
+  return OkStatus();
 }
 
 void Context::Finish(Status status) {

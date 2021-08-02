@@ -275,6 +275,52 @@ TEST(Tranfser, Read_UnregisteredHandler) {
   EXPECT_EQ(chunk.status.value(), Status::NotFound());
 }
 
+class SometimesUnavailableReadHandler final : public ReadOnlyHandler {
+ public:
+  SometimesUnavailableReadHandler(uint32_t transfer_id, ConstByteSpan data)
+      : ReadOnlyHandler(transfer_id), reader_(data), call_count_(0) {}
+
+  Status PrepareRead() final {
+    if ((call_count_++ % 2) == 0) {
+      return Status::Unavailable();
+    }
+
+    set_reader(reader_);
+    return OkStatus();
+  }
+
+ private:
+  stream::MemoryReader reader_;
+  int call_count_;
+};
+
+TEST(Tranfser, PrepareError) {
+  constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
+  SometimesUnavailableReadHandler handler(3, data);
+
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx;
+  ctx.service().RegisterHandler(handler);
+
+  ctx.call();
+  ctx.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 128, .offset = 0}));
+
+  ASSERT_EQ(ctx.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx.responses()[0]);
+  EXPECT_EQ(chunk.transfer_id, 3u);
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), Status::Unavailable());
+
+  // Try starting the transfer again. It should work this time.
+  ctx.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 128, .offset = 0}));
+  ASSERT_EQ(ctx.total_responses(), 3u);
+  chunk = DecodeChunk(ctx.responses()[1]);
+  EXPECT_EQ(chunk.transfer_id, 3u);
+  ASSERT_EQ(chunk.data.size(), data.size());
+  EXPECT_EQ(std::memcmp(chunk.data.data(), data.data(), chunk.data.size()), 0);
+}
+
 PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace
