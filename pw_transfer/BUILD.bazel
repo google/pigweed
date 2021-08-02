@@ -24,14 +24,14 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "pw_transfer",
-    hdrs = [
-        "public/pw_transfer/handler.h",
-        "public/pw_transfer/transfer.h",
-    ],
     srcs = [
         "chunk.cc",
         "pw_transfer_private/chunk.h",
-        "transfer.cc"
+        "transfer.cc",
+    ],
+    hdrs = [
+        "public/pw_transfer/handler.h",
+        "public/pw_transfer/transfer.h",
     ],
     includes = ["public"],
     deps = [
