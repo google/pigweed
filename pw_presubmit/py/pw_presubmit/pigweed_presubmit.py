@@ -302,7 +302,6 @@ _MODULES_THAT_BUILD_WITH_BAZEL = [
     '//pw_thread_stl/...',
     '//pw_tool/...',
     '//pw_toolchain/...',
-    '//pw_transfer/...',
     '//pw_unit_test/...',
     '//pw_varint/...',
     '//pw_web_ui/...',
@@ -330,17 +329,16 @@ _MODULES_THAT_TEST_WITH_BAZEL = [
     '//pw_stream/...',
     '//pw_string/...',
     '//pw_thread_stl/...',
-    '//pw_transfer/...',
     '//pw_unit_test/...',
     '//pw_varint/...',
     '//:buildifier_test',
 ]
 
 
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
+                        'BUILD'))
 def bazel_test(ctx: PresubmitContext):
     """Runs bazel test on each bazel compatible module"""
-
     try:
         call('bazel',
              'test',
@@ -358,7 +356,8 @@ def bazel_test(ctx: PresubmitContext):
         raise
 
 
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
+                        'BUILD'))
 def bazel_build(ctx: PresubmitContext):
     """Runs Bazel build on each Bazel compatible module"""
     try:
@@ -762,6 +761,7 @@ QUICK = (
     # the clang issues. The problem is that all clang++ invocations need the
     # two extra flags: "-nostdc++" and "${clang_prefix}/../lib/libc++.a".
     cmake_tests if sys.platform != 'darwin' else (),
+    bazel_test if sys.platform == 'linux' else (),
 )
 
 FULL = (
@@ -770,7 +770,8 @@ FULL = (
     gn_arm_build,
     gn_docs_build,
     gn_host_tools,
-    bazel_build,
+    bazel_test if sys.platform == 'linux' else (),
+    bazel_build if sys.platform == 'linux' else (),
     # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
     # host builds on Mac for now. Skip it on Windows too, since gn_host_build
     # already uses 'gcc' on Windows.
