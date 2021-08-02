@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -31,6 +31,7 @@ pw_cc_library(
         "public/pw_bytes/array.h",
         "public/pw_bytes/byte_builder.h",
         "public/pw_bytes/endian.h",
+        "public/pw_bytes/units.h",
         "public/pw_bytes/span.h",
     ],
     includes = ["public"],
@@ -65,5 +66,13 @@ pw_cc_test(
     deps = [
         ":pw_bytes",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "units_test",
+    srcs = ["units_test.cc"],
+    deps = [
+        ":pw_bytes",
     ],
 )
