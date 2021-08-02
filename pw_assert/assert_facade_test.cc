@@ -26,6 +26,7 @@
 // clang-format on
 
 #include "gtest/gtest.h"
+#include "pw_status/status.h"
 
 namespace {
 
@@ -344,113 +345,107 @@ TEST_F(AssertFail, CommaHandlingRightSide) {
 }
 
 // Verify that the CHECK_*(x,y) macros only evaluate their arguments once.
-static int global_state_for_multi_evaluate_test;
-static int IncrementsGlobal() {
-  global_state_for_multi_evaluate_test++;
-  return 0;
-}
+struct MultiEvaluateTestContext {
+  int IncrementAndReturnZero() {
+    counter += 1;
+    return 0;
+  }
+  int counter = 0;
+};
 
 TEST(AssertPass, CheckSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK(IncrementsGlobal() == 0);
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+  MultiEvaluateTestContext ctx;
+  PW_CHECK(ctx.IncrementAndReturnZero() == 0);
+  EXPECT_EQ(ctx.counter, 1);
 }
 TEST(AssertFail, CheckSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK(IncrementsGlobal() == 1);
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+  MultiEvaluateTestContext ctx;
+  PW_CHECK(ctx.IncrementAndReturnZero() == 1);
+  EXPECT_EQ(ctx.counter, 1);
 }
 TEST(AssertPass, BinaryOpSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(0, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+  MultiEvaluateTestContext ctx;
+  PW_CHECK_INT_EQ(0, ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, 1);
 }
 TEST(AssertPass, BinaryOpTwoSideEffectingCalls) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(IncrementsGlobal(), IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
+  MultiEvaluateTestContext ctx;
+  PW_CHECK_INT_EQ(ctx.IncrementAndReturnZero(), ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, 2);
 }
 TEST(AssertFail, BinaryOpSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(12314, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+  MultiEvaluateTestContext ctx;
+  PW_CHECK_INT_EQ(12314, ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, 1);
 }
 TEST(AssertFail, BinaryOpTwoSideEffectingCalls) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(IncrementsGlobal() + 10, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
+  MultiEvaluateTestContext ctx;
+  PW_CHECK_INT_EQ(ctx.IncrementAndReturnZero() + 10,
+                  ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, 2);
+}
+TEST(AssertPass, CheckOkSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_CHECK_OK(ctx.IncrementAndReturnZero() ? pw::OkStatus() : pw::OkStatus());
+  EXPECT_EQ(ctx.counter, 1);
+}
+TEST(AssertFail, CheckOkSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_CHECK_OK(ctx.IncrementAndReturnZero() ? pw::Status::NotFound()
+                                           : pw::Status::NotFound());
+  EXPECT_EQ(ctx.counter, 1);
 }
 
 // Verify side effects of debug checks work as expected.
 // Only check a couple of cases, since the logic is all the same.
-#if PW_ASSERT_ENABLE_DEBUG
+
 // When DCHECKs are enabled, they behave the same as normal checks.
-TEST(AssertPass, DCheckEnabledSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK(IncrementsGlobal() == 0);
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
-}
-TEST(AssertFail, DCheckEnabledSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK(IncrementsGlobal() == 1);
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
-}
-TEST(AssertPass, DCheckEnabledBinaryOpSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(0, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
-}
-TEST(AssertPass, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(IncrementsGlobal(), IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
-}
-TEST(AssertFail, DCheckEnabledBinaryOpSingleSideEffectingCall) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(12314, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
-}
-TEST(AssertFail, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(IncrementsGlobal() + 10, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
-}
-
-#else   // PW_ASSERT_ENABLE_DEBUG
-
 // When DCHECKs are disabled, they should not trip, and their arguments
 // shouldn't be evaluated.
-TEST(AssertPass, DCheckDisabledSingleSideEffectingCall_1) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK(IncrementsGlobal() == 0);
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+constexpr int kExpectedSideEffects = PW_ASSERT_ENABLE_DEBUG;
+
+TEST(AssertPass, DCheckEnabledSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK(ctx.IncrementAndReturnZero() == 0);
+  EXPECT_EQ(ctx.counter, kExpectedSideEffects);
 }
-TEST(AssertPass, DCheckDisabledSingleSideEffectingCall_2) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK(IncrementsGlobal() == 1);
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+TEST(AssertFail, DCheckEnabledSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK(ctx.IncrementAndReturnZero() == 1);
+  EXPECT_EQ(ctx.counter, kExpectedSideEffects);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall_1) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(0, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+TEST(AssertPass, DCheckEnabledBinaryOpSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK_INT_EQ(0, ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, kExpectedSideEffects);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls_1) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(IncrementsGlobal(), IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+TEST(AssertPass, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK_INT_EQ(ctx.IncrementAndReturnZero(), ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, 2 * kExpectedSideEffects);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall_2) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(12314, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+TEST(AssertFail, DCheckEnabledBinaryOpSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK_INT_EQ(12314, ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, kExpectedSideEffects);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls_2) {
-  global_state_for_multi_evaluate_test = 0;
-  PW_DCHECK_INT_EQ(IncrementsGlobal() + 10, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+TEST(AssertFail, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK_INT_EQ(ctx.IncrementAndReturnZero() + 10,
+                   ctx.IncrementAndReturnZero());
+  EXPECT_EQ(ctx.counter, 2 * kExpectedSideEffects);
 }
-#endif  // PW_ASSERT_ENABLE_DEBUG
+TEST(AssertPass, DCheckOkSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK_OK(ctx.IncrementAndReturnZero() ? pw::OkStatus() : pw::OkStatus());
+  EXPECT_EQ(ctx.counter, kExpectedSideEffects);
+}
+TEST(AssertFail, DCheckOkSingleSideEffectingCall) {
+  MultiEvaluateTestContext ctx;
+  PW_DCHECK_OK(ctx.IncrementAndReturnZero() ? pw::Status::NotFound()
+                                            : pw::Status::NotFound());
+  EXPECT_EQ(ctx.counter, kExpectedSideEffects);
+}
 
 // Verify PW_CHECK_OK, including message handling.
 TEST_F(AssertFail, StatusNotOK) {

@@ -133,15 +133,22 @@
 // clang-format on
 
 // PW_CHECK - If condition evaluates to false, crash. Message optional.
-#define PW_CHECK_OK(status, ...)                          \
-  do {                                                    \
-    if (status != PW_STATUS_OK) {                         \
-      _PW_CHECK_OK_SELECT_MACRO(#status,                  \
-                                pw_StatusString(status),  \
-                                PW_HAS_ARGS(__VA_ARGS__), \
-                                __VA_ARGS__);             \
-    }                                                     \
+#define PW_CHECK_OK(expression, ...)                                         \
+  do {                                                                       \
+    const _PW_CHECK_OK_STATUS _pw_assert_check_ok_status = (expression);     \
+    if (_pw_assert_check_ok_status != PW_STATUS_OK) {                        \
+      _PW_CHECK_OK_SELECT_MACRO(#expression,                                 \
+                                pw_StatusString(_pw_assert_check_ok_status), \
+                                PW_HAS_ARGS(__VA_ARGS__),                    \
+                                __VA_ARGS__);                                \
+    }                                                                        \
   } while (0)
+
+#ifdef __cplusplus
+#define _PW_CHECK_OK_STATUS ::pw::Status
+#else
+#define _PW_CHECK_OK_STATUS pw_Status
+#endif  // __cplusplus
 
 #define PW_DCHECK_OK(...)          \
   if (!(PW_ASSERT_ENABLE_DEBUG)) { \

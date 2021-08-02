@@ -17,14 +17,14 @@
 #include "gtest/gtest.h"
 
 // PW_ASSERT() should always be enabled, and always evaluate the expression.
-TEST(Light, AssertTrue) {
+TEST(Assert, AssertTrue) {
   int evaluated = 1;
   PW_ASSERT(++evaluated);
   EXPECT_EQ(evaluated, 2);
 }
 
 // PW_DASSERT() might be disabled sometimes.
-TEST(Light, DebugAssertTrue) {
+TEST(Assert, DebugAssertTrue) {
   int evaluated = 1;
   PW_DASSERT(++evaluated);
   if (PW_ASSERT_ENABLE_DEBUG == 1) {
@@ -39,13 +39,13 @@ TEST(Light, DebugAssertTrue) {
 // test. The unsatisfying alternative is to test the functionality manually,
 // then disable the test.
 
-TEST(Light, AssertFalse) {
+TEST(Assert, AssertFalse) {
   if (0) {
     PW_ASSERT(false);
   }
 }
 
-TEST(Light, DebugAssertFalse) {
+TEST(Assert, DebugAssertFalse) {
   if (0) {
     PW_DASSERT(false);
   }
