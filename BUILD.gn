@@ -128,15 +128,20 @@ group("docs") {
 
 _default_toolchain = _default_toolchain_prefix + pw_default_optimization_level
 
-# Tests that larger than unit tests, that are typically run in a specific
-# configuration.
+# Tests larger than unit tests, typically run in a specific configuration.
 group("integration_tests") {
   deps = []
 
   if (host_os != "windows") {
     deps += [
+      # Uses port 33000
       "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_toolchain)",
+
+      # Uses port 33001
       "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_toolchain)",
+
+      # Uses port 33002
+      "$dir_pw_unit_test/py:rpc_service_test.action($_default_toolchain)",
     ]
   } else {
     not_needed([ "_default_toolchain" ])

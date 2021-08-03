@@ -30,3 +30,14 @@ pw_python_package("py") {
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }
+
+pw_python_script("rpc_service_test") {
+  sources = [ "rpc_service_test.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+
+  action = {
+    args = [ "<TARGET_FILE(..:test_rpc_server)>" ]
+    deps = [ "..:test_rpc_server" ]
+    stamp = true
+  }
+}

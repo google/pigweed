@@ -50,8 +50,8 @@ void UnitTestService::Run(ServerContext&,
         if (!suites_to_run.full()) {
           suites_to_run.push_back(suite_name);
         } else {
-          PW_LOG_ERROR("Maximum of %d test suite filters supported",
-                       suites_to_run.max_size());
+          PW_LOG_ERROR("Maximum of %u test suite filters supported",
+                       static_cast<unsigned>(suites_to_run.max_size()));
           writer_.Finish(Status::InvalidArgument());
           return;
         }

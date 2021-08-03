@@ -132,6 +132,17 @@ pw_source_set("rpc_main") {
   sources = [ "rpc_main.cc" ]
 }
 
+pw_executable("test_rpc_server") {
+  sources = [ "test_rpc_server.cc" ]
+  deps = [
+    ":pw_unit_test",
+    ":rpc_service",
+    "$dir_pw_rpc/system_server",
+    "$dir_pw_rpc/system_server:socket",
+    dir_pw_log,
+  ]
+}
+
 pw_proto_library("unit_test_proto") {
   sources = [ "pw_unit_test_proto/unit_test.proto" ]
 }
