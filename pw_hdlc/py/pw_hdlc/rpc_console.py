@@ -37,7 +37,8 @@ from inspect import cleandoc
 import logging
 from pathlib import Path
 import sys
-from typing import Any, Collection, Iterable, Iterator, BinaryIO
+from types import ModuleType
+from typing import Any, Collection, Iterable, Iterator, BinaryIO, List, Union
 import socket
 
 import serial  # type: ignore
@@ -45,6 +46,7 @@ import serial  # type: ignore
 import pw_cli.log
 from pw_console import PwConsoleEmbed
 from pw_console.__main__ import create_temp_log_file
+from pw_log.proto import log_pb2
 from pw_tokenizer import tokens
 from pw_tokenizer.database import LoadTokenDatabases
 from pw_tokenizer.detokenize import Detokenizer, detokenize_base64
@@ -180,7 +182,12 @@ def console(device: str, baudrate: int, proto_globs: Collection[str],
     if not proto_globs:
         proto_globs = ['**/*.proto']
 
-    protos = list(_expand_globs(proto_globs))
+    protos: List[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
+
+    # Append compiled log.proto library to avoid include errors when manually
+    # provided, and shadowing errors due to ordering when the default global
+    # search path is used.
+    protos.append(log_pb2)
 
     if not protos:
         _LOG.critical('No .proto files were found with %s',
