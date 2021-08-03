@@ -233,12 +233,15 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       format_code.presubmit_checks(exclude=PATH_EXCLUSIONS),
       # Include the upstream inclusive language check.
       inclusive_language.inclusive_language,
+      # Include just the lint-related Python checks.
+      python_checks.lint_checks(exclude=PATH_EXCLUSIONS),
   )
 
   FULL = (
       QUICK,  # Add all checks from the 'quick' program
       release_build,
       # Use the upstream Python checks, with custom path filters applied.
+      # Checks listed multiple times are only run once.
       python_checks.all_checks(exclude=PATH_EXCLUSIONS),
   )
 

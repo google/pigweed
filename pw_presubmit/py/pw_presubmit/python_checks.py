@@ -137,11 +137,22 @@ def mypy(ctx: pw_presubmit.PresubmitContext) -> None:
             env=env)
 
 
-_ALL_CHECKS = (
-    test_python_packages,
+_LINT_CHECKS = (
     pylint,
     mypy,
 )
+
+_ALL_CHECKS = (
+    test_python_packages,
+    *_LINT_CHECKS,
+)
+
+
+def lint_checks(endswith: str = '.py',
+                **filter_paths_args) -> Tuple[Callable, ...]:
+    return tuple(
+        filter_paths(endswith=endswith, **filter_paths_args)(function)
+        for function in _LINT_CHECKS)
 
 
 def all_checks(endswith: str = '.py',
