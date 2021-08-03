@@ -23,26 +23,52 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "pw_logs",
-    srcs = ["logs_rpc.cc"],
-    hdrs = ["public/pw_log_rpc/logs_rpc.h"],
+    name = "log_service",
+    srcs = ["log_service.cc"],
+    hdrs = ["public/pw_log_rpc/log_service.h"],
     includes = ["public"],
     deps = [
-        "//pw_bytes",
-        "//pw_result",
-        "//pw_ring_buffer",
-        "//pw_status",
+        ":rpc_log_drain",
+        "//pw_log",
+        "//pw_log:protos.pwpb",
+        "//pw_log:protos.raw_rpc",
     ],
 )
 
+pw_cc_library(
+    name = "rpc_log_drain",
+    srcs = ["rpc_log_drain.cc"],
+    hdrs = [
+        "public/pw_log_rpc/rpc_log_drain.h",
+        "public/pw_log_rpc/rpc_log_drain_map.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_log:protos.pwpb",
+        "//pw_log:protos.raw_rpc",
+        "//pw_multisink",
+        "//pw_protobuf",
+        "//pw_result",
+        "//pw_status",
+        "//pw_string",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_library(
+    name = "rpc_log_drain_thread",
+    hdrs = ["public/pw_log_rpc/rpc_log_drain_thread.h"],
+    includes = ["public"],
+    deps = [
+        ":rpc_log_drain",
+        "//pw_sync:thread_notification",
+        "//pw_thread:thread",
+    ],
+)
+
+# TODO(cachinchilla): implement tests.
 pw_cc_test(
     name = "logs_rpc_test",
-    srcs = [
-        "logs_rpc_test.cc",
-    ],
-    deps = [
-        ":pw_log_queue",
-        "//pw_preprocessor",
-        "//pw_unit_test",
-    ],
 )
