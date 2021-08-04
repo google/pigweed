@@ -949,6 +949,33 @@ constexpr uint16_t kLERPATimeoutMin = 0x0001;      // 1 second
 constexpr uint16_t kLERPATimeoutMax = 0xA1B8;      // Approx. 11.5 hours
 constexpr uint16_t kLERPATimeoutDefault = 0x0384;  // 900 seconds or 15 minutes.
 
+// The maximum length of advertising data that can get passed to the
+// HCI_LE_Set_Advertising_Data command.
+//
+// This constant should be used on pre-5.0 controllers. On controllers that
+// support 5.0+ the host should use the
+// HCI_LE_Read_Maximum_Advertising_Data_Length command to obtain this
+// information.
+constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
+
+// The maximum length of advertising data that can get passed to the
+// HCI_LE_Set_Extended_Advertising_Data command. The advertised data can be
+// larger than this value (based on the value returned for the LE Read Maximum
+// Advertising Data Length parameter), however must be fragmented among multiple
+// command packets.
+constexpr size_t kMaxLEExtendedAdvertisingDataLength = 251;
+
+// Tx Power values, See Core Spec v5.0 Vol 4, Part E, 7.8.6.
+constexpr int8_t kTxPowerInvalid = 127;
+constexpr int8_t kLEAdvertisingTxPowerMin = -127;
+constexpr int8_t kLEAdvertisingTxPowerMax = 20;
+constexpr int8_t kLEExtendedAdvertisingTxPowerNoPreference = 0x7F; // Vol 4, Part E, 7.8.53
+
+// Values used in enabling extended advertising. See Core Spec v5.0 Vol 4, Part E, 7.8.56.
+constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
+constexpr uint8_t kNoMaxExtendedAdvertisingEvents = 0;
+constexpr uint8_t kNoAdvertisingDuration = 0;
+
 // LE advertising types (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5).
 enum class LEAdvertisingType : uint8_t {
   // ADV_IND: Connectable and scannable undirected advertising (the default
@@ -1275,22 +1302,6 @@ enum class LEPrivacyMode : uint8_t {
   kDevice = 0x01,
 };
 
-// The maximum length of advertising data that can get passed to the
-// HCI_LE_Set_Advertising_Data command.
-//
-// This constant should be used on pre-5.0 controllers. On controllers that
-// support 5.0+ the host should use the
-// HCI_LE_Read_Maximum_Advertising_Data_Length command to obtain this
-// information.
-constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
-
-// The maximum length of advertising data that can get passed to the
-// HCI_LE_Set_Extended_Advertising_Data command. The advertised data can be
-// larger than this value (based on the value returned for the LE Read Maximum
-// Advertising Data Length parameter), however must be fragmented among multiple
-// command packets.
-constexpr size_t kMaxLEExtendedAdvertisingDataLength = 251;
-
 // The maximum length of LE data packets when the LE Data Packet Length Extension
 // feature is supported. See v5.0, Vol 6, Part B, 4.5.10, Table 4.3.
 constexpr size_t kMaxLEExtendedDataLength = 251;
@@ -1300,9 +1311,6 @@ constexpr uint8_t kLEAdvertsingSIDMax = 0xEF;
 
 // Invalid RSSI value.
 constexpr int8_t kRSSIInvalid = 127;
-
-// Invalid Tx Power value
-constexpr int8_t kTxPowerInvalid = 127;
 
 // The maximum length of a friendly name that can be assigned to a BR/EDR
 // controller, in octets.
@@ -1319,20 +1327,6 @@ constexpr size_t kMaxEventPacketPayloadSize = 255;
 // The maximum number of bytes in a HCI ACL data packet payload supported by our
 // stack.
 constexpr size_t kMaxACLPayloadSize = 1024;
-
-// The maximum valid advertising handle. See Core Spec v5.0 Vol 4, Part E,
-// 7.8.56.
-constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
-
-// The minimum advertising tx power value. See Core Spec v5.0 Vol 4, Part E, 7.8.6.
-constexpr int8_t kLEAdvertisingTxPowerMin = -127;
-
-// The maximum advertising tx power value. See Core Spec v5.0 Vol 4, Part E, 7.8.6.
-constexpr int8_t kLEAdvertisingTxPowerMax = 20;
-
-// Host has no preference on the advertising tx power, the controller is free to choose the
-// advertising tx power. See Core Spec v5.0 Vol 4, Part E, 7.8.53.
-constexpr int8_t kLEAdvertisingTxPowerNoPreference = 0x7F;
 
 // Values that can be used in HCI Read|WriteFlowControlMode commands.
 enum class FlowControlMode : uint8_t {

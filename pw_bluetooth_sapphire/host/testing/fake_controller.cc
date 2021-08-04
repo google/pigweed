@@ -1701,7 +1701,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
     return;
   }
 
-  if (params.adv_tx_power != hci::kLEAdvertisingTxPowerNoPreference &&
+  if (params.adv_tx_power != hci::kLEExtendedAdvertisingTxPowerNoPreference &&
       (params.adv_tx_power < hci::kLEAdvertisingTxPowerMin ||
        params.adv_tx_power > hci::kLEAdvertisingTxPowerMax)) {
     bt_log(INFO, "fake-hci", "advertising tx power out of range: %d", params.adv_tx_power);
