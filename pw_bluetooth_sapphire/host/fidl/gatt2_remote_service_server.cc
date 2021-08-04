@@ -52,6 +52,45 @@ fbg::Characteristic CharacteristicToFidl(
   return fidl_char;
 }
 
+bool IsHandleValid(fbg::Handle handle) {
+  if (handle.value > std::numeric_limits<bt::att::Handle>::max()) {
+    bt_log(ERROR, "fidl", "Invalid 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX)",
+           handle.value);
+    return false;
+  }
+  return true;
+}
+
+// Returned result is supposed to match Read{Characteristic, Descriptor}Callback (result type is
+// converted by FIDL move constructor).
+[[nodiscard]] fit::result<::fuchsia::bluetooth::gatt2::ReadValue,
+                          ::fuchsia::bluetooth::gatt2::Error>
+ReadResultToFidl(bt::PeerId peer_id, fbg::Handle handle, bt::att::Status status,
+                 const bt::ByteBuffer& value, bool maybe_truncated, const char* request) {
+  if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", request,
+                  bt_str(peer_id), handle.value)) {
+    return fit::error(fidl_helpers::AttStatusToGattFidlError(status));
+  }
+
+  fbg::ReadValue fidl_value;
+  fidl_value.set_handle(handle);
+  fidl_value.set_value(value.ToVector());
+  fidl_value.set_maybe_truncated(maybe_truncated);
+  return fit::ok(std::move(fidl_value));
+}
+
+void FillInReadOptionsDefaults(fbg::ReadOptions& options) {
+  if (options.is_short_read()) {
+    return;
+  }
+  if (!options.long_read().has_offset()) {
+    options.long_read().set_offset(0);
+  }
+  if (!options.long_read().has_max_bytes()) {
+    options.long_read().set_max_bytes(fbg::MAX_VALUE_LENGTH);
+  }
+}
+
 }  // namespace
 
 Gatt2RemoteServiceServer::Gatt2RemoteServiceServer(
@@ -143,29 +182,20 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
 
 void Gatt2RemoteServiceServer::ReadCharacteristic(fbg::Handle fidl_handle, fbg::ReadOptions options,
                                                   ReadCharacteristicCallback callback) {
-  if (fidl_handle.value > std::numeric_limits<bt::att::Handle>::max()) {
-    bt_log(ERROR, "fidl", "Invalid 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX)",
-           fidl_handle.value);
+  if (!IsHandleValid(fidl_handle)) {
     callback(fit::error(fbg::Error::INVALID_HANDLE));
     return;
   }
-
   bt::gatt::CharacteristicHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
 
-  bt::gatt::RemoteService::ReadValueCallback read_cb =
-      [peer_id = peer_id_, fidl_handle, callback = std::move(callback), func = __FUNCTION__](
-          bt::att::Status status, const bt::ByteBuffer& value, bool maybe_truncated) {
-        if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", func,
-                        bt_str(peer_id), fidl_handle.value)) {
-          callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
-          return;
-        }
+  FillInReadOptionsDefaults(options);
 
-        fbg::ReadValue fidl_value;
-        fidl_value.set_handle(fidl_handle);
-        fidl_value.set_value(value.ToVector());
-        fidl_value.set_maybe_truncated(maybe_truncated);
-        callback(fit::ok(std::move(fidl_value)));
+  const char* kRequestName = __FUNCTION__;
+  bt::gatt::RemoteService::ReadValueCallback read_cb =
+      [peer_id = peer_id_, fidl_handle, kRequestName, callback = std::move(callback)](
+          bt::att::Status status, const bt::ByteBuffer& value, bool maybe_truncated) {
+        callback(
+            ReadResultToFidl(peer_id, fidl_handle, status, value, maybe_truncated, kRequestName));
       };
 
   if (options.is_short_read()) {
@@ -173,11 +203,36 @@ void Gatt2RemoteServiceServer::ReadCharacteristic(fbg::Handle fidl_handle, fbg::
     return;
   }
 
-  const fbg::LongReadOptions& long_options = options.long_read();
-  size_t max_bytes = long_options.has_max_bytes() ? static_cast<size_t>(long_options.max_bytes())
-                                                  : bt::att::kMaxAttributeValueLength;
-  uint16_t offset = long_options.has_offset() ? long_options.offset() : 0;
-  service_->ReadLongCharacteristic(handle, offset, max_bytes, std::move(read_cb));
+  service_->ReadLongCharacteristic(handle, options.long_read().offset(),
+                                   options.long_read().max_bytes(), std::move(read_cb));
+}
+
+void Gatt2RemoteServiceServer::ReadDescriptor(::fuchsia::bluetooth::gatt2::Handle fidl_handle,
+                                              ::fuchsia::bluetooth::gatt2::ReadOptions options,
+                                              ReadDescriptorCallback callback) {
+  if (!IsHandleValid(fidl_handle)) {
+    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    return;
+  }
+  bt::gatt::DescriptorHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
+
+  FillInReadOptionsDefaults(options);
+
+  const char* kRequestName = __FUNCTION__;
+  bt::gatt::RemoteService::ReadValueCallback read_cb =
+      [peer_id = peer_id_, fidl_handle, kRequestName, callback = std::move(callback)](
+          bt::att::Status status, const bt::ByteBuffer& value, bool maybe_truncated) {
+        callback(
+            ReadResultToFidl(peer_id, fidl_handle, status, value, maybe_truncated, kRequestName));
+      };
+
+  if (options.is_short_read()) {
+    service_->ReadDescriptor(handle, std::move(read_cb));
+    return;
+  }
+
+  service_->ReadLongDescriptor(handle, options.long_read().offset(),
+                               options.long_read().max_bytes(), std::move(read_cb));
 }
 
 }  // namespace bthost

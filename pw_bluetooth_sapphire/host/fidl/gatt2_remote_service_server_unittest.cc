@@ -21,6 +21,7 @@ constexpr bt::PeerId kPeerId(1);
 constexpr bt::att::Handle kServiceStartHandle = 0x0001;
 constexpr bt::att::Handle kServiceEndHandle = 0xFFFE;
 const bt::UUID kServiceUuid(uint16_t{0x180D});
+const bt::UUID kDescriptorUuid(uint16_t{0x180E});
 
 class FIDL_Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
@@ -412,6 +413,136 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadCharacteristicFailure) {
   std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadCharacteristic(fbg::Handle{kHandle}, std::move(options),
                                       [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_error());
+  EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadShortDescriptor) {
+  constexpr bt::att::Handle kCharacteristicHandle = 2;
+  constexpr bt::att::Handle kCharacteristicValueHandle = 3;
+  constexpr bt::att::Handle kDescriptorHandle = 4;
+  const auto kDescriptorValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
+
+  bt::gatt::CharacteristicData char_data(bt::gatt::Property::kRead, std::nullopt,
+                                         kCharacteristicHandle, kCharacteristicValueHandle,
+                                         kServiceUuid);
+  fake_client()->set_characteristics({char_data});
+  bt::gatt::DescriptorData desc_data(kDescriptorHandle, kDescriptorUuid);
+  fake_client()->set_descriptors({desc_data});
+
+  std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+  service_proxy()->DiscoverCharacteristics(
+      [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_characteristics.has_value());
+  ASSERT_EQ(fidl_characteristics->size(), 1u);
+  const fbg::Characteristic& fidl_char = fidl_characteristics->front();
+  ASSERT_TRUE(fidl_char.has_descriptors());
+  ASSERT_EQ(fidl_char.descriptors().size(), 1u);
+  const fbg::Descriptor& fidl_desc = fidl_char.descriptors().front();
+  ASSERT_TRUE(fidl_desc.has_handle());
+
+  size_t read_count = 0;
+  fake_client()->set_read_request_callback(
+      [&](bt::att::Handle handle, bt::gatt::Client::ReadCallback callback) {
+        read_count++;
+        EXPECT_EQ(handle, kDescriptorHandle);
+        callback(bt::att::Status(), kDescriptorValue, /*maybe_truncated=*/false);
+      });
+  fake_client()->set_read_blob_request_callback([](auto, auto, auto) { FAIL(); });
+
+  fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadDescriptor(fidl_desc.handle(), std::move(options),
+                                  [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  EXPECT_EQ(read_count, 1u);
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_ok()) << static_cast<uint32_t>(fidl_result->error());
+  const fbg::ReadValue& read_value = fidl_result->value();
+  EXPECT_TRUE(ContainersEqual(kDescriptorValue, read_value.value()));
+  EXPECT_FALSE(read_value.maybe_truncated());
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadLongDescriptorWithOffsetAndMaxBytes) {
+  constexpr bt::att::Handle kCharacteristicHandle = 2;
+  constexpr bt::att::Handle kCharacteristicValueHandle = 3;
+  constexpr bt::att::Handle kDescriptorHandle = 4;
+  constexpr uint16_t kOffset = 1;
+  constexpr uint16_t kMaxBytes = 3;
+  const auto kDescriptorValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
+
+  bt::gatt::CharacteristicData char_data(bt::gatt::Property::kRead, std::nullopt,
+                                         kCharacteristicHandle, kCharacteristicValueHandle,
+                                         kServiceUuid);
+  fake_client()->set_characteristics({char_data});
+  bt::gatt::DescriptorData desc_data(kDescriptorHandle, kDescriptorUuid);
+  fake_client()->set_descriptors({desc_data});
+
+  std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+  service_proxy()->DiscoverCharacteristics(
+      [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_characteristics.has_value());
+  ASSERT_EQ(fidl_characteristics->size(), 1u);
+  const fbg::Characteristic& fidl_char = fidl_characteristics->front();
+  ASSERT_TRUE(fidl_char.has_descriptors());
+  ASSERT_EQ(fidl_char.descriptors().size(), 1u);
+  const fbg::Descriptor& fidl_desc = fidl_char.descriptors().front();
+  ASSERT_TRUE(fidl_desc.has_handle());
+
+  fbg::LongReadOptions long_options;
+  long_options.set_offset(kOffset);
+  long_options.set_max_bytes(kMaxBytes);
+  fbg::ReadOptions read_options;
+  read_options.set_long_read(std::move(long_options));
+
+  size_t read_count = 0;
+  fake_client()->set_read_request_callback([](auto, auto) { FAIL(); });
+  fake_client()->set_read_blob_request_callback(
+      [&](bt::att::Handle handle, uint16_t offset, bt::gatt::Client::ReadCallback cb) {
+        read_count++;
+        EXPECT_EQ(handle, kDescriptorHandle);
+        EXPECT_EQ(offset, kOffset);
+        cb(bt::att::Status(), kDescriptorValue.view(offset), /*maybe_truncated=*/false);
+      });
+
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadDescriptor(fidl_desc.handle(), std::move(read_options),
+                                  [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  RunLoopUntilIdle();
+  EXPECT_EQ(read_count, 1u);
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_ok()) << static_cast<uint32_t>(fidl_result->error());
+  const fbg::ReadValue& read_value = fidl_result->value();
+  EXPECT_TRUE(ContainersEqual(kDescriptorValue.view(kOffset, kMaxBytes), read_value.value()));
+  EXPECT_TRUE(read_value.maybe_truncated());
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadDescriptorHandleTooLarge) {
+  fbg::Handle handle;
+  handle.value = static_cast<uint64_t>(std::numeric_limits<bt::att::Handle>::max()) + 1;
+
+  fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadDescriptor(handle, std::move(options),
+                                  [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_error());
+  EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_HANDLE);
+}
+
+// Trying to read a descriptor that doesn't exist should return a FAILURE error.
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadDescriptorFailure) {
+  constexpr bt::att::Handle kHandle = 3;
+  fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
+  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  service_proxy()->ReadDescriptor(fbg::Handle{kHandle}, std::move(options),
+                                  [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
   ASSERT_TRUE(fidl_result.has_value());
   ASSERT_TRUE(fidl_result->is_error());
