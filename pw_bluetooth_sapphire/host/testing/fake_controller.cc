@@ -1158,8 +1158,14 @@ void FakeController::OnLESetAdvertisingEnable(
 void FakeController::OnLESetScanResponseData(
     const hci::LESetScanResponseDataCommandParams& params) {
   legacy_advertising_state_.scan_rsp_length = params.scan_rsp_data_length;
-  std::memcpy(legacy_advertising_state_.scan_rsp_data, params.scan_rsp_data,
-              params.scan_rsp_data_length);
+
+  if (params.scan_rsp_data_length == 0) {
+    std::memset(legacy_advertising_state_.scan_rsp_data, 0,
+                sizeof(legacy_advertising_state_.scan_rsp_data));
+  } else {
+    std::memcpy(legacy_advertising_state_.scan_rsp_data, params.scan_rsp_data,
+                params.scan_rsp_data_length);
+  }
 
   RespondWithCommandComplete(hci::kLESetScanResponseData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
@@ -1167,7 +1173,12 @@ void FakeController::OnLESetScanResponseData(
 
 void FakeController::OnLESetAdvertisingData(const hci::LESetAdvertisingDataCommandParams& params) {
   legacy_advertising_state_.data_length = params.adv_data_length;
-  std::memcpy(legacy_advertising_state_.data, params.adv_data, params.adv_data_length);
+
+  if (params.adv_data_length == 0) {
+    std::memset(legacy_advertising_state_.data, 0, sizeof(legacy_advertising_state_.data));
+  } else {
+    std::memcpy(legacy_advertising_state_.data, params.adv_data, params.adv_data_length);
+  }
 
   RespondWithCommandComplete(hci::kLESetAdvertisingData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
@@ -1797,7 +1808,13 @@ void FakeController::OnLESetExtendedAdvertisingData(
   }
 
   state.data_length = params.adv_data_length;
-  std::memcpy(state.data, params.adv_data, params.adv_data_length);
+
+  if (params.adv_data_length == 0) {
+    std::memset(state.data, 0, sizeof(state.data));
+  } else {
+    std::memcpy(state.data, params.adv_data, params.adv_data_length);
+  }
+
   RespondWithCommandComplete(hci::kLESetExtendedAdvertisingData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
@@ -1855,7 +1872,13 @@ void FakeController::OnLESetExtendedScanResponseData(
   }
 
   state.scan_rsp_length = params.scan_rsp_data_length;
-  std::memcpy(state.scan_rsp_data, params.scan_rsp_data, state.scan_rsp_length);
+
+  if (params.scan_rsp_data_length == 0) {
+    std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
+  } else {
+    std::memcpy(state.scan_rsp_data, params.scan_rsp_data, params.scan_rsp_data_length);
+  }
+
   RespondWithCommandComplete(hci::kLESetExtendedScanResponseData, hci::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
