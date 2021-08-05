@@ -158,13 +158,14 @@ pw_cc_test(
     ],
 )
 
-cc_binary(
+# TODO(hepler): Build this as a cc_binary and use it in integration tests.
+filegroup(
     name = "test_rpc_server",
     srcs = ["test_rpc_server.cc"],
-    deps = [
-        ":pw_unit_test",
-        ":rpc_service",
-        "//pw_log",
-        "//pw_rpc/system_server",
-    ],
+    # deps = [
+    #     ":pw_unit_test",
+    #     ":rpc_service",
+    #     "//pw_log",
+    #     "//pw_rpc/system_server",
+    # ],
 )

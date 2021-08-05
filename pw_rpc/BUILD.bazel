@@ -78,14 +78,15 @@ pw_cc_library(
     includes = ["public"],
 )
 
-cc_binary(
+# TODO(hepler): Build this as a cc_binary and use it in integration tests.
+filegroup(
     name = "test_rpc_server",
     srcs = ["test_rpc_server.cc"],
-    deps = [
-        "system_server",
-        ":benchmark",
-        "//pw_log",
-    ],
+    # deps = [
+    #     "system_server",
+    #     ":benchmark",
+    #     "//pw_log",
+    # ],
 )
 
 pw_cc_library(
