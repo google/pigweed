@@ -30,10 +30,11 @@ namespace pw::rpc::internal {
 class TestMethod : public Method {
  public:
   constexpr TestMethod(uint32_t id)
-      : Method(id, InvokeForTest), last_channel_id_(0) {}
+      : Method(id, InvokeForTest), last_channel_id_(0), invocations_(0) {}
 
   uint32_t last_channel_id() const { return last_channel_id_; }
   const Packet& last_request() const { return last_request_; }
+  size_t invocations() const { return invocations_; }
 
   void set_response(std::span<const std::byte> payload) { response_ = payload; }
   void set_status(Status status) { response_status_ = status; }
@@ -45,6 +46,7 @@ class TestMethod : public Method {
     const auto& test_method = static_cast<const TestMethod&>(method);
     test_method.last_channel_id_ = call.channel().id();
     test_method.last_request_ = request;
+    test_method.invocations_ += 1;
   }
 
   // Make these mutable so they can be set in the Invoke method, which is const.
@@ -52,6 +54,7 @@ class TestMethod : public Method {
   // allows tests to verify that the Method is invoked correctly.
   mutable uint32_t last_channel_id_;
   mutable Packet last_request_;
+  mutable size_t invocations_;
 
   std::span<const std::byte> response_;
   Status response_status_;

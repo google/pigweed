@@ -250,6 +250,24 @@ class BidiMethod : public BasicServer {
   internal::test::FakeServerReaderWriter responder_;
 };
 
+TEST_F(BidiMethod, DuplicateCall_CancelsExistingThenCallsAgain) {
+  bool cancelled = false;
+  responder_.set_on_error([&cancelled](Status error) {
+    if (error.IsCancelled()) {
+      cancelled = true;
+    }
+  });
+
+  const TestMethod& method = service_.method(100);
+  ASSERT_EQ(method.invocations(), 0u);
+
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::REQUEST), output_));
+
+  EXPECT_TRUE(cancelled);
+  EXPECT_EQ(method.invocations(), 1u);
+}
+
 TEST_F(BidiMethod, Cancel_ClosesServerWriter) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(PacketForRpc(PacketType::CANCEL), output_));

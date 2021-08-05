@@ -107,6 +107,11 @@ Status Server::ProcessPacket(std::span<const byte> data,
 
   switch (packet.type()) {
     case PacketType::REQUEST: {
+      // If the REQUEST is for an ongoing RPC, cancel it, then call it again.
+      if (responder != responders_.end()) {
+        responder->HandleError(Status::Cancelled());
+      }
+
       internal::ServerCall call(
           static_cast<internal::Server&>(*this), *channel, *service, *method);
       method->Invoke(call, packet);

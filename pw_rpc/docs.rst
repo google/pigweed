@@ -24,6 +24,26 @@ documents:
 
   This documentation is under construction.
 
+RPC semantics
+=============
+The semantics of ``pw_rpc`` are similar to `gRPC
+<https://grpc.io/docs/what-is-grpc/core-concepts/>`_.
+
+RPC call lifecycle
+------------------
+In ``pw_rpc``, an RPC begins when the client sends a request packet. The server
+receives the request, looks up the relevant service method, then calls into the
+RPC function. The RPC is considered active until the server sends a response
+packet with the RPC's status. The client may terminate an ongoing RPC by
+cancelling it.
+
+``pw_rpc`` supports only one RPC invocation per service/method/channel. If a
+client calls an ongoing RPC on the same channel, the server cancels the ongoing
+call and reinvokes the RPC with the new request. This applies to unary and
+streaming RPCs, though the server may not have an opportunity to cancel a
+synchronously handled unary RPC before it completes. The same RPC may be invoked
+multiple times simultaneously if the invocations are on different channels.
+
 Creating an RPC
 ===============
 
