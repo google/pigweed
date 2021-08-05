@@ -146,6 +146,11 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return nullptr;
   }
 
+  std::unique_ptr<hci::CommandPacket> BuildRemoveAdvertisingSet(
+      const DeviceAddress& address) override {
+    return nullptr;
+  }
+
   size_t max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Status pending_error_;

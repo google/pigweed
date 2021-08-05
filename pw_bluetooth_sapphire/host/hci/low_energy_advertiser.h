@@ -160,6 +160,11 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // flavor of low energy advertising being implemented.
   virtual std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) = 0;
 
+  // Build the HCI command packet to remove the advertising set entirely from the controller's
+  // memory for the flavor of low energy advertising being implemented.
+  virtual std::unique_ptr<CommandPacket> BuildRemoveAdvertisingSet(
+      const DeviceAddress& address) = 0;
+
   // Unconditionally start advertising (all checks must be performed in the methods that call this
   // one).
   void StartAdvertisingInternal(const DeviceAddress& address, const AdvertisingData& data,

@@ -93,6 +93,15 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildUnsetScanResponse
   return packet;
 }
 
+std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+    const DeviceAddress& address) {
+  constexpr size_t kPayloadSize = sizeof(LESetAdvertisingEnableCommandParams);
+  auto packet = CommandPacket::New(kLESetAdvertisingEnable, kPayloadSize);
+  auto params = packet->mutable_payload<LESetAdvertisingEnableCommandParams>();
+  params->advertising_enable = GenericEnableParam::kDisable;
+  return packet;
+}
+
 static std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
   auto packet = CommandPacket::New(kLEReadAdvertisingChannelTxPower);
   ZX_ASSERT(packet);

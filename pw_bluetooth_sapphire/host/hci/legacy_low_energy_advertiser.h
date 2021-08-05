@@ -64,6 +64,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) override;
 
+  std::unique_ptr<CommandPacket> BuildRemoveAdvertisingSet(const DeviceAddress& address) override;
+
   // |starting_| is set to true if a start is pending.
   // |staged_params_| are the parameters that will be advertised.
   struct StagedParams {

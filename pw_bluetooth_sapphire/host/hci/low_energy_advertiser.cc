@@ -84,6 +84,7 @@ bool LowEnergyAdvertiser::StopAdvertising() {
     hci_cmd_runner_->QueueCommand(BuildEnablePacket(address, GenericEnableParam::kDisable));
     hci_cmd_runner_->QueueCommand(BuildUnsetScanResponse(address));
     hci_cmd_runner_->QueueCommand(BuildUnsetAdvertisingData(address));
+    hci_cmd_runner_->QueueCommand(BuildRemoveAdvertisingSet(address));
   }
 
   hci_cmd_runner_->RunCommands(
@@ -108,6 +109,8 @@ bool LowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
   hci_cmd_runner_->QueueCommand(BuildEnablePacket(address, GenericEnableParam::kDisable));
   hci_cmd_runner_->QueueCommand(BuildUnsetScanResponse(address));
   hci_cmd_runner_->QueueCommand(BuildUnsetAdvertisingData(address));
+  hci_cmd_runner_->QueueCommand(BuildRemoveAdvertisingSet(address));
+
   hci_cmd_runner_->RunCommands([address](Status status) {
     bt_log(INFO, "hci-le", "advertising stopped for %s: %s", bt_str(address), bt_str(status));
   });
