@@ -77,8 +77,8 @@ class FakeClient final : public Client {
     write_request_callback_ = std::move(callback);
   }
 
-  using ExecutePrepareWritesCallback =
-      fit::function<void(att::PrepareWriteQueue prep_write_queue, att::StatusCallback)>;
+  using ExecutePrepareWritesCallback = fit::function<void(att::PrepareWriteQueue prep_write_queue,
+                                                          ReliableMode, att::StatusCallback)>;
   void set_execute_prepare_writes_callback(ExecutePrepareWritesCallback callback) {
     execute_prepare_writes_callback_ = std::move(callback);
   }
@@ -98,7 +98,8 @@ class FakeClient final : public Client {
   }
 
   // Sets a callback which will run when WriteWithoutResponse gets called.
-  using WriteWithoutResponseCallback = fit::function<void(att::Handle, const ByteBuffer&)>;
+  using WriteWithoutResponseCallback =
+      fit::function<void(att::Handle, const ByteBuffer&, att::StatusCallback)>;
   void set_write_without_rsp_callback(WriteWithoutResponseCallback callback) {
     write_without_rsp_callback_ = std::move(callback);
   }
@@ -110,9 +111,11 @@ class FakeClient final : public Client {
   fxl::WeakPtr<Client> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
   fxl::WeakPtr<FakeClient> AsFakeWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
- private:
   // Client overrides:
   uint16_t mtu() const override;
+
+ private:
+  // Client overrides:
   void ExchangeMTU(MTUCallback callback) override;
   void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
                         att::StatusCallback status_callback) override;
@@ -143,7 +146,8 @@ class FakeClient final : public Client {
   void PrepareWriteRequest(att::Handle handle, uint16_t offset, const ByteBuffer& part_value,
                            PrepareCallback callback) override;
   void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCallback callback) override;
-  void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value) override;
+  void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value,
+                            att::StatusCallback callback) override;
   void SetNotificationHandler(NotificationCallback callback) override;
 
   // All callbacks will be posted on this dispatcher to emulate asynchronous

@@ -2991,11 +2991,16 @@ TEST_F(GATT_ClientTest, WriteWithoutResponseExceedsMtu) {
   bool called = false;
   fake_chan()->SetSendCallback([&](auto) { called = true; }, dispatcher());
 
-  client()->WriteWithoutResponse(kHandle, kValue);
+  std::optional<att::Status> status;
+  client()->WriteWithoutResponse(kHandle, kValue,
+                                 [&](att::Status cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   // No packet should be sent.
   EXPECT_FALSE(called);
+  ASSERT_TRUE(status.has_value());
+  ASSERT_FALSE(status->is_success());
+  EXPECT_EQ(status->error(), HostError::kFailed);
 }
 
 TEST_F(GATT_ClientTest, WriteWithoutResponseSuccess) {
@@ -3007,9 +3012,15 @@ TEST_F(GATT_ClientTest, WriteWithoutResponseSuccess) {
   );
 
   // Initiate the request in a loop task, as Expect() below blocks
-  async::PostTask(dispatcher(), [&] { client()->WriteWithoutResponse(kHandle, kValue); });
+  std::optional<att::Status> status;
+  async::PostTask(dispatcher(), [&] {
+    client()->WriteWithoutResponse(kHandle, kValue,
+                                   [&](att::Status cb_status) { status = cb_status; });
+  });
 
   ASSERT_TRUE(Expect(kExpectedRequest));
+  ASSERT_TRUE(status.has_value());
+  ASSERT_TRUE(status->is_success());
 }
 
 TEST_F(GATT_ClientTest, ReadRequestEmptyResponse) {

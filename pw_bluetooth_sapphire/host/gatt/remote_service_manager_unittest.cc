@@ -2010,7 +2010,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
 
   uint8_t process_long_write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
-      [&](att::PrepareWriteQueue write_queue, auto callback) {
+      [&](att::PrepareWriteQueue write_queue, auto /*reliable_mode*/, auto callback) {
         EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
 
         for (int i = 0; i < kExpectedQueueSize; i++) {
@@ -2068,7 +2068,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
 
   uint8_t process_long_write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
-      [&](att::PrepareWriteQueue write_queue, auto callback) {
+      [&](att::PrepareWriteQueue write_queue, auto /*reliable_mode*/, auto callback) {
         EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
 
         for (int i = 0; i < kExpectedQueueSize; i++) {
@@ -2130,7 +2130,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongReliableWrite) {
 
   uint8_t process_long_write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
-      [&](att::PrepareWriteQueue write_queue, auto callback) {
+      [&](att::PrepareWriteQueue write_queue, auto /*reliable_mode*/, auto callback) {
         EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
         process_long_write_count++;
         callback(att::Status());
@@ -2155,11 +2155,33 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   SetupCharacteristics(service, {{chr}});
 
   bool called = false;
-  fake_client()->set_write_without_rsp_callback([&](auto, const auto&) { called = true; });
+  fake_client()->set_write_without_rsp_callback([&](auto, const auto&, auto) { called = true; });
 
-  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, std::vector<uint8_t>());
+  std::optional<att::Status> status;
+  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, std::vector<uint8_t>(),
+                                              [&](att::Status cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   EXPECT_FALSE(called);
+  ASSERT_TRUE(status.has_value());
+  ASSERT_FALSE(status->is_success());
+  EXPECT_EQ(status->error(), HostError::kNotSupported);
+}
+
+TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseBeforeCharacteristicDiscovery) {
+  ServiceData data(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  bool called = false;
+  fake_client()->set_write_without_rsp_callback([&](auto, const auto&, auto) { called = true; });
+
+  std::optional<att::Status> status;
+  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, std::vector<uint8_t>(),
+                                              [&](att::Status cb_status) { status = cb_status; });
+  RunLoopUntilIdle();
+  EXPECT_FALSE(called);
+  ASSERT_TRUE(status.has_value());
+  ASSERT_FALSE(status->is_success());
+  EXPECT_EQ(status->error(), HostError::kNotReady);
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithoutResponseProperty) {
@@ -2171,16 +2193,21 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithou
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1), {chr});
 
   bool called = false;
-  fake_client()->set_write_without_rsp_callback([&](att::Handle handle, const auto& value) {
-    EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
-    called = true;
-  });
+  fake_client()->set_write_without_rsp_callback(
+      [&](att::Handle handle, const auto& value, att::StatusCallback cb) {
+        EXPECT_EQ(kDefaultChrcValueHandle, handle);
+        EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
+        called = true;
+        cb(att::Status());
+      });
 
-  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, kValue);
+  std::optional<att::Status> status;
+  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, kValue,
+                                              [&](att::Status cb_status) { status = cb_status; });
   RunLoopUntilIdle();
-
   EXPECT_TRUE(called);
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProperty) {
@@ -2191,16 +2218,22 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProper
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1), {chr});
 
   bool called = false;
-  fake_client()->set_write_without_rsp_callback([&](att::Handle handle, const auto& value) {
-    EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
-    called = true;
-  });
+  fake_client()->set_write_without_rsp_callback(
+      [&](att::Handle handle, const auto& value, att::StatusCallback cb) {
+        EXPECT_EQ(kDefaultChrcValueHandle, handle);
+        EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
+        called = true;
+        cb(att::Status());
+      });
 
-  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, kValue);
+  std::optional<att::Status> status;
+  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, kValue,
+                                              [&](att::Status cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   EXPECT_TRUE(called);
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, ReadDescAfterShutDown) {
@@ -2517,7 +2550,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescLongSuccess) {
 
   uint8_t process_long_write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
-      [&](att::PrepareWriteQueue write_queue, auto callback) {
+      [&](att::PrepareWriteQueue write_queue, auto /*reliable_mode*/, auto callback) {
         EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
 
         att::QueuedWrite prepare_write;

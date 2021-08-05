@@ -163,7 +163,8 @@ void GattRemoteServiceServer::WriteLongCharacteristic(uint64_t id, uint16_t offs
 void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(uint64_t id,
                                                                  ::std::vector<uint8_t> value) {
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
-  service_->WriteCharacteristicWithoutResponse(CharacteristicHandleFromFidl(id), std::move(value));
+  service_->WriteCharacteristicWithoutResponse(CharacteristicHandleFromFidl(id), std::move(value),
+                                               /*cb=*/[](auto) {});
 }
 
 void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback callback) {

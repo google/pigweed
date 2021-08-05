@@ -66,6 +66,9 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   // Returns the service UUID.
   const UUID& uuid() const { return service_data_.type; }
 
+  // The current ATT_MTU.
+  uint16_t att_mtu() const { return client_->mtu(); }
+
   // Adds a handler which will be called when this service gets removed.
   // Returns false if the service was already shut down. |callback| will be
   // posted on |dispatcher|.
@@ -147,7 +150,9 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
 
   // Sends a "Write Without Response" to the characteristic with the given
   // identifier. Fails if characteristics have not been discovered.
-  void WriteCharacteristicWithoutResponse(CharacteristicHandle id, std::vector<uint8_t> value);
+  void WriteCharacteristicWithoutResponse(CharacteristicHandle id, std::vector<uint8_t> value,
+                                          att::StatusCallback cb,
+                                          async_dispatcher_t* dispatcher = nullptr);
 
   // Performs the "Read Characteristic Descriptors" procedure (v5.0, Vol 3, Part
   // G, 4.12.1).

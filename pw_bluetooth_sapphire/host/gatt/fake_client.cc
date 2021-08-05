@@ -139,7 +139,7 @@ void FakeClient::WriteRequest(att::Handle handle, const ByteBuffer& value,
 void FakeClient::ExecutePrepareWrites(att::PrepareWriteQueue write_queue,
                                       ReliableMode reliable_mode, att::StatusCallback callback) {
   if (execute_prepare_writes_callback_) {
-    execute_prepare_writes_callback_(std::move(write_queue), std::move(callback));
+    execute_prepare_writes_callback_(std::move(write_queue), reliable_mode, std::move(callback));
   }
 }
 
@@ -155,9 +155,10 @@ void FakeClient::ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCall
   }
 }
 
-void FakeClient::WriteWithoutResponse(att::Handle handle, const ByteBuffer& value) {
+void FakeClient::WriteWithoutResponse(att::Handle handle, const ByteBuffer& value,
+                                      att::StatusCallback callback) {
   if (write_without_rsp_callback_) {
-    write_without_rsp_callback_(handle, value);
+    write_without_rsp_callback_(handle, value, std::move(callback));
   }
 }
 

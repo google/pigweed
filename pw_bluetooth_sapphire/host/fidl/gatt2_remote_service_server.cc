@@ -91,6 +91,20 @@ void FillInReadOptionsDefaults(fbg::ReadOptions& options) {
   }
 }
 
+void FillInDefaultWriteOptions(fbg::WriteOptions& options) {
+  if (!options.has_write_mode()) {
+    *options.mutable_write_mode() = fbg::WriteMode::DEFAULT;
+  }
+  if (!options.has_offset()) {
+    *options.mutable_offset() = 0;
+  }
+}
+
+bt::gatt::ReliableMode ReliableModeFromFidl(const fbg::WriteMode& mode) {
+  return mode == fbg::WriteMode::RELIABLE ? bt::gatt::ReliableMode::kEnabled
+                                          : bt::gatt::ReliableMode::kDisabled;
+}
+
 }  // namespace
 
 Gatt2RemoteServiceServer::Gatt2RemoteServiceServer(
@@ -205,6 +219,53 @@ void Gatt2RemoteServiceServer::ReadCharacteristic(fbg::Handle fidl_handle, fbg::
 
   service_->ReadLongCharacteristic(handle, options.long_read().offset(),
                                    options.long_read().max_bytes(), std::move(read_cb));
+}
+
+void Gatt2RemoteServiceServer::WriteCharacteristic(fbg::Handle fidl_handle,
+                                                   std::vector<uint8_t> value,
+                                                   fbg::WriteOptions options,
+                                                   WriteCharacteristicCallback callback) {
+  if (!IsHandleValid(fidl_handle)) {
+    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    return;
+  }
+  bt::gatt::CharacteristicHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
+
+  FillInDefaultWriteOptions(options);
+
+  const char* kRequestName = __FUNCTION__;
+  bt::att::StatusCallback write_cb = [peer_id = peer_id_, fidl_handle,
+                                      callback = std::move(callback),
+                                      kRequestName](bt::att::Status status) {
+    if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", kRequestName,
+                    bt_str(peer_id), fidl_handle.value)) {
+      callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
+      return;
+    }
+
+    callback(fit::ok());
+  };
+
+  if (options.write_mode() == fbg::WriteMode::WITHOUT_RESPONSE) {
+    if (options.offset() != 0) {
+      write_cb(bt::att::Status(bt::HostError::kInvalidParameters));
+      return;
+    }
+    service_->WriteCharacteristicWithoutResponse(handle, std::move(value), std::move(write_cb));
+    return;
+  }
+
+  const uint16_t kMaxShortWriteValueLength =
+      service_->att_mtu() - sizeof(bt::att::OpCode) - sizeof(bt::att::WriteRequestParams);
+  if (options.offset() == 0 && options.write_mode() == fbg::WriteMode::DEFAULT &&
+      value.size() <= kMaxShortWriteValueLength) {
+    service_->WriteCharacteristic(handle, std::move(value), std::move(write_cb));
+    return;
+  }
+
+  service_->WriteLongCharacteristic(handle, options.offset(), std::move(value),
+                                    ReliableModeFromFidl(options.write_mode()),
+                                    std::move(write_cb));
 }
 
 void Gatt2RemoteServiceServer::ReadDescriptor(::fuchsia::bluetooth::gatt2::Handle fidl_handle,

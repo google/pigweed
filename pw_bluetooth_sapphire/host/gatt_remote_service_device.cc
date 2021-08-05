@@ -337,7 +337,8 @@ void GattRemoteServiceDevice::BtGattSvcWriteCharacteristic(
   auto handle = CharacteristicHandleFromBanjo(id);
 
   if (write_cb == nullptr) {
-    service_->WriteCharacteristicWithoutResponse(handle, std::move(data));
+    service_->WriteCharacteristicWithoutResponse(
+        handle, std::move(data), /*cb=*/[](auto) {}, loop_.dispatcher());
   } else {
     auto status_callback = [cookie, id, write_cb](bt::att::Status status) {
       bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);

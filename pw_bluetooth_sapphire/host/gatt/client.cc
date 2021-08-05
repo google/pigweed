@@ -1009,15 +1009,18 @@ class Impl final : public Client {
     }
   }
 
-  void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value) override {
+  void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value,
+                            att::StatusCallback callback) override {
     const size_t payload_size = sizeof(att::WriteRequestParams) + value.size();
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
-      bt_log(TRACE, "gatt", "write request payload exceeds MTU");
+      bt_log(DEBUG, "gatt", "write request payload exceeds MTU");
+      callback(att::Status(HostError::kFailed));
       return;
     }
 
     auto pdu = NewPDU(payload_size);
     if (!pdu) {
+      callback(att::Status(HostError::kOutOfMemory));
       return;
     }
 
@@ -1029,6 +1032,7 @@ class Impl final : public Client {
     value.Copy(&value_view);
 
     att_->SendWithoutResponse(std::move(pdu));
+    callback(att::Status());
   }
 
   void SetNotificationHandler(NotificationCallback handler) override {

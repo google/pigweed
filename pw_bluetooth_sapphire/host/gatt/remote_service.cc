@@ -323,22 +323,28 @@ void RemoteService::WriteLongCharacteristic(CharacteristicHandle id, uint16_t of
 }
 
 void RemoteService::WriteCharacteristicWithoutResponse(CharacteristicHandle id,
-                                                       std::vector<uint8_t> value) {
-  RunGattTask([this, id, value = std::move(value)]() mutable {
+                                                       std::vector<uint8_t> value,
+                                                       StatusCallback cb,
+                                                       async_dispatcher_t* dispatcher) {
+  RunGattTask([this, id, cb = std::move(cb), dispatcher, value = std::move(value)]() mutable {
     RemoteCharacteristic* chrc;
     Status status = Status(GetCharacteristic(id, &chrc));
     ZX_DEBUG_ASSERT(chrc || !status);
     if (!status) {
+      ReportStatus(status, std::move(cb), dispatcher);
       return;
     }
 
     if (!(chrc->info().properties & (Property::kWrite | Property::kWriteWithoutResponse))) {
       bt_log(DEBUG, "gatt", "characteristic does not support \"write without response\"");
+      ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
     }
 
-    client_->WriteWithoutResponse(chrc->info().value_handle,
-                                  BufferView(value.data(), value.size()));
+    client_->WriteWithoutResponse(chrc->info().value_handle, BufferView(value.data(), value.size()),
+                                  [cb = std::move(cb), dispatcher](Status status) mutable {
+                                    ReportStatus(status, std::move(cb), dispatcher);
+                                  });
   });
 }
 
