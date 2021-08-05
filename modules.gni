@@ -50,6 +50,7 @@ declare_args() {
   dir_pw_env_setup = get_path_info("pw_env_setup", "abspath")
   dir_pw_function = get_path_info("pw_function", "abspath")
   dir_pw_fuzzer = get_path_info("pw_fuzzer", "abspath")
+  dir_pw_bluetooth_hci = get_path_info("pw_bluetooth_hci", "abspath")
   dir_pw_hex_dump = get_path_info("pw_hex_dump", "abspath")
   dir_pw_hdlc = get_path_info("pw_hdlc", "abspath")
   dir_pw_i2c = get_path_info("pw_i2c", "abspath")

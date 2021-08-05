@@ -68,6 +68,7 @@ group("module_docs") {
     "$dir_pw_base64:docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_blob_store:docs",
+    "$dir_pw_bluetooth_hci:docs",
     "$dir_pw_boot:docs",
     "$dir_pw_boot_cortex_m:docs",
     "$dir_pw_build:docs",
