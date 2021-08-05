@@ -50,7 +50,9 @@ provided for the three RPC events:
   * on_completed(call_object, status) - called when the RPC completes
   * on_error(call_object, error) - called if the RPC terminates due to an error
 
-If no callbacks are provided, the events are simply logged.
+The default callbacks simply log the events. If a user-provided callback throws
+an exception, that exception is logged and raised when the user calls functions
+on the call object.
 
 Unary and client streaming RPCs are invoked asynchronously by calling invoke on
 the method object. invoke takes the callbacks. The request may be provided

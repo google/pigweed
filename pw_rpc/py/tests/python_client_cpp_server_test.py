@@ -17,7 +17,7 @@
 from typing import List, Tuple
 import unittest
 
-from pw_hdlc import rpc
+import pw_hdlc.rpc
 from pw_rpc import benchmark_pb2, testing
 from pw_status import Status
 
@@ -30,7 +30,7 @@ class RpcIntegrationTest(unittest.TestCase):
     test_server_command: Tuple[str, ...] = ()
 
     def setUp(self) -> None:
-        self._context = rpc.HdlcRpcLocalServerAndClient(
+        self._context = pw_hdlc.rpc.HdlcRpcLocalServerAndClient(
             self.test_server_command, PORT, [benchmark_pb2])
         self.rpcs = self._context.client.channel(1).rpcs
 
@@ -54,6 +54,29 @@ class RpcIntegrationTest(unittest.TestCase):
                 call.send(benchmark_pb2.Payload(payload=payload))
 
                 self.assertEqual(next(responses).payload, payload)
+
+    def test_bidirectional_call_twice(self) -> None:
+        rpc = self.rpcs.pw.rpc.Benchmark.BidirectionalEcho
+
+        for _ in range(ITERATIONS):
+            first_call = rpc.invoke()
+            first_call.send(payload=b'abc')
+            self.assertEqual(next(iter(first_call)),
+                             rpc.response(payload=b'abc'))
+            self.assertFalse(first_call.completed())
+
+            second_call = rpc.invoke()
+            second_call.send(payload=b'123')
+            self.assertEqual(next(iter(second_call)),
+                             rpc.response(payload=b'123'))
+
+            self.assertIs(first_call.error, Status.CANCELLED)
+            self.assertEqual(first_call.responses,
+                             [rpc.response(payload=b'abc')])
+
+            self.assertFalse(second_call.completed())
+            self.assertEqual(second_call.responses,
+                             [rpc.response(payload=b'123')])
 
 
 def _main(test_server_command: List[str], unittest_args: List[str]) -> None:

@@ -31,6 +31,7 @@ from pw_rpc.callback_client.call import (
     CallType,
     UnaryResponse,
     StreamResponse,
+    Call,
     UnaryCall,
     ServerStreamingCall,
     ClientStreamingCall,
@@ -38,7 +39,6 @@ from pw_rpc.callback_client.call import (
     OnNextCallback,
     OnCompletedCallback,
     OnErrorCallback,
-    InternalCallbacks,
 )
 
 _LOG = logging.getLogger(__package__)
@@ -348,46 +348,31 @@ class Impl(client.ClientImpl):
 
     def handle_response(self,
                         rpc: PendingRpc,
-                        context: InternalCallbacks,
+                        context: Call,
                         payload,
                         *,
                         args: tuple = (),
                         kwargs: dict = None) -> None:
         """Invokes the callback associated with this RPC."""
         assert not args and not kwargs, 'Forwarding args & kwargs not supported'
-        # Catch and log any exceptions from the user-provided callback so that
-        # exceptions don't terminate the thread that is handling RPC packets.
-        try:
-            context.on_next(payload)
-        except:  # pylint: disable=bare-except
-            self.rpcs.send_cancel(rpc)
-            _LOG.exception('Response callback %s for %s raised exception',
-                           context.on_next, rpc)
+        context._handle_response(payload)  # pylint: disable=protected-access
 
     def handle_completion(self,
                           rpc: PendingRpc,
-                          context: InternalCallbacks,
+                          context: Call,
                           status: Status,
                           *,
                           args: tuple = (),
                           kwargs: dict = None):
         assert not args and not kwargs, 'Forwarding args & kwargs not supported'
-        try:
-            context.on_completed(status)
-        except:  # pylint: disable=bare-except
-            _LOG.exception('Completion callback %s for %s raised exception',
-                           context.on_completed, rpc)
+        context._handle_completion(status)  # pylint: disable=protected-access
 
     def handle_error(self,
                      rpc: PendingRpc,
-                     context: InternalCallbacks,
+                     context: Call,
                      status: Status,
                      *,
                      args: tuple = (),
                      kwargs: dict = None) -> None:
         assert not args and not kwargs, 'Forwarding args & kwargs not supported'
-        try:
-            context.on_error(status)
-        except:  # pylint: disable=bare-except
-            _LOG.exception('Error callback %s for %s raised exception',
-                           context.on_error, rpc)
+        context._handle_error(status)  # pylint: disable=protected-access

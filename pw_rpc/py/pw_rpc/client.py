@@ -61,38 +61,54 @@ class PendingRpcs:
         """Starts the provided RPC and returns the encoded packet to send."""
         # Ensure that every context is a unique object by wrapping it in a list.
         self.open(rpc, context, override_pending)
-        _LOG.debug('Starting %s', rpc)
         return packets.encode_request(rpc, request)
 
     def send_request(self,
                      rpc: PendingRpc,
                      request: Optional[Message],
                      context: object,
-                     override_pending: bool = False) -> None:
-        """Calls request and sends the resulting packet to the channel."""
+                     override_pending: bool = False) -> Any:
+        """Starts the provided RPC and sends the request packet to the channel.
+
+        Returns:
+          the previous context object or None
+        """
+        previous = self.open(rpc, context, override_pending)
+
         # TODO(hepler): Remove `type: ignore` on this and similar lines when
         #     https://github.com/python/mypy/issues/5485 is fixed
         rpc.channel.output(  # type: ignore
-            self.request(rpc, request, context, override_pending))
+            packets.encode_request(rpc, request))
+
+        return previous
 
     def open(self,
              rpc: PendingRpc,
              context: object,
-             override_pending: bool = False) -> None:
+             override_pending: bool = False) -> Any:
         """Creates a context for an RPC, but does not invoke it.
 
         open() can be used to receive streaming responses to an RPC that was not
         invoked by this client. For example, a server may stream logs with a
         server streaming RPC prior to any clients invoking it.
+
+        Returns:
+          the previous context object or None
         """
+        _LOG.debug('Starting %s', rpc)
         metadata = _PendingRpcMetadata(context)
 
         if override_pending:
+            previous = self._pending.get(rpc)
             self._pending[rpc] = metadata
-        elif self._pending.setdefault(rpc, metadata) is not metadata:
+            return None if previous is None else previous.context
+
+        if self._pending.setdefault(rpc, metadata) is not metadata:
             # If the context was not added, the RPC was already pending.
             raise Error(f'Sent request for {rpc}, but it is already pending! '
                         'Cancel the RPC before invoking it again')
+
+        return None
 
     def send_client_stream(self, rpc: PendingRpc, message: Message) -> None:
         if rpc not in self._pending:

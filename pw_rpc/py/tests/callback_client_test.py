@@ -329,6 +329,27 @@ class UnaryTest(_CallbackClientImplTestBase):
         with self.assertRaises(callback_client.RpcTimeout):
             self._service.SomeUnary()
 
+    def test_nonblocking_duplicate_calls_first_is_cancelled(self) -> None:
+        first_call = self.rpc.invoke()
+        self.assertFalse(first_call.completed())
+
+        second_call = self.rpc.invoke()
+
+        self.assertIs(first_call.error, Status.CANCELLED)
+        self.assertFalse(second_call.completed())
+
+    def test_nonblocking_exception_in_callback(self) -> None:
+        exception = ValueError('something went wrong!')
+
+        self._enqueue_response(1, self.method, Status.OK)
+
+        call = self.rpc.invoke(on_completed=mock.Mock(side_effect=exception))
+
+        with self.assertRaises(RuntimeError) as context:
+            call.wait()
+
+        self.assertEqual(context.exception.__cause__, exception)
+
 
 class ServerStreamingTest(_CallbackClientImplTestBase):
     """Tests for server streaming RPCs."""
@@ -447,6 +468,38 @@ class ServerStreamingTest(_CallbackClientImplTestBase):
             for _ in call:
                 pass
 
+    def test_nonblocking_duplicate_calls_first_is_cancelled(self) -> None:
+        first_call = self.rpc.invoke()
+        self.assertFalse(first_call.completed())
+
+        second_call = self.rpc.invoke()
+
+        self.assertIs(first_call.error, Status.CANCELLED)
+        self.assertFalse(second_call.completed())
+
+    def test_nonblocking_iterate_over_count(self) -> None:
+        reply = self.method.response_type(payload='!?')
+
+        for _ in range(4):
+            self._enqueue_server_stream(1, self.method, reply)
+
+        call = self.rpc.invoke()
+
+        self.assertEqual(list(call.get_responses(count=1)), [reply])
+        self.assertEqual(next(iter(call)), reply)
+        self.assertEqual(list(call.get_responses(count=2)), [reply, reply])
+
+    def test_nonblocking_iterate_after_completed_doesnt_block(self) -> None:
+        reply = self.method.response_type(payload='!?')
+        self._enqueue_server_stream(1, self.method, reply)
+        self._enqueue_response(1, self.method, Status.OK)
+
+        call = self.rpc.invoke()
+
+        self.assertEqual(list(call.get_responses()), [reply])
+        self.assertEqual(list(call.get_responses()), [])
+        self.assertEqual(list(call), [])
+
 
 class ClientStreamingTest(_CallbackClientImplTestBase):
     """Tests for client streaming RPCs."""
@@ -551,7 +604,7 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
             self.assertFalse(stream.cancel())
 
             self.assertTrue(stream.completed())
-            self.assertIs(stream.error.status, Status.CANCELLED)
+            self.assertIs(stream.error, Status.CANCELLED)
 
     def test_nonblocking_server_error(self) -> None:
         for _ in range(3):
@@ -607,8 +660,17 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
                 call.finish_and_wait()
 
             self.assertIs(context.exception.status, Status.UNAVAILABLE)
-            self.assertIs(context.exception, call.error)
+            self.assertIs(call.error, Status.UNAVAILABLE)
             self.assertIsNone(call.response)
+
+    def test_nonblocking_duplicate_calls_first_is_cancelled(self) -> None:
+        first_call = self.rpc.invoke()
+        self.assertFalse(first_call.completed())
+
+        second_call = self.rpc.invoke()
+
+        self.assertIs(first_call.error, Status.CANCELLED)
+        self.assertFalse(second_call.completed())
 
 
 class BidirectionalStreamingTest(_CallbackClientImplTestBase):
@@ -684,7 +746,7 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
             self.assertIs(Status.OK, stream.status)
             self.assertIsNone(stream.error)
 
-    @mock.patch('pw_rpc.callback_client.call._Call._default_response')
+    @mock.patch('pw_rpc.callback_client.call.Call._default_response')
     def test_nonblocking(self, callback) -> None:
         """Tests a bidirectional streaming RPC ended by the server."""
         reply = self.method.response_type(payload='This is the payload!')
@@ -716,7 +778,7 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
             self.assertEqual([rep1], responses)
 
             self.assertIsNone(stream.status)
-            self.assertIs(Status.OUT_OF_RANGE, stream.error.status)
+            self.assertIs(Status.OUT_OF_RANGE, stream.error)
 
             with self.assertRaises(callback_client.RpcError) as context:
                 stream.finish_and_wait()
@@ -767,8 +829,17 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
                 call.finish_and_wait()
 
             self.assertIs(context.exception.status, Status.UNAVAILABLE)
-            self.assertIs(context.exception, call.error)
+            self.assertIs(call.error, Status.UNAVAILABLE)
             self.assertEqual(call.responses, [reply])
+
+    def test_nonblocking_duplicate_calls_first_is_cancelled(self) -> None:
+        first_call = self.rpc.invoke()
+        self.assertFalse(first_call.completed())
+
+        second_call = self.rpc.invoke()
+
+        self.assertIs(first_call.error, Status.CANCELLED)
+        self.assertFalse(second_call.completed())
 
 
 if __name__ == '__main__':
