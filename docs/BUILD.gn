@@ -154,6 +154,7 @@ group("module_docs") {
     "$dir_pw_varint:docs",
     "$dir_pw_watch:docs",
     "$dir_pw_web_ui:docs",
+    "$dir_pw_work_queue:docs",
   ]
 }
 

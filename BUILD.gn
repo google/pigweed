@@ -321,6 +321,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_trace_tokenized:tests",
       "$dir_pw_unit_test:tests",
       "$dir_pw_varint:tests",
+      "$dir_pw_work_queue:tests",
     ]
 
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&

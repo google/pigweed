@@ -121,4 +121,5 @@ declare_args() {
   dir_pw_varint = get_path_info("pw_varint", "abspath")
   dir_pw_watch = get_path_info("pw_watch", "abspath")
   dir_pw_web_ui = get_path_info("pw_web_ui", "abspath")
+  dir_pw_work_queue = get_path_info("pw_work_queue", "abspath")
 }
