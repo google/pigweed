@@ -28,6 +28,7 @@ pw_python_package("pw_snapshot_metadata") {
     "pw_snapshot_metadata/metadata.py",
   ]
   python_deps = [
+    "$dir_pw_log_tokenized/py",
     "$dir_pw_tokenizer/py",
     "..:metadata_proto.python",
   ]

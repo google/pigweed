@@ -120,7 +120,7 @@ optionally be passed to the tool to detokenize applicable fields.
                               ▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀
 
   Device crash cause:
-      Assert failed: 1+1 == 42
+      ../examples/example_rpc.cc: Assert failed: 1+1 == 42
 
   Project name:      gShoe
   Device:            GSHOE-QUANTUM_CORE-REV_0.1
@@ -129,8 +129,8 @@ optionally be passed to the tool to detokenize applicable fields.
   Snapshot UUID:     8481bb12a162164f5c74855f6d94ea1a
 
   Thread State
-    2 threads running, Main/Handler active at the time of capture.
-                       ~~~~~~~~~~~~
+    2 threads running, Main Stack (Handler Mode) active at the time of capture.
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Thread (INTERRUPT_HANDLER): Main Stack (Handler Mode) <-- [ACTIVE]
   Stack info

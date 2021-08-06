@@ -14,6 +14,7 @@
 """Library to assist processing Snapshot Metadata protos into text"""
 
 from typing import Optional, List, Mapping
+import pw_log_tokenized
 import pw_tokenizer
 from pw_tokenizer import proto as proto_detokenizer
 from pw_snapshot_metadata_proto import snapshot_metadata_pb2
@@ -71,8 +72,13 @@ class MetadataProcessor:
         return self._metadata.fatal
 
     def reason(self) -> str:
-        return self._metadata.reason.decode(
-        ) if self._metadata.reason else 'UNKNOWN (field missing)'
+        if not self._metadata.reason:
+            return 'UNKNOWN (field missing)'
+
+        log = pw_log_tokenized.FormatStringWithMetadata(
+            self._metadata.reason.decode())
+
+        return f'{log.file}: {log.message}' if log.file else log.message
 
     def project_name(self) -> str:
         return self._metadata.project_name.decode()

@@ -47,7 +47,9 @@ def _add_threads(snapshot: snapshot_pb2.Snapshot) -> snapshot_pb2.Snapshot:
 def _main(out_file: TextIO):
     snapshot = snapshot_pb2.Snapshot()
 
-    snapshot.metadata.reason = 'Assert failed: 1+1 == 42'.encode('utf-8')
+    snapshot.metadata.reason = (
+        '■msg♦Assert failed: 1+1 == 42'
+        '■file♦../examples/example_rpc.cc').encode('utf-8')
     snapshot.metadata.fatal = True
     snapshot.metadata.project_name = 'gShoe'.encode('utf-8')
     snapshot.metadata.software_version = 'QUANTUM_CORE-0.1.325-e4a84b1a'

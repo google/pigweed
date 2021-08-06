@@ -47,6 +47,14 @@ class MetadataProcessorTest(unittest.TestCase):
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
         self.assertEqual(meta.reason(), 'Assert failed: 1+1 == 42')
 
+    def test_reason_log_format(self):
+        self.snapshot.metadata.reason = (
+            '■msg♦Assert failed :('
+            '■file♦rpc_services/crash.cc').encode('utf-8')
+        meta = MetadataProcessor(self.snapshot.metadata, self.detok)
+        self.assertEqual(meta.reason(),
+                         'rpc_services/crash.cc: Assert failed :(')
+
     def test_project_name_tokenized(self):
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
         self.assertEqual(meta.project_name(), 'gShoe')
