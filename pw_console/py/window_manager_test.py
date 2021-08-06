@@ -91,12 +91,26 @@ class TestWindowManager(unittest.TestCase):
             window_manager = console_app.window_manager
             self.assertEqual(_window_pane_counts(window_manager), [4])
 
+            # Move 2 windows to the right into their own splits
             _target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
             _target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
             _target_list_and_pane(window_manager, 1, 0)
             window_manager.move_pane_right()
+            # 3 splits, first split has 2 windows
+            self.assertEqual(_window_pane_counts(window_manager), [2, 1, 1])
+
+            # Move the first window in the first split left
+            _target_list_and_pane(window_manager, 0, 0)
+            window_manager.move_pane_left()
+            # 4 splits, each with their own window
+            self.assertEqual(_window_pane_counts(window_manager), [1, 1, 1, 1])
+
+            # Move the first window to the right
+            _target_list_and_pane(window_manager, 0, 0)
+            window_manager.move_pane_right()
+            # 3 splits, first split has 2 windows
             self.assertEqual(_window_pane_counts(window_manager), [2, 1, 1])
 
             target_pane = window_manager.window_lists[2].active_panes[0]

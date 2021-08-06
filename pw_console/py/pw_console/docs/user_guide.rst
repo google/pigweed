@@ -88,7 +88,7 @@ shortcut highlighted in blue:
 
 ::
 
-        / → Search  f → [✓] Follow  t → [✓] Table  w → [ ] Wrap  C → Clear
+        / : Search  f : [x] Follow  t : [x] Table  w : [ ] Wrap  C : Clear
 
 
 Log Window
@@ -163,8 +163,8 @@ Here is a view of the search bar:
 ::
 
   +-------------------------------------------------------------------------------+
-  |           Enter → Search  Ctrl-Alt-f → Add Filter  Ctrl-Alt-r → Clear Filters |
-  |  Search   Ctrl-t → Column:All  Ctrl-v → [ ] Invert  Ctrl-n → Matcher:REGEX    |
+  |           Enter : Search  Ctrl-Alt-f : Add Filter  Ctrl-Alt-r : Clear Filters |
+  |  Search   Ctrl-t : Column:All  Ctrl-v : [ ] Invert  Ctrl-n : Matcher:REGEX    |
   | /                                                                             |
   +-------------------------------------------------------------------------------+
 
@@ -248,9 +248,9 @@ log window. For example, here are some logs with one active filter for
   | 20210722 15:38:54  INF  APP     Log message # 310 Lorem ipsum dolor sit amet |
   | 20210722 15:39:04  INF  APP     Log message # 320 Lorem ipsum dolor sit amet |
   +------------------------------------------------------------------------------+
-  |  Filters   <lorem ipsum (X)>  Ctrl-Alt-r → Clear Filters                     |
+  |  Filters   <lorem ipsum (X)>  Ctrl-Alt-r : Clear Filters                     |
   +------------------------------------------------------------------------------+
-  |   Logs   / → Search  f → [✓] Follow  t → [✓] Table  w → [ ] Wrap  C → Clear  |
+  |   Logs   / : Search  f : [x] Follow  t : [x] Table  w : [ ] Wrap  C : Clear  |
   +------------------------------------------------------------------------------+
 
 **Stacking Filters**
@@ -270,9 +270,9 @@ toolbar to show:
   | 20210722 15:38:24  INF  APP     Log message # 280 Lorem ipsum dolor sit amet |
   | 20210722 15:38:34  INF  APP     Log message # 290 Lorem ipsum dolor sit amet |
   +------------------------------------------------------------------------------+
-  |  Filters   <lorem ipsum (X)>  <# 2 (X)>  Ctrl-Alt-r → Clear Filters          |
+  |  Filters   <lorem ipsum (X)>  <# 2 (X)>  Ctrl-Alt-r : Clear Filters          |
   +------------------------------------------------------------------------------+
-  |   Logs   / → Search  f → [✓] Follow  t → [✓] Table  w → [ ] Wrap  C → Clear  |
+  |   Logs   / : Search  f : [x] Follow  t : [x] Table  w : [ ] Wrap  C : Clear  |
   +------------------------------------------------------------------------------+
 
 Any filter listed in the Filters toolbar and can be individually removed by

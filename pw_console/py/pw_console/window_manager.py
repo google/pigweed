@@ -117,9 +117,13 @@ class WindowManager:
         # Move left should pick the previous window_list
         target_window_list_index = window_list_index - 1
 
-        # Do nothing if target_window_list is the first one.
-        if target_window_list_index < 0:
-            return
+        # Check if a new WindowList should be created on the left
+        if target_window_list_index == -1:
+            # Add the new WindowList
+            target_window_list = WindowList(self)
+            self.window_lists.appendleft(target_window_list)
+            # New index is 0
+            target_window_list_index = 0
 
         # Get the destination window_list
         target_window_list = self.window_lists[target_window_list_index]

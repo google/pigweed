@@ -17,6 +17,7 @@ import asyncio
 import concurrent
 import functools
 import logging
+import pprint
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -200,7 +201,9 @@ class UserCodeExecution:
     output: str
     stdout: str
     stderr: str
-    output_check_task: Optional[concurrent.futures.Future] = None
+    stdout_check_task: Optional[concurrent.futures.Future] = None
+    result_object: Optional[Any] = None
+    exception_text: Optional[str] = None
 
     @property
     def is_running(self):
@@ -213,6 +216,33 @@ class UserCodeExecution:
     def update_stderr(self, text: Optional[str]):
         if text:
             self.stderr = text
+
+
+class ReplHSplit(HSplit):
+    """PromptToolkit HSplit class with a write_to_screen function that saves the
+    width and height of the container to be rendered.
+    """
+    def __init__(self, parent_window_pane, *args, **kwargs):
+        # Save a reference to the parent LogPane.
+        self.parent_window_pane = parent_window_pane
+        super().__init__(*args, **kwargs)
+
+    def write_to_screen(
+        self,
+        screen,
+        mouse_handlers,
+        write_position,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: Optional[int],
+    ) -> None:
+        # Save the width and height for the current render pass. This will be
+        # used by the log pane to render the correct amount of log lines.
+        self.parent_window_pane.update_pane_size(write_position.width,
+                                                 write_position.height)
+        # Continue writing content to the screen.
+        super().write_to_screen(screen, mouse_handlers, write_position,
+                                parent_style, erase_bg, z_index)
 
 
 class ReplPane:
@@ -236,6 +266,11 @@ class ReplPane:
         self.height = height if height else Dimension(weight=50)
         self.width = width if width else Dimension(weight=50)
         self.show_pane = True
+
+        self.current_pane_width = 0
+        self.current_pane_height = 0
+        self.last_pane_width = 0
+        self.last_pane_height = 0
 
         self.executed_code: List = []
         self.application = application
@@ -274,7 +309,8 @@ class ReplPane:
         self.container = ConditionalContainer(
             FloatContainer(
                 # Horizontal split of all Repl pane sections.
-                HSplit(
+                ReplHSplit(
+                    self,
                     [
                         HSplit([
                             # 1. Repl Output
@@ -303,6 +339,16 @@ class ReplPane:
                     ),
                 ]),
             filter=Condition(lambda: self.show_pane))
+
+    def update_pane_size(self, width, height):
+        """Save width and height of the repl pane for the current UI render
+        pass."""
+        if width:
+            self.last_pane_width = self.current_pane_width
+            self.current_pane_width = width
+        if height:
+            self.last_pane_height = self.current_pane_height
+            self.current_pane_height = height
 
     def _get_output_toolbar_fragments(self):
         toolbar_fragments = []
@@ -490,29 +536,42 @@ class ReplPane:
         background_stdout_check = asyncio.create_task(
             self.periodically_check_stdout(user_code, temp_stdout,
                                            temp_stderr))
-        user_code.output_check_task = background_stdout_check
+        user_code.stdout_check_task = background_stdout_check
         self.executed_code.append(user_code)
         self._log_executed_code(user_code, prefix='START')
 
-    def append_result_to_executed_code(self,
-                                       _input_text,
-                                       future,
-                                       result_text,
-                                       stdout_text='',
-                                       stderr_text=''):
+    def append_result_to_executed_code(
+        self,
+        _input_text,
+        future,
+        result_text,
+        stdout_text='',
+        stderr_text='',
+        exception_text='',
+        result_object=None,
+    ):
 
         code = self._get_executed_code(future)
         if code:
             code.output = result_text
             code.stdout = stdout_text
             code.stderr = stderr_text
+            code.exception_text = exception_text
+            code.result_object = result_object
         self._log_executed_code(code, prefix='FINISH')
         self.update_output_buffer('repl_pane.append_result_to_executed_code')
 
     def get_output_buffer_text(self, code_items=None, show_index=True):
+        content_width = (self.current_pane_width
+                         if self.current_pane_width else 80)
+        pprint_respecting_width = pprint.PrettyPrinter(
+            indent=2, width=content_width).pformat
+
         executed_code = code_items or self.executed_code
         template = self.application.get_template('repl_output.jinja')
-        return template.render(code_items=executed_code, show_index=show_index)
+        return template.render(code_items=executed_code,
+                               pprint_respecting_width=pprint_respecting_width,
+                               show_index=show_index)
 
     def update_output_buffer(self, *unused_args):
         text = self.get_output_buffer_text()

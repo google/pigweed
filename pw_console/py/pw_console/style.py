@@ -159,7 +159,7 @@ def generate_styles(theme_name='dark'):
 
         # Search matches
         'search': 'bg:{} {}'.format(theme.cyan_accent, theme.default_bg),
-        'search.current': 'bg:{} {}'.format(theme.yellow_accent,
+        'search.current': 'bg:{} {}'.format(theme.cyan_accent,
                                             theme.default_bg),
 
         # Highlighted line styles

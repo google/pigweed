@@ -324,6 +324,9 @@ class LogView:
 
     def clear_scrollback(self):
         """Hide log lines before the max length of the stored logs."""
+        # Enable follow and scroll to the bottom, then clear.
+        if not self.follow:
+            self.toggle_follow()
         self._scrollback_start_index = self.line_index
 
     def hidden_line_count(self):

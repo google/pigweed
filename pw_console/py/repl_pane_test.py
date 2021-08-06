@@ -106,7 +106,7 @@ if _PYTHON_3_8:
                 pw_ptpython_repl._run_user_code('return "blah"', temp_stdout,
                                                 temp_stderr))
             self.assertIn("SyntaxError: 'return' outside function",
-                          pw_ptpython_repl._last_result)  # type: ignore
+                          pw_ptpython_repl._last_exception)  # type: ignore
 
         async def test_user_thread(self) -> None:
             """Test user code thread."""
@@ -149,8 +149,8 @@ if _PYTHON_3_8:
                 user_code1.future.add_done_callback(
                     lambda future: user_code_done.set())
                 # Wait for stdout monitoring to complete.
-                if user_code1.output_check_task:
-                    await user_code1.output_check_task
+                if user_code1.stdout_check_task:
+                    await user_code1.stdout_check_task
                 # Wait for test done callback.
                 user_code_done.wait(timeout=3)
 
@@ -195,8 +195,8 @@ if _PYTHON_3_8:
                 user_code2.future.add_done_callback(
                     lambda future: user_code_done.set())
                 # Wait for stdout monitoring to complete.
-                if user_code2.output_check_task:
-                    await user_code2.output_check_task
+                if user_code2.stdout_check_task:
+                    await user_code2.stdout_check_task
                 # Wait for test done callback.
                 user_code_done.wait(timeout=3)
 

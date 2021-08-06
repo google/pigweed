@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,17 +15,23 @@
 # the License.
 """Functions to create checkboxes for menus and toolbars."""
 
+import sys
 from typing import Iterable, Optional
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 _KEY_SEPARATOR = ' → '
+_CHECKED_BOX = '[✓]'
+
+if sys.platform in ['win32']:
+    _KEY_SEPARATOR = ' : '
+    _CHECKED_BOX = '[x]'
 
 
 def to_checkbox(checked: bool, mouse_handler=None, end=' '):
     default_style = 'class:checkbox'
     checked_style = 'class:checkbox-checked'
-    text = '[✓]' if checked else '[ ]'
+    text = _CHECKED_BOX if checked else '[ ]'
     text += end
     style = checked_style if checked else default_style
     if mouse_handler:

@@ -66,6 +66,13 @@ Log Pane: Basic Actions
      - Line wrapping is enabled
      - |checkbox|
 
+   * - 7
+     - Click ``Clear`` on the log toolbar
+     - | All log lines are erased
+       | Follow mode is on
+       | New lines start appearing
+     - |checkbox|
+
 Log Pane: Search and Filtering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -451,6 +458,37 @@ Incremental Stdout
      - | ``Running...`` should appear in the python with
        | increasing integers incrementally appearing above
        | (not all at once after a delay).
+     - |checkbox|
+
+Python Input & Output
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - Click the ``Python Input`` window title
+     - Python Input pane is focused
+     - |checkbox|
+
+   * - 2
+     - | Enter the following text and press enter to run
+       | ``[i for i in __builtins__ if not i.startswith('_')]``
+     - | The results should appear pretty printed
+       | with each list element on it's own line:
+       |
+       |   >>> [i for i in __builtins__ if not i.startswith('_')]
+       |   [ 'abs',
+       |     'all',
+       |     'any',
+       |     'ascii'
+       |
      - |checkbox|
 
 Add note to the commit message

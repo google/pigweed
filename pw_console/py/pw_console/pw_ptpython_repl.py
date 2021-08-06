@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 _LOG = logging.getLogger(__package__)
 
 
-class PwPtPythonRepl(ptpython.repl.PythonRepl):
+class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-instance-attributes
     """A ptpython repl class with changes to code execution and output related
     methods."""
     def __init__(
@@ -79,7 +79,9 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
             _completer=completer,
             **ptpython_kwargs)
 
-        self.enable_dictionary_completion = True
+        self.enable_mouse_support: bool = True
+        self.enable_history_search: bool = True
+        self.enable_dictionary_completion: bool = True
 
         # Change some ptpython.repl defaults.
         self.use_code_colorscheme('pigweed-code')
@@ -103,6 +105,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         # Additional state variables.
         self.repl_pane: 'Optional[ReplPane]' = None
         self._last_result = None
+        self._last_exception = None
 
     def __pt_container__(self):
         """Return the prompt_toolkit root container for class."""
@@ -118,9 +121,16 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
             formatted_text)
         self._last_result = unformatted_result
 
+    def _save_exception(self, formatted_text):
+        """Save the last repl exception."""
+        unformatted_result = pw_console.text_formatting.remove_formatting(
+            formatted_text)
+        self._last_exception = unformatted_result
+
     def clear_last_result(self):
         """Erase the last repl execution result."""
         self._last_result = None
+        self._last_exception = None
 
     def show_result(self, result):
         """Format and save output results.
@@ -140,13 +150,16 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
         .run_and_show_expression_async().
         """
         formatted_result = self._format_exception_output(e)
-        self._save_result(formatted_result.__pt_formatted_text__())
+        self._save_exception(formatted_result.__pt_formatted_text__())
 
     def user_code_complete_callback(self, input_text, future):
         """Callback to run after user repl code is finished."""
         # If there was an exception it will be saved in self._last_result
-        result = self._last_result
-        # _last_result consumed, erase for the next run.
+        result_text = self._last_result
+        result_object = None
+        exception_text = self._last_exception
+
+        # _last_results consumed, erase for the next run.
         self.clear_last_result()
 
         stdout_contents = None
@@ -155,17 +168,24 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):
             future_result = future.result()
             stdout_contents = future_result['stdout']
             stderr_contents = future_result['stderr']
-            result_value = future_result['result']
+            result_object = future_result['result']
 
-            if result_value is not None:
-                formatted_result = self._format_result_output(result_value)
-                result = pw_console.text_formatting.remove_formatting(
+            if result_object is not None:
+                # Use ptpython formatted results:
+                formatted_result = self._format_result_output(result_object)
+                result_text = pw_console.text_formatting.remove_formatting(
                     formatted_result)
 
         # Job is finished, append the last result.
-        self.repl_pane.append_result_to_executed_code(input_text, future,
-                                                      result, stdout_contents,
-                                                      stderr_contents)
+        self.repl_pane.append_result_to_executed_code(
+            input_text,
+            future,
+            result_text,
+            stdout_contents,
+            stderr_contents,
+            exception_text=exception_text,
+            result_object=result_object,
+        )
 
         # Rebuild output buffer.
         self.repl_pane.update_output_buffer(
