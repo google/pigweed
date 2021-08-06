@@ -14,10 +14,14 @@
 
 #pragma once
 
+#define PW_LOG_MODULE_NAME "SHA256"
+#define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
+
 #include <cstdint>
 
 #include "pw_bytes/span.h"
 #include "pw_crypto/sha256_backend.h"
+#include "pw_log/log.h"
 #include "pw_status/status.h"
 
 namespace pw::crypto::sha256 {
@@ -39,10 +43,12 @@ enum class Sha256State {
 };
 
 namespace backend {
+
 // Primitive operations to be implemented by backends.
 Status DoInit(NativeSha256Context& ctx);
 Status DoUpdate(NativeSha256Context& ctx, ConstByteSpan data);
 Status DoFinal(NativeSha256Context& ctx, ByteSpan out_digest);
+
 }  // namespace backend
 
 // Sha256 computes the SHA256 digest of potentially long, non-contiguous input
@@ -57,6 +63,7 @@ class Sha256 {
  public:
   Sha256() {
     if (!backend::DoInit(native_ctx_).ok()) {
+      PW_LOG_DEBUG("backend::DoInit() failed");
       state_ = Sha256State::kError;
       return;
     }
@@ -68,10 +75,12 @@ class Sha256 {
   // or more `Update()` calls and the order matters.
   Sha256& Update(ConstByteSpan data) {
     if (state_ != Sha256State::kReady) {
+      PW_LOG_DEBUG("The backend is not ready/initialized");
       return *this;
     }
 
     if (!backend::DoUpdate(native_ctx_, data).ok()) {
+      PW_LOG_DEBUG("backend::DoUpdate() failed");
       state_ = Sha256State::kError;
       return *this;
     }
@@ -89,16 +98,19 @@ class Sha256 {
   // reflected in the return value of Final();
   Status Final(ByteSpan out_digest) {
     if (out_digest.size() < kDigestSizeBytes) {
+      PW_LOG_DEBUG("Digest output buffer is too small");
       state_ = Sha256State::kError;
       return Status::InvalidArgument();
     }
 
     if (state_ != Sha256State::kReady) {
+      PW_LOG_DEBUG("The backend is not ready/initialized");
       return Status::FailedPrecondition();
     }
 
     auto status = backend::DoFinal(native_ctx_, out_digest);
     if (!status.ok()) {
+      PW_LOG_DEBUG("backend::DoFinal() failed");
       state_ = Sha256State::kError;
       return status;
     }

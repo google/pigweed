@@ -11,6 +11,8 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#define PW_LOG_MODULE_NAME "ECDSA"
+#define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
 
 #include "mbedtls/ecdsa.h"
 #include "pw_crypto/ecdsa.h"
@@ -77,13 +79,13 @@ Status VerifyP256Signature(ConstByteSpan public_key,
   // Load the public key.
   if (mbedtls_ecp_point_read_binary(
           &ctx.grp, &ctx.Q, public_key_data, public_key.size())) {
-    PW_LOG_ERROR("Bad public key format");
+    PW_LOG_DEBUG("Bad public key format");
     return Status::InvalidArgument();
   }
 
   // Load the signature.
   if (signature.size() != kP256CurveOrderBytes * 2) {
-    PW_LOG_ERROR("Bad signature format");
+    PW_LOG_DEBUG("Bad signature format");
     return Status::InvalidArgument();
   }
 
@@ -96,13 +98,14 @@ Status VerifyP256Signature(ConstByteSpan public_key,
 
   // Digest must be 32 bytes or longer (and be truncated).
   if (digest.size() < kP256CurveOrderBytes) {
+    PW_LOG_DEBUG("Digest is too short");
     return Status::InvalidArgument();
   }
 
   // Verify the signature.
   if (mbedtls_ecdsa_verify(
           &ctx.grp, digest_data, digest.size(), &ctx.Q, &ctx.r, &ctx.s)) {
-    PW_LOG_ERROR("Digital signature failed verification");
+    PW_LOG_DEBUG("Signature verification failed");
     return Status::Unauthenticated();
   }
 
