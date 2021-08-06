@@ -33,6 +33,7 @@ pw_python_package("py") {
 
 pw_python_script("rpc_service_test") {
   sources = [ "rpc_service_test.py" ]
+  python_deps = [ ":py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 
   action = {

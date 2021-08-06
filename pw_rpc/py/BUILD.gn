@@ -73,6 +73,7 @@ pw_doc_group("docs") {
 
 pw_python_script("python_client_cpp_server_test") {
   sources = [ "tests/python_client_cpp_server_test.py" ]
+  python_deps = [ ":py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 
   action = {
