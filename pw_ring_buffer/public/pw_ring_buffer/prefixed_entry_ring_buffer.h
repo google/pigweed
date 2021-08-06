@@ -88,6 +88,11 @@ class PrefixedEntryRingBufferMulti {
       return buffer_->InternalPeekFront(*this, output);
     }
 
+    // Peek the front entry's preamble only to avoid copying data unnecessarily.
+    Status PeekFrontPreamble(uint32_t& user_preamble_out) const {
+      return buffer_->InternalPeekFrontPreamble(*this, user_preamble_out);
+    }
+
     // Same as PeekFront but includes the entry's preamble of optional user
     // value and the varint of the data size.
     // TODO(pwbug/341): Move all other APIs to passing bytes_read by reference,
@@ -356,6 +361,8 @@ class PrefixedEntryRingBufferMulti {
                            size_t* bytes_read_out) const;
   Status InternalPeekFront(const Reader& reader, ReadOutput output) const;
 
+  Status InternalPeekFrontPreamble(const Reader& reader,
+                                   uint32_t& user_preamble_out) const;
   // Same as Read but includes the entry's preamble of optional user value and
   // the varint of the data size
   Status InternalPeekFrontWithPreamble(const Reader& reader,

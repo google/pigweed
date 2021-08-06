@@ -17,6 +17,10 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -45,6 +49,15 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "test_thread",
+    hdrs = ["public/pw_multisink/test_thread.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_thread:thread",
+    ],
+)
+
 pw_cc_test(
     name = "multisink_test",
     srcs = [
@@ -54,5 +67,42 @@ pw_cc_test(
         ":pw_multisink",
         "//pw_preprocessor",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_library(
+    name = "multisink_threaded_test",
+    srcs = [
+        "multisink_threaded_test.cc",
+    ],
+    deps = [
+        ":pw_multisink",
+        ":test_thread",
+        "//pw_string",
+        "//pw_thread:thread",
+        "//pw_thread:yield",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_library(
+    name = "stl_test_thread",
+    srcs = [
+        "stl_test_thread.cc",
+    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":test_thread",
+        "//pw_thread:thread",
+        "//pw_thread_stl:thread",
+    ],
+)
+
+pw_cc_test(
+    name = "stl_multisink_threaded_test",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":multisink_threaded_test",
+        ":stl_test_thread",
     ],
 )

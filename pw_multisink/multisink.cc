@@ -34,27 +34,59 @@ void MultiSink::HandleDropped(uint32_t drop_count) {
   NotifyListeners();
 }
 
-Result<ConstByteSpan> MultiSink::GetEntry(Drain& drain,
-                                          ByteSpan buffer,
-                                          uint32_t& drop_count_out) {
+Status MultiSink::PopEntry(Drain& drain, const Drain::PeekedEntry& entry) {
+  std::lock_guard lock(lock_);
+  PW_DCHECK_PTR_EQ(drain.multisink_, this);
+
+  // Ignore the call if the entry has been handled already.
+  if (entry.sequence_id() == drain.last_handled_sequence_id_) {
+    return OkStatus();
+  }
+
+  uint32_t next_entry_sequence_id;
+  Status peek_status = drain.reader_.PeekFrontPreamble(next_entry_sequence_id);
+  if (!peek_status.ok()) {
+    // Ignore errors if the multisink is empty.
+    if (peek_status.IsOutOfRange()) {
+      return OkStatus();
+    }
+    return peek_status;
+  }
+  if (next_entry_sequence_id == entry.sequence_id()) {
+    // A crash should not happen, since the peek was successful and `lock_` is
+    // still held, there shouldn't be any modifications to the multisink in
+    // between peeking and popping.
+    PW_CHECK_OK(drain.reader_.PopFront());
+    drain.last_handled_sequence_id_ = next_entry_sequence_id;
+  }
+  return OkStatus();
+}
+
+Result<ConstByteSpan> MultiSink::PeekOrPopEntry(
+    Drain& drain,
+    ByteSpan buffer,
+    Request request,
+    uint32_t& drop_count_out,
+    uint32_t& entry_sequence_id_out) {
   size_t bytes_read = 0;
-  uint32_t entry_sequence_id = 0;
+  entry_sequence_id_out = 0;
   drop_count_out = 0;
 
   std::lock_guard lock(lock_);
   PW_DCHECK_PTR_EQ(drain.multisink_, this);
 
   const Status peek_status = drain.reader_.PeekFrontWithPreamble(
-      buffer, entry_sequence_id, bytes_read);
+      buffer, entry_sequence_id_out, bytes_read);
+
   if (peek_status.IsOutOfRange()) {
     // If the drain has caught up, report the last handled sequence ID so that
     // it can still process any dropped entries.
-    entry_sequence_id = sequence_id_ - 1;
+    entry_sequence_id_out = sequence_id_ - 1;
   } else if (!peek_status.ok()) {
-    // Exit immediately if the result isn't OK or OUT_OF_RANGE, as the
-    // entry_entry_sequence_id cannot be used for computation. Later invocations
-    // to GetEntry will permit readers to determine how far the sequence ID
-    // moved forward.
+    // Discard the entry if the result isn't OK or OUT_OF_RANGE and exit, as the
+    // entry_sequence_id_out cannot be used for computation. Later invocations
+    // will calculate the drop count.
+    PW_CHECK(drain.reader_.PopFront().ok());
     return peek_status;
   }
 
@@ -65,18 +97,20 @@ Result<ConstByteSpan> MultiSink::GetEntry(Drain& drain,
   // current and last sequence IDs. Consecutive successful reads will always
   // differ by one at least, so it is subtracted out. If the read was not
   // successful, the difference is not adjusted.
-  drop_count_out = entry_sequence_id - drain.last_handled_sequence_id_ -
+  drop_count_out = entry_sequence_id_out - drain.last_handled_sequence_id_ -
                    (peek_status.ok() ? 1 : 0);
-  drain.last_handled_sequence_id_ = entry_sequence_id;
 
   // The Peek above may have failed due to OutOfRange, now that we've set the
   // drop count see if we should return before attempting to pop.
   if (peek_status.IsOutOfRange()) {
+    // No more entries, update the drain.
+    drain.last_handled_sequence_id_ = entry_sequence_id_out;
     return peek_status;
   }
-
-  // Success, pop the oldest entry!
-  PW_CHECK(drain.reader_.PopFront().ok());
+  if (request == Request::kPop) {
+    PW_CHECK(drain.reader_.PopFront().ok());
+    drain.last_handled_sequence_id_ = entry_sequence_id_out;
+  }
   return std::as_bytes(buffer.first(bytes_read));
 }
 
@@ -88,10 +122,11 @@ void MultiSink::AttachDrain(Drain& drain) {
   PW_CHECK_OK(ring_buffer_.AttachReader(drain.reader_));
   if (&drain == &oldest_entry_drain_) {
     drain.last_handled_sequence_id_ = sequence_id_ - 1;
-    return;
+  } else {
+    drain.last_handled_sequence_id_ =
+        oldest_entry_drain_.last_handled_sequence_id_;
   }
-  drain.last_handled_sequence_id_ =
-      oldest_entry_drain_.last_handled_sequence_id_;
+  drain.last_peek_sequence_id_ = drain.last_handled_sequence_id_;
 }
 
 void MultiSink::DetachDrain(Drain& drain) {
@@ -124,10 +159,29 @@ void MultiSink::NotifyListeners() {
   }
 }
 
-Result<ConstByteSpan> MultiSink::Drain::GetEntry(ByteSpan buffer,
+Status MultiSink::Drain::PopEntry(const PeekedEntry& entry) {
+  PW_DCHECK_NOTNULL(multisink_);
+  return multisink_->PopEntry(*this, entry);
+}
+
+Result<MultiSink::Drain::PeekedEntry> MultiSink::Drain::PeekEntry(
+    ByteSpan buffer, uint32_t& drop_count_out) {
+  PW_DCHECK_NOTNULL(multisink_);
+  uint32_t entry_sequence_id_out;
+  Result<ConstByteSpan> peek_result = multisink_->PeekOrPopEntry(
+      *this, buffer, Request::kPeek, drop_count_out, entry_sequence_id_out);
+  if (!peek_result.ok()) {
+    return peek_result.status();
+  }
+  return PeekedEntry(peek_result.value(), entry_sequence_id_out);
+}
+
+Result<ConstByteSpan> MultiSink::Drain::PopEntry(ByteSpan buffer,
                                                  uint32_t& drop_count_out) {
   PW_DCHECK_NOTNULL(multisink_);
-  return multisink_->GetEntry(*this, buffer, drop_count_out);
+  uint32_t entry_sequence_id_out;
+  return multisink_->PeekOrPopEntry(
+      *this, buffer, Request::kPop, drop_count_out, entry_sequence_id_out);
 }
 
 }  // namespace multisink

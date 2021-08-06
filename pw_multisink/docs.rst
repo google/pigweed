@@ -62,7 +62,7 @@ drain consumers may need time to initialize their output paths.
     std::byte read_buffer[512];
     uint32_t drop_count = 0;
     do {
-      Result<ConstByteSpan> entry = multisink.GetEntry(read_buffer, drop_count);
+      Result<ConstByteSpan> entry = drain.PopEntry(read_buffer, drop_count);
       if (drop_count > 0) {
         StringBuilder<32> sb;
         sb.Format("Dropped %d entries.", drop_count);
@@ -123,7 +123,7 @@ iterator to be used even if no drains have been previously attached.
   uint32_t drop_count = 0;
 
   multisink.AttachDrain(drain);
-  drain.GetEntry(read_buffer, drop_count);
+  drain.PopEntry(read_buffer, drop_count);
 
   // !! A function causes a crash before we've read out all entries.
   FunctionThatCrashes();
@@ -137,4 +137,36 @@ iterator to be used even if no drains have been previously attached.
   //  "Example!"
   for (ConstByteSpan entry : multisink.UnsafeIteration()) {
     PrintByteArray(entry);
+  }
+
+Peek & Pop
+==========
+A drain can peek the front multisink entry without removing it using
+`PeekEntry`, which is the same as `PopEntry` without removing the entry from the
+multisink. Once the drain is done with the peeked entry, `PopEntry` will tell
+the drain to remove the peeked entry from the multisink and advance one entry.
+
+.. code-block:: cpp
+
+  constexpr char kExampleEntry[] = "Example!";
+  std::byte buffer[1024];
+  MultiSink multisink(buffer);
+  MultiSink::Drain drain;
+
+  multisink.AttachDrain(drain);
+  multisink.HandleEntry(kExampleEntry);
+
+  std::byte read_buffer[512];
+  uint32_t drop_count = 0;
+  Result<PeekedEntry> peeked_entry = drain.PeekEntry(read_buffer, drop_count);
+  // ... Handle drop_count ...
+
+  if (peeked_entry.ok()) {
+    // Note: SendByteArray is not a provided utility function.
+    Status send_status = SendByteArray(peeked_entry.value().entry());
+    if (send_status.ok()) {
+      drain.PopEntry(peeked_entry.value());
+    } else {
+      // ... Handle send error ...
+    }
   }

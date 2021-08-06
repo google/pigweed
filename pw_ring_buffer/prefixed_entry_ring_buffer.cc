@@ -162,6 +162,17 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFrontWithPreamble(
   return InternalRead(reader, output, true);
 }
 
+Status PrefixedEntryRingBufferMulti::InternalPeekFrontPreamble(
+    const Reader& reader, uint32_t& user_preamble_out) const {
+  if (reader.entry_count_ == 0) {
+    return Status::OutOfRange();
+  }
+  // Figure out where to start reading (wrapped); accounting for preamble.
+  EntryInfo info = FrontEntryInfo(reader);
+  user_preamble_out = info.user_preamble;
+  return OkStatus();
+}
+
 // TODO(pwbug/339): Consider whether this internal templating is required, or if
 // we can simply promote GetOutput to a static function and remove the template.
 // T should be similar to Status (*read_output)(std::span<const byte>)
