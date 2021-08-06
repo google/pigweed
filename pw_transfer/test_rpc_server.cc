@@ -62,7 +62,10 @@ class BufferReaderWriter final : public ReadWriteHandler {
   size_t size_bytes_;
 };
 
-TransferService transfer_service;
+constexpr size_t kChunkSizeBytes = 256;
+constexpr size_t kMaxReceiveSizeBytes = 1024;
+
+TransferService transfer_service(kChunkSizeBytes, kMaxReceiveSizeBytes);
 
 std::byte buffer[512];
 

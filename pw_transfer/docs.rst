@@ -48,8 +48,18 @@ transfer service using their transfer IDs.
     pw::stream::MemoryReader reader_;
   };
 
+  // The maximum amount of data that can be sent in a single chunk, excluding
+  // transport layer overhead.
+  constexpr size_t kMaxChunkSizeBytes = 256;
+
+  // In a write transfer, the maximum number of bytes to receive at one time,
+  // (potentially across multiple chunks), unless specified otherwise by the
+  // transfer handler's stream::Writer.
+  constexpr size_t kDefaultMaxBytesToReceive = 1024;
+
   // Instantiate a static transfer service.
-  pw::transfer::TransferService transfer_service;
+  pw::transfer::TransferService transfer_service(
+      kMaxChunkSizeBytes, kDefaultMaxBytesToReceive);
 
   // Instantiate a handler for the the data to be transferred.
   constexpr uint32_t kBufferTransferId = 1;

@@ -15,87 +15,35 @@
 
 #include <limits>
 
-#include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
-#include "pw_result/result.h"
 #include "pw_transfer/handler.h"
+#include "pw_transfer/internal/context.h"
 #include "pw_transfer/transfer.raw_rpc.pb.h"
 
 namespace pw::transfer {
-namespace internal {
-
-// Information about a single transfer.
-class Context {
- public:
-  enum Type { kRead, kWrite };
-
-  constexpr Context()
-      : type_(kRead),
-        handler_(nullptr),
-        offset_(0),
-        pending_bytes_(0),
-        max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()) {}
-
-  Context(const Context&) = delete;
-  Context(Context&&) = delete;
-  Context& operator=(const Context&) = delete;
-  Context& operator=(Context&&) = delete;
-
-  Status Start(Type type, Handler& handler);
-  void Finish(Status status);
-
-  constexpr bool active() const { return handler_ != nullptr; }
-
-  constexpr uint32_t transfer_id() const { return handler().id(); }
-
-  stream::Reader& reader() const {
-    PW_DASSERT(type_ == kRead);
-    return handler().reader();
-  }
-
-  stream::Writer& writer() const {
-    PW_DASSERT(type_ == kWrite);
-    return handler().writer();
-  }
-
-  constexpr uint32_t offset() const { return offset_; }
-  constexpr void set_offset(size_t offset) { offset_ = offset; }
-
-  constexpr uint32_t pending_bytes() const { return pending_bytes_; }
-  constexpr void set_pending_bytes(size_t pending_bytes) {
-    pending_bytes_ = pending_bytes;
-  }
-
-  constexpr uint32_t max_chunk_size_bytes() const {
-    return max_chunk_size_bytes_;
-  }
-  constexpr void set_max_chunk_size_bytes(size_t max_chunk_size_bytes) {
-    max_chunk_size_bytes_ = max_chunk_size_bytes;
-  }
-
- private:
-  constexpr Handler& handler() {
-    PW_DASSERT(active());
-    return *handler_;
-  }
-
-  constexpr const Handler& handler() const {
-    PW_DASSERT(active());
-    return *handler_;
-  }
-
-  Type type_;
-  Handler* handler_;
-  size_t offset_;
-  size_t pending_bytes_;
-  size_t max_chunk_size_bytes_;
-};
-
-}  // namespace internal
 
 class TransferService : public generated::Transfer<TransferService> {
  public:
-  TransferService() : read_transfers_() {}
+  // Initializes a TransferService that can be registered with an RPC server.
+  //
+  // max_chunk_size_bytes is the largest amount of data that can be sent within
+  // a single transfer chunk (read or write), excluding any transport layer
+  // overhead. Not all of this size is used to send data -- there is additional
+  // overhead in the pw_rpc and pw_transfer protocols (typically ~22B/chunk).
+  //
+  // default_max_bytes_to_receive is the maximum amount of data to ask for at a
+  // time during a write transfer, unless told a more restrictive amount by a
+  // transfer handler. This size can span multiple chunks. A larger value
+  // generally increases the efficiency of write transfers when sent over a
+  // reliable transport. However, if the underlying transport is unreliable,
+  // larger values could slow down a transfer in the event of repeated packet
+  // loss.
+  constexpr TransferService(size_t max_chunk_size_bytes,
+                            size_t default_max_bytes_to_receive)
+      : read_transfers_(internal::Context::kRead, handlers_),
+        write_transfers_(internal::Context::kWrite, handlers_),
+        max_chunk_size_bytes_(max_chunk_size_bytes),
+        default_max_bytes_to_receive_(default_max_bytes_to_receive) {}
 
   void Read(ServerContext&, RawServerReaderWriter& reader_writer);
 
@@ -106,10 +54,6 @@ class TransferService : public generated::Transfer<TransferService> {
   }
 
  private:
-  // TODO(frolv): Initially, only one transfer at a time is supported. Once that
-  // is updated, this should be made configurable.
-  static constexpr int kMaxConcurrentTransfers = 1;
-
   void SendStatusChunk(RawServerReaderWriter& stream,
                        uint32_t transfer_id,
                        Status status);
@@ -118,9 +62,10 @@ class TransferService : public generated::Transfer<TransferService> {
   // sent successfully.
   bool SendNextReadChunk(internal::Context& context);
 
-  Result<internal::Context*> GetOrStartReadTransfer(uint32_t id);
-
   void OnReadMessage(ConstByteSpan message);
+  void OnWriteMessage(ConstByteSpan message);
+
+  size_t MaxWriteChunkSize(const internal::Context& transfer) const;
 
   // All registered transfer handlers.
   IntrusiveList<internal::Handler> handlers_;
@@ -130,7 +75,11 @@ class TransferService : public generated::Transfer<TransferService> {
   RawServerReaderWriter read_stream_;
   RawServerReaderWriter write_stream_;
 
-  std::array<internal::Context, kMaxConcurrentTransfers> read_transfers_;
+  internal::ContextPool read_transfers_;
+  internal::ContextPool write_transfers_;
+
+  size_t max_chunk_size_bytes_;
+  size_t default_max_bytes_to_receive_;
 };
 
 }  // namespace pw::transfer

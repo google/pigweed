@@ -37,6 +37,7 @@ pw_source_set("pw_transfer") {
   deps = [
     ":proto.pwpb",
     dir_pw_log,
+    dir_pw_varint,
   ]
   public = [
     "public/pw_transfer/handler.h",
@@ -44,6 +45,8 @@ pw_source_set("pw_transfer") {
   ]
   sources = [
     "chunk.cc",
+    "context.cc",
+    "public/pw_transfer/internal/context.h",
     "pw_transfer_private/chunk.h",
     "transfer.cc",
   ]

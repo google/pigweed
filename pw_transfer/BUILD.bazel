@@ -26,11 +26,13 @@ pw_cc_library(
     name = "pw_transfer",
     srcs = [
         "chunk.cc",
+        "context.cc",
         "pw_transfer_private/chunk.h",
         "transfer.cc",
     ],
     hdrs = [
         "public/pw_transfer/handler.h",
+        "public/pw_transfer/internal/context.h",
         "public/pw_transfer/transfer.h",
     ],
     includes = ["public"],
