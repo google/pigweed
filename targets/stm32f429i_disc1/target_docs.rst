@@ -124,13 +124,13 @@ OpenOCD requires a few steps. Summary version of the steps:
      $ arm-none-eabi-gdb -ex "target remote :3333" \
        out/stm32f429i_disc1_debug/obj/pw_assert/test/assert_facade_test.elf
 
-#. Flash (``load``), run (``mon reset init; continue``), and debug
+#. Flash (``load``), run (``mon reset run; continue``), and debug
 
    .. code:: none
 
      (gdb) set print pretty on
      (gdb) load
-     (gdb) mon reset init
+     (gdb) mon reset run
      (gdb) continue
 
 #. You can re-flash the device after compiling by running ``load``.
@@ -227,14 +227,14 @@ To reset the device and halt on the first instruction (before main):
 
 .. code:: none
 
-  (gdb) mon reset init
+  (gdb) mon reset run
 
 
 This will produce output similar to:
 
 .. code:: none
 
-  (gdb) mon reset init
+  (gdb) mon reset run
   Unable to match requested speed 2000 kHz, using 1800 kHz
   Unable to match requested speed 2000 kHz, using 1800 kHz
   target halted due to debug-request, current mode: Thread
