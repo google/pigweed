@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 from typing import Optional, BinaryIO, TextIO, Callable
 import pw_tokenizer
+import pw_cpu_exception_cortex_m
 from pw_snapshot_metadata import metadata
 from pw_snapshot_protos import snapshot_pb2
 from pw_symbolizer import LlvmSymbolizer
@@ -62,6 +63,11 @@ def process_snapshot(serialized_snapshot: bytes,
         symbolizer = LlvmSymbolizer(elf_matcher(snapshot))
     else:
         symbolizer = LlvmSymbolizer()
+
+    cortex_m_cpu_state = pw_cpu_exception_cortex_m.process_snapshot(
+        serialized_snapshot)
+    if cortex_m_cpu_state:
+        output.append(cortex_m_cpu_state)
 
     thread_info = thread_analyzer.process_snapshot(serialized_snapshot,
                                                    detokenizer, symbolizer)

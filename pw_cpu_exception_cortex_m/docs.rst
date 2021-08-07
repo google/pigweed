@@ -184,3 +184,9 @@ information is captured by a ``pw::thread::Thread`` protobuf encoder.
   ``pw_cpu_exception_DefaultHandler()`` instead of using the current running
   context to capture the main stack to minimize how much of the snapshot
   handling is captured in the stack.
+
+Python processor
+================
+This module's included Python exception analyzer tooling provides snapshot
+integration via a ``process_snapshot()`` function that produces a multi-line
+dump from a serialized snapshot proto.

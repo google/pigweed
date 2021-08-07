@@ -16,6 +16,7 @@
 from typing import Tuple
 
 from pw_cpu_exception_cortex_m import cortex_m_constants
+from pw_cpu_exception_cortex_m_protos import cpu_state_pb2
 
 
 class CortexMExceptionAnalyzer:
@@ -150,3 +151,16 @@ class CortexMExceptionAnalyzer:
             self.dump_registers(),
         ))
         return '\n'.join(dump)
+
+
+def process_snapshot(serialized_snapshot: bytes) -> str:
+    """Returns the stringified result of a SnapshotCpuState message run though
+    a CortexMExceptionAnalyzer.
+    """
+    snapshot = cpu_state_pb2.SnapshotCpuState()
+    snapshot.ParseFromString(serialized_snapshot)
+
+    if snapshot.HasField('armv7m_cpu_state'):
+        return f'{CortexMExceptionAnalyzer(snapshot.armv7m_cpu_state)}\n'
+
+    return ''

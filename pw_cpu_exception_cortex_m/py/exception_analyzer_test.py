@@ -15,19 +15,8 @@
 """Tests dumped Cortex-M CPU state."""
 
 import unittest
-import os
-
-from pw_protobuf_compiler import python_protos
-from pw_cli import env
 from pw_cpu_exception_cortex_m import exception_analyzer, cortex_m_constants
-
-CPU_STATE_PROTO_PATH = os.path.join(
-    env.pigweed_environment().PW_ROOT,  #pylint: disable=no-member
-    'pw_cpu_exception_cortex_m',
-    'pw_cpu_exception_cortex_m_protos',
-    'cpu_state.proto')
-
-cpu_state_pb2 = python_protos.compile_and_import_file(CPU_STATE_PROTO_PATH)
+from pw_cpu_exception_cortex_m_protos import cpu_state_pb2
 
 # pylint: disable=protected-access
 
