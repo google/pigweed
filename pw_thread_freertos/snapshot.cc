@@ -34,33 +34,33 @@ void CaptureThreadState(eTaskState thread_state,
                         Thread::StreamEncoder& encoder) {
   switch (thread_state) {
     case eRunning:
-      PW_LOG_INFO("Thread state: RUNNING");
+      PW_LOG_DEBUG("Thread state: RUNNING");
       encoder.WriteState(ThreadState::Enum::RUNNING);
       return;
 
     case eReady:
-      PW_LOG_INFO("Thread state: READY");
+      PW_LOG_DEBUG("Thread state: READY");
       encoder.WriteState(ThreadState::Enum::READY);
       return;
 
     case eBlocked:
-      PW_LOG_INFO("Thread state: BLOCKED");
+      PW_LOG_DEBUG("Thread state: BLOCKED");
       encoder.WriteState(ThreadState::Enum::BLOCKED);
       return;
 
     case eSuspended:
-      PW_LOG_INFO("Thread state: SUSPENDED");
+      PW_LOG_DEBUG("Thread state: SUSPENDED");
       encoder.WriteState(ThreadState::Enum::SUSPENDED);
       return;
 
     case eDeleted:
-      PW_LOG_INFO("Thread state: INACTIVE");
+      PW_LOG_DEBUG("Thread state: INACTIVE");
       encoder.WriteState(ThreadState::Enum::INACTIVE);
       return;
 
     case eInvalid:
     default:
-      PW_LOG_INFO("Thread state: UNKNOWN");
+      PW_LOG_DEBUG("Thread state: UNKNOWN");
       encoder.WriteState(ThreadState::Enum::UNKNOWN);
       return;
   }
@@ -108,7 +108,7 @@ Status SnapshotThread(TaskHandle_t thread,
                       ProcessThreadStackCallback& thread_stack_callback) {
   const tskTCB& tcb = *reinterpret_cast<tskTCB*>(thread);
 
-  PW_LOG_INFO("Capturing thread info for %s", tcb.pcTaskName);
+  PW_LOG_DEBUG("Capturing thread info for %s", tcb.pcTaskName);
   encoder.WriteName(std::as_bytes(std::span(std::string_view(tcb.pcTaskName))));
 
   CaptureThreadState(thread_state, encoder);

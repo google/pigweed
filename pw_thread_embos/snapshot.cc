@@ -35,7 +35,7 @@ inline bool ThreadIsRunning(const OS_TASK& thread) {
 
 void CaptureThreadState(const OS_TASK& thread, Thread::StreamEncoder& encoder) {
   if (ThreadIsRunning(thread)) {
-    PW_LOG_INFO("Thread state: RUNNING");
+    PW_LOG_DEBUG("Thread state: RUNNING");
     encoder.WriteState(ThreadState::Enum::RUNNING);
     return;
   }
@@ -56,13 +56,13 @@ void CaptureThreadState(const OS_TASK& thread, Thread::StreamEncoder& encoder) {
 #endif  // OS_VERSION_GENERIC < 42200 || OS_VERSION_GENERIC > 50600
 
   if ((thread.Stat & 0x3) != 0) {
-    PW_LOG_INFO("Thread state: SUSPENDED");
+    PW_LOG_DEBUG("Thread state: SUSPENDED");
     encoder.WriteState(ThreadState::Enum::SUSPENDED);
   } else if ((thread.Stat & 0xf8) == 0) {
-    PW_LOG_INFO("Thread state: READY");
+    PW_LOG_DEBUG("Thread state: READY");
     encoder.WriteState(ThreadState::Enum::READY);
   } else {
-    PW_LOG_INFO("Thread state: BLOCKED");
+    PW_LOG_DEBUG("Thread state: BLOCKED");
     encoder.WriteState(ThreadState::Enum::BLOCKED);
   }
 }
@@ -107,10 +107,10 @@ Status SnapshotThread(const OS_TASK& thread,
                       Thread::StreamEncoder& encoder,
                       ProcessThreadStackCallback& thread_stack_callback) {
 #if OS_TRACKNAME
-  PW_LOG_INFO("Capturing thread info for %s", thread.Name);
+  PW_LOG_DEBUG("Capturing thread info for %s", thread.Name);
   encoder.WriteName(std::as_bytes(std::span(std::string_view(thread.Name))));
 #else
-  PW_LOG_INFO("Capturing thread info for thread at 0x%08x", &thread);
+  PW_LOG_DEBUG("Capturing thread info for thread at 0x%08x", &thread);
 #endif  // OS_TRACKNAME
 
   CaptureThreadState(thread, encoder);
@@ -132,7 +132,7 @@ Status SnapshotThread(const OS_TASK& thread,
 
   return SnapshotStack(thread_ctx, encoder, thread_stack_callback);
 #else
-  PW_LOG_INFO("Stack pointer: 0x%08x", running_thread_stack_pointer);
+  PW_LOG_DEBUG("Stack pointer: 0x%08x", running_thread_stack_pointer);
   encoder.WriteStackPointer(reinterpret_cast<uintptr_t>(
       ThreadIsRunning(thread) ? running_thread_stack_pointer : thread.pStack));
   return encoder.status();

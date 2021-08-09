@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 #include "pw_thread_threadx/snapshot.h"
 
 #include <string_view>
@@ -39,24 +40,24 @@ inline bool ThreadIsRunning(const TX_THREAD& thread) {
 void CaptureThreadState(const TX_THREAD& thread,
                         Thread::StreamEncoder& encoder) {
   if (ThreadIsRunning(thread)) {
-    PW_LOG_INFO("Thread state: RUNNING");
+    PW_LOG_DEBUG("Thread state: RUNNING");
     encoder.WriteState(ThreadState::Enum::RUNNING);
     return;
   }
 
   switch (thread.tx_thread_state) {
     case TX_READY:
-      PW_LOG_INFO("Thread state: READY");
+      PW_LOG_DEBUG("Thread state: READY");
       encoder.WriteState(ThreadState::Enum::READY);
       break;
     case TX_COMPLETED:
     case TX_TERMINATED:
-      PW_LOG_INFO("Thread state: INACTIVE");
+      PW_LOG_DEBUG("Thread state: INACTIVE");
       encoder.WriteState(ThreadState::Enum::INACTIVE);
       break;
     case TX_SUSPENDED:
     case TX_SLEEP:
-      PW_LOG_INFO("Thread state: SUSPENDED");
+      PW_LOG_DEBUG("Thread state: SUSPENDED");
       encoder.WriteState(ThreadState::Enum::SUSPENDED);
       break;
     case TX_QUEUE_SUSP:
@@ -68,11 +69,11 @@ void CaptureThreadState(const TX_THREAD& thread,
     case TX_FILE:
     case TX_TCP_IP:
     case TX_MUTEX_SUSP:
-      PW_LOG_INFO("Thread state: BLOCKED");
+      PW_LOG_DEBUG("Thread state: BLOCKED");
       encoder.WriteState(ThreadState::Enum::BLOCKED);
       break;
     default:
-      PW_LOG_INFO("Thread state: UNKNOWN");
+      PW_LOG_DEBUG("Thread state: UNKNOWN");
       encoder.WriteState(ThreadState::Enum::UNKNOWN);
   }
 }
@@ -115,7 +116,7 @@ Status SnapshotThread(const TX_THREAD& thread,
                       void* running_thread_stack_pointer,
                       Thread::StreamEncoder& encoder,
                       ProcessThreadStackCallback& thread_stack_callback) {
-  PW_LOG_INFO("Capturing thread info for %s", thread.tx_thread_name);
+  PW_LOG_DEBUG("Capturing thread info for %s", thread.tx_thread_name);
   encoder.WriteName(
       std::as_bytes(std::span(std::string_view(thread.tx_thread_name))));
 
