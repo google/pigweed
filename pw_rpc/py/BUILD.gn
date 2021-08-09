@@ -77,7 +77,10 @@ pw_python_script("python_client_cpp_server_test") {
   pylintrc = "$dir_pigweed/.pylintrc"
 
   action = {
-    args = [ "<TARGET_FILE(..:test_rpc_server)>" ]
+    args = [
+      "--test-server-command",
+      "<TARGET_FILE(..:test_rpc_server)>",
+    ]
     deps = [ "..:test_rpc_server" ]
     stamp = true
   }

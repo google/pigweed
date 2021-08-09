@@ -24,18 +24,16 @@ def parse_test_server_args(
         parser = argparse.ArgumentParser(
             description=sys.modules['__main__'].__doc__)
 
-    parser.add_argument('test_server_command',
+    parser.add_argument('--test-server-command',
                         nargs='+',
-                        help=('Command that starts the test server. '
-                              'Arguments after "--" are passed to unittest.'))
+                        required=True,
+                        help='Command that starts the test server.')
+    parser.add_argument('unittest_args',
+                        nargs=argparse.REMAINDER,
+                        help='Arguments after "--" are passed to unittest.')
+
     args = parser.parse_args()
 
-    try:
-        index = args.test_server_command.index('--')
-    except ValueError:
-        index = len(args.test_server_command)
-
-    args.unittest_args = sys.argv[:1] + args.test_server_command[index + 1:]
-    args.test_server_command = args.test_server_command[:index]
-
+    # Make the script name argv[0] and drop the "--".
+    args.unittest_args = sys.argv[:1] + args.unittest_args[1:]
     return args
