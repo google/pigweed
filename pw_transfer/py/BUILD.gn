@@ -35,7 +35,12 @@ pw_python_package("py") {
 
 pw_python_script("python_cpp_transfer_test") {
   sources = [ "tests/python_cpp_transfer_test.py" ]
-  python_deps = [ ":py" ]
+  python_deps = [
+    ":py",
+    "$dir_pw_hdlc/py",
+    "$dir_pw_rpc/py",
+    "$dir_pw_status/py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 
   action = {
