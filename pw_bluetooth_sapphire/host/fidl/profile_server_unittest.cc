@@ -794,7 +794,9 @@ class FakeScoConnectionReceiver : public fidlbredr::testing::ScoConnectionReceiv
   std::optional<fidlbredr::ScoConnection> connection_;
   size_t error_count_;
   std::optional<fidlbredr::ScoErrorCode> error_;
-  virtual void NotImplemented_(const std::string& name) { FAIL() << name << " is not implemented"; }
+  virtual void NotImplemented_(const std::string& name) override {
+    FAIL() << name << " is not implemented";
+  }
 };
 
 TEST_F(FIDL_ProfileServerTest, ConnectScoWithInvalidParameters) {
