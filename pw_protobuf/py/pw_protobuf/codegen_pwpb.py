@@ -34,7 +34,7 @@ PLUGIN_VERSION = '0.1.0'
 PROTO_H_EXTENSION = '.pwpb.h'
 PROTO_CC_EXTENSION = '.pwpb.cc'
 
-PROTOBUF_NAMESPACE = 'pw::protobuf'
+PROTOBUF_NAMESPACE = '::pw::protobuf'
 
 
 class EncoderType(enum.Enum):
@@ -565,12 +565,13 @@ def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
 
         # Allow MemoryEncoder& to be converted to StreamEncoder&.
         if encoder_type == EncoderType.MEMORY:
-            stream_type = (f'{message.cpp_namespace()}::'
+            stream_type = (f'::{message.cpp_namespace()}::'
                            f'{EncoderType.STREAMING.codegen_class_name()}')
             output.write_line(
                 f'operator {stream_type}&() '
                 f' {{ return static_cast<{stream_type}&>('
-                f'*static_cast<pw::protobuf::StreamEncoder*>(this));}}')
+                f'*static_cast<{PROTOBUF_NAMESPACE}::StreamEncoder*>(this));}}'
+            )
 
         # Generate methods for each of the message's fields.
         for field in message.fields():
