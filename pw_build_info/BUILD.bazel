@@ -35,7 +35,6 @@ pw_cc_library(
     ],
 )
 
-
 # This is only used for the python tests.
 filegroup(
     name = "build_id_print_test",
