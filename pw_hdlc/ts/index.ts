@@ -12,5 +12,5 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export {Decoder, Frame} from './decoder';
+export {Decoder, Frame, FrameStatus} from './decoder';
 export {Encoder} from './encoder';

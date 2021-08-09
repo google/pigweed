@@ -26,6 +26,7 @@ ts_project(
         "index.ts",
         "src/frontend/app.tsx",
         "src/frontend/index.tsx",
+        "src/frontend/log.tsx",
         "src/transport/device_transport.ts",
         "src/transport/serial_mock.ts",
         "src/transport/web_serial_transport.ts",
@@ -33,7 +34,10 @@ ts_project(
     ],
     declaration = True,
     source_map = True,
-    deps = ["@npm//:node_modules"],  # can't use fine-grained deps
+    deps = [
+        "//pw_hdlc/ts:pw_hdlc",
+        "@npm//:node_modules",
+    ],  # can't use fine-grained deps
 )
 
 js_library(

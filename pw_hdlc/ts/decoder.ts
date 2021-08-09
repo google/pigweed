@@ -84,8 +84,6 @@ export class Decoder {
   private rawData = new Uint8Array();
   private state = DecoderState.INTERFRAME;
 
-  constructor() {}
-
   /**
    *  Decodes and yields HDLC frames, including corrupt frames
    *

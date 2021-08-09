@@ -19,9 +19,9 @@ import DeviceTransport from './device_transport';
 
 const DEFAULT_SERIAL_OPTIONS: SerialOptions & {baudRate: number} = {
   // Some versions of chrome use `baudrate` (linux)
-  baudrate: 921600,
+  baudrate: 115200,
   // Some versions use `baudRate` (chromebook)
-  baudRate: 921600,
+  baudRate: 115200,
   databits: 8,
   parity: 'none',
   stopbits: 1,
@@ -109,11 +109,11 @@ export class WebSerialTransport implements DeviceTransport {
 
     this.rxSubscriptions.push(
       this.activePortConnectionConnection.chunks.subscribe(
-        chunk => {
+        (chunk: any) => {
           this.chunks.next(chunk);
         },
-        err => {
-          throw new Error(`Chunks observable had an unexpeted error ${err}`);
+        (err: any) => {
+          throw new Error(`Chunks observable had an unexpected error ${err}`);
         },
         () => {
           this.connected.next(false);
@@ -125,7 +125,7 @@ export class WebSerialTransport implements DeviceTransport {
     );
 
     this.rxSubscriptions.push(
-      this.activePortConnectionConnection.errors.subscribe(error => {
+      this.activePortConnectionConnection.errors.subscribe((error: any) => {
         this.errors.next(error);
         if (error instanceof DeviceLostError) {
           // The device has been lost

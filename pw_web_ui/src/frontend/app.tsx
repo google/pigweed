@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,29 +13,60 @@
 // the License.
 
 /* eslint-env browser */
-import Button from '@material-ui/core/Button';
-import * as React from 'react';
+import {Button, makeStyles, Typography} from '@material-ui/core';
 import {WebSerialTransport} from '../transport/web_serial_transport';
+import {Decoder, Frame} from '@pigweed/pw_hdlc';
+import {SerialDebug} from './log';
+import * as React from 'react';
+import {useState, useRef} from 'react';
+
+const useStyles = makeStyles(() => ({
+  root: {
+    display: 'flex',
+    'flex-direction': 'column',
+    overflow: 'hidden',
+    width: '1000px',
+  },
+}));
 
 export function App() {
-  const transport = new WebSerialTransport();
+  const [connected, setConnected] = useState<boolean>(false);
+  const [frames, setFrames] = useState<Frame[]>([]);
 
-  transport.chunks.subscribe(item => {
-    console.log(item);
-  });
+  const transportRef = useRef(new WebSerialTransport());
+  const decoderRef = useRef(new Decoder());
+  const classes = useStyles();
+
+  function onConnected() {
+    setConnected(true);
+    transportRef.current!.chunks.subscribe((item: Uint8Array) => {
+      const decoded = decoderRef.current!.process(item);
+      for (const frame of decoded) {
+        setFrames(old => [...old, frame]);
+      }
+    });
+  }
 
   return (
-    <div className="app">
-      <h1>Example Page</h1>
+    <div className={classes.root}>
+      <Typography variant="h1">Pigweb Demo</Typography>
       <Button
+        disabled={connected}
         variant="contained"
         color="primary"
         onClick={() => {
-          transport.connect();
+          transportRef.current
+            .connect()
+            .then(onConnected)
+            .catch(error => {
+              setConnected(false);
+              console.log(error);
+            });
         }}
       >
-        Connect
+        {connected ? 'Connected' : 'Connect'}
       </Button>
+      <SerialDebug frames={frames} />
     </div>
   );
 }
