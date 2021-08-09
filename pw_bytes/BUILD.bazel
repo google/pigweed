@@ -31,8 +31,8 @@ pw_cc_library(
         "public/pw_bytes/array.h",
         "public/pw_bytes/byte_builder.h",
         "public/pw_bytes/endian.h",
-        "public/pw_bytes/units.h",
         "public/pw_bytes/span.h",
+        "public/pw_bytes/units.h",
     ],
     includes = ["public"],
     deps = [
