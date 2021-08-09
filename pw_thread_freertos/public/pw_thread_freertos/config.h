@@ -52,11 +52,16 @@
   configMINIMAL_STACK_SIZE
 #endif  // PW_THREAD_FREERTOS_CONFIG_DEFAULT_STACK_SIZE_WORDS
 
-// The default stack size in words. By default this uses the minimal FreeRTOS
+// The default thread priority. By default this uses the minimal FreeRTOS
 // priority level above the idle priority.
 #ifndef PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY
 #define PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY (tskIDLE_PRIORITY + 1)
 #endif  // PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY
+
+// The maximum thread priority defined by the FreeRTOS configuration.
+#ifndef PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY
+#define PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY (configMAX_PRIORITIES - 1)
+#endif  // PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY
 
 namespace pw::thread::freertos::config {
 
@@ -65,5 +70,7 @@ inline constexpr size_t kDefaultStackSizeWords =
     PW_THREAD_FREERTOS_CONFIG_DEFAULT_STACK_SIZE_WORDS;
 inline constexpr UBaseType_t kDefaultPriority =
     PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY;
+inline constexpr UBaseType_t kMaximumPriority =
+    PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY;
 
 }  // namespace pw::thread::freertos::config

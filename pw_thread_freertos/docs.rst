@@ -110,8 +110,14 @@ more details.
 
 .. c:macro:: PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY
 
-   The default stack size in words. By default this uses the minimal FreeRTOS
+   The default thread priority. By default this uses the minimal FreeRTOS
    priority level above the idle priority (``tskIDLE_PRIORITY + 1``).
+
+.. c:macro:: PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY
+
+  The maximum thread priority. By default this uses the value below the
+  number of priorities defined by the FreeRTOS configuration
+  (``configMAX_PRIORITIES - 1``).
 
 FreeRTOS Thread Options
 =======================
