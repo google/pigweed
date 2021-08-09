@@ -71,8 +71,8 @@ pw_cc_library(
 
 pw_cc_library(
     name = "snapshot",
-    hdrs = ["public/pw_cpu_exception_cortex_m/snapshot.h"],
     srcs = ["snapshot.cc"],
+    hdrs = ["public/pw_cpu_exception_cortex_m/snapshot.h"],
     deps = [
         ":cortex_m_constants",
         ":cpu_state_protos",
