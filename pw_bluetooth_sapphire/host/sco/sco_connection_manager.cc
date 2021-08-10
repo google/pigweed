@@ -195,7 +195,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
         if (!self || status.is_success()) {
           return;
         }
-        bt_is_error(status, DEBUG, "sco", "SCO accept connection command failed");
+        bt_is_error(status, WARN, "sco", "enhanced accept SCO connection command failed");
         self->CompleteRequest(fpromise::error(HostError::kFailed));
       });
 
@@ -211,8 +211,11 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
   queued_request_.reset();
 
   auto req_id = next_req_id_++;
-  queued_request_ = {
-      .id = req_id, .initiator = initiator, .parameters = params, .callback = std::move(cb)};
+  queued_request_ = {.id = req_id,
+                     .initiator = initiator,
+                     .received_request = false,
+                     .parameters = params,
+                     .callback = std::move(cb)};
 
   TryCreateNextConnection();
 
@@ -263,8 +266,11 @@ void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
   bt_log(INFO, "gap-sco",
          "Completing SCO connection request (initiator: %d, success: %d, peer: %s)",
          in_progress_request_->initiator, result.is_ok(), bt_str(peer_id_));
-  in_progress_request_->callback(std::move(result));
+  // Clear in_progress_request_ before calling callback to prevent additional calls to
+  // CompleteRequest() during execution of the callback (e.g. due to destroying the RequestHandle).
+  ConnectionRequest request = std::move(in_progress_request_.value());
   in_progress_request_.reset();
+  request.callback(std::move(result));
   TryCreateNextConnection();
 }
 
@@ -282,7 +288,7 @@ void ScoConnectionManager::SendCommandWithStatusCallback(
 void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
   // Cancel queued request if id matches.
   if (queued_request_ && queued_request_->id == id) {
-    bt_log(TRACE, "gap-sco", "Cancelling queued request (id: %zu)", id);
+    bt_log(INFO, "gap-sco", "Cancelling queued SCO request (id: %zu)", id);
     queued_request_.reset();
     return;
   }
@@ -291,7 +297,7 @@ void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
   // request yet.
   if (in_progress_request_ && in_progress_request_->id == id && !in_progress_request_->initiator &&
       !in_progress_request_->received_request) {
-    bt_log(TRACE, "gap-sco", "Cancelling in progress request (id: %zu)", id);
+    bt_log(INFO, "gap-sco", "Cancelling in progress SCO request (id: %zu)", id);
     CompleteRequest(fpromise::error(HostError::kCanceled));
   }
 }

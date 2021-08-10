@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 #include "sco_connection_manager.h"
 
+#include <optional>
+
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -157,6 +159,33 @@ TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionAndReceiveFailureCompleteEven
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
   RunLoopUntilIdle();
+  ASSERT_TRUE(conn.is_error());
+  EXPECT_EQ(conn.error(), HostError::kFailed);
+}
+
+TEST_F(
+    SCO_ScoConnectionManagerTest,
+    EnhancedAcceptSynchronousConnectionRequestCommandErrorStatusResultCallbackDestroysRequestHandle) {
+  ConnectionResult conn;
+  std::optional<ScoConnectionManager::RequestHandle> req_handle;
+  auto conn_cb = [&conn, &req_handle](auto cb_result) {
+    req_handle.reset();
+    conn = std::move(cb_result);
+  };
+
+  req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
+
+  auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
+  test_device()->SendCommandChannelPacket(conn_req_packet);
+
+  auto accept_status_packet = testing::CommandStatusPacket(
+      hci::kEnhancedAcceptSynchronousConnectionRequest, hci::StatusCode::kUnspecifiedError);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
+      &accept_status_packet);
+  RunLoopUntilIdle();
+
   ASSERT_TRUE(conn.is_error());
   EXPECT_EQ(conn.error(), HostError::kFailed);
 }
@@ -463,6 +492,49 @@ TEST_F(SCO_ScoConnectionManagerTest, QueueTwoAcceptConnectionRequestsCancelsFirs
   ConnectionResult conn_0;
   auto conn_cb = [&conn_0](auto cb_conn) { conn_0 = std::move(cb_conn); };
   auto req_handle_0 = manager()->AcceptConnection(kConnectionParams, conn_cb);
+
+  auto second_conn_params = kConnectionParams;
+  second_conn_params.transmit_bandwidth = 99;
+
+  ConnectionResult conn_1;
+  auto req_handle_1 = manager()->AcceptConnection(
+      second_conn_params, [&conn_1](auto cb_conn) { conn_1 = std::move(cb_conn); });
+
+  ASSERT_TRUE(conn_0.is_error());
+  EXPECT_EQ(conn_0.error(), HostError::kCanceled);
+
+  auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
+  test_device()->SendCommandChannelPacket(conn_req_packet);
+
+  auto accept_status_packet = testing::CommandStatusPacket(
+      hci::kEnhancedAcceptSynchronousConnectionRequest, hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, second_conn_params),
+      &accept_status_packet);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_1.is_pending());
+
+  test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
+      kScoConnectionHandle, kPeerAddress, hci::LinkType::kSCO, hci::StatusCode::kSuccess));
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_1.is_ok());
+  EXPECT_EQ(conn_1.value()->handle(), kScoConnectionHandle);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
+}
+
+TEST_F(
+    SCO_ScoConnectionManagerTest,
+    QueueTwoAcceptConnectionRequestsCancelsFirstRequestAndFirstRequestCallbackDestroysRequestHandle) {
+  std::optional<ScoConnectionManager::RequestHandle> req_handle_0;
+  ConnectionResult conn_0;
+  auto conn_cb = [&conn_0, &req_handle_0](auto cb_conn) {
+    conn_0 = std::move(cb_conn);
+    req_handle_0.reset();
+  };
+  req_handle_0 = manager()->AcceptConnection(kConnectionParams, conn_cb);
 
   auto second_conn_params = kConnectionParams;
   second_conn_params.transmit_bandwidth = 99;
