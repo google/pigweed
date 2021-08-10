@@ -483,15 +483,6 @@ variables before launching the console.
 Known Issues
 ------------
 
-
-Python Repl Window
-~~~~~~~~~~~~~~~~~~
-
-- Any ``print()`` commands entered in the repl will not appear until the code
-  being run is completed. This is a high priority issue:
-  https://bugs.chromium.org/p/pigweed/issues/detail?id=407
-
-
 Log Window
 ~~~~~~~~~~
 
@@ -501,13 +492,6 @@ Log Window
 - Tab character rendering will not work in the log pane view. They will
   appear as ``^I`` since prompt_toolkit can't render them. See this issue for details:
   https://github.com/prompt-toolkit/python-prompt-toolkit/issues/556
-
-
-General
-~~~~~~~
-
--  Mouse click and colors don't work if using Windows cmd.exe. Please
-   use the newer Windows Terminal app instead: https://github.com/microsoft/terminal
 
 
 Upcoming Features

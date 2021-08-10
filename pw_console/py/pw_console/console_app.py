@@ -24,6 +24,7 @@ from typing import Iterable, Union
 from jinja2 import Environment, PackageLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.layout.menus import CompletionsMenu
+from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.application import Application
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.styles import (
@@ -107,7 +108,7 @@ class ConsoleApp:
         repl_startup_message=None,
         help_text=None,
         app_title=None,
-        color_depth=None,
+        color_depth=ColorDepth.DEPTH_8_BIT,
         extra_completers=None,
     ):
         # Create a default global and local symbol table. Values are the same
