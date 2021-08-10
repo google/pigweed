@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_toolchain/static_analysis_toolchain.gni")
 import("$dir_pw_toolchain/universal_tools.gni")
 
 declare_args() {
@@ -356,6 +357,15 @@ template("generate_toolchain") {
           name = target_name
         }
         forward_variables_from(invoker_toolchain_args, "*")
+      }
+    }
+
+    _generate_static_analysis_toolchain =
+        defined(invoker.static_analysis) && invoker.static_analysis
+
+    if (_generate_static_analysis_toolchain) {
+      pw_static_analysis_toolchain(target_name + ".static_analysis") {
+        forward_variables_from(invoker, "*")
       }
     }
   } else {

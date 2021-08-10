@@ -125,6 +125,12 @@ _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
 }
 
+# Run clang-tidy on pigweed_default with host_clang_debug toolchain options.
+group("static_analysis") {
+  _toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
+  deps = [ ":pigweed_default(${_toolchain_prefix}debug.static_analysis)" ]
+}
+
 group("docs") {
   deps = [ "$dir_pigweed/docs($dir_pigweed/targets/docs)" ]
 }

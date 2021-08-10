@@ -13,22 +13,39 @@ Toolchains
 ``pw_toolchain`` provides GN toolchains that may be used to build Pigweed. The
 following toolchains are defined:
 
- - arm_gcc_cortex_m4_og
- - arm_gcc_cortex_m4_o1
- - arm_gcc_cortex_m4_o2
- - arm_gcc_cortex_m4_os
- - arm_gcc_cortex_m4f_og
- - arm_gcc_cortex_m4f_o1
- - arm_gcc_cortex_m4f_o2
- - arm_gcc_cortex_m4f_os
- - host_clang_og
- - host_clang_o2
- - host_clang_os
- - host_gcc_og
- - host_gcc_o2
- - host_gcc_os
+ - pw_toolchain_arm_gcc.cortex_m0plus_debug
+ - pw_toolchain_arm_gcc.cortex_m0plus_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m0plus_size_optimized
+ - pw_toolchain_arm_gcc.cortex_m3_debug
+ - pw_toolchain_arm_gcc.cortex_m3_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m3_size_optimized
+ - pw_toolchain_arm_gcc.cortex_m4_debug
+ - pw_toolchain_arm_gcc.cortex_m4_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m4_size_optimized
+ - pw_toolchain_arm_gcc.cortex_m4f_debug
+ - pw_toolchain_arm_gcc.cortex_m4f_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m4f_size_optimized
+ - pw_toolchain_arm_gcc.cortex_m7_debug
+ - pw_toolchain_arm_gcc.cortex_m7_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m7_size_optimized
+ - pw_toolchain_arm_gcc.cortex_m7f_debug
+ - pw_toolchain_arm_gcc.cortex_m7f_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m7f_size_optimized
+ - pw_toolchain_arm_gcc.cortex_m33_debug
+ - pw_toolchain_arm_gcc.cortex_m33_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m33_size_optimized
+ - pw_toolchain_arm_gcc.cortex_m33f_debug
+ - pw_toolchain_arm_gcc.cortex_m33f_speed_optimized
+ - pw_toolchain_arm_gcc.cortex_m33f_size_optimized
+ - pw_toolchain_host_clang.debug
+ - pw_toolchain_host_clang.speed_optimized
+ - pw_toolchain_host_clang.size_optimized
+ - pw_toolchain_host_clang.fuzz
+ - pw_toolchain_host_gcc.debug
+ - pw_toolchain_host_gcc.speed_optimized
+ - pw_toolchain_host_gcc.size_optimized
 
-.. note::
+ .. note::
   The documentation for this module is currently incomplete.
 
 Non-C/C++ toolchains
@@ -56,3 +73,42 @@ version by modifying the ``pw_toolchain_CLANG_PREFIX`` GN build argument to
 point to the directory that contains the desired clang, clang++, and llvm-ar
 binaries. This should only be used for debugging purposes. Pigweed does not
 officially support any compilers other than those provided by Pigweed.
+
+Running static analysis checks
+==============================
+``clang-tidy`` can be run as a compiler replacement, to analyze all sources
+built for a target. ``pw_toolchain/static_analysis_toolchain.gni`` provides
+the ``pw_static_analysis_toolchain`` template. This template creates toolchains
+that execute ``clang-tidy`` for C/C++ sources, and mock implementations of
+the ``link``, ``alink`` and ``solink`` tools.
+
+Additionally, ``generate_toolchain`` implements a boolean flag
+``static_analysis`` (default ``false``) which generates the derived
+toolchain ``${target_name}.static_analysis`` using
+``pw_generate_static_analysis_toolchain`` and the toolchain options.
+
+The build argument ``pw_toolchain_STATIC_ANALYSIS_SOURCE_FILTER`` may be
+used to select and/or exclude source files to output diagnostics from.
+
+``pw_toolchain`` provides static analysis GN toolchains that may be used to
+test host targets:
+
+ - pw_toolchain_host_clang.debug.static_analysis
+ - pw_toolchain_host_clang.speed_optimized.static_analysis
+ - pw_toolchain_host_clang.size_optimized.static_analysis
+ - pw_toolchain_host_clang.fuzz.static_analysis
+   (if pw_toolchain_OSS_FUZZ_ENABLED is false)
+
+ For example, to run ``clang-tidy`` on all source dependencies of the
+ ``default`` target:
+
+.. code-block::
+
+  generate_toolchain("my_toolchain") {
+    ..
+    static_analysis = true
+  }
+
+  group("static_analysis") {
+    deps = [ ":default(my_toolchain.static_analysis)" ]
+  }
