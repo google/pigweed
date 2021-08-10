@@ -70,7 +70,7 @@ Status RpcLogDrain::Flush() {
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
     if (const Status status = server_writer_.Write(encoder); !status.ok()) {
       committed_entry_drop_count_ += packed_entry_count;
-      if (close_stream_on_writer_error_) {
+      if (error_handling_ == LogDrainErrorHandling::kCloseStreamOnWriterError) {
         server_writer_.Finish().IgnoreError();
         return Status::Aborted();
       }

@@ -38,12 +38,18 @@ namespace pw::log_rpc {
 // into a log::LogEntries message, writes the message to the provided writer,
 // then repeats the process until there are no more entries in the MultiSink or
 // the writer failed to write the outgoing package, in which case the RPC on
-// the writer is closed. When close_stream_on_writer_error is false the drain
+// the writer is closed. When error_handling is `kIgnoreWriterErrors` the drain
 // will continue to retrieve log entries out of the MultiSink and attempt to
 // send them out ignoring the writer errors. Note: this behavior might change or
 // be removed in the future.
 class RpcLogDrain : public multisink::MultiSink::Drain {
  public:
+  // Dictates how to handle server writer errors.
+  enum class LogDrainErrorHandling {
+    kIgnoreWriterErrors,
+    kCloseStreamOnWriterError,
+  };
+
   // The minimum buffer size, without the message payload, needed to retrieve a
   // log::LogEntry from the attached MultiSink. The user must account for the
   // max message size to avoid log entry drops.
@@ -77,9 +83,9 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
               ByteSpan log_entry_buffer,
               rpc::RawServerWriter writer,
               sync::Mutex& mutex,
-              bool close_stream_on_writer_error)
+              LogDrainErrorHandling error_handling)
       : channel_id_(channel_id),
-        close_stream_on_writer_error_(close_stream_on_writer_error),
+        error_handling_(error_handling),
         server_writer_(std::move(writer)),
         log_entry_buffer_(log_entry_buffer),
         committed_entry_drop_count_(0),
@@ -96,9 +102,9 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   RpcLogDrain(uint32_t channel_id,
               ByteSpan log_entry_buffer,
               sync::Mutex& mutex,
-              bool close_stream_on_writer_error)
+              LogDrainErrorHandling error_handling)
       : channel_id_(channel_id),
-        close_stream_on_writer_error_(close_stream_on_writer_error),
+        error_handling_(error_handling),
         server_writer_(),
         log_entry_buffer_(log_entry_buffer),
         committed_entry_drop_count_(0),
@@ -122,15 +128,15 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // Accesses log entries and sends them via the writer. Expected to be called
   // frequently to avoid log drops. If the writer fails to send a packet with
   // multiple log entries, the entries are dropped and a drop message with the
-  // count is sent. When close_stream_on_writer_error is set, the stream will
-  // automatically be closed and Flush will return the writer error.
+  // count is sent. When error_handling is kCloseStreamOnWriterError, the stream
+  // will automatically be closed and Flush will return the writer error.
   //
   // Precondition: the drain must be attached to a MultiSink.
   //
   // Return values:
   // OK - all entries were consumed.
-  // ABORTED - there was an error writing the packet, and
-  // close_stream_on_writer_error is true.
+  // ABORTED - there was an error writing the packet, and error_handling equals
+  // `kCloseStreamOnWriterError`.
   Status Flush() PW_LOCKS_EXCLUDED(mutex_);
 
   // Ends RPC log stream without flushing.
@@ -155,7 +161,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
       PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const uint32_t channel_id_;
-  const bool close_stream_on_writer_error_;
+  const LogDrainErrorHandling error_handling_;
   rpc::RawServerWriter server_writer_ PW_GUARDED_BY(mutex_);
   const ByteSpan log_entry_buffer_ PW_GUARDED_BY(mutex_);
   uint32_t committed_entry_drop_count_ PW_GUARDED_BY(mutex_);
