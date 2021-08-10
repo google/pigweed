@@ -462,11 +462,14 @@ split. This can be done repeatedly to form additional window stacks.
 Color Depth
 -----------
 
-Some terminals support full 24-bit color. By default pw console will try
-to use 256 colors.
+Some terminals support full 24-bit color and pw console will use that by default
+in most cases. One notable exeception is Apple Terminal on MacOS which supports
+256 colors only. `iTerm2 <https://iterm2.com/>`__ is a good MacOS alternative
+that supports 24-bit colors.
 
-To force a particular color depth: set one of these environment
-variables before launching the console.
+To force a particular color depth: set one of these environment variables before
+launching the console. For ``bash`` and ``zsh`` shells you can use the
+``export`` command.
 
 ::
 
@@ -479,6 +482,14 @@ variables before launching the console.
    # 24 bit | True colors
    export PROMPT_TOOLKIT_COLOR_DEPTH=DEPTH_24_BIT
 
+For Windows command prompt (``cmd.exe``) use the ``set`` command:
+
+::
+
+   set PROMPT_TOOLKIT_COLOR_DEPTH=DEPTH_1_BIT
+   set PROMPT_TOOLKIT_COLOR_DEPTH=DEPTH_4_BIT
+   set PROMPT_TOOLKIT_COLOR_DEPTH=DEPTH_8_BIT
+   set PROMPT_TOOLKIT_COLOR_DEPTH=DEPTH_24_BIT
 
 Known Issues
 ------------

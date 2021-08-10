@@ -13,10 +13,12 @@
 # the License.
 """ConsoleApp control class."""
 
-import builtins
 import asyncio
-import logging
+import builtins
 import functools
+import logging
+import os
+import sys
 from pathlib import Path
 from threading import Thread
 from typing import Iterable, Union
@@ -108,9 +110,23 @@ class ConsoleApp:
         repl_startup_message=None,
         help_text=None,
         app_title=None,
-        color_depth=ColorDepth.DEPTH_8_BIT,
+        color_depth=None,
         extra_completers=None,
     ):
+        self.color_depth = color_depth
+        # Check for any PROMPT_TOOLKIT_COLOR_DEPTH environment variables
+        color_depth_override = os.environ.get('PROMPT_TOOLKIT_COLOR_DEPTH', '')
+
+        # Set prompt_toolkit color_depth to the highest possible.
+        if color_depth is None and not color_depth_override:
+            # Default to 24bit color
+            self.color_depth = ColorDepth.DEPTH_24_BIT
+
+            # If using Apple Terminal switch to 256 (8bit) color.
+            term_program = os.environ.get('TERM_PROGRAM', '')
+            if sys.platform == 'darwin' and 'Apple_Terminal' in term_program:
+                self.color_depth = ColorDepth.DEPTH_8_BIT
+
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
         #   https://docs.python.org/3/library/functions.html#globals
@@ -181,7 +197,7 @@ class ConsoleApp:
         self.pw_ptpython_repl = PwPtPythonRepl(
             get_globals=lambda: global_vars,
             get_locals=lambda: local_vars,
-            color_depth=color_depth,
+            color_depth=self.color_depth,
             history_filename=self.repl_history_filename,
             extra_completers=extra_completers,
         )
@@ -300,7 +316,7 @@ class ConsoleApp:
             enable_page_navigation_bindings=True,
             full_screen=True,
             mouse_support=True,
-            color_depth=color_depth,
+            color_depth=self.color_depth,
             clipboard=PyperclipClipboard(),
         )
 

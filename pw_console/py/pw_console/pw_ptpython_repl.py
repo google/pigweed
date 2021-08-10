@@ -73,11 +73,10 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         super().__init__(
             *args,
             create_app=False,
-            # Use python_toolkit default color depth.
-            # color_depth=ColorDepth.DEPTH_8_BIT,  # 256 Colors
             _input_buffer_height=Dimension(min=5, weight=30),
             _completer=completer,
-            **ptpython_kwargs)
+            **ptpython_kwargs,
+        )
 
         self.enable_mouse_support: bool = True
         self.enable_history_search: bool = True
