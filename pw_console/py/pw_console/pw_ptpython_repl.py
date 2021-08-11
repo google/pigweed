@@ -73,7 +73,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         super().__init__(
             *args,
             create_app=False,
-            _input_buffer_height=Dimension(min=5, weight=30),
+            # Absolute minimum height of 1
+            _input_buffer_height=Dimension(min=1),
             _completer=completer,
             **ptpython_kwargs,
         )
@@ -107,7 +108,10 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         self._last_exception = None
 
     def __pt_container__(self):
-        """Return the prompt_toolkit root container for class."""
+        """Return the prompt_toolkit root container for class.
+
+        This allows self to be used wherever prompt_toolkit expects a container
+        object."""
         return self.ptpython_layout.root_container
 
     def set_repl_pane(self, repl_pane):
@@ -267,6 +271,9 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         # TODO(tonymd): Return True if exception is found?
         # Don't keep input for now. Return True to keep input text.
         return False
+
+    def line_break_count(self) -> int:
+        return self.default_buffer.text.count('\n')
 
     def has_focus_and_input_empty_condition(self) -> Condition:
         @Condition

@@ -130,14 +130,18 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 pw_console.widgets.checkbox.to_keybind_indicator(
                     'F3', 'History'))
         else:
+            focus = functools.partial(pw_console.mouse.focus_handler,
+                                      repl_pane)
+            fragments.append(('class:toolbar-button-decoration', '[', focus))
             fragments.append((
                 # Style
                 'class:keyhelp',
                 # Text
-                '[click to focus] ',
+                'click to focus',
                 # Mouse handler
-                functools.partial(pw_console.mouse.focus_handler, repl_pane),
+                focus,
             ))
+            fragments.append(('class:toolbar-button-decoration', '] ', focus))
         return fragments
 
     def __init__(self, repl_pane):
@@ -253,16 +257,11 @@ class ReplPane:
         self,
         application: Any,
         python_repl: PwPtPythonRepl,
-        # TODO(tonymd): Make the height of input+output windows match the log
-        # pane height. (Using minimum output height of 5 for now).
-        output_height: Optional[AnyDimension] = Dimension(min=5, weight=70),
-        # TODO(tonymd): Figure out how to resize ptpython input field.
-        _input_height: Optional[AnyDimension] = None,
-        # Default width and height to 50% of the screen
         height: Optional[AnyDimension] = None,
         width: Optional[AnyDimension] = None,
         startup_message: Optional[str] = None,
     ) -> None:
+        # Default width and height to 50% of the screen
         self.height = height if height else Dimension(weight=50)
         self.width = width if width else Dimension(weight=50)
         self.show_pane = True
@@ -283,7 +282,6 @@ class ReplPane:
         self.startup_message = startup_message if startup_message else ''
 
         self.output_field = TextArea(
-            height=output_height,
             text=self.startup_message,
             focusable=True,
             focus_on_click=True,
@@ -312,19 +310,28 @@ class ReplPane:
                 ReplHSplit(
                     self,
                     [
-                        HSplit([
-                            # 1. Repl Output
-                            self.output_field,
-                            # 2. Static separator toolbar.
-                            self.results_toolbar,
-                        ]),
-                        HSplit([
-                            # 3. Repl Input
-                            self.pw_ptpython_repl,
-                            # 4. Bottom toolbar
-                            self.bottom_toolbar,
-                        ]),
+                        HSplit(
+                            [
+                                # 1. Repl Output
+                                self.output_field,
+                                # 2. Static separator toolbar.
+                                self.results_toolbar,
+                            ],
+                            # Output area only dimensions
+                            height=self.get_output_height,
+                        ),
+                        HSplit(
+                            [
+                                # 3. Repl Input
+                                self.pw_ptpython_repl,
+                                # 4. Bottom toolbar
+                                self.bottom_toolbar,
+                            ],
+                            # Input area only dimensions
+                            height=self.get_input_height,
+                        ),
                     ],
+                    # Repl pane dimensions
                     height=lambda: self.height,
                     width=lambda: self.width,
                     style=functools.partial(pw_console.style.get_pane_style,
@@ -339,6 +346,29 @@ class ReplPane:
                     ),
                 ]),
             filter=Condition(lambda: self.show_pane))
+
+    def get_output_height(self) -> AnyDimension:
+        # pylint: disable=no-self-use
+        return Dimension(min=1)
+
+    def get_input_height(self) -> AnyDimension:
+        desired_max_height = 10
+        # Check number of line breaks in the input buffer.
+        input_line_count = self.pw_ptpython_repl.line_break_count()
+        if input_line_count > desired_max_height:
+            desired_max_height = input_line_count
+        # Check if it's taller than the available space
+        if desired_max_height > self.current_pane_height:
+            # Leave space for minimum of
+            #   1 line of content in the output
+            #   + 1 for output toolbar
+            #   + 1 for input toolbar
+            desired_max_height = self.current_pane_height - 3
+
+        if desired_max_height > 1:
+            return Dimension(min=1, max=desired_max_height)
+        # Fall back to at least a height of 1
+        return Dimension(min=1)
 
     def update_pane_size(self, width, height):
         """Save width and height of the repl pane for the current UI render
@@ -427,7 +457,10 @@ class ReplPane:
         return ''
 
     def __pt_container__(self):
-        """Return the prompt_toolkit container for this ReplPane."""
+        """Return the prompt_toolkit container for this ReplPane.
+
+        This allows self to be used wherever prompt_toolkit expects a container
+        object."""
         return self.container
 
     def copy_output_selection(self):

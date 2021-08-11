@@ -13,10 +13,11 @@
 # the License.
 """Help window container class."""
 
-import logging
+import functools
 import inspect
+import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
@@ -24,13 +25,21 @@ from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout import (
     ConditionalContainer,
     DynamicContainer,
+    FormattedTextControl,
     HSplit,
+    VSplit,
+    Window,
+    WindowAlign,
 )
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.widgets import Box, Frame, TextArea
+from prompt_toolkit.widgets import Box, TextArea
 
 from pygments.lexers.markup import RstLexer  # type: ignore
+import pw_console.widgets.mouse_handlers
+
+if TYPE_CHECKING:
+    from pw_console.console_app import ConsoleApp
 
 _LOG = logging.getLogger(__package__)
 
@@ -46,6 +55,9 @@ def _longest_line_length(text):
 
 class HelpWindow(ConditionalContainer):
     """Help window container for displaying keybindings."""
+
+    # pylint: disable=too-many-instance-attributes
+
     def _create_help_text_area(self, **kwargs):
         help_text_area = TextArea(
             focusable=True,
@@ -59,6 +71,7 @@ class HelpWindow(ConditionalContainer):
         key_bindings = KeyBindings()
 
         @key_bindings.add('q')
+        @key_bindings.add('f1')
         def _close_window(_event: KeyPressEvent) -> None:
             """Close the current dialog window."""
             self.toggle_display()
@@ -66,39 +79,94 @@ class HelpWindow(ConditionalContainer):
         help_text_area.control.key_bindings = key_bindings
         return help_text_area
 
-    def __init__(self, application, preamble='', additional_help_text=''):
+    def __init__(self,
+                 application: 'ConsoleApp',
+                 preamble: str = '',
+                 additional_help_text: str = '',
+                 title: str = '') -> None:
         # Dict containing key = section title and value = list of key bindings.
-        self.application = application
-        self.show_window = False
-        self.help_text_sections = {}
+        self.application: 'ConsoleApp' = application
+        self.show_window: bool = False
+        self.help_text_sections: Dict[str, Dict] = {}
+        self._pane_title: str = title
 
         # Generated keybinding text
-        self.preamble = preamble
-        self.additional_help_text = additional_help_text
-        self.help_text = ''
+        self.preamble: str = preamble
+        self.additional_help_text: str = additional_help_text
+        self.help_text: str = ''
 
-        self.max_additional_help_text_width = (_longest_line_length(
+        self.max_additional_help_text_width: int = (_longest_line_length(
             self.additional_help_text) if additional_help_text else 0)
-        self.max_description_width = 0
-        self.max_key_list_width = 0
-        self.max_line_length = 0
+        self.max_description_width: int = 0
+        self.max_key_list_width: int = 0
+        self.max_line_length: int = 0
 
-        self.help_text_area = self._create_help_text_area()
+        self.help_text_area: TextArea = self._create_help_text_area()
 
-        frame = Frame(
-            body=Box(
+        close_mouse_handler = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.toggle_display)
+
+        toolbar_padding = 1
+        toolbar_title = ' ' * toolbar_padding
+        toolbar_title += self.pane_title()
+
+        top_toolbar = VSplit(
+            [
+                Window(
+                    content=FormattedTextControl(
+                        # [('', toolbar_title)]
+                        functools.partial(pw_console.style.get_pane_indicator,
+                                          self, toolbar_title)),
+                    align=WindowAlign.LEFT,
+                    dont_extend_width=True,
+                ),
+                Window(
+                    content=FormattedTextControl([]),
+                    align=WindowAlign.LEFT,
+                    dont_extend_width=False,
+                ),
+                Window(
+                    content=FormattedTextControl(
+                        pw_console.widgets.checkbox.to_keybind_indicator(
+                            'q', 'Close', close_mouse_handler)),
+                    align=WindowAlign.RIGHT,
+                    dont_extend_width=True,
+                ),
+            ],
+            height=1,
+            style='class:toolbar_active',
+        )
+
+        self.container = HSplit([
+            top_toolbar,
+            Box(
                 body=DynamicContainer(lambda: self.help_text_area),
                 padding=Dimension(preferred=1, max=1),
                 padding_bottom=0,
                 padding_top=0,
                 char=' ',
                 style='class:frame.border',  # Same style used for Frame.
-            ), )
+            ),
+        ])
 
         super().__init__(
-            HSplit([frame]),
+            self.container,
             filter=Condition(lambda: self.show_window),
         )
+
+    def pane_title(self):
+        return self._pane_title
+
+    def menu_title(self):
+        """Return the title to display in the Window menu."""
+        return self.pane_title()
+
+    def __pt_container__(self):
+        """Return the prompt_toolkit container for displaying this HelpWindow.
+
+        This allows self to be used wherever prompt_toolkit expects a container
+        object."""
+        return self.container
 
     def toggle_display(self):
         """Toggle visibility of this help window."""

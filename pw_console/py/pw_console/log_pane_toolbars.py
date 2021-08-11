@@ -183,7 +183,9 @@ class BottomToolbarBar(ConditionalContainer):
                                   self.log_pane.focus_self)
         fragments = []
         if not has_focus(self.log_pane.__pt_container__())():
-            fragments.append(('class:keyhelp', '[click to focus] ', focus))
+            fragments.append(('class:toolbar-button-decoration', '[', focus))
+            fragments.append(('class:keyhelp', 'click to focus', focus))
+            fragments.append(('class:toolbar-button-decoration', '] ', focus))
         fragments.append(
             ('', ' {} '.format(self.log_pane.pane_subtitle()), focus))
         return fragments

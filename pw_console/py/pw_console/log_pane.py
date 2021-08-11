@@ -500,7 +500,10 @@ class LogPane:
         self.redraw_ui()
 
     def __pt_container__(self):
-        """Return the prompt_toolkit root container for this log pane."""
+        """Return the prompt_toolkit root container for this log pane.
+
+        This allows self to be used wherever prompt_toolkit expects a container
+        object."""
         return self.container
 
     def get_all_key_bindings(self) -> List:

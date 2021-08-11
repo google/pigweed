@@ -56,6 +56,7 @@ from ptpython.key_bindings import (  # type: ignore
 
 import pw_console.key_bindings
 import pw_console.widgets.checkbox
+import pw_console.widgets.mouse_handlers
 import pw_console.style
 from pw_console.help_window import HelpWindow
 from pw_console.log_pane import LogPane
@@ -164,30 +165,36 @@ class ConsoleApp:
 
         self.app_title = app_title if app_title else 'Pigweed Console'
 
-        # Top title message
-        self.message = [
-            ('class:logo', self.app_title),
-            ('class:menu-bar', '  '),
-        ]
-        self.message.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator('F1', 'Help '))
-        self.message.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-W', 'Quit '))
-
         # Top level UI state toggles.
         self.load_theme()
 
         # Pigweed upstream RST user guide
-        self.user_guide_window = HelpWindow(self)
+        self.user_guide_window = HelpWindow(self, title='User Guide')
         self.user_guide_window.load_user_guide()
 
+        # Top title message
+        self.message = [('class:logo', self.app_title), ('', '  ')]
+
+        self.message.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'F1', 'Help',
+                functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.user_guide_window.toggle_display)))
+
+        # Two space separator
+        self.message.append(('', '  '))
+
+        self.message.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator('Ctrl-W', 'Quit'))
+
         # Auto-generated keybindings list for all active panes
-        self.keybind_help_window = HelpWindow(self)
+        self.keybind_help_window = HelpWindow(self, title='Keyboard Shortcuts')
 
         # Downstream project specific help text
         self.app_help_text = help_text if help_text else None
-        self.app_help_window = HelpWindow(self, additional_help_text=help_text)
+        self.app_help_window = HelpWindow(self,
+                                          additional_help_text=help_text,
+                                          title=(self.app_title + ' Help'))
         self.app_help_window.generate_help_text()
 
         # Used for tracking which pane was in focus before showing help window.
@@ -475,16 +482,16 @@ class ConsoleApp:
         window_menu = self.window_manager.create_window_menu()
 
         help_menu_items = [
-            MenuItem('User Guide',
+            MenuItem(self.user_guide_window.menu_title(),
                      handler=self.user_guide_window.toggle_display),
-            MenuItem('Keyboard Shortcuts',
+            MenuItem(self.keybind_help_window.menu_title(),
                      handler=self.keybind_help_window.toggle_display),
         ]
 
         if self.app_help_text:
             help_menu_items.extend([
                 MenuItem('-'),
-                MenuItem(self.app_title + ' Help',
+                MenuItem(self.app_help_window.menu_title(),
                          handler=self.app_help_window.toggle_display)
             ])
 

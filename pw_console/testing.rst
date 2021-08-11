@@ -221,7 +221,7 @@ Help Windows
      - |checkbox|
 
    * - 4
-     - Press :guilabel:`q`
+     - Press :guilabel:`f1`
      - Window is hidden
      - |checkbox|
 
@@ -232,7 +232,7 @@ Help Windows
      - |checkbox|
 
    * - 6
-     - Press :guilabel:`q`
+     - Click the :guilabel:`[Close q]` button.
      - Window is hidden
      - |checkbox|
 

@@ -20,11 +20,10 @@ from typing import Iterable, Optional
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
-_KEY_SEPARATOR = ' → '
+_KEY_SEPARATOR = ' '
 _CHECKED_BOX = '[✓]'
 
 if sys.platform in ['win32']:
-    _KEY_SEPARATOR = ' : '
     _CHECKED_BOX = '[x]'
 
 
@@ -67,32 +66,45 @@ def to_checkbox_with_keybind_indicator(checked: bool,
             key,
             description,
             mouse_handler,
-            extra_fragments=[to_checkbox(checked, mouse_handler)])
+            leading_fragments=[to_checkbox(checked, mouse_handler)])
     return to_keybind_indicator(key,
                                 description,
-                                extra_fragments=[to_checkbox(checked)])
+                                leading_fragments=[to_checkbox(checked)])
 
 
-def to_keybind_indicator(key: str,
-                         description: str,
-                         mouse_handler=None,
-                         extra_fragments: Optional[Iterable] = None):
+def to_keybind_indicator(
+    key: str,
+    description: str,
+    mouse_handler=None,
+    leading_fragments: Optional[Iterable] = None,
+    middle_fragments: Optional[Iterable] = None,
+):
     """Create a clickable keybind indicator for toolbars."""
     fragments: StyleAndTextTuples = []
+    fragments.append(('class:toolbar-button-decoration', '['))
 
-    if mouse_handler:
-        fragments.append(('class:keybind', key, mouse_handler))
-        fragments.append(('class:keyhelp', _KEY_SEPARATOR, mouse_handler))
-    else:
-        fragments.append(('class:keybind', key))
-        fragments.append(('class:keyhelp', _KEY_SEPARATOR))
-
-    if extra_fragments:
-        for fragment in extra_fragments:
+    # Add any starting fragments first
+    if leading_fragments:
+        for fragment in leading_fragments:
             fragments.append(fragment)
 
+    # Function name
     if mouse_handler:
         fragments.append(('class:keyhelp', description, mouse_handler))
     else:
         fragments.append(('class:keyhelp', description))
+
+    if middle_fragments:
+        for fragment in middle_fragments:
+            fragments.append(fragment)
+
+    # Separator and keybind
+    if mouse_handler:
+        fragments.append(('class:keyhelp', _KEY_SEPARATOR, mouse_handler))
+        fragments.append(('class:keybind', key, mouse_handler))
+    else:
+        fragments.append(('class:keyhelp', _KEY_SEPARATOR))
+        fragments.append(('class:keybind', key))
+
+    fragments.append(('class:toolbar-button-decoration', ']'))
     return fragments

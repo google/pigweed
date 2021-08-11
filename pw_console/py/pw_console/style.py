@@ -108,6 +108,7 @@ def generate_styles(theme_name='dark'):
         # Used for pane titles
         'toolbar_accent': theme.cyan_accent,
 
+        'toolbar-button-decoration': '{}'.format(theme.cyan_accent),
         'toolbar-setting-active': 'bg:{} {}'.format(
             theme.green_accent,
             theme.active_bg,

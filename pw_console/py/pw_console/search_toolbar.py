@@ -139,14 +139,17 @@ class SearchToolbar(ConditionalContainer):
         ]
         fragments.extend(separator_text)
 
-        fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-t', 'Column:', next_field))
-        fragments.extend([
+        selected_column_text = [
             ('class:search-bar-setting',
              (self._search_field.title() if self._search_field else 'All'),
              next_field),
-        ])
+        ]
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                'Ctrl-t',
+                'Column:',
+                next_field,
+                middle_fragments=selected_column_text))
         fragments.extend(separator_text)
 
         fragments.extend(
@@ -155,13 +158,16 @@ class SearchToolbar(ConditionalContainer):
         fragments.extend(separator_text)
 
         # Matching Method
+        current_matcher_text = [
+            ('class:search-bar-setting',
+             str(self.log_pane.log_view.search_matcher.name), next_matcher)
+        ]
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-n', 'Matcher:', next_matcher))
-        fragments.extend([
-            ('class:search-bar-setting',
-             str(self.log_pane.log_view.search_matcher.name), next_matcher),
-        ])
+                'Ctrl-n',
+                'Matcher:',
+                next_matcher,
+                middle_fragments=current_matcher_text))
         fragments.extend(separator_text)
 
         return fragments
