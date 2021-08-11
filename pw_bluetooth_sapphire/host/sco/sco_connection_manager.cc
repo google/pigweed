@@ -120,11 +120,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   auto status = event.ToStatus();
   if (bt_is_error(status, INFO, "gap-sco", "SCO connection failed to be established (peer: %s)",
                   bt_str(peer_id_))) {
-    if (in_progress_request_) {
-      CompleteRequest(fpromise::error(HostError::kFailed));
-    } else {
-      bt_log(ERROR, "gap-sco", "Unexpected SCO connection complete (peer: %s)", bt_str(peer_id_));
-    }
+    // A request must be in progress for this event to be generated.
+    CompleteRequest(fpromise::error(HostError::kFailed));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -201,14 +198,19 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
       accept->mutable_payload<hci::EnhancedAcceptSynchronousConnectionRequestCommandParams>();
   accept_params->bd_addr = params.bd_addr;
   accept_params->connection_parameters = ConnectionParametersToLe(in_progress_request_->parameters);
-  SendCommandWithStatusCallback(
-      std::move(accept), [self = weak_ptr_factory_.GetWeakPtr()](hci::Status status) {
-        if (!self || status.is_success()) {
-          return;
-        }
-        bt_is_error(status, WARN, "sco", "enhanced accept SCO connection command failed");
-        self->CompleteRequest(fpromise::error(HostError::kFailed));
-      });
+  SendCommandWithStatusCallback(std::move(accept), [self = weak_ptr_factory_.GetWeakPtr(),
+                                                    peer_id = peer_id_](hci::Status status) {
+    if (!self || status.is_success()) {
+      return;
+    }
+    bt_is_error(
+        status, WARN, "sco",
+        "enhanced accept SCO connection command failed, waiting for connection complete (peer: %s",
+        bt_str(peer_id));
+    // Do not complete the request here. Wait for HCI_Synchronous_Connection_Complete event,
+    // which should be received after Connection_Accept_Timeout with status
+    // kConnectionAcceptTimeoutExceeded.
+  });
 
   in_progress_request_->received_request = true;
 
@@ -266,7 +268,7 @@ void ScoConnectionManager::TryCreateNextConnection() {
       if (!self || status.is_success()) {
         return;
       }
-      bt_is_error(status, DEBUG, "sco", "SCO setup connection command failed");
+      bt_is_error(status, WARN, "sco", "SCO setup connection command failed");
       self->CompleteRequest(fpromise::error(HostError::kFailed));
     };
 
