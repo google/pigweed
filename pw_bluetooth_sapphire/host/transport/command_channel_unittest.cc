@@ -225,7 +225,6 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
   EXPECT_CMD_PACKET_OUT(test_device(), req2, &rsp2);
   StartTestDevice();
 
-  CommandChannel::TransactionId reset_id, inquiry_id;
   size_t cb_event_count = 0u;
   size_t transaction_count = 0u;
 
@@ -245,9 +244,9 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
   };
 
   auto reset = CommandPacket::New(kReset);
-  reset_id = cmd_channel()->SendCommand(std::move(reset), cb);
+  [[maybe_unused]] auto reset_id = cmd_channel()->SendCommand(std::move(reset), cb);
   auto inquiry = CommandPacket::New(kInquiryCancel);
-  inquiry_id = cmd_channel()->SendCommand(std::move(inquiry), cb);
+  [[maybe_unused]] auto inquiry_id = cmd_channel()->SendCommand(std::move(inquiry), cb);
 
   RunLoopUntilIdle();
 
