@@ -31,10 +31,14 @@ struct TestStruct {
 
 constexpr TestStruct kExpectedStruct = {.day = 18, .month = 5, .year = 2020};
 
-std::array<std::byte, kSinkBufferSize> memory_buffer;
+class MemoryWriterTest : public ::testing::Test {
+ protected:
+  MemoryWriterTest() : memory_buffer_{} {}
+  std::array<std::byte, kSinkBufferSize> memory_buffer_;
+};
 
-TEST(MemoryWriter, BytesWritten) {
-  MemoryWriter memory_writer(memory_buffer);
+TEST_F(MemoryWriterTest, BytesWritten) {
+  MemoryWriter memory_writer(memory_buffer_);
   EXPECT_EQ(memory_writer.bytes_written(), 0u);
   Status status =
       memory_writer.Write(&kExpectedStruct, sizeof(kExpectedStruct));
@@ -42,19 +46,19 @@ TEST(MemoryWriter, BytesWritten) {
   EXPECT_EQ(memory_writer.bytes_written(), sizeof(kExpectedStruct));
 }
 
-TEST(MemoryWriter, BytesWrittenOnConstruction) {
+TEST_F(MemoryWriterTest, BytesWrittenOnConstruction) {
   constexpr size_t bytes_written = kSinkBufferSize / 2;
-  std::memset(memory_buffer.data(), 1u, bytes_written);
-  MemoryWriter memory_writer(memory_buffer, bytes_written);
+  std::memset(memory_buffer_.data(), 1u, bytes_written);
+  MemoryWriter memory_writer(memory_buffer_, bytes_written);
   EXPECT_EQ(memory_writer.bytes_written(), bytes_written);
   EXPECT_EQ(memcmp(memory_writer.WrittenData().data(),
-                   memory_buffer.data(),
+                   memory_buffer_.data(),
                    bytes_written),
             0);
 }
 
-TEST(MemoryWriter, ValidateContents) {
-  MemoryWriter memory_writer(memory_buffer);
+TEST_F(MemoryWriterTest, ValidateContents) {
+  MemoryWriter memory_writer(memory_buffer_);
   EXPECT_TRUE(
       memory_writer.Write(&kExpectedStruct, sizeof(kExpectedStruct)).ok());
 
@@ -65,14 +69,14 @@ TEST(MemoryWriter, ValidateContents) {
   EXPECT_EQ(memcmp(&temp, &kExpectedStruct, sizeof(kExpectedStruct)), 0);
 }
 
-TEST(MemoryWriter, MultipleWrites) {
+TEST_F(MemoryWriterTest, MultipleWrites) {
   constexpr size_t kTempBufferSize = 72;
   std::byte buffer[kTempBufferSize] = {};
 
-  for (std::byte& value : memory_buffer) {
+  for (std::byte& value : memory_buffer_) {
     value = std::byte(0);
   }
-  MemoryWriter memory_writer(memory_buffer);
+  MemoryWriter memory_writer(memory_buffer_);
 
   size_t counter = 0;
   while (memory_writer.ConservativeWriteLimit() >= kTempBufferSize) {
@@ -95,16 +99,16 @@ TEST(MemoryWriter, MultipleWrites) {
   }
 }
 
-TEST(MemoryWriter, FullWriter) {
+TEST_F(MemoryWriterTest, FullWriter) {
   constexpr size_t kTempBufferSize = 32;
   std::byte buffer[kTempBufferSize] = {};
   const int fill_byte = 0x25;
   memset(buffer, fill_byte, sizeof(buffer));
 
-  for (std::byte& value : memory_buffer) {
+  for (std::byte& value : memory_buffer_) {
     value = std::byte(0);
   }
-  MemoryWriter memory_writer(memory_buffer);
+  MemoryWriter memory_writer(memory_buffer_);
 
   while (memory_writer.ConservativeWriteLimit() > 0) {
     size_t bytes_to_write =
@@ -116,23 +120,23 @@ TEST(MemoryWriter, FullWriter) {
   EXPECT_EQ(memory_writer.ConservativeWriteLimit(), 0u);
 
   EXPECT_EQ(memory_writer.Write(std::span(buffer)), Status::OutOfRange());
-  EXPECT_EQ(memory_writer.bytes_written(), memory_buffer.size());
+  EXPECT_EQ(memory_writer.bytes_written(), memory_buffer_.size());
 
   for (const std::byte& value : memory_writer.WrittenData()) {
     EXPECT_EQ(value, std::byte(fill_byte));
   }
 }
 
-TEST(MemoryWriter, EmptyData) {
+TEST_F(MemoryWriterTest, EmptyData) {
   std::byte buffer[5] = {};
 
-  MemoryWriter memory_writer(memory_buffer);
+  MemoryWriter memory_writer(memory_buffer_);
   EXPECT_EQ(memory_writer.Write(buffer, 0), OkStatus());
   EXPECT_EQ(memory_writer.bytes_written(), 0u);
 }
 
-TEST(MemoryWriter, ValidateContents_SingleByteWrites) {
-  MemoryWriter memory_writer(memory_buffer);
+TEST_F(MemoryWriterTest, ValidateContents_SingleByteWrites) {
+  MemoryWriter memory_writer(memory_buffer_);
   EXPECT_TRUE(memory_writer.Write(std::byte{0x01}).ok());
   EXPECT_EQ(memory_writer.bytes_written(), 1u);
   EXPECT_EQ(memory_writer.data()[0], std::byte{0x01});
@@ -142,12 +146,12 @@ TEST(MemoryWriter, ValidateContents_SingleByteWrites) {
   EXPECT_EQ(memory_writer.data()[1], std::byte{0x7E});
 }
 
-TEST(MemoryWriter, OverlappingBuffer) {
+TEST_F(MemoryWriterTest, OverlappingBuffer) {
   constexpr std::string_view kTestString("This is staged into the same buffer");
   // Write at a five-byte offset from the start of the destination buffer.
-  constexpr std::byte* kOverlappingStart = memory_buffer.data() + 5;
+  std::byte* const kOverlappingStart = memory_buffer_.data() + 5;
   std::memcpy(kOverlappingStart, kTestString.data(), kTestString.size());
-  MemoryWriter memory_writer(memory_buffer);
+  MemoryWriter memory_writer(memory_buffer_);
   EXPECT_TRUE(memory_writer.Write(kOverlappingStart, kTestString.size()).ok());
   EXPECT_TRUE(memory_writer.Write(std::byte(0)).ok());
   EXPECT_EQ(memory_writer.bytes_written(), kTestString.size() + 1);
@@ -157,17 +161,41 @@ TEST(MemoryWriter, OverlappingBuffer) {
       kTestString.data());
 }
 
+TEST_F(MemoryWriterTest, Seek_To0) {
+  MemoryWriter writer(memory_buffer_);
+  EXPECT_EQ(OkStatus(), writer.Seek(0));
+}
+
+TEST_F(MemoryWriterTest, Tell_StartsAt0) {
+  MemoryWriter writer(memory_buffer_);
+  EXPECT_EQ(0u, writer.Tell());
+}
+
+TEST_F(MemoryWriterTest, Tell_UpdatesOnSeek) {
+  MemoryWriter writer(memory_buffer_);
+  ASSERT_EQ(OkStatus(), writer.Seek(2, Stream::kCurrent));
+  EXPECT_EQ(2u, writer.Tell());
+}
+
+TEST_F(MemoryWriterTest, Tell_UpdatesOnRead) {
+  MemoryWriter writer(memory_buffer_);
+  std::byte buffer[4] = {};
+  ASSERT_EQ(OkStatus(), writer.Write(buffer));
+  EXPECT_EQ(4u, writer.Tell());
+}
+
 #define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
 
 // TODO(amontanez): Ensure that this test triggers an assert.
-TEST(MemoryWriter, NullPointer) {
-  MemoryWriter memory_writer(memory_buffer);
+TEST_F(MemoryWriterTest, NullPointer) {
+  MemoryWriter memory_writer(memory_buffer_);
   memory_writer.Write(nullptr, 21);
 }
 
 // TODO(davidrogers): Ensure that this test triggers an assert.
 TEST(MemoryReader, NullSpan) {
+  std::byte memory_buffer[32];
   ByteSpan dest(nullptr, 5);
   MemoryReader memory_reader(memory_buffer);
   memory_reader.Read(dest);
@@ -175,6 +203,7 @@ TEST(MemoryReader, NullSpan) {
 
 // TODO(davidrogers): Ensure that this test triggers an assert.
 TEST(MemoryReader, NullPointer) {
+  std::byte memory_buffer[32];
   MemoryReader memory_reader(memory_buffer);
   memory_reader.Read(nullptr, 21);
 }
@@ -292,6 +321,41 @@ TEST(MemoryReader, MultipleReads) {
     }
     source_chunk_base += result.value().size_bytes();
   }
+}
+
+TEST(MemoryReader, Seek) {
+  constexpr std::string_view data = "0123456789";
+  MemoryReader reader(std::as_bytes(std::span(data)));
+
+  char buffer[5] = {};  // Leave a null terminator at the end.
+  ASSERT_EQ(OkStatus(), reader.Read(buffer, sizeof(buffer) - 1).status());
+  EXPECT_STREQ(buffer, "0123");
+
+  ASSERT_EQ(OkStatus(), reader.Seek(1));
+  ASSERT_EQ(OkStatus(), reader.Read(buffer, sizeof(buffer) - 1).status());
+  EXPECT_STREQ(buffer, "1234");
+
+  ASSERT_EQ(OkStatus(), reader.Seek(0));
+  ASSERT_EQ(OkStatus(), reader.Read(buffer, sizeof(buffer) - 1).status());
+  EXPECT_STREQ(buffer, "0123");
+}
+
+TEST(MemoryReader, Tell_StartsAt0) {
+  MemoryReader reader(std::as_bytes(std::span("\3\2\1")));
+  EXPECT_EQ(0u, reader.Tell());
+}
+
+TEST(MemoryReader, Tell_UpdatesOnSeek) {
+  MemoryReader reader(std::as_bytes(std::span("\3\2\1")));
+  ASSERT_EQ(OkStatus(), reader.Seek(2, Stream::kCurrent));
+  EXPECT_EQ(2u, reader.Tell());
+}
+
+TEST(MemoryReader, Tell_UpdatesOnRead) {
+  MemoryReader reader(std::as_bytes(std::span("\3\2\1")));
+  std::byte buffer[4];
+  ASSERT_EQ(OkStatus(), reader.Read(buffer).status());
+  EXPECT_EQ(4u, reader.Tell());
 }
 
 }  // namespace

@@ -32,13 +32,9 @@ namespace pw::persistent_ram {
 // PersistentBuffer. This object should NOT be stored in persistent RAM.
 //
 // Only one writer should be open at a given time.
-class PersistentBufferWriter : public stream::Writer {
+class PersistentBufferWriter : public stream::NonSeekableWriter {
  public:
   PersistentBufferWriter() = delete;
-
-  size_t ConservativeWriteLimit() const override {
-    return buffer_.size_bytes() - size_;
-  }
 
  private:
   template <size_t>
@@ -51,6 +47,13 @@ class PersistentBufferWriter : public stream::Writer {
 
   // Implementation for writing data to this stream.
   Status DoWrite(ConstByteSpan data) override;
+
+  size_t ConservativeLimit(LimitType limit) const override {
+    if (limit == LimitType::kWrite) {
+      return buffer_.size_bytes() - size_;
+    }
+    return 0;
+  }
 
   ByteSpan buffer_;
   volatile size_t& size_;

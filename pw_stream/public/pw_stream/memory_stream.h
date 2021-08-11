@@ -19,11 +19,12 @@
 
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
+#include "pw_stream/seek.h"
 #include "pw_stream/stream.h"
 
 namespace pw::stream {
 
-class MemoryWriter : public Writer {
+class MemoryWriter : public SeekableWriter {
  public:
   constexpr MemoryWriter(ByteSpan dest) : dest_(dest) {}
 
@@ -33,30 +34,36 @@ class MemoryWriter : public Writer {
   // Precondition: The number of pre-written bytes must not be greater than the
   // size of the provided buffer.
   constexpr MemoryWriter(ByteSpan dest, size_t bytes_written)
-      : dest_(dest), bytes_written_(bytes_written) {
-    PW_ASSERT(bytes_written_ <= dest.size_bytes());
+      : dest_(dest), position_(bytes_written) {
+    PW_ASSERT(position_ <= dest.size_bytes());
   }
 
-  size_t bytes_written() const { return bytes_written_; }
+  size_t bytes_written() const { return position_; }
 
-  size_t ConservativeWriteLimit() const override {
-    return dest_.size_bytes() - bytes_written_;
-  }
-
-  ConstByteSpan WrittenData() const { return dest_.first(bytes_written_); }
+  ConstByteSpan WrittenData() const { return dest_.first(position_); }
 
   std::byte* data() { return dest_.data(); }
   const std::byte* data() const { return dest_.data(); }
 
  private:
+  size_t ConservativeLimit(LimitType type) const override {
+    return type == LimitType::kWrite ? dest_.size_bytes() - position_ : 0;
+  }
+
   // Implementation for writing data to this stream.
   //
   // If the in-memory buffer is exhausted in the middle of a write, this will
   // perform a partial write and Status::ResourceExhausted() will be returned.
-  Status DoWrite(ConstByteSpan data) override;
+  Status DoWrite(ConstByteSpan data) final;
+
+  Status DoSeek(ssize_t offset, Whence origin) final {
+    return CalculateSeek(offset, origin, dest_.size(), position_);
+  }
+
+  size_t DoTell() const final { return position_; }
 
   ByteSpan dest_;
-  size_t bytes_written_ = 0;
+  size_t position_ = 0;
 };
 
 template <size_t kSizeBytes>
@@ -68,20 +75,26 @@ class MemoryWriterBuffer final : public MemoryWriter {
   std::array<std::byte, kSizeBytes> buffer_;
 };
 
-class MemoryReader final : public Reader {
+class MemoryReader final : public SeekableReader {
  public:
   constexpr MemoryReader(ConstByteSpan source)
-      : source_(source), bytes_read_(0) {}
+      : source_(source), position_(0) {}
 
-  size_t ConservativeReadLimit() const override {
-    return source_.size_bytes() - bytes_read_;
-  }
-
-  size_t bytes_read() const { return bytes_read_; }
+  size_t bytes_read() const { return position_; }
 
   const std::byte* data() const { return source_.data(); }
 
  private:
+  size_t ConservativeLimit(LimitType type) const override {
+    return type == LimitType::kRead ? source_.size_bytes() - position_ : 0;
+  }
+
+  Status DoSeek(ssize_t offset, Whence origin) override {
+    return CalculateSeek(offset, origin, source_.size(), position_);
+  }
+
+  size_t DoTell() const override { return position_; }
+
   // Implementation for reading data from this stream.
   //
   // If the in-memory buffer does not have enough remaining bytes for what was
@@ -89,7 +102,7 @@ class MemoryReader final : public Reader {
   StatusWithSize DoRead(ByteSpan dest) override;
 
   ConstByteSpan source_;
-  size_t bytes_read_;
+  size_t position_;
 };
 
 }  // namespace pw::stream

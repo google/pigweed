@@ -137,7 +137,7 @@ class ReadWriteHandler : public internal::Handler {
   constexpr ReadWriteHandler(uint32_t transfer_id,
                              stream::ReaderWriter& reader_writer)
       : internal::Handler(transfer_id,
-                          static_cast<stream::Reader*>(&reader_writer)) {}
+                          &static_cast<stream::Reader&>(reader_writer)) {}
 
   virtual ~ReadWriteHandler() = default;
 

@@ -53,7 +53,7 @@ class BlobStore {
   //
   // Only one writter (of either type) is allowed to be open at a time.
   // Additionally, writters are unable to open if a reader is already open.
-  class BlobWriter : public stream::Writer {
+  class BlobWriter : public stream::NonSeekableWriter {
    public:
     constexpr BlobWriter(BlobStore& store) : store_(store), open_(false) {}
     BlobWriter(const BlobWriter&) = delete;
@@ -117,15 +117,6 @@ class BlobStore {
       return store_.Invalidate();
     }
 
-    // Probable (not guaranteed) minimum number of bytes at this time that can
-    // be written. This is not necessarily the full number of bytes remaining in
-    // the blob. Returns zero if, in the current state, Write would return
-    // status other than OK. See stream.h for additional details.
-    size_t ConservativeWriteLimit() const override {
-      PW_DASSERT(open_);
-      return store_.WriteBytesRemaining();
-    }
-
     size_t CurrentSizeBytes() {
       PW_DASSERT(open_);
       return store_.write_address_;
@@ -139,6 +130,19 @@ class BlobStore {
 
     BlobStore& store_;
     bool open_;
+
+   private:
+    // Probable (not guaranteed) minimum number of bytes at this time that can
+    // be written. This is not necessarily the full number of bytes remaining in
+    // the blob. Returns zero if, in the current state, Write would return
+    // status other than OK. See stream.h for additional details.
+    size_t ConservativeLimit(LimitType limit) const override {
+      if (limit == LimitType::kRead) {
+        PW_DASSERT(open_);
+        return store_.WriteBytesRemaining();
+      }
+      return 0;
+    }
   };
 
   // Implement the stream::Writer and erase interface with deferred action for a
@@ -165,10 +169,13 @@ class BlobStore {
     // be written. This is not necessarily the full number of bytes remaining in
     // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
-    size_t ConservativeWriteLimit() const override {
-      PW_DASSERT(open_);
-      // Deferred writes need to fit in the write buffer.
-      return store_.WriteBufferBytesFree();
+    size_t ConservativeLimit(LimitType limit) const override {
+      if (limit == LimitType::kWrite) {
+        PW_DASSERT(open_);
+        // Deferred writes need to fit in the write buffer.
+        return store_.WriteBufferBytesFree();
+      }
+      return 0;
     }
 
    private:
@@ -180,7 +187,7 @@ class BlobStore {
 
   // Implement stream::Reader interface for BlobStore. Multiple readers may be
   // open at the same time, but readers may not be open with a writer open.
-  class BlobReader final : public stream::Reader {
+  class BlobReader final : public stream::NonSeekableReader {
    public:
     constexpr BlobReader(BlobStore& store)
         : store_(store), open_(false), offset_(0) {}
@@ -232,9 +239,12 @@ class BlobStore {
     // Probable (not guaranteed) minimum number of bytes at this time that can
     // be read. Returns zero if, in the current state, Read would return status
     // other than OK. See stream.h for additional details.
-    size_t ConservativeReadLimit() const override {
-      PW_DASSERT(open_);
-      return store_.ReadableDataBytes() - offset_;
+    size_t ConservativeLimit(LimitType limit) const override {
+      if (limit == LimitType::kRead) {
+        PW_DASSERT(open_);
+        return store_.ReadableDataBytes() - offset_;
+      }
+      return 0;
     }
 
     // Get a span with the MCU pointer and size of the data. Returns:

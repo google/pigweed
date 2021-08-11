@@ -22,7 +22,7 @@
 
 namespace pw::stream {
 
-class SocketStream : public ReaderWriter {
+class SocketStream : public NonSeekableReaderWriter {
  public:
   constexpr SocketStream() = default;
 

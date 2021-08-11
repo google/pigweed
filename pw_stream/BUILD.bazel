@@ -30,6 +30,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_stream/memory_stream.h",
         "public/pw_stream/null_stream.h",
+        "public/pw_stream/seek.h",
         "public/pw_stream/stream.h",
     ],
     includes = ["public"],
@@ -64,9 +65,16 @@ pw_cc_library(
 
 pw_cc_test(
     name = "memory_stream_test",
-    srcs = [
-        "memory_stream_test.cc",
+    srcs = ["memory_stream_test.cc"],
+    deps = [
+        ":pw_stream",
+        "//pw_unit_test",
     ],
+)
+
+pw_cc_test(
+    name = "seek_test",
+    srcs = ["seek_test.cc"],
     deps = [
         ":pw_stream",
         "//pw_unit_test",
@@ -75,9 +83,7 @@ pw_cc_test(
 
 pw_cc_test(
     name = "stream_test",
-    srcs = [
-        "stream_test.cc",
-    ],
+    srcs = ["stream_test.cc"],
     deps = [
         ":pw_stream",
         "//pw_unit_test",

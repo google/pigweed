@@ -30,22 +30,22 @@ Status MemoryWriter::DoWrite(ConstByteSpan data) {
   }
 
   size_t bytes_to_write = data.size_bytes();
-  std::memmove(dest_.data() + bytes_written_, data.data(), bytes_to_write);
-  bytes_written_ += bytes_to_write;
+  std::memmove(dest_.data() + position_, data.data(), bytes_to_write);
+  position_ += bytes_to_write;
 
   return OkStatus();
 }
 
 StatusWithSize MemoryReader::DoRead(ByteSpan dest) {
-  if (source_.size_bytes() == bytes_read_) {
+  if (source_.size_bytes() == position_) {
     return StatusWithSize::OutOfRange();
   }
 
   size_t bytes_to_read =
-      std::min(dest.size_bytes(), source_.size_bytes() - bytes_read_);
+      std::min(dest.size_bytes(), source_.size_bytes() - position_);
 
-  std::memcpy(dest.data(), source_.data() + bytes_read_, bytes_to_read);
-  bytes_read_ += bytes_to_read;
+  std::memcpy(dest.data(), source_.data() + position_, bytes_to_read);
+  position_ += bytes_to_read;
 
   return StatusWithSize(bytes_to_read);
 }

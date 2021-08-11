@@ -28,12 +28,14 @@ pw_source_set("pw_stream") {
   public = [
     "public/pw_stream/memory_stream.h",
     "public/pw_stream/null_stream.h",
+    "public/pw_stream/seek.h",
     "public/pw_stream/stream.h",
   ]
   sources = [ "memory_stream.cc" ]
   public_deps = [
     dir_pw_assert,
     dir_pw_bytes,
+    dir_pw_polyfill,
     dir_pw_result,
     dir_pw_status,
   ]
@@ -63,12 +65,18 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":memory_stream_test",
+    ":seek_test",
     ":stream_test",
   ]
 }
 
 pw_test("memory_stream_test") {
   sources = [ "memory_stream_test.cc" ]
+  deps = [ ":pw_stream" ]
+}
+
+pw_test("seek_test") {
+  sources = [ "seek_test.cc" ]
   deps = [ ":pw_stream" ]
 }
 

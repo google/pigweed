@@ -73,11 +73,12 @@ class StreamEncoder {
   // StreamEncoder objects that do not write nested proto messages can
   // provide a zero-length scratch buffer.
   constexpr StreamEncoder(stream::Writer& writer, ByteSpan scratch_buffer)
-      : writer_(writer),
-        status_(OkStatus()),
+      : status_(OkStatus()),
         parent_(nullptr),
         nested_field_number_(0),
-        memory_writer_(scratch_buffer) {}
+        memory_writer_(scratch_buffer),
+        writer_(writer) {}
+
   ~StreamEncoder() {
     Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
@@ -374,12 +375,12 @@ class StreamEncoder {
  protected:
   // We need this for codegen.
   constexpr StreamEncoder(StreamEncoder&& other)
-      : writer_(&other.writer_ == &other.memory_writer_ ? memory_writer_
-                                                        : other.writer_),
-        status_(other.status_),
+      : status_(other.status_),
         parent_(other.parent_),
         nested_field_number_(other.nested_field_number_),
-        memory_writer_(std::move(other.memory_writer_)) {
+        memory_writer_(std::move(other.memory_writer_)),
+        writer_(&other.writer_ == &other.memory_writer_ ? memory_writer_
+                                                        : other.writer_) {
     PW_ASSERT(nested_field_number_ == 0);
     // Make the nested encoder look like it has an open child to block writes
     // for the remainder of the object's life.
@@ -396,12 +397,12 @@ class StreamEncoder {
   };
 
   constexpr StreamEncoder(StreamEncoder& parent, ByteSpan scratch_buffer)
-      : writer_(memory_writer_),
-        status_(scratch_buffer.empty() ? Status::ResourceExhausted()
+      : status_(scratch_buffer.empty() ? Status::ResourceExhausted()
                                        : OkStatus()),
         parent_(&parent),
         nested_field_number_(0),
-        memory_writer_(scratch_buffer) {}
+        memory_writer_(scratch_buffer),
+        writer_(memory_writer_) {}
 
   bool nested_encoder_open() const { return nested_field_number_ != 0; }
 
@@ -495,9 +496,6 @@ class StreamEncoder {
                               WireType type,
                               size_t data_size);
 
-  // All proto encode operations are directly written to this writer.
-  stream::Writer& writer_;
-
   // The current encoder status. This status is only updated to reflect the
   // first error encountered. Any further write operations are blocked when the
   // encoder enters an error state.
@@ -516,6 +514,9 @@ class StreamEncoder {
   // This memory writer is used for staging proto submessages to the
   // scratch_buffer.
   stream::MemoryWriter memory_writer_;
+
+  // All proto encode operations are directly written to this writer.
+  stream::Writer& writer_;
 };
 
 // A protobuf encoder that writes directly to a provided buffer.
