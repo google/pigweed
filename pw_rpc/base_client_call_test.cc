@@ -55,6 +55,25 @@ TEST(BaseClientCall, Move_UnregistersOriginal) {
   EXPECT_TRUE(call.active());
 }
 
+TEST(BaseClientCall, TwoConcurrentClientCallsAssigned) {
+  // Mostly null/placeholder data to exercise the call registration path.
+  constexpr uint32_t kServiceId = 16;
+  constexpr uint32_t kMethodId = 111;
+  std::array<pw::rpc::Channel, 2> channels = {
+      Channel::Create<1>(nullptr),
+      Channel::Create<2>(nullptr),
+  };
+  Client client(channels);
+
+  // Specifically testing the assignment operator.
+  BaseClientCall call1;
+  BaseClientCall call2;
+  call1 = BaseClientCall(&channels[0], kServiceId, kMethodId, nullptr);
+  call2 = BaseClientCall(&channels[1], kServiceId, kMethodId, nullptr);
+
+  EXPECT_EQ(client.active_calls(), 2u);
+}
+
 class FakeClientCall : public BaseClientCall {
  public:
   constexpr FakeClientCall(rpc::Channel* channel,

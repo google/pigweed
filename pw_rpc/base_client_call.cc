@@ -24,6 +24,11 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
   Unregister();
 
   active_ = other.active_;
+  channel_ = other.channel_;
+  service_id_ = other.service_id_;
+  method_id_ = other.method_id_;
+  request_ = std::move(other.request_);
+  handler_ = other.handler_;
 
   if (other.active()) {
     // If the call being assigned is active, replace it in the client's list
@@ -31,12 +36,6 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
     other.Unregister();
     other.channel_->client()->RegisterCall(*this);
   }
-
-  channel_ = other.channel_;
-  service_id_ = other.service_id_;
-  method_id_ = other.method_id_;
-  request_ = std::move(other.request_);
-  handler_ = other.handler_;
 
   return *this;
 }
