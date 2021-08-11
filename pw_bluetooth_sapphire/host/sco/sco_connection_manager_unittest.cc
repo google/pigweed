@@ -763,6 +763,41 @@ TEST_F(SCO_ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
 }
 
 TEST_F(SCO_ScoConnectionManagerTest,
+       QueueingThreeRequestsCancelsSecondAndRequestHandleDestroyedInResultCallback) {
+  auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
+                                                          hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
+      &setup_status_packet);
+
+  ConnectionResult conn_0;
+  auto conn_cb_0 = [&conn_0](auto cb_conn) { conn_0 = std::move(cb_conn); };
+  auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
+
+  std::optional<ScoConnectionManager::RequestHandle> req_handle_1;
+  ConnectionResult conn_1;
+  auto conn_cb_1 = [&conn_1, &req_handle_1](auto cb_conn) {
+    req_handle_1.reset();
+    conn_1 = std::move(cb_conn);
+  };
+  req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+
+  ConnectionResult conn_2;
+  auto conn_cb_2 = [&conn_2](auto cb_conn) { conn_2 = std::move(cb_conn); };
+  auto req_handle_2 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_2));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_0.is_pending());
+  EXPECT_TRUE(conn_2.is_pending());
+  ASSERT_TRUE(conn_1.is_error());
+  EXPECT_EQ(conn_1.error(), HostError::kCanceled);
+
+  DestroyManager();
+  RunLoopUntilIdle();
+}
+
+TEST_F(SCO_ScoConnectionManagerTest,
        OpenConnectionFollowedByPeerDisconnectAndSecondOpenConnectonWithHandleReuse) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
@@ -805,6 +840,56 @@ TEST_F(SCO_ScoConnectionManagerTest,
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   conn_result_1.value()->Close();
   RunLoopUntilIdle();
+}
+
+TEST_F(SCO_ScoConnectionManagerTest,
+       DestroyManagerWhileResponderRequestInProgressAndDestroyRequestHandleInResultCallback) {
+  ConnectionResult conn;
+  std::optional<ScoConnectionManager::RequestHandle> req_handle;
+  auto conn_cb = [&conn, &req_handle](auto cb_result) {
+    req_handle.reset();
+    conn = std::move(cb_result);
+  };
+
+  req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
+  RunLoopUntilIdle();
+
+  DestroyManager();
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(conn.is_error());
+  EXPECT_EQ(conn.error(), HostError::kCanceled);
+}
+
+TEST_F(SCO_ScoConnectionManagerTest,
+       DestroyManagerWhileInitiatorRequestQueuedAndDestroyRequestHandleInResultCallback) {
+  auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
+                                                          hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
+      &setup_status_packet);
+
+  ConnectionResult conn_0;
+  auto conn_cb_0 = [&conn_0](auto cb_conn) { conn_0 = std::move(cb_conn); };
+  auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
+
+  std::optional<ScoConnectionManager::RequestHandle> req_handle_1;
+  ConnectionResult conn_1;
+  auto conn_cb_1 = [&conn_1, &req_handle_1](auto cb_conn) {
+    req_handle_1.reset();
+    conn_1 = std::move(cb_conn);
+  };
+  req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_0.is_pending());
+
+  DestroyManager();
+  ASSERT_TRUE(conn_0.is_error());
+  EXPECT_EQ(conn_0.error(), HostError::kCanceled);
+  ASSERT_TRUE(conn_1.is_error());
+  EXPECT_EQ(conn_1.error(), HostError::kCanceled);
 }
 
 }  // namespace

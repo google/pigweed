@@ -65,9 +65,18 @@ ScoConnectionManager::~ScoConnectionManager() {
     conn->Close();
   }
 
+  if (queued_request_) {
+    CancelRequestWithId(queued_request_->id);
+  }
+
   if (in_progress_request_) {
     bt_log(DEBUG, "gap-sco", "ScoConnectionManager destroyed while request in progress");
+    // Clear in_progress_request_ before calling callback to prevent calls to
+    // CompleteRequest() during execution of the callback (e.g. due to destroying the
+    // RequestHandle).
+    ConnectionRequest request = std::move(in_progress_request_.value());
     in_progress_request_.reset();
+    request.callback(fpromise::error(HostError::kCanceled));
   }
 }
 
@@ -113,6 +122,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
                   bt_str(peer_id_))) {
     if (in_progress_request_) {
       CompleteRequest(fpromise::error(HostError::kFailed));
+    } else {
+      bt_log(ERROR, "gap-sco", "Unexpected SCO connection complete (peer: %s)", bt_str(peer_id_));
     }
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
@@ -129,7 +140,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
                                          peer_address_, transport_);
 
   if (!in_progress_request_) {
-    bt_log(WARN, "gap-sco", "Unexpected SCO connection complete, disconnecting (peer: %s)",
+    bt_log(ERROR, "gap-sco", "Unexpected SCO connection complete, disconnecting (peer: %s)",
            bt_str(peer_id_));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
@@ -207,8 +218,10 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
 ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
     bool initiator, hci::SynchronousConnectionParameters params, ConnectionCallback cb) {
   ZX_ASSERT(cb);
-  // Cancel the current request.
-  queued_request_.reset();
+
+  if (queued_request_) {
+    CancelRequestWithId(queued_request_->id);
+  }
 
   auto req_id = next_req_id_++;
   queued_request_ = {.id = req_id,
@@ -289,7 +302,12 @@ void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
   // Cancel queued request if id matches.
   if (queued_request_ && queued_request_->id == id) {
     bt_log(INFO, "gap-sco", "Cancelling queued SCO request (id: %zu)", id);
+    // Clear queued_request_ before calling callback to prevent calls to
+    // CancelRequestWithId() during execution of the callback (e.g. due to destroying the
+    // RequestHandle).
+    ConnectionRequest request = std::move(queued_request_.value());
     queued_request_.reset();
+    request.callback(fpromise::error(HostError::kCanceled));
     return;
   }
 
