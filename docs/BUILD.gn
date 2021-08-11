@@ -89,6 +89,7 @@ group("module_docs") {
     "$dir_pw_docgen:docs",
     "$dir_pw_doctor:docs",
     "$dir_pw_env_setup:docs",
+    "$dir_pw_file:docs",
     "$dir_pw_function:docs",
     "$dir_pw_fuzzer:docs",
     "$dir_pw_hdlc:docs",
