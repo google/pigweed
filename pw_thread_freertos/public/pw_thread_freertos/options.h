@@ -55,9 +55,15 @@ class Options : public thread::Options {
   }
 
   // Sets the priority for the FreeRTOS task. This must be a value between
-  // tskIDLE_PRIORITY or 0 to configMAX_PRIORITIES - 1. Higher priority values
-  // have a higher priority.
+  // 0 to PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY. Higher priority
+  // values have a higher priority.
+  //
+  // Note that the idle task priority, tskIDLE_PRIORITY, is fixed to 0.
+  // See the FreeRTOS documentation on the idle task for more details.
+  //
+  // Precondition: This must be <= PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY.
   constexpr Options& set_priority(UBaseType_t priority) {
+    PW_DASSERT(priority <= config::kMaximumPriority);
     priority_ = priority;
     return *this;
   }

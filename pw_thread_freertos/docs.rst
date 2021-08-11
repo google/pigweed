@@ -132,8 +132,14 @@ FreeRTOS Thread Options
   .. cpp:function:: set_priority(UBaseType_t priority)
 
     Sets the priority for the FreeRTOS task. This must be a value between
-    ``tskIDLE_PRIORITY`` or ``0`` to ``configMAX_PRIORITIES - 1``. Higher
-    priority values have a higher priority.
+    ``0`` to ``PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY``. Higher priority
+    values have a higher priority.
+
+    Note that the idle task priority, ``tskIDLE_PRIORITY``, is fixed to ``0``.
+    See the `FreeRTOS documentation on the idle task
+    <https://www.freertos.org/RTOS-idle-task.html>`_ for more details.
+
+    Precondition: This must be <= PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY.
 
   .. cpp:function:: set_stack_size(size_t size_words)
 
