@@ -51,14 +51,13 @@ class RpcIntegrationTest(unittest.TestCase):
     test_server_command: Tuple[str, ...] = ()
 
     def setUp(self) -> None:
-        server_and_client = rpc.HdlcRpcLocalServerAndClient(
+        self._context = rpc.HdlcRpcLocalServerAndClient(
             self.test_server_command, PORT, [unit_test_pb2])
-        self._server = server_and_client.server
-        self.rpcs = server_and_client.client.channel(1).rpcs
+        self.rpcs = self._context.client.channel(1).rpcs
         self.handler = mock.NonCallableMagicMock(spec=EventHandler)
 
     def tearDown(self) -> None:
-        self._server.close()
+        self._context.close()
 
     def test_run_tests_default_handler(self) -> None:
         with self.assertLogs(logging.getLogger('pw_unit_test'),

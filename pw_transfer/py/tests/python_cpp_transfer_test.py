@@ -31,20 +31,19 @@ class TransferServiceIntegrationTest(unittest.TestCase):
     test_server_command: Tuple[str, ...] = ()
 
     def setUp(self) -> None:
-        context = rpc.HdlcRpcLocalServerAndClient(self.test_server_command,
-                                                  PORT, [transfer_pb2])
-        self._server = context.server
-        service = context.client.channel(1).rpcs.pw.transfer.Transfer
+        self._context = rpc.HdlcRpcLocalServerAndClient(
+            self.test_server_command, PORT, [transfer_pb2])
+        service = self._context.client.channel(1).rpcs.pw.transfer.Transfer
         self.manager = transfer.Manager(service)
 
     def set_contents(self, data: str) -> None:
-        assert self._server.stdin is not None
-        self._server.stdin.write(data.encode() + b'\0')
-        self._server.stdin.flush()
+        assert self._context.server.stdin is not None
+        self._context.server.stdin.write(data.encode() + b'\0')
+        self._context.server.stdin.flush()
 
     def tearDown(self) -> None:
-        if hasattr(self, '_server'):
-            self._server.close()
+        if hasattr(self, '_context'):
+            self._context.close()
 
     def test_read_empty(self) -> None:
         for _ in range(ITERATIONS):

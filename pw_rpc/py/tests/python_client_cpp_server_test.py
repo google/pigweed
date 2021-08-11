@@ -30,13 +30,12 @@ class RpcIntegrationTest(unittest.TestCase):
     test_server_command: Tuple[str, ...] = ()
 
     def setUp(self) -> None:
-        server_and_client = rpc.HdlcRpcLocalServerAndClient(
+        self._context = rpc.HdlcRpcLocalServerAndClient(
             self.test_server_command, PORT, [benchmark_pb2])
-        self._server = server_and_client.server
-        self.rpcs = server_and_client.client.channel(1).rpcs
+        self.rpcs = self._context.client.channel(1).rpcs
 
     def tearDown(self) -> None:
-        self._server.close()
+        self._context.close()
 
     def test_unary(self) -> None:
         for i in range(ITERATIONS):

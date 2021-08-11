@@ -131,11 +131,18 @@ def run_tests(rpcs: pw_rpc.client.Services,
     request = unit_test_service.Run.request(
         report_passed_expectations=report_passed_expectations,
         test_suite=test_suites)
-    test_responses = iter(
-        unit_test_service.Run.invoke(request, timeout_s=timeout_s))
+    call = unit_test_service.Run.invoke(request, timeout_s=timeout_s)
+    test_responses = iter(call)
 
     # Read the first response, which must be a test_run_start message.
-    first_response = next(test_responses)
+    try:
+        first_response = next(test_responses)
+    except StopIteration:
+        _LOG.error(
+            'The "test_run_start" message was dropped! UnitTest.Run '
+            'concluded with %s.', call.status)
+        raise
+
     if not first_response.HasField('test_run_start'):
         raise ValueError(
             'Expected a "test_run_start" response from pw.unit_test.Run, '

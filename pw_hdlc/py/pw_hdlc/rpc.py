@@ -16,6 +16,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
+from queue import SimpleQueue
 import sys
 import threading
 import time
@@ -180,29 +181,53 @@ class HdlcRpcClient:
             _LOG.error('Packet not handled by RPC client: %s', frame.data)
 
 
+def _try_connect(sock: socket.socket, port: int, attempts: int = 10) -> None:
+    """Tries to connect to the specified port up to the given number of times.
+
+    This is helpful when connecting to a process that was started by this
+    script. The process may need time to start listening for connections, and
+    that length of time can vary. This retries with a short delay rather than
+    having to wait for the worst case delay every time.
+    """
+    while True:
+        attempts -= 1
+        time.sleep(0.001)
+
+        try:
+            sock.connect(('localhost', port))
+            return
+        except ConnectionRefusedError:
+            if attempts <= 0:
+                raise
+
+
 class SocketSubprocess:
     """Executes a subprocess and connects to it with a socket."""
     def __init__(self, command: Sequence, port: int) -> None:
         self._server_process = subprocess.Popen(command, stdin=subprocess.PIPE)
         self.stdin = self._server_process.stdin
 
-        try:
-            # Delay a bit to ensure the process has time to initialize.
-            time.sleep(0.01)
+        sock = None
 
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect(('localhost', port))
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            _try_connect(sock, port)
         except:
+            if sock:
+                sock.close()
+
             self._server_process.terminate()
-            self._server_process.wait()
+            self._server_process.communicate()
             raise
+
+        self.socket: socket.socket = sock  # 🧦
 
     def close(self) -> None:
         try:
             self.socket.close()
         finally:
             self._server_process.terminate()
-            self._server_process.wait()
+            self._server_process.communicate()
 
     def __enter__(self) -> 'SocketSubprocess':
         return self
@@ -220,8 +245,30 @@ class HdlcRpcLocalServerAndClient:
                  protos: PathsModulesOrProtoLibrary) -> None:
         self.server = SocketSubprocess(server_command, port)
 
+        self._bytes_queue: 'SimpleQueue[bytes]' = SimpleQueue()
+        self._read_thread = threading.Thread(target=self._read_from_socket)
+        self._read_thread.start()
+
         self.output = io.BytesIO()
         self.client = HdlcRpcClient(
-            lambda: self.server.socket.recv(4096), protos,
+            self._bytes_queue.get, protos,
             default_channels(self.server.socket.sendall),
             self.output.write).client
+
+    def _read_from_socket(self):
+        while True:
+            data = self.server.socket.recv(4096)
+            self._bytes_queue.put(data)
+            if not data:
+                return
+
+    def close(self):
+        self.server.close()
+        self.output.close()
+        self._read_thread.join()
+
+    def __enter__(self) -> 'HdlcRpcLocalServerAndClient':
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()
