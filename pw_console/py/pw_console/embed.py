@@ -14,11 +14,13 @@
 """pw_console embed class."""
 
 import asyncio
+import copy
 import logging
 from typing import Dict, List, Iterable, Optional, Union
 
 from prompt_toolkit.completion import WordCompleter
 
+import pw_console.python_logging
 from pw_console.console_app import ConsoleApp
 
 
@@ -94,6 +96,9 @@ class PwConsoleEmbed:
         self.console_app = None
         self.extra_completers: List = []
 
+        self.setup_python_logging_called = False
+        self.hidden_by_default_windows: List[str] = []
+
     def add_sentence_completer(self,
                                word_meta_dict: Dict[str, str],
                                ignore_case=True):
@@ -121,14 +126,51 @@ class PwConsoleEmbed:
         self.extra_completers.append(word_completer)
 
     def _setup_log_panes(self):
-        """Add loggers to the console app log pane(s)."""
-        if self.loggers:
-            if isinstance(self.loggers, list):
-                self.console_app.add_log_handler('Logs', self.loggers)
-            elif isinstance(self.loggers, dict):
-                for window_title, logger_instances in self.loggers.items():
-                    self.console_app.add_log_handler(window_title,
-                                                     logger_instances)
+        """Add loggers to ConsoleApp log pane(s)."""
+        if not self.loggers:
+            return
+
+        if isinstance(self.loggers, list):
+            self.console_app.add_log_handler('Logs', self.loggers)
+
+        elif isinstance(self.loggers, dict):
+            for window_title, logger_instances in self.loggers.items():
+                window_pane = self.console_app.add_log_handler(
+                    window_title, logger_instances)
+
+                if window_pane.pane_title() in self.hidden_by_default_windows:
+                    window_pane.show_pane = False
+
+    def setup_python_logging(self):
+        """Disable log handlers for full screen prompt_toolkit applications."""
+        self.setup_python_logging_called = True
+        for logger in pw_console.python_logging.all_loggers():
+            # Make sure all known loggers propagate to the root logger.
+            logger.propagate = True
+            # Remove all stdout and stdout & stderr handlers to prevent
+            # corrupting the prompt_toolkit user interface.
+            for handler in copy.copy(logger.handlers):
+                # Must use type() check here since this returns True:
+                #   isinstance(logging.FileHandler, logging.StreamHandler)
+                if type(handler) == logging.StreamHandler:  # pylint: disable=unidiomatic-typecheck
+                    logger.removeHandler(handler)
+
+        # Prevent these loggers from propagating to the root logger.
+        logging.getLogger('pw_console').propagate = False
+        # prompt_toolkit triggered debug log messages
+        logging.getLogger('prompt_toolkit').propagate = False
+        logging.getLogger('prompt_toolkit.buffer').propagate = False
+        logging.getLogger('parso.python.diff').propagate = False
+        logging.getLogger('parso.cache').propagate = False
+        # Set asyncio log level to WARNING
+        logging.getLogger('asyncio').setLevel(logging.WARNING)
+        # Always set DEBUG level for serial debug.
+        logging.getLogger('pw_console.serial_debug_logger').setLevel(
+            logging.DEBUG)
+
+    def hide_windows(self, *window_titles):
+        for window_title in window_titles:
+            self.hidden_by_default_windows.append(window_title)
 
     def embed(self):
         """Start the console."""
@@ -142,6 +184,9 @@ class PwConsoleEmbed:
             app_title=self.app_title,
             extra_completers=self.extra_completers,
         )
+        # Setup Python logging and log panes.
+        if not self.setup_python_logging_called:
+            self.setup_python_logging()
         self._setup_log_panes()
         self.console_app.apply_window_config()
 

@@ -21,7 +21,7 @@ import os
 from pathlib import Path
 import sys
 from threading import Thread
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
 from jinja2 import Environment, FileSystemLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -565,7 +565,7 @@ class ConsoleApp:
     def add_log_handler(self,
                         window_title: str,
                         logger_instances: Iterable[logging.Logger],
-                        separate_log_panes=False):
+                        separate_log_panes=False) -> Optional[LogPane]:
         """Add the Log pane as a handler for this logger instance."""
 
         existing_log_pane = None
@@ -584,6 +584,7 @@ class ConsoleApp:
         self.window_manager.update_root_container_body()
         self.update_menu_items()
         self._update_help_window()
+        return existing_log_pane
 
     def _user_code_thread_entry(self):
         """Entry point for the user code thread."""

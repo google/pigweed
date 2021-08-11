@@ -44,6 +44,8 @@ pw_python_package("py") {
     "pw_console/progress_bar/progress_bar_state.py",
     "pw_console/progress_bar/progress_bar_task_counter.py",
     "pw_console/pw_ptpython_repl.py",
+    "pw_console/pyserial_wrapper.py",
+    "pw_console/python_logging.py",
     "pw_console/repl_pane.py",
     "pw_console/search_toolbar.py",
     "pw_console/style.py",

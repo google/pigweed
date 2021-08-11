@@ -41,10 +41,12 @@ class LogLine:
     def update_metadata(self, extra_fields: Optional[Dict] = None):
         """Parse log metadata fields from various sources."""
 
-        # 1. Parse any metadata from the message itself
+        # 1. Parse any metadata from the message itself.
         self.metadata = FormatStringWithMetadata(str(self.record.message))
         self.formatted_log = self.formatted_log.replace(
             self.metadata.raw_string, self.metadata.message)
+        # Remove any trailing line breaks.
+        self.formatted_log = self.formatted_log.strip()
 
         # 2. Check for a metadata Dict[str, str] stored in the log record in the
         # `extra_metadata_fields` attribute. This should be set using the

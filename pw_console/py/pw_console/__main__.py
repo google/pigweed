@@ -11,22 +11,26 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Pigweed Console - Warning: This is a work in progress."""
+"""Pigweed Console entry point."""
 
 import argparse
 import inspect
 import logging
 import sys
-import tempfile
-from datetime import datetime
 from typing import List
 
 import pw_cli.log
 import pw_cli.argument_types
 
 import pw_console
+import pw_console.python_logging
 
 _LOG = logging.getLogger(__package__)
+
+
+# TODO(tonymd): Remove this when no downstream projects are using it.
+def create_temp_log_file():
+    return pw_console.python_logging.create_temp_log_file()
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -52,25 +56,6 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def create_temp_log_file():
-    """Create a unique tempfile for saving logs.
-
-    Example format: /tmp/pw_console_2021-05-04_151807_8hem6iyq
-    """
-
-    # Grab the current system timestamp as a string.
-    isotime = datetime.now().isoformat(sep='_', timespec='seconds')
-    # Timestamp string should not have colons in it.
-    isotime = isotime.replace(':', '')
-
-    log_file_name = None
-    with tempfile.NamedTemporaryFile(prefix=f'{__package__}_{isotime}_',
-                                     delete=False) as log_file:
-        log_file_name = log_file.name
-
-    return log_file_name
-
-
 def main() -> int:
     """Pigweed Console."""
 
@@ -80,7 +65,7 @@ def main() -> int:
     if not args.logfile:
         # Create a temp logfile to prevent logs from appearing over stdout. This
         # would corrupt the prompt toolkit UI.
-        args.logfile = create_temp_log_file()
+        args.logfile = pw_console.python_logging.create_temp_log_file()
 
     pw_cli.log.install(level=args.loglevel,
                        use_color=True,

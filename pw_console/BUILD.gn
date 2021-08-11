@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("docs") {
+  inputs = [ "images/serial_debug.svg" ]
   sources = [
     "docs.rst",
     "embedding.rst",

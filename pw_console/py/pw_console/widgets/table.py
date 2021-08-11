@@ -196,13 +196,17 @@ class TableView:
             else:
                 columns[name] = value.rjust(width)
 
-        # Grab the message to appear after the justified columns.
+        # Grab the message to appear after the justified columns with ANSI
+        # escape sequences removed.
+        message_text = pw_console.text_formatting.strip_ansi(
+            log.record.message)
         message = log.metadata.fields.get(
             'msg',
-            # ANSI format the standard formatted log message if no 'msg'
-            # available from metadata.fields.
-            # ANSI(log.record.message).__pt_formatted_text__()
-            pw_console.text_formatting.strip_ansi(log.record.message))
+            message_text.strip(),  # Remove any trailing line breaks
+        )
+        # Alternatively ANSI formatting can be preserved with:
+        #   message = ANSI(log.record.message).__pt_formatted_text__()
+
         # Convert to FormattedText if we have a raw string from fields.
         if isinstance(message, str):
             message_style = default_style
