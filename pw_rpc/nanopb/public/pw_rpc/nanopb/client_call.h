@@ -18,7 +18,7 @@
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
 #include "pw_rpc/internal/base_client_call.h"
-#include "pw_rpc/internal/method_type.h"
+#include "pw_rpc/method_type.h"
 #include "pw_rpc/nanopb/internal/common.h"
 #include "pw_status/status.h"
 
@@ -144,10 +144,10 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
   }
 
   void HandleResponse(const internal::Packet& packet) {
-    if constexpr (Callbacks::kType == internal::MethodType::kUnary) {
+    if constexpr (Callbacks::kType == MethodType::kUnary) {
       InvokeUnaryCallback(packet);
     }
-    if constexpr (Callbacks::kType == internal::MethodType::kServerStreaming) {
+    if constexpr (Callbacks::kType == MethodType::kServerStreaming) {
       InvokeServerStreamingCallback(packet);
     }
   }

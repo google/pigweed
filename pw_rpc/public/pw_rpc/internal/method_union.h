@@ -17,7 +17,7 @@
 #include <utility>
 
 #include "pw_rpc/internal/method.h"
-#include "pw_rpc/internal/method_type.h"
+#include "pw_rpc/method_type.h"
 
 namespace pw::rpc::internal {
 

@@ -23,7 +23,7 @@
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"
-#include "pw_rpc/internal/method_type.h"
+#include "pw_rpc/method_type.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 

@@ -112,8 +112,8 @@ pw_source_set("common") {
     "channel.cc",
     "packet.cc",
     "public/pw_rpc/internal/channel.h",
-    "public/pw_rpc/internal/method_type.h",
     "public/pw_rpc/internal/packet.h",
+    "public/pw_rpc/method_type.h",
   ]
   friend = [ "./*" ]
 }
@@ -230,6 +230,7 @@ pw_test_group("tests") {
     ":channel_test",
     ":client_test",
     ":client_server_test",
+    ":method_test",
     ":ids_test",
     ":packet_test",
     ":responder_test",
@@ -324,6 +325,14 @@ pw_test("base_client_call_test") {
     ":test_utils",
   ]
   sources = [ "base_client_call_test.cc" ]
+}
+
+pw_test("method_test") {
+  deps = [
+    ":server",
+    ":test_utils",
+  ]
+  sources = [ "method_test.cc" ]
 }
 
 pw_test("server_test") {

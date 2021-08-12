@@ -331,7 +331,7 @@ class ProtoServiceMethod:
 
         def cc_enum(self) -> str:
             """Returns the pw_rpc MethodType C++ enum for this method type."""
-            return '::pw::rpc::internal::MethodType::' + self.value
+            return '::pw::rpc::MethodType::' + self.value
 
     def __init__(self, name: str, method_type: Type, request_type: ProtoNode,
                  response_type: ProtoNode):
