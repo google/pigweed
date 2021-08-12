@@ -20,7 +20,15 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     StatusCallback status_callback) {
   if (IsAdvertising(address)) {
     // Temporarily disable advertising so we can tweak the parameters
-    hci_cmd_runner_->QueueCommand(BuildEnablePacket(address, GenericEnableParam::kDisable));
+    std::unique_ptr<CommandPacket> packet =
+        BuildEnablePacket(address, GenericEnableParam::kDisable);
+    if (!packet) {
+      bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
+      status_callback(Status(HostError::kCanceled));
+      return;
+    }
+
+    hci_cmd_runner_->QueueCommand(std::move(packet));
   }
 
   // Set advertising parameters
@@ -38,22 +46,51 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     own_addr_type = LEOwnAddressType::kRandom;
   }
 
-  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingParams(address, type, own_addr_type, interval));
+  std::unique_ptr<CommandPacket> set_adv_params_packet =
+      BuildSetAdvertisingParams(address, type, own_addr_type, interval);
+  if (!set_adv_params_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI set params packet for %s", bt_str(address));
+    status_callback(Status(HostError::kCanceled));
+    return;
+  }
 
-  // Set advertising and scan response data. If either piece of data is empty then it will be
-  // cleared accordingly.
-  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingData(address, data, flags));
-  hci_cmd_runner_->QueueCommand(BuildSetScanResponse(address, scan_rsp));
+  std::unique_ptr<CommandPacket> set_adv_data_packet =
+      BuildSetAdvertisingData(address, data, flags);
+  if (!set_adv_data_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI set advertising data packet for %s", bt_str(address));
+    StopAdvertising(address);
+    status_callback(Status(HostError::kCanceled));
+    return;
+  }
 
-  // Enable advertising
-  hci_cmd_runner_->QueueCommand(BuildEnablePacket(address, GenericEnableParam::kEnable));
+  std::unique_ptr<CommandPacket> set_scan_rsp_packet = BuildSetScanResponse(address, scan_rsp);
+  if (!set_scan_rsp_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI set scan response data packet for %s",
+           bt_str(address));
+    StopAdvertising(address);
+    status_callback(Status(HostError::kCanceled));
+    return;
+  }
+
+  std::unique_ptr<CommandPacket> enable_packet =
+      BuildEnablePacket(address, GenericEnableParam::kEnable);
+  if (!enable_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI enable packet for %s", bt_str(address));
+    StopAdvertising(address);
+    status_callback(Status(HostError::kCanceled));
+    return;
+  }
+
+  hci_cmd_runner_->QueueCommand(std::move(set_adv_params_packet));
+  hci_cmd_runner_->QueueCommand(std::move(set_adv_data_packet));
+  hci_cmd_runner_->QueueCommand(std::move(set_scan_rsp_packet));
+  hci_cmd_runner_->QueueCommand(std::move(enable_packet));
 
   hci_cmd_runner_->RunCommands(
       [this, address, status_callback = std::move(status_callback),
        connect_callback = std::move(connect_callback)](Status status) mutable {
         if (bt_is_error(status, ERROR, "hci-le", "failed to start advertising for %s",
                         bt_str(address))) {
-          // Clear out the advertising data in case it partially succeeded
           StopAdvertising(address);
         } else {
           bt_log(INFO, "hci-le", "advertising enabled for %s", bt_str(address));
@@ -68,30 +105,36 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
 // iterating through all addresses and calling StopAdvertising(address) on each iteration. However,
 // such an implementation won't work. Each call to StopAdvertising(address) checks if the command
 // runner is running, cancels any pending commands if it is, and then issues new ones. Called in
-// quick succession, StopAdvertising(address) won't have a chance to finish its previous hci
+// quick succession, StopAdvertising(address) won't have a chance to finish its previous HCI
 // commands before being cancelled. Instead, we must enqueue them all at once and then run them
 // together.
 bool LowEnergyAdvertiser::StopAdvertising() {
-  if (!hci_cmd_runner_->IsReady()) {
-    hci_cmd_runner_->Cancel();
-  }
-
   if (connection_callbacks_.empty()) {
     return true;
   }
 
-  for (const auto& [address, _] : connection_callbacks_) {
-    hci_cmd_runner_->QueueCommand(BuildEnablePacket(address, GenericEnableParam::kDisable));
-    hci_cmd_runner_->QueueCommand(BuildUnsetScanResponse(address));
-    hci_cmd_runner_->QueueCommand(BuildUnsetAdvertisingData(address));
-    hci_cmd_runner_->QueueCommand(BuildRemoveAdvertisingSet(address));
+  if (!hci_cmd_runner_->IsReady()) {
+    hci_cmd_runner_->Cancel();
+  }
+
+  bool success = true;
+  for (auto itr = connection_callbacks_.begin(); itr != connection_callbacks_.end();) {
+    const DeviceAddress& address = itr->first;
+
+    bool success = EnqueueStopAdvertisingCommands(address);
+    if (success) {
+      itr = connection_callbacks_.erase(itr);
+    } else {
+      success = false;
+      bt_log(WARN, "hci-le", "cannot stop advertising for %s", bt_str(address));
+      itr++;
+    }
   }
 
   hci_cmd_runner_->RunCommands(
-      [](Status status) { bt_log(INFO, "hci-le", "all advertising stopped: %s", bt_str(status)); });
+      [](Status status) { bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(status)); });
 
-  connection_callbacks_.clear();
-  return true;
+  return success;
 }
 
 // TODO(fxbug.dev/50542): StopAdvertising() should cancel outstanding calls to StartAdvertising()
@@ -106,16 +149,51 @@ bool LowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
     hci_cmd_runner_->Cancel();
   }
 
-  hci_cmd_runner_->QueueCommand(BuildEnablePacket(address, GenericEnableParam::kDisable));
-  hci_cmd_runner_->QueueCommand(BuildUnsetScanResponse(address));
-  hci_cmd_runner_->QueueCommand(BuildUnsetAdvertisingData(address));
-  hci_cmd_runner_->QueueCommand(BuildRemoveAdvertisingSet(address));
+  bool success = EnqueueStopAdvertisingCommands(address);
+  if (!success) {
+    bt_log(WARN, "hci-le", "cannot stop advertising for %s", bt_str(address));
+    return false;
+  }
 
   hci_cmd_runner_->RunCommands([address](Status status) {
     bt_log(INFO, "hci-le", "advertising stopped for %s: %s", bt_str(address), bt_str(status));
   });
 
   connection_callbacks_.erase(address);
+  return true;
+}
+
+bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& address) {
+  std::unique_ptr<CommandPacket> disable_packet =
+      BuildEnablePacket(address, GenericEnableParam::kDisable);
+  if (!disable_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
+    return false;
+  }
+
+  std::unique_ptr<CommandPacket> unset_scan_rsp_packet = BuildUnsetScanResponse(address);
+  if (!unset_scan_rsp_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI unset scan rsp packet for %s", bt_str(address));
+    return false;
+  }
+
+  std::unique_ptr<CommandPacket> unset_adv_data_packet = BuildUnsetAdvertisingData(address);
+  if (!unset_adv_data_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI unset advertising data packet for %s",
+           bt_str(address));
+    return false;
+  }
+
+  std::unique_ptr<CommandPacket> remove_packet = BuildRemoveAdvertisingSet(address);
+  if (!remove_packet) {
+    bt_log(WARN, "hci-le", "cannot build HCI remove packet for %s", bt_str(address));
+    return false;
+  }
+
+  hci_cmd_runner_->QueueCommand(std::move(disable_packet));
+  hci_cmd_runner_->QueueCommand(std::move(unset_scan_rsp_packet));
+  hci_cmd_runner_->QueueCommand(std::move(unset_adv_data_packet));
+  hci_cmd_runner_->QueueCommand(std::move(remove_packet));
   return true;
 }
 

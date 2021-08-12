@@ -105,7 +105,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                 StatusCallback status_callback) = 0;
 
   // Stops advertisement on all currently advertising addresses. Idempotent and asynchronous.
-  // Returns true if advertising will be stopped, false otherwise.
+  // Returns true if advertising will be stopped for all currently registered advertising sets,
+  // false otherwise.
   virtual bool StopAdvertising();
 
   // Stops any advertisement currently active on |address|. Idempotent and asynchronous. Returns
@@ -187,6 +188,11 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   }
 
  private:
+  // Enqueue onto the HCI command runner the HCI commands necessary to stop advertising and
+  // completely remove a given address from the controller's memory. If even one of the HCI commands
+  // cannot be generated for some reason, no HCI commands are enqueued.
+  bool EnqueueStopAdvertisingCommands(const DeviceAddress& address);
+
   fxl::WeakPtr<Transport> hci_;
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
   std::unordered_map<DeviceAddress, ConnectionCallback> connection_callbacks_;
