@@ -204,9 +204,12 @@ package declared by ``my_package``.
 
   pw_python_pacakge("my_package") {
     generate_setup = {
-      name = "foo"
-      version = "1.0"
+      metadata = {
+        name = "foo"
+        version = "1.0"
+      }
     }
+
     sources = [ "foo/cool_module.py" ]
     proto_library = ":my_protos"
   }

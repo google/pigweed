@@ -19,8 +19,10 @@ import("$dir_pw_docgen/docs.gni")
 
 pw_python_package("pw_snapshot_metadata") {
   generate_setup = {
-    name = "pw_snapshot_metadata"
-    version = "0.0.1"
+    metadata = {
+      name = "pw_snapshot_metadata"
+      version = "0.0.1"
+    }
   }
 
   sources = [
@@ -37,8 +39,10 @@ pw_python_package("pw_snapshot_metadata") {
 
 pw_python_package("pw_snapshot") {
   generate_setup = {
-    name = "pw_snapshot"
-    version = "0.0.1"
+    metadata = {
+      name = "pw_snapshot"
+      version = "0.0.1"
+    }
   }
   sources = [
     "generate_example_snapshot.py",

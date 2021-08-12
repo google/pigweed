@@ -331,8 +331,11 @@ template("_pw_python_proto_library") {
     pw_python_package(target_name) {
       forward_variables_from(invoker, _forwarded_vars)
       generate_setup = {
-        name = invoker._package_dir
-        version = "0.0.1"  # TODO(hepler): Need to be able to set this verison.
+        metadata = {
+          name = invoker._package_dir
+          version =
+              "0.0.1"  # TODO(hepler): Need to be able to set this verison.
+        }
       }
       sources = invoker.outputs
       strip_prefix = "${invoker.base_out_dir}/python"

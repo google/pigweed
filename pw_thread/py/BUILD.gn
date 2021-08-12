@@ -19,8 +19,10 @@ import("$dir_pw_docgen/docs.gni")
 
 pw_python_package("py") {
   generate_setup = {
-    name = "pw_thread"
-    version = "0.0.1"
+    metadata = {
+      name = "pw_thread"
+      version = "0.0.1"
+    }
   }
 
   sources = [

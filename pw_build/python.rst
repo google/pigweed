@@ -42,13 +42,21 @@ Arguments
 - ``setup`` - List of setup file paths (setup.py or pyproject.toml & setup.cfg),
   which must all be in the same directory.
 - ``generate_setup``: As an alternative to ``setup``, generate setup files with
-  the keywords in this scope. ``name`` is required. For example:
+  the keywords in this scope. ``name`` is required. This follows the same
+  structure as a ``setup.cfg`` file's `declarative config
+  <https://setuptools.readthedocs.io/en/latest/userguide/declarative_config.html>`_
+  For example:
 
   .. code-block::
 
     generate_setup = {
-      name = "a_nifty_package"
-      version = "1.2a"
+      metadata = {
+        name = "a_nifty_package"
+        version = "1.2a"
+      }
+      options = {
+        install_requires = [ "a_pip_package" ]
+      }
     }
 
 - ``sources`` - Python sources files in the package.

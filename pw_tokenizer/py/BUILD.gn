@@ -19,9 +19,15 @@ import("$dir_pw_protobuf_compiler/proto.gni")
 
 pw_python_package("py") {
   generate_setup = {
-    name = "pw_tokenizer"
-    version = "0.0.1"
-    extra_requires = [ "serial" ]
+    metadata = {
+      name = "pw_tokenizer"
+      version = "0.0.1"
+    }
+    options = {
+      extras_require = {
+        serial_detokenizer = [ "serial" ]
+      }
+    }
   }
   sources = [
     "generate_argument_types_macro.py",

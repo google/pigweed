@@ -18,9 +18,13 @@ import("$dir_pw_build/python.gni")
 
 pw_python_package("py") {
   generate_setup = {
-    name = "pw_build_info"
-    version = "0.0.1"
-    install_requires = [ "pyelftools" ]
+    metadata = {
+      name = "pw_build_info"
+      version = "0.0.1"
+    }
+    options = {
+      install_requires = [ "pyelftools" ]
+    }
   }
   inputs = [ "print_build_id.cc" ]
   sources = [

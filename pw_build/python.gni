@@ -287,7 +287,10 @@ template("pw_python_package") {
   if (defined(invoker.setup)) {
     _setup_sources = invoker.setup
   } else if (_generate_package) {
-    _setup_sources = [ "$_setup_dir/setup.py" ]
+    _setup_sources = [
+      "$_setup_dir/pyproject.toml",
+      "$_setup_dir/setup.cfg",
+    ]
   }
 
   # Argument: python_test_deps (list)
@@ -305,7 +308,8 @@ template("pw_python_package") {
     not_needed([ "_python_test_deps" ])
   }
 
-  _all_py_files = _sources + _test_sources + _setup_sources
+  _all_py_files =
+      _sources + _test_sources + filter_include(_setup_sources, [ "*.py" ])
 
   # The pw_python_package subtargets are only instantiated in
   # pw_build_PYTHON_TOOLCHAIN. Targets in other toolchains just refer to the
@@ -334,12 +338,33 @@ template("pw_python_package") {
         public_deps = _python_deps + _other_deps
       }
 
-      # Get generated_setup scope and write it to disk ask JSON.
+      # Get generated_setup scope and write it to disk as JSON.
+
+      # Expected setup.cfg structure:
+      # https://setuptools.readthedocs.io/en/latest/userguide/declarative_config.html
       _gen_setup = invoker.generate_setup
-      assert(defined(_gen_setup.name), "'name' is required in generate_package")
-      assert(!defined(_gen_setup.packages) && !defined(_gen_setup.package_data),
-             "'packages' and 'package_data' may not be provided " +
-                 "in 'generate_package'")
+      assert(defined(_gen_setup.metadata),
+             "'metadata = {}' is required in generate_package")
+
+      # Get metadata which should contain at least name.
+      _gen_metadata = {
+      }
+      _gen_metadata = _gen_setup.metadata
+      assert(
+          defined(_gen_metadata.name),
+          "metadata = { name = 'package_name' } is required in generate_package")
+
+      # Get options which should not have packages or package_data.
+      if (defined(_gen_setup.options)) {
+        _gen_options = {
+        }
+        _gen_options = _gen_setup.options
+        assert(!defined(_gen_options.packages) &&
+                   !defined(_gen_options.package_data),
+               "'packages' and 'package_data' may not be provided " +
+                   "in 'generate_package' options.")
+      }
+
       write_file("$_setup_dir/setup.json", _gen_setup, "json")
 
       # Generate the setup.py, py.typed, and __init__.py files as needed.

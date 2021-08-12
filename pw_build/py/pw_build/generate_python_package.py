@@ -11,17 +11,28 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Script that invokes protoc to generate code for .proto files."""
+"""Generates a setup.cfg file for a Python package."""
 
 import argparse
 from collections import defaultdict
+import configparser
 from dataclasses import dataclass
 from itertools import chain
 import json
 from pathlib import Path
 import sys
 import textwrap
-from typing import Any, Dict, Iterable, Iterator, List, Set, Sequence, TextIO
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    TextIO,
+)
 
 try:
     from pw_build.mirror_tree import mirror_paths
@@ -113,31 +124,69 @@ def _collect_all_files(
     return pkg_data
 
 
-_SETUP_PY_FILE = '''\
+_PYPROJECT_FILE = '''\
 # Generated file. Do not modify.
-# pylint: skip-file
-
-import setuptools  # type: ignore
-
-setuptools.setup(
-{keywords}
-)
+[build-system]
+requires = ['setuptools', 'wheel']
+build-backend = 'setuptools.build_meta'
 '''
 
 
-def _generate_setup_py(pkg_data: dict, keywords: dict) -> str:
-    setup_keywords = dict(
+def _get_setup_keywords(pkg_data: dict, keywords: dict) -> Dict:
+    """Gather all setuptools.setup() keyword args."""
+    options_keywords = dict(
         packages=list(pkg_data),
         package_data={pkg: list(files)
                       for pkg, files in pkg_data.items()},
     )
 
-    assert not any(kw in keywords for kw in setup_keywords), (
-        'Generated packages may not specify "packages" or "package_data"')
-    setup_keywords.update(keywords)
+    keywords['options'].update(options_keywords)
+    return keywords
 
-    return _SETUP_PY_FILE.format(keywords='\n'.join(
-        f'    {k}={v!r},' for k, v in setup_keywords.items()))
+
+def _write_to_config(config: configparser.ConfigParser,
+                     data: Dict,
+                     section: Optional[str] = None):
+    """Populate a ConfigParser instance with the contents of a dict."""
+    # Add a specified section if missing.
+    if section is not None and not config.has_section(section):
+        config.add_section(section)
+
+    for key, value in data.items():
+        # Value is a dict so create a new subsection
+        if isinstance(value, dict):
+            _write_to_config(
+                config,
+                value,
+                f'{section}.{key}' if section else key,
+            )
+        elif isinstance(value, list):
+            if value:
+                assert section is not None
+                # Convert the list to an allowed str format.
+                config[section][key] = '\n' + '\n'.join(value)
+        else:
+            assert section is not None
+            # Add the value as a string. See expected types here:
+            # https://setuptools.readthedocs.io/en/latest/userguide/declarative_config.html#specifying-values
+            config[section][key] = str(value)
+
+
+def _generate_setup_cfg(
+    pkg_data: dict,
+    keywords: dict,
+    config_file_path: Path,
+) -> None:
+    """Creates a setup.cfg file based on setuptools keywords."""
+    setup_keywords = _get_setup_keywords(pkg_data, keywords)
+
+    config = configparser.ConfigParser()
+
+    _write_to_config(config, setup_keywords)
+
+    # Write the config to a file.
+    with config_file_path.open('w') as config_file:
+        config.write(config_file)
 
 
 def _import_module_in_package_init(all_files: List[Path]) -> None:
@@ -189,16 +238,20 @@ def main(generated_root: Path, files: List[Path], module_as_package: bool,
 
     with setup_json:
         setup_keywords = json.load(setup_json)
+        setup_keywords.setdefault('options', {})
 
-    install_requires = setup_keywords.setdefault('install_requires', [])
+    install_requires = setup_keywords['options'].setdefault(
+        'install_requires', [])
     install_requires += chain.from_iterable(i.deps for i in proto_infos)
 
     if module_as_package:
         _import_module_in_package_init(files)
 
-    # Create the setup.py file for this package.
-    generated_root.joinpath('setup.py').write_text(
-        _generate_setup_py(pkg_data, setup_keywords))
+    # Create the pyproject.toml and setup.cfg files for this package.
+    generated_root.joinpath('pyproject.toml').write_text(_PYPROJECT_FILE)
+    _generate_setup_cfg(pkg_data,
+                        setup_keywords,
+                        config_file_path=generated_root.joinpath('setup.cfg'))
 
     return 0
 
