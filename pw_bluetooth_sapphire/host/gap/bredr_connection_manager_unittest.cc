@@ -289,13 +289,8 @@ const auto kDisconnect = testing::DisconnectPacket(kConnectionHandle);
 
 const auto kDisconnectRsp = COMMAND_STATUS_RSP(hci::kDisconnect, hci::StatusCode::kSuccess);
 
-const auto kDisconnectionComplete =
-    CreateStaticByteBuffer(hci::kDisconnectionCompleteEventCode,
-                           0x04,                       // parameter_total_size (4 bytes)
-                           hci::StatusCode::kSuccess,  // status
-                           0xAA, 0x0B,                 // connection_handle
-                           0x13                        // Reason (Remote User Terminated Connection)
-    );
+const auto kDisconnectionComplete = testing::DisconnectionCompletePacket(
+    kConnectionHandle, hci::StatusCode::kRemoteUserTerminatedConnection);
 
 const auto kAuthenticationRequested = testing::AuthenticationRequestedPacket(kConnectionHandle);
 
@@ -560,15 +555,20 @@ class BrEdrConnectionManagerTest : public TestingBase {
   }
 
   void TearDown() override {
-    // Don't trigger the transaction callback when cleaning up the manager.
-    test_device()->ClearTransactionCallback();
+    int expected_transaction_count = transaction_count();
     if (connection_manager_ != nullptr) {
+      expected_transaction_count += 2;
       // deallocating the connection manager disables connectivity.
       EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
       EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
       connection_manager_ = nullptr;
     }
     RunLoopUntilIdle();
+    // A disconnection may also occur for a queued disconnection, allow up to 1 extra transaction.
+    EXPECT_LE(expected_transaction_count, transaction_count());
+    EXPECT_GE(expected_transaction_count + 1, transaction_count());
+    // Don't trigger the transaction callback for the rest.
+    test_device()->ClearTransactionCallback();
     test_device()->Stop();
     l2cap_ = nullptr;
     peer_cache_ = nullptr;
@@ -576,8 +576,13 @@ class BrEdrConnectionManagerTest : public TestingBase {
   }
 
  protected:
-  static constexpr const int kIncomingConnTransactions = 6;
+  static constexpr const int kShortInterrogationTransactions = 3;
+  static constexpr const int kInterrogationTransactions = kShortInterrogationTransactions + 2;
+  static constexpr const int kIncomingConnTransactions = 1 + kInterrogationTransactions;
   static constexpr const int kDisconnectionTransactions = 1;
+  // Currently unused, for reference:
+  // static constexpr const int kIncomingConnShortTransactions = 1 +
+  // kShortInterrogationTransactions;
 
   BrEdrConnectionManager* connmgr() const { return connection_manager_.get(); }
   void SetConnectionManager(std::unique_ptr<BrEdrConnectionManager> mgr) {
@@ -590,13 +595,10 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
   int transaction_count() const { return transaction_count_; }
 
-  // Add expectations and simulated responses for the outbound commands sent
-  // after an inbound Connection Request Event is received. Results in
-  // |kIncomingConnTransactions| transactions.
-
-  void QueueSuccessfulIncomingConn(
-      DeviceAddress addr = kTestDevAddr, hci::ConnectionHandle handle = kConnectionHandle,
-      std::optional<hci::ConnectionRole> role_change = std::nullopt) const {
+  // Expect an incoming connection that is accepted.
+  void QueueSuccessfulAccept(DeviceAddress addr = kTestDevAddr,
+                             hci::ConnectionHandle handle = kConnectionHandle,
+                             std::optional<hci::ConnectionRole> role_change = std::nullopt) const {
     const auto connection_complete = testing::ConnectionCompletePacket(addr, handle);
     if (role_change) {
       const auto role_change_event = testing::RoleChangePacket(addr, role_change.value());
@@ -606,6 +608,25 @@ class BrEdrConnectionManagerTest : public TestingBase {
       EXPECT_CMD_PACKET_OUT(test_device(), testing::AcceptConnectionRequestPacket(addr),
                             &kAcceptConnectionRequestRsp, &connection_complete);
     }
+  }
+
+  // Add expectations and simulated responses for the outbound commands sent
+  // after an inbound Connection Request Event is received, for a peer that is already interrogated.
+  // Results in kIncomingConnShortTransactions transaction.
+  void QueueRepeatIncomingConn(
+      DeviceAddress addr = kTestDevAddr, hci::ConnectionHandle handle = kConnectionHandle,
+      std::optional<hci::ConnectionRole> role_change = std::nullopt) const {
+    QueueSuccessfulAccept(addr, handle, role_change);
+    QueueShortInterrogation(handle);
+  }
+
+  // Add expectations and simulated responses for the outbound commands sent
+  // after an inbound Connection Request Event is received, for a peer that is already interrogated.
+  //  Results in |kIncomingConnTransactions| transactions.
+  void QueueSuccessfulIncomingConn(
+      DeviceAddress addr = kTestDevAddr, hci::ConnectionHandle handle = kConnectionHandle,
+      std::optional<hci::ConnectionRole> role_change = std::nullopt) const {
+    QueueSuccessfulAccept(addr, handle, role_change);
     QueueSuccessfulInterrogation(addr, handle);
   }
 
@@ -616,6 +637,17 @@ class BrEdrConnectionManagerTest : public TestingBase {
                           &kCreateConnectionRsp, &complete_packet);
   }
 
+  void QueueShortInterrogation(hci::ConnectionHandle conn) const {
+    const DynamicByteBuffer remote_extended1_complete_packet =
+        testing::ReadRemoteExtended1CompletePacket(conn);
+    const DynamicByteBuffer remote_extended2_complete_packet =
+        testing::ReadRemoteExtended2CompletePacket(conn);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended1Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended2Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet);
+  }
+
   void QueueSuccessfulInterrogation(DeviceAddress addr, hci::ConnectionHandle conn) const {
     const DynamicByteBuffer remote_name_complete_packet =
         testing::RemoteNameRequestCompletePacket(addr);
@@ -623,10 +655,6 @@ class BrEdrConnectionManagerTest : public TestingBase {
         testing::ReadRemoteVersionInfoCompletePacket(conn);
     const DynamicByteBuffer remote_supported_complete_packet =
         testing::ReadRemoteSupportedFeaturesCompletePacket(conn, true);
-    const DynamicByteBuffer remote_extended1_complete_packet =
-        testing::ReadRemoteExtended1CompletePacket(conn);
-    const DynamicByteBuffer remote_extended2_complete_packet =
-        testing::ReadRemoteExtended2CompletePacket(conn);
 
     EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
                           &kRemoteNameRequestRsp, &remote_name_complete_packet);
@@ -634,10 +662,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
                           &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
     EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteSupportedFeaturesPacket(conn),
                           &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended1Packet(conn),
-                          &kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet);
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended2Packet(conn),
-                          &kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet);
+    QueueShortInterrogation(conn);
   }
 
   // Queue all interrogation packets except for the remote extended complete packet 2.
@@ -817,18 +842,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnection_BrokenExtendedPageResp
 
   EXPECT_EQ(6, transaction_count());
 
-  // When we deallocate the connection manager next, we should disconnect.
-  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp, &kDisconnectionComplete);
-
-  // deallocating the connection manager disables connectivity.
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
-
-  SetConnectionManager(nullptr);
-
-  RunLoopUntilIdle();
-
-  EXPECT_EQ(9, transaction_count());
+  // When we deallocate the connection manager during teardown, we should disconnect.
+  QueueDisconnection(kConnectionHandle);
 }
 
 // Test: An incoming connection request should trigger an acceptance and an
@@ -847,18 +862,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
   EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
-  // When we deallocate the connection manager next, we should disconnect.
-  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp, &kDisconnectionComplete);
-
-  // deallocating the connection manager disables connectivity.
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
-
-  SetConnectionManager(nullptr);
-
-  RunLoopUntilIdle();
-
-  EXPECT_EQ(kIncomingConnTransactions + 3, transaction_count());
+  // When we deallocate the connection manager during teardown, we should disconnect.
+  QueueDisconnection(kConnectionHandle);
 }
 
 // Test: An incoming connection request should upgrade a known LE peer with a
@@ -903,16 +908,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RemoteDisconnect) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
-
-  // deallocating the connection manager disables connectivity.
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
-
-  SetConnectionManager(nullptr);
-
-  RunLoopUntilIdle();
-
-  EXPECT_EQ(kIncomingConnTransactions + 2, transaction_count());
 }
 
 const auto kRemoteNameRequestCompleteFailed =
@@ -1146,6 +1141,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
 
   EXPECT_EQ(kIncomingConnTransactions + 2, transaction_count());
 
+  // Queue disconnection for teardown
   QueueDisconnection(kConnectionHandle);
 }
 
@@ -1175,6 +1171,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
+  // Queue disconnection for teardown.
   QueueDisconnection(kConnectionHandle);
 }
 
@@ -1438,15 +1435,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectOnLinkError) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
-
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
-
-  SetConnectionManager(nullptr);
-
-  RunLoopUntilIdle();
-
-  EXPECT_EQ(kIncomingConnTransactions + 3, transaction_count());
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
@@ -2796,6 +2784,98 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectPendingConnections) {
 
   EXPECT_FALSE(connmgr()->Disconnect(peer_a->identifier(), DisconnectReason::kApiRequest));
   EXPECT_FALSE(connmgr()->Disconnect(peer_b->identifier(), DisconnectReason::kApiRequest));
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+
+  // Peer successfully connects to us.
+  QueueSuccessfulIncomingConn(kTestDevAddr);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(IsConnected(peer));
+
+  // Disconnect locally from an API Request.
+  QueueDisconnection(kConnectionHandle);
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_FALSE(IsConnected(peer));
+
+  // Peer tries to connect to us. We should reject the connection.
+  auto status_event =
+      testing::CommandStatusPacket(hci::kRejectConnectionRequest, hci::StatusCode::kSuccess);
+  auto reject_packet = testing::RejectConnectionRequestPacket(
+      kTestDevAddr, hci::StatusCode::kConnectionRejectedBadBdAddr);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), reject_packet, &status_event);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // After the cooldown time, a successful incoming connection can happen.
+  RunLoopFor(BrEdrConnectionManager::kLocalDisconnectCooldownDuration);
+
+  QueueRepeatIncomingConn(kTestDevAddr);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(IsConnected(peer));
+
+  // Can still connect out if we disconnect locally.
+  QueueDisconnection(kConnectionHandle);
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_FALSE(IsConnected(peer));
+
+  QueueSuccessfulCreateConnection(peer, kConnectionHandle);
+  // Interrogation is short because the peer is already known
+  QueueShortInterrogation(kConnectionHandle);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  BrEdrConnection* connection = nullptr;
+  auto callback = [&status, &connection](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    connection = std::move(cb_conn_ref);
+  };
+
+  // Launch request.
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+
+  // Complete connection.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(HasConnectionTo(peer, connection));
+  EXPECT_TRUE(IsConnected(peer));
+
+  // Remote disconnections can reconnect immediately
+  test_device()->SendCommandChannelPacket(kDisconnectionComplete);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_FALSE(IsConnected(peer));
+
+  QueueRepeatIncomingConn(kTestDevAddr);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(IsConnected(peer));
+
+  // If the reason is not kApiRequest, then the remote peer can reconnect immediately.
+  QueueDisconnection(kConnectionHandle);
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kPairingFailed));
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_FALSE(IsConnected(peer));
+
+  QueueRepeatIncomingConn(kTestDevAddr);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(IsConnected(peer));
+
+  // Queue disconnection for teardown.
+  QueueDisconnection(kConnectionHandle);
 }
 
 // If SDP channel creation fails, null channel should be caught and

@@ -7,6 +7,7 @@
 #include <lib/async/time.h>
 #include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
@@ -319,8 +320,9 @@ std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::
 }
 
 bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason) {
-  bt_log(INFO, "gap-bredr", "Disconnect Requested (peer %s, reason %hhu - %s)", bt_str(peer_id),
-         reason, ReasonAsString(reason).c_str());
+  bt_log_scope("peer: %s", bt_str(peer_id));
+  bt_log(INFO, "gap-bredr", "Disconnect Requested (reason %hhu - %s)", reason,
+         ReasonAsString(reason).c_str());
 
   // TODO(fxbug.dev/65157) - If a disconnect request is received when we have a pending connection,
   // we should instead abort the connection, by either:
@@ -328,19 +330,27 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
   //   * sending a cancel command to the controller and waiting for it to be processed
   //   * sending a cancel command, and if we already complete, then beginning a disconnect procedure
   if (connection_requests_.find(peer_id) != connection_requests_.end()) {
-    bt_log(WARN, "gap-bredr", "Can't disconnect peer %s because it's being connected to",
-           bt_str(peer_id));
+    bt_log(WARN, "gap-bredr", "Can't disconnect because it's being connected to");
     return false;
   }
 
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
-    bt_log(INFO, "gap-bredr", "No need to disconnect peer (id: %s): It is not connected",
-           bt_str(peer_id));
+    bt_log(INFO, "gap-bredr", "No need to disconnect: It is not connected");
     return true;
   }
 
   auto [handle, connection] = *conn_pair;
+
+  const DeviceAddress& peer_addr = connection->link().peer_address();
+  bt_log_scope("addr: %s", bt_str(peer_addr));
+  if (reason == DisconnectReason::kApiRequest) {
+    bt_log(DEBUG, "gap-bredr", "requested disconnect from peer, cooldown for %lds",
+           kLocalDisconnectCooldownDuration.to_secs());
+    deny_incoming_.add_until(
+        peer_addr, async::Now(async_get_default_dispatcher()) + kLocalDisconnectCooldownDuration);
+  }
+
   CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()));
   return true;
 }
@@ -532,37 +542,43 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::ConnectionHandle handle) {
   auto self = weak_ptr_factory_.GetWeakPtr();
 
+  bt_log_scope("peer: %s, handle: %#.4x", bt_str(peer->identifier()), handle);
   auto connections_iter = connections_.find(handle);
   if (connections_iter == connections_.end()) {
-    bt_log(WARN, "gap-bredr", "Connection to complete not found, handle: %#.4x", handle);
+    bt_log(WARN, "gap-bredr", "Connection to complete not found");
     return;
   }
   BrEdrConnection& conn_state = connections_iter->second;
   if (conn_state.peer_id() != peer->identifier()) {
     bt_log(WARN, "gap-bredr",
-           "Connection %#.4x is no longer to peer %s (now to %s), ignoring interrogation result",
-           handle, bt_str(peer->identifier()), bt_str(conn_state.peer_id()));
+           "Connection switched peers! (now to %s), ignoring interrogation result",
+           bt_str(conn_state.peer_id()));
     return;
   }
   hci::Connection* const connection = &conn_state.link();
 
-  auto error_handler = [self, peer_id = peer->identifier(), connection = connection->WeakPtr()] {
+  auto error_handler = [self, log_ctx = capture_log_context(), peer_id = peer->identifier(),
+                        connection = connection->WeakPtr()] {
     if (!self || !connection)
       return;
-    bt_log(WARN, "gap-bredr", "Link error received, closing connection (peer: %s, handle: %#.4x)",
-           bt_str(peer_id), connection->handle());
-
+    add_parent_context(log_ctx);
+    bt_log(WARN, "gap-bredr", "Link error received, closing connection");
     self->Disconnect(peer_id, DisconnectReason::kAclLinkError);
   };
 
   // TODO(fxbug.dev/37650): Implement this callback as a call to InitiatePairing().
-  auto security_callback = [](hci::ConnectionHandle handle, sm::SecurityLevel level, auto cb) {
+  auto security_callback = [log_ctx = capture_log_context()](hci::ConnectionHandle handle,
+                                                             sm::SecurityLevel level, auto cb) {
+    add_parent_context(log_ctx);
     bt_log(INFO, "gap-bredr", "Ignoring security upgrade request; not implemented");
     cb(sm::Status(HostError::kNotSupported));
   };
 
   // Register with L2CAP to handle services on the ACL signaling channel.
   l2cap_->AddACLConnection(handle, connection->role(), error_handler, std::move(security_callback));
+
+  // Remove from the denylist if we successfully connect.
+  deny_incoming_.remove(peer->address());
 
   peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
 
@@ -571,11 +587,9 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
                              [self, peer_id = peer->identifier()](auto channel) {
                                if (!self)
                                  return;
-
                                if (!channel) {
-                                 bt_log(ERROR, "gap",
-                                        "failed to create l2cap channel for SDP (peer id: %s)",
-                                        bt_str(peer_id));
+                                 bt_log_scope("peer: %s", bt_str(peer_id));
+                                 bt_log(ERROR, "gap", "failed to create l2cap channel for SDP");
                                  return;
                                }
 
@@ -612,6 +626,12 @@ bool BrEdrConnectionManager::ExistsIncomingRequest(PeerId id) {
 }
 
 void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
+  if (deny_incoming_.contains(event.addr)) {
+    bt_log(INFO, "gap-bredr", "rejecting incoming from peer (addr: %s) on cooldown",
+           bt_str(event.addr));
+    SendRejectConnectionRequest(event.addr, hci::StatusCode::kConnectionRejectedBadBdAddr);
+    return;
+  }
   // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId
   auto peer = FindOrInitPeer(event.addr);
   auto peer_id = peer->identifier();
@@ -694,10 +714,13 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
 
   auto req_iter = connection_requests_.find(peer_id);
   if (req_iter == connection_requests_.end()) {
+    // Prevent logspam for rejected during cooldown.
+    if (deny_incoming_.contains(address)) {
+      return;
+    }
     // This could potentially happen if the peer expired from the peer cache during the connection
     // procedure
-    bt_log(INFO, "gap-bredr",
-           "ConnectionComplete received for address with no known request (status: %s)",
+    bt_log(INFO, "gap-bredr", "ConnectionComplete received with no known request (status: %s)",
            bt_str(status));
     return;
   }

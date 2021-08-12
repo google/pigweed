@@ -9,6 +9,7 @@
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/bounded_inspect_list_node.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
@@ -145,6 +146,10 @@ class BrEdrConnectionManager final {
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
   // the peer is disconnected, false if the peer can not be disconnected.
   bool Disconnect(PeerId peer_id, DisconnectReason reason);
+
+  // If `reason` is DisconnectReason::kApiRequest, then incoming connections from `peer_id` are
+  // rejected for kLocalDisconnectCooldownDuration
+  static constexpr zx::duration kLocalDisconnectCooldownDuration = zx::sec(30);
 
   // Attach Inspect node as child of |parent| named |name|.
   // Only connections established after a call to AttachInspect are tracked.
@@ -337,6 +342,9 @@ class BrEdrConnectionManager final {
 
   // Holds the connections that are active.
   ConnectionMap connections_;
+
+  // Holds a denylist with cooldowns for locally requested disconnects.
+  ExpiringSet<DeviceAddress> deny_incoming_;
 
   // Handler IDs for registered events
   std::vector<hci::CommandChannel::EventHandlerId> event_handler_ids_;

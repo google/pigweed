@@ -144,6 +144,7 @@ source_set("tests") {
     ":testing",
     "//garnet/public/lib/gtest",
     "//sdk/lib/inspect/testing/cpp",
+    "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
