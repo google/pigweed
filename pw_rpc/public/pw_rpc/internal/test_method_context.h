@@ -30,6 +30,9 @@ class InvocationContext {
  public:
   Service& service() { return service_; }
 
+  // Sets the channel ID, which defaults to an arbitrary value.
+  void set_channel_id(uint32_t id) { channel_ = Channel(id, &output_); }
+
   // The total number of responses sent, which may be larger than
   // responses.max_size().
   size_t total_responses() const { return output_.total_responses(); }
