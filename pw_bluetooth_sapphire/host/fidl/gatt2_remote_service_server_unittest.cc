@@ -832,5 +832,197 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteLongCharacteristicDefaultOptions)
   EXPECT_EQ(write_count, 1);
 }
 
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorHandleTooLarge) {
+  fbg::Handle handle;
+  handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
+
+  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  service_proxy()->WriteDescriptor(handle, /*value=*/{}, fbg::WriteOptions(),
+                                   [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_error());
+  EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_HANDLE);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorWithoutResponseNotSupported) {
+  constexpr bt::att::Handle kHandle = 3;
+  fbg::WriteOptions options;
+  options.set_write_mode(fbg::WriteMode::WITHOUT_RESPONSE);
+
+  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  service_proxy()->WriteDescriptor(fbg::Handle{kHandle}, /*value=*/{}, std::move(options),
+                                   [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_error());
+  EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_PARAMETERS);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorReliableNotSupported) {
+  constexpr bt::att::Handle kHandle = 3;
+  fbg::WriteOptions options;
+  options.set_write_mode(fbg::WriteMode::RELIABLE);
+
+  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  service_proxy()->WriteDescriptor(fbg::Handle{kHandle}, /*value=*/{}, std::move(options),
+                                   [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  ASSERT_TRUE(fidl_result->is_error());
+  EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_PARAMETERS);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortDescriptor) {
+  constexpr bt::att::Handle kHandle = 3;
+  constexpr bt::att::Handle kCharacteristicValueHandle = kHandle + 1;
+  bt::gatt::CharacteristicData char_data(bt::gatt::Property::kWrite, std::nullopt, kHandle,
+                                         kCharacteristicValueHandle, kServiceUuid);
+  fake_client()->set_characteristics({char_data});
+
+  constexpr bt::att::Handle kDescriptorHandle(kCharacteristicValueHandle + 1);
+  const bt::UUID kDescriptorUuid(uint16_t{0x0001});
+  bt::gatt::DescriptorData descriptor(kDescriptorHandle, kDescriptorUuid);
+  const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
+  fake_client()->set_descriptors({descriptor});
+
+  int write_count = 0;
+  fake_client()->set_write_request_callback(
+      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::StatusCallback callback) {
+        write_count++;
+        EXPECT_EQ(handle, kDescriptorHandle);
+        EXPECT_TRUE(ContainersEqual(value, kValue));
+        callback(bt::att::Status());
+      });
+
+  std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+  service_proxy()->DiscoverCharacteristics(
+      [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_characteristics.has_value());
+  ASSERT_EQ(fidl_characteristics->size(), 1u);
+  const fbg::Characteristic& fidl_char = fidl_characteristics->front();
+  ASSERT_TRUE(fidl_char.has_descriptors());
+  ASSERT_EQ(fidl_char.descriptors().size(), 1u);
+
+  fbg::WriteOptions options;
+  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  service_proxy()->WriteDescriptor(fidl_char.descriptors().front().handle(), kValue.ToVector(),
+                                   std::move(options),
+                                   [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  EXPECT_TRUE(fidl_result->is_ok());
+  EXPECT_EQ(write_count, 1);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortDescriptorWithNonZeroOffset) {
+  constexpr bt::att::Handle kHandle = 3;
+  constexpr bt::att::Handle kCharacteristicValueHandle = kHandle + 1;
+  bt::gatt::CharacteristicData char_data(bt::gatt::Property::kWrite, std::nullopt, kHandle,
+                                         kCharacteristicValueHandle, kServiceUuid);
+  fake_client()->set_characteristics({char_data});
+
+  constexpr bt::att::Handle kDescriptorHandle(kCharacteristicValueHandle + 1);
+  const bt::UUID kDescriptorUuid(uint16_t{0x0001});
+  bt::gatt::DescriptorData descriptor(kDescriptorHandle, kDescriptorUuid);
+  fake_client()->set_descriptors({descriptor});
+
+  const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
+  const uint16_t kOffset = 1;
+
+  int write_count = 0;
+  fake_client()->set_execute_prepare_writes_callback(
+      [&](bt::att::PrepareWriteQueue prep_write_queue, bt::gatt::ReliableMode reliable,
+          bt::att::StatusCallback callback) {
+        write_count++;
+        ASSERT_EQ(prep_write_queue.size(), 1u);
+        EXPECT_EQ(prep_write_queue.front().handle(), kDescriptorHandle);
+        EXPECT_EQ(prep_write_queue.front().offset(), kOffset);
+        EXPECT_EQ(reliable, bt::gatt::ReliableMode::kDisabled);
+        EXPECT_TRUE(ContainersEqual(prep_write_queue.front().value(), kValue));
+        callback(bt::att::Status());
+      });
+
+  std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+  service_proxy()->DiscoverCharacteristics(
+      [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_characteristics.has_value());
+  ASSERT_EQ(fidl_characteristics->size(), 1u);
+  const fbg::Characteristic& fidl_char = fidl_characteristics->front();
+  ASSERT_TRUE(fidl_char.has_descriptors());
+  ASSERT_EQ(fidl_char.descriptors().size(), 1u);
+
+  fbg::WriteOptions options;
+  options.set_offset(kOffset);
+  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  service_proxy()->WriteDescriptor(fidl_char.descriptors().front().handle(), kValue.ToVector(),
+                                   std::move(options),
+                                   [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  EXPECT_TRUE(fidl_result->is_ok());
+  EXPECT_EQ(write_count, 1);
+}
+
+TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteLongDescriptorDefaultOptions) {
+  constexpr bt::att::Handle kHandle = 3;
+  constexpr bt::att::Handle kCharacteristicValueHandle = kHandle + 1;
+  bt::gatt::CharacteristicData char_data(bt::gatt::Property::kWrite, std::nullopt, kHandle,
+                                         kCharacteristicValueHandle, kServiceUuid);
+  fake_client()->set_characteristics({char_data});
+
+  constexpr bt::att::Handle kDescriptorHandle(kCharacteristicValueHandle + 1);
+  const bt::UUID kDescriptorUuid(uint16_t{0x0001});
+  bt::gatt::DescriptorData descriptor(kDescriptorHandle, kDescriptorUuid);
+  fake_client()->set_descriptors({descriptor});
+
+  constexpr size_t kHeaderSize =
+      sizeof(bt::att::OpCode) + sizeof(bt::att::PrepareWriteRequestParams);
+  const uint16_t kMtu = fake_client()->mtu();
+  const size_t kFirstPacketValueSize = kMtu - kHeaderSize;
+  bt::DynamicByteBuffer kValue(kMtu);
+  kValue.Fill(0x03);
+
+  int write_count = 0;
+  fake_client()->set_execute_prepare_writes_callback(
+      [&](bt::att::PrepareWriteQueue prep_write_queue, bt::gatt::ReliableMode reliable,
+          bt::att::StatusCallback callback) {
+        write_count++;
+        EXPECT_EQ(reliable, bt::gatt::ReliableMode::kDisabled);
+        ASSERT_EQ(prep_write_queue.size(), 2u);
+        EXPECT_EQ(prep_write_queue.front().handle(), kDescriptorHandle);
+        EXPECT_EQ(prep_write_queue.front().offset(), 0u);
+        EXPECT_TRUE(ContainersEqual(kValue.view(0, kFirstPacketValueSize),
+                                    prep_write_queue.front().value()));
+        prep_write_queue.pop();
+        EXPECT_EQ(prep_write_queue.front().handle(), kDescriptorHandle);
+        EXPECT_EQ(prep_write_queue.front().offset(), kFirstPacketValueSize);
+        EXPECT_TRUE(
+            ContainersEqual(kValue.view(kFirstPacketValueSize), prep_write_queue.front().value()));
+        callback(bt::att::Status());
+      });
+
+  std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+  service_proxy()->DiscoverCharacteristics(
+      [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_characteristics.has_value());
+  ASSERT_EQ(fidl_characteristics->size(), 1u);
+  const fbg::Characteristic& fidl_char = fidl_characteristics->front();
+  ASSERT_TRUE(fidl_char.has_descriptors());
+  ASSERT_EQ(fidl_char.descriptors().size(), 1u);
+
+  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  service_proxy()->WriteDescriptor(fidl_char.descriptors().front().handle(), kValue.ToVector(),
+                                   fbg::WriteOptions(),
+                                   [&](auto result) { fidl_result = std::move(result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_result.has_value());
+  EXPECT_TRUE(fidl_result->is_ok());
+  EXPECT_EQ(write_count, 1);
+}
+
 }  // namespace
 }  // namespace bthost

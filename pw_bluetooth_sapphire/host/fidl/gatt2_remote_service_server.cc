@@ -7,6 +7,7 @@
 #include <measure_tape/hlcpp/hlcpp_measure_tape_for_read_by_type_result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 
 namespace fbg = fuchsia::bluetooth::gatt2;
@@ -14,6 +15,21 @@ namespace measure_fbg = measure_tape::fuchsia::bluetooth::gatt2;
 
 namespace bthost {
 namespace {
+
+bt::att::StatusCallback MakeStatusCallback(
+    bt::PeerId peer_id, const char* request_name, fbg::Handle fidl_handle,
+    fit::function<void(fit::result<void, fbg::Error>)> callback) {
+  return
+      [peer_id, fidl_handle, callback = std::move(callback), request_name](bt::att::Status status) {
+        if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", request_name,
+                        bt_str(peer_id), fidl_handle.value)) {
+          callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
+          return;
+        }
+
+        callback(fit::ok());
+      };
+}
 
 fbg::Characteristic CharacteristicToFidl(
     const bt::gatt::CharacteristicData& characteristic,
@@ -233,18 +249,8 @@ void Gatt2RemoteServiceServer::WriteCharacteristic(fbg::Handle fidl_handle,
 
   FillInDefaultWriteOptions(options);
 
-  const char* kRequestName = __FUNCTION__;
-  bt::att::StatusCallback write_cb = [peer_id = peer_id_, fidl_handle,
-                                      callback = std::move(callback),
-                                      kRequestName](bt::att::Status status) {
-    if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", kRequestName,
-                    bt_str(peer_id), fidl_handle.value)) {
-      callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
-      return;
-    }
-
-    callback(fit::ok());
-  };
+  bt::att::StatusCallback write_cb =
+      MakeStatusCallback(peer_id_, __FUNCTION__, fidl_handle, std::move(callback));
 
   if (options.write_mode() == fbg::WriteMode::WITHOUT_RESPONSE) {
     if (options.offset() != 0) {
@@ -294,6 +300,37 @@ void Gatt2RemoteServiceServer::ReadDescriptor(::fuchsia::bluetooth::gatt2::Handl
 
   service_->ReadLongDescriptor(handle, options.long_read().offset(),
                                options.long_read().max_bytes(), std::move(read_cb));
+}
+
+void Gatt2RemoteServiceServer::WriteDescriptor(fbg::Handle fidl_handle, std::vector<uint8_t> value,
+                                               fbg::WriteOptions options,
+                                               WriteDescriptorCallback callback) {
+  if (!IsHandleValid(fidl_handle)) {
+    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    return;
+  }
+  bt::gatt::DescriptorHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
+
+  FillInDefaultWriteOptions(options);
+
+  bt::att::StatusCallback write_cb =
+      MakeStatusCallback(peer_id_, __FUNCTION__, fidl_handle, std::move(callback));
+
+  // WITHOUT_RESPONSE and RELIABLE write modes are not supported for descriptors.
+  if (options.write_mode() == fbg::WriteMode::WITHOUT_RESPONSE ||
+      options.write_mode() == fbg::WriteMode::RELIABLE) {
+    write_cb(bt::att::Status(bt::HostError::kInvalidParameters));
+    return;
+  }
+
+  const uint16_t kMaxShortWriteValueLength =
+      service_->att_mtu() - sizeof(bt::att::OpCode) - sizeof(bt::att::WriteRequestParams);
+  if (options.offset() == 0 && value.size() <= kMaxShortWriteValueLength) {
+    service_->WriteDescriptor(handle, std::move(value), std::move(write_cb));
+    return;
+  }
+
+  service_->WriteLongDescriptor(handle, options.offset(), std::move(value), std::move(write_cb));
 }
 
 }  // namespace bthost
