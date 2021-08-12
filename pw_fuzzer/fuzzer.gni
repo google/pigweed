@@ -33,7 +33,7 @@ template("pw_fuzzer") {
     "mac",
   ]
 
-  fuzzing_toolchains = [ "//targets/host:host_clang_fuzz" ]
+  fuzzing_toolchains = [ "$dir_pigweed/targets/host:host_clang_fuzz" ]
 
   # This is how GN says 'elem in list':
   can_fuzz = fuzzing_platforms + [ host_os ] - [ host_os ] != fuzzing_platforms
