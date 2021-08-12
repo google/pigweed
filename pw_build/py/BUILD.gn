@@ -26,6 +26,7 @@ pw_python_package("py") {
     "pw_build/__init__.py",
     "pw_build/collect_wheels.py",
     "pw_build/copy_from_cipd.py",
+    "pw_build/create_python_tree.py",
     "pw_build/error.py",
     "pw_build/exec.py",
     "pw_build/generate_python_package.py",
@@ -34,11 +35,13 @@ pw_python_package("py") {
     "pw_build/host_tool.py",
     "pw_build/mirror_tree.py",
     "pw_build/nop.py",
+    "pw_build/python_package.py",
     "pw_build/python_runner.py",
     "pw_build/python_wheels.py",
     "pw_build/zip.py",
   ]
   tests = [
+    "create_python_tree_test.py",
     "python_runner_test.py",
     "zip_test.py",
   ]

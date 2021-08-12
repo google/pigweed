@@ -8,6 +8,8 @@ The Python build is implemented with GN templates defined in
 
 .. seealso:: :ref:`docs-python-build`
 
+.. _module-pw_build-pw_python_package:
+
 pw_python_package
 =================
 The main Python template is ``pw_python_package``. Each ``pw_python_package``
@@ -164,7 +166,7 @@ conflict).
 .. _module-pw_build-python-dist:
 
 ---------------------
-Python distributables
+Python Distributables
 ---------------------
 Pigweed also provides some templates to make it easier to bundle Python packages
 for deployment. These templates are found in ``pw_build/python_dist.gni``. See
@@ -244,3 +246,81 @@ Example
     packages = [ ":some_python_package" ]
     inputs = [ "$dir_pw_build/python_dist/README.md > /${target_name}/" ]
   }
+
+pw_create_python_source_tree
+============================
+
+Generates a directory of Python packages from source files suitable for
+deployment outside of the project developer environment. The resulting directory
+contains only files mentioned in each package's ``setup.cfg`` file. This is
+useful for bundling multiple Python packages up into a single package for
+distribution to other locations like `<http://pypi.org>`_.
+
+Arguments
+---------
+
+- ``packages`` - A list of :ref:`module-pw_build-pw_python_package` targets to be installed into
+  the build directory. Their dependencies will be pulled in as wheels also.
+
+- ``include_tests`` - If true, copy Python package tests to a ``tests`` subdir.
+
+- ``extra_files`` - A list of extra files that should be included in the output.
+  The format of each item in this list follows this convention:
+
+  .. code-block:: text
+
+     //some/nested/source_file > nested/destination_file
+
+  - Source and destination file should be separated by ``>``.
+
+  - The source file should be a GN target label (starting with ``//``).
+
+  - The destination file will be relative to the generated output
+    directory. Parent directories are automatically created for each file. If a
+    file would be overwritten an error is raised.
+
+
+Example
+-------
+
+:octicon:`file;1em` ./pw_env_setup/BUILD.gn
+
+.. code-block::
+
+   import("//build_overrides/pigweed.gni")
+
+   import("$dir_pw_build/python_dist.gni")
+
+   pw_create_python_source_tree("build_python_source_tree") {
+     packages = [
+       ":some_python_package",
+       ":another_python_package",
+     ]
+     include_tests = true
+     extra_files = [
+       "//README.md > ./README.md",
+       "//some_python_package/py/BUILD.bazel > some_python_package/BUILD.bazel",
+       "//another_python_package/py/BUILD.bazel > another_python_package/BUILD.bazel",
+     ]
+   }
+
+:octicon:`file-directory;1em` ./out/obj/pw_env_setup/build_python_source_tree/
+
+.. code-block:: text
+
+   $ tree ./out/obj/pw_env_setup/build_python_source_tree/
+   ├── README.md
+   ├── some_python_package
+   │   ├── BUILD.bazel
+   │   ├── __init__.py
+   │   ├── py.typed
+   │   ├── some_source_file.py
+   │   └── tests
+   │       └── some_source_test.py
+   └── another_python_package
+       ├── BUILD.bazel
+       ├── __init__.py
+       ├── another_source_file.py
+       ├── py.typed
+       └── tests
+           └── another_source_test.py

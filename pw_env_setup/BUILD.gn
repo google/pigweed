@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
+import("$dir_pw_build/python_dist.gni")
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("docs") {
@@ -22,43 +23,47 @@ pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
-pw_python_group("python") {
-  python_deps = [
-    # Python packages
-    "$dir_pw_allocator/py",
-    "$dir_pw_arduino_build/py",
-    "$dir_pw_bloat/py",
-    "$dir_pw_build/py",
-    "$dir_pw_build_info/py",
-    "$dir_pw_cli/py",
-    "$dir_pw_console/py",
-    "$dir_pw_cpu_exception_cortex_m/py",
-    "$dir_pw_docgen/py",
-    "$dir_pw_doctor/py",
-    "$dir_pw_env_setup/py",
-    "$dir_pw_hdlc/py",
-    "$dir_pw_log:protos.python",
-    "$dir_pw_log_tokenized/py",
-    "$dir_pw_module/py",
-    "$dir_pw_package/py",
-    "$dir_pw_presubmit/py",
-    "$dir_pw_protobuf/py",
-    "$dir_pw_protobuf_compiler/py",
-    "$dir_pw_rpc/py",
-    "$dir_pw_snapshot/py",
-    "$dir_pw_status/py",
-    "$dir_pw_stm32cube_build/py",
-    "$dir_pw_symbolizer/py",
-    "$dir_pw_thread/py",
-    "$dir_pw_tls_client/py",
-    "$dir_pw_tokenizer/py",
-    "$dir_pw_toolchain/py",
-    "$dir_pw_trace/py",
-    "$dir_pw_trace_tokenized/py",
-    "$dir_pw_transfer/py",
-    "$dir_pw_unit_test/py",
-    "$dir_pw_watch/py",
+_pigweed_python_deps = [
+  # Python packages
+  "$dir_pw_allocator/py",
+  "$dir_pw_arduino_build/py",
+  "$dir_pw_bloat/py",
+  "$dir_pw_build/py",
+  "$dir_pw_build_info/py",
+  "$dir_pw_cli/py",
+  "$dir_pw_console/py",
+  "$dir_pw_cpu_exception_cortex_m/py",
+  "$dir_pw_docgen/py",
+  "$dir_pw_doctor/py",
+  "$dir_pw_env_setup/py",
+  "$dir_pw_hdlc/py",
+  "$dir_pw_log:protos.python",
+  "$dir_pw_log_tokenized/py",
+  "$dir_pw_module/py",
+  "$dir_pw_package/py",
+  "$dir_pw_presubmit/py",
+  "$dir_pw_protobuf/py",
+  "$dir_pw_protobuf_compiler/py",
+  "$dir_pw_rpc/py",
+  "$dir_pw_snapshot/py:pw_snapshot",
+  "$dir_pw_snapshot/py:pw_snapshot_metadata",
+  "$dir_pw_status/py",
+  "$dir_pw_stm32cube_build/py",
+  "$dir_pw_symbolizer/py",
+  "$dir_pw_thread/py",
+  "$dir_pw_tls_client/py",
+  "$dir_pw_tokenizer/py",
+  "$dir_pw_toolchain/py",
+  "$dir_pw_trace/py",
+  "$dir_pw_trace_tokenized/py",
+  "$dir_pw_transfer/py",
+  "$dir_pw_unit_test/py",
+  "$dir_pw_watch/py",
+]
 
+pw_python_group("python") {
+  python_deps = _pigweed_python_deps
+  python_deps += [
     # Standalone scripts
     "$dir_pw_hdlc/rpc_example:example_script",
     "$dir_pw_rpc/py:python_client_cpp_server_test",
@@ -83,5 +88,17 @@ pw_python_requirements("renode_requirements") {
     "psutil",
     "pyyaml",
     "robotframework==3.1",
+  ]
+}
+
+pw_create_python_source_tree("build_pigweed_python_source_tree") {
+  packages = _pigweed_python_deps
+  include_tests = true
+  extra_files = [
+    "$dir_pigweed/pw_cli/py/BUILD.bazel > pw_cli/BUILD.bazel",
+    "$dir_pigweed/pw_protobuf/py/BUILD.bazel > pw_protobuf/BUILD.bazel",
+    "$dir_pigweed/pw_protobuf_compiler/py/BUILD.bazel > pw_protobuf_compiler/BUILD.bazel",
+    "$dir_pigweed/pw_rpc/py/BUILD.bazel > pw_rpc/BUILD.bazel",
+    "$dir_pigweed/pw_status/py/BUILD.bazel > pw_status/BUILD.bazel",
   ]
 }

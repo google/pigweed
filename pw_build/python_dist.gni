@@ -127,3 +127,99 @@ template("pw_python_zip_with_setup") {
     deps = [ ":${_outer_name}.wheels" ]
   }
 }
+
+# Generates a directory of Python packages from source files suitable for
+# deployment outside of the project developer environment.
+#
+# The resulting directory contains only files mentioned in each package's
+# setup.cfg file. This is useful for bundling multiple Python packages up
+# into a single package for distribution to other locations like
+# http://pypi.org.
+#
+# Args:
+#   packages: A list of pw_python_package targets to be installed into the build
+#     directory. Their dependencies will be pulled in as wheels also.
+#
+#   include_tests: If true, copy Python package tests to a `tests` subdir.
+#
+#   extra_files: A list of extra files that should be included in the output. The
+#     format of each item in this list follows this convention:
+#       //some/nested/source_file > nested/destination_file
+template("pw_create_python_source_tree") {
+  _output_dir = "${target_out_dir}/${target_name}/"
+  _metadata_json_file_list =
+      "${target_gen_dir}/${target_name}_metadata_path_list.txt"
+
+  # Convert extra_file strings to input, outputs and create_python_tree.py args.
+  _delimiter = ">"
+  _extra_file_inputs = []
+  _extra_file_outputs = []
+  _extra_file_args = []
+  if (defined(invoker.extra_files)) {
+    foreach(input, invoker.extra_files) {
+      # Remove spaces before and after the delimiter
+      input = string_replace(input, " $_delimiter", _delimiter)
+      input = string_replace(input, "$_delimiter ", _delimiter)
+
+      input_list = []
+      input_list = string_split(input, _delimiter)
+
+      # Save the input file
+      _extra_file_inputs += [ input_list[0] ]
+
+      # Save the output file
+      _this_output = _output_dir + "/" + input_list[1]
+      _extra_file_outputs += [ _this_output ]
+
+      # Compose an arg for passing to create_python_tree.py with properly
+      # rebased paths.
+      _extra_file_args +=
+          [ string_join(" $_delimiter ",
+                        [
+                          rebase_path(input_list[0], root_build_dir),
+                          rebase_path(_this_output, root_build_dir),
+                        ]) ]
+    }
+  }
+
+  _include_tests = defined(invoker.include_tests) && invoker.include_tests
+
+  # Build a list of relative paths containing all the python
+  # package_metadata.json files we depend on.
+  generated_file("${target_name}._metadata_path_list.txt") {
+    data_keys = [ "pw_python_package_metadata_json" ]
+    rebase = root_build_dir
+    deps = invoker.packages
+    outputs = [ _metadata_json_file_list ]
+  }
+
+  # Run the python action on the metadata_path_list.txt file
+  pw_python_action(target_name) {
+    deps =
+        invoker.packages + [ ":${invoker.target_name}._metadata_path_list.txt" ]
+    script = "$dir_pw_build/py/pw_build/create_python_tree.py"
+    inputs = _extra_file_inputs
+
+    args = [
+      "--tree-destination-dir",
+      rebase_path(_output_dir, root_build_dir),
+      "--input-list-files",
+      rebase_path(_metadata_json_file_list, root_build_dir),
+    ]
+
+    if (_extra_file_args == []) {
+      # No known output files - stamp instead.
+      stamp = true
+    } else {
+      args += [ "--extra-files" ]
+      args += _extra_file_args
+
+      # Include extra_files as outputs
+      outputs = _extra_file_outputs
+    }
+
+    if (_include_tests) {
+      args += [ "--include-tests" ]
+    }
+  }
+}

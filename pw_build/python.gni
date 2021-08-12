@@ -315,6 +315,39 @@ template("pw_python_package") {
   # pw_build_PYTHON_TOOLCHAIN. Targets in other toolchains just refer to the
   # targets in this toolchain.
   if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
+    # Create the package_metadata.json file. This is used by the
+    # pw_create_python_source_tree template.
+    _package_metadata_json_file =
+        "$target_gen_dir/$target_name/package_metadata.json"
+
+    # Get Python package metadata and write to disk as JSON.
+    _package_metadata = {
+      gn_target_name = get_label_info(invoker.target_name, "label_no_toolchain")
+
+      # Get package source files
+      sources = rebase_path(_sources, root_build_dir)
+
+      # Get setup.cfg, pyproject.toml, or setup.py file
+      setup_sources = rebase_path(_setup_sources, root_build_dir)
+
+      # Get test source files
+      tests = rebase_path(_test_sources, root_build_dir)
+
+      # Get package input files (package data)
+      inputs = []
+      if (defined(invoker.inputs)) {
+        inputs = rebase_path(invoker.inputs, root_build_dir)
+      }
+
+      # Get generate_setup
+      if (defined(invoker.generate_setup)) {
+        generate_setup = invoker.generate_setup
+      }
+    }
+
+    # Finally, write out the json
+    write_file(_package_metadata_json_file, _package_metadata, "json")
+
     # Declare the main Python package group. This represents the Python files,
     # but does not take any actions. GN targets can depend on the package name
     # to run when any files in the package change.
@@ -369,6 +402,10 @@ template("pw_python_package") {
 
       # Generate the setup.py, py.typed, and __init__.py files as needed.
       action(target_name) {
+        metadata = {
+          pw_python_package_metadata_json = [ _package_metadata_json_file ]
+        }
+
         script = "$dir_pw_build/py/pw_build/generate_python_package.py"
         args = [
                  "--label",
@@ -405,6 +442,9 @@ template("pw_python_package") {
     } else {
       # If the package is not generated, use an input group for the sources.
       pw_input_group(target_name) {
+        metadata = {
+          pw_python_package_metadata_json = [ _package_metadata_json_file ]
+        }
         inputs = _all_py_files
         if (defined(invoker.inputs)) {
           inputs += invoker.inputs
