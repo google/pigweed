@@ -38,12 +38,12 @@ class RawMethodUnion : public MethodUnion {
 
 // Deduces the type of an implemented service method from its signature, and
 // returns the appropriate MethodUnion object to invoke it.
-template <auto method, MethodType type>
+template <auto kMethod, MethodType kType>
 constexpr RawMethod GetRawMethodFor(uint32_t id) {
-  if constexpr (RawMethod::matches<method>()) {
-    return GetMethodFor<method, RawMethod, type>(id);
+  if constexpr (RawMethod::matches<kMethod>()) {
+    return GetMethodFor<kMethod, RawMethod, kType>(id);
   } else {
-    return InvalidMethod<method, type, RawMethod>(id);
+    return InvalidMethod<kMethod, kType, RawMethod>(id);
   }
 };
 

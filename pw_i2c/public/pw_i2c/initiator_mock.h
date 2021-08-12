@@ -140,9 +140,9 @@ class MockInitiator : public Initiator {
 };
 
 // Makes a new i2c transactions list.
-template <size_t size>
-constexpr std::array<Transaction, size> MakeExpectedTransactionArray(
-    const Transaction (&transactions)[size]) {
+template <size_t kSize>
+constexpr std::array<Transaction, kSize> MakeExpectedTransactionArray(
+    const Transaction (&transactions)[kSize]) {
   return std::to_array(transactions);
 }
 

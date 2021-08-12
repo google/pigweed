@@ -65,7 +65,7 @@ class DestructorHelper<VectorClass, false> {
 // the maximum size in a variable. This allows Vectors to be used without having
 // to know their maximum size at compile time. It also keeps code size small
 // since function implementations are shared for all maximum sizes.
-template <typename T, size_t max_size = vector_impl::kGeneric>
+template <typename T, size_t kMaxSize = vector_impl::kGeneric>
 class Vector : public Vector<T, vector_impl::kGeneric> {
  public:
   using typename Vector<T, vector_impl::kGeneric>::value_type;
@@ -81,37 +81,37 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
   using typename Vector<T, vector_impl::kGeneric>::const_reverse_iterator;
 
   // Construct
-  Vector() noexcept : Vector<T, vector_impl::kGeneric>(max_size) {}
+  Vector() noexcept : Vector<T, vector_impl::kGeneric>(kMaxSize) {}
 
   Vector(size_type count, const T& value)
-      : Vector<T, vector_impl::kGeneric>(max_size, count, value) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, count, value) {}
 
   explicit Vector(size_type count)
-      : Vector<T, vector_impl::kGeneric>(max_size, count, T()) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, count, T()) {}
 
   template <
       typename Iterator,
       typename...,
       typename = std::enable_if_t<vector_impl::IsIterator<Iterator>::value>>
   Vector(Iterator first, Iterator last)
-      : Vector<T, vector_impl::kGeneric>(max_size, first, last) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, first, last) {}
 
   Vector(const Vector& other)
-      : Vector<T, vector_impl::kGeneric>(max_size, other) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, other) {}
 
   template <size_t kOtherMaxSize>
   Vector(const Vector<T, kOtherMaxSize>& other)
-      : Vector<T, vector_impl::kGeneric>(max_size, other) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, other) {}
 
   Vector(Vector&& other) noexcept
-      : Vector<T, vector_impl::kGeneric>(max_size, std::move(other)) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, std::move(other)) {}
 
   template <size_t kOtherMaxSize>
   Vector(Vector<T, kOtherMaxSize>&& other) noexcept
-      : Vector<T, vector_impl::kGeneric>(max_size, std::move(other)) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, std::move(other)) {}
 
   Vector(std::initializer_list<T> list)
-      : Vector<T, vector_impl::kGeneric>(max_size, list) {}
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, list) {}
 
   Vector& operator=(const Vector& other) {
     Vector<T>::assign(other.begin(), other.end());
@@ -145,7 +145,7 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
  private:
   friend class Vector<T, vector_impl::kGeneric>;
 
-  static_assert(max_size <= std::numeric_limits<size_type>::max());
+  static_assert(kMaxSize <= std::numeric_limits<size_type>::max());
 
   // Provides access to the underlying array as an array of T.
 #ifdef __cpp_lib_launder
@@ -166,7 +166,7 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
   // The alignas specifier is required ensure that a zero-length array is
   // aligned the same as an array with elements.
   alignas(T) std::array<std::aligned_storage_t<sizeof(T), alignof(T)>,
-                        max_size> array_;
+                        kMaxSize> array_;
 };
 
 // Defines the generic-sized Vector<T> specialization, which serves as the base
@@ -196,7 +196,7 @@ class Vector<T, vector_impl::kGeneric>
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   // A vector without an explicit maximum size (Vector<T>) cannot be constructed
-  // directly. Instead, construct a Vector<T, max_size>. Vectors of any max size
+  // directly. Instead, construct a Vector<T, kMaxSize>. Vectors of any max size
   // can be used through a Vector<T> pointer or reference.
 
   // Assign

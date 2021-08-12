@@ -37,11 +37,11 @@ namespace pw::rpc::internal {
       ::pw::rpc::internal::EncodeProtobuf<proto, proto##_fields>( \
           proto{__VA_ARGS__}, _pb_buffer_##unique)
 
-template <typename T, auto fields>
+template <typename T, auto kFields>
 std::span<const std::byte> EncodeProtobuf(const T& protobuf,
                                           std::span<pb_byte_t> buffer) {
   auto output = pb_ostream_from_buffer(buffer.data(), buffer.size());
-  EXPECT_TRUE(pb_encode(&output, fields, &protobuf));
+  EXPECT_TRUE(pb_encode(&output, kFields, &protobuf));
   return std::as_bytes(buffer.first(output.bytes_written));
 }
 
@@ -53,10 +53,10 @@ std::span<const std::byte> EncodeProtobuf(const T& protobuf,
                 buffer.size()),                                    \
       result);
 
-template <typename T, auto fields>
+template <typename T, auto kFields>
 void DecodeProtobuf(std::span<const pb_byte_t> buffer, T& protobuf) {
   auto input = pb_istream_from_buffer(buffer.data(), buffer.size());
-  EXPECT_TRUE(pb_decode(&input, fields, &protobuf));
+  EXPECT_TRUE(pb_decode(&input, kFields, &protobuf));
 }
 
 }  // namespace pw::rpc::internal

@@ -260,10 +260,6 @@ additional requirements.
     duration of the program, the naming convention is ``kCamelCase``, and so
     that is the style we use in Pigweed.
 
-    **Note:** At time of writing much of Pigweed incorrectly follows the
-    ``snake_case`` naming for non-type template arguments. This is a bug that
-    will be fixed eventually.
-
 **C code**
 In general, C symbols should be prefixed with the module name. If the symbol is
 not associated with a module, use just ``pw`` as the module name. Facade

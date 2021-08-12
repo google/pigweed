@@ -22,32 +22,32 @@
 
 _PW_POLYFILL_BEGIN_NAMESPACE_STD
 
-template <typename T, T... sequence>
+template <typename T, T... kSequence>
 struct integer_sequence {
-  static constexpr size_t size() noexcept { return sizeof...(sequence); }
+  static constexpr size_t size() noexcept { return sizeof...(kSequence); }
 };
 
 namespace impl {
 
 // In the absence of a compiler builtin for this, have MakeSequence expand
 // recursively to enumerate all indices up to count.
-template <size_t count, typename T, T... sequence>
-struct MakeSequence : MakeSequence<count - 1, T, count - 1, sequence...> {};
+template <size_t kCount, typename T, T... kSequence>
+struct MakeSequence : MakeSequence<kCount - 1, T, kCount - 1, kSequence...> {};
 
-template <typename T, T... sequence>
-struct MakeSequence<0, T, sequence...> : std::integer_sequence<T, sequence...> {
-};
+template <typename T, T... kSequence>
+struct MakeSequence<0, T, kSequence...>
+    : std::integer_sequence<T, kSequence...> {};
 
 }  // namespace impl
 
-template <size_t... sequence>
-using index_sequence = integer_sequence<size_t, sequence...>;
+template <size_t... kSequence>
+using index_sequence = integer_sequence<size_t, kSequence...>;
 
-template <typename T, T count>
-using make_integer_sequence = impl::MakeSequence<count, T>;
+template <typename T, T kCount>
+using make_integer_sequence = impl::MakeSequence<kCount, T>;
 
-template <size_t count>
-using make_index_sequence = make_integer_sequence<size_t, count>;
+template <size_t kCount>
+using make_index_sequence = make_integer_sequence<size_t, kCount>;
 
 template <typename... T>
 using index_sequence_for = make_index_sequence<sizeof...(T)>;

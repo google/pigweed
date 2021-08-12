@@ -24,20 +24,20 @@ _PW_POLYFILL_BEGIN_NAMESPACE_STD
 #ifndef __cpp_lib_transformation_trait_aliases
 #define __cpp_lib_transformation_trait_aliases 201304L
 
-template <decltype(sizeof(int)) Len, decltype(sizeof(int)) Align>
-using aligned_storage_t = typename aligned_storage<Len, Align>::type;
+template <decltype(sizeof(int)) kLen, decltype(sizeof(int)) kAlign>
+using aligned_storage_t = typename aligned_storage<kLen, kAlign>::type;
 
 template <typename... T>
 using common_type_t = typename common_type<T...>::type;
 
-template <bool B, typename T, typename F>
-using conditional_t = typename conditional<B, T, F>::type;
+template <bool kBool, typename T, typename F>
+using conditional_t = typename conditional<kBool, T, F>::type;
 
 template <typename T>
 using decay_t = typename decay<T>::type;
 
-template <bool B, typename T = void>
-using enable_if_t = typename enable_if<B, T>::type;
+template <bool kBool, typename T = void>
+using enable_if_t = typename enable_if<kBool, T>::type;
 
 template <typename T>
 using make_signed_t = typename make_signed<T>::type;
@@ -67,14 +67,14 @@ struct is_null_pointer : std::is_same<decltype(nullptr), std::remove_cv_t<T>> {
 
 #ifndef __cpp_lib_bool_constant
 #define __cpp_lib_bool_constant 201505L
-template <bool value>
-using bool_constant = integral_constant<bool, value>;
+template <bool kValue>
+using bool_constant = integral_constant<bool, kValue>;
 #endif  // __cpp_lib_bool_constant
 
 #ifndef __cpp_lib_logical_traits
 #define __cpp_lib_logical_traits 201510L
-template <typename value>
-struct negation : bool_constant<!bool(value::value)> {};
+template <typename Value>
+struct negation : bool_constant<!bool(Value::value)> {};
 
 template <typename...>
 struct conjunction : std::true_type {};

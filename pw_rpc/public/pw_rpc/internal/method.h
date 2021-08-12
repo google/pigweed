@@ -28,15 +28,15 @@ class Packet;
 /*
 class MethodImpl : public Method {
   // True if the provided function signature is valid for this method impl.
-  template <auto method>
+  template <auto kMethod>
   static constexpr bool matches();
 
   // Creates a unary method instance.
-  template <auto method>
+  template <auto kMethod>
   static constexpr MethodImpl Unary(uint32_t id, [optional args]);
 
   // Creates a server streaming method instance.
-  template <auto method>
+  template <auto kMethod>
   static constexpr MethodImpl ServerStreaming(uint32_t id, [optional args]);
 
   // Creates a client streaming method instance.
@@ -101,22 +101,22 @@ struct MethodTraits {
   using Response = void;
 };
 
-template <auto method>
+template <auto kMethod>
 using MethodImplementation =
-    typename MethodTraits<decltype(method)>::Implementation;
+    typename MethodTraits<decltype(kMethod)>::Implementation;
 
 // Function that calls a user-defined method implementation function from a
 // ServerCall object.
-template <auto method, typename... Args>
+template <auto kMethod, typename... Args>
 constexpr auto CallMethodImplFunction(ServerCall& call, Args&&... args) {
   // If the method impl is a member function, deduce the type of the
   // user-defined service from it, then call the method on the service.
-  if constexpr (std::is_member_function_pointer_v<decltype(method)>) {
-    return (static_cast<typename MethodTraits<decltype(method)>::Service&>(
+  if constexpr (std::is_member_function_pointer_v<decltype(kMethod)>) {
+    return (static_cast<typename MethodTraits<decltype(kMethod)>::Service&>(
                 call.service()).*
-            method)(call.context(), std::forward<Args>(args)...);
+            kMethod)(call.context(), std::forward<Args>(args)...);
   } else {
-    return method(call.context(), std::forward<Args>(args)...);
+    return kMethod(call.context(), std::forward<Args>(args)...);
   }
 }
 

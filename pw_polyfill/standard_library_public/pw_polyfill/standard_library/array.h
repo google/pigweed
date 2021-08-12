@@ -26,28 +26,28 @@ _PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 namespace impl {
 
-template <typename T, size_t size, size_t... indices>
-constexpr array<remove_cv_t<T>, size> CopyArray(const T (&values)[size],
-                                                index_sequence<indices...>) {
-  return {{values[indices]...}};
+template <typename T, size_t kSize, size_t... kIndices>
+constexpr array<remove_cv_t<T>, kSize> CopyArray(const T (&values)[kSize],
+                                                 index_sequence<kIndices...>) {
+  return {{values[kIndices]...}};
 }
 
-template <typename T, size_t size, size_t... indices>
-constexpr array<remove_cv_t<T>, size> MoveArray(T(&&values)[size],
-                                                index_sequence<indices...>) {
-  return {{move(values[indices])...}};
+template <typename T, size_t kSize, size_t... kIndices>
+constexpr array<remove_cv_t<T>, kSize> MoveArray(T(&&values)[kSize],
+                                                 index_sequence<kIndices...>) {
+  return {{move(values[kIndices])...}};
 }
 
 }  // namespace impl
 
-template <typename T, size_t size>
-constexpr array<remove_cv_t<T>, size> to_array(T (&values)[size]) {
-  return impl::CopyArray(values, make_index_sequence<size>{});
+template <typename T, size_t kSize>
+constexpr array<remove_cv_t<T>, kSize> to_array(T (&values)[kSize]) {
+  return impl::CopyArray(values, make_index_sequence<kSize>{});
 }
 
-template <typename T, size_t size>
-constexpr array<remove_cv_t<T>, size> to_array(T(&&values)[size]) {
-  return impl::MoveArray(move(values), make_index_sequence<size>{});
+template <typename T, size_t kSize>
+constexpr array<remove_cv_t<T>, kSize> to_array(T(&&values)[kSize]) {
+  return impl::MoveArray(move(values), make_index_sequence<kSize>{});
 }
 
 _PW_POLYFILL_END_NAMESPACE_STD

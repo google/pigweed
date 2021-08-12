@@ -72,32 +72,32 @@ constexpr std::false_type kCheckMethodSignature{};
 // This function is called if an RPC method implementation's signature is not
 // correct. It triggers a static_assert with an error message tailored to the
 // expected RPC type.
-template <auto method,
-          MethodType expected,
-          typename InvalidImpl = MethodImplementation<method>>
+template <auto kMethod,
+          MethodType kExpected,
+          typename InvalidImpl = MethodImplementation<kMethod>>
 constexpr auto InvalidMethod(uint32_t) {
-  if constexpr (expected == MethodType::kUnary) {
+  if constexpr (kExpected == MethodType::kUnary) {
     static_assert(
-        kCheckMethodSignature<decltype(method)>,
+        kCheckMethodSignature<decltype(kMethod)>,
         _PW_RPC_FUNCTION_ERROR("unary", "Status", "Request, Response"));
-  } else if constexpr (expected == MethodType::kServerStreaming) {
+  } else if constexpr (kExpected == MethodType::kServerStreaming) {
     static_assert(
-        kCheckMethodSignature<decltype(method)>,
+        kCheckMethodSignature<decltype(kMethod)>,
         _PW_RPC_FUNCTION_ERROR(
             "server streaming", "void", "Request, ServerWriter<Response>&"));
-  } else if constexpr (expected == MethodType::kClientStreaming) {
+  } else if constexpr (kExpected == MethodType::kClientStreaming) {
     static_assert(
-        kCheckMethodSignature<decltype(method)>,
+        kCheckMethodSignature<decltype(kMethod)>,
         _PW_RPC_FUNCTION_ERROR(
             "client streaming", "Status", "ServerReader<Request>&, Response"));
-  } else if constexpr (expected == MethodType::kBidirectionalStreaming) {
-    static_assert(kCheckMethodSignature<decltype(method)>,
+  } else if constexpr (kExpected == MethodType::kBidirectionalStreaming) {
+    static_assert(kCheckMethodSignature<decltype(kMethod)>,
                   _PW_RPC_FUNCTION_ERROR(
                       "bidirectional streaming",
                       "void",
                       "ServerReader<Request>&, ServerWriter<Response>&"));
   } else {
-    static_assert(kCheckMethodSignature<decltype(method)>,
+    static_assert(kCheckMethodSignature<decltype(kMethod)>,
                   "Unsupported MethodType");
   }
   return InvalidImpl::Invalid();
@@ -108,20 +108,20 @@ constexpr auto InvalidMethod(uint32_t) {
 
 // This function checks the type of the method and calls the appropriate
 // function to create the method instance.
-template <auto method, typename MethodImpl, MethodType type, typename... Args>
+template <auto kMethod, typename MethodImpl, MethodType kType, typename... Args>
 constexpr auto GetMethodFor(uint32_t id, Args&&... args) {
-  if constexpr (MethodTraits<decltype(method)>::kType != type) {
-    return InvalidMethod<method, type>(id);
-  } else if constexpr (type == MethodType::kUnary) {
-    return MethodImpl::template Unary<method>(id, std::forward<Args>(args)...);
-  } else if constexpr (type == MethodType::kServerStreaming) {
-    return MethodImpl::template ServerStreaming<method>(
+  if constexpr (MethodTraits<decltype(kMethod)>::kType != kType) {
+    return InvalidMethod<kMethod, kType>(id);
+  } else if constexpr (kType == MethodType::kUnary) {
+    return MethodImpl::template Unary<kMethod>(id, std::forward<Args>(args)...);
+  } else if constexpr (kType == MethodType::kServerStreaming) {
+    return MethodImpl::template ServerStreaming<kMethod>(
         id, std::forward<Args>(args)...);
-  } else if constexpr (type == MethodType::kClientStreaming) {
-    return MethodImpl::template ClientStreaming<method>(
+  } else if constexpr (kType == MethodType::kClientStreaming) {
+    return MethodImpl::template ClientStreaming<kMethod>(
         id, std::forward<Args>(args)...);
-  } else if constexpr (type == MethodType::kBidirectionalStreaming) {
-    return MethodImpl::template BidirectionalStreaming<method>(
+  } else if constexpr (kType == MethodType::kBidirectionalStreaming) {
+    return MethodImpl::template BidirectionalStreaming<kMethod>(
         id, std::forward<Args>(args)...);
   } else {
     static_assert(kCheckMethodSignature<MethodImpl>, "Invalid MethodType");

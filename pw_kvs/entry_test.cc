@@ -410,10 +410,10 @@ constexpr uint32_t kMagicWithSum = 0x6093aadb;
 constexpr EntryFormat kFormatWithSum{kMagicWithSum, &sum_checksum};
 constexpr internal::EntryFormats kFormatsWithSum(kFormatWithSum);
 
-template <size_t alignment>
+template <size_t kAlignment>
 constexpr auto MakeNewFormatWithSumEntry() {
-  constexpr uint8_t alignment_units = (alignment + 15) / 16 - 1;
-  constexpr size_t size = AlignUp(kEntryWithoutPadding1.size(), alignment);
+  constexpr uint8_t alignment_units = (kAlignment + 15) / 16 - 1;
+  constexpr size_t size = AlignUp(kEntryWithoutPadding1.size(), kAlignment);
 
   constexpr uint32_t checksum =
       ByteSum(bytes::Concat(kFormatWithSum.magic)) + 0 /* checksum */ +
@@ -428,7 +428,7 @@ constexpr auto MakeNewFormatWithSumEntry() {
                     uint8_t(kKey1.size()),     // key length
                     uint16_t(kValue1.size()),  // value size
                     kTransactionId1 + 1);      // transaction ID
-  constexpr size_t padding = Padding(kEntryWithoutPadding1.size(), alignment);
+  constexpr size_t padding = Padding(kEntryWithoutPadding1.size(), kAlignment);
   return bytes::Concat(
       kNewHeader1, kKey1, kValue1, bytes::Initialized<padding>(0));
 }

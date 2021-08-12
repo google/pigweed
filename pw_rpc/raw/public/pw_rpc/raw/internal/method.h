@@ -30,47 +30,47 @@ namespace pw::rpc::internal {
 // responses up to a channel's MTU.
 class RawMethod : public Method {
  public:
-  template <auto method>
+  template <auto kMethod>
   static constexpr bool matches() {
-    return std::is_same_v<MethodImplementation<method>, RawMethod>;
+    return std::is_same_v<MethodImplementation<kMethod>, RawMethod>;
   }
 
-  template <auto method>
+  template <auto kMethod>
   static constexpr RawMethod Unary(uint32_t id) {
     constexpr SynchronousUnaryFunction wrapper =
         [](ServerCall& call, ConstByteSpan req, ByteSpan res) {
-          return CallMethodImplFunction<method>(call, req, res);
+          return CallMethodImplFunction<kMethod>(call, req, res);
         };
     return RawMethod(
         id, SynchronousUnaryInvoker, Function{.synchronous_unary = wrapper});
   }
 
-  template <auto method>
+  template <auto kMethod>
   static constexpr RawMethod ServerStreaming(uint32_t id) {
     constexpr UnaryRequestFunction wrapper =
         [](ServerCall& call, ConstByteSpan request, RawServerWriter& writer) {
-          return CallMethodImplFunction<method>(call, request, writer);
+          return CallMethodImplFunction<kMethod>(call, request, writer);
         };
     return RawMethod(
         id, UnaryRequestInvoker, Function{.unary_request = wrapper});
   }
 
-  template <auto method>
+  template <auto kMethod>
   static constexpr RawMethod ClientStreaming(uint32_t id) {
     constexpr StreamRequestFunction wrapper =
         [](ServerCall& call, RawServerReaderWriter& reader) {
-          return CallMethodImplFunction<method>(
+          return CallMethodImplFunction<kMethod>(
               call, static_cast<RawServerReader&>(reader));
         };
     return RawMethod(
         id, StreamRequestInvoker, Function{.stream_request = wrapper});
   }
 
-  template <auto method>
+  template <auto kMethod>
   static constexpr RawMethod BidirectionalStreaming(uint32_t id) {
     constexpr StreamRequestFunction wrapper =
         [](ServerCall& call, RawServerReaderWriter& reader_writer) {
-          return CallMethodImplFunction<method>(call, reader_writer);
+          return CallMethodImplFunction<kMethod>(call, reader_writer);
         };
     return RawMethod(
         id, StreamRequestInvoker, Function{.stream_request = wrapper});
