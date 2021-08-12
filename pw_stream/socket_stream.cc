@@ -17,6 +17,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include <cstring>
+
 #include "pw_log/log.h"
 
 namespace pw::stream {
