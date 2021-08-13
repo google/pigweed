@@ -95,7 +95,7 @@ if (dir_pw_third_party_googletest != "") {
 
   pw_source_set("gtest_main") {
     public_deps = [ ":googletest" ]
-    sources = [ "$dir_pw_third_party_googletest/googlemock/src/gtest_main.cc" ]
+    sources = [ "$dir_pw_third_party_googletest/googletest/src/gtest_main.cc" ]
   }
 
   pw_source_set("gmock_main") {
