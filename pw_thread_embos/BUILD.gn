@@ -154,6 +154,7 @@ pw_source_set("util") {
 pw_source_set("snapshot") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":config",
     "$dir_pw_third_party/embos",
     "$dir_pw_thread:protos.pwpb",
     "$dir_pw_thread:snapshot",

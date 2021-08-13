@@ -99,6 +99,8 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "thread",
+    hdrs = [ "public/pw_thread/config.h" ],
+    includes = ["public"],
     srcs = [
         "thread.cc",
     ],

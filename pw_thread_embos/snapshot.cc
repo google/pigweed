@@ -11,6 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+#define PW_LOG_LEVEL PW_THREAD_EMBOS_CONFIG_LOG_LEVEL
+
 #include "pw_thread_embos/snapshot.h"
 
 #include <string_view>
@@ -21,6 +24,7 @@
 #include "pw_protobuf/encoder.h"
 #include "pw_status/status.h"
 #include "pw_thread/snapshot.h"
+#include "pw_thread_embos/config.h"
 #include "pw_thread_embos/util.h"
 #include "pw_thread_protos/thread.pwpb.h"
 

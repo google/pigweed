@@ -63,6 +63,11 @@
 #define PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY (configMAX_PRIORITIES - 1)
 #endif  // PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY
 
+// The log level to use for this module. Logs below this level are omitted.
+#ifndef PW_THREAD_FREERTOS_CONFIG_LOG_LEVEL
+#define PW_THREAD_FREERTOS_CONFIG_LOG_LEVEL PW_LOG_LEVEL_DEBUG
+#endif  // PW_THREAD_FREERTOS_CONFIG_LOG_LEVEL
+
 namespace pw::thread::freertos::config {
 
 inline constexpr size_t kMinimumStackSizeWords = configMINIMAL_STACK_SIZE;

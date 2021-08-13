@@ -119,6 +119,10 @@ more details.
   number of priorities defined by the FreeRTOS configuration
   (``configMAX_PRIORITIES - 1``).
 
+.. c:macro:: PW_THREAD_FREERTOS_CONFIG_LOG_LEVEL
+
+  The log level to use for this module. Logs below this level are omitted.
+
 FreeRTOS Thread Options
 =======================
 .. cpp:class:: pw::thread::freertos::Options

@@ -101,6 +101,9 @@ more details.
   The round robin time slice tick interval for threads at the same priority.
   By default this is set to 2 ticks based on the embOS default.
 
+.. c:macro:: PW_THREAD_EMBOS_CONFIG_LOG_LEVEL
+
+  The log level to use for this module. Logs below this level are omitted.
 
 embOS Thread Options
 ====================

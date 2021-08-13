@@ -66,6 +66,16 @@ MoveAssignable.
   * - CMSIS-RTOS API v2 & RTX5
     - Planned
 
+Module Configuration Options
+============================
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_THREAD_CONFIG_LOG_LEVEL
+
+  The log level to use for this module. Logs below this level are omitted.
 
 Options
 =======

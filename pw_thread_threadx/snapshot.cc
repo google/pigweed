@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_LEVEL PW_THREAD_THREADX_CONFIG_LOG_LEVEL
+
 #include "pw_thread_threadx/snapshot.h"
 
 #include <string_view>
@@ -22,6 +24,7 @@
 #include "pw_status/status.h"
 #include "pw_thread/snapshot.h"
 #include "pw_thread_protos/thread.pwpb.h"
+#include "pw_thread_threadx/config.h"
 #include "pw_thread_threadx/util.h"
 #include "tx_api.h"
 #include "tx_thread.h"

@@ -68,6 +68,11 @@
 #define PW_THREAD_EMBOS_CONFIG_DEFAULT_TIME_SLICE_INTERVAL 2
 #endif  // PW_THREAD_EMBOS_CONFIG_DEFAULT_TIME_SLICE_INTERVAL
 
+// The log level to use for this module. Logs below this level are omitted.
+#ifndef PW_THREAD_EMBOS_CONFIG_LOG_LEVEL
+#define PW_THREAD_EMBOS_CONFIG_LOG_LEVEL PW_LOG_LEVEL_DEBUG
+#endif  // PW_THREAD_EMBOS_CONFIG_LOG_LEVEL
+
 namespace pw::thread::embos::config {
 
 inline constexpr size_t kMaximumNameLength =

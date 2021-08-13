@@ -26,6 +26,58 @@ This is a set of backends for pw_thread based on ThreadX.
     - ``pw_thread_threadx:thread``
     - Thread creation.
 
+Module Configuration Options
+============================
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_THREAD_THREADX_CONFIG_JOINING_ENABLED
+
+  Whether thread joining is enabled. By default this is disabled.
+
+  We suggest only enabling this when thread joining is required to minimize
+  the RAM and ROM cost of threads.
+
+  Enabling this grows the RAM footprint of every pw::thread::Thread as it adds
+  a TX_EVENT_FLAGS_GROUP to every thread's pw::thread::threadx::Context. In
+  addition, there is a minute ROM cost to construct and destroy this added
+  object.
+
+  PW_THREAD_JOINING_ENABLED gets set to this value.
+
+.. c:macro:: PW_THREAD_THREADX_CONFIG_DEFAULT_STACK_SIZE_WORDS
+
+  The default stack size in words. By default this uses the minimal ThreadX
+  stack size.
+
+.. c:macro:: PW_THREAD_THREADX_CONFIG_MAX_THREAD_NAME_LEN
+
+  The maximum length of a thread's name, not including null termination. By
+  default this is arbitrarily set to 15. This results in an array of characters
+  which is this length + 1 bytes in every pw::thread::Thread's context.
+
+.. c:macro:: PW_THREAD_THREADX_CONFIG_DEFAULT_TIME_SLICE_INTERVAL
+
+  The round robin time slice tick interval for threads at the same priority.
+  By default this is disabled as not all ports support this, using a value of 0
+  ticks.
+
+.. c:macro:: PW_THREAD_THREADX_CONFIG_MIN_PRIORITY
+
+  The minimum priority level, this is normally based on the number of priority
+  levels.
+
+.. c:macro:: PW_THREAD_THREADX_CONFIG_DEFAULT_PRIORITY
+
+  The default priority level. By default this uses the minimal ThreadX
+  priority level, given that 0 is the highest priority.
+
+.. c:macro:: PW_THREAD_THREADX_CONFIG_LOG_LEVEL
+
+  The log level to use for this module. Logs below this level are omitted.
+
 ---------
 utilities
 ---------

@@ -11,6 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+#define PW_LOG_LEVEL PW_THREAD_FREERTOS_CONFIG_LOG_LEVEL
+
 #include "pw_thread_freertos/snapshot.h"
 
 #include <span>
@@ -22,6 +25,7 @@
 #include "pw_protobuf/encoder.h"
 #include "pw_status/status.h"
 #include "pw_thread/snapshot.h"
+#include "pw_thread_freertos/config.h"
 #include "pw_thread_freertos/freertos_tsktcb.h"
 #include "pw_thread_freertos/util.h"
 #include "pw_thread_protos/thread.pwpb.h"

@@ -66,6 +66,11 @@
   PW_THREAD_THREADX_CONFIG_MIN_PRIORITY
 #endif  // PW_THREAD_THREADX_CONFIG_DEFAULT_PRIORITY
 
+// The log level to use for this module. Logs below this level are omitted.
+#ifndef PW_THREAD_THREADX_CONFIG_LOG_LEVEL
+#define PW_THREAD_THREADX_CONFIG_LOG_LEVEL PW_LOG_LEVEL_DEBUG
+#endif  // PW_THREAD_THREADX_CONFIG_LOG_LEVEL
+
 namespace pw::thread::threadx::config {
 
 inline constexpr size_t kMaximumNameLength =
