@@ -123,6 +123,11 @@ TEST(SystemTimer, InvokeAt) {
   uut.expected_deadline = SystemClock::now() + kRoundedArbitraryShortDuration;
   uut.timer().InvokeAt(uut.expected_deadline);
   uut.callback_ran_notification.acquire();
+
+  // Ensure scheduling it in the past causes it to execute immediately.
+  uut.expected_deadline = SystemClock::now() - SystemClock::duration(1);
+  uut.timer().InvokeAt(uut.expected_deadline);
+  uut.callback_ran_notification.acquire();
 }
 
 TEST(SystemTimer, InvokeAfter) {
@@ -148,6 +153,11 @@ TEST(SystemTimer, InvokeAfter) {
   uut.expected_min_deadline =
       SystemClock::TimePointAfterAtLeast(kRoundedArbitraryShortDuration);
   uut.timer().InvokeAfter(kRoundedArbitraryShortDuration);
+  uut.callback_ran_notification.acquire();
+
+  // Ensure scheduling it immediately works.
+  uut.expected_min_deadline = SystemClock::now();
+  uut.timer().InvokeAfter(SystemClock::duration(0));
   uut.callback_ran_notification.acquire();
 }
 

@@ -72,6 +72,8 @@ void HandleTimerCallback(TimerHandle_t timer_handle) {
   }
 
   // We haven't met the deadline yet, reschedule as far out as possible.
+  // Note that this must be > SystemClock::duration::zero() based on the
+  // conditional above.
   const SystemClock::duration period =
       std::min(pw::chrono::freertos::kMaxTimeout, time_until_deadline);
   PW_CHECK_UINT_EQ(
@@ -84,7 +86,9 @@ void HandleTimerCallback(TimerHandle_t timer_handle) {
                    "Timer command queue overflowed");
 }
 
-constexpr TickType_t kInvalidPeriod = 1;
+// FreeRTOS requires a timer to have a non-zero period.
+constexpr SystemClock::duration kMinTimerPeriod = SystemClock::duration(1);
+constexpr TickType_t kInvalidPeriod = kMinTimerPeriod.count();
 constexpr UBaseType_t kOneShotMode = pdFALSE;  // Do not use auto reload.
 
 }  // namespace
@@ -154,10 +158,8 @@ void SystemTimer::InvokeAt(SystemClock::time_point timestamp) {
   // clamped and it may be rescheduled internally.
   const SystemClock::duration time_until_deadline =
       timestamp - SystemClock::now();
-  const SystemClock::duration period =
-      std::clamp(SystemClock::duration::zero(),
-                 time_until_deadline,
-                 pw::chrono::freertos::kMaxTimeout);
+  const SystemClock::duration period = std::clamp(
+      kMinTimerPeriod, time_until_deadline, pw::chrono::freertos::kMaxTimeout);
 
   PW_CHECK_UINT_EQ(
       xTimerChangePeriod(
