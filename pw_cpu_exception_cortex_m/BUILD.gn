@@ -14,11 +14,25 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_cpu_exception/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_cpu_exception_cortex_m_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
+
+pw_source_set("config") {
+  public_deps = [ pw_cpu_exception_cortex_m_CONFIG ]
+  public = [ "pw_cpu_exception_cortex_m_private/config.h" ]
+  visibility = [ ":*" ]
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -33,6 +47,7 @@ pw_source_set("support_armv7m") {
     dir_pw_string,
   ]
   deps = [
+    ":config",
     ":cortex_m_constants",
     dir_pw_log,
   ]
@@ -48,7 +63,10 @@ pw_source_set("proto_dump_armv7m") {
     dir_pw_stream,
   ]
   public = [ "public/pw_cpu_exception_cortex_m/proto_dump.h" ]
-  deps = [ ":cpu_state_protos.pwpb" ]
+  deps = [
+    ":config",
+    ":cpu_state_protos.pwpb",
+  ]
   sources = [ "proto_dump.cc" ]
 }
 
@@ -69,7 +87,10 @@ pw_source_set("cpu_exception_armv7m") {
     "$dir_pw_preprocessor",
   ]
   sources = [ "entry.cc" ]
-  deps = [ ":cortex_m_constants" ]
+  deps = [
+    ":config",
+    ":cortex_m_constants",
+  ]
 }
 
 pw_source_set("snapshot") {
@@ -85,6 +106,7 @@ pw_source_set("snapshot") {
   public = [ "public/pw_cpu_exception_cortex_m/snapshot.h" ]
   sources = [ "snapshot.cc" ]
   deps = [
+    ":config",
     ":cortex_m_constants",
     ":proto_dump_armv7m",
     dir_pw_log,

@@ -11,9 +11,13 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+#define PW_LOG_LEVEL PW_CPU_EXCEPTION_CORTEX_M_LOG_LEVEL
+
 #include "pw_cpu_exception_cortex_m/snapshot.h"
 
 #include "pw_cpu_exception_cortex_m/proto_dump.h"
+#include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_cpu_exception_cortex_m_protos/cpu_state.pwpb.h"
 #include "pw_log/log.h"
@@ -46,14 +50,14 @@ Status CaptureMainStack(
   thread::ThreadState::Enum thread_state;
   if (mode == ProcessorMode::kHandlerMode) {
     thread_name = kMainStackHandlerModeName;
-    PW_LOG_INFO("Capturing thread info for Main Stack (Handler Mode)");
+    PW_LOG_DEBUG("Capturing thread info for Main Stack (Handler Mode)");
     thread_state = thread::ThreadState::Enum::INTERRUPT_HANDLER;
-    PW_LOG_INFO("Thread state: INTERRUPT_HANDLER");
+    PW_LOG_DEBUG("Thread state: INTERRUPT_HANDLER");
   } else {  // mode == ProcessorMode::kThreadMode
     thread_name = kMainStackHandlerModeName;
-    PW_LOG_INFO("Capturing thread info for Main Stack (Thread Mode)");
+    PW_LOG_DEBUG("Capturing thread info for Main Stack (Thread Mode)");
     thread_state = thread::ThreadState::Enum::RUNNING;
-    PW_LOG_INFO("Thread state: RUNNING");
+    PW_LOG_DEBUG("Thread state: RUNNING");
   }
   encoder.WriteState(thread_state);
   encoder.WriteName(std::as_bytes(std::span(std::string_view(thread_name))));

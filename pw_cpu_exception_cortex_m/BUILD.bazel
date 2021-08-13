@@ -23,11 +23,17 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
+    name = "config",
+    hdrs = ["pw_cpu_exception_cortex_m_private/config.h"],
+)
+
+pw_cc_library(
     name = "support_armv7m",
     srcs = ["cpu_state.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/cpu_state.h"],
     includes = ["public"],
     deps = [
+        ":config",
         ":cortex_m_constants",
         "//pw_log",
         "//pw_preprocessor",
@@ -40,6 +46,7 @@ pw_cc_library(
     srcs = ["proto_dump.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/proto_dump.h"],
     deps = [
+        ":config",
         ":cpu_state_protos",
         ":support_armv7m",
         "//pw_protobuf",
@@ -60,6 +67,7 @@ pw_cc_library(
     name = "cpu_exception_armv7m",
     srcs = ["entry.cc"],
     deps = [
+        ":config",
         ":cortex_m_constants",
         ":proto_dump_armv7m",
         ":support_armv7m",
@@ -74,6 +82,7 @@ pw_cc_library(
     srcs = ["snapshot.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/snapshot.h"],
     deps = [
+        ":config",
         ":cortex_m_constants",
         ":cpu_state_protos",
         ":proto_dump_armv7m",

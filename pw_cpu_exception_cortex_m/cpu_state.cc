@@ -19,14 +19,10 @@
 #include <span>
 
 #include "pw_cpu_exception/support.h"
+#include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_log/log.h"
 #include "pw_string/string_builder.h"
-
-// TODO(amontanez): Set up config when this module is moved to *_cortex_m.
-#ifndef PW_CPU_EXCEPTION_EXTENDED_CFSR_DUMP
-#define PW_CPU_EXCEPTION_EXTENDED_CFSR_DUMP 0
-#endif  // PW_CPU_EXCEPTION_EXTENDED_CFSR_DUMP
 
 namespace pw::cpu_exception {
 namespace {
@@ -147,9 +143,9 @@ void AnalyzeException(const pw_cpu_exception_State& cpu_state) {
   if ((cpu_state.extended.icsr & kIcsrVectactiveMask) == kNmiIsrNum) {
     PW_LOG_INFO("Encountered non-maskable interrupt (NMI)");
   }
-#if PW_CPU_EXCEPTION_EXTENDED_CFSR_DUMP
+#if PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
   AnalyzeCfsr(cpu_state.extended.cfsr);
-#endif  // PW_CPU_EXCEPTION_EXTENDED_CFSR_DUMP
+#endif  // PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
 }
 }  // namespace
 
