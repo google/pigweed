@@ -24,14 +24,14 @@ namespace test {
 
 class TestService final : public generated::TestService<TestService> {
  public:
-  Status TestRpc(ServerContext&,
-                 const pw_rpc_test_TestRequest& request,
-                 pw_rpc_test_TestResponse& response) {
+  Status TestUnaryRpc(ServerContext&,
+                      const pw_rpc_test_TestRequest& request,
+                      pw_rpc_test_TestResponse& response) {
     response.value = request.integer + 1;
     return static_cast<Status::Code>(request.status_code);
   }
 
-  static void TestStreamRpc(
+  static void TestServerStreamRpc(
       ServerContext&,
       const pw_rpc_test_TestRequest& request,
       ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
@@ -67,7 +67,7 @@ TEST(NanopbCodegen, CompilesProperly) {
 }
 
 TEST(NanopbCodegen, Server_InvokeUnaryRpc) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestUnaryRpc) context;
 
   EXPECT_EQ(OkStatus(),
             context.call({.integer = 123, .status_code = OkStatus().code()}));
@@ -81,7 +81,7 @@ TEST(NanopbCodegen, Server_InvokeUnaryRpc) {
 }
 
 TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc) context;
 
   context.call({.integer = 0, .status_code = Status::Aborted().code()});
 
@@ -104,7 +104,8 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
 
 TEST(NanopbCodegen,
      Server_InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc, 3)
+  context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 
@@ -119,7 +120,8 @@ TEST(NanopbCodegen,
 }
 
 TEST(NanopbCodegen, Server_InvokeStreamingRpc_ManualWriting) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc, 3)
+  context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 
@@ -147,23 +149,23 @@ using TestServiceClient = test::nanopb::TestServiceClient;
 
 TEST(NanopbCodegen, Client_GeneratesCallAliases) {
   static_assert(
-      std::is_same_v<TestServiceClient::TestRpcCall,
+      std::is_same_v<TestServiceClient::TestUnaryRpcCall,
                      NanopbClientCall<
                          internal::UnaryCallbacks<pw_rpc_test_TestResponse>>>);
   static_assert(
-      std::is_same_v<TestServiceClient::TestStreamRpcCall,
+      std::is_same_v<TestServiceClient::TestServerStreamRpcCall,
                      NanopbClientCall<internal::ServerStreamingCallbacks<
                          pw_rpc_test_TestStreamResponse>>>);
 }
 
 TEST(NanopbCodegen, ClientCall_DefaultConstructor) {
-  TestServiceClient::TestRpcCall unary_call;
-  TestServiceClient::TestStreamRpcCall server_streaming_call;
+  TestServiceClient::TestUnaryRpcCall unary_call;
+  TestServiceClient::TestServerStreamRpcCall server_streaming_call;
 }
 
 TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");
-  constexpr uint32_t method_id = internal::Hash("TestRpc");
+  constexpr uint32_t method_id = internal::Hash("TestUnaryRpc");
 
   ClientContextForTest<128, 128, 99, service_id, method_id> context;
 
@@ -172,7 +174,7 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
     int response_value = -1;
   } result;
 
-  auto call = TestServiceClient::TestRpc(
+  auto call = TestServiceClient::TestUnaryRpc(
       context.channel(),
       {.integer = 123, .status_code = 0},
       [&result](const pw_rpc_test_TestResponse& response, Status status) {
@@ -196,7 +198,7 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
 
 TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
   constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");
-  constexpr uint32_t method_id = internal::Hash("TestStreamRpc");
+  constexpr uint32_t method_id = internal::Hash("TestServerStreamRpc");
 
   ClientContextForTest<128, 128, 99, service_id, method_id> context;
 
@@ -206,7 +208,7 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
     int response_value = -1;
   } result;
 
-  auto call = TestServiceClient::TestStreamRpc(
+  auto call = TestServiceClient::TestServerStreamRpc(
       context.channel(),
       {.integer = 123, .status_code = 0},
       [&result](const pw_rpc_test_TestStreamResponse& response) {

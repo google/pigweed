@@ -51,9 +51,9 @@ namespace test {
 
 class TestService final : public generated::TestService<TestService> {
  public:
-  static StatusWithSize TestRpc(ServerContext&,
-                                ConstByteSpan request,
-                                ByteSpan response) {
+  static StatusWithSize TestUnaryRpc(ServerContext&,
+                                     ConstByteSpan request,
+                                     ByteSpan response) {
     int64_t integer;
     Status status;
 
@@ -67,9 +67,9 @@ class TestService final : public generated::TestService<TestService> {
     return StatusWithSize(status, test_response.size());
   }
 
-  void TestStreamRpc(ServerContext&,
-                     ConstByteSpan request,
-                     RawServerWriter& writer) {
+  void TestServerStreamRpc(ServerContext&,
+                           ConstByteSpan request,
+                           RawServerWriter& writer) {
     int64_t integer;
     Status status;
 
@@ -170,7 +170,7 @@ TEST(RawCodegen, CompilesProperly) {
 }
 
 TEST(RawCodegen, Server_InvokeUnaryRpc) {
-  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestUnaryRpc) context;
 
   auto sws = context.call(EncodeRequest(123, OkStatus()));
   EXPECT_EQ(OkStatus(), sws.status());
@@ -190,7 +190,7 @@ TEST(RawCodegen, Server_InvokeUnaryRpc) {
 }
 
 TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
-  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc) context;
 
   context.call(EncodeRequest(5, Status::Unauthenticated()));
   EXPECT_TRUE(context.done());

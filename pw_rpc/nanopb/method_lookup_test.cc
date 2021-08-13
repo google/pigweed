@@ -22,13 +22,13 @@ namespace {
 
 class MixedService1 : public test::generated::TestService<MixedService1> {
  public:
-  StatusWithSize TestRpc(ServerContext&, ConstByteSpan, ByteSpan) {
+  StatusWithSize TestUnaryRpc(ServerContext&, ConstByteSpan, ByteSpan) {
     return StatusWithSize(123);
   }
 
-  void TestStreamRpc(ServerContext&,
-                     const pw_rpc_test_TestRequest&,
-                     ServerWriter<pw_rpc_test_TestStreamResponse>&) {
+  void TestServerStreamRpc(ServerContext&,
+                           const pw_rpc_test_TestRequest&,
+                           ServerWriter<pw_rpc_test_TestStreamResponse>&) {
     called_server_streaming_method = true;
   }
 
@@ -50,13 +50,13 @@ class MixedService1 : public test::generated::TestService<MixedService1> {
 
 class MixedService2 : public test::generated::TestService<MixedService2> {
  public:
-  Status TestRpc(ServerContext&,
-                 const pw_rpc_test_TestRequest&,
-                 pw_rpc_test_TestResponse&) {
+  Status TestUnaryRpc(ServerContext&,
+                      const pw_rpc_test_TestRequest&,
+                      pw_rpc_test_TestResponse&) {
     return Status::Unauthenticated();
   }
 
-  void TestStreamRpc(ServerContext&, ConstByteSpan, RawServerWriter&) {
+  void TestServerStreamRpc(ServerContext&, ConstByteSpan, RawServerWriter&) {
     called_server_streaming_method = true;
   }
 
@@ -76,14 +76,14 @@ class MixedService2 : public test::generated::TestService<MixedService2> {
 };
 
 TEST(MixedService1, CallRawMethod_Unary) {
-  PW_RAW_TEST_METHOD_CONTEXT(MixedService1, TestRpc) context;
+  PW_RAW_TEST_METHOD_CONTEXT(MixedService1, TestUnaryRpc) context;
   StatusWithSize sws = context.call({});
   EXPECT_TRUE(sws.ok());
   EXPECT_EQ(123u, sws.size());
 }
 
 TEST(MixedService1, CallNanopbMethod_ServerStreaming) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(MixedService1, TestStreamRpc) context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(MixedService1, TestServerStreamRpc) context;
   ASSERT_FALSE(context.service().called_server_streaming_method);
   context.call({});
   EXPECT_TRUE(context.service().called_server_streaming_method);
@@ -101,13 +101,13 @@ TEST(MixedService1, CallNanopbMethod_BidirectionalStreaming) {
 }
 
 TEST(MixedService2, CallNanopbMethod_Unary) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(MixedService2, TestRpc) context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(MixedService2, TestUnaryRpc) context;
   Status status = context.call({});
   EXPECT_EQ(Status::Unauthenticated(), status);
 }
 
 TEST(MixedService2, CallRawMethod_ServerStreaming) {
-  PW_RAW_TEST_METHOD_CONTEXT(MixedService2, TestStreamRpc) context;
+  PW_RAW_TEST_METHOD_CONTEXT(MixedService2, TestServerStreamRpc) context;
   ASSERT_FALSE(context.service().called_server_streaming_method);
   context.call({});
   EXPECT_TRUE(context.service().called_server_streaming_method);

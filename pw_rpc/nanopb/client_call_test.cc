@@ -29,10 +29,11 @@ constexpr uint32_t kServerStreamingMethodId = 112;
 class FakeGeneratedServiceClient {
  public:
   static NanopbClientCall<internal::UnaryCallbacks<pw_rpc_test_TestResponse>>
-  TestRpc(Channel& channel,
-          const pw_rpc_test_TestRequest& request,
-          Function<void(const pw_rpc_test_TestResponse&, Status)> on_response,
-          Function<void(Status)> on_error = nullptr) {
+  TestUnaryRpc(
+      Channel& channel,
+      const pw_rpc_test_TestRequest& request,
+      Function<void(const pw_rpc_test_TestResponse&, Status)> on_response,
+      Function<void(Status)> on_error = nullptr) {
     auto call = NanopbClientCall(
         &channel,
         kServiceId,
@@ -46,7 +47,7 @@ class FakeGeneratedServiceClient {
 
   static NanopbClientCall<
       internal::ServerStreamingCallbacks<pw_rpc_test_TestStreamResponse>>
-  TestStreamRpc(
+  TestServerStreamRpc(
       Channel& channel,
       const pw_rpc_test_TestRequest& request,
       Function<void(const pw_rpc_test_TestStreamResponse&)> on_response,
@@ -69,7 +70,7 @@ class FakeGeneratedServiceClient {
 TEST(NanopbClientCall, Unary_SendsRequestPacket) {
   ClientContextForTest context;
 
-  auto call = FakeGeneratedServiceClient::TestRpc(
+  auto call = FakeGeneratedServiceClient::TestUnaryRpc(
       context.channel(), {.integer = 123, .status_code = 0}, nullptr);
 
   EXPECT_EQ(context.output().packet_count(), 1u);
@@ -93,7 +94,7 @@ class UnaryClientCall : public ::testing::Test {
 TEST_F(UnaryClientCall, InvokesCallbackOnValidResponse) {
   ClientContextForTest context;
 
-  auto call = FakeGeneratedServiceClient::TestRpc(
+  auto call = FakeGeneratedServiceClient::TestUnaryRpc(
       context.channel(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
@@ -113,7 +114,7 @@ TEST_F(UnaryClientCall, InvokesCallbackOnValidResponse) {
 TEST_F(UnaryClientCall, DoesNothingOnNullCallback) {
   ClientContextForTest context;
 
-  auto call = FakeGeneratedServiceClient::TestRpc(
+  auto call = FakeGeneratedServiceClient::TestUnaryRpc(
       context.channel(), {.integer = 123, .status_code = 0}, nullptr);
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
@@ -125,7 +126,7 @@ TEST_F(UnaryClientCall, DoesNothingOnNullCallback) {
 TEST_F(UnaryClientCall, InvokesErrorCallbackOnInvalidResponse) {
   ClientContextForTest context;
 
-  auto call = FakeGeneratedServiceClient::TestRpc(
+  auto call = FakeGeneratedServiceClient::TestUnaryRpc(
       context.channel(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
@@ -146,7 +147,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnInvalidResponse) {
 TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
   ClientContextForTest context;
 
-  auto call = FakeGeneratedServiceClient::TestRpc(
+  auto call = FakeGeneratedServiceClient::TestUnaryRpc(
       context.channel(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
@@ -165,7 +166,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
 TEST_F(UnaryClientCall, DoesNothingOnErrorWithoutCallback) {
   ClientContextForTest context;
 
-  auto call = FakeGeneratedServiceClient::TestRpc(
+  auto call = FakeGeneratedServiceClient::TestUnaryRpc(
       context.channel(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
@@ -184,7 +185,7 @@ TEST_F(UnaryClientCall, DoesNothingOnErrorWithoutCallback) {
 TEST_F(UnaryClientCall, OnlyReceivesOneResponse) {
   ClientContextForTest context;
 
-  auto call = FakeGeneratedServiceClient::TestRpc(
+  auto call = FakeGeneratedServiceClient::TestUnaryRpc(
       context.channel(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
@@ -218,7 +219,7 @@ TEST_F(ServerStreamingClientCall, SendsRequestPacket) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
 
-  auto call = FakeGeneratedServiceClient::TestStreamRpc(
+  auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.channel(), {.integer = 71, .status_code = 0}, nullptr, nullptr);
 
   EXPECT_EQ(context.output().packet_count(), 1u);
@@ -235,7 +236,7 @@ TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
 
-  auto call = FakeGeneratedServiceClient::TestStreamRpc(
+  auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.channel(),
       {.integer = 71, .status_code = 0},
       [this](const pw_rpc_test_TestStreamResponse& response) {
@@ -270,7 +271,7 @@ TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
 
-  auto call = FakeGeneratedServiceClient::TestStreamRpc(
+  auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.channel(),
       {.integer = 71, .status_code = 0},
       [this](const pw_rpc_test_TestStreamResponse& response) {
@@ -304,7 +305,7 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
 
-  auto call = FakeGeneratedServiceClient::TestStreamRpc(
+  auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
       context.channel(),
       {.integer = 71, .status_code = 0},
       [this](const pw_rpc_test_TestStreamResponse& response) {
