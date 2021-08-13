@@ -76,10 +76,7 @@ pw_source_set("common") {
 
 pw_source_set("test_method_context") {
   public_configs = [ ":public" ]
-  public = [
-    "public/pw_rpc/nanopb/test_method_context.h",
-    "public/pw_rpc/nanopb_test_method_context.h",
-  ]
+  public = [ "public/pw_rpc/nanopb/test_method_context.h" ]
   public_deps = [
     ":method",
     "..:test_utils",
