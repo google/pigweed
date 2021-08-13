@@ -8,9 +8,6 @@ completely test in an automated fashion. Unit tests that don't depend on the
 user interface are preferred but not always possible. For those situations
 manual tests should be added here to validate expected behavior.
 
-.. contents::
-  :local:
-
 Run in Test Mode
 ----------------
 

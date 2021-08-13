@@ -16,39 +16,66 @@
 
 /********** Top left logo & search bar ***********/
 
-/* Hide the version string since we're not yet using it. */
-.wy-side-nav-search div.version {
-  display: none;
-}
-
-/* Hide the little house icon */
-.wy-side-nav-search a.icon.icon-home::before {
-  display: none;
-}
-
 /* Make the "Pigweed" logo text. One day, this will be an image. */
-.wy-side-nav-search a {
+.sidebar-brand {
   font-size: 2em;
   font-family: 'Inconsolata', monospace;
+  font-weight: bold;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-
-/* Make the logo background more amaranth-like */
-.wy-side-nav-search {
-  background-color: #e815a5;
-}
-
-/* The input box has a subtle outline; make it match the background */
-.wy-side-nav-search input[type=text] {
-  border-color: #b529aa;
+.sidebar-brand-text {
+    font-size: 2.5rem;
 }
 
 /********** General document coloring ***********/
 
-/* Re-color the fixed width text away from the red color to something more
- * gentle, that aligns with the Pigweed colored theme. */
-.rst-content code.literal, .rst-content tt.literal {
-    color: #b756bd;
+/* Code blocks inside block quotes end up getting italicized. */
+blockquote {
+  font-style: normal;
 }
 
+/* Update description list (dl) > description titles (dt) styles for autodoc */
+
+/* Function signatures are gray */
+dl.c>dt, dl.cpp>dt, dl.js>dt, dl.py>dt {
+  border: none;
+  border-left: 3px solid var(--color-api-function-border);
+  background: var(--color-api-function-background);
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 0.5em;
+  font-family: var(--font-stack--monospace);
+}
+
+/* Adjust indentation for all list types */
+dl.class>dt, dl.enum-class>dt, dl.enum-struct>dt, dl.enum>dt, dl.exception>dt, dl.function>dt, dl.method>dt, dl.type>dt {
+  padding-left: 3em;
+  text-indent: -2.5em;
+}
+
+/* Class and describe signatures are blue */
+dl.class>dt, dl.describe>dt {
+  background: var(--color-api-class-background);
+  color: var(--color-api-class-foreground);
+  border: none;
+  border-top: 3px solid var(--color-api-class-border);
+  font-family: var(--font-stack--monospace);
+}
+/* Adjust .. describe:: block padding */
+dl.describe>dt {
+  display: table;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+/* Diagram backgrounds should always be light */
+div>svg {
+  background: #ffffff;
+}
+
+code.literal {
+  border: 1px solid var(--color-inline-code-border);
+}

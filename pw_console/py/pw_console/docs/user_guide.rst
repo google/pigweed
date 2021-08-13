@@ -10,9 +10,6 @@ User Guide
 The Pigweed Console provides a Python repl (read eval print loop) and log viewer
 in a single-window terminal based interface.
 
-.. contents::
-   :local:
-
 
 Starting the Console
 --------------------

@@ -44,7 +44,8 @@ version = '0.1'
 release = '0.1.0'
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygm = 'sphinx'
+pygments_style = 'pigweed-code-light'
+pygments_dark_style = 'pigweed-code'
 
 extensions = [
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
@@ -73,14 +74,7 @@ m2r_parse_relative_links = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
-
-# Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = [
-    '_themes',
-]
-
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme = 'furo'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -116,6 +110,42 @@ html_css_files = [
     # Needed for Inconsolata font.
     'https://fonts.googleapis.com/css2?family=Inconsolata&display=swap',
 ]
+
+html_theme_options = {
+    'light_css_variables': {
+        # Make the logo text more amaranth-like
+        'color-sidebar-brand-text': '#b529aa',
+        'color-sidebar-search-border': '#b529aa',
+        'color-sidebar-link-text--top-level': '#85004d',
+        'color-sidebar-link-text': '#016074',
+        'color-sidebar-item-background--current': '#f0f0f0',
+        'color-sidebar-item-background--hover': '#ffe2f3',
+        'color-sidebar-item-expander-background--hover': '#ffe2f3',
+        'color-api-function-border': '#cccccc',
+        'color-api-function-background': '#f0f0f0',
+        'color-api-class-background': '#e7f2fa',
+        'color-api-class-foreground': '#2980b9',
+        'color-api-class-border': '#6ab0de',
+        'color-inline-code-background': '#fafafa',
+        'color-inline-code-border': '#cccccc',
+    },
+    'dark_css_variables': {
+        'color-sidebar-brand-text': '#e815a5',
+        'color-sidebar-search-border': '#e815a5',
+        'color-sidebar-link-text--top-level': '#ff79c6',
+        'color-sidebar-link-text': '#8be9fd',
+        'color-sidebar-item-background--current': '#575757',
+        'color-sidebar-item-background--hover': '#4c333f',
+        'color-sidebar-item-expander-background--hover': '#4c333f',
+        'color-api-function-border': '#575757',
+        'color-api-function-background': '#2b2b2b',
+        'color-api-class-background': '#222c35',
+        'color-api-class-foreground': '#87c1e5',
+        'color-api-class-border': '#5288be',
+        'color-inline-code-background': '#2b2b2b',
+        'color-inline-code-border': '#575757',
+    },
+}
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Pigweeddoc'

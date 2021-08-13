@@ -38,6 +38,8 @@ setuptools.setup(
         'pygments.styles': [
             'pigweed-code = '
             'pw_console.pigweed_code_style:PigweedCodeStyle',
+            'pigweed-code-light = '
+            'pw_console.pigweed_code_style:PigweedCodeLightStyle',
         ],
     },
     install_requires=[
