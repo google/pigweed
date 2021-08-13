@@ -165,6 +165,9 @@ function that corresponds with the status code.
   // the authentication and try again.
   pw::Status::Unauthenticated()
 
+.. note::
+  Status enumerations are also supported for Python and Typescript.
+
 .. attention::
 
   Some code may use all-caps status values such as ``Status::UNKNOWN`` instead
