@@ -43,6 +43,9 @@ _host_clang_toolchain = {
 
 # Common default scope shared by all host Clang toolchains.
 _defaults = {
+  # TODO(pwbug/461) amend toolchain declaration process to
+  # remove this hack.
+  default_configs = []
   default_configs = [
     "$dir_pw_build:extra_debugging",
     "$dir_pw_toolchain/host_clang:no_system_libcpp",
