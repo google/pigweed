@@ -34,6 +34,6 @@ setuptools.setup(
         'sphinxcontrib-blockdiag',
         'sphinxcontrib-nwdiag',
         'sphinxcontrib-seqdiag',
-        'sphinxcontrib-mermaid',
+        'sphinxcontrib-mermaid >=0.7.1',
     ],
 )
