@@ -18,7 +18,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
-load("@rules_proto_grpc//:plugin.bzl", "proto_plugin")
+load("@rules_proto_grpc//:defs.bzl", "proto_plugin")
 load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])

@@ -15,10 +15,10 @@
 
 load("//pw_build:pigweed.bzl", "pw_cc_library")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
-load("@rules_proto_grpc//:plugin.bzl", "ProtoPluginInfo")
 load(
-    "@rules_proto_grpc//:aspect.bzl",
+    "@rules_proto_grpc//:defs.bzl",
     "ProtoLibraryAspectNodeInfo",
+    "ProtoPluginInfo",
     "proto_compile_aspect_attrs",
     "proto_compile_aspect_impl",
     "proto_compile_attrs",
@@ -58,6 +58,10 @@ _rule = rule(
             providers = [ProtoInfo, ProtoLibraryAspectNodeInfo],
             aspects = [cc_proto_compile_aspect],
         ),
+        protos = attr.label_list(
+            providers = [ProtoInfo],
+            doc = "List of proto_library targets.",
+        ),
     ),
 )
 
@@ -65,8 +69,7 @@ _rule = rule(
 def _cc_proto_compile(**kwargs):
     _rule(
         verbose_string = "{}".format(kwargs.get("verbose", 0)),
-        merge_directories = True,
-        **{k: v for k, v in kwargs.items() if k != "merge_directories"}
+        **kwargs
     )
 
 def pw_proto_library(**kwargs):

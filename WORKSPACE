@@ -110,9 +110,9 @@ protobuf_deps()
 # Used in modules: //pw_protobuf.
 http_archive(
     name = "rules_proto_grpc",
-    sha256 = "5f0f2fc0199810c65a2de148a52ba0aff14d631d4e8202f41aff6a9d590a471b",
-    strip_prefix = "rules_proto_grpc-1.0.2",
-    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/1.0.2.tar.gz"],
+    sha256 = "7954abbb6898830cd10ac9714fbcacf092299fda00ed2baf781172f545120419",
+    strip_prefix = "rules_proto_grpc-3.1.1",
+    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/3.1.1.tar.gz"],
 )
 
 load(
