@@ -23,8 +23,8 @@ Exiting
 ~~~~~~~
 
 1.  Click the :guilabel:`[File]` menu and then :guilabel:`Exit`.
-2.  Type :guilabel:`quit` or :guilabel:`exit` in the Python Input window.
-3.  The keyboard shortcut :guilabel:`Ctrl-W` also quits.
+2.  Type ``quit`` or ``exit`` in the Python Input window.
+3.  The keyboard shortcut :kbd:`Ctrl-W` also quits.
 
 
 Interface Layout
@@ -65,15 +65,15 @@ Main Menu Navigation with the Keyboard
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Move focus between all active UI elements     :guilabel:`Shift-Tab`
+Move focus between all active UI elements     :kbd:`Shift-Tab`
 
-Move focus between windows and the main menu  :guilabel:`Ctrl-Up`
-                                              :guilabel:`Ctrl-Down`
+Move focus between windows and the main menu  :kbd:`Ctrl-Up`
+                                              :kbd:`Ctrl-Down`
 
-Move selection in the main menu               :guilabel:`Up`
-                                              :guilabel:`Down`
-                                              :guilabel:`Left`
-                                              :guilabel:`Right`
+Move selection in the main menu               :kbd:`Up`
+                                              :kbd:`Down`
+                                              :kbd:`Left`
+                                              :kbd:`Right`
 ============================================  =====================
 
 
@@ -98,24 +98,24 @@ Log Window Scrolling
 Function                                      Keys
 ============================================  =====================
 Scroll logs up                                :guilabel:`Mouse Wheel Up`
-                                              :guilabel:`Up`
-                                              :guilabel:`k`
+                                              :kbd:`Up`
+                                              :kbd:`k`
 
 Scroll logs down                              :guilabel:`Mouse Wheel Down`
-                                              :guilabel:`Down`
-                                              :guilabel:`j`
+                                              :kbd:`Down`
+                                              :kbd:`j`
 
-Scroll logs up one page                       :guilabel:`PageUp`
-Scroll logs down one page                     :guilabel:`PageDown`
-Jump to the beginning                         :guilabel:`g`
-Jump to the end                               :guilabel:`G`
+Scroll logs up one page                       :kbd:`PageUp`
+Scroll logs down one page                     :kbd:`PageDown`
+Jump to the beginning                         :kbd:`g`
+Jump to the end                               :kbd:`G`
 
-Horizontal scroll left or right               :guilabel:`Left`
-                                              :guilabel:`Right`
+Horizontal scroll left or right               :kbd:`Left`
+                                              :kbd:`Right`
 
-Horizontal scroll to the beginning            :guilabel:`Home`
-                                              :guilabel:`0`
-                                              :guilabel:`^`
+Horizontal scroll to the beginning            :kbd:`Home`
+                                              :kbd:`0`
+                                              :kbd:`^`
 ============================================  =====================
 
 Log Window View Options
@@ -124,11 +124,11 @@ Log Window View Options
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Copy visible log lines to the clipboard.      :guilabel:`Ctrl-c`
-Toggle line following.                        :guilabel:`f`
-Toggle table view.                            :guilabel:`t`
-Toggle line wrapping.                         :guilabel:`w`
-Clear log pane history.                       :guilabel:`C`
+Copy visible log lines to the clipboard.      :kbd:`Ctrl-c`
+Toggle line following.                        :kbd:`f`
+Toggle table view.                            :kbd:`t`
+Toggle line wrapping.                         :kbd:`w`
+Clear log pane history.                       :kbd:`C`
 ============================================  =====================
 
 Log Window Management
@@ -137,8 +137,8 @@ Log Window Management
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Duplicate this log pane.                      :guilabel:`Insert`
-Remove log pane.                              :guilabel:`Delete`
+Duplicate this log pane.                      :kbd:`Insert`
+Remove log pane.                              :kbd:`Delete`
 ============================================  =====================
 
 Log Searching
@@ -147,12 +147,12 @@ Log Searching
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Open the search bar                           :guilabel:`/`
-                                              :guilabel:`Ctrl-f`
-Navigate search term history                  :guilabel:`Up`
-                                              :guilabel:`Down`
-Start the search and highlight matches        :guilabel:`Enter`
-Close the search bar without searching        :guilabel:`Ctrl-c`
+Open the search bar                           :kbd:`/`
+                                              :kbd:`Ctrl-f`
+Navigate search term history                  :kbd:`Up`
+                                              :kbd:`Down`
+Start the search and highlight matches        :kbd:`Enter`
+Close the search bar without searching        :kbd:`Ctrl-c`
 ============================================  =====================
 
 Here is a view of the search bar:
@@ -202,14 +202,14 @@ available.
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Move to the next search result                :guilabel:`n`
-                                              :guilabel:`Ctrl-g`
-                                              :guilabel:`Ctrl-s`
-Move to the previous search result            :guilabel:`N`
-                                              :guilabel:`Ctrl-r`
-Removes search highlighting                   :guilabel:`Ctrl-l`
-Creates a filter using the active search      :guilabel:`Ctrl-Alt-f`
-Reset all active filters.                     :guilabel:`Ctrl-Alt-r`
+Move to the next search result                :kbd:`n`
+                                              :kbd:`Ctrl-g`
+                                              :kbd:`Ctrl-s`
+Move to the previous search result            :kbd:`N`
+                                              :kbd:`Ctrl-r`
+Removes search highlighting                   :kbd:`Ctrl-l`
+Creates a filter using the active search      :kbd:`Ctrl-Alt-f`
+Reset all active filters.                     :kbd:`Ctrl-Alt-r`
 ============================================  =====================
 
 
@@ -222,12 +222,12 @@ search bar.
 
 - With the search bar **open**:
 
-  Type something to search for then press :guilabel:`Ctrl-Alt-f` or click on
+  Type something to search for then press :kbd:`Ctrl-Alt-f` or click on
   :guilabel:`Add Filter`.
 
 - With the search bar **closed**:
 
-  Press :guilabel:`Ctrl-Alt-f` to use the current search term as a filter.
+  Press :kbd:`Ctrl-Alt-f` to use the current search term as a filter.
 
 When a filter is active the ``Filters`` toolbar will appear at the bottom of the
 log window. For example, here are some logs with one active filter for
@@ -283,36 +283,36 @@ Python Window
 Running Code in the Python Repl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  Type code and hit :guilabel:`Enter` to run.
+-  Type code and hit :kbd:`Enter` to run.
 -  If multiple lines are used, move the cursor to the end and press
-   :guilabel:`Enter` twice.
--  :guilabel:`Up` / :guilabel:`Down` Navigate command history
--  :guilabel:`Ctrl-r` Start reverse history searching
--  :guilabel:`Ctrl-c` Erase the input buffer
--  :guilabel:`Ctrl-v` Paste text from the clipboard to the input buffer
--  :guilabel:`Ctrl-Alt-c` Copy the Python Output to the system clipboard
+   :kbd:`Enter` twice.
+-  :kbd:`Up` / :kbd:`Down` Navigate command history
+-  :kbd:`Ctrl-r` Start reverse history searching
+-  :kbd:`Ctrl-c` Erase the input buffer
+-  :kbd:`Ctrl-v` Paste text from the clipboard to the input buffer
+-  :kbd:`Ctrl-Alt-c` Copy the Python Output to the system clipboard
 
    -  If the input buffer is empty:
-      :guilabel:`Ctrl-c` cancels any currently running Python commands.
+      :kbd:`Ctrl-c` cancels any currently running Python commands.
 
--  :guilabel:`F2` Open the python repl settings (from
+-  :kbd:`F2` Open the python repl settings (from
    `ptpython <https://github.com/prompt-toolkit/ptpython>`__). This
    works best in vertical split mode.
 
-   -  To exit: hit :guilabel:`F2` again.
+   -  To exit: hit :kbd:`F2` again.
    -  Navigate options with the arrow keys, Enter will close the menu.
 
--  :guilabel:`F3` Open the python repl history (from
+-  :kbd:`F3` Open the python repl history (from
    `ptpython <https://github.com/prompt-toolkit/ptpython>`__).
 
-   -  To exit: hit :guilabel:`F3` again.
+   -  To exit: hit :kbd:`F3` again.
    -  Left side shows previously entered commands
    -  Use arrow keys to navigate.
-   -  :guilabel:`Space` to select as many lines you want to use
+   -  :kbd:`Space` to select as many lines you want to use
 
       -  Selected lines will be appended to the right side.
 
-   -  :guilabel:`Enter` to accept the right side text, this will be inserted
+   -  :kbd:`Enter` to accept the right side text, this will be inserted
       into the repl.
 
 
@@ -328,8 +328,8 @@ these keybindings.
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Copy Logs from the focused log window         :guilabel:`Ctrl-c`
-Copy Python Output if window is focused       :guilabel:`Ctrl-Alt-c`
+Copy Logs from the focused log window         :kbd:`Ctrl-c`
+Copy Python Output if window is focused       :kbd:`Ctrl-Alt-c`
 ============================================  =====================
 
 Text will be put in the host computer's system clipboard using the
@@ -343,17 +343,17 @@ terminal's built in text selection:
 
 - **Linux**
 
-  - Holding :guilabel:`Shift` and dragging the mouse in most terminals.
+  - Holding :kbd:`Shift` and dragging the mouse in most terminals.
 
 - **Mac**
 
   - **Apple Terminal**:
 
-    Hold :guilabel:`Fn` and drag the mouse
+    Hold :kbd:`Fn` and drag the mouse
 
   - **iTerm2**:
 
-    Hold :guilabel:`Cmd+Option` and drag the mouse
+    Hold :kbd:`Cmd+Option` and drag the mouse
 
 - **Windows**
 
@@ -365,14 +365,14 @@ terminal's built in text selection:
 
   - **Windows Terminal**
 
-    1. Hold :guilabel:`Shift` and drag the mouse to select text
-    2. Press :guilabel:`Ctrl-Shift-C` to copy.
+    1. Hold :kbd:`Shift` and drag the mouse to select text
+    2. Press :kbd:`Ctrl-Shift-C` to copy.
 
 Pasting Text
 ^^^^^^^^^^^^
 
 Text can be pasted into the Python Input window from the system clipboard with
-:guilabel:`Ctrl-v`.
+:kbd:`Ctrl-v`.
 
 If you are using the console on a separate machine (over an ssh connection for
 example) then pasting will use that machine's clipboard. This may not be the
@@ -384,11 +384,11 @@ are using and on which OS. Here's how on various platforms:
 
   - **XTerm**
 
-    :guilabel:`Shift-Insert` pastes text
+    :kbd:`Shift-Insert` pastes text
 
   - **Gnome Terminal**
 
-    :guilabel:`Ctrl-Shift-V` pastes text
+    :kbd:`Ctrl-Shift-V` pastes text
 
 - **Windows**
 
@@ -397,12 +397,12 @@ are using and on which OS. Here's how on various platforms:
     1. Click on the Git icon in the upper left of the windows title bar and open
        ``Properties``.
     2. Checkmark the option ``Use Ctrl+Shift+C/V as Copy Paste`` and hit ok.
-    3. Then use :guilabel:`Ctrl-Shift-V` to paste.
+    3. Then use :kbd:`Ctrl-Shift-V` to paste.
 
   - **Windows Terminal**
 
-   -  :guilabel:`Ctrl-Shift-V` pastes text.
-   -  :guilabel:`Shift-RightClick` also pastes text.
+   -  :kbd:`Ctrl-Shift-V` pastes text.
+   -  :kbd:`Shift-RightClick` also pastes text.
 
 
 Window Management
@@ -417,17 +417,17 @@ also menu options under :guilabel:`[View]` for the same actions.
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Enlarge window height                         :guilabel:`Alt-=`
-Shrink window height                          :guilabel:`Alt--`
-                                              (`Alt` and `Minus`)
-Enlarge vertical split width                  :guilabel:`Alt-,`
-Shrink vertical split width                   :guilabel:`Alt-.`
-Reset window sizes                            :guilabel:`Ctrl-u`
+Enlarge window height                         :kbd:`Alt-=`
+Shrink window height                          :kbd:`Alt--`
+                                              (:kbd:`Alt` and :kbd:`Minus`)
+Enlarge vertical split width                  :kbd:`Alt-,`
+Shrink vertical split width                   :kbd:`Alt-.`
+Reset window sizes                            :kbd:`Ctrl-u`
 
-Move window up                                :guilabel:`Ctrl-Alt-k`
-Move window down                              :guilabel:`Ctrl-Alt-j`
-Move window left                              :guilabel:`Ctrl-Alt-h`
-Move window right                             :guilabel:`Ctrl-Alt-l`
+Move window up                                :kbd:`Ctrl-Alt-k`
+Move window down                              :kbd:`Ctrl-Alt-j`
+Move window left                              :kbd:`Ctrl-Alt-h`
+Move window right                             :kbd:`Ctrl-Alt-l`
 ============================================  =====================
 
 Moving windows left and right will create a new vertical splits. Each vertical

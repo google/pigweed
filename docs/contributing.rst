@@ -95,6 +95,27 @@ It's acceptable to only document new changes in an otherwise underdocumented
 module, but it's not acceptable to not document new changes because the module
 doesn't have any other documentation.
 
+Documentation Style Guide
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pigweed documentation is written using the `reStructuredText
+<https://docutils.sourceforge.io/rst.html>`_ markup language and processed by
+`Sphinx`_. We use the `Furo theme <https://github.com/pradyunsg/furo>`_ along
+with the `sphinx-design <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
+extension.
+
+.. admonition:: Doc Writing Reference Links
+   :class: seealso
+
+   - `reStructuredText Primer`_
+
+   - `reStructuredText Directives <https://docutils.sourceforge.io/docs/ref/rst/directives.html>`_
+
+   - `Furo Reference <https://pradyunsg.me/furo/reference/>`_
+
+   - `Sphinx-design Reference <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
+
+
 Code Reviews
 ------------
 All Pigweed development happens on Gerrit, following the `typical Gerrit
@@ -234,3 +255,12 @@ example) you may push using this command:
 .. code:: bash
 
   $ git push origin HEAD:refs/for/main --no-verify
+
+.. _Sphinx: https://www.sphinx-doc.org/
+
+.. inclusive-language: disable
+
+.. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
+
+.. inclusive-language: enable
+

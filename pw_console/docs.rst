@@ -4,6 +4,10 @@
 pw_console
 ----------
 
+:bdg-primary:`host`
+:bdg-secondary:`Python`
+:bdg-warning:`unstable`
+
 The Pigweed Console provides a Python repl (read eval print loop) using
 `ptpython`_ and a log message viewer in a single-window terminal based
 interface. It is designed to be a replacement for `IPython's embed()`_ function.

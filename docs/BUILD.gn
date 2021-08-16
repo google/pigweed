@@ -188,5 +188,8 @@ pw_doc_gen("docs") {
 
 # Install Pigweed specific sphinx themes.
 pw_python_requirements("sphinx_themes") {
-  requirements = [ "furo" ]
+  requirements = [
+    "furo",
+    "sphinx_design",
+  ]
 }
