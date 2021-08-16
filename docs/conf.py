@@ -119,6 +119,8 @@ html_theme_options = {
         'color-api-class-border': '#6ab0de',
         'color-inline-code-background': '#fafafa',
         'color-inline-code-border': '#cccccc',
+        'color-text-selection-background': '#1d5fad',
+        'color-text-selection-foreground': '#ffffff',
     },
     'dark_css_variables': {
         'color-sidebar-brand-text': '#e815a5',
@@ -135,6 +137,8 @@ html_theme_options = {
         'color-api-class-border': '#5288be',
         'color-inline-code-background': '#2b2b2b',
         'color-inline-code-border': '#575757',
+        'color-text-selection-background': '#2674bf',
+        'color-text-selection-foreground': '#ffffff',
     },
 }
 

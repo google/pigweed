@@ -45,13 +45,13 @@ _style_list[Name.Variable.Class] = '#8be9fd'
 _style_list[Name.Variable.Global] = '#8be9fd'
 _style_list[Name.Variable.Instance] = '#8be9fd'
 
-_color_regex = re.compile(r'#(?P<hex>[0-9a-fA-F]{6}) *(?P<rest>.*?)$')
+_COLOR_REGEX = re.compile(r'#(?P<hex>[0-9a-fA-F]{6}) *(?P<rest>.*?)$')
 
 
 def swap_light_dark(color: str) -> str:
     if not color:
         return color
-    match = _color_regex.search(color)
+    match = _COLOR_REGEX.search(color)
     if not match:
         return color
     match_groups = match.groupdict()

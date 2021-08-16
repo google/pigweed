@@ -76,6 +76,18 @@ div>svg {
   background: #ffffff;
 }
 
+/* Make inline code standout more */
 code.literal {
   border: 1px solid var(--color-inline-code-border);
+}
+
+/* Make sure text selection colors are readable */
+::selection {
+  color: var(--color-text-selection-foreground);
+  background: var(--color-text-selection-background);
+}
+
+/* Use normal mixed-case for h4, h5, and h6 */
+h4, h5, h6 {
+    text-transform: none;
 }

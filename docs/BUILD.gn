@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
 
 # Note: These may be useful for downstream projects, which is why they are
@@ -177,8 +178,8 @@ pw_doc_gen("docs") {
   output_directory = target_gen_dir
   deps = [
     ":core_docs",
-    ":install_sphinx_themes",
     ":module_docs",
+    ":sphinx_themes.install",
     ":target_docs",
     ":third_party_docs",
     "$dir_pw_env_setup:python.install",
@@ -186,11 +187,6 @@ pw_doc_gen("docs") {
 }
 
 # Install Pigweed specific sphinx themes.
-pw_python_action("install_sphinx_themes") {
-  module = "pip"
-  args = [
-    "install",
-    "furo",
-  ]
-  stamp = true
+pw_python_requirements("sphinx_themes") {
+  requirements = [ "furo" ]
 }
