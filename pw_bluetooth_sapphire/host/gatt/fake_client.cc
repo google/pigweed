@@ -162,9 +162,10 @@ void FakeClient::WriteWithoutResponse(att::Handle handle, const ByteBuffer& valu
   }
 }
 
-void FakeClient::SendNotification(bool indicate, att::Handle handle, const ByteBuffer& value) {
+void FakeClient::SendNotification(bool indicate, att::Handle handle, const ByteBuffer& value,
+                                  bool maybe_truncated) {
   if (notification_callback_) {
-    notification_callback_(indicate, handle, value);
+    notification_callback_(indicate, handle, value, maybe_truncated);
   }
 }
 

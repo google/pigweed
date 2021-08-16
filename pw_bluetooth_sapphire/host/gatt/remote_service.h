@@ -303,7 +303,7 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
 
   // Called by RemoteServiceManager when a notification is received for one of
   // this service's characteristics.
-  void HandleNotification(att::Handle value_handle, const ByteBuffer& value);
+  void HandleNotification(att::Handle value_handle, const ByteBuffer& value, bool maybe_truncated);
 
   ServiceData service_data_;
 

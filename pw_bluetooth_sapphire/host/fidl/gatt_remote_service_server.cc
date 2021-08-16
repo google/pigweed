@@ -310,7 +310,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
   notify_handlers_[handle] = bt::gatt::kInvalidId;
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto value_cb = [self, id](const ByteBuffer& value) {
+  auto value_cb = [self, id](const ByteBuffer& value, bool /*maybe_truncated*/) {
     if (!self)
       return;
 

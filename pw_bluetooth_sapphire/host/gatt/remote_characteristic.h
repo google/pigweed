@@ -48,7 +48,7 @@ class Client;
 // MUST call ShutDown() on the GATT thread to ensure safe clean up.
 class RemoteCharacteristic final {
  public:
-  using ValueCallback = fit::function<void(const ByteBuffer&)>;
+  using ValueCallback = fit::function<void(const ByteBuffer&, bool maybe_truncated)>;
   using NotifyStatusCallback = fit::function<void(att::Status, IdType handler_id)>;
 
   // We use an ordered map so that the Descriptors are exposed to the world in order
@@ -117,7 +117,7 @@ class RemoteCharacteristic final {
   void ResolvePendingNotifyRequests(att::Status status);
 
   // Called when a notification is received for this characteristic.
-  void HandleNotification(const ByteBuffer& value);
+  void HandleNotification(const ByteBuffer& value, bool maybe_truncated);
 
   fit::thread_checker thread_checker_;
   CharacteristicData info_;

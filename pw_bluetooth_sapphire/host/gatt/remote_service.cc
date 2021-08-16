@@ -836,7 +836,8 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
   client_->ReadByTypeRequest(type, start, end, std::move(read_cb));
 }
 
-void RemoteService::HandleNotification(att::Handle value_handle, const ByteBuffer& value) {
+void RemoteService::HandleNotification(att::Handle value_handle, const ByteBuffer& value,
+                                       bool maybe_truncated) {
   ZX_DEBUG_ASSERT(IsOnGattThread());
 
   if (shut_down_)
@@ -844,7 +845,7 @@ void RemoteService::HandleNotification(att::Handle value_handle, const ByteBuffe
 
   auto iter = characteristics_.find(CharacteristicHandle(value_handle));
   if (iter != characteristics_.end()) {
-    iter->second.HandleNotification(value);
+    iter->second.HandleNotification(value, maybe_truncated);
   }
 }
 

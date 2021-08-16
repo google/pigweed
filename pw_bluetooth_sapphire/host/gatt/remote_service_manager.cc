@@ -168,7 +168,7 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(
 
         const bt::gatt::CharacteristicHandle svc_changed_char_handle = svc_changed_char_iter->first;
 
-        auto notification_cb = [self](const ByteBuffer& value) {
+        auto notification_cb = [self](const ByteBuffer& value, bool /*maybe_truncated*/) {
           // The Client's Bearer may outlive this object.
           if (self) {
             self->OnServiceChangedNotification(value);
@@ -382,7 +382,8 @@ void RemoteServiceManager::ClearServices() {
   }
 }
 
-void RemoteServiceManager::OnNotification(bool, att::Handle value_handle, const ByteBuffer& value) {
+void RemoteServiceManager::OnNotification(bool ind, att::Handle value_handle,
+                                          const ByteBuffer& value, bool maybe_truncated) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (services_.empty()) {
@@ -400,7 +401,7 @@ void RemoteServiceManager::OnNotification(bool, att::Handle value_handle, const 
   ZX_DEBUG_ASSERT(value_handle >= svc->handle());
 
   if (svc->info().range_end >= value_handle) {
-    svc->HandleNotification(value_handle, value);
+    svc->HandleNotification(value_handle, value, maybe_truncated);
   }
 }
 

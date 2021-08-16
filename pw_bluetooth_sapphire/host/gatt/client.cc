@@ -94,6 +94,7 @@ class Impl final : public Client {
       bool is_ind = pdu.opcode() == att::kIndication;
       const auto& params = pdu.payload<att::NotificationParams>();
       att::Handle handle = le16toh(params.handle);
+      size_t value_size = pdu.payload_size() - sizeof(att::Handle);
 
       // Auto-confirm indications.
       if (is_ind) {
@@ -106,10 +107,16 @@ class Impl final : public Client {
         }
       }
 
+      bool maybe_truncated = false;
+      // If the value is the max size that fits in the MTU, it may be truncated.
+      if (value_size == att_->mtu() - sizeof(att::OpCode) - sizeof(att::Handle)) {
+        maybe_truncated = true;
+      }
+
       // Run the handler
       if (notification_handler_) {
-        notification_handler_(is_ind, handle,
-                              BufferView(params.value, pdu.payload_size() - sizeof(att::Handle)));
+        notification_handler_(is_ind, handle, BufferView(params.value, value_size),
+                              maybe_truncated);
       } else {
         bt_log(TRACE, "gatt", "dropped notification/indication without handler");
       }

@@ -221,8 +221,8 @@ class Client {
 
   // Assigns a callback that will be called when a notification or indication
   // PDU is received.
-  using NotificationCallback =
-      fit::function<void(bool indication, att::Handle handle, const ByteBuffer& value)>;
+  using NotificationCallback = fit::function<void(bool indication, att::Handle handle,
+                                                  const ByteBuffer& value, bool maybe_truncated)>;
   virtual void SetNotificationHandler(NotificationCallback handler) = 0;
 };
 

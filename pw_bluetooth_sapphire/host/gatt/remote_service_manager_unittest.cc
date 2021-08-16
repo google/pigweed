@@ -40,7 +40,7 @@ constexpr att::Handle kDesc2 = 5;
 constexpr att::Handle kEnd = 5;
 
 void NopStatusCallback(att::Status) {}
-void NopValueCallback(const ByteBuffer&) {}
+void NopValueCallback(const ByteBuffer& /*value*/, bool /*maybe_truncated*/) {}
 
 class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
  public:
@@ -2893,7 +2893,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
   fake_client()->set_write_request_callback([&](auto, auto&, auto) { write_requested = true; });
 
   int notify_count = 0;
-  auto notify_cb = [&](const auto& value) { notify_count++; };
+  auto notify_cb = [&](const auto& value, bool /*maybe_truncated*/) { notify_count++; };
 
   att::Status status;
   IdType id;
@@ -2907,7 +2907,8 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
   EXPECT_TRUE(status);
   EXPECT_FALSE(write_requested);
 
-  fake_client()->SendNotification(false, 3, StaticByteBuffer('y', 'e'));
+  fake_client()->SendNotification(/*indicate=*/false, 3, StaticByteBuffer('y', 'e'),
+                                  /*maybe_truncated=*/false);
   EXPECT_EQ(1, notify_count);
 
   // Disabling notifications should not result in a write request.
@@ -2918,7 +2919,8 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
   EXPECT_FALSE(write_requested);
 
   // The handler should no longer receive notifications.
-  fake_client()->SendNotification(false, 3, StaticByteBuffer('o', 'y', 'e'));
+  fake_client()->SendNotification(/*indicate=*/false, 3, StaticByteBuffer('o', 'y', 'e'),
+                                  /*maybe_truncated=*/false);
   EXPECT_EQ(1, notify_count);
 }
 
@@ -2926,7 +2928,9 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
 // dropped and not cause a crash.
 TEST_F(GATT_RemoteServiceManagerTest, NotificationWithoutServices) {
   for (att::Handle i = 0; i < 10; ++i) {
-    fake_client()->SendNotification(false, i, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+    fake_client()->SendNotification(/*indicate=*/false, i,
+                                    CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'),
+                                    /*maybe_truncated=*/false);
   }
   RunLoopUntilIdle();
 }
@@ -2950,21 +2954,26 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   att::Status status(HostError::kFailed);
 
   int chr1_count = 0;
-  auto chr1_cb = [&](const ByteBuffer& value) {
+  auto chr1_cb = [&](const ByteBuffer& value, bool maybe_truncated) {
     chr1_count++;
     EXPECT_EQ("notify", value.AsString());
+    EXPECT_FALSE(maybe_truncated);
   };
 
   int chr2_count = 0;
-  auto chr2_cb = [&](const ByteBuffer& value) {
+  auto chr2_cb = [&](const ByteBuffer& value, bool maybe_truncated) {
     chr2_count++;
     EXPECT_EQ("indicate", value.AsString());
+    EXPECT_TRUE(maybe_truncated);
   };
 
   // Notify both characteristics which should get dropped.
-  fake_client()->SendNotification(false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
-  fake_client()->SendNotification(true, 6,
-                                  CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+  fake_client()->SendNotification(/*indicate=*/false, 3,
+                                  StaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'),
+                                  /*maybe_truncated=*/false);
+  fake_client()->SendNotification(/*indicate=*/true, 6,
+                                  StaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'),
+                                  /*maybe_truncated=*/true);
 
   EnableNotifications(service, kDefaultCharacteristic, &status, &handler_id, std::move(chr1_cb));
   ASSERT_TRUE(status);
@@ -2972,13 +2981,16 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   ASSERT_TRUE(status);
 
   // Notify characteristic 1.
-  fake_client()->SendNotification(false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+  fake_client()->SendNotification(/*indicate=*/false, 3,
+                                  StaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'),
+                                  /*maybe_truncated=*/false);
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(0, chr2_count);
 
   // Notify characteristic 2.
-  fake_client()->SendNotification(true, 6,
-                                  CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+  fake_client()->SendNotification(/*indicate=*/true, 6,
+                                  StaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'),
+                                  /*maybe_truncated=*/true);
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(1, chr2_count);
 
@@ -2991,9 +3003,12 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   EXPECT_TRUE(status);
 
   // Notifications for characteristic 1 should get dropped.
-  fake_client()->SendNotification(false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
-  fake_client()->SendNotification(true, 6,
-                                  CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+  fake_client()->SendNotification(/*indicate=*/false, 3,
+                                  StaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'),
+                                  /*maybe_truncated=*/false);
+  fake_client()->SendNotification(/*indicate=*/true, 6,
+                                  StaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'),
+                                  /*maybe_truncated=*/true);
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(2, chr2_count);
 }
@@ -3290,7 +3305,7 @@ TEST_F(GATT_RemoteServiceManagerTest,
       LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)       // end handle of affected range
   );
   fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
-                                  svc_changed_range_buffer);
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
   RunLoopUntilIdle();
   // TODO(fxbug.dev/71986): Add expectations around service changed notification
   // once the facilities in RemoteServiceManager are available to do so.

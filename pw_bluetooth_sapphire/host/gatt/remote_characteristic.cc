@@ -21,18 +21,18 @@ void ReportNotifyStatus(att::Status status, IdType id,
   RunOrPost([status, id, cb = std::move(callback)] { cb(status, id); }, dispatcher);
 }
 
-void NotifyValue(const ByteBuffer& value, RemoteCharacteristic::ValueCallback callback,
-                 async_dispatcher_t* dispatcher) {
+void NotifyValue(const ByteBuffer& value, bool maybe_truncated,
+                 RemoteCharacteristic::ValueCallback callback, async_dispatcher_t* dispatcher) {
   if (!dispatcher) {
-    callback(value);
+    callback(value, maybe_truncated);
     return;
   }
 
   auto buffer = NewSlabBuffer(value.size());
   if (buffer) {
     value.Copy(buffer.get());
-    async::PostTask(dispatcher,
-                    [callback = std::move(callback), val = std::move(buffer)] { callback(*val); });
+    async::PostTask(dispatcher, [callback = std::move(callback), val = std::move(buffer),
+                                 maybe_truncated] { callback(*val, maybe_truncated); });
   } else {
     bt_log(DEBUG, "gatt", "out of memory!");
   }
@@ -334,14 +334,14 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Status status) {
   }
 }
 
-void RemoteCharacteristic::HandleNotification(const ByteBuffer& value) {
+void RemoteCharacteristic::HandleNotification(const ByteBuffer& value, bool maybe_truncated) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(!shut_down_);
 
   for (auto& iter : notify_handlers_) {
     auto& handler = iter.second;
-    NotifyValue(value, handler.callback.share(), handler.dispatcher);
+    NotifyValue(value, maybe_truncated, handler.callback.share(), handler.dispatcher);
   }
 }
 

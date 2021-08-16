@@ -123,7 +123,8 @@ class RemoteServiceManager final {
   void ClearServices();
 
   // Called by |client_| when a notification or indication is received.
-  void OnNotification(bool ind, att::Handle value_handle, const ByteBuffer& value);
+  void OnNotification(bool ind, att::Handle value_handle, const ByteBuffer& value,
+                      bool maybe_truncated);
 
   async_dispatcher_t* gatt_dispatcher_;
   std::unique_ptr<Client> client_;

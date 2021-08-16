@@ -3592,12 +3592,13 @@ TEST_F(GATT_ClientTest, EmptyNotification) {
   constexpr att::Handle kHandle = 1;
 
   bool called = false;
-  client()->SetNotificationHandler([&](bool ind, auto handle, const auto& value) {
-    called = true;
-    EXPECT_FALSE(ind);
-    EXPECT_EQ(kHandle, handle);
-    EXPECT_EQ(0u, value.size());
-  });
+  client()->SetNotificationHandler(
+      [&](bool ind, auto handle, const auto& value, bool /*maybe_truncated*/) {
+        called = true;
+        EXPECT_FALSE(ind);
+        EXPECT_EQ(kHandle, handle);
+        EXPECT_EQ(0u, value.size());
+      });
 
   // clang-format off
   fake_chan()->Receive(CreateStaticByteBuffer(
@@ -3614,12 +3615,14 @@ TEST_F(GATT_ClientTest, Notification) {
   constexpr att::Handle kHandle = 1;
 
   bool called = false;
-  client()->SetNotificationHandler([&](bool ind, auto handle, const auto& value) {
-    called = true;
-    EXPECT_FALSE(ind);
-    EXPECT_EQ(kHandle, handle);
-    EXPECT_EQ("test", value.AsString());
-  });
+  client()->SetNotificationHandler(
+      [&](bool ind, auto handle, const auto& value, bool maybe_truncated) {
+        called = true;
+        EXPECT_FALSE(ind);
+        EXPECT_EQ(kHandle, handle);
+        EXPECT_EQ("test", value.AsString());
+        EXPECT_FALSE(maybe_truncated);
+      });
 
   // clang-format off
   fake_chan()->Receive(CreateStaticByteBuffer(
@@ -3633,16 +3636,43 @@ TEST_F(GATT_ClientTest, Notification) {
   EXPECT_TRUE(called);
 }
 
+TEST_F(GATT_ClientTest, NotificationTruncated) {
+  constexpr att::Handle kHandle = 1;
+  StaticByteBuffer pdu_header(0x1B,       // opcode: notification
+                              0x01, 0x00  // handle: 1
+
+  );
+  DynamicByteBuffer pdu(att()->mtu());
+  pdu.Fill(0);
+  pdu_header.Copy(&pdu);
+
+  bool called = false;
+  client()->SetNotificationHandler(
+      [&](bool ind, auto handle, const ByteBuffer& value, bool maybe_truncated) {
+        called = true;
+        EXPECT_FALSE(ind);
+        EXPECT_EQ(kHandle, handle);
+        EXPECT_EQ(value.size(), att()->mtu() - pdu_header.size());
+        EXPECT_TRUE(maybe_truncated);
+      });
+  fake_chan()->Receive(pdu);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(called);
+}
+
 TEST_F(GATT_ClientTest, Indication) {
   constexpr att::Handle kHandle = 1;
 
   bool called = false;
-  client()->SetNotificationHandler([&](bool ind, auto handle, const auto& value) {
-    called = true;
-    EXPECT_TRUE(ind);
-    EXPECT_EQ(kHandle, handle);
-    EXPECT_EQ("test", value.AsString());
-  });
+  client()->SetNotificationHandler(
+      [&](bool ind, auto handle, const auto& value, bool maybe_truncated) {
+        called = true;
+        EXPECT_TRUE(ind);
+        EXPECT_EQ(kHandle, handle);
+        EXPECT_EQ("test", value.AsString());
+        EXPECT_FALSE(maybe_truncated);
+      });
 
   const auto kIndication = StaticByteBuffer(0x1D,               // opcode: indication
                                             0x01, 0x00,         // handle: 1
