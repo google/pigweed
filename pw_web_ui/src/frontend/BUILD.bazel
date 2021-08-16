@@ -14,10 +14,10 @@
 
 load("@npm//@bazel/concatjs:index.bzl", "concatjs_devserver")
 
-package(default_visibility = ["//visibility:public"])
-
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 load("//pw_web_ui:web_bundle.bzl", "web_bundle")
+
+package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "app_lib",

@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Configure Pigweed's backend implementations."""
 
 def _pigweed_config_impl(repository_ctx):
     if repository_ctx.attr.build_file_content and \

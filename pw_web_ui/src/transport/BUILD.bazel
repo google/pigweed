@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-package(default_visibility = ["//visibility:public"])
-
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 load("//pw_web_ui:web_bundle.bzl", "web_bundle")
 load("@npm//@bazel/concatjs:index.bzl", "karma_web_test")
+
+package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "device_transport_lib",

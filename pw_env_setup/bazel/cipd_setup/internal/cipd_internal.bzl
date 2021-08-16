@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Internal Bazel helpers for downloading CIPD packages."""
 
 load(
     ":cipd_repository_list_templates.bzl",

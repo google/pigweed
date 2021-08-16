@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Utility for tagging a target as compatible with a host OS."""
 
 _RTOS_NONE = "//pw_build/constraints/rtos:none"
 

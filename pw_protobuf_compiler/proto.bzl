@@ -11,6 +11,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Embedded-friendly replacement for native.cc_proto_library."""
+
 load("//pw_build:pigweed.bzl", "pw_cc_library")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@rules_proto_grpc//:plugin.bzl", "ProtoPluginInfo")
