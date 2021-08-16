@@ -402,6 +402,16 @@ Implementations
   ``/dev/null``. Writes are always dropped. Reads always return
   ``OUT_OF_RANGE``. Seeks have no effect.
 
+.. cpp:class:: StdFileWriter : public SeekableWriter
+
+  ``StdFileWriter`` wraps an ``std::ofstream`` with the :cpp:class:`Writer`
+  interface.
+
+.. cpp:class:: StdFileReader : public SeekableReader
+
+  ``StdFileReader`` wraps an ``std::ifstream`` with the :cpp:class:`Reader`
+  interface.
+
 ------------------
 Why use pw_stream?
 ------------------

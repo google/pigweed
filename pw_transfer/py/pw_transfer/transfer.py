@@ -158,6 +158,11 @@ class _WriteTransfer(_Transfer):
         if chunk.HasField('min_delay_microseconds'):
             self._chunk_delay_us = chunk.min_delay_microseconds
 
+        if len(self.data) == 0:
+            # Zero-length transfers immediately notify the server that there is
+            # no data to send.
+            self._send_chunk(Chunk(transfer_id=self.id, remaining_bytes=0))
+
         while self._max_bytes_to_send > 0:
             write_chunk = self._next_chunk()
             self._offset += len(write_chunk.data)

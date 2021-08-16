@@ -43,6 +43,7 @@ pw_python_script("python_cpp_transfer_test") {
     "$dir_pw_hdlc/py",
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
+    "..:test_server_proto.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
 

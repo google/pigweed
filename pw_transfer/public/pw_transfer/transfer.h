@@ -53,6 +53,10 @@ class TransferService : public generated::Transfer<TransferService> {
     handlers_.push_front(handler);
   }
 
+  void UnregisterHandler(internal::Handler& handler) {
+    handlers_.remove(handler);
+  }
+
  private:
   void SendStatusChunk(RawServerReaderWriter& stream,
                        uint32_t transfer_id,

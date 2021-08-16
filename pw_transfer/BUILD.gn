@@ -85,12 +85,20 @@ pw_doc_group("docs") {
   inputs = [ "transfer.proto" ]
 }
 
+pw_proto_library("test_server_proto") {
+  sources = [ "test_server.proto" ]
+  prefix = "pw_transfer_test"
+  deps = [ "$dir_pw_protobuf:common_protos" ]
+}
+
 pw_executable("test_rpc_server") {
   sources = [ "test_rpc_server.cc" ]
   deps = [
     ":pw_transfer",
+    ":test_server_proto.raw_rpc",
     "$dir_pw_rpc/system_server",
     "$dir_pw_rpc/system_server:socket",
+    "$dir_pw_stream:std_file_stream",
     dir_pw_log,
   ]
 }

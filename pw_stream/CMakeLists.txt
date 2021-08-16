@@ -28,14 +28,21 @@ pw_add_module_library(pw_stream
 pw_add_module_library(pw_stream.socket_stream
   SOURCES
     socket_stream.cc
-  PRIVATE_DEPS
+  PUBLIC_DEPS
     pw_stream
 )
 
 pw_add_module_library(pw_stream.sys_io_stream
-  PRIVATE_DEPS
+  PUBLIC_DEPS
     pw_stream
     pw_sys_io
+)
+
+pw_add_module_library(pw_stream.std_file_stream
+  SOURCES
+    std_file_stream.cc
+  PUBLIC_DEPS
+    pw_stream
 )
 
 pw_add_test(pw_stream.memory_stream_test

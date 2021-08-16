@@ -27,7 +27,7 @@
 namespace pw::rpc::system_server {
 namespace {
 
-constexpr size_t kMaxTransmissionUnit = 256;
+constexpr size_t kMaxTransmissionUnit = 512;
 uint16_t socket_port = 33000;
 
 stream::SocketStream socket_stream;
