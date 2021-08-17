@@ -90,10 +90,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     callback(hci::Status());
   }
 
-  bool StopAdvertising(const DeviceAddress& address) override {
-    ads_->erase(address);
-    return true;
-  }
+  void StopAdvertising(const DeviceAddress& address) override { ads_->erase(address); }
 
   void OnIncomingConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                             const DeviceAddress& peer_address,

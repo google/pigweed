@@ -141,6 +141,7 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
     case kLEMetaEventCode: {
       auto subevent_code = params<LEMetaEventParams>().subevent_code;
       switch (subevent_code) {
+        CASE_SUBEVENT_STATUS(LEAdvertisingSetTerminated);
         CASE_SUBEVENT_STATUS(LEReadRemoteFeaturesComplete);
         default:
           ZX_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);

@@ -4,6 +4,7 @@
 
 #include "util.h"
 
+#include <endian.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -211,6 +212,71 @@ LEAddressType AddressTypeToHCI(DeviceAddress::Type type) {
       break;
   }
   return result;
+}
+
+// TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
+// future, we should generalize this logic and make a uint24_t type that makes it easier to work
+// with these types of conversions.
+void EncodeLegacyAdvertisingInterval(uint16_t input, uint8_t (&result)[3]) {
+  MutableBufferView result_view(result, sizeof(result));
+  result_view.SetToZeros();
+
+  // Core spec Volume 6, Part B, Section 1.2: Link layer order is little endian, convert to little
+  // endian if host order is big endian
+  input = htole16(input);
+  BufferView input_view(&input, sizeof(input));
+
+  input_view.Copy(&result_view, 0, sizeof(input));
+}
+
+// TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
+// future, we should generalize this logic and make a uint24_t type that makes it easier to work
+// with these types of conversions.
+uint32_t DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]) {
+  uint32_t result = 0;
+  MutableBufferView result_view(&result, sizeof(result));
+
+  BufferView input_view(input, sizeof(input));
+  input_view.Copy(&result_view);
+
+  // Core spec Volume 6, Part B, Section 1.2: Link layer order is little endian, convert to little
+  // endian if host order is big endian
+  return letoh32(result);
+}
+
+std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(LEAdvertisingType type) {
+  // TODO(fxbug.dev/81470): for backwards compatibility and because supporting extended advertising
+  // PDUs is a much larger project, we currently only support legacy PDUs. Without using legacy
+  // PDUs, non-Bluetooth 5 devices will not be able to discover extended advertisements.
+  uint16_t adv_event_properties = kLEAdvEventPropBitUseLegacyPDUs;
+
+  // Bluetooth Spec Volume 4, Part E, Section 7.8.53, Table 7.2 defines the mapping of legacy PDU
+  // types to the corresponding bits within adv_event_properties.
+  switch (type) {
+    case LEAdvertisingType::kAdvInd:
+      adv_event_properties |= kLEAdvEventPropBitConnectable;
+      adv_event_properties |= kLEAdvEventPropBitScannable;
+      break;
+    case LEAdvertisingType::kAdvDirectIndLowDutyCycle:
+      adv_event_properties |= kLEAdvEventPropBitConnectable;
+      adv_event_properties |= kLEAdvEventPropBitDirected;
+      break;
+    case LEAdvertisingType::kAdvDirectIndHighDutyCycle:
+      adv_event_properties |= kLEAdvEventPropBitConnectable;
+      adv_event_properties |= kLEAdvEventPropBitDirected;
+      adv_event_properties |= kLEAdvEventPropBitHighDutyCycleDirectedConnectable;
+      break;
+    case LEAdvertisingType::kAdvScanInd:
+      adv_event_properties |= kLEAdvEventPropBitScannable;
+      break;
+    case LEAdvertisingType::kAdvNonConnInd:
+      // no extra bits to set
+      break;
+    default:
+      return std::nullopt;
+  }
+
+  return adv_event_properties;
 }
 
 }  // namespace bt::hci

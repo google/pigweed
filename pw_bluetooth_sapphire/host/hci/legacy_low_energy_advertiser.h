@@ -32,14 +32,14 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
                         ConnectionCallback connect_callback,
                         StatusCallback status_callback) override;
 
-  bool StopAdvertising() override;
+  void StopAdvertising() override;
 
   // If called while a stop request is pending, returns false.
   // If called while a start request is pending, then cancels the start
   // request and proceeds with start.
   // Returns false if called while not advertising.
   // TODO(fxbug.dev/50542): Update documentation.
-  bool StopAdvertising(const DeviceAddress& address) override;
+  void StopAdvertising(const DeviceAddress& address) override;
 
   void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
                             const DeviceAddress& peer_address,

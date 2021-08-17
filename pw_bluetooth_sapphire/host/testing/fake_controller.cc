@@ -1581,31 +1581,6 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
   RespondWithCommandComplete(hci::kLESetAdvertisingSetRandomAddress, hci::StatusCode::kSuccess);
 }
 
-// TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
-// future, we should generalize this logic and make a uint24_t type that makes it easier to work
-// with these types of conversions.
-uint32_t FakeController::DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]) {
-  uint32_t result = 0;
-
-  BufferView input_view(input, sizeof(input));
-  MutableBufferView result_view(&result, sizeof(result));
-
-  // Core spec Volume 6, Part B, Section 1.2: Link layer order is little endian, convert to little
-  // endian if host order is big endian
-  if (__BYTE_ORDER == __BIG_ENDIAN) {
-    result_view[0] = input_view[2];
-    result_view[1] = input_view[1];
-    result_view[2] = input_view[0];
-  } else {
-    result_view[0] = input_view[0];
-    result_view[1] = input_view[1];
-    result_view[2] = input_view[2];
-  }
-
-  result_view[3] = 0;
-  return result;
-}
-
 void FakeController::OnLESetExtendedAdvertisingParameters(
     const hci::LESetExtendedAdvertisingParametersCommandParams& params) {
   hci::AdvertisingHandle handle = params.adv_handle;
@@ -1678,8 +1653,8 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
     state = extended_advertising_states_[handle];
   }
 
-  uint32_t interval_min = DecodeExtendedAdvertisingInterval(params.primary_adv_interval_min);
-  uint32_t interval_max = DecodeExtendedAdvertisingInterval(params.primary_adv_interval_max);
+  uint32_t interval_min = hci::DecodeExtendedAdvertisingInterval(params.primary_adv_interval_min);
+  uint32_t interval_max = hci::DecodeExtendedAdvertisingInterval(params.primary_adv_interval_max);
 
   if (interval_min >= interval_max) {
     bt_log(INFO, "fake-hci", "advertising interval min (%d) not strictly less than max (%d)",
@@ -2062,6 +2037,16 @@ void FakeController::OnLEReadAdvertisingChannelTxPower() {
   params.tx_power = 9;
   RespondWithCommandComplete(hci::kLEReadAdvertisingChannelTxPower,
                              BufferView(&params, sizeof(params)));
+}
+
+void FakeController::SendLEAdvertisingSetTerminatedEvent(hci::ConnectionHandle conn_handle,
+                                                         hci::AdvertisingHandle adv_handle) {
+  hci::LEAdvertisingSetTerminatedSubeventParams params;
+  params.status = hci::kSuccess;
+  params.connection_handle = conn_handle;
+  params.adv_handle = adv_handle;
+  SendLEMetaEvent(hci::kLEAdvertisingSetTerminatedSubeventCode,
+                  BufferView(&params, sizeof(params)));
 }
 
 void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {

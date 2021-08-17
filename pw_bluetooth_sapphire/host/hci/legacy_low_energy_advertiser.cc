@@ -20,9 +20,8 @@ namespace bt::hci {
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address, GenericEnableParam enable) {
   constexpr size_t kPayloadSize = sizeof(LESetAdvertisingEnableCommandParams);
-  auto packet = CommandPacket::New(kLESetAdvertisingEnable, kPayloadSize);
+  std::unique_ptr<CommandPacket> packet = CommandPacket::New(kLESetAdvertisingEnable, kPayloadSize);
   packet->mutable_payload<LESetAdvertisingEnableCommandParams>()->advertising_enable = enable;
-  ZX_ASSERT(packet);
   return packet;
 }
 
@@ -59,8 +58,8 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
     AdvertisingIntervalRange interval) {
-  auto packet = CommandPacket::New(kLESetAdvertisingParameters,
-                                   sizeof(LESetAdvertisingParametersCommandParams));
+  std::unique_ptr<CommandPacket> packet = CommandPacket::New(
+      kLESetAdvertisingParameters, sizeof(LESetAdvertisingParametersCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
   auto params = packet->mutable_payload<LESetAdvertisingParametersCommandParams>();
@@ -103,8 +102,7 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdvertising
 }
 
 static std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
-  auto packet = CommandPacket::New(kLEReadAdvertisingChannelTxPower);
-  ZX_ASSERT(packet);
+  std::unique_ptr<CommandPacket> packet = CommandPacket::New(kLEReadAdvertisingChannelTxPower);
   return packet;
 }
 
@@ -248,16 +246,23 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
       });
 }
 
-bool LegacyLowEnergyAdvertiser::StopAdvertising() {
-  bool ret = LowEnergyAdvertiser::StopAdvertising();
+void LegacyLowEnergyAdvertiser::StopAdvertising() {
+  LowEnergyAdvertiser::StopAdvertising();
   starting_ = false;
-  return ret;
 }
 
-bool LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
-  bool ret = LowEnergyAdvertiser::StopAdvertising(address);
+void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
+  if (!IsAdvertising(address)) {
+    // not advertising, or not advertising on this address.
+    return;
+  }
+
+  if (!hci_cmd_runner().IsReady()) {
+    hci_cmd_runner().Cancel();
+  }
+
+  LowEnergyAdvertiser::StopAdvertisingInternal(address);
   starting_ = false;
-  return ret;
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Connection::Role role,

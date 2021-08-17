@@ -107,11 +107,11 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Stops advertisement on all currently advertising addresses. Idempotent and asynchronous.
   // Returns true if advertising will be stopped for all currently registered advertising sets,
   // false otherwise.
-  virtual bool StopAdvertising();
+  virtual void StopAdvertising();
 
   // Stops any advertisement currently active on |address|. Idempotent and asynchronous. Returns
   // true if advertising will be stopped, false otherwise.
-  virtual bool StopAdvertising(const DeviceAddress& address);
+  virtual void StopAdvertising(const DeviceAddress& address) = 0;
 
   // Callback for an incoming LE connection. This function should be called in reaction to any
   // connection that was not initiated locally. This object will determine if it was a result of an
@@ -127,6 +127,9 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   bool IsAdvertising(const DeviceAddress& address) const {
     return connection_callbacks_.count(address) != 0;
   }
+
+  // Returns the number of advertisements currently registered
+  size_t NumAdvertisements() const { return connection_callbacks_.size(); }
 
  protected:
   // Build the HCI command packet to enable advertising for the flavor of low energy advertising
@@ -166,6 +169,14 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   virtual std::unique_ptr<CommandPacket> BuildRemoveAdvertisingSet(
       const DeviceAddress& address) = 0;
 
+  // Called when the command packet created with BuildSetAdvertisingParams returns with a result
+  virtual void OnSetAdvertisingParamsComplete(const EventPacket& event){};
+
+  // Called when a sequence of HCI commands that form a single operation (e.g. start advertising,
+  // stop advertising) completes in its entirety. Subclasses can override this method to be notified
+  // when the HCI command runner is available once again.
+  virtual void OnCurrentOperationComplete() {}
+
   // Unconditionally start advertising (all checks must be performed in the methods that call this
   // one).
   void StartAdvertisingInternal(const DeviceAddress& address, const AdvertisingData& data,
@@ -173,12 +184,16 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                 AdvFlags flags, ConnectionCallback connect_callback,
                                 StatusCallback callback);
 
+  // Unconditionally stop advertising (all checks muts be performed in the methods that call this
+  // one).
+  void StopAdvertisingInternal(const DeviceAddress& address);
+
   // Handle shared housekeeping tasks when an incoming connection is completed (e.g. clean up
   // internal state, call callbacks, etc)
-  virtual void CompleteIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                                          const DeviceAddress& local_address,
-                                          const DeviceAddress& peer_address,
-                                          const LEConnectionParameters& conn_params);
+  void CompleteIncomingConnection(ConnectionHandle handle, Connection::Role role,
+                                  const DeviceAddress& local_address,
+                                  const DeviceAddress& peer_address,
+                                  const LEConnectionParameters& conn_params);
 
   SequentialCommandRunner& hci_cmd_runner() const { return *hci_cmd_runner_; }
   fxl::WeakPtr<Transport> hci() const { return hci_; }
@@ -188,6 +203,23 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   }
 
  private:
+  struct StagedParameters {
+    AdvertisingData data;
+    AdvertisingData scan_rsp;
+
+    void reset() {
+      AdvertisingData blank;
+      blank.Copy(&data);
+      blank.Copy(&scan_rsp);
+    }
+  };
+
+  // Continuation function for starting advertising, called automatically via callbacks in
+  // StartAdvertisingInternal. Developers should not call this function directly.
+  bool StartAdvertisingInternalStep2(const DeviceAddress& address, AdvFlags flags,
+                                     ConnectionCallback connect_callback,
+                                     StatusCallback status_callback);
+
   // Enqueue onto the HCI command runner the HCI commands necessary to stop advertising and
   // completely remove a given address from the controller's memory. If even one of the HCI commands
   // cannot be generated for some reason, no HCI commands are enqueued.
@@ -196,6 +228,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   fxl::WeakPtr<Transport> hci_;
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
   std::unordered_map<DeviceAddress, ConnectionCallback> connection_callbacks_;
+  StagedParameters staged_parameters_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiser);
 };

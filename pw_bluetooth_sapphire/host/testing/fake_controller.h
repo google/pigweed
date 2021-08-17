@@ -145,6 +145,12 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Returns the current LE advertising state for legacy advertising
   const LEAdvertisingState& legacy_advertising_state() const { return legacy_advertising_state_; }
 
+  // Returns the current LE advertising state for extended advertising, for the given advertising
+  // handle
+  const LEAdvertisingState& extended_advertising_state(hci::AdvertisingHandle handle) {
+    return extended_advertising_states_[handle];
+  }
+
   // Returns the most recent LE connection request parameters.
   const std::optional<LEConnectParams>& le_connect_params() const { return le_connect_params_; }
 
@@ -312,12 +318,19 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Called when a HCI_LE_Read_Advertising_Channel_Tx_Power command is received.
   void OnLEReadAdvertisingChannelTxPower();
 
+  // Inform the controller that the advertising handle is connected via the connection handle. This
+  // method then generates the necessary LE Meta Events (e.g. Advertising Set Terminated) to inform
+  // extended advertising listeners.
+  void SendLEAdvertisingSetTerminatedEvent(hci::ConnectionHandle conn_handle,
+                                           hci::AdvertisingHandle adv_handle);
+
   // The maximum number of advertising sets supported by the controller. Core Spec Volume 4, Part E,
   // Section 7.8.58: the memory used to store advertising sets can also be used for other purposes.
   // This value can change over time.
   uint8_t num_supported_advertising_sets() const { return num_supported_advertising_sets_; }
   void set_num_supported_advertising_sets(uint8_t value) {
     ZX_ASSERT(value >= extended_advertising_states_.size());
+    ZX_ASSERT(value <= hci::kAdvertisingHandleMax + 1);  // support advertising handle of 0
     num_supported_advertising_sets_ = value;
   }
 

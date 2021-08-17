@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/extended_low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
@@ -285,6 +286,16 @@ class AdapterImpl final : public Adapter {
   // Called by |le_address_manager_| to query whether it is currently allowed to
   // reconfigure the LE random address.
   bool IsLeRandomAddressChangeAllowed();
+
+  std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser() {
+    constexpr hci::LESupportedFeature feature = hci::LESupportedFeature::kLEExtendedAdvertising;
+    if (state_.low_energy_state().IsFeatureSupported(feature)) {
+      bt_log(INFO, "gap", "controller supports extended advertising, using extended LE commands");
+      return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
+    }
+
+    return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
+  }
 
   // Must be initialized first so that child nodes can be passed to other constructors.
   inspect::Node adapter_node_;
@@ -883,17 +894,8 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
 }
 
 void AdapterImpl::InitializeStep4(InitializeCallback callback) {
+  // Initialize the scan manager and low energy adapters based on current feature support
   ZX_DEBUG_ASSERT(IsInitializing());
-
-  // Initialize the scan manager based on current feature support.
-  if (state_.low_energy_state().IsFeatureSupported(
-          hci::LESupportedFeature::kLEExtendedAdvertising)) {
-    bt_log(INFO, "gap", "controller supports extended advertising");
-
-    // TODO(armansito): Initialize |hci_le_*| objects here with extended-mode
-    // versions.
-    bt_log(WARN, "gap", "5.0 not yet supported; using legacy mode");
-  }
 
   // We use the public controller address as the local LE identity address.
   DeviceAddress adapter_identity(DeviceAddress::Type::kLEPublic, state_.controller_address());
@@ -903,7 +905,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
       adapter_identity, fit::bind_member(this, &AdapterImpl::IsLeRandomAddressChangeAllowed), hci_);
 
   // Initialize the HCI adapters.
-  hci_le_advertiser_ = std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
+  hci_le_advertiser_ = CreateAdvertiser();
   hci_le_connector_ = std::make_unique<hci::LowEnergyConnector>(
       hci_, le_address_manager_.get(), dispatcher_,
       fit::bind_member(hci_le_advertiser_.get(), &hci::LowEnergyAdvertiser::OnIncomingConnection));
