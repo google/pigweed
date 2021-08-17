@@ -48,7 +48,7 @@ class _MethodClient:
     """A method that can be invoked for a particular channel."""
     def __init__(self, client_impl: 'Impl', rpcs: PendingRpcs,
                  channel: Channel, method: Method,
-                 default_timeout_s: Optional[float]):
+                 default_timeout_s: Optional[float]) -> None:
         self._impl = client_impl
         self._rpcs = rpcs
         self._rpc = PendingRpc(channel, method.service, method)
@@ -253,10 +253,16 @@ class Impl(client.ClientImpl):
     """Callback-based ClientImpl, for use with pw_rpc.Client."""
     def __init__(self,
                  default_unary_timeout_s: float = None,
-                 default_stream_timeout_s: float = None):
+                 default_stream_timeout_s: float = None,
+                 cancel_duplicate_calls: bool = True) -> None:
         super().__init__()
         self._default_unary_timeout_s = default_unary_timeout_s
         self._default_stream_timeout_s = default_stream_timeout_s
+
+        # Temporary workaround for clients that rely on mulitple in-flight
+        # instances of an RPC on the same channel, which is not supported.
+        # TODO(hepler): Remove this option when clients have updated.
+        self._cancel_duplicate_calls = cancel_duplicate_calls
 
     @property
     def default_unary_timeout_s(self) -> Optional[float]:
@@ -268,6 +274,12 @@ class Impl(client.ClientImpl):
 
     def method_client(self, channel: Channel, method: Method) -> _MethodClient:
         """Returns an object that invokes a method using the given chanel."""
+
+        # Temporarily attach the cancel_duplicate_calls option to the
+        # PendingRpcs object.
+        # TODO(hepler): Remove this workaround.
+        self.rpcs.cancel_duplicate_calls = (  # type: ignore[attr-defined]
+            self._cancel_duplicate_calls)
 
         if method.type is Method.Type.UNARY:
             return self._create_unary_method_client(

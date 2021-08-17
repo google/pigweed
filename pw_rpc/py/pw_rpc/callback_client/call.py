@@ -93,7 +93,9 @@ class Call:
                                            self,
                                            override_pending=True)
 
-        if previous is not None and not previous.completed():
+        # TODO(hepler): Remove the cancel_duplicate_calls option.
+        if (self._rpcs.cancel_duplicate_calls and  # type: ignore[attr-defined]
+                previous is not None and not previous.completed()):
             previous._handle_error(Status.CANCELLED)  # pylint: disable=protected-access
 
     def _default_response(self, response: Message) -> None:
