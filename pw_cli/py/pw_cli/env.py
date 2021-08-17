@@ -66,6 +66,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_BRANDING_BANNER')
     parser.add_var('PW_BRANDING_BANNER_COLOR', default='magenta')
 
+    parser.add_var('PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE',
+                   type=envparse.strict_bool)
+
     return parser
 
 

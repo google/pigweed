@@ -52,6 +52,7 @@ import time
 from typing import (Callable, Collection, Dict, Iterable, Iterator, List,
                     NamedTuple, Optional, Pattern, Sequence, Set, Tuple, Union)
 
+import pw_cli.env
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
 
@@ -604,19 +605,21 @@ def call(*args, **kwargs) -> None:
     attributes, command = tools.format_command(args, kwargs)
     _LOG.debug('[RUN] %s\n%s', attributes, command)
 
-    process = subprocess.run(args,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             **kwargs)
+    env = pw_cli.env.pigweed_environment()
+    if not env.PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE:
+        kwargs["stdout"] = subprocess.PIPE
+
+    process = subprocess.run(args, stderr=subprocess.STDOUT, **kwargs)
     logfunc = _LOG.warning if process.returncode else _LOG.debug
 
     logfunc('[FINISHED]\n%s', command)
     logfunc('[RESULT] %s with return code %d',
             'Failed' if process.returncode else 'Passed', process.returncode)
 
-    output = process.stdout.decode(errors='backslashreplace')
-    if output:
-        logfunc('[OUTPUT]\n%s', output)
+    if kwargs.get('stdout'):
+        output = process.stdout.decode(errors='backslashreplace')
+        if output:
+            logfunc('[OUTPUT]\n%s', output)
 
     if process.returncode:
         raise PresubmitFailure
