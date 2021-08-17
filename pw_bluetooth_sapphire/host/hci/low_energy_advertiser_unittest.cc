@@ -37,6 +37,20 @@ constexpr AdvertisingIntervalRange kTestInterval(kLEAdvertisingIntervalMin,
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
 
+// Various parts of the Bluetooth Core Spec require that advertising interval min and max are not
+// the same value. We shouldn't allow it either. For example, Core Spec Volume 4, Part E, Section
+// 7.8.5: "The Advertising_Interval_Min and Advertising_Interval_Max should not be the same value
+// to enable the Controller to determine the best advertising interval given other activities."
+TEST(AdvertisingIntervalRangeDeathTest, MaxMinNotSame) {
+  EXPECT_DEATH(AdvertisingIntervalRange(kLEAdvertisingIntervalMin, kLEAdvertisingIntervalMin),
+               ".*");
+}
+
+TEST(AdvertisingIntervalRangeDeathTest, MinLessThanMax) {
+  EXPECT_DEATH(AdvertisingIntervalRange(kLEAdvertisingIntervalMax, kLEAdvertisingIntervalMin),
+               ".*");
+}
+
 template <typename T>
 class LowEnergyAdvertiserTest : public TestingBase {
  public:
