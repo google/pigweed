@@ -52,6 +52,8 @@ class RawServerReaderWriter : private internal::Responder {
 
   using internal::Responder::open;
 
+  using internal::Responder::channel_id;
+
   // Functions for setting the callbacks.
   using internal::Responder::set_on_client_stream_end;
   using internal::Responder::set_on_error;
@@ -107,6 +109,8 @@ class RawServerReader : private RawServerReaderWriter {
 
   using RawServerReaderWriter::open;
 
+  using RawServerReaderWriter::channel_id;
+
   using RawServerReaderWriter::set_on_client_stream_end;
   using RawServerReaderWriter::set_on_error;
   using RawServerReaderWriter::set_on_next;
@@ -138,6 +142,8 @@ class RawServerWriter : private RawServerReaderWriter {
   RawServerWriter& operator=(RawServerWriter&&) = default;
 
   using RawServerReaderWriter::open;
+
+  using RawServerReaderWriter::channel_id;
 
   using RawServerReaderWriter::set_on_error;
 

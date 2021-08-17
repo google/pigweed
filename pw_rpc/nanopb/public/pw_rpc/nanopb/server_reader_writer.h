@@ -98,6 +98,8 @@ class NanopbServerReaderWriter
 
   using internal::GenericNanopbResponder::open;
 
+  using internal::GenericNanopbResponder::channel_id;
+
   // Writes a response struct. Returns the following Status codes:
   //
   //   OK - the response was successfully sent
@@ -136,6 +138,8 @@ class NanopbServerReader : private NanopbServerReaderWriter<Request, Response> {
   NanopbServerReader(NanopbServerReader&&) = default;
   NanopbServerReader& operator=(NanopbServerReader&&) = default;
 
+  using internal::GenericNanopbResponder::channel_id;
+
   // Functions for setting RPC event callbacks.
   using NanopbServerReaderWriter<Request, Response>::set_on_client_stream_end;
   using NanopbServerReaderWriter<Request, Response>::set_on_error;
@@ -161,6 +165,8 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   NanopbServerWriter& operator=(NanopbServerWriter&&) = default;
 
   using internal::GenericNanopbResponder::open;
+
+  using internal::GenericNanopbResponder::channel_id;
 
   // Writes a response struct. Returns the following Status codes:
   //
