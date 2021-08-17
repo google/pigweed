@@ -823,6 +823,7 @@ LINTFORMAT = (
     format_code.presubmit_checks(),
     inclusive_language,
     pw_presubmit.pragma_once,
+    pw_presubmit.bazel_lint,
     source_is_in_build_files,
 )
 

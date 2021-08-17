@@ -620,3 +620,22 @@ def call(*args, **kwargs) -> None:
 
     if process.returncode:
         raise PresubmitFailure
+
+
+@filter_paths(endswith=('.bzl', '.bazel'))
+def bazel_lint(ctx: PresubmitContext):
+    """Runs buildifier with lint on Bazel files.
+
+    Should be run after bazel_format since that will give more useful output
+    for formatting-only issues.
+    """
+
+    failure = False
+    for path in ctx.paths:
+        try:
+            call('buildifier', '--lint=warn', '--mode=check', path)
+        except PresubmitFailure:
+            failure = True
+
+    if failure:
+        raise PresubmitFailure
