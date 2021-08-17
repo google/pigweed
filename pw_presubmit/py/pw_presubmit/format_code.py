@@ -26,7 +26,6 @@ import logging
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -133,10 +132,6 @@ def fix_gn_format(files: Iterable[Path]) -> None:
 
 def check_bazel_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    # TODO(pwbug/191): Get buildifier from CIPD and remove this check.
-    if not shutil.which("buildifier"):
-        return check_trailing_space(files)
-
     def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
         # buildifier doesn't have an option to output the changed file, so
         # copy the file to a temp location, run buildifier on it, read that
@@ -152,11 +147,6 @@ def check_bazel_format(files: Iterable[Path]) -> Dict[Path, str]:
 
 def fix_bazel_format(files: Iterable[Path]) -> None:
     """Fixes formatting for the provided files in place."""
-    # TODO(pwbug/191): Get buildifier from CIPD and remove this check.
-    if not shutil.which("buildifier"):
-        fix_trailing_space(files)
-        return
-
     log_run(['buildifier', *files], check=True)
 
 
