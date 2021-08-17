@@ -194,8 +194,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   const bool matches_pending_request =
       pending_request_ && (pending_request_->peer_address.value() == params->peer_address);
 
-  Status status(params->status);
-  if (!status) {
+  if (Status status = event.ToStatus(); !status) {
     if (matches_pending_request) {
       // The "Unknown Connect Identifier" error code is returned if this event
       // was sent due to a successful cancelation via the
@@ -233,12 +232,11 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   auto connection = Connection::CreateLE(handle, role, pending_request_->local_address,
                                          peer_address, connection_params, hci_);
 
+  Status status;
   if (pending_request_->timed_out) {
     status = Status(HostError::kTimedOut);
   } else if (pending_request_->canceled) {
     status = Status(HostError::kCanceled);
-  } else {
-    status = Status();
   }
 
   // If we were requested to cancel the connection after the logical link
@@ -246,6 +244,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   if (!status) {
     connection = nullptr;
   }
+
   OnCreateConnectionComplete(status, std::move(connection));
   return CommandChannel::EventCallbackResult::kContinue;
 }
