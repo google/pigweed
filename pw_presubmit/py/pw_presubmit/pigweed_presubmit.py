@@ -260,6 +260,7 @@ _MODULES_THAT_BUILD_WITH_BAZEL = [
     '//pw_chrono_freertos/...',
     '//pw_chrono_stl/...',
     '//pw_chrono_threadx/...',
+    '//pw_cli/...',
     '//pw_containers/...',
     '//pw_cpu_exception/...',
     '//pw_docgen/...',

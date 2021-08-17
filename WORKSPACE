@@ -79,7 +79,7 @@ http_archive(
 # Used in modules: All cc targets.
 git_repository(
     name = "rules_cc_toolchain",
-    commit = "dd9265e3ce0daa444911040430bd716076869b34",
+    commit = "80b51ba81f14eebe06684efa25261f6dc46e9b29",
     remote = "https://github.com/silvergasp/rules_cc_toolchain.git",
 )
 
