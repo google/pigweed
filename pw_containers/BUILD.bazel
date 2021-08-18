@@ -60,9 +60,13 @@ pw_cc_library(
 
 pw_cc_library(
     name = "flat_map",
-    hdrs = [
-        "public/pw_containers/flat_map.h",
-    ],
+    hdrs = ["public/pw_containers/flat_map.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "to_array",
+    hdrs = ["public/pw_containers/to_array.h"],
     includes = ["public"],
 )
 
@@ -101,6 +105,12 @@ pw_cc_test(
         ":pw_containers",
         "//pw_unit_test",
     ],
+)
+
+pw_cc_test(
+    name = "to_array_test",
+    srcs = ["to_array_test.cc"],
+    deps = [":to_array"],
 )
 
 pw_cc_test(

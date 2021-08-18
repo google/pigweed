@@ -74,6 +74,7 @@ pw_source_set("pw_tokenizer") {
   all_dependent_configs = [ ":linker_script" ]
   public_deps = [
     ":config",
+    "$dir_pw_containers:to_array",
     dir_pw_preprocessor,
   ]
   deps = [ dir_pw_varint ]
@@ -272,6 +273,7 @@ pw_test("hash_test") {
 # Fully test C++11 and C++14 compatibility by compiling all sources as C++11 or
 # C++14.
 _simple_tokenize_test_sources = [
+  "$dir_pw_containers/public/pw_containers/to_array.h",
   "$dir_pw_varint/public/pw_varint/varint.h",
   "$dir_pw_varint/varint.cc",
   "encode_args.cc",
@@ -296,6 +298,7 @@ _simple_tokenize_test_sources = [
 _simple_tokenize_test_configs = [
   ":public_include_path",
   "$dir_pw_varint:default_config",
+  "$dir_pw_containers:public_include_path",
 ]
 
 pw_test("simple_tokenize_test_cpp11") {

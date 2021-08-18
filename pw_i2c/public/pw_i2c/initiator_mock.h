@@ -12,11 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #pragma once
+
 #include <array>
 #include <cstddef>
 #include <optional>
 
 #include "pw_bytes/span.h"
+#include "pw_containers/to_array.h"
 #include "pw_i2c/initiator.h"
 
 namespace pw::i2c {
@@ -143,7 +145,7 @@ class MockInitiator : public Initiator {
 template <size_t kSize>
 constexpr std::array<Transaction, kSize> MakeExpectedTransactionArray(
     const Transaction (&transactions)[kSize]) {
-  return std::to_array(transactions);
+  return containers::to_array(transactions);
 }
 
 }  // namespace pw::i2c

@@ -42,7 +42,6 @@ Backported features
 ==================  ================================  ============================================  ========================================
 Header              Feature                           Level of support                              Feature test macro
 ==================  ================================  ============================================  ========================================
-<array>             std::to_array                     full                                          __cpp_lib_to_array
 <bit>               std::endian                       full                                          __cpp_lib_endian
 <cstdlib>           std::byte                         full; some operators not constexpr in C++11   __cpp_lib_byte
 <iterator>          std::data, std::size              full                                          __cpp_lib_nonmember_container_access
@@ -61,7 +60,6 @@ Adapt code to compile with different versions of C++
   - ``pw_polyfill/standard.h`` -- provides a macro for checking the C++ standard
   - ``pw_polyfill/language_feature_macros.h`` -- provides macros for adapting
     code to work with or without newer language features
-
 
 Language feature macros
 =======================

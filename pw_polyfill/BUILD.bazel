@@ -27,14 +27,12 @@ cc_toolchain_import(
     name = "toolchain_polyfill_overrides",
     hdrs = [
         "language_features.h",
-        "public_overrides/array",
         "public_overrides/assert.h",
         "public_overrides/bit",
         "public_overrides/cstddef",
         "public_overrides/iterator",
         "public_overrides/type_traits",
         "public_overrides/utility",
-        "standard_library_public/pw_polyfill/standard_library/array.h",
         "standard_library_public/pw_polyfill/standard_library/assert.h",
         "standard_library_public/pw_polyfill/standard_library/bit.h",
         "standard_library_public/pw_polyfill/standard_library/cstddef.h",
@@ -65,7 +63,6 @@ pw_cc_library(
     name = "overrides",
     srcs = ["language_features.h"],
     hdrs = [
-        "public_overrides/array",
         "public_overrides/assert.h",
         "public_overrides/bit",
         "public_overrides/cstddef",
@@ -84,7 +81,6 @@ pw_cc_library(
 pw_cc_library(
     name = "standard_library",
     hdrs = [
-        "standard_library_public/pw_polyfill/standard_library/array.h",
         "standard_library_public/pw_polyfill/standard_library/assert.h",
         "standard_library_public/pw_polyfill/standard_library/bit.h",
         "standard_library_public/pw_polyfill/standard_library/cstddef.h",

@@ -76,6 +76,7 @@ pw_source_set("mock") {
   public_deps = [
     ":initiator",
     "$dir_pw_bytes",
+    "$dir_pw_containers:to_array",
   ]
   deps = [
     "$dir_pw_assert",

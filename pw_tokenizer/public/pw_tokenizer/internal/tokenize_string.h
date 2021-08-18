@@ -31,7 +31,7 @@
 
 #ifdef __cplusplus
 
-#include <array>
+#include "pw_containers/to_array.h"
 
 namespace pw {
 namespace tokenizer {
@@ -50,8 +50,8 @@ Entry {
         token_(token),
         domain_size_(kDomainSize),
         string_size_(kStringSize),
-        domain_(std::to_array(domain)),
-        string_(std::to_array(string)) {}
+        domain_(containers::to_array(domain)),
+        string_(containers::to_array(string)) {}
 
  private:
   static_assert(kStringSize > 0u && kDomainSize > 0u);

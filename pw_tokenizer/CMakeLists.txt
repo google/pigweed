@@ -20,6 +20,7 @@ pw_add_module_library(pw_tokenizer
     hash.cc
     tokenize.cc
   PUBLIC_DEPS
+    pw_containers
     pw_polyfill.overrides
     pw_preprocessor
     pw_span

@@ -158,6 +158,12 @@ in Java 8. ``WrappedIterator`` and ``FilteredView`` require no memory
 allocation, which is helpful when memory is too constrained to process the items
 into a new container.
 
+pw::containers::to_array
+========================
+``pw::containers::to_array`` is a C++14-compatible implementation of C++20's
+`std::to_array <https://en.cppreference.com/w/cpp/container/array/to_array>`_.
+It converts a C array to a ``std::array``.
+
 Compatibility
 =============
 * C++17

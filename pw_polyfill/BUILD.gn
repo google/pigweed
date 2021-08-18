@@ -53,7 +53,6 @@ pw_source_set("overrides") {
     "$dir_pw_span:polyfill",
   ]
   inputs = [
-    "public_overrides/array",
     "public_overrides/assert.h",
     "public_overrides/bit",
     "public_overrides/cstddef",
@@ -72,7 +71,6 @@ pw_source_set("standard_library") {
   public_configs = [ ":standard_library_public" ]
   remove_public_deps = [ "*" ]
   public = [
-    "standard_library_public/pw_polyfill/standard_library/array.h",
     "standard_library_public/pw_polyfill/standard_library/assert.h",
     "standard_library_public/pw_polyfill/standard_library/bit.h",
     "standard_library_public/pw_polyfill/standard_library/cstddef.h",

@@ -103,6 +103,7 @@ pw_cc_library(
         ":address",
         ":initiator",
         "//pw_assert",
+        "//pw_containers:to_array",
         "//pw_unit_test",
     ],
 )

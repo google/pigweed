@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,42 +14,39 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
-#include "pw_polyfill/standard_library/namespace.h"
-
-#ifndef __cpp_lib_to_array
-#define __cpp_lib_to_array 201907L
-
-_PW_POLYFILL_BEGIN_NAMESPACE_STD
-
+namespace pw {
+namespace containers {
 namespace impl {
 
 template <typename T, size_t kSize, size_t... kIndices>
-constexpr array<remove_cv_t<T>, kSize> CopyArray(const T (&values)[kSize],
-                                                 index_sequence<kIndices...>) {
+constexpr std::array<std::remove_cv_t<T>, kSize> CopyArray(
+    const T (&values)[kSize], std::index_sequence<kIndices...>) {
   return {{values[kIndices]...}};
 }
 
 template <typename T, size_t kSize, size_t... kIndices>
-constexpr array<remove_cv_t<T>, kSize> MoveArray(T(&&values)[kSize],
-                                                 index_sequence<kIndices...>) {
-  return {{move(values[kIndices])...}};
+constexpr std::array<std::remove_cv_t<T>, kSize> MoveArray(
+    T(&&values)[kSize], std::index_sequence<kIndices...>) {
+  return {{std::move(values[kIndices])...}};
 }
 
 }  // namespace impl
 
+// pw::containers::to_array is C++14-compatible implementation of C++20's
+// std::to_array.
 template <typename T, size_t kSize>
-constexpr array<remove_cv_t<T>, kSize> to_array(T (&values)[kSize]) {
-  return impl::CopyArray(values, make_index_sequence<kSize>{});
+constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T (&values)[kSize]) {
+  return impl::CopyArray(values, std::make_index_sequence<kSize>{});
 }
 
 template <typename T, size_t kSize>
-constexpr array<remove_cv_t<T>, kSize> to_array(T(&&values)[kSize]) {
-  return impl::MoveArray(move(values), make_index_sequence<kSize>{});
+constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T(&&values)[kSize]) {
+  return impl::MoveArray(std::move(values), std::make_index_sequence<kSize>{});
 }
 
-_PW_POLYFILL_END_NAMESPACE_STD
-
-#endif  // __cpp_lib_to_array
+}  // namespace containers
+}  // namespace pw

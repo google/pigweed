@@ -46,42 +46,6 @@ static_assert(PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be not supported");
 static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be supported");
 #endif  // __cplusplus >= 201703L
 
-TEST(Array, ToArray_StringLiteral) {
-  std::array<char, sizeof("literally!")> array = std::to_array("literally!");
-  EXPECT_TRUE(std::strcmp(array.data(), "literally!") == 0);
-}
-
-TEST(Array, ToArray_Inline) {
-  constexpr std::array<int, 3> kArray = std::to_array({1, 2, 3});
-  static_assert(kArray.size() == 3);
-  EXPECT_TRUE(kArray[0] == 1);
-}
-
-TEST(Array, ToArray_Array) {
-  char c_array[] = "array!";
-  std::array<char, sizeof("array!")> array = std::to_array(c_array);
-  EXPECT_TRUE(std::strcmp(array.data(), "array!") == 0);
-}
-
-struct MoveOnly {
-  MoveOnly(char ch) : value(ch) {}
-
-  MoveOnly(const MoveOnly&) = delete;
-  MoveOnly& operator=(const MoveOnly&) = delete;
-
-  MoveOnly(MoveOnly&&) = default;
-  MoveOnly& operator=(MoveOnly&&) = default;
-
-  char value;
-};
-
-TEST(Array, ToArray_MoveOnly) {
-  MoveOnly c_array[]{MoveOnly('a'), MoveOnly('b')};
-  std::array<MoveOnly, 2> array = std::to_array(std::move(c_array));
-  EXPECT_TRUE(array[0].value == 'a');
-  EXPECT_TRUE(array[1].value == 'b');
-}
-
 TEST(Bit, Endian) {
   if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
     EXPECT_TRUE(std::endian::native == std::endian::big);
