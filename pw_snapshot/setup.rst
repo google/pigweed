@@ -4,8 +4,6 @@
 Setting up a Snapshot Pipeline
 ==============================
 
-.. contents:: Table of Contents
-
 -------------------
 Crash Handler Setup
 -------------------

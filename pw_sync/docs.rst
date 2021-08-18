@@ -7,10 +7,6 @@ The ``pw_sync`` module contains utilities for synchronizing between threads
 and/or interrupts through signaling primitives and critical section lock
 primitives.
 
-.. contents::
-   :local:
-   :depth: 2
-
 .. Warning::
   This module is still under construction, the API is not yet stable.
 
