@@ -68,7 +68,7 @@ class TableView:
     def update_metadata_column_widths(self, log: LogLine):
         """Calculate the max widths for each metadata field."""
         for field_name, value in log.metadata.fields.items():
-            value_string = str(value).strip()
+            value_string = str(value)
 
             # Get width of formatted numbers
             if isinstance(value, float):
@@ -107,8 +107,7 @@ class TableView:
             if name in ['msg', 'message', 'file']:
                 continue
             fragments.append(
-                (default_style,
-                 name.title().strip()[:width].ljust(width) + padding))
+                (default_style, name.title()[:width].ljust(width) + padding))
 
         fragments.append((default_style, 'Message'))
 
@@ -129,9 +128,8 @@ class TableView:
         fragments: collections.deque = collections.deque()
 
         # Column 1: Time
-        fragments.append(
-            ('class:log-time',
-             log.record.asctime.strip().ljust(self._column_width_time)))
+        fragments.append(('class:log-time',
+                          log.record.asctime.ljust(self._column_width_time)))
         fragments.append(padding_formatted_text)
 
         # Column 2: Level
@@ -144,7 +142,7 @@ class TableView:
 
         # NOTE: To preseve ANSI formatting on log level use:
         # fragments.extend(
-        #     ANSI(log.record.levelname.strip().ljust(
+        #     ANSI(log.record.levelname.ljust(
         #         self._column_width_level)).__pt_formatted_text__())
 
         # Collect remaining columns to display after host time and level.
@@ -166,9 +164,9 @@ class TableView:
                 left_justify = False
 
             if left_justify:
-                columns.append(value.strip().ljust(width))
+                columns.append(value.ljust(width))
             else:
-                columns.append(value.strip().rjust(width))
+                columns.append(value.rjust(width))
 
         # Grab the message to appear after the justified columns.
         message = log.metadata.fields.get(
