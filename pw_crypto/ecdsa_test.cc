@@ -121,7 +121,7 @@ TEST(EcdsaP256, MalformedPublicKeyWrongHeader) {
 }
 
 TEST(EcdsaP256, TamperedSignature) {
-  ASSERT_EQ(Status::InvalidSignature(),
+  ASSERT_EQ(Status::Unauthenticated(),
             VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
                                 STR_TO_BYTES(TEST_DIGEST),
                                 STR_TO_BYTES(TAMPERED_SIGNATURE)));
@@ -149,14 +149,14 @@ TEST(EcdsaP256, DigestTooShort) {
 }
 
 TEST(EcdsaP256, TamperedDigest) {
-  ASSERT_EQ(Status::InvalidSignature(),
+  ASSERT_EQ(Status::Unauthenticated(),
             VerifyP256Signature(STR_TO_BYTES(TEST_PUBKEY),
                                 STR_TO_BYTES(TAMPERED_DIGEST),
                                 STR_TO_BYTES(TEST_SIGNATURE)));
 }
 
 TEST(EcdsaP256, TamperedPubkey) {
-  ASSERT_EQ(Status::InvalidSignature(),
+  ASSERT_EQ(Status::Unauthenticated(),
             VerifyP256Signature(STR_TO_BYTES(TAMPERED_PUBKEY),
                                 STR_TO_BYTES(TEST_DIGEST),
                                 STR_TO_BYTES(TEST_SIGNATURE)));

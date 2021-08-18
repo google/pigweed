@@ -103,7 +103,7 @@ Status VerifyP256Signature(ConstByteSpan public_key,
   if (mbedtls_ecdsa_verify(
           &ctx.grp, digest_data, digest.size(), &ctx.Q, &ctx.r, &ctx.s)) {
     PW_LOG_ERROR("Digital signature failed verification.");
-    return Status::InvalidSignature();
+    return Status::Unauthenticated();
   }
 
   return OkStatus();
