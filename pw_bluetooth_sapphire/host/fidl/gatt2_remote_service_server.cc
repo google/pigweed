@@ -131,6 +131,15 @@ Gatt2RemoteServiceServer::Gatt2RemoteServiceServer(
       peer_id_(peer_id),
       weak_ptr_factory_(this) {}
 
+Gatt2RemoteServiceServer::~Gatt2RemoteServiceServer() {
+  // Disable all notifications to prevent leaks.
+  for (auto& [_, notifier] : characteristic_notifiers_) {
+    service_->DisableNotifications(notifier.characteristic_handle, notifier.handler_id,
+                                   /*status_callback=*/[](auto /*status*/) {});
+  }
+  characteristic_notifiers_.clear();
+}
+
 void Gatt2RemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCallback callback) {
   auto res_cb = [callback = std::move(callback)](
                     bt::att::Status status, const bt::gatt::CharacteristicMap& characteristics) {
@@ -331,6 +340,141 @@ void Gatt2RemoteServiceServer::WriteDescriptor(fbg::Handle fidl_handle, std::vec
   }
 
   service_->WriteLongDescriptor(handle, options.offset(), std::move(value), std::move(write_cb));
+}
+
+void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
+    fbg::Handle fidl_handle, fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle,
+    RegisterCharacteristicNotifierCallback callback) {
+  bt::gatt::CharacteristicHandle char_handle(static_cast<bt::att::Handle>(fidl_handle.value));
+  NotifierId notifier_id = next_notifier_id_++;
+  auto self = weak_ptr_factory_.GetWeakPtr();
+
+  auto value_cb = [self, notifier_id, fidl_handle](const bt::ByteBuffer& value,
+                                                   bool maybe_truncated) {
+    if (!self) {
+      return;
+    }
+
+    auto notifier_iter = self->characteristic_notifiers_.find(notifier_id);
+    // The lower layers guarantee that the status callback is always invoked before sending
+    // notifications. Notifiers are only removed during destruction (addressed by previous `self`
+    // check) and in the `DisableNotifications` completion callback in
+    // `OnCharacteristicNotifierError`, so no notifications should be received after removing a
+    // notifier.
+    ZX_ASSERT_MSG(notifier_iter != self->characteristic_notifiers_.end(),
+                  "characteristic notification value received after notifier unregistered"
+                  "(peer: %s, characteristic: 0x%lX) ",
+                  bt_str(self->peer_id_), fidl_handle.value);
+    CharacteristicNotifier& notifier = notifier_iter->second;
+
+    // The `- 1` is needed because there is one unacked notification that we've already sent to the
+    // client aside from the values in the queue.
+    if (notifier.queued_values.size() == kMaxPendingNotifierValues - 1) {
+      bt_log(WARN, "fidl",
+             "GATT CharacteristicNotifier pending values limit reached, closing protocol (peer: "
+             "%s, characteristic: %#.2x)",
+             bt_str(self->peer_id_), notifier.characteristic_handle.value);
+      self->OnCharacteristicNotifierError(notifier_id, notifier.characteristic_handle,
+                                          notifier.handler_id);
+      return;
+    }
+
+    fbg::ReadValue fidl_value;
+    fidl_value.set_handle(fidl_handle);
+    fidl_value.set_value(value.ToVector());
+    fidl_value.set_maybe_truncated(maybe_truncated);
+
+    bt_log(TRACE, "fidl", "Queueing GATT notification value (characteristic: %#.2x)",
+           notifier.characteristic_handle.value);
+    notifier.queued_values.push(std::move(fidl_value));
+
+    self->MaybeNotifyNextValue(notifier_id);
+  };
+
+  auto status_cb = [self, service = service_, char_handle, notifier_id,
+                    notifier_handle = std::move(notifier_handle), callback = std::move(callback)](
+                       bt::att::Status status, bt::gatt::IdType handler_id) mutable {
+    if (!self) {
+      if (status) {
+        // Disable this handler so it doesn't leak.
+        service->DisableNotifications(char_handle, handler_id, [](auto /*status*/) {
+          // There is no notifier to clean up because the server has been destroyed.
+        });
+      }
+      return;
+    }
+
+    if (!status.is_success()) {
+      callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
+      return;
+    }
+
+    CharacteristicNotifier notifier{.handler_id = handler_id,
+                                    .characteristic_handle = char_handle,
+                                    .notifier = notifier_handle.Bind()};
+    auto [notifier_iter, emplaced] =
+        self->characteristic_notifiers_.emplace(notifier_id, std::move(notifier));
+    ZX_ASSERT(emplaced);
+
+    // When the client closes the protocol, unregister the notifier.
+    notifier_iter->second.notifier.set_error_handler(
+        [self, char_handle, handler_id, notifier_id](auto /*status*/) {
+          self->OnCharacteristicNotifierError(notifier_id, char_handle, handler_id);
+        });
+
+    callback(fit::ok());
+  };
+
+  service_->EnableNotifications(char_handle, std::move(value_cb), std::move(status_cb));
+}
+
+void Gatt2RemoteServiceServer::MaybeNotifyNextValue(NotifierId notifier_id) {
+  auto notifier_iter = characteristic_notifiers_.find(notifier_id);
+  if (notifier_iter == characteristic_notifiers_.end()) {
+    return;
+  }
+  CharacteristicNotifier& notifier = notifier_iter->second;
+
+  if (notifier.queued_values.empty()) {
+    return;
+  }
+
+  if (!notifier.last_value_ack) {
+    return;
+  }
+  notifier.last_value_ack = false;
+
+  fbg::ReadValue value = std::move(notifier.queued_values.front());
+  notifier.queued_values.pop();
+
+  bt_log(DEBUG, "fidl", "Sending GATT notification value (handle: 0x%lX)", value.handle().value);
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  notifier.notifier->OnNotification(std::move(value), [self, notifier_id]() {
+    if (!self) {
+      return;
+    }
+
+    auto notifier_iter = self->characteristic_notifiers_.find(notifier_id);
+    if (notifier_iter == self->characteristic_notifiers_.end()) {
+      return;
+    }
+    notifier_iter->second.last_value_ack = true;
+    self->MaybeNotifyNextValue(notifier_id);
+  });
+}
+
+void Gatt2RemoteServiceServer::OnCharacteristicNotifierError(
+    NotifierId notifier_id, bt::gatt::CharacteristicHandle char_handle,
+    bt::gatt::IdType handler_id) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  service_->DisableNotifications(char_handle, handler_id, [self, notifier_id](auto /*status*/) {
+    if (!self) {
+      return;
+    }
+    // Clear the notifier regardless of status. Wait until this callback is called in order to
+    // prevent the value callback from being called for an erased notifier.
+    self->characteristic_notifiers_.erase(notifier_id);
+  });
 }
 
 }  // namespace bthost

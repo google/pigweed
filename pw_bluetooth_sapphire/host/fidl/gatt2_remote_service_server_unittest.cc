@@ -4,8 +4,12 @@
 
 #include "gatt2_remote_service_server.h"
 
-#include <algorithm>
+#include <fuchsia/bluetooth/gatt2/cpp/fidl_test_base.h>
 
+#include <algorithm>
+#include <optional>
+
+#include "fuchsia/bluetooth/gatt2/cpp/fidl.h"
 #include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
@@ -21,7 +25,8 @@ constexpr bt::PeerId kPeerId(1);
 constexpr bt::att::Handle kServiceStartHandle = 0x0001;
 constexpr bt::att::Handle kServiceEndHandle = 0xFFFE;
 const bt::UUID kServiceUuid(uint16_t{0x180D});
-const bt::UUID kDescriptorUuid(uint16_t{0x180E});
+const bt::UUID kCharacteristicUuid(uint16_t{0x180E});
+const bt::UUID kDescriptorUuid(uint16_t{0x180F});
 
 class FIDL_Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
@@ -58,6 +63,9 @@ class FIDL_Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTes
   }
 
   fbg::RemoteServicePtr& service_proxy() { return proxy_; }
+  fbl::RefPtr<bt::gatt::RemoteService> service() { return service_; }
+
+  void DestroyServer() { server_.reset(); }
 
  private:
   std::unique_ptr<Gatt2RemoteServiceServer> server_;
@@ -1022,6 +1030,277 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteLongDescriptorDefaultOptions) {
   ASSERT_TRUE(fidl_result.has_value());
   EXPECT_TRUE(fidl_result->is_ok());
   EXPECT_EQ(write_count, 1);
+}
+
+class FakeCharacteristicNotifier : public fbg::testing::CharacteristicNotifier_TestBase {
+ public:
+  struct Notification {
+    fbg::ReadValue value;
+    OnNotificationCallback notification_cb;
+  };
+  explicit FakeCharacteristicNotifier(fidl::InterfaceRequest<fbg::CharacteristicNotifier> request)
+      : binding_(this, std::move(request)) {
+    binding_.set_error_handler([this](zx_status_t status) { error_ = status; });
+  }
+
+  void Unbind() { binding_.Unbind(); }
+
+  void OnNotification(fbg::ReadValue value, OnNotificationCallback callback) override {
+    notifications_.push_back(Notification{std::move(value), std::move(callback)});
+  }
+
+  std::vector<Notification>& notifications() { return notifications_; }
+
+  std::optional<zx_status_t> error() const { return error_; }
+
+ private:
+  void NotImplemented_(const std::string& name) override {
+    FAIL() << name << " is not implemented";
+  }
+
+  fidl::Binding<fbg::CharacteristicNotifier> binding_;
+  std::vector<Notification> notifications_;
+  std::optional<zx_status_t> error_;
+};
+
+class Gatt2RemoteServiceServerCharacteristicNotifierTest
+    : public FIDL_Gatt2RemoteServiceServerTest {
+ public:
+  void SetUp() override {
+    FIDL_Gatt2RemoteServiceServerTest::SetUp();
+    bt::gatt::CharacteristicData characteristic(bt::gatt::Property::kNotify,
+                                                /*ext_props=*/std::nullopt, char_handle_,
+                                                char_value_handle_, kCharacteristicUuid);
+    fake_client()->set_characteristics({characteristic});
+    bt::gatt::DescriptorData ccc_descriptor(ccc_descriptor_handle_,
+                                            bt::gatt::types::kClientCharacteristicConfig);
+    fake_client()->set_descriptors({ccc_descriptor});
+
+    std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
+    service_proxy()->DiscoverCharacteristics(
+        [&](std::vector<fbg::Characteristic> chars) { fidl_characteristics = std::move(chars); });
+    RunLoopUntilIdle();
+    ASSERT_TRUE(fidl_characteristics.has_value());
+    ASSERT_EQ(fidl_characteristics->size(), 1u);
+    characteristic_ = std::move(fidl_characteristics->front());
+  }
+
+ protected:
+  const fbg::Characteristic& characteristic() const { return characteristic_; }
+  bt::att::Handle characteristic_handle() const { return char_handle_; }
+  bt::att::Handle characteristic_value_handle() const { return char_value_handle_; }
+  bt::att::Handle ccc_descriptor_handle() const { return ccc_descriptor_handle_; }
+
+ private:
+  fbg::Characteristic characteristic_;
+  const bt::att::Handle char_handle_ = 2;
+  const bt::att::Handle char_value_handle_ = 3;
+  const bt::att::Handle ccc_descriptor_handle_ = 4;
+};
+
+TEST_F(Gatt2RemoteServiceServerCharacteristicNotifierTest,
+       RegisterCharacteristicNotifierReceiveNotificationsAndUnregister) {
+  const auto kValue0 = bt::StaticByteBuffer(0x01, 0x02, 0x03);
+  const auto kValue1 = bt::StaticByteBuffer(0x04, 0x05, 0x06);
+
+  // Respond to CCC write with success status so that notifications are enabled.
+  fake_client()->set_write_request_callback(
+      [&](bt::att::Handle handle, const bt::ByteBuffer& /*value*/, auto status_callback) {
+        EXPECT_EQ(handle, ccc_descriptor_handle());
+        status_callback(bt::att::Status());
+      });
+
+  fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
+  FakeCharacteristicNotifier notifier_server(notifier_handle.NewRequest());
+  auto& notifications = notifier_server.notifications();
+
+  std::optional<fpromise::result<void, fbg::Error>> register_result;
+  auto register_cb = [&](fpromise::result<void, fbg::Error> result) { register_result = result; };
+  service_proxy()->RegisterCharacteristicNotifier(
+      characteristic().handle(), std::move(notifier_handle), std::move(register_cb));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(register_result.has_value());
+  EXPECT_TRUE(register_result->is_ok());
+
+  // Send 2 notifications to test flow control.
+  service()->HandleNotificationForTesting(characteristic_value_handle(), kValue0,
+                                          /*maybe_truncated=*/false);
+  service()->HandleNotificationForTesting(characteristic_value_handle(), kValue1,
+                                          /*maybe_truncated=*/true);
+  RunLoopUntilIdle();
+  ASSERT_EQ(notifications.size(), 1u);
+  fbg::ReadValue& notification_0 = notifications[0].value;
+  ASSERT_TRUE(notification_0.has_value());
+  EXPECT_TRUE(bt::ContainersEqual(notification_0.value(), kValue0));
+  ASSERT_TRUE(notification_0.has_handle());
+  EXPECT_EQ(notification_0.handle().value, static_cast<uint64_t>(characteristic_value_handle()));
+  ASSERT_TRUE(notification_0.has_maybe_truncated());
+  ASSERT_FALSE(notification_0.maybe_truncated());
+
+  notifications[0].notification_cb();
+  RunLoopUntilIdle();
+  ASSERT_EQ(notifications.size(), 2u);
+  fbg::ReadValue& notification_1 = notifications[1].value;
+  ASSERT_TRUE(notification_1.has_value());
+  EXPECT_TRUE(bt::ContainersEqual(notification_1.value(), kValue1));
+  ASSERT_TRUE(notification_1.has_handle());
+  EXPECT_EQ(notification_1.handle().value, static_cast<uint64_t>(characteristic_value_handle()));
+  ASSERT_TRUE(notification_1.has_maybe_truncated());
+  ASSERT_TRUE(notification_1.maybe_truncated());
+
+  notifications[1].notification_cb();
+  RunLoopUntilIdle();
+  EXPECT_EQ(notifications.size(), 2u);
+
+  notifier_server.Unbind();
+  RunLoopUntilIdle();
+
+  // Notifications should be ignored after notifier is unregistered.
+  service()->HandleNotificationForTesting(characteristic_value_handle(), kValue0,
+                                          /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+}
+
+TEST_F(Gatt2RemoteServiceServerCharacteristicNotifierTest,
+       QueueTooManyNotificationsAndCloseNotifier) {
+  const auto kValue = bt::StaticByteBuffer(0x01, 0x02, 0x03);
+
+  // Respond to CCC write with success status so that notifications are enabled.
+  fake_client()->set_write_request_callback(
+      [&](bt::att::Handle handle, const bt::ByteBuffer& /*value*/, auto status_callback) {
+        EXPECT_EQ(handle, ccc_descriptor_handle());
+        status_callback(bt::att::Status());
+      });
+
+  fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
+  FakeCharacteristicNotifier notifier_server(notifier_handle.NewRequest());
+  auto& notifications = notifier_server.notifications();
+
+  std::optional<fpromise::result<void, fbg::Error>> register_result;
+  auto register_cb = [&](fpromise::result<void, fbg::Error> result) { register_result = result; };
+  service_proxy()->RegisterCharacteristicNotifier(
+      characteristic().handle(), std::move(notifier_handle), std::move(register_cb));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(register_result.has_value());
+  EXPECT_TRUE(register_result->is_ok());
+
+  // Fill the pending notifier values queue.
+  for (size_t i = 0; i < Gatt2RemoteServiceServer::kMaxPendingNotifierValues; i++) {
+    service()->HandleNotificationForTesting(characteristic_value_handle(), kValue,
+                                            /*maybe_truncated=*/false);
+  }
+  RunLoopUntilIdle();
+  ASSERT_EQ(notifications.size(), 1u);
+  EXPECT_FALSE(notifier_server.error().has_value());
+
+  // This notification should exceed the max queue size.
+  service()->HandleNotificationForTesting(characteristic_value_handle(), kValue,
+                                          /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(notifier_server.error().has_value());
+
+  // Notifications should be ignored after notifier is unregistered due to an error.
+  service()->HandleNotificationForTesting(characteristic_value_handle(), kValue,
+                                          /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  notifications[0].notification_cb();
+  EXPECT_EQ(notifications.size(), 1u);
+}
+
+TEST_F(Gatt2RemoteServiceServerCharacteristicNotifierTest,
+       RegisterCharacteristicNotifierWriteError) {
+  // Respond to CCC write with error status so that registration fails.
+  fake_client()->set_write_request_callback(
+      [&](bt::att::Handle handle, const bt::ByteBuffer& /*value*/, auto status_callback) {
+        EXPECT_EQ(handle, ccc_descriptor_handle());
+        status_callback(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthentication));
+      });
+
+  fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
+  FakeCharacteristicNotifier notifier_server(notifier_handle.NewRequest());
+  std::optional<fpromise::result<void, fbg::Error>> register_result;
+  auto register_cb = [&](fpromise::result<void, fbg::Error> result) { register_result = result; };
+  service_proxy()->RegisterCharacteristicNotifier(
+      characteristic().handle(), std::move(notifier_handle), std::move(register_cb));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(register_result.has_value());
+  ASSERT_TRUE(register_result->is_error());
+  EXPECT_EQ(register_result->error(), fbg::Error::INSUFFICIENT_AUTHENTICATION);
+  EXPECT_TRUE(notifier_server.error().has_value());
+}
+
+TEST_F(
+    Gatt2RemoteServiceServerCharacteristicNotifierTest,
+    RegisterCharacteristicNotifierAndDestroyServerBeforeStatusCallbackCausesNotificationsToBeDisabled) {
+  // Respond to CCC write with success status so that notifications are enabled.
+  int ccc_write_count = 0;
+  bt::att::StatusCallback enable_notifications_status_cb = nullptr;
+  fake_client()->set_write_request_callback([&](bt::att::Handle handle, const bt::ByteBuffer& value,
+                                                bt::att::StatusCallback status_callback) {
+    ccc_write_count++;
+    EXPECT_EQ(handle, ccc_descriptor_handle());
+    if (ccc_write_count == 1) {
+      EXPECT_NE(value[0], 0u);  // Enable value
+      enable_notifications_status_cb = std::move(status_callback);
+    } else {
+      EXPECT_EQ(value[0], 0u);  // Disable value
+      status_callback(bt::att::Status());
+    }
+  });
+
+  fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
+  FakeCharacteristicNotifier notifier_server(notifier_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fbg::Error>> register_result;
+  auto register_cb = [&](fpromise::result<void, fbg::Error> result) { register_result = result; };
+  service_proxy()->RegisterCharacteristicNotifier(
+      characteristic().handle(), std::move(notifier_handle), std::move(register_cb));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(register_result.has_value());
+  EXPECT_EQ(ccc_write_count, 1);
+
+  DestroyServer();
+  ASSERT_TRUE(enable_notifications_status_cb);
+  enable_notifications_status_cb(bt::att::Status());
+  RunLoopUntilIdle();
+  // Notifications should have been disabled in enable notifications status callback.
+  EXPECT_EQ(ccc_write_count, 2);
+}
+
+TEST_F(
+    Gatt2RemoteServiceServerCharacteristicNotifierTest,
+    RegisterCharacteristicNotifierAndDestroyServerAfterStatusCallbackCausesNotificationsToBeDisabled) {
+  // Respond to CCC write with success status so that notifications are enabled.
+  int ccc_write_count = 0;
+  bt::att::StatusCallback enable_notifications_status_cb = nullptr;
+  fake_client()->set_write_request_callback([&](bt::att::Handle handle, const bt::ByteBuffer& value,
+                                                bt::att::StatusCallback status_callback) {
+    ccc_write_count++;
+    EXPECT_EQ(handle, ccc_descriptor_handle());
+    if (ccc_write_count == 1) {
+      EXPECT_NE(value[0], 0u);  // Enable value
+    } else {
+      EXPECT_EQ(value[0], 0u);  // Disable value
+    }
+    status_callback(bt::att::Status());
+  });
+
+  fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
+  FakeCharacteristicNotifier notifier_server(notifier_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fbg::Error>> register_result;
+  auto register_cb = [&](fpromise::result<void, fbg::Error> result) { register_result = result; };
+  service_proxy()->RegisterCharacteristicNotifier(
+      characteristic().handle(), std::move(notifier_handle), std::move(register_cb));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(register_result.has_value());
+  EXPECT_TRUE(register_result->is_ok());
+  EXPECT_EQ(ccc_write_count, 1);
+
+  DestroyServer();
+  RunLoopUntilIdle();
+  // Notifications should have been disabled in the server destructor.
+  EXPECT_EQ(ccc_write_count, 2);
 }
 
 }  // namespace

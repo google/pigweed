@@ -18,12 +18,30 @@ namespace bthost {
 
 class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2::RemoteService> {
  public:
+  // The maximum number of pending notification values per CharacteristicNotifier (for flow
+  // control). If exceeded, the notifier protocol is closed.
+  static const size_t kMaxPendingNotifierValues = 20;
+
   Gatt2RemoteServiceServer(
       fbl::RefPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
       bt::PeerId peer_id, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::RemoteService> request);
-  ~Gatt2RemoteServiceServer() override = default;
+  ~Gatt2RemoteServiceServer() override;
 
  private:
+  using NotifierId = uint64_t;
+
+  struct CharacteristicNotifier {
+    bt::gatt::IdType handler_id;
+    bt::gatt::CharacteristicHandle characteristic_handle;
+    fidl::InterfacePtr<fuchsia::bluetooth::gatt2::CharacteristicNotifier> notifier;
+    // For flow control, values are only sent when the client responds to the previous value with an
+    // acknowledgement. This variable stores the queued values.
+    std::queue<fuchsia::bluetooth::gatt2::ReadValue> queued_values;
+    // `last_value_ack` defaults to true so that the first notification queued up is sent to the
+    // FIDL client immediately.
+    bool last_value_ack = true;
+  };
+
   // fuchsia::bluetooth::gatt2::RemoteService overrides:
   void DiscoverCharacteristics(DiscoverCharacteristicsCallback callback) override;
 
@@ -48,10 +66,20 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
   void RegisterCharacteristicNotifier(
       ::fuchsia::bluetooth::gatt2::Handle handle,
       ::fidl::InterfaceHandle<::fuchsia::bluetooth::gatt2::CharacteristicNotifier> notifier,
-      RegisterCharacteristicNotifierCallback callback) override {}
+      RegisterCharacteristicNotifierCallback callback) override;
+
+  // Send the next notifier value in the queue if the client acknowledged the previous value.
+  void MaybeNotifyNextValue(NotifierId notifier_id);
+
+  void OnCharacteristicNotifierError(NotifierId notifier_id,
+                                     bt::gatt::CharacteristicHandle char_handle,
+                                     bt::gatt::IdType handler_id);
 
   // The remote GATT service that backs this service.
   fbl::RefPtr<bt::gatt::RemoteService> service_;
+
+  NotifierId next_notifier_id_ = 0u;
+  std::unordered_map<NotifierId, CharacteristicNotifier> characteristic_notifiers_;
 
   // The peer that is serving this service.
   bt::PeerId peer_id_;

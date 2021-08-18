@@ -211,6 +211,13 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
                             att::StatusCallback status_callback,
                             async_dispatcher_t* dispatcher = nullptr);
 
+  // Simulate receiving a notification. HandleNotification is usually called by
+  // RemoteServiceManager, but tests without a RemoteServiceManager may use this method.
+  void HandleNotificationForTesting(att::Handle value_handle, const ByteBuffer& value,
+                                    bool maybe_truncated) {
+    HandleNotification(value_handle, value, maybe_truncated);
+  }
+
  private:
   friend class fbl::RefPtr<RemoteService>;
   friend class internal::RemoteServiceManager;
