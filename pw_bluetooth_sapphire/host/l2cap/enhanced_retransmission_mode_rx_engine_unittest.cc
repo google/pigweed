@@ -26,7 +26,7 @@ using Engine = EnhancedRetransmissionModeRxEngine;
 void NoOpTxCallback(ByteBufferPtr) {}
 void NoOpFailureCallback() {}
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduImmediatelyReturnsDataForUnsegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
@@ -38,7 +38,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'), *sdu));
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(0, 0);
   const ByteBufferPtr sdu = Engine(NoOpTxCallback, NoOpFailureCallback)
@@ -49,7 +49,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePa
   EXPECT_EQ(0u, sdu->size());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePdu) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const StaticByteBuffer payload{0, 0};
 
@@ -61,7 +61,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePd
   EXPECT_FALSE(sdu);
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleIncompleteFcsFooter) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleIncompleteFcsFooter) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   // No payload is present and only one byte of the FCS footer is present.
   const StaticByteBuffer payload{0, 0, 0};
@@ -72,7 +72,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleIncomplete
   EXPECT_FALSE(sdu);
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotGenerateSduForOutOfSequencePdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(  //
@@ -85,7 +85,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
                                                FrameCheckSequenceOption::kIncludeFcs)));
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduAdvancesSequenceNumberOnInSequenceFrame) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
@@ -123,7 +123,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   }
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRollsOverSequenceNumber) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduRollsOverSequenceNumber) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
   auto payload = CreateStaticByteBuffer(  //
       0 << 1,                             // TxSeq=0, R=0
@@ -145,7 +145,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRollsOverSequenceNu
           .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kIncludeFcs)));
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotAdvanceSequenceNumberForOutOfSequencePdu) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
   const auto out_of_seq = CreateStaticByteBuffer(  //
@@ -165,7 +165,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
           .BuildFrame(kTestChannelId, in_seq, FrameCheckSequenceOption::kIncludeFcs)));
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyAcksUnsegmentedSdu) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyAcksUnsegmentedSdu) {
   size_t n_acks = 0;
   ByteBufferPtr outbound_ack;
   auto tx_callback = [&](auto pdu) {
@@ -188,7 +188,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyAcksUnse
   EXPECT_EQ(1u, ack_frame.receive_seq_num());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduSendsCorrectReqSeqOnRollover) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduSendsCorrectReqSeqOnRollover) {
   size_t n_acks = 0;
   ByteBufferPtr last_ack;
   auto tx_callback = [&](auto pdu) {
@@ -214,7 +214,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduSendsCorrectReqSeqO
   EXPECT_EQ(0u, ack_frame.receive_seq_num());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotAckOutOfSequenceFrame) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotAckOutOfSequenceFrame) {
   size_t n_acks = 0;
   ByteBufferPtr outbound_ack;
   auto tx_callback = [&](auto pdu) {
@@ -237,7 +237,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotAckOutOfSequ
   EXPECT_EQ(0u, n_acks);
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverReadyPollRequest) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverReadyPollRequest) {
   size_t n_outbound_frames = 0;
   ByteBufferPtr last_outbound_frame;
   auto tx_callback = [&](auto pdu) {
@@ -273,7 +273,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverR
   EXPECT_FALSE(sframe.is_poll_request());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumCallback) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumCallback) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   std::optional<uint8_t> receive_seq_num;
@@ -331,7 +331,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumC
   EXPECT_FALSE(receive_is_poll_response.value());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallback) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallback) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   std::optional<uint8_t> ack_seq_num;
@@ -350,7 +350,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallb
   EXPECT_EQ(1, ack_seq_num.value());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsRemoteBusySetCallbackOnReceiverNotReady) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
@@ -384,7 +384,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   EXPECT_FALSE(remote_busy_set_called);
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsRemoteBusySetCallbackOnReceiverNotReadyAfterReceiverReadyClearedBusy) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
@@ -471,13 +471,13 @@ TEST_P(ExtendedControlFieldBitsTest,
   // Second S-Frame shouldn't invoke either callback because RemoteBusy remains cleared.
 }
 
-INSTANTIATE_TEST_SUITE_P(L2CAP_EnhancedRetransmissionModeRxEngineTestNonRnrSFrames,
+INSTANTIATE_TEST_SUITE_P(EnhancedRetransmissionModeRxEngineTestNonRnrSFrames,
                          ExtendedControlFieldBitsTest,
                          testing::Values(kExtendedControlReceiverReadyBits,
                                          kExtendedControlRejectBits,
                                          kExtendedControlSelectiveRejectBits));
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsRangeRetransmitSetCallbackThenReceiveSeqNumCallbackOnReject) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
@@ -505,7 +505,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   EXPECT_TRUE(receive_is_poll_response.has_value());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsSingleRetransmitSetCallbackThenReceiveSeqNumCallbackOnSelectiveReject) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
@@ -533,7 +533,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   EXPECT_TRUE(receive_is_poll_response.has_value());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+TEST(EnhancedRetransmissionModeRxEngineTest,
      ProcessPduWithPollResponseAndPollRequestClosesChannel) {
   bool connection_failed = false;
   Engine rx_engine(NoOpTxCallback, [&] { connection_failed = true; });

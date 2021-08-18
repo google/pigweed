@@ -21,7 +21,7 @@
 namespace bt::sm::util {
 namespace {
 
-TEST(SMP_UtilTest, ConvertSmIoCapabilityToHci) {
+TEST(UtilTest, ConvertSmIoCapabilityToHci) {
   EXPECT_EQ(hci::IOCapability::kDisplayOnly, IOCapabilityForHci(IOCapability::kDisplayOnly));
   EXPECT_EQ(hci::IOCapability::kDisplayYesNo, IOCapabilityForHci(IOCapability::kDisplayYesNo));
   EXPECT_EQ(hci::IOCapability::kKeyboardOnly, IOCapabilityForHci(IOCapability::kKeyboardOnly));
@@ -36,7 +36,7 @@ TEST(SMP_UtilTest, ConvertSmIoCapabilityToHci) {
   }
 }
 
-TEST(SMP_UtilTest, MapToRolesCorrectly) {
+TEST(UtilTest, MapToRolesCorrectly) {
   UInt128 local_val = {1}, peer_val = {2};
   auto [initiator_val, responder_val] = MapToRoles(local_val, peer_val, Role::kInitiator);
   EXPECT_EQ(local_val, initiator_val);
@@ -47,7 +47,7 @@ TEST(SMP_UtilTest, MapToRolesCorrectly) {
   EXPECT_EQ(peer_val, initiator_val);
 }
 
-TEST(SMP_UtilTest, SelectPairingMethodOOB) {
+TEST(UtilTest, SelectPairingMethodOOB) {
   // In SC OOB is selected if either device has OOB data.
   EXPECT_EQ(
       PairingMethod::kOutOfBand,
@@ -88,7 +88,7 @@ TEST(SMP_UtilTest, SelectPairingMethodOOB) {
                           IOCapability::kKeyboardDisplay /* peer */, true /* local_initiator */));
 }
 
-TEST(SMP_UtilTest, SelectPairingMethodNoMITM) {
+TEST(UtilTest, SelectPairingMethodNoMITM) {
   // The pairing method should be "Just Works" if neither device requires MITM
   // protection, regardless of other parameters.
   EXPECT_EQ(
@@ -107,7 +107,7 @@ TEST(SMP_UtilTest, SelectPairingMethodNoMITM) {
 }
 
 // Tests all combinations that result in the "Just Works" pairing method.
-TEST(SMP_UtilTest, SelectPairingMethodJustWorks) {
+TEST(UtilTest, SelectPairingMethodJustWorks) {
   // Local: DisplayOnly
   EXPECT_EQ(PairingMethod::kJustWorks,
             SelectPairingMethod(true /* sc */, false /* local_oob */, false /* peer_oob */,
@@ -186,7 +186,7 @@ TEST(SMP_UtilTest, SelectPairingMethodJustWorks) {
 
 // Tests all combinations that result in the "Passkey Entry (input)" pairing
 // method.
-TEST(SMP_UtilTest, SelectPairingMethodPasskeyEntryInput) {
+TEST(UtilTest, SelectPairingMethodPasskeyEntryInput) {
   // Local: KeyboardOnly
   EXPECT_EQ(PairingMethod::kPasskeyEntryInput,
             SelectPairingMethod(true /* sc */, false /* local_oob */, false /* peer_oob */,
@@ -230,7 +230,7 @@ TEST(SMP_UtilTest, SelectPairingMethodPasskeyEntryInput) {
 
 // Tests all combinations that result in the "Passkey Entry (display)" pairing
 // method.
-TEST(SMP_UtilTest, SelectPairingMethodPasskeyEntryDisplay) {
+TEST(UtilTest, SelectPairingMethodPasskeyEntryDisplay) {
   // Local: DisplayOnly
   EXPECT_EQ(
       PairingMethod::kPasskeyEntryDisplay,
@@ -276,7 +276,7 @@ TEST(SMP_UtilTest, SelectPairingMethodPasskeyEntryDisplay) {
 // Tests all combinations that result in the "Numeric Comparison" pairing
 // method. This will be selected in certain I/O capability combinations only if
 // both devices support Secure Connections.
-TEST(SMP_UtilTest, SelectPairingMethodNumericComparison) {
+TEST(UtilTest, SelectPairingMethodNumericComparison) {
   // Local: DisplayYesNo
   EXPECT_EQ(
       PairingMethod::kNumericComparison,
@@ -303,7 +303,7 @@ TEST(SMP_UtilTest, SelectPairingMethodNumericComparison) {
 }
 
 // Tests "c1" using the sample data from Vol 3, Part H, 2.2.3.
-TEST(SMP_UtilTest, C1) {
+TEST(UtilTest, C1) {
   const UInt128 tk{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
   const UInt128 r{{0xE0, 0x2E, 0x70, 0xC6, 0x4E, 0x27, 0x88, 0x63, 0x0E, 0x6F, 0xAD, 0x56, 0x21,
                    0xD5, 0x83, 0x57}};
@@ -323,7 +323,7 @@ TEST(SMP_UtilTest, C1) {
 }
 
 // Tests "s1" using the sample data from Vol 3, Part H, 2.2.4.
-TEST(SMP_UtilTest, S1) {
+TEST(UtilTest, S1) {
   const UInt128 tk{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
   const UInt128 r1{{0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x09, 0xA0, 0xB0, 0xC0, 0xD0,
                     0xE0, 0xF0, 0x00}};
@@ -339,7 +339,7 @@ TEST(SMP_UtilTest, S1) {
 }
 
 // Test "ah" using the sample data from Vol 3, Part H, Appendix D.7.
-TEST(SMP_UtilTest, Ah) {
+TEST(UtilTest, Ah) {
   const UInt128 irk{{0x9B, 0x7D, 0x39, 0x0A, 0xA6, 0x10, 0x10, 0x34, 0x05, 0xAD, 0xC8, 0x57, 0xA3,
                      0x34, 0x02, 0xEC}};
   const uint32_t prand = 0x708194;
@@ -348,7 +348,7 @@ TEST(SMP_UtilTest, Ah) {
   EXPECT_EQ(kExpected, Ah(irk, prand));
 }
 
-TEST(SMP_UtilTest, IrkCanResolveRpa) {
+TEST(UtilTest, IrkCanResolveRpa) {
   // Using the sample data from Vol 3, Part H, Appendix D.7.
   const UInt128 kIRK{{0x9B, 0x7D, 0x39, 0x0A, 0xA6, 0x10, 0x10, 0x34, 0x05, 0xAD, 0xC8, 0x57, 0xA3,
                       0x34, 0x02, 0xEC}};
@@ -372,7 +372,7 @@ TEST(SMP_UtilTest, IrkCanResolveRpa) {
   EXPECT_TRUE(IrkCanResolveRpa(kIRK, kMatchingResolvable));
 }
 
-TEST(SMP_UtilTest, GenerateRpa) {
+TEST(UtilTest, GenerateRpa) {
   const UInt128 irk{
       {'s', 'o', 'm', 'e', ' ', 'r', 'a', 'n', 'd', 'o', 'm', ' ', 'd', 'a', 't', 'a'}};
 
@@ -385,7 +385,7 @@ TEST(SMP_UtilTest, GenerateRpa) {
   EXPECT_TRUE(IrkCanResolveRpa(irk, rpa));
 }
 
-TEST(SMP_UtilTest, GenerateRandomAddress) {
+TEST(UtilTest, GenerateRandomAddress) {
   DeviceAddress addr = GenerateRandomAddress(false);
   EXPECT_EQ(DeviceAddress::Type::kLERandom, addr.type());
   EXPECT_TRUE(addr.IsNonResolvablePrivate());
@@ -396,7 +396,7 @@ TEST(SMP_UtilTest, GenerateRandomAddress) {
 }
 
 // Using the sample data from Vol 3, Part H, Appendix D.1.
-TEST(SMP_UtilTest, AesCmac) {
+TEST(UtilTest, AesCmac) {
   const UInt128 key{0x3C, 0x4F, 0xCF, 0x09, 0x88, 0x15, 0xF7, 0xAB,
                     0xA6, 0xD2, 0xAE, 0x28, 0x16, 0x15, 0x7E, 0x2B};
 
@@ -449,7 +449,7 @@ TEST(SMP_UtilTest, AesCmac) {
 }
 
 // Using the sample data from Vol 3, Part H, Appendix D.2.
-TEST(SMP_UtilTest, F4) {
+TEST(UtilTest, F4) {
   const UInt256 kU{0xE6, 0x9D, 0x35, 0x0E, 0x48, 0x01, 0x03, 0xCC, 0xDB, 0xFD, 0xF4,
                    0xAC, 0x11, 0x91, 0xF4, 0xEF, 0xB9, 0xA5, 0xF9, 0xE9, 0xA7, 0x83,
                    0x2C, 0x5E, 0x2C, 0xBE, 0x97, 0xF2, 0xD2, 0x03, 0xB0, 0x20};
@@ -468,7 +468,7 @@ TEST(SMP_UtilTest, F4) {
 }
 
 // Using the sample data from Vol 3, Part H, Appendix D.3.
-TEST(SMP_UtilTest, F5) {
+TEST(UtilTest, F5) {
   const UInt256 kDhKey{0x98, 0xA6, 0xBF, 0x73, 0xF3, 0x34, 0x8D, 0x86, 0xF1, 0x66, 0xF8,
                        0xB4, 0x13, 0x6B, 0x79, 0x99, 0x9B, 0x7D, 0x39, 0x0A, 0xA6, 0x10,
                        0x10, 0x34, 0x05, 0xAD, 0xC8, 0x57, 0xA3, 0x34, 0x02, 0xEC};
@@ -494,7 +494,7 @@ TEST(SMP_UtilTest, F5) {
 }
 
 // Using the sample data from Vol 3, Part H, Appendix D.4
-TEST(SMP_UtilTest, F6) {
+TEST(UtilTest, F6) {
   const UInt128 kMacKey{0x20, 0x6E, 0x63, 0xCE, 0x20, 0x6A, 0x3F, 0xFD,
                         0x02, 0x4A, 0x08, 0xA1, 0x76, 0xF1, 0x65, 0x29};
   const UInt128 kN1{0xAB, 0xAE, 0x2B, 0x71, 0xEC, 0xB2, 0xFF, 0xFF,
@@ -518,7 +518,7 @@ TEST(SMP_UtilTest, F6) {
 }
 
 // Using the sample data from Vol 3, Part H, Appendix D.5
-TEST(SMP_UtilTest, G2) {
+TEST(UtilTest, G2) {
   const UInt256 kInitiatorPubKeyX{0xE6, 0x9D, 0x35, 0x0E, 0x48, 0x01, 0x03, 0xCC, 0xDB, 0xFD, 0xF4,
                                   0xAC, 0x11, 0x91, 0xF4, 0xEF, 0xB9, 0xA5, 0xF9, 0xE9, 0xA7, 0x83,
                                   0x2C, 0x5E, 0x2C, 0xBE, 0x97, 0xF2, 0xD2, 0x03, 0xB0, 0x20};
@@ -539,7 +539,7 @@ TEST(SMP_UtilTest, G2) {
 }
 
 // Using the sample data from v5.2 Vol. 3, Part H, Appendix D.6
-TEST(SMP_UtilTest, H6) {
+TEST(UtilTest, H6) {
   const UInt128 kKeyBytes = {0x9B, 0x7D, 0x39, 0x0A, 0xA6, 0x10, 0x10, 0x34,
                              0x05, 0xAD, 0xC8, 0x57, 0xA3, 0x34, 0x02, 0xEC};
   const uint32_t kKeyId = 0x6c656272;
@@ -552,7 +552,7 @@ TEST(SMP_UtilTest, H6) {
 }
 
 // Using the sample data from v5.2 Vol. 3, Part H, Appendix D.8
-TEST(SMP_UtilTest, H7) {
+TEST(UtilTest, H7) {
   const UInt128 kKeyBytes = {0x9B, 0x7D, 0x39, 0x0A, 0xA6, 0x10, 0x10, 0x34,
                              0x05, 0xAD, 0xC8, 0x57, 0xA3, 0x34, 0x02, 0xEC};
   const UInt128 kSalt = {0x31, 0x70, 0x6D, 0x74, 0x00, 0x00, 0x00, 0x00,
@@ -566,7 +566,7 @@ TEST(SMP_UtilTest, H7) {
 }
 
 // Using the sample data from v5.2 Vol. 3, Part H, Appendix D.9
-TEST(SMP_UtilTest, LtkToLinkKeyUsingH7) {
+TEST(UtilTest, LtkToLinkKeyUsingH7) {
   const UInt128 kLtkBytes = {0x64, 0xBF, 0x4F, 0x33, 0x33, 0x6C, 0x06, 0xBD,
                              0x58, 0x4B, 0x26, 0xE3, 0xBC, 0xF9, 0x8D, 0x36};
   const UInt128 kExpectedLinkKeyBytes = {0x35, 0xB8, 0x47, 0x30, 0xF4, 0xF1, 0x39, 0x0A,
@@ -579,7 +579,7 @@ TEST(SMP_UtilTest, LtkToLinkKeyUsingH7) {
 }
 
 // Using the sample data from v5.2 Vol. 3, Part H, Appendix D.10
-TEST(SMP_UtilTest, LtkToLinkKeyUsingH6) {
+TEST(UtilTest, LtkToLinkKeyUsingH6) {
   const UInt128 kLtkBytes = {0x64, 0xBF, 0x4F, 0x33, 0x33, 0x6C, 0x06, 0xBD,
                              0x58, 0x4B, 0x26, 0xE3, 0xBC, 0xF9, 0x8D, 0x36};
   const UInt128 kExpectedLinkKeyBytes = {0xB0, 0x8F, 0x38, 0xEE, 0xAF, 0x30, 0x82, 0x0D,

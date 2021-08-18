@@ -14,7 +14,7 @@ namespace {
 
 constexpr ChannelId kTestChannelId = 0x0001;
 
-TEST(L2CAP_BasicModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
+TEST(BasicModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) {
@@ -31,7 +31,7 @@ TEST(L2CAP_BasicModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
   EXPECT_TRUE(ContainersEqual(payload, *last_pdu));
 }
 
-TEST(L2CAP_BasicModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu) {
+TEST(BasicModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) {
@@ -48,7 +48,7 @@ TEST(L2CAP_BasicModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu) {
   EXPECT_TRUE(ContainersEqual(payload, *last_pdu));
 }
 
-TEST(L2CAP_BasicModeTxEngineTest, QueueSduDropsOversizedSdu) {
+TEST(BasicModeTxEngineTest, QueueSduDropsOversizedSdu) {
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
 
@@ -58,7 +58,7 @@ TEST(L2CAP_BasicModeTxEngineTest, QueueSduDropsOversizedSdu) {
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST(L2CAP_BasicModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
+TEST(BasicModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
   constexpr size_t kMtu = 1;
   BasicModeTxEngine(kTestChannelId, kMtu, [](auto pdu) {
   }).QueueSdu(std::make_unique<DynamicByteBuffer>());

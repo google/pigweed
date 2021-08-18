@@ -25,11 +25,11 @@ const bt::DeviceAddress kTestAddr2(bt::DeviceAddress::Type::kLEPublic, {0x02, 0,
 using bt::testing::FakePeer;
 using FidlAdvHandle = fidl::InterfaceHandle<fble::AdvertisingHandle>;
 
-class FIDL_LowEnergyPeripheralServerTest_FakeAdapter
+class LowEnergyPeripheralServerTestFakeAdapter
     : public bt::gap::testing::FakeAdapterTestFixture {
  public:
-  FIDL_LowEnergyPeripheralServerTest_FakeAdapter() = default;
-  ~FIDL_LowEnergyPeripheralServerTest_FakeAdapter() override = default;
+  LowEnergyPeripheralServerTestFakeAdapter() = default;
+  ~LowEnergyPeripheralServerTestFakeAdapter() override = default;
 
   void SetUp() override {
     bt::gap::testing::FakeAdapterTestFixture::SetUp();
@@ -58,13 +58,13 @@ class FIDL_LowEnergyPeripheralServerTest_FakeAdapter
  private:
   std::unique_ptr<LowEnergyPeripheralServer> server_;
   fble::PeripheralPtr peripheral_client_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_LowEnergyPeripheralServerTest_FakeAdapter);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTestFakeAdapter);
 };
 
-class FIDL_LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture {
+class LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture {
  public:
-  FIDL_LowEnergyPeripheralServerTest() = default;
-  ~FIDL_LowEnergyPeripheralServerTest() override = default;
+  LowEnergyPeripheralServerTest() = default;
+  ~LowEnergyPeripheralServerTest() override = default;
 
   void SetUp() override {
     AdapterTestFixture::SetUp();
@@ -92,10 +92,10 @@ class FIDL_LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFi
  private:
   std::unique_ptr<LowEnergyPeripheralServer> server_;
   fble::PeripheralPtr peripheral_client_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_LowEnergyPeripheralServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTest);
 };
 
-class BoolParam : public FIDL_LowEnergyPeripheralServerTest,
+class BoolParam : public LowEnergyPeripheralServerTest,
                   public ::testing::WithParamInterface<bool> {};
 
 class FakeAdvertisedPeripheral : public ServerBase<fble::AdvertisedPeripheral> {
@@ -131,7 +131,7 @@ class FakeAdvertisedPeripheral : public ServerBase<fble::AdvertisedPeripheral> {
 
 // Tests that aborting a StartAdvertising command sequence does not cause a crash in successive
 // requests.
-TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCrash) {
+TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCrash) {
   fble::AdvertisingParameters params1, params2, params3;
   FidlAdvHandle token1, token2, token3;
 
@@ -155,7 +155,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCr
 }
 
 // Same as the test above but tests that an error status leaves the server in the expected state.
-TEST_F(FIDL_LowEnergyPeripheralServerTest,
+TEST_F(LowEnergyPeripheralServerTest,
        StartAdvertisingWhilePendingDoesNotCrashWithControllerError) {
   test_device()->SetDefaultResponseStatus(bt::hci::kLESetAdvertisingEnable,
                                           bt::hci::StatusCode::kCommandDisallowed);
@@ -191,7 +191,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest,
   EXPECT_TRUE(result4->is_ok());
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseWhilePendingDoesNotCrashWithControllerError) {
+TEST_F(LowEnergyPeripheralServerTest, AdvertiseWhilePendingDoesNotCrashWithControllerError) {
   test_device()->SetDefaultResponseStatus(bt::hci::kLESetAdvertisingEnable,
                                           bt::hci::StatusCode::kCommandDisallowed);
   fble::AdvertisingParameters params1, params2, params3, params4;
@@ -235,7 +235,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseWhilePendingDoesNotCrashWith
   EXPECT_TRUE(result4);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingNoConnectionRelatedParamsNoConnection) {
+TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingNoConnectionRelatedParamsNoConnection) {
   fble::Peer peer;
   // `conn` is stored so the bondable mode of the connection resulting from `OnPeerConnected` can
   // be checked. The connection would otherwise be dropped immediately after `ConnectLowEnergy`.
@@ -265,7 +265,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingNoConnectionRelatedPa
   ASSERT_FALSE(conn.is_valid());
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseNoConnectionRelatedParamsNoConnection) {
+TEST_F(LowEnergyPeripheralServerTest, AdvertiseNoConnectionRelatedParamsNoConnection) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
   fble::AdvertisingParameters params;
@@ -284,7 +284,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseNoConnectionRelatedParamsNoC
   EXPECT_TRUE(result);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest,
+TEST_F(LowEnergyPeripheralServerTest,
        StartAdvertisingConnectableParameterTrueConnectsBondable) {
   fble::Peer peer;
   // `conn` is stored so the bondable mode of the connection resulting from `OnPeerConnected` can
@@ -323,7 +323,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest,
   ASSERT_EQ(conn_handle->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingEmptyConnectionOptionsConnectsBondable) {
+TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingEmptyConnectionOptionsConnectsBondable) {
   fble::Peer peer;
   // `conn` is stored so the bondable mode of the connection resulting from `OnPeerConnected` can
   // be checked. The connection would otherwise be dropped immediately after `ConnectLowEnergy`.
@@ -362,7 +362,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, StartAdvertisingEmptyConnectionOption
   ASSERT_EQ(conn_handle->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseEmptyConnectionOptionsConnectsBondable) {
+TEST_F(LowEnergyPeripheralServerTest, AdvertiseEmptyConnectionOptionsConnectsBondable) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
 
@@ -468,7 +468,7 @@ TEST_P(BoolParam, StartAdvertisingBondableOrNonBondableConnectsBondableOrNonBond
             bondable ? bt::sm::BondableMode::Bondable : bt::sm::BondableMode::NonBondable);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest,
+TEST_F(LowEnergyPeripheralServerTest,
        RestartStartAdvertisingDuringInboundConnKeepsNewAdvAlive) {
   fble::Peer peer;
   // `conn` is stored so that the connection is not dropped immediately after connection.
@@ -542,7 +542,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest,
 
 // Ensures that a connection to a canceled advertisement received after the advertisement is
 // canceled doesn't end or get sent to a new advertisement.
-TEST_F(FIDL_LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeepsNewAdvAlive) {
+TEST_F(LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeepsNewAdvAlive) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_0;
   FakeAdvertisedPeripheral adv_peripheral_server_0(adv_peripheral_handle_0.NewRequest());
 
@@ -612,7 +612,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeep
   EXPECT_TRUE(result.has_value());
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter,
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter,
        StartAdvertisingWithIncludeTxPowerSetToTrue) {
   fble::AdvertisingParameters params;
   fble::AdvertisingData adv_data;
@@ -628,7 +628,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter,
       adapter()->fake_le()->registered_advertisements().begin()->second.include_tx_power_level);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseWithIncludeTxPowerSetToTrue) {
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter, AdvertiseWithIncludeTxPowerSetToTrue) {
   fble::AdvertisingParameters params;
   fble::AdvertisingData adv_data;
   adv_data.set_include_tx_power_level(true);
@@ -649,7 +649,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseWithIncludeTxPow
   RunLoopUntilIdle();
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseInvalidAdvData) {
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter, AdvertiseInvalidAdvData) {
   fble::AdvertisingData adv_data;
   adv_data.set_name(std::string(bt::kMaxNameLength + 1, '*'));
   fble::AdvertisingParameters params;
@@ -669,7 +669,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseInvalidAdvData) 
   EXPECT_EQ(adv_result->error(), fble::PeripheralError::INVALID_PARAMETERS);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseInvalidScanResponseData) {
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter, AdvertiseInvalidScanResponseData) {
   fble::AdvertisingData adv_data;
   adv_data.set_name(std::string(bt::kMaxNameLength + 1, '*'));
   fble::AdvertisingParameters params;
@@ -689,7 +689,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseInvalidScanRespo
   EXPECT_EQ(adv_result->error(), fble::PeripheralError::INVALID_PARAMETERS);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseAndReceiveTwoConnections) {
+TEST_F(LowEnergyPeripheralServerTest, AdvertiseAndReceiveTwoConnections) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
 
@@ -723,7 +723,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseAndReceiveTwoConnections) {
   EXPECT_TRUE(adv_result->is_ok());
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseCanceledBeforeAdvertisingStarts) {
+TEST_F(LowEnergyPeripheralServerTest, AdvertiseCanceledBeforeAdvertisingStarts) {
   fit::closure send_adv_enable_response;
   test_device()->pause_responses_for_opcode(
       bt::hci::kLESetAdvertisingEnable,
@@ -796,7 +796,7 @@ TEST_P(BoolParam, AdvertiseTwiceCausesSecondToFail) {
   EXPECT_TRUE(adv_result_0->is_ok());
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, CallAdvertiseTwiceSequentiallyBothSucceed) {
+TEST_F(LowEnergyPeripheralServerTest, CallAdvertiseTwiceSequentiallyBothSucceed) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_0;
   FakeAdvertisedPeripheral adv_peripheral_server_0(adv_peripheral_handle_0.NewRequest());
   fble::AdvertisingParameters params_0;
@@ -836,7 +836,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, CallAdvertiseTwiceSequentiallyBothSuc
   EXPECT_TRUE(adv_result_1->is_ok());
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, PeerDisconnectClosesConnection) {
+TEST_F(LowEnergyPeripheralServerTest, PeerDisconnectClosesConnection) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
 
@@ -872,7 +872,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, PeerDisconnectClosesConnection) {
   EXPECT_TRUE(connection_closed);
 }
 
-TEST_F(FIDL_LowEnergyPeripheralServerTest, IncomingConnectionFailureContinuesAdvertising) {
+TEST_F(LowEnergyPeripheralServerTest, IncomingConnectionFailureContinuesAdvertising) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
   FakeAdvertisedPeripheral adv_peripheral_server(adv_peripheral_handle.NewRequest());
 
@@ -911,7 +911,7 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, IncomingConnectionFailureContinuesAdv
   EXPECT_TRUE(adv_result.has_value());
 }
 
-INSTANTIATE_TEST_SUITE_P(FIDL_LowEnergyPeripheralServerTest, BoolParam, ::testing::Bool());
+INSTANTIATE_TEST_SUITE_P(LowEnergyPeripheralServerTest, BoolParam, ::testing::Bool());
 
 }  // namespace
 }  // namespace bthost

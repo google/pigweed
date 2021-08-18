@@ -92,7 +92,7 @@ class InterrogatorTest : public TestingBase {
 
 using GAP_InterrogatorTest = InterrogatorTest;
 
-TEST_F(GAP_InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
+TEST_F(InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
   std::optional<InterrogationRefPtr> ref;
   interrogator()->set_send_commands_cb([&ref](InterrogationRefPtr r) { ref = std::move(r); });
 
@@ -114,7 +114,7 @@ TEST_F(GAP_InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
   EXPECT_TRUE(result->is_success());
 }
 
-TEST_F(GAP_InterrogatorTest,
+TEST_F(InterrogatorTest,
        DestroyingInterrogatorBeforeReadRemoteVersionInformationCompleteCallbackCalledDoesNotCrash) {
   std::optional<InterrogationRefPtr> ref;
   interrogator()->set_send_commands_cb([this, &ref](InterrogationRefPtr r) {
@@ -147,7 +147,7 @@ TEST_F(GAP_InterrogatorTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(GAP_InterrogatorTest, Cancel) {
+TEST_F(InterrogatorTest, Cancel) {
   std::optional<InterrogationRefPtr> ref;
   interrogator()->set_send_commands_cb([this, &ref](InterrogationRefPtr r) {
     ref = std::move(r);

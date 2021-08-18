@@ -16,7 +16,7 @@ namespace {
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
-TEST(L2CAP_FragmenterTest, OutboundFrameEmptyPayload) {
+TEST(FragmenterTest, OutboundFrameEmptyPayload) {
   StaticByteBuffer kExpectedFrame(
       // Basic L2CAP header (0-length Information Payload)
       0x00, 0x00, 0x01, 0x00);
@@ -29,7 +29,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameEmptyPayload) {
   EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
 }
 
-TEST(L2CAP_FragmenterTest, OutboundFrameEmptyPayloadWithFcs) {
+TEST(FragmenterTest, OutboundFrameEmptyPayloadWithFcs) {
   StaticByteBuffer kExpectedFrame(
       // Basic L2CAP header (2-byte Information Payload)
       0x02, 0x00, 0x01, 0x00,
@@ -53,7 +53,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameEmptyPayloadWithFcs) {
   EXPECT_EQ(0x28, out_buffer[5]);
 }
 
-TEST(L2CAP_FragmenterTest, OutboundFrameExactFit) {
+TEST(FragmenterTest, OutboundFrameExactFit) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrame(
@@ -71,7 +71,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameExactFit) {
   EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
 }
 
-TEST(L2CAP_FragmenterTest, OutboundFrameExactFitWithFcs) {
+TEST(FragmenterTest, OutboundFrameExactFitWithFcs) {
   // Test data from v5.0, Vol 3, Part A, Section 3.3.5, Example 1
   StaticByteBuffer payload(0x02, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09);
 
@@ -93,7 +93,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameExactFitWithFcs) {
   EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
 }
 
-TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInHeader) {
+TEST(FragmenterTest, OutboundFrameOffsetInHeader) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrameChunk(
@@ -114,7 +114,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInHeader) {
   EXPECT_TRUE(ContainersEqual(kExpectedFrameChunk, out_buffer));
 }
 
-TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInPayload) {
+TEST(FragmenterTest, OutboundFrameOffsetInPayload) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrameChunk(
@@ -132,7 +132,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInPayload) {
   EXPECT_TRUE(ContainersEqual(kExpectedFrameChunk, out_buffer));
 }
 
-TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInFcs) {
+TEST(FragmenterTest, OutboundFrameOffsetInFcs) {
   StaticByteBuffer payload('T', 'e', 's', 't');
 
   // Second and last byte of FCS
@@ -147,7 +147,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInFcs) {
 }
 
 // This isn't expected to happen from Fragmenter.
-TEST(L2CAP_FragmenterTest, OutboundFrameOutBufferBigger) {
+TEST(FragmenterTest, OutboundFrameOutBufferBigger) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
   StaticByteBuffer kExpectedFrameChunk(
@@ -169,7 +169,7 @@ TEST(L2CAP_FragmenterTest, OutboundFrameOutBufferBigger) {
   EXPECT_TRUE(ContainersEqual(kExpectedFrameChunk, out_buffer));
 }
 
-TEST(L2CAP_FragmenterTest, EmptyPayload) {
+TEST(FragmenterTest, EmptyPayload) {
   BufferView payload;
 
   auto expected_fragment = CreateStaticByteBuffer(
@@ -190,7 +190,7 @@ TEST(L2CAP_FragmenterTest, EmptyPayload) {
   EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
-TEST(L2CAP_FragmenterTest, SingleFragment) {
+TEST(FragmenterTest, SingleFragment) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
   auto expected_fragment = CreateStaticByteBuffer(
@@ -211,7 +211,7 @@ TEST(L2CAP_FragmenterTest, SingleFragment) {
   EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
-TEST(L2CAP_FragmenterTest, SingleFragmentExactFit) {
+TEST(FragmenterTest, SingleFragmentExactFit) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
   auto expected_fragment = CreateStaticByteBuffer(
@@ -233,7 +233,7 @@ TEST(L2CAP_FragmenterTest, SingleFragmentExactFit) {
   EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
-TEST(L2CAP_FragmenterTest, TwoFragmentsOffByOne) {
+TEST(FragmenterTest, TwoFragmentsOffByOne) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't', '!');
 
   auto expected_fragment0 = CreateStaticByteBuffer(
@@ -264,7 +264,7 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsOffByOne) {
   EXPECT_TRUE(ContainersEqual(expected_fragment1, (++fragments.begin())->view().data()));
 }
 
-TEST(L2CAP_FragmenterTest, TwoFragmentsExact) {
+TEST(FragmenterTest, TwoFragmentsExact) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
   ZX_DEBUG_ASSERT_MSG(payload.size() % 2 == 0, "test payload size should be even");
 
@@ -296,7 +296,7 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsExact) {
   EXPECT_TRUE(ContainersEqual(expected_fragment1, (++fragments.begin())->view().data()));
 }
 
-TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
+TEST(FragmenterTest, ManyFragmentsOffByOne) {
   constexpr size_t kMaxFragmentPayloadSize = 5;
   constexpr size_t kExpectedFragmentCount = 4;
   constexpr size_t kFrameSize = (kExpectedFragmentCount - 1) * kMaxFragmentPayloadSize + 1;
@@ -345,7 +345,7 @@ TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
   EXPECT_TRUE(ContainersEqual(expected_fragment3, iter->view().data()));
 }
 
-TEST(L2CAP_FragmenterTest, MaximalSizedPayload) {
+TEST(FragmenterTest, MaximalSizedPayload) {
   DynamicByteBuffer payload(65535);
   Fragmenter fragmenter(kTestHandle, 1024);
   PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs);
@@ -353,7 +353,7 @@ TEST(L2CAP_FragmenterTest, MaximalSizedPayload) {
   EXPECT_LT(64u, pdu.fragment_count());
 }
 
-TEST(L2CAP_FragmenterTest, FragmentsFrameCheckSequence) {
+TEST(FragmenterTest, FragmentsFrameCheckSequence) {
   constexpr size_t kMaxFragmentPayloadSize = 5;
   constexpr size_t kExpectedFragmentCount = 3;
   constexpr size_t kFrameSize = (kExpectedFragmentCount - 1) * kMaxFragmentPayloadSize + 1;

@@ -16,13 +16,13 @@ namespace {
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
-class HCI_TransportTest : public TestingBase {
+class TransportTest : public TestingBase {
  public:
-  HCI_TransportTest() = default;
-  ~HCI_TransportTest() override = default;
+  TransportTest() = default;
+  ~TransportTest() override = default;
 };
 
-TEST_F(HCI_TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
+TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
   size_t closed_cb_count = 0;
   transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
 

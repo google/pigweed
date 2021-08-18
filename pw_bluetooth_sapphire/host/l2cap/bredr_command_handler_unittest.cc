@@ -25,11 +25,11 @@ constexpr uint16_t kPsm = 0x0001;
 constexpr ChannelId kLocalCId = 0x0040;
 constexpr ChannelId kRemoteCId = 0x60a3;
 
-class L2CAP_BrEdrCommandHandlerTest : public TestBase {
+class BrEdrCommandHandlerTest : public TestBase {
  public:
-  L2CAP_BrEdrCommandHandlerTest() = default;
-  ~L2CAP_BrEdrCommandHandlerTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_BrEdrCommandHandlerTest);
+  BrEdrCommandHandlerTest() = default;
+  ~BrEdrCommandHandlerTest() override = default;
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrCommandHandlerTest);
 
  protected:
   // TestLoopFixture overrides
@@ -37,7 +37,7 @@ class L2CAP_BrEdrCommandHandlerTest : public TestBase {
     TestBase::SetUp();
     signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<BrEdrCommandHandler>(
-        fake_sig(), fit::bind_member(this, &L2CAP_BrEdrCommandHandlerTest::OnRequestFail));
+        fake_sig(), fit::bind_member(this, &BrEdrCommandHandlerTest::OnRequestFail));
     request_fail_callback_ = nullptr;
     failed_requests_ = 0;
   }
@@ -72,7 +72,7 @@ class L2CAP_BrEdrCommandHandlerTest : public TestBase {
   size_t failed_requests_;
 };
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRej) {
+TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRej) {
   constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
 
   // Connection Request payload
@@ -112,7 +112,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRej) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
+TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
   constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
 
   // Connection Request payload
@@ -143,7 +143,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejectio
   EXPECT_FALSE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
+TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
   // Connection Request payload
   auto expected_conn_req = CreateStaticByteBuffer(
       // PSM
@@ -184,7 +184,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
+TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
   // Connection Request payload
   auto expected_conn_req = CreateStaticByteBuffer(
       // PSM
@@ -246,7 +246,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
   EXPECT_EQ(2, cb_count);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspTimeOut) {
+TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspTimeOut) {
   // Connection Request payload
   auto expected_conn_req = CreateStaticByteBuffer(
       // PSM
@@ -269,7 +269,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspTimeOut) {
   EXPECT_EQ(1u, failed_requests());
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspNotSupported) {
+TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspNotSupported) {
   BrEdrCommandHandler::InformationRequestCallback cb = [](InformationType type, auto responder) {
     EXPECT_EQ(InformationType::kConnectionlessMTU, type);
     responder->SendNotSupported();
@@ -292,7 +292,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspNotSupported) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kInformationRequest, info_req, expected_rsp));
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspConnlessMtu) {
+TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspConnlessMtu) {
   BrEdrCommandHandler::InformationRequestCallback cb = [](InformationType type, auto responder) {
     EXPECT_EQ(InformationType::kConnectionlessMTU, type);
     responder->SendConnectionlessMtu(0x02dc);
@@ -318,7 +318,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspConnlessMtu) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kInformationRequest, info_req, expected_rsp));
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspExtendedFeatures) {
+TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspExtendedFeatures) {
   BrEdrCommandHandler::InformationRequestCallback cb = [](InformationType type, auto responder) {
     EXPECT_EQ(InformationType::kExtendedFeaturesSupported, type);
     responder->SendExtendedFeaturesSupported(0xfaceb00c);
@@ -344,7 +344,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspExtendedFeatures) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kInformationRequest, info_req, expected_rsp));
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspFixedChannels) {
+TEST_F(BrEdrCommandHandlerTest, InboundInfoReqRspFixedChannels) {
   BrEdrCommandHandler::InformationRequestCallback cb = [](InformationType type, auto responder) {
     EXPECT_EQ(InformationType::kFixedChannelsSupported, type);
     responder->SendFixedChannelsSupported(0xcafef00d4badc0deUL);
@@ -370,7 +370,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspFixedChannels) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kInformationRequest, info_req, expected_rsp));
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConfigReqEmptyRspOkEmpty) {
+TEST_F(BrEdrCommandHandlerTest, InboundConfigReqEmptyRspOkEmpty) {
   BrEdrCommandHandler::ConfigurationRequestCallback cb =
       [](ChannelId local_cid, uint16_t flags, ChannelConfiguration config, auto responder) {
         EXPECT_EQ(kLocalCId, local_cid);
@@ -406,7 +406,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConfigReqEmptyRspOkEmpty) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kConfigurationRequest, config_req, expected_rsp));
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
+TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
   // Configuration Request payload
   auto expected_config_req = CreateStaticByteBuffer(
       // Destination CID
@@ -463,7 +463,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
+TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
   // Configuration Request payload
   auto expected_config_req = CreateStaticByteBuffer(
       // Destination CID
@@ -512,7 +512,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_EQ(1u, failed_requests());
 }
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
+TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
   // Information Request payload
   auto expected_info_req = CreateStaticByteBuffer(
       // Information Type
@@ -551,7 +551,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspNotSupported) {
+TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspNotSupported) {
   // Information Request payload
   auto expected_info_req = CreateStaticByteBuffer(
       // Information Type
@@ -586,7 +586,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspNotSupported) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
+TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
   // Information Request payload
   auto expected_info_req = CreateStaticByteBuffer(
       // Information Type
@@ -611,7 +611,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
   EXPECT_FALSE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
+TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
   // Information Request payload
   auto expected_info_req = CreateStaticByteBuffer(
       // Information Type
@@ -646,7 +646,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
 
 // Accept and pass a valid Information Response even if it doesn't have the type
 // requested.
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspWrongType) {
+TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspWrongType) {
   // Information Request payload
   auto expected_info_req = CreateStaticByteBuffer(
       // Information Type
@@ -686,7 +686,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspWrongType) {
 }
 
 // Allow types of information besides those known to BrEdrCommandHandler.
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
+TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
   // Information Request payload
   auto expected_info_req = CreateStaticByteBuffer(
       // Information Type
@@ -722,7 +722,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConnReqRspPending) {
+TEST_F(BrEdrCommandHandlerTest, InboundConnReqRspPending) {
   BrEdrCommandHandler::ConnectionRequestCallback cb = [](PSM psm, ChannelId remote_cid,
                                                          auto responder) {
     EXPECT_EQ(kPsm, psm);
@@ -758,7 +758,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConnReqRspPending) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kConnectionRequest, conn_req, conn_rsp));
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
+TEST_F(BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
   constexpr uint16_t kBadPsm = 0x0002;
 
   // Request callback shouldn't even be called for an invalid PSM.
@@ -795,7 +795,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
   EXPECT_FALSE(req_cb_called);
 }
 
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConnReqNonDynamicSrcCId) {
+TEST_F(BrEdrCommandHandlerTest, InboundConnReqNonDynamicSrcCId) {
   // Request callback shouldn't even be called for an invalid Source Channel ID.
   bool req_cb_called = false;
   BrEdrCommandHandler::ConnectionRequestCallback cb =

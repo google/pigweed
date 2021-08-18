@@ -79,7 +79,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
 
 using GAP_LowEnergyInterrogatorTest = LowEnergyInterrogatorTest;
 
-TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulInterrogation) {
+TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   const hci::LESupportedFeatures kFeatures{0x0123456789abcdef};
   QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
@@ -101,7 +101,7 @@ TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_EQ(kFeatures.le_features, peer->le()->features()->le_features);
 }
 
-TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeatures) {
+TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeatures) {
   const hci::LESupportedFeatures kFeatures{0x0123456789abcdef};
 
   const auto remote_version_complete_packet =
@@ -125,7 +125,7 @@ TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFea
   EXPECT_EQ(kFeatures.le_features, peer->le()->features()->le_features);
 }
 
-TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
+TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
   QueueSuccessfulInterrogation(kConnectionHandle);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
@@ -153,7 +153,7 @@ TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
   EXPECT_TRUE(status->is_success());
 }
 
-TEST_F(GAP_LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
+TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
   const auto le_read_remote_features_error_status_packet =
@@ -176,7 +176,7 @@ TEST_F(GAP_LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   EXPECT_FALSE(peer->le()->features().has_value());
 }
 
-TEST_F(GAP_LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesComplete) {
+TEST_F(LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesComplete) {
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
   const auto le_remote_features_complete_packet =
@@ -205,7 +205,7 @@ TEST_F(GAP_LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesCompl
   EXPECT_FALSE(status->is_success());
 }
 
-TEST_F(GAP_LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCanceledInterrogation) {
+TEST_F(LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCanceledInterrogation) {
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
   const auto le_remote_features_complete_packet =

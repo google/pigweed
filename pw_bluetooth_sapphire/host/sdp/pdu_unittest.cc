@@ -38,9 +38,7 @@ bool MatchesOneOf(const Container1& one, const Container2& two, const Container3
   return opt_one || opt_two;
 }
 
-using SDP_PDUTest = ::testing::Test;
-
-TEST_F(SDP_PDUTest, ErrorResponse) {
+TEST(PDUTest, ErrorResponse) {
   ErrorResponse response;
   EXPECT_FALSE(response.complete());
 
@@ -68,7 +66,7 @@ TEST_F(SDP_PDUTest, ErrorResponse) {
   EXPECT_TRUE(ContainersEqual(kInvalidContState.view(0, 7), *ptr));
 }
 
-TEST_F(SDP_PDUTest, ServiceSearchRequestParse) {
+TEST(PDUTest, ServiceSearchRequestParse) {
   const auto kL2capSearch = CreateStaticByteBuffer(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
@@ -133,7 +131,7 @@ TEST_F(SDP_PDUTest, ServiceSearchRequestParse) {
   EXPECT_FALSE(req4.valid());
 };
 
-TEST_F(SDP_PDUTest, ServiceSearchRequestGetPDU) {
+TEST(PDUTest, ServiceSearchRequestGetPDU) {
   ServiceSearchRequest req;
 
   req.set_search_pattern({protocol::kATT, protocol::kL2CAP});
@@ -165,7 +163,7 @@ TEST_F(SDP_PDUTest, ServiceSearchRequestGetPDU) {
   EXPECT_TRUE(MatchesOneOf(kExpected, kExpected2, *pdu));
 };
 
-TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
+TEST(PDUTest, ServiceSearchResponseParse) {
   const auto kValidResponse = CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
                                                      0x00, 0x02,  // Current service record count: 2
                                                      0x00, 0x00, 0x00, 0x01,  // Service Handle 1
@@ -193,23 +191,21 @@ TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
   EXPECT_FALSE(status);
 
   // A Truncated packet doesn't parse either.
-  const auto kTruncated =
-      CreateStaticByteBuffer(0x00, 0x02,              // Total service record count: 2
-                             0x00, 0x02              // Current service record count: 2
-      );
+  const auto kTruncated = CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
+                                                 0x00, 0x02   // Current service record count: 2
+  );
   ServiceSearchResponse resp3;
   status = resp3.Parse(kTruncated);
   EXPECT_FALSE(status);
 
   // Too many bytes for the number of records is also not allowed (with or without a continuation
   // state)
-  const auto kTooLong =
-      CreateStaticByteBuffer(0x00, 0x01,              // Total service record count: 1
-                             0x00, 0x01,              // Current service record count: 1
-                             0x00, 0x00, 0x00, 0x01,  // Service Handle 1
-                             0x00, 0x00, 0x00, 0x02,  // Service Handle 2
-                             0x00                    // No continuation state
-      );
+  const auto kTooLong = CreateStaticByteBuffer(0x00, 0x01,  // Total service record count: 1
+                                               0x00, 0x01,  // Current service record count: 1
+                                               0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                                               0x00, 0x00, 0x00, 0x02,  // Service Handle 2
+                                               0x00                     // No continuation state
+  );
   ServiceSearchResponse resp4;
   status = resp4.Parse(kTooLong);
   EXPECT_FALSE(status);
@@ -227,7 +223,7 @@ TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
   EXPECT_FALSE(status);
 };
 
-TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
+TEST(PDUTest, ServiceSearchResponsePDU) {
   std::vector<ServiceHandle> results{1, 2};
   ServiceSearchResponse resp;
 
@@ -296,7 +292,7 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
   EXPECT_TRUE(ContainersEqual(kExpectedLarge, *pdu));
 };
 
-TEST_F(SDP_PDUTest, ServiceSearchResponsePDU_MaxSize) {
+TEST(PDUTest, ServiceSearchResponsePDU_MaxSize) {
   std::vector<ServiceHandle> results{1, 2};
   ServiceSearchResponse resp;
 
@@ -377,7 +373,7 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU_MaxSize) {
   EXPECT_TRUE(ContainersEqual(kExpectedRest, *pdu));
 };
 
-TEST_F(SDP_PDUTest, ServiceAttributeRequestValidity) {
+TEST(PDUTest, ServiceAttributeRequestValidity) {
   ServiceAttributeRequest req;
 
   // No attributes requested, so it begins invalid
@@ -421,7 +417,7 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestValidity) {
   EXPECT_TRUE(req.valid());
 }
 
-TEST_F(SDP_PDUTest, ServiceAttriuteRequestAddRange) {
+TEST(PDUTest, ServiceAttriuteRequestAddRange) {
   ServiceAttributeRequest req;
 
   req.AddAttributeRange(0x0010, 0xFFF0);
@@ -473,7 +469,7 @@ TEST_F(SDP_PDUTest, ServiceAttriuteRequestAddRange) {
   EXPECT_EQ(0xFFFF, req.attribute_ranges().front().end);
 }
 
-TEST_F(SDP_PDUTest, ServiceAttributeRequestParse) {
+TEST(PDUTest, ServiceAttributeRequestParse) {
   const auto kSDPAllAttributes = CreateStaticByteBuffer(
       0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
       0xF0, 0x0F,              // Maximum attribute byte count: (max = 61455)
@@ -563,17 +559,18 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestParse) {
   EXPECT_FALSE(req_baditems.valid());
 
   // AttributeID list is empty
-  const auto kInvalidNoItems = CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00, // ServiceRecordHandle: 0
-                                                      0xFF, 0xFF, // Maximum attribute byte count: max
-                                                      0x35, 0x00, // Sequence uint8 no bytes
-                                                      0x00 // No continuation state
-  );
+  const auto kInvalidNoItems =
+      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                             0xFF, 0xFF,              // Maximum attribute byte count: max
+                             0x35, 0x00,              // Sequence uint8 no bytes
+                             0x00                     // No continuation state
+      );
 
   ServiceAttributeRequest req_noitems(kInvalidNoItems);
   EXPECT_FALSE(req_noitems.valid());
 }
 
-TEST_F(SDP_PDUTest, ServiceAttributeRequestGetPDU) {
+TEST(PDUTest, ServiceAttributeRequestGetPDU) {
   ServiceAttributeRequest req;
   req.AddAttribute(0xF00F);
   req.AddAttributeRange(0x0001, 0xBECA);
@@ -597,7 +594,7 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestGetPDU) {
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 }
 
-TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
+TEST(PDUTest, ServiceAttributeResponseParse) {
   const auto kValidResponseEmpty = CreateStaticByteBuffer(0x00, 0x02,  // AttributeListByteCount (2
                                                                        // bytes) Attribute List
                                                           0x35, 0x00,  // Sequence uint8 0 bytes
@@ -701,7 +698,7 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
   EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
-TEST_F(SDP_PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
+TEST(PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
   ServiceAttributeResponse resp;
 
   // Even if set in the wrong order, attributes should be sorted in the PDU.
@@ -756,7 +753,7 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
   EXPECT_TRUE(ContainersEqual(kExpectedRemaining, *pdu));
 }
 
-TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
+TEST(PDUTest, ServiceSearchAttributeRequestParse) {
   const auto kSDPL2CAPAllAttributes = CreateStaticByteBuffer(
       // Service search pattern
       0x35, 0x03,        // Sequence uint8 3 bytes
@@ -868,12 +865,12 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
   EXPECT_FALSE(req_noitems.valid());
 
   const auto kInvalidNoAttributes =
-      CreateStaticByteBuffer(0x35, 0x03,  // Sequence uint8 3 bytes
+      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
                              0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0xF0, 0x0F,  // Maximum attribute byte count (61455)
+                             0xF0, 0x0F,        // Maximum attribute byte count (61455)
                              // Attribute ID List
-                             0x35, 0x00,        // Sequence uint8 0 bytes
-                             0x00               // No continuation state
+                             0x35, 0x00,  // Sequence uint8 0 bytes
+                             0x00         // No continuation state
       );
 
   ServiceSearchAttributeRequest req_noattributes(kInvalidNoAttributes);
@@ -895,7 +892,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
   EXPECT_FALSE(req_toomany.valid());
 }
 
-TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestGetPDU) {
+TEST(PDUTest, ServiceSearchAttributeRequestGetPDU) {
   ServiceSearchAttributeRequest req;
   req.AddAttribute(0xF00F);
   req.AddAttributeRange(0x0001, 0xBECA);
@@ -937,7 +934,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestGetPDU) {
   EXPECT_TRUE(MatchesOneOf(kExpected, kExpected2, *pdu));
 }
 
-TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
+TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   const auto kValidResponseEmpty = CreateStaticByteBuffer(0x00, 0x02,  // AttributeListsByteCount (2
                                                                        // bytes) Attribute List
                                                           0x35, 0x00,  // Sequence uint8 0 bytes
@@ -1084,7 +1081,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
   EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
-TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU) {
+TEST(PDUTest, ServiceSearchAttributeResponseGetPDU) {
   ServiceSearchAttributeResponse resp;
 
   // Even if set in the wrong order, attributes should be sorted in the PDU.
@@ -1122,7 +1119,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU) {
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 }
 
-TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
+TEST(PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
   ServiceSearchAttributeResponse resp;
 
   // Even if set in the wrong order, attributes should be sorted in the PDU.
@@ -1181,7 +1178,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
   EXPECT_TRUE(ContainersEqual(kExpectedRemaining, *pdu));
 }
 
-TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
+TEST(PDUTest, ResponseOutOfRangeContinuation) {
   ServiceSearchResponse rsp_search;
   rsp_search.set_service_record_handle_list({1, 2, 3, 4});
   auto buf = rsp_search.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
@@ -1227,7 +1224,6 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
 
   EXPECT_FALSE(buf);
 }
-
 
 }  // namespace
 }  // namespace bt::sdp

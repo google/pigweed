@@ -235,10 +235,10 @@ auto OutboundDisconnectionRequest(CommandId id) {
 // Serves as a test double for data transport to the Bluetooth controller beneath ChannelManager.
 // Performs injection of inbound data and sets "strict" expectations on outbound data—i.e.
 // unexpected outbound packets will cause test failures.
-class L2CAP_ChannelManagerTest : public TestingBase {
+class ChannelManagerTest : public TestingBase {
  public:
-  L2CAP_ChannelManagerTest() = default;
-  ~L2CAP_ChannelManagerTest() override = default;
+  ChannelManagerTest() = default;
+  ~ChannelManagerTest() override = default;
 
   void SetUp() override { SetUp(hci::kMaxACLPayloadSize, hci::kMaxACLPayloadSize); }
 
@@ -246,7 +246,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     TestingBase::SetUp();
 
     acl_data_channel_.set_send_packets_cb(
-        fit::bind_member(this, &L2CAP_ChannelManagerTest::SendPackets));
+        fit::bind_member(this, &ChannelManagerTest::SendPackets));
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
     chanmgr_ = std::make_unique<ChannelManager>(max_acl_payload_size, max_le_payload_size,
@@ -488,10 +488,10 @@ class L2CAP_ChannelManagerTest : public TestingBase {
 
   CommandId next_command_id_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_ChannelManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerTest);
 };
 
-TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelErrorNoConn) {
+TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {
   // This should fail as the ChannelManager has no entry for |kTestHandle1|.
   EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId));
 
@@ -501,7 +501,7 @@ TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelErrorNoConn) {
   EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
+TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -516,7 +516,7 @@ TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
   EXPECT_EQ(nullptr, ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ActivateFailsAfterDeactivate) {
+TEST_F(ChannelManagerTest, ActivateFailsAfterDeactivate) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
   auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   ASSERT_TRUE(chan);
@@ -527,7 +527,7 @@ TEST_F(L2CAP_ChannelManagerTest, ActivateFailsAfterDeactivate) {
   EXPECT_FALSE(chan->Activate(NopRxCallback, DoNothing));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
+TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -548,7 +548,7 @@ TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
   EXPECT_TRUE(closed_called);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
+TEST_F(ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -568,14 +568,14 @@ TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
   EXPECT_FALSE(closed_called);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, FixedChannelsUseBasicMode) {
+TEST_F(ChannelManagerTest, FixedChannelsUseBasicMode) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
   auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   ASSERT_TRUE(chan);
   EXPECT_EQ(ChannelMode::kBasic, chan->mode());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
+TEST_F(ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -600,7 +600,7 @@ TEST_F(L2CAP_ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   EXPECT_FALSE(smp_closed);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
+TEST_F(ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -635,7 +635,7 @@ TEST_F(L2CAP_ChannelManagerTest, SendingPacketsBeforeAndAfterCleanUp) {
 }
 
 // Tests that destroying the ChannelManager cleanly shuts down all channels.
-TEST_F(L2CAP_ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
+TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -668,7 +668,7 @@ TEST_F(L2CAP_ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
+TEST_F(ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
   // Tests that the clean up task posted to the LogicalLink does not crash when
   // a dynamic registry is not present (which is the case for LE links).
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
@@ -681,7 +681,7 @@ TEST_F(L2CAP_ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
+TEST_F(ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -691,7 +691,7 @@ TEST_F(L2CAP_ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrash
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ReceiveData) {
+TEST_F(ChannelManagerTest, ReceiveData) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -751,7 +751,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveData) {
   EXPECT_EQ("how are you?", sdus[1]);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
+TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
   constexpr size_t kPacketCount = 10;
 
   StaticByteBuffer<255> buffer;
@@ -807,7 +807,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
 }
 
 // Receive data after registering the link but before creating the channel.
-TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
+TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
   constexpr size_t kPacketCount = 10;
 
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
@@ -865,7 +865,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
 
 // Receive data after registering the link and creating the channel but before
 // setting the rx handler.
-TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
+TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   constexpr size_t kPacketCount = 10;
 
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
@@ -919,7 +919,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   EXPECT_EQ(kPacketCount, packet_count);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchronously) {
+TEST_F(ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchronously) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -977,7 +977,7 @@ TEST_F(L2CAP_ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSyn
   EXPECT_TRUE(smp_closed_called);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, SendOnClosedLink) {
+TEST_F(ChannelManagerTest, SendOnClosedLink) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
   auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   ZX_DEBUG_ASSERT(att_chan);
@@ -987,7 +987,7 @@ TEST_F(L2CAP_ChannelManagerTest, SendOnClosedLink) {
   EXPECT_FALSE(att_chan->Send(NewBuffer('T', 'e', 's', 't')));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, SendBasicSdu) {
+TEST_F(ChannelManagerTest, SendBasicSdu) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
   auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   ZX_DEBUG_ASSERT(att_chan);
@@ -1006,7 +1006,7 @@ TEST_F(L2CAP_ChannelManagerTest, SendBasicSdu) {
 }
 
 // Tests that fragmentation of LE and BR/EDR packets use the corresponding buffer size.
-TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
+TEST_F(ChannelManagerTest, SendFragmentedSdus) {
   constexpr size_t kMaxACLDataSize = 6;
   constexpr size_t kMaxLEDataSize = 5;
 
@@ -1111,7 +1111,7 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, LEChannelSignalLinkError) {
+TEST_F(ChannelManagerTest, LEChannelSignalLinkError) {
   bool link_error = false;
   auto link_error_cb = [&link_error] { link_error = true; };
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, link_error_cb);
@@ -1125,7 +1125,7 @@ TEST_F(L2CAP_ChannelManagerTest, LEChannelSignalLinkError) {
   EXPECT_TRUE(link_error);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
+TEST_F(ChannelManagerTest, ACLChannelSignalLinkError) {
   bool link_error = false;
   auto link_error_cb = [&link_error] { link_error = true; };
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster, link_error_cb);
@@ -1139,7 +1139,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
   EXPECT_TRUE(link_error);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
+TEST_F(ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
   bool link_error = false;
   auto link_error_cb = [this, &link_error] {
     // This callback is run after the expectation for OutboundDisconnectionRequest is set, so this
@@ -1210,7 +1210,7 @@ TEST_F(L2CAP_ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
   EXPECT_TRUE(link_error);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
+TEST_F(ChannelManagerTest, LEConnectionParameterUpdateRequest) {
   bool conn_param_cb_called = false;
   auto conn_param_cb = [&conn_param_cb_called](const auto& params) {
     // The parameters should match the payload of the HCI packet seen below.
@@ -1276,7 +1276,7 @@ auto OutboundDisconnectionResponse(CommandId id) {
       UpperBits(kRemoteId));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
+TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -1378,7 +1378,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   EXPECT_FALSE(closed_cb_called);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
+TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
@@ -1481,7 +1481,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   EXPECT_EQ(1u, filter_cb_count);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
+TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
@@ -1553,7 +1553,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
+TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   bool channel_cb_called = false;
@@ -1588,7 +1588,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
   EXPECT_TRUE(channel_cb_called);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
+TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   bool channel_cb_called = false;
@@ -1642,7 +1642,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
   EXPECT_TRUE(channel_cb_called);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
+TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   constexpr PSM kBadPsm0 = 0x0004;
   constexpr PSM kBadPsm1 = 0x0103;
 
@@ -1723,7 +1723,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   EXPECT_FALSE(closed_cb_called);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, LinkSecurityProperties) {
+TEST_F(ChannelManagerTest, LinkSecurityProperties) {
   sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, false);
 
   // Has no effect.
@@ -1746,7 +1746,7 @@ TEST_F(L2CAP_ChannelManagerTest, LinkSecurityProperties) {
 }
 
 // Tests that assigning a new security level on a closed link does nothing.
-TEST_F(L2CAP_ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
+TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
   // Register a link and open a channel. The security properties should be
   // accessible using the channel.
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
@@ -1764,7 +1764,7 @@ TEST_F(L2CAP_ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLink) {
   EXPECT_EQ(sm::SecurityProperties(), chan->security());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
+TEST_F(ChannelManagerTest, UpgradeSecurity) {
   // The callback passed to to Channel::UpgradeSecurity().
   sm::Status received_status;
   int security_status_count = 0;
@@ -1820,7 +1820,7 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
   EXPECT_EQ(2, security_status_count);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData) {
+TEST_F(ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
@@ -1863,7 +1863,7 @@ TEST_F(L2CAP_ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChann
   EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, MtuOutboundChannelConfiguration) {
+TEST_F(ChannelManagerTest, MtuOutboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
   constexpr uint16_t kLocalMtu = kMaxMTU;
 
@@ -1897,7 +1897,7 @@ TEST_F(L2CAP_ChannelManagerTest, MtuOutboundChannelConfiguration) {
   EXPECT_EQ(kLocalMtu, channel->max_rx_sdu_size());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
+TEST_F(ChannelManagerTest, MtuInboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
   constexpr uint16_t kLocalMtu = kMaxMTU;
 
@@ -1930,7 +1930,7 @@ TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
   EXPECT_EQ(kLocalMtu, channel->max_rx_sdu_size());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
+TEST_F(ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
@@ -1983,7 +1983,7 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParamete
   EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
+TEST_F(ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
   CommandId kPeerConnReqId = 3;
 
   l2cap::ChannelParameters chan_params;
@@ -2036,7 +2036,7 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoesNotCrash) {
+TEST_F(ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoesNotCrash) {
   // Packet for unregistered handle should be queued.
   ReceiveAclDataPacket(testing::AclConnectionReq(1, kTestHandle1, kRemoteId, kTestPsm));
   chanmgr()->Unregister(kTestHandle1);
@@ -2046,7 +2046,7 @@ TEST_F(L2CAP_ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsA
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest,
+TEST_F(ChannelManagerTest,
        PacketsReceivedAfterChannelDeactivatedAndBeforeRemoveChannelCalledAreDropped) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -2089,7 +2089,7 @@ TEST_F(L2CAP_ChannelManagerTest,
   ReceiveAclDataPacket(kPacket);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotSupportedResult) {
+TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotSupportedResult) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   // Handler should check for result and not crash from reading mask or type.
   ReceiveAclDataPacket(testing::AclNotSupportedInformationResponse(
@@ -2097,7 +2097,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotS
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInvalidResult) {
+TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInvalidResult) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   // Handler should check for result and not crash from reading mask or type.
   auto kPacket = StaticByteBuffer(
@@ -2116,7 +2116,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInva
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithIncorrectType) {
+TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithIncorrectType) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   // Handler should check type and not attempt to read fixed channel mask.
   ReceiveAclDataPacket(
@@ -2124,7 +2124,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInco
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithRejectStatus) {
+TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithRejectStatus) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   // Handler should check status and not attempt to read fields.
   ReceiveAclDataPacket(
@@ -2132,7 +2132,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithReje
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest,
+TEST_F(ChannelManagerTest,
        ReceiveValidConnectionParameterUpdateRequestAsMasterAndRespondWithAcceptedResult) {
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
@@ -2165,7 +2165,7 @@ TEST_F(L2CAP_ChannelManagerTest,
 }
 
 // If an LE Slave host receives a Connection Parameter Update Request, it should reject it.
-TEST_F(L2CAP_ChannelManagerTest,
+TEST_F(ChannelManagerTest,
        ReceiveValidConnectionParameterUpdateRequestAsSlaveAndRespondWithReject) {
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
@@ -2193,7 +2193,7 @@ TEST_F(L2CAP_ChannelManagerTest,
   ASSERT_FALSE(params.has_value());
 }
 
-TEST_F(L2CAP_ChannelManagerTest,
+TEST_F(ChannelManagerTest,
        ReceiveInvalidConnectionParameterUpdateRequestsAndRespondWithRejectedResult) {
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
@@ -2242,14 +2242,14 @@ TEST_F(L2CAP_ChannelManagerTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
+TEST_F(ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
   auto update_cb = [](auto) { ADD_FAILURE(); };
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, hci::LEPreferredConnectionParameters(),
                                               std::move(update_cb));
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest,
+TEST_F(ChannelManagerTest,
        RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRejectedResponses) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kSlave);
 
@@ -2300,7 +2300,7 @@ TEST_F(L2CAP_ChannelManagerTest,
   EXPECT_FALSE(accepted.value());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ConnParamUpdateRequestRejected) {
+TEST_F(ChannelManagerTest, ConnParamUpdateRequestRejected) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kSlave);
 
   // Valid parameter values
@@ -2330,7 +2330,7 @@ TEST_F(L2CAP_ChannelManagerTest, ConnParamUpdateRequestRejected) {
   EXPECT_FALSE(accepted.value());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndClosesChannels) {
+TEST_F(ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndClosesChannels) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
   auto link = chanmgr()->LogicalLinkForTesting(kTestHandle1);
@@ -2356,7 +2356,7 @@ TEST_F(L2CAP_ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndC
   EXPECT_FALSE(link);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, RequestAclPriorityNormal) {
+TEST_F(ChannelManagerTest, RequestAclPriorityNormal) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2386,7 +2386,7 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPriorityNormal) {
   EXPECT_FALSE(requested_priority.has_value());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
+TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2429,7 +2429,7 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
   EXPECT_FALSE(requested_priority.has_value());
 }
 
-TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResult) {
+TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResult) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2462,7 +2462,7 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfte
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
+TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2499,7 +2499,7 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequ
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
-TEST_F(L2CAP_ChannelManagerTest,
+TEST_F(ChannelManagerTest,
        RequestAclPrioritySinkThenDeactivateChannelBeforeResultShouldResetPriorityOnDeactivate) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
@@ -2536,7 +2536,7 @@ TEST_F(L2CAP_ChannelManagerTest,
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkFails) {
+TEST_F(ChannelManagerTest, RequestAclPrioritySinkFails) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2560,7 +2560,7 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkFails) {
   channel->Deactivate();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
+TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2612,7 +2612,7 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate)
   EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
+TEST_F(ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2665,7 +2665,7 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
 
 // If two channels request ACL priorities before the first command completes, they should receive
 // responses as if they were handled strictly sequentially.
-TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
+TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2711,7 +2711,7 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   channel_1->Deactivate();
 }
 
-TEST_F(L2CAP_ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
+TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
@@ -2767,7 +2767,7 @@ TEST_F(L2CAP_ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored)
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, InspectHierarchy) {
+TEST_F(ChannelManagerTest, InspectHierarchy) {
   inspect::Inspector inspector;
   chanmgr()->AttachInspect(inspector.GetRoot());
 
@@ -2821,7 +2821,7 @@ TEST_F(L2CAP_ChannelManagerTest, InspectHierarchy) {
   chanmgr()->Unregister(kTestHandle1);
 }
 
-TEST_F(L2CAP_ChannelManagerTest,
+TEST_F(ChannelManagerTest,
        OutboundChannelWithFlushTimeoutInChannelParametersAndDelayedFlushTimeoutCallback) {
   const zx::duration kFlushTimeout = zx::msec(1);
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
@@ -2871,7 +2871,7 @@ TEST_F(L2CAP_ChannelManagerTest,
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFailure) {
+TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFailure) {
   const zx::duration kFlushTimeout = zx::msec(1);
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
@@ -2906,7 +2906,7 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParamet
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
+TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
   const zx::duration kFlushTimeout = zx::msec(1);
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
@@ -2962,7 +2962,7 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParamete
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
+TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
   auto nonflushable_channel = SetUpOutboundChannel();
@@ -3009,7 +3009,7 @@ TEST_F(L2CAP_ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLin
   EXPECT_TRUE(nonflushable_channel->Send(NewBuffer('h', 'i')));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, SettingFlushTimeoutFails) {
+TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
   auto channel = SetUpOutboundChannel();
@@ -3039,7 +3039,7 @@ TEST_F(L2CAP_ChannelManagerTest, SettingFlushTimeoutFails) {
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
 }
 
-TEST_F(L2CAP_ChannelManagerTest, SetFlushTimeoutOnDeactivatedChannel) {
+TEST_F(ChannelManagerTest, SetFlushTimeoutOnDeactivatedChannel) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
   auto channel = SetUpOutboundChannel();

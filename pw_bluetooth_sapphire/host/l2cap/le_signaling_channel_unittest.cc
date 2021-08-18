@@ -14,10 +14,10 @@ constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 1;
 
 template <hci::Connection::Role Role = hci::Connection::Role::kMaster>
-class LESignalingChannelTest : public testing::FakeChannelTest {
+class LESignalingChannelTestBase : public testing::FakeChannelTest {
  public:
-  LESignalingChannelTest() = default;
-  ~LESignalingChannelTest() override = default;
+  LESignalingChannelTestBase() = default;
+  ~LESignalingChannelTestBase() override = default;
 
  protected:
   void SetUp() override {
@@ -35,14 +35,14 @@ class LESignalingChannelTest : public testing::FakeChannelTest {
  private:
   std::unique_ptr<LESignalingChannel> sig_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannelTestBase);
 };
 
-using L2CAP_LESignalingChannelTest = LESignalingChannelTest<>;
+using LESignalingChannelTest = LESignalingChannelTestBase<>;
 
-using L2CAP_LESignalingChannelSlaveTest = LESignalingChannelTest<hci::Connection::Role::kSlave>;
+using LESignalingChannelSlaveTest = LESignalingChannelTestBase<hci::Connection::Role::kSlave>;
 
-TEST_F(L2CAP_LESignalingChannelTest, IgnoreEmptyFrame) {
+TEST_F(LESignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
@@ -53,7 +53,7 @@ TEST_F(L2CAP_LESignalingChannelTest, IgnoreEmptyFrame) {
   EXPECT_FALSE(send_cb_called);
 }
 
-TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooLarge) {
+TEST_F(LESignalingChannelTest, RejectMalformedTooLarge) {
   // Command Reject packet.
   // clang-format off
   auto expected = CreateStaticByteBuffer(
@@ -78,7 +78,7 @@ TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooLarge) {
   EXPECT_TRUE(ReceiveAndExpect(cmd_with_oversize_payload, expected));
 }
 
-TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooSmall) {
+TEST_F(LESignalingChannelTest, RejectMalformedTooSmall) {
   // Command Reject packet.
   // clang-format off
   auto expected = CreateStaticByteBuffer(
@@ -103,7 +103,7 @@ TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooSmall) {
   EXPECT_TRUE(ReceiveAndExpect(cmd_with_undersize_payload, expected));
 }
 
-TEST_F(L2CAP_LESignalingChannelTest, DefaultMTU) {
+TEST_F(LESignalingChannelTest, DefaultMTU) {
   constexpr size_t kCommandSize = kMinLEMTU + 1;
 
   // The channel should start out with the minimum MTU as the default (23

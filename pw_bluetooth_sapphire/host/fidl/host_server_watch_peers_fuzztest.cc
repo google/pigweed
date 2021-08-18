@@ -24,7 +24,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
 
   // Creates a peer with fuzzer-generated mutations that will be encoded as a
   // fuchsia.bluetooth.sys.Peer and sent as a response to WatchPeers immediately (see
-  // FIDL_HostServerTest.WatchPeersRepliesOnFirstCallWithExistingPeers).
+  // HostServerTest.WatchPeersRepliesOnFirstCallWithExistingPeers).
   void FuzzWatchPeers(FuzzedDataProvider &fuzzed_data_provider) {
     // WatchPeers only tracks connectable peers by design
     bt::gap::Peer *const peer =

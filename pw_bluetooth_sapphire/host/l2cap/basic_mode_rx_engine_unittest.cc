@@ -18,7 +18,7 @@ namespace {
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
-TEST(L2CAP_BasicModeRxEngineTest, ProcessPduReturnsSdu) {
+TEST(BasicModeRxEngineTest, ProcessPduReturnsSdu) {
   const auto payload = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const auto sdu = BasicModeRxEngine().ProcessPdu(
       Fragmenter(kTestHandle)
@@ -27,7 +27,7 @@ TEST(L2CAP_BasicModeRxEngineTest, ProcessPduReturnsSdu) {
   EXPECT_TRUE(ContainersEqual(payload, *sdu));
 }
 
-TEST(L2CAP_BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
+TEST(BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   const auto byte_buf = CreateStaticByteBuffer(0x01, 0x00, 0x04, 0x00,  // ACL data header
                                                0x00, 0x00, 0xFF, 0xFF   // Basic L2CAP header
   );

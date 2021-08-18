@@ -45,7 +45,7 @@ IdType RegisterService(LocalServiceManager* mgr, ServicePtr service,
                               std::move(ccc_callback));
 }
 
-TEST(GATT_LocalServiceManagerTest, EmptyService) {
+TEST(LocalServiceManagerTest, EmptyService) {
   LocalServiceManager mgr;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
@@ -82,7 +82,7 @@ TEST(GATT_LocalServiceManagerTest, EmptyService) {
                       iter->decl_value()));
 }
 
-TEST(GATT_LocalServiceManagerTest, UnregisterService) {
+TEST(LocalServiceManagerTest, UnregisterService) {
   LocalServiceManager mgr;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
@@ -101,7 +101,7 @@ TEST(GATT_LocalServiceManagerTest, UnregisterService) {
   EXPECT_FALSE(mgr.UnregisterService(id1));
 }
 
-TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic) {
+TEST(LocalServiceManagerTest, RegisterCharacteristic) {
   LocalServiceManager mgr;
 
   constexpr IdType kChrcId = 0;
@@ -152,7 +152,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic) {
   EXPECT_FALSE(attrs[2].value());
 }
 
-TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic32) {
+TEST(LocalServiceManagerTest, RegisterCharacteristic32) {
   LocalServiceManager mgr;
 
   constexpr IdType kChrcId = 0;
@@ -202,7 +202,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic32) {
   EXPECT_FALSE(attrs[2].value());
 }
 
-TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic128) {
+TEST(LocalServiceManagerTest, RegisterCharacteristic128) {
   LocalServiceManager mgr;
 
   constexpr IdType kChrcId = 0;
@@ -253,7 +253,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic128) {
   EXPECT_FALSE(attrs[2].value());
 }
 
-TEST(GATT_LocalServiceManagerTest, ExtPropSetSuccess) {
+TEST(LocalServiceManagerTest, ExtPropSetSuccess) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
   constexpr UUID kChrcType16(uint16_t{0x1234});
@@ -278,7 +278,7 @@ TEST(GATT_LocalServiceManagerTest, ExtPropSetSuccess) {
 }
 
 // tests that the extended properties descriptor cannot be set externally
-TEST(GATT_LocalServiceManagerTest, ExtPropSetFailure) {
+TEST(LocalServiceManagerTest, ExtPropSetFailure) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
@@ -294,7 +294,7 @@ TEST(GATT_LocalServiceManagerTest, ExtPropSetFailure) {
   EXPECT_EQ(false, RegisterService(&mgr, std::move(service)));
 }
 
-TEST(GATT_LocalServiceManagerTest, RegisterCharacteristicSorted) {
+TEST(LocalServiceManagerTest, RegisterCharacteristicSorted) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
@@ -341,7 +341,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristicSorted) {
   EXPECT_EQ(kChrcProps2, (*attrs[7].value())[0]);
 }
 
-TEST(GATT_LocalServiceManagerTest, RegisterDescriptor) {
+TEST(LocalServiceManagerTest, RegisterDescriptor) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
@@ -367,7 +367,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterDescriptor) {
   EXPECT_FALSE(attrs[3].value());
 }
 
-TEST(GATT_LocalServiceManagerTest, DuplicateChrcIds) {
+TEST(LocalServiceManagerTest, DuplicateChrcIds) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
@@ -384,7 +384,7 @@ TEST(GATT_LocalServiceManagerTest, DuplicateChrcIds) {
   EXPECT_EQ(0u, RegisterService(&mgr, std::move(service)));
 }
 
-TEST(GATT_LocalServiceManagerTest, DuplicateDescIds) {
+TEST(LocalServiceManagerTest, DuplicateDescIds) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
@@ -403,7 +403,7 @@ TEST(GATT_LocalServiceManagerTest, DuplicateDescIds) {
   EXPECT_EQ(0u, RegisterService(&mgr, std::move(service)));
 }
 
-TEST(GATT_LocalServiceManagerTest, DuplicateChrcAndDescIds) {
+TEST(LocalServiceManagerTest, DuplicateChrcAndDescIds) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
@@ -421,7 +421,7 @@ TEST(GATT_LocalServiceManagerTest, DuplicateChrcAndDescIds) {
   EXPECT_EQ(0u, RegisterService(&mgr, std::move(service)));
 }
 
-TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
+TEST(LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
   constexpr UUID kChrcType16(uint16_t{0x1234});
@@ -448,7 +448,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
   EXPECT_FALSE(result_called);
 }
 
-TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
+TEST(LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
   LocalServiceManager mgr;
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr IdType kChrcId = 5;
@@ -480,7 +480,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
   EXPECT_EQ(att::ErrorCode::kReadNotPermitted, ecode);
 }
 
-TEST(GATT_LocalServiceManagerTest, ReadCharacteristic) {
+TEST(LocalServiceManagerTest, ReadCharacteristic) {
   LocalServiceManager mgr;
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr IdType kChrcId = 5;
@@ -524,7 +524,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristic) {
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
 }
 
-TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
+TEST(LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
   constexpr UUID kChrcType16(uint16_t{0x1234});
@@ -552,7 +552,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
   EXPECT_FALSE(result_called);
 }
 
-TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
+TEST(LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   LocalServiceManager mgr;
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr IdType kChrcId = 5;
@@ -584,7 +584,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, ecode);
 }
 
-TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
+TEST(LocalServiceManagerTest, WriteCharacteristic) {
   LocalServiceManager mgr;
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr IdType kChrcId = 5;
@@ -626,7 +626,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
 }
 
-TEST(GATT_LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
+TEST(LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
   constexpr UUID kChrcType16(uint16_t{0x1234});
@@ -657,7 +657,7 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
   EXPECT_FALSE(result_called);
 }
 
-TEST(GATT_LocalServiceManagerTest, ReadDescriptor) {
+TEST(LocalServiceManagerTest, ReadDescriptor) {
   LocalServiceManager mgr;
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr UUID kDescType16(uint16_t{0x5678});
@@ -705,7 +705,7 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptor) {
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
 }
 
-TEST(GATT_LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
+TEST(LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
   constexpr UUID kChrcType16(uint16_t{0x1234});
@@ -737,7 +737,7 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
   EXPECT_FALSE(result_called);
 }
 
-TEST(GATT_LocalServiceManagerTest, WriteDescriptor) {
+TEST(LocalServiceManagerTest, WriteDescriptor) {
   LocalServiceManager mgr;
   constexpr UUID kChrcType16(uint16_t{0x1234});
   constexpr UUID kDescType16(uint16_t{0x5678});
@@ -784,7 +784,7 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptor) {
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
 }
 
-TEST(GATT_LocalServiceManagerTest, ServiceChanged) {
+TEST(LocalServiceManagerTest, ServiceChanged) {
   IdType expected_id;
   att::Handle expected_start, expected_end;
   int callback_count = 0;
@@ -844,7 +844,7 @@ TEST(GATT_LocalServiceManagerTest, ServiceChanged) {
 // TODO(armansito): Some functional groupings of tests above (such as
 // ReadCharacteristic, WriteCharacteristic, etc) should each use a common test
 // harness to reduce code duplication.
-class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
+class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
  protected:
   LocalServiceManager mgr;
 
@@ -919,7 +919,7 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
   }
 };
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest, UpdatePermissions) {
+TEST_F(LocalClientCharacteristicConfigurationTest, UpdatePermissions) {
   // Require authentication. This should have no bearing on reads but it should
   // prevent writes.
   const att::AccessRequirements kUpdateReqs(false, true, false);
@@ -934,7 +934,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, UpdatePermissions) {
   EXPECT_TRUE(attr->write_reqs().authentication_required());
 }
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest, IndicationNotSupported) {
+TEST_F(LocalClientCharacteristicConfigurationTest, IndicationNotSupported) {
   // No security required to enable notifications.
   auto kUpdateReqs = AllowedNoSecurity();
   constexpr uint8_t kProps = Property::kNotify;
@@ -958,7 +958,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, IndicationNotSupported) 
   EXPECT_EQ(0x0000, ccc_value);
 }
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest, NotificationNotSupported) {
+TEST_F(LocalClientCharacteristicConfigurationTest, NotificationNotSupported) {
   // No security.
   auto kUpdateReqs = AllowedNoSecurity();
   constexpr uint8_t kProps = Property::kIndicate;
@@ -982,7 +982,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, NotificationNotSupported
   EXPECT_EQ(0x0000, ccc_value);
 }
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableNotify) {
+TEST_F(LocalClientCharacteristicConfigurationTest, EnableNotify) {
   // No security.
   auto kUpdateReqs = AllowedNoSecurity();
   constexpr uint8_t kProps = Property::kNotify;
@@ -1036,7 +1036,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableNotify) {
   EXPECT_EQ(1, ccc_callback_count);
 }
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableIndicate) {
+TEST_F(LocalClientCharacteristicConfigurationTest, EnableIndicate) {
   // No security.
   auto kUpdateReqs = AllowedNoSecurity();
   constexpr uint8_t kProps = Property::kIndicate;
@@ -1088,7 +1088,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableIndicate) {
   EXPECT_EQ(1, ccc_callback_count);
 }
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
+TEST_F(LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
   // No security.
   auto kUpdateReqs = AllowedNoSecurity();
   constexpr uint8_t kProps = Property::kNotify;

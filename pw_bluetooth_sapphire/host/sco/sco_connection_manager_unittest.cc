@@ -99,7 +99,7 @@ class ScoConnectionManagerTest : public TestingBase {
 
 using SCO_ScoConnectionManagerTest = ScoConnectionManagerTest;
 
-TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionSuccess) {
+TEST_F(ScoConnectionManagerTest, OpenConnectionSuccess) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
   auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
@@ -124,7 +124,7 @@ TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionSuccess) {
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionAndReceiveFailureStatusEvent) {
+TEST_F(ScoConnectionManagerTest, OpenConnectionAndReceiveFailureStatusEvent) {
   auto setup_status_packet = testing::CommandStatusPacket(
       hci::kEnhancedSetupSynchronousConnection, hci::StatusCode::kConnectionLimitExceeded);
   EXPECT_CMD_PACKET_OUT(
@@ -142,7 +142,7 @@ TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionAndReceiveFailureStatusEvent)
   EXPECT_EQ(conn.error(), HostError::kFailed);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionAndReceiveFailureCompleteEvent) {
+TEST_F(ScoConnectionManagerTest, OpenConnectionAndReceiveFailureCompleteEvent) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
   auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
@@ -163,7 +163,7 @@ TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionAndReceiveFailureCompleteEven
   EXPECT_EQ(conn.error(), HostError::kFailed);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest,
+TEST_F(ScoConnectionManagerTest,
        AcceptConnectionCompleteEventErrorAndResultCallbackDestroysRequestHandle) {
   ConnectionResult conn;
   std::optional<ScoConnectionManager::RequestHandle> req_handle;
@@ -192,7 +192,7 @@ TEST_F(SCO_ScoConnectionManagerTest,
   EXPECT_EQ(conn.error(), HostError::kFailed);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, IgnoreWrongAddressInConnectionComplete) {
+TEST_F(ScoConnectionManagerTest, IgnoreWrongAddressInConnectionComplete) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
   const DeviceAddress kWrongPeerAddress(DeviceAddress::Type::kBREDR,
@@ -222,7 +222,7 @@ TEST_F(SCO_ScoConnectionManagerTest, IgnoreWrongAddressInConnectionComplete) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, UnexpectedConnectionCompleteDisconnectsConnection) {
+TEST_F(ScoConnectionManagerTest, UnexpectedConnectionCompleteDisconnectsConnection) {
   auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci::LinkType::kExtendedSCO, hci::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
@@ -230,7 +230,7 @@ TEST_F(SCO_ScoConnectionManagerTest, UnexpectedConnectionCompleteDisconnectsConn
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
+TEST_F(ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
   auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
@@ -255,7 +255,7 @@ TEST_F(SCO_ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
   EXPECT_TRUE(conn_result.value());
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
+TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
   const hci::ConnectionHandle handle_0 = kScoConnectionHandle;
   const hci::ConnectionHandle handle_1 = handle_0 + 1;
   const hci::ConnectionHandle handle_2 = handle_1 + 1;
@@ -315,7 +315,7 @@ TEST_F(SCO_ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, HandleReuse) {
+TEST_F(ScoConnectionManagerTest, HandleReuse) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
   auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
@@ -357,7 +357,7 @@ TEST_F(SCO_ScoConnectionManagerTest, HandleReuse) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionSuccess) {
+TEST_F(ScoConnectionManagerTest, AcceptConnectionSuccess) {
   ConnectionResult conn;
   auto conn_cb = [&conn](auto cb_conn) {
     EXPECT_TRUE(cb_conn.is_ok());
@@ -387,7 +387,7 @@ TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionAndReceiveStatusAndCompleteEventWithErrors) {
+TEST_F(ScoConnectionManagerTest, AcceptConnectionAndReceiveStatusAndCompleteEventWithErrors) {
   ConnectionResult conn;
   auto conn_cb = [&conn](auto cb_conn) { conn = std::move(cb_conn); };
 
@@ -415,7 +415,7 @@ TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionAndReceiveStatusAndComplete
   EXPECT_EQ(conn.error(), HostError::kFailed);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionAndReceiveCompleteEventWithFailureStatus) {
+TEST_F(ScoConnectionManagerTest, AcceptConnectionAndReceiveCompleteEventWithFailureStatus) {
   ConnectionResult conn;
   auto conn_cb = [&conn](auto cb_conn) { conn = std::move(cb_conn); };
 
@@ -442,7 +442,7 @@ TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionAndReceiveCompleteEventWith
   EXPECT_EQ(conn.error(), HostError::kFailed);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, RejectInboundRequestWhileInitiatorRequestPending) {
+TEST_F(ScoConnectionManagerTest, RejectInboundRequestWhileInitiatorRequestPending) {
   size_t conn_cb_count = 0;
   auto conn_cb = [&conn_cb_count](auto cb_conn) { conn_cb_count++; };
 
@@ -471,7 +471,7 @@ TEST_F(SCO_ScoConnectionManagerTest, RejectInboundRequestWhileInitiatorRequestPe
   EXPECT_EQ(conn_cb_count, 1u);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, RejectInboundRequestWhenNoRequestsPending) {
+TEST_F(ScoConnectionManagerTest, RejectInboundRequestWhenNoRequestsPending) {
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
   test_device()->SendCommandChannelPacket(conn_req_packet);
 
@@ -484,20 +484,20 @@ TEST_F(SCO_ScoConnectionManagerTest, RejectInboundRequestWhenNoRequestsPending) 
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, IgnoreInboundAclRequest) {
+TEST_F(ScoConnectionManagerTest, IgnoreInboundAclRequest) {
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kACL);
   test_device()->SendCommandChannelPacket(conn_req_packet);
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, IgnoreInboundRequestWrongPeerAddress) {
+TEST_F(ScoConnectionManagerTest, IgnoreInboundRequestWrongPeerAddress) {
   const DeviceAddress address(DeviceAddress::Type::kBREDR, {0x00, 0x00, 0x00, 0x00, 0x00, 0x05});
   auto conn_req_packet = testing::ConnectionRequestPacket(address, hci::LinkType::kACL);
   test_device()->SendCommandChannelPacket(conn_req_packet);
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, QueueTwoAcceptConnectionRequestsCancelsFirstRequest) {
+TEST_F(ScoConnectionManagerTest, QueueTwoAcceptConnectionRequestsCancelsFirstRequest) {
   ConnectionResult conn_0;
   auto conn_cb = [&conn_0](auto cb_conn) { conn_0 = std::move(cb_conn); };
   auto req_handle_0 = manager()->AcceptConnection(kConnectionParams, conn_cb);
@@ -577,7 +577,7 @@ TEST_F(
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestReceivesEvent) {
+TEST_F(ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestReceivesEvent) {
   ConnectionResult conn_0;
   auto req_handle_0 = manager()->AcceptConnection(
       kConnectionParams, [&conn_0](auto cb_conn) { conn_0 = std::move(cb_conn); });
@@ -628,7 +628,7 @@ TEST_F(SCO_ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestRe
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, RequestsCancelledOnManagerDestruction) {
+TEST_F(ScoConnectionManagerTest, RequestsCancelledOnManagerDestruction) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(
@@ -653,7 +653,7 @@ TEST_F(SCO_ScoConnectionManagerTest, RequestsCancelledOnManagerDestruction) {
   EXPECT_EQ(conn_1.error(), HostError::kCanceled);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionExplicitlyCancelledByClient) {
+TEST_F(ScoConnectionManagerTest, AcceptConnectionExplicitlyCancelledByClient) {
   ConnectionResult conn;
   auto conn_cb = [&conn](auto cb_conn) { conn = std::move(cb_conn); };
   auto req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
@@ -676,7 +676,7 @@ TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionExplicitlyCancelledByClient
   EXPECT_EQ(conn.error(), HostError::kCanceled);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionCancelledByClientDestroyingHandle) {
+TEST_F(ScoConnectionManagerTest, AcceptConnectionCancelledByClientDestroyingHandle) {
   ConnectionResult conn;
   auto conn_cb = [&conn](auto cb_conn) { conn = std::move(cb_conn); };
 
@@ -699,7 +699,7 @@ TEST_F(SCO_ScoConnectionManagerTest, AcceptConnectionCancelledByClientDestroying
   EXPECT_EQ(conn.error(), HostError::kCanceled);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionCantBeCancelledOnceInProgress) {
+TEST_F(ScoConnectionManagerTest, OpenConnectionCantBeCancelledOnceInProgress) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
   auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
@@ -728,7 +728,7 @@ TEST_F(SCO_ScoConnectionManagerTest, OpenConnectionCantBeCancelledOnceInProgress
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
+TEST_F(ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
   const hci::ConnectionHandle handle_0 = kScoConnectionHandle;
 
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
@@ -774,7 +774,7 @@ TEST_F(SCO_ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest,
+TEST_F(ScoConnectionManagerTest,
        QueueingThreeRequestsCancelsSecondAndRequestHandleDestroyedInResultCallback) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
@@ -809,7 +809,7 @@ TEST_F(SCO_ScoConnectionManagerTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest,
+TEST_F(ScoConnectionManagerTest,
        OpenConnectionFollowedByPeerDisconnectAndSecondOpenConnectonWithHandleReuse) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
@@ -854,7 +854,7 @@ TEST_F(SCO_ScoConnectionManagerTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(SCO_ScoConnectionManagerTest,
+TEST_F(ScoConnectionManagerTest,
        DestroyManagerWhileResponderRequestInProgressAndDestroyRequestHandleInResultCallback) {
   ConnectionResult conn;
   std::optional<ScoConnectionManager::RequestHandle> req_handle;
@@ -873,7 +873,7 @@ TEST_F(SCO_ScoConnectionManagerTest,
   EXPECT_EQ(conn.error(), HostError::kCanceled);
 }
 
-TEST_F(SCO_ScoConnectionManagerTest,
+TEST_F(ScoConnectionManagerTest,
        DestroyManagerWhileInitiatorRequestQueuedAndDestroyRequestHandleInResultCallback) {
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);

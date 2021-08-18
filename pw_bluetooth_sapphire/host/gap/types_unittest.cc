@@ -8,7 +8,7 @@
 
 namespace bt::gap {
 
-TEST(GAP_TypesTest, SecurityPropertiesMeetRequirements) {
+TEST(TypesTest, SecurityPropertiesMeetRequirements) {
   std::array<hci::LinkKeyType, 5> kUnauthenticatedNoScKeyTypes = {
       hci::LinkKeyType::kCombination, hci::LinkKeyType::kLocalUnit, hci::LinkKeyType::kRemoteUnit,
       hci::LinkKeyType::kDebugCombination, hci::LinkKeyType::kUnauthenticatedCombination192};

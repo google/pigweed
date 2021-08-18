@@ -14,7 +14,7 @@
 namespace bt::l2cap::internal {
 namespace {
 
-class L2CAP_EnhancedRetransmissionModeEnginesTest : public ::gtest::TestLoopFixture {};
+class EnhancedRetransmissionModeEnginesTest : public ::gtest::TestLoopFixture {};
 
 constexpr size_t kMaxTransmissions = 2;
 constexpr size_t kTxWindow = 63;
@@ -30,7 +30,7 @@ constexpr uint8_t kExtendedControlSrejFunctionMask = 0b0000'1100;
 void NoOpTxCallback(ByteBufferPtr){};
 void NoOpFailureCallback(){};
 
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
+TEST_F(EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
   auto [rx_engine, tx_engine] =
       MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId, kDefaultMTU, kMaxTransmissions,
                                                   kTxWindow, NoOpTxCallback, NoOpFailureCallback);
@@ -41,7 +41,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
 // This test that TxEngine sends I-Frames whose acknowledgement sequence numbers match the receive
 // sequence number in RxEngine. This also tests that peer acknowledgement restarts our outbound data
 // that was paused by hitting TxWindow. This mirrors the L2CAP Test Specification L2CAP/ERM/BV-06-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+TEST_F(EnhancedRetransmissionModeEnginesTest,
        OutboundInformationFramesAcknowledgeReceivedInformationFrames) {
   int tx_count = 0;
   auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
@@ -89,7 +89,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 // This test simulates a peer's non-response to our S-Frame poll request which causes us to
 // raise a channel error after the monitor timer expires. This mirrors L2CAP Test Specification
 // v5.0.2 L2CAP/ERM/BV-11-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTimerExpiry) {
+TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTimerExpiry) {
   int tx_count = 0;
   auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
     ASSERT_TRUE(pdu);
@@ -131,7 +131,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTim
 // This test simulates non-acknowledgment of an I-Frame that the local host sends which causes us
 // to meet the MaxTransmit that the peer specified, raising a local error for the channel. This
 // mirrors L2CAP Test Specification v5.0.2 L2CAP/ERM/BV-12-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmitExhausted) {
+TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmitExhausted) {
   int tx_count = 0;
   auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
     ASSERT_TRUE(pdu);
@@ -179,7 +179,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmi
 
 // This tests the integration of receiving Reject frames with triggering retransmission of requested
 // unacknowledged I-Frames. This mirrors the L2CAP Test Specification v5.0.2 L2CAP/ERM/BV-13-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingRejectSFrame) {
+TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingRejectSFrame) {
   int tx_count = 0;
   int iframe_0_tx_count = 0;
   int iframe_1_tx_count = 0;
@@ -225,7 +225,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingReje
 // This tests the integration of receiving Selective Reject frames that are poll requests,
 // triggering retransmission as well as acknowledgment that frees up transmit window. This mirrors
 // the L2CAP Test Specification v5.0.2 L2CAP/ERM/BV-14-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+TEST_F(EnhancedRetransmissionModeEnginesTest,
        RetransmitAfterReceivingSelectiveRejectPollRequestSFrame) {
   int tx_count = 0;
   std::array<int, 4> iframe_tx_counts{};
@@ -268,7 +268,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 // This tests the integration of receiving Selective Reject frames that are not poll requests,
 // triggering retransmission only. This mirrors the L2CAP Test Specification v5.0.2
 // L2CAP/ERM/BV-15-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSelectiveRejectSFrame) {
+TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSelectiveRejectSFrame) {
   int tx_count = 0;
   std::array<int, 4> iframe_tx_counts{};
   auto tx_callback = [&tx_count, &iframe_tx_counts](ByteBufferPtr pdu) {
@@ -325,7 +325,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSele
 
 // This tests the integration of receiving an acknowledgment sequence with triggering retransmission
 // of unacknowledged I-Frames. This mirrors the L2CAP Test Specification L2CAP/ERM/BV-18-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+TEST_F(EnhancedRetransmissionModeEnginesTest,
        RetransmitAfterPollResponseDoesNotAcknowledgeSentFrames) {
   DynamicByteBuffer info_frame;
   int tx_count = 0;
@@ -333,7 +333,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
     // The first packet is the I-Frame containing the data that we sent.
     // The second packet is the S-Frame polling for the peer after the Retransmission Timer expires.
     // It is not checked to keep the tests less fragile, as the first two packets are already
-    // covered by L2CAP_EnhancedRetransmissionModeTxEngineTest.
+    // covered by EnhancedRetransmissionModeTxEngineTest.
     if (tx_count == 0) {
       info_frame = DynamicByteBuffer(*pdu);
     } else if (tx_count == 2) {
@@ -366,7 +366,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 // This test simulates the peer declaring that it is busy by sending the ReceiverNotReady S-Frame,
 // which prevents us from retransmitting an unacknowledged outbound I-Frame. This mirrors L2CAP Test
 // Specification v5.0.2 L2CAP/ERM/BV-20-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+TEST_F(EnhancedRetransmissionModeEnginesTest,
        DoNotRetransmitAfterReceivingReceiverNotReadyPollResponse) {
   int tx_count = 0;
   auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
@@ -414,7 +414,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 // that is a poll response causes only one retransmission. This mirrors the L2CAP Test Specification
 // v5.0.2 L2CAP/ERM/BI-03-C.
 TEST_F(
-    L2CAP_EnhancedRetransmissionModeEnginesTest,
+    EnhancedRetransmissionModeEnginesTest,
     RetransmitOnlyOnceAfterReceivingDuplicateSelectiveRejectSFramesForSameIFrameDuringReceiverReadyPoll) {
   int tx_count = 0;
   int iframe_0_tx_count = 0;
@@ -483,7 +483,7 @@ TEST_F(
 // This tests that explicitly requested retransmission and receiving a poll response that doesn't
 // acknowledge all I-Frames results in only a single set of retransmissions. This mirrors the L2CAP
 // Test Specification v5.0.2 L2CAP/ERM/BI-04-C.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+TEST_F(EnhancedRetransmissionModeEnginesTest,
        RetransmitAfterReceivingRejectSFrameAndReceiverReadyPollResponseNotAcknowledgingSentFrames) {
   int tx_count = 0;
   int iframe_0_tx_count = 0;
@@ -553,7 +553,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 // acknowledge all I-Frames results in only a single set of retransmissions. This mirrors the L2CAP
 // Test Specification v5.0.2 L2CAP/ERM/BI-05-C in which we—the IUT—perform the ALT1 path in the
 // sequence diagram Figure 4.96.
-TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+TEST_F(EnhancedRetransmissionModeEnginesTest,
        RetransmitAfterReceivingRejectSFrameAndIFramePollResponseNotAcknowledgingSentFrames) {
   int tx_count = 0;
   int iframe_0_tx_count = 0;

@@ -33,10 +33,10 @@ struct ScStage1Args {
   PairingMethod method = PairingMethod::kJustWorks;
 };
 
-class SMP_ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChannelTest {
+class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_ScStage1JustWorksNumericComparisonTest() = default;
-  ~SMP_ScStage1JustWorksNumericComparisonTest() = default;
+  ScStage1JustWorksNumericComparisonTest() = default;
+  ~ScStage1JustWorksNumericComparisonTest() = default;
 
  protected:
   using ConfirmCallback = FakeListener::ConfirmCallback;
@@ -102,8 +102,8 @@ class SMP_ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeCh
   std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results_ = std::nullopt;
 };
 
-using SMP_ScStage1JustWorksNumericComparisonDeathTest = SMP_ScStage1JustWorksNumericComparisonTest;
-TEST_F(SMP_ScStage1JustWorksNumericComparisonDeathTest, InvalidMethodsDie) {
+using ScStage1JustWorksNumericComparisonDeathTest = ScStage1JustWorksNumericComparisonTest;
+TEST_F(ScStage1JustWorksNumericComparisonDeathTest, InvalidMethodsDie) {
   ScStage1Args args;
   args.method = PairingMethod::kOutOfBand;
   ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args), ".*method.*");
@@ -113,7 +113,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonDeathTest, InvalidMethodsDie) {
   ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args), ".*method.*");
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
   ScStage1Args args;
   args.role = Role::kInitiator;
   args.method = PairingMethod::kJustWorks;
@@ -134,7 +134,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
   ScStage1Args args;
   args.role = Role::kInitiator;
   args.method = PairingMethod::kNumericComparison;
@@ -173,7 +173,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorReceivesConfirmTwiceFails) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorReceivesConfirmTwiceFails) {
   ScStage1Args args;
   args.role = Role::kInitiator;
   NewScStage1JustWorksNumericComparison(args);
@@ -184,7 +184,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorReceivesConfirmTwice
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorReceiveRandomOutOfOrder) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorReceiveRandomOutOfOrder) {
   stage_1()->Run();
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
@@ -192,7 +192,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorReceiveRandomOutOfOr
 }
 
 // Test to demonstrate receiving random twice for responder causes pairing to fail.
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomTwiceFails) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomTwiceFails) {
   ScStage1Args args;
   args.role = Role::kResponder;
   NewScStage1JustWorksNumericComparison(args);
@@ -204,7 +204,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomTwiceFa
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAndRand) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAndRand) {
   ScStage1Args args;
   args.role = Role::kInitiator;
   NewScStage1JustWorksNumericComparison(args);
@@ -219,7 +219,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAnd
   EXPECT_EQ(ErrorCode::kConfirmValueFailed, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kJustWorks;
@@ -244,7 +244,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kNumericComparison;
@@ -289,7 +289,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceivesConfirmFails) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceivesConfirmFails) {
   ScStage1Args args;
   args.role = Role::kResponder;
   NewScStage1JustWorksNumericComparison(args);
@@ -299,7 +299,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceivesConfirmFails
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomOutOfOrder) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomOutOfOrder) {
   NewScStage1JustWorksNumericComparison(ScStage1Args{.role = Role::kResponder});
   // `stage_1_` was not `Run`, so the Pairing Confirm hasn't been sent and the peer should not have
   // sent the Pairing Random.
@@ -308,7 +308,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomOutOfOr
 }
 
 // This test uses responder flow, but the behavior under test is the same for initiator.
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ListenerRejectsJustWorks) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsJustWorks) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kJustWorks;
@@ -326,7 +326,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ListenerRejectsJustWorks) {
 }
 
 // This test uses responder flow, but the behavior under test is the same for initiator.
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ListenerRejectsNumericComparison) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsNumericComparison) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kNumericComparison;
@@ -347,7 +347,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ListenerRejectsNumericCompari
   EXPECT_EQ(ErrorCode::kNumericComparisonFailed, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForJustWorksConfirm) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForJustWorksConfirm) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kJustWorks;
@@ -366,7 +366,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingFor
   EXPECT_FALSE(last_results().has_value());
 }
 
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForNumericComparison) {
+TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForNumericComparison) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kNumericComparison;

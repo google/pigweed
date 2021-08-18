@@ -14,13 +14,13 @@ constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 97;
 constexpr hci::Connection::Role kDeviceRole = hci::Connection::Role::kMaster;
 
-class L2CAP_BrEdrSignalingChannelTest : public testing::FakeChannelTest {
+class BrEdrSignalingChannelTest : public testing::FakeChannelTest {
  public:
-  L2CAP_BrEdrSignalingChannelTest() = default;
-  ~L2CAP_BrEdrSignalingChannelTest() override = default;
+  BrEdrSignalingChannelTest() = default;
+  ~BrEdrSignalingChannelTest() override = default;
 
-  L2CAP_BrEdrSignalingChannelTest(const L2CAP_BrEdrSignalingChannelTest&) = delete;
-  L2CAP_BrEdrSignalingChannelTest& operator=(const L2CAP_BrEdrSignalingChannelTest&) = delete;
+  BrEdrSignalingChannelTest(const BrEdrSignalingChannelTest&) = delete;
+  BrEdrSignalingChannelTest& operator=(const BrEdrSignalingChannelTest&) = delete;
 
  protected:
   void SetUp() override {
@@ -39,7 +39,7 @@ class L2CAP_BrEdrSignalingChannelTest : public testing::FakeChannelTest {
   std::unique_ptr<BrEdrSignalingChannel> sig_;
 };
 
-TEST_F(L2CAP_BrEdrSignalingChannelTest, RespondsToEchoRequest) {
+TEST_F(BrEdrSignalingChannelTest, RespondsToEchoRequest) {
   auto cmd = CreateStaticByteBuffer(
       // Command header (Echo Request, length 1)
       0x08, kTestCmdId, 0x01, 0x00,
@@ -62,7 +62,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RespondsToEchoRequest) {
   EXPECT_TRUE(called);
 }
 
-TEST_F(L2CAP_BrEdrSignalingChannelTest, IgnoreEmptyFrame) {
+TEST_F(BrEdrSignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
@@ -73,7 +73,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, IgnoreEmptyFrame) {
   EXPECT_FALSE(send_cb_called);
 }
 
-TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
+TEST_F(BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
   constexpr uint8_t kTestId0 = 14;
   constexpr uint8_t kTestId1 = 15;
 
@@ -123,7 +123,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
   EXPECT_EQ(2, cb_times_called);
 }
 
-TEST_F(L2CAP_BrEdrSignalingChannelTest, HandleMultipleCommands) {
+TEST_F(BrEdrSignalingChannelTest, HandleMultipleCommands) {
   constexpr uint8_t kTestId0 = 14;
   constexpr uint8_t kTestId1 = 15;
   constexpr uint8_t kTestId2 = 16;
@@ -185,7 +185,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, HandleMultipleCommands) {
   EXPECT_EQ(3, cb_times_called);
 }
 
-TEST_F(L2CAP_BrEdrSignalingChannelTest, SendAndReceiveEcho) {
+TEST_F(BrEdrSignalingChannelTest, SendAndReceiveEcho) {
   const ByteBuffer& expected_req = CreateStaticByteBuffer(
       // Echo request with 3-byte payload.
       0x08, 0x01, 0x03, 0x00,

@@ -21,10 +21,10 @@ using TestingBase = testing::ControllerTest<MockController>;
 
 const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic, {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
 
-class GAP_LowEnergyAddressManagerTest : public TestingBase {
+class LowEnergyAddressManagerTest : public TestingBase {
  public:
-  GAP_LowEnergyAddressManagerTest() = default;
-  ~GAP_LowEnergyAddressManagerTest() override = default;
+  LowEnergyAddressManagerTest() = default;
+  ~LowEnergyAddressManagerTest() override = default;
 
  protected:
   void SetUp() override {
@@ -64,12 +64,12 @@ class GAP_LowEnergyAddressManagerTest : public TestingBase {
   std::unique_ptr<LowEnergyAddressManager> addr_mgr_;
   bool random_address_change_allowed_ = true;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(GAP_LowEnergyAddressManagerTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyAddressManagerTest);
 };
 
-TEST_F(GAP_LowEnergyAddressManagerTest, DefaultState) { EXPECT_EQ(kPublic, EnsureLocalAddress()); }
+TEST_F(LowEnergyAddressManagerTest, DefaultState) { EXPECT_EQ(kPublic, EnsureLocalAddress()); }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
+TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   // Respond with success.
   const auto kResponse = CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                                                 1,           // 1 allowed packet
@@ -131,7 +131,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
   EXPECT_TRUE(sm::util::IrkCanResolveRpa(kIrk2, addr));
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
+TEST_F(LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
   // Respond with success.
   const auto kResponse = CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                                                 1,           // 1 allowed packet
@@ -167,7 +167,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
   EXPECT_EQ(addr, EnsureLocalAddress());
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyHciError) {
+TEST_F(LowEnergyAddressManagerTest, EnablePrivacyHciError) {
   // Respond with error.
   const auto kErrorResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
@@ -206,7 +206,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyHciError) {
   EXPECT_EQ(1, hci_count);
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed) {
+TEST_F(LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed) {
   const auto kSuccessResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                              1,           // 1 allowed packet
@@ -234,7 +234,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallo
   EXPECT_EQ(1, hci_count);
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpiration) {
+TEST_F(LowEnergyAddressManagerTest, AddressExpiration) {
   const auto kSuccessResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                              1,           // 1 allowed packet
@@ -271,7 +271,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpiration) {
   EXPECT_EQ(1, hci_count);
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDisallowed) {
+TEST_F(LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDisallowed) {
   const auto kSuccessResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                              1,           // 1 allowed packet
@@ -312,7 +312,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDis
   EXPECT_EQ(1, hci_count);
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, DisablePrivacy) {
+TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
   // Enable privacy.
   const auto kSuccessResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
@@ -339,7 +339,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, DisablePrivacy) {
   EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
+TEST_F(LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
   const auto kSuccessResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                              1,           // 1 allowed packet

@@ -51,10 +51,10 @@ class FakeClient : public Client {
   fit::closure destroyed_cb_;
 };
 
-class SDP_ServiceDiscovererTest : public TestingBase {
+class ServiceDiscovererTest : public TestingBase {
  public:
-  SDP_ServiceDiscovererTest() = default;
-  ~SDP_ServiceDiscovererTest() = default;
+  ServiceDiscovererTest() = default;
+  ~ServiceDiscovererTest() = default;
 
  protected:
   void SetUp() override {
@@ -79,7 +79,7 @@ class SDP_ServiceDiscovererTest : public TestingBase {
 };
 
 // When there are no searches registered, it just disconnects the client.
-TEST_F(SDP_ServiceDiscovererTest, NoSearches) {
+TEST_F(ServiceDiscovererTest, NoSearches) {
   ServiceDiscoverer discoverer;
   EXPECT_EQ(0u, discoverer.search_count());
 
@@ -91,7 +91,7 @@ TEST_F(SDP_ServiceDiscovererTest, NoSearches) {
 }
 
 // Happy path test with one registered service and no results.
-TEST_F(SDP_ServiceDiscovererTest, NoResults) {
+TEST_F(ServiceDiscovererTest, NoResults) {
   ServiceDiscoverer discoverer;
 
   size_t cb_count = 0;
@@ -128,7 +128,7 @@ TEST_F(SDP_ServiceDiscovererTest, NoResults) {
 // No results, then two results.
 // Unregister one search.
 // Then one result are searched for and two returned.
-TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
+TEST_F(ServiceDiscovererTest, SomeResults) {
   ServiceDiscoverer discoverer;
 
   std::vector<std::pair<PeerId, std::map<AttributeId, DataElement>>> results;
@@ -265,7 +265,7 @@ TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
 }
 
 // Disconnected on the other end before the discovery completes
-TEST_F(SDP_ServiceDiscovererTest, Disconnected) {
+TEST_F(ServiceDiscovererTest, Disconnected) {
   ServiceDiscoverer discoverer;
 
   size_t cb_count = 0;
@@ -308,7 +308,7 @@ TEST_F(SDP_ServiceDiscovererTest, Disconnected) {
 }
 
 // Unregistered Search when partway through the discovery
-TEST_F(SDP_ServiceDiscovererTest, UnregisterInProgress) {
+TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
   ServiceDiscoverer discoverer;
 
   std::optional<std::pair<PeerId, std::map<AttributeId, DataElement>>> result;

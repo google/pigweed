@@ -18,9 +18,9 @@ constexpr ChannelId kTestChannelId = 0x0001;
 
 using TxEngine = EnhancedRetransmissionModeTxEngine;
 
-class L2CAP_EnhancedRetransmissionModeTxEngineTest : public ::gtest::TestLoopFixture {
+class EnhancedRetransmissionModeTxEngineTest : public ::gtest::TestLoopFixture {
  public:
-  L2CAP_EnhancedRetransmissionModeTxEngineTest() : kDefaultPayload('h', 'e', 'l', 'l', 'o') {}
+  EnhancedRetransmissionModeTxEngineTest() : kDefaultPayload('h', 'e', 'l', 'l', 'o') {}
 
  protected:
   // The default values are provided for use by tests which don't depend on the
@@ -46,7 +46,7 @@ class L2CAP_EnhancedRetransmissionModeTxEngineTest : public ::gtest::TestLoopFix
 void NoOpTxCallback(ByteBufferPtr) {}
 void NoOpFailureCallback() {}
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) {
@@ -69,7 +69,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMinimalSiz
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMaximalSizedSdu) {
   ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) {
@@ -92,7 +92,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMaximalSiz
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesOversizedSdu) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesOversizedSdu) {
   // TODO(fxbug.dev/1033): Update this test when we add support for segmentation.
   constexpr size_t kMtu = 1;
   TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow, NoOpTxCallback,
@@ -100,13 +100,13 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesOversizedSd
       .QueueSdu(std::make_unique<DynamicByteBuffer>(CreateStaticByteBuffer(1, 2)));
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesZeroByteSdu) {
   TxEngine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow, NoOpTxCallback,
            NoOpFailureCallback)
       .QueueSdu(std::make_unique<DynamicByteBuffer>());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNumber) {
   const auto payload = CreateStaticByteBuffer(1);
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -145,7 +145,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduAdvancesSequenceNum
   }
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduRollsOverSequenceNumber) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduRollsOverSequenceNumber) {
   constexpr size_t kTxWindow = 63;  // Max possible value
   const auto payload = CreateStaticByteBuffer(1);
   ByteBufferPtr last_pdu;
@@ -174,7 +174,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduRollsOverSequenceNu
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduDoesNotTransmitBeyondTxWindow) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduDoesNotTransmitBeyondTxWindow) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
@@ -189,7 +189,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduDoesNotTransmitBeyo
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitBeyondTxWindowEvenIfQueueWrapsSequenceNumbers) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
@@ -208,7 +208,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   }
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineTransmitsReceiverReadyPollAfterTimeout) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineTransmitsReceiverReadyPollAfterTimeout) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -224,7 +224,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineTransmitsReceiverRead
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineTransmitsReceiverReadyPollOnlyOnceAfterTimeout) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -247,7 +247,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_FALSE(last_pdu);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineAdvancesReceiverReadyPollTimeoutOnNewTransmission) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -270,7 +270,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        ReceiverReadyPollIncludesRequestSequenceNumber) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -290,7 +290,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(1u, last_pdu->As<SimpleSupervisoryFrame>().receive_seq_num());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        AckOfOnlyOutstandingFrameCancelsReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -309,7 +309,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_FALSE(last_pdu);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        AckOfAllOutstandingFramesCancelsReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -330,7 +330,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_FALSE(last_pdu);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        PartialAckDoesNotCancelReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -354,7 +354,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        NewTransmissionAfterAckedFrameReArmsReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -379,7 +379,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsReceiverReadyPollAfterMonitorTimeout) {
   constexpr size_t kMaxTransmissions = 2;  // Allow retransmission
   ByteBufferPtr last_pdu;
@@ -400,7 +400,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineDoesNotRetransmitReceiverReadyPollAfterMonitorTimeoutWhenRetransmissionsAreDisabled) {
   constexpr size_t kMaxTransmissions = 1;
   ByteBufferPtr last_pdu;
@@ -424,7 +424,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 5.4, Table 8.6.5.8, for the row
 // with "Recv ReqSeqAndFbit" and "F = 1".
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineStopsPollingReceiverReadyFromMonitorTaskAfterReceivingFinalUpdateForAckSeq) {
   constexpr size_t kMaxTransmissions = 3;  // Allow multiple retransmissions
   ByteBufferPtr last_pdu;
@@ -442,7 +442,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 5.4, Table 8.6.5.8, for the row
 // with "Recv ReqSeqAndFbit" and "F = 0".
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineContinuesPollingReceiverReadyFromMonitorTaskAfterReceivingNonFinalUpdateForAckSeq) {
   constexpr size_t kMaxTransmissions = 2;  // Allow retransmissions
   ByteBufferPtr last_pdu;
@@ -460,7 +460,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsReceiverReadyPollAfterMultipleMonitorTimeouts) {
   constexpr size_t kMaxTransmissions = 3;  // Allow multiple retransmissions
   ByteBufferPtr last_pdu;
@@ -480,7 +480,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsReceiverReadyPollIndefinitelyAfterMonitorTimeoutWhenMaxTransmitsIsZero) {
   constexpr size_t kMaxTransmissions = 0;
   ByteBufferPtr last_pdu;
@@ -511,7 +511,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(last_pdu);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineStopsTransmittingReceiverReadyPollAfterMaxTransmits) {
   constexpr size_t kMaxTransmissions = 2;
   ByteBufferPtr last_pdu;
@@ -531,7 +531,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_FALSE(last_pdu);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineClosesChannelAfterMaxTransmitsOfReceiverReadyPoll) {
   constexpr size_t kMaxTransmissions = 2;
   bool connection_failed = false;
@@ -547,7 +547,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineClosesChannelAfterMaxTransmitsOfReceiverReadyPollEvenIfRetransmissionsAreDisabled) {
   constexpr size_t kMaxTransmissions = 1;
   bool connection_failed = false;
@@ -562,7 +562,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineClosesChannelAfterMaxTransmitsOfIFrame) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineClosesChannelAfterMaxTransmitsOfIFrame) {
   constexpr size_t kMaxTransmissions = 2;
   size_t num_info_frames_sent = 0;
   bool connection_failed = false;
@@ -606,7 +606,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineClosesChannelAfterMax
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineExhaustsAllRetransmissionsOfIFrameBeforeClosingChannel) {
   constexpr size_t kMaxTransmissions = 255;
   size_t num_info_frames_sent = 0;
@@ -643,7 +643,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(255u, num_info_frames_sent);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsIFrameIndefinitelyWhenMaxTransmitsIsZero) {
   constexpr size_t kMaxTransmissions = 0;
   constexpr size_t kTxWindow = 2;
@@ -698,7 +698,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ('@', (*last_tx_frame)[sizeof(EnhancedControlField)]);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineClosesChannelAfterMaxTransmitsOfIFrameEvenIfRetransmissionsAreDisabled) {
   constexpr size_t kMaxTransmissions = 1;
   bool connection_failed = false;
@@ -722,7 +722,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineRetransmitsMissingFrameOnPollResponse) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineRetransmitsMissingFrameOnPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
@@ -743,7 +743,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineRetransmitsMissingFra
   EXPECT_EQ(0u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsAllMissingFramesOnPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 63;
@@ -776,7 +776,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(kTxWindow - 1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsAllMissingFramesOnPollResponseWithWrappedSequenceNumber) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 63;
@@ -822,7 +822,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(30u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineProperlyHandlesPartialAckWithWrappedSequenceNumber) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 63;
@@ -868,7 +868,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(60u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineDoesNotRetransmitFramesBeyondTxWindow) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineDoesNotRetransmitFramesBeyondTxWindow) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 32;
   size_t n_pdus = 0;
@@ -899,7 +899,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineDoesNotRetransmitFram
   EXPECT_EQ(kTxWindow - 1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineDoesNotRetransmitFramesBeyondTxWindowWhenWindowWraps) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 48;
@@ -954,7 +954,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(31u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineDoesNotRetransmitPreviouslyAckedFramesOnPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 2;
@@ -986,7 +986,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, AckOfFrameWithNoneOutstandingClosesChannel) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, AckOfFrameWithNoneOutstandingClosesChannel) {
   bool connection_failed = false;
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
                      NoOpTxCallback, [&] { connection_failed = true; });
@@ -995,7 +995,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, AckOfFrameWithNoneOutstandi
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        AckOfMoreFramesThanAreOutstandingClosesChannel) {
   bool connection_failed = false;
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -1006,7 +1006,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineDoesNotCrashOnSpuriousAckAfterValidAck) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineDoesNotCrashOnSpuriousAckAfterValidAck) {
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
                      NoOpTxCallback, NoOpFailureCallback);
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
@@ -1015,7 +1015,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineDoesNotCrashOnSpuriou
   tx_engine.UpdateAckSeq(2, true);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineDoesNotCrashOnSpuriousAckBeforeAnyDataHasBeenSent) {
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
                      NoOpTxCallback, NoOpFailureCallback);
@@ -1024,7 +1024,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   }
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitFramesWhenRemoteIsBusy) {
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
@@ -1037,7 +1037,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, UpdateAckSeqTransmitsQueuedDataWhenPossible) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, UpdateAckSeqTransmitsQueuedDataWhenPossible) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
@@ -1055,7 +1055,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, UpdateAckSeqTransmitsQueued
   EXPECT_EQ(1u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        UpdateAckSeqTransmissionOfQueuedDataRespectsTxWindow) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
@@ -1075,7 +1075,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(1u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        NonFinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
@@ -1095,7 +1095,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        FinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
@@ -1115,7 +1115,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataTransmitsAllQueuedFramesWithinTxWindow) {
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
@@ -1136,7 +1136,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(kTxWindow, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataDoesNotTransmitBeyondTxWindow) {
   constexpr size_t kTxWindow = 32;
   size_t n_pdus = 0;
@@ -1157,7 +1157,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(kTxWindow, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, MaybeSendQueuedDataRespectsRemoteBusy) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, MaybeSendQueuedDataRespectsRemoteBusy) {
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -1173,7 +1173,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, MaybeSendQueuedDataRespects
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataDoesNotCrashWhenCalledWithoutPendingPdus) {
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
                      NoOpTxCallback, NoOpFailureCallback);
@@ -1181,7 +1181,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduCanSendMoreFramesAfterClearingRemoteBusy) {
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
@@ -1204,7 +1204,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(1u, n_pdus);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduMaintainsSduOrderingAfterClearRemoteBusy) {
   std::vector<uint8_t> pdu_seq_numbers;
   auto tx_callback = [&](ByteBufferPtr pdu) {
@@ -1233,7 +1233,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ((std::vector<uint8_t>{0, 1}), pdu_seq_numbers);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        UpdateAckSeqRetransmitsUnackedFramesBeforeTransmittingQueuedFrames) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 63;
@@ -1271,7 +1271,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ((std::vector{uint8_t{1}, uint8_t{2}}), pdu_seq_numbers);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitNewFrameWhenEngineIsAwaitingPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 3;
@@ -1300,7 +1300,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(std::vector<uint8_t>(), pdu_seq_numbers);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        NonFinalUpdateAckSeqDoesNotTransmitNewFrameWhenEngineIsAwaitingPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 1;
@@ -1336,7 +1336,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 // Note: to make the most of this test, the unit tests should be built with
 // ASAN.
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineDoesNotCrashIfExhaustionOfMaxTransmitForIFrameCausesEngineDestruction) {
   constexpr size_t kMaxTransmissions = 1;
   constexpr size_t kTxWindow = 2;
@@ -1366,7 +1366,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        EngineDoesNotCrashIfExhaustionOfMaxTransmitForReceiverReadyPollCausesEngineDestruction) {
   constexpr size_t kMaxTransmissions = 1;
   bool connection_failed = false;
@@ -1390,7 +1390,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, TransmissionOfPduIncludesRequestSeqNum) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, TransmissionOfPduIncludesRequestSeqNum) {
   uint8_t outbound_req_seq = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
@@ -1409,7 +1409,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, TransmissionOfPduIncludesRe
   EXPECT_EQ(5u, outbound_req_seq);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        DeferredTransmissionOfPduIncludesCurrentRequestSeqNum) {
   constexpr size_t kTxWindow = 1;
   uint8_t outbound_req_seq = 0;
@@ -1435,7 +1435,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(5u, outbound_req_seq);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, RetransmissionOfPduIncludesCurrentSeqNum) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, RetransmissionOfPduIncludesCurrentSeqNum) {
   constexpr size_t kMaxTransmissions = 2;
   uint8_t outbound_req_seq = 0;
   size_t n_info_frames = 0;
@@ -1470,7 +1470,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, RetransmissionOfPduIncludes
   EXPECT_EQ(10u, outbound_req_seq);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, PollTaskLoopsEvenWhenRemoteIsBusy) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, PollTaskLoopsEvenWhenRemoteIsBusy) {
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
   bool failure = false;
@@ -1499,7 +1499,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, PollTaskLoopsEvenWhenRemote
   EXPECT_FALSE(failure);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitCausesUpdateAckSeqToRetransmit) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
@@ -1536,7 +1536,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_info_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitWithPollRequestTriggersPollResponseOnFirstIFrame) {
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
@@ -1565,7 +1565,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(4u, n_info_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitAfterPollTaskSuppressesSubsequentRetransmitByPollResponse) {
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
@@ -1607,7 +1607,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_info_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitWithPollResponseSetDoesNotSuppressSubsequentRetransmissions) {
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
@@ -1642,7 +1642,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(3u, n_info_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitSuppressesRetransmissionsByRetransmitRangeWithPollResponse) {
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
@@ -1685,7 +1685,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_info_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitCausesUpdateAckSeqToRetransmit) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
@@ -1721,7 +1721,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_info_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitWithPollRequestTriggersPollResponseOnIFrame) {
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
@@ -1755,7 +1755,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(4u, n_info_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitOnlyAcksIFramesIfPollRequestIsSet) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
@@ -1801,7 +1801,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 }
 
 TEST_F(
-    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EnhancedRetransmissionModeTxEngineTest,
     SetSingleRetransmitDuringPollRequestThenAgainWithPollResponseAndDifferentAckSeqBothCauseRetransmit) {
   size_t n_info_frames = 0;
   size_t n_supervisory_frames = 0;
@@ -1855,7 +1855,7 @@ TEST_F(
   EXPECT_EQ(2U, n_supervisory_frames);
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitDuringPollRequestSuppressesSingleRetransmitPollResponseWithSameAckSeq) {
   size_t n_info_frames = 0;
   size_t n_supervisory_frames = 0;
@@ -1907,7 +1907,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 // This is a possible bug introduced by implementing SrejActioned to the letter per Core Spec
 // v5.{0–2} Vol 3, Part A, Sec 8.6.5.9–11.
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+TEST_F(EnhancedRetransmissionModeTxEngineTest,
        SetSingleRetransmitDuringPollRequestSuppressesRetransmissionErroneously) {
   size_t n_info_frames = 0;
   size_t n_supervisory_frames = 0;

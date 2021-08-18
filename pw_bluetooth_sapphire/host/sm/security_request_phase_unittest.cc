@@ -29,10 +29,10 @@ struct SecurityRequestOptions {
   BondableMode bondable = BondableMode::Bondable;
 };
 
-class SMP_SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
+class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_SecurityRequestPhaseTest() = default;
-  ~SMP_SecurityRequestPhaseTest() override = default;
+  SecurityRequestPhaseTest() = default;
+  ~SecurityRequestPhaseTest() override = default;
 
  protected:
   void SetUp() override { NewSecurityRequestPhase(); }
@@ -67,12 +67,12 @@ class SMP_SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
 
   std::optional<PairingRequestParams> last_pairing_req_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_SecurityRequestPhaseTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhaseTest);
 };
 
-using SMP_SecurityRequestPhaseDeathTest = SMP_SecurityRequestPhaseTest;
+using SMP_SecurityRequestPhaseDeathTest = SecurityRequestPhaseTest;
 
-TEST_F(SMP_SecurityRequestPhaseTest, MakeEncryptedBondableSecurityRequest) {
+TEST_F(SecurityRequestPhaseTest, MakeEncryptedBondableSecurityRequest) {
   NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kEncrypted,
                                                  .bondable = BondableMode::Bondable});
   StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kBondingFlag);
@@ -81,7 +81,7 @@ TEST_F(SMP_SecurityRequestPhaseTest, MakeEncryptedBondableSecurityRequest) {
   EXPECT_EQ(SecurityLevel::kEncrypted, security_request_phase()->pending_security_request());
 }
 
-TEST_F(SMP_SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
+TEST_F(SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
   NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kAuthenticated,
                                                  .bondable = BondableMode::NonBondable});
   StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kMITM);
@@ -90,7 +90,7 @@ TEST_F(SMP_SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest
   EXPECT_EQ(SecurityLevel::kAuthenticated, security_request_phase()->pending_security_request());
 }
 
-TEST_F(SMP_SecurityRequestPhaseTest, MakeSecureAuthenticatedBondableSecurityRequest) {
+TEST_F(SecurityRequestPhaseTest, MakeSecureAuthenticatedBondableSecurityRequest) {
   NewSecurityRequestPhase(
       SecurityRequestOptions{.requested_level = SecurityLevel::kSecureAuthenticated});
   StaticByteBuffer kExpectedReq(kSecurityRequest,
@@ -104,12 +104,12 @@ TEST_F(SMP_SecurityRequestPhaseTest, MakeSecureAuthenticatedBondableSecurityRequ
             security_request_phase()->pending_security_request());
 }
 
-TEST_F(SMP_SecurityRequestPhaseTest, HandlesChannelClosedGracefully) {
+TEST_F(SecurityRequestPhaseTest, HandlesChannelClosedGracefully) {
   fake_chan()->Close();
   RunLoopUntilIdle();
 }
 
-TEST_F(SMP_SecurityRequestPhaseTest, PairingRequestAsResponderPassedThrough) {
+TEST_F(SecurityRequestPhaseTest, PairingRequestAsResponderPassedThrough) {
   StaticByteBuffer<util::PacketSize<PairingRequestParams>()> preq_packet;
   PacketWriter writer(kPairingRequest, &preq_packet);
   PairingRequestParams generic_preq{.auth_req = AuthReq::kBondingFlag};
@@ -122,7 +122,7 @@ TEST_F(SMP_SecurityRequestPhaseTest, PairingRequestAsResponderPassedThrough) {
   ASSERT_EQ(0, memcmp(&last_preq, &generic_preq, sizeof(PairingRequestParams)));
 }
 
-TEST_F(SMP_SecurityRequestPhaseTest, InboundSecurityRequestFails) {
+TEST_F(SecurityRequestPhaseTest, InboundSecurityRequestFails) {
   StaticByteBuffer<util::PacketSize<PairingResponseParams>()> pres_packet;
   PacketWriter writer(kPairingResponse, &pres_packet);
   *writer.mutable_payload<PairingResponseParams>() = PairingResponseParams();
@@ -142,7 +142,7 @@ TEST_F(SMP_SecurityRequestPhaseTest, InboundSecurityRequestFails) {
   ASSERT_TRUE(message_sent);
 }
 
-TEST_F(SMP_SecurityRequestPhaseTest, DropsInvalidPacket) {
+TEST_F(SecurityRequestPhaseTest, DropsInvalidPacket) {
   auto bad_packet = CreateStaticByteBuffer(0xFF);  // 0xFF is not a valid SMP header code
 
   bool message_sent = false;

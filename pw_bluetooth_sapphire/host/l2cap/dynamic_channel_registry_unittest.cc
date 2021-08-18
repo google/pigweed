@@ -136,7 +136,7 @@ std::optional<DynamicChannelRegistry::ServiceInfo> RejectAllServices(PSM /*psm*/
   return std::nullopt;
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, OpenAndRemoteCloseChannel) {
+TEST(DynamicChannelRegistryTest, OpenAndRemoteCloseChannel) {
   ChannelId local_cid = kInvalidChannelId;
   ChannelId remote_cid = kInvalidChannelId;
   bool close_cb_called = false;
@@ -181,7 +181,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, OpenAndRemoteCloseChannel) {
   EXPECT_FALSE(registry.FindChannelByRemoteId(remote_cid));
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, OpenAndLocalCloseChannel) {
+TEST(DynamicChannelRegistryTest, OpenAndLocalCloseChannel) {
   bool registry_close_cb_called = false;
   auto registry_close_cb = [&](const DynamicChannel*) { registry_close_cb_called = true; };
 
@@ -210,7 +210,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, OpenAndLocalCloseChannel) {
   EXPECT_FALSE(registry.FindChannelByLocalId(local_cid));
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, RejectServiceRequest) {
+TEST(DynamicChannelRegistryTest, RejectServiceRequest) {
   bool service_request_cb_called = false;
   auto service_request_cb = [&service_request_cb_called](PSM psm) {
     EXPECT_FALSE(service_request_cb_called);
@@ -226,7 +226,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, RejectServiceRequest) {
   EXPECT_FALSE(registry.last_channel());
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
+TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
   bool open_result_cb_called = false;
   ChannelId local_cid = kInvalidChannelId;
   ChannelId remote_cid = kInvalidChannelId;
@@ -261,7 +261,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
   EXPECT_TRUE(registry.FindChannelByLocalId(local_cid));
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
+TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
   bool open_result_cb_called = false;
   DynamicChannelRegistry::DynamicChannelCallback open_result_cb =
       [&open_result_cb_called](const DynamicChannel* chan) { open_result_cb_called = true; };
@@ -292,7 +292,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
   EXPECT_EQ(0u, registry.AliveChannelCount());
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelClosesIt) {
+TEST(DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelClosesIt) {
   bool close_cb_called = false;
   auto close_cb = [&close_cb_called](const DynamicChannel* chan) { close_cb_called = true; };
 
@@ -317,7 +317,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelClosesIt) {
   // is disconnected.
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, ErrorConnectingChannel) {
+TEST(DynamicChannelRegistryTest, ErrorConnectingChannel) {
   bool open_result_cb_called = false;
   auto open_result_cb = [&open_result_cb_called](const DynamicChannel* chan) {
     EXPECT_FALSE(open_result_cb_called);
@@ -339,7 +339,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, ErrorConnectingChannel) {
   EXPECT_EQ(0u, registry.AliveChannelCount());
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, ExhaustedChannelIds) {
+TEST(DynamicChannelRegistryTest, ExhaustedChannelIds) {
   int open_result_cb_count = 0;
 
   // This callback expects the channel to be creatable.
@@ -392,7 +392,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, ExhaustedChannelIds) {
   EXPECT_EQ(1, close_cb_count);
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
+TEST(DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
   TestDynamicChannelRegistry registry(DoNothing, RejectAllServices);
 
   // This callback expects the channel to be creatable.
@@ -469,7 +469,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompl
 
 // Removing a channel from the channel map while iterating the channels in ForEach should not cause
 // a use-after-free of the invalidated pointer.
-TEST(L2CAP_DynamicChannelRegistryTest, CloseChannelInForEachCallback) {
+TEST(DynamicChannelRegistryTest, CloseChannelInForEachCallback) {
   bool registry_close_cb_called = false;
   auto registry_close_cb = [&](const DynamicChannel*) { registry_close_cb_called = true; };
 

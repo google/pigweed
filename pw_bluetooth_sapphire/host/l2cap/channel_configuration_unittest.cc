@@ -26,14 +26,14 @@ const RetransmissionAndFlowControlOption kRetransmissionAndFlowControlOption =
     RetransmissionAndFlowControlOption::MakeBasicMode();
 const FlushTimeoutOption kFlushTimeoutOption(200);
 
-class L2CAP_ChannelConfigurationTest : public ::testing::Test {
+class ChannelConfigurationTest : public ::testing::Test {
  public:
-  L2CAP_ChannelConfigurationTest() = default;
-  ~L2CAP_ChannelConfigurationTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_ChannelConfigurationTest);
+  ChannelConfigurationTest() = default;
+  ~ChannelConfigurationTest() override = default;
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelConfigurationTest);
 };
 
-TEST_F(L2CAP_ChannelConfigurationTest, ReadAllOptionTypes) {
+TEST_F(ChannelConfigurationTest, ReadAllOptionTypes) {
   const auto kOptionBuffer = CreateStaticByteBuffer(
       // MTU Option
       static_cast<uint8_t>(OptionType::kMTU), MtuOption::kPayloadLength, LowerBits(kMinACLMTU),
@@ -69,7 +69,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadAllOptionTypes) {
   EXPECT_EQ(0x03, option.payload().data()[0]);
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, ReadTooShortOption) {
+TEST_F(ChannelConfigurationTest, ReadTooShortOption) {
   // clang-format off
   // missing required Length field
   auto kEncodedOption = CreateStaticByteBuffer(
@@ -81,7 +81,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadTooShortOption) {
   EXPECT_FALSE(config.ReadOptions(kEncodedOption));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, ReadInvalidOptionField) {
+TEST_F(ChannelConfigurationTest, ReadInvalidOptionField) {
   // clang-format off
   auto kEncodedOption = CreateStaticByteBuffer(
       // Length = 255
@@ -92,7 +92,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadInvalidOptionField) {
   EXPECT_FALSE(config.ReadOptions(kEncodedOption));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, ReadIncorrectOptionLength) {
+TEST_F(ChannelConfigurationTest, ReadIncorrectOptionLength) {
   // clang-format off
   auto kEncodedMtuOption = CreateStaticByteBuffer(
       // Type = MTU, Length = 3 (spec length is 2)
@@ -117,7 +117,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadIncorrectOptionLength) {
   EXPECT_FALSE(config.ReadOptions(kEncodedFlushTimeoutOption));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, MtuOptionDecodeEncode) {
+TEST_F(ChannelConfigurationTest, MtuOptionDecodeEncode) {
   constexpr uint16_t kMTU = 48;
 
   // clang-format off
@@ -134,7 +134,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, MtuOptionDecodeEncode) {
   EXPECT_TRUE(ContainersEqual(mtu_option.Encode(), kExpectedEncodedMtuOption));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, RetransmissionAndFlowControlOptionDecodeEncode) {
+TEST_F(ChannelConfigurationTest, RetransmissionAndFlowControlOptionDecodeEncode) {
   const auto kMode = ChannelMode::kRetransmission;
   const uint8_t kTxWindow = 32;
   const uint8_t kMaxTransmit = 1;
@@ -164,7 +164,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, RetransmissionAndFlowControlOptionDecodeE
       ContainersEqual(rtx_option.Encode(), kExpectedEncodedRetransmissionAndFlowControlOption));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, FlushTimeoutOptionDecodeEncode) {
+TEST_F(ChannelConfigurationTest, FlushTimeoutOptionDecodeEncode) {
   const uint16_t kFlushTimeout = 200;
 
   auto kExpectedEncodedFlushTimeoutOption = CreateStaticByteBuffer(
@@ -177,7 +177,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, FlushTimeoutOptionDecodeEncode) {
   EXPECT_EQ(kExpectedEncodedFlushTimeoutOption, option.Encode());
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, UnknownOptionDecodeEncode) {
+TEST_F(ChannelConfigurationTest, UnknownOptionDecodeEncode) {
   // clang-format off
   auto kExpectedEncodedUnknownOption = CreateStaticByteBuffer(
       kUnknownOptionType, 0x02, // Length = 2
@@ -189,7 +189,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, UnknownOptionDecodeEncode) {
   EXPECT_TRUE(ContainersEqual(unknown_option.Encode(), kExpectedEncodedUnknownOption));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, UnknownOptionHints) {
+TEST_F(ChannelConfigurationTest, UnknownOptionHints) {
   constexpr auto kHintOptionType = static_cast<OptionType>(0x80);
   constexpr auto kNotHintOptionType = static_cast<OptionType>(0x70);
   auto data = CreateStaticByteBuffer(0x01);
@@ -199,7 +199,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, UnknownOptionHints) {
   EXPECT_FALSE(unknown_option.IsHint());
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, OptionsReturnsKnownOptions) {
+TEST_F(ChannelConfigurationTest, OptionsReturnsKnownOptions) {
   // Empty configuration
   EXPECT_EQ(0u, ChannelConfiguration().Options().size());
 
@@ -235,7 +235,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, OptionsReturnsKnownOptions) {
   EXPECT_FALSE(OptionsContainsOptionOfType(options2, OptionType::kMTU));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, MergingConfigurations) {
+TEST_F(ChannelConfigurationTest, MergingConfigurations) {
   ChannelConfiguration config0;
   config0.set_mtu_option(kMtuOption);
   config0.set_retransmission_flow_control_option(kRetransmissionAndFlowControlOption);
@@ -266,7 +266,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, MergingConfigurations) {
   EXPECT_EQ(kTimeout, config1.flush_timeout_option()->flush_timeout());
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, MergingUnknownOptionsAppendsThem) {
+TEST_F(ChannelConfigurationTest, MergingUnknownOptionsAppendsThem) {
   const auto kUnknownOption0 = StaticByteBuffer(
       // code, length, payload
       0x70, 0x01, 0x01);
@@ -297,7 +297,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, MergingUnknownOptionsAppendsThem) {
   EXPECT_EQ(kUnknownOption0.data()[0], static_cast<uint8_t>(config0.unknown_options()[2].type()));
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, ReadOptions) {
+TEST_F(ChannelConfigurationTest, ReadOptions) {
   const auto kOptionBuffer = CreateStaticByteBuffer(
       // MTU Option
       OptionType::kMTU, MtuOption::kPayloadLength, LowerBits(kMinACLMTU), UpperBits(kMinACLMTU),
@@ -332,7 +332,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadOptions) {
   EXPECT_EQ(0x03, option.payload().data()[0]);
 }
 
-TEST_F(L2CAP_ChannelConfigurationTest, ConfigToString) {
+TEST_F(ChannelConfigurationTest, ConfigToString) {
   const auto kOptionBuffer = CreateStaticByteBuffer(
       // MTU Option
       static_cast<uint8_t>(OptionType::kMTU), MtuOption::kPayloadLength, LowerBits(kMinACLMTU),

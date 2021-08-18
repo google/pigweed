@@ -18,7 +18,7 @@ using namespace inspect::testing;
 const DeviceAddress kTestAddr(DeviceAddress::Type::kBREDR, {1});
 const PeerId kPeerId;
 
-TEST(GAP_BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
+TEST(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   // A freshly created request is not yet incoming
   auto req = BrEdrConnectionRequest(kTestAddr, kPeerId);
   EXPECT_FALSE(req.HasIncoming());
@@ -33,7 +33,7 @@ TEST(GAP_BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   EXPECT_FALSE(req.HasIncoming());
 }
 
-TEST(GAP_BrEdrConnectionRequestTests, CallbacksExecuted) {
+TEST(BrEdrConnectionRequestTests, CallbacksExecuted) {
   bool callback_called = false;
   auto req = BrEdrConnectionRequest(kTestAddr, kPeerId,
                                     [&callback_called](auto, auto) { callback_called = true; });
@@ -45,7 +45,7 @@ TEST(GAP_BrEdrConnectionRequestTests, CallbacksExecuted) {
   ASSERT_TRUE(callback_called);
 }
 
-TEST(GAP_BrEdrConnectionRequestTests, Inspect) {
+TEST(BrEdrConnectionRequestTests, Inspect) {
   // inspector must outlive request
   inspect::Inspector inspector;
   BrEdrConnectionRequest req(kTestAddr, kPeerId, [](auto, auto) {});

@@ -11,14 +11,14 @@
 namespace bt::gap {
 namespace {
 
-TEST(GAP_FakePairingDelegateTest, io_capability) {
+TEST(FakePairingDelegateTest, io_capability) {
   FakePairingDelegate delegate(sm::IOCapability::kDisplayYesNo);
   EXPECT_EQ(sm::IOCapability::kDisplayYesNo, delegate.io_capability());
   delegate.set_io_capability(sm::IOCapability::kNoInputNoOutput);
   EXPECT_EQ(sm::IOCapability::kNoInputNoOutput, delegate.io_capability());
 }
 
-TEST(GAP_FakePairingDelegateTest, CompletePairing) {
+TEST(FakePairingDelegateTest, CompletePairing) {
   FakePairingDelegate delegate(sm::IOCapability::kDisplayYesNo);
 
   bool cb_called = false;
@@ -32,7 +32,7 @@ TEST(GAP_FakePairingDelegateTest, CompletePairing) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST(GAP_FakePairingDelegateTest, ConfirmPairing) {
+TEST(FakePairingDelegateTest, ConfirmPairing) {
   FakePairingDelegate delegate(sm::IOCapability::kDisplayYesNo);
 
   bool cb_called = false;
@@ -47,7 +47,7 @@ TEST(GAP_FakePairingDelegateTest, ConfirmPairing) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST(GAP_FakePairingDelegateTest, DisplayPasskey) {
+TEST(FakePairingDelegateTest, DisplayPasskey) {
   FakePairingDelegate delegate(sm::IOCapability::kDisplayYesNo);
 
   bool cb_called = false;
@@ -65,7 +65,7 @@ TEST(GAP_FakePairingDelegateTest, DisplayPasskey) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST(GAP_FakePairingDelegateTest, RequestPasskey) {
+TEST(FakePairingDelegateTest, RequestPasskey) {
   FakePairingDelegate delegate(sm::IOCapability::kDisplayYesNo);
 
   bool cb_called = false;
@@ -80,7 +80,7 @@ TEST(GAP_FakePairingDelegateTest, RequestPasskey) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST(GAP_FakePairingDelegateTest, UnexpectedCalls) {
+TEST(FakePairingDelegateTest, UnexpectedCalls) {
   FakePairingDelegate delegate(sm::IOCapability::kDisplayYesNo);
 
   // Each of the following calls should generate failure(s).
@@ -91,7 +91,7 @@ TEST(GAP_FakePairingDelegateTest, UnexpectedCalls) {
   // delegate.RequestPasskey(PeerId(5), [](uint64_t) {});
 }
 
-TEST(GAP_FakePairingDelegateTest, ExpectCallNotCalled) {
+TEST(FakePairingDelegateTest, ExpectCallNotCalled) {
   FakePairingDelegate delegate(sm::IOCapability::kDisplayYesNo);
 
   // delegate.SetCompletePairingCallback([](auto, auto) {});

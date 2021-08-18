@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "sco_connection.h"
+
 #include <gtest/gtest.h>
 
 #include "lib/gtest/test_loop_fixture.h"
-#include "sco_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
@@ -17,10 +18,10 @@ namespace {
 hci::ConnectionHandle kConnectionHandle = 1u;
 
 using TestingBase = ::gtest::TestLoopFixture;
-class SCO_ScoConnectionTest : public TestingBase {
+class ScoConnectionTest : public TestingBase {
  public:
-  SCO_ScoConnectionTest() = default;
-  ~SCO_ScoConnectionTest() override = default;
+  ScoConnectionTest() = default;
+  ~ScoConnectionTest() override = default;
 
  protected:
   void SetUp() override {
@@ -55,11 +56,11 @@ class SCO_ScoConnectionTest : public TestingBase {
   hci::testing::FakeConnection* fake_conn_;
 };
 
-TEST_F(SCO_ScoConnectionTest, Send) { EXPECT_FALSE(sco_conn()->Send(nullptr)); }
+TEST_F(ScoConnectionTest, Send) { EXPECT_FALSE(sco_conn()->Send(nullptr)); }
 
-TEST_F(SCO_ScoConnectionTest, MaxTxSduSize) { EXPECT_EQ(sco_conn()->max_tx_sdu_size(), 0u); }
+TEST_F(ScoConnectionTest, MaxTxSduSize) { EXPECT_EQ(sco_conn()->max_tx_sdu_size(), 0u); }
 
-TEST_F(SCO_ScoConnectionTest, ActivateAndDeactivate) {
+TEST_F(ScoConnectionTest, ActivateAndDeactivate) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
@@ -78,7 +79,7 @@ TEST_F(SCO_ScoConnectionTest, ActivateAndDeactivate) {
   EXPECT_EQ(deactivated_count(), 1u);
 }
 
-TEST_F(SCO_ScoConnectionTest, ActivateAndClose) {
+TEST_F(ScoConnectionTest, ActivateAndClose) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
@@ -97,16 +98,16 @@ TEST_F(SCO_ScoConnectionTest, ActivateAndClose) {
   EXPECT_EQ(deactivated_count(), 0u);
 }
 
-TEST_F(SCO_ScoConnectionTest, UniqueId) { EXPECT_EQ(sco_conn()->unique_id(), kConnectionHandle); }
+TEST_F(ScoConnectionTest, UniqueId) { EXPECT_EQ(sco_conn()->unique_id(), kConnectionHandle); }
 
-TEST_F(SCO_ScoConnectionTest, CloseWithoutActivating) {
+TEST_F(ScoConnectionTest, CloseWithoutActivating) {
   EXPECT_TRUE(hci_conn());
   sco_conn()->Close();
   EXPECT_EQ(deactivated_count(), 0u);
   EXPECT_FALSE(hci_conn());
 }
 
-TEST_F(SCO_ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
+TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 

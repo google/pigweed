@@ -11,7 +11,7 @@
 namespace bt::sm {
 namespace {
 
-TEST(SMP_PacketTest, ParseValidPacket) {
+TEST(PacketTest, ParseValidPacket) {
   auto kValidPacket = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kEncryptionKeySize);
   ByteBufferPtr valid_packet_ptr = std::make_unique<DynamicByteBuffer>(kValidPacket);
   fpromise::result<ValidPacketReader, ErrorCode> maybe_reader =
@@ -23,7 +23,7 @@ TEST(SMP_PacketTest, ParseValidPacket) {
   ASSERT_EQ(payload, ErrorCode::kEncryptionKeySize);
 }
 
-TEST(SMP_PacketTest, EmptyPacketGivesError) {
+TEST(PacketTest, EmptyPacketGivesError) {
   ByteBufferPtr empty_packet_ptr = std::make_unique<DynamicByteBuffer>();
   fpromise::result<ValidPacketReader, ErrorCode> maybe_reader =
       ValidPacketReader::ParseSdu(empty_packet_ptr);
@@ -32,7 +32,7 @@ TEST(SMP_PacketTest, EmptyPacketGivesError) {
   ASSERT_EQ(ecode, ErrorCode::kInvalidParameters);
 }
 
-TEST(SMP_PacketTest, UnknownSMPCodeGivesError) {
+TEST(PacketTest, UnknownSMPCodeGivesError) {
   auto kUnknownCodePacket = CreateStaticByteBuffer(0xFF,  // Not a valid SMP packet header code.
                                                    ErrorCode::kEncryptionKeySize);
   ByteBufferPtr unknown_code_packet_ptr = std::make_unique<DynamicByteBuffer>(kUnknownCodePacket);
@@ -46,7 +46,7 @@ TEST(SMP_PacketTest, UnknownSMPCodeGivesError) {
 // This tests a case where the `size_t` packet size was stored into a `uint8_t`. If the packet size
 // modulo 2^8 was 0, the length would overflow the `uint8_t` and the packet would be incorrectly
 // recognized as having 0 length, leading to the wrong error being returned (and logged).
-TEST(SMP_PacketTest, Mod256Equals0LengthPacketGivesCorrectError) {
+TEST(PacketTest, Mod256Equals0LengthPacketGivesCorrectError) {
   constexpr size_t k2ToThe8Size = 256;
   Code kInvalidSmpCode = 0xFF;
   StaticByteBuffer<k2ToThe8Size> unfortunately_sized_packet;
@@ -58,7 +58,7 @@ TEST(SMP_PacketTest, Mod256Equals0LengthPacketGivesCorrectError) {
   ASSERT_EQ(ecode, ErrorCode::kCommandNotSupported);
 }
 
-TEST(SMP_PacketTest, PayloadSizeDoesNotMatchHeaderGivesError) {
+TEST(PacketTest, PayloadSizeDoesNotMatchHeaderGivesError) {
   // The PairingFailed code is expected to have a one byte error code as payload, not three bytes.
   auto kMalformedPacket = CreateStaticByteBuffer(kPairingFailed, 0x01, 0x01, 0x01);
   ByteBufferPtr malformed_packet_ptr = std::make_unique<DynamicByteBuffer>(kMalformedPacket);

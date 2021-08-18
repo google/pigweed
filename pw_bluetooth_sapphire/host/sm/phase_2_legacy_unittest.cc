@@ -67,10 +67,10 @@ struct Phase2LegacyArgs {
 
 using util::PacketSize;
 
-class SMP_Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
+class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_Phase2LegacyTest() = default;
-  ~SMP_Phase2LegacyTest() override = default;
+  Phase2LegacyTest() = default;
+  ~Phase2LegacyTest() override = default;
 
  protected:
   void SetUp() override { NewPhase2Legacy(); }
@@ -162,19 +162,19 @@ class SMP_Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   int phase_2_complete_count_ = 0;
   UInt128 stk_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_Phase2LegacyTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2LegacyTest);
 };
 
-using SMP_Phase2LegacyDeathTest = SMP_Phase2LegacyTest;
+using Phase2LegacyDeathTest = Phase2LegacyTest;
 
-TEST_F(SMP_Phase2LegacyDeathTest, InvalidPairingMethodDies) {
+TEST_F(Phase2LegacyDeathTest, InvalidPairingMethodDies) {
   Phase2LegacyArgs args;
   // Legacy Pairing does not permit Numeric Comparison (V5.0, Vol. 3, Part H, Section 2.3.5.1)
   args.features.method = PairingMethod::kNumericComparison;
   ASSERT_DEATH_IF_SUPPORTED(NewPhase2Legacy(args), "method");
 }
 
-TEST_F(SMP_Phase2LegacyTest, InitiatorJustWorksStkSucceeds) {
+TEST_F(Phase2LegacyTest, InitiatorJustWorksStkSucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = true;
   args.features.method = PairingMethod::kJustWorks;
@@ -216,7 +216,7 @@ TEST_F(SMP_Phase2LegacyTest, InitiatorJustWorksStkSucceeds) {
   ASSERT_EQ(generated_stk, stk());
 }
 
-TEST_F(SMP_Phase2LegacyTest, InitiatorPasskeyInputStkSucceeds) {
+TEST_F(Phase2LegacyTest, InitiatorPasskeyInputStkSucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = true;
   args.features.method = PairingMethod::kPasskeyEntryInput;
@@ -266,7 +266,7 @@ TEST_F(SMP_Phase2LegacyTest, InitiatorPasskeyInputStkSucceeds) {
 
 // This test is shorter than InitiatorPasskeyInputStkSucceeds because it only tests the code paths
 // that differ for PasskeyDisplay, which all take place before sending the Confirm value.
-TEST_F(SMP_Phase2LegacyTest, InitiatorPasskeyDisplaySucceeds) {
+TEST_F(Phase2LegacyTest, InitiatorPasskeyDisplaySucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = true;
   args.features.method = PairingMethod::kPasskeyEntryDisplay;
@@ -298,7 +298,7 @@ TEST_F(SMP_Phase2LegacyTest, InitiatorPasskeyDisplaySucceeds) {
   // After sending Pairing Confirm, the behavior is the same as InitiatorPasskeyInputStkSucceeds
 }
 
-TEST_F(SMP_Phase2LegacyTest, InitiatorReceivesConfirmBeforeTkFails) {
+TEST_F(Phase2LegacyTest, InitiatorReceivesConfirmBeforeTkFails) {
   Phase2LegacyArgs args;
   args.features.initiator = true;
   NewPhase2Legacy(args);
@@ -319,7 +319,7 @@ TEST_F(SMP_Phase2LegacyTest, InitiatorReceivesConfirmBeforeTkFails) {
   ASSERT_TRUE(ReceiveAndExpect(kPairingConfirmCmd, kExpectedFailure));
 }
 
-TEST_F(SMP_Phase2LegacyTest, InvalidConfirmValueFails) {
+TEST_F(Phase2LegacyTest, InvalidConfirmValueFails) {
   Code sent_code = kInvalidCode;
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
@@ -346,7 +346,7 @@ TEST_F(SMP_Phase2LegacyTest, InvalidConfirmValueFails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2LegacyTest, JustWorksUserConfirmationRejectedPairingFails) {
+TEST_F(Phase2LegacyTest, JustWorksUserConfirmationRejectedPairingFails) {
   Phase2LegacyArgs args;
   args.features.method = PairingMethod::kJustWorks;
   NewPhase2Legacy(args);
@@ -364,7 +364,7 @@ TEST_F(SMP_Phase2LegacyTest, JustWorksUserConfirmationRejectedPairingFails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2LegacyTest, PasskeyInputRejectedPairingFails) {
+TEST_F(Phase2LegacyTest, PasskeyInputRejectedPairingFails) {
   Phase2LegacyArgs args;
   args.features.method = PairingMethod::kPasskeyEntryInput;
   NewPhase2Legacy(args);
@@ -383,7 +383,7 @@ TEST_F(SMP_Phase2LegacyTest, PasskeyInputRejectedPairingFails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2LegacyTest, PasskeyDisplayRejectedPairingFails) {
+TEST_F(Phase2LegacyTest, PasskeyDisplayRejectedPairingFails) {
   Phase2LegacyArgs args;
   args.features.method = PairingMethod::kPasskeyEntryDisplay;
   NewPhase2Legacy(args);
@@ -404,7 +404,7 @@ TEST_F(SMP_Phase2LegacyTest, PasskeyDisplayRejectedPairingFails) {
 
 // Each of the pairing methods has its own user input callback, and thus correct behavior under
 // destruction of the Phase needs to be checked for each method.
-TEST_F(SMP_Phase2LegacyTest, PhaseDestroyedWhileWaitingForJustWorksTk) {
+TEST_F(Phase2LegacyTest, PhaseDestroyedWhileWaitingForJustWorksTk) {
   Phase2LegacyArgs args;
   args.features.method = PairingMethod::kJustWorks;
   NewPhase2Legacy(args);
@@ -420,7 +420,7 @@ TEST_F(SMP_Phase2LegacyTest, PhaseDestroyedWhileWaitingForJustWorksTk) {
   SUCCEED();
 }
 
-TEST_F(SMP_Phase2LegacyTest, PhaseDestroyedWhileWaitingForPasskeyInputTk) {
+TEST_F(Phase2LegacyTest, PhaseDestroyedWhileWaitingForPasskeyInputTk) {
   Phase2LegacyArgs args;
   args.features.method = PairingMethod::kPasskeyEntryInput;
   NewPhase2Legacy(args);
@@ -436,7 +436,7 @@ TEST_F(SMP_Phase2LegacyTest, PhaseDestroyedWhileWaitingForPasskeyInputTk) {
   SUCCEED();
 }
 
-TEST_F(SMP_Phase2LegacyTest, PhaseDestroyedWaitingForPasskeyDisplayTk) {
+TEST_F(Phase2LegacyTest, PhaseDestroyedWaitingForPasskeyDisplayTk) {
   Phase2LegacyArgs args;
   args.features.method = PairingMethod::kPasskeyEntryDisplay;
   NewPhase2Legacy(args);
@@ -455,7 +455,7 @@ TEST_F(SMP_Phase2LegacyTest, PhaseDestroyedWaitingForPasskeyDisplayTk) {
   SUCCEED();
 }
 
-TEST_F(SMP_Phase2LegacyTest, ReceiveRandomBeforeTkFails) {
+TEST_F(Phase2LegacyTest, ReceiveRandomBeforeTkFails) {
   // This test assumes initiator flow, but the behavior verified is the same for responder flow.
   FakeListener::ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate(
@@ -473,7 +473,7 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveRandomBeforeTkFails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2LegacyTest, ReceiveRandomBeforeConfirmFails) {
+TEST_F(Phase2LegacyTest, ReceiveRandomBeforeConfirmFails) {
   // This test assumes initiator flow, but the behavior verified is the same for responder flow.
   bool requested_confirmation = false;
   // We automatically confirm the TK to check the case where we have a TK, but no peer confirm.
@@ -491,7 +491,7 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveRandomBeforeConfirmFails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2LegacyTest, ReceivePairingFailed) {
+TEST_F(Phase2LegacyTest, ReceivePairingFailed) {
   phase_2_legacy()->Start();
   fake_chan()->Receive(
       StaticByteBuffer<PacketSize<ErrorCode>()>{kPairingFailed, ErrorCode::kPairingNotSupported});
@@ -502,7 +502,7 @@ TEST_F(SMP_Phase2LegacyTest, ReceivePairingFailed) {
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2LegacyTest, UnsupportedCommandDuringPairing) {
+TEST_F(Phase2LegacyTest, UnsupportedCommandDuringPairing) {
   // Don't confirm the TK so that the confirm value is not sent;
   listener()->set_confirm_delegate([](auto) {});
   phase_2_legacy()->Start();
@@ -514,7 +514,7 @@ TEST_F(SMP_Phase2LegacyTest, UnsupportedCommandDuringPairing) {
   EXPECT_EQ(ErrorCode::kCommandNotSupported, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase2LegacyTest, ReceiveMalformedPacket) {
+TEST_F(Phase2LegacyTest, ReceiveMalformedPacket) {
   phase_2_legacy()->Start();
   // clang-format off
   const StaticByteBuffer<PacketSize<PairingRandomValue>() - 1> kMalformedPairingRandom {
@@ -530,7 +530,7 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveMalformedPacket) {
   EXPECT_TRUE(ReceiveAndExpect(kMalformedPairingRandom, kExpectedFailure));
 }
 
-TEST_F(SMP_Phase2LegacyTest, ResponderJustWorksStkSucceeds) {
+TEST_F(Phase2LegacyTest, ResponderJustWorksStkSucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = false;
   args.features.method = PairingMethod::kJustWorks;
@@ -574,7 +574,7 @@ TEST_F(SMP_Phase2LegacyTest, ResponderJustWorksStkSucceeds) {
   ASSERT_EQ(generated_stk, stk());
 }
 
-TEST_F(SMP_Phase2LegacyTest, ResponderPasskeyInputStkSucceeds) {
+TEST_F(Phase2LegacyTest, ResponderPasskeyInputStkSucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = false;
   args.features.method = PairingMethod::kPasskeyEntryInput;
@@ -626,7 +626,7 @@ TEST_F(SMP_Phase2LegacyTest, ResponderPasskeyInputStkSucceeds) {
 
 // This test is shorter than ResponderPasskeyInputStkSucceeds because it only tests the code paths
 // that differ for PasskeyDisplay, which all take place before sending the Confirm value.
-TEST_F(SMP_Phase2LegacyTest, ResponderPasskeyDisplaySucceeds) {
+TEST_F(Phase2LegacyTest, ResponderPasskeyDisplaySucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = false;
   args.features.method = PairingMethod::kPasskeyEntryDisplay;
@@ -667,7 +667,7 @@ TEST_F(SMP_Phase2LegacyTest, ResponderPasskeyDisplaySucceeds) {
   ASSERT_TRUE(sent_payload.has_value());
 }
 
-TEST_F(SMP_Phase2LegacyTest, ResponderReceivesConfirmBeforeTkSucceeds) {
+TEST_F(Phase2LegacyTest, ResponderReceivesConfirmBeforeTkSucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = false;
   NewPhase2Legacy(args);
@@ -710,7 +710,7 @@ TEST_F(SMP_Phase2LegacyTest, ResponderReceivesConfirmBeforeTkSucceeds) {
   ASSERT_EQ(generated_stk, stk());
 }
 
-TEST_F(SMP_Phase2LegacyTest, ReceiveConfirmValueTwiceFails) {
+TEST_F(Phase2LegacyTest, ReceiveConfirmValueTwiceFails) {
   // This test uses the responder flow, but the behavior verified is the same for initiator flow.
   Phase2LegacyArgs args;
   args.features.initiator = false;
@@ -738,7 +738,7 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveConfirmValueTwiceFails) {
 
 // Phase 2 ends after receiving the second random value & subsequently sending its own, but if the
 // Phase 2 object is kept around and receives a second random value, pairing will fail.
-TEST_F(SMP_Phase2LegacyTest, ReceiveRandomValueTwiceFails) {
+TEST_F(Phase2LegacyTest, ReceiveRandomValueTwiceFails) {
   // This test uses the responder flow, but the behavior verified is the same for initiator flow.
   Phase2LegacyArgs args;
   args.features.initiator = false;

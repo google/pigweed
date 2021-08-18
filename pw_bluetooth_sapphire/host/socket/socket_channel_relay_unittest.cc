@@ -24,9 +24,9 @@ namespace {
 // We'll test the template just for L2CAP channels.
 using RelayT = SocketChannelRelay<l2cap::Channel>;
 
-class SOCKET_SocketChannelRelayTest : public ::testing::Test {
+class SocketChannelRelayTest : public ::testing::Test {
  public:
-  SOCKET_SocketChannelRelayTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
+  SocketChannelRelayTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
     EXPECT_EQ(ASYNC_LOOP_RUNNABLE, loop_.GetState());
 
     constexpr l2cap::ChannelId kDynamicChannelIdMin = 0x0040;
@@ -122,9 +122,9 @@ class SOCKET_SocketChannelRelayTest : public ::testing::Test {
   async::Loop loop_;
 };
 
-class SOCKET_SocketChannelRelayLifetimeTest : public SOCKET_SocketChannelRelayTest {
+class SocketChannelRelayLifetimeTest : public SocketChannelRelayTest {
  public:
-  SOCKET_SocketChannelRelayLifetimeTest()
+  SocketChannelRelayLifetimeTest()
       : was_deactivation_callback_invoked_(false),
         relay_(std::make_unique<RelayT>(ConsumeLocalSocket(), channel(),
                                         [this]() { was_deactivation_callback_invoked_ = true; })) {}
@@ -142,56 +142,56 @@ class SOCKET_SocketChannelRelayLifetimeTest : public SOCKET_SocketChannelRelayTe
   std::unique_ptr<RelayT> relay_;
 };
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, ActivateFailsIfGivenStoppedDispatcher) {
+TEST_F(SocketChannelRelayLifetimeTest, ActivateFailsIfGivenStoppedDispatcher) {
   ShutdownLoop();
   EXPECT_FALSE(relay()->Activate());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, ActivateDoesNotInvokeDeactivationCallbackOnSuccess) {
+TEST_F(SocketChannelRelayLifetimeTest, ActivateDoesNotInvokeDeactivationCallbackOnSuccess) {
   ASSERT_TRUE(relay()->Activate());
   EXPECT_FALSE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, ActivateDoesNotInvokeDeactivationCallbackOnFailure) {
+TEST_F(SocketChannelRelayLifetimeTest, ActivateDoesNotInvokeDeactivationCallbackOnFailure) {
   ShutdownLoop();
   ASSERT_FALSE(relay()->Activate());
   EXPECT_FALSE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, SocketIsClosedWhenRelayIsDestroyed) {
+TEST_F(SocketChannelRelayLifetimeTest, SocketIsClosedWhenRelayIsDestroyed) {
   const char data = kGoodChar;
   ASSERT_EQ(ZX_OK, remote_socket()->write(0, &data, sizeof(data), nullptr));
   DestroyRelay();
   EXPECT_EQ(ZX_ERR_PEER_CLOSED, remote_socket()->write(0, &data, sizeof(data), nullptr));
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, RelayIsDeactivatedWhenDispatcherIsShutDown) {
+TEST_F(SocketChannelRelayLifetimeTest, RelayIsDeactivatedWhenDispatcherIsShutDown) {
   ASSERT_TRUE(relay()->Activate());
 
   ShutdownLoop();
   EXPECT_TRUE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, RelayActivationFailsIfChannelActivationFails) {
+TEST_F(SocketChannelRelayLifetimeTest, RelayActivationFailsIfChannelActivationFails) {
   channel()->set_activate_fails(true);
   EXPECT_FALSE(relay()->Activate());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, DestructionWithPendingSdusFromChannelDoesNotCrash) {
+TEST_F(SocketChannelRelayLifetimeTest, DestructionWithPendingSdusFromChannelDoesNotCrash) {
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
   DestroyRelay();
   RunLoopUntilIdle();
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, RelayIsDeactivatedWhenChannelIsClosed) {
+TEST_F(SocketChannelRelayLifetimeTest, RelayIsDeactivatedWhenChannelIsClosed) {
   ASSERT_TRUE(relay()->Activate());
 
   channel()->Close();
   EXPECT_TRUE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, RelayIsDeactivatedWhenRemoteSocketIsClosed) {
+TEST_F(SocketChannelRelayLifetimeTest, RelayIsDeactivatedWhenRemoteSocketIsClosed) {
   ASSERT_TRUE(relay()->Activate());
 
   CloseRemoteSocket();
@@ -199,7 +199,7 @@ TEST_F(SOCKET_SocketChannelRelayLifetimeTest, RelayIsDeactivatedWhenRemoteSocket
   EXPECT_TRUE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest,
+TEST_F(SocketChannelRelayLifetimeTest,
        RelayIsDeactivatedWhenRemoteSocketIsClosedEvenWithPendingSocketData) {
   ASSERT_TRUE(relay()->Activate());
   ASSERT_TRUE(StuffSocket());
@@ -213,7 +213,7 @@ TEST_F(SOCKET_SocketChannelRelayLifetimeTest,
   EXPECT_TRUE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, OversizedDatagramDeactivatesRelay) {
+TEST_F(SocketChannelRelayLifetimeTest, OversizedDatagramDeactivatesRelay) {
   const size_t kMessageBufSize = channel()->max_tx_sdu_size() * 5;
   DynamicByteBuffer large_message(kMessageBufSize);
   large_message.Fill('a');
@@ -229,7 +229,7 @@ TEST_F(SOCKET_SocketChannelRelayLifetimeTest, OversizedDatagramDeactivatesRelay)
   EXPECT_TRUE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, SocketClosureAfterChannelClosureDoesNotHangOrCrash) {
+TEST_F(SocketChannelRelayLifetimeTest, SocketClosureAfterChannelClosureDoesNotHangOrCrash) {
   ASSERT_TRUE(relay()->Activate());
   channel()->Close();
   ASSERT_TRUE(was_deactivation_callback_invoked());
@@ -238,7 +238,7 @@ TEST_F(SOCKET_SocketChannelRelayLifetimeTest, SocketClosureAfterChannelClosureDo
   RunLoopUntilIdle();
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, ChannelClosureAfterSocketClosureDoesNotHangOrCrash) {
+TEST_F(SocketChannelRelayLifetimeTest, ChannelClosureAfterSocketClosureDoesNotHangOrCrash) {
   ASSERT_TRUE(relay()->Activate());
   CloseRemoteSocket();
   RunLoopUntilIdle();
@@ -247,7 +247,7 @@ TEST_F(SOCKET_SocketChannelRelayLifetimeTest, ChannelClosureAfterSocketClosureDo
   ASSERT_TRUE(was_deactivation_callback_invoked());
 }
 
-TEST_F(SOCKET_SocketChannelRelayLifetimeTest, DeactivationClosesSocket) {
+TEST_F(SocketChannelRelayLifetimeTest, DeactivationClosesSocket) {
   ASSERT_TRUE(relay()->Activate());
   channel()->Close();  // Triggers relay deactivation.
 
@@ -255,9 +255,9 @@ TEST_F(SOCKET_SocketChannelRelayLifetimeTest, DeactivationClosesSocket) {
   EXPECT_EQ(ZX_ERR_PEER_CLOSED, remote_socket()->write(0, &data, sizeof(data), nullptr));
 }
 
-class SOCKET_SocketChannelRelayDataPathTest : public SOCKET_SocketChannelRelayTest {
+class SocketChannelRelayDataPathTest : public SocketChannelRelayTest {
  public:
-  SOCKET_SocketChannelRelayDataPathTest()
+  SocketChannelRelayDataPathTest()
       : relay_(ConsumeLocalSocket(), channel(), nullptr /* deactivation_cb */) {
     channel()->SetSendCallback([&](auto data) { sent_to_channel_.push_back(std::move(data)); },
                                dispatcher());
@@ -273,7 +273,7 @@ class SOCKET_SocketChannelRelayDataPathTest : public SOCKET_SocketChannelRelayTe
 };
 
 // Fixture for tests which exercise the datapath from the controller.
-class SOCKET_SocketChannelRelayRxTest : public SOCKET_SocketChannelRelayDataPathTest {
+class SocketChannelRelayRxTest : public SocketChannelRelayDataPathTest {
  protected:
   DynamicByteBuffer ReadDatagramFromSocket(const size_t dgram_len) {
     DynamicByteBuffer socket_read_buffer(dgram_len + 1);  // +1 to detect trailing garbage.
@@ -288,7 +288,7 @@ class SOCKET_SocketChannelRelayRxTest : public SOCKET_SocketChannelRelayDataPath
   }
 };
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, MessageFromChannelIsCopiedToSocketSynchronously) {
+TEST_F(SocketChannelRelayRxTest, MessageFromChannelIsCopiedToSocketSynchronously) {
   const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage);
@@ -296,8 +296,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, MessageFromChannelIsCopiedToSocketSynchr
   EXPECT_TRUE(ContainersEqual(kExpectedMessage, ReadDatagramFromSocket(kExpectedMessage.size())));
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest,
-       MultipleSdusFromChannelAreCopiedToSocketPreservingSduBoundaries) {
+TEST_F(SocketChannelRelayRxTest, MultipleSdusFromChannelAreCopiedToSocketPreservingSduBoundaries) {
   const auto kExpectedMessage1 = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const auto kExpectedMessage2 = CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
   ASSERT_TRUE(relay()->Activate());
@@ -309,7 +308,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest,
   EXPECT_TRUE(ContainersEqual(kExpectedMessage2, ReadDatagramFromSocket(kExpectedMessage2.size())));
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, SduFromChannelIsCopiedToSocketWhenSocketUnblocks) {
+TEST_F(SocketChannelRelayRxTest, SduFromChannelIsCopiedToSocketWhenSocketUnblocks) {
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
@@ -323,7 +322,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, SduFromChannelIsCopiedToSocketWhenSocket
   EXPECT_TRUE(ContainersEqual(kExpectedMessage, ReadDatagramFromSocket(kExpectedMessage.size())));
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, CanQueueAndWriteMultipleSDUs) {
+TEST_F(SocketChannelRelayRxTest, CanQueueAndWriteMultipleSDUs) {
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
@@ -343,7 +342,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, CanQueueAndWriteMultipleSDUs) {
   EXPECT_TRUE(ContainersEqual(kExpectedMessage2, ReadDatagramFromSocket(kExpectedMessage2.size())));
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, CanQueueAndIncrementallyWriteMultipleSDUs) {
+TEST_F(SocketChannelRelayRxTest, CanQueueAndIncrementallyWriteMultipleSDUs) {
   // Find the socket buffer size.
   const size_t socket_buffer_size = StuffSocket();
   ASSERT_TRUE(DiscardFromSocket(socket_buffer_size));
@@ -402,7 +401,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, CanQueueAndIncrementallyWriteMultipleSDU
   EXPECT_EQ(0u, ReadDatagramFromSocket(1u).size()) << "Found unexpected datagram";
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, ZeroByteSDUsDropped) {
+TEST_F(SocketChannelRelayRxTest, ZeroByteSDUsDropped) {
   const auto kMessage1 = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   DynamicByteBuffer kMessageZero(0);
   const auto kMessage3 = CreateStaticByteBuffer('f', 'u', 'c', 'h', 's', 'i', 'a');
@@ -421,7 +420,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, ZeroByteSDUsDropped) {
   EXPECT_EQ(0u, ReadDatagramFromSocket(1u).size()) << "Found unexpected datagram";
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, OldestSDUIsDroppedOnOverflow) {
+TEST_F(SocketChannelRelayRxTest, OldestSDUIsDroppedOnOverflow) {
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
@@ -441,7 +440,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, OldestSDUIsDroppedOnOverflow) {
   EXPECT_TRUE(ContainersEqual(kSentMessage3, ReadDatagramFromSocket(kSentMessage3.size())));
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, SdusReceivedBeforeChannelActivationAreCopiedToSocket) {
+TEST_F(SocketChannelRelayRxTest, SdusReceivedBeforeChannelActivationAreCopiedToSocket) {
   const auto kExpectedMessage1 = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const auto kExpectedMessage2 = CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
   channel()->Receive(kExpectedMessage1);
@@ -454,7 +453,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, SdusReceivedBeforeChannelActivationAreCo
   EXPECT_TRUE(ContainersEqual(kExpectedMessage2, ReadDatagramFromSocket(kExpectedMessage2.size())));
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, SdusPendingAtChannelClosureAreCopiedToSocket) {
+TEST_F(SocketChannelRelayRxTest, SdusPendingAtChannelClosureAreCopiedToSocket) {
   ASSERT_TRUE(StuffSocket());
   ASSERT_TRUE(relay()->Activate());
 
@@ -482,7 +481,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, SdusPendingAtChannelClosureAreCopiedToSo
   EXPECT_TRUE(ContainersEqual(kExpectedMessage2, ReadDatagramFromSocket(1u)));
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest,
+TEST_F(SocketChannelRelayRxTest,
        ReceivingFromChannelBetweenSocketCloseAndCloseWaitTriggerDoesNotCrash) {
   // Note: we call Channel::Receive() first, to force FakeChannel to deliver the
   // SDU synchronously to the SocketChannelRelay. Asynchronous delivery could
@@ -493,7 +492,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest,
   ASSERT_TRUE(relay()->Activate());
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest,
+TEST_F(SocketChannelRelayRxTest,
        SocketCloseBetweenReceivingFromChannelAndSocketWritabilityDoesNotCrashOrHang) {
   ASSERT_TRUE(relay()->Activate());
 
@@ -507,7 +506,7 @@ TEST_F(SOCKET_SocketChannelRelayRxTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(SOCKET_SocketChannelRelayRxTest, NoDataFromChannelIsWrittenToSocketAfterDeactivation) {
+TEST_F(SocketChannelRelayRxTest, NoDataFromChannelIsWrittenToSocketAfterDeactivation) {
   ASSERT_TRUE(relay()->Activate());
 
   size_t n_junk_bytes = StuffSocket();
@@ -530,9 +529,9 @@ TEST_F(SOCKET_SocketChannelRelayRxTest, NoDataFromChannelIsWrittenToSocketAfterD
 
 // Alias for the fixture for tests which exercise the datapath to the
 // controller.
-using SOCKET_SocketChannelRelayTxTest = SOCKET_SocketChannelRelayDataPathTest;
+using SocketChannelRelayTxTest = SocketChannelRelayDataPathTest;
 
-TEST_F(SOCKET_SocketChannelRelayTxTest, SduFromSocketIsCopiedToChannel) {
+TEST_F(SocketChannelRelayTxTest, SduFromSocketIsCopiedToChannel) {
   const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
 
@@ -551,7 +550,7 @@ TEST_F(SOCKET_SocketChannelRelayTxTest, SduFromSocketIsCopiedToChannel) {
   EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[0]));
 }
 
-TEST_F(SOCKET_SocketChannelRelayTxTest, MultipleSdusFromSocketAreCopiedToChannel) {
+TEST_F(SocketChannelRelayTxTest, MultipleSdusFromSocketAreCopiedToChannel) {
   const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const size_t kNumMessages = 3;
   ASSERT_TRUE(relay()->Activate());
@@ -576,7 +575,7 @@ TEST_F(SOCKET_SocketChannelRelayTxTest, MultipleSdusFromSocketAreCopiedToChannel
   EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[2]));
 }
 
-TEST_F(SOCKET_SocketChannelRelayTxTest, MultipleSdusAreCopiedToChannelInOneRelayTask) {
+TEST_F(SocketChannelRelayTxTest, MultipleSdusAreCopiedToChannelInOneRelayTask) {
   const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const size_t kNumMessages = 3;
   ASSERT_TRUE(relay()->Activate());
@@ -603,7 +602,7 @@ TEST_F(SOCKET_SocketChannelRelayTxTest, MultipleSdusAreCopiedToChannelInOneRelay
   EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[2]));
 }
 
-TEST_F(SOCKET_SocketChannelRelayTxTest, OversizedSduIsDropped) {
+TEST_F(SocketChannelRelayTxTest, OversizedSduIsDropped) {
   const size_t kMessageBufSize = channel()->max_tx_sdu_size() * 5;
   DynamicByteBuffer large_message(kMessageBufSize);
   large_message.Fill(kGoodChar);
@@ -619,7 +618,7 @@ TEST_F(SOCKET_SocketChannelRelayTxTest, OversizedSduIsDropped) {
   ASSERT_TRUE(sent_to_channel().empty());
 }
 
-TEST_F(SOCKET_SocketChannelRelayTxTest, ValidSduAfterOversizedSduIsIgnored) {
+TEST_F(SocketChannelRelayTxTest, ValidSduAfterOversizedSduIsIgnored) {
   const auto kSentMsg = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
 
@@ -645,7 +644,7 @@ TEST_F(SOCKET_SocketChannelRelayTxTest, ValidSduAfterOversizedSduIsIgnored) {
   EXPECT_TRUE(sent_to_channel().empty());
 }
 
-TEST_F(SOCKET_SocketChannelRelayTxTest, NewSocketDataAfterChannelClosureIsNotSentToChannel) {
+TEST_F(SocketChannelRelayTxTest, NewSocketDataAfterChannelClosureIsNotSentToChannel) {
   ASSERT_TRUE(relay()->Activate());
   channel()->Close();
 

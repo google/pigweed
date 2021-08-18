@@ -80,7 +80,7 @@ ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
   //
   // We skip step 1 (validation of the Channel ID), as a frame with an
   // unrecognized Channel ID will not be delivered to us. (Various
-  // L2CAP_ChannelManagerTest test cases verify that LogicalLink directs frames
+  // ChannelManagerTest test cases verify that LogicalLink directs frames
   // to their proper channels.)
   //
   // We skip step 2 (validation of FCS), as we don't support FCS.

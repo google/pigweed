@@ -20,13 +20,13 @@ constexpr UUID kTestType4(uint16_t{0x0004});
 
 const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
-TEST(ATT_AttributeDeathTest, OverflowingMaxHandleOnAttributeGroupDies) {
+TEST(AttributeDeathTest, OverflowingMaxHandleOnAttributeGroupDies) {
   ASSERT_DEATH_IF_SUPPORTED(
       { AttributeGrouping A(kTestType1, kHandleMax - 1, size_t{2}, kTestValue); },
       ".*attr_count.*");
 }
 
-TEST(ATT_AttributeTest, AccessRequirementsDefault) {
+TEST(AttributeTest, AccessRequirementsDefault) {
   AccessRequirements reqs;
   EXPECT_FALSE(reqs.allowed());
   EXPECT_FALSE(reqs.encryption_required());
@@ -34,7 +34,7 @@ TEST(ATT_AttributeTest, AccessRequirementsDefault) {
   EXPECT_FALSE(reqs.authorization_required());
 }
 
-TEST(ATT_AttributeTest, AccessRequirements) {
+TEST(AttributeTest, AccessRequirements) {
   AccessRequirements reqs0(true, false, false);
   EXPECT_TRUE(reqs0.allowed());
   EXPECT_TRUE(reqs0.encryption_required());
@@ -68,7 +68,7 @@ TEST(ATT_AttributeTest, AccessRequirements) {
   EXPECT_FALSE(reqs4.authorization_required());
 }
 
-TEST(ATT_AttributeTest, GroupingDeclAttr) {
+TEST(AttributeTest, GroupingDeclAttr) {
   constexpr size_t kAttrCount = 0u;
 
   AttributeGrouping group(kTestType1, kTestHandle, kAttrCount, kTestValue);
@@ -96,7 +96,7 @@ TEST(ATT_AttributeTest, GroupingDeclAttr) {
   EXPECT_EQ(&group, &decl_attr.group());
 }
 
-TEST(ATT_AttributeTest, GroupingAddAttribute) {
+TEST(AttributeTest, GroupingAddAttribute) {
   constexpr size_t kAttrCount = 2;
 
   AttributeGrouping group(kTestType1, kTestHandle, kAttrCount, kTestValue);
@@ -131,13 +131,13 @@ TEST(ATT_AttributeTest, GroupingAddAttribute) {
   EXPECT_FALSE(group.AddAttribute(kTestType4, AccessRequirements(), AccessRequirements()));
 }
 
-TEST(ATT_AttributeTest, ReadAsyncReadNotAllowed) {
+TEST(AttributeTest, ReadAsyncReadNotAllowed) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, [](auto, const auto&) {}));
 }
 
-TEST(ATT_AttributeTest, ReadAsyncReadNoHandler) {
+TEST(AttributeTest, ReadAsyncReadNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
       group.AddAttribute(kTestType2, AccessRequirements(false, false, false),  // read (no security)
@@ -145,7 +145,7 @@ TEST(ATT_AttributeTest, ReadAsyncReadNoHandler) {
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, [](auto, const auto&) {}));
 }
 
-TEST(ATT_AttributeTest, ReadAsync) {
+TEST(AttributeTest, ReadAsync) {
   constexpr uint16_t kTestOffset = 5;
   constexpr ErrorCode kTestStatus = ErrorCode::kNoError;
 
@@ -175,13 +175,13 @@ TEST(ATT_AttributeTest, ReadAsync) {
   EXPECT_TRUE(callback_called);
 }
 
-TEST(ATT_AttributeTest, WriteAsyncWriteNotAllowed) {
+TEST(AttributeTest, WriteAsyncWriteNotAllowed) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
   EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
-TEST(ATT_AttributeTest, WriteAsyncWriteNoHandler) {
+TEST(AttributeTest, WriteAsyncWriteNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr =
       group.AddAttribute(kTestType2,
@@ -190,7 +190,7 @@ TEST(ATT_AttributeTest, WriteAsyncWriteNoHandler) {
   EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
-TEST(ATT_AttributeTest, WriteAsync) {
+TEST(AttributeTest, WriteAsync) {
   constexpr uint16_t kTestOffset = 5;
   constexpr ErrorCode kTestStatus = ErrorCode::kNoError;
 

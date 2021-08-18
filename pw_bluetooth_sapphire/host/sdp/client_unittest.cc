@@ -18,10 +18,10 @@ using TestingBase = bt::l2cap::testing::FakeChannelTest;
 constexpr l2cap::ChannelId kTestChannelId = 0x0041;
 constexpr uint16_t kResponseMaxSize = 672;
 
-class SDP_ClientTest : public TestingBase {
+class ClientTest : public TestingBase {
  public:
-  SDP_ClientTest() = default;
-  ~SDP_ClientTest() = default;
+  ClientTest() = default;
+  ~ClientTest() = default;
 
  protected:
   void SetUp() override {
@@ -43,7 +43,7 @@ class SDP_ClientTest : public TestingBase {
 //  - receives response in the callback
 //  - receives kNotFound at the end of the callbacks
 //  - closes SDP channel when client is deallocated
-TEST_F(SDP_ClientTest, ConnectAndQuery) {
+TEST_F(ClientTest, ConnectAndQuery) {
   {
     auto client = Client::Create(channel());
 
@@ -137,7 +137,7 @@ TEST_F(SDP_ClientTest, ConnectAndQuery) {
   EXPECT_FALSE(fake_chan()->activated());
 }
 
-TEST_F(SDP_ClientTest, TwoQueriesSubsequent) {
+TEST_F(ClientTest, TwoQueriesSubsequent) {
   {
     auto client = Client::Create(channel());
 
@@ -213,7 +213,7 @@ TEST_F(SDP_ClientTest, TwoQueriesSubsequent) {
   EXPECT_FALSE(fake_chan()->activated());
 }
 
-TEST_F(SDP_ClientTest, TwoQueriesQueued) {
+TEST_F(ClientTest, TwoQueriesQueued) {
   {
     auto client = Client::Create(channel());
 
@@ -297,7 +297,7 @@ TEST_F(SDP_ClientTest, TwoQueriesQueued) {
 //  - receives the continued response
 //  - responds with the results
 //  - gives up when callback returns false
-TEST_F(SDP_ClientTest, ContinuingResponseRequested) {
+TEST_F(ClientTest, ContinuingResponseRequested) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
@@ -372,7 +372,7 @@ TEST_F(SDP_ClientTest, ContinuingResponseRequested) {
 //  - send correctly formatted request
 //  - receives response with no results
 //  - callback with no results (kNotFound right away)
-TEST_F(SDP_ClientTest, NoResults) {
+TEST_F(ClientTest, NoResults) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
@@ -434,7 +434,7 @@ TEST_F(SDP_ClientTest, NoResults) {
 //  - send request
 //  - remote end disconnects
 //  - result should be called with kLinkDisconnected
-TEST_F(SDP_ClientTest, Disconnected) {
+TEST_F(ClientTest, Disconnected) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
@@ -492,7 +492,7 @@ TEST_F(SDP_ClientTest, Disconnected) {
 //  - remote end sends wrong packet type in response (dropped)
 //  - remote end sends invalid response
 //  - callback receives no response with a malformed packet error
-TEST_F(SDP_ClientTest, InvalidResponse) {
+TEST_F(ClientTest, InvalidResponse) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
@@ -550,7 +550,7 @@ TEST_F(SDP_ClientTest, InvalidResponse) {
 }
 
 // Time out (or possibly dropped packets that were malformed)
-TEST_F(SDP_ClientTest, Timeout) {
+TEST_F(ClientTest, Timeout) {
   constexpr uint32_t kTimeoutMs = 10000;
   auto client = Client::Create(channel());
 

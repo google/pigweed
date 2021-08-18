@@ -230,7 +230,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
 using GAP_LowEnergyDiscoveryManagerTest = LowEnergyDiscoveryManagerTest;
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
@@ -252,7 +252,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
   // Start discovery but don't acquire ownership of the received session. This
   // should immediately terminate the session.
   std::unique_ptr<LowEnergyDiscoverySession> session;
@@ -275,7 +275,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, Destructor) {
+TEST_F(LowEnergyDiscoveryManagerTest, Destructor) {
   // Start discovery with a session, delete the manager and ensure that the
   // session is inactive with the error callback called.
   std::unique_ptr<LowEnergyDiscoverySession> session;
@@ -298,7 +298,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, Destructor) {
   EXPECT_FALSE(session->alive());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
   // Start discovery but don't acquire ownership of the received session. This
   // should terminate the session when |session| goes out of scope.
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) {});
@@ -309,7 +309,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
   EXPECT_FALSE(scan_states()[1]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
   test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
                                           hci::StatusCode::kCommandDisallowed);
 
@@ -320,7 +320,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
   std::vector<std::unique_ptr<LowEnergyDiscoverySession>> sessions;
 
   constexpr size_t kExpectedSessionCount = 5;
@@ -363,7 +363,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStart) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStart) {
   std::vector<std::unique_ptr<LowEnergyDiscoverySession>> sessions;
 
   constexpr size_t kExpectedSessionCount = 5;
@@ -387,7 +387,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStart) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStartAndStopInCallback) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStartAndStopInCallback) {
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
   std::unique_ptr<LowEnergyDiscoverySession> session;
@@ -418,7 +418,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStartAndStop
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
 
   discovery_manager()->StartDiscovery(
@@ -445,7 +445,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
   EXPECT_TRUE(scan_states()[2]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
   test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
                                           hci::StatusCode::kCommandDisallowed);
 
@@ -465,7 +465,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestart) {
+TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestart) {
   constexpr size_t kNumScanStates = 3;
 
   discovery_manager()->set_scan_period(kTestScanPeriod);
@@ -486,7 +486,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestart) {
   EXPECT_TRUE(scan_states()[2]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
+TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
   constexpr size_t kNumScanStates = 2;
 
   discovery_manager()->set_scan_period(kTestScanPeriod);
@@ -518,7 +518,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
   EXPECT_TRUE(session_error);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
+TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
   constexpr size_t kNumScanStates = 4;
 
   discovery_manager()->set_scan_period(kTestScanPeriod);
@@ -547,7 +547,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true, false));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) {
+TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) {
   constexpr size_t kNumScanStates = 2;
 
   // Set a very short scan period for the sake of the test.
@@ -577,7 +577,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) 
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) {
+TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) {
   constexpr size_t kNumScanPeriodRestartStates = 3;
   constexpr size_t kTotalNumStates = 5;
 
@@ -615,7 +615,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) 
   EXPECT_TRUE(scan_states()[2]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   AddFakePeers();
 
   std::vector<std::unique_ptr<LowEnergyDiscoverySession>> sessions;
@@ -700,7 +700,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 #undef EXPECT_CONTAINS
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNotifications) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNotifications) {
   AddFakePeers();
 
   std::vector<std::unique_ptr<LowEnergyDiscoverySession>> sessions;
@@ -788,7 +788,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNot
 #undef EXPECT_CONTAINS
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
+TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
   auto fake_peer = std::make_unique<FakePeer>(kAddress0, /*connectable=*/true, /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
@@ -813,7 +813,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPee
   EXPECT_EQ(0, passive_count);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnectablePeer) {
+TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnectablePeer) {
   auto fake_peer =
       std::make_unique<FakePeer>(kAddress0, /*connectable=*/false, /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
@@ -841,7 +841,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonCo
   EXPECT_EQ(1, passive_count);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectablePeer) {
+TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectablePeer) {
   auto fake_peer = std::make_unique<FakePeer>(kAddress0, /*connectable=*/true, /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
@@ -874,7 +874,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConne
   EXPECT_EQ(1, passive_count);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDualMode) {
+TEST_F(LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDualMode) {
   Peer* peer = peer_cache()->NewPeer(kAddrAlias0, true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(peer, peer_cache()->FindByAddress(kAddress0));
@@ -899,7 +899,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDual
   EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScan) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScan) {
   ASSERT_FALSE(test_device()->le_scan_state().enabled);
 
   auto session = StartDiscoverySession(/*active=*/false);
@@ -913,7 +913,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScan) {
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
   ASSERT_FALSE(test_device()->le_scan_state().enabled);
 
   // Session will be destroyed in callback, stopping scan.
@@ -939,7 +939,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
+TEST_F(LowEnergyDiscoveryManagerTest,
        EnablePassiveScanDuringActiveScanAndDisableActiveScanCausesDowngrade) {
   auto active_session = StartDiscoverySession();
   ASSERT_TRUE(active_session);
@@ -965,7 +965,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisablePassiveScanDuringActiveScan) {
+TEST_F(LowEnergyDiscoveryManagerTest, DisablePassiveScanDuringActiveScan) {
   auto active_session = StartDiscoverySession();
   ASSERT_TRUE(active_session);
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
@@ -996,7 +996,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisablePassiveScanDuringActiveScan) {
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
   auto passive_session = StartDiscoverySession(false);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
@@ -1015,7 +1015,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanWhileStartingPassiveScan) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanWhileStartingPassiveScan) {
   std::unique_ptr<LowEnergyDiscoverySession> passive_session;
   discovery_manager()->StartDiscovery(/*active=*/false, [&](auto cb_session) {
     ZX_ASSERT(cb_session);
@@ -1045,7 +1045,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanWhileStartingPassiveSca
 // Emulate a number of connectable and non-connectable advertisers in both undirected connectable
 // and directed connectable modes. This test is to ensure that the only peers notified during a
 // passive scan are from connectable peers that are already in the cache.
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
+TEST_F(LowEnergyDiscoveryManagerTest,
        PeerConnectableCallbackOnlyHandlesEventsFromKnownConnectableDevices) {
   // Address 0: undirected connectable; added to cache below
   {
@@ -1108,7 +1108,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_EQ(4u, peer_cache()->count());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, PassiveScanPeriodRestart) {
+TEST_F(LowEnergyDiscoveryManagerTest, PassiveScanPeriodRestart) {
   discovery_manager()->set_scan_period(kTestScanPeriod);
   auto session = StartDiscoverySession(/*active=*/false);
 
@@ -1125,7 +1125,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PassiveScanPeriodRestart) {
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
+TEST_F(LowEnergyDiscoveryManagerTest,
        PauseActiveDiscoveryTwiceKeepsScanningDisabledUntilBothPauseTokensDestroyed) {
   auto session = StartDiscoverySession();
   EXPECT_TRUE(scan_enabled());
@@ -1151,7 +1151,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_TRUE(discovery_manager()->discovering());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnablePassiveScanAfterPausing) {
+TEST_F(LowEnergyDiscoveryManagerTest, EnablePassiveScanAfterPausing) {
   std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
@@ -1168,7 +1168,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnablePassiveScanAfterPausing) {
   EXPECT_TRUE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanAfterPausing) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanAfterPausing) {
   std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
@@ -1186,7 +1186,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanAfterPausing) {
   EXPECT_TRUE(session);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanComplete) {
+TEST_F(LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanComplete) {
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
   auto session = StartDiscoverySession();
@@ -1204,7 +1204,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanComplete) 
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanStopped) {
+TEST_F(LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanStopped) {
   auto session = StartDiscoverySession();
   EXPECT_TRUE(scan_enabled());
 
@@ -1221,7 +1221,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanStopped) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanActive) {
+TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanActive) {
   // Pause discovery in FakeController scan state callback to ensure it is called just before
   // kActive status is received. This will be the first scan state change.
   std::optional<PauseToken> pause;
@@ -1247,7 +1247,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanActive) {
   EXPECT_TRUE(discovery_manager()->discovering());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
+TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
   // Pause discovery in FakeController scan state callback to ensure it is called just before
   // kPassive status is received. This will be the first scan state change.
   std::optional<PauseToken> pause;
@@ -1270,7 +1270,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
   EXPECT_TRUE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
+TEST_F(LowEnergyDiscoveryManagerTest,
        StartActiveScanWhilePassiveScanStoppingBetweenScanPeriods) {
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
@@ -1287,7 +1287,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StopSessionInsideOfResultCallbackDoesNotCrash) {
+TEST_F(LowEnergyDiscoveryManagerTest, StopSessionInsideOfResultCallbackDoesNotCrash) {
   auto session = StartDiscoverySession(/*active=*/false);
   auto result_cb = [&session](const auto& peer) { session->Stop(); };
   session->SetResultCallback(std::move(result_cb));
@@ -1297,7 +1297,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StopSessionInsideOfResultCallbackDoesN
   RunLoopUntilIdle();
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable) {
+TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable) {
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, /*connectable=*/false));
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
@@ -1329,7 +1329,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnect
   EXPECT_TRUE(peer->connectable());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, Inspect) {
+TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
   // Ensure node exists before testing properties.
   ASSERT_THAT(InspectHierarchy(), AllOf(ChildrenMatch(ElementsAre(NodeMatches(
                                       AllOf(NameMatches(std::string(kInspectNodeName))))))));
@@ -1380,7 +1380,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, Inspect) {
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({UintIs("failed_count", 1u)}));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
+TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
   auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer_0));
   Peer* peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);

@@ -14,7 +14,7 @@
 namespace bt::sm {
 namespace {
 
-TEST(SMP_EcdhKeyTest, ParseSerializedKey) {
+TEST(EcdhKeyTest, ParseSerializedKey) {
   // Debug ECDH key given in V5.1 Vol. 3 Part H Section 2.3.5.6.1
   const UInt256 kDebugPubKeyX{0xE6, 0x9D, 0x35, 0x0E, 0x48, 0x01, 0x03, 0xCC, 0xDB, 0xFD, 0xF4,
                               0xAC, 0x11, 0x91, 0xF4, 0xEF, 0xB9, 0xA5, 0xF9, 0xE9, 0xA7, 0x83,
@@ -37,7 +37,7 @@ TEST(SMP_EcdhKeyTest, ParseSerializedKey) {
   ASSERT_EQ(kDebugPubKeyY, new_key->GetPublicKeyY());
 }
 
-TEST(SMP_EcdhKeyTest, PointOffP256CurveXValueParsesToNullopt) {
+TEST(EcdhKeyTest, PointOffP256CurveXValueParsesToNullopt) {
   // These values come from the debug ECDH key in V5.1 Vol. 3 Part H Section 2.3.5.6.1 (converted
   // to little-endian). The debug ECDH key values are on the P-256 curve, but by changing only the
   // X-coordinate's most-significant byte from 0x20 to 0x00, we create a point off the P-256 curve.
@@ -52,7 +52,7 @@ TEST(SMP_EcdhKeyTest, PointOffP256CurveXValueParsesToNullopt) {
   ASSERT_EQ(new_key, std::nullopt);
 }
 
-TEST(SMP_EcdhKeyTest, PointOffP256CurveYValueParsesToNullopt) {
+TEST(EcdhKeyTest, PointOffP256CurveYValueParsesToNullopt) {
   // These values come from the debug ECDH key in V5.1 Vol. 3 Part H Section 2.3.5.6.1 (converted
   // to little-endian). The debug ECDH key values are on the P-256 curve, but by changing only the
   // Y-coordinate's most-significant byte from 0xDC to 0x00, we create a point off the P-256 curve.
@@ -67,7 +67,7 @@ TEST(SMP_EcdhKeyTest, PointOffP256CurveYValueParsesToNullopt) {
   ASSERT_EQ(new_key, std::nullopt);
 }
 
-TEST(SMP_EcdhKeyTest, CreateGivesValidKey) {
+TEST(EcdhKeyTest, CreateGivesValidKey) {
   std::optional<LocalEcdhKey> new_key = LocalEcdhKey::Create();
   ASSERT_TRUE(new_key.has_value());
   auto serialized_pub_key = new_key->GetSerializedPublicKey();
@@ -82,7 +82,7 @@ TEST(SMP_EcdhKeyTest, CreateGivesValidKey) {
 // Local private key is dIUT value, Peer X and Y are taken from QCAVSx and QCAVSy, ExpectedDHKey
 // is ZIUT. The examples are given in human-readable big-endian format, but here we've converted
 // them to little-endian format for consistency with the bt-host stack.
-TEST(SMP_EcdhKeyTest, CalculateDhKeyWorks) {
+TEST(EcdhKeyTest, CalculateDhKeyWorks) {
   std::optional<LocalEcdhKey> local_key = LocalEcdhKey::Create();
   ASSERT_TRUE(local_key.has_value());
   const UInt256 kSamplePrivateKey{0x34, 0xA5, 0xC1, 0x2B, 0xB6, 0xAD, 0x0B, 0xD8, 0x2E, 0xD2, 0xB6,
@@ -107,7 +107,7 @@ TEST(SMP_EcdhKeyTest, CalculateDhKeyWorks) {
   ASSERT_EQ(kExpectedDhKey, dhkey);
 }
 
-TEST(SMP_EcdhKeyTest, PublicKeyXAndYComparisonSameKey) {
+TEST(EcdhKeyTest, PublicKeyXAndYComparisonSameKey) {
   // Debug ECDH key given in V5.1 Vol. 3 Part H Section 2.3.5.6.1, converted to little-endian.
   const sm::PairingPublicKeyParams kSerializedKey{
       .x = {0xE6, 0x9D, 0x35, 0x0E, 0x48, 0x01, 0x03, 0xCC, 0xDB, 0xFD, 0xF4,
@@ -124,7 +124,7 @@ TEST(SMP_EcdhKeyTest, PublicKeyXAndYComparisonSameKey) {
   ASSERT_EQ(ecdh_key->GetPublicKeyY(), same_ecdh_key->GetPublicKeyY());
 }
 
-TEST(SMP_EcdhKeyTest, PublicKeyXAndYComparisonDifferentKeys) {
+TEST(EcdhKeyTest, PublicKeyXAndYComparisonDifferentKeys) {
   // Debug ECDH key given in V5.1 Vol. 3 Part H Section 2.3.5.6.1, converted to little-endian.
   const sm::PairingPublicKeyParams kSpecSampleSerializedKey{
       .x = {0xE6, 0x9D, 0x35, 0x0E, 0x48, 0x01, 0x03, 0xCC, 0xDB, 0xFD, 0xF4,

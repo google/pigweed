@@ -28,10 +28,10 @@ const bt::UUID kServiceUuid(uint16_t{0x180D});
 const bt::UUID kCharacteristicUuid(uint16_t{0x180E});
 const bt::UUID kDescriptorUuid(uint16_t{0x180F});
 
-class FIDL_Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
+class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
-  FIDL_Gatt2RemoteServiceServerTest() = default;
-  ~FIDL_Gatt2RemoteServiceServerTest() override = default;
+  Gatt2RemoteServiceServerTest() = default;
+  ~Gatt2RemoteServiceServerTest() override = default;
 
   void SetUp() override {
     {
@@ -74,10 +74,10 @@ class FIDL_Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTes
   fbl::RefPtr<bt::gatt::RemoteService> service_;
   fxl::WeakPtr<bt::gatt::testing::FakeClient> fake_client_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(FIDL_Gatt2RemoteServiceServerTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(Gatt2RemoteServiceServerTest);
 };
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverCharacteristics) {
+TEST_F(Gatt2RemoteServiceServerTest, DiscoverCharacteristics) {
   bt::gatt::Properties properties =
       static_cast<bt::gatt::Properties>(bt::gatt::Property::kAuthenticatedSignedWrites) |
       static_cast<bt::gatt::Properties>(bt::gatt::Property::kExtendedProperties);
@@ -131,7 +131,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverCharacteristics) {
   EXPECT_FALSE(fidl_descriptor.has_permissions());
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverCharacteristicsWithNoDescriptors) {
+TEST_F(Gatt2RemoteServiceServerTest, DiscoverCharacteristicsWithNoDescriptors) {
   bt::gatt::Properties properties = 0;
   bt::gatt::ExtendedProperties ext_properties = 0;
   constexpr bt::att::Handle kCharacteristicHandle(kServiceStartHandle + 1);
@@ -151,7 +151,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverCharacteristicsWithNoDescripto
   EXPECT_FALSE(fidl_characteristic.has_descriptors());
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeSuccess) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeSuccess) {
   constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr bt::att::Handle kHandle = kServiceStartHandle;
@@ -202,7 +202,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeSuccess) {
   EXPECT_TRUE(ContainersEqual(bt::BufferView(value.data(), value.size()), kValue));
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeResultPermissionError) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeResultPermissionError) {
   constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
@@ -230,7 +230,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeResultPermissionError) {
   EXPECT_EQ(fbg::Error::INSUFFICIENT_AUTHORIZATION, result0.error());
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
   constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
@@ -257,7 +257,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
   EXPECT_EQ(fbg::Error::FAILURE, err);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeInvalidUuid) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeInvalidUuid) {
   constexpr bt::UUID kCharUuid = bt::gatt::types::kCharacteristicDeclaration;
 
   fake_client()->set_read_by_type_request_callback([&](const bt::UUID& type, bt::att::Handle start,
@@ -275,7 +275,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeInvalidUuid) {
   EXPECT_EQ(fbg::Error::INVALID_PARAMETERS, err);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
   constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
   const auto value = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06);
 
@@ -312,7 +312,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
   EXPECT_EQ(fbg::Error::TOO_MANY_RESULTS, err);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadShortCharacteristic) {
+TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadShortCharacteristic) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
@@ -352,7 +352,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadShortCharacteristic) {
   EXPECT_FALSE(read_value.maybe_truncated());
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadLongCharacteristicWithOffsetAndMaxBytes) {
+TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadLongCharacteristicWithOffsetAndMaxBytes) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04, 0x05);
@@ -400,7 +400,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadLongCharacteristicWithO
   EXPECT_TRUE(read_value.maybe_truncated());
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadCharacteristicHandleTooLarge) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadCharacteristicHandleTooLarge) {
   fbg::Handle handle;
   handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
 
@@ -415,7 +415,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadCharacteristicHandleTooLarge) {
 }
 
 // Trying to read a characteristic that doesn't exist should return a FAILURE error.
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadCharacteristicFailure) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadCharacteristicFailure) {
   constexpr bt::att::Handle kHandle = 3;
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
   std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
@@ -427,7 +427,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadCharacteristicFailure) {
   EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadShortDescriptor) {
+TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadShortDescriptor) {
   constexpr bt::att::Handle kCharacteristicHandle = 2;
   constexpr bt::att::Handle kCharacteristicValueHandle = 3;
   constexpr bt::att::Handle kDescriptorHandle = 4;
@@ -474,7 +474,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadShortDescriptor) {
   EXPECT_FALSE(read_value.maybe_truncated());
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadLongDescriptorWithOffsetAndMaxBytes) {
+TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadLongDescriptorWithOffsetAndMaxBytes) {
   constexpr bt::att::Handle kCharacteristicHandle = 2;
   constexpr bt::att::Handle kCharacteristicValueHandle = 3;
   constexpr bt::att::Handle kDescriptorHandle = 4;
@@ -530,7 +530,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, DiscoverAndReadLongDescriptorWithOffse
   EXPECT_TRUE(read_value.maybe_truncated());
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadDescriptorHandleTooLarge) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadDescriptorHandleTooLarge) {
   fbg::Handle handle;
   handle.value = static_cast<uint64_t>(std::numeric_limits<bt::att::Handle>::max()) + 1;
 
@@ -545,7 +545,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadDescriptorHandleTooLarge) {
 }
 
 // Trying to read a descriptor that doesn't exist should return a FAILURE error.
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadDescriptorFailure) {
+TEST_F(Gatt2RemoteServiceServerTest, ReadDescriptorFailure) {
   constexpr bt::att::Handle kHandle = 3;
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
   std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
@@ -557,7 +557,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, ReadDescriptorFailure) {
   EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteCharacteristicHandleTooLarge) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicHandleTooLarge) {
   fbg::Handle handle;
   handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
 
@@ -570,7 +570,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteCharacteristicHandleTooLarge) {
   EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_HANDLE);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest,
+TEST_F(Gatt2RemoteServiceServerTest,
        WriteCharacteristicWithoutResponseAndNonZeroOffsetReturnsError) {
   fbg::Handle handle;
   handle.value = 3;
@@ -586,7 +586,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest,
   EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_PARAMETERS);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponse) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponse) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
@@ -625,7 +625,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponse) {
   EXPECT_EQ(write_count, 1);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponseValueTooLong) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponseValueTooLong) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   ASSERT_EQ(fake_client()->mtu(), bt::att::kLEMinMTU);
@@ -667,7 +667,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponseValu
   EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortCharacteristic) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristic) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
@@ -704,7 +704,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortCharacteristic) {
   EXPECT_EQ(write_count, 1);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithNonZeroOffset) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithNonZeroOffset) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
@@ -747,7 +747,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithNonZeroOff
   EXPECT_EQ(write_count, 1);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithReliableMode) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithReliableMode) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04);
@@ -789,7 +789,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithReliableMo
   EXPECT_EQ(write_count, 1);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteLongCharacteristicDefaultOptions) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteLongCharacteristicDefaultOptions) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kValueHandle = kHandle + 1;
   constexpr size_t kHeaderSize =
@@ -840,7 +840,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteLongCharacteristicDefaultOptions)
   EXPECT_EQ(write_count, 1);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorHandleTooLarge) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteDescriptorHandleTooLarge) {
   fbg::Handle handle;
   handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
 
@@ -853,7 +853,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorHandleTooLarge) {
   EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_HANDLE);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorWithoutResponseNotSupported) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteDescriptorWithoutResponseNotSupported) {
   constexpr bt::att::Handle kHandle = 3;
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::WITHOUT_RESPONSE);
@@ -867,7 +867,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorWithoutResponseNotSuppo
   EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_PARAMETERS);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorReliableNotSupported) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteDescriptorReliableNotSupported) {
   constexpr bt::att::Handle kHandle = 3;
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::RELIABLE);
@@ -881,7 +881,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteDescriptorReliableNotSupported) {
   EXPECT_EQ(fidl_result->error(), fbg::Error::INVALID_PARAMETERS);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortDescriptor) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteShortDescriptor) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kCharacteristicValueHandle = kHandle + 1;
   bt::gatt::CharacteristicData char_data(bt::gatt::Property::kWrite, std::nullopt, kHandle,
@@ -924,7 +924,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortDescriptor) {
   EXPECT_EQ(write_count, 1);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortDescriptorWithNonZeroOffset) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteShortDescriptorWithNonZeroOffset) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kCharacteristicValueHandle = kHandle + 1;
   bt::gatt::CharacteristicData char_data(bt::gatt::Property::kWrite, std::nullopt, kHandle,
@@ -974,7 +974,7 @@ TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteShortDescriptorWithNonZeroOffset)
   EXPECT_EQ(write_count, 1);
 }
 
-TEST_F(FIDL_Gatt2RemoteServiceServerTest, WriteLongDescriptorDefaultOptions) {
+TEST_F(Gatt2RemoteServiceServerTest, WriteLongDescriptorDefaultOptions) {
   constexpr bt::att::Handle kHandle = 3;
   constexpr bt::att::Handle kCharacteristicValueHandle = kHandle + 1;
   bt::gatt::CharacteristicData char_data(bt::gatt::Property::kWrite, std::nullopt, kHandle,
@@ -1064,10 +1064,10 @@ class FakeCharacteristicNotifier : public fbg::testing::CharacteristicNotifier_T
 };
 
 class Gatt2RemoteServiceServerCharacteristicNotifierTest
-    : public FIDL_Gatt2RemoteServiceServerTest {
+    : public Gatt2RemoteServiceServerTest {
  public:
   void SetUp() override {
-    FIDL_Gatt2RemoteServiceServerTest::SetUp();
+    Gatt2RemoteServiceServerTest::SetUp();
     bt::gatt::CharacteristicData characteristic(bt::gatt::Property::kNotify,
                                                 /*ext_props=*/std::nullopt, char_handle_,
                                                 char_value_handle_, kCharacteristicUuid);

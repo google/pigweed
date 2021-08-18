@@ -75,10 +75,10 @@ class TestSignalingChannel : public SignalingChannel {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestSignalingChannel);
 };
 
-class L2CAP_SignalingChannelTest : public testing::FakeChannelTest {
+class SignalingChannelTest : public testing::FakeChannelTest {
  public:
-  L2CAP_SignalingChannelTest() = default;
-  ~L2CAP_SignalingChannelTest() override = default;
+  SignalingChannelTest() = default;
+  ~SignalingChannelTest() override = default;
 
  protected:
   void SetUp() override {
@@ -106,10 +106,10 @@ class L2CAP_SignalingChannelTest : public testing::FakeChannelTest {
   // Own the fake channel so that its lifetime can span beyond that of |sig_|.
   fbl::RefPtr<Channel> fake_channel_inst_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_SignalingChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannelTest);
 };
 
-TEST_F(L2CAP_SignalingChannelTest, IgnoreEmptyFrame) {
+TEST_F(SignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
@@ -120,7 +120,7 @@ TEST_F(L2CAP_SignalingChannelTest, IgnoreEmptyFrame) {
   EXPECT_FALSE(send_cb_called);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, Reject) {
+TEST_F(SignalingChannelTest, Reject) {
   constexpr uint8_t kTestId = 14;
 
   // Command Reject packet.
@@ -142,7 +142,7 @@ TEST_F(L2CAP_SignalingChannelTest, Reject) {
   EXPECT_TRUE(ReceiveAndExpect(cmd, expected));
 }
 
-TEST_F(L2CAP_SignalingChannelTest, RejectCommandCodeZero) {
+TEST_F(SignalingChannelTest, RejectCommandCodeZero) {
   constexpr uint8_t kTestId = 14;
 
   // Command Reject packet.
@@ -164,7 +164,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectCommandCodeZero) {
   EXPECT_TRUE(ReceiveAndExpect(cmd, expected));
 }
 
-TEST_F(L2CAP_SignalingChannelTest, RejectNotUnderstoodWithResponder) {
+TEST_F(SignalingChannelTest, RejectNotUnderstoodWithResponder) {
   constexpr uint8_t kTestId = 14;
 
   auto expected = CreateStaticByteBuffer(
@@ -188,7 +188,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectNotUnderstoodWithResponder) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, RejectInvalidCIdWithResponder) {
+TEST_F(SignalingChannelTest, RejectInvalidCIdWithResponder) {
   constexpr uint8_t kTestId = 14;
   constexpr uint16_t kLocalCId = 0xf00d;
   constexpr uint16_t kRemoteCId = 0xcafe;
@@ -217,7 +217,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectInvalidCIdWithResponder) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, InvalidMTU) {
+TEST_F(SignalingChannelTest, InvalidMTU) {
   constexpr uint8_t kTestId = 14;
   constexpr uint16_t kTooSmallMTU = 7;
 
@@ -244,7 +244,7 @@ TEST_F(L2CAP_SignalingChannelTest, InvalidMTU) {
   EXPECT_TRUE(ReceiveAndExpect(cmd, expected));
 }
 
-TEST_F(L2CAP_SignalingChannelTest, HandlePacket) {
+TEST_F(SignalingChannelTest, HandlePacket) {
   constexpr uint8_t kTestId = 14;
 
   // A command that TestSignalingChannel supports.
@@ -267,7 +267,7 @@ TEST_F(L2CAP_SignalingChannelTest, HandlePacket) {
   EXPECT_TRUE(called);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, UseChannelAfterSignalFree) {
+TEST_F(SignalingChannelTest, UseChannelAfterSignalFree) {
   // Destroy the underlying channel's user (SignalingChannel).
   DestroySig();
 
@@ -284,14 +284,14 @@ TEST_F(L2CAP_SignalingChannelTest, UseChannelAfterSignalFree) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_SignalingChannelTest, ValidRequestCommandIds) {
+TEST_F(SignalingChannelTest, ValidRequestCommandIds) {
   EXPECT_EQ(0x01, sig()->GetNextCommandId());
   for (int i = 0; i < kMaxCommandId + 1; i++) {
     EXPECT_NE(0x00, sig()->GetNextCommandId());
   }
 }
 
-TEST_F(L2CAP_SignalingChannelTest, DoNotRejectUnsolicitedResponse) {
+TEST_F(SignalingChannelTest, DoNotRejectUnsolicitedResponse) {
   constexpr CommandId kTestCmdId = 97;
   auto cmd = CreateStaticByteBuffer(
       // Command header (Echo Response, length 1)
@@ -309,7 +309,7 @@ TEST_F(L2CAP_SignalingChannelTest, DoNotRejectUnsolicitedResponse) {
   EXPECT_EQ(0u, send_count);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, RejectRemoteResponseWithWrongType) {
+TEST_F(SignalingChannelTest, RejectRemoteResponseWithWrongType) {
   constexpr CommandId kReqId = 1;
 
   // Remote's response with the correct ID but wrong type of response.
@@ -356,7 +356,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectRemoteResponseWithWrongType) {
 // Ensure that the signaling channel can reuse outgoing command IDs. In the case
 // that it's expecting a response on every single valid command ID, requests
 // should fail.
-TEST_F(L2CAP_SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
+TEST_F(SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
   int req_count = 0;
   constexpr CommandId kRspId = 0x0c;
 
@@ -401,7 +401,7 @@ TEST_F(L2CAP_SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
 }
 
 // Ensure that a response handler may destroy the signaling channel.
-TEST_F(L2CAP_SignalingChannelTest, ResponseHandlerThatDestroysSigDoesNotCrash) {
+TEST_F(SignalingChannelTest, ResponseHandlerThatDestroysSigDoesNotCrash) {
   fake_chan()->SetSendCallback([](auto) {}, dispatcher());
 
   const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
@@ -429,7 +429,7 @@ TEST_F(L2CAP_SignalingChannelTest, ResponseHandlerThatDestroysSigDoesNotCrash) {
 
 // Ensure that the signaling channel plumbs a rejection command from remote to
 // the appropriate response handler.
-TEST_F(L2CAP_SignalingChannelTest, RemoteRejectionPassedToHandler) {
+TEST_F(SignalingChannelTest, RemoteRejectionPassedToHandler) {
   const ByteBuffer& reject_rsp = StaticByteBuffer(
       // Command header (Command Rejected)
       0x01, 0x01, 0x02, 0x00,
@@ -461,7 +461,7 @@ TEST_F(L2CAP_SignalingChannelTest, RemoteRejectionPassedToHandler) {
   EXPECT_TRUE(rx_success);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, HandlerCompletedByResponseNotCalledAgainAfterRtxTimeout) {
+TEST_F(SignalingChannelTest, HandlerCompletedByResponseNotCalledAgainAfterRtxTimeout) {
   bool tx_success = false;
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
 
@@ -489,7 +489,7 @@ TEST_F(L2CAP_SignalingChannelTest, HandlerCompletedByResponseNotCalledAgainAfter
 
 // Ensure that the signaling channel calls ResponseHandler with Status::kTimeOut after a request
 // times out waiting for a peer response.
-TEST_F(L2CAP_SignalingChannelTest, CallHandlerCalledAfterMaxNumberOfRtxTimeoutRetransmissions) {
+TEST_F(SignalingChannelTest, CallHandlerCalledAfterMaxNumberOfRtxTimeoutRetransmissions) {
   size_t send_cb_count = 0;
   auto send_cb = [&](auto cb_packet) {
     SignalingPacket pkt(cb_packet.get());
@@ -530,7 +530,7 @@ TEST_F(L2CAP_SignalingChannelTest, CallHandlerCalledAfterMaxNumberOfRtxTimeoutRe
   EXPECT_TRUE(rx_cb_called);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, TwoResponsesToARetransmittedOutboundRequest) {
+TEST_F(SignalingChannelTest, TwoResponsesToARetransmittedOutboundRequest) {
   size_t send_cb_count = 0;
   auto send_cb = [&](auto cb_packet) {
     SignalingPacket pkt(cb_packet.get());
@@ -569,7 +569,7 @@ TEST_F(L2CAP_SignalingChannelTest, TwoResponsesToARetransmittedOutboundRequest) 
 
 // When the response handler expects more responses, use the longer ERTX timeout for the following
 // response.
-TEST_F(L2CAP_SignalingChannelTest, ExpectAdditionalResponseExtendsRtxTimeoutToErtxTimeout) {
+TEST_F(SignalingChannelTest, ExpectAdditionalResponseExtendsRtxTimeoutToErtxTimeout) {
   bool tx_success = false;
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
 
@@ -610,7 +610,7 @@ TEST_F(L2CAP_SignalingChannelTest, ExpectAdditionalResponseExtendsRtxTimeoutToEr
   EXPECT_EQ(3, rx_cb_calls);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, RegisterRequestResponder) {
+TEST_F(SignalingChannelTest, RegisterRequestResponder) {
   const ByteBuffer& remote_req = StaticByteBuffer(
       // Disconnection Request.
       0x06, 0x01, 0x04, 0x00,
@@ -652,7 +652,7 @@ TEST_F(L2CAP_SignalingChannelTest, RegisterRequestResponder) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
+TEST_F(SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
   // Request will use ID = 1.
   constexpr CommandId kIncorrectId = 2;
   // Remote's echo response that has a different ID to what will be in the

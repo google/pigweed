@@ -79,10 +79,10 @@ bt::sdp::DataElement MakeL2capProtocolListElement() {
 }  // namespace
 
 using TestingBase = bthost::testing::AdapterTestFixture;
-class FIDL_ProfileServerTest : public TestingBase {
+class ProfileServerTest : public TestingBase {
  public:
-  FIDL_ProfileServerTest() = default;
-  ~FIDL_ProfileServerTest() override = default;
+  ProfileServerTest() = default;
+  ~ProfileServerTest() override = default;
 
  protected:
   void SetUp() override {
@@ -110,7 +110,7 @@ class FIDL_ProfileServerTest : public TestingBase {
   std::unique_ptr<ProfileServer> server_;
   fidlbredr::ProfilePtr client_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_ProfileServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTest);
 };
 
 // TODO(fxbug.dev/64167): Replace GMock usage with homegrown mocks.
@@ -135,7 +135,7 @@ class MockConnectionReceiver : public fidlbredr::testing::ConnectionReceiver_Tes
   }
 };
 
-TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidDefinition) {
+TEST_F(ProfileServerTest, ErrorOnInvalidDefinition) {
   fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle;
   auto request = receiver_handle.NewRequest();
 
@@ -161,7 +161,7 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidDefinition) {
   EXPECT_TRUE(signals & ZX_CHANNEL_PEER_CLOSED);
 }
 
-TEST_F(FIDL_ProfileServerTest, ErrorOnMultipleAdvertiseRequests) {
+TEST_F(ProfileServerTest, ErrorOnMultipleAdvertiseRequests) {
   fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle1;
   auto request1 = receiver_handle1.NewRequest();
 
@@ -212,7 +212,7 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnMultipleAdvertiseRequests) {
   EXPECT_EQ(cb1_count, 1u);
 }
 
-TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersNoPSM) {
+TEST_F(ProfileServerTest, ErrorOnInvalidConnectParametersNoPSM) {
   // Random peer, since we don't expect the connection.
   fuchsia::bluetooth::PeerId peer_id{123};
 
@@ -234,7 +234,7 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersNoPSM) {
   RunLoopUntilIdle();
 }
 
-TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersRfcomm) {
+TEST_F(ProfileServerTest, ErrorOnInvalidConnectParametersRfcomm) {
   // Random peer, since we don't expect the connection.
   fuchsia::bluetooth::PeerId peer_id{123};
 
@@ -253,7 +253,7 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersRfcomm) {
   RunLoopUntilIdle();
 }
 
-TEST_F(FIDL_ProfileServerTest, UnregisterAdvertisementTriggersCallback) {
+TEST_F(ProfileServerTest, UnregisterAdvertisementTriggersCallback) {
   fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle;
   auto request = receiver_handle.NewRequest();
 
@@ -282,14 +282,14 @@ TEST_F(FIDL_ProfileServerTest, UnregisterAdvertisementTriggersCallback) {
   ASSERT_EQ(cb_count, 1u);
 }
 
-class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
+class ProfileServerTestConnectedPeer : public ProfileServerTest {
  public:
-  FIDL_ProfileServerTest_ConnectedPeer() = default;
-  ~FIDL_ProfileServerTest_ConnectedPeer() override = default;
+  ProfileServerTestConnectedPeer() = default;
+  ~ProfileServerTestConnectedPeer() override = default;
 
  protected:
   void SetUp() override {
-    FIDL_ProfileServerTest::SetUp();
+    ProfileServerTest::SetUp();
     peer_ = peer_cache()->NewPeer(kTestDevAddr, true);
     auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestDevAddr);
     test_device()->AddPeer(std::move(fake_peer));
@@ -318,7 +318,7 @@ class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
   void TearDown() override {
     connection_ = nullptr;
     peer_ = nullptr;
-    FIDL_ProfileServerTest::TearDown();
+    ProfileServerTest::TearDown();
   }
 
   bt::gap::BrEdrConnection* connection() const { return connection_; }
@@ -329,10 +329,10 @@ class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
   bt::gap::BrEdrConnection* connection_;
   bt::gap::Peer* peer_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_ProfileServerTest_ConnectedPeer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTestConnectedPeer);
 };
 
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
+TEST_F(ProfileServerTestConnectedPeer, ConnectL2capChannelParameters) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
@@ -382,7 +382,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   EXPECT_FALSE(channel->has_flush_timeout());
 }
 
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
+TEST_F(ProfileServerTestConnectedPeer,
        ConnectWithAuthenticationRequiredButLinkKeyNotAuthenticatedFails) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kNoInputNoOutput);
@@ -418,7 +418,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
 }
 
 // Tests receiving an empty Channel results in an error propagated through the callback.
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectEmptyChannelResponse) {
+TEST_F(ProfileServerTestConnectedPeer, ConnectEmptyChannelResponse) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
@@ -459,7 +459,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectEmptyChannelResponse) {
   RunLoopUntilIdle();
 }
 
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
+TEST_F(ProfileServerTestConnectedPeer,
        AdvertiseChannelParametersReceivedInOnChannelConnectedCallback) {
   fidlbredr::ChannelParameters fidl_chan_params;
   fidl_chan_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
@@ -499,11 +499,11 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   RunLoopUntilIdle();
 }
 
-class AclPrioritySupportedTest : public FIDL_ProfileServerTest_ConnectedPeer {
+class AclPrioritySupportedTest : public ProfileServerTestConnectedPeer {
  public:
   void SetUp() override {
     set_vendor_features(BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND);
-    FIDL_ProfileServerTest_ConnectedPeer::SetUp();
+    ProfileServerTestConnectedPeer::SetUp();
   }
 };
 
@@ -584,7 +584,7 @@ const std::array<std::pair<fidlbredr::A2dpDirectionPriority, bool>, 4> kPriority
      {fidlbredr::A2dpDirectionPriority::SOURCE, true},
      {fidlbredr::A2dpDirectionPriority::SINK, true},
      {fidlbredr::A2dpDirectionPriority::NORMAL, true}}};
-INSTANTIATE_TEST_SUITE_P(FIDL_ProfileServerTest_ConnectedPeer, PriorityTest,
+INSTANTIATE_TEST_SUITE_P(ProfileServerTestConnectedPeer, PriorityTest,
                          ::testing::ValuesIn(kPriorityParams));
 
 TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
@@ -637,7 +637,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
 
 // Verifies that a socket channel relay is correctly set up such that bytes written to the socket
 // are sent to the channel.
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectReturnsValidSocket) {
+TEST_F(ProfileServerTestConnectedPeer, ConnectReturnsValidSocket) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
@@ -697,7 +697,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectReturnsValidSocket) {
 
 // Verifies that a socket channel relay is correctly set up such that bytes written to the socket
 // are sent to the channel.
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectionReceiverReturnsValidSocket) {
+TEST_F(ProfileServerTestConnectedPeer, ConnectionReceiverReturnsValidSocket) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
@@ -799,7 +799,7 @@ class FakeScoConnectionReceiver : public fidlbredr::testing::ScoConnectionReceiv
   }
 };
 
-TEST_F(FIDL_ProfileServerTest, ConnectScoWithInvalidParameters) {
+TEST_F(ProfileServerTest, ConnectScoWithInvalidParameters) {
   fidlbredr::ScoConnectionParameters bad_sco_params;
   fidl::InterfaceHandle<fidlbredr::ScoConnectionReceiver> receiver_handle;
   FakeScoConnectionReceiver receiver(receiver_handle.NewRequest(), dispatcher());
@@ -811,7 +811,7 @@ TEST_F(FIDL_ProfileServerTest, ConnectScoWithInvalidParameters) {
   EXPECT_FALSE(receiver.connection().has_value());
 }
 
-TEST_F(FIDL_ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
+TEST_F(ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
   fidlbredr::ScoConnectionParameters sco_params = CreateScoConnectionParameters();
   EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
 
@@ -825,7 +825,7 @@ TEST_F(FIDL_ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
   EXPECT_FALSE(receiver.connection().has_value());
 }
 
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectScoInitiatorSuccess) {
+TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorSuccess) {
   fidlbredr::ScoConnectionParameters sco_params = CreateScoConnectionParameters();
   EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
 
@@ -839,7 +839,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectScoInitiatorSuccess) {
   EXPECT_TRUE(receiver.connection()->has_socket());
 }
 
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectScoInitiatorAndCloseReceiver) {
+TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiver) {
   fidlbredr::ScoConnectionParameters sco_params = CreateScoConnectionParameters();
   EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
 
@@ -855,7 +855,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectScoInitiatorAndCloseReceiver
 
 // Verifies that the profile server gracefully ignores connection results after the receiver has
 // closed.
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
+TEST_F(ProfileServerTestConnectedPeer,
        ConnectScoInitiatorAndCloseReceiverBeforeCompleteEvent) {
   fidlbredr::ScoConnectionParameters sco_params = CreateScoConnectionParameters();
   EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
@@ -878,10 +878,10 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   EXPECT_FALSE(receiver.connection().has_value());
 }
 
-class FIDL_ProfileServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+class ProfileServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
  public:
-  FIDL_ProfileServerTest_FakeAdapter() = default;
-  ~FIDL_ProfileServerTest_FakeAdapter() override = default;
+  ProfileServerTestFakeAdapter() = default;
+  ~ProfileServerTestFakeAdapter() override = default;
 
   void SetUp() override {
     FakeAdapterTestFixture::SetUp();
@@ -899,10 +899,10 @@ class FIDL_ProfileServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterT
  private:
   std::unique_ptr<ProfileServer> server_;
   fidlbredr::ProfilePtr client_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_ProfileServerTest_FakeAdapter);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTestFakeAdapter);
 };
 
-TEST_F(FIDL_ProfileServerTest_FakeAdapter, ConnectChannelParametersContainsFlushTimeout) {
+TEST_F(ProfileServerTestFakeAdapter, ConnectChannelParametersContainsFlushTimeout) {
   const bt::PeerId kPeerId;
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
   const zx::duration kFlushTimeout(zx::msec(100));
@@ -932,7 +932,7 @@ TEST_F(FIDL_ProfileServerTest_FakeAdapter, ConnectChannelParametersContainsFlush
   ASSERT_EQ(response_channel->flush_timeout(), kFlushTimeout.get());
 }
 
-TEST_F(FIDL_ProfileServerTest_FakeAdapter, AdvertiseChannelParametersContainsFlushTimeout) {
+TEST_F(ProfileServerTestFakeAdapter, AdvertiseChannelParametersContainsFlushTimeout) {
   const zx::duration kFlushTimeout(zx::msec(100));
   const bt::hci::ConnectionHandle kHandle(1);
 
@@ -968,7 +968,7 @@ TEST_F(FIDL_ProfileServerTest_FakeAdapter, AdvertiseChannelParametersContainsFlu
   EXPECT_EQ(fidl_channel->flush_timeout(), kFlushTimeout.get());
 }
 
-TEST_F(FIDL_ProfileServerTest_FakeAdapter, L2capParametersExtRequestParametersSucceeds) {
+TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersSucceeds) {
   const bt::PeerId kPeerId;
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
   const zx::duration kFlushTimeout(zx::msec(100));
@@ -1021,7 +1021,7 @@ TEST_F(FIDL_ProfileServerTest_FakeAdapter, L2capParametersExtRequestParametersSu
   RunLoopUntilIdle();
 }
 
-TEST_F(FIDL_ProfileServerTest_FakeAdapter, L2capParametersExtRequestParametersFails) {
+TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersFails) {
   const bt::PeerId kPeerId;
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
   const zx::duration kFlushTimeout(zx::msec(100));

@@ -117,10 +117,10 @@ class MockFidlPairingDelegate : public fsys::testing::PairingDelegate_TestBase {
   PairingRequestCallback pairing_request_cb_;
 };
 
-class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
+class HostServerTest : public bthost::testing::AdapterTestFixture {
  public:
-  FIDL_HostServerTest() = default;
-  ~FIDL_HostServerTest() override = default;
+  HostServerTest() = default;
+  ~HostServerTest() override = default;
 
   void SetUp() override {
     AdapterTestFixture::SetUp();
@@ -243,16 +243,16 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
   std::unique_ptr<bt::gatt::GATT> gatt_;
   fuchsia::bluetooth::host::HostPtr host_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServerTest);
 };
 
 // The main role of this sub-suite is improved test object lifecycle management (see TearDown for
 // more details). An additional convenience it provides is fake peer/channel and mock pairing
 // delegate setup, which all tests of the full pairing stack need.
-class FIDL_HostServerPairingTest : public FIDL_HostServerTest {
+class HostServerPairingTest : public HostServerTest {
  public:
   void SetUp() override {
-    FIDL_HostServerTest::SetUp();
+    HostServerTest::SetUp();
     NewPairingTest(fsys::InputCapability::NONE, fsys::OutputCapability::NONE);
   }
 
@@ -276,7 +276,7 @@ class FIDL_HostServerPairingTest : public FIDL_HostServerTest {
   void TearDown() override {
     fake_chan_->SetSendCallback(nullptr, nullptr);
     host_client_ptr().Unbind();
-    FIDL_HostServerTest::TearDown();
+    HostServerTest::TearDown();
   }
 
   bt::gap::Peer* peer() { return fake_peer_; }
@@ -317,7 +317,7 @@ fsys::BondingData MakeTestBond(bt::PeerId id, fbt::Address address) {
   return bond;
 }
 
-TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
+TEST_F(HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
 
@@ -329,7 +329,7 @@ TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   EXPECT_EQ(bt::sm::IOCapability::kKeyboardDisplay, host_pairing_delegate->io_capability());
 }
 
-TEST_F(FIDL_HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
+TEST_F(HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
   using namespace ::testing;
 
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
@@ -347,7 +347,7 @@ TEST_F(FIDL_HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
   RunLoopUntilIdle();
 }
 
-TEST_F(FIDL_HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
+TEST_F(HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
@@ -376,7 +376,7 @@ TEST_F(FIDL_HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   EXPECT_TRUE(confirm_cb_value);
 }
 
-TEST_F(FIDL_HostServerTest,
+TEST_F(HostServerTest,
        HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparisonPairingOverFidl) {
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
@@ -430,7 +430,7 @@ TEST_F(FIDL_HostServerTest,
   EXPECT_TRUE(confirm_cb_called);
 }
 
-TEST_F(FIDL_HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFidl) {
+TEST_F(HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFidl) {
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
@@ -486,7 +486,7 @@ TEST_F(FIDL_HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFid
   EXPECT_EQ(12345, passkey_response.value());
 }
 
-TEST_F(FIDL_HostServerTest, SysDelegateInvokesCallbackMultipleTimesIgnored) {
+TEST_F(HostServerTest, SysDelegateInvokesCallbackMultipleTimesIgnored) {
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
@@ -541,7 +541,7 @@ TEST_F(FIDL_HostServerTest, SysDelegateInvokesCallbackMultipleTimesIgnored) {
   ASSERT_EQ(1u, confirm_req_cb_count);
 }
 
-TEST_F(FIDL_HostServerTest, WatchState) {
+TEST_F(HostServerTest, WatchState) {
   std::optional<fsys::HostInfo> info;
   host_server()->WatchState([&](auto value) { info = std::move(value); });
   ASSERT_TRUE(info.has_value());
@@ -562,7 +562,7 @@ TEST_F(FIDL_HostServerTest, WatchState) {
   EXPECT_FALSE(info->discovering());
 }
 
-TEST_F(FIDL_HostServerTest, WatchDiscoveryState) {
+TEST_F(HostServerTest, WatchDiscoveryState) {
   std::optional<fsys::HostInfo> info;
 
   // Make initial watch call so that subsequent calls remain pending.
@@ -590,7 +590,7 @@ TEST_F(FIDL_HostServerTest, WatchDiscoveryState) {
   EXPECT_FALSE(info->discovering());
 }
 
-TEST_F(FIDL_HostServerTest, WatchDiscoverableState) {
+TEST_F(HostServerTest, WatchDiscoverableState) {
   std::optional<fsys::HostInfo> info;
 
   // Make initial watch call so that subsequent calls remain pending.
@@ -618,7 +618,7 @@ TEST_F(FIDL_HostServerTest, WatchDiscoverableState) {
   EXPECT_FALSE(info->discoverable());
 }
 
-TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
+TEST_F(HostServerPairingTest, InitiatePairingLeDefault) {
   const auto kExpected = CreateStaticByteBuffer(
       0x01,  // code: "Pairing Request"
       0x04,  // IO cap.: KeyboardDisplay
@@ -655,7 +655,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
   ASSERT_TRUE(pairing_request_sent);
 }
 
-TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
+TEST_F(HostServerPairingTest, InitiatePairingLeEncrypted) {
   const auto kExpected = CreateStaticByteBuffer(
       0x01,  // code: "Pairing Request"
       0x03,  // IO cap.: NoInputNoOutput
@@ -690,7 +690,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
   ASSERT_TRUE(pairing_request_sent);
 }
 
-TEST_F(FIDL_HostServerPairingTest, InitiatePairingNonBondableLe) {
+TEST_F(HostServerPairingTest, InitiatePairingNonBondableLe) {
   const auto kExpected = CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
                                                 0x04,  // IO cap.: KeyboardDisplay
                                                 0x00,  // OOB: not present
@@ -727,7 +727,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingNonBondableLe) {
   ASSERT_TRUE(pairing_request_sent);
 }
 
-TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
+TEST_F(HostServerTest, InitiateBrEdrPairingLePeerFails) {
   auto [peer, fake_chan] = CreateAndConnectFakePeer();
   ASSERT_TRUE(peer);
   ASSERT_TRUE(fake_chan);
@@ -747,7 +747,7 @@ TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
   ASSERT_EQ(pair_result->error(), fsys::Error::PEER_NOT_FOUND);
 }
 
-TEST_F(FIDL_HostServerTest, WatchPeersHangsOnFirstCallWithNoExistingPeers) {
+TEST_F(HostServerTest, WatchPeersHangsOnFirstCallWithNoExistingPeers) {
   // By default the peer cache contains no entries when HostServer is first constructed. The first
   // call to WatchPeers should hang.
   bool replied = false;
@@ -755,7 +755,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersHangsOnFirstCallWithNoExistingPeers) {
   EXPECT_FALSE(replied);
 }
 
-TEST_F(FIDL_HostServerTest, WatchPeersRepliesOnFirstCallWithExistingPeers) {
+TEST_F(HostServerTest, WatchPeersRepliesOnFirstCallWithExistingPeers) {
   __UNUSED bt::gap::Peer* peer =
       adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ResetHostServer();
@@ -770,7 +770,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersRepliesOnFirstCallWithExistingPeers) {
   EXPECT_TRUE(replied);
 }
 
-TEST_F(FIDL_HostServerTest, WatchPeersHandlesNonEnumeratedAppearanceInPeer) {
+TEST_F(HostServerTest, WatchPeersHandlesNonEnumeratedAppearanceInPeer) {
   using namespace ::testing;
   bt::gap::Peer* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
@@ -796,7 +796,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersHandlesNonEnumeratedAppearanceInPeer) {
   EXPECT_TRUE(replied);
 }
 
-TEST_F(FIDL_HostServerTest, WatchPeersStateMachine) {
+TEST_F(HostServerTest, WatchPeersStateMachine) {
   std::optional<std::vector<fsys::Peer>> updated;
   std::optional<std::vector<fbt::PeerId>> removed;
 
@@ -836,7 +836,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersStateMachine) {
   EXPECT_TRUE(fidl::Equals(fbt::PeerId{peer_id.value()}, (*removed)[0]));
 }
 
-TEST_F(FIDL_HostServerTest, WatchPeersUpdatedThenRemoved) {
+TEST_F(HostServerTest, WatchPeersUpdatedThenRemoved) {
   // Add then remove a peer. The watcher should only report the removal.
   bt::PeerId id;
   {
@@ -858,7 +858,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersUpdatedThenRemoved) {
   EXPECT_TRUE(replied);
 }
 
-TEST_F(FIDL_HostServerTest, SetLeSecurityMode) {
+TEST_F(HostServerTest, SetLeSecurityMode) {
   // Set the HostServer to SecureConnectionsOnly mode first
   host_client()->SetLeSecurityMode(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY);
   RunLoopUntilIdle();
@@ -872,7 +872,7 @@ TEST_F(FIDL_HostServerTest, SetLeSecurityMode) {
             adapter()->le()->security_mode());
 }
 
-TEST_F(FIDL_HostServerTest, ConnectLowEnergy) {
+TEST_F(HostServerTest, ConnectLowEnergy) {
   bt::gap::Peer* peer = AddFakePeer(kLeTestAddr);
   EXPECT_EQ(bt::gap::TechnologyType::kLowEnergy, peer->technology());
 
@@ -889,7 +889,7 @@ TEST_F(FIDL_HostServerTest, ConnectLowEnergy) {
   EXPECT_EQ(0, test_device()->acl_create_connection_command_count());
 }
 
-TEST_F(FIDL_HostServerTest, ConnectBredr) {
+TEST_F(HostServerTest, ConnectBredr) {
   bt::gap::Peer* peer = AddFakePeer(kBredrTestAddr);
   EXPECT_EQ(bt::gap::TechnologyType::kClassic, peer->technology());
 
@@ -906,7 +906,7 @@ TEST_F(FIDL_HostServerTest, ConnectBredr) {
   EXPECT_EQ(1, test_device()->acl_create_connection_command_count());
 }
 
-TEST_F(FIDL_HostServerTest, ConnectDualMode) {
+TEST_F(HostServerTest, ConnectDualMode) {
   // Initialize the peer with data for both transport types.
   bt::gap::Peer* peer = AddFakePeer(kBredrTestAddr);
   peer->MutLe();
@@ -926,7 +926,7 @@ TEST_F(FIDL_HostServerTest, ConnectDualMode) {
   EXPECT_EQ(1, test_device()->acl_create_connection_command_count());
 }
 
-TEST_F(FIDL_HostServerTest, RestoreBondsErrorDataMissing) {
+TEST_F(HostServerTest, RestoreBondsErrorDataMissing) {
   fsys::BondingData bond;
 
   // Empty bond.
@@ -953,7 +953,7 @@ TEST_F(FIDL_HostServerTest, RestoreBondsErrorDataMissing) {
   TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
 }
 
-TEST_F(FIDL_HostServerTest, RestoreBondsInvalidAddress) {
+TEST_F(HostServerTest, RestoreBondsInvalidAddress) {
   // LE Random address on dual-mode or BR/EDR-only bond should not be supported.
   fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrRandom);
   bond.set_bredr_bond(fsys::BredrBondData());
@@ -972,7 +972,7 @@ TEST_F(FIDL_HostServerTest, RestoreBondsInvalidAddress) {
   TestRestoreBonds(MakeClonedVector(non_resolvable_bond), MakeClonedVector(non_resolvable_bond));
 }
 
-TEST_F(FIDL_HostServerTest, RestoreBondsLeOnlySuccess) {
+TEST_F(HostServerTest, RestoreBondsLeOnlySuccess) {
   fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrRandom);
   auto ltk =
       fsys::Ltk{.key =
@@ -1005,7 +1005,7 @@ TEST_F(FIDL_HostServerTest, RestoreBondsLeOnlySuccess) {
   EXPECT_EQ(bt::DeviceAddress::Type::kLERandom, peer->address().type());
 }
 
-TEST_F(FIDL_HostServerTest, RestoreBondsBredrOnlySuccess) {
+TEST_F(HostServerTest, RestoreBondsBredrOnlySuccess) {
   fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
   bond.clear_le_bond();
 
@@ -1037,7 +1037,7 @@ TEST_F(FIDL_HostServerTest, RestoreBondsBredrOnlySuccess) {
   EXPECT_EQ(bt::DeviceAddress::Type::kBREDR, peer->address().type());
 }
 
-TEST_F(FIDL_HostServerTest, RestoreBondsDualModeSuccess) {
+TEST_F(HostServerTest, RestoreBondsDualModeSuccess) {
   fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
   auto key = fsys::PeerKey{
       .security =
@@ -1074,7 +1074,7 @@ TEST_F(FIDL_HostServerTest, RestoreBondsDualModeSuccess) {
   EXPECT_EQ(bt::DeviceAddress::Type::kBREDR, peer->address().type());
 }
 
-TEST_F(FIDL_HostServerTest, SetHostData) {
+TEST_F(HostServerTest, SetHostData) {
   EXPECT_FALSE(adapter()->le()->irk());
 
   fsys::Key irk{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
@@ -1086,7 +1086,7 @@ TEST_F(FIDL_HostServerTest, SetHostData) {
   EXPECT_EQ(irk.value, adapter()->le()->irk().value());
 }
 
-TEST_F(FIDL_HostServerTest, OnNewBondingData) {
+TEST_F(HostServerTest, OnNewBondingData) {
   const std::string kTestName = "florp";
   const bt::UInt128 kTestKeyValue{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
@@ -1160,7 +1160,7 @@ TEST_F(FIDL_HostServerTest, OnNewBondingData) {
   EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data->bredr_bond().link_key()));
 }
 
-TEST_F(FIDL_HostServerTest, EnableBackgroundScan) {
+TEST_F(HostServerTest, EnableBackgroundScan) {
   host_server()->EnableBackgroundScan(true);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 
@@ -1173,7 +1173,7 @@ TEST_F(FIDL_HostServerTest, EnableBackgroundScan) {
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(FIDL_HostServerTest, EnableBackgroundScanTwiceAtSameTime) {
+TEST_F(HostServerTest, EnableBackgroundScanTwiceAtSameTime) {
   host_server()->EnableBackgroundScan(true);
   host_server()->EnableBackgroundScan(true);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
@@ -1187,7 +1187,7 @@ TEST_F(FIDL_HostServerTest, EnableBackgroundScanTwiceAtSameTime) {
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(FIDL_HostServerTest, EnableBackgroundScanTwiceSequentially) {
+TEST_F(HostServerTest, EnableBackgroundScanTwiceSequentially) {
   host_server()->EnableBackgroundScan(true);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 
@@ -1205,7 +1205,7 @@ TEST_F(FIDL_HostServerTest, EnableBackgroundScanTwiceSequentially) {
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(FIDL_HostServerTest, CancelEnableBackgroundScan) {
+TEST_F(HostServerTest, CancelEnableBackgroundScan) {
   host_server()->EnableBackgroundScan(true);
   host_server()->EnableBackgroundScan(false);
 
@@ -1217,13 +1217,13 @@ TEST_F(FIDL_HostServerTest, CancelEnableBackgroundScan) {
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(FIDL_HostServerTest, DisableBackgroundScan) {
+TEST_F(HostServerTest, DisableBackgroundScan) {
   host_server()->EnableBackgroundScan(false);
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(FIDL_HostServerTest, EnableBackgroundScanFailsToStart) {
+TEST_F(HostServerTest, EnableBackgroundScanFailsToStart) {
   test_device()->SetDefaultCommandStatus(bt::hci::kLESetScanEnable,
                                          bt::hci::StatusCode::kControllerBusy);
   host_server()->EnableBackgroundScan(true);
@@ -1238,10 +1238,10 @@ TEST_F(FIDL_HostServerTest, EnableBackgroundScanFailsToStart) {
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
 }
 
-class FIDL_HostServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+class HostServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
  public:
-  FIDL_HostServerTest_FakeAdapter() = default;
-  ~FIDL_HostServerTest_FakeAdapter() override = default;
+  HostServerTestFakeAdapter() = default;
+  ~HostServerTestFakeAdapter() override = default;
 
   void SetUp() override {
     FakeAdapterTestFixture::SetUp();
@@ -1272,10 +1272,10 @@ class FIDL_HostServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterTest
   fuchsia::bluetooth::host::HostPtr host_;
   std::unique_ptr<bt::gatt::GATT> gatt_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest_FakeAdapter);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServerTestFakeAdapter);
 };
 
-TEST_F(FIDL_HostServerTest_FakeAdapter, SetLocalNameNotifiesWatchState) {
+TEST_F(HostServerTestFakeAdapter, SetLocalNameNotifiesWatchState) {
   std::vector<fsys::HostInfo> info;
   // Consume initial state value.
   host_client()->WatchState([&](auto value) { info.push_back(std::move(value)); });

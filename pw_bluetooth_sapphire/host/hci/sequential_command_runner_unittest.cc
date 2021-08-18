@@ -27,7 +27,7 @@ class SequentialCommandRunnerTest : public TestingBase {
 
 using HCI_SequentialCommandRunnerTest = SequentialCommandRunnerTest;
 
-TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunner) {
+TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   // HCI command with custom opcode FFFF.
   auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
 
@@ -182,7 +182,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
+TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
 
   auto command_cmpl_error_bytes =
@@ -314,7 +314,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
 }
 
-TEST_F(HCI_SequentialCommandRunnerTest, ParallelCommands) {
+TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   // Need to signal to the queue that we can run more than one command at once.
   auto command_status_queue_increase =
       CreateStaticByteBuffer(kCommandStatusEventCode,

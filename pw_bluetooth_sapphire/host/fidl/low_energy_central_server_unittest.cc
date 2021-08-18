@@ -48,10 +48,10 @@ size_t MaxPeersPerScanResultWatcherChannel(const bt::gap::Peer& peer) {
 
 using TestingBase = bthost::testing::AdapterTestFixture;
 
-class FIDL_LowEnergyCentralServerTest : public TestingBase {
+class LowEnergyCentralServerTest : public TestingBase {
  public:
-  FIDL_LowEnergyCentralServerTest() = default;
-  ~FIDL_LowEnergyCentralServerTest() override = default;
+  LowEnergyCentralServerTest() = default;
+  ~LowEnergyCentralServerTest() override = default;
 
   void SetUp() override {
     AdapterTestFixture::SetUp();
@@ -112,12 +112,12 @@ class FIDL_LowEnergyCentralServerTest : public TestingBase {
   fble::CentralPtr proxy_;
   std::unique_ptr<bt::gatt::GATT> gatt_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_LowEnergyCentralServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServerTest);
 };
 
 // Tests that connecting to a peripheral with LowEnergyConnectionOptions.bondable_mode unset results
 // in a bondable connection ref being stored in LowEnergyConnectionManager
-TEST_F(FIDL_LowEnergyCentralServerTest, ConnectDefaultResultsBondableConnectionRef) {
+TEST_F(LowEnergyCentralServerTest, ConnectDefaultResultsBondableConnectionRef) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -148,7 +148,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectDefaultResultsBondableConnectionR
 
 // Tests that setting LowEnergyConnectionOptions.bondable_mode to true and connecting to a peer in
 // bondable mode results in a bondable connection ref being stored in LowEnergyConnectionManager
-TEST_F(FIDL_LowEnergyCentralServerTest, ConnectBondableResultsBondableConnectionRef) {
+TEST_F(LowEnergyCentralServerTest, ConnectBondableResultsBondableConnectionRef) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -180,7 +180,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectBondableResultsBondableConnection
 
 // Tests that setting LowEnergyConnectionOptions.bondable_mode to false and connecting to a peer
 // results in a non-bondable connection ref being stored in LowEnergyConnectionManager.
-TEST_F(FIDL_LowEnergyCentralServerTest, ConnectNonBondableResultsNonBondableConnectionRef) {
+TEST_F(LowEnergyCentralServerTest, ConnectNonBondableResultsNonBondableConnectionRef) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -210,7 +210,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectNonBondableResultsNonBondableConn
   ASSERT_EQ(conn_ref.value()->bondable_mode(), bt::sm::BondableMode::NonBondable);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectUnconnectedPeripheralReturnsSuccess) {
+TEST_F(LowEnergyCentralServerTest, DisconnectUnconnectedPeripheralReturnsSuccess) {
   auto status =
       fidl_helpers::NewFidlError(fuchsia::bluetooth::ErrorCode::BAD_STATE, "this should change");
   auto callback = [&status](::fuchsia::bluetooth::Status cb_status) {
@@ -221,7 +221,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectUnconnectedPeripheralReturnsSu
   EXPECT_EQ(status.error, nullptr);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
+TEST_F(LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -250,7 +250,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
   EXPECT_FALSE(conn.has_value());
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm) {
+TEST_F(LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kTestAddr));
 
@@ -284,7 +284,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm)
   EXPECT_NE(server_conn.value(), nullptr);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralUnknownPeer) {
+TEST_F(LowEnergyCentralServerTest, ConnectPeripheralUnknownPeer) {
   fuchsia::bluetooth::Status status;
   auto callback = [&status](::fuchsia::bluetooth::Status cb_status) {
     status = std::move(cb_status);
@@ -305,7 +305,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralUnknownPeer) {
   EXPECT_FALSE(server_conn.has_value());
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectPeripheralClosesCorrectGattHandle) {
+TEST_F(LowEnergyCentralServerTest, DisconnectPeripheralClosesCorrectGattHandle) {
   const bt::DeviceAddress kAddr1 = kTestAddr;
   const bt::DeviceAddress kAddr2(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
   auto* const peer1 = adapter()->peer_cache()->NewPeer(kAddr1, /*connectable=*/true);
@@ -336,7 +336,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectPeripheralClosesCorrectGattHan
   EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle2));
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, PeerDisconnectClosesCorrectHandle) {
+TEST_F(LowEnergyCentralServerTest, PeerDisconnectClosesCorrectHandle) {
   const bt::DeviceAddress kAddr1 = kTestAddr;
   const bt::DeviceAddress kAddr2(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
   auto* const peer1 = adapter()->peer_cache()->NewPeer(kAddr1, /*connectable=*/true);
@@ -367,7 +367,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, PeerDisconnectClosesCorrectHandle) {
   EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle2));
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ClosingCentralHandleClosesAssociatedGattClientHandles) {
+TEST_F(LowEnergyCentralServerTest, ClosingCentralHandleClosesAssociatedGattClientHandles) {
   const bt::DeviceAddress kAddr1 = kTestAddr;
   const bt::DeviceAddress kAddr2(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
   auto* const peer1 = adapter()->peer_cache()->NewPeer(kAddr1, /*connectable=*/true);
@@ -393,7 +393,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ClosingCentralHandleClosesAssociatedGatt
   EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle2));
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanWithEmptyScanOptionsFails) {
+TEST_F(LowEnergyCentralServerTest, ScanWithEmptyScanOptionsFails) {
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
   auto result_watcher_server = result_watcher_handle.NewRequest();
 
@@ -411,7 +411,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanWithEmptyScanOptionsFails) {
   EXPECT_EQ(result_watcher_epitaph.value(), ZX_ERR_INVALID_ARGS);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanWithNoFiltersFails) {
+TEST_F(LowEnergyCentralServerTest, ScanWithNoFiltersFails) {
   fble::ScanOptions options;
   std::vector<fble::Filter> filters;
   options.set_filters(std::move(filters));
@@ -433,7 +433,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanWithNoFiltersFails) {
   EXPECT_EQ(result_watcher_epitaph.value(), ZX_ERR_INVALID_ARGS);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanReceivesPeerPreviouslyAddedToPeerCache) {
+TEST_F(LowEnergyCentralServerTest, ScanReceivesPeerPreviouslyAddedToPeerCache) {
   bt::gap::Peer* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/false);
 
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
@@ -464,7 +464,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanReceivesPeerPreviouslyAddedToPeerCac
   EXPECT_TRUE(scan_stopped);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanReceivesPeerAddedToPeerCacheAfterScanStart) {
+TEST_F(LowEnergyCentralServerTest, ScanReceivesPeerAddedToPeerCacheAfterScanStart) {
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
   auto result_watcher_server = result_watcher_handle.NewRequest();
   auto result_watcher_client = result_watcher_handle.Bind();
@@ -497,7 +497,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanReceivesPeerAddedToPeerCacheAfterSca
   EXPECT_TRUE(scan_stopped);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ConcurrentScansFail) {
+TEST_F(LowEnergyCentralServerTest, ConcurrentScansFail) {
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle_0;
   auto result_watcher_server_0 = result_watcher_handle_0.NewRequest();
   auto result_watcher_client_0 = result_watcher_handle_0.Bind();
@@ -528,7 +528,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConcurrentScansFail) {
   EXPECT_TRUE(scan_stopped_0);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, SequentialScansSucceed) {
+TEST_F(LowEnergyCentralServerTest, SequentialScansSucceed) {
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle_0;
   auto result_watcher_server_0 = result_watcher_handle_0.NewRequest();
   auto result_watcher_client_0 = result_watcher_handle_0.Bind();
@@ -556,7 +556,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, SequentialScansSucceed) {
   EXPECT_TRUE(scan_stopped_1);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, IgnorePeersThatDoNotMatchFilter) {
+TEST_F(LowEnergyCentralServerTest, IgnorePeersThatDoNotMatchFilter) {
   fble::ScanOptions options;
   fble::Filter filter;
   filter.set_connectable(true);
@@ -601,7 +601,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, IgnorePeersThatDoNotMatchFilter) {
   EXPECT_TRUE(scan_stopped);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest,
+TEST_F(LowEnergyCentralServerTest,
        DoNotNotifyResultWatcherWithPeerThatWasRemovedFromPeerCacheWhileQueued) {
   bt::gap::Peer* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/false);
 
@@ -633,7 +633,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest,
   EXPECT_TRUE(scan_stopped);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, MaxQueuedScanResultWatcherPeers) {
+TEST_F(LowEnergyCentralServerTest, MaxQueuedScanResultWatcherPeers) {
   // Create smallest possible peer
   bt::gap::Peer* peer_0 = adapter()->peer_cache()->NewPeer(
       bt::DeviceAddress(bt::DeviceAddress::Type::kLEPublic, {0, 0, 0, 0, 0, 0}),
@@ -685,7 +685,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, MaxQueuedScanResultWatcherPeers) {
   EXPECT_TRUE(scan_stopped);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanResultWatcherMeasureTape) {
+TEST_F(LowEnergyCentralServerTest, ScanResultWatcherMeasureTape) {
   // Create a very large Peer
   bt::gap::Peer* peer_0 = adapter()->peer_cache()->NewPeer(
       bt::DeviceAddress(bt::DeviceAddress::Type::kLEPublic, {0, 0, 0, 0, 0, 0}),
@@ -750,7 +750,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanResultWatcherMeasureTape) {
   EXPECT_TRUE(scan_stopped);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanResultsMatchPeerFromAnyFilter) {
+TEST_F(LowEnergyCentralServerTest, ScanResultsMatchPeerFromAnyFilter) {
   const int8_t kRssi = 0;
   // Peer that matches neither filter
   adapter()->peer_cache()->NewPeer(
@@ -817,7 +817,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanResultsMatchPeerFromAnyFilter) {
   EXPECT_TRUE(scan_stopped);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, DiscoveryStartJustAfterScanCanceledShouldBeIgnored) {
+TEST_F(LowEnergyCentralServerTest, DiscoveryStartJustAfterScanCanceledShouldBeIgnored) {
   // Pause discovery so that we can cancel scanning before resuming discovery.
   fit::closure start_discovery;
   test_device()->pause_responses_for_opcode(
@@ -844,7 +844,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, DiscoveryStartJustAfterScanCanceledShoul
   RunLoopUntilIdle();
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanFailsToStart) {
+TEST_F(LowEnergyCentralServerTest, ScanFailsToStart) {
   test_device()->SetDefaultResponseStatus(bt::hci::kLESetScanEnable,
                                           bt::hci::StatusCode::kControllerBusy);
 
@@ -864,7 +864,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanFailsToStart) {
   EXPECT_EQ(*epitaph, ZX_ERR_INTERNAL);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest, ScanSessionErrorCancelsScan) {
+TEST_F(LowEnergyCentralServerTest, ScanSessionErrorCancelsScan) {
   zx::duration kTestScanPeriod = zx::sec(1);
   adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
   std::vector<bool> scan_states;
@@ -894,7 +894,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ScanSessionErrorCancelsScan) {
   EXPECT_EQ(*epitaph, ZX_ERR_INTERNAL);
 }
 
-TEST_F(FIDL_LowEnergyCentralServerTest,
+TEST_F(LowEnergyCentralServerTest,
        ScanResultWatcherWatchCalledBeforePreviousWatchReceivedResponse) {
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
   auto result_watcher_server = result_watcher_handle.NewRequest();

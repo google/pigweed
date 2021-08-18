@@ -34,10 +34,10 @@ void NopConnectCallback(fbl::RefPtr<l2cap::Channel>, const DataElement&) {}
 
 constexpr l2cap::ChannelParameters kChannelParams;
 
-class SDP_ServerTest : public TestingBase {
+class ServerTest : public TestingBase {
  public:
-  SDP_ServerTest() = default;
-  ~SDP_ServerTest() = default;
+  ServerTest() = default;
+  ~ServerTest() = default;
 
  protected:
   void SetUp() override {
@@ -132,7 +132,7 @@ constexpr l2cap::ChannelId kSdpChannel = 0x0041;
 //  - More than one channel from the same peer can be open at once.
 //  - Packets that are the wrong length are responded to with kInvalidSize
 //  - Answers with the same TransactionID as sent
-TEST_F(SDP_ServerTest, BasicError) {
+TEST_F(ServerTest, BasicError) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan());
@@ -177,7 +177,7 @@ TEST_F(SDP_ServerTest, BasicError) {
 //  - Doesn't add a service that doesn't contain a ServiceClassIDList
 //  - Adds a service that is valid.
 //  - Services can be Unregistered.
-TEST_F(SDP_ServerTest, RegisterService) {
+TEST_F(ServerTest, RegisterService) {
   std::vector<ServiceRecord> records;
   EXPECT_FALSE(server()->RegisterService(std::move(records), kChannelParams, {}));
 
@@ -215,7 +215,7 @@ TEST_F(SDP_ServerTest, RegisterService) {
 // - Adds multiple additional protocols to the service definition.
 // - Tests registration and removal are successful.
 // - Tests callback correctness when inbound l2cap channels are connected.
-TEST_F(SDP_ServerTest, RegisterServiceWithAdditionalProtocol) {
+TEST_F(ServerTest, RegisterServiceWithAdditionalProtocol) {
   std::vector<l2cap::PSM> psms{500, 27, 29};
 
   ServiceRecord psm_additional;
@@ -260,7 +260,7 @@ TEST_F(SDP_ServerTest, RegisterServiceWithAdditionalProtocol) {
 // - Adds an additional protocol to the service definition.
 // - Adds an additional protocol with missing information.
 // - Tests that none of protocols are registered.
-TEST_F(SDP_ServerTest, RegisterServiceWithIncompleteAdditionalProtocol) {
+TEST_F(ServerTest, RegisterServiceWithIncompleteAdditionalProtocol) {
   ServiceRecord psm_additional;
   psm_additional.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_additional.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -287,7 +287,7 @@ TEST_F(SDP_ServerTest, RegisterServiceWithIncompleteAdditionalProtocol) {
   EXPECT_FALSE(server()->UnregisterService(handle));
 }
 
-TEST_F(SDP_ServerTest, PSMVerification) {
+TEST_F(ServerTest, PSMVerification) {
   ServiceRecord no_psm;
   no_psm.SetServiceClassUUIDs({profile::kAVRemoteControl});
   no_psm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -372,7 +372,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
 // Test:
 // - Registering multiple ServiceRecords from the same client is successful.
 // - Inbound L2CAP connections on the registered PSMs trigger the callback.
-TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSuccess) {
+TEST_F(ServerTest, RegisterServiceMultipleRecordsSuccess) {
   ServiceRecord record1;
   record1.SetServiceClassUUIDs({profile::kAVRemoteControl});
   record1.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -412,7 +412,7 @@ TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSuccess) {
 // - Inbound L2CAP connections on the registered PSMs trigger the same callback.
 // - Attempting to register a record with an already taken PSM will fail, and not
 // register any of the other records in the set of records.
-TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSamePSM) {
+TEST_F(ServerTest, RegisterServiceMultipleRecordsSamePSM) {
   ServiceRecord target_browse_record;
   target_browse_record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
   target_browse_record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -478,7 +478,7 @@ TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSamePSM) {
 //  - doesn't return services that don't have the UUID
 //  - fails when there are no items or too many items in the search
 //  - doesn't return more than the max requested
-TEST_F(SDP_ServerTest, ServiceSearchRequest) {
+TEST_F(ServerTest, ServiceSearchRequest) {
   RegistrationHandle spp_handle = AddSPP();
   RegistrationHandle a2dp_handle = AddA2DPSink();
 
@@ -577,7 +577,7 @@ TEST_F(SDP_ServerTest, ServiceSearchRequest) {
 
 // Test ServiceSearchRequest:
 //  - doesn't return more than the max requested
-TEST_F(SDP_ServerTest, ServiceSearchRequestOneOfMany) {
+TEST_F(ServerTest, ServiceSearchRequestOneOfMany) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
@@ -630,7 +630,7 @@ TEST_F(SDP_ServerTest, ServiceSearchRequestOneOfMany) {
 // Test ServiceSearchRequest:
 //  - returns continuation state if too many services match
 //  - continuation state in request works correctly
-TEST_F(SDP_ServerTest, ServiceSearchContinuationState) {
+TEST_F(ServerTest, ServiceSearchContinuationState) {
   // Set the TX MTU to the lowest that's allowed (48)
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad,
                                                   48 /* tx_mtu */));
@@ -723,7 +723,7 @@ TEST_F(SDP_ServerTest, ServiceSearchContinuationState) {
 //  - Continuation state is generated correctly re:
 //    MaximumAttributeListByteCount
 //  - Valid Continuation state continues response
-TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
+TEST_F(ServerTest, ServiceAttributeRequest) {
   ServiceRecord record;
   record.SetServiceClassUUIDs({profile::kAVRemoteControl});
   record.SetAttribute(0xf00d, DataElement(uint32_t{0xfeedbeef}));
@@ -862,7 +862,7 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
 //  - Continuation state is generated correctly re:
 //    MaximumAttributeListsByteCount
 //  - Valid Continuation state continues response
-TEST_F(SDP_ServerTest, SearchAttributeRequest) {
+TEST_F(ServerTest, SearchAttributeRequest) {
   ServiceRecord record1;
   record1.SetServiceClassUUIDs({profile::kAVRemoteControl});
   record1.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -1024,7 +1024,7 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidMaxBytes, kRspErrSyntax2));
 }
 
-TEST_F(SDP_ServerTest, ConnectionCallbacks) {
+TEST_F(ServerTest, ConnectionCallbacks) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
@@ -1068,7 +1068,7 @@ TEST_F(SDP_ServerTest, ConnectionCallbacks) {
 }
 
 // Browse Group gets set correctly
-TEST_F(SDP_ServerTest, BrowseGroup) {
+TEST_F(ServerTest, BrowseGroup) {
   AddA2DPSink();
 
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
@@ -1115,7 +1115,7 @@ TEST_F(SDP_ServerTest, BrowseGroup) {
 
 // Channels created for a service registered with channel parameters should be configured with that
 // service's channel parameters.
-TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
+TEST_F(ServerTest, RegisterServiceWithChannelParameters) {
   l2cap::PSM kPSM = l2cap::kAVDTP;
 
   l2cap::ChannelParameters preferred_params;
@@ -1139,7 +1139,7 @@ TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
 
 // Test:
 // - Creation of ServiceDiscoveryService is valid.
-TEST_F(SDP_ServerTest, MakeServiceDiscoveryServiceIsValid) {
+TEST_F(ServerTest, MakeServiceDiscoveryServiceIsValid) {
   auto sdp_def = server()->MakeServiceDiscoveryService();
 
   const DataElement& version_number_list = sdp_def.GetAttribute(kSDP_VersionNumberList);
@@ -1153,7 +1153,7 @@ TEST_F(SDP_ServerTest, MakeServiceDiscoveryServiceIsValid) {
 // Test:
 // - The inspect hierarchy for the initial server is valid. It should
 // only contain the registered PSM for SDP.
-TEST_F(SDP_ServerTest, InspectHierarchy) {
+TEST_F(ServerTest, InspectHierarchy) {
   inspect::Inspector inspector;
   server()->AttachInspect(inspector.GetRoot());
 
@@ -1186,7 +1186,7 @@ TEST_F(SDP_ServerTest, InspectHierarchy) {
 // the std::unordered_map of PSMs is not guaranteed. Asserting on the name of the node
 // is not feasible due to the usage of inspect::UniqueName, which assigns a new name
 // to a node in every call. The contents of the node are verified.
-TEST_F(SDP_ServerTest, InspectHierarchyAfterUnregisterService) {
+TEST_F(ServerTest, InspectHierarchyAfterUnregisterService) {
   inspect::Inspector inspector;
   server()->AttachInspect(inspector.GetRoot());
 
@@ -1244,7 +1244,7 @@ TEST_F(SDP_ServerTest, InspectHierarchyAfterUnregisterService) {
 // Test:
 // Server::HandleRequest() provides expected responses when called without
 // a corresponding l2cap::channel for both successful requests and errors.
-TEST_F(SDP_ServerTest, HandleRequestWithoutChannel) {
+TEST_F(ServerTest, HandleRequestWithoutChannel) {
   const auto kRspErrSize = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
   const auto kTooSmall = CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
                                                 0x10, 0x01,  // Transaction ID (0x1001)

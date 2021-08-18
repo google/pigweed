@@ -58,7 +58,7 @@ class ConnectionTest : public TestingBase {
 };
 
 // Tests using this harness will be instantiated using ACL and LE link types.
-// See INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest, ...)
+// See INSTANTIATE_TEST_SUITE_P(ConnectionTest, LinkTypeConnectionTest, ...)
 class LinkTypeConnectionTest : public ConnectionTest,
                                public ::testing::WithParamInterface<bt::LinkType> {
  protected:
@@ -90,7 +90,7 @@ class LinkTypeConnectionTest : public ConnectionTest,
 
 using HCI_ConnectionTest = ConnectionTest;
 
-TEST_F(HCI_ConnectionTest, Getters) {
+TEST_F(ConnectionTest, Getters) {
   auto connection = NewLEConnection();
 
   EXPECT_EQ(bt::LinkType::kLE, connection->ll_type());
@@ -108,7 +108,7 @@ TEST_F(HCI_ConnectionTest, Getters) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
-TEST_F(HCI_ConnectionTest, AclLinkKeyAndTypeAccessors) {
+TEST_F(ConnectionTest, AclLinkKeyAndTypeAccessors) {
   auto connection = NewACLConnection();
 
   EXPECT_EQ(bt::LinkType::kACL, connection->ll_type());
@@ -310,14 +310,14 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
 }
 
-TEST_F(HCI_ConnectionTest, StartEncryptionFailsAsLowEnergySlave) {
+TEST_F(ConnectionTest, StartEncryptionFailsAsLowEnergySlave) {
   auto conn = NewLEConnection(Connection::Role::kSlave);
   conn->set_le_ltk(LinkKey());
   EXPECT_FALSE(conn->StartEncryption());
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
-TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
+TEST_F(ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
   auto conn = NewLEConnection(Connection::Role::kMaster);
   auto ltk = LinkKey();
   conn->set_le_ltk(ltk);
@@ -326,7 +326,7 @@ TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
                                                                         ltk.ediv(), ltk.value()));
 }
 
-TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
+TEST_F(ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
   auto conn = NewACLConnection();
   conn->set_bredr_link_key(LinkKey(), kLinkKeyType);
   EXPECT_TRUE(conn->StartEncryption());
@@ -373,7 +373,7 @@ TEST_P(LinkTypeConnectionTest, StartEncryptionNoLinkKey) {
 }
 
 // HCI Command Status event is received with an error status.
-TEST_F(HCI_ConnectionTest, LEStartEncryptionFailsAtStatus) {
+TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
   // clang-format off
   auto kExpectedCommand = CreateStaticByteBuffer(
     0x19, 0x20,  // HCI_LE_Start_Encryption
@@ -411,7 +411,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionFailsAtStatus) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
-TEST_F(HCI_ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
+TEST_F(ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
   auto kExpectedCommand =
       CreateStaticByteBuffer(0x19, 0x20,  // HCI_LE_Start_Encryption
                              28,          // parameter total size
@@ -444,7 +444,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionComman
 }
 
 // HCI Command Status event is received with an error status.
-TEST_F(HCI_ConnectionTest, AclStartEncryptionFailsAtStatus) {
+TEST_F(ConnectionTest, AclStartEncryptionFailsAtStatus) {
   auto kExpectedCommand = CreateStaticByteBuffer(0x13, 0x04,  // HCI_Set_Connection_Encryption
                                                  3,           // parameter total size
                                                  0x01, 0x00,  // connection handle
@@ -476,7 +476,7 @@ TEST_F(HCI_ConnectionTest, AclStartEncryptionFailsAtStatus) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
-TEST_F(HCI_ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
+TEST_F(ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
   auto kExpectedCommand = CreateStaticByteBuffer(0x13, 0x04,  // HCI_Set_Connection_Encryption
                                                  3,           // parameter total size
                                                  0x01, 0x00,  // connection handle
@@ -625,7 +625,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   EXPECT_EQ(StatusCode::kPinOrKeyMissing, status.protocol_error());
 }
 
-TEST_F(HCI_ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
+TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   bool peer_disconnect_callback_received = false;
   auto conn = NewLEConnection();
   conn->set_peer_disconnect_callback([&](auto* self, auto /*reason*/) {
@@ -649,7 +649,7 @@ TEST_F(HCI_ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   EXPECT_TRUE(peer_disconnect_callback_received);
 }
 
-TEST_F(HCI_ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
+TEST_F(ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
   auto kKeySizeComplete = CreateStaticByteBuffer(0x0E,        // event code: Command Complete
                                                  0x07,        // parameters total size
                                                  0xFF,        // num command packets allowed (255)
@@ -677,7 +677,7 @@ TEST_F(HCI_ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
   EXPECT_EQ(1, callback_count);
 }
 
-TEST_F(HCI_ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
+TEST_F(ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
   auto kKeySizeComplete = CreateStaticByteBuffer(0x0E,        // event code: Command Complete
                                                  0x07,        // parameters total size
                                                  0xFF,        // num command packets allowed (255)
@@ -750,7 +750,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   EXPECT_FALSE(enabled);
 }
 
-TEST_F(HCI_ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
+TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
   // clang-format off
   auto kMalformed = CreateStaticByteBuffer(
     0x3E,        // LE Meta Event code
@@ -791,7 +791,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
-TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoKey) {
+TEST_F(ConnectionTest, LELongTermKeyRequestNoKey) {
   // clang-format off
   auto kEvent = CreateStaticByteBuffer(
     0x3E,        // LE Meta Event code
@@ -821,7 +821,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoKey) {
 }
 
 // There is a link key but EDiv and Rand values don't match.
-TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
+TEST_F(ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
   // clang-format off
   auto kEvent = CreateStaticByteBuffer(
     0x3E,        // LE Meta Event code
@@ -851,7 +851,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
   RunLoopUntilIdle();
 }
 
-TEST_F(HCI_ConnectionTest, LELongTermKeyRequestReply) {
+TEST_F(ConnectionTest, LELongTermKeyRequestReply) {
   // clang-format off
   auto kEvent = CreateStaticByteBuffer(
     0x3E,        // LE Meta Event code
@@ -883,7 +883,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestReply) {
   RunLoopUntilIdle();
 }
 
-TEST_F(HCI_ConnectionTest,
+TEST_F(ConnectionTest,
        QueuedPacketsGetDroppedOnDisconnectionCompleteAndStalePacketsAreNotSentOnHandleReuse) {
   const ConnectionHandle kHandle = 0x0001;
 
@@ -957,7 +957,7 @@ TEST_F(HCI_ConnectionTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(HCI_ConnectionTest, PeerDisconnectCallback) {
+TEST_F(ConnectionTest, PeerDisconnectCallback) {
   const ConnectionHandle kHandle = 0x0001;
 
   auto conn = NewACLConnection(Connection::Role::kMaster, kHandle);
@@ -983,7 +983,7 @@ TEST_F(HCI_ConnectionTest, PeerDisconnectCallback) {
 }
 
 // Test connection handling cases for all types of links.
-INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest,
+INSTANTIATE_TEST_SUITE_P(ConnectionTest, LinkTypeConnectionTest,
                          ::testing::Values(bt::LinkType::kACL, bt::LinkType::kLE));
 
 }  // namespace

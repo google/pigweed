@@ -13,9 +13,7 @@
 namespace bt::sdp {
 namespace {
 
-using SDP_DataElementTest = ::testing::Test;
-
-TEST_F(SDP_DataElementTest, CreateIsNull) {
+TEST(DataElementTest, CreateIsNull) {
   DataElement elem;
   EXPECT_EQ(DataElement::Type::kNull, elem.type());
   EXPECT_TRUE(elem.Get<std::nullptr_t>());
@@ -27,7 +25,7 @@ TEST_F(SDP_DataElementTest, CreateIsNull) {
   EXPECT_TRUE(ContainersEqual(expected, buf));
 }
 
-TEST_F(SDP_DataElementTest, SetAndGet) {
+TEST(DataElementTest, SetAndGet) {
   DataElement elem;
 
   elem.Set(uint8_t{5});
@@ -43,7 +41,7 @@ TEST_F(SDP_DataElementTest, SetAndGet) {
   EXPECT_EQ(std::string("Fuchsia💖"), *elem.Get<std::string>());
 }
 
-TEST_F(SDP_DataElementTest, Read) {
+TEST(DataElementTest, Read) {
   auto buf = CreateStaticByteBuffer(
       0x25,  // Type (4: String) & Size (5: in an additional byte) = 0b00100 101
       0x0B,  // Bytes
@@ -65,7 +63,7 @@ TEST_F(SDP_DataElementTest, Read) {
   EXPECT_EQ(std::string("Fuchsia💖"), *elem.Get<std::string>());
 }
 
-TEST_F(SDP_DataElementTest, ReadUUID) {
+TEST(DataElementTest, ReadUUID) {
   auto buf = CreateStaticByteBuffer(0x19,  // Type (3: UUID) & Size (1: two bytes) = 0b00011 001
                                     0x01, 0x00  // L2CAP
   );
@@ -100,7 +98,7 @@ TEST_F(SDP_DataElementTest, ReadUUID) {
             *elem.Get<UUID>());
 }
 
-TEST_F(SDP_DataElementTest, Write) {
+TEST(DataElementTest, Write) {
   // This represents a plausible attribute_lists parameter of a
   // SDP_ServiceSearchAttributeResponse PDU for an SPP service.
   std::vector<DataElement> attribute_list;
@@ -188,7 +186,7 @@ TEST_F(SDP_DataElementTest, Write) {
   EXPECT_TRUE(ContainersEqual(expected, block));
 }
 
-TEST_F(SDP_DataElementTest, ReadSequence) {
+TEST(DataElementTest, ReadSequence) {
   // clang-format off
   auto buf = CreateStaticByteBuffer(
       0x35, 0x08, // Sequence with 1 byte length (8)
@@ -209,7 +207,7 @@ TEST_F(SDP_DataElementTest, ReadSequence) {
   EXPECT_EQ(2u, *it->Get<uint32_t>());
 }
 
-TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
+TEST(DataElementTest, ReadNestedSeqeunce) {
   auto buf =
       CreateStaticByteBuffer(0x35, 0x1C,                    // Sequence uint8 28 bytes
                                                             // Sequence 0
@@ -258,7 +256,7 @@ TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
   EXPECT_EQ(DataElement::Type::kUuid, inner_it->type());
 }
 
-TEST_F(SDP_DataElementTest, ToString) {
+TEST(DataElementTest, ToString) {
   EXPECT_EQ("Null", DataElement().ToString());
   EXPECT_EQ("Boolean(true)", DataElement(true).ToString());
   EXPECT_EQ("UnsignedInt:1(27)", DataElement(uint8_t{27}).ToString());

@@ -11,12 +11,12 @@ namespace {
 constexpr const char kTestData[] = u8"🍜🥯🍕🥖🍞🍩";  // Carb-heavy dataset
 const BufferView kTestBuffer = BufferView(kTestData, sizeof(kTestData) - 1);
 
-TEST(L2CAP_FcsTest, EmptyBufferProducesInitialValue) {
+TEST(FcsTest, EmptyBufferProducesInitialValue) {
   EXPECT_EQ(0, ComputeFcs(BufferView()).fcs);
   EXPECT_EQ(5, ComputeFcs(BufferView(), FrameCheckSequence{5}).fcs);
 }
 
-TEST(L2CAP_FcsTest, FcsOfSimpleValues) {
+TEST(FcsTest, FcsOfSimpleValues) {
   // By inspection, the FCS has value zero if all inputs are 0.
   EXPECT_EQ(0, ComputeFcs(CreateStaticByteBuffer(0).view()).fcs);
 
@@ -25,20 +25,20 @@ TEST(L2CAP_FcsTest, FcsOfSimpleValues) {
   EXPECT_EQ(0b1010'0000'0000'0001, ComputeFcs(CreateStaticByteBuffer(0b1000'0000).view()).fcs);
 }
 
-TEST(L2CAP_FcsTest, Example1) {
+TEST(FcsTest, Example1) {
   // Core Spec v5.0, Vol 3, Part A, Section 3.3.5, Example 1.
   const auto kExample1Data = CreateStaticByteBuffer(0x0E, 0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x01,
                                                     0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09);
   EXPECT_EQ(0x6138, ComputeFcs(kExample1Data.view()).fcs);
 }
 
-TEST(L2CAP_FcsTest, Example2) {
+TEST(FcsTest, Example2) {
   // Core Spec v5.0, Vol 3, Part A, Section 3.3.5, Example 2.
   const auto kExample2Data = CreateStaticByteBuffer(0x04, 0x00, 0x40, 0x00, 0x01, 0x01);
   EXPECT_EQ(0x14D4, ComputeFcs(kExample2Data.view()).fcs);
 }
 
-TEST(L2CAP_FcsTest, FcsOfSlicesSameAsFcsOfWhole) {
+TEST(FcsTest, FcsOfSlicesSameAsFcsOfWhole) {
   const FrameCheckSequence whole_fcs = ComputeFcs(kTestBuffer);
   const auto slice0 = kTestBuffer.view(0, 4);
   const auto slice1 = kTestBuffer.view(slice0.size());

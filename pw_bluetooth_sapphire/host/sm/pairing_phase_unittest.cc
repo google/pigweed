@@ -56,10 +56,10 @@ class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
   DynamicByteBuffer last_rx_packet_;
 };
 
-class SMP_PairingPhaseTest : public l2cap::testing::FakeChannelTest {
+class PairingPhaseTest : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_PairingPhaseTest() = default;
-  ~SMP_PairingPhaseTest() override = default;
+  PairingPhaseTest() = default;
+  ~PairingPhaseTest() override = default;
 
  protected:
   void SetUp() override { NewPairingPhase(); }
@@ -89,17 +89,17 @@ class SMP_PairingPhaseTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ConcretePairingPhase> pairing_phase_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_PairingPhaseTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhaseTest);
 };
 
-using SMP_PairingPhaseDeathTest = SMP_PairingPhaseTest;
+using PairingPhaseDeathTest = PairingPhaseTest;
 
-TEST_F(SMP_PairingPhaseDeathTest, CallMethodOnFailedPhaseDies) {
+TEST_F(PairingPhaseDeathTest, CallMethodOnFailedPhaseDies) {
   pairing_phase()->Abort(ErrorCode::kUnspecifiedReason);
   ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnFailure(Status(HostError::kFailed)), ".*failed.*");
 }
 
-TEST_F(SMP_PairingPhaseTest, ChannelClosedNotifiesListener) {
+TEST_F(PairingPhaseTest, ChannelClosedNotifiesListener) {
   ASSERT_EQ(listener()->last_error().error(), HostError::kNoError);
   ASSERT_EQ(listener()->pairing_error_count(), 0);
   fake_chan()->Close();
@@ -108,7 +108,7 @@ TEST_F(SMP_PairingPhaseTest, ChannelClosedNotifiesListener) {
   ASSERT_EQ(listener()->last_error().error(), HostError::kLinkDisconnected);
 }
 
-TEST_F(SMP_PairingPhaseTest, OnFailureNotifiesListener) {
+TEST_F(PairingPhaseTest, OnFailureNotifiesListener) {
   auto ecode = ErrorCode::kDHKeyCheckFailed;
   ASSERT_EQ(listener()->last_error().error(), HostError::kNoError);
   ASSERT_EQ(listener()->pairing_error_count(), 0);
@@ -119,7 +119,7 @@ TEST_F(SMP_PairingPhaseTest, OnFailureNotifiesListener) {
   ASSERT_EQ(listener()->pairing_error_count(), 1);
 }
 
-TEST_F(SMP_PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
+TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
   ByteBufferPtr msg_sent = nullptr;
   fake_chan()->SetSendCallback([&msg_sent](ByteBufferPtr sdu) { msg_sent = std::move(sdu); },
                                dispatcher());

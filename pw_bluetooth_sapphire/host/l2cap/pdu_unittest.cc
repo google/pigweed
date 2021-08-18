@@ -27,7 +27,7 @@ hci::ACLDataPacketPtr PacketFromBytes(T... data) {
   return packet;
 }
 
-TEST(L2CAP_PduTest, CanCopyEmptyBody) {
+TEST(PduTest, CanCopyEmptyBody) {
   Recombiner recombiner(0x0001);
 
   // clang-format off
@@ -54,7 +54,7 @@ TEST(L2CAP_PduTest, CanCopyEmptyBody) {
   EXPECT_EQ(0u, pdu.Copy(&buf));
 }
 
-TEST(L2CAP_PduTest, Move) {
+TEST(PduTest, Move) {
   Recombiner recombiner(0x0001);
 
   // clang-format off
@@ -103,7 +103,7 @@ TEST(L2CAP_PduTest, Move) {
   EXPECT_EQ("Test", pdu_data.AsString());
 }
 
-TEST(L2CAP_PduTest, ReleaseFragments) {
+TEST(PduTest, ReleaseFragments) {
   Recombiner recombiner(0x0001);
 
   // clang-format off
@@ -148,7 +148,7 @@ TEST(L2CAP_PduTest, ReleaseFragments) {
                               fragments.begin()->view().data()));
 }
 
-TEST(L2CAP_PduTest, ReadSingleFragment) {
+TEST(PduTest, ReadSingleFragment) {
   Recombiner recombiner(0x0001);
 
   // clang-format off
@@ -191,7 +191,7 @@ TEST(L2CAP_PduTest, ReadSingleFragment) {
   EXPECT_EQ("tXXX", pdu_data.AsString());
 }
 
-TEST(L2CAP_PduTest, ReadMultipleFragments) {
+TEST(PduTest, ReadMultipleFragments) {
   Recombiner recombiner(0x0001);
 
   // clang-format off

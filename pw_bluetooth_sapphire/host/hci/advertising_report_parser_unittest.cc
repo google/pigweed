@@ -13,7 +13,7 @@
 namespace bt::hci::test {
 namespace {
 
-TEST(HCI_AdvertisingReportParserTest, EmptyReport) {
+TEST(AdvertisingReportParserTest, EmptyReport) {
   auto bytes = CreateStaticByteBuffer(0x3E, 0x02, 0x02, 0x00);
 
   auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
@@ -28,7 +28,7 @@ TEST(HCI_AdvertisingReportParserTest, EmptyReport) {
   EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
 }
 
-TEST(HCI_AdvertisingReportParserTest, SingleReportMalformed) {
+TEST(AdvertisingReportParserTest, SingleReportMalformed) {
   // clang-format off
 
   auto bytes = CreateStaticByteBuffer(
@@ -54,7 +54,7 @@ TEST(HCI_AdvertisingReportParserTest, SingleReportMalformed) {
   EXPECT_TRUE(parser.encountered_error());
 }
 
-TEST(HCI_AdvertisingReportParserTest, SingleReportNoData) {
+TEST(AdvertisingReportParserTest, SingleReportNoData) {
   // clang-format off
 
   auto bytes = CreateStaticByteBuffer(
@@ -89,7 +89,7 @@ TEST(HCI_AdvertisingReportParserTest, SingleReportNoData) {
   EXPECT_FALSE(parser.encountered_error());
 }
 
-TEST(HCI_AdvertisingReportParserTest, ReportsValidInvalid) {
+TEST(AdvertisingReportParserTest, ReportsValidInvalid) {
   // clang-format off
 
   auto bytes = CreateStaticByteBuffer(
@@ -130,7 +130,7 @@ TEST(HCI_AdvertisingReportParserTest, ReportsValidInvalid) {
   EXPECT_TRUE(parser.encountered_error());
 }
 
-TEST(HCI_AdvertisingReportParserTest, ReportsAllValid) {
+TEST(AdvertisingReportParserTest, ReportsAllValid) {
   // clang-format off
 
   auto bytes = CreateStaticByteBuffer(
@@ -196,7 +196,7 @@ TEST(HCI_AdvertisingReportParserTest, ReportsAllValid) {
   EXPECT_FALSE(parser.encountered_error());
 }
 
-TEST(HCI_AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
+TEST(AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
   // clang-format off
 
   auto bytes = CreateStaticByteBuffer(
@@ -245,7 +245,7 @@ TEST(HCI_AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
   EXPECT_TRUE(parser.encountered_error());
 }
 
-TEST(HCI_AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
+TEST(AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
   // clang-format off
 
   auto bytes = CreateStaticByteBuffer(

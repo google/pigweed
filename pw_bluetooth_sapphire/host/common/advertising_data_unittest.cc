@@ -26,13 +26,13 @@ constexpr uint16_t kId2As16 = 0x1122;
 
 constexpr size_t kRandomDataSize = 100;
 
-TEST(GAP_AdvertisingDataTest, MakeEmpty) {
+TEST(AdvertisingDataTest, MakeEmpty) {
   AdvertisingData data;
 
   EXPECT_EQ(0u, data.CalculateBlockSize());
 }
 
-TEST(GAP_AdvertisingDataTest, EncodeKnownURI) {
+TEST(AdvertisingDataTest, EncodeKnownURI) {
   AdvertisingData data;
   EXPECT_TRUE(data.AddUri("https://abc.xyz"));
 
@@ -45,7 +45,7 @@ TEST(GAP_AdvertisingDataTest, EncodeKnownURI) {
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
 
-TEST(GAP_AdvertisingDataTest, EncodeUnknownURI) {
+TEST(AdvertisingDataTest, EncodeUnknownURI) {
   AdvertisingData data;
   EXPECT_TRUE(data.AddUri("flubs:xyz"));
 
@@ -59,7 +59,7 @@ TEST(GAP_AdvertisingDataTest, EncodeUnknownURI) {
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
 
-TEST(GAP_AdvertisingDataTest, CompressServiceUUIDs) {
+TEST(AdvertisingDataTest, CompressServiceUUIDs) {
   AdvertisingData data;
   std::unordered_set<UUID> uuids{UUID(kId1As16), UUID(kId2As16)};
   for (auto& uuid : uuids) {
@@ -85,7 +85,7 @@ TEST(GAP_AdvertisingDataTest, CompressServiceUUIDs) {
   EXPECT_TRUE(uuids.find(to_uuid(block, 4)) != uuids.end());
 }
 
-TEST(GAP_AdvertisingDataTest, ParseBlock) {
+TEST(AdvertisingDataTest, ParseBlock) {
   auto bytes = CreateStaticByteBuffer(
       // Complete 16-bit UUIDs
       0x05, 0x03, 0x12, 0x02, 0x22, 0x11,
@@ -106,7 +106,7 @@ TEST(GAP_AdvertisingDataTest, ParseBlock) {
   EXPECT_EQ(-113, *(data->tx_power()));
 }
 
-TEST(GAP_AdvertisingDataTest, ParseBlockUnknownDataType) {
+TEST(AdvertisingDataTest, ParseBlockUnknownDataType) {
   AdvertisingData expected_ad;
   constexpr uint8_t lower_byte = 0x12, upper_byte = 0x22;
   constexpr uint16_t uuid_value = (upper_byte << 8) + lower_byte;
@@ -127,7 +127,7 @@ TEST(GAP_AdvertisingDataTest, ParseBlockUnknownDataType) {
   EXPECT_EQ(expected_ad, *data);
 }
 
-TEST(GAP_AdvertisingDataTest, ParseBlockNameTooLong) {
+TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
   // A block with a name of exactly kMaxNameLength (==248) bytes should be parsed correctly.
   {
     auto leading_bytes = StaticByteBuffer<2>{kMaxNameLength + 1, DataType::kCompleteLocalName};
@@ -153,7 +153,7 @@ TEST(GAP_AdvertisingDataTest, ParseBlockNameTooLong) {
   }
 }
 
-TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
+TEST(AdvertisingDataTest, ManufacturerZeroLength) {
   auto bytes = CreateStaticByteBuffer(
       // Complete 16-bit UUIDs
       0x05, 0x03, 0x12, 0x02, 0x22, 0x11,
@@ -169,7 +169,7 @@ TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
   EXPECT_EQ(0u, data->manufacturer_data(0x1234).size());
 }
 
-TEST(GAP_AdvertisingDataTest, ServiceData) {
+TEST(AdvertisingDataTest, ServiceData) {
   // A typical Eddystone-URL beacon advertisement
   // to "https://fuchsia.cl"
   auto bytes = CreateStaticByteBuffer(
@@ -195,7 +195,7 @@ TEST(GAP_AdvertisingDataTest, ServiceData) {
   EXPECT_TRUE(ContainersEqual(bytes.view(8), data->service_data(eddystone)));
 }
 
-TEST(GAP_AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {
+TEST(AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {
   auto service_data =
       StaticByteBuffer(0x02,                                               // Length
                        static_cast<uint8_t>(DataType::kServiceData16Bit),  // Data type
@@ -205,7 +205,7 @@ TEST(GAP_AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {
   EXPECT_FALSE(AdvertisingData::FromBytes(service_data));
 }
 
-TEST(GAP_AdvertisingDataTest, Equality) {
+TEST(AdvertisingDataTest, Equality) {
   AdvertisingData one, two;
 
   UUID gatt(kGattUuid);
@@ -245,7 +245,7 @@ TEST(GAP_AdvertisingDataTest, Equality) {
   EXPECT_EQ(three, four);
 }
 
-TEST(GAP_AdvertisingDataTest, Copy) {
+TEST(AdvertisingDataTest, Copy) {
   UUID gatt(kGattUuid);
   UUID eddy(kEddystoneUuid);
   StaticByteBuffer<kRandomDataSize> rand_data;
@@ -272,7 +272,7 @@ TEST(GAP_AdvertisingDataTest, Copy) {
   EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
 }
 
-TEST(GAP_AdvertisingDataTest, Move) {
+TEST(AdvertisingDataTest, Move) {
   UUID gatt(kGattUuid);
   UUID eddy(kEddystoneUuid);
   StaticByteBuffer<kRandomDataSize> rand_data;
@@ -316,7 +316,7 @@ TEST(GAP_AdvertisingDataTest, Move) {
   verify_advertising_data(move_assigned, "move_assigned");
 }
 
-TEST(GAP_AdvertisingDataTest, Uris) {
+TEST(AdvertisingDataTest, Uris) {
   // The encoding scheme is represented by the first UTF-8 code-point in the URI string. Per
   // https://www.bluetooth.com/specifications/assigned-numbers/uri-scheme-name-string-mapping/,
   // 0xBA is the highest code point corresponding to an encoding scheme. However, 0xBA > 0x7F, so
@@ -351,7 +351,7 @@ TEST(GAP_AdvertisingDataTest, Uris) {
 
 // Tests writing a fully populated |AdvertisingData| to
 // an output buffer succeeds.
-TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
+TEST(AdvertisingDataTest, WriteBlockSuccess) {
   AdvertisingData data;
 
   data.SetTxPower(4);
@@ -384,7 +384,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
 
 // Tests writing |AdvertisingData| to an output buffer that
 // is too small fails gracefully and returns early.
-TEST(GAP_AdvertisingDataTest, WriteBlockSmallBufError) {
+TEST(AdvertisingDataTest, WriteBlockSmallBufError) {
   AdvertisingData data;
 
   data.SetTxPower(4);
@@ -398,7 +398,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSmallBufError) {
 
 // Tests writing a fully populated |AdvertisingData| with provided flags to
 // an output buffer succeeds.
-TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
+TEST(AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
   AdvertisingData data;
 
   data.SetTxPower(4);
@@ -430,7 +430,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
   EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
 }
 
-TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsBufError) {
+TEST(AdvertisingDataTest, WriteBlockWithFlagsBufError) {
   AdvertisingData data;
 
   data.SetTxPower(6);
@@ -466,7 +466,7 @@ UUID AddNDistinctUuids(AdvertisingData& input,
   }
 }
 
-TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
+TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
   AdvertisingData data;
   {
     // Use the https URI encoding scheme. This prefix will be compressed to one byte when encoded.
@@ -540,7 +540,7 @@ TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
 
 // Tests that even when the maximum number of distinct UUIDs for a certain size have been added to
 // an AD, we do not reject additional UUIDs that are duplicates of already-added UUIDs.
-TEST(GAP_AdvertisingDataTest, AddDuplicateServiceUuidsWhenFullSucceeds) {
+TEST(AdvertisingDataTest, AddDuplicateServiceUuidsWhenFullSucceeds) {
   AdvertisingData data;
   uint16_t starting_16bit_uuid = 0x0001;
   UUID should_fail = AddNDistinctUuids(

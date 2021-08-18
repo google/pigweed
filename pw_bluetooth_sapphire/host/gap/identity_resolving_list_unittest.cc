@@ -15,12 +15,12 @@ namespace {
 const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {6, 5, 4, 3, 2, 1});
 const DeviceAddress kAddress2(DeviceAddress::Type::kLERandom, {0x66, 0x55, 0x44, 0x33, 0x22, 0x11});
 
-TEST(GAP_IdentityResolvingListTest, ResolveEmpty) {
+TEST(IdentityResolvingListTest, ResolveEmpty) {
   IdentityResolvingList rl;
   EXPECT_EQ(std::nullopt, rl.Resolve(kAddress1));
 }
 
-TEST(GAP_IdentityResolvingListTest, Resolve) {
+TEST(IdentityResolvingListTest, Resolve) {
   IdentityResolvingList rl;
 
   // Populate the list with two resolvable identities.
@@ -59,7 +59,7 @@ TEST(GAP_IdentityResolvingListTest, Resolve) {
 }
 
 // Tests that an identity address can be assigned a new IRK.
-TEST(GAP_IdentityResolvingListTest, OverwriteIrk) {
+TEST(IdentityResolvingListTest, OverwriteIrk) {
   IdentityResolvingList rl;
   UInt128 irk1 = Random<UInt128>();
   UInt128 irk2 = Random<UInt128>();

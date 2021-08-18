@@ -32,10 +32,10 @@ inline att::AccessRequirements AllowedNoSecurity() {
   return att::AccessRequirements(false, false, false);
 }
 
-class GATT_ServerTest : public l2cap::testing::FakeChannelTest {
+class ServerTest : public l2cap::testing::FakeChannelTest {
  public:
-  GATT_ServerTest() = default;
-  ~GATT_ServerTest() override = default;
+  ServerTest() = default;
+  ~ServerTest() override = default;
 
  protected:
   void SetUp() override {
@@ -65,10 +65,10 @@ class GATT_ServerTest : public l2cap::testing::FakeChannelTest {
   fxl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT_ServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServerTest);
 };
 
-TEST_F(GATT_ServerTest, ExchangeMTURequestInvalidPDU) {
+TEST_F(ServerTest, ExchangeMTURequestInvalidPDU) {
   // Just opcode
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(0x02);
@@ -83,7 +83,7 @@ TEST_F(GATT_ServerTest, ExchangeMTURequestInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ExchangeMTURequestValueTooSmall) {
+TEST_F(ServerTest, ExchangeMTURequestValueTooSmall) {
   const uint16_t kServerMTU = att::kLEMaxMTU;
   constexpr uint16_t kClientMTU = 1;
 
@@ -107,7 +107,7 @@ TEST_F(GATT_ServerTest, ExchangeMTURequestValueTooSmall) {
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
-TEST_F(GATT_ServerTest, ExchangeMTURequest) {
+TEST_F(ServerTest, ExchangeMTURequest) {
   constexpr uint16_t kServerMTU = att::kLEMaxMTU;
   constexpr uint16_t kClientMTU = 0x64;
 
@@ -130,7 +130,7 @@ TEST_F(GATT_ServerTest, ExchangeMTURequest) {
   EXPECT_EQ(kClientMTU, att()->mtu());
 }
 
-TEST_F(GATT_ServerTest, FindInformationInvalidPDU) {
+TEST_F(ServerTest, FindInformationInvalidPDU) {
   // Just opcode
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(0x04);
@@ -145,7 +145,7 @@ TEST_F(GATT_ServerTest, FindInformationInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindInformationInvalidHandle) {
+TEST_F(ServerTest, FindInformationInvalidHandle) {
   // Start handle is 0
   // clang-format off
   const auto kInvalidStartHandle = CreateStaticByteBuffer(
@@ -180,7 +180,7 @@ TEST_F(GATT_ServerTest, FindInformationInvalidHandle) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidEndHandle, kExpected2));
 }
 
-TEST_F(GATT_ServerTest, FindInformationAttributeNotFound) {
+TEST_F(ServerTest, FindInformationAttributeNotFound) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x04,        // opcode: find information request
@@ -199,7 +199,7 @@ TEST_F(GATT_ServerTest, FindInformationAttributeNotFound) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindInformation16) {
+TEST_F(ServerTest, FindInformation16) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   grp->AddAttribute(kTestType16);
   grp->AddAttribute(kTestType16);
@@ -227,7 +227,7 @@ TEST_F(GATT_ServerTest, FindInformation16) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindInformation128) {
+TEST_F(ServerTest, FindInformation128) {
   auto* grp = db()->NewGrouping(kTestType128, 0, kTestValue1);
   grp->set_active(true);
 
@@ -251,7 +251,7 @@ TEST_F(GATT_ServerTest, FindInformation128) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindByTypeValueSuccess) {
+TEST_F(ServerTest, FindByTypeValueSuccess) {
   // handle: 1 (active)
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
@@ -282,7 +282,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueSuccess) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindByTypeValueFail) {
+TEST_F(ServerTest, FindByTypeValueFail) {
   // handle: 1 (active)
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
@@ -306,7 +306,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueFail) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindByTypeValueEmptyDB) {
+TEST_F(ServerTest, FindByTypeValueEmptyDB) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
@@ -327,7 +327,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueEmptyDB) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindByTypeValueInvalidHandle) {
+TEST_F(ServerTest, FindByTypeValueInvalidHandle) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
@@ -348,7 +348,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueInvalidHandle) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindByTypeValueInvalidPDUError) {
+TEST_F(ServerTest, FindByTypeValueInvalidPDUError) {
   // handle: 1 (active)
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
@@ -366,7 +366,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueInvalidPDUError) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindByTypeValueZeroLengthValueError) {
+TEST_F(ServerTest, FindByTypeValueZeroLengthValueError) {
   // handle: 1 (active)
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
@@ -389,7 +389,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueZeroLengthValueError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindByTypeValueOutsideRangeError) {
+TEST_F(ServerTest, FindByTypeValueOutsideRangeError) {
   // handle: 1 (active)
   auto* grp = db()->NewGrouping(kTestType16, 2, kTestValue2);
 
@@ -420,7 +420,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueOutsideRangeError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindInfomationInactive) {
+TEST_F(ServerTest, FindInfomationInactive) {
   // handle: 1 (active)
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
@@ -452,7 +452,7 @@ TEST_F(GATT_ServerTest, FindInfomationInactive) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, FindInfomationRange) {
+TEST_F(ServerTest, FindInfomationRange) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   grp->AddAttribute(kTestType16);
   grp->AddAttribute(kTestType16);
@@ -479,7 +479,7 @@ TEST_F(GATT_ServerTest, FindInfomationRange) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidPDU) {
+TEST_F(ServerTest, ReadByGroupTypeInvalidPDU) {
   // Just opcode
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(0x10);
@@ -494,7 +494,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeUnsupportedGroupType) {
+TEST_F(ServerTest, ReadByGroupTypeUnsupportedGroupType) {
   // 16-bit UUID
   // clang-format off
   const auto kUsing16BitType = CreateStaticByteBuffer(
@@ -526,7 +526,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeUnsupportedGroupType) {
   EXPECT_TRUE(ReceiveAndExpect(kUsing128BitType, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidHandle) {
+TEST_F(ServerTest, ReadByGroupTypeInvalidHandle) {
   // Start handle is 0
   // clang-format off
   const auto kInvalidStartHandle = CreateStaticByteBuffer(
@@ -563,7 +563,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidHandle) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidEndHandle, kExpected2));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeAttributeNotFound) {
+TEST_F(ServerTest, ReadByGroupTypeAttributeNotFound) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
@@ -588,7 +588,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeAttributeNotFound) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeSingle) {
+TEST_F(ServerTest, ReadByGroupTypeSingle) {
   const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   // Start: 1, end: 2
@@ -616,7 +616,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingle) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeSingle128) {
+TEST_F(ServerTest, ReadByGroupTypeSingle128) {
   const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   // Start: 1, end: 2
@@ -646,7 +646,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingle128) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeSingleTruncated) {
+TEST_F(ServerTest, ReadByGroupTypeSingleTruncated) {
   const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   // Start: 1, end: 1
@@ -677,7 +677,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingleTruncated) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleSameValueSize) {
+TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   // Start: 1, end: 1
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
@@ -762,7 +762,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected3));
 }
 
-TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
+TEST_F(ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // Matching type but value of different size. The results will stop here.
@@ -790,7 +790,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
   // clang-format on
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeInvalidPDU) {
+TEST_F(ServerTest, ReadByTypeInvalidPDU) {
   // Just opcode
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(0x08);
@@ -805,7 +805,7 @@ TEST_F(GATT_ServerTest, ReadByTypeInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeInvalidHandle) {
+TEST_F(ServerTest, ReadByTypeInvalidHandle) {
   // Start handle is 0
   // clang-format off
   const auto kInvalidStartHandle = CreateStaticByteBuffer(
@@ -842,7 +842,7 @@ TEST_F(GATT_ServerTest, ReadByTypeInvalidHandle) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidEndHandle, kExpected2));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeAttributeNotFound) {
+TEST_F(ServerTest, ReadByTypeAttributeNotFound) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
@@ -867,7 +867,7 @@ TEST_F(GATT_ServerTest, ReadByTypeAttributeNotFound) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeDynamicValueNoHandler) {
+TEST_F(ServerTest, ReadByTypeDynamicValueNoHandler) {
   const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
@@ -893,7 +893,7 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueNoHandler) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeDynamicValue) {
+TEST_F(ServerTest, ReadByTypeDynamicValue) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
   attr->set_read_handler(
@@ -931,7 +931,7 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValue) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeDynamicValueError) {
+TEST_F(ServerTest, ReadByTypeDynamicValueError) {
   const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
@@ -960,7 +960,7 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeSingle) {
+TEST_F(ServerTest, ReadByTypeSingle) {
   const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kTestValue2 = CreateStaticByteBuffer('t', 'e', 's', 't');
 
@@ -989,7 +989,7 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
+TEST_F(ServerTest, ReadByTypeSingle128) {
   const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kTestValue2 = CreateStaticByteBuffer('t', 'e', 's', 't');
 
@@ -1019,7 +1019,7 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeSingleTruncated) {
+TEST_F(ServerTest, ReadByTypeSingleTruncated) {
   const auto kVeryLongValue =
       CreateStaticByteBuffer('t', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f', 'u', 'n');
 
@@ -1054,7 +1054,7 @@ TEST_F(GATT_ServerTest, ReadByTypeSingleTruncated) {
 
 // When there are more than one matching attributes, the list should end at the
 // first attribute that causes an error.
-TEST_F(GATT_ServerTest, ReadByTypeMultipleExcludeFirstError) {
+TEST_F(ServerTest, ReadByTypeMultipleExcludeFirstError) {
   // handle 1: readable
   auto* grp = db()->NewGrouping(kTestType16, 1, kTestValue1);
 
@@ -1080,7 +1080,7 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleExcludeFirstError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadByTypeMultipleSameValueSize) {
+TEST_F(ServerTest, ReadByTypeMultipleSameValueSize) {
   // handle: 1, value: foo
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
 
@@ -1177,7 +1177,7 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleSameValueSize) {
 
 // A response packet should only include consecutive attributes with the same
 // value size.
-TEST_F(GATT_ServerTest, ReadByTypeMultipleVaryingLengths) {
+TEST_F(ServerTest, ReadByTypeMultipleVaryingLengths) {
   // handle: 1 - value: "foo"
   auto* grp = db()->NewGrouping(kTestType16, 2, kTestValue1);
 
@@ -1238,7 +1238,7 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleVaryingLengths) {
 
 // When there are more than one matching attributes, the list should end at the
 // first attribute with a dynamic value.
-TEST_F(GATT_ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
+TEST_F(ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
   // handle: 1 - value: "foo"
   auto* grp = db()->NewGrouping(kTestType16, 1, kTestValue1);
 
@@ -1264,7 +1264,7 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, WriteRequestInvalidPDU) {
+TEST_F(ServerTest, WriteRequestInvalidPDU) {
   // Just opcode
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(0x12);
@@ -1279,7 +1279,7 @@ TEST_F(GATT_ServerTest, WriteRequestInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, WriteRequestInvalidHandle) {
+TEST_F(ServerTest, WriteRequestInvalidHandle) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x12,        // opcode: write request
@@ -1299,7 +1299,7 @@ TEST_F(GATT_ServerTest, WriteRequestInvalidHandle) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, WriteRequestSecurity) {
+TEST_F(ServerTest, WriteRequestSecurity) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
@@ -1345,7 +1345,7 @@ TEST_F(GATT_ServerTest, WriteRequestSecurity) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected2));
 }
 
-TEST_F(GATT_ServerTest, WriteRequestNoHandler) {
+TEST_F(ServerTest, WriteRequestNoHandler) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
@@ -1371,7 +1371,7 @@ TEST_F(GATT_ServerTest, WriteRequestNoHandler) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, WriteRequestError) {
+TEST_F(ServerTest, WriteRequestError) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
@@ -1406,7 +1406,7 @@ TEST_F(GATT_ServerTest, WriteRequestError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, WriteRequestSuccess) {
+TEST_F(ServerTest, WriteRequestSuccess) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
@@ -1440,7 +1440,7 @@ TEST_F(GATT_ServerTest, WriteRequestSuccess) {
 // TODO(bwb): Add test cases for the error conditions involved in a Write
 // Command (fxbug.dev/675)
 
-TEST_F(GATT_ServerTest, WriteCommandSuccess) {
+TEST_F(ServerTest, WriteCommandSuccess) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
@@ -1465,7 +1465,7 @@ TEST_F(GATT_ServerTest, WriteCommandSuccess) {
   RunLoopUntilIdle();
 }
 
-TEST_F(GATT_ServerTest, ReadRequestInvalidPDU) {
+TEST_F(ServerTest, ReadRequestInvalidPDU) {
   // Just opcode
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(0x0A);
@@ -1480,7 +1480,7 @@ TEST_F(GATT_ServerTest, ReadRequestInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadRequestInvalidHandle) {
+TEST_F(ServerTest, ReadRequestInvalidHandle) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
@@ -1498,7 +1498,7 @@ TEST_F(GATT_ServerTest, ReadRequestInvalidHandle) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadRequestSecurity) {
+TEST_F(ServerTest, ReadRequestSecurity) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
@@ -1523,7 +1523,7 @@ TEST_F(GATT_ServerTest, ReadRequestSecurity) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadRequestCached) {
+TEST_F(ServerTest, ReadRequestCached) {
   const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kDeclValue);
@@ -1554,7 +1554,7 @@ TEST_F(GATT_ServerTest, ReadRequestCached) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest2, kExpected2));
 }
 
-TEST_F(GATT_ServerTest, ReadRequestNoHandler) {
+TEST_F(ServerTest, ReadRequestNoHandler) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
@@ -1578,7 +1578,7 @@ TEST_F(GATT_ServerTest, ReadRequestNoHandler) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadRequestError) {
+TEST_F(ServerTest, ReadRequestError) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
@@ -1609,7 +1609,7 @@ TEST_F(GATT_ServerTest, ReadRequestError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobRequestInvalidPDU) {
+TEST_F(ServerTest, ReadBlobRequestInvalidPDU) {
   // Just opcode
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(0x0C);
@@ -1624,7 +1624,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
+TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
   const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
   const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
@@ -1662,7 +1662,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
+TEST_F(ServerTest, ReadBlobDynamicRequestError) {
   const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
       'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
@@ -1695,7 +1695,7 @@ TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobRequestStaticSuccess) {
+TEST_F(ServerTest, ReadBlobRequestStaticSuccess) {
   const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
       'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
@@ -1721,7 +1721,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestStaticSuccess) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobRequestStaticOverflowError) {
+TEST_F(ServerTest, ReadBlobRequestStaticOverflowError) {
   const auto kTestValue = CreateStaticByteBuffer('s', 'h', 'o', 'r', 't', 'e', 'r');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
@@ -1744,7 +1744,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestStaticOverflowError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobRequestInvalidHandleError) {
+TEST_F(ServerTest, ReadBlobRequestInvalidHandleError) {
   const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
       'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
@@ -1769,7 +1769,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidHandleError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
+TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
   const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
       'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
@@ -1803,7 +1803,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadBlobRequestInvalidOffsetError) {
+TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
   const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
       'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
@@ -1837,7 +1837,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidOffsetError) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ReadRequestSuccess) {
+TEST_F(ServerTest, ReadRequestSuccess) {
   const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
@@ -1866,7 +1866,7 @@ TEST_F(GATT_ServerTest, ReadRequestSuccess) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
-TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidPDU) {
+TEST_F(ServerTest, PrepareWriteRequestInvalidPDU) {
   // Payload is one byte too short.
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(
@@ -1885,7 +1885,7 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidPDU) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidHandle) {
+TEST_F(ServerTest, PrepareWriteRequestInvalidHandle) {
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x16,              // opcode: prepare write request
@@ -1904,7 +1904,7 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidHandle) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
 }
 
-TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
+TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
@@ -1940,7 +1940,7 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
   EXPECT_EQ(0, write_count);
 }
 
-TEST_F(GATT_ServerTest, PrepareWriteRequestPrepareQueueFull) {
+TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
@@ -1982,7 +1982,7 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestPrepareQueueFull) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kErrorResponse));
 }
 
-TEST_F(GATT_ServerTest, ExecuteWriteMalformedPayload) {
+TEST_F(ServerTest, ExecuteWriteMalformedPayload) {
   // Payload is one byte too short.
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(
@@ -1999,7 +1999,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteMalformedPayload) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
 }
 
-TEST_F(GATT_ServerTest, ExecuteWriteInvalidFlag) {
+TEST_F(ServerTest, ExecuteWriteInvalidFlag) {
   // Payload is one byte too short.
   // clang-format off
   const auto kInvalidPDU = CreateStaticByteBuffer(
@@ -2019,7 +2019,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteInvalidFlag) {
 
 // Tests that an "execute write request" without any prepared writes returns
 // success without writing to any attributes.
-TEST_F(GATT_ServerTest, ExecuteWriteQueueEmpty) {
+TEST_F(ServerTest, ExecuteWriteQueueEmpty) {
   // clang-format off
   const auto kExecute = CreateStaticByteBuffer(
     0x18,  // opcode: execute write request
@@ -2034,7 +2034,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteQueueEmpty) {
   EXPECT_TRUE(ReceiveAndExpect(kExecute, kExecuteResponse));
 }
 
-TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
+TEST_F(ServerTest, ExecuteWriteSuccess) {
   auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
@@ -2117,7 +2117,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
 }
 
 // Tests that the rest of the queue is dropped if a prepared write fails.
-TEST_F(GATT_ServerTest, ExecuteWriteError) {
+TEST_F(ServerTest, ExecuteWriteError) {
   auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
@@ -2191,7 +2191,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteError) {
   EXPECT_EQ("hellxx", buffer.AsString());
 }
 
-TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
+TEST_F(ServerTest, ExecuteWriteAbort) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   // |attr| has handle "2".
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
@@ -2273,7 +2273,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
   EXPECT_EQ(1, write_count);
 }
 
-TEST_F(GATT_ServerTest, SendNotificationEmpty) {
+TEST_F(ServerTest, SendNotificationEmpty) {
   constexpr att::Handle kHandle = 0x1234;
   const BufferView kTestValue;
 
@@ -2289,7 +2289,7 @@ TEST_F(GATT_ServerTest, SendNotificationEmpty) {
   EXPECT_TRUE(Expect(kExpected));
 }
 
-TEST_F(GATT_ServerTest, SendNotification) {
+TEST_F(ServerTest, SendNotification) {
   constexpr att::Handle kHandle = 0x1234;
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
@@ -2306,7 +2306,7 @@ TEST_F(GATT_ServerTest, SendNotification) {
   EXPECT_TRUE(Expect(kExpected));
 }
 
-TEST_F(GATT_ServerTest, SendIndicationEmpty) {
+TEST_F(ServerTest, SendIndicationEmpty) {
   constexpr att::Handle kHandle = 0x1234;
   const BufferView kTestValue;
 
@@ -2322,7 +2322,7 @@ TEST_F(GATT_ServerTest, SendIndicationEmpty) {
   EXPECT_TRUE(Expect(kExpected));
 }
 
-TEST_F(GATT_ServerTest, SendIndication) {
+TEST_F(ServerTest, SendIndication) {
   constexpr att::Handle kHandle = 0x1234;
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
@@ -2339,7 +2339,7 @@ TEST_F(GATT_ServerTest, SendIndication) {
   EXPECT_TRUE(Expect(kExpected));
 }
 
-class GATT_ServerTest_Security : public GATT_ServerTest {
+class ServerTestSecurity : public ServerTest {
  protected:
   void InitializeAttributesForReading() {
     auto* grp = db()->NewGrouping(types::kPrimaryService, 4, kTestValue1);
@@ -2503,7 +2503,7 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
     return true;
   }
 
-  template <bool (GATT_ServerTest_Security::*EmulateMethod)(att::Handle, att::ErrorCode),
+  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, att::ErrorCode),
             bool IsWrite>
   void RunTest() {
     const att::ErrorCode kNotPermittedError =
@@ -2540,15 +2540,15 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   }
 
   void RunReadByTypeTest() {
-    RunTest<&GATT_ServerTest_Security::EmulateReadByTypeRequest, false>();
+    RunTest<&ServerTestSecurity::EmulateReadByTypeRequest, false>();
   }
-  void RunReadBlobTest() { RunTest<&GATT_ServerTest_Security::EmulateReadBlobRequest, false>(); }
-  void RunReadRequestTest() { RunTest<&GATT_ServerTest_Security::EmulateReadRequest, false>(); }
-  void RunWriteRequestTest() { RunTest<&GATT_ServerTest_Security::EmulateWriteRequest, true>(); }
+  void RunReadBlobTest() { RunTest<&ServerTestSecurity::EmulateReadBlobRequest, false>(); }
+  void RunReadRequestTest() { RunTest<&ServerTestSecurity::EmulateReadRequest, false>(); }
+  void RunWriteRequestTest() { RunTest<&ServerTestSecurity::EmulateWriteRequest, true>(); }
   void RunPrepareWriteRequestTest() {
-    RunTest<&GATT_ServerTest_Security::EmulatePrepareWriteRequest, true>();
+    RunTest<&ServerTestSecurity::EmulatePrepareWriteRequest, true>();
   }
-  void RunWriteCommandTest() { RunTest<&GATT_ServerTest_Security::EmulateWriteCommand, true>(); }
+  void RunWriteCommandTest() { RunTest<&ServerTestSecurity::EmulateWriteCommand, true>(); }
 
   const att::Attribute* not_permitted_attr() const { return not_permitted_attr_; }
   const att::Attribute* encryption_required_attr() const { return encryption_required_attr_; }
@@ -2569,22 +2569,22 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
 };
 
 // Tests receiving a Read By Type error under 3 possible link security levels.
-TEST_F(GATT_ServerTest_Security, ReadByTypeErrorSecurity) {
+TEST_F(ServerTestSecurity, ReadByTypeErrorSecurity) {
   InitializeAttributesForReading();
   RunReadByTypeTest();
 }
 
-TEST_F(GATT_ServerTest_Security, ReadBlobErrorSecurity) {
+TEST_F(ServerTestSecurity, ReadBlobErrorSecurity) {
   InitializeAttributesForReading();
   RunReadBlobTest();
 }
 
-TEST_F(GATT_ServerTest_Security, ReadErrorSecurity) {
+TEST_F(ServerTestSecurity, ReadErrorSecurity) {
   InitializeAttributesForReading();
   RunReadRequestTest();
 }
 
-TEST_F(GATT_ServerTest_Security, WriteErrorSecurity) {
+TEST_F(ServerTestSecurity, WriteErrorSecurity) {
   InitializeAttributesForWriting();
   RunWriteRequestTest();
 
@@ -2592,7 +2592,7 @@ TEST_F(GATT_ServerTest_Security, WriteErrorSecurity) {
   EXPECT_EQ(4u, write_count());
 }
 
-TEST_F(GATT_ServerTest_Security, WriteCommandErrorSecurity) {
+TEST_F(ServerTestSecurity, WriteCommandErrorSecurity) {
   InitializeAttributesForWriting();
   RunWriteCommandTest();
 
@@ -2600,7 +2600,7 @@ TEST_F(GATT_ServerTest_Security, WriteCommandErrorSecurity) {
   EXPECT_EQ(4u, write_count());
 }
 
-TEST_F(GATT_ServerTest_Security, PrepareWriteRequestSecurity) {
+TEST_F(ServerTestSecurity, PrepareWriteRequestSecurity) {
   InitializeAttributesForWriting();
   RunPrepareWriteRequestTest();
 

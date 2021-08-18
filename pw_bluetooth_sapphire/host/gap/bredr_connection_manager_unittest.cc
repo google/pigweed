@@ -763,7 +763,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
 using GAP_BrEdrConnectionManagerTest = BrEdrConnectionManagerTest;
 
-TEST_F(GAP_BrEdrConnectionManagerTest, DisableConnectivity) {
+TEST_F(BrEdrConnectionManagerTest, DisableConnectivity) {
   size_t cb_count = 0;
   auto cb = [&cb_count](const auto& status) {
     cb_count++;
@@ -789,7 +789,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisableConnectivity) {
   EXPECT_EQ(2u, cb_count);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, EnableConnectivity) {
+TEST_F(BrEdrConnectionManagerTest, EnableConnectivity) {
   size_t cb_count = 0;
   auto cb = [&cb_count](const auto& status) {
     cb_count++;
@@ -822,7 +822,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EnableConnectivity) {
 // Test: An incoming connection request should trigger an acceptance and
 // interrogation should allow a peer that only report the first Extended
 // Features page.
-TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnection_BrokenExtendedPageResponse) {
+TEST_F(BrEdrConnectionManagerTest, IncomingConnection_BrokenExtendedPageResponse) {
   EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
                         &kConnectionComplete);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
@@ -848,7 +848,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnection_BrokenExtendedPageResp
 
 // Test: An incoming connection request should trigger an acceptance and an
 // interrogation to discover capabilities.
-TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
+TEST_F(BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   QueueSuccessfulIncomingConn();
@@ -868,7 +868,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
 
 // Test: An incoming connection request should upgrade a known LE peer with a
 // matching address to a dual mode peer.
-TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionUpgradesKnownLowEnergyPeerToDualMode) {
+TEST_F(BrEdrConnectionManagerTest, IncomingConnectionUpgradesKnownLowEnergyPeerToDualMode) {
   const DeviceAddress le_alias_addr(DeviceAddress::Type::kLEPublic, kTestDevAddr.value());
   Peer* const peer = peer_cache()->NewPeer(le_alias_addr, true);
   ASSERT_TRUE(peer);
@@ -889,7 +889,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionUpgradesKnownLowEnergyP
 }
 
 // Test: A remote disconnect should correctly remove the connection.
-TEST_F(GAP_BrEdrConnectionManagerTest, RemoteDisconnect) {
+TEST_F(BrEdrConnectionManagerTest, RemoteDisconnect) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
   QueueSuccessfulIncomingConn();
 
@@ -923,7 +923,7 @@ const auto kReadRemoteSupportedFeaturesCompleteFailed =
 // Test: if the interrogation fails, we disconnect.
 //  - Receiving extra responses after a command fails will not fail
 //  - We don't query extended features if we don't receive an answer.
-TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
+TEST_F(BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
   EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
                         &kConnectionComplete);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
@@ -944,7 +944,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
 }
 
 // Test: replies negative to IO Capability Requests before PairingDelegate is set
-TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWithNoPairingDelegate) {
+TEST_F(BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWithNoPairingDelegate) {
   EXPECT_CMD_PACKET_OUT(test_device(), kIoCapabilityRequestNegativeReply,
                         &kIoCapabilityRequestNegativeReplyRsp);
 
@@ -956,7 +956,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWithNoPai
 }
 
 // Test: replies negative to IO Capability Requests for unconnected peers
-TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWhenNotConnected) {
+TEST_F(BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWhenNotConnected) {
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -971,7 +971,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWhenNotCo
 }
 
 // Test: replies to IO Capability Requests for connected peers
-TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
+TEST_F(BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -1000,7 +1000,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
 }
 
 // Test: Responds to Secure Simple Pairing with user rejection of Numeric Comparison association
-TEST_F(GAP_BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUserRejects) {
+TEST_F(BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUserRejects) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1066,7 +1066,7 @@ const auto kUserPasskeyRequestNegativeReplyRsp = CreateStaticByteBuffer(
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
 // user declines or provides invalid input
-TEST_F(GAP_BrEdrConnectionManagerTest,
+TEST_F(BrEdrConnectionManagerTest,
        RespondToPasskeyEntryPairingAfterUserProvidesInvalidPasskey) {
   QueueSuccessfulIncomingConn();
 
@@ -1109,7 +1109,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 }
 
 // Test: replies negative to Link Key Requests for unknown and unbonded peers
-TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
+TEST_F(BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
   EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
                         &kLinkKeyRequestNegativeReplyRsp);
 
@@ -1146,7 +1146,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
 }
 
 // Test: replies to Link Key Requests for bonded peer
-TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
+TEST_F(BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   ASSERT_TRUE(peer_cache()->AddBondedPeer(
       BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
@@ -1177,7 +1177,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
 // user provides the correct passkey
-TEST_F(GAP_BrEdrConnectionManagerTest,
+TEST_F(BrEdrConnectionManagerTest,
        EncryptAfterPasskeyEntryPairingAndUserProvidesAcceptedPasskey) {
   QueueSuccessfulIncomingConn();
 
@@ -1231,7 +1231,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
 // Test: Responds to Secure Simple Pairing as the display side of Passkey Entry association after
 // the user provides the correct passkey on the peer
-TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
+TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1284,7 +1284,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
 
 // Test: Responds to Secure Simple Pairing and user confirmation of Numeric Comparison association,
 // then bonds and encrypts using resulting link key
-TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAndUserConfirms) {
+TEST_F(BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAndUserConfirms) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1344,7 +1344,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairi
 }
 
 // Test: can't change the link key of an unbonded peer
-TEST_F(GAP_BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
+TEST_F(BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1386,7 +1386,7 @@ const auto kLinkKeyNotificationLegacy =
     );
 
 // Test: don't bond if the link key resulted from legacy pairing
-TEST_F(GAP_BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
+TEST_F(BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1418,7 +1418,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
 }
 
 // Test: if L2CAP gets a link error, we disconnect the connection
-TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectOnLinkError) {
+TEST_F(BrEdrConnectionManagerTest, DisconnectOnLinkError) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1437,7 +1437,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectOnLinkError) {
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
+TEST_F(BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1465,7 +1465,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSearchedFor) {
+TEST_F(BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSearchedFor) {
   constexpr UUID kServiceUuid1 = sdp::profile::kAudioSink;
   auto* const peer = peer_cache()->NewPeer(kTestDevAddr, true);
   peer->MutBrEdr().AddService(kServiceUuid1);
@@ -1517,7 +1517,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNot
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOfSameService) {
+TEST_F(BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOfSameService) {
   constexpr UUID kServiceUuid = sdp::profile::kAudioSink;
   auto* const peer = peer_cache()->NewPeer(kTestDevAddr, true);
   peer->MutBrEdr().AddService(kServiceUuid);
@@ -1563,7 +1563,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSear
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
+TEST_F(BrEdrConnectionManagerTest, ServiceSearch) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto& attributes) {
     auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
@@ -1653,7 +1653,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
+TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto& attributes) {
     auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
@@ -1768,7 +1768,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
 
 // Test: when opening an L2CAP channel on an unbonded peer, indicate that we have no link key then
 // pair, authenticate, bond, and encrypt the link, then try to open the channel.
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
+TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1855,7 +1855,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 
 // Test: when the peer is already bonded, the link key gets stored when it is provided to the
 // connection.
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
+TEST_F(BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
   ASSERT_TRUE(peer_cache()->AddBondedPeer(
       BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
@@ -1923,7 +1923,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest,
+TEST_F(BrEdrConnectionManagerTest,
        OpenL2capAuthenticationFailureReturnsInvalidSocketAndDisconnects) {
   QueueSuccessfulIncomingConn();
 
@@ -1975,7 +1975,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   ASSERT_EQ(count + kDisconnectionTransactions, transaction_count());
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
+TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -2058,7 +2058,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
 
 // Test: when pairing is in progress, opening an L2CAP channel waits for the pairing to complete
 // before retrying.
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComplete) {
+TEST_F(BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComplete) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -2133,7 +2133,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
 
 // Test: when pairing is in progress, opening an L2CAP channel waits for the pairing to complete
 // before retrying.
-TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNotL2cap) {
+TEST_F(BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNotL2cap) {
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -2215,16 +2215,16 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownPeer) {
+TEST_F(BrEdrConnectionManagerTest, ConnectUnknownPeer) {
   EXPECT_FALSE(connmgr()->Connect(PeerId(456), {}));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectLowEnergyPeer) {
+TEST_F(BrEdrConnectionManagerTest, ConnectLowEnergyPeer) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddrLe, true);
   EXPECT_FALSE(connmgr()->Connect(peer->identifier(), {}));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectUnknownPeerDoesNothing) {
+TEST_F(BrEdrConnectionManagerTest, DisconnectUnknownPeerDoesNothing) {
   EXPECT_TRUE(connmgr()->Disconnect(PeerId(999), DisconnectReason::kApiRequest));
 
   RunLoopUntilIdle();
@@ -2233,7 +2233,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectUnknownPeerDoesNothing) {
 }
 
 // Test: user-initiated disconnection
-TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
+TEST_F(BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -2256,7 +2256,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   EXPECT_FALSE(peer->bredr()->connected());
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
+TEST_F(BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -2285,7 +2285,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnection) {
+TEST_F(BrEdrConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnection) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -2312,7 +2312,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnectio
   EXPECT_FALSE(peer_cache()->FindByAddress(kTestDevAddr));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
+TEST_F(BrEdrConnectionManagerTest, AddServiceSearchAll) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto&) {
     auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
@@ -2434,7 +2434,7 @@ std::string FormatConnectionState(Peer::ConnectionState s) {
   })
 
 // An error is received via the HCI Command cb_status event
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRspError);
@@ -2462,7 +2462,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
 }
 
 // Connection Complete event reports error
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
@@ -2490,7 +2490,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
   EXPECT_TRUE(NotConnected(peer));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
@@ -2514,7 +2514,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
 }
 
 // Successful connection to single peer
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeer) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
 
@@ -2544,7 +2544,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kMaster);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
 
@@ -2581,7 +2581,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
 }
 
 // Connecting to an already connected peer should complete instantly
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
 
@@ -2625,7 +2625,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
 
 // Initiating Two Connections to the same (currently unconnected) peer should
 // successfully establish both
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
 
@@ -2664,7 +2664,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   EXPECT_EQ(num_callbacks, 2);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInterrogation) {
+TEST_F(BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInterrogation) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
 
@@ -2706,7 +2706,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfte
   EXPECT_EQ(num_callbacks, 2);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
+TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, true);
   auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
 
@@ -2759,7 +2759,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   EXPECT_TRUE(IsConnected(peer_b));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectPendingConnections) {
+TEST_F(BrEdrConnectionManagerTest, DisconnectPendingConnections) {
   auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, true);
   auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
 
@@ -2880,7 +2880,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
 
 // If SDP channel creation fails, null channel should be caught and
 // not be dereferenced. Search should fail to return results.
-TEST_F(GAP_BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
+TEST_F(BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
   constexpr l2cap::ChannelId kLocalCId = 0x40;
   constexpr l2cap::ChannelId kRemoteCId = 0x41;
 
@@ -2912,7 +2912,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
   EXPECT_FALSE(IsConnected(peer));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest,
+TEST_F(BrEdrConnectionManagerTest,
        PendingPacketsNotClearedOnDisconnectAndClearedOnDisconnectionCompleteEvent) {
   constexpr size_t kMaxNumPackets = 1;
 
@@ -2984,7 +2984,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   QueueDisconnection(kConnectionHandle2);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, PairUnconnectedPeer) {
+TEST_F(BrEdrConnectionManagerTest, PairUnconnectedPeer) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
   ASSERT_EQ(peer_cache()->count(), 1u);
@@ -2997,7 +2997,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PairUnconnectedPeer) {
   ASSERT_EQ(count_cb_called, 1u);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, Pair) {
+TEST_F(BrEdrConnectionManagerTest, Pair) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -3043,7 +3043,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Pair) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, PairTwice) {
+TEST_F(BrEdrConnectionManagerTest, PairTwice) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -3097,7 +3097,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PairTwice) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelParameters) {
+TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelParameters) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = l2cap::kFirstDynamicChannelId;
   l2cap::ChannelParameters params;
@@ -3146,7 +3146,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
 
 // Tests that the connection manager cleans up its connection map correctly following a
 // disconnection due to encryption failure.
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) {
+TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
 
@@ -3180,7 +3180,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
   EXPECT_TRUE(NotConnected(peer));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
+TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -3242,7 +3242,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
+TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
   QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -3301,7 +3301,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConnectionFails) {
+TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConnectionFails) {
   sco::ScoConnectionManager::ConnectionResult conn_result;
   auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
   auto handle = connmgr()->OpenScoConnection(
@@ -3311,7 +3311,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConn
   EXPECT_EQ(conn_result.error(), HostError::kNotFound);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
+TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
   QueueSuccessfulIncomingConn();
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
@@ -3396,7 +3396,7 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
   RunLoopUntilIdle();
 }
 
-INSTANTIATE_TEST_SUITE_P(GAP_BrEdrConnectionManagerTest, ScoLinkTypesTest,
+INSTANTIATE_TEST_SUITE_P(BrEdrConnectionManagerTest, ScoLinkTypesTest,
                          ::testing::Values(hci::LinkType::kSCO, hci::LinkType::kExtendedSCO));
 
 class UnconnectedLinkTypesTest : public BrEdrConnectionManagerTest,
@@ -3417,12 +3417,12 @@ TEST_P(UnconnectedLinkTypesTest, RejectUnsupportedSCOConnectionRequests) {
   RunLoopUntilIdle();
 }
 
-INSTANTIATE_TEST_SUITE_P(GAP_BrEdrConnectionManagerTest, UnconnectedLinkTypesTest,
+INSTANTIATE_TEST_SUITE_P(BrEdrConnectionManagerTest, UnconnectedLinkTypesTest,
                          ::testing::Values(hci::LinkType::kSCO, hci::LinkType::kExtendedSCO));
 
 // Test that an unexpected link type connection request is rejected for
 // kUnsupportedFeatureOrParameter
-TEST_F(GAP_BrEdrConnectionManagerTest, RejectUnsupportedConnectionRequest) {
+TEST_F(BrEdrConnectionManagerTest, RejectUnsupportedConnectionRequest) {
   auto linktype = static_cast<hci::LinkType>(0x09);
   auto status_event =
       testing::CommandStatusPacket(hci::kRejectConnectionRequest, hci::StatusCode::kSuccess);
@@ -3437,10 +3437,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RejectUnsupportedConnectionRequest) {
 }
 
 // Tests for assertions that enforce invariants.
-class GAP_BrEdrConnectionManagerDeathTest : public BrEdrConnectionManagerTest {};
+class BrEdrConnectionManagerDeathTest : public BrEdrConnectionManagerTest {};
 
 // Tests that a disconnection event that occurs after a peer gets removed is handled gracefully.
-TEST_F(GAP_BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
+TEST_F(BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_TRUE(peer->temporary());
 
@@ -3478,7 +3478,7 @@ TEST_F(GAP_BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
       ".*");
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
+TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->bredr() && NotConnected(peer));
 
@@ -3523,7 +3523,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
+TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->bredr() && NotConnected(peer));
   hci::Status status(HostError::kFailed);
@@ -3561,7 +3561,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerRejected) {
+TEST_F(BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerRejected) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->bredr() && NotConnected(peer));
 
@@ -3596,7 +3596,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerR
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
+TEST_F(BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
   // Initially, we should not have a peer for the given address
   auto peer = peer_cache()->FindByAddress(kTestDevAddr);
   EXPECT_FALSE(peer);
@@ -3615,7 +3615,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
   ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
+TEST_F(BrEdrConnectionManagerTest, Inspect) {
   inspect::Inspector inspector;
   connmgr()->AttachInspect(inspector.GetRoot(), "bredr_connection_manager");
 
@@ -3690,7 +3690,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_disconnect_matcher)));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
+TEST_F(BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   QueueSuccessfulIncomingConn();
@@ -3717,7 +3717,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeWithFailureStatusAfterInboundConnection) {
+TEST_F(BrEdrConnectionManagerTest, RoleChangeWithFailureStatusAfterInboundConnection) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   QueueSuccessfulIncomingConn();
@@ -3744,7 +3744,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeWithFailureStatusAfterInboundCo
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
+TEST_F(BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle,

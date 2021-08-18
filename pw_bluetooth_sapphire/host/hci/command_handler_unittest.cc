@@ -86,7 +86,7 @@ const auto kTestCommandPacket = StaticByteBuffer(LowerBits(kOpCode), UpperBits(k
                                                  kEncodedTestCommandParam);
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
-class HCI_CommandHandlerTest : public TestingBase {
+class CommandHandlerTest : public TestingBase {
  public:
   void SetUp() override {
     TestingBase::SetUp();
@@ -100,7 +100,7 @@ class HCI_CommandHandlerTest : public TestingBase {
   std::optional<CommandHandler> handler_;
 };
 
-TEST_F(HCI_CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
+TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
   const auto kEventPacket = testing::CommandCompletePacket(kOpCode, StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
@@ -115,7 +115,7 @@ TEST_F(HCI_CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
   EXPECT_EQ(event->test_param, kTestEventParam);
 }
 
-TEST_F(HCI_CommandHandlerTest, SendCommandReceiveFailEvent) {
+TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
   const auto kEventPacket = testing::CommandCompletePacket(kOpCode, StatusCode::kCommandDisallowed);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
@@ -130,7 +130,7 @@ TEST_F(HCI_CommandHandlerTest, SendCommandReceiveFailEvent) {
   EXPECT_EQ(status.value(), Status(StatusCode::kCommandDisallowed));
 }
 
-TEST_F(HCI_CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
+TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
   const auto kEventPacket = testing::CommandCompletePacket(kOpCode, StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
@@ -145,7 +145,7 @@ TEST_F(HCI_CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
   EXPECT_EQ(status.value(), Status(HostError::kPacketMalformed));
 }
 
-TEST_F(HCI_CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
+TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   const auto kTestEventPacket = MakeTestEventPacket();
   const auto kStatusEventPacket = testing::CommandStatusPacket(kOpCode, StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket, &kTestEventPacket);
@@ -164,7 +164,7 @@ TEST_F(HCI_CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   EXPECT_EQ(event->test_param, kTestEventParam);
 }
 
-TEST_F(HCI_CommandHandlerTest, AddEventHandlerSuccess) {
+TEST_F(CommandHandlerTest, AddEventHandlerSuccess) {
   std::optional<DecodableEvent> event;
   size_t cb_count = 0;
   handler().AddEventHandler<DecodableEvent>([&event, &cb_count](auto cb_event) {
@@ -180,7 +180,7 @@ TEST_F(HCI_CommandHandlerTest, AddEventHandlerSuccess) {
   EXPECT_EQ(event->test_param, kTestEventParam);
 }
 
-TEST_F(HCI_CommandHandlerTest, AddEventHandlerDecodeError) {
+TEST_F(CommandHandlerTest, AddEventHandlerDecodeError) {
   size_t cb_count = 0;
   handler().AddEventHandler<UndecodableEvent>([&cb_count](auto cb_event) {
     cb_count++;
@@ -192,7 +192,7 @@ TEST_F(HCI_CommandHandlerTest, AddEventHandlerDecodeError) {
   EXPECT_EQ(cb_count, 0u);
 }
 
-TEST_F(HCI_CommandHandlerTest, SendCommandFinishOnStatus) {
+TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
   const auto kStatusEventPacket = testing::CommandStatusPacket(kOpCode, StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket);
 

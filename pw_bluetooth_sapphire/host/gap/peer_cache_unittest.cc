@@ -78,7 +78,7 @@ const std::vector<bt::UUID> kBrEdrServices = {UUID(uint16_t{0x110a}), UUID(uint1
 // Phone (Networking)
 const DeviceClass kTestDeviceClass({0x06, 0x02, 0x02});
 
-class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
+class PeerCacheTest : public ::gtest::TestLoopFixture {
  public:
   void SetUp() override {
     TestLoopFixture::SetUp();
@@ -106,7 +106,7 @@ class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
   // Returns the cached pointer to the peer created in the most recent call to
   // NewPeer(). The caller must ensure that the peer has not expired out of
   // the cache. (Tests of cache expiration should generally subclass the
-  // GAP_PeerCacheExpirationTest fixture.)
+  // PeerCacheExpirationTest fixture.)
   Peer* peer() { return peer_; }
 
  private:
@@ -114,7 +114,7 @@ class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
   Peer* peer_;
 };
 
-TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsMetrics) {
+TEST_F(PeerCacheTest, InspectHierarchyContainsMetrics) {
   inspect::Inspector inspector;
   cache()->AttachInspect(inspector.GetRoot());
 
@@ -138,7 +138,7 @@ TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsMetrics) {
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher))));
 }
 
-TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemovedPeers) {
+TEST_F(PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemovedPeers) {
   inspect::Inspector inspector;
   cache()->AttachInspect(inspector.GetRoot());
 
@@ -167,7 +167,7 @@ TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRem
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher1))));
 }
 
-TEST_F(GAP_PeerCacheTest, LookUp) {
+TEST_F(PeerCacheTest, LookUp) {
   auto kAdvData0 = CreateStaticByteBuffer(0x05, 0x09, 'T', 'e', 's', 't');
   auto kAdvData1 =
       CreateStaticByteBuffer(0x0C, 0x09, 'T', 'e', 's', 't', ' ', 'D', 'e', 'v', 'i', 'c', 'e');
@@ -202,7 +202,7 @@ TEST_F(GAP_PeerCacheTest, LookUp) {
   EXPECT_EQ(kTestRSSI, peer->rssi());
 }
 
-TEST_F(GAP_PeerCacheTest, LookUpBrEdrPeerByLePublicAlias) {
+TEST_F(PeerCacheTest, LookUpBrEdrPeerByLePublicAlias) {
   ASSERT_FALSE(cache()->FindByAddress(kAddrLeAlias));
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   auto* p = cache()->FindByAddress(kAddrBrEdr);
@@ -215,7 +215,7 @@ TEST_F(GAP_PeerCacheTest, LookUpBrEdrPeerByLePublicAlias) {
   EXPECT_EQ(DeviceAddress::Type::kBREDR, p->address().type());
 }
 
-TEST_F(GAP_PeerCacheTest, LookUpLePeerByBrEdrAlias) {
+TEST_F(PeerCacheTest, LookUpLePeerByBrEdrAlias) {
   EXPECT_FALSE(cache()->FindByAddress(kAddrBrEdr));
   ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
   auto* p = cache()->FindByAddress(kAddrLeAlias);
@@ -228,17 +228,17 @@ TEST_F(GAP_PeerCacheTest, LookUpLePeerByBrEdrAlias) {
   EXPECT_EQ(DeviceAddress::Type::kLEPublic, p->address().type());
 }
 
-TEST_F(GAP_PeerCacheTest, NewPeerDoesNotCrashWhenNoCallbackIsRegistered) {
+TEST_F(PeerCacheTest, NewPeerDoesNotCrashWhenNoCallbackIsRegistered) {
   cache()->NewPeer(kAddrLePublic, true);
 }
 
-TEST_F(GAP_PeerCacheTest, ForEachEmpty) {
+TEST_F(PeerCacheTest, ForEachEmpty) {
   bool found = false;
   cache()->ForEach([&](const auto&) { found = true; });
   EXPECT_FALSE(found);
 }
 
-TEST_F(GAP_PeerCacheTest, ForEach) {
+TEST_F(PeerCacheTest, ForEach) {
   int count = 0;
   ASSERT_TRUE(NewPeer(kAddrLePublic, true));
   cache()->ForEach([&](const auto& p) {
@@ -249,14 +249,14 @@ TEST_F(GAP_PeerCacheTest, ForEach) {
   EXPECT_EQ(1, count);
 }
 
-TEST_F(GAP_PeerCacheTest, NewPeerInvokesCallbackWhenPeerIsFirstRegistered) {
+TEST_F(PeerCacheTest, NewPeerInvokesCallbackWhenPeerIsFirstRegistered) {
   bool was_called = false;
   cache()->add_peer_updated_callback([&was_called](const auto&) { was_called = true; });
   cache()->NewPeer(kAddrLePublic, true);
   EXPECT_TRUE(was_called);
 }
 
-TEST_F(GAP_PeerCacheTest, MultiplePeerUpdatedCallbacks) {
+TEST_F(PeerCacheTest, MultiplePeerUpdatedCallbacks) {
   size_t updated_count_0 = 0, updated_count_1 = 0;
   PeerCache::CallbackId id_0 =
       cache()->add_peer_updated_callback([&](const auto&) { updated_count_0++; });
@@ -284,7 +284,7 @@ TEST_F(GAP_PeerCacheTest, MultiplePeerUpdatedCallbacks) {
   EXPECT_EQ(updated_count_1, 3u);
 }
 
-TEST_F(GAP_PeerCacheTest, NewPeerDoesNotInvokeCallbackWhenPeerIsReRegistered) {
+TEST_F(PeerCacheTest, NewPeerDoesNotInvokeCallbackWhenPeerIsReRegistered) {
   int call_count = 0;
   cache()->add_peer_updated_callback([&call_count](const auto&) { ++call_count; });
   cache()->NewPeer(kAddrLePublic, true);
@@ -292,14 +292,14 @@ TEST_F(GAP_PeerCacheTest, NewPeerDoesNotInvokeCallbackWhenPeerIsReRegistered) {
   EXPECT_EQ(1, call_count);
 }
 
-TEST_F(GAP_PeerCacheTest, NewPeerIdentityKnown) {
+TEST_F(PeerCacheTest, NewPeerIdentityKnown) {
   EXPECT_TRUE(cache()->NewPeer(kAddrBrEdr, true)->identity_known());
   EXPECT_TRUE(cache()->NewPeer(kAddrLePublic, true)->identity_known());
   EXPECT_FALSE(cache()->NewPeer(kAddrLeRandom, true)->identity_known());
   EXPECT_FALSE(cache()->NewPeer(kAddrLeAnon, false)->identity_known());
 }
 
-TEST_F(GAP_PeerCacheTest, NewPeerInitialTechnologyIsClassic) {
+TEST_F(PeerCacheTest, NewPeerInitialTechnologyIsClassic) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
 
   // A peer initialized with a BR/EDR address should start out as a
@@ -311,7 +311,7 @@ TEST_F(GAP_PeerCacheTest, NewPeerInitialTechnologyIsClassic) {
   EXPECT_EQ(TechnologyType::kClassic, peer()->technology());
 }
 
-TEST_F(GAP_PeerCacheTest, NewPeerInitialTechnologyLowEnergy) {
+TEST_F(PeerCacheTest, NewPeerInitialTechnologyLowEnergy) {
   // LE address types should initialize the peer as LE-only.
   auto* le_publ_peer = cache()->NewPeer(kAddrLePublic, true /*connectable*/);
   auto* le_rand_peer = cache()->NewPeer(kAddrLeRandom, true /*connectable*/);
@@ -333,7 +333,7 @@ TEST_F(GAP_PeerCacheTest, NewPeerInitialTechnologyLowEnergy) {
   EXPECT_FALSE(le_anon_peer->identity_known());
 }
 
-TEST_F(GAP_PeerCacheTest, DisallowNewLowEnergyPeerIfBrEdrPeerExists) {
+TEST_F(PeerCacheTest, DisallowNewLowEnergyPeerIfBrEdrPeerExists) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
 
   // Try to add new LE peer with a public identity address containing the same
@@ -342,7 +342,7 @@ TEST_F(GAP_PeerCacheTest, DisallowNewLowEnergyPeerIfBrEdrPeerExists) {
   EXPECT_FALSE(le_alias_peer);
 }
 
-TEST_F(GAP_PeerCacheTest, DisallowNewBrEdrPeerIfLowEnergyPeerExists) {
+TEST_F(PeerCacheTest, DisallowNewBrEdrPeerIfLowEnergyPeerExists) {
   ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
 
   // Try to add new BR/EDR peer with BD_ADDR containing the same value as the
@@ -351,7 +351,7 @@ TEST_F(GAP_PeerCacheTest, DisallowNewBrEdrPeerIfLowEnergyPeerExists) {
   ASSERT_FALSE(bredr_alias_peer);
 }
 
-TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWithAdvertisingData) {
+TEST_F(PeerCacheTest, BrEdrPeerBecomesDualModeWithAdvertisingData) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_TRUE(peer()->bredr());
   ASSERT_FALSE(peer()->le());
@@ -367,7 +367,7 @@ TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWithAdvertisingData) {
   EXPECT_EQ(DeviceAddress::Type::kBREDR, peer()->address().type());
 }
 
-TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWhenConnectedOverLowEnergy) {
+TEST_F(PeerCacheTest, BrEdrPeerBecomesDualModeWhenConnectedOverLowEnergy) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_TRUE(peer()->bredr());
   ASSERT_FALSE(peer()->le());
@@ -381,7 +381,7 @@ TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWhenConnectedOverLowEnergy) {
   EXPECT_EQ(DeviceAddress::Type::kBREDR, peer()->address().type());
 }
 
-TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWithLowEnergyConnParams) {
+TEST_F(PeerCacheTest, BrEdrPeerBecomesDualModeWithLowEnergyConnParams) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_TRUE(peer()->bredr());
   ASSERT_FALSE(peer()->le());
@@ -395,7 +395,7 @@ TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWithLowEnergyConnParams) {
   EXPECT_EQ(DeviceAddress::Type::kBREDR, peer()->address().type());
 }
 
-TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWithLowEnergyPreferredConnParams) {
+TEST_F(PeerCacheTest, BrEdrPeerBecomesDualModeWithLowEnergyPreferredConnParams) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_TRUE(peer()->bredr());
   ASSERT_FALSE(peer()->le());
@@ -409,7 +409,7 @@ TEST_F(GAP_PeerCacheTest, BrEdrPeerBecomesDualModeWithLowEnergyPreferredConnPara
   EXPECT_EQ(DeviceAddress::Type::kBREDR, peer()->address().type());
 }
 
-TEST_F(GAP_PeerCacheTest, LowEnergyPeerBecomesDualModeWithInquiryData) {
+TEST_F(PeerCacheTest, LowEnergyPeerBecomesDualModeWithInquiryData) {
   ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
   ASSERT_TRUE(peer()->le());
   ASSERT_FALSE(peer()->bredr());
@@ -428,7 +428,7 @@ TEST_F(GAP_PeerCacheTest, LowEnergyPeerBecomesDualModeWithInquiryData) {
   EXPECT_EQ(kAddrBrEdr, peer()->bredr()->address());
 }
 
-TEST_F(GAP_PeerCacheTest, LowEnergyPeerBecomesDualModeWhenConnectedOverClassic) {
+TEST_F(PeerCacheTest, LowEnergyPeerBecomesDualModeWhenConnectedOverClassic) {
   ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
   ASSERT_TRUE(peer()->le());
   ASSERT_FALSE(peer()->bredr());
@@ -443,7 +443,7 @@ TEST_F(GAP_PeerCacheTest, LowEnergyPeerBecomesDualModeWhenConnectedOverClassic) 
   EXPECT_EQ(kAddrBrEdr, peer()->bredr()->address());
 }
 
-TEST_F(GAP_PeerCacheTest, InitialAutoConnectBehavior) {
+TEST_F(PeerCacheTest, InitialAutoConnectBehavior) {
   ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
 
   // Peers are not autoconnected before they are bonded.
@@ -463,13 +463,13 @@ TEST_F(GAP_PeerCacheTest, InitialAutoConnectBehavior) {
   EXPECT_TRUE(peer()->le()->should_auto_connect());
 }
 
-TEST_F(GAP_PeerCacheTest, AutoConnectDisabledAfterIntentionalDisconnect) {
+TEST_F(PeerCacheTest, AutoConnectDisabledAfterIntentionalDisconnect) {
   ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
   cache()->SetAutoConnectBehaviorForIntentionalDisconnect(peer()->identifier());
   EXPECT_FALSE(peer()->le()->should_auto_connect());
 }
 
-TEST_F(GAP_PeerCacheTest, AutoConnectReenabledAfterSuccessfulConnect) {
+TEST_F(PeerCacheTest, AutoConnectReenabledAfterSuccessfulConnect) {
   ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
 
   // Only bonded peers are eligible for autoconnect.
@@ -485,10 +485,10 @@ TEST_F(GAP_PeerCacheTest, AutoConnectReenabledAfterSuccessfulConnect) {
   EXPECT_TRUE(peer()->le()->should_auto_connect());
 }
 
-class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
+class PeerCacheTestBondingTest : public PeerCacheTest {
  public:
   void SetUp() override {
-    GAP_PeerCacheTest::SetUp();
+    PeerCacheTest::SetUp();
     ASSERT_TRUE(NewPeer(kAddrLePublic, true));
     bonded_callback_count_ = 0;
     cache()->set_peer_bonded_callback([this](const auto&) { bonded_callback_count_++; });
@@ -506,7 +506,7 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
     updated_callback_count_ = 0;
     cache()->set_peer_bonded_callback(nullptr);
     bonded_callback_count_ = 0;
-    GAP_PeerCacheTest::TearDown();
+    PeerCacheTest::TearDown();
   }
 
  protected:
@@ -526,7 +526,7 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
   PeerCache::CallbackId updated_callback_id_ = 0;
 };
 
-TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingId) {
+TEST_F(PeerCacheTestBondingTest, AddBondedPeerFailsWithExistingId) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -535,7 +535,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingId) {
   EXPECT_FALSE(bonded_callback_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingAddress) {
+TEST_F(PeerCacheTestBondingTest, AddBondedPeerFailsWithExistingAddress) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -544,7 +544,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingAddress) {
   EXPECT_FALSE(bonded_callback_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedLowEnergyPeerFailsWithExistingBrEdrAliasAddress) {
+TEST_F(PeerCacheTestBondingTest, AddBondedLowEnergyPeerFailsWithExistingBrEdrAliasAddress) {
   EXPECT_TRUE(NewPeer(kAddrBrEdr, true));
   sm::PairingData data;
   data.peer_ltk = kLTK;
@@ -554,14 +554,14 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedLowEnergyPeerFailsWithExistingBrE
   EXPECT_FALSE(bonded_callback_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedBrEdrPeerFailsWithExistingLowEnergyAliasAddress) {
+TEST_F(PeerCacheTestBondingTest, AddBondedBrEdrPeerFailsWithExistingLowEnergyAliasAddress) {
   EXPECT_TRUE(NewPeer(kAddrLeAlias, true));
   EXPECT_FALSE(cache()->AddBondedPeer(
       BondingData{.identifier = kId, .address = kAddrBrEdr, .bredr_link_key = kBrEdrKey}));
   EXPECT_FALSE(bonded_callback_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithoutMandatoryKeys) {
+TEST_F(PeerCacheTestBondingTest, AddBondedPeerFailsWithoutMandatoryKeys) {
   sm::PairingData data;
   EXPECT_FALSE(cache()->AddBondedPeer(BondingData{.identifier = kId,
                                                   .address = kAddrLeAlias,
@@ -574,7 +574,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithoutMandatoryKeys) {
   EXPECT_FALSE(bonded_callback_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, AddLowEnergyBondedPeerSuccess) {
+TEST_F(PeerCacheTestBondingTest, AddLowEnergyBondedPeerSuccess) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -600,7 +600,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddLowEnergyBondedPeerSuccess) {
   EXPECT_FALSE(bonded_callback_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
+TEST_F(PeerCacheTestBondingTest, AddBrEdrBondedPeerSuccess) {
   PeerId kId(5);
   sm::PairingData data;
 
@@ -629,7 +629,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
   EXPECT_FALSE(bonded_callback_called());
 }
 
-TEST_F(GAP_PeerCacheTest, AddBondedPeerWithIrkIsAddedToResolvingList) {
+TEST_F(PeerCacheTest, AddBondedPeerWithIrkIsAddedToResolvingList) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -648,7 +648,7 @@ TEST_F(GAP_PeerCacheTest, AddBondedPeerWithIrkIsAddedToResolvingList) {
   EXPECT_EQ(peer, cache()->FindByAddress(rpa));
 }
 
-TEST_F(GAP_PeerCacheTest, AddBondedPeerWithIrkButWithoutIdentityAddressPanics) {
+TEST_F(PeerCacheTest, AddBondedPeerWithIrkButWithoutIdentityAddressPanics) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -660,7 +660,7 @@ TEST_F(GAP_PeerCacheTest, AddBondedPeerWithIrkButWithoutIdentityAddressPanics) {
       ".*identity_address.*");
 }
 
-TEST_F(GAP_PeerCacheTest, StoreLowEnergyBondWithIrkButWithoutIdentityAddressPanics) {
+TEST_F(PeerCacheTest, StoreLowEnergyBondWithIrkButWithoutIdentityAddressPanics) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -669,19 +669,19 @@ TEST_F(GAP_PeerCacheTest, StoreLowEnergyBondWithIrkButWithoutIdentityAddressPani
   EXPECT_DEATH_IF_SUPPORTED(cache()->StoreLowEnergyBond(kId, data), ".*identity_address.*");
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondFailsWithNoKeys) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondFailsWithNoKeys) {
   sm::PairingData data;
   EXPECT_FALSE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondPeerUnknown) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondPeerUnknown) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
   EXPECT_FALSE(cache()->StoreLowEnergyBond(kId, data));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithLtk) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithLtk) {
   ASSERT_TRUE(peer()->temporary());
   ASSERT_TRUE(peer()->le());
   ASSERT_FALSE(peer()->le()->bonded());
@@ -698,7 +698,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithLtk) {
   EXPECT_EQ(data, *peer()->le()->bond_data());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithCsrk) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithCsrk) {
   ASSERT_TRUE(peer()->temporary());
   ASSERT_TRUE(peer()->le());
   ASSERT_FALSE(peer()->le()->bonded());
@@ -716,7 +716,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithCsrk) {
 
 // StoreLowEnergyBond fails if it contains the address of a different,
 // previously known peer.
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithExistingDifferentIdentity) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithExistingDifferentIdentity) {
   auto* p = cache()->NewPeer(kAddrLeRandom, true);
 
   // Assign the other peer's address as identity.
@@ -732,7 +732,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithExistingDifferentIde
 
 // StoreLowEnergyBond fails if the new identity is the address of a "different"
 // (another peer record with a distinct ID) BR/EDR peer.
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithNewIdentityMatchingExistingBrEdrPeer) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithNewIdentityMatchingExistingBrEdrPeer) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_TRUE(NewPeer(kAddrLeRandom, true));
   ASSERT_FALSE(peer()->identity_known());
@@ -752,7 +752,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithNewIdentityMatchingE
 
 // StoreLowEnergyBond succeeds if it contains an identity address that already
 // matches the target peer.
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithExistingMatchingIdentity) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithExistingMatchingIdentity) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -763,7 +763,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithExistingMatchingIden
   EXPECT_EQ(peer(), cache()->FindByAddress(*data.identity_address));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithNewIdentity) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithNewIdentity) {
   ASSERT_TRUE(NewPeer(kAddrLeRandom, true));
   ASSERT_FALSE(peer()->identity_known());
 
@@ -789,7 +789,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithNewIdentity) {
   ASSERT_EQ(peer(), cache()->FindByAddress(old_address));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithIrkIsAddedToResolvingList) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithIrkIsAddedToResolvingList) {
   ASSERT_TRUE(NewPeer(kAddrLeRandom, true));
   ASSERT_FALSE(peer()->identity_known());
 
@@ -809,7 +809,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithIrkIsAddedToResolvin
   EXPECT_EQ(peer(), cache()->FindByAddress(rpa));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, RemovingPeerRemovesIrkFromResolvingList) {
+TEST_F(PeerCacheTestBondingTest, RemovingPeerRemovesIrkFromResolvingList) {
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -830,7 +830,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, RemovingPeerRemovesIrkFromResolvingList) {
   EXPECT_FALSE(NewPeer(rpa, true));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithXTransportKeyNoBrEdr) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithXTransportKeyNoBrEdr) {
   // There's no preexisting BR/EDR data, the LE peer already exists.
   sm::PairingData data;
   data.peer_ltk = kLTK;
@@ -850,7 +850,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithXTransportKeyNoBrEdr
   EXPECT_EQ(kSecureBrEdrKey, peer()->bredr()->link_key().value());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithInsecureXTransportKeyExistingBrEdr) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithInsecureXTransportKeyExistingBrEdr) {
   // The peer is already dual-mode with a secure BR/EDR key.
   peer()->MutBrEdr().SetBondData(kSecureBrEdrKey);
   EXPECT_TRUE(peer()->bredr()->bonded());
@@ -867,7 +867,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithInsecureXTransportKe
   EXPECT_EQ(kSecureBrEdrKey, current_bredr_key);
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithXTransportKeyExistingBrEdr) {
+TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithXTransportKeyExistingBrEdr) {
   // The peer is already dual-mode with an insecure BR/EDR key.
   peer()->MutBrEdr().SetBondData(kInsecureBrEdrKey);
   EXPECT_TRUE(peer()->bredr()->bonded());
@@ -895,12 +895,12 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithXTransportKeyExistin
   EXPECT_EQ(kSecureBrEdrKey, current_bredr_key);
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreBrEdrBondWithUnknownAddress) {
+TEST_F(PeerCacheTestBondingTest, StoreBrEdrBondWithUnknownAddress) {
   ASSERT_EQ(nullptr, cache()->FindByAddress(kAddrBrEdr));
   EXPECT_FALSE(cache()->StoreBrEdrBond(kAddrBrEdr, kBrEdrKey));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreBrEdrBond) {
+TEST_F(PeerCacheTestBondingTest, StoreBrEdrBond) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_EQ(peer(), cache()->FindByAddress(kAddrBrEdr));
   ASSERT_TRUE(peer()->temporary());
@@ -917,7 +917,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreBrEdrBond) {
   EXPECT_EQ(kBrEdrKey, *peer()->bredr()->link_key());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, StoreBondsForBothTech) {
+TEST_F(PeerCacheTestBondingTest, StoreBondsForBothTech) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_EQ(peer(), cache()->FindByAddress(kAddrBrEdr));
   ASSERT_TRUE(peer()->temporary());
@@ -944,7 +944,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreBondsForBothTech) {
   EXPECT_TRUE(peer()->le()->bonded());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, BondsUpdatedWhenNewServicesAdded) {
+TEST_F(PeerCacheTestBondingTest, BondsUpdatedWhenNewServicesAdded) {
   ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
   ASSERT_EQ(peer(), cache()->FindByAddress(kAddrBrEdr));
   ASSERT_FALSE(peer()->bonded());
@@ -958,14 +958,14 @@ TEST_F(GAP_PeerCacheTest_BondingTest, BondsUpdatedWhenNewServicesAdded) {
   EXPECT_EQ(2, bonded_callback_count());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnUnknownPeer) {
+TEST_F(PeerCacheTestBondingTest, RemoveDisconnectedPeerOnUnknownPeer) {
   const PeerId id(0x9999);
   ASSERT_FALSE(cache()->FindById(id));
   EXPECT_TRUE(cache()->RemoveDisconnectedPeer(id));
   EXPECT_EQ(0, updated_callback_count());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnUnconnectedPeer) {
+TEST_F(PeerCacheTestBondingTest, RemoveDisconnectedPeerOnUnconnectedPeer) {
   ASSERT_FALSE(peer()->connected());
   const PeerId id = peer()->identifier();
   EXPECT_TRUE(cache()->RemoveDisconnectedPeer(id));
@@ -973,7 +973,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnUnconnectedPeer) {
   EXPECT_FALSE(cache()->FindById(id));
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnConnectedPeer) {
+TEST_F(PeerCacheTestBondingTest, RemoveDisconnectedPeerOnConnectedPeer) {
   peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
   ASSERT_TRUE(peer()->connected());
   const PeerId id = peer()->identifier();
@@ -983,7 +983,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnConnectedPeer) {
 }
 
 // Fixture parameterized by peer address
-class DualModeBondingTest : public GAP_PeerCacheTest_BondingTest,
+class DualModeBondingTest : public PeerCacheTestBondingTest,
                             public ::testing::WithParamInterface<DeviceAddress> {};
 
 TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
@@ -1025,14 +1025,14 @@ TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
 }
 
 // Test dual-mode character of peer using the same address of both types.
-INSTANTIATE_TEST_SUITE_P(GAP_PeerCacheTest, DualModeBondingTest,
+INSTANTIATE_TEST_SUITE_P(PeerCacheTest, DualModeBondingTest,
                          ::testing::Values(kAddrBrEdr, kAddrLeAlias));
 
 template <const DeviceAddress* DevAddr>
-class GAP_PeerCacheTest_UpdateCallbackTest : public GAP_PeerCacheTest {
+class PeerCacheTest_UpdateCallbackTest : public PeerCacheTest {
  public:
   void SetUp() override {
-    GAP_PeerCacheTest::SetUp();
+    PeerCacheTest::SetUp();
 
     was_called_ = false;
     ASSERT_TRUE(NewPeer(*DevAddr, true));
@@ -1044,7 +1044,7 @@ class GAP_PeerCacheTest_UpdateCallbackTest : public GAP_PeerCacheTest {
     EXPECT_FALSE(was_called_);
   }
 
-  void TearDown() override { GAP_PeerCacheTest::TearDown(); }
+  void TearDown() override { PeerCacheTest::TearDown(); }
 
  protected:
   hci::InquiryResult& ir() { return ir_; }
@@ -1065,17 +1065,17 @@ class GAP_PeerCacheTest_UpdateCallbackTest : public GAP_PeerCacheTest {
   hci::ExtendedInquiryResultEventParams eirep_;
 };
 
-using GAP_PeerCacheTest_BrEdrUpdateCallbackTest = GAP_PeerCacheTest_UpdateCallbackTest<&kAddrBrEdr>;
-using GAP_PeerCacheTest_LowEnergyUpdateCallbackTest =
-    GAP_PeerCacheTest_UpdateCallbackTest<&kAddrLeAlias>;
+using PeerCacheBrEdrUpdateCallbackTest = PeerCacheTest_UpdateCallbackTest<&kAddrBrEdr>;
+using PeerCacheLowEnergyUpdateCallbackTest =
+    PeerCacheTest_UpdateCallbackTest<&kAddrLeAlias>;
 
-TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
        ChangingLEConnectionStateTriggersUpdateCallback) {
   peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
        SetAdvertisingDataTriggersUpdateCallbackOnNameSet) {
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   EXPECT_TRUE(was_called());
@@ -1083,7 +1083,7 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
   EXPECT_EQ("Test", *peer()->name());
 }
 
-TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
        SetLowEnergyAdvertisingDataUpdateCallbackProvidesUpdatedPeer) {
   ASSERT_NE(peer()->rssi(), kTestRSSI);
   cache()->add_peer_updated_callback([&](const auto& updated_peer) {
@@ -1094,7 +1094,7 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
 }
 
-TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
        SetAdvertisingDataTriggersUpdateCallbackOnSameNameAndRssi) {
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   ASSERT_TRUE(was_called());
@@ -1104,19 +1104,19 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
        SetLowEnergyConnectionParamsDoesNotTriggerUpdateCallback) {
   peer()->MutLe().SetConnectionParameters({});
   EXPECT_FALSE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
        SetLowEnergyPreferredConnectionParamsDoesNotTriggerUpdateCallback) {
   peer()->MutLe().SetPreferredConnectionParameters({});
   EXPECT_FALSE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest, BecomingDualModeTriggersUpdateCallBack) {
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest, BecomingDualModeTriggersUpdateCallBack) {
   EXPECT_EQ(TechnologyType::kLowEnergy, peer()->technology());
 
   size_t call_count = 0;
@@ -1132,20 +1132,20 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest, BecomingDualModeTriggersUp
   EXPECT_EQ(call_count, 2U);
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        ChangingBrEdrConnectionStateTriggersUpdateCallback) {
   peer()->MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultTriggersUpdateCallbackOnPeerClassSet) {
   ir().class_of_device = kTestDeviceClass;
   peer()->MutBrEdr().SetInquiryData(ir());
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultUpdateCallbackProvidesUpdatedPeer) {
   ir().class_of_device = kTestDeviceClass;
   cache()->add_peer_updated_callback([](const auto& updated_peer) {
@@ -1156,7 +1156,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   peer()->MutBrEdr().SetInquiryData(ir());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultDoesNotTriggerUpdateCallbackOnSameDeviceClass) {
   ir().class_of_device = kTestDeviceClass;
   peer()->MutBrEdr().SetInquiryData(ir());
@@ -1167,14 +1167,14 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   EXPECT_FALSE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSITriggersUpdateCallbackOnDeviceClassSet) {
   irr().class_of_device = kTestDeviceClass;
   peer()->MutBrEdr().SetInquiryData(irr());
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSIUpdateCallbackProvidesUpdatedPeer) {
   irr().class_of_device = kTestDeviceClass;
   cache()->add_peer_updated_callback([](const auto& updated_peer) {
@@ -1184,7 +1184,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   peer()->MutBrEdr().SetInquiryData(irr());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSIDoesNotTriggerUpdateCallbackOnSameDeviceClass) {
   irr().class_of_device = kTestDeviceClass;
   peer()->MutBrEdr().SetInquiryData(irr());
@@ -1195,7 +1195,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   EXPECT_FALSE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSIDoesNotTriggerUpdateCallbackOnRSSI) {
   irr().rssi = 1;
   peer()->MutBrEdr().SetInquiryData(irr());
@@ -1208,14 +1208,14 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
 }
 
 TEST_F(
-    GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+    PeerCacheBrEdrUpdateCallbackTest,
     SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsTriggersUpdateCallbackOnDeviceClassSet) {
   eirep().class_of_device = kTestDeviceClass;
   peer()->MutBrEdr().SetInquiryData(eirep());
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsTriggersUpdateCallbackOnNameSet) {
   peer()->MutBrEdr().SetInquiryData(eirep());
   ASSERT_TRUE(was_called());  // Callback due to |class_of_device|.
@@ -1226,7 +1226,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsUpdateCallbackProvidesUpdatedPeer) {
   eirep().clock_offset = htole16(1);
   eirep().page_scan_repetition_mode = hci::PageScanRepetitionMode::kR1;
@@ -1253,7 +1253,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
 }
 
 TEST_F(
-    GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+    PeerCacheBrEdrUpdateCallbackTest,
     SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsGeneratesExactlyOneUpdateCallbackRegardlessOfNumberOfFieldsChanged) {
   eirep().clock_offset = htole16(1);
   eirep().page_scan_repetition_mode = hci::PageScanRepetitionMode::kR1;
@@ -1268,7 +1268,7 @@ TEST_F(
 }
 
 TEST_F(
-    GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+    PeerCacheBrEdrUpdateCallbackTest,
     SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsDoesNotTriggerUpdateCallbackOnSamePeerClass) {
   eirep().class_of_device = kTestDeviceClass;
   peer()->MutBrEdr().SetInquiryData(eirep());
@@ -1280,7 +1280,7 @@ TEST_F(
 }
 
 TEST_F(
-    GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+    PeerCacheBrEdrUpdateCallbackTest,
     SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsDoesNotTriggerUpdateCallbackOnSameName) {
   eir_data().Write(kEirData);
   peer()->MutBrEdr().SetInquiryData(eirep());
@@ -1291,7 +1291,7 @@ TEST_F(
   EXPECT_FALSE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
+TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsDoesNotTriggerUpdateCallbackOnRSSI) {
   eirep().rssi = 1;
   peer()->MutBrEdr().SetInquiryData(eirep());
@@ -1303,12 +1303,12 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   EXPECT_FALSE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, SetNameTriggersUpdateCallback) {
+TEST_F(PeerCacheBrEdrUpdateCallbackTest, SetNameTriggersUpdateCallback) {
   peer()->SetName("nombre");
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, SetNameDoesNotTriggerUpdateCallbackOnSameName) {
+TEST_F(PeerCacheBrEdrUpdateCallbackTest, SetNameDoesNotTriggerUpdateCallbackOnSameName) {
   peer()->SetName("nombre");
   ASSERT_TRUE(was_called());
 
@@ -1318,7 +1318,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, SetNameDoesNotTriggerUpdateCal
   EXPECT_FALSE(was_called_again);
 }
 
-TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdateCallBack) {
+TEST_F(PeerCacheBrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdateCallBack) {
   EXPECT_EQ(TechnologyType::kClassic, peer()->technology());
 
   size_t call_count = 0;
@@ -1334,9 +1334,9 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdate
   EXPECT_EQ(call_count, 2U);
 }
 
-class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
+class PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
  public:
-  GAP_PeerCacheExpirationTest() = default;
+  PeerCacheExpirationTest() = default;
   void SetUp() {
     TestLoopFixture::SetUp();
     cache_.set_peer_removed_callback([this](PeerId) { peers_removed_++; });
@@ -1373,19 +1373,19 @@ class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
   int peers_removed_;
 };
 
-TEST_F(GAP_PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterBirth) {
+TEST_F(PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterBirth) {
   RunLoopFor(kCacheTimeout);
   EXPECT_FALSE(IsDefaultPeerPresent());
   EXPECT_EQ(1, peers_removed());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, TemporaryLivesForSixtySecondsAfterBirth) {
+TEST_F(PeerCacheExpirationTest, TemporaryLivesForSixtySecondsAfterBirth) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
   EXPECT_EQ(0, peers_removed());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, TemporaryLivesForSixtySecondsSinceLastSeen) {
+TEST_F(PeerCacheExpirationTest, TemporaryLivesForSixtySecondsSinceLastSeen) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
 
@@ -1395,7 +1395,7 @@ TEST_F(GAP_PeerCacheExpirationTest, TemporaryLivesForSixtySecondsSinceLastSeen) 
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterLastSeen) {
+TEST_F(PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterLastSeen) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
 
@@ -1405,7 +1405,7 @@ TEST_F(GAP_PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterLastSeen) {
   EXPECT_FALSE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, CanMakeNonTemporaryJustBeforeSixtySeconds) {
+TEST_F(PeerCacheExpirationTest, CanMakeNonTemporaryJustBeforeSixtySeconds) {
   // At last possible moment, make peer non-temporary,
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
@@ -1417,7 +1417,7 @@ TEST_F(GAP_PeerCacheExpirationTest, CanMakeNonTemporaryJustBeforeSixtySeconds) {
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, LEConnectedPeerLivesMuchMoreThanSixtySeconds) {
+TEST_F(PeerCacheExpirationTest, LEConnectedPeerLivesMuchMoreThanSixtySeconds) {
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
   RunLoopFor(kCacheTimeout * 10);
@@ -1425,7 +1425,7 @@ TEST_F(GAP_PeerCacheExpirationTest, LEConnectedPeerLivesMuchMoreThanSixtySeconds
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, BREDRConnectedPeerLivesMuchMoreThanSixtySeconds) {
+TEST_F(PeerCacheExpirationTest, BREDRConnectedPeerLivesMuchMoreThanSixtySeconds) {
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
   RunLoopFor(kCacheTimeout * 10);
@@ -1433,7 +1433,7 @@ TEST_F(GAP_PeerCacheExpirationTest, BREDRConnectedPeerLivesMuchMoreThanSixtySeco
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, LePeerBecomesNonTemporaryWhenConnecting) {
+TEST_F(PeerCacheExpirationTest, LePeerBecomesNonTemporaryWhenConnecting) {
   ASSERT_TRUE(IsDefaultPeerPresent());
   ASSERT_EQ(kAddrLeAlias, GetDefaultPeer()->address());
   ASSERT_TRUE(GetDefaultPeer()->temporary());
@@ -1445,7 +1445,7 @@ TEST_F(GAP_PeerCacheExpirationTest, LePeerBecomesNonTemporaryWhenConnecting) {
   ASSERT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, LEPublicPeerRemainsNonTemporaryOnDisconnect) {
+TEST_F(PeerCacheExpirationTest, LEPublicPeerRemainsNonTemporaryOnDisconnect) {
   ASSERT_TRUE(IsDefaultPeerPresent());
   ASSERT_EQ(kAddrLeAlias, GetDefaultPeer()->address());
   GetDefaultPeer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
@@ -1462,7 +1462,7 @@ TEST_F(GAP_PeerCacheExpirationTest, LEPublicPeerRemainsNonTemporaryOnDisconnect)
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
+TEST_F(PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
   // Create our Peer, and get it into the kConnected state.
   PeerId custom_peer_id;
   {
@@ -1498,7 +1498,7 @@ TEST_F(GAP_PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
   EXPECT_EQ(2, peers_removed());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
+TEST_F(PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
   // Create our Peer, and get it into the kConnected state.
   PeerId custom_peer_id;
   {
@@ -1532,7 +1532,7 @@ TEST_F(GAP_PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
   EXPECT_EQ(1, peers_removed());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, ExpirationUpdatesAddressMap) {
+TEST_F(PeerCacheExpirationTest, ExpirationUpdatesAddressMap) {
   ASSERT_TRUE(IsDefaultPeerAddressInCache());
   ASSERT_TRUE(IsOtherTransportAddressInCache());
   RunLoopFor(kCacheTimeout);
@@ -1540,7 +1540,7 @@ TEST_F(GAP_PeerCacheExpirationTest, ExpirationUpdatesAddressMap) {
   EXPECT_FALSE(IsOtherTransportAddressInCache());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
+TEST_F(PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{}, zx::time());
@@ -1552,7 +1552,7 @@ TEST_F(GAP_PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultUpdatesExpiration) {
+TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultUpdatesExpiration) {
   hci::InquiryResult ir;
   ASSERT_TRUE(IsDefaultPeerPresent());
   ir.bd_addr = GetDefaultPeer()->address().value();
@@ -1565,7 +1565,7 @@ TEST_F(GAP_PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultUpdatesE
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultRSSIUpdatesExpiration) {
+TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultRSSIUpdatesExpiration) {
   hci::InquiryResultRSSI irr;
   ASSERT_TRUE(IsDefaultPeerPresent());
   irr.bd_addr = GetDefaultPeer()->address().value();
@@ -1578,7 +1578,7 @@ TEST_F(GAP_PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultRSSIUpda
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest,
+TEST_F(PeerCacheExpirationTest,
        SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsUpdatesExpiration) {
   hci::ExtendedInquiryResultEventParams eirep;
   ASSERT_TRUE(IsDefaultPeerPresent());
@@ -1592,7 +1592,7 @@ TEST_F(GAP_PeerCacheExpirationTest,
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
-TEST_F(GAP_PeerCacheExpirationTest, SetNameUpdatesExpiration) {
+TEST_F(PeerCacheExpirationTest, SetNameUpdatesExpiration) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->SetName({});

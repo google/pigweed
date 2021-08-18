@@ -9,7 +9,7 @@
 namespace bt::hci {
 namespace {
 
-TEST(HCI_DdkDeviceWrapperTest, NullVendorProto) {
+TEST(DdkDeviceWrapperTest, NullVendorProto) {
   bt_hci_protocol_t hci_proto = {};
   DdkDeviceWrapper wrapper(hci_proto, std::nullopt);
   EXPECT_EQ(wrapper.GetVendorFeatures(), 0u);
@@ -20,7 +20,7 @@ TEST(HCI_DdkDeviceWrapperTest, NullVendorProto) {
 constexpr bt_vendor_features_t kVendorFeatures = 1;
 bt_vendor_features_t get_vendor_features(void* ctx) { return kVendorFeatures; }
 
-TEST(HCI_DdkDeviceWrapperTest, GetVendorFeatures) {
+TEST(DdkDeviceWrapperTest, GetVendorFeatures) {
   bt_hci_protocol_t hci_proto = {};
   bt_vendor_protocol_ops_t vendor_ops{.get_features = get_vendor_features};
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
@@ -34,7 +34,7 @@ zx_status_t encode_command_error(void* ctx, bt_vendor_command_t command,
   return ZX_ERR_BUFFER_TOO_SMALL;
 }
 
-TEST(HCI_DdkDeviceWrapperTest, EncodeCommandError) {
+TEST(DdkDeviceWrapperTest, EncodeCommandError) {
   bt_hci_protocol_t hci_proto = {};
   bt_vendor_protocol_ops_t vendor_ops{.encode_command = encode_command_error};
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
@@ -51,7 +51,7 @@ zx_status_t encode_command_actual_size_0(void* ctx, bt_vendor_command_t command,
   return ZX_OK;
 }
 
-TEST(HCI_DdkDeviceWrapperTest, EncodeCommandActualSizeZero) {
+TEST(DdkDeviceWrapperTest, EncodeCommandActualSizeZero) {
   bt_hci_protocol_t hci_proto = {};
   bt_vendor_protocol_ops_t vendor_ops{.encode_command = encode_command_actual_size_0};
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
@@ -68,7 +68,7 @@ zx_status_t encode_command_actual_size_too_large(void* ctx, bt_vendor_command_t 
   return ZX_OK;
 }
 
-TEST(HCI_DdkDeviceWrapperTest, EncodeCommandActualSizeTooLarge) {
+TEST(DdkDeviceWrapperTest, EncodeCommandActualSizeTooLarge) {
   bt_hci_protocol_t hci_proto = {};
   bt_vendor_protocol_ops_t vendor_ops{.encode_command = encode_command_actual_size_too_large};
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};
@@ -85,7 +85,7 @@ zx_status_t encode_command_success(void* ctx, bt_vendor_command_t command,
   return ZX_OK;
 }
 
-TEST(HCI_DdkDeviceWrapperTest, EncodeCommandSuccess) {
+TEST(DdkDeviceWrapperTest, EncodeCommandSuccess) {
   bt_hci_protocol_t hci_proto = {};
   bt_vendor_protocol_ops_t vendor_ops{.encode_command = encode_command_success};
   bt_vendor_protocol_t vendor_proto = {.ops = &vendor_ops};

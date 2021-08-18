@@ -43,11 +43,11 @@ class TestCommandHandler final : public CommandHandler {
 };
 
 using TestBase = ::gtest::TestLoopFixture;
-class L2CAP_CommandHandlerTest : public TestBase {
+class CommandHandlerTest : public TestBase {
  public:
-  L2CAP_CommandHandlerTest() = default;
-  ~L2CAP_CommandHandlerTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_CommandHandlerTest);
+  CommandHandlerTest() = default;
+  ~CommandHandlerTest() override = default;
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandHandlerTest);
 
  protected:
   // TestLoopFixture overrides
@@ -55,7 +55,7 @@ class L2CAP_CommandHandlerTest : public TestBase {
     TestBase::SetUp();
     signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<TestCommandHandler>(
-        fake_sig(), fit::bind_member(this, &L2CAP_CommandHandlerTest::OnRequestFail));
+        fake_sig(), fit::bind_member(this, &CommandHandlerTest::OnRequestFail));
     request_fail_callback_ = nullptr;
     failed_requests_ = 0;
   }
@@ -90,7 +90,7 @@ class L2CAP_CommandHandlerTest : public TestBase {
   size_t failed_requests_;
 };
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRspOk) {
+TEST_F(CommandHandlerTest, OutboundDisconReqRspOk) {
   // Disconnect Request payload
   auto expected_discon_req = StaticByteBuffer(
       // Destination CID
@@ -122,7 +122,7 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRspOk) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRej) {
+TEST_F(CommandHandlerTest, OutboundDisconReqRej) {
   // Disconnect Request payload
   auto expected_discon_req = StaticByteBuffer(
       // Destination CID (relative to requester)
@@ -162,7 +162,7 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRej) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRejNotEnoughBytes) {
+TEST_F(CommandHandlerTest, OutboundDisconReqRejNotEnoughBytes) {
   constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
 
   // Disconnect Request payload
@@ -190,7 +190,7 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRejNotEnoughBytes) {
   EXPECT_FALSE(cb_called);
 }
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRejInvalidCIDNotEnoughBytes) {
+TEST_F(CommandHandlerTest, OutboundDisconReqRejInvalidCIDNotEnoughBytes) {
   constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
 
   // Disconnect Request payload
@@ -221,7 +221,7 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRejInvalidCIDNotEnoughBytes) {
   EXPECT_FALSE(cb_called);
 }
 
-TEST_F(L2CAP_CommandHandlerTest, InboundDisconReqRspOk) {
+TEST_F(CommandHandlerTest, InboundDisconReqRspOk) {
   CommandHandler::DisconnectionRequestCallback cb = [](ChannelId local_cid, ChannelId remote_cid,
                                                        auto responder) {
     EXPECT_EQ(kLocalCId, local_cid);
@@ -244,7 +244,7 @@ TEST_F(L2CAP_CommandHandlerTest, InboundDisconReqRspOk) {
   RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kDisconnectionRequest, discon_req, expected_rsp));
 }
 
-TEST_F(L2CAP_CommandHandlerTest, InboundDisconReqRej) {
+TEST_F(CommandHandlerTest, InboundDisconReqRej) {
   CommandHandler::DisconnectionRequestCallback cb = [](ChannelId local_cid, ChannelId remote_cid,
                                                        auto responder) {
     EXPECT_EQ(kLocalCId, local_cid);
@@ -268,7 +268,7 @@ TEST_F(L2CAP_CommandHandlerTest, InboundDisconReqRej) {
                                                                   kLocalCId, kRemoteCId));
 }
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRspPayloadNotEnoughBytes) {
+TEST_F(CommandHandlerTest, OutboundDisconReqRspPayloadNotEnoughBytes) {
   // Disconnect Request payload
   auto expected_discon_req = StaticByteBuffer(
       // Destination CID
@@ -296,7 +296,7 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRspPayloadNotEnoughBytes) {
   EXPECT_FALSE(cb_called);
 }
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundReqRspDecodeError) {
+TEST_F(CommandHandlerTest, OutboundReqRspDecodeError) {
   auto payload = StaticByteBuffer(0x00);
   EXPECT_OUTBOUND_REQ(*fake_sig(), kDisconnectionRequest, payload.view(),
                       {SignalingChannel::Status::kSuccess, payload.view()});
@@ -312,7 +312,7 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundReqRspDecodeError) {
   EXPECT_FALSE(cb_called);
 }
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRspTimeOut) {
+TEST_F(CommandHandlerTest, OutboundDisconReqRspTimeOut) {
   // Disconnect Request payload
   auto expected_discon_req = StaticByteBuffer(
       // Destination CID
@@ -342,7 +342,7 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRspTimeOut) {
   EXPECT_EQ(1u, failed_requests());
 }
 
-TEST_F(L2CAP_CommandHandlerTest, RejectInvalidChannelId) {
+TEST_F(CommandHandlerTest, RejectInvalidChannelId) {
   CommandHandler::DisconnectionRequestCallback cb =
       [](ChannelId local_cid, ChannelId remote_cid,
          CommandHandler::DisconnectionResponder* responder) {

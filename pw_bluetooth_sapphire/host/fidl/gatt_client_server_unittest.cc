@@ -15,10 +15,10 @@ constexpr bt::PeerId kPeerId(1);
 constexpr bt::UUID kHeartRate(uint16_t{0x180D});
 constexpr bt::UUID kHid(uint16_t{0x1812});
 
-class FIDL_GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
+class GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
-  FIDL_GattClientServerTest() = default;
-  ~FIDL_GattClientServerTest() override = default;
+  GattClientServerTest() = default;
+  ~GattClientServerTest() override = default;
 
   void SetUp() override {
     fidl::InterfaceHandle<fgatt::Client> handle;
@@ -32,10 +32,10 @@ class FIDL_GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
   std::unique_ptr<GattClientServer> server_;
   fgatt::ClientPtr proxy_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(FIDL_GattClientServerTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(GattClientServerTest);
 };
 
-TEST_F(FIDL_GattClientServerTest, ListServices) {
+TEST_F(GattClientServerTest, ListServices) {
   bt::gatt::ServiceData data1(bt::gatt::ServiceKind::PRIMARY, 1, 1, kHeartRate);
   bt::gatt::ServiceData data2(bt::gatt::ServiceKind::SECONDARY, 2, 2, kHid);
   gatt()->AddPeerService(kPeerId, data1);

@@ -28,9 +28,9 @@ constexpr l2cap::ChannelId kRemoteChannelId = 0x0050;
 constexpr hci::ConnectionHandle kDefaultConnectionHandle = 0x0001;
 constexpr hci::ConnectionHandle kAnotherConnectionHandle = 0x0002;
 
-class DATA_SocketFactoryTest : public ::testing::Test {
+class SocketFactoryTest : public ::testing::Test {
  public:
-  DATA_SocketFactoryTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
+  SocketFactoryTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
     EXPECT_EQ(ASYNC_LOOP_RUNNABLE, loop_.GetState());
     channel_ = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
         kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
@@ -52,22 +52,22 @@ class DATA_SocketFactoryTest : public ::testing::Test {
   fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
 };
 
-TEST_F(DATA_SocketFactoryTest, TemplatesCompile) {
+TEST_F(SocketFactoryTest, TemplatesCompile) {
   socket::SocketFactory<l2cap::Channel> l2cap_factory;
   socket::SocketFactory<sco::ScoConnection> sco_factory;
 }
 
-TEST_F(DATA_SocketFactoryTest, CanCreateSocket) {
+TEST_F(SocketFactoryTest, CanCreateSocket) {
   FactoryT socket_factory;
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(channel()));
 }
 
-TEST_F(DATA_SocketFactoryTest, SocketCreationFailsIfChannelIsNullptr) {
+TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelIsNullptr) {
   FactoryT socket_factory;
   EXPECT_FALSE(socket_factory.MakeSocketForChannel(nullptr));
 }
 
-TEST_F(DATA_SocketFactoryTest, SocketCreationFailsIfChannelAlreadyHasASocket) {
+TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelAlreadyHasASocket) {
   FactoryT socket_factory;
   zx::socket socket = socket_factory.MakeSocketForChannel(channel());
   ASSERT_TRUE(socket);
@@ -75,12 +75,12 @@ TEST_F(DATA_SocketFactoryTest, SocketCreationFailsIfChannelAlreadyHasASocket) {
   EXPECT_FALSE(socket_factory.MakeSocketForChannel(channel()));
 }
 
-TEST_F(DATA_SocketFactoryTest, SocketCreationFailsIfChannelActivationFails) {
+TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelActivationFails) {
   channel()->set_activate_fails(true);
   EXPECT_FALSE(FactoryT().MakeSocketForChannel(channel()));
 }
 
-TEST_F(DATA_SocketFactoryTest, CanCreateSocketForNewChannelWithRecycledId) {
+TEST_F(SocketFactoryTest, CanCreateSocketForNewChannelWithRecycledId) {
   FactoryT socket_factory;
   auto original_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
       kDynamicChannelIdMin + 1, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
@@ -94,14 +94,14 @@ TEST_F(DATA_SocketFactoryTest, CanCreateSocketForNewChannelWithRecycledId) {
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(new_channel));
 }
 
-TEST_F(DATA_SocketFactoryTest, DestructionWithActiveRelayDoesNotCrash) {
+TEST_F(SocketFactoryTest, DestructionWithActiveRelayDoesNotCrash) {
   FactoryT socket_factory;
   zx::socket socket = socket_factory.MakeSocketForChannel(channel());
   ASSERT_TRUE(socket);
   // |socket_factory| is destroyed implicitly.
 }
 
-TEST_F(DATA_SocketFactoryTest, DestructionAfterDeactivatingRelayDoesNotCrash) {
+TEST_F(SocketFactoryTest, DestructionAfterDeactivatingRelayDoesNotCrash) {
   FactoryT socket_factory;
   zx::socket socket = socket_factory.MakeSocketForChannel(channel());
   ASSERT_TRUE(socket);
@@ -110,7 +110,7 @@ TEST_F(DATA_SocketFactoryTest, DestructionAfterDeactivatingRelayDoesNotCrash) {
   // |socket_factory| is destroyed implicitly.
 }
 
-TEST_F(DATA_SocketFactoryTest, SameChannelIdDifferentHandles) {
+TEST_F(SocketFactoryTest, SameChannelIdDifferentHandles) {
   FactoryT socket_factory;
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(channel()));
   auto another_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(

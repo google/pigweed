@@ -155,10 +155,10 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
 };
 
-class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
+class LowEnergyAdvertisingManagerTest : public TestingBase {
  public:
-  GAP_LowEnergyAdvertisingManagerTest() = default;
-  ~GAP_LowEnergyAdvertisingManagerTest() override = default;
+  LowEnergyAdvertisingManagerTest() = default;
+  ~LowEnergyAdvertisingManagerTest() override = default;
 
  protected:
   void SetUp() override {
@@ -248,12 +248,12 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   std::unique_ptr<FakeLowEnergyAdvertiser> advertiser_;
   std::unique_ptr<LowEnergyAdvertisingManager> adv_mgr_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GAP_LowEnergyAdvertisingManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertisingManagerTest);
 };
 
 // Tests:
 //  - When the advertiser succeeds, the callback is called with the success
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, Success) {
+TEST_F(LowEnergyAdvertisingManagerTest, Success) {
   EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
                               kTestInterval, /*anonymous=*/false, /*include_tx_power_level*/ false,
@@ -269,7 +269,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, Success) {
   EXPECT_EQ(kRandomAddress, ad_store().begin()->first);
 }
 
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, DataSize) {
+TEST_F(LowEnergyAdvertisingManagerTest, DataSize) {
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
                               kTestInterval, /*anonymous=*/false, /*include_tx_power_level*/ false,
                               GetSuccessCallback());
@@ -293,8 +293,8 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, DataSize) {
 // multi-advertising is supported.
 //  - Stopping one that is registered stops it in the advertiser
 //    (and stops the right address)
-//  - Stopping an advertisement that isn't registered retuns false
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, RegisterUnregister) {
+//  - Stopping an advertisement that isn't registered returns false
+TEST_F(LowEnergyAdvertisingManagerTest, RegisterUnregister) {
   EXPECT_FALSE(adv_mgr()->StopAdvertising(kInvalidAdvertisementId));
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
@@ -316,7 +316,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, RegisterUnregister) {
 }
 
 //  - When the advertiser returns an error, we return an error
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, AdvertiserError) {
+TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
   advertiser()->ErrorOnNext(hci::Status(hci::kInvalidHCICommandParameters));
 
   EXPECT_FALSE(adv_mgr()->advertising());
@@ -330,7 +330,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, AdvertiserError) {
 }
 
 //  - It calls the connectable callback correctly when connected to
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectCallback) {
+TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
   hci::ConnectionPtr link;
   AdvertisementId advertised_id = kInvalidAdvertisementId;
 
@@ -359,7 +359,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectCallback) {
 }
 
 //  - Error: Connectable and Anonymous at the same time
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
+TEST_F(LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
   auto connect_cb = [](AdvertisementId connected_id, hci::ConnectionPtr conn) {};
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), connect_cb,
@@ -370,7 +370,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
 }
 
 // Passes the values for the data on. (anonymous, data, scan_rsp)
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, SendsCorrectData) {
+TEST_F(LowEnergyAdvertisingManagerTest, SendsCorrectData) {
   adv_mgr()->StartAdvertising(
       CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
       kTestInterval, false /* anonymous */, /*include_tx_power_level*/ false, GetSuccessCallback());
@@ -393,7 +393,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, SendsCorrectData) {
 // Test that the AdvertisingInterval values map to the spec defined constants (NOTE: this might
 // change in the future in favor of a more advanced policy for managing the intervals; for now they
 // get mapped to recommended values from Vol 3, Part C, Appendix A).
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
+TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               CreateFakeAdvertisingData(21 /* size of ad */), NopConnectCallback,
                               AdvertisingInterval::FAST1, false /* anonymous */,
@@ -428,7 +428,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
 }
 
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
+TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
   AdvertisingData fake_ad = CreateFakeAdvertisingData();
   AdvertisingData scan_rsp = CreateFakeAdvertisingData(21 /* size of ad */);
 
@@ -469,7 +469,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) 
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
 }
 
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
+TEST_F(LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
   {
     AdvertisementInstance instance;
     adv_mgr()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
@@ -489,7 +489,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement
   EXPECT_FALSE(adv_mgr()->advertising());
 }
 
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
+TEST_F(LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
   AdvertisementInstance instance;
   adv_mgr()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
                               AdvertisingInterval::FAST1, /*anonymous=*/false,
@@ -507,7 +507,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement
   EXPECT_FALSE(adv_mgr()->advertising());
 }
 
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAdvertisement) {
+TEST_F(LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAdvertisement) {
   auto instance = std::make_unique<AdvertisementInstance>();
   adv_mgr()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
                               AdvertisingInterval::FAST1, /*anonymous=*/false,

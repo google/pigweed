@@ -39,13 +39,13 @@ std::vector<Handle> IterHandles(Database::Iterator* iter) {
   return handles;
 }
 
-TEST(ATT_DatabaseTest, NewGroupingWhileEmptyError) {
+TEST(DatabaseTest, NewGroupingWhileEmptyError) {
   constexpr size_t kTooLarge = kTestRangeEnd - kTestRangeStart + 1;
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   EXPECT_FALSE(db->NewGrouping(kTestType1, kTooLarge, kTestValue1));
 }
 
-TEST(ATT_DatabaseTest, NewGroupingWhileEmptyFill) {
+TEST(DatabaseTest, NewGroupingWhileEmptyFill) {
   constexpr size_t kExact = kTestRangeEnd - kTestRangeStart;
 
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
@@ -61,7 +61,7 @@ TEST(ATT_DatabaseTest, NewGroupingWhileEmptyFill) {
 
 // This test case performs multiple insertions and removals on the same
 // database.
-TEST(ATT_DatabaseTest, NewGroupingMultipleInsertions) {
+TEST(DatabaseTest, NewGroupingMultipleInsertions) {
   // [__________]
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
 
@@ -143,17 +143,17 @@ TEST(ATT_DatabaseTest, NewGroupingMultipleInsertions) {
   EXPECT_FALSE(db->NewGrouping(kTestType1, 0, kTestValue1));
 }
 
-TEST(ATT_DatabaseTest, RemoveWhileEmpty) {
+TEST(DatabaseTest, RemoveWhileEmpty) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   EXPECT_FALSE(db->RemoveGrouping(kTestRangeStart));
 }
 
-TEST(ATT_DatabaseTest, FindAttributeInvalidHandle) {
+TEST(DatabaseTest, FindAttributeInvalidHandle) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   EXPECT_EQ(nullptr, db->FindAttribute(kInvalidHandle));
 }
 
-TEST(ATT_DatabaseTest, FindAttributeGroupingNotFound) {
+TEST(DatabaseTest, FindAttributeGroupingNotFound) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
 
   // Create the following layout:
@@ -173,19 +173,19 @@ TEST(ATT_DatabaseTest, FindAttributeGroupingNotFound) {
   EXPECT_NE(nullptr, db->FindAttribute(0x0003));
 }
 
-TEST(ATT_DatabaseTest, FindAttributeIncompleteGrouping) {
+TEST(DatabaseTest, FindAttributeIncompleteGrouping) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto* grp = db->NewGrouping(kTestType1, 1, kTestValue1);
   EXPECT_EQ(nullptr, db->FindAttribute(grp->start_handle()));
 }
 
-TEST(ATT_DatabaseTest, FindAttributeInactiveGrouping) {
+TEST(DatabaseTest, FindAttributeInactiveGrouping) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto* grp = db->NewGrouping(kTestType1, 0, kTestValue1);
   EXPECT_EQ(nullptr, db->FindAttribute(grp->start_handle()));
 }
 
-TEST(ATT_DatabaseTest, FindAttributeOnePerGrouping) {
+TEST(DatabaseTest, FindAttributeOnePerGrouping) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto* grp1 = db->NewGrouping(kTestType1, 0, kTestValue1);
   grp1->set_active(true);
@@ -196,7 +196,7 @@ TEST(ATT_DatabaseTest, FindAttributeOnePerGrouping) {
   EXPECT_EQ(&grp2->attributes()[0], db->FindAttribute(grp2->start_handle()));
 }
 
-TEST(ATT_DatabaseTest, FindAttributeIndexIntoGrouping) {
+TEST(DatabaseTest, FindAttributeIndexIntoGrouping) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
 
   auto* grp = db->NewGrouping(kTestType1, 1, kTestValue1);
@@ -206,7 +206,7 @@ TEST(ATT_DatabaseTest, FindAttributeIndexIntoGrouping) {
   EXPECT_EQ(attr, db->FindAttribute(grp->end_handle()));
 }
 
-TEST(ATT_DatabaseTest, IteratorEmpty) {
+TEST(DatabaseTest, IteratorEmpty) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd);
   EXPECT_TRUE(iter.AtEnd());
@@ -217,7 +217,7 @@ TEST(ATT_DatabaseTest, IteratorEmpty) {
   EXPECT_TRUE(iter.AtEnd());
 }
 
-TEST(ATT_DatabaseTest, IteratorGroupOnlySingleInactive) {
+TEST(DatabaseTest, IteratorGroupOnlySingleInactive) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   db->NewGrouping(kTestType1, 0, kTestValue1);
 
@@ -227,7 +227,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlySingleInactive) {
   EXPECT_FALSE(iter.get());
 }
 
-TEST(ATT_DatabaseTest, IteratorGroupOnlySingle) {
+TEST(DatabaseTest, IteratorGroupOnlySingle) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto grp = db->NewGrouping(kTestType1, 0, kTestValue1);
   grp->set_active(true);
@@ -246,7 +246,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlySingle) {
   EXPECT_EQ(grp->start_handle(), handles[0]);
 }
 
-TEST(ATT_DatabaseTest, IteratorGroupOnlyMultiple) {
+TEST(DatabaseTest, IteratorGroupOnlyMultiple) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto grp1 = db->NewGrouping(kTestType1, 0, kTestValue1);
   auto grp2 = db->NewGrouping(kTestType1, 0, kTestValue1);
@@ -278,7 +278,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyMultiple) {
   EXPECT_EQ(grp3->start_handle(), handles[1]);
 }
 
-TEST(ATT_DatabaseTest, IteratorGroupOnlySingleWithFilter) {
+TEST(DatabaseTest, IteratorGroupOnlySingleWithFilter) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
 
   auto grp = db->NewGrouping(kTestType1, 0, kTestValue1);
@@ -296,7 +296,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlySingleWithFilter) {
   EXPECT_EQ(grp->start_handle(), handles[0]);
 }
 
-TEST(ATT_DatabaseTest, IteratorGroupOnlyManyWithFilter) {
+TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
 
   auto grp1 = db->NewGrouping(kTestType1, 1, kTestValue1);  // match
@@ -347,7 +347,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   EXPECT_EQ(grp3->start_handle(), handles[0]);
 }
 
-TEST(ATT_DatabaseTest, IteratorSingleInactive) {
+TEST(DatabaseTest, IteratorSingleInactive) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto grp = db->NewGrouping(kTestType1, 1, kTestValue1);
 
@@ -362,7 +362,7 @@ TEST(ATT_DatabaseTest, IteratorSingleInactive) {
   EXPECT_FALSE(iter.get());
 }
 
-TEST(ATT_DatabaseTest, IteratorSingle) {
+TEST(DatabaseTest, IteratorSingle) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
   auto grp = db->NewGrouping(kTestType1, 0, kTestValue1);
   grp->set_active(true);
@@ -380,10 +380,10 @@ TEST(ATT_DatabaseTest, IteratorSingle) {
   EXPECT_EQ(grp->start_handle(), handles[0]);
 }
 
-class ATT_DatabaseIteratorManyTest : public ::testing::Test {
+class DatabaseIteratorManyTest : public ::testing::Test {
  public:
-  ATT_DatabaseIteratorManyTest() = default;
-  ~ATT_DatabaseIteratorManyTest() override = default;
+  DatabaseIteratorManyTest() = default;
+  ~DatabaseIteratorManyTest() override = default;
 
  protected:
   static constexpr size_t kActiveAttrCount = 8;
@@ -414,10 +414,10 @@ class ATT_DatabaseIteratorManyTest : public ::testing::Test {
  private:
   fxl::RefPtr<Database> db_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ATT_DatabaseIteratorManyTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseIteratorManyTest);
 };
 
-TEST_F(ATT_DatabaseIteratorManyTest, NoFilter) {
+TEST_F(DatabaseIteratorManyTest, NoFilter) {
   auto iter = db()->GetIterator(kTestRangeStart, kTestRangeEnd);
   EXPECT_FALSE(iter.AtEnd());
 
@@ -433,7 +433,7 @@ TEST_F(ATT_DatabaseIteratorManyTest, NoFilter) {
   }
 }
 
-TEST_F(ATT_DatabaseIteratorManyTest, FilterTestType1) {
+TEST_F(DatabaseIteratorManyTest, FilterTestType1) {
   // Filter by |kTestType1|.
   auto iter = db()->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1);
   EXPECT_FALSE(iter.AtEnd());
@@ -449,7 +449,7 @@ TEST_F(ATT_DatabaseIteratorManyTest, FilterTestType1) {
   }
 }
 
-TEST_F(ATT_DatabaseIteratorManyTest, FilterTestType2) {
+TEST_F(DatabaseIteratorManyTest, FilterTestType2) {
   // Filter by |kTestType2|.
   auto iter = db()->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2);
   EXPECT_FALSE(iter.AtEnd());
@@ -465,13 +465,13 @@ TEST_F(ATT_DatabaseIteratorManyTest, FilterTestType2) {
   }
 }
 
-TEST_F(ATT_DatabaseIteratorManyTest, FilterTestType3) {
+TEST_F(DatabaseIteratorManyTest, FilterTestType3) {
   // Filter by |kTestType3|.
   auto iter = db()->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType3);
   EXPECT_TRUE(iter.AtEnd());
 }
 
-TEST_F(ATT_DatabaseIteratorManyTest, UnaryRange) {
+TEST_F(DatabaseIteratorManyTest, UnaryRange) {
   // Test ranges with a single attribute. Test group begin, middle, and end
   // cases.
   constexpr Handle kBegin = 5;
@@ -497,7 +497,7 @@ TEST_F(ATT_DatabaseIteratorManyTest, UnaryRange) {
   EXPECT_EQ(kEnd, handles[0]);
 }
 
-TEST_F(ATT_DatabaseIteratorManyTest, Range) {
+TEST_F(DatabaseIteratorManyTest, Range) {
   auto iter = db()->GetIterator(4, 6);
   EXPECT_FALSE(iter.AtEnd());
 
@@ -512,10 +512,10 @@ TEST_F(ATT_DatabaseIteratorManyTest, Range) {
   }
 }
 
-class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
+class DatabaseExecuteWriteQueueTest : public ::testing::Test {
  public:
-  ATT_DatabaseExecuteWriteQueueTest() = default;
-  ~ATT_DatabaseExecuteWriteQueueTest() override = default;
+  DatabaseExecuteWriteQueueTest() = default;
+  ~DatabaseExecuteWriteQueueTest() override = default;
 
  protected:
   struct PendingWrite {
@@ -576,7 +576,7 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
 
   void SetAttributeWriteHandler(Attribute* attribute) {
     attribute->set_write_handler(
-        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+        fit::bind_member(this, &DatabaseExecuteWriteQueueTest::WriteHandler));
   }
 
   const std::queue<PendingWrite>& pending_writes() const { return pending_writes_; }
@@ -608,19 +608,19 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
   Handle test_handle2_ = kInvalidHandle;
   Handle test_handle3_ = kInvalidHandle;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ATT_DatabaseExecuteWriteQueueTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseExecuteWriteQueueTest);
 };
 
 constexpr PeerId kPeerId(1);
 
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, EmptyQueueSucceedsImmediately) {
+TEST_F(DatabaseExecuteWriteQueueTest, EmptyQueueSucceedsImmediately) {
   ExecuteWriteQueue(kPeerId, {});
   EXPECT_EQ(1, callback_count());
   EXPECT_EQ(ErrorCode::kNoError, ecode());
   EXPECT_EQ(kInvalidHandle, handle_in_error());
 }
 
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, InvalidHandle) {
+TEST_F(DatabaseExecuteWriteQueueTest, InvalidHandle) {
   constexpr Handle kHandle = 1;
   PrepareWriteQueue wq;
   wq.push(QueuedWrite(kHandle, 0, BufferView()));
@@ -631,7 +631,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, InvalidHandle) {
   EXPECT_EQ(kHandle, handle_in_error());
 }
 
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, ValueLength) {
+TEST_F(DatabaseExecuteWriteQueueTest, ValueLength) {
   auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType2);
   grp->set_active(true);
@@ -645,7 +645,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, ValueLength) {
   EXPECT_EQ(attr->handle(), handle_in_error());
 }
 
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
+TEST_F(DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
   auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType2);  // read/write not permitted
   grp->set_active(true);
@@ -659,7 +659,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
   EXPECT_EQ(attr->handle(), handle_in_error());
 }
 
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, SecurityChecks) {
+TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
   auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
   auto* attr =
       grp->AddAttribute(kTestType2, att::AccessRequirements(),
@@ -688,7 +688,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, SecurityChecks) {
 
 // If an error is caught before delivering the request to the delegate then we
 // expect subsequent entries to not be delivered.
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, UndelegatedWriteErrorAborts) {
+TEST_F(DatabaseExecuteWriteQueueTest, UndelegatedWriteErrorAborts) {
   SetUpAttributes();
   PrepareWriteQueue wq;
 
@@ -724,7 +724,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, UndelegatedWriteErrorAborts) {
   EXPECT_EQ(1, callback_count());  // still 1
 }
 
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, ErrorInMultipleQueuedWrites) {
+TEST_F(DatabaseExecuteWriteQueueTest, ErrorInMultipleQueuedWrites) {
   SetUpAttributes();
   PrepareWriteQueue wq;
 
@@ -776,7 +776,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, ErrorInMultipleQueuedWrites) {
   EXPECT_EQ(1, callback_count());
 }
 
-TEST_F(ATT_DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
+TEST_F(DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
   SetUpAttributes();
   PrepareWriteQueue wq;
 

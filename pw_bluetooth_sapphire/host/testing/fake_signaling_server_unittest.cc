@@ -12,10 +12,10 @@
 
 namespace bt::testing {
 
-class TESTING_FakeSignalingServerTest : public gtest::TestLoopFixture {
+class FakeSignalingServerTest : public gtest::TestLoopFixture {
  public:
-  TESTING_FakeSignalingServerTest() = default;
-  ~TESTING_FakeSignalingServerTest() override = default;
+  FakeSignalingServerTest() = default;
+  ~FakeSignalingServerTest() override = default;
 
   // Each test sets up its own FakeL2cap and FakeSignalingServer, so only
   // instantiate constants here.
@@ -24,10 +24,10 @@ class TESTING_FakeSignalingServerTest : public gtest::TestLoopFixture {
   l2cap::CommandId kCommandId = 0x02;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TESTING_FakeSignalingServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSignalingServerTest);
 };
 
-TEST_F(TESTING_FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
+TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
   // Copy the received packet to a local variable.
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
@@ -55,7 +55,7 @@ TEST_F(TESTING_FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
 };
 
-TEST_F(TESTING_FakeSignalingServerTest, FixedChannelInformationRequest) {
+TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
   // Copy the received packet to a local variable.
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
@@ -83,7 +83,7 @@ TEST_F(TESTING_FakeSignalingServerTest, FixedChannelInformationRequest) {
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
 };
 
-TEST_F(TESTING_FakeSignalingServerTest, RejectInvalidInformationRequest) {
+TEST_F(FakeSignalingServerTest, RejectInvalidInformationRequest) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);

@@ -42,10 +42,10 @@ constexpr att::Handle kEnd = 5;
 void NopStatusCallback(att::Status) {}
 void NopValueCallback(const ByteBuffer& /*value*/, bool /*maybe_truncated*/) {}
 
-class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
+class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
  public:
-  GATT_RemoteServiceManagerTest() = default;
-  ~GATT_RemoteServiceManagerTest() override = default;
+  RemoteServiceManagerTest() = default;
+  ~RemoteServiceManagerTest() override = default;
 
  protected:
   void SetUp() override {
@@ -147,10 +147,10 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   // The memory is owned by |mgr_|.
   testing::FakeClient* fake_client_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT_RemoteServiceManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManagerTest);
 };
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeNoServices) {
+TEST_F(RemoteServiceManagerTest, InitializeNoServices) {
   std::vector<fbl::RefPtr<RemoteService>> services;
   mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
 
@@ -168,7 +168,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeNoServices) {
   EXPECT_TRUE(services.empty());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, Initialize) {
+TEST_F(RemoteServiceManagerTest, Initialize) {
   ServiceData svc1(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   ServiceData svc2(ServiceKind::PRIMARY, 2, 2, kTestServiceUuid2);
   std::vector<ServiceData> fake_services{{svc1, svc2}};
@@ -190,7 +190,7 @@ TEST_F(GATT_RemoteServiceManagerTest, Initialize) {
   EXPECT_EQ(svc2.type, services[1]->uuid());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeFailure) {
+TEST_F(RemoteServiceManagerTest, InitializeFailure) {
   fake_client()->set_primary_service_discovery_status(
       att::Status(att::ErrorCode::kRequestNotSupported));
 
@@ -215,7 +215,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeFailure) {
   EXPECT_TRUE(watcher_services.empty());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDNoServices) {
+TEST_F(RemoteServiceManagerTest, InitializeByUUIDNoServices) {
   std::vector<fbl::RefPtr<RemoteService>> services;
   mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
 
@@ -233,7 +233,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDNoServices) {
   EXPECT_TRUE(services.empty());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeWithUuids) {
+TEST_F(RemoteServiceManagerTest, InitializeWithUuids) {
   ServiceData svc1(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   ServiceData svc2(ServiceKind::PRIMARY, 2, 2, kTestServiceUuid2);
   ServiceData svc3(ServiceKind::PRIMARY, 3, 3, kTestServiceUuid3);
@@ -255,7 +255,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeWithUuids) {
                                    Pointee(::testing::Property(&RemoteService::info, Eq(svc3)))));
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDFailure) {
+TEST_F(RemoteServiceManagerTest, InitializeByUUIDFailure) {
   fake_client()->set_primary_service_discovery_status(
       att::Status(att::ErrorCode::kRequestNotSupported));
 
@@ -280,7 +280,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDFailure) {
   EXPECT_TRUE(watcher_services.empty());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeSecondaryServices) {
+TEST_F(RemoteServiceManagerTest, InitializeSecondaryServices) {
   ServiceData svc(ServiceKind::SECONDARY, 1, 1, kTestServiceUuid1);
   std::vector<ServiceData> fake_services{{svc}};
   fake_client()->set_services(std::move(fake_services));
@@ -300,7 +300,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeSecondaryServices) {
   EXPECT_EQ(ServiceKind::SECONDARY, services[0]->info().kind);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializePrimaryAndSecondaryServices) {
+TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServices) {
   ServiceData svc1(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   ServiceData svc2(ServiceKind::SECONDARY, 2, 2, kTestServiceUuid2);
   std::vector<ServiceData> fake_services{{svc1, svc2}};
@@ -320,7 +320,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializePrimaryAndSecondaryServices) {
   EXPECT_EQ(ServiceKind::SECONDARY, services[1]->info().kind);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOfOrder) {
+TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOfOrder) {
   // RemoteServiceManager discovers primary services first, followed by secondary services. Test
   // that the results are stored and represented in the correct order when a secondary service
   // precedes a primary service.
@@ -342,7 +342,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOf
 }
 
 // Tests that an ATT error that occurs during secondary service aborts initialization.
-TEST_F(GATT_RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
+TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
   fake_client()->set_secondary_service_discovery_status(
       att::Status(att::ErrorCode::kRequestNotSupported));
 
@@ -360,7 +360,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
 }
 
 // Tests that the "unsupported group type" error is treated as a failure for primary services.
-TEST_F(GATT_RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedGroupType) {
+TEST_F(RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedGroupType) {
   fake_client()->set_primary_service_discovery_status(
       att::Status(att::ErrorCode::kUnsupportedGroupType));
 
@@ -378,7 +378,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedG
 }
 
 // Tests that the "unsupported group type" error is NOT treated as a failure for secondary services.
-TEST_F(GATT_RemoteServiceManagerTest,
+TEST_F(RemoteServiceManagerTest,
        InitializeSecondaryServicesErrorUnsupportedGroupTypeIsIgnored) {
   ServiceData svc1(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   fake_client()->set_services({{svc1}});
@@ -397,7 +397,7 @@ TEST_F(GATT_RemoteServiceManagerTest,
   EXPECT_EQ(svc1, watcher_services[0]->info());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ListServicesBeforeInit) {
+TEST_F(RemoteServiceManagerTest, ListServicesBeforeInit) {
   ServiceData svc(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   std::vector<ServiceData> fake_services{{svc}};
   fake_client()->set_services(std::move(fake_services));
@@ -419,7 +419,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesBeforeInit) {
   EXPECT_EQ(svc.type, services[0]->uuid());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ListServicesAfterInit) {
+TEST_F(RemoteServiceManagerTest, ListServicesAfterInit) {
   ServiceData svc(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   std::vector<ServiceData> fake_services{{svc}};
   fake_client()->set_services(std::move(fake_services));
@@ -440,7 +440,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesAfterInit) {
   EXPECT_EQ(svc.type, services[0]->uuid());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ListServicesByUuid) {
+TEST_F(RemoteServiceManagerTest, ListServicesByUuid) {
   std::vector<UUID> uuids{kTestServiceUuid1};
 
   ServiceData svc1(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
@@ -469,7 +469,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesByUuid) {
   EXPECT_EQ(svc1.type, services[0]->uuid());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsAfterShutDown) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   service->ShutDown();
@@ -489,7 +489,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsAfterShutDown) {
   EXPECT_FALSE(service->IsDiscovered());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
+TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
   auto data = ServiceData(ServiceKind::PRIMARY, 1, 5, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -548,7 +548,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
   EXPECT_TRUE(service->IsDiscovered());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsError) {
+TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsError) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 5, kTestServiceUuid1));
 
   CharacteristicData chrc1(0, std::nullopt, 2, 3, kTestUuid3);
@@ -585,7 +585,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsError) {
 }
 
 // Discover descriptors of a service with one characteristic.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
   ServiceData data(ServiceKind::PRIMARY, kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -621,7 +621,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
 }
 
 // Discover descriptors of a service with one characteristic.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
   ServiceData data(ServiceKind::PRIMARY, kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -650,7 +650,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
 }
 
 // Discover descriptors of a service with multiple characteristics
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
   // Has one descriptor
   CharacteristicData fake_char1(0, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData fake_desc1(4, kTestUuid4);
@@ -695,7 +695,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
 
 // Discover descriptors of a service with multiple characteristics. The first
 // request results in an error though others succeed.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
   // Has one descriptor
   CharacteristicData fake_char1(0, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData fake_desc1(4, kTestUuid4);
@@ -736,7 +736,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
 
 // Discover descriptors of a service with multiple characteristics. The last
 // request results in an error while the preceding ones succeed.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
   // Has one descriptor
   CharacteristicData fake_char1(0, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData fake_desc1(4, kTestUuid4);
@@ -776,7 +776,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
 }
 
 // Discover descriptors of a service with extended properties set.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesSuccess) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesSuccess) {
   ServiceData data(ServiceKind::PRIMARY, kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -833,7 +833,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesS
 // Discover descriptors of a service that doesn't contain the ExtendedProperties bit set,
 // but with a descriptor containing an ExtendedProperty value. This is not invalid, as per
 // the spec, and so discovery shouldn't fail.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSet) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSet) {
   ServiceData data(ServiceKind::PRIMARY, kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -878,7 +878,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSe
 
 // Discover descriptors of a service with two descriptors containing ExtendedProperties.
 // This is invalid, and discovery should fail.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropertiesError) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropertiesError) {
   ServiceData data(ServiceKind::PRIMARY, kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -916,7 +916,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropert
 
 // Discover descriptors of a service with ExtendedProperties set, but with
 // an error when reading the descriptor value. Discovery should fail.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescValueError) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescValueError) {
   ServiceData data(ServiceKind::PRIMARY, kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -954,7 +954,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadD
 
 // Discover descriptors of a service with ExtendedProperties set, but with
 // a malformed response when reading the descriptor value. Discovery should fail.
-TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescInvalidValue) {
+TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescInvalidValue) {
   ServiceData data(ServiceKind::PRIMARY, kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -1012,7 +1012,7 @@ CharacteristicData WriteableExtendedPropChrc() {
   return CharacteristicData(props, std::nullopt, 2, kDefaultChrcValueHandle, kTestUuid3);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadCharAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, ReadCharAfterShutDown) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   service->ShutDown();
@@ -1026,7 +1026,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharAfterShutDown) {
   EXPECT_EQ(HostError::kFailed, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadCharWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, ReadCharWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
@@ -1037,7 +1037,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotFound) {
+TEST_F(RemoteServiceManagerTest, ReadCharNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
   att::Status status;
@@ -1048,7 +1048,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotSupported) {
+TEST_F(RemoteServiceManagerTest, ReadCharNotSupported) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {UnreadableChrc()});
   att::Status status;
@@ -1059,7 +1059,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotSupported) {
   EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequest) {
+TEST_F(RemoteServiceManagerTest, ReadCharSendsReadRequest) {
   auto service = SetupServiceWithChrcs(
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
       {ReadableChrc()});
@@ -1084,7 +1084,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequest) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequestWithDispatcher) {
+TEST_F(RemoteServiceManagerTest, ReadCharSendsReadRequestWithDispatcher) {
   auto service = SetupServiceWithChrcs(
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
       {ReadableChrc()});
@@ -1111,7 +1111,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequestWithDispatcher) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, ReadLongAfterShutDown) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   service->ShutDown();
@@ -1126,7 +1126,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAfterShutDown) {
   EXPECT_EQ(HostError::kFailed, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, ReadLongWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
@@ -1139,7 +1139,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotFound) {
+TEST_F(RemoteServiceManagerTest, ReadLongNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
@@ -1153,7 +1153,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotSupported) {
+TEST_F(RemoteServiceManagerTest, ReadLongNotSupported) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {UnreadableChrc()});
 
@@ -1168,7 +1168,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotSupported) {
 }
 
 // 0 is not a valid parameter for the |max_size| field of ReadLongCharacteristic
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongMaxSizeZero) {
+TEST_F(RemoteServiceManagerTest, ReadLongMaxSizeZero) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {ReadableChrc()});
 
@@ -1183,7 +1183,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMaxSizeZero) {
 }
 
 // The complete attribute value is read in a single request.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongSingleBlob) {
+TEST_F(RemoteServiceManagerTest, ReadLongSingleBlob) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
 
@@ -1214,7 +1214,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongSingleBlob) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobs) {
+TEST_F(RemoteServiceManagerTest, ReadLongMultipleBlobs) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
   constexpr int kExpectedBlobCount = 4;
@@ -1279,7 +1279,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobs) {
 // read request completes successfully and contains the entire value. The specification implies that
 // the peer can either respond with an empty buffer or a kAttributeNotLong error for the second
 // request.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErrorIgnored) {
+TEST_F(RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErrorIgnored) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
   constexpr int kExpectedBlobCount = 2;
@@ -1322,7 +1322,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErro
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest,
+TEST_F(RemoteServiceManagerTest,
        ReadLongCharacteristicAttributeNotLongErrorOnFirstReadRequest) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
@@ -1358,7 +1358,7 @@ TEST_F(GATT_RemoteServiceManagerTest,
 // Same as ReadLongMultipleBlobs except the characteristic value has a size that
 // is a multiple of (ATT_MTU - 1), so that the last read blob request returns 0
 // bytes.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
+TEST_F(RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
   constexpr int kExpectedBlobCount = 4;
@@ -1421,7 +1421,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
 
 // Same as ReadLongMultipleBlobs but a maximum size is given that is smaller
 // than the size of the attribute value.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
+TEST_F(RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 40;
   constexpr int kExpectedBlobCount = 2;
@@ -1472,7 +1472,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
 }
 
 // Same as ReadLongMultipleBlobs but a non-zero offset is given.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffset) {
+TEST_F(RemoteServiceManagerTest, ReadLongAtOffset) {
   constexpr uint16_t kOffset = 30;
   constexpr size_t kMaxBytes = 1000;
   constexpr int kExpectedBlobCount = 2;
@@ -1515,7 +1515,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffset) {
 }
 
 // Same as ReadLongAtOffset but a very small max size is given.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffsetWithMaxBytes) {
+TEST_F(RemoteServiceManagerTest, ReadLongAtOffsetWithMaxBytes) {
   constexpr uint16_t kOffset = 10;
   constexpr size_t kMaxBytes = 34;
   constexpr int kExpectedBlobCount = 2;
@@ -1558,7 +1558,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffsetWithMaxBytes) {
   EXPECT_EQ(kExpectedBlobCount, read_blob_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongError) {
+TEST_F(RemoteServiceManagerTest, ReadLongError) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
   constexpr int kExpectedBlobCount = 2;  // The second request will fail.
@@ -1604,7 +1604,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongError) {
 
 // The service is shut down just before the first read blob response. The
 // operation should get canceled.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
+TEST_F(RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
   constexpr int kExpectedBlobCount = 1;
@@ -1638,7 +1638,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeNotFound) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeNotFound) {
   constexpr att::Handle kStartHandle = 1;
   constexpr att::Handle kEndHandle = 5;
   auto service = SetUpFakeService(
@@ -1699,7 +1699,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeN
   EXPECT_TRUE(status->is_success()) << bt_str(status.value());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEndHandle) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEndHandle) {
   constexpr att::Handle kStartHandle = 1;
   constexpr att::Handle kEndHandle = 2;
   auto service = SetUpFakeService(
@@ -1734,7 +1734,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEnd
   EXPECT_TRUE(status->is_success()) << bt_str(status.value());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
   constexpr att::Handle kStartHandle = 1;
   constexpr att::Handle kEndHandle = 5;
   auto service = SetUpFakeService(
@@ -1776,7 +1776,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
   ASSERT_TRUE(status->is_success());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
   constexpr att::Handle kStartHandle = 1;
   constexpr att::Handle kEndHandle = 5;
   auto service = SetUpFakeService(
@@ -1826,7 +1826,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
   }
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandle) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandle) {
   constexpr att::Handle kStartHandle = 1;
   constexpr att::Handle kEndHandle = 5;
   auto service = SetUpFakeService(
@@ -1851,7 +1851,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandl
   EXPECT_EQ(att::ErrorCode::kReadNotPermitted, status->protocol_error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHandle) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHandle) {
   constexpr att::Handle kStartHandle = 1;
   constexpr att::Handle kEndHandle = 5;
   auto service = SetUpFakeService(
@@ -1875,7 +1875,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHa
   EXPECT_EQ(HostError::kPacketMalformed, status->error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsErrorIfUuidIsInternal) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsErrorIfUuidIsInternal) {
   const std::array<UUID, 10> kInternalUuids = {types::kPrimaryService,
                                                types::kSecondaryService,
                                                types::kIncludeDeclaration,
@@ -1905,7 +1905,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsErrorIfUuidIsInternal) {
   }
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, WriteCharAfterShutDown) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   service->ShutDown();
@@ -1919,7 +1919,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharAfterShutDown) {
   EXPECT_EQ(HostError::kFailed, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, WriteCharWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
@@ -1931,7 +1931,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotFound) {
+TEST_F(RemoteServiceManagerTest, WriteCharNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
@@ -1944,7 +1944,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotSupported) {
+TEST_F(RemoteServiceManagerTest, WriteCharNotSupported) {
   // No "write" property set.
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {ReadableChrc()});
@@ -1958,7 +1958,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotSupported) {
   EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharSendsWriteRequest) {
+TEST_F(RemoteServiceManagerTest, WriteCharSendsWriteRequest) {
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
   constexpr att::Status kStatus(att::ErrorCode::kWriteNotPermitted);
 
@@ -1985,7 +1985,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharSendsWriteRequest) {
 
 // Tests that a long write is chunked up properly into a series of QueuedWrites
 // that will be processed by the client. This tests a non-zero offset.
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
+TEST_F(RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
   constexpr uint16_t kOffset = 5;
   constexpr uint16_t kExpectedQueueSize = 4;
   constexpr uint16_t kExpectedFullWriteSize = 18;
@@ -2044,7 +2044,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
   EXPECT_EQ(1u, process_long_write_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
+TEST_F(RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
   constexpr uint16_t kOffset = 0;
   constexpr uint16_t kExpectedQueueSize = 4;
   constexpr uint16_t kExpectedFullWriteSize = 18;
@@ -2098,7 +2098,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
 }
 
 // Writing a long characteristic with ReliableMode::Enabled should succeed.
-TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongReliableWrite) {
+TEST_F(RemoteServiceManagerTest, WriteCharLongReliableWrite) {
   constexpr uint16_t kOffset = 0;
   constexpr uint16_t kExpectedQueueSize = 1;
 
@@ -2146,7 +2146,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongReliableWrite) {
   EXPECT_EQ(1u, process_long_write_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
+TEST_F(RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   ServiceData data(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -2167,7 +2167,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   EXPECT_EQ(status->error(), HostError::kNotSupported);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseBeforeCharacteristicDiscovery) {
+TEST_F(RemoteServiceManagerTest, WriteWithoutResponseBeforeCharacteristicDiscovery) {
   ServiceData data(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -2184,7 +2184,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseBeforeCharacteristicDi
   EXPECT_EQ(status->error(), HostError::kNotReady);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithoutResponseProperty) {
+TEST_F(RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithoutResponseProperty) {
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
 
   CharacteristicData chr(Property::kWriteWithoutResponse, std::nullopt, 2, kDefaultChrcValueHandle,
@@ -2210,7 +2210,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithou
   EXPECT_TRUE(status->is_success());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProperty) {
+TEST_F(RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProperty) {
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
 
   CharacteristicData chr(Property::kWrite, std::nullopt, 2, kDefaultChrcValueHandle, kTestUuid3);
@@ -2236,7 +2236,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProper
   EXPECT_TRUE(status->is_success());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadDescAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, ReadDescAfterShutDown) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   service->ShutDown();
@@ -2249,7 +2249,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescAfterShutDown) {
   EXPECT_EQ(HostError::kFailed, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadDescWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, ReadDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
@@ -2260,7 +2260,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadDescriptorNotFound) {
+TEST_F(RemoteServiceManagerTest, ReadDescriptorNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
@@ -2272,7 +2272,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescriptorNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequest) {
+TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequest) {
   // TODO(armansito): Some of the service set up and |status| verification
   // boilerplate could be reduced by factoring them out into helpers on the test
   // harness (also see code review comment in
@@ -2308,7 +2308,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequest) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
+TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
   constexpr att::Handle kValueHandle = 3;
   constexpr att::Handle kDescrHandle = 4;
 
@@ -2340,7 +2340,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, ReadLongDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
@@ -2352,7 +2352,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescNotFound) {
+TEST_F(RemoteServiceManagerTest, ReadLongDescNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
@@ -2368,7 +2368,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescNotFound) {
 // Tests that ReadLongDescriptor sends Read Blob requests. Other conditions
 // around the long read procedure are already covered by the tests for
 // ReadLongCharacteristic as the implementations are shared.
-TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescriptor) {
+TEST_F(RemoteServiceManagerTest, ReadLongDescriptor) {
   constexpr att::Handle kValueHandle = 3;
   constexpr att::Handle kDescrHandle = 4;
   constexpr uint16_t kOffset = 0;
@@ -2433,7 +2433,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescriptor) {
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteDescAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, WriteDescAfterShutDown) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   service->ShutDown();
@@ -2447,7 +2447,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescAfterShutDown) {
   EXPECT_EQ(HostError::kFailed, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteDescWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, WriteDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
@@ -2459,7 +2459,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotFound) {
+TEST_F(RemoteServiceManagerTest, WriteDescNotFound) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
@@ -2472,7 +2472,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotAllowed) {
+TEST_F(RemoteServiceManagerTest, WriteDescNotAllowed) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 4, kTestServiceUuid1));
 
   // "CCC" characteristic cannot be written to.
@@ -2489,7 +2489,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotAllowed) {
   EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
+TEST_F(RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
   constexpr att::Handle kValueHandle = 3;
   constexpr att::Handle kDescrHandle = 4;
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
@@ -2520,7 +2520,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
 // Tests that WriteDescriptor with a long vector is prepared correctly.
 // Other conditions around the long write procedure are already covered by the
 // tests for WriteCharacteristic as the implementations are shared.
-TEST_F(GATT_RemoteServiceManagerTest, WriteDescLongSuccess) {
+TEST_F(RemoteServiceManagerTest, WriteDescLongSuccess) {
   constexpr att::Handle kValueHandle = 3;
   constexpr att::Handle kDescrHandle = 4;
   constexpr uint16_t kOffset = 0;
@@ -2584,7 +2584,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescLongSuccess) {
   EXPECT_EQ(1u, process_long_write_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsAfterShutDown) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   service->ShutDown();
@@ -2598,7 +2598,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsAfterShutDown) {
   EXPECT_EQ(HostError::kFailed, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
   att::Status status;
@@ -2610,7 +2610,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsCharNotFound) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsCharNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
@@ -2623,7 +2623,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsCharNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoProperties) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsNoProperties) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 4, kTestServiceUuid1));
 
   // Has neither the "notify" nor "indicate" property but has a CCC descriptor.
@@ -2639,7 +2639,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoProperties) {
   EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsSuccess) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsSuccess) {
   constexpr att::Handle kCCCHandle = 4;
   auto service =
       SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, kCCCHandle, kTestServiceUuid1));
@@ -2669,7 +2669,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsSuccess) {
   EXPECT_NE(kInvalidId, id);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableIndications) {
+TEST_F(RemoteServiceManagerTest, EnableIndications) {
   constexpr att::Handle kCCCHandle = 4;
   auto service =
       SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, kCCCHandle, kTestServiceUuid1));
@@ -2699,7 +2699,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableIndications) {
   EXPECT_NE(kInvalidId, id);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsError) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsError) {
   constexpr att::Handle kCCCHandle = 4;
 
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 4, kTestServiceUuid1));
@@ -2733,7 +2733,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsError) {
   EXPECT_EQ(kInvalidId, id);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestMany) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestMany) {
   constexpr att::Handle kCCCHandle1 = 4;
   constexpr att::Handle kCCCHandle2 = 7;
 
@@ -2824,7 +2824,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestMany) {
   EXPECT_EQ(6u, cb_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
   constexpr att::Handle kCCCHandle = 4;
 
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 4, kTestServiceUuid1));
@@ -2883,7 +2883,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
 }
 
 // Enabling notifications should succeed without a descriptor write.
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
+TEST_F(RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
   // Has the "notify" property but no CCC descriptor.
   CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
   auto service =
@@ -2926,7 +2926,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
 
 // Notifications received when the remote service database is empty should be
 // dropped and not cause a crash.
-TEST_F(GATT_RemoteServiceManagerTest, NotificationWithoutServices) {
+TEST_F(RemoteServiceManagerTest, NotificationWithoutServices) {
   for (att::Handle i = 0; i < 10; ++i) {
     fake_client()->SendNotification(/*indicate=*/false, i,
                                     CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'),
@@ -2935,7 +2935,7 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationWithoutServices) {
   RunLoopUntilIdle();
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
+TEST_F(RemoteServiceManagerTest, NotificationCallback) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 7, kTestServiceUuid1));
 
   // Set up two characteristics
@@ -3013,7 +3013,7 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   EXPECT_EQ(2, chr2_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsAfterShutDown) {
+TEST_F(RemoteServiceManagerTest, DisableNotificationsAfterShutDown) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
@@ -3033,7 +3033,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsAfterShutDown) {
   EXPECT_EQ(HostError::kFailed, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsWhileNotReady) {
+TEST_F(RemoteServiceManagerTest, DisableNotificationsWhileNotReady) {
   ServiceData data(ServiceKind::PRIMARY, 1, 4, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
@@ -3046,7 +3046,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsWhileNotReady) {
   EXPECT_EQ(HostError::kNotReady, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsCharNotFound) {
+TEST_F(RemoteServiceManagerTest, DisableNotificationsCharNotFound) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
@@ -3062,7 +3062,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsCharNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsIdNotFound) {
+TEST_F(RemoteServiceManagerTest, DisableNotificationsIdNotFound) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
@@ -3078,7 +3078,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsIdNotFound) {
   EXPECT_EQ(HostError::kNotFound, status.error());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
+TEST_F(RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
   constexpr att::Handle kCCCHandle = 4;
   auto service = SetupNotifiableService();
 
@@ -3108,7 +3108,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
   EXPECT_EQ(1, ccc_write_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsDuringShutDown) {
+TEST_F(RemoteServiceManagerTest, DisableNotificationsDuringShutDown) {
   constexpr att::Handle kCCCHandle = 4;
   auto service = SetupNotifiableService();
 
@@ -3136,7 +3136,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsDuringShutDown) {
   EXPECT_EQ(1, ccc_write_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
+TEST_F(RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
@@ -3185,7 +3185,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
   EXPECT_EQ(1, ccc_write_count);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeErrorOnLastHandleDoesNotOverflowHandle) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeErrorOnLastHandleDoesNotOverflowHandle) {
   constexpr att::Handle kStartHandle = 0xFFFE;
   constexpr att::Handle kEndHandle = 0xFFFF;
   auto service = SetUpFakeService(
@@ -3216,7 +3216,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeErrorOnLastHandleDoesNotOverflow
   EXPECT_EQ(results[0].result.error(), att::ErrorCode::kReadNotPermitted);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflowHandle) {
+TEST_F(RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflowHandle) {
   constexpr att::Handle kStartHandle = 0xFFFE;
   constexpr att::Handle kEndHandle = 0xFFFF;
   auto service = SetUpFakeService(
@@ -3251,7 +3251,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflo
   EXPECT_TRUE(status->is_success()) << bt_str(status.value());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest,
+TEST_F(RemoteServiceManagerTest,
        InitializeGattProfileServiceWithServiceChangedCharacteristicAndReceiveNotification) {
   const att::Handle kGattSvcStartHandle(1);
   const att::Handle kSvcChangedChrcHandle(2);
@@ -3311,7 +3311,7 @@ TEST_F(GATT_RemoteServiceManagerTest,
   // once the facilities in RemoteServiceManager are available to do so.
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
+TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
   ServiceData gatt_svc(ServiceKind::PRIMARY, 1, 1, types::kGenericAttributeService);
   ServiceData svc1(ServiceKind::PRIMARY, 2, 2, kTestServiceUuid1);
   std::vector<ServiceData> fake_services{{gatt_svc, svc1}};
@@ -3327,7 +3327,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
   EXPECT_EQ(*status, att::Status(att::ErrorCode::kRequestNotSupported));
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, MultipleGattProfileServicesFailsInitialization) {
+TEST_F(RemoteServiceManagerTest, MultipleGattProfileServicesFailsInitialization) {
   ServiceData gatt_svc0(ServiceKind::PRIMARY, 1, 1, types::kGenericAttributeService);
   ServiceData gatt_svc1(ServiceKind::PRIMARY, 2, 2, types::kGenericAttributeService);
   std::vector<ServiceData> fake_services{{gatt_svc0, gatt_svc1}};
@@ -3340,7 +3340,7 @@ TEST_F(GATT_RemoteServiceManagerTest, MultipleGattProfileServicesFailsInitializa
   EXPECT_EQ(*status, att::Status(HostError::kFailed));
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeEmptyGattProfileService) {
+TEST_F(RemoteServiceManagerTest, InitializeEmptyGattProfileService) {
   ServiceData gatt_svc(ServiceKind::PRIMARY, 1, 1, types::kGenericAttributeService);
   ServiceData svc1(ServiceKind::PRIMARY, 2, 2, kTestServiceUuid1);
   std::vector<ServiceData> fake_services{{gatt_svc, svc1}};
@@ -3360,7 +3360,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeEmptyGattProfileService) {
   EXPECT_EQ(svc1.type, services[1]->uuid());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, EnableServiceChangedNotificationsReturnsError) {
+TEST_F(RemoteServiceManagerTest, EnableServiceChangedNotificationsReturnsError) {
   const att::Handle kGattSvcStartHandle(1);
   const att::Handle kSvcChangedChrcHandle(2);
   const att::Handle kSvcChangedChrcValueHandle(3);
@@ -3399,7 +3399,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableServiceChangedNotificationsReturnsEr
   EXPECT_EQ(write_request_count, 1);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, ErrorDiscoveringGattProfileServiceCharacteristics) {
+TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileServiceCharacteristics) {
   ServiceData gatt_svc(ServiceKind::PRIMARY, 1, 3, types::kGenericAttributeService);
   ServiceData svc1(ServiceKind::PRIMARY, 4, 4, kTestServiceUuid1);
   std::vector<ServiceData> fake_services{{gatt_svc, svc1}};

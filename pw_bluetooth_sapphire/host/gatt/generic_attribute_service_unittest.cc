@@ -26,7 +26,7 @@ constexpr att::Handle kCCCHandle = 0x0004;
 constexpr PeerId kTestPeerId(1);
 constexpr uint16_t kEnableInd = 0x0002;
 
-class GATT_GenericAttributeServiceTest : public ::testing::Test {
+class GenericAttributeServiceTest : public ::testing::Test {
  protected:
   bool WriteServiceChangedCCC(PeerId peer_id, uint16_t ccc_value, att::ErrorCode* out_ecode) {
     ZX_DEBUG_ASSERT(out_ecode);
@@ -42,7 +42,7 @@ class GATT_GenericAttributeServiceTest : public ::testing::Test {
 };
 
 // Test registration and unregistration of the local GATT service itself.
-TEST_F(GATT_GenericAttributeServiceTest, RegisterUnregister) {
+TEST_F(GenericAttributeServiceTest, RegisterUnregister) {
   {
     GenericAttributeService gatt_service(&mgr, NopSendIndication);
 
@@ -70,7 +70,7 @@ TEST_F(GATT_GenericAttributeServiceTest, RegisterUnregister) {
 // Tests that registering the GATT service, enabling indication on its Service
 // Changed characteristic, then registering a different service invokes the
 // callback to send an indication to the "client."
-TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
+TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
   int callback_count = 0;
   auto send_indication = [&](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {
     EXPECT_EQ(kTestPeerId, peer_id);
@@ -111,7 +111,7 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
 
 // Same test as above, but the indication is enabled just prior unregistering
 // the latter test service.
-TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
+TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
   int callback_count = 0;
   auto send_indication = [&](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {
     EXPECT_EQ(kTestPeerId, peer_id);
@@ -155,7 +155,7 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
 // Tests that registering the GATT service reads a persisted value for the service changed
 // characteristic's ccc, and that enabling indication on its service changed characteristic writes a
 // persisted value.
-TEST_F(GATT_GenericAttributeServiceTest, PersistIndicate) {
+TEST_F(GenericAttributeServiceTest, PersistIndicate) {
   int persist_callback_count = 0;
 
   auto persist_callback = [&persist_callback_count](PeerId peer_id,

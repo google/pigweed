@@ -16,7 +16,7 @@ namespace {
 
 constexpr OpCode kTestOpCode = 0xFFFF;
 
-TEST(HCI_SlabAllocatorsTest, CommandPacket) {
+TEST(SlabAllocatorsTest, CommandPacket) {
   auto packet = CommandPacket::New(kTestOpCode, 5);
   EXPECT_TRUE(packet);
   EXPECT_EQ(5u + sizeof(CommandHeader), packet->view().size());
@@ -30,7 +30,7 @@ TEST(HCI_SlabAllocatorsTest, CommandPacket) {
   EXPECT_EQ(kSmallControlPacketSize + 1, packet->view().size());
 }
 
-TEST(HCI_SlabAllocatorsTest, CommandPacketFallBack) {
+TEST(SlabAllocatorsTest, CommandPacketFallBack) {
   size_t num_packets = 0;
   LinkedList<Packet<CommandHeader>> packets;
 
@@ -45,7 +45,7 @@ TEST(HCI_SlabAllocatorsTest, CommandPacketFallBack) {
             num_packets);
 }
 
-TEST(HCI_SlabAllocatorsTest, ACLDataPacket) {
+TEST(SlabAllocatorsTest, ACLDataPacket) {
   auto packet = ACLDataPacket::New(5);
   EXPECT_TRUE(packet);
   EXPECT_EQ(packet->view().size(), 5u + sizeof(ACLDataHeader));
@@ -62,7 +62,7 @@ TEST(HCI_SlabAllocatorsTest, ACLDataPacket) {
   EXPECT_EQ(kMediumACLDataPacketSize + 1, packet->view().size());
 }
 
-TEST(HCI_SlabAllocatorsTest, ACLDataPacketFallBack) {
+TEST(SlabAllocatorsTest, ACLDataPacketFallBack) {
   // Maximum number of packets we can expect to obtain from all the slab allocators.
   const size_t kMaxSlabPackets = kMaxNumSlabs * kNumSmallACLDataPackets +
                                  kMaxNumSlabs * kNumMediumACLDataPackets +
@@ -87,7 +87,7 @@ TEST(HCI_SlabAllocatorsTest, ACLDataPacketFallBack) {
   packet->mutable_view()->mutable_data().Fill('m');
 }
 
-TEST(HCI_SlabAllocatorsTest, LargeACLDataPacketFallback) {
+TEST(SlabAllocatorsTest, LargeACLDataPacketFallback) {
   // Maximum number of packets we can expect to obtain from the large slab allocator.
   const size_t kMaxSlabPackets = kMaxNumSlabs * kNumLargeACLDataPackets;
   const size_t kPayloadSize = kLargeACLDataPayloadSize;

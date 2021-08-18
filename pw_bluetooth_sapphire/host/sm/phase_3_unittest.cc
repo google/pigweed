@@ -60,10 +60,10 @@ const hci::LinkKey kSampleLinkKey(
 
 const DeviceAddress kSampleDeviceAddress(DeviceAddress::Type::kLEPublic, {1});
 
-class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
+class Phase3Test : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_Phase3Test() = default;
-  ~SMP_Phase3Test() override = default;
+  Phase3Test() = default;
+  ~Phase3Test() override = default;
 
  protected:
   void SetUp() override { NewPhase3(); }
@@ -176,33 +176,33 @@ class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
   int phase_3_complete_count_ = 0;
   PairingData pairing_data_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_Phase3Test);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase3Test);
 };
 
-using SMP_Phase3DeathTest = SMP_Phase3Test;
+using Phase3DeathTest = Phase3Test;
 
-TEST_F(SMP_Phase3DeathTest, NoLocalLtkDistributionDuringSecureConnections) {
+TEST_F(Phase3DeathTest, NoLocalLtkDistributionDuringSecureConnections) {
   Phase3Args args;
   args.features.secure_connections = true;
   args.features.local_key_distribution = KeyDistGen::kEncKey;
   ASSERT_DEATH_IF_SUPPORTED(NewPhase3(args), ".*Secure Connections.*");
 }
 
-TEST_F(SMP_Phase3DeathTest, NoRemoteLtkDistributionDuringSecureConnections) {
+TEST_F(Phase3DeathTest, NoRemoteLtkDistributionDuringSecureConnections) {
   Phase3Args args;
   args.features.secure_connections = true;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
   ASSERT_DEATH_IF_SUPPORTED(NewPhase3(args), ".*Secure Connections.*");
 }
 
-TEST_F(SMP_Phase3DeathTest, CannotDistributeKeysOnUnencryptedChannel) {
+TEST_F(Phase3DeathTest, CannotDistributeKeysOnUnencryptedChannel) {
   Phase3Args args;
   args.le_props = SecurityProperties(SecurityLevel::kNoSecurity, kMaxEncryptionKeySize,
                                      false /* secure connections */);
   ASSERT_DEATH_IF_SUPPORTED(NewPhase3(args), ".*NoSecurity.*");
 }
 
-TEST_F(SMP_Phase3DeathTest, Phase3MustDistributeKeys) {
+TEST_F(Phase3DeathTest, Phase3MustDistributeKeys) {
   Phase3Args args;
   args.features.remote_key_distribution = args.features.local_key_distribution = 0;
   // Phase 3 should only be instantiated if there are keys to distribute
@@ -210,7 +210,7 @@ TEST_F(SMP_Phase3DeathTest, Phase3MustDistributeKeys) {
 }
 
 // The peer sends EDIV and Rand before LTK.
-TEST_F(SMP_Phase3Test, EncryptionInformationReceivedTwice) {
+TEST_F(Phase3Test, EncryptionInformationReceivedTwice) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
@@ -233,7 +233,7 @@ TEST_F(SMP_Phase3Test, EncryptionInformationReceivedTwice) {
 }
 
 // The peer sends EDIV and Rand before LTK.
-TEST_F(SMP_Phase3Test, MasterIdentificationReceivedInWrongOrder) {
+TEST_F(Phase3Test, MasterIdentificationReceivedInWrongOrder) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
@@ -254,7 +254,7 @@ TEST_F(SMP_Phase3Test, MasterIdentificationReceivedInWrongOrder) {
 }
 
 // The peer sends the sample Rand from the specification doc
-TEST_F(SMP_Phase3Test, ReceiveExampleLtkAborts) {
+TEST_F(Phase3Test, ReceiveExampleLtkAborts) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
@@ -277,7 +277,7 @@ TEST_F(SMP_Phase3Test, ReceiveExampleLtkAborts) {
 }
 
 // The peer sends the sample LTK from the specification doc
-TEST_F(SMP_Phase3Test, ReceiveExampleRandAborts) {
+TEST_F(Phase3Test, ReceiveExampleRandAborts) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
@@ -306,7 +306,7 @@ TEST_F(SMP_Phase3Test, ReceiveExampleRandAborts) {
 }
 
 // The peer sends us an LTK that is longer than the negotiated maximum key size
-TEST_F(SMP_Phase3Test, ReceiveTooLongLTK) {
+TEST_F(Phase3Test, ReceiveTooLongLTK) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
@@ -323,7 +323,7 @@ TEST_F(SMP_Phase3Test, ReceiveTooLongLTK) {
   EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase3Test, MasterIdentificationReceivedTwice) {
+TEST_F(Phase3Test, MasterIdentificationReceivedTwice) {
   Phase3Args args;
   args.features.initiator = true;
   // The local device must expect both an Encryption and ID key from the peer, or it would start
@@ -347,7 +347,7 @@ TEST_F(SMP_Phase3Test, MasterIdentificationReceivedTwice) {
 }
 
 // Pairing completes after obtaining encryption information only.
-TEST_F(SMP_Phase3Test, InitiatorReceivesEncKey) {
+TEST_F(Phase3Test, InitiatorReceivesEncKey) {
   const LTK kExpectedLtk = LTK(kDefaultProperties, kSampleLinkKey);
   Phase3Args args;
   args.features.initiator = true;
@@ -374,7 +374,7 @@ TEST_F(SMP_Phase3Test, InitiatorReceivesEncKey) {
   EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
 }
 
-TEST_F(SMP_Phase3Test, InitiatorSendsLocalIdKey) {
+TEST_F(Phase3Test, InitiatorSendsLocalIdKey) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.local_key_distribution = KeyDistGen::kIdKey;
@@ -404,7 +404,7 @@ TEST_F(SMP_Phase3Test, InitiatorSendsLocalIdKey) {
   ASSERT_FALSE(pairing_data().local_ltk.has_value());
 }
 
-TEST_F(SMP_Phase3Test, InitiatorSendsEncKey) {
+TEST_F(Phase3Test, InitiatorSendsEncKey) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.local_key_distribution = KeyDistGen::kEncKey;
@@ -428,7 +428,7 @@ TEST_F(SMP_Phase3Test, InitiatorSendsEncKey) {
             hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
 }
 
-TEST_F(SMP_Phase3Test, InitiatorReceivesThenSendsEncKey) {
+TEST_F(Phase3Test, InitiatorReceivesThenSendsEncKey) {
   const LTK kExpectedLtk = LTK(kDefaultProperties, kSampleLinkKey);
   Phase3Args args;
   args.features.initiator = true;
@@ -461,7 +461,7 @@ TEST_F(SMP_Phase3Test, InitiatorReceivesThenSendsEncKey) {
 }
 
 // Tests that pairing aborts if the local ID key doesn't exist but we'd already agreed to send it.
-TEST_F(SMP_Phase3Test, AbortsIfLocalIdKeyIsRemoved) {
+TEST_F(Phase3Test, AbortsIfLocalIdKeyIsRemoved) {
   Phase3Args args;
   args.features.local_key_distribution = KeyDistGen::kIdKey;
   NewPhase3(args);
@@ -477,7 +477,7 @@ TEST_F(SMP_Phase3Test, AbortsIfLocalIdKeyIsRemoved) {
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase3Test, IRKReceivedTwice) {
+TEST_F(Phase3Test, IRKReceivedTwice) {
   Phase3Args args;
   args.features.remote_key_distribution = KeyDistGen::kIdKey;
   NewPhase3(args);
@@ -498,7 +498,7 @@ TEST_F(SMP_Phase3Test, IRKReceivedTwice) {
 }
 
 // The responder sends its identity address before sending its IRK.
-TEST_F(SMP_Phase3Test, IdentityAddressReceivedInWrongOrder) {
+TEST_F(Phase3Test, IdentityAddressReceivedInWrongOrder) {
   Phase3Args args;
   args.features.remote_key_distribution = KeyDistGen::kIdKey;
   NewPhase3(args);
@@ -510,7 +510,7 @@ TEST_F(SMP_Phase3Test, IdentityAddressReceivedInWrongOrder) {
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase3Test, IdentityAddressReceivedTwice) {
+TEST_F(Phase3Test, IdentityAddressReceivedTwice) {
   Phase3Args args;
   // We tell Phase 3 to expect the sign key even though we don't yet support it so that pairing
   // does not complete after receiving the first IdentityAddress
@@ -534,7 +534,7 @@ TEST_F(SMP_Phase3Test, IdentityAddressReceivedTwice) {
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase3Test, BadIdentityAddressType) {
+TEST_F(Phase3Test, BadIdentityAddressType) {
   Phase3Args args;
   args.features.remote_key_distribution = KeyDistGen::kIdKey;
   NewPhase3(args);
@@ -557,7 +557,7 @@ TEST_F(SMP_Phase3Test, BadIdentityAddressType) {
 }
 
 // Pairing completes after obtaining identity information only.
-TEST_F(SMP_Phase3Test, InitiatorCompleteWithIdKey) {
+TEST_F(Phase3Test, InitiatorCompleteWithIdKey) {
   const Key kIrk = Key(kDefaultProperties, {1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0});
   Phase3Args args;
   args.features.local_key_distribution = 0u;
@@ -583,7 +583,7 @@ TEST_F(SMP_Phase3Test, InitiatorCompleteWithIdKey) {
 }
 
 // Pairing completes after obtaining identity information only.
-TEST_F(SMP_Phase3Test, InitiatorCompleteWithEncAndIdKey) {
+TEST_F(Phase3Test, InitiatorCompleteWithEncAndIdKey) {
   const LTK kExpectedLtk = LTK(kDefaultProperties, kSampleLinkKey);
   const Key kIrk = Key(kDefaultProperties, {1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0});
   Phase3Args args;
@@ -615,7 +615,7 @@ TEST_F(SMP_Phase3Test, InitiatorCompleteWithEncAndIdKey) {
   EXPECT_EQ(kIrk, *pairing_data().irk);
 }
 
-TEST_F(SMP_Phase3Test, ResponderLTKDistributionNoRemoteKeys) {
+TEST_F(Phase3Test, ResponderLTKDistributionNoRemoteKeys) {
   Phase3Args args;
   args.features.initiator = false;
   args.features.secure_connections = false;
@@ -641,7 +641,7 @@ TEST_F(SMP_Phase3Test, ResponderLTKDistributionNoRemoteKeys) {
             pairing_data().local_ltk->key());
 }
 
-TEST_F(SMP_Phase3Test, ResponderAcceptsInitiatorEncKey) {
+TEST_F(Phase3Test, ResponderAcceptsInitiatorEncKey) {
   const LTK kExpectedLtk = LTK(kDefaultProperties, kSampleLinkKey);
   Phase3Args args;
   args.features.initiator = false;
@@ -669,7 +669,7 @@ TEST_F(SMP_Phase3Test, ResponderAcceptsInitiatorEncKey) {
   EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
 }
 
-TEST_F(SMP_Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
+TEST_F(Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
   const Key kIrk = Key(kDefaultProperties, {1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0});
   Phase3Args args;
   args.features.initiator = false;
@@ -710,7 +710,7 @@ TEST_F(SMP_Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
 }
 
 // Locally generated ltk length should match max key length specified
-TEST_F(SMP_Phase3Test, ResponderLocalLTKMaxLength) {
+TEST_F(Phase3Test, ResponderLocalLTKMaxLength) {
   const uint16_t kNegotiatedMaxKeySize = 7;
   Phase3Args args;
   args.features.initiator = false;
@@ -740,7 +740,7 @@ TEST_F(SMP_Phase3Test, ResponderLocalLTKMaxLength) {
   }
 }
 
-TEST_F(SMP_Phase3Test, ResponderLocalIdKeyDistributionWithRemoteKeys) {
+TEST_F(Phase3Test, ResponderLocalIdKeyDistributionWithRemoteKeys) {
   Phase3Args args;
   args.features.initiator = false;
   args.features.local_key_distribution = KeyDistGen::kIdKey;
@@ -779,7 +779,7 @@ TEST_F(SMP_Phase3Test, ResponderLocalIdKeyDistributionWithRemoteKeys) {
   EXPECT_EQ(kPeerAddr, *pairing_data().identity_address);
 }
 
-TEST_F(SMP_Phase3Test, ReceivePairingFailed) {
+TEST_F(Phase3Test, ReceivePairingFailed) {
   Phase3Args args;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
   NewPhase3(args);
@@ -792,7 +792,7 @@ TEST_F(SMP_Phase3Test, ReceivePairingFailed) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase3Test, MalformedCommand) {
+TEST_F(Phase3Test, MalformedCommand) {
   Phase3Args args;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
   NewPhase3(args);
@@ -807,7 +807,7 @@ TEST_F(SMP_Phase3Test, MalformedCommand) {
   ASSERT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase3Test, UnexpectedOpCode) {
+TEST_F(Phase3Test, UnexpectedOpCode) {
   phase_3()->Start();
   // The Security Request is not expected during Phase 3.
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,

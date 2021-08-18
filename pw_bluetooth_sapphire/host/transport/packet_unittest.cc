@@ -27,7 +27,7 @@ struct TestPayload {
   uint8_t foo;
 } __PACKED;
 
-TEST(HCI_PacketTest, CommandPacket) {
+TEST(PacketTest, CommandPacket) {
   constexpr size_t kPayloadSize = sizeof(TestPayload);
   auto packet = CommandPacket::New(kTestOpCode, kPayloadSize);
 
@@ -49,7 +49,7 @@ TEST(HCI_PacketTest, CommandPacket) {
   EXPECT_TRUE(ContainersEqual(kExpected, packet->view().data()));
 }
 
-TEST(HCI_PacketTest, EventPacket) {
+TEST(PacketTest, EventPacket) {
   constexpr size_t kPayloadSize = sizeof(TestPayload);
   auto packet = EventPacket::New(kPayloadSize);
 
@@ -70,7 +70,7 @@ TEST(HCI_PacketTest, EventPacket) {
   EXPECT_EQ(127, packet->params<TestPayload>().foo);
 }
 
-TEST(HCI_PacketTest, EventPacketReturnParams) {
+TEST(PacketTest, EventPacketReturnParams) {
   // clang-format off
 
   auto correct_size_bad_event_code = CreateStaticByteBuffer(
@@ -123,7 +123,7 @@ TEST(HCI_PacketTest, EventPacketReturnParams) {
   EXPECT_EQ(127, packet->return_params<TestPayload>()->foo);
 }
 
-TEST(HCI_PacketTest, EventPacketStatus) {
+TEST(PacketTest, EventPacketStatus) {
   // clang-format off
   auto evt = CreateStaticByteBuffer(
       // Event header
@@ -145,7 +145,7 @@ TEST(HCI_PacketTest, EventPacketStatus) {
   EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
 }
 
-TEST(HCI_PacketTest, CommandCompleteEventStatus) {
+TEST(PacketTest, CommandCompleteEventStatus) {
   // clang-format off
   auto evt = CreateStaticByteBuffer(
       // Event header
@@ -167,7 +167,7 @@ TEST(HCI_PacketTest, CommandCompleteEventStatus) {
   EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
 }
 
-TEST(HCI_PacketTest, EventPacketMalformed) {
+TEST(PacketTest, EventPacketMalformed) {
   // clang-format off
   auto evt = CreateStaticByteBuffer(
       // Event header
@@ -189,7 +189,7 @@ TEST(HCI_PacketTest, EventPacketMalformed) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST(HCI_PacketTest, LEEventParams) {
+TEST(PacketTest, LEEventParams) {
   // clang-format off
 
   auto correct_size_bad_event_code = CreateStaticByteBuffer(
@@ -239,7 +239,7 @@ TEST(HCI_PacketTest, LEEventParams) {
   EXPECT_EQ(127, packet->le_event_params<TestPayload>()->foo);
 }
 
-TEST(HCI_PacketTest, ACLDataPacketFromFields) {
+TEST(PacketTest, ACLDataPacketFromFields) {
   constexpr size_t kLargeDataLength = 10;
   constexpr size_t kSmallDataLength = 1;
 
@@ -272,7 +272,7 @@ TEST(HCI_PacketTest, ACLDataPacketFromFields) {
                                                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}));
 }
 
-TEST(HCI_PacketTest, ACLDataPacketFromBuffer) {
+TEST(PacketTest, ACLDataPacketFromBuffer) {
   constexpr size_t kLargeDataLength = 256;
   constexpr size_t kSmallDataLength = 1;
 

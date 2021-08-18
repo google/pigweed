@@ -45,7 +45,7 @@ class ACLDataChannelTest : public TestingBase {
 
 using HCI_ACLDataChannelTest = ACLDataChannelTest;
 
-TEST_F(HCI_ACLDataChannelTest, VerifyMTUs) {
+TEST_F(ACLDataChannelTest, VerifyMTUs) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   const DataBufferInfo kLEBufferInfo(64, 16);
 
@@ -72,7 +72,7 @@ TEST_F(HCI_ACLDataChannelTest, VerifyMTUs) {
 }
 
 // Test that SendPacket works using only the BR/EDR buffer.
-TEST_F(HCI_ACLDataChannelTest, SendPacketBREDRBuffer) {
+TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
   constexpr ConnectionHandle kHandle0 = 0x0001;
@@ -136,7 +136,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketBREDRBuffer) {
 
 // Test that SendPacket works using the LE buffer when no BR/EDR buffer is
 // available.
-TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
+TEST_F(ACLDataChannelTest, SendPacketLEBuffer) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kTotalAttempts = 12;
   constexpr size_t kTotalExpected = 6;
@@ -215,7 +215,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
 
 // Test that SendPacket works for LE packets when both buffer types are
 // available.
-TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
+TEST_F(ACLDataChannelTest, SendLEPacketBothBuffers) {
   constexpr size_t kMaxMTU = 200;
   constexpr size_t kMaxNumPackets = 50;
   constexpr size_t kLEMaxMTU = 5;
@@ -286,7 +286,7 @@ TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
 
 // Test that SendPacket works for BR/EDR packets when both buffer types are
 // available.
-TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
+TEST_F(ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   constexpr size_t kLEMaxMTU = 200;
   constexpr size_t kLEMaxNumPackets = 50;
   constexpr size_t kMaxMTU = 5;
@@ -355,7 +355,7 @@ TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   EXPECT_EQ(5, handle1_packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, SendPacketsFailure) {
+TEST_F(ACLDataChannelTest, SendPacketsFailure) {
   constexpr size_t kMaxMTU = 5;
   constexpr ConnectionHandle kHandle = 0x0001;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
@@ -375,9 +375,9 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsFailure) {
 }
 
 // Suffix DeathTest has GoogleTest-specific behavior
-using HCI_ACLDataChannelDeathTest = HCI_ACLDataChannelTest;
+using ACLDataChannelDeathTest = HCI_ACLDataChannelTest;
 
-TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
+TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
   constexpr size_t kMaxMTU = 5;
   constexpr ConnectionHandle kHandle = 0x0001;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
@@ -393,7 +393,7 @@ TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
       "expected full PDU");
 }
 
-TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneConnection) {
+TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneConnection) {
   constexpr size_t kMaxMTU = 5;
   constexpr ConnectionHandle kHandle0 = 0x0001;
   constexpr ConnectionHandle kHandle1 = 0x0002;
@@ -415,7 +415,7 @@ TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneC
 }
 
 // Tests sending multiple packets in a single call.
-TEST_F(HCI_ACLDataChannelTest, SendPackets) {
+TEST_F(ACLDataChannelTest, SendPackets) {
   constexpr int kExpectedPacketCount = 5;
   constexpr ConnectionHandle kHandle = 0x0001;
 
@@ -457,7 +457,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPackets) {
   EXPECT_EQ(kExpectedPacketCount, seq_no);
 }
 
-TEST_F(HCI_ACLDataChannelTest,
+TEST_F(ACLDataChannelTest,
        UnregisterLinkDoesNotClearNumSentPacketsAndClearControllerPacketCountDoes) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 2;
@@ -503,7 +503,7 @@ TEST_F(HCI_ACLDataChannelTest,
   ASSERT_EQ(3, packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
+TEST_F(ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 2;
   constexpr ConnectionHandle kHandle = 1;
@@ -539,7 +539,7 @@ TEST_F(HCI_ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
   ASSERT_EQ(0, packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
+TEST_F(ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
   constexpr ConnectionHandle kHandle1 = 1;
@@ -604,7 +604,7 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
   ASSERT_EQ(0, handle2_packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregisterLink) {
+TEST_F(ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregisterLink) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
   constexpr ConnectionHandle kHandle1 = 1;
@@ -646,7 +646,7 @@ TEST_F(HCI_ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregist
   ASSERT_EQ(1, packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest,
+TEST_F(ACLDataChannelTest,
        StalePacketsBufferedBeforeFirstUnregisterAndBeforeSecondRegisterAreNotSent) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
@@ -718,7 +718,7 @@ TEST_F(HCI_ACLDataChannelTest,
   ASSERT_EQ(2, data_cb_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
+TEST_F(ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
   constexpr ConnectionHandle kHandle = 1;
@@ -751,7 +751,7 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
   ASSERT_EQ(1, packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, ReceiveData) {
+TEST_F(ACLDataChannelTest, ReceiveData) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
 
@@ -802,7 +802,7 @@ TEST_F(HCI_ACLDataChannelTest, ReceiveData) {
   EXPECT_EQ(0x0002, packet1_handle);
 }
 
-TEST_F(HCI_ACLDataChannelTest, TransportClosedCallback) {
+TEST_F(ACLDataChannelTest, TransportClosedCallback) {
   InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
 
   bool closed_cb_called = false;
@@ -814,7 +814,7 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallback) {
   EXPECT_TRUE(closed_cb_called);
 }
 
-TEST_F(HCI_ACLDataChannelTest, TransportClosedCallbackBothChannels) {
+TEST_F(ACLDataChannelTest, TransportClosedCallbackBothChannels) {
   InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
 
   int closed_cb_count = 0;
@@ -834,7 +834,7 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallbackBothChannels) {
 
 // Make sure that a HCI "Number of completed packets" event received after shut
 // down does not cause a crash.
-TEST_F(HCI_ACLDataChannelTest, HciEventReceivedAfterShutDown) {
+TEST_F(ACLDataChannelTest, HciEventReceivedAfterShutDown) {
   InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
@@ -851,7 +851,7 @@ TEST_F(HCI_ACLDataChannelTest, HciEventReceivedAfterShutDown) {
   RunLoopUntilIdle();
 }
 
-TEST_F(HCI_ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueue) {
+TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueue) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
   constexpr ConnectionHandle kHandle0 = 0x0001;
@@ -937,7 +937,7 @@ TEST_F(HCI_ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFrom
   EXPECT_EQ(2, handle1_packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSentFirst) {
+TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSentFirst) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
   constexpr ConnectionHandle kHandle0 = 0x0001;
@@ -1018,7 +1018,7 @@ TEST_F(HCI_ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsA
   EXPECT_EQ(5u, handle1_packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
+TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 6;
   constexpr ConnectionHandle kHandle0 = 0x0001;
@@ -1173,10 +1173,10 @@ const std::array<std::pair<hci::AclPriority, bool>, 4> kPriorityParams = {
      {hci::AclPriority::kSource, true},
      {hci::AclPriority::kSink, true},
      {hci::AclPriority::kNormal, true}}};
-INSTANTIATE_TEST_SUITE_P(HCI_ACLDataChannelTest, AclPriorityTest,
+INSTANTIATE_TEST_SUITE_P(ACLDataChannelTest, AclPriorityTest,
                          ::testing::ValuesIn(kPriorityParams));
 
-TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeFails) {
+TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeFails) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
@@ -1192,7 +1192,7 @@ TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeFails) {
   EXPECT_EQ(request_cb_count, 1u);
 }
 
-TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
+TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
@@ -1210,7 +1210,7 @@ TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   EXPECT_EQ(request_cb_count, 1u);
 }
 
-TEST_F(HCI_ACLDataChannelTest, SetAutomaticFlushTimeout) {
+TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
   acl_data_channel()->RegisterLink(kLinkHandle, bt::LinkType::kACL);
@@ -1270,7 +1270,7 @@ TEST_F(HCI_ACLDataChannelTest, SetAutomaticFlushTimeout) {
   EXPECT_EQ(cb_status->error(), hci::StatusCode::kInvalidHCICommandParameters);
 }
 
-TEST_F(HCI_ACLDataChannelTest,
+TEST_F(ACLDataChannelTest,
        SendingLowPriorityBrEdrPacketsWhenTooManyAreQueuedDropsLeastRecentlySentPduOnSameChannel) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
@@ -1336,7 +1336,7 @@ TEST_F(HCI_ACLDataChannelTest,
   EXPECT_EQ(2u, packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest,
+TEST_F(ACLDataChannelTest,
        SendingLowPriorityPacketsThatDropDoNotAffectDataOnSameLinkDifferentChannel) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
@@ -1403,7 +1403,7 @@ TEST_F(HCI_ACLDataChannelTest,
   EXPECT_EQ(2u, packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDifferentLink) {
+TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDifferentLink) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
   constexpr ConnectionHandle kHandle0 = 0x0001;
@@ -1471,7 +1471,7 @@ TEST_F(HCI_ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataO
   EXPECT_EQ(2u, packet_count);
 }
 
-TEST_F(HCI_ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts) {
+TEST_F(ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
   constexpr ConnectionHandle kHandle0 = 0x0001;

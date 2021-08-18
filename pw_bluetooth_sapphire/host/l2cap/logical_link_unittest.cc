@@ -17,11 +17,11 @@
 namespace bt::l2cap::internal {
 namespace {
 using Conn = hci::Connection;
-class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
+class LogicalLinkTest : public ::gtest::TestLoopFixture {
  public:
-  L2CAP_LogicalLinkTest() = default;
-  ~L2CAP_LogicalLinkTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_LogicalLinkTest);
+  LogicalLinkTest() = default;
+  ~LogicalLinkTest() override = default;
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLinkTest);
 
  protected:
   void SetUp() override { NewLogicalLink(); }
@@ -50,21 +50,21 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
   hci::testing::MockAclDataChannel acl_data_channel_;
 };
 
-using L2CAP_LogicalLinkDeathTest = L2CAP_LogicalLinkTest;
+using LogicalLinkDeathTest = LogicalLinkTest;
 
-TEST_F(L2CAP_LogicalLinkDeathTest, DestructedWithoutClosingDies) {
+TEST_F(LogicalLinkDeathTest, DestructedWithoutClosingDies) {
   // Deleting the link without calling `Close` on it should trigger an assertion.
   ASSERT_DEATH_IF_SUPPORTED(DeleteLink(), ".*closed.*");
 }
 
-TEST_F(L2CAP_LogicalLinkTest, FixedChannelHasCorrectMtu) {
+TEST_F(LogicalLinkTest, FixedChannelHasCorrectMtu) {
   fbl::RefPtr<Channel> fixed_chan = link()->OpenFixedChannel(kATTChannelId);
   ASSERT_TRUE(fixed_chan);
   EXPECT_EQ(kMaxMTU, fixed_chan->max_rx_sdu_size());
   EXPECT_EQ(kMaxMTU, fixed_chan->max_tx_sdu_size());
 }
 
-TEST_F(L2CAP_LogicalLinkTest, DropsBroadcastPackets) {
+TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
   link()->Close();
   NewLogicalLink(bt::LinkType::kACL);
   fbl::RefPtr<Channel> connectionless_chan = link()->OpenFixedChannel(kConnectionlessChannelId);
@@ -96,7 +96,7 @@ TEST_F(L2CAP_LogicalLinkTest, DropsBroadcastPackets) {
 #define EXPECT_LOW_PRIORITY(channel_id) \
   EXPECT_EQ(LogicalLink::ChannelPriority((channel_id)), hci::AclDataChannel::PacketPriority::kLow)
 
-TEST_F(L2CAP_LogicalLinkTest, ChannelPriority) {
+TEST_F(LogicalLinkTest, ChannelPriority) {
   EXPECT_HIGH_PRIORITY(kSignalingChannelId);
   EXPECT_HIGH_PRIORITY(kLESignalingChannelId);
   EXPECT_HIGH_PRIORITY(kSMPChannelId);
@@ -107,7 +107,7 @@ TEST_F(L2CAP_LogicalLinkTest, ChannelPriority) {
   EXPECT_LOW_PRIORITY(kATTChannelId);
 }
 
-TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
+TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
   link()->Close();
   NewLogicalLink(bt::LinkType::kACL);
   constexpr zx::duration kTimeout(zx::msec(100));
@@ -126,7 +126,7 @@ TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
+TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
   constexpr zx::duration kTimeout(zx::msec(100));
   // LE links are unsupported, so result should be an error.
   link()->Close();

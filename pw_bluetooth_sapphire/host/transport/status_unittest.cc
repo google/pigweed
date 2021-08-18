@@ -9,13 +9,13 @@
 namespace bt::hci {
 namespace {
 
-TEST(HCI_StatusTest, ProtocolSuccess) {
+TEST(StatusTest, ProtocolSuccess) {
   Status status(StatusCode::kSuccess);
   EXPECT_TRUE(status);
   EXPECT_FALSE(status.is_protocol_error());
 }
 
-TEST(HCI_StatusTest, ProtocolError) {
+TEST(StatusTest, ProtocolError) {
   Status status(StatusCode::kHardwareFailure);
   EXPECT_FALSE(status);
   EXPECT_TRUE(status.is_protocol_error());

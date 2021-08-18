@@ -36,10 +36,10 @@ class TestCallbackObject : public fxl::RefCountedThreadSafe<TestCallbackObject> 
   fit::closure deletion_cb_;
 };
 
-class HCI_CommandChannelTest : public TestingBase {
+class CommandChannelTest : public TestingBase {
  public:
-  HCI_CommandChannelTest() = default;
-  ~HCI_CommandChannelTest() override = default;
+  CommandChannelTest() = default;
+  ~CommandChannelTest() override = default;
 };
 
 std::unique_ptr<CommandPacket> MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
@@ -50,7 +50,7 @@ std::unique_ptr<CommandPacket> MakeReadRemoteSupportedFeatures(uint16_t connecti
   return packet;
 }
 
-TEST_F(HCI_CommandChannelTest, SingleRequestResponse) {
+TEST_F(CommandChannelTest, SingleRequestResponse) {
   // Set up expectations:
   // clang-format off
   // HCI_Reset
@@ -98,7 +98,7 @@ TEST_F(HCI_CommandChannelTest, SingleRequestResponse) {
   EXPECT_TRUE(test_obj_deleted);
 }
 
-TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
+TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
   // Set up expectations:
   // clang-format off
   // HCI_Inquiry (general, unlimited, 1s)
@@ -153,7 +153,7 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
   EXPECT_EQ(2, cb_count);
 }
 
-TEST_F(HCI_CommandChannelTest, SingleRequestWithStatusResponse) {
+TEST_F(CommandChannelTest, SingleRequestWithStatusResponse) {
   // Set up expectations
   // clang-format off
   // HCI_Reset for the sake of testing
@@ -190,7 +190,7 @@ TEST_F(HCI_CommandChannelTest, SingleRequestWithStatusResponse) {
 // Tests:
 //  - Only one HCI command sent until a status is received.
 //  - Receiving a status update with a new number of packets available works.
-TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
+TEST_F(CommandChannelTest, OneSentUntilStatus) {
   // Set up expectations
   // clang-format off
   // HCI_Reset for the sake of testing
@@ -264,7 +264,7 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
 // Tests:
 //  - Different opcodes can be sent concurrently
 //  - Same opcodes are queued until a status opcode is sent.
-TEST_F(HCI_CommandChannelTest, QueuedCommands) {
+TEST_F(CommandChannelTest, QueuedCommands) {
   // Set up expectations
   // clang-format off
   // HCI_Reset for the sake of testing
@@ -360,7 +360,7 @@ TEST_F(HCI_CommandChannelTest, QueuedCommands) {
 //  - Asynchronous commands with the same event result are queued even if they
 //    have different opcodes.
 //  - Can't register an event handler when an asynchronous command is waiting.
-TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
+TEST_F(CommandChannelTest, AsynchronousCommands) {
   constexpr EventCode kTestEventCode0 = 0xFE;
   // Set up expectations
   // clang-format off
@@ -454,7 +454,7 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
 //  - Updating to say no commands can be sent works. (commands are queued)
 //  - Can't add an event handler once a SendCommand() succeeds watiing on
 //    the same event code. (even if they are queued)
-TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
+TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
   constexpr EventCode kTestEventCode0 = 0xF0;
   // Set up expectations
   // clang-format off
@@ -544,7 +544,7 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
 //  - Events are routed to the event handler.
 //  - Can't queue a command on the same event that is already in an event
 //  handler.
-TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
+TEST_F(CommandChannelTest, EventHandlerBasic) {
   constexpr EventCode kTestEventCode0 = 0xFE;
   constexpr EventCode kTestEventCode1 = 0xFF;
   auto cmd_status = CreateStaticByteBuffer(kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
@@ -652,7 +652,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
 // Tests:
 //  - can't send a command that masks an event handler.
 //  - can send a command without a callback.
-TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
+TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   // clang-format off
   // HCI_Reset
   auto req = CreateStaticByteBuffer(
@@ -706,7 +706,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
 //  - Calling RemoveQueuedCommand on a synchronous command that has already been sent to the
 //    controller returns false.
 //  - The command still completes and notifies the callback.
-TEST_F(HCI_CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
+TEST_F(CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
   auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
                                           0x00  // parameter_total_size
   );
@@ -743,7 +743,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
 // Tests:
 //  - Remove a synchronous command that is queued up behind another command with the same opcode.
 //  - The first command (after removal) does not receive the update event for the second command.
-TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
+TEST_F(CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
   using namespace std::placeholders;
   auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
                                           0x00  // parameter_total_size
@@ -828,7 +828,7 @@ const auto kReadRemoteSupportedFeaturesComplete =
 // Tests:
 //  - Remove an asynchronous command that is queued up behind another command with the same opcode.
 //  - The first command (after removal) does not receive the update event for the second command.
-TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
+TEST_F(CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
   using namespace std::placeholders;
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
   StartTestDevice();
@@ -880,7 +880,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
 // Tests:
 //  - Calling RemoveQueuedCommand on an asynchronous command that has received both Command Status
 //    and command completion events returns false and has no effect.
-TEST_F(HCI_CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
+TEST_F(CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd,
                         &kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete);
   StartTestDevice();
@@ -916,7 +916,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
 //  - Calling RemoveQueuedCommand on an asynchronous command that has already been sent to the
 //    controller returns false.
 //  - The command still notifies the callback for update and completion events.
-TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
+TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
   StartTestDevice();
 
@@ -960,7 +960,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
 //  - Calling RemoveQueuedCommand on an asynchronous command that has already been sent to the
 //    controller and gotten Command Status returns false.
 //  - The command still notifies the callback for completion event.
-TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
+TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd,
                         &kReadRemoteSupportedFeaturesRsp);
   StartTestDevice();
@@ -1000,7 +1000,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
   EXPECT_EQ(2, cmd_events);
 }
 
-TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
+TEST_F(CommandChannelTest, LEMetaEventHandler) {
   constexpr EventCode kTestSubeventCode0 = 0xFE;
   constexpr EventCode kTestSubeventCode1 = 0xFF;
   auto le_meta_event_bytes0 =
@@ -1062,7 +1062,7 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
   EXPECT_EQ(2, event_count1);
 }
 
-TEST_F(HCI_CommandChannelTest, EventHandlerIdsDontCollide) {
+TEST_F(CommandChannelTest, EventHandlerIdsDontCollide) {
   // Add a LE Meta event handler and a event handler and make sure that IDs are
   // generated correctly across the two methods.
   EXPECT_EQ(1u, cmd_channel()->AddLEMetaEventHandler(
@@ -1076,7 +1076,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerIdsDontCollide) {
 
 // Tests:
 //  - Can't register an event handler for CommandStatus or CommandComplete
-TEST_F(HCI_CommandChannelTest, EventHandlerRestrictions) {
+TEST_F(CommandChannelTest, EventHandlerRestrictions) {
   auto id0 = cmd_channel()->AddEventHandler(
       hci::kCommandStatusEventCode, [](const auto&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, id0);
@@ -1087,7 +1087,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerRestrictions) {
 
 // Tests that an asynchronous command with a completion event code does not
 // remove an existing handler for colliding LE meta subevent code.
-TEST_F(HCI_CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfere) {
+TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfere) {
   // Set up expectations for the asynchronous command and its corresponding
   // command status event.
   // clang-format off
@@ -1168,7 +1168,7 @@ TEST_F(HCI_CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInte
   EXPECT_EQ(2, async_cmd_cb_count);
 }
 
-TEST_F(HCI_CommandChannelTest, TransportClosedCallback) {
+TEST_F(CommandChannelTest, TransportClosedCallback) {
   StartTestDevice();
 
   bool closed_cb_called = false;
@@ -1180,7 +1180,7 @@ TEST_F(HCI_CommandChannelTest, TransportClosedCallback) {
   EXPECT_TRUE(closed_cb_called);
 }
 
-TEST_F(HCI_CommandChannelTest, CommandTimeoutCallback) {
+TEST_F(CommandChannelTest, CommandTimeoutCallback) {
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
   auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
@@ -1218,7 +1218,7 @@ TEST_F(HCI_CommandChannelTest, CommandTimeoutCallback) {
   EXPECT_EQ(0u, cmd_cb_count);
 }
 
-TEST_F(HCI_CommandChannelTest, DestroyChannelInTimeoutCallback) {
+TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
   auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
@@ -1255,7 +1255,7 @@ TEST_F(HCI_CommandChannelTest, DestroyChannelInTimeoutCallback) {
 // Tests:
 //  - Asynchronous commands should be able to schedule another asynchronous
 //    command in their callback.
-TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
+TEST_F(CommandChannelTest, AsynchronousCommandChaining) {
   constexpr size_t kExpectedCallbacksPerCommand = 2;
   constexpr EventCode kTestEventCode0 = 0xFE;
   // Set up expectations
@@ -1346,7 +1346,7 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
 //  - Exclusive Commands in the queue still get started in order
 //  - Commands that aren't exclusive run as normal even when an exclusive one is
 //    waiting.
-TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
+TEST_F(CommandChannelTest, ExclusiveCommands) {
   constexpr EventCode kExclOneCompleteEvent = 0xFE;
   constexpr EventCode kExclTwoCompleteEvent = 0xFD;
   constexpr OpCode kExclusiveOne = DefineOpCode(0x01, 0x01);
@@ -1527,7 +1527,7 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
   EXPECT_EQ(3u, nonexclusive_cb_count);
 }
 
-TEST_F(HCI_CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
+TEST_F(CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
   constexpr EventCode kTestEventCode0 = 0xFE;
 
   // Register event handler for kTestEventCode0.
@@ -1544,7 +1544,7 @@ TEST_F(HCI_CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
   EXPECT_EQ(0u, transaction_id);
 }
 
-TEST_F(HCI_CommandChannelTest, EventHandlerResults) {
+TEST_F(CommandChannelTest, EventHandlerResults) {
   constexpr EventCode kTestEventCode0 = 0xFE;
 
   int event_count = 0;
@@ -1574,7 +1574,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerResults) {
   EXPECT_EQ(2, event_count);
 }
 
-TEST_F(HCI_CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
+TEST_F(CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
   constexpr OpCode kOpCode = kLEReadRemoteFeatures;
   constexpr EventCode kSubeventCode = kLEReadRemoteFeaturesCompleteSubeventCode;
 
@@ -1634,7 +1634,7 @@ TEST_F(HCI_CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
 }
 
 TEST_F(
-    HCI_CommandChannelTest,
+    CommandChannelTest,
     SendingLECommandAfterAddingLEMetaEventHandlerFailsForSameSubeventCodeAndSucceedsForDifferentSubeventCode) {
   constexpr EventCode kSubeventCode = kLEReadRemoteFeaturesCompleteSubeventCode;
   constexpr OpCode kOpCode = kLEReadRemoteFeatures;  // LE Read Remote Features
@@ -1655,7 +1655,7 @@ TEST_F(
   RunLoopUntilIdle();
 }
 
-TEST_F(HCI_CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFirstToComplete) {
+TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFirstToComplete) {
   // Commands have different op codes but same subevent code so that second command is not
   // blocked because of matching op codes (which would not test LE command handling).
   constexpr OpCode kOpCode0 = kLEReadRemoteFeatures;
@@ -1753,7 +1753,7 @@ TEST_F(HCI_CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitF
 }
 
 TEST_F(
-    HCI_CommandChannelTest,
+    CommandChannelTest,
     RegisteringLEMetaEventHandlerWhileLECommandPendingFailsForSameSubeventAndSucceedsForDifferentSubevent) {
   constexpr OpCode kOpCode = kLEReadRemoteFeatures;
   constexpr EventCode kSubeventCode = kLEReadRemoteFeaturesCompleteSubeventCode;

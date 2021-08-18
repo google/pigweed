@@ -35,10 +35,10 @@ const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
 constexpr AdvertisingIntervalRange kTestInterval(kLEAdvertisingIntervalMin,
                                                  kLEAdvertisingIntervalMax);
 
-class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
+class LegacyLowEnergyAdvertiserTest : public TestingBase {
  public:
-  HCI_LegacyLowEnergyAdvertiserTest() = default;
-  ~HCI_LegacyLowEnergyAdvertiserTest() override = default;
+  LegacyLowEnergyAdvertiserTest() = default;
+  ~LegacyLowEnergyAdvertiserTest() override = default;
 
  protected:
   // TestingBase overrides:
@@ -140,11 +140,11 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
 
   std::optional<Status> last_status_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HCI_LegacyLowEnergyAdvertiserTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiserTest);
 };
 
 // - Rejects StartAdvertising for a different address when Advertising already
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
+TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data = GetExampleData();
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
@@ -182,7 +182,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
 // Tests starting and stopping an advertisement when the TX power is requested.
 // Validates the advertising and scan response data are correctly populated with the
 // TX power.
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
+TEST_F(LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data = GetExampleData();
   AdvertisingOptions options(kTestInterval, false, kDefaultNoAdvFlags, true);
@@ -214,7 +214,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAndStopWithTxPower) {
 
 // Tests sending a second StartAdvertising command while the first one is outstanding,
 // with TX power enabled.
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
+TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data;
   DeviceAddress addr = kRandomAddress;
@@ -249,7 +249,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingWithTxPower) {
 // Test that the second StartAdvertising call (with no TX Power requested) successfully supercedes
 // the first ongoing StartAdvertising call (with TX Power requested).
 // Validates the advertised data does not include the TX power.
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingTxPowerRequestedThenNotRequested) {
+TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileStartingTxPowerRequestedThenNotRequested) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data;
   DeviceAddress addr = kRandomAddress;
@@ -279,7 +279,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStartingTxPowerRequestedThen
 // Test that the second StartAdvertising call (with TX Power requested) successfully supercedes
 // the first ongoing StartAdvertising call (no TX Power requested).
 // Validates the advertised data includes the TX power.
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartingWhileStartingTxPowerNotRequestedThenRequested) {
+TEST_F(LegacyLowEnergyAdvertiserTest, StartingWhileStartingTxPowerNotRequestedThenRequested) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data;
   DeviceAddress addr = kRandomAddress;
@@ -311,7 +311,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartingWhileStartingTxPowerNotRequest
 
 // Tests that advertising gets enabled successfully with the updated parameters if
 // StartAdvertising is called during a TX Power Level read.
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
+TEST_F(LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data;
   DeviceAddress addr = kRandomAddress;
@@ -345,7 +345,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileTxPowerReadSuccess) {
 }
 
 // Tests that advertising does not get enabled if the TX Power read fails.
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
+TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data;
   AdvertisingOptions options(kTestInterval, false, kDefaultNoAdvFlags, true);
@@ -369,7 +369,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
 // is the ExtendedLowEnergyAdvertiser. For ExtendedLowEnergyAdvertiser, we will implement random
 // address rotation in a future project. When that is done, we should move this test to the general
 // LowEnergyAdvertiser unit test file.
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AllowsRandomAddressChange) {
+TEST_F(LegacyLowEnergyAdvertiserTest, AllowsRandomAddressChange) {
   AdvertisingData scan_rsp;
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/false);

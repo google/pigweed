@@ -32,10 +32,10 @@ struct Phase1Args {
   bool sc_supported = false;
 };
 
-class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
+class Phase1Test : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_Phase1Test() = default;
-  ~SMP_Phase1Test() override = default;
+  Phase1Test() = default;
+  ~Phase1Test() override = default;
 
  protected:
   void SetUp() override { NewPhase1(); }
@@ -96,10 +96,10 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
   MutableByteBufferPtr last_pairing_req_;
   MutableByteBufferPtr last_pairing_res_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_Phase1Test);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase1Test);
 };
 
-TEST_F(SMP_Phase1Test, FeatureExchangeStartDefaultParams) {
+TEST_F(Phase1Test, FeatureExchangeStartDefaultParams) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
                              0x03,  // IO cap.: NoInputNoOutput
@@ -115,7 +115,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeStartDefaultParams) {
   ASSERT_TRUE(Expect(kRequest));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeStartCustomParams) {
+TEST_F(Phase1Test, FeatureExchangeStartCustomParams) {
   auto phase_args = Phase1Args{.io_capability = IOCapability::kDisplayYesNo,
                                .bondable_mode = BondableMode::NonBondable,
                                .level = SecurityLevel::kAuthenticated,
@@ -136,7 +136,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeStartCustomParams) {
   ASSERT_TRUE(Expect(kRequest));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorWithIdentityInfo) {
+TEST_F(Phase1Test, FeatureExchangeInitiatorWithIdentityInfo) {
   listener()->set_identity_info(IdentityInfo());
 
   const auto kRequest =
@@ -156,7 +156,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorWithIdentityInfo) {
   EXPECT_EQ(1, listener()->identity_info_count());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangePairingFailed) {
+TEST_F(Phase1Test, FeatureExchangePairingFailed) {
   fake_chan()->Receive(CreateStaticByteBuffer(0x05,  // code: Pairing Failed
                                               0x05   // reason: Pairing Not Supported
                                               ));
@@ -167,7 +167,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePairingFailed) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
+TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -203,7 +203,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
   EXPECT_EQ(0, feature_exchange_count());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
+TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -240,7 +240,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
 }
 
 // Pairing should fail if MITM is required but the I/O capabilities cannot provide it
-TEST_F(SMP_Phase1Test, FeatureExchangeFailureAuthenticationRequirements) {
+TEST_F(Phase1Test, FeatureExchangeFailureAuthenticationRequirements) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -277,7 +277,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeFailureAuthenticationRequirements) {
   EXPECT_EQ(0, feature_exchange_count());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeFailureMalformedRequest) {
+TEST_F(Phase1Test, FeatureExchangeFailureMalformedRequest) {
   const auto kMalformedResponse =
       CreateStaticByteBuffer(0x02,                // code: Pairing Response
                              0x03,                // IO cap.: NoInputNoOutput
@@ -297,7 +297,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeFailureMalformedRequest) {
   EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
+TEST_F(Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
   Phase1Args args;
   args.sc_supported = true;
   NewPhase1(Role::kInitiator, args);
@@ -337,7 +337,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
   EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeScIgnoresEncKeyBit) {
+TEST_F(Phase1Test, FeatureExchangeScIgnoresEncKeyBit) {
   Phase1Args args;
   args.sc_supported = true;
   NewPhase1(Role::kInitiator, args);
@@ -381,7 +381,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeScIgnoresEncKeyBit) {
   EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
+TEST_F(Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
   Phase1Args args;
   args.sc_supported = true;
   NewPhase1(Role::kInitiator, args);
@@ -421,7 +421,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
   EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyJustWorks) {
+TEST_F(Phase1Test, FeatureExchangePairingResponseLegacyJustWorks) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -461,7 +461,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyJustWorks) {
   EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyMITM) {
+TEST_F(Phase1Test, FeatureExchangePairingResponseLegacyMITM) {
   auto phase_args = Phase1Args{.io_capability = IOCapability::kDisplayYesNo};
   NewPhase1(Role::kInitiator, phase_args);
 
@@ -504,7 +504,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyMITM) {
   EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeEncryptionKeySize) {
+TEST_F(Phase1Test, FeatureExchangeEncryptionKeySize) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -538,7 +538,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeEncryptionKeySize) {
   ASSERT_EQ(ErrorCode::kEncryptionKeySize, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
+TEST_F(Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
   auto phase_args = Phase1Args{.io_capability = IOCapability::kKeyboardDisplay,
                                .level = SecurityLevel::kSecureAuthenticated,
                                .sc_supported = true};
@@ -576,7 +576,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
   ASSERT_EQ(ErrorCode::kEncryptionKeySize, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
+TEST_F(Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
   auto phase_args = Phase1Args{.io_capability = IOCapability::kKeyboardDisplay,
                                .level = SecurityLevel::kSecureAuthenticated,
                                .sc_supported = true};
@@ -614,7 +614,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
   ASSERT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportScLinkKeyAndCt2GenerateH7CtKey) {
+TEST_F(Phase1Test, FeatureExchangeBothSupportScLinkKeyAndCt2GenerateH7CtKey) {
   auto phase_args = Phase1Args{.sc_supported = true};
   NewPhase1(Role::kInitiator, phase_args);
   const auto kRequest = CreateStaticByteBuffer(
@@ -647,7 +647,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportScLinkKeyAndCt2GenerateH7CtKey)
   EXPECT_EQ(CrossTransportKeyAlgo::kUseH7, features().generate_ct_key);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangePeerDoesntSupportCt2GenerateH6CtKey) {
+TEST_F(Phase1Test, FeatureExchangePeerDoesntSupportCt2GenerateH6CtKey) {
   auto phase_args = Phase1Args{.sc_supported = true};
   NewPhase1(Role::kInitiator, phase_args);
   const auto kRequest = CreateStaticByteBuffer(
@@ -679,7 +679,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePeerDoesntSupportCt2GenerateH6CtKey) {
   EXPECT_EQ(CrossTransportKeyAlgo::kUseH6, features().generate_ct_key);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangePeerDoesntSupportScDoNotGenerateCtKey) {
+TEST_F(Phase1Test, FeatureExchangePeerDoesntSupportScDoNotGenerateCtKey) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              IOCapability::kNoInputNoOutput,
@@ -710,7 +710,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePeerDoesntSupportScDoNotGenerateCtKey) {
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangePeerSupportsCt2ButNotLinkKeyDoNotGenerateCtKey) {
+TEST_F(Phase1Test, FeatureExchangePeerSupportsCt2ButNotLinkKeyDoNotGenerateCtKey) {
   auto phase_args = Phase1Args{.sc_supported = true};
   NewPhase1(Role::kInitiator, phase_args);
   const auto kRequest = CreateStaticByteBuffer(
@@ -743,7 +743,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePeerSupportsCt2ButNotLinkKeyDoNotGenerateC
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangePeerOnlyIndicatesOneLinkKeyDoNotGenerateCtKey) {
+TEST_F(Phase1Test, FeatureExchangePeerOnlyIndicatesOneLinkKeyDoNotGenerateCtKey) {
   auto phase_args = Phase1Args{.sc_supported = true};
   NewPhase1(Role::kInitiator, phase_args);
   const auto kRequest = CreateStaticByteBuffer(
@@ -776,7 +776,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePeerOnlyIndicatesOneLinkKeyDoNotGenerateCt
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderErrorMaster) {
+TEST_F(Phase1Test, FeatureExchangeResponderErrorMaster) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,                 // code: Pairing Request
                              0x03,                 // IO cap.: NoInputNoOutput
@@ -795,7 +795,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderErrorMaster) {
 }
 
 // Verify that Pairing Requests are rejected by Phase1 - these are handled elsewhere in our stack.
-TEST_F(SMP_Phase1Test, Phase1ResponderRejectsPairingRequest) {
+TEST_F(Phase1Test, Phase1ResponderRejectsPairingRequest) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,                 // code: Pairing Request
                              0x03,                 // IO cap.: NoInputNoOutput
@@ -813,7 +813,7 @@ TEST_F(SMP_Phase1Test, Phase1ResponderRejectsPairingRequest) {
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
+TEST_F(Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
   const auto kResponse = StaticByteBuffer(0x02,  // code: Pairing Response
                                           0x03,  // IO cap.: NoInputNoOutput
                                           0x00,  // OOB: not present
@@ -846,7 +846,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
   EXPECT_TRUE(features().secure_connections);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
+TEST_F(Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
   const auto kResponse = StaticByteBuffer(0x02,  // code: Pairing Response
                                           0x03,  // IO cap.: NoInputNoOutput
                                           0x00,  // OOB: not present
@@ -880,7 +880,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
 }
 
 // Tests that the local responder does not request keys that the initiator cannot distribute.
-TEST_F(SMP_Phase1Test, FeatureExchangeLocalResponderDoesNotRequestUnsupportedKeys) {
+TEST_F(Phase1Test, FeatureExchangeLocalResponderDoesNotRequestUnsupportedKeys) {
   auto phase_args = Phase1Args{.preq = PairingRequestParams{
                                    .io_capability = IOCapability::kNoInputNoOutput,
                                    .auth_req = AuthReq::kBondingFlag,
@@ -910,7 +910,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalResponderDoesNotRequestUnsupportedKey
 }
 
 // Tests that we (as the responder) request to distribute identity information if available.
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderDistributesIdKey) {
+TEST_F(Phase1Test, FeatureExchangeResponderDistributesIdKey) {
   auto phase_args =
       Phase1Args{.preq = PairingRequestParams{.io_capability = IOCapability::kNoInputNoOutput,
                                               .auth_req = 0x01,                 // bondable mode
@@ -938,7 +938,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderDistributesIdKey) {
 
 // Tests that local responder doesn't respond with distribute ID info if available but not requested
 // by the initiator.
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsInitiatorForIdKey) {
+TEST_F(Phase1Test, FeatureExchangeResponderRespectsInitiatorForIdKey) {
   auto phase_args =
       Phase1Args{.preq = PairingRequestParams{
                      .io_capability = IOCapability::kNoInputNoOutput,
@@ -970,7 +970,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsInitiatorForIdKey) {
 
 // Pairing should fail if MITM is required but the pairing method cannot provide
 // it (due to I/O capabilities).
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderFailedAuthenticationRequirements) {
+TEST_F(Phase1Test, FeatureExchangeResponderFailedAuthenticationRequirements) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Response
                              0x00,  // IO cap.: DisplayOnly
@@ -995,7 +995,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderFailedAuthenticationRequirements)
   EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderJustWorks) {
+TEST_F(Phase1Test, FeatureExchangeResponderJustWorks) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Response
                              0x00,  // IO cap.: DisplayOnly
@@ -1041,7 +1041,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderJustWorks) {
   EXPECT_TRUE(KeyDistGen::kIdKey & features().remote_key_distribution);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderRequestInitiatorEncKey) {
+TEST_F(Phase1Test, FeatureExchangeResponderRequestInitiatorEncKey) {
   const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Response
                                                0x00,  // IO cap.: DisplayOnly
                                                0x00,  // OOB: not present
@@ -1079,7 +1079,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRequestInitiatorEncKey) {
   EXPECT_TRUE(KeyDistGen::kEncKey & features().remote_key_distribution);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderSendsOnlyRequestedKeys) {
+TEST_F(Phase1Test, FeatureExchangeResponderSendsOnlyRequestedKeys) {
   const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Response
                                                0x00,  // IO cap.: DisplayOnly
                                                0x00,  // OOB: not present
@@ -1109,7 +1109,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderSendsOnlyRequestedKeys) {
   ASSERT_EQ(1, feature_exchange_count());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderMITM) {
+TEST_F(Phase1Test, FeatureExchangeResponderMITM) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x02,  // IO cap.: KeyboardOnly
@@ -1158,7 +1158,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderMITM) {
   EXPECT_TRUE(features().will_bond);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsDesiredLevel) {
+TEST_F(Phase1Test, FeatureExchangeResponderRespectsDesiredLevel) {
   const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Response
                                                0x01,  // IO cap.: KeyboardDisplay
                                                0x00,  // OOB: not present
@@ -1198,7 +1198,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsDesiredLevel) {
   EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderRejectsMethodOfInsufficientSecurity) {
+TEST_F(Phase1Test, FeatureExchangeResponderRejectsMethodOfInsufficientSecurity) {
   const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Response
                                                0x01,  // IO cap.: DisplayYesNo
                                                0x00,  // OOB: not present
@@ -1227,7 +1227,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRejectsMethodOfInsufficientSecuri
   EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInputNoOutput) {
+TEST_F(Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInputNoOutput) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -1255,7 +1255,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInp
   EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderDoesntSupportScDoNotGenerateCtKey) {
+TEST_F(Phase1Test, FeatureExchangeResponderDoesntSupportScDoNotGenerateCtKey) {
   const auto kRequest = CreateStaticByteBuffer(
       0x01,  // code: Pairing Request
       IOCapability::kNoInputNoOutput,
@@ -1287,7 +1287,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderDoesntSupportScDoNotGenerateCtKey
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
 
-TEST_F(SMP_Phase1Test, UnsupportedCommandDuringPairing) {
+TEST_F(Phase1Test, UnsupportedCommandDuringPairing) {
   phase_1()->Start();
 
   const auto kExpected = CreateStaticByteBuffer(0x05,  // code: Pairing Failed
@@ -1298,7 +1298,7 @@ TEST_F(SMP_Phase1Test, UnsupportedCommandDuringPairing) {
   EXPECT_EQ(ErrorCode::kCommandNotSupported, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase1Test, OnSecurityRequestWhilePairing) {
+TEST_F(Phase1Test, OnSecurityRequestWhilePairing) {
   phase_1()->Start();
 
   const auto kSecurityRequest = CreateStaticByteBuffer(0x0B,  // code: Security Request
@@ -1314,7 +1314,7 @@ TEST_F(SMP_Phase1Test, OnSecurityRequestWhilePairing) {
 
 // Tests whether a request from a device with bondable mode enabled to a peer with non-bondable
 // mode enabled will return a PairingFeatures with non-bondable mode enabled, the desired result.
-TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
+TEST_F(Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -1348,7 +1348,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqNoBondResBond) {
+TEST_F(Phase1Test, FeatureExchangeInitiatorReqNoBondResBond) {
   auto phase_args = Phase1Args{.bondable_mode = BondableMode::NonBondable};
   NewPhase1(Role::kInitiator, phase_args);
   const auto kRequest = CreateStaticByteBuffer(0x01,           // code: Pairing Request
@@ -1383,7 +1383,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqNoBondResBond) {
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqBondResNoBond) {
+TEST_F(Phase1Test, FeatureExchangeResponderReqBondResNoBond) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
@@ -1419,7 +1419,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqBondResNoBond) {
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondResNoBond) {
+TEST_F(Phase1Test, FeatureExchangeResponderReqNoBondResNoBond) {
   const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Request
                                                0x03,  // IO cap.: NoInputNoOutput
                                                0x00,  // OOB: not present
@@ -1456,7 +1456,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondResNoBond) {
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
-TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
+TEST_F(Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,           // code: Pairing Request
                              0x03,           // IO cap.: NoInputNoOutput

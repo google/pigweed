@@ -11,11 +11,11 @@
 namespace bt::l2cap::internal {
 
 using TestBase = ::gtest::TestLoopFixture;
-class L2CAP_LowEnergyCommandHandlerTest : public TestBase {
+class LowEnergyCommandHandlerTest : public TestBase {
  public:
-  L2CAP_LowEnergyCommandHandlerTest() = default;
-  ~L2CAP_LowEnergyCommandHandlerTest() override = default;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_LowEnergyCommandHandlerTest);
+  LowEnergyCommandHandlerTest() = default;
+  ~LowEnergyCommandHandlerTest() override = default;
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCommandHandlerTest);
 
  protected:
   // TestLoopFixture overrides
@@ -23,7 +23,7 @@ class L2CAP_LowEnergyCommandHandlerTest : public TestBase {
     TestBase::SetUp();
     signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<LowEnergyCommandHandler>(
-        fake_sig(), fit::bind_member(this, &L2CAP_LowEnergyCommandHandlerTest::OnRequestFail));
+        fake_sig(), fit::bind_member(this, &LowEnergyCommandHandlerTest::OnRequestFail));
     request_fail_callback_ = nullptr;
     failed_requests_ = 0;
   }
@@ -58,7 +58,7 @@ class L2CAP_LowEnergyCommandHandlerTest : public TestBase {
   size_t failed_requests_;
 };
 
-TEST_F(L2CAP_LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
+TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
   constexpr uint16_t kIntervalMin = 0;
   constexpr uint16_t kIntervalMax = 1;
   constexpr uint16_t kSlaveLatency = 2;
@@ -94,7 +94,7 @@ TEST_F(L2CAP_LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqRspOk) {
+TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqRspOk) {
   constexpr uint16_t kIntervalMin = 0;
   constexpr uint16_t kIntervalMax = 1;
   constexpr uint16_t kSlaveLatency = 2;
@@ -130,7 +130,7 @@ TEST_F(L2CAP_LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqRspOk) {
                                             param_update_rsp));
 }
 
-TEST_F(L2CAP_LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqNotEnoughBytes) {
+TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqNotEnoughBytes) {
   constexpr uint16_t kIntervalMin = 0;
 
   // Request is missing interval max, slave latency, and timeout multiplier fields.

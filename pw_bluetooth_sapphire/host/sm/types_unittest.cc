@@ -14,7 +14,7 @@
 namespace bt::sm {
 namespace {
 
-TEST(SMP_TypesTest, LinkKeyTypeToSecurityProperties) {
+TEST(TypesTest, LinkKeyTypeToSecurityProperties) {
   SecurityProperties props(hci::LinkKeyType::kCombination);
   EXPECT_EQ(SecurityLevel::kNoSecurity, props.level());
   EXPECT_EQ(16UL, props.enc_key_size());
@@ -64,7 +64,7 @@ TEST(SMP_TypesTest, LinkKeyTypeToSecurityProperties) {
   EXPECT_EQ(true, props.secure_connections());
 }
 
-TEST(SMP_TypesTest, SecurityPropertiesToLinkKeyType) {
+TEST(TypesTest, SecurityPropertiesToLinkKeyType) {
   SecurityProperties props(hci::LinkKeyType::kCombination);
   EXPECT_EQ(std::nullopt, props.GetLinkKeyType());
 
@@ -95,7 +95,7 @@ TEST(SMP_TypesTest, SecurityPropertiesToLinkKeyType) {
   EXPECT_EQ(hci::LinkKeyType::kAuthenticatedCombination256, *props.GetLinkKeyType());
 }
 
-TEST(SMP_TypesTest, CorrectPropertiesToLevelMapping) {
+TEST(TypesTest, CorrectPropertiesToLevelMapping) {
   for (auto sc : {true, false}) {
     SCOPED_TRACE("secure connections: " + std::to_string(sc));
     for (auto key_sz : {kMinEncryptionKeySize, kMaxEncryptionKeySize}) {
@@ -116,7 +116,7 @@ TEST(SMP_TypesTest, CorrectPropertiesToLevelMapping) {
             SecurityProperties(true, true, true, kMaxEncryptionKeySize).level());
 }
 
-TEST(SMP_TypesTest, PropertiesLevelConstructorWorks) {
+TEST(TypesTest, PropertiesLevelConstructorWorks) {
   for (auto enc_key_size : {kMinEncryptionKeySize, kMaxEncryptionKeySize}) {
     SCOPED_TRACE("Enc key size: " + std::to_string(enc_key_size));
     for (auto sc : {true, false}) {
@@ -139,7 +139,7 @@ TEST(SMP_TypesTest, PropertiesLevelConstructorWorks) {
   }
 }
 
-TEST(SMP_TypesTest, HasKeysToDistribute) {
+TEST(TypesTest, HasKeysToDistribute) {
   PairingFeatures local_link_key_and_others;
   local_link_key_and_others.local_key_distribution = KeyDistGen::kLinkKey | KeyDistGen::kEncKey;
   EXPECT_TRUE(HasKeysToDistribute(local_link_key_and_others));
@@ -156,7 +156,7 @@ TEST(SMP_TypesTest, HasKeysToDistribute) {
   EXPECT_FALSE(HasKeysToDistribute(PairingFeatures{}));
 }
 
-TEST(SMP_TypesTest, SecurityPropertiesComparisonWorks) {
+TEST(TypesTest, SecurityPropertiesComparisonWorks) {
   const SecurityProperties kInsecure(SecurityLevel::kNoSecurity, kMinEncryptionKeySize, false),
       kEncryptedLegacy(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, false),
       kEncryptedSecure(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, true),

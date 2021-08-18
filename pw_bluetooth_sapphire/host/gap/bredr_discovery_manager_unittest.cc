@@ -94,7 +94,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
 using GAP_BrEdrDiscoveryManagerTest = BrEdrDiscoveryManagerTest;
 
 // Suffix DeathTest has GoogleTest-specific behavior
-using GAP_BrEdrDiscoveryManagerDeathTest = BrEdrDiscoveryManagerTest;
+using BrEdrDiscoveryManagerDeathTest = BrEdrDiscoveryManagerTest;
 
 // clang-format off
 const auto kInquiry = CreateStaticByteBuffer(
@@ -385,7 +385,7 @@ const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci::kWriteScanEnable);
 // clang-format on
 
 // Test: malformed inquiry result is fatal
-TEST_F(GAP_BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFatal) {
+TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFatal) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
@@ -418,7 +418,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerI
 // Test: Peers discovered are reported to the cache
 // Test: Inquiry Results that come in when there's no discovery happening get
 // discarded.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
+TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
@@ -464,7 +464,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
 // any more HCI commands.
 // Test: dropping the first discovery shouldn't stop inquiry
 // Test: starting two sessions at once should only start inquiry once
-TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
+TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
@@ -544,7 +544,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
 // without needing an InquiryComplete first.
 // Test: we should only request a peer's name if it's the first time we
 // encounter it.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
+TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
@@ -620,7 +620,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
 }
 
 // Test: When Inquiry Fails to start, we report this back to the requester.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
+TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRspError, &kInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
@@ -643,7 +643,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
 
 // Test: When inquiry complete indicates failure, we signal to the current
 // sessions.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
+TEST_F(BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
@@ -738,7 +738,7 @@ const auto kWriteExtInquiryResponseMaxLen = CreateStaticByteBuffer(
 
 // Test: UpdateLocalName successfully sends hci command, and further calls
 // UpdateEIRResponseData (private). Ensures the name is updated at the very end.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
+TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalNameMaxLen, );
 
   // Set the status to be a dummy invalid status.
@@ -783,7 +783,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
 
 // Test: UpdateLocalName successfully sends hci command, and further calls
 // UpdateEIRResponseData (private). Ensures the name is updated at the very end.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
+TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
@@ -824,7 +824,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
 
 // Test: UpdateLocalName passes back error code through the callback and |local_name_|
 // does not get updated.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
+TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
@@ -858,7 +858,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
 // Test: UpdateLocalName should succeed, but UpdateEIRResponseData should fail.
 // Consequently, the |local_name_| should not be updated, and the callback should
 // return the error.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
+TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
@@ -903,7 +903,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
 // Test: requesting discoverable works
 // Test: requesting discoverable while discoverable is pending doesn't send
 // any more HCI commands
-TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
+TEST_F(BrEdrDiscoveryManagerTest, DiscoverableSet) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, );
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
@@ -953,7 +953,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
 // Test: requesting discoverable while discovery is disabling leaves
 // the discoverable enabled and reports success
 // Test: enable/disable while page scan is enabled works.
-TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
+TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
 
@@ -1013,7 +1013,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
 // Test: non-standard inquiry modes mean before the first discovery, the
 // inquiry mode is set.
 // Test: extended inquiry is stored in the remote peer
-TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiry) {
+TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   NewDiscoveryManager(hci::InquiryMode::kExtended);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
@@ -1056,7 +1056,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   EXPECT_FALSE(discovery_manager()->discovering());
 }
 
-TEST_F(GAP_BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
+TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
   Peer* peer = peer_cache()->NewPeer(kLeAliasAddress1, true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
@@ -1085,7 +1085,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToD
   RunLoopUntilIdle();
 }
 
-TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
+TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
   Peer* peer = peer_cache()->NewPeer(kLeAliasAddress2, true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());

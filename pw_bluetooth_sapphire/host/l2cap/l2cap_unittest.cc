@@ -50,10 +50,10 @@ constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic
 constexpr l2cap::ExtendedFeatures kExtendedFeatures =
     l2cap::kExtendedFeaturesBitEnhancedRetransmission;
 
-class L2CAP_L2capTest : public TestingBase {
+class L2capTest : public TestingBase {
  public:
-  L2CAP_L2capTest() = default;
-  ~L2CAP_L2capTest() override = default;
+  L2capTest() = default;
+  ~L2capTest() override = default;
 
  protected:
   void SetUp() override {
@@ -178,10 +178,10 @@ class L2CAP_L2capTest : public TestingBase {
   l2cap::CommandId next_command_id_;
   std::unique_ptr<socket::SocketFactory<l2cap::Channel>> socket_factory_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(L2CAP_L2capTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(L2capTest);
 };
 
-TEST_F(L2CAP_L2capTest, InboundL2capSocket) {
+TEST_F(L2capTest, InboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -286,7 +286,7 @@ TEST_F(L2CAP_L2capTest, InboundL2capSocket) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_L2capTest, InboundRfcommSocketFails) {
+TEST_F(L2capTest, InboundRfcommSocketFails) {
   constexpr l2cap::PSM kPSM = l2cap::kRFCOMM;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
@@ -309,7 +309,7 @@ TEST_F(L2CAP_L2capTest, InboundRfcommSocketFails) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_L2capTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
+TEST_F(L2capTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   constexpr l2cap::PSM kPSM = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -374,7 +374,7 @@ TEST_F(L2CAP_L2capTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
                                            NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
-TEST_F(L2CAP_L2capTest, OutboundL2capSocket) {
+TEST_F(L2capTest, OutboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -424,7 +424,7 @@ TEST_F(L2CAP_L2capTest, OutboundL2capSocket) {
                                            NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
-TEST_F(L2CAP_L2capTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
+TEST_F(L2capTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
@@ -444,7 +444,7 @@ TEST_F(L2CAP_L2capTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
 
 // Queue dynamic channel packets, then open a new dynamic channel.
 // The signaling channel packets should be sent before the queued dynamic channel packets.
-TEST_F(L2CAP_L2capTest, ChannelCreationPrioritizedOverDynamicChannelData) {
+TEST_F(L2capTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
@@ -532,7 +532,7 @@ TEST_F(L2CAP_L2capTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
-TEST_F(L2CAP_L2capTest, NegotiateChannelParametersOnOutboundL2capSocket) {
+TEST_F(L2capTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -561,7 +561,7 @@ TEST_F(L2CAP_L2capTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   EXPECT_EQ(*chan_params.mode, chan->mode());
 }
 
-TEST_F(L2CAP_L2capTest, NegotiateChannelParametersOnInboundL2capSocket) {
+TEST_F(L2capTest, NegotiateChannelParametersOnInboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -592,7 +592,7 @@ TEST_F(L2CAP_L2capTest, NegotiateChannelParametersOnInboundL2capSocket) {
                                            NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
-TEST_F(L2CAP_L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
+TEST_F(L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
@@ -625,7 +625,7 @@ TEST_F(L2CAP_L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   accepted.reset();
 }
 
-TEST_F(L2CAP_L2capTest, InspectHierarchy) {
+TEST_F(L2capTest, InspectHierarchy) {
   inspect::Inspector inspector;
   l2cap()->AttachInspect(inspector.GetRoot(), L2cap::kInspectNodeName);
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
@@ -637,7 +637,7 @@ TEST_F(L2CAP_L2capTest, InspectHierarchy) {
   EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(l2cap_matcher))));
 }
 
-TEST_F(L2CAP_L2capTest, AddLEConnectionReturnsFixedChannels) {
+TEST_F(L2capTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
   auto channels = QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
   ASSERT_TRUE(channels.att);
@@ -646,7 +646,7 @@ TEST_F(L2CAP_L2capTest, AddLEConnectionReturnsFixedChannels) {
   EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
 }
 
-class AclPriorityTest : public L2CAP_L2capTest,
+class AclPriorityTest : public L2capTest,
                         public ::testing::WithParamInterface<std::pair<hci::AclPriority, bool>> {};
 
 TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
@@ -752,7 +752,7 @@ const std::array<std::pair<hci::AclPriority, bool>, 4> kPriorityParams = {
      {hci::AclPriority::kSource, true},
      {hci::AclPriority::kSink, true},
      {hci::AclPriority::kNormal, true}}};
-INSTANTIATE_TEST_SUITE_P(L2CAP_L2capTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
+INSTANTIATE_TEST_SUITE_P(L2capTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
 
 }  // namespace
 }  // namespace bt::l2cap

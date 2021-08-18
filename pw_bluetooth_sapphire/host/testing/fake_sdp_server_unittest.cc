@@ -61,7 +61,7 @@ std::vector<sdp::ServiceRecord> GetA2DPServiceRecord() {
 #define UINT32_AS_BE_BYTES(x) \
   UpperBits(x >> 16), LowerBits(x >> 16), UpperBits(x & 0xFFFF), LowerBits(x & 0xFFFF)
 
-TEST(TESTING_FakeSdpServerTest, SuccessfulSearch) {
+TEST(FakeSdpServerTest, SuccessfulSearch) {
   std::unique_ptr<ByteBuffer> sent_packet;
   auto send_cb = [&sent_packet](auto& buffer) {
     sent_packet = std::make_unique<DynamicByteBuffer>(buffer);
@@ -103,7 +103,7 @@ TEST(TESTING_FakeSdpServerTest, SuccessfulSearch) {
   EXPECT_TRUE(ContainersEqual(kL2capSearchResponse, *sent_packet));
 }
 
-TEST(TESTING_FakeSdpServerTest, ErrorIfTooSmall) {
+TEST(FakeSdpServerTest, ErrorIfTooSmall) {
   std::unique_ptr<ByteBuffer> sent_packet;
   auto send_cb = [&sent_packet](auto& buffer) {
     sent_packet = std::make_unique<DynamicByteBuffer>(buffer);
@@ -123,7 +123,7 @@ TEST(TESTING_FakeSdpServerTest, ErrorIfTooSmall) {
   EXPECT_TRUE(ContainersEqual(kRspTooSmall, *sent_packet));
 }
 
-TEST(TESTING_FakeSdpServerTest, RegisterWithL2cap) {
+TEST(FakeSdpServerTest, RegisterWithL2cap) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);

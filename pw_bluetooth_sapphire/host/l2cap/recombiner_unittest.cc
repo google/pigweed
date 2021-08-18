@@ -94,7 +94,7 @@ void ValidatePdu(PDU pdu, std::string expected_payload, ChannelId expected_cid =
 
 // The following test exercises a ZX_DEBUG_ASSERT and thus only works in DEBUG builds.
 #ifdef DEBUG
-TEST(L2CAP_RecombinerTest, WrongHandle) {
+TEST(RecombinerTest, WrongHandle) {
   Recombiner recombiner(kTestHandle);
   auto packet = PacketFromBytes(0x02, 0x00,  // handle: 0x0002
                                 0x00, 0x00   // length: 0
@@ -103,28 +103,28 @@ TEST(L2CAP_RecombinerTest, WrongHandle) {
 }
 #endif  // DEBUG
 
-TEST(L2CAP_RecombinerTest, FirstFragmentTooShort) {
+TEST(RecombinerTest, FirstFragmentTooShort) {
   Recombiner recombiner(kTestHandle);
   auto result = recombiner.ConsumeFragment(FirstFragmentWithShortL2capHeader());
   EXPECT_FALSE(result.pdu);
   EXPECT_TRUE(result.frames_dropped);
 }
 
-TEST(L2CAP_RecombinerTest, FirstFragmentTooLong) {
+TEST(RecombinerTest, FirstFragmentTooLong) {
   Recombiner recombiner(kTestHandle);
   auto result = recombiner.ConsumeFragment(FirstFragmentWithTooLargePayload());
   EXPECT_FALSE(result.pdu);
   EXPECT_TRUE(result.frames_dropped);
 }
 
-TEST(L2CAP_RecombinerTest, ContinuingFragmentWhenNotRecombining) {
+TEST(RecombinerTest, ContinuingFragmentWhenNotRecombining) {
   Recombiner recombiner(kTestHandle);
   auto result = recombiner.ConsumeFragment(ContinuingFragment(""));
   EXPECT_FALSE(result.pdu);
   EXPECT_TRUE(result.frames_dropped);
 }
 
-TEST(L2CAP_RecombinerTest, CompleteEmptyFirstFragment) {
+TEST(RecombinerTest, CompleteEmptyFirstFragment) {
   Recombiner recombiner(kTestHandle);
   auto result = recombiner.ConsumeFragment(FirstFragment(""));
   EXPECT_FALSE(result.frames_dropped);
@@ -132,7 +132,7 @@ TEST(L2CAP_RecombinerTest, CompleteEmptyFirstFragment) {
   VALIDATE_PDU(std::move(*result.pdu), "");
 }
 
-TEST(L2CAP_RecombinerTest, CompleteNonEmptyFirstFragment) {
+TEST(RecombinerTest, CompleteNonEmptyFirstFragment) {
   Recombiner recombiner(kTestHandle);
   auto result = recombiner.ConsumeFragment(FirstFragment("Test"));
   EXPECT_FALSE(result.frames_dropped);
@@ -140,7 +140,7 @@ TEST(L2CAP_RecombinerTest, CompleteNonEmptyFirstFragment) {
   VALIDATE_PDU(std::move(*result.pdu), "Test");
 }
 
-TEST(L2CAP_RecombinerTest, TwoPartRecombination) {
+TEST(RecombinerTest, TwoPartRecombination) {
   Recombiner recombiner(kTestHandle);
   auto result = recombiner.ConsumeFragment(FirstFragment("der", {4}));
   EXPECT_FALSE(result.frames_dropped);
@@ -152,7 +152,7 @@ TEST(L2CAP_RecombinerTest, TwoPartRecombination) {
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(L2CAP_RecombinerTest, ThreePartRecombination) {
+TEST(RecombinerTest, ThreePartRecombination) {
   Recombiner recombiner(kTestHandle);
   auto result = recombiner.ConsumeFragment(FirstFragment("d", {4}));
   EXPECT_FALSE(result.frames_dropped);
@@ -168,7 +168,7 @@ TEST(L2CAP_RecombinerTest, ThreePartRecombination) {
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToCompleteFirstPacket) {
+TEST(RecombinerTest, RecombinationDroppedDueToCompleteFirstPacket) {
   Recombiner recombiner(kTestHandle);
 
   // Write a partial first fragment that initiates a recombination (complete frame length is 2 but
@@ -188,7 +188,7 @@ TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToCompleteFirstPacket) {
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToPartialFirstPacket) {
+TEST(RecombinerTest, RecombinationDroppedDueToPartialFirstPacket) {
   Recombiner recombiner(kTestHandle);
 
   // Write a partial first fragment that initiates a recombination (complete frame length is 2 but
@@ -210,7 +210,7 @@ TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToPartialFirstPacket) {
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToMalformedFirstPacket) {
+TEST(RecombinerTest, RecombinationDroppedDueToMalformedFirstPacket) {
   Recombiner recombiner(kTestHandle);
 
   // Write a partial first fragment that initiates a recombination (complete frame length is 2 but
@@ -232,7 +232,7 @@ TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToMalformedFirstPacket) {
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToTooLargeContinuingFrame) {
+TEST(RecombinerTest, RecombinationDroppedDueToTooLargeContinuingFrame) {
   Recombiner recombiner(kTestHandle);
 
   // Write a partial first fragment that initiates a recombination (complete frame length is 2 but
@@ -254,7 +254,7 @@ TEST(L2CAP_RecombinerTest, RecombinationDroppedDueToTooLargeContinuingFrame) {
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(L2CAP_RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
+TEST(RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
   constexpr size_t kFrameSize = std::numeric_limits<uint16_t>::max();
   constexpr size_t kRxSize = kFrameSize + 1;
 
@@ -286,7 +286,7 @@ TEST(L2CAP_RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
   EXPECT_TRUE(completed);
 }
 
-TEST(L2CAP_RecombinerTest, RecombinationSucceedsForFrameWithMaxSize) {
+TEST(RecombinerTest, RecombinationSucceedsForFrameWithMaxSize) {
   constexpr size_t kFrameSize = std::numeric_limits<uint16_t>::max();
 
   Recombiner recombiner(kTestHandle);

@@ -25,16 +25,16 @@ const auto kAdvData = StaticByteBuffer(0x05,  // Length
                                        0x09,  // AD type: Complete Local Name
                                        'T', 'e', 's', 't');
 
-class GAP_PeerTest : public ::gtest::TestLoopFixture {
+class PeerTest : public ::gtest::TestLoopFixture {
  public:
-  GAP_PeerTest() = default;
+  PeerTest() = default;
 
   void SetUp() override {
     TestLoopFixture::SetUp();
     auto connectable = true;
-    peer_ = std::make_unique<Peer>(fit::bind_member(this, &GAP_PeerTest::NotifyListenersCallback),
-                                   fit::bind_member(this, &GAP_PeerTest::UpdateExpiryCallback),
-                                   fit::bind_member(this, &GAP_PeerTest::DualModeCallback),
+    peer_ = std::make_unique<Peer>(fit::bind_member(this, &PeerTest::NotifyListenersCallback),
+                                   fit::bind_member(this, &PeerTest::UpdateExpiryCallback),
+                                   fit::bind_member(this, &PeerTest::DualModeCallback),
                                    RandomPeerId(), address_, connectable, &metrics_);
   }
 
@@ -78,7 +78,7 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
   PeerMetrics metrics_;
 };
 
-TEST_F(GAP_PeerTest, InspectHierarchy) {
+TEST_F(PeerTest, InspectHierarchy) {
   inspect::Inspector inspector;
   peer().AttachInspect(inspector.GetRoot());
 
@@ -133,7 +133,7 @@ TEST_F(GAP_PeerTest, InspectHierarchy) {
   EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
 }
 
-TEST_F(GAP_PeerTest, BrEdrDataAddServiceNotifiesListeners) {
+TEST_F(PeerTest, BrEdrDataAddServiceNotifiesListeners) {
   // Initialize BrEdrData.
   peer().MutBrEdr();
   ASSERT_TRUE(peer().bredr()->services().empty());
@@ -156,7 +156,7 @@ TEST_F(GAP_PeerTest, BrEdrDataAddServiceNotifiesListeners) {
   EXPECT_FALSE(listener_notified);
 }
 
-TEST_F(GAP_PeerTest, BrEdrDataAddServiceOnBondedPeerNotifiesListenersToUpdateBond) {
+TEST_F(PeerTest, BrEdrDataAddServiceOnBondedPeerNotifiesListenersToUpdateBond) {
   // Initialize BrEdrData.
   peer().MutBrEdr().SetBondData({});
   ASSERT_TRUE(peer().bredr()->services().empty());
@@ -172,7 +172,7 @@ TEST_F(GAP_PeerTest, BrEdrDataAddServiceOnBondedPeerNotifiesListenersToUpdateBon
   EXPECT_TRUE(listener_notified);
 }
 
-TEST_F(GAP_PeerTest, LowEnergyDataSetAdvDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
+TEST_F(PeerTest, LowEnergyDataSetAdvDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
   peer().MutLe();  // Initialize LowEnergyData.
   ASSERT_FALSE(peer().name().has_value());
 
@@ -190,7 +190,7 @@ TEST_F(GAP_PeerTest, LowEnergyDataSetAdvDataWithInvalidUtf8NameDoesNotUpdatePeer
   EXPECT_FALSE(peer().name().has_value());
 }
 
-TEST_F(GAP_PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
+TEST_F(PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
   peer().MutBrEdr();  // Initialize BrEdrData.
   ASSERT_FALSE(peer().name().has_value());
 
@@ -213,7 +213,7 @@ TEST_F(GAP_PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName
   EXPECT_FALSE(peer().name().has_value());
 }
 
-TEST_F(GAP_PeerTest, SetNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
+TEST_F(PeerTest, SetNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
   ASSERT_FALSE(peer().name().has_value());
 
   bool listener_notified = false;
@@ -225,7 +225,7 @@ TEST_F(GAP_PeerTest, SetNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
   EXPECT_FALSE(peer().name().has_value());
 }
 
-TEST_F(GAP_PeerTest, LowEnergyAdvertisingDataTimestamp) {
+TEST_F(PeerTest, LowEnergyAdvertisingDataTimestamp) {
   EXPECT_FALSE(peer().MutLe().advertising_data_timestamp());
   peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(1));
   ASSERT_TRUE(peer().MutLe().advertising_data_timestamp());

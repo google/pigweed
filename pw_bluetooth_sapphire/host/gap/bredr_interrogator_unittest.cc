@@ -105,7 +105,7 @@ class BrEdrInterrogatorTest : public TestingBase {
 
 using GAP_BrEdrInterrogatorTest = BrEdrInterrogatorTest;
 
-TEST_F(GAP_BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestComplete) {
+TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestComplete) {
   // Remote Name Request Complete event with insufficient length.
   const auto addr = kTestDevAddr.value().bytes();
   StaticByteBuffer remote_name_request_complete_packet(hci::kRemoteNameRequestCompleteEventCode,
@@ -131,7 +131,7 @@ TEST_F(GAP_BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameReque
   EXPECT_FALSE(status.value_or(hci::Status()));
 }
 
-TEST_F(GAP_BrEdrInterrogatorTest, SuccessfulInterrogation) {
+TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
@@ -156,7 +156,7 @@ TEST_F(GAP_BrEdrInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_EQ(2u, peer->features().last_page_number());
 }
 
-TEST_F(GAP_BrEdrInterrogatorTest, SuccessfulReinterrogation) {
+TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
@@ -178,7 +178,7 @@ TEST_F(GAP_BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   EXPECT_TRUE(status->is_success());
 }
 
-TEST_F(GAP_BrEdrInterrogatorTest, InterrogationFailedToGetName) {
+TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
   const DynamicByteBuffer remote_name_request_failure_rsp =
       testing::CommandStatusPacket(hci::kRemoteNameRequest, hci::StatusCode::kUnspecifiedError);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),

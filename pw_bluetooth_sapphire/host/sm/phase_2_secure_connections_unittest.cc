@@ -67,10 +67,10 @@ const LocalEcdhKey kDefaultEcdhKey = LocalEcdhKey::Create().value();
 
 using util::PacketSize;
 
-class SMP_Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
+class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_Phase2SecureConnectionsTest() = default;
-  ~SMP_Phase2SecureConnectionsTest() override = default;
+  Phase2SecureConnectionsTest() = default;
+  ~Phase2SecureConnectionsTest() override = default;
 
  protected:
   void SetUp() override { NewPhase2SecureConnections(); }
@@ -271,18 +271,18 @@ class SMP_Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
   int phase_2_complete_count_ = 0;
   UInt128 ltk_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_Phase2SecureConnectionsTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2SecureConnectionsTest);
 };
 
-using SMP_Phase2SecureConnectionsDeathTest = SMP_Phase2SecureConnectionsTest;
+using Phase2SecureConnectionsDeathTest = Phase2SecureConnectionsTest;
 
-TEST_F(SMP_Phase2SecureConnectionsDeathTest, MtuTooSmallDies) {
+TEST_F(Phase2SecureConnectionsDeathTest, MtuTooSmallDies) {
   ASSERT_DEATH_IF_SUPPORTED(NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kJustWorks,
                                                        kNoSecureConnectionsMtu),
                             ".*SecureConnections.*");
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceivePairingFailed) {
+TEST_F(Phase2SecureConnectionsTest, ReceivePairingFailed) {
   phase_2_sc()->Start();
   fake_chan()->Receive(
       StaticByteBuffer<PacketSize<ErrorCode>()>{kPairingFailed, ErrorCode::kPairingNotSupported});
@@ -292,7 +292,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceivePairingFailed) {
   EXPECT_EQ(ErrorCode::kPairingNotSupported, listener()->last_error().protocol_error());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveMalformedPacket) {
+TEST_F(Phase2SecureConnectionsTest, ReceiveMalformedPacket) {
   phase_2_sc()->Start();
   // PairingPublicKeyParams is expected to have both an X and Y value, not just an X.
   const UInt256 kX = peer_key().GetPublicKeyX();
@@ -303,7 +303,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveMalformedPacket) {
   EXPECT_TRUE(ReceiveAndExpect(kPairingPublicKeyCmd, kExpectedFailure));
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveUnexpectedPacket) {
+TEST_F(Phase2SecureConnectionsTest, ReceiveUnexpectedPacket) {
   phase_2_sc()->Start();
   // Pairing Responses should only be sent during Phase 1 of pairing.
   const auto kPairingResponseCmd = MakeCmd(kPairingResponse, PairingResponseParams());
@@ -313,7 +313,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveUnexpectedPacket) {
   EXPECT_TRUE(ReceiveAndExpect(kPairingResponseCmd, kExpectedFailure));
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorPubKeyOutOfOrder) {
+TEST_F(Phase2SecureConnectionsTest, InitiatorPubKeyOutOfOrder) {
   NewPhase2SecureConnections(Role::kInitiator);
 
   const auto kPairingPublicKeyCmd = MakeCmd(kPairingPublicKey, peer_key().GetSerializedPublicKey());
@@ -323,7 +323,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorPubKeyOutOfOrder) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, RejectsPublicKeyOffCurve) {
+TEST_F(Phase2SecureConnectionsTest, RejectsPublicKeyOffCurve) {
   phase_2_sc()->Start();
   const auto kPairingPublicKeyCmd =
       MakeCmd(kPairingPublicKey, PairingPublicKeyParams{.x = {0x01}, .y = {0x02}});
@@ -333,7 +333,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, RejectsPublicKeyOffCurve) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, RejectsPublicKeyIdenticalToLocalKey) {
+TEST_F(Phase2SecureConnectionsTest, RejectsPublicKeyIdenticalToLocalKey) {
   // Read local key sent to peer
   fake_chan()->SetSendCallback(
       [this](ByteBufferPtr sdu) {
@@ -356,7 +356,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, RejectsPublicKeyIdenticalToLocalKey) {
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceivePeerPublicKeyTwice) {
+TEST_F(Phase2SecureConnectionsTest, ReceivePeerPublicKeyTwice) {
   phase_2_sc()->Start();
   const auto kPairingPublicKeyCmd = MakeCmd(kPairingPublicKey, peer_key().GetSerializedPublicKey());
   fake_chan()->Receive(kPairingPublicKeyCmd);
@@ -366,7 +366,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceivePeerPublicKeyTwice) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveConfirmValueBeforeStage1Fails) {
+TEST_F(Phase2SecureConnectionsTest, ReceiveConfirmValueBeforeStage1Fails) {
   phase_2_sc()->Start();
   const auto kPairingConfirmCmd = MakeCmd(kPairingConfirm, PairingConfirmValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
@@ -375,7 +375,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveConfirmValueBeforeStage1Fails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveRandomValueBeforeStage1Fails) {
+TEST_F(Phase2SecureConnectionsTest, ReceiveRandomValueBeforeStage1Fails) {
   phase_2_sc()->Start();
   const auto kPairingRandomCmd = MakeCmd(kPairingRandom, PairingRandomValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
@@ -384,7 +384,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveRandomValueBeforeStage1Fails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveDhKeyCheckValueBeforeStage1Fails) {
+TEST_F(Phase2SecureConnectionsTest, ReceiveDhKeyCheckValueBeforeStage1Fails) {
   phase_2_sc()->Start();
   const auto kPairingDHKeyCheckCmd = MakeCmd(kPairingDHKeyCheck, PairingDHKeyCheckValueE{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
@@ -393,7 +393,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveDhKeyCheckValueBeforeStage1Fails)
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveConfirmValueAfterStage1Fails) {
+TEST_F(Phase2SecureConnectionsTest, ReceiveConfirmValueAfterStage1Fails) {
   FastForwardToDhKeyCheck();
   const auto kPairingConfirmCmd = MakeCmd(kPairingConfirm, PairingConfirmValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
@@ -402,7 +402,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveConfirmValueAfterStage1Fails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveRandomValueAfterStage1Fails) {
+TEST_F(Phase2SecureConnectionsTest, ReceiveRandomValueAfterStage1Fails) {
   FastForwardToDhKeyCheck();
   const auto kPairingRandomCmd = MakeCmd(kPairingRandom, PairingRandomValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
@@ -411,7 +411,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveRandomValueAfterStage1Fails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorReceiveDhKeyCheckWhileWaitingForConfirmFails) {
+TEST_F(Phase2SecureConnectionsTest, InitiatorReceiveDhKeyCheckWhileWaitingForConfirmFails) {
   NewPhase2SecureConnections(Role::kInitiator);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate([&](ConfirmCallback cb) { confirm_cb = std::move(cb); });
@@ -426,7 +426,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorReceiveDhKeyCheckWhileWaitingFo
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, Stage1JustWorksErrorPropagates) {
+TEST_F(Phase2SecureConnectionsTest, Stage1JustWorksErrorPropagates) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kJustWorks);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate([&](ConfirmCallback cb) { confirm_cb = std::move(cb); });
@@ -451,7 +451,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, Stage1JustWorksErrorPropagates) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, Stage1PasskeyErrorPropagates) {
+TEST_F(Phase2SecureConnectionsTest, Stage1PasskeyErrorPropagates) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kPasskeyEntryDisplay);
   uint32_t passkey;
   ConfirmCallback confirm_cb = nullptr;
@@ -479,7 +479,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, Stage1PasskeyErrorPropagates) {
   ASSERT_TRUE(failure_sent);
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorReceiveWrongDhKeyCheckFails) {
+TEST_F(Phase2SecureConnectionsTest, InitiatorReceiveWrongDhKeyCheckFails) {
   NewPhase2SecureConnections(Role::kInitiator);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate([&](ConfirmCallback cb) { confirm_cb = std::move(cb); });
@@ -505,7 +505,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorReceiveWrongDhKeyCheckFails) {
   ASSERT_EQ(0, phase_2_complete_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessJustWorks) {
+TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessJustWorks) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kJustWorks);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate([&](ConfirmCallback cb) { confirm_cb = std::move(cb); });
@@ -541,7 +541,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessJustWorks) {
   ASSERT_EQ(expected_stage2_vals.ltk, ltk());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessNumericComparison) {
+TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessNumericComparison) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kNumericComparison);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_display_delegate(
@@ -578,7 +578,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessNumericComparison) {
   ASSERT_EQ(vals.ltk, ltk());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryDisplay) {
+TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryDisplay) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kPasskeyEntryDisplay);
   uint32_t passkey;
   ConfirmCallback confirm_cb = nullptr;
@@ -624,7 +624,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryDisplay)
   ASSERT_EQ(vals.ltk, ltk());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryInput) {
+TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryInput) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kPasskeyEntryInput);
   PasskeyResponseCallback passkey_cb = nullptr;
   listener()->set_request_passkey_delegate(
@@ -666,7 +666,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryInput) {
   ASSERT_EQ(vals.ltk, ltk());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ResponderReceiveWrongDhKeyCheckFails) {
+TEST_F(Phase2SecureConnectionsTest, ResponderReceiveWrongDhKeyCheckFails) {
   NewPhase2SecureConnections(Role::kResponder);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate([&](ConfirmCallback cb) { confirm_cb = std::move(cb); });
@@ -691,7 +691,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ResponderReceiveWrongDhKeyCheckFails) {
   ASSERT_EQ(0, phase_2_complete_count());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ResponderFlowSuccessJustWorks) {
+TEST_F(Phase2SecureConnectionsTest, ResponderFlowSuccessJustWorks) {
   NewPhase2SecureConnections(Role::kResponder, PairingMethod::kJustWorks);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate([&](ConfirmCallback cb) { confirm_cb = std::move(cb); });
@@ -725,7 +725,7 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ResponderFlowSuccessJustWorks) {
   ASSERT_EQ(expected_stage2_vals.ltk, ltk());
 }
 
-TEST_F(SMP_Phase2SecureConnectionsTest, ResponderReceiveDhKeyCheckWhileWaitingForConfirmSuccess) {
+TEST_F(Phase2SecureConnectionsTest, ResponderReceiveDhKeyCheckWhileWaitingForConfirmSuccess) {
   NewPhase2SecureConnections(Role::kResponder, PairingMethod::kJustWorks);
   ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate([&](ConfirmCallback cb) { confirm_cb = std::move(cb); });

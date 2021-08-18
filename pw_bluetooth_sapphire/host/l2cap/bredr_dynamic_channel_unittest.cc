@@ -460,10 +460,10 @@ const ByteBuffer& kExtendedFeaturesInfoRsp =
 const ByteBuffer& kExtendedFeaturesInfoRspWithERTM = MakeExtendedFeaturesInfoRsp(
     InformationResult::kSuccess, kExtendedFeaturesBitEnhancedRetransmission);
 
-class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
+class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
  public:
-  L2CAP_BrEdrDynamicChannelTest() = default;
-  ~L2CAP_BrEdrDynamicChannelTest() override = default;
+  BrEdrDynamicChannelTest() = default;
+  ~BrEdrDynamicChannelTest() override = default;
 
  protected:
   // Import types for brevity.
@@ -481,8 +481,8 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
         EXPECT_OUTBOUND_REQ(*sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
     // TODO(63074): Make these tests not rely on strict ordering of channel IDs.
     registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
-        sig(), fit::bind_member(this, &L2CAP_BrEdrDynamicChannelTest::OnChannelClose),
-        fit::bind_member(this, &L2CAP_BrEdrDynamicChannelTest::OnServiceRequest),
+        sig(), fit::bind_member(this, &BrEdrDynamicChannelTest::OnChannelClose),
+        fit::bind_member(this, &BrEdrDynamicChannelTest::OnServiceRequest),
         /*random_channel_ids=*/false);
   }
 
@@ -532,10 +532,10 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<BrEdrDynamicChannelRegistry> registry_;
   testing::FakeSignalingChannel::TransactionId ext_info_transaction_id_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_BrEdrDynamicChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDynamicChannelTest);
 };
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        InboundConnectionResponseReusingChannelIdCausesInboundChannelFailure) {
   // make successful connection
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
@@ -578,7 +578,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                        kOutboundSourceCIdAlreadyAllocatedConnRsp);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        PeerConnectionResponseReusingChannelIdCausesOutboundChannelFailure) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -643,7 +643,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        PeerPendingConnectionResponseReusingChannelIdCausesOutboundChannelFailure) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -703,7 +703,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        PeerConnectionResponseWithSameRemoteChannelIdAsPeerPendingConnectionResponseSucceeds) {
   const auto kOkPendingConnRsp = MakeConnectionResponseWithResultPending(kLocalCId, kRemoteCId);
   auto conn_rsp_id =
@@ -748,7 +748,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelDeletedBeforeConnectionResponse) {
+TEST_F(BrEdrDynamicChannelTest, ChannelDeletedBeforeConnectionResponse) {
   auto conn_id = EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view());
 
   // Build channel and operate it directly to be able to delete it.
@@ -770,7 +770,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelDeletedBeforeConnectionResponse) {
   // No disconnection transaction expected because the channel isn't actually owned by the registry.
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, FailConnectChannel) {
+TEST_F(BrEdrDynamicChannelTest, FailConnectChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kRejectConnRsp.view()});
 
@@ -809,7 +809,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, FailConnectChannel) {
   // owned by the registry.
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ConnectChannelFailConfig) {
+TEST_F(BrEdrDynamicChannelTest, ConnectChannelFailConfig) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -851,7 +851,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ConnectChannelFailConfig) {
   // owned by the registry.
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ConnectChannelFailInvalidResponse) {
+TEST_F(BrEdrDynamicChannelTest, ConnectChannelFailInvalidResponse) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kInvalidConnRsp.view()});
 
@@ -882,7 +882,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ConnectChannelFailInvalidResponse) {
   // owned by the registry.
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OutboundFailsAfterRtxExpiryForConnectionResponse) {
+TEST_F(BrEdrDynamicChannelTest, OutboundFailsAfterRtxExpiryForConnectionResponse) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kTimeOut, BufferView()});
 
@@ -902,7 +902,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OutboundFailsAfterRtxExpiryForConnectionRe
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OutboundFailsAfterErtxExpiryForConnectionResponse) {
+TEST_F(BrEdrDynamicChannelTest, OutboundFailsAfterErtxExpiryForConnectionResponse) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kPendingConnRsp.view()},
                       {SignalingChannel::Status::kTimeOut, BufferView()});
@@ -924,8 +924,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OutboundFailsAfterErtxExpiryForConnectionR
 }
 
 // In L2CAP Test Spec v5.0.2, this is L2CAP/COS/CED/BV-08-C [Disconnect on Timeout].
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       OutboundFailsAndDisconnectsAfterRtxExpiryForConfigurationResponse) {
+TEST_F(BrEdrDynamicChannelTest, OutboundFailsAndDisconnectsAfterRtxExpiryForConfigurationResponse) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -950,7 +949,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 }
 
 // Simulate a ERTX timer expiry after a Configuration Response with "Pending" status.
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        OutboundFailsAndDisconnectsAfterErtxExpiryForConfigurationResponse) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -976,7 +975,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
+TEST_F(BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1035,7 +1034,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   EXPECT_EQ(0, close_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndRemoteCloseChannel) {
+TEST_F(BrEdrDynamicChannelTest, OpenAndRemoteCloseChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1073,7 +1072,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndRemoteCloseChannel) {
   EXPECT_EQ(1, close_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
+TEST_F(BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kPendingConnRsp.view()},
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -1098,7 +1097,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
+TEST_F(BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
   // The first Connection Response (pending) has a different ID than the final
   // Connection Response (success).
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
@@ -1125,7 +1124,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigPending) {
+TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigPending) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1150,7 +1149,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigPending) {
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelRemoteDisconnectWhileConfiguring) {
+TEST_F(BrEdrDynamicChannelTest, OpenChannelRemoteDisconnectWhileConfiguring) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   auto config_id = EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view());
@@ -1176,7 +1175,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelRemoteDisconnectWhileConfigurin
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
+TEST_F(BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1239,7 +1238,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
 // DisconnectDoneCallback is load-bearing as a signal for the registry to delete a channel's state
 // and recycle its channel ID, so test that it's called even when the peer doesn't actually send a
 // Disconnect Response.
-TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectDoneCallbackCalledAfterDisconnectResponseTimeOut) {
+TEST_F(BrEdrDynamicChannelTest, DisconnectDoneCallbackCalledAfterDisconnectResponseTimeOut) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1267,7 +1266,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectDoneCallbackCalledAfterDisconnec
   EXPECT_TRUE(disconnect_done_cb_called);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
+TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1289,7 +1288,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionOk) {
+TEST_F(BrEdrDynamicChannelTest, InboundConnectionOk) {
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
@@ -1337,7 +1336,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionOk) {
   EXPECT_EQ(0, close_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConfiguring) {
+TEST_F(BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConfiguring) {
   auto config_id = EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view());
 
   int open_cb_count = 0;
@@ -1381,7 +1380,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConf
   EXPECT_EQ(0, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
+TEST_F(BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
   auto service_request_cb = [](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     // Write user code that accepts the invalid PSM, but control flow may not
     // reach here.
@@ -1400,7 +1399,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
+TEST_F(BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
   int service_request_cb_count = 0;
   auto service_request_cb =
       [&service_request_cb_count](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
@@ -1419,7 +1418,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
   EXPECT_EQ(1, service_request_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidSrcCId) {
+TEST_F(BrEdrDynamicChannelTest, InboundConnectionInvalidSrcCId) {
   auto service_request_cb = [](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     // Control flow may not reach here.
     EXPECT_EQ(kPsm, psm);
@@ -1438,7 +1437,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidSrcCId) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
+TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1485,7 +1484,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadSize) {
+TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadSize) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
@@ -1530,7 +1529,7 @@ struct ReceiveMtuTestParams {
   uint16_t response_mtu;
   ConfigurationResult response_status;
 };
-class ReceivedMtuTest : public L2CAP_BrEdrDynamicChannelTest,
+class ReceivedMtuTest : public BrEdrDynamicChannelTest,
                         public ::testing::WithParamInterface<ReceiveMtuTestParams> {};
 
 TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
@@ -1570,7 +1569,7 @@ TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    L2CAP_BrEdrDynamicChannelTest, ReceivedMtuTest,
+    BrEdrDynamicChannelTest, ReceivedMtuTest,
     ::testing::Values(
         ReceiveMtuTestParams{std::nullopt, kDefaultMTU, ConfigurationResult::kSuccess},
         ReceiveMtuTestParams{kMinACLMTU, kMinACLMTU, ConfigurationResult::kSuccess},
@@ -1579,7 +1578,7 @@ INSTANTIATE_TEST_SUITE_P(
         ReceiveMtuTestParams{kDefaultMTU + 1, kDefaultMTU + 1, ConfigurationResult::kSuccess}));
 
 class ConfigRspWithMtuTest
-    : public L2CAP_BrEdrDynamicChannelTest,
+    : public BrEdrDynamicChannelTest,
       public ::testing::WithParamInterface<std::optional<uint16_t> /*response mtu*/> {};
 
 TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtu) {
@@ -1655,10 +1654,10 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
-INSTANTIATE_TEST_SUITE_P(L2CAP_BrEdrDynamicChannelTest, ConfigRspWithMtuTest,
+INSTANTIATE_TEST_SUITE_P(BrEdrDynamicChannelTest, ConfigRspWithMtuTest,
                          ::testing::Values(std::nullopt, kMinACLMTU));
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, RespondsToInboundExtendedFeaturesRequest) {
+TEST_F(BrEdrDynamicChannelTest, RespondsToInboundExtendedFeaturesRequest) {
   const auto kExpectedExtendedFeatures =
       kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitEnhancedRetransmission;
   const auto kExpectedExtendedFeaturesInfoRsp =
@@ -1667,7 +1666,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RespondsToInboundExtendedFeaturesRequest) 
                        kExpectedExtendedFeaturesInfoRsp);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
+TEST_F(BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
   const auto kExpectedExtendedFeatures =
       kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitEnhancedRetransmission;
   const auto kInfoRsp =
@@ -1681,7 +1680,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
   EXPECT_EQ(kExpectedExtendedFeatures, *registry()->extended_features());
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseInvalidFailureResult) {
+TEST_F(BrEdrDynamicChannelTest, ExtendedFeaturesResponseInvalidFailureResult) {
   constexpr auto kResult = static_cast<InformationResult>(0xFFFF);
   const auto kInfoRsp = MakeExtendedFeaturesInfoRsp(kResult);
 
@@ -1692,7 +1691,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseInvalidFailureResu
   EXPECT_FALSE(registry()->extended_features());
 }
 
-class InformationResultTest : public L2CAP_BrEdrDynamicChannelTest,
+class InformationResultTest : public BrEdrDynamicChannelTest,
                               public ::testing::WithParamInterface<InformationResult> {};
 
 TEST_P(InformationResultTest,
@@ -1727,12 +1726,12 @@ TEST_P(InformationResultTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
-INSTANTIATE_TEST_SUITE_P(L2CAP_BrEdrDynamicChannelTest, InformationResultTest,
+INSTANTIATE_TEST_SUITE_P(BrEdrDynamicChannelTest, InformationResultTest,
                          ::testing::Values(InformationResult::kSuccess,
                                            InformationResult::kNotSupported,
                                            static_cast<InformationResult>(0xFFFF)));
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspReceived) {
+TEST_F(BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspReceived) {
   auto conn_id = EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(), {});
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
@@ -1755,7 +1754,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRs
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
+TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
   constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
   const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtuAndRfc(
       kRemoteCId, kPreferredMtu, ChannelMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
@@ -1812,7 +1811,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
 // option specifying basic mode, the local device should send a new request with basic mode.
 // When the peer then requests basic mode, it should be accepted.
 // PTS: L2CAP/CMC/BV-03-C
-TEST_F(L2CAP_BrEdrDynamicChannelTest, PeerRejectsERTM) {
+TEST_F(BrEdrDynamicChannelTest, PeerRejectsERTM) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(
@@ -1850,8 +1849,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, PeerRejectsERTM) {
 // Local device that prefers ERTM will renegotiate channel mode to basic mode after peer negotiates
 // basic mode and rejects ERTM.
 // PTS: L2CAP/CMC/BV-07-C
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       RenegotiateChannelModeAfterPeerRequestsBasicModeAndRejectsERTM) {
+TEST_F(BrEdrDynamicChannelTest, RenegotiateChannelModeAfterPeerRequestsBasicModeAndRejectsERTM) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   auto config_req_id =
@@ -1898,7 +1896,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 // The local device should configure basic mode if peer does not indicate support for ERTM when it
 // is preferred.
 // PTS: L2CAP/CMC/BV-10-C
-TEST_F(L2CAP_BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatureMask) {
+TEST_F(BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatureMask) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1915,7 +1913,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatu
                           {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
+TEST_F(BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -1943,7 +1941,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic)
 // -> ConfigurationRequest (with ERTM)
 // <- ConfigurationResponse (Unacceptable, with Basic)
 TEST_F(
-    L2CAP_BrEdrDynamicChannelTest,
+    BrEdrDynamicChannelTest,
     DisconnectWhenInboundConfigReqReceivedBeforeOutboundConfigReqSentModeInInboundUnacceptableParamsConfigRspDoesNotMatchPeerConfigReq) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -1982,7 +1980,7 @@ TEST_F(
 // -> ConfigurationResponse (Ok)
 // <- ConfigurationResponse (Unacceptable, with Basic)
 TEST_F(
-    L2CAP_BrEdrDynamicChannelTest,
+    BrEdrDynamicChannelTest,
     DisconnectWhenInboundConfigReqReceivedAfterOutboundConfigReqSentAndModeInInboundUnacceptableParamsConfigRspDoesNotMatchPeerConfigReq) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -2021,7 +2019,7 @@ TEST_F(
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectAfterReceivingTwoConfigRequestsWithoutDesiredMode) {
+TEST_F(BrEdrDynamicChannelTest, DisconnectAfterReceivingTwoConfigRequestsWithoutDesiredMode) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
@@ -2050,7 +2048,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectAfterReceivingTwoConfigRequestsW
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, RetryWhenPeerRejectsConfigReqWithBasicMode) {
+TEST_F(BrEdrDynamicChannelTest, RetryWhenPeerRejectsConfigReqWithBasicMode) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(
@@ -2072,7 +2070,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RetryWhenPeerRejectsConfigReqWithBasicMode
   EXPECT_EQ(0, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        SendUnacceptableParamsResponseWhenPeerRequestsUnsupportedChannelMode) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -2091,7 +2089,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                                        kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        SendUnacceptableParamsResponseWhenPeerRequestsUnsupportedChannelModeAndSupportsErtm) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -2116,8 +2114,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                                        kOutboundUnacceptableParamsWithRfcERTMConfigRsp));
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       SendUnacceptableParamsResponseWhenPeerRequestErtmWithZeroTxWindow) {
+TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErtmWithZeroTxWindow) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
@@ -2150,7 +2147,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                                        kOutboundConfigRsp));
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+TEST_F(BrEdrDynamicChannelTest,
        SendUnacceptableParamsResponseWhenPeerRequestErtmWithOversizeTxWindow) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -2184,8 +2181,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                                        kOutboundConfigRsp));
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       SendUnacceptableParamsResponseWhenPeerRequestErtmWithUndersizeMps) {
+TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErtmWithUndersizeMps) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
@@ -2221,8 +2217,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 // Local config with ERTM incorrectly accepted by peer, then peer requests basic mode which
 // the local device must accept. These modes are incompatible, so the local device should
 // default to Basic Mode.
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       OpenBasicModeChannelAfterPeerAcceptsErtmThenPeerRequestsBasicMode) {
+TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerAcceptsErtmThenPeerRequestsBasicMode) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
@@ -2260,8 +2255,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 }
 
 // Same as above, but the peer sends its positive response after sending its Basic Mode request.
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       OpenBasicModeChannelAfterPeerRequestsBasicModeThenPeerAcceptsErtm) {
+TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerRequestsBasicModeThenPeerAcceptsErtm) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
@@ -2295,7 +2289,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
+TEST_F(BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
   constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
   const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId, kPreferredMtu);
 
@@ -2323,7 +2317,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
+TEST_F(BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
   constexpr uint16_t kMtu = kMinACLMTU - 1;
   const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId, kMinACLMTU);
 
@@ -2351,8 +2345,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       UseMaxPduPayloadSizeWhenMtuChannelParameterExceedsItWithErtm) {
+TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExceedsItWithErtm) {
   constexpr uint16_t kPreferredMtu = kMaxInboundPduPayloadSize + 1;
   const auto kExpectedOutboundConfigReq =
       MakeConfigReqWithMtuAndRfc(kRemoteCId, kMaxInboundPduPayloadSize,
@@ -2391,8 +2384,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       BasicModeChannelReportsChannelInfoWithBasicModeAndSduCapacities) {
+TEST_F(BrEdrDynamicChannelTest, BasicModeChannelReportsChannelInfoWithBasicModeAndSduCapacities) {
   constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
   const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId, kPreferredMtu);
 
@@ -2424,7 +2416,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_EQ(1, open_cb_count);
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq) {
+TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq) {
   constexpr uint16_t kTxMtu = kMinACLMTU;
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -2465,8 +2457,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFi
 }
 
 // The unknown options from both configuration requests should be included when responding
-// with the "unkown options" result.
-TEST_F(L2CAP_BrEdrDynamicChannelTest,
+// with the "unknown options" result.
+TEST_F(BrEdrDynamicChannelTest,
        Receive2ConfigReqsWithContinuationFlagInFirstReqAndUnknownOptionInBothReqs) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});

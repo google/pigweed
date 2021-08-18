@@ -24,10 +24,10 @@ constexpr bt::att::Handle kServiceStartHandle = 0x0021;
 constexpr bt::att::Handle kServiceEndHandle = 0x002C;
 const bt::UUID kServiceUuid(uint16_t{0x180D});
 
-class FIDL_GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
+class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
-  FIDL_GattRemoteServiceServerTest() = default;
-  ~FIDL_GattRemoteServiceServerTest() override = default;
+  GattRemoteServiceServerTest() = default;
+  ~GattRemoteServiceServerTest() override = default;
 
   void SetUp() override {
     {
@@ -67,10 +67,10 @@ class FIDL_GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest
   fbl::RefPtr<bt::gatt::RemoteService> service_;
   fxl::WeakPtr<bt::gatt::testing::FakeClient> fake_client_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(FIDL_GattRemoteServiceServerTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(GattRemoteServiceServerTest);
 };
 
-TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeSuccess) {
+TEST_F(GattRemoteServiceServerTest, ReadByTypeSuccess) {
   constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr bt::att::Handle kHandle = kServiceStartHandle;
@@ -112,7 +112,7 @@ TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeSuccess) {
   EXPECT_FALSE(result0.has_error());
 }
 
-TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeResultWithError) {
+TEST_F(GattRemoteServiceServerTest, ReadByTypeResultWithError) {
   constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
@@ -140,7 +140,7 @@ TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeResultWithError) {
   EXPECT_EQ(fbgatt::Error::INSUFFICIENT_AUTHORIZATION, result0.error());
 }
 
-TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeError) {
+TEST_F(GattRemoteServiceServerTest, ReadByTypeError) {
   constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
@@ -167,7 +167,7 @@ TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeError) {
   EXPECT_EQ(fbgatt::Error::INVALID_RESPONSE, err);
 }
 
-TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeInvalidParametersErrorClosesChannel) {
+TEST_F(GattRemoteServiceServerTest, ReadByTypeInvalidParametersErrorClosesChannel) {
   constexpr bt::UUID kCharUuid = bt::gatt::types::kCharacteristicDeclaration;
 
   std::optional<zx_status_t> error_status;

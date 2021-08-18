@@ -16,7 +16,7 @@ void NopRxCallback(ByteBufferPtr) {}
 
 }  // namespace
 
-TEST(L2CAP_ScopedChannelTest, Close) {
+TEST(ScopedChannelTest, Close) {
   auto chan = fbl::AdoptRef(new FakeChannel(1, 1, 1, bt::LinkType::kACL));
   ASSERT_TRUE(chan->Activate(NopRxCallback, DoNothing));
   ASSERT_TRUE(chan->activated());
@@ -29,7 +29,7 @@ TEST(L2CAP_ScopedChannelTest, Close) {
   EXPECT_FALSE(chan->activated());
 }
 
-TEST(L2CAP_ScopedChannelTest, Reset) {
+TEST(ScopedChannelTest, Reset) {
   auto chan1 = fbl::AdoptRef(new FakeChannel(1, 1, 1, bt::LinkType::kACL));
   auto chan2 = fbl::AdoptRef(new FakeChannel(1, 1, 1, bt::LinkType::kACL));
   ASSERT_TRUE(chan1->Activate(NopRxCallback, DoNothing));

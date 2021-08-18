@@ -11,7 +11,7 @@
 
 namespace bt::l2cap::testing {
 
-TEST(L2CAP_ChannelTest, UniqueId) {
+TEST(ChannelTest, UniqueId) {
   // Same channel and handle on the local side produces the same unique id
   auto chan = fbl::AdoptRef(new FakeChannel(1, 1, 1, bt::LinkType::kACL));
   auto chan_diffremote = fbl::AdoptRef(new FakeChannel(1, 2, 1, bt::LinkType::kACL));

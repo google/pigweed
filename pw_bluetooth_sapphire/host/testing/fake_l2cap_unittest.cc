@@ -14,10 +14,10 @@ namespace bt::testing {
 
 hci::ConnectionHandle kConnectionHandle = 0x01;
 
-class TESTING_FakeL2capTest : public gtest::TestLoopFixture {
+class FakeL2capTest : public gtest::TestLoopFixture {
  public:
-  TESTING_FakeL2capTest() = default;
-  ~TESTING_FakeL2capTest() override = default;
+  FakeL2capTest() = default;
+  ~FakeL2capTest() override = default;
 
   void SetUp() override {
     TestLoopFixture::SetUp();
@@ -38,10 +38,10 @@ class TESTING_FakeL2capTest : public gtest::TestLoopFixture {
  private:
   FakeL2cap::SendFrameCallback send_frame_callback_;
   std::unique_ptr<FakeL2cap> fake_l2cap_;
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TESTING_FakeL2capTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2capTest);
 };
 
-TEST_F(TESTING_FakeL2capTest, RegisterHandler) {
+TEST_F(FakeL2capTest, RegisterHandler) {
   size_t n_pdus = 0;
   auto cb = [&](auto kConnectionHandle, auto& buffer) {
     ++n_pdus;
@@ -61,7 +61,7 @@ TEST_F(TESTING_FakeL2capTest, RegisterHandler) {
   EXPECT_EQ(1u, n_pdus);
 }
 
-TEST_F(TESTING_FakeL2capTest, CallHandlerMultipleTimes) {
+TEST_F(FakeL2capTest, CallHandlerMultipleTimes) {
   size_t n_pdus = 0;
   auto cb = [&](auto kConnectionHandle, auto& buffer) {
     ++n_pdus;
@@ -83,7 +83,7 @@ TEST_F(TESTING_FakeL2capTest, CallHandlerMultipleTimes) {
   EXPECT_EQ(2u, n_pdus);
 }
 
-TEST_F(TESTING_FakeL2capTest, CustomUnexpectedPacketHandler) {
+TEST_F(FakeL2capTest, CustomUnexpectedPacketHandler) {
   size_t n_pdus = 0;
   auto unexpected_cb = [&](auto kConnectionHandle, auto& buffer) {
     ++n_pdus;
@@ -105,7 +105,7 @@ TEST_F(TESTING_FakeL2capTest, CustomUnexpectedPacketHandler) {
   EXPECT_EQ(1u, n_pdus);
 }
 
-TEST_F(TESTING_FakeL2capTest, DefaultUnexpectedPacketHandler) {
+TEST_F(FakeL2capTest, DefaultUnexpectedPacketHandler) {
   size_t n_pdus = 0;
   auto cb = [&](auto kConnectionHandle, auto& buffer) { ++n_pdus; };
   fake_l2cap().RegisterHandler(l2cap::kConnectionlessChannelId, cb);
@@ -125,7 +125,7 @@ TEST_F(TESTING_FakeL2capTest, DefaultUnexpectedPacketHandler) {
   EXPECT_EQ(0u, n_pdus);
 }
 
-TEST_F(TESTING_FakeL2capTest, DefaultSendPacketOnCustomChannel) {
+TEST_F(FakeL2capTest, DefaultSendPacketOnCustomChannel) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto kConnectionHandle, auto cid, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);

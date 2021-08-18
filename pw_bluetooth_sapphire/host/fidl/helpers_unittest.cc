@@ -70,7 +70,7 @@ const fsys::PeerKey kTestKeyFidl{
 };
 const fsys::Ltk kTestLtkFidl{.key = kTestKeyFidl, .ediv = 0, .rand = 0};
 
-TEST(FIDL_HelpersTest, HostErrorToFidl) {
+TEST(HelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kFailed));
   EXPECT_EQ(fsys::Error::TIMED_OUT, HostErrorToFidl(bt::HostError::kTimedOut));
   EXPECT_EQ(fsys::Error::INVALID_ARGUMENTS, HostErrorToFidl(bt::HostError::kInvalidParameters));
@@ -83,7 +83,7 @@ TEST(FIDL_HelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kProtocolError));
 }
 
-TEST(FIDL_HelpersTest, GattStatusToFidl) {
+TEST(HelpersTest, GattStatusToFidl) {
   // Host errors
   EXPECT_EQ(fbg::Error::INVALID_RESPONSE,
             GattStatusToFidl(bt::att::Status(bt::HostError::kPacketMalformed)));
@@ -104,7 +104,7 @@ TEST(FIDL_HelpersTest, GattStatusToFidl) {
             GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
 }
 
-TEST(FIDL_HelpersTest, AttStatusToGattFidlError) {
+TEST(HelpersTest, AttStatusToGattFidlError) {
   // Host errors
   EXPECT_EQ(fbg2::Error::INVALID_RESPONSE,
             AttStatusToGattFidlError(bt::att::Status(bt::HostError::kPacketMalformed)));
@@ -133,7 +133,7 @@ TEST(FIDL_HelpersTest, AttStatusToGattFidlError) {
             AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
 }
 
-TEST(FIDL_HelpersTest, AddressBytesFrommString) {
+TEST(HelpersTest, AddressBytesFrommString) {
   EXPECT_FALSE(AddressBytesFromString(""));
   EXPECT_FALSE(AddressBytesFromString("FF"));
   EXPECT_FALSE(AddressBytesFromString("FF:FF:FF:FF:"));
@@ -152,7 +152,7 @@ TEST(FIDL_HelpersTest, AddressBytesFrommString) {
   EXPECT_EQ("03:7F:FF:02:0F:01", addr2->ToString());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingIntervalFromFidl) {
+TEST(HelpersTest, AdvertisingIntervalFromFidl) {
   EXPECT_EQ(bt::gap::AdvertisingInterval::FAST1,
             AdvertisingIntervalFromFidl(fble::AdvertisingModeHint::VERY_FAST));
   EXPECT_EQ(bt::gap::AdvertisingInterval::FAST2,
@@ -161,7 +161,7 @@ TEST(FIDL_HelpersTest, AdvertisingIntervalFromFidl) {
             AdvertisingIntervalFromFidl(fble::AdvertisingModeHint::SLOW));
 }
 
-TEST(FIDL_HelpersTest, UuidFromFidl) {
+TEST(HelpersTest, UuidFromFidl) {
   fbt::Uuid input;
   input.value = {{0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x0d,
                   0x18, 0x00, 0x00}};
@@ -172,7 +172,7 @@ TEST(FIDL_HelpersTest, UuidFromFidl) {
   EXPECT_EQ(2u, output.CompactSize());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlEmpty) {
+TEST(HelpersTest, AdvertisingDataFromFidlEmpty) {
   fble::AdvertisingData input;
   ASSERT_TRUE(input.IsEmpty());
 
@@ -189,7 +189,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlEmpty) {
   EXPECT_FALSE(output.local_name());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlName) {
+TEST(HelpersTest, AdvertisingDataFromFidlName) {
   constexpr char kTestName[] = "💩";
   fble::AdvertisingData input;
   input.set_name(kTestName);
@@ -201,7 +201,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlName) {
   EXPECT_EQ(kTestName, *output.local_name());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlAppearance) {
+TEST(HelpersTest, AdvertisingDataFromFidlAppearance) {
   fble::AdvertisingData input;
   input.set_appearance(fuchsia::bluetooth::Appearance::HID_DIGITIZER_TABLET);
 
@@ -215,7 +215,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlAppearance) {
   EXPECT_EQ(0x03C5, *output.appearance());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlTxPower) {
+TEST(HelpersTest, AdvertisingDataFromFidlTxPower) {
   constexpr int8_t kTxPower = -50;
   fble::AdvertisingData input;
   input.set_tx_power_level(kTxPower);
@@ -228,7 +228,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlTxPower) {
   EXPECT_EQ(kTxPower, *output.tx_power());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlUuids) {
+TEST(HelpersTest, AdvertisingDataFromFidlUuids) {
   // The first two entries are duplicated. The resulting structure should contain no duplicates.
   const fbt::Uuid kUuid1{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
   const fbt::Uuid kUuid2{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
@@ -245,7 +245,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlUuids) {
   EXPECT_EQ(1u, output.service_uuids().count(bt::UUID(kUuid2.value)));
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlServiceData) {
+TEST(HelpersTest, AdvertisingDataFromFidlServiceData) {
   const fbt::Uuid kUuid1{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
   const fbt::Uuid kUuid2{{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
   const std::vector<uint8_t> kData1{{'h', 'e', 'l', 'l', 'o'}};
@@ -262,7 +262,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlServiceData) {
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.service_data(bt::UUID(kUuid2.value))));
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlManufacturerData) {
+TEST(HelpersTest, AdvertisingDataFromFidlManufacturerData) {
   constexpr uint16_t kCompanyId1 = 1;
   constexpr uint16_t kCompanyId2 = 2;
   const std::vector<uint8_t> kData1{{'h', 'e', 'l', 'l', 'o'}};
@@ -289,7 +289,7 @@ std::string UuidToString(fbt::Uuid uuid) {
 // Each field for this test first attempts to perform the too-long conversion, and then verifies
 // that the bounds are where expected by performing a successful conversion with a field that just
 // fits in the encoded version. This also enables using the same `input` throughout the test.
-TEST(FIDL_HelpersTest, AdvertisingDataFromFidlWithFieldsTooLong) {
+TEST(HelpersTest, AdvertisingDataFromFidlWithFieldsTooLong) {
   fble::AdvertisingData input;
   // The length of the AD name field must be <= 248 bytes per v5.2, Vol 4, Part E, 7.3.11 and Vol 3,
   // Part C, 12.1.`
@@ -368,7 +368,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlWithFieldsTooLong) {
   }
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
+TEST(HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
   bt::AdvertisingData input;
   auto output = AdvertisingDataToFidlDeprecated(input);
 
@@ -383,7 +383,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
   EXPECT_FALSE(output.uris);
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
+TEST(HelpersTest, AdvertisingDataToFidlDeprecated) {
   bt::AdvertisingData input;
   EXPECT_TRUE(input.SetLocalName("fuchsia"));
   input.SetTxPower(4);
@@ -431,7 +431,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
   EXPECT_EQ(uri, output.uris->front());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataToFidlEmpty) {
+TEST(HelpersTest, AdvertisingDataToFidlEmpty) {
   bt::AdvertisingData input;
   auto output = AdvertisingDataToFidl(input);
 
@@ -445,7 +445,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlEmpty) {
   EXPECT_FALSE(output.has_uris());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataToFidl) {
+TEST(HelpersTest, AdvertisingDataToFidl) {
   bt::AdvertisingData input;
   EXPECT_TRUE(input.SetLocalName("fuchsia"));
   input.SetTxPower(4);
@@ -491,7 +491,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidl) {
   EXPECT_THAT(output.uris(), ::testing::ElementsAre(uri));
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataToFidlOmitsNonEnumeratedAppearance) {
+TEST(HelpersTest, AdvertisingDataToFidlOmitsNonEnumeratedAppearance) {
   // There is an "unknown" appearance, which is why this isn't named that.
   const uint16_t kNonEnumeratedAppearance = 0xFFFFu;
   bt::AdvertisingData input;
@@ -505,7 +505,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlOmitsNonEnumeratedAppearance) {
   EXPECT_TRUE(AdvertisingDataToFidl(input).has_appearance());
 }
 
-TEST(FIDL_HelpersTest, LeSecurityModeFromFidl) {
+TEST(HelpersTest, LeSecurityModeFromFidl) {
   EXPECT_EQ(bt::gap::LeSecurityMode::Mode1, LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1));
   EXPECT_EQ(bt::gap::LeSecurityMode::SecureConnectionsOnly,
             LeSecurityModeFromFidl(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY));
@@ -514,7 +514,7 @@ TEST(FIDL_HelpersTest, LeSecurityModeFromFidl) {
             LeSecurityModeFromFidl(nonexistent_security_mode));
 }
 
-TEST(FIDL_HelpersTest, TechnologyTypeToFidl) {
+TEST(HelpersTest, TechnologyTypeToFidl) {
   EXPECT_EQ(fsys::TechnologyType::LOW_ENERGY,
             TechnologyTypeToFidl(bt::gap::TechnologyType::kLowEnergy));
   EXPECT_EQ(fsys::TechnologyType::CLASSIC, TechnologyTypeToFidl(bt::gap::TechnologyType::kClassic));
@@ -522,18 +522,18 @@ TEST(FIDL_HelpersTest, TechnologyTypeToFidl) {
             TechnologyTypeToFidl(bt::gap::TechnologyType::kDualMode));
 }
 
-TEST(FIDL_HelpersTest, SecurityLevelFromFidl) {
+TEST(HelpersTest, SecurityLevelFromFidl) {
   const fsys::PairingSecurityLevel level = fsys::PairingSecurityLevel::AUTHENTICATED;
   EXPECT_EQ(bt::sm::SecurityLevel::kAuthenticated, SecurityLevelFromFidl(level));
 }
 
-TEST(FIDL_HelpersTest, SecurityLevelFromBadFidlFails) {
+TEST(HelpersTest, SecurityLevelFromBadFidlFails) {
   int nonexistant_security_level = 500000;
   auto level = static_cast<fsys::PairingSecurityLevel>(nonexistant_security_level);
   EXPECT_EQ(std::nullopt, SecurityLevelFromFidl(level));
 }
 
-TEST(FIDL_HelpersTest, PeerToFidlMandatoryFields) {
+TEST(HelpersTest, PeerToFidlMandatoryFields) {
   // Required by PeerCache expiry functions.
   async::TestLoop dispatcher;
 
@@ -564,7 +564,7 @@ TEST(FIDL_HelpersTest, PeerToFidlMandatoryFields) {
   EXPECT_FALSE(fidl.has_bredr_services());
 }
 
-TEST(FIDL_HelpersTest, PeerToFidlOptionalFields) {
+TEST(HelpersTest, PeerToFidlOptionalFields) {
   // Required by PeerCache expiry functions.
   async::TestLoop dispatcher;
 
@@ -615,7 +615,7 @@ TEST(FIDL_HelpersTest, PeerToFidlOptionalFields) {
   EXPECT_THAT(fidl.bredr_services(), ::testing::UnorderedElementsAreArray(expected_uuids));
 }
 
-TEST(FIDL_HelpersTest, ReliableModeFromFidl) {
+TEST(HelpersTest, ReliableModeFromFidl) {
   using WriteOptions = fuchsia::bluetooth::gatt::WriteOptions;
   using ReliableMode = fuchsia::bluetooth::gatt::ReliableMode;
   WriteOptions options;
@@ -633,7 +633,7 @@ TEST(FIDL_HelpersTest, ReliableModeFromFidl) {
 // TODO: Set information w/o setting language, set a FIDL type that cannot be converted
 // - make sure the expected attributes are set and have the correct type
 // - make sure the profile descriptor sets the right attributes
-TEST(FIDL_HelpersTest, ServiceDefinitionToServiceRecord) {
+TEST(HelpersTest, ServiceDefinitionToServiceRecord) {
   fuchsia::bluetooth::bredr::ServiceDefinition def_should_fail;
   // Should fail to convert without service class UUIDs.
   auto rec_no_uuids = ServiceDefinitionToServiceRecord(def_should_fail);
@@ -762,7 +762,7 @@ TEST(FIDL_HelpersTest, ServiceDefinitionToServiceRecord) {
   EXPECT_FALSE(rec.value().HasAttribute(invalid_att_id));
 }
 
-TEST(FIDL_HelpersTest, FidlToBrEdrSecurityRequirements) {
+TEST(HelpersTest, FidlToBrEdrSecurityRequirements) {
   fbredr::ChannelParameters params;
   EXPECT_EQ(
       FidlToBrEdrSecurityRequirements(params),
@@ -800,7 +800,7 @@ TEST(FIDL_HelpersTest, FidlToBrEdrSecurityRequirements) {
       (bt::gap::BrEdrSecurityRequirements{.authentication = true, .secure_connections = true}));
 }
 
-TEST(FIDL_HelpersTest, AddressFromFidlBondingDataRandomAddressRejectedIfBredr) {
+TEST(HelpersTest, AddressFromFidlBondingDataRandomAddressRejectedIfBredr) {
   fsys::BondingData bond;
   bond.set_address(kRandomAddrFidl);
   bond.set_bredr_bond(fsys::BredrBondData());
@@ -808,7 +808,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataRandomAddressRejectedIfBredr) {
   EXPECT_EQ(std::nullopt, AddressFromFidlBondingData(bond));
 }
 
-TEST(FIDL_HelpersTest, AddressFromFidlBondingDataBredr) {
+TEST(HelpersTest, AddressFromFidlBondingDataBredr) {
   fsys::BondingData bond;
   bond.set_address(kPublicAddrFidl);
   bond.set_bredr_bond(fsys::BredrBondData());
@@ -818,7 +818,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataBredr) {
   EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kBREDR);
 }
 
-TEST(FIDL_HelpersTest, AddressFromFidlBondingDataDualMode) {
+TEST(HelpersTest, AddressFromFidlBondingDataDualMode) {
   fsys::BondingData bond;
   bond.set_address(kPublicAddrFidl);
   bond.set_bredr_bond(fsys::BredrBondData());
@@ -829,7 +829,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataDualMode) {
   EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kBREDR);
 }
 
-TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLePublic) {
+TEST(HelpersTest, AddressFromFidlBondingDataLePublic) {
   fsys::BondingData bond;
   bond.set_address(kPublicAddrFidl);
   bond.set_le_bond(fsys::LeBondData());
@@ -839,7 +839,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLePublic) {
   EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kLEPublic);
 }
 
-TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandom) {
+TEST(HelpersTest, AddressFromFidlBondingDataLeRandom) {
   fsys::BondingData bond;
   bond.set_address(kRandomAddrFidl);
   bond.set_le_bond(fsys::LeBondData());
@@ -849,7 +849,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandom) {
   EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kLERandom);
 }
 
-TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandomResolvable) {
+TEST(HelpersTest, AddressFromFidlBondingDataLeRandomResolvable) {
   fsys::BondingData bond;
   bond.set_address(kRandomAddrResolvableFidl);
   bond.set_le_bond(fsys::LeBondData());
@@ -858,7 +858,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandomResolvable) {
   EXPECT_FALSE(addr);
 }
 
-TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandomNonResolvable) {
+TEST(HelpersTest, AddressFromFidlBondingDataLeRandomNonResolvable) {
   fsys::BondingData bond;
   bond.set_address(kRandomAddrNonResolvableFidl);
   bond.set_le_bond(fsys::LeBondData());
@@ -867,7 +867,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandomNonResolvable) {
   EXPECT_FALSE(addr);
 }
 
-TEST(FIDL_HelpersTest, LePairingDataFromFidlEmpty) {
+TEST(HelpersTest, LePairingDataFromFidlEmpty) {
   bt::sm::PairingData result = LePairingDataFromFidl(kLePublicAddress, fsys::LeBondData());
   EXPECT_FALSE(result.identity_address);
   EXPECT_FALSE(result.local_ltk);
@@ -876,7 +876,7 @@ TEST(FIDL_HelpersTest, LePairingDataFromFidlEmpty) {
   EXPECT_FALSE(result.csrk);
 }
 
-TEST(FIDL_HelpersTest, LePairingDataFromFidl) {
+TEST(HelpersTest, LePairingDataFromFidl) {
   fsys::LeBondData le;
   le.set_local_ltk(kTestLtkFidl);
   le.set_peer_ltk(kTestLtkFidl);
@@ -897,11 +897,11 @@ TEST(FIDL_HelpersTest, LePairingDataFromFidl) {
   EXPECT_EQ(kTestKey, *result.csrk);
 }
 
-TEST(FIDL_HelpersTest, BredrKeyFromFidlEmpty) {
+TEST(HelpersTest, BredrKeyFromFidlEmpty) {
   EXPECT_FALSE(BredrKeyFromFidl(fsys::BredrBondData()));
 }
 
-TEST(FIDL_HelpersTest, BredrKeyFromFidl) {
+TEST(HelpersTest, BredrKeyFromFidl) {
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
                                                  true);
   const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci::LinkKey(kTestKeyValue, 0, 0));
@@ -913,11 +913,11 @@ TEST(FIDL_HelpersTest, BredrKeyFromFidl) {
   EXPECT_EQ(kTestLtk, *result);
 }
 
-TEST(FIDL_HelpersTest, BredrServicesFromFidlEmpty) {
+TEST(HelpersTest, BredrServicesFromFidlEmpty) {
   EXPECT_TRUE(BredrServicesFromFidl(fsys::BredrBondData()).empty());
 }
 
-TEST(FIDL_HelpersTest, BredrServicesFromFidl) {
+TEST(HelpersTest, BredrServicesFromFidl) {
   fsys::BredrBondData bredr;
   bredr.mutable_services()->push_back(UuidToFidl(bt::sdp::profile::kAudioSink));
   bredr.mutable_services()->push_back(UuidToFidl(bt::sdp::profile::kAudioSource));
@@ -926,9 +926,9 @@ TEST(FIDL_HelpersTest, BredrServicesFromFidl) {
                                                               bt::sdp::profile::kAudioSink));
 }
 
-class FIDL_HelpersAdapterTest : public bthost::testing::AdapterTestFixture {};
+class HelpersAdapterTest : public bthost::testing::AdapterTestFixture {};
 
-TEST_F(FIDL_HelpersAdapterTest, HostInfoToFidl) {
+TEST_F(HelpersAdapterTest, HostInfoToFidl) {
   // Verify that the default parameters are populated as expected.
   auto host_info = HostInfoToFidl(*adapter());
   ASSERT_TRUE(host_info.has_id());
@@ -948,7 +948,7 @@ TEST_F(FIDL_HelpersAdapterTest, HostInfoToFidl) {
   EXPECT_FALSE(host_info.discovering());
 }
 
-TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_NoTransportData) {
+TEST_F(HelpersAdapterTest, PeerToFidlBondingData_NoTransportData) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
   ASSERT_TRUE(data.has_identifier());
@@ -964,7 +964,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_NoTransportData) {
   EXPECT_TRUE(fidl::Equals(kPublicAddrFidl, data.address()));
 }
 
-TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BothTransportsPresentButNotBonded) {
+TEST_F(HelpersAdapterTest, PeerToFidlBondingData_BothTransportsPresentButNotBonded) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   peer->MutLe();
   peer->MutBrEdr();
@@ -982,7 +982,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BothTransportsPresentButNo
   EXPECT_TRUE(fidl::Equals(kPublicAddrFidl, data.address()));
 }
 
-TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrServicesDiscoveredNotBonded) {
+TEST_F(HelpersAdapterTest, PeerToFidlBondingData_BredrServicesDiscoveredNotBonded) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   peer->MutBrEdr().AddService(bt::UUID(uint16_t{0x1234}));
 
@@ -990,7 +990,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrServicesDiscoveredNot
   EXPECT_FALSE(data.has_bredr_bond());
 }
 
-TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_EmptyLeData) {
+TEST_F(HelpersAdapterTest, PeerToFidlBondingData_EmptyLeData) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   peer->MutLe().SetBondData(bt::sm::PairingData());
 
@@ -1003,7 +1003,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_EmptyLeData) {
   EXPECT_FALSE(data.le_bond().has_csrk());
 }
 
-TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_LeData) {
+TEST_F(HelpersAdapterTest, PeerToFidlBondingData_LeData) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   peer->MutLe().SetBondData(bt::sm::PairingData{
       .local_ltk = {kTestLtk},
@@ -1026,7 +1026,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_LeData) {
   EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.le_bond().csrk()));
 }
 
-TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
+TEST_F(HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   peer->MutBrEdr().SetBondData(kTestLtk);
 
@@ -1037,7 +1037,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
   EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.bredr_bond().link_key()));
 }
 
-TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
+TEST_F(HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   peer->MutBrEdr().SetBondData(kTestLtk);
   peer->MutBrEdr().AddService(bt::sdp::profile::kAudioSink);
@@ -1052,7 +1052,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
                                               UuidToFidl(bt::sdp::profile::kAudioSource)));
 }
 
-TEST_F(FIDL_HelpersAdapterTest, FidlToScoParameters) {
+TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   fbredr::ScoConnectionParameters params;
   EXPECT_TRUE(FidlToScoParameters(params).is_error());
   params.set_parameter_set(fbredr::HfpParameterSet::MSBC_T2);
@@ -1135,7 +1135,7 @@ TEST_F(FIDL_HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 0u);
 }
 
-TEST(FIDL_HelpersTest, DiscoveryFilterFromEmptyFidlFilter) {
+TEST(HelpersTest, DiscoveryFilterFromEmptyFidlFilter) {
   bt::gap::DiscoveryFilter filter = DiscoveryFilterFromFidl(fble::Filter());
   EXPECT_TRUE(filter.service_uuids().empty());
   EXPECT_FALSE(filter.manufacturer_code().has_value());
@@ -1144,7 +1144,7 @@ TEST(FIDL_HelpersTest, DiscoveryFilterFromEmptyFidlFilter) {
   EXPECT_FALSE(filter.pathloss().has_value());
 }
 
-TEST(FIDL_HelpersTest, DiscoveryFilterFromFidlFilter) {
+TEST(HelpersTest, DiscoveryFilterFromFidlFilter) {
   fble::Filter fidl_filter;
   fuchsia::bluetooth::Uuid service_uuid;
   service_uuid.value[0] = 1;
@@ -1164,7 +1164,7 @@ TEST(FIDL_HelpersTest, DiscoveryFilterFromFidlFilter) {
   ASSERT_EQ(filter.pathloss().value(), 3);
 }
 
-TEST(FIDL_HelpersTest, EmptyAdvertisingDataToFidlScanData) {
+TEST(HelpersTest, EmptyAdvertisingDataToFidlScanData) {
   bt::AdvertisingData input;
   fble::ScanData output = AdvertisingDataToFidlScanData(input, zx::time(1));
   EXPECT_FALSE(output.has_tx_power());
@@ -1177,7 +1177,7 @@ TEST(FIDL_HelpersTest, EmptyAdvertisingDataToFidlScanData) {
   EXPECT_EQ(output.timestamp(), zx::time(1).get());
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanData) {
+TEST(HelpersTest, AdvertisingDataToFidlScanData) {
   bt::AdvertisingData input;
   input.SetTxPower(4);
   const uint16_t kAppearance = 193u;  // WATCH_SPORTS
@@ -1214,7 +1214,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanData) {
   EXPECT_THAT(output.uris(), ::testing::ElementsAre(kUri));
 }
 
-TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanDataOmitsNonEnumeratedAppearance) {
+TEST(HelpersTest, AdvertisingDataToFidlScanDataOmitsNonEnumeratedAppearance) {
   // There is an "unknown" appearance, which is why this isn't named that.
   const uint16_t kNonEnumeratedAppearance = 0xFFFFu;
   bt::AdvertisingData input;
@@ -1228,7 +1228,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlScanDataOmitsNonEnumeratedAppearance
   EXPECT_TRUE(AdvertisingDataToFidlScanData(input, zx::time()).has_appearance());
 }
 
-TEST(FIDL_HelpersTest, PeerToFidlLeWithAllFields) {
+TEST(HelpersTest, PeerToFidlLeWithAllFields) {
   const bt::PeerId kPeerId(1);
   const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
   bt::gap::PeerMetrics metrics;
@@ -1257,7 +1257,7 @@ TEST(FIDL_HelpersTest, PeerToFidlLeWithAllFields) {
   EXPECT_EQ(fidl_peer.data().timestamp(), zx::time(1).get());
 }
 
-TEST(FIDL_HelpersTest, PeerToFidlLeWithoutAdvertisingData) {
+TEST(HelpersTest, PeerToFidlLeWithoutAdvertisingData) {
   const bt::PeerId kPeerId(1);
   const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
   bt::gap::PeerMetrics metrics;

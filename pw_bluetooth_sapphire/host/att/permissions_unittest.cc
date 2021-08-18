@@ -24,19 +24,19 @@ const sm::SecurityProperties kAuthenticated(sm::SecurityLevel::kAuthenticated, 1
 const sm::SecurityProperties kAuthenticatedWithMinKeySize(sm::SecurityLevel::kAuthenticated, 7,
                                                           false);
 
-TEST(ATT_PermissionsTest, ReadNotPermittedWhenDisallowed) {
+TEST(PermissionsTest, ReadNotPermittedWhenDisallowed) {
   EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kNoSecurity));
   EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kEncrypted));
   EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kAuthenticated));
 }
 
-TEST(ATT_PermissionsTest, WriteNotPermittedWhenDisallowed) {
+TEST(PermissionsTest, WriteNotPermittedWhenDisallowed) {
   EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kNoSecurity));
   EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kEncrypted));
   EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kAuthenticated));
 }
 
-TEST(ATT_PermissionsTest, LinkNotSecure) {
+TEST(PermissionsTest, LinkNotSecure) {
   EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kNoSecurity));
   EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kNoSecurity));
 
@@ -56,7 +56,7 @@ TEST(ATT_PermissionsTest, LinkNotSecure) {
             CheckWritePermissions(kAuthorizationReq, kNoSecurity));
 }
 
-TEST(ATT_PermissionsTest, LinkEncrypted) {
+TEST(PermissionsTest, LinkEncrypted) {
   EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kEncrypted));
   EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kEncrypted));
 
@@ -84,7 +84,7 @@ TEST(ATT_PermissionsTest, LinkEncrypted) {
             CheckWritePermissions(kEncryptionReq, kEncryptedWithMinKeySize));
 }
 
-TEST(ATT_PermissionsTest, LinkAuthenticated) {
+TEST(PermissionsTest, LinkAuthenticated) {
   EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kAuthenticated));
   EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kAuthenticated));
 

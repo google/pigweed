@@ -43,10 +43,10 @@ void NopSvcCallback(const gatt::ServiceData&) {}
 void NopChrcCallback(const gatt::CharacteristicData&) {}
 void NopDescCallback(const gatt::DescriptorData&) {}
 
-class GATT_ClientTest : public l2cap::testing::FakeChannelTest {
+class ClientTest : public l2cap::testing::FakeChannelTest {
  public:
-  GATT_ClientTest() = default;
-  ~GATT_ClientTest() override = default;
+  ClientTest() = default;
+  ~ClientTest() override = default;
 
  protected:
   void SetUp() override {
@@ -89,10 +89,10 @@ class GATT_ClientTest : public l2cap::testing::FakeChannelTest {
   fxl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT_ClientTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ClientTest);
 };
 
-TEST_F(GATT_ClientTest, ExchangeMTUMalformedResponse) {
+TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
   constexpr uint16_t kPreferredMTU = 100;
   const auto kExpectedRequest =
       CreateStaticByteBuffer(0x02,                // opcode: exchange MTU
@@ -129,7 +129,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUMalformedResponse) {
 }
 
 // Tests that the ATT "Request Not Supported" error results in the default MTU.
-TEST_F(GATT_ClientTest, ExchangeMTUErrorNotSupported) {
+TEST_F(ClientTest, ExchangeMTUErrorNotSupported) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kInitialMTU = 50;
   const auto kExpectedRequest =
@@ -170,7 +170,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUErrorNotSupported) {
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
-TEST_F(GATT_ClientTest, ExchangeMTUErrorOther) {
+TEST_F(ClientTest, ExchangeMTUErrorOther) {
   constexpr uint16_t kPreferredMTU = 100;
   const auto kExpectedRequest =
       CreateStaticByteBuffer(0x02,                // opcode: exchange MTU
@@ -207,7 +207,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUErrorOther) {
 }
 
 // Tests that the client rx MTU is selected when smaller.
-TEST_F(GATT_ClientTest, ExchangeMTUSelectLocal) {
+TEST_F(ClientTest, ExchangeMTUSelectLocal) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kServerRxMTU = kPreferredMTU + 1;
 
@@ -244,7 +244,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectLocal) {
 }
 
 // Tests that the server rx MTU is selected when smaller.
-TEST_F(GATT_ClientTest, ExchangeMTUSelectRemote) {
+TEST_F(ClientTest, ExchangeMTUSelectRemote) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kServerRxMTU = kPreferredMTU - 1;
 
@@ -281,7 +281,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectRemote) {
 }
 
 // Tests that the default MTU is selected when one of the MTUs is too small.
-TEST_F(GATT_ClientTest, ExchangeMTUSelectDefault) {
+TEST_F(ClientTest, ExchangeMTUSelectDefault) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kServerRxMTU = 5;  // Smaller than the LE default MTU
 
@@ -317,7 +317,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectDefault) {
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryResponseTooShort) {
+TEST_F(ClientTest, DiscoverPrimaryResponseTooShort) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -336,7 +336,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryResponseTooShort) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedDataLength) {
+TEST_F(ClientTest, DiscoverPrimaryMalformedDataLength) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -361,7 +361,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedDataLength) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedAttrDataList) {
+TEST_F(ClientTest, DiscoverPrimaryMalformedAttrDataList) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -386,7 +386,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedAttrDataList) {
 // Tests that we handle an empty attribute data list. In practice, the
 // server would send an "Attribute Not Found" error instead but our stack treats
 // an empty data list as not an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryEmptyDataList) {
+TEST_F(ClientTest, DiscoverPrimaryEmptyDataList) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -407,7 +407,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryEmptyDataList) {
 }
 
 // The first request results in "Attribute Not Found".
-TEST_F(GATT_ClientTest, DiscoverPrimaryAttributeNotFound) {
+TEST_F(ClientTest, DiscoverPrimaryAttributeNotFound) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -431,7 +431,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryAttributeNotFound) {
 }
 
 // The first request results in an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryError) {
+TEST_F(ClientTest, DiscoverPrimaryError) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -454,7 +454,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryError) {
   EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedServiceRange) {
+TEST_F(ClientTest, DiscoverPrimaryMalformedServiceRange) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -480,7 +480,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedServiceRange) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
+TEST_F(ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -518,7 +518,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
   EXPECT_EQ(kTestUuid2, services[1].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimary128BitResultSingleRequest) {
+TEST_F(ClientTest, DiscoverPrimary128BitResultSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -552,7 +552,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimary128BitResultSingleRequest) {
   EXPECT_EQ(kTestUuid3, services[0].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
+TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
   const auto kExpectedRequest0 =
       CreateStaticByteBuffer(0x10,        // opcode: read by group type request
                              0x01, 0x00,  // start handle: 0x0001
@@ -639,7 +639,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
   EXPECT_EQ(kTestUuid3, services[2].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverServicesInRangeMultipleRequests) {
+TEST_F(ClientTest, DiscoverServicesInRangeMultipleRequests) {
   const att::Handle kRangeStart = 0x0010;
   const att::Handle kRangeEnd = 0x0020;
 
@@ -719,7 +719,7 @@ TEST_F(GATT_ClientTest, DiscoverServicesInRangeMultipleRequests) {
   EXPECT_EQ(kTestUuid3, services[2].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -741,7 +741,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
 // Tests that we handle an empty handle information list properly. In practice, the
 // server would send an "Attribute Not Found" error instead.  A handle list that is
 // empty is an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsEmptyDataList) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuidsEmptyDataList) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -761,7 +761,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsEmptyDataList) {
 }
 
 // The first request results in "Attribute Not Found".
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -785,7 +785,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
 }
 
 // The first request results in an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsError) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuidsError) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -808,7 +808,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsError) {
   EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsMalformedServiceRange) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuidsMalformedServiceRange) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -833,7 +833,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsMalformedServiceRange) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -868,7 +868,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
   EXPECT_EQ(kTestUuid1, services[1].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -898,7 +898,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
   EXPECT_EQ(kTestUuid3, services[0].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
+TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
   const auto kExpectedRequest0 = StaticByteBuffer(0x06,        // opcode: find by type value request
                                                   0x01, 0x00,  // start handle: 0x0001
                                                   0xFF, 0xFF,  // end handle: 0xFFFF
@@ -977,7 +977,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
   EXPECT_EQ(kTestUuid1, services[2].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
+TEST_F(ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
   const auto kExpectedRequest0 = StaticByteBuffer(0x06,        // opcode: find by type value request
                                                   0x01, 0x00,  // start handle: 0x0001
                                                   0xFF, 0xFF,  // end handle: 0xFFFF
@@ -1053,7 +1053,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
   EXPECT_EQ(kTestUuid2, services[1].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
+TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   const att::Handle kRangeStart = 0x0002;
   const att::Handle kRangeEnd = 0x0020;
   const auto kExpectedRequest0 =
@@ -1135,7 +1135,7 @@ TEST_F(GATT_ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   EXPECT_EQ(kTestUuid2, services[1].type);
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesEqual) {
+TEST_F(ClientTest, CharacteristicDiscoveryHandlesEqual) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0001;
 
@@ -1147,7 +1147,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesEqual) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryResponseTooShort) {
+TEST_F(ClientTest, CharacteristicDiscoveryResponseTooShort) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
@@ -1176,7 +1176,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResponseTooShort) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedDataLength) {
+TEST_F(ClientTest, CharacteristicDiscoveryMalformedDataLength) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
@@ -1211,7 +1211,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedDataLength) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
+TEST_F(ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
@@ -1246,7 +1246,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryEmptyDataList) {
+TEST_F(ClientTest, CharacteristicDiscoveryEmptyDataList) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
@@ -1277,7 +1277,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryEmptyDataList) {
   EXPECT_EQ(status, att::Status(HostError::kPacketMalformed));
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryAttributeNotFound) {
+TEST_F(ClientTest, CharacteristicDiscoveryAttributeNotFound) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
@@ -1310,7 +1310,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryAttributeNotFound) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryError) {
+TEST_F(ClientTest, CharacteristicDiscoveryError) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
@@ -1343,7 +1343,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryError) {
   EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
+TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0005;
 
@@ -1393,7 +1393,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
   EXPECT_EQ(kTestUuid2, chrcs[1].type);
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
+TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0005;
 
@@ -1436,7 +1436,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
   EXPECT_EQ(kTestUuid3, chrcs[0].type);
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
+TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
@@ -1528,7 +1528,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
 
 // Expects the discovery procedure to end with an error if a batch contains
 // results that are from before requested range.
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
+TEST_F(ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
@@ -1568,7 +1568,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
 
 // Expects the discovery procedure to end with an error if a batch contains
 // results that are from beyond the requested range.
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
+TEST_F(ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
@@ -1608,7 +1608,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
 
 // Expects the characteristic value handle to immediately follow the
 // declaration as specified in Vol 3, Part G, 3.3.
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryValueNotContiguous) {
+TEST_F(ClientTest, CharacteristicDiscoveryValueNotContiguous) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
@@ -1645,7 +1645,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryValueNotContiguous) {
   EXPECT_TRUE(chrcs.empty());
 }
 
-TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
+TEST_F(ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
@@ -1689,7 +1689,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
 }
 
 // Equal handles should result should not short-circuit and result in a request.
-TEST_F(GATT_ClientTest, DescriptorDiscoveryHandlesEqual) {
+TEST_F(ClientTest, DescriptorDiscoveryHandlesEqual) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0001;
 
@@ -1698,7 +1698,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryHandlesEqual) {
   EXPECT_TRUE(ExpectFindInformation(kStart, kEnd));
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryResponseTooShort) {
+TEST_F(ClientTest, DescriptorDiscoveryResponseTooShort) {
   att::Status status;
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1711,7 +1711,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryResponseTooShort) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedDataLength) {
+TEST_F(ClientTest, DescriptorDiscoveryMalformedDataLength) {
   att::Status status;
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1725,7 +1725,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedDataLength) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
+TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
   att::Status status;
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1739,7 +1739,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
+TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
   att::Status status;
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1754,7 +1754,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryEmptyDataList) {
+TEST_F(ClientTest, DescriptorDiscoveryEmptyDataList) {
   att::Status status(HostError::kFailed);
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1769,7 +1769,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryEmptyDataList) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryAttributeNotFound) {
+TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
   att::Status status(HostError::kFailed);
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1785,7 +1785,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryAttributeNotFound) {
   EXPECT_TRUE(status);
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryError) {
+TEST_F(ClientTest, DescriptorDiscoveryError) {
   att::Status status(HostError::kFailed);
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1802,7 +1802,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryError) {
   EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
+TEST_F(ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0003;
 
@@ -1835,7 +1835,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   EXPECT_EQ(uint16_t{0xFEFE}, descrs[2].type);
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
+TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0002;
 
@@ -1868,7 +1868,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
   EXPECT_EQ(uint16_t{0xDEAD}, descrs[1].type);
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryMultipleRequests) {
+TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
   constexpr att::Handle kEnd = 0x0005;
   constexpr att::Handle kStart1 = 0x0001;
   constexpr att::Handle kStart2 = 0x0003;
@@ -1922,7 +1922,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMultipleRequests) {
   EXPECT_EQ(uint16_t{0xFEFE}, descrs[2].type);
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryResultsBeforeRange) {
+TEST_F(ClientTest, DescriptorDiscoveryResultsBeforeRange) {
   constexpr att::Handle kStart = 0x0002;
 
   att::Status status;
@@ -1940,7 +1940,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryResultsBeforeRange) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryResultsBeyondRange) {
+TEST_F(ClientTest, DescriptorDiscoveryResultsBeyondRange) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0002;
 
@@ -1959,7 +1959,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryResultsBeyondRange) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
+TEST_F(ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
   att::Status status;
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
@@ -1977,7 +1977,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, WriteRequestMalformedResponse) {
+TEST_F(ClientTest, WriteRequestMalformedResponse) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x12,          // opcode: write request
@@ -2007,7 +2007,7 @@ TEST_F(GATT_ClientTest, WriteRequestMalformedResponse) {
   EXPECT_TRUE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, WriteRequestExceedsMtu) {
+TEST_F(ClientTest, WriteRequestExceedsMtu) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;
   constexpr size_t kMtu = 5;
@@ -2029,7 +2029,7 @@ TEST_F(GATT_ClientTest, WriteRequestExceedsMtu) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, WriteRequestError) {
+TEST_F(ClientTest, WriteRequestError) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x12,          // opcode: write request
@@ -2057,7 +2057,7 @@ TEST_F(GATT_ClientTest, WriteRequestError) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, WriteRequestSuccess) {
+TEST_F(ClientTest, WriteRequestSuccess) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x12,          // opcode: write request
@@ -2081,7 +2081,7 @@ TEST_F(GATT_ClientTest, WriteRequestSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, PrepareWriteRequestExceedsMtu) {
+TEST_F(ClientTest, PrepareWriteRequestExceedsMtu) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;
   constexpr auto kOffset = 0;
@@ -2105,7 +2105,7 @@ TEST_F(GATT_ClientTest, PrepareWriteRequestExceedsMtu) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, PrepareWriteRequestError) {
+TEST_F(ClientTest, PrepareWriteRequestError) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kOffset = 5;
@@ -2136,7 +2136,7 @@ TEST_F(GATT_ClientTest, PrepareWriteRequestError) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, PrepareWriteRequestSuccess) {
+TEST_F(ClientTest, PrepareWriteRequestSuccess) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
@@ -2166,7 +2166,7 @@ TEST_F(GATT_ClientTest, PrepareWriteRequestSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ExecuteWriteRequestPendingSuccess) {
+TEST_F(ClientTest, ExecuteWriteRequestPendingSuccess) {
   const auto kFlag = att::ExecuteWriteFlag::kWritePending;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x18,  // opcode: execute write request
                                                        0x01   // flag: write pending
@@ -2188,7 +2188,7 @@ TEST_F(GATT_ClientTest, ExecuteWriteRequestPendingSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ExecuteWriteRequestCancelSuccess) {
+TEST_F(ClientTest, ExecuteWriteRequestCancelSuccess) {
   const auto kFlag = att::ExecuteWriteFlag::kCancelAll;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x18,  // opcode: execute write request
                                                        0x00   // flag: cancel all
@@ -2212,7 +2212,7 @@ TEST_F(GATT_ClientTest, ExecuteWriteRequestCancelSuccess) {
 
 // ExecutePrepareWrites should send each QueuedWrite request in the
 // PrepareWriteQueue as a PrepareWriteRequest then finally send an ExecuteWrite.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesSuccess) {
+TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2275,7 +2275,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesSuccess) {
 
 // When the PreparedWrite request exceeds the mtu, the client should
 // automatically send a kCancellAll request.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesMalformedFailure) {
+TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   constexpr size_t kMtu = 7;
@@ -2335,7 +2335,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesMalformedFailure) {
 
 // When the PreparedWrite receives an error response, the client should
 // automatically send a kCancellAll request.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesErrorFailure) {
+TEST_F(ClientTest, ExecutePrepareWritesErrorFailure) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2386,7 +2386,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesErrorFailure) {
 
 // ExecutePrepareWrites should enqueue immediately and send both long writes,
 // one after the other.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
+TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   const auto kHandle1 = 0x0001;
   const auto kHandle2 = 0x0002;
   const auto kOffset = 0;
@@ -2495,7 +2495,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
 
 // ExecutePrepareWrites should enqueue while one is being processed and send
 // both long writes, one after the other.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
+TEST_F(ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
   const auto kHandle1 = 0x0001;
   const auto kHandle2 = 0x0002;
   const auto kOffset = 0;
@@ -2611,7 +2611,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
 // PrepareWriteQueue as a PrepareWriteRequest and then send an ExecuteWrite.
 // Test that a WriteRequest succeeds if ReliableMode is disabled even when the
 // echoed response is different.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
+TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2675,7 +2675,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
 // ExecutePrepareWrites should send each QueuedWrite request in the
 // PrepareWriteQueue as a PrepareWriteRequest, validate the responses,
 // then finally send an ExecuteWrite.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
+TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2739,7 +2739,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
 // If ReliableMode is enabled:
 // When the requested buffer is empty, the reliability check should
 // succeed when vailidating the echoed response.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
+TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = BufferView();
@@ -2785,7 +2785,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
 // If ReliableMode is enabled:
 // When the PreparedWrite response differs from the PreparedWrite request,
 // the client should automatically send a kCancellAll request.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
+TEST_F(ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2835,7 +2835,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
 // If ReliableMode is enabled:
 // When the PreparedWrite response is malformed, the client should
 // automatically send a kCancellAll request.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
+TEST_F(ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2884,7 +2884,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
 // If ReliableMode is enabled:
 // When the PreparedWrite response contains an incorrect offset, but correct
 // value, the client should automatically send a kCancellAll request.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
+TEST_F(ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2932,7 +2932,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
 // If ReliableMode is enabled:
 // When the PreparedWrite response contains an incorrect empty value,
 // the client should automatically send a kCancellAll request.
-TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
+TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
   const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
@@ -2976,7 +2976,7 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, WriteWithoutResponseExceedsMtu) {
+TEST_F(ClientTest, WriteWithoutResponseExceedsMtu) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;
   constexpr size_t kMtu = 5;
@@ -3003,7 +3003,7 @@ TEST_F(GATT_ClientTest, WriteWithoutResponseExceedsMtu) {
   EXPECT_EQ(status->error(), HostError::kFailed);
 }
 
-TEST_F(GATT_ClientTest, WriteWithoutResponseSuccess) {
+TEST_F(ClientTest, WriteWithoutResponseSuccess) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x52,          // opcode: write request
@@ -3023,7 +3023,7 @@ TEST_F(GATT_ClientTest, WriteWithoutResponseSuccess) {
   ASSERT_TRUE(status->is_success());
 }
 
-TEST_F(GATT_ClientTest, ReadRequestEmptyResponse) {
+TEST_F(ClientTest, ReadRequestEmptyResponse) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x0A,       // opcode: read request
                                                        0x01, 0x00  // handle: 0x0001
@@ -3052,7 +3052,7 @@ TEST_F(GATT_ClientTest, ReadRequestEmptyResponse) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadRequestSuccess) {
+TEST_F(ClientTest, ReadRequestSuccess) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x0A,       // opcode: read request
                                                        0x01, 0x00  // handle: 0x0001
@@ -3082,7 +3082,7 @@ TEST_F(GATT_ClientTest, ReadRequestSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
+TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest = StaticByteBuffer(0x0A,  // opcode: read request
                                                  LowerBits(kHandle), UpperBits(kHandle)  // handle
@@ -3109,7 +3109,7 @@ TEST_F(GATT_ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
+TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
   constexpr uint16_t kPreferredMTU = att::kMaxAttributeValueLength + sizeof(att::OpCode);
   att()->set_preferred_mtu(kPreferredMTU);
   constexpr uint16_t kServerRxMTU = kPreferredMTU;
@@ -3169,7 +3169,7 @@ TEST_F(GATT_ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLengt
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadRequestError) {
+TEST_F(ClientTest, ReadRequestError) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x0A,       // opcode: read request
                                                        0x01, 0x00  // handle: 0x0001
@@ -3202,7 +3202,7 @@ TEST_F(GATT_ClientTest, ReadRequestError) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess16BitUUID) {
+TEST_F(ClientTest, ReadByTypeRequestSuccess16BitUUID) {
   const UUID kUuid16(uint16_t{0xBEEF});
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
@@ -3251,7 +3251,7 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess16BitUUID) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess128BitUUID) {
+TEST_F(ClientTest, ReadByTypeRequestSuccess128BitUUID) {
   const UUID kUuid128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
@@ -3295,7 +3295,7 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess128BitUUID) {
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
 }
-TEST_F(GATT_ClientTest, ReadByTypeRequestError) {
+TEST_F(ClientTest, ReadByTypeRequestError) {
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
   const auto kExpectedRequest =
@@ -3339,7 +3339,7 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestError) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadByTypeRequestInvalidResponses) {
+TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
   constexpr att::Handle kStartHandle = 0x0002;
   constexpr att::Handle kEndHandle = 0xFF00;
   constexpr att::Handle kHandle0 = 0x0005;
@@ -3431,7 +3431,7 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestInvalidResponses) {
   }
 }
 
-TEST_F(GATT_ClientTest, ReadBlobRequestEmptyResponse) {
+TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x0C,        // opcode: read blob request
@@ -3462,7 +3462,7 @@ TEST_F(GATT_ClientTest, ReadBlobRequestEmptyResponse) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadBlobRequestSuccess) {
+TEST_F(ClientTest, ReadBlobRequestSuccess) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x0C,        // opcode: read blob request
@@ -3493,7 +3493,7 @@ TEST_F(GATT_ClientTest, ReadBlobRequestSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadBlobRequestMaybeTruncated) {
+TEST_F(ClientTest, ReadBlobRequestMaybeTruncated) {
   constexpr att::Handle kHandle = 0x0001;
   constexpr uint16_t kOffset = 5;
   const auto kExpectedRequest =
@@ -3523,7 +3523,7 @@ TEST_F(GATT_ClientTest, ReadBlobRequestMaybeTruncated) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxValueLength) {
+TEST_F(ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxValueLength) {
   constexpr att::Handle kHandle = 0x0001;
   const uint16_t kOffset = att::kMaxAttributeValueLength - (att()->mtu() - sizeof(att::OpCode));
   const auto kExpectedRequest = StaticByteBuffer(0x0C,  // opcode: read blob request
@@ -3553,7 +3553,7 @@ TEST_F(GATT_ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqual
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, ReadBlobRequestError) {
+TEST_F(ClientTest, ReadBlobRequestError) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;
   const auto kExpectedRequest = CreateStaticByteBuffer(0x0C,        // opcode: read blob request
@@ -3588,7 +3588,7 @@ TEST_F(GATT_ClientTest, ReadBlobRequestError) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(GATT_ClientTest, EmptyNotification) {
+TEST_F(ClientTest, EmptyNotification) {
   constexpr att::Handle kHandle = 1;
 
   bool called = false;
@@ -3611,7 +3611,7 @@ TEST_F(GATT_ClientTest, EmptyNotification) {
   EXPECT_TRUE(called);
 }
 
-TEST_F(GATT_ClientTest, Notification) {
+TEST_F(ClientTest, Notification) {
   constexpr att::Handle kHandle = 1;
 
   bool called = false;
@@ -3636,7 +3636,7 @@ TEST_F(GATT_ClientTest, Notification) {
   EXPECT_TRUE(called);
 }
 
-TEST_F(GATT_ClientTest, NotificationTruncated) {
+TEST_F(ClientTest, NotificationTruncated) {
   constexpr att::Handle kHandle = 1;
   StaticByteBuffer pdu_header(0x1B,       // opcode: notification
                               0x01, 0x00  // handle: 1
@@ -3661,7 +3661,7 @@ TEST_F(GATT_ClientTest, NotificationTruncated) {
   EXPECT_TRUE(called);
 }
 
-TEST_F(GATT_ClientTest, Indication) {
+TEST_F(ClientTest, Indication) {
   constexpr att::Handle kHandle = 1;
 
   bool called = false;
@@ -3689,7 +3689,7 @@ TEST_F(GATT_ClientTest, Indication) {
 // preferred MTU. If the max MTU is increased, this test will need to be updated to test that
 // ReadByTypeValue.maybe_truncated is true for read by type responses with values that max out the
 // length parameter.
-TEST_F(GATT_ClientTest, ReadByTypeRequestSuccessValueTruncatedByLengthParam) {
+TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByLengthParam) {
   const uint16_t kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam =
       sizeof(att::kReadByTypeResponse) + sizeof(att::ReadByTypeResponseParams) +
       std::numeric_limits<decltype(att::ReadByTypeResponseParams::length)>::max();
@@ -3697,7 +3697,7 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccessValueTruncatedByLengthParam) {
   EXPECT_LT(att::kLEMaxMTU, kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam);
 }
 
-TEST_F(GATT_ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
+TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
   EXPECT_EQ(att()->mtu(), att::kLEMinMTU);
 
   const UUID kUuid16(uint16_t{0xBEEF});

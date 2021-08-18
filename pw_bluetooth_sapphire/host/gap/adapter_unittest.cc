@@ -95,7 +95,7 @@ class AdapterTest : public TestingBase {
 
 using GAP_AdapterTest = AdapterTest;
 
-TEST_F(GAP_AdapterTest, InitializeFailureNoFeaturesSupported) {
+TEST_F(AdapterTest, InitializeFailureNoFeaturesSupported) {
   bool success;
   int init_cb_count = 0;
   auto init_cb = [&](bool cb_success) {
@@ -110,7 +110,7 @@ TEST_F(GAP_AdapterTest, InitializeFailureNoFeaturesSupported) {
   EXPECT_FALSE(transport_closed_called());
 }
 
-TEST_F(GAP_AdapterTest, InitializeFailureNoBufferInfo) {
+TEST_F(AdapterTest, InitializeFailureNoBufferInfo) {
   bool success;
   int init_cb_count = 0;
   auto init_cb = [&](bool cb_success) {
@@ -129,7 +129,7 @@ TEST_F(GAP_AdapterTest, InitializeFailureNoBufferInfo) {
   EXPECT_FALSE(transport_closed_called());
 }
 
-TEST_F(GAP_AdapterTest, InitializeNoBREDR) {
+TEST_F(AdapterTest, InitializeNoBREDR) {
   bool success;
   int init_cb_count = 0;
   auto init_cb = [&](bool cb_success) {
@@ -155,7 +155,7 @@ TEST_F(GAP_AdapterTest, InitializeNoBREDR) {
   EXPECT_FALSE(transport_closed_called());
 }
 
-TEST_F(GAP_AdapterTest, InitializeSuccess) {
+TEST_F(AdapterTest, InitializeSuccess) {
   bool success;
   int init_cb_count = 0;
   auto init_cb = [&](bool cb_success) {
@@ -182,7 +182,7 @@ TEST_F(GAP_AdapterTest, InitializeSuccess) {
   EXPECT_FALSE(transport_closed_called());
 }
 
-TEST_F(GAP_AdapterTest, InitializeFailureHCICommandError) {
+TEST_F(AdapterTest, InitializeFailureHCICommandError) {
   bool success;
   int init_cb_count = 0;
   auto init_cb = [&](bool cb_success) {
@@ -204,7 +204,7 @@ TEST_F(GAP_AdapterTest, InitializeFailureHCICommandError) {
   EXPECT_FALSE(transport_closed_called());
 }
 
-TEST_F(GAP_AdapterTest, TransportClosedCallback) {
+TEST_F(AdapterTest, TransportClosedCallback) {
   bool success;
   int init_cb_count = 0;
   auto init_cb = [&](bool cb_success) {
@@ -233,7 +233,7 @@ TEST_F(GAP_AdapterTest, TransportClosedCallback) {
 // TODO(fxbug.dev/1512): Add a unit test for Adapter::ShutDown() and update
 // ShutDownDuringInitialize() with the same expectations.
 
-TEST_F(GAP_AdapterTest, ShutDownDuringInitialize) {
+TEST_F(AdapterTest, ShutDownDuringInitialize) {
   bool success;
   int init_cb_count = 0;
   auto init_cb = [&](bool result) {
@@ -259,7 +259,7 @@ TEST_F(GAP_AdapterTest, ShutDownDuringInitialize) {
   RunLoopUntilIdle();
 }
 
-TEST_F(GAP_AdapterTest, SetNameError) {
+TEST_F(AdapterTest, SetNameError) {
   std::string kNewName = "something";
 
   // Make all settings valid but make WriteLocalName command fail.
@@ -280,7 +280,7 @@ TEST_F(GAP_AdapterTest, SetNameError) {
   EXPECT_EQ(hci::StatusCode::kHardwareFailure, result.protocol_error());
 }
 
-TEST_F(GAP_AdapterTest, SetNameSuccess) {
+TEST_F(AdapterTest, SetNameSuccess) {
   const std::string kNewName = "Fuchsia BT 💖✨";
 
   FakeController::Settings settings;
@@ -300,7 +300,7 @@ TEST_F(GAP_AdapterTest, SetNameSuccess) {
 
 // Tests that writing a local name that is larger than the maximum size succeeds.
 // The saved local name is the original (untruncated) local name.
-TEST_F(GAP_AdapterTest, SetNameLargerThanMax) {
+TEST_F(AdapterTest, SetNameLargerThanMax) {
   const std::string long_name(hci::kMaxNameLength + 1, 'x');
 
   FakeController::Settings settings;
@@ -319,7 +319,7 @@ TEST_F(GAP_AdapterTest, SetNameLargerThanMax) {
 }
 
 // Tests that SetLocalName results in BrEdrDiscoveryManager updating it's local name.
-TEST_F(GAP_AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
+TEST_F(AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
   const std::string kNewName = "This is a test BT name! 1234";
 
   FakeController::Settings settings;
@@ -341,7 +341,7 @@ TEST_F(GAP_AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
 
 // Tests that writing a long local name results in BrEdr updating it's local name.
 // Should still succeed, and the stored local name should be the original name.
-TEST_F(GAP_AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
+TEST_F(AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
   const std::string long_name(hci::kExtendedInquiryResponseMaxNameBytes + 2, 'x');
 
   FakeController::Settings settings;
@@ -363,7 +363,7 @@ TEST_F(GAP_AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
 }
 
 // Tests WriteExtendedInquiryResponse failure leads to |local_name_| not updated.
-TEST_F(GAP_AdapterTest, BrEdrUpdateEIRResponseError) {
+TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
   std::string kNewName = "EirFailure";
 
   // Make all settings valid but make WriteExtendedInquiryResponse command fail.
@@ -389,7 +389,7 @@ TEST_F(GAP_AdapterTest, BrEdrUpdateEIRResponseError) {
   EXPECT_NE(kNewName, adapter()->local_name());
 }
 
-TEST_F(GAP_AdapterTest, DefaultName) {
+TEST_F(AdapterTest, DefaultName) {
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
@@ -408,9 +408,9 @@ TEST_F(GAP_AdapterTest, DefaultName) {
   EXPECT_TRUE(initialized);
 }
 
-TEST_F(GAP_AdapterTest, PeerCacheReturnsNonNull) { EXPECT_TRUE(adapter()->peer_cache()); }
+TEST_F(AdapterTest, PeerCacheReturnsNonNull) { EXPECT_TRUE(adapter()->peer_cache()); }
 
-TEST_F(GAP_AdapterTest, LeAutoConnect) {
+TEST_F(AdapterTest, LeAutoConnect) {
   constexpr zx::duration kTestScanPeriod = zx::sec(10);
   constexpr PeerId kPeerId(1234);
 
@@ -454,7 +454,7 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   EXPECT_EQ(kPeerId, conn->peer_identifier());
 }
 
-TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
+TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   constexpr zx::duration kTestScanPeriod = zx::sec(10);
   constexpr PeerId kPeerId(1234);
 
@@ -515,7 +515,7 @@ TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
 
 // Tests the interactions between the advertising manager and the local address
 // manager when the controller uses legacy advertising.
-TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
+TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
   test_device()->set_settings(settings);
@@ -592,7 +592,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
 
 // Tests the interactions between the discovery manager and the local address
 // manager.
-TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
+TEST_F(AdapterTest, LocalAddressForDiscovery) {
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
   test_device()->set_settings(settings);
@@ -656,7 +656,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
 }
 
-TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
+TEST_F(AdapterTest, LocalAddressForConnections) {
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
   test_device()->set_settings(settings);
@@ -709,7 +709,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
 
 // Tests the deferral of random address configuration while a connection request
 // is outstanding.
-TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
+TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
   test_device()->set_settings(settings);
@@ -795,7 +795,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 }
 
 // Tests that existing connections don't prevent an address change.
-TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
+TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
   test_device()->set_settings(settings);
@@ -829,7 +829,7 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   EXPECT_NE(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 }
 
-TEST_F(GAP_AdapterTest, IsDiscoverableLowEnergy) {
+TEST_F(AdapterTest, IsDiscoverableLowEnergy) {
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
   test_device()->set_settings(settings);
@@ -852,7 +852,7 @@ TEST_F(GAP_AdapterTest, IsDiscoverableLowEnergy) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
-TEST_F(GAP_AdapterTest, IsDiscoverableBredr) {
+TEST_F(AdapterTest, IsDiscoverableBredr) {
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
@@ -870,7 +870,7 @@ TEST_F(GAP_AdapterTest, IsDiscoverableBredr) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
-TEST_F(GAP_AdapterTest, InspectHierarchy) {
+TEST_F(AdapterTest, InspectHierarchy) {
   inspect::Inspector inspector;
   auto bt_host_node = inspector.GetRoot().CreateChild("bt-host");
   adapter()->AttachInspect(bt_host_node, "adapter");
@@ -946,7 +946,7 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
                                ChildrenMatch(UnorderedElementsAre(bt_host_matcher))));
 }
 
-TEST_F(GAP_AdapterTest, VendorFeatures) {
+TEST_F(AdapterTest, VendorFeatures) {
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
@@ -985,7 +985,7 @@ class AdapterConstructorTest : public TestingBase {
 
 using GAP_AdapterConstructorTest = AdapterConstructorTest;
 
-TEST_F(GAP_AdapterConstructorTest, GattCallbacks) {
+TEST_F(AdapterConstructorTest, GattCallbacks) {
   constexpr PeerId kPeerId(1234);
   constexpr gatt::ServiceChangedCCCPersistedData kPersistedData = {.notify = true,
                                                                    .indicate = true};

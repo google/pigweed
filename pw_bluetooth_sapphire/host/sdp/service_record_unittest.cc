@@ -13,8 +13,6 @@
 namespace bt::sdp {
 namespace {
 
-using SDP_ServiceRecordTest = ::testing::Test;
-
 // Test: making a new record generates a UUID.
 // Test: GetAttribute
 // Test: HasAttribute
@@ -23,7 +21,7 @@ using SDP_ServiceRecordTest = ::testing::Test;
 // Test: RemoveAttribute
 // Test: SetServiceClassUUIDs
 //  - Sets the right attribute with the right format.
-TEST_F(SDP_ServiceRecordTest, BasicFunctionality) {
+TEST(ServiceRecordTest, BasicFunctionality) {
   ServiceRecord record;
 
   record.SetHandle(kSDPHandle);
@@ -66,7 +64,7 @@ TEST_F(SDP_ServiceRecordTest, BasicFunctionality) {
 
 // Test: GetAttributesInRange
 //  - Returns any attributes that are present.
-TEST_F(SDP_ServiceRecordTest, GetAttributesInRange) {
+TEST(ServiceRecordTest, GetAttributesInRange) {
   ServiceRecord record;
 
   record.SetHandle(kSDPHandle);
@@ -93,7 +91,7 @@ TEST_F(SDP_ServiceRecordTest, GetAttributesInRange) {
 
 // Test: FindUUID
 //  - Only returns true if all uuids are present
-TEST_F(SDP_ServiceRecordTest, FindUUID) {
+TEST(ServiceRecordTest, FindUUID) {
   ServiceRecord record;
 
   DataElement elem;
@@ -119,7 +117,7 @@ TEST_F(SDP_ServiceRecordTest, FindUUID) {
 }
 
 // Test: AddProtocolDescriptor
-TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
+TEST(ServiceRecordTest, AddProtocolDescriptor) {
   ServiceRecord record;
 
   EXPECT_FALSE(record.HasAttribute(kProtocolDescriptorList));
@@ -199,7 +197,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
 // Test: AddProfile
 //  - Adds an attribute if it doesn't exist
 //  - Appends to the attribute if it does exist
-TEST_F(SDP_ServiceRecordTest, AddProfile) {
+TEST(ServiceRecordTest, AddProfile) {
   ServiceRecord record;
 
   EXPECT_FALSE(record.HasAttribute(kBluetoothProfileDescriptorList));
@@ -255,7 +253,7 @@ TEST_F(SDP_ServiceRecordTest, AddProfile) {
 // Test: AddInfo
 //  - Requires at least one is set.
 //  - Adds the right attributes to a set.
-TEST_F(SDP_ServiceRecordTest, AddInfo) {
+TEST(ServiceRecordTest, AddInfo) {
   ServiceRecord record;
 
   EXPECT_FALSE(record.HasAttribute(kLanguageBaseAttributeIdList));
@@ -305,7 +303,7 @@ TEST_F(SDP_ServiceRecordTest, AddInfo) {
 
 // Test: IsRegisterable
 // - ServiceRecord must contain the BrowseGroupList to be registerable.
-TEST_F(SDP_ServiceRecordTest, IsRegisterable) {
+TEST(ServiceRecordTest, IsRegisterable) {
   ServiceRecord record;
   record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
   record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -324,7 +322,7 @@ TEST_F(SDP_ServiceRecordTest, IsRegisterable) {
 
 // Test: ToString
 // - The ToString() method correctly formats the fields.
-TEST_F(SDP_ServiceRecordTest, ToString) {
+TEST(ServiceRecordTest, ToString) {
   ServiceRecord record;
   EXPECT_EQ("", record.ToString());
 

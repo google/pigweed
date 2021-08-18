@@ -44,7 +44,7 @@ class FakeChannelHandler : public PairingChannel::Handler {
   fxl::WeakPtrFactory<PairingChannel::Handler> weak_ptr_factory_;
 };
 
-class SMP_PairingChannelTest : public l2cap::testing::FakeChannelTest {
+class PairingChannelTest : public l2cap::testing::FakeChannelTest {
  protected:
   void SetUp() override { NewPairingChannel(); }
 
@@ -57,7 +57,7 @@ class SMP_PairingChannelTest : public l2cap::testing::FakeChannelTest {
     ChannelOptions options(cid, mtu);
     options.link_type = ll_type;
     sm_chan_ = std::make_unique<PairingChannel>(
-        CreateFakeChannel(options), fit::bind_member(this, &SMP_PairingChannelTest::ResetTimer));
+        CreateFakeChannel(options), fit::bind_member(this, &PairingChannelTest::ResetTimer));
   }
 
   PairingChannel* sm_chan() { return sm_chan_.get(); }
@@ -72,13 +72,13 @@ class SMP_PairingChannelTest : public l2cap::testing::FakeChannelTest {
   fit::closure timer_resetter_ = []() {};
 };
 
-using SMP_PairingChannelDeathTest = SMP_PairingChannelTest;
-TEST_F(SMP_PairingChannelDeathTest, L2capChannelMtuTooSmallDies) {
+using PairingChannelDeathTest = PairingChannelTest;
+TEST_F(PairingChannelDeathTest, L2capChannelMtuTooSmallDies) {
   ASSERT_DEATH_IF_SUPPORTED(NewPairingChannel(bt::LinkType::kLE, kNoSecureConnectionsMtu - 1),
                             ".*max.*_sdu_size.*");
 }
 
-TEST_F(SMP_PairingChannelDeathTest, SendInvalidMessageDies) {
+TEST_F(PairingChannelDeathTest, SendInvalidMessageDies) {
   // Tests that an invalid SMP code aborts the process
   EXPECT_DEATH_IF_SUPPORTED(sm_chan()->SendMessage(0xFF, ErrorCode::kUnspecifiedReason), ".*end.*");
 
@@ -87,7 +87,7 @@ TEST_F(SMP_PairingChannelDeathTest, SendInvalidMessageDies) {
                             ".*sizeof.*");
 }
 
-TEST_F(SMP_PairingChannelTest, SendMessageWorks) {
+TEST_F(PairingChannelTest, SendMessageWorks) {
   PairingRandomValue kExpectedPayload = {1, 2, 3, 4, 5};
   StaticByteBuffer<util::PacketSize<PairingRandomValue>()> kExpectedPacket;
   PacketWriter w(kPairingRandom, &kExpectedPacket);
@@ -100,7 +100,7 @@ TEST_F(SMP_PairingChannelTest, SendMessageWorks) {
 }
 
 // This checks that PairingChannel doesn't crash when receiving events without a handler set.
-TEST_F(SMP_PairingChannelTest, NoHandlerSetDataDropped) {
+TEST_F(PairingChannelTest, NoHandlerSetDataDropped) {
   ASSERT_TRUE(sm_chan());
   const auto kSmPacket = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kPairingNotSupported);
 
@@ -111,7 +111,7 @@ TEST_F(SMP_PairingChannelTest, NoHandlerSetDataDropped) {
   RunLoopUntilIdle();
 }
 
-TEST_F(SMP_PairingChannelTest, SetHandlerReceivesData) {
+TEST_F(PairingChannelTest, SetHandlerReceivesData) {
   ASSERT_TRUE(sm_chan());
   const auto kSmPacket1 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kPairingNotSupported);
   const auto kSmPacket2 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kConfirmValueFailed);
@@ -137,7 +137,7 @@ TEST_F(SMP_PairingChannelTest, SetHandlerReceivesData) {
   ASSERT_EQ(handler.channel_closed_count(), 1);
 }
 
-TEST_F(SMP_PairingChannelTest, ChangeHandlerNewHandlerReceivesData) {
+TEST_F(PairingChannelTest, ChangeHandlerNewHandlerReceivesData) {
   ASSERT_TRUE(sm_chan());
   const auto kSmPacket1 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kPairingNotSupported);
   const auto kSmPacket2 = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kConfirmValueFailed);

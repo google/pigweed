@@ -21,7 +21,7 @@ hci::ConnectionHandle kConnectionHandle = 0x01;
 l2cap::CommandId kCommandId = 0x02;
 l2cap::PSM kPsm = l2cap::kSDP;
 
-TEST(TESTING_FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
+TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto kConnectionHandle, auto cid, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
@@ -145,7 +145,7 @@ TEST(TESTING_FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
 };
 
-TEST(TESTING_FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
+TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
   // Create a custom FakeL2cap with no registered services.
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto kConnectionHandle, auto cid, auto& buffer) {
@@ -177,7 +177,7 @@ TEST(TESTING_FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredServi
   EXPECT_FALSE(fake_l2cap_without_service.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
 };
 
-TEST(TESTING_FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
+TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
   // Configure FakeSignalingServer to copy any received signaling packets.
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto kConnectionHandle, auto cid, auto& buffer) {
@@ -210,7 +210,7 @@ TEST(TESTING_FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
   EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
 };
 
-TEST(TESTING_FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
+TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto kConnectionHandle, auto cid, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
@@ -327,7 +327,7 @@ TEST(TESTING_FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   EXPECT_TRUE(ContainersEqual(second_expected_response, *received_packet));
 };
 
-TEST(TESTING_FakeDynamicChannelTest, FailWhenOutOfIds) {
+TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
   auto unexpected_cb = [](auto handle, auto& pdu) {};
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto kConnectionHandle, auto cid, auto& buffer) {

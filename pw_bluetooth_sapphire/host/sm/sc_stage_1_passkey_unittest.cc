@@ -31,10 +31,10 @@ struct ScStage1Args {
   PairingMethod method = PairingMethod::kPasskeyEntryDisplay;
 };
 
-class SMP_ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
+class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
  public:
-  SMP_ScStage1PasskeyTest() = default;
-  ~SMP_ScStage1PasskeyTest() = default;
+  ScStage1PasskeyTest() = default;
+  ~ScStage1PasskeyTest() = default;
 
  protected:
   using ConfirmCallback = FakeListener::ConfirmCallback;
@@ -106,8 +106,8 @@ class SMP_ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
   std::optional<fpromise::result<ScStage1::Output, ErrorCode>> last_results_ = std::nullopt;
 };
 
-using SMP_ScStage1PasskeyDeathTest = SMP_ScStage1PasskeyTest;
-TEST_F(SMP_ScStage1PasskeyDeathTest, InvalidMethodsDie) {
+using ScStage1PasskeyDeathTest = ScStage1PasskeyTest;
+TEST_F(ScStage1PasskeyDeathTest, InvalidMethodsDie) {
   ScStage1Args args;
   args.method = PairingMethod::kOutOfBand;
   ASSERT_DEATH_IF_SUPPORTED(NewScStage1Passkey(args), ".*method.*");
@@ -117,7 +117,7 @@ TEST_F(SMP_ScStage1PasskeyDeathTest, InvalidMethodsDie) {
   ASSERT_DEATH_IF_SUPPORTED(NewScStage1Passkey(args), ".*method.*");
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
+TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryDisplay;
   args.role = Role::kInitiator;
@@ -162,7 +162,7 @@ TEST_F(SMP_ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
   ASSERT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, InitiatorPasskeyEntryInput) {
+TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryInput) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kInitiator;
@@ -203,7 +203,7 @@ TEST_F(SMP_ScStage1PasskeyTest, InitiatorPasskeyEntryInput) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, InitiatorPeerConfirmBeforeUserInputFails) {
+TEST_F(ScStage1PasskeyTest, InitiatorPeerConfirmBeforeUserInputFails) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kInitiator;
@@ -222,7 +222,7 @@ TEST_F(SMP_ScStage1PasskeyTest, InitiatorPeerConfirmBeforeUserInputFails) {
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ReceiveRandomBeforePeerConfirm) {
+TEST_F(ScStage1PasskeyTest, ReceiveRandomBeforePeerConfirm) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kInitiator;
@@ -240,7 +240,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ReceiveRandomBeforePeerConfirm) {
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ListenerRejectsPasskeyEntryDisplay) {
+TEST_F(ScStage1PasskeyTest, ListenerRejectsPasskeyEntryDisplay) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryDisplay;
   NewScStage1Passkey(args);
@@ -259,7 +259,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ListenerRejectsPasskeyEntryDisplay) {
   EXPECT_EQ(ErrorCode::kPasskeyEntryFailed, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ListenerRejectsPasskeyEntryInput) {
+TEST_F(ScStage1PasskeyTest, ListenerRejectsPasskeyEntryInput) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   NewScStage1Passkey(args);
@@ -276,7 +276,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ListenerRejectsPasskeyEntryInput) {
   EXPECT_EQ(ErrorCode::kPasskeyEntryFailed, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryDisplay) {
+TEST_F(ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryDisplay) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryDisplay;
   NewScStage1Passkey(args);
@@ -297,7 +297,7 @@ TEST_F(SMP_ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryDisplay
   EXPECT_FALSE(last_results().has_value());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryInput) {
+TEST_F(ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryInput) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   NewScStage1Passkey(args);
@@ -315,7 +315,7 @@ TEST_F(SMP_ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryInput) 
   EXPECT_FALSE(last_results().has_value());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
+TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryDisplay;
   args.role = Role::kResponder;
@@ -359,7 +359,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ResponderPasskeyEntryInput) {
+TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryInput) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kResponder;
@@ -399,7 +399,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ResponderPasskeyEntryInput) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
+TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kResponder;
@@ -452,7 +452,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ReceiveTwoPairingConfirmsFails) {
+TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingConfirmsFails) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kResponder;
@@ -472,7 +472,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ReceiveTwoPairingConfirmsFails) {
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ReceiveTwoPairingRandomsFails) {
+TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingRandomsFails) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kResponder;
@@ -496,7 +496,7 @@ TEST_F(SMP_ScStage1PasskeyTest, ReceiveTwoPairingRandomsFails) {
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-TEST_F(SMP_ScStage1PasskeyTest, ReceiveMismatchedPairingConfirmFails) {
+TEST_F(ScStage1PasskeyTest, ReceiveMismatchedPairingConfirmFails) {
   ScStage1Args args;
   args.method = PairingMethod::kPasskeyEntryInput;
   args.role = Role::kResponder;
