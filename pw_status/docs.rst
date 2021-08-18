@@ -168,20 +168,6 @@ function that corresponds with the status code.
 .. note::
   Status enumerations are also supported for Python and Typescript.
 
-.. attention::
-
-  Some code may use all-caps status values such as ``Status::UNKNOWN`` instead
-  of ``Status::Unknown()``. These all-caps status codes are deprecated and will
-  be removed in the future. Do not use them; use the functions above instead.
-
-  The all-caps status aliases were deprecated because they do not comply with
-  the style guide and potentially conflict with macro definitions. For example,
-  projects might define an ``INTERNAL`` macro, which would prevent ``status.h``
-  or code that uses ``Status::INTERNAL`` from compiling.
-
-  The Python tool ``pw_status/update_style.py`` may be used to migrate code in a
-  Git repo to the new status style.
-
 Tracking the first error encountered
 ------------------------------------
 In some contexts it is useful to track the first error encountered while
@@ -228,8 +214,8 @@ Unused result warnings
 If the ``PW_STATUS_CFG_CHECK_IF_USED`` option is enabled, ``pw::Status`` objects
 returned from function calls must be used or it is a compilation error. To
 silence these warnings call ``IgnoreError()`` on the returned status object.
-``PW_STATUS_CFG_CHECK_IF_USED`` defaults to off. Pigweed and projects that use it
-will be updated to compile with this option enabled. After all projects have
+``PW_STATUS_CFG_CHECK_IF_USED`` defaults to off. Pigweed and projects that use
+it will be updated to compile with this option enabled. After all projects have
 migrated, unused result warnings will be enabled unconditionally.
 
 C compatibility
