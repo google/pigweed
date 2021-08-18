@@ -610,6 +610,52 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertiseUpdate) {
   EXPECT_EQ(new_interval.max(), this->GetControllerAdvertisingState().interval_max);
 }
 
+// Ensures advertising set data is removed from controller memory after advertising is stopped
+TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
+  AdvertisingData ad = this->GetExampleData();
+  AdvertisingData scan_data = this->GetExampleData();
+
+  // start public address advertising
+  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/false);
+  this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, nullptr,
+                                       this->GetSuccessCallback());
+  this->RunLoopUntilIdle();
+  EXPECT_TRUE(this->GetLastStatus());
+
+  constexpr uint8_t blank[kMaxLEAdvertisingDataLength] = {0};
+
+  // check that advertiser and controller both report the same advertising state
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress));
+
+  {
+    const FakeController::LEAdvertisingState& state = this->GetControllerAdvertisingState();
+    EXPECT_TRUE(state.enabled);
+    EXPECT_NE(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_NE(0, state.data_length);
+    EXPECT_NE(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_NE(0, state.scan_rsp_length);
+  }
+
+  // stop advertising the random address
+  this->advertiser()->StopAdvertising(kPublicAddress);
+  this->RunLoopUntilIdle();
+
+  // check that advertiser and controller both report the same advertising state
+  EXPECT_FALSE(this->advertiser()->IsAdvertising());
+  EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress));
+
+  {
+    const FakeController::LEAdvertisingState& state = this->GetControllerAdvertisingState();
+    EXPECT_FALSE(state.enabled);
+    EXPECT_EQ(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, state.data_length);
+    EXPECT_EQ(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, state.scan_rsp_length);
+  }
+}
+
 // - Rejects anonymous advertisement (unsupported)
 TYPED_TEST(LowEnergyAdvertiserTest, NoAnonymous) {
   AdvertisingData ad = this->GetExampleData();
