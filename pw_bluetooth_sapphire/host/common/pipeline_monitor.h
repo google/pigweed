@@ -16,8 +16,10 @@
 #include <queue>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -70,7 +72,8 @@ class PipelineMonitor final {
 
    private:
     friend class PipelineMonitor;
-    Token(fxl::WeakPtr<PipelineMonitor> parent, TokenId id) : parent_(parent), id_(id) {}
+    Token(fxl::WeakPtr<PipelineMonitor> parent, TokenId id)
+        : parent_(std::move(parent)), id_(id) {}
 
     const fxl::WeakPtr<PipelineMonitor> parent_;
     TokenId id_ = kInvalidTokenId;
@@ -95,8 +98,13 @@ class PipelineMonitor final {
     zx::duration value;
   };
 
-  explicit PipelineMonitor(fit::nullable<async_dispatcher_t*> dispatcher)
-      : dispatcher_(dispatcher.value_or(async_get_default_dispatcher())) {}
+  // Create a data chunk-tracking service that uses |dispatcher| for timing (may be null to use the
+  // default dispatcher). |retire_log| is copied into the class in order to store statistics about
+  // retired tokens. Note that the "live" internal log is readable with the |retire_log()| method,
+  // not the original instance passed to the ctor (which will not be logged into).
+  explicit PipelineMonitor(fit::nullable<async_dispatcher_t*> dispatcher,
+                           const internal::RetireLog& retire_log)
+      : dispatcher_(dispatcher.value_or(async_get_default_dispatcher())), retire_log_(retire_log) {}
 
   [[nodiscard]] size_t bytes_issued() const { return bytes_issued_; }
   [[nodiscard]] int64_t tokens_issued() const { return tokens_issued_; }
@@ -110,6 +118,8 @@ class PipelineMonitor final {
     return bytes_issued() - bytes_in_flight();
   }
   [[nodiscard]] int64_t tokens_retired() const { return tokens_issued() - tokens_in_flight(); }
+
+  const internal::RetireLog& retire_log() const { return retire_log_; }
 
   // Start tracking |byte_count| bytes of data. This issues a token that is now considered
   // "in-flight" until it is retired.
@@ -232,12 +242,15 @@ class PipelineMonitor final {
     TokenInfo& packet_info = node.mapped();
     bytes_in_flight_ -= packet_info.byte_count;
     const zx::duration age = async::Now(dispatcher_) - packet_info.issue_time;
+    retire_log_.Retire(packet_info.byte_count, age);
 
     // Process alerts.
     SignalAlertValue<MaxAgeRetiredAlert>(age);
   };
 
   async_dispatcher_t* const dispatcher_ = nullptr;
+
+  internal::RetireLog retire_log_;
 
   // This is likely not the best choice for memory efficiency and insertion latency (allocation and
   // rehashing are both concerning). A slotmap is likely a good choice here with some tweaks to
