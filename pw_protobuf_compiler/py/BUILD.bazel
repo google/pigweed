@@ -27,5 +27,35 @@ py_library(
         "pw_protobuf_compiler/python_protos.py",
     ],
     imports = ["."],
-    deps = ["//pw_protobuf/py:plugin"],
 )
+
+py_test(
+    name = "compiled_protos_test",
+    size = "small",
+    srcs = [
+        "compiled_protos_test.py",
+    ],
+    imports = [
+        # To import pw_protobuf_compiler_protos
+        "..",
+    ],
+    deps = [
+        ":pw_protobuf_compiler",
+        "//pw_protobuf_compiler:pw_protobuf_compiler_protos",
+    ],
+)
+
+# TODO(tonymd) Find out how to make protoc available in the bazel sandbox.
+# py_test(
+#     name = "python_protos_test",
+#     size = "small",
+#     srcs = [
+#         "python_protos_test.py",
+#     ],
+#     deps = [
+#         ":pw_protobuf_compiler",
+#     ],
+#     data = [
+#         "@com_google_protobuf//:protoc",
+#     ]
+# )

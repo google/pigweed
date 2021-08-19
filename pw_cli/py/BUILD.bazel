@@ -35,4 +35,37 @@ py_library(
         "pw_cli/pw_command_plugins.py",
         "pw_cli/requires.py",
     ],
+    imports = ["."],
+)
+
+py_binary(
+    name = "log",
+    srcs = [
+        "pw_cli/log.py",
+    ],
+    deps = [
+        ":pw_cli",
+    ],
+)
+
+py_test(
+    name = "plugins_test",
+    size = "small",
+    srcs = [
+        "plugins_test.py",
+    ],
+    deps = [
+        ":pw_cli",
+    ],
+)
+
+py_test(
+    name = "envparse_test",
+    size = "small",
+    srcs = [
+        "envparse_test.py",
+    ],
+    deps = [
+        ":pw_cli",
+    ],
 )

@@ -35,11 +35,8 @@ cipd_init()
 # Used in modules: None.
 http_archive(
     name = "rules_python",
-    sha256 = "778197e26c5fbeb07ac2a2c5ae405b30f6cb7ad1f5510ea6fdac03bded96cc6f",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_python/releases/download/0.2.0/rules_python-0.2.0.tar.gz",
-        "https://github.com/bazelbuild/rules_python/releases/download/0.2.0/rules_python-0.2.0.tar.gz",
-    ],
+    sha256 = "934c9ceb552e84577b0faf1e5a2f0450314985b4d8712b2b70717dc679fdc01b",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.3.0/rules_python-0.3.0.tar.gz",
 )
 
 # Set up Starlark library.
@@ -96,9 +93,9 @@ register_cc_toolchains()
 # Used in modules: //pw_protobuf.
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "71030a04aedf9f612d2991c1c552317038c3c5a2b578ac4745267a45e7037c29",
-    strip_prefix = "protobuf-3.12.3",
-    url = "https://github.com/protocolbuffers/protobuf/archive/v3.12.3.tar.gz",
+    sha256 = "c6003e1d2e7fefa78a3039f19f383b4f3a61e81be8c19356f85b6461998ad3db",
+    strip_prefix = "protobuf-3.17.3",
+    url = "https://github.com/protocolbuffers/protobuf/archive/v3.17.3.tar.gz",
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")

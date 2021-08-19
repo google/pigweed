@@ -18,9 +18,20 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+filegroup(
+    name = "pw_protobuf_common_sources",
+    srcs = [
+        "pw_protobuf/__init__.py",
+        "pw_protobuf/codegen_pwpb.py",
+        "pw_protobuf/output_file.py",
+        "pw_protobuf/plugin.py",
+        "pw_protobuf/proto_tree.py",
+    ],
+)
+
 py_library(
     name = "plugin_library",
-    srcs = glob(["pw_protobuf/*.py"]),
+    srcs = [":pw_protobuf_common_sources"],
     imports = ["."],
     deps = ["@com_google_protobuf//:protobuf_python"],
 )
@@ -38,12 +49,6 @@ py_binary(
 
 py_library(
     name = "pw_protobuf",
-    srcs = [
-        "pw_protobuf/__init__.py",
-        "pw_protobuf/codegen_pwpb.py",
-        "pw_protobuf/output_file.py",
-        "pw_protobuf/plugin.py",
-        "pw_protobuf/proto_tree.py",
-    ],
+    srcs = [":pw_protobuf_common_sources"],
     deps = ["//pw_cli/py:pw_cli"],
 )
