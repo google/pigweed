@@ -41,7 +41,4 @@ class NullStream final : public SeekableReaderWriter {
   Status DoSeek(ssize_t, Whence) final { return OkStatus(); }
 };
 
-// TODO(hepler): Remove this unnecessary alias when users have migrated.
-using NullWriter = NullStream;
-
 }  // namespace pw::stream
