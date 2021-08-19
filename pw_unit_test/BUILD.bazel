@@ -102,12 +102,6 @@ proto_library(
 
 pw_proto_library(
     name = "unit_test_pwpb",
-    # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains are
-    # supported with Bazel.
-    tags = [
-        "manual",
-        "needs-python3.6",
-    ],
     deps = [":unit_test_proto"],
 )
 
@@ -121,9 +115,6 @@ pw_cc_library(
         "public/pw_unit_test/internal/rpc_event_handler.h",
         "public/pw_unit_test/unit_test_service.h",
     ],
-    # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains are
-    # supported with Bazel.
-    tags = ["manual"],
     deps = [
         ":pw_unit_test",
         ":unit_test_pwpb",
@@ -138,9 +129,6 @@ pw_cc_library(
     srcs = [
         "rpc_main.cc",
     ],
-    # TODO(pwbug/437): Remove 'manual' tag once hermetic Python toolchains are
-    # supported with Bazel.
-    tags = ["manual"],
     deps = [
         ":pw_unit_test",
         ":rpc_service",

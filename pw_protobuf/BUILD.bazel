@@ -152,5 +152,6 @@ proto_plugin(
     ],
     protoc_plugin_name = "pwpb",
     tool = "@pigweed//pw_protobuf/py:plugin",
+    use_built_in_shell_environment = True,
     visibility = ["//visibility:public"],
 )

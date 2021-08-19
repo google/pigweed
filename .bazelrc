@@ -24,6 +24,15 @@ coverage --combined_report=lcov
 # variables.
 build --incompatible_strict_action_env
 
+# This leaks the PATH variable into the Bazel build environment, which
+# enables the Python pw_protobuf plugins to find the Python version
+# via CIPD and pw_env_setup. This is a partial fix for pwbug/437,
+# however this does not provide a fix for downstream projects that
+# use system Python < 3.6. This approach is problematic because of the
+# Protobuf rebuild sensitivity to environment variable changes.
+# TODO(pwbug/437): Remove this once pwbug/437 is completely resolved.
+build --action_env=PATH
+
 # Define the --config=asan-libfuzzer configuration.
 build:asan-libfuzzer \
     --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer

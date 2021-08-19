@@ -42,7 +42,6 @@ py_library(
     name = "pw_rpc",
     srcs = [
         "pw_rpc/__init__.py",
-        "pw_rpc/callback_client.py",
         "pw_rpc/client.py",
         "pw_rpc/codegen.py",
         "pw_rpc/codegen_nanopb.py",

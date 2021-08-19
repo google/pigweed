@@ -69,13 +69,28 @@ pw_cc_library(
     ],
 )
 
+proto_library(
+    name = "benchmark_proto",
+    srcs = [
+        "benchmark.proto",
+    ],
+)
+
+pw_proto_library(
+    name = "benchmark_pwpb",
+    deps = [":benchmark_proto"],
+)
+
 pw_cc_library(
     name = "benchmark",
     srcs = ["benchmark.cc"],
-    # TODO(hepler): Pull in the raw RPC generated headers.
-    # deps = [ ":protos.raw_rpc" ],
     hdrs = ["public/pw_rpc/benchmark.h"],
     includes = ["public"],
+    deps = [
+        ":benchmark_pwpb",
+        ":server",
+        "//pw_rpc/raw:method_union",
+    ],
 )
 
 # TODO(hepler): Build this as a cc_binary and use it in integration tests.
@@ -318,5 +333,6 @@ proto_plugin(
     ],
     protoc_plugin_name = "raw_rpc",
     tool = "@pigweed//pw_rpc/py:plugin",
+    use_built_in_shell_environment = True,
     visibility = ["//visibility:public"],
 )
