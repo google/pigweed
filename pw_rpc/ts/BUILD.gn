@@ -12,14 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
+import("//build_overrides/pigweed.gni")
 
-package(default_visibility = ["//visibility:public"])
+import("$dir_pw_build/python.gni")
+import("$dir_pw_docgen/docs.gni")
 
-ts_library(
-    name = "pw_status",
-    srcs = [
-        "status.ts",
-    ],
-    module_name = "pigweed/pw_status/ts",
-)
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

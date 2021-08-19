@@ -20,6 +20,7 @@ load(
 )
 load("@rules_proto_grpc//:defs.bzl", "proto_plugin")
 load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
+load("@rules_proto_grpc//js:defs.bzl", "js_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -309,6 +310,11 @@ proto_library(
     name = "internal_packet_proto",
     srcs = ["internal/packet.proto"],
     visibility = ["//visibility:private"],
+)
+
+js_proto_library(
+    name = "packet_proto_tspb",
+    protos = [":packet_proto"],
 )
 
 pw_proto_library(

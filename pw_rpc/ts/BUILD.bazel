@@ -12,14 +12,47 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
 ts_library(
-    name = "pw_status",
+    name = "rpc_utils",
     srcs = [
-        "status.ts",
+        "packets.ts",
     ],
-    module_name = "pigweed/pw_status/ts",
+    deps = [
+        "//pw_rpc:packet_proto_tspb",
+        "//pw_status/ts:pw_status",
+        "@npm//@types/google-protobuf",
+    ],
+)
+
+ts_library(
+    name = "rpc",
+    srcs = [],
+    module_name = "pigweed/pw_rpc/ts",
+    deps = [":rpc_utils"],
+)
+
+ts_library(
+    name = "rpc_utils_test_lib",
+    srcs = [
+        "packets_test.ts",
+    ],
+    deps = [
+        ":rpc",
+        ":rpc_utils",
+        "//pw_rpc:packet_proto_tspb",
+        "//pw_status/ts:pw_status",
+        "@npm//@types/jasmine",
+    ],
+)
+
+jasmine_node_test(
+    name = "rpc_test",
+    srcs = [
+        ":rpc_utils_test_lib",
+    ],
 )

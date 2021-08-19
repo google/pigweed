@@ -14,7 +14,7 @@
 
 /** Pigweed Status class; mirrors pw::Status. */
 
-enum Status {
+export enum Status {
   OK = 0,
   CANCELLED = 1,
   UNKNOWN = 2,

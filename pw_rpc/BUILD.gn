@@ -190,6 +190,7 @@ pw_doc_group("docs") {
   group_deps = [
     "nanopb:docs",
     "py:docs",
+    "ts:docs",
   ]
   report_deps = [ ":server_size" ]
 }

@@ -14,6 +14,7 @@ documents:
   :maxdepth: 1
 
   py/docs
+  ts/docs
 
 .. admonition:: Try it out!
 
