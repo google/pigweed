@@ -53,6 +53,7 @@ template("pw_python_wheels") {
   }
 
   pw_python_action(target_name) {
+    forward_variables_from(invoker, [ "public_deps" ])
     deps = _deps + [ ":${_outer_name}._wheel_paths" ]
     module = "pw_build.collect_wheels"
 
@@ -91,10 +92,7 @@ template("pw_python_wheels") {
 template("pw_python_zip_with_setup") {
   _outer_name = target_name
   _zip_path = "${target_out_dir}/${target_name}.zip"
-  _deps = []
-  if (defined(invoker.deps)) {
-    _deps = invoker.deps
-  }
+
   _inputs = []
   if (defined(invoker.inputs)) {
     _inputs = invoker.inputs
@@ -106,10 +104,15 @@ template("pw_python_zip_with_setup") {
 
   pw_python_wheels("${target_name}.wheels") {
     packages = invoker.packages
-    deps = _deps
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
   }
 
   pw_zip("${target_name}") {
+    forward_variables_from(invoker, [ "public_deps" ])
     inputs = _inputs + [
                "$dir_pw_build/python_dist/setup.bat > /${target_name}/",
                "$dir_pw_build/python_dist/setup.sh > /${target_name}/",

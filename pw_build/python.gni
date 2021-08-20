@@ -420,6 +420,9 @@ template("pw_python_package") {
       pw_python_action("$target_name._run_pip_install") {
         module = "pip"
         public_deps = []
+        if (defined(invoker.public_deps)) {
+          public_deps += invoker.public_deps
+        }
 
         args = [ "install" ]
 

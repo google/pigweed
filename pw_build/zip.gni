@@ -90,7 +90,11 @@ import("$dir_pw_build/python_action.gni")
 template("pw_zip") {
   _delimiter = ">"
   pw_python_action(target_name) {
-    forward_variables_from(invoker, [ "deps" ])
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
     script = "$dir_pw_build/py/pw_build/zip.py"
 
     args = [ "--out_filename" ]
