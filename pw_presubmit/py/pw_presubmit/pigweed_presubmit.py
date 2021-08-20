@@ -81,16 +81,8 @@ def gn_host_build(ctx: PresubmitContext):
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_quick_build_check(ctx: PresubmitContext):
+    """Checks the state of the GN build by running gn gen and gn check."""
     build.gn_gen(ctx.root, ctx.output_dir)
-
-    # TODO(pwbug/255): Switch to optimized GCC builds when this is fixed.
-    # See comment in _at_all_optimization_levels() above for details.
-    optimization_level = 'size_optimized'
-    if _HOST_COMPILER == 'gcc':
-        optimization_level = 'debug'
-
-    build.ninja(ctx.output_dir, f'host_{_HOST_COMPILER}_{optimization_level}',
-                'stm32f429i_size_optimized', 'python.tests', 'python.lint')
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
@@ -834,7 +826,6 @@ QUICK = (
     # the clang issues. The problem is that all clang++ invocations need the
     # two extra flags: "-nostdc++" and "${clang_prefix}/../lib/libc++.a".
     cmake_tests if sys.platform != 'darwin' else (),
-    bazel_test if sys.platform == 'linux' else (),
 )
 
 FULL = (
