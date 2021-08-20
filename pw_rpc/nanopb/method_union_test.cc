@@ -17,8 +17,8 @@
 #include <array>
 
 #include "gtest/gtest.h"
+#include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
-#include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
 namespace pw::rpc::internal {
@@ -56,7 +56,7 @@ class FakeGeneratedService : public Service {
 };
 
 pw_rpc_test_TestRequest last_request;
-ServerWriter<pw_rpc_test_TestResponse> last_writer;
+NanopbServerWriter<pw_rpc_test_TestResponse> last_writer;
 RawServerWriter last_raw_writer;
 
 class FakeGeneratedServiceImpl
@@ -82,7 +82,7 @@ class FakeGeneratedServiceImpl
 
   void StartStream(ServerContext&,
                    const pw_rpc_test_TestRequest& request,
-                   ServerWriter<pw_rpc_test_TestResponse>& writer) {
+                   NanopbServerWriter<pw_rpc_test_TestResponse>& writer) {
     last_request = request;
     last_writer = std::move(writer);
   }

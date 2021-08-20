@@ -23,8 +23,8 @@
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/test_method_context.h"
+#include "pw_rpc/nanopb/fake_channel_output.h"
 #include "pw_rpc/nanopb/internal/method.h"
-#include "pw_rpc_private/fake_channel_output.h"
 
 namespace pw::rpc {
 
@@ -71,11 +71,11 @@ namespace pw::rpc {
 //   PW_NANOPB_TEST_METHOD_CONTEXT(MyService, BestMethod, 3, 256) context;
 //   ASSERT_EQ(3u, context.responses().max_size());
 //
-#define PW_NANOPB_TEST_METHOD_CONTEXT(service, method, ...)              \
-  ::pw::rpc::NanopbTestMethodContext<service,                            \
-                                     &service::method,                   \
-                                     ::pw::rpc::internal::Hash(#method), \
-                                     ##__VA_ARGS__>
+#define PW_NANOPB_TEST_METHOD_CONTEXT(service, method, ...)                \
+  ::pw::rpc::NanopbTestMethodContext<service,                              \
+                                     &service::method,                     \
+                                     ::pw::rpc::CalculateMethodId(#method) \
+                                         PW_COMMA_ARGS(__VA_ARGS__)>
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
@@ -86,42 +86,13 @@ class NanopbTestMethodContext;
 // Internal classes that implement NanopbTestMethodContext.
 namespace internal::test::nanopb {
 
-// A ChannelOutput implementation that stores the outgoing payloads and status.
-template <typename Response, size_t kMaxResponses, size_t kOutputSize>
-class MessageOutput final : public FakeChannelOutput {
- public:
-  MessageOutput(const internal::NanopbMethod& kMethod, bool server_streaming)
-      : FakeChannelOutput(packet_buffer_, server_streaming), method_(kMethod) {}
-
-  const Vector<Response>& responses() const { return responses_; }
-
-  Response& AllocateResponse() {
-    // If we run out of space, the back message is always the most recent.
-    responses_.emplace_back();
-    responses_.back() = {};
-    return responses_.back();
-  }
-
- private:
-  void AppendResponse(ConstByteSpan response) override {
-    Response& response_struct = AllocateResponse();
-    PW_ASSERT(method_.serde().DecodeResponse(response, &response_struct));
-  }
-
-  void ClearResponses() override { responses_.clear(); }
-
-  const internal::NanopbMethod& method_;
-  Vector<Response, kMaxResponses> responses_;
-  std::array<std::byte, kOutputSize> packet_buffer_;
-};
-
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
           size_t kMaxResponses,
           size_t kOutputSize>
-struct NanopbInvocationContext : public InvocationContext<Service, kMethodId> {
+class NanopbInvocationContext : public InvocationContext<Service, kMethodId> {
  public:
   using Request = internal::Request<kMethod>;
   using Response = internal::Response<kMethod>;
@@ -141,18 +112,31 @@ struct NanopbInvocationContext : public InvocationContext<Service, kMethodId> {
   template <typename... Args>
   NanopbInvocationContext(Args&&... args)
       : InvocationContext<Service, kMethodId>(
-            MethodLookup::GetNanopbMethod<Service, kMethodId>(),
-            output_,
-            std::forward<Args>(args)...),
-        output_(MethodLookup::GetNanopbMethod<Service, kMethodId>(),
-                MethodTraits<decltype(kMethod)>::kServerStreaming) {}
+            kMethodInfo, output_, std::forward<Args>(args)...),
+        output_(
+            decltype(output_)::template Create<kMethod, kMethodId, Service>()) {
+  }
 
-  MessageOutput<Response, kMaxResponses, kOutputSize>& output() {
+  NanopbFakeChannelOutput<Response, kMaxResponses, kOutputSize>& output() {
     return output_;
   }
 
+  void SendClientStream(const Request& request) {
+    // Borrow a buffer from the ChannelOutput for sending the request.
+    ChannelOutput& channel_output = static_cast<rpc::ChannelOutput&>(output());
+    std::span buffer = channel_output.AcquireBuffer();
+
+    InvocationContext<Service, kMethodId>::SendClientStream(buffer.first(
+        kMethodInfo.serde().EncodeRequest(&request, buffer).size()));
+
+    channel_output.DiscardBuffer(buffer);
+  }
+
  private:
-  MessageOutput<Response, kMaxResponses, kOutputSize> output_;
+  static constexpr NanopbMethod kMethodInfo =
+      MethodLookup::GetNanopbMethod<Service, kMethodId>();
+
+  NanopbFakeChannelOutput<Response, kMaxResponses, kOutputSize> output_;
 };
 
 // Method invocation context for a unary RPC. Returns the status in
@@ -212,18 +196,99 @@ class ServerStreamingContext : public NanopbInvocationContext<Service,
 
   // Invokes the RPC with the provided request.
   void call(const Request& request) {
-    Base::output().clear();
-    NanopbServerWriter<Response> writer(Base::server_call());
-    return CallMethodImplFunction<kMethod>(
-        Base::server_call(), request, writer);
+    Base::template call<kMethod, NanopbServerWriter<Response>>(request);
   }
 
   // Returns a server writer which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
   NanopbServerWriter<Response> writer() {
-    Base::output().clear();
-    return NanopbServerWriter<Response>(Base::server_call());
+    return Base::template GetResponder<NanopbServerWriter<Response>>();
   }
+};
+
+// Method invocation context for a client streaming RPC.
+template <typename Service,
+          auto kMethod,
+          uint32_t kMethodId,
+          size_t kMaxResponses,
+          size_t kOutputSize>
+class ClientStreamingContext : public NanopbInvocationContext<Service,
+                                                              kMethod,
+                                                              kMethodId,
+                                                              kMaxResponses,
+                                                              kOutputSize> {
+ private:
+  using Base = NanopbInvocationContext<Service,
+                                       kMethod,
+                                       kMethodId,
+                                       kMaxResponses,
+                                       kOutputSize>;
+
+ public:
+  using Request = typename Base::Request;
+  using Response = typename Base::Response;
+
+  template <typename... Args>
+  ClientStreamingContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
+
+  // Invokes the RPC.
+  void call() {
+    Base::template call<kMethod, NanopbServerReader<Request, Response>>();
+  }
+
+  // Returns a server reader which writes responses into the context's buffer.
+  // This should not be called alongside call(); use one or the other.
+  NanopbServerReader<Request, Response> reader() {
+    return Base::template GetResponder<NanopbServerReader<Request, Response>>();
+  }
+
+  // Allow sending client streaming packets.
+  using Base::SendClientStream;
+  using Base::SendClientStreamEnd;
+};
+
+// Method invocation context for a bidirectional streaming RPC.
+template <typename Service,
+          auto kMethod,
+          uint32_t kMethodId,
+          size_t kMaxResponses,
+          size_t kOutputSize>
+class BidirectionalStreamingContext
+    : public NanopbInvocationContext<Service,
+                                     kMethod,
+                                     kMethodId,
+                                     kMaxResponses,
+                                     kOutputSize> {
+ private:
+  using Base = NanopbInvocationContext<Service,
+                                       kMethod,
+                                       kMethodId,
+                                       kMaxResponses,
+                                       kOutputSize>;
+
+ public:
+  using Request = typename Base::Request;
+  using Response = typename Base::Response;
+
+  template <typename... Args>
+  BidirectionalStreamingContext(Args&&... args)
+      : Base(std::forward<Args>(args)...) {}
+
+  // Invokes the RPC.
+  void call() {
+    Base::template call<kMethod, NanopbServerReaderWriter<Request, Response>>();
+  }
+
+  // Returns a server reader which writes responses into the context's buffer.
+  // This should not be called alongside call(); use one or the other.
+  NanopbServerReader<Request, Response> reader() {
+    return Base::template GetResponder<
+        NanopbServerReaderWriter<Request, Response>>();
+  }
+
+  // Allow sending client streaming packets.
+  using Base::SendClientStream;
+  using Base::SendClientStreamEnd;
 };
 
 // Alias to select the type of the context object to use based on which type of
@@ -240,9 +305,17 @@ using Context = std::tuple_element_t<
                                       kMethod,
                                       kMethodId,
                                       kMaxResponses,
-                                      kOutputSize>
-               // TODO(hepler): Support client and bidi streaming
-               >>;
+                                      kOutputSize>,
+               ClientStreamingContext<Service,
+                                      kMethod,
+                                      kMethodId,
+                                      kMaxResponses,
+                                      kOutputSize>,
+               BidirectionalStreamingContext<Service,
+                                             kMethod,
+                                             kMethodId,
+                                             kMaxResponses,
+                                             kOutputSize>>>;
 
 }  // namespace internal::test::nanopb
 

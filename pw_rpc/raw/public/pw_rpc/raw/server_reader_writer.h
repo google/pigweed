@@ -18,7 +18,10 @@
 #pragma once
 
 #include "pw_bytes/span.h"
+#include "pw_rpc/channel.h"
+#include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/responder.h"
+#include "pw_rpc/server.h"
 
 namespace pw::rpc {
 namespace internal {
@@ -26,16 +29,12 @@ namespace internal {
 // Forward declarations for internal classes needed in friend statements.
 class RawMethod;
 
-namespace test::raw {
+namespace test {
 
-template <typename, auto, uint32_t, size_t, size_t>
-class ServerStreamingContext;
-template <typename, auto, uint32_t, size_t, size_t>
-class ClientStreamingContext;
-template <typename, auto, uint32_t, size_t, size_t>
-class BidirectionalStreamingContext;
+template <typename, uint32_t>
+class InvocationContext;
 
-}  // namespace test::raw
+}  // namespace test
 }  // namespace internal
 
 class RawServerReader;
@@ -45,7 +44,8 @@ class RawServerWriter;
 // bidirectional streaming RPC.
 class RawServerReaderWriter : private internal::Responder {
  public:
-  constexpr RawServerReaderWriter() : RawServerReaderWriter(kHasClientStream) {}
+  constexpr RawServerReaderWriter()
+      : RawServerReaderWriter(MethodType::kBidirectionalStreaming) {}
 
   RawServerReaderWriter(RawServerReaderWriter&&) = default;
   RawServerReaderWriter& operator=(RawServerReaderWriter&&) = default;
@@ -63,10 +63,7 @@ class RawServerReaderWriter : private internal::Responder {
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
 
   // Releases a buffer acquired from PayloadBuffer() without sending any data.
-  void ReleaseBuffer() {
-    ReleasePayloadBuffer()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  }
+  void ReleaseBuffer() { ReleasePayloadBuffer(); }
 
   // Sends a response packet with the given raw payload. The payload can either
   // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary
@@ -78,31 +75,29 @@ class RawServerReaderWriter : private internal::Responder {
   }
 
  protected:
-  using internal::Responder::HasClientStream;
-  using internal::Responder::kHasClientStream;
-  using internal::Responder::kNoClientStream;
+  // Constructor for derived classes to use.
+  constexpr RawServerReaderWriter(MethodType type)
+      : internal::Responder(type) {}
 
-  RawServerReaderWriter(internal::ServerCall& call,
-                        HasClientStream has_client_stream = kHasClientStream)
-      : internal::Responder(call, has_client_stream) {}
-
-  constexpr RawServerReaderWriter(HasClientStream has_client_stream)
-      : internal::Responder(has_client_stream) {}
+  RawServerReaderWriter(const internal::ServerCall& call,
+                        MethodType type = MethodType::kBidirectionalStreaming)
+      : internal::Responder(call, type) {}
 
   using internal::Responder::CloseAndSendResponse;
 
  private:
   friend class internal::RawMethod;
 
-  template <typename, auto, uint32_t, size_t, size_t>
-  friend class internal::test::raw::BidirectionalStreamingContext;
+  template <typename, uint32_t>
+  friend class internal::test::InvocationContext;
 };
 
 // The RawServerReader is used to receive messages and send a response in a
 // raw client streaming RPC.
 class RawServerReader : private RawServerReaderWriter {
  public:
-  constexpr RawServerReader() : RawServerReaderWriter(kHasClientStream) {}
+  constexpr RawServerReader()
+      : RawServerReaderWriter(MethodType::kClientStreaming) {}
 
   RawServerReader(RawServerReader&&) = default;
   RawServerReader& operator=(RawServerReader&&) = default;
@@ -124,19 +119,18 @@ class RawServerReader : private RawServerReaderWriter {
  private:
   friend class internal::RawMethod;  // Needed for conversions from ReaderWriter
 
-  template <typename, auto, uint32_t, size_t, size_t>
-  friend class internal::test::raw::ClientStreamingContext;
+  template <typename, uint32_t>
+  friend class internal::test::InvocationContext;
 
-  using RawServerReaderWriter::HasClientStream;
-
-  RawServerReader(internal::ServerCall& call)
-      : RawServerReaderWriter(call, kHasClientStream) {}
+  RawServerReader(const internal::ServerCall& call)
+      : RawServerReaderWriter(call, MethodType::kClientStreaming) {}
 };
 
 // The RawServerWriter is used to send responses in a raw server streaming RPC.
 class RawServerWriter : private RawServerReaderWriter {
  public:
-  constexpr RawServerWriter() : RawServerReaderWriter(kNoClientStream) {}
+  constexpr RawServerWriter()
+      : RawServerReaderWriter(MethodType::kServerStreaming) {}
 
   RawServerWriter(RawServerWriter&&) = default;
   RawServerWriter& operator=(RawServerWriter&&) = default;
@@ -155,15 +149,13 @@ class RawServerWriter : private RawServerReaderWriter {
  private:
   friend class RawServerReaderWriter;  // Needed for conversions.
 
-  template <typename, auto, uint32_t, size_t, size_t>
-  friend class internal::test::raw::ServerStreamingContext;
+  template <typename, uint32_t>
+  friend class internal::test::InvocationContext;
 
   friend class internal::RawMethod;
 
-  using RawServerReaderWriter::HasClientStream;
-
-  RawServerWriter(internal::ServerCall& call)
-      : RawServerReaderWriter(call, kNoClientStream) {}
+  RawServerWriter(const internal::ServerCall& call)
+      : RawServerReaderWriter(call, MethodType::kServerStreaming) {}
 };
 
 }  // namespace pw::rpc

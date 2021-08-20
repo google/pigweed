@@ -27,7 +27,8 @@ namespace {
 
 class MetricWriter {
  public:
-  MetricWriter(rpc::ServerWriter<pw_metric_MetricResponse>& response_writer)
+  MetricWriter(
+      MetricService::ServerWriter<pw_metric_MetricResponse>& response_writer)
       : response_(pw_metric_MetricResponse_init_zero),
         response_writer_(response_writer) {}
 
@@ -78,7 +79,7 @@ class MetricWriter {
  private:
   pw_metric_MetricResponse response_;
   // This RPC stream writer handle must be valid for the metric writer lifetime.
-  rpc::ServerWriter<pw_metric_MetricResponse>& response_writer_;
+  MetricService::ServerWriter<pw_metric_MetricResponse>& response_writer_;
 };
 
 // Walk a metric tree recursively; passing metrics with their path (names) to a

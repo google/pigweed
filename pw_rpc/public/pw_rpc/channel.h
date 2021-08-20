@@ -53,8 +53,7 @@ class ChannelOutput {
   virtual Status SendAndReleaseBuffer(std::span<const std::byte> buffer) = 0;
 
   void DiscardBuffer(std::span<const std::byte> buffer) {
-    SendAndReleaseBuffer(buffer.first(0))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    SendAndReleaseBuffer(buffer.first(0)).IgnoreError();
   }
 
  private:

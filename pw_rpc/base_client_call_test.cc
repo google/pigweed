@@ -15,7 +15,7 @@
 #include "pw_rpc/internal/base_client_call.h"
 
 #include "gtest/gtest.h"
-#include "pw_rpc_private/internal_test_utils.h"
+#include "pw_rpc/internal/test_utils.h"
 
 namespace pw::rpc::internal {
 namespace {
@@ -97,8 +97,7 @@ TEST(BaseClientCall, SendsPacketWithPayload) {
                       [](BaseClientCall&, const Packet&) {});
 
   constexpr std::byte payload[]{std::byte{0x08}, std::byte{0x39}};
-  call.SendPacket(payload)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  call.SendPacket(payload).IgnoreError();
 
   EXPECT_EQ(context.output().packet_count(), 1u);
   Packet packet = context.output().sent_packet();

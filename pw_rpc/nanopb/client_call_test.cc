@@ -15,12 +15,14 @@
 #include "pw_rpc/nanopb/client_call.h"
 
 #include "gtest/gtest.h"
+#include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
-#include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
 namespace pw::rpc {
 namespace {
+
+using internal::ClientContextForTest;
 
 constexpr uint32_t kServiceId = 16;
 constexpr uint32_t kUnaryMethodId = 111;

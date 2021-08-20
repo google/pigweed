@@ -22,9 +22,9 @@
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/test_method.h"
+#include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/fake_server_reader_writer.h"
-#include "pw_rpc_private/internal_test_utils.h"
 
 namespace pw::rpc {
 namespace {
@@ -97,7 +97,7 @@ class BasicServer : public ::testing::Test {
         type, 1, 42, 100, std::as_bytes(std::span(payload)), status);
   }
 
-  TestOutput<128> output_;
+  internal::TestOutput<128> output_;
   std::array<Channel, 3> channels_;
   Server server_;
   TestService service_;
@@ -197,7 +197,7 @@ TEST_F(BasicServer, ProcessPacket_InvalidService_SendsError) {
 }
 
 TEST_F(BasicServer, ProcessPacket_UnassignedChannel_AssignsToAvailableSlot) {
-  TestOutput<128> unassigned_output;
+  internal::TestOutput<128> unassigned_output;
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::REQUEST, /*channel_id=*/99, 42, 100),

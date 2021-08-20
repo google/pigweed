@@ -24,19 +24,18 @@ Status RawServerReaderWriter::Write(ConstByteSpan response) {
   }
 
   if (buffer().Contains(response)) {
-    return ReleasePayloadBuffer(response);
+    return SendPayloadBufferClientStream(response);
   }
 
   std::span<std::byte> buffer = AcquirePayloadBuffer();
 
   if (response.size() > buffer.size()) {
-    ReleasePayloadBuffer()
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    ReleasePayloadBuffer();
     return Status::OutOfRange();
   }
 
   std::memcpy(buffer.data(), response.data(), response.size());
-  return ReleasePayloadBuffer(buffer.first(response.size()));
+  return SendPayloadBufferClientStream(buffer.first(response.size()));
 }
 
 }  // namespace pw::rpc

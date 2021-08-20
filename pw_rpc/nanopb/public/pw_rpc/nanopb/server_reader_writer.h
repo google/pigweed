@@ -18,7 +18,9 @@
 #pragma once
 
 #include "pw_bytes/span.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/responder.h"
+#include "pw_rpc/server.h"
 
 namespace pw::rpc {
 namespace internal {
@@ -26,28 +28,35 @@ namespace internal {
 // Forward declarations for internal classes needed in friend statements.
 class NanopbMethod;
 
-namespace test::nanopb {
+namespace test {
 
-template <typename, auto, uint32_t, size_t, size_t>
-class ServerStreamingContext;
+template <typename, uint32_t>
+class InvocationContext;
 
-}  // namespace test::nanopb
+}  // namespace test
 
 // Non-templated base so the methods are instantiated only once.
 class GenericNanopbResponder : public internal::Responder {
  public:
-  using internal::Responder::kNoClientStream;
+  constexpr GenericNanopbResponder(MethodType type)
+      : internal::Responder(type) {}
 
-  constexpr GenericNanopbResponder(HasClientStream has_client_stream)
-      : internal::Responder(has_client_stream) {}
-
-  GenericNanopbResponder(ServerCall& call, HasClientStream has_client_stream)
-      : internal::Responder(call, has_client_stream) {}
+  GenericNanopbResponder(const ServerCall& call, MethodType type)
+      : internal::Responder(call, type) {}
 
  protected:
-  Status WriteResponse(const void* response);
+  Status SendClientStream(const void* response) {
+    return SendClientStreamOrResponse(response, nullptr);
+  }
 
-  void DecodeRequest(ConstByteSpan payload, void* response_struct) const;
+  Status SendResponse(const void* response, Status status) {
+    return SendClientStreamOrResponse(response, &status);
+  }
+
+  void DecodeRequest(ConstByteSpan payload, void* request_struct) const;
+
+ private:
+  Status SendClientStreamOrResponse(const void* response, Status* status);
 };
 
 // The BaseNanopbServerReader serves as the base for the ServerReader and
@@ -56,12 +65,12 @@ class GenericNanopbResponder : public internal::Responder {
 template <typename Request>
 class BaseNanopbServerReader : public GenericNanopbResponder {
  public:
-  BaseNanopbServerReader(internal::ServerCall& call)
-      : GenericNanopbResponder(call, kHasClientStream) {}
+  BaseNanopbServerReader(const internal::ServerCall& call, MethodType type)
+      : GenericNanopbResponder(call, type) {}
 
  protected:
-  constexpr BaseNanopbServerReader()
-      : GenericNanopbResponder(kHasClientStream) {}
+  constexpr BaseNanopbServerReader(MethodType type)
+      : GenericNanopbResponder(type) {}
 
   void set_on_next(Function<void(const Request& request)> on_next) {
     nanopb_on_next_ = std::move(on_next);
@@ -79,19 +88,15 @@ class BaseNanopbServerReader : public GenericNanopbResponder {
 
 }  // namespace internal
 
-template <typename Request, typename Response>
-class NanopbServerReader;
-template <typename Response>
-class NanopbServerWriter;
-
 // The NanopbServerReaderWriter is used to send and receive messages in a Nanopb
 // bidirectional streaming RPC.
 template <typename Request, typename Response>
 class NanopbServerReaderWriter
-    : private internal::BaseNanopbServerReader<Response> {
+    : private internal::BaseNanopbServerReader<Request> {
  public:
   constexpr NanopbServerReaderWriter()
-      : internal::BaseNanopbServerReader<Response>() {}
+      : internal::BaseNanopbServerReader<Request>(
+            MethodType::kBidirectionalStreaming) {}
 
   NanopbServerReaderWriter(NanopbServerReaderWriter&&) = default;
   NanopbServerReaderWriter& operator=(NanopbServerReaderWriter&&) = default;
@@ -108,32 +113,40 @@ class NanopbServerReaderWriter
   //   other errors - the ChannelOutput failed to send the packet; the error
   //       codes are determined by the ChannelOutput implementation
   //
-  Status Write(const Response& response) { return WriteResponse(&response); }
+  Status Write(const Response& response) {
+    return internal::GenericNanopbResponder::SendClientStream(&response);
+  }
 
   Status Finish(Status status = OkStatus()) {
     return internal::Responder::CloseAndSendResponse(status);
   }
 
   // Functions for setting RPC event callbacks.
-  using internal::BaseNanopbServerReader<Response>::set_on_client_stream_end;
-  using internal::BaseNanopbServerReader<Response>::set_on_error;
-  using internal::BaseNanopbServerReader<Response>::set_on_next;
+  using internal::BaseNanopbServerReader<Request>::set_on_client_stream_end;
+  using internal::BaseNanopbServerReader<Request>::set_on_error;
+  using internal::BaseNanopbServerReader<Request>::set_on_next;
 
  private:
   friend class internal::NanopbMethod;
 
-  NanopbServerReaderWriter(internal::ServerCall& call)
-      : internal::BaseNanopbServerReader<Response>(call) {}
+  template <typename, uint32_t>
+  friend class internal::test::InvocationContext;
+
+  NanopbServerReaderWriter(const internal::ServerCall& call)
+      : internal::BaseNanopbServerReader<Request>(
+            call, MethodType::kBidirectionalStreaming) {}
 };
 
 // The NanopbServerReader is used to receive messages and send a response in a
 // Nanopb client streaming RPC.
 template <typename Request, typename Response>
-class NanopbServerReader : private NanopbServerReaderWriter<Request, Response> {
+class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
  public:
   // Allow default construction so that users can declare a variable into which
   // to move NanopbServerReaders from RPC calls.
-  constexpr NanopbServerReader() = default;
+  constexpr NanopbServerReader()
+      : internal::BaseNanopbServerReader<Request>(
+            MethodType::kClientStreaming) {}
 
   NanopbServerReader(NanopbServerReader&&) = default;
   NanopbServerReader& operator=(NanopbServerReader&&) = default;
@@ -141,14 +154,24 @@ class NanopbServerReader : private NanopbServerReaderWriter<Request, Response> {
   using internal::GenericNanopbResponder::channel_id;
 
   // Functions for setting RPC event callbacks.
-  using NanopbServerReaderWriter<Request, Response>::set_on_client_stream_end;
-  using NanopbServerReaderWriter<Request, Response>::set_on_error;
-  using NanopbServerReaderWriter<Request, Response>::set_on_next;
+  using internal::BaseNanopbServerReader<Request>::set_on_client_stream_end;
+  using internal::BaseNanopbServerReader<Request>::set_on_error;
+  using internal::BaseNanopbServerReader<Request>::set_on_next;
 
-  // TODO(hepler): Implement NanopbServerReader::Finish.
+  Status Finish(const Response& response, Status status = OkStatus()) {
+    return internal::BaseNanopbServerReader<Request>::SendResponse(&response,
+                                                                   status);
+  }
 
  private:
   friend class internal::NanopbMethod;
+
+  template <typename, uint32_t>
+  friend class internal::test::InvocationContext;
+
+  NanopbServerReader(const internal::ServerCall& call)
+      : internal::BaseNanopbServerReader<Request>(
+            call, MethodType::kClientStreaming) {}
 };
 
 // The NanopbServerWriter is used to send responses in a Nanopb server streaming
@@ -159,7 +182,7 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   // Allow default construction so that users can declare a variable into which
   // to move ServerWriters from RPC calls.
   constexpr NanopbServerWriter()
-      : internal::GenericNanopbResponder(kNoClientStream) {}
+      : internal::GenericNanopbResponder(MethodType::kServerStreaming) {}
 
   NanopbServerWriter(NanopbServerWriter&&) = default;
   NanopbServerWriter& operator=(NanopbServerWriter&&) = default;
@@ -176,20 +199,22 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   //   other errors - the ChannelOutput failed to send the packet; the error
   //       codes are determined by the ChannelOutput implementation
   //
-  Status Write(const Response& response) { return WriteResponse(&response); }
+  Status Write(const Response& response) {
+    return internal::GenericNanopbResponder::SendClientStream(&response);
+  }
 
   Status Finish(Status status = OkStatus()) {
-    return CloseAndSendResponse(status);
+    return internal::Responder::CloseAndSendResponse(status);
   }
 
  private:
   friend class internal::NanopbMethod;
 
-  template <typename, auto, uint32_t, size_t, size_t>
-  friend class internal::test::nanopb::ServerStreamingContext;
+  template <typename, uint32_t>
+  friend class internal::test::InvocationContext;
 
-  NanopbServerWriter(internal::ServerCall& call)
-      : internal::GenericNanopbResponder(call, kNoClientStream) {}
+  NanopbServerWriter(const internal::ServerCall& call)
+      : internal::GenericNanopbResponder(call, MethodType::kServerStreaming) {}
 };
 
 // TODO(hepler): "pw::rpc::ServerWriter" should not be specific to Nanopb.

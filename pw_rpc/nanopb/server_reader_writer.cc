@@ -18,7 +18,8 @@
 
 namespace pw::rpc::internal {
 
-Status GenericNanopbResponder::WriteResponse(const void* response) {
+Status GenericNanopbResponder::SendClientStreamOrResponse(const void* response,
+                                                          Status* status) {
   if (!open()) {
     return Status::FailedPrecondition();
   }
@@ -27,19 +28,21 @@ Status GenericNanopbResponder::WriteResponse(const void* response) {
 
   // Cast the method to a NanopbMethod. Access the Nanopb
   // serializer/deserializer object and encode the response with it.
-  if (auto result = static_cast<const internal::NanopbMethod&>(method())
-                        .serde()
-                        .EncodeResponse(response, buffer);
-      result.ok()) {
-    return ReleasePayloadBuffer(buffer.first(result.size()));
+  auto result = static_cast<const internal::NanopbMethod&>(method())
+                    .serde()
+                    .EncodeResponse(response, buffer);
+  if (!result.ok()) {
+    ReleasePayloadBuffer();
+
+    // If the Nanopb encode failed, the channel output may not have provided a
+    // large enough buffer or something went wrong in Nanopb. Return INTERNAL to
+    // indicate that the problem is internal to the server.
+    return Status::Internal();
   }
-
-  ReleasePayloadBuffer();
-
-  // If the Nanopb encode failed, the channel output may not have provided a
-  // large enough buffer or something went wrong in Nanopb. Return INTERNAL to
-  // indicate that the problem is internal to the server.
-  return Status::Internal();
+  if (status != nullptr) {
+    return CloseAndSendResponse(buffer.first(result.size()), *status);
+  }
+  return SendPayloadBufferClientStream(buffer.first(result.size()));
 }
 
 void GenericNanopbResponder::DecodeRequest(ConstByteSpan payload,

@@ -19,6 +19,7 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_union.h"
 
@@ -65,5 +66,11 @@ class Service : public IntrusiveList<Service>::Item {
   const uint16_t method_size_;
   const uint16_t method_count_;
 };
+
+// Calculates the method ID of the method with the given name. Services track
+// methods by this ID.
+constexpr uint32_t CalculateMethodId(std::string_view method_name) {
+  return internal::Hash(method_name);
+}
 
 }  // namespace pw::rpc

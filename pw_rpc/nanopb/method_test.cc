@@ -17,12 +17,12 @@
 #include <array>
 
 #include "gtest/gtest.h"
+#include "pw_rpc/internal/method_impl_tester.h"
+#include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/nanopb/internal/method_union.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
-#include "pw_rpc_private/internal_test_utils.h"
-#include "pw_rpc_private/method_impl_tester.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
 namespace pw::rpc::internal {
@@ -121,7 +121,11 @@ static_assert(MethodImplTests<NanopbMethod, TestNanopbService>().Pass(
     MatchesTypes<FakePb, FakePb>(), CreationArgs<nullptr, nullptr>()));
 
 pw_rpc_test_TestRequest last_request;
-ServerWriter<pw_rpc_test_TestResponse> last_writer;
+NanopbServerWriter<pw_rpc_test_TestResponse> last_writer;
+NanopbServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestResponse>
+    last_reader;
+NanopbServerReaderWriter<pw_rpc_test_TestRequest, pw_rpc_test_TestResponse>
+    last_reader_writer;
 
 Status AddFive(ServerContext&,
                const pw_rpc_test_TestRequest& request,
@@ -137,33 +141,60 @@ Status DoNothing(ServerContext&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
 
 void StartStream(ServerContext&,
                  const pw_rpc_test_TestRequest& request,
-                 ServerWriter<pw_rpc_test_TestResponse>& writer) {
+                 NanopbServerWriter<pw_rpc_test_TestResponse>& writer) {
   last_request = request;
   last_writer = std::move(writer);
+}
+
+void ClientStream(ServerContext&,
+                  NanopbServerReader<pw_rpc_test_TestRequest,
+                                     pw_rpc_test_TestResponse>& reader) {
+  last_reader = std::move(reader);
+}
+
+void BidirectionalStream(
+    ServerContext&,
+    NanopbServerReaderWriter<pw_rpc_test_TestRequest, pw_rpc_test_TestResponse>&
+        reader_writer) {
+  last_reader_writer = std::move(reader_writer);
 }
 
 class FakeService : public Service {
  public:
   FakeService(uint32_t id) : Service(id, kMethods) {}
 
-  static constexpr std::array<NanopbMethodUnion, 3> kMethods = {
+  static constexpr std::array<NanopbMethodUnion, 5> kMethods = {
       NanopbMethod::Unary<DoNothing>(
           10u, pw_rpc_test_Empty_fields, pw_rpc_test_Empty_fields),
       NanopbMethod::Unary<AddFive>(
           11u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
       NanopbMethod::ServerStreaming<StartStream>(
           12u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
-  };
+      NanopbMethod::ClientStreaming<ClientStream>(
+          13u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
+      NanopbMethod::BidirectionalStreaming<BidirectionalStream>(
+          14u,
+          pw_rpc_test_TestRequest_fields,
+          pw_rpc_test_TestResponse_fields)};
 };
+
+constexpr const NanopbMethod& kDoNothing =
+    std::get<0>(FakeService::kMethods).nanopb_method();
+constexpr const NanopbMethod& kAddFive =
+    std::get<1>(FakeService::kMethods).nanopb_method();
+constexpr const NanopbMethod& kStartStream =
+    std::get<2>(FakeService::kMethods).nanopb_method();
+constexpr const NanopbMethod& kClientStream =
+    std::get<3>(FakeService::kMethods).nanopb_method();
+constexpr const NanopbMethod& kBidirectionalStream =
+    std::get<4>(FakeService::kMethods).nanopb_method();
 
 TEST(NanopbMethod, UnaryRpc_SendsResponse) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = 123, .status_code = 0);
 
-  const NanopbMethod& method =
-      std::get<1>(FakeService::kMethods).nanopb_method();
-  ServerContextForTest<FakeService> context(method);
-  method.Invoke(context.get(), context.request(request));
+  ServerContextForTest<FakeService> context(kAddFive);
+  kAddFive.Invoke(context.get(), context.request(request));
 
   const Packet& response = context.output().sent_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
@@ -182,16 +213,14 @@ TEST(NanopbMethod, UnaryRpc_SendsResponse) {
 TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
   std::array<byte, 8> bad_payload{byte{0xFF}, byte{0xAA}, byte{0xDD}};
 
-  const NanopbMethod& method =
-      std::get<0>(FakeService::kMethods).nanopb_method();
-  ServerContextForTest<FakeService> context(method);
-  method.Invoke(context.get(), context.request(bad_payload));
+  ServerContextForTest<FakeService> context(kDoNothing);
+  kDoNothing.Invoke(context.get(), context.request(bad_payload));
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::DataLoss(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
-  EXPECT_EQ(method.id(), packet.method_id());
+  EXPECT_EQ(kDoNothing.id(), packet.method_id());
 }
 
 TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
@@ -199,21 +228,19 @@ TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = value, .status_code = 0);
 
-  const NanopbMethod& method =
-      std::get<1>(FakeService::kMethods).nanopb_method();
   // Output buffer is too small for the response, but can fit an error packet.
-  ServerContextForTest<FakeService, 22> context(method);
+  ServerContextForTest<FakeService, 22> context(kAddFive);
   ASSERT_LT(
       context.output().buffer_size(),
       context.request(request).MinEncodedSizeBytes() + request.size() + 1);
 
-  method.Invoke(context.get(), context.request(request));
+  kAddFive.Invoke(context.get(), context.request(request));
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::Internal(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
-  EXPECT_EQ(method.id(), packet.method_id());
+  EXPECT_EQ(kAddFive.id(), packet.method_id());
 
   EXPECT_EQ(value, last_request.integer);
 }
@@ -222,22 +249,18 @@ TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = 555, .status_code = 0);
 
-  const NanopbMethod& method =
-      std::get<2>(FakeService::kMethods).nanopb_method();
-  ServerContextForTest<FakeService> context(method);
+  ServerContextForTest<FakeService> context(kStartStream);
 
-  method.Invoke(context.get(), context.request(request));
+  kStartStream.Invoke(context.get(), context.request(request));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(555, last_request.integer);
 }
 
 TEST(NanopbMethod, ServerWriter_SendsResponse) {
-  const NanopbMethod& method =
-      std::get<2>(FakeService::kMethods).nanopb_method();
-  ServerContextForTest<FakeService> context(method);
+  ServerContextForTest<FakeService> context(kStartStream);
 
-  method.Invoke(context.get(), context.request({}));
+  kStartStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Write({.value = 100}));
 
@@ -254,23 +277,20 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
 }
 
 TEST(NanopbMethod, ServerWriter_WriteWhenClosed_ReturnsFailedPrecondition) {
-  const NanopbMethod& method =
-      std::get<2>(FakeService::kMethods).nanopb_method();
-  ServerContextForTest<FakeService> context(method);
+  ServerContextForTest<FakeService> context(kStartStream);
 
-  method.Invoke(context.get(), context.request({}));
+  kStartStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Finish());
   EXPECT_TRUE(last_writer.Write({.value = 100}).IsFailedPrecondition());
 }
 
 TEST(NanopbMethod, ServerWriter_WriteAfterMoved_ReturnsFailedPrecondition) {
-  const NanopbMethod& method =
-      std::get<2>(FakeService::kMethods).nanopb_method();
-  ServerContextForTest<FakeService> context(method);
+  ServerContextForTest<FakeService> context(kStartStream);
 
-  method.Invoke(context.get(), context.request({}));
-  ServerWriter<pw_rpc_test_TestResponse> new_writer = std::move(last_writer);
+  kStartStream.Invoke(context.get(), context.request({}));
+  NanopbServerWriter<pw_rpc_test_TestResponse> new_writer =
+      std::move(last_writer);
 
   EXPECT_EQ(OkStatus(), new_writer.Write({.value = 100}));
 
@@ -282,15 +302,12 @@ TEST(NanopbMethod, ServerWriter_WriteAfterMoved_ReturnsFailedPrecondition) {
 
 TEST(NanopbMethod,
      ServerStreamingRpc_ServerWriterBufferTooSmall_InternalError) {
-  const NanopbMethod& method =
-      std::get<2>(FakeService::kMethods).nanopb_method();
-
   constexpr size_t kNoPayloadPacketSize =
       2 /* type */ + 2 /* channel */ + 5 /* service */ + 5 /* method */ +
       0 /* payload (when empty) */ + 0 /* status (when OK)*/;
 
   // Make the buffer barely fit a packet with no payload.
-  ServerContextForTest<FakeService, kNoPayloadPacketSize> context(method);
+  ServerContextForTest<FakeService, kNoPayloadPacketSize> context(kStartStream);
 
   // Verify that the encoded size of a packet with an empty payload is correct.
   std::array<byte, 128> encoded_response = {};
@@ -298,15 +315,76 @@ TEST(NanopbMethod,
   ASSERT_EQ(OkStatus(), encoded.status());
   ASSERT_EQ(kNoPayloadPacketSize, encoded.value().size());
 
-  method.Invoke(context.get(), context.request({}));
+  kStartStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Write({}));  // Barely fits
   EXPECT_EQ(Status::Internal(), last_writer.Write({.value = 1}));  // Too big
 }
 
-// TODO(pwbug/428): Test NanopbServerReader / NanopbServerReaderWriter. In
-//     particular, test that the client stream callback correctly decodes
-//     incoming messages with Nanopb.
+TEST(NanopbMethod, ServerReader_HandlesRequests) {
+  ServerContextForTest<FakeService> context(kClientStream);
+
+  kBidirectionalStream.Invoke(context.get(), context.request({}));
+
+  pw_rpc_test_TestRequest request_struct{};
+  last_reader_writer.set_on_next(
+      [&request_struct](const pw_rpc_test_TestRequest& req) {
+        request_struct = req;
+      });
+
+  PW_ENCODE_PB(
+      pw_rpc_test_TestRequest, request, .integer = 1 << 30, .status_code = 9);
+  std::array<byte, 128> encoded_request = {};
+  auto encoded = context.client_stream(request).Encode(encoded_request);
+  ASSERT_EQ(OkStatus(), encoded.status());
+  ASSERT_EQ(OkStatus(),
+            context.server().ProcessPacket(*encoded, context.output()));
+
+  EXPECT_EQ(request_struct.integer, 1 << 30);
+  EXPECT_EQ(request_struct.status_code, 9u);
+}
+
+TEST(NanopbMethod, ServerReaderWriter_WritesResponses) {
+  ServerContextForTest<FakeService> context(kBidirectionalStream);
+
+  kBidirectionalStream.Invoke(context.get(), context.request({}));
+
+  EXPECT_EQ(OkStatus(), last_reader_writer.Write({.value = 100}));
+
+  PW_ENCODE_PB(pw_rpc_test_TestResponse, payload, .value = 100);
+  std::array<byte, 128> encoded_response = {};
+  auto encoded = context.server_stream(payload).Encode(encoded_response);
+  ASSERT_EQ(OkStatus(), encoded.status());
+
+  ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
+  EXPECT_EQ(0,
+            std::memcmp(encoded.value().data(),
+                        context.output().sent_data().data(),
+                        encoded.value().size()));
+}
+
+TEST(NanopbMethod, ServerReaderWriter_HandlesRequests) {
+  ServerContextForTest<FakeService> context(kBidirectionalStream);
+
+  kBidirectionalStream.Invoke(context.get(), context.request({}));
+
+  pw_rpc_test_TestRequest request_struct{};
+  last_reader_writer.set_on_next(
+      [&request_struct](const pw_rpc_test_TestRequest& req) {
+        request_struct = req;
+      });
+
+  PW_ENCODE_PB(
+      pw_rpc_test_TestRequest, request, .integer = 1 << 30, .status_code = 9);
+  std::array<byte, 128> encoded_request = {};
+  auto encoded = context.client_stream(request).Encode(encoded_request);
+  ASSERT_EQ(OkStatus(), encoded.status());
+  ASSERT_EQ(OkStatus(),
+            context.server().ProcessPacket(*encoded, context.output()));
+
+  EXPECT_EQ(request_struct.integer, 1 << 30);
+  EXPECT_EQ(request_struct.status_code, 9u);
+}
 
 }  // namespace
 }  // namespace pw::rpc::internal

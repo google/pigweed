@@ -20,9 +20,9 @@
 #include "pw_bytes/array.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
-#include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 
 namespace pw::rpc::internal {

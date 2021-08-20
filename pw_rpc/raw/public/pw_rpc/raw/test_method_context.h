@@ -17,14 +17,15 @@
 
 #include "pw_assert/assert.h"
 #include "pw_containers/vector.h"
+#include "pw_preprocessor/arguments.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
 #include "pw_rpc/internal/test_method_context.h"
+#include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/raw/internal/method.h"
-#include "pw_rpc_private/fake_channel_output.h"
 
 namespace pw::rpc {
 
@@ -74,11 +75,11 @@ namespace pw::rpc {
 //   PW_RAW_TEST_METHOD_CONTEXT(MyService, BestMethod, 3, 256) context;
 //   ASSERT_EQ(3u, context.responses().max_size());
 //
-#define PW_RAW_TEST_METHOD_CONTEXT(service, method, ...)              \
-  ::pw::rpc::RawTestMethodContext<service,                            \
-                                  &service::method,                   \
-                                  ::pw::rpc::internal::Hash(#method), \
-                                  ##__VA_ARGS__>
+#define PW_RAW_TEST_METHOD_CONTEXT(service, method, ...)                \
+  ::pw::rpc::RawTestMethodContext<service,                              \
+                                  &service::method,                     \
+                                  ::pw::rpc::CalculateMethodId(#method) \
+                                      PW_COMMA_ARGS(__VA_ARGS__)>
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
@@ -88,47 +89,6 @@ class RawTestMethodContext;
 
 // Internal classes that implement RawTestMethodContext.
 namespace internal::test::raw {
-
-// A ChannelOutput implementation that stores the outgoing payloads and status.
-template <size_t kOutputSize, size_t kMaxResponses>
-class MessageOutput final : public FakeChannelOutput {
- public:
-  MessageOutput(bool server_streaming)
-      : FakeChannelOutput(packet_buffer_, server_streaming) {}
-
-  const Vector<ByteSpan>& responses() const { return responses_; }
-
-  // Allocates a response buffer and returns a reference to the response span
-  // for it.
-  ByteSpan& AllocateResponse() {
-    // If we run out of space, the back message is always the most recent.
-    response_buffers_.emplace_back();
-    response_buffers_.back() = {};
-
-    responses_.emplace_back();
-    responses_.back() = {response_buffers_.back().data(),
-                         response_buffers_.back().size()};
-    return responses_.back();
-  }
-
- private:
-  void AppendResponse(ConstByteSpan response) override {
-    ByteSpan& response_span = AllocateResponse();
-    PW_ASSERT(response.size() <= response_span.size());
-
-    std::memcpy(response_span.data(), response.data(), response.size());
-    response_span = response_span.first(response.size());
-  }
-
-  void ClearResponses() override {
-    responses_.clear();
-    response_buffers_.clear();
-  }
-
-  std::array<std::byte, kOutputSize> packet_buffer_;
-  Vector<ByteSpan, kMaxResponses> responses_;
-  Vector<std::array<std::byte, kOutputSize>, kMaxResponses> response_buffers_;
-};
 
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
@@ -156,12 +116,12 @@ class RawInvocationContext : public InvocationContext<Service, kMethodId> {
             MethodLookup::GetRawMethod<Service, kMethodId>(),
             output_,
             std::forward<Args>(args)...),
-        output_(MethodTraits<decltype(kMethod)>::kServerStreaming) {}
+        output_(MethodTraits<decltype(kMethod)>::kType) {}
 
-  MessageOutput<kOutputSize, kMaxResponses>& output() { return output_; }
+  RawFakeChannelOutput<kOutputSize, kMaxResponses>& output() { return output_; }
 
  private:
-  MessageOutput<kOutputSize, kMaxResponses> output_;
+  RawFakeChannelOutput<kOutputSize, kMaxResponses> output_;
 };
 
 // Method invocation context for a unary RPC. Returns the status in call() and
@@ -213,17 +173,13 @@ class ServerStreamingContext : public RawInvocationContext<Service,
 
   // Invokes the RPC with the provided request.
   void call(ConstByteSpan request) {
-    Base::output().clear();
-    RawServerWriter writer(Base::server_call());
-    return CallMethodImplFunction<kMethod>(
-        Base::server_call(), request, writer);
+    Base::template call<kMethod, RawServerWriter>(request);
   }
 
   // Returns a server writer which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
   RawServerWriter writer() {
-    Base::output().clear();
-    return RawServerWriter(Base::server_call());
+    return Base::template GetResponder<RawServerWriter>();
   }
 };
 
@@ -249,17 +205,12 @@ class ClientStreamingContext : public RawInvocationContext<Service,
   ClientStreamingContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
 
   // Invokes the RPC.
-  void call() {
-    Base::output().clear();
-    RawServerReader reader_writer(Base::server_call());
-    return CallMethodImplFunction<kMethod>(Base::server_call(), reader_writer);
-  }
+  void call() { Base::template call<kMethod, RawServerReader>(); }
 
   // Returns a reader/writer which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
   RawServerReader reader() {
-    Base::output().clear();
-    return RawServerReader(Base::server_call());
+    return Base::template GetResponder<RawServerReader>();
   }
 
   // Allow sending client streaming packets.
@@ -290,17 +241,12 @@ class BidirectionalStreamingContext : public RawInvocationContext<Service,
       : Base(std::forward<Args>(args)...) {}
 
   // Invokes the RPC.
-  void call() {
-    Base::output().clear();
-    RawServerReaderWriter reader_writer(Base::server_call());
-    return CallMethodImplFunction<kMethod>(Base::server_call(), reader_writer);
-  }
+  void call() { Base::template call<kMethod, RawServerReaderWriter>(); }
 
   // Returns a reader/writer which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
   RawServerReaderWriter reader_writer() {
-    Base::output().clear();
-    return RawServerReaderWriter(Base::server_call());
+    return Base::template GetResponder<RawServerReaderWriter>();
   }
 
   // Allow sending client streaming packets.

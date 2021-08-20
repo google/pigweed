@@ -154,12 +154,12 @@ pw_cc_library(
     name = "internal_test_utils",
     srcs = ["fake_channel_output.cc"],
     hdrs = [
+        "public/pw_rpc/internal/fake_channel_output.h",
+        "public/pw_rpc/internal/method_impl_tester.h",
         "public/pw_rpc/internal/test_method.h",
         "public/pw_rpc/internal/test_method_context.h",
-        "pw_rpc_private/fake_channel_output.h",
+        "public/pw_rpc/internal/test_utils.h",
         "pw_rpc_private/fake_server_reader_writer.h",
-        "pw_rpc_private/internal_test_utils.h",
-        "pw_rpc_private/method_impl_tester.h",
     ],
     includes = [
         ".",
@@ -191,6 +191,7 @@ filegroup(
         "nanopb/method_union_test.cc",
         "nanopb/public/pw_rpc/echo_service_nanopb.h",
         "nanopb/public/pw_rpc/nanopb/client_call.h",
+        "nanopb/public/pw_rpc/nanopb/fake_channel_output.h",
         "nanopb/public/pw_rpc/nanopb/internal/common.h",
         "nanopb/public/pw_rpc/nanopb/internal/method.h",
         "nanopb/public/pw_rpc/nanopb/internal/method_union.h",

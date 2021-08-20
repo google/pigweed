@@ -89,13 +89,13 @@ constexpr auto InvalidMethod(uint32_t) {
     static_assert(
         kCheckMethodSignature<decltype(kMethod)>,
         _PW_RPC_FUNCTION_ERROR(
-            "client streaming", "Status", "ServerReader<Request>&, Response"));
+            "client streaming", "void", "ServerReader<Request, Request>&"));
   } else if constexpr (kExpected == MethodType::kBidirectionalStreaming) {
-    static_assert(kCheckMethodSignature<decltype(kMethod)>,
-                  _PW_RPC_FUNCTION_ERROR(
-                      "bidirectional streaming",
-                      "void",
-                      "ServerReader<Request>&, ServerWriter<Response>&"));
+    static_assert(
+        kCheckMethodSignature<decltype(kMethod)>,
+        _PW_RPC_FUNCTION_ERROR("bidirectional streaming",
+                               "void",
+                               "ServerReaderWriter<Request, Response>&"));
   } else {
     static_assert(kCheckMethodSignature<decltype(kMethod)>,
                   "Unsupported MethodType");

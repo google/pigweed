@@ -130,12 +130,6 @@ struct MethodTraits<NanopbBidirectionalStreaming<Req, Resp>(T::*)>
   using Service = T;
 };
 
-template <auto kMethod>
-using Request = typename MethodTraits<decltype(kMethod)>::Request;
-
-template <auto kMethod>
-using Response = typename MethodTraits<decltype(kMethod)>::Response;
-
 // The NanopbMethod class invokes user-defined service methods. When a
 // pw::rpc::Server receives an RPC request packet, it looks up the matching
 // NanopbMethod instance and calls its Invoke method, which eventually calls
@@ -201,7 +195,7 @@ class NanopbMethod : public Method {
         };
     return NanopbMethod(
         id,
-        UnaryRequestInvoker<AllocateSpaceFor<Request<kMethod>>()>,
+        ServerStreamingInvoker<AllocateSpaceFor<Request<kMethod>>()>,
         Function{.unary_request = wrapper},
         request,
         response);
@@ -222,7 +216,7 @@ class NanopbMethod : public Method {
               reader));
     };
     return NanopbMethod(id,
-                        StreamRequestInvoker<Request<kMethod>>,
+                        ClientStreamingInvoker<Request<kMethod>>,
                         Function{.stream_request = wrapper},
                         request,
                         response);
@@ -243,7 +237,7 @@ class NanopbMethod : public Method {
                   reader_writer));
         };
     return NanopbMethod(id,
-                        StreamRequestInvoker<Request<kMethod>>,
+                        BidirectionalStreamingInvoker<Request<kMethod>>,
                         Function{.stream_request = wrapper},
                         request,
                         response);
@@ -303,6 +297,7 @@ class NanopbMethod : public Method {
                             void* response_struct) const;
 
   void CallUnaryRequest(ServerCall& call,
+                        MethodType type,
                         const Packet& request,
                         void* request_struct) const;
 
@@ -328,23 +323,34 @@ class NanopbMethod : public Method {
   // struct. Ignores the payload buffer since resposnes are sent through the
   // NanopbServerWriter.
   template <size_t kRequestSize>
-  static void UnaryRequestInvoker(const Method& method,
-                                  ServerCall& call,
-                                  const Packet& request) {
+  static void ServerStreamingInvoker(const Method& method,
+                                     ServerCall& call,
+                                     const Packet& request) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
 
     static_cast<const NanopbMethod&>(method).CallUnaryRequest(
-        call, request, &request_struct);
+        call, MethodType::kServerStreaming, request, &request_struct);
   }
 
-  // Invoker function for client or bidirectional streaming RPCs.
+  // Invoker function for client streaming RPCs.
   template <typename Request>
-  static void StreamRequestInvoker(const Method& method,
-                                   ServerCall& call,
-                                   const Packet&) {
-    BaseNanopbServerReader<Request> reader_writer(call);
+  static void ClientStreamingInvoker(const Method& method,
+                                     ServerCall& call,
+                                     const Packet&) {
+    BaseNanopbServerReader<Request> reader(call, MethodType::kClientStreaming);
+    static_cast<const NanopbMethod&>(method).function_.stream_request(call,
+                                                                      reader);
+  }
+
+  // Invoker function for bidirectional streaming RPCs.
+  template <typename Request>
+  static void BidirectionalStreamingInvoker(const Method& method,
+                                            ServerCall& call,
+                                            const Packet&) {
+    BaseNanopbServerReader<Request> reader_writer(
+        call, MethodType::kBidirectionalStreaming);
     static_cast<const NanopbMethod&>(method).function_.stream_request(
         call, reader_writer);
   }

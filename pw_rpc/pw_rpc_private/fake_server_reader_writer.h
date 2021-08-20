@@ -17,6 +17,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/internal/call.h"
+#include "pw_rpc/method_type.h"
 
 namespace pw::rpc::internal::test {
 
@@ -36,15 +37,13 @@ namespace pw::rpc::internal::test {
 // methods with private inheritance.
 class FakeServerReaderWriter : private internal::Responder {
  public:
-  using internal::Responder::kHasClientStream;
-  using internal::Responder::kNoClientStream;
-
-  constexpr FakeServerReaderWriter() : internal::Responder(kHasClientStream) {}
+  constexpr FakeServerReaderWriter()
+      : FakeServerReaderWriter(MethodType::kBidirectionalStreaming) {}
 
   // On a real reader/writer, this constructor would not be exposed.
   FakeServerReaderWriter(ServerCall& context,
-                         HasClientStream has_client_stream = kHasClientStream)
-      : Responder(context, has_client_stream) {}
+                         MethodType type = MethodType::kBidirectionalStreaming)
+      : Responder(context, type) {}
 
   FakeServerReaderWriter(FakeServerReaderWriter&&) = default;
   FakeServerReaderWriter& operator=(FakeServerReaderWriter&&) = default;
@@ -64,7 +63,7 @@ class FakeServerReaderWriter : private internal::Responder {
     std::memcpy(buffer.data(),
                 response.data(),
                 std::min(buffer.size(), response.size()));
-    return ReleasePayloadBuffer(buffer.first(response.size()));
+    return SendPayloadBufferClientStream(buffer.first(response.size()));
   }
 
   // Expose a few additional methods for test use.
@@ -73,15 +72,16 @@ class FakeServerReaderWriter : private internal::Responder {
   const Channel::OutputBuffer& output_buffer() { return buffer(); }
 
  protected:
-  constexpr FakeServerReaderWriter(HasClientStream has_client_stream)
-      : internal::Responder(has_client_stream) {}
+  constexpr FakeServerReaderWriter(MethodType type)
+      : internal::Responder(type) {}
 };
 
 class FakeServerWriter : private FakeServerReaderWriter {
  public:
-  constexpr FakeServerWriter() : FakeServerReaderWriter(kNoClientStream) {}
+  constexpr FakeServerWriter()
+      : FakeServerReaderWriter(MethodType::kServerStreaming) {}
   FakeServerWriter(ServerCall& context)
-      : FakeServerReaderWriter(context, kNoClientStream) {}
+      : FakeServerReaderWriter(context, MethodType::kServerStreaming) {}
   FakeServerWriter(FakeServerWriter&&) = default;
 
   // Common reader/writer functions.
@@ -98,10 +98,12 @@ class FakeServerWriter : private FakeServerReaderWriter {
 
 class FakeServerReader : private FakeServerReaderWriter {
  public:
-  constexpr FakeServerReader() : FakeServerReaderWriter(kHasClientStream) {}
+  constexpr FakeServerReader()
+      : FakeServerReaderWriter(MethodType::kClientStreaming) {}
 
   FakeServerReader(ServerCall& context)
-      : FakeServerReaderWriter(context, kHasClientStream) {}
+      : FakeServerReaderWriter(context, MethodType::kClientStreaming) {}
+
   FakeServerReader(FakeServerReader&&) = default;
 
   using FakeServerReaderWriter::as_responder;

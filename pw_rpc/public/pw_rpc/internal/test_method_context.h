@@ -18,9 +18,10 @@
 
 #include "pw_assert/assert.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/fake_channel_output.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
-#include "pw_rpc_private/fake_channel_output.h"
 
 namespace pw::rpc::internal::test {
 
@@ -48,59 +49,33 @@ class InvocationContext {
 
   void SendClientError(Status error) {
     std::byte packet[kNoPayloadPacketSizeBytes];
-    server_
-        .ProcessPacket(Packet(PacketType::CLIENT_ERROR,
-                              channel_.id(),
-                              service_.id(),
-                              kMethodId,
-                              {},
-                              error)
-                           .Encode(packet)
-                           .value(),
-                       output_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    PW_ASSERT(server_
+                  .ProcessPacket(Packet(PacketType::CLIENT_ERROR,
+                                        channel_.id(),
+                                        service_.id(),
+                                        kMethodId,
+                                        {},
+                                        error)
+                                     .Encode(packet)
+                                     .value(),
+                                 output_)
+                  .ok());
   }
 
   void SendCancel() {
     std::byte packet[kNoPayloadPacketSizeBytes];
-    server_
-        .ProcessPacket(
-            Packet(PacketType::CANCEL, channel_.id(), service_.id(), kMethodId)
-                .Encode(packet)
-                .value(),
-            output_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    PW_ASSERT(
+        server_
+            .ProcessPacket(
+                Packet(
+                    PacketType::CANCEL, channel_.id(), service_.id(), kMethodId)
+                    .Encode(packet)
+                    .value(),
+                output_)
+            .ok());
   }
 
  protected:
-  template <size_t kMaxPayloadSize = 32>
-  void SendClientStream(ConstByteSpan payload) {
-    std::byte packet[kNoPayloadPacketSizeBytes + 3 + kMaxPayloadSize];
-    server_
-        .ProcessPacket(Packet(PacketType::CLIENT_STREAM,
-                              channel_.id(),
-                              service_.id(),
-                              kMethodId,
-                              payload)
-                           .Encode(packet)
-                           .value(),
-                       output_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  }
-
-  void SendClientStreamEnd() {
-    std::byte packet[kNoPayloadPacketSizeBytes];
-    server_
-        .ProcessPacket(Packet(PacketType::CLIENT_STREAM_END,
-                              channel_.id(),
-                              service_.id(),
-                              kMethodId)
-                           .Encode(packet)
-                           .value(),
-                       output_)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  }
-
   template <typename... Args>
   InvocationContext(const Method& method,
                     FakeChannelOutput& output,
@@ -114,6 +89,51 @@ class InvocationContext {
                      service_,
                      method) {
     server_.RegisterService(service_);
+  }
+
+  template <size_t kMaxPayloadSize = 32>
+  void SendClientStream(ConstByteSpan payload) {
+    std::byte packet[kNoPayloadPacketSizeBytes + 3 + kMaxPayloadSize];
+    PW_ASSERT(server_
+                  .ProcessPacket(Packet(PacketType::CLIENT_STREAM,
+                                        channel_.id(),
+                                        service_.id(),
+                                        kMethodId,
+                                        payload)
+                                     .Encode(packet)
+                                     .value(),
+                                 output_)
+                  .ok());
+  }
+
+  void SendClientStreamEnd() {
+    std::byte packet[kNoPayloadPacketSizeBytes];
+    PW_ASSERT(server_
+                  .ProcessPacket(Packet(PacketType::CLIENT_STREAM_END,
+                                        channel_.id(),
+                                        service_.id(),
+                                        kMethodId)
+                                     .Encode(packet)
+                                     .value(),
+                                 output_)
+                  .ok());
+  }
+
+  // Invokes the RPC, optionally with a request argument.
+  template <auto kMethod, typename T, typename... RequestArg>
+  auto call(RequestArg&&... request) {
+    static_assert(sizeof...(request) <= 1);
+    output_.clear();
+    T responder = GetResponder<T>();
+    return CallMethodImplFunction<kMethod>(
+        InvocationContext<Service, kMethodId>::server_call(),
+        std::forward<RequestArg>(request)...,
+        responder);
+  }
+
+  template <typename T>
+  T GetResponder() {
+    return T(InvocationContext<Service, kMethodId>::server_call());
   }
 
   internal::ServerCall& server_call() { return server_call_; }

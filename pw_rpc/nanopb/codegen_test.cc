@@ -14,9 +14,9 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/hash.h"
+#include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/nanopb/test_method_context.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
-#include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 
 namespace pw::rpc {
@@ -44,21 +44,28 @@ class TestService final : public generated::TestService<TestService> {
 
   void TestClientStreamRpc(
       ServerContext&,
-      ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>&) {
-    // TODO(pwbug/428): Test Nanopb client streaming.
+      ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>&
+          new_reader) {
+    reader = std::move(new_reader);
   }
 
   void TestBidirectionalStreamRpc(
       ServerContext&,
       ServerReaderWriter<pw_rpc_test_TestRequest,
-                         pw_rpc_test_TestStreamResponse>&) {
-    // TODO(pwbug/428): Test Nanopb bidirectional streaming.
+                         pw_rpc_test_TestStreamResponse>& new_reader_writer) {
+    reader_writer = std::move(new_reader_writer);
   }
+
+  ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse> reader;
+  ServerReaderWriter<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>
+      reader_writer;
 };
 
 }  // namespace test
 
 namespace {
+
+using internal::ClientContextForTest;
 
 TEST(NanopbCodegen, CompilesProperly) {
   test::TestService service;
@@ -80,7 +87,7 @@ TEST(NanopbCodegen, Server_InvokeUnaryRpc) {
   EXPECT_EQ(1000, context.response().value);
 }
 
-TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
+TEST(NanopbCodegen, Server_InvokeServerStreamingRpc) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc) context;
 
   context.call({.integer = 0, .status_code = Status::Aborted().code()});
@@ -103,7 +110,7 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
 }
 
 TEST(NanopbCodegen,
-     Server_InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
+     Server_InvokeServerStreamingRpc_ContextKeepsFixedNumberOfResponses) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc, 3)
   context;
 
@@ -119,7 +126,7 @@ TEST(NanopbCodegen,
   EXPECT_EQ(context.responses()[2].number, 4u);
 }
 
-TEST(NanopbCodegen, Server_InvokeStreamingRpc_ManualWriting) {
+TEST(NanopbCodegen, Server_InvokeServerStreamingRpc_ManualWriting) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc, 3)
   context;
 
@@ -143,6 +150,49 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc_ManualWriting) {
   EXPECT_EQ(context.responses()[0].number, 3u);
   EXPECT_EQ(context.responses()[1].number, 6u);
   EXPECT_EQ(context.responses()[2].number, 9u);
+}
+
+TEST(NanopbCodegen, Server_InvokeClientStreamingRpc) {
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestClientStreamRpc) context;
+
+  context.call();
+
+  pw_rpc_test_TestRequest request = {};
+  context.service().reader.set_on_next(
+      [&request](const pw_rpc_test_TestRequest& req) { request = req; });
+
+  context.SendClientStream({.integer = -99, .status_code = 10});
+  EXPECT_EQ(request.integer, -99);
+  EXPECT_EQ(request.status_code, 10u);
+
+  ASSERT_EQ(OkStatus(),
+            context.service().reader.Finish({.chunk = {}, .number = 3},
+                                            Status::Unimplemented()));
+  EXPECT_EQ(Status::Unimplemented(), context.status());
+  EXPECT_EQ(context.response().number, 3u);
+}
+
+TEST(NanopbCodegen, Server_InvokeBidirectionalStreamingRpc) {
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestBidirectionalStreamRpc)
+  context;
+
+  context.call();
+
+  pw_rpc_test_TestRequest request = {};
+  context.service().reader_writer.set_on_next(
+      [&request](const pw_rpc_test_TestRequest& req) { request = req; });
+
+  context.SendClientStream({.integer = -99, .status_code = 10});
+  EXPECT_EQ(request.integer, -99);
+  EXPECT_EQ(request.status_code, 10u);
+
+  ASSERT_EQ(OkStatus(),
+            context.service().reader_writer.Write({.chunk = {}, .number = 2}));
+  EXPECT_EQ(context.responses()[0].number, 2u);
+
+  ASSERT_EQ(OkStatus(),
+            context.service().reader_writer.Finish(Status::NotFound()));
+  EXPECT_EQ(Status::NotFound(), context.status());
 }
 
 using TestServiceClient = test::nanopb::TestServiceClient;

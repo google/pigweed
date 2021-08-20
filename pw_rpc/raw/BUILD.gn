@@ -48,7 +48,10 @@ pw_source_set("method_union") {
 
 pw_source_set("test_method_context") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/raw/test_method_context.h" ]
+  public = [
+    "public/pw_rpc/raw/fake_channel_output.h",
+    "public/pw_rpc/raw/test_method_context.h",
+  ]
   public_deps = [
     ":method",
     "..:test_utils",

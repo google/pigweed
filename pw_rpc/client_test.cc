@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc_private/internal_test_utils.h"
+#include "pw_rpc/internal/test_utils.h"
 
 namespace pw::rpc {
 namespace {
@@ -45,7 +45,7 @@ class TestClientCall : public BaseClientCall {
 };
 
 TEST(Client, ProcessPacket_InvokesARegisteredClientCall) {
-  ClientContextForTest context;
+  internal::ClientContextForTest context;
 
   TestClientCall call(
       &context.channel(), context.service_id(), context.method_id());
@@ -55,7 +55,7 @@ TEST(Client, ProcessPacket_InvokesARegisteredClientCall) {
 }
 
 TEST(Client, ProcessPacket_SendsClientErrorOnUnregisteredCall) {
-  ClientContextForTest context;
+  internal::ClientContextForTest context;
 
   EXPECT_EQ(context.SendResponse(OkStatus(), {}), Status::NotFound());
 
@@ -70,7 +70,7 @@ TEST(Client, ProcessPacket_SendsClientErrorOnUnregisteredCall) {
 }
 
 TEST(Client, ProcessPacket_ReturnsDataLossOnBadPacket) {
-  ClientContextForTest context;
+  internal::ClientContextForTest context;
 
   constexpr std::byte bad_packet[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
@@ -78,7 +78,7 @@ TEST(Client, ProcessPacket_ReturnsDataLossOnBadPacket) {
 }
 
 TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
-  ClientContextForTest context;
+  internal::ClientContextForTest context;
   EXPECT_EQ(context.SendPacket(PacketType::REQUEST), Status::InvalidArgument());
   EXPECT_EQ(context.SendPacket(PacketType::CANCEL), Status::InvalidArgument());
 }

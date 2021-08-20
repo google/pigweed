@@ -48,10 +48,7 @@ class Responder : public IntrusiveList<Responder>::Item {
  public:
   Responder(const Responder&) = delete;
 
-  ~Responder() {
-    CloseAndSendResponse(OkStatus())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  }
+  ~Responder() { CloseAndSendResponse(OkStatus()).IgnoreError(); }
 
   Responder& operator=(const Responder&) = delete;
 
@@ -95,25 +92,21 @@ class Responder : public IntrusiveList<Responder>::Item {
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
   }
 
-  bool has_client_stream() const {
-    return has_client_stream_ == kHasClientStream;
-  }
+  bool has_client_stream() const { return HasClientStream(type_); }
 
   bool client_stream_open() const {
     return client_stream_state_ == kClientStreamOpen;
   }
 
  protected:
-  enum HasClientStream : bool { kNoClientStream, kHasClientStream };
-
   // Creates a Responder for a closed RPC.
-  constexpr Responder(HasClientStream has_client_stream)
+  constexpr Responder(MethodType type)
       : rpc_state_(kClosed),
-        has_client_stream_(has_client_stream),
+        type_(type),
         client_stream_state_(kClientStreamClosed) {}
 
   // Creates a Responder for an open RPC.
-  Responder(ServerCall& call, HasClientStream has_client_stream);
+  Responder(const ServerCall& call, MethodType type);
 
   // Initialize rpc_state_ to closed since move-assignment will check if the
   // Responder is open before moving into it.
@@ -156,12 +149,12 @@ class Responder : public IntrusiveList<Responder>::Item {
   // when this is called!
   std::span<std::byte> AcquirePayloadBuffer();
 
-  // Releases the buffer, sending a packet with the specified payload. The
-  // Responder MUST be open when this is called!
-  Status ReleasePayloadBuffer(std::span<const std::byte> payload);
+  // Releases the buffer, sending a client stream packet with the specified
+  // payload. The Responder MUST be open when this is called!
+  Status SendPayloadBufferClientStream(std::span<const std::byte> payload);
 
   // Releases the buffer without sending a packet.
-  Status ReleasePayloadBuffer();
+  void ReleasePayloadBuffer();
 
  private:
   // Removes the RPC from the server & marks as closed. The responder must be
@@ -184,7 +177,7 @@ class Responder : public IntrusiveList<Responder>::Item {
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
   enum : bool { kClosed, kOpen } rpc_state_;
-  HasClientStream has_client_stream_;
+  MethodType type_;
   enum : bool { kClientStreamClosed, kClientStreamOpen } client_stream_state_;
 };
 

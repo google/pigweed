@@ -15,19 +15,17 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/method_type.h"
 
 namespace pw::rpc::internal::test {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
 class FakeChannelOutput : public ChannelOutput {
  public:
-  constexpr FakeChannelOutput(ByteSpan buffer, bool server_streaming)
-      : ChannelOutput("pw::rpc::internal::test::FakeChannelOutput"),
-        packet_buffer_(buffer),
-        server_streaming_(server_streaming) {}
-
-  Status last_status() const { return last_status_; }
-  void set_last_status(Status status) { last_status_ = status; }
+  Status last_status() const {
+    PW_ASSERT(done());
+    return last_status_;
+  }
 
   size_t total_responses() const { return total_responses_; }
 
@@ -35,6 +33,12 @@ class FakeChannelOutput : public ChannelOutput {
   bool done() const { return done_; }
 
   void clear();
+
+ protected:
+  constexpr FakeChannelOutput(ByteSpan buffer, MethodType method_type)
+      : ChannelOutput("pw::rpc::internal::test::FakeChannelOutput"),
+        packet_buffer_(buffer),
+        method_type_(method_type) {}
 
  private:
   ByteSpan AcquireBuffer() final { return packet_buffer_; }
@@ -53,7 +57,7 @@ class FakeChannelOutput : public ChannelOutput {
   size_t total_responses_ = 0;
   Status last_status_;
   bool done_ = false;
-  const bool server_streaming_;
+  const MethodType method_type_;
 };
 
 }  // namespace pw::rpc::internal::test

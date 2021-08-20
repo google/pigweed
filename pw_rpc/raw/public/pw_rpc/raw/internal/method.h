@@ -52,7 +52,7 @@ class RawMethod : public Method {
           return CallMethodImplFunction<kMethod>(call, request, writer);
         };
     return RawMethod(
-        id, UnaryRequestInvoker, Function{.unary_request = wrapper});
+        id, ServerStreamingInvoker, Function{.unary_request = wrapper});
   }
 
   template <auto kMethod>
@@ -63,7 +63,7 @@ class RawMethod : public Method {
               call, static_cast<RawServerReader&>(reader));
         };
     return RawMethod(
-        id, StreamRequestInvoker, Function{.stream_request = wrapper});
+        id, ClientStreamingInvoker, Function{.stream_request = wrapper});
   }
 
   template <auto kMethod>
@@ -73,7 +73,7 @@ class RawMethod : public Method {
           return CallMethodImplFunction<kMethod>(call, reader_writer);
         };
     return RawMethod(
-        id, StreamRequestInvoker, Function{.stream_request = wrapper});
+        id, BidirectionalStreamingInvoker, Function{.stream_request = wrapper});
   }
 
   // Represents an invalid method. Used to reduce error message verbosity.
@@ -104,13 +104,17 @@ class RawMethod : public Method {
                                       ServerCall& call,
                                       const Packet& request);
 
-  static void UnaryRequestInvoker(const Method& method,
-                                  ServerCall& call,
-                                  const Packet& request);
+  static void ServerStreamingInvoker(const Method& method,
+                                     ServerCall& call,
+                                     const Packet& request);
 
-  static void StreamRequestInvoker(const Method& method,
-                                   ServerCall& call,
-                                   const Packet&);
+  static void ClientStreamingInvoker(const Method& method,
+                                     ServerCall& call,
+                                     const Packet&);
+
+  static void BidirectionalStreamingInvoker(const Method& method,
+                                            ServerCall& call,
+                                            const Packet&);
 
   // Stores the user-defined RPC.
   Function function_;

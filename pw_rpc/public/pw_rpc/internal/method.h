@@ -52,7 +52,7 @@ class MethodImpl : public Method {
 };
 */
 // Method implementations must pass a test that uses the MethodImplTester class
-// in pw_rpc_private/method_impl_tester.h.
+// in pw_rpc/internal/method_impl_tester.h.
 class Method {
  public:
   constexpr uint32_t id() const { return id_; }
@@ -104,6 +104,12 @@ struct MethodTraits {
 template <auto kMethod>
 using MethodImplementation =
     typename MethodTraits<decltype(kMethod)>::Implementation;
+
+template <auto kMethod>
+using Request = typename MethodTraits<decltype(kMethod)>::Request;
+
+template <auto kMethod>
+using Response = typename MethodTraits<decltype(kMethod)>::Response;
 
 // Function that calls a user-defined method implementation function from a
 // ServerCall object.

@@ -97,7 +97,11 @@ TEST(MixedService1, CallRawMethod_ClientStreaming) {
 }
 
 TEST(MixedService1, CallNanopbMethod_BidirectionalStreaming) {
-  // TODO(pwbug/428): Test Nanopb bidirectional streaming when supported.
+  PW_NANOPB_TEST_METHOD_CONTEXT(MixedService1, TestBidirectionalStreamRpc)
+  context;
+  ASSERT_FALSE(context.service().called_bidirectional_streaming_method);
+  context.call();
+  EXPECT_TRUE(context.service().called_bidirectional_streaming_method);
 }
 
 TEST(MixedService2, CallNanopbMethod_Unary) {
@@ -114,7 +118,10 @@ TEST(MixedService2, CallRawMethod_ServerStreaming) {
 }
 
 TEST(MixedService2, CallNanopbMethod_ClientStreaming) {
-  // TODO(pwbug/428): Test Nanopb client streaming when supported.
+  PW_NANOPB_TEST_METHOD_CONTEXT(MixedService2, TestClientStreamRpc) context;
+  ASSERT_FALSE(context.service().called_client_streaming_method);
+  context.call();
+  EXPECT_TRUE(context.service().called_client_streaming_method);
 }
 
 TEST(MixedService2, CallRawMethod_BidirectionalStreaming) {

@@ -53,6 +53,7 @@ pw_cc_library(
 pw_cc_library(
     name = "test_method_context",
     hdrs = [
+        "public/pw_rpc/raw/fake_channel_output.h",
         "public/pw_rpc/raw/test_method_context.h",
     ],
     includes = ["public"],

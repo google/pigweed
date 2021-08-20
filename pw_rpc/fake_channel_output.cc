@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc_private/fake_channel_output.h"
+#include "pw_rpc/internal/fake_channel_output.h"
 
 #include "pw_assert/check.h"
 #include "pw_result/result.h"
@@ -46,7 +46,7 @@ Status FakeChannelOutput::SendAndReleaseBuffer(
   switch (result.value().type()) {
     case PacketType::RESPONSE:
       // Server streaming RPCs don't have a payload in their response packet.
-      if (!server_streaming_) {
+      if (!HasServerStream(method_type_)) {
         ProcessResponse(result.value().payload());
       }
       done_ = true;

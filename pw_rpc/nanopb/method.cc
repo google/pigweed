@@ -39,14 +39,14 @@ void NanopbMethod::CallSynchronousUnary(ServerCall& call,
 }
 
 void NanopbMethod::CallUnaryRequest(ServerCall& call,
+                                    MethodType type,
                                     const Packet& request,
                                     void* request_struct) const {
   if (!DecodeRequest(call.channel(), request, request_struct)) {
     return;
   }
 
-  GenericNanopbResponder server_writer(call,
-                                       GenericNanopbResponder::kNoClientStream);
+  GenericNanopbResponder server_writer(call, type);
   function_.unary_request(call, request_struct, server_writer);
 }
 

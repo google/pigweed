@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc_private/internal_test_utils.h"
+#include "pw_rpc/internal/test_utils.h"
 
 namespace pw::rpc::internal {
 namespace {

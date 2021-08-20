@@ -20,11 +20,11 @@
 #include "pw_bytes/array.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_rpc/internal/method_impl_tester.h"
+#include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/raw/internal/method_union.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
-#include "pw_rpc_private/internal_test_utils.h"
-#include "pw_rpc_private/method_impl_tester.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 
 namespace pw::rpc::internal {
@@ -111,12 +111,10 @@ void DecodeRawTestRequest(ConstByteSpan request) {
 
     switch (field) {
       case TestRequest::Fields::INTEGER:
-        decoder.ReadInt64(&last_request.integer)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        ASSERT_EQ(OkStatus(), decoder.ReadInt64(&last_request.integer));
         break;
       case TestRequest::Fields::STATUS_CODE:
-        decoder.ReadUint32(&last_request.status_code)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        ASSERT_EQ(OkStatus(), decoder.ReadUint32(&last_request.status_code));
         break;
     }
   }
@@ -128,8 +126,7 @@ StatusWithSize AddFive(ServerContext&,
   DecodeRawTestRequest(request);
 
   TestResponse::MemoryEncoder test_response(response);
-  test_response.WriteValue(last_request.integer + 5)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  EXPECT_EQ(OkStatus(), test_response.WriteValue(last_request.integer + 5));
   ConstByteSpan payload(test_response);
 
   return StatusWithSize::Unauthenticated(payload.size());
@@ -156,10 +153,8 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
   std::byte buffer[16];
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
-  test_request.WriteInteger(456)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  test_request.WriteStatusCode(7)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), test_request.WriteInteger(456));
+  ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(7));
 
   const RawMethod& method = std::get<0>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
@@ -182,10 +177,8 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   std::byte buffer[16];
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
-  test_request.WriteInteger(777)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  test_request.WriteStatusCode(2)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  ASSERT_EQ(OkStatus(), test_request.WriteInteger(777));
+  ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(2));
 
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);

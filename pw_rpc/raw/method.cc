@@ -38,24 +38,33 @@ void RawMethod::SynchronousUnaryInvoker(const Method& method,
     return;
   }
 
-  PW_LOG_WARN("Failed to send response packet for channel %u",
-              unsigned(call.channel().id()));
+  PW_LOG_WARN(
+      "Failed to send response packet for channel %u; terminating RPC with "
+      "INTERNAL error",
+      unsigned(call.channel().id()));
   call.channel()
       .Send(Packet::ServerError(request, Status::Internal()))
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+      .IgnoreError();
 }
 
-void RawMethod::UnaryRequestInvoker(const Method& method,
-                                    ServerCall& call,
-                                    const Packet& request) {
+void RawMethod::ServerStreamingInvoker(const Method& method,
+                                       ServerCall& call,
+                                       const Packet& request) {
   RawServerWriter server_writer(call);
   static_cast<const RawMethod&>(method).function_.unary_request(
       call, request.payload(), server_writer);
 }
 
-void RawMethod::StreamRequestInvoker(const Method& method,
-                                     ServerCall& call,
-                                     const Packet&) {
+void RawMethod::ClientStreamingInvoker(const Method& method,
+                                       ServerCall& call,
+                                       const Packet&) {
+  RawServerReader reader(call);
+  static_cast<const RawMethod&>(method).function_.stream_request(call, reader);
+}
+
+void RawMethod::BidirectionalStreamingInvoker(const Method& method,
+                                              ServerCall& call,
+                                              const Packet&) {
   RawServerReaderWriter reader_writer(call);
   static_cast<const RawMethod&>(method).function_.stream_request(call,
                                                                  reader_writer);

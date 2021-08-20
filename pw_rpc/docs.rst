@@ -802,7 +802,7 @@ function.
 function pointer to the user-defined method implementation. They also provide
 ``static constexpr`` functions for creating each type of method. ``Method``
 implementations must satisfy the ``MethodImplTester`` test class in
-``pw_rpc_private/method_impl_tester.h``.
+``pw_rpc/internal/method_impl_tester.h``.
 
 See ``pw_rpc/internal/method.h`` for more details about ``Method``.
 

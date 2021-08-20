@@ -28,7 +28,7 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
 
-namespace pw::rpc {
+namespace pw::rpc::internal {
 
 template <size_t kOutputBufferSize>
 class TestOutput : public ChannelOutput {
@@ -76,7 +76,7 @@ class TestOutput : public ChannelOutput {
 };
 
 // Version of the internal::Server with extra methods exposed for testing.
-class TestServer : public internal::Server {
+class TestServer : public Server {
  public:
   using internal::Server::writers;
 };
@@ -94,8 +94,8 @@ class ServerContextForTest {
       : channel_(Channel::Create<kChannelId>(&output_)),
         server_(std::span(&channel_, 1)),
         service_(kServiceId),
-        context_(static_cast<internal::Server&>(server_),
-                 static_cast<internal::Channel&>(channel_),
+        context_(static_cast<Server&>(server_),
+                 static_cast<Channel&>(channel_),
                  service_,
                  method) {
     server_.RegisterService(service_);
@@ -128,14 +128,22 @@ class ServerContextForTest {
                             payload);
   }
 
+  internal::Packet client_stream(std::span<const std::byte> payload) const {
+    return internal::Packet(internal::PacketType::CLIENT_STREAM,
+                            kChannelId,
+                            kServiceId,
+                            context_.method().id(),
+                            payload);
+  }
+
   internal::ServerCall& get() { return context_; }
   auto& output() { return output_; }
   TestServer& server() { return static_cast<TestServer&>(server_); }
 
  private:
   TestOutput<kOutputBufferSize> output_;
-  Channel channel_;
-  Server server_;
+  rpc::Channel channel_;
+  rpc::Server server_;
   Service service_;
 
   internal::ServerCall context_;
@@ -157,7 +165,7 @@ class ClientContextForTest {
         client_(std::span(&channel_, 1)) {}
 
   const auto& output() const { return output_; }
-  Channel& channel() { return channel_; }
+  Channel& channel() { return static_cast<Channel&>(channel_); }
   Client& client() { return client_; }
 
   // Sends a packet to be processed by the client. Returns the client's
@@ -183,8 +191,8 @@ class ClientContextForTest {
 
  private:
   TestOutput<kOutputBufferSize> output_;
-  Channel channel_;
+  rpc::Channel channel_;
   Client client_;
 };
 
-}  // namespace pw::rpc
+}  // namespace pw::rpc::internal
