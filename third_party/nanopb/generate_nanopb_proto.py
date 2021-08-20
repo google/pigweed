@@ -35,6 +35,7 @@ def generate_nanopb_proto(root: Path) -> None:
 
     spec = importlib.util.spec_from_file_location(
         'proto', root / 'generator' / 'proto' / '__init__.py')
+    assert spec is not None
     proto_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(proto_module)  # type: ignore[union-attr]
 

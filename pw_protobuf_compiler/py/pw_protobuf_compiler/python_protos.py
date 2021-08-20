@@ -67,6 +67,7 @@ def compile_protos(
 
 def _import_module(name: str, path: str) -> ModuleType:
     spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # type: ignore[union-attr]
     return module

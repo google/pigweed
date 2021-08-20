@@ -167,7 +167,13 @@ group("empty") {
 pw_python_requirements("python_lint") {
   requirements = [
     "build",
-    "mypy==0.812",
+
+    # NOTE: mypy needs to stay in sync with mypy-protobuf
+    # Currently using mypy 0.910 and mypy-protobuf 2.9
+    "mypy==0.910",
+
+    # typeshed packages (required by mypy > 0.9)
+    "types-setuptools",
     "pylint==2.9.3",
   ]
 }
