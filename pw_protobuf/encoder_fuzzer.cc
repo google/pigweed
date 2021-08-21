@@ -55,8 +55,7 @@ enum FieldType : uint8_t {
   kBytes,
   kString,
   kPush,
-  kPop,
-  kMaxValue = kPop,
+  kMaxValue = kPush,
 };
 
 // TODO(pwbug/181): Move this to pw_fuzzer/fuzzed_data_provider.h
@@ -314,13 +313,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       case kPush:
         // Special "field". The marks the start of a nested message.
         encoder.GetNestedEncoder(provider.ConsumeIntegral<uint32_t>());
-        break;
-      case kPop:
-        // Special "field". this marks the end of a nested message. No attempt
-        // is made to match pushes to pops, in order to test that the encoder
-        // behaves correctly when they are mismatched.
-        encoder.Finalize()
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
         break;
     }
   }

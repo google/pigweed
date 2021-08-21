@@ -185,8 +185,6 @@ TEST(StreamEncoder, Nested) {
       EXPECT_EQ(double_nested_proto.WriteString(kDoubleNestedProtoValueField,
                                                 "2.9.1"),
                 OkStatus());
-
-      EXPECT_EQ(double_nested_proto.Finalize(), OkStatus());
     }  // end DoubleNestedProto
 
     // nested_proto.id = 999;
@@ -206,9 +204,7 @@ TEST(StreamEncoder, Nested) {
                 OkStatus());
       // Rely on destructor for finalization.
     }  // end DoubleNestedProto
-
-    EXPECT_EQ(nested_proto.Finalize(), OkStatus());
-  }  // end NestedProto
+  }    // end NestedProto
 
   // test_proto.ziggy = -13;
   EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), OkStatus());
@@ -349,7 +345,6 @@ TEST(StreamEncoder, ParentUnavailable) {
   MemoryEncoder parent(encode_buffer);
   {
     StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
-    ASSERT_EQ(parent.status(), Status::Unavailable());
     ASSERT_EQ(child.status(), OkStatus());
   }
   ASSERT_EQ(parent.status(), OkStatus());
@@ -388,16 +383,6 @@ TEST(StreamEncoder, EmptyChildWrites) {
           MakeKey(kTestProtoNestedField, WireType::kDelimited)) +
       varint::EncodedSize(0);
   ASSERT_EQ(parent.size(), kExpectedSize);
-}
-
-TEST(StreamEncoder, ChildUnavailableAfterFinalize) {
-  std::byte encode_buffer[32];
-  MemoryEncoder parent(encode_buffer);
-  {
-    StreamEncoder child = parent.GetNestedEncoder(kTestProtoNestedField);
-    child.Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    ASSERT_EQ(child.status(), Status::Unavailable());
-  }
 }
 
 TEST(StreamEncoder, NestedStatusPropagates) {

@@ -79,9 +79,11 @@ class StreamEncoder {
         memory_writer_(scratch_buffer),
         writer_(writer) {}
 
-  ~StreamEncoder() {
-    Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  }
+  // Precondition: Encoder has no active child encoder.
+  //
+  // Postcondition: If this encoder is a nested one, the parent encoder is
+  //     unlocked and proto encoding may resume on the parent.
+  ~StreamEncoder();
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   StreamEncoder& operator=(const StreamEncoder& other) = delete;
@@ -105,23 +107,16 @@ class StreamEncoder {
   // nested encoder is finalized (either explicitly or through destruction).
   //
   // Precondition: Encoder has no active child encoder.
+  //
+  // Postcondition: Until the nested child encoder has been destroyed, this
+  //     encoder cannot be used.
   StreamEncoder GetNestedEncoder(uint32_t field_number);
 
-  // Closes the proto encoder. If this encoder is a nested one, the parent is
-  // unlocked and proto encoding may resume on the parent. This is automatically
-  // called on object destruction.
+  // Returns the current encoder's status.
   //
   // Precondition: Encoder has no active child encoder.
-  //
-  // Returns:
-  //   OutOfRange: Insufficient space reserved for the submessage. This
-  //     usually means config::kMaxVarintSize was set too small.
-  Status Finalize();
-
   Status status() const {
-    if (nested_encoder_open()) {
-      return Status::Unavailable();
-    }
+    PW_ASSERT(!nested_encoder_open());
     return status_;
   }
 
@@ -373,7 +368,10 @@ class StreamEncoder {
   }
 
  protected:
-  // We need this for codegen.
+  // Specialized move constructor used only for codegen.
+  //
+  // Postcondition: The other encoder is invalidated and cannot be used as it
+  //     acts like a parent encoder with an active child encoder.
   constexpr StreamEncoder(StreamEncoder&& other)
       : status_(other.status_),
         parent_(other.parent_),
@@ -406,10 +404,9 @@ class StreamEncoder {
 
   bool nested_encoder_open() const { return nested_field_number_ != 0; }
 
-  // Finalization logic for nested encoders that call Finalize(). While
-  // Finalize() is called on the child encoder, FinalizeNestedMessage() is
-  // called on the parent encoder.
-  Status FinalizeNestedMessage(StreamEncoder& nested);
+  // CloseNestedMessage() is called on the parent encoder as part of the nested
+  // encoder destructor.
+  void CloseNestedMessage(StreamEncoder& nested);
 
   // Implementation for encoding all varint field types.
   Status WriteVarintField(uint32_t field_number, uint64_t value);
@@ -538,9 +535,12 @@ class StreamEncoder {
 class MemoryEncoder : public StreamEncoder {
  public:
   constexpr MemoryEncoder(ByteSpan dest) : StreamEncoder(*this, dest) {}
-  ~MemoryEncoder() {
-    Finalize().IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  }
+
+  // Precondition: Encoder has no active child encoder.
+  //
+  // Postcondition: If this encoder is a nested one, the parent encoder is
+  //     unlocked and proto encoding may resume on the parent.
+  ~MemoryEncoder() = default;
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   MemoryEncoder(const MemoryEncoder& other) = delete;

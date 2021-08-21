@@ -137,25 +137,21 @@ space to allocate to account for nested submessage encoding overhead.
   // Provide the scratch buffer to the proto encoder. The buffer's lifetime must
   // match the lifetime of the encoder.
   pw::protobuf::StreamEncoder my_proto_encoder(sys_io_writer,
-                                                  submessage_scratch_buffer);
+                                               submessage_scratch_buffer);
 
-  StreamEncoder nested_encoder =
-      my_proto_encoder.GetNestedEncoder(kPetsFieldNumber);
-
-  // There's no intermediate buffering when writing a string directly to a
-  // StreamEncoder.
-  nested_encoder.WriteString(kNameFieldNumber, "Spot");
-  nested_encoder.WriteString(kPetTypeFieldNumber, "dog");
-  // Since this message is only nested one deep, the submessage is serialized to
-  // the writer as soon as we finalize the submessage.
-  PW_CHECK_OK(nested_encoder.Finalize());
-
-  {  // If a nested_encoder is destroyed it will silently Finalize().
-    StreamEncoder nested_encoder_2 =
+  {
+    // Note that the parent encoder, my_proto_encoder, cannot be used until the
+    // nested encoder, nested_encoder, has been destroyed.
+    StreamEncoder nested_encoder =
         my_proto_encoder.GetNestedEncoder(kPetsFieldNumber);
-    nested_encoder_2.WriteString(kNameFieldNumber, "Slippers");
-    nested_encoder_2.WriteString(kPetTypeFieldNumber, "rabbit");
-  }  // When this scope ends, the nested encoder is serialized to the Writer.
+
+    // There's intermediate buffering when writing to a nested encoder.
+    nested_encoder.WriteString(kNameFieldNumber, "Spot");
+    nested_encoder.WriteString(kPetTypeFieldNumber, "dog");
+
+    // When this scope ends, the nested encoder is serialized to the Writer.
+    // In addition, the parent encoder, my_proto_encoder, can be used again.
+  }
 
   // If an encode error occurs when encoding the nested messages, it will be
   // reflected at the root encoder.
@@ -164,9 +160,9 @@ space to allocate to account for nested submessage encoding overhead.
   }
 
 .. warning::
-  When a nested submessage is created, any writes to the parent encoder that
-  created the nested encoder will trigger a crash. To resume writing to
-  a parent encoder, Finalize() the submessage encoder first.
+  When a nested submessage is created, any use of the parent encoder that
+  created the nested encoder will trigger a crash. To resume using the parent
+  encoder, destroy the submessage encoder first.
 
 Error Handling
 ==============
@@ -249,14 +245,13 @@ Example ``example_client.cc``:
   // The constructor is the same as a pw::protobuf::StreamEncoder.
   fuzzy_friends::Client::StreamEncoder client(sys_io_writer,
                                               submessage_scratch_buffer);
+  {
+    fuzzy_friends::Pet::StreamEncoder pet1 = client.GetPetsEncoder();
+    pet1.WriteName("Spot");
+    pet1.WritePetType("dog");
+  }
 
-  fuzzy_friends::Pet::StreamEncoder pet1 = client.GetPetsEncoder();
-
-  pet1.WriteName("Spot");
-  pet1.WritePetType("dog");
-  PW_CHECK_OK(pet1.Finalize());
-
-  {  // Since pet2 is scoped, it will automatically Finalize() on destruction.
+  {
     fuzzy_friends::Pet::StreamEncoder pet2 = client.GetPetsEncoder();
     pet2.WriteName("Slippers");
     pet2.WritePetType("rabbit");

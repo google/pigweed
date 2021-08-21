@@ -57,30 +57,26 @@ StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number) {
   return StreamEncoder(*this, nested_buffer);
 }
 
-Status StreamEncoder::Finalize() {
-  // If an encoder has no parent, finalize is a no-op.
-  if (parent_ == nullptr) {
-    return OkStatus();
+StreamEncoder::~StreamEncoder() {
+  // If this was an invalidated StreamEncoder which cannot be used, permit the
+  // object to be cleanly destructed by doing nothing.
+  if (nested_field_number_ == kFirstReservedNumber) {
+    return;
   }
 
-  PW_CHECK(!nested_encoder_open(),
-           "Tried to finalize a proto encoder when it has an active submessage "
-           "encoder that hasn't been finalized!");
-  // MemoryWriters with their parent set to themselves are externally
-  // created by users. It's not valid or necessary to call
-  // FinalizeNestedMessage() on themselves.
-  if (parent_ == this) {
-    return OkStatus();
-  }
+  PW_CHECK(
+      !nested_encoder_open(),
+      "Tried to destruct a proto encoder with an active submessage encoder");
 
-  return parent_->FinalizeNestedMessage(*this);
+  if (parent_ != nullptr) {
+    parent_->CloseNestedMessage(*this);
+  }
 }
 
-Status StreamEncoder::FinalizeNestedMessage(StreamEncoder& nested) {
-  PW_DCHECK_PTR_EQ(
-      nested.parent_,
-      this,
-      "FinalizeNestedMessage() called on the wrong Encoder parent");
+void StreamEncoder::CloseNestedMessage(StreamEncoder& nested) {
+  PW_DCHECK_PTR_EQ(nested.parent_,
+                   this,
+                   "CloseNestedMessage() called on the wrong Encoder parent");
 
   // Make the nested encoder look like it has an open child to block writes for
   // the remainder of the object's life.
@@ -95,17 +91,18 @@ Status StreamEncoder::FinalizeNestedMessage(StreamEncoder& nested) {
   // it and continue happily. For now, we'll always invalidate the entire
   // encoder if a single submessage fails.
   status_.Update(nested.status_);
-  PW_TRY(status_);
+  if (!status_.ok()) {
+    return;
+  }
 
   if (varint::EncodedSize(nested.memory_writer_.bytes_written()) >
       config::kMaxVarintSize) {
     status_ = Status::OutOfRange();
-    return status_;
+    return;
   }
 
   status_ = WriteLengthDelimitedField(temp_field_number,
                                       nested.memory_writer_.WrittenData());
-  return status_;
 }
 
 Status StreamEncoder::WriteVarintField(uint32_t field_number, uint64_t value) {
