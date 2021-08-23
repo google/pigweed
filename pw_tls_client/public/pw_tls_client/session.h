@@ -27,7 +27,7 @@
 namespace pw::tls_client {
 
 // Session provides APIs for performing TLS communication.
-class Session : public stream::ReaderWriter {
+class Session : public stream::NonSeekableReaderWriter {
  public:
   // Resources allocated during Session::Create() will be released in the
   // destructor. For example, backend may choose to allocate Session from a pool

@@ -25,7 +25,7 @@
 
 namespace pw::tls_client::test {
 
-class FixedSizeFIFOBuffer : public stream::ReaderWriter {
+class FixedSizeFIFOBuffer : public stream::NonSeekableReaderWriter {
  public:
   FixedSizeFIFOBuffer() = delete;
   FixedSizeFIFOBuffer(const FixedSizeFIFOBuffer&) = delete;
@@ -47,7 +47,7 @@ class FixedSizeFIFOBuffer : public stream::ReaderWriter {
 // Reading from the server is equivalent to receiving data from the server.
 //
 // The server accepts is only for one client and echo messages it sends.
-class InMemoryTestServer : public stream::ReaderWriter {
+class InMemoryTestServer : public stream::NonSeekableReaderWriter {
  public:
   InMemoryTestServer() = delete;
   InMemoryTestServer(const InMemoryTestServer&) = delete;

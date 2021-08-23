@@ -13,25 +13,13 @@
 // the License.
 
 #include "gtest/gtest.h"
-#include "pw_stream/stream.h"
+#include "pw_stream/null_stream.h"
 #include "pw_tls_client/session.h"
-
-namespace {
-
-class NoopTransport : public pw::stream::ReaderWriter {
- private:
-  pw::StatusWithSize DoRead(pw::ByteSpan dest) { return pw::StatusWithSize(0); }
-
-  pw::Status DoWrite(pw::ConstByteSpan data) { return pw::OkStatus(); }
-};
-
-}  // namespace
 
 namespace pw::tls_client {
 
 TEST(TLSClientMbedTLS, CreateSucceed) {
-  NoopTransport transport;
-  auto options = SessionOptions().set_transport(transport);
+  auto options = SessionOptions().set_transport(stream::NullStream::Instance());
   auto res = Session::Create(options);
   ASSERT_EQ(res.status(), OkStatus());
   ASSERT_NE(res.value(), nullptr);
@@ -45,8 +33,7 @@ TEST(TLSClientMbedTLS, CreateFailOnMissingTransport) {
 
 TEST(TLSClientMbedTLS, EntropySourceFail) {
   backend::SessionImplementation::SetEntropySourceStatus(Status::Internal());
-  NoopTransport transport;
-  auto options = SessionOptions().set_transport(transport);
+  auto options = SessionOptions().set_transport(stream::NullStream::Instance());
   auto res = Session::Create(options);
   ASSERT_NE(res.status(), OkStatus());
 }
