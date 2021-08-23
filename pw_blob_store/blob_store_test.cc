@@ -168,6 +168,40 @@ TEST_F(BlobStoreTest, Init_Ok) {
   EXPECT_EQ(OkStatus(), blob.Init());
 }
 
+TEST_F(BlobStoreTest, Writer_ConservativeLimits) {
+  constexpr size_t kBufferSize = 256;
+  BlobStoreBuffer<kBufferSize> blob(
+      "Blob_OK", partition_, nullptr, kvs::TestKvs(), kBufferSize);
+  ASSERT_EQ(OkStatus(), blob.Init());
+
+  BlobStore::BlobWriter writer(blob);
+  ASSERT_EQ(OkStatus(), writer.Open());
+  EXPECT_EQ(writer.ConservativeReadLimit(), 0u);
+  EXPECT_EQ(writer.ConservativeWriteLimit(), kSectorSize * kSectorCount);
+  ASSERT_EQ(OkStatus(), writer.Close());
+
+  BlobStore::DeferredWriter deferred_writer(blob);
+  ASSERT_EQ(OkStatus(), deferred_writer.Open());
+  EXPECT_EQ(deferred_writer.ConservativeReadLimit(), 0u);
+  EXPECT_EQ(deferred_writer.ConservativeWriteLimit(), kBufferSize);
+}
+
+TEST_F(BlobStoreTest, Reader_ConservativeLimits) {
+  InitSourceBufferToRandom(0x11309);
+  WriteTestBlock();
+
+  kvs::ChecksumCrc16 checksum;
+  constexpr size_t kBufferSize = 16;
+  BlobStoreBuffer<kBufferSize> blob(
+      "TestBlobBlock", partition_, &checksum, kvs::TestKvs(), kBufferSize);
+  EXPECT_EQ(OkStatus(), blob.Init());
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+
+  EXPECT_EQ(kBlobDataSize, reader.ConservativeReadLimit());
+  EXPECT_EQ(0u, reader.ConservativeWriteLimit());
+}
+
 TEST_F(BlobStoreTest, IsOpen) {
   constexpr size_t kBufferSize = 256;
   BlobStoreBuffer<kBufferSize> blob(

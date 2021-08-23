@@ -137,7 +137,7 @@ class BlobStore {
     // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
     size_t ConservativeLimit(LimitType limit) const override {
-      if (limit == LimitType::kRead) {
+      if (limit == LimitType::kWrite) {
         PW_DASSERT(open_);
         return store_.WriteBytesRemaining();
       }
