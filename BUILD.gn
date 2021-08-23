@@ -49,8 +49,6 @@ group("default") {
     "$dir_pw_env_setup:python.install",
     "$dir_pw_env_setup:python.lint",
     "$dir_pw_env_setup:python.tests",
-    "$dir_pw_env_setup:target_support_packages.lint",
-    "$dir_pw_env_setup:target_support_packages.tests",
   ]
 }
 
@@ -151,14 +149,11 @@ group("fuzzers") {
   }
 }
 
-# TODO(pwbug/325) Delete this target.
 pw_python_group("python") {
-  python_deps = [ "$dir_pw_env_setup:python" ]
-}
-
-# TODO(pwbug/325) Delete this target.
-pw_python_group("target_support_packages") {
-  python_deps = [ "$dir_pw_env_setup:target_support_packages" ]
+  python_deps = [
+    "$dir_pw_env_setup:python",
+    "$dir_pw_env_setup:target_support_packages",
+  ]
 }
 
 # By default, Pigweed will build this target when invoking ninja.

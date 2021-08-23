@@ -10,8 +10,7 @@
   "virtualenv": {
     "gn_root": ".",
     "gn_targets": [
-      ":python.install",
-      ":target_support_packages.install"
+      ":python.install"
     ]
   }
 }

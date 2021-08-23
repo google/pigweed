@@ -40,6 +40,7 @@ import pw_package.pigweed_packages
 from pw_presubmit import build, cli, format_code, git_repo, call, filter_paths
 import pw_presubmit.inclusive_language
 from pw_presubmit import plural, PresubmitContext, PresubmitFailure, Programs
+from pw_presubmit import python_checks
 from pw_presubmit.install_hook import install_hook
 
 _LOG = logging.getLogger(__name__)
@@ -228,18 +229,6 @@ def gn_host_tools(ctx: PresubmitContext):
 def oss_fuzz_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir, pw_toolchain_OSS_FUZZ_ENABLED=True)
     build.ninja(ctx.output_dir, "fuzzers")
-
-
-@filter_paths(endswith='.py')
-def python_checks(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(
-        ctx.output_dir,
-        ':python.lint',
-        ':python.tests',
-        ':target_support_packages.lint',
-        ':target_support_packages.tests',
-    )
 
 
 def _run_cmake(ctx: PresubmitContext) -> None:
@@ -834,7 +823,7 @@ OTHER_CHECKS = (
     stm32f429i,
 )
 
-LINTFORMAT = (
+_LINTFORMAT = (
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(),
@@ -844,8 +833,13 @@ LINTFORMAT = (
     source_is_in_build_files,
 )
 
+LINTFORMAT = (
+    _LINTFORMAT,
+    python_checks.gn_lint,
+)
+
 QUICK = (
-    LINTFORMAT,
+    _LINTFORMAT,
     gn_quick_build_check,
     # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
     # the clang issues. The problem is that all clang++ invocations need the
@@ -854,7 +848,7 @@ QUICK = (
 )
 
 FULL = (
-    LINTFORMAT,
+    _LINTFORMAT,
     gn_host_build,
     gn_arm_build,
     gn_docs_build,
@@ -869,7 +863,7 @@ FULL = (
     gn_qemu_build if sys.platform != 'win32' else (),
     gn_qemu_clang_build if sys.platform != 'win32' else (),
     source_is_in_build_files,
-    python_checks,
+    python_checks.gn_python_check,
     build_env_setup,
     # Skip gn_teensy_build if running on Windows. The Teensycore installer is
     # an exe that requires an admin role.

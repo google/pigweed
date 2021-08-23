@@ -116,6 +116,13 @@ There's a ``pragma_once`` check that confirms the first non-comment line of
 C/C++ headers is ``#pragma once``. This is enabled by adding
 ``pw_presubmit.pragma_once`` to a presubmit program.
 
+Python Checks
+=============
+There are two checks in the ``pw_presubmit.python_checks`` module, ``gn_lint``
+and ``gn_python_check``. They assume there's a top-level ``python`` GN target.
+``gn_lint`` runs Pylint and Mypy checks and ``gn_python_check`` runs Pylint,
+Mypy, and all Python tests.
+
 Inclusive Language
 ==================
 .. inclusive-language: disable
@@ -169,26 +176,13 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
 
   import pw_presubmit
   from pw_presubmit import build, cli, environment, format_code, git_repo
-  from pw_presubmit import inclusive_language, python_checks, filter_paths
+  from pw_presubmit import inclusive_language, filter_paths, python_checks
   from pw_presubmit import PresubmitContext
   from pw_presubmit.install_hook import install_hook
 
   # Set up variables for key project paths.
   PROJECT_ROOT = Path(os.environ['MY_PROJECT_ROOT'])
   PIGWEED_ROOT = PROJECT_ROOT / 'pigweed'
-
-  #
-  # Initialization
-  #
-  def init_cipd(ctx: PresubmitContext):
-      environment.init_cipd(PIGWEED_ROOT, ctx.output_dir)
-
-
-  def init_virtualenv(ctx: PresubmitContext):
-      environment.init_virtualenv(PIGWEED_ROOT,
-                                  ctx.output_dir,
-                                  setup_py_roots=[PROJECT_ROOT])
-
 
   # Rerun the build if files with these extensions change.
   _BUILD_EXTENSIONS = frozenset(
