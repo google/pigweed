@@ -26,8 +26,6 @@ from pw_unit_test_proto import unit_test_pb2
 from pw_unit_test import run_tests, EventHandler, TestCase
 from pw_status import Status
 
-PORT = 33002
-
 # The three suites (Passing, Failing, and DISABLED_Disabled) have these cases.
 _CASES = ('Zero', 'One', 'Two', 'DISABLED_Disabled')
 _FILE = 'pw_unit_test/test_rpc_server.cc'
@@ -49,10 +47,11 @@ ALL_DISABLED_TESTS = (
 class RpcIntegrationTest(unittest.TestCase):
     """Calls RPCs on an RPC server through a socket."""
     test_server_command: Tuple[str, ...] = ()
+    port: int
 
     def setUp(self) -> None:
         self._context = rpc.HdlcRpcLocalServerAndClient(
-            self.test_server_command, PORT, [unit_test_pb2])
+            self.test_server_command, self.port, [unit_test_pb2])
         self.rpcs = self._context.client.channel(1).rpcs
         self.handler = mock.NonCallableMagicMock(spec=EventHandler)
 
@@ -118,8 +117,10 @@ class RpcIntegrationTest(unittest.TestCase):
         self.handler.test_case_end.assert_has_calls(calls, any_order=True)
 
 
-def _main(test_server_command: List[str], unittest_args: List[str]) -> None:
+def _main(test_server_command: List[str], port: int,
+          unittest_args: List[str]) -> None:
     RpcIntegrationTest.test_server_command = tuple(test_server_command)
+    RpcIntegrationTest.port = port
     unittest.main(argv=unittest_args)
 
 

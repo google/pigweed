@@ -69,8 +69,8 @@ TransferService transfer_service(kChunkSizeBytes, kMaxReceiveSizeBytes);
 
 std::byte buffer[512];
 
-void RunServer() {
-  rpc::system_server::set_socket_port(33001);
+void RunServer(int socket_port) {
+  rpc::system_server::set_socket_port(socket_port);
 
   BufferReaderWriter transfer(99, buffer);
 
@@ -97,14 +97,17 @@ void RunServer() {
   rpc::system_server::Server().RegisterService(transfer_service);
 
   PW_LOG_INFO("Starting pw_rpc server");
-  rpc::system_server::Start()
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  PW_CHECK_OK(rpc::system_server::Start());
 }
 
 }  // namespace
 }  // namespace pw::transfer
 
-int main() {
-  pw::transfer::RunServer();
+int main(int argc, char* argv[]) {
+  if (argc != 2) {
+    PW_LOG_ERROR("Usage: %s PORT", argv[0]);
+    return 1;
+  }
+  pw::transfer::RunServer(std::atoi(argv[1]));
   return 0;
 }

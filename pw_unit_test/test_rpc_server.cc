@@ -13,6 +13,7 @@
 // the License.
 
 #include "gtest/gtest.h"
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_rpc_system_server/socket.h"
@@ -66,14 +67,17 @@ TEST(DISABLED_Disabled, DISABLED_Disabled) {
 
 }  // namespace
 
-int main() {
-  pw::rpc::system_server::set_socket_port(33002);
+int main(int argc, char* argv[]) {
+  if (argc != 2) {
+    PW_LOG_ERROR("Usage: %s PORT", argv[0]);
+    return 1;
+  }
+  pw::rpc::system_server::set_socket_port(std::atoi(argv[1]));
   pw::rpc::system_server::Init();
   pw::rpc::system_server::Server().RegisterService(unit_test_service);
 
   PW_LOG_INFO("Starting pw_rpc server");
-  pw::rpc::system_server::Start()
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  PW_CHECK_OK(pw::rpc::system_server::Start());
 
   return 0;
 }

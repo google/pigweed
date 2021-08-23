@@ -28,12 +28,22 @@ def parse_test_server_args(
                         nargs='+',
                         required=True,
                         help='Command that starts the test server.')
+    parser.add_argument(
+        '--port',
+        type=int,
+        required=True,
+        help=('The port to use to connect to the test server. This value is '
+              'passed to the test server as the last argument.'))
     parser.add_argument('unittest_args',
                         nargs=argparse.REMAINDER,
                         help='Arguments after "--" are passed to unittest.')
 
     args = parser.parse_args()
 
+    # Append the port number to the test server command.
+    args.test_server_command.append(str(args.port))
+
     # Make the script name argv[0] and drop the "--".
     args.unittest_args = sys.argv[:1] + args.unittest_args[1:]
+
     return args

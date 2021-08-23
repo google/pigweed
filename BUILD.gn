@@ -134,13 +134,8 @@ group("integration_tests") {
 
   if (host_os != "win") {
     deps += [
-      # Uses port 33000
       "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_toolchain)",
-
-      # Uses port 33001
       "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_toolchain)",
-
-      # Uses port 33002
       "$dir_pw_unit_test/py:rpc_service_test.action($_default_toolchain)",
     ]
   } else {

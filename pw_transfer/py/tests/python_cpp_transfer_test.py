@@ -21,7 +21,6 @@ from pw_hdlc import rpc
 from pw_rpc import testing
 from pw_transfer import transfer, transfer_pb2
 
-PORT = 33001
 TRANSFER_ID = 99
 ITERATIONS = 5
 
@@ -29,10 +28,11 @@ ITERATIONS = 5
 class TransferServiceIntegrationTest(unittest.TestCase):
     """Tests transfers between the Python client and C++ service."""
     test_server_command: Tuple[str, ...] = ()
+    port: int
 
     def setUp(self) -> None:
         self._context = rpc.HdlcRpcLocalServerAndClient(
-            self.test_server_command, PORT, [transfer_pb2])
+            self.test_server_command, self.port, [transfer_pb2])
         service = self._context.client.channel(1).rpcs.pw.transfer.Transfer
         self.manager = transfer.Manager(service)
 
@@ -68,9 +68,11 @@ class TransferServiceIntegrationTest(unittest.TestCase):
             self.assertEqual(self.manager.read(TRANSFER_ID), b'~' * 512)
 
 
-def _main(test_server_command: List[str], unittest_args: List[str]) -> None:
+def _main(test_server_command: List[str], port: int,
+          unittest_args: List[str]) -> None:
     TransferServiceIntegrationTest.test_server_command = tuple(
         test_server_command)
+    TransferServiceIntegrationTest.port = port
     unittest.main(argv=unittest_args)
 
 

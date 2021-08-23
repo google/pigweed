@@ -22,16 +22,16 @@ from pw_rpc import benchmark_pb2, testing
 from pw_status import Status
 
 ITERATIONS = 50
-PORT = 33000
 
 
 class RpcIntegrationTest(unittest.TestCase):
     """Calls RPCs on an RPC server through a socket."""
     test_server_command: Tuple[str, ...] = ()
+    port: int
 
     def setUp(self) -> None:
         self._context = pw_hdlc.rpc.HdlcRpcLocalServerAndClient(
-            self.test_server_command, PORT, [benchmark_pb2])
+            self.test_server_command, self.port, [benchmark_pb2])
         self.rpcs = self._context.client.channel(1).rpcs
 
     def tearDown(self) -> None:
@@ -79,8 +79,10 @@ class RpcIntegrationTest(unittest.TestCase):
                              [rpc.response(payload=b'123')])
 
 
-def _main(test_server_command: List[str], unittest_args: List[str]) -> None:
+def _main(test_server_command: List[str], port: int,
+          unittest_args: List[str]) -> None:
     RpcIntegrationTest.test_server_command = tuple(test_server_command)
+    RpcIntegrationTest.port = port
     unittest.main(argv=unittest_args)
 
 
