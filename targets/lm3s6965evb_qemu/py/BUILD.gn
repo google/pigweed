@@ -17,7 +17,11 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python.gni")
 
 pw_python_package("py") {
-  setup = [ "setup.py" ]
+  setup = [
+    "pyproject.toml",
+    "setup.cfg",
+    "setup.py",
+  ]
   sources = [
     "lm3s6965evb_qemu_utils/__init__.py",
     "lm3s6965evb_qemu_utils/unit_test_runner.py",

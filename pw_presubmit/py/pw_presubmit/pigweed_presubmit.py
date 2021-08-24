@@ -655,7 +655,8 @@ def copyright_notice(ctx: PresubmitContext):
 
 
 _BAZEL_SOURCES_IN_BUILD = tuple(format_code.C_FORMAT.extensions)
-_GN_SOURCES_IN_BUILD = '.rst', '.py', *_BAZEL_SOURCES_IN_BUILD
+_GN_SOURCES_IN_BUILD = ('setup.cfg', '.toml', '.rst', '.py',
+                        *_BAZEL_SOURCES_IN_BUILD)
 
 
 @filter_paths(endswith=(*_GN_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'))

@@ -16,7 +16,11 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python.gni")
 
 pw_python_package("py") {
-  setup = [ "setup.py" ]
+  setup = [
+    "pyproject.toml",
+    "setup.cfg",
+    "setup.py",
+  ]
   sources = [
     "pw_tls_client/__init__.py",
     "pw_tls_client/generate_test_data.py",

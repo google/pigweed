@@ -90,7 +90,11 @@ This is an example Python package declaration for a ``pw_my_module`` module.
   import("$dir_pw_build/python.gni")
 
   pw_python_package("py") {
-    setup = [ "setup.py" ]
+    setup = [
+      "pyproject.toml",
+      "setup.cfg",
+      "setup.py",
+    ]
     sources = [
       "pw_my_module/__init__.py",
       "pw_my_module/alfa.py",

@@ -70,6 +70,10 @@ pw_python_package("py") {
 # protobuf module.
 pw_python_script("setup") {
   sources = [ "setup.py" ]
+  inputs = [
+    "setup.cfg",
+    "pyproject.toml",
+  ]
 }
 
 pw_proto_library("test_proto") {

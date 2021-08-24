@@ -18,7 +18,11 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 
 pw_python_package("py") {
-  setup = [ "setup.py" ]
+  setup = [
+    "pyproject.toml",
+    "setup.cfg",
+    "setup.py",
+  ]
   sources = [
     "pw_protobuf_compiler/__init__.py",
     "pw_protobuf_compiler/generate_protos.py",
