@@ -123,6 +123,7 @@ group("module_docs") {
     "$dir_pw_router:docs",
     "$dir_pw_rpc:docs",
     "$dir_pw_snapshot:docs",
+    "$dir_pw_software_update:docs",
     "$dir_pw_span:docs",
     "$dir_pw_status:docs",
     "$dir_pw_stm32cube_build:docs",

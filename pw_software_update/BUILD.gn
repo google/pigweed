@@ -14,7 +14,9 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
+import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
   include_dirs = [ "public" ]
@@ -26,4 +28,34 @@ pw_proto_library("protos") {
     "update_bundle.proto",
   ]
   prefix = "pw_software_update"
+}
+
+pw_source_set("update_bundle") {
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    dir_pw_blob_store,
+    dir_pw_kvs,
+  ]
+  deps = [ dir_pw_log ]
+  public = [
+    "public/pw_software_update/config.h",
+    "public/pw_software_update/update_bundle.h",
+  ]
+}
+
+pw_test("update_bundle_test") {
+  sources = [ "update_bundle_test.cc" ]
+  public_deps = [
+    ":update_bundle",
+    "$dir_pw_kvs:fake_flash",
+    "$dir_pw_kvs:fake_flash_test_key_value_store",
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":update_bundle_test" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }

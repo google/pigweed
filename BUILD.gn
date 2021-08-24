@@ -304,6 +304,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_router:tests",
       "$dir_pw_rpc:tests",
       "$dir_pw_snapshot:tests",
+      "$dir_pw_software_update:tests",
       "$dir_pw_span:tests",
       "$dir_pw_status:tests",
       "$dir_pw_stream:tests",
