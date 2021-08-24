@@ -209,7 +209,7 @@ class ByteBuilder {
 
   ByteBuilder& operator=(const ByteBuilder&) = delete;
 
-  // Returns the contents of the bytes buffer. Always null-terminated.
+  // Returns the contents of the bytes buffer.
   const std::byte* data() const { return buffer_.data(); }
 
   // Returns the ByteBuilder's status, which reflects the most recent error
