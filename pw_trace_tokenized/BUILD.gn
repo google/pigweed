@@ -99,6 +99,7 @@ pw_source_set("tokenized_trace_buffer") {
   deps = [ ":core" ]
   public_deps = [
     ":config",
+    "$dir_pw_bytes",
     "$dir_pw_ring_buffer",
     "$dir_pw_tokenizer",
     "$dir_pw_varint",

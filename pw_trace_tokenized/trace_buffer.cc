@@ -72,6 +72,11 @@ class TraceBuffer {
     return ring_buffer_;
   };
 
+  ConstByteSpan DeringAndViewRawBuffer() {
+    ring_buffer_.Dering();
+    return ByteSpan(raw_buffer_, ring_buffer_.TotalUsedBytes());
+  }
+
  private:
   uint16_t block_size_ = 0;
   uint16_t block_idx_ = 0;
@@ -90,6 +95,10 @@ void ClearBuffer() { trace_buffer_instance.RingBuffer().Clear(); }
 
 pw::ring_buffer::PrefixedEntryRingBuffer* GetBuffer() {
   return &trace_buffer_instance.RingBuffer();
+}
+
+ConstByteSpan DeringAndViewRawBuffer() {
+  return trace_buffer_instance.DeringAndViewRawBuffer();
 }
 
 }  // namespace trace

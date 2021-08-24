@@ -172,6 +172,15 @@ The buffer has two configurable options:
    Including the token, time, and any attached data. Any trace object larger
    then this will be dropped.
 
+.. cpp:function:: ConstByteSpan DeringAndViewRawBuffer()
+
+The DeringAndViewRawBuffer function can be used to get bulk access of the full
+deringed prefixed-ring-buffer data. This might be neccessary for large zero-copy
+bulk transfers. It is the caller's responsibility to disable tracing during
+access to the buffer. The data in the block is defined by the
+prefixed-ring-buffer format without any user-preamble.
+
+
 Added dependencies
 ------------------
 ``pw_ring_buffer``

@@ -16,6 +16,7 @@
 // This file provides an optional trace buffer which can be used with the
 #pragma once
 
+#include "pw_bytes/span.h"
 #include "pw_ring_buffer/prefixed_entry_ring_buffer.h"
 #include "pw_trace_tokenized/config.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
@@ -30,6 +31,12 @@ void ClearBuffer();
 
 // Get the ring buffer which contains the data.
 pw::ring_buffer::PrefixedEntryRingBuffer* GetBuffer();
+
+// View underlying buffer trace_tokenized provided ring_buffer at time of
+// construction. This allows for bulk access to the trace events buffer. Since
+// this also derings the underlying ring_buffer, ensure that tracing is disabled
+// when calling this function.
+ConstByteSpan DeringAndViewRawBuffer();
 
 }  // namespace trace
 }  // namespace pw

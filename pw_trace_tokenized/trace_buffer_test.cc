@@ -141,3 +141,23 @@ TEST(TokenizedTrace, BlockTooLarge) {
   PW_TRACE_INSTANT_DATA("Test", "data", data, sizeof(data));
   EXPECT_EQ(buf->EntryCount(), 0u);
 }
+
+TEST(TokenizedTrace, DeringAndViewRawBuffer) {
+  PW_TRACE_SET_ENABLED(true);
+  pw::trace::ClearBuffer();
+
+  // Should be empty span
+  pw::ConstByteSpan buf = pw::trace::DeringAndViewRawBuffer();
+  EXPECT_EQ(buf.size(), 0u);
+
+  // Should now have data
+  PW_TRACE_INSTANT("Test");
+  buf = pw::trace::DeringAndViewRawBuffer();
+  EXPECT_GT(buf.size(), 0u);
+
+  // Should now have more data
+  PW_TRACE_INSTANT("Test");
+  size_t size_start = buf.size();
+  buf = pw::trace::DeringAndViewRawBuffer();
+  EXPECT_GT(buf.size(), size_start);
+}
