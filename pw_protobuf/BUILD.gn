@@ -67,11 +67,7 @@ pw_source_set("pw_protobuf") {
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "decoding.rst",
-    "docs.rst",
-    "encoding.rst",
-  ]
+  sources = [ "docs.rst" ]
   report_deps = [
     "size_report:decoder_full",
     "size_report:decoder_incremental",
