@@ -69,6 +69,8 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE',
                    type=envparse.strict_bool)
 
+    parser.add_var('PW_ENVIRONMENT_NO_ERROR_ON_UNRECOGNIZED')
+
     return parser
 
 
