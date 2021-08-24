@@ -215,7 +215,7 @@ meaning it is a
 
 Note that the ``TimedMutex`` is a derived ``Mutex`` class, meaning that
 a ``TimedMutex`` can be used by someone who needs the basic ``Mutex``. This is
-in stark contrast to the C++ STL's
+in contrast to the C++ STL's
 `std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_.
 
 
@@ -973,6 +973,12 @@ ThreadNotification
 The ThreadNotification is a synchronization primitive that can be used to
 permit a SINGLE thread to block and consume a latching, saturating
 notification from multiple notifiers.
+
+.. Note::
+  Although only a single thread can block on a ThreadNotification at a time,
+  many instances may be used by a single thread just like binary semaphores.
+  This is in contrast to some native RTOS APIs, such as direct task
+  notifications, which re-use the same state within a thread's context.
 
 .. Warning::
   This is a single consumer/waiter, multiple producer/notifier API!
