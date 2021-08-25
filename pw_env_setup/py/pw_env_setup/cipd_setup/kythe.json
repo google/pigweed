@@ -1,12 +1,18 @@
 [
   {
     "path": "fuchsia/third_party/kythe",
+    "platforms": [
+      "linux-amd64"
+    ],
     "tags": [
       "version:0.0.46"
     ]
   },
   {
-    "path": "fuchsia/third_party/kythe-libs/${os=linux}-${arch=amd64}",
+    "path": "fuchsia/third_party/kythe-libs/${platform}",
+    "platforms": [
+      "linux-amd64"
+    ],
     "tags": [
       "version:2020-08-05"
     ]

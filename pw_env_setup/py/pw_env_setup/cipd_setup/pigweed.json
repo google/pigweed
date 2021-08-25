@@ -5,6 +5,7 @@
       "linux-amd64",
       "linux-arm64",
       "mac-amd64",
+      "mac-arm64",
       "windows-amd64"
     ],
     "tags": [
@@ -84,6 +85,7 @@
       "linux-amd64",
       "linux-arm64",
       "mac-amd64",
+      "mac-arm64",
       "windows-amd64"
     ],
     "tags": [
@@ -176,7 +178,8 @@
   {
     "path": "infra/3pp/tools/renode/${platform}",
     "platforms": [
-      "linux-amd64"
+      "linux-amd64",
+      "linux-arm64"
     ],
     "tags": [
       "version:2@renode-1.11.0+20210306gite7897c1"
@@ -186,7 +189,9 @@
     "path": "infra/3pp/tools/buildifier/${platform}",
     "platforms": [
       "linux-amd64",
+      "linux-arm64",
       "mac-amd64",
+      "mac-arm64",
       "windows-amd64"
     ],
     "tags": [
