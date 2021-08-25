@@ -22,7 +22,8 @@ config("default_config") {
 
 pw_proto_library("protos") {
   sources = [
-    "pw_software_update_protos/tuf.proto",
-    "pw_software_update_protos/update_bundle.proto",
+    "tuf.proto",
+    "update_bundle.proto",
   ]
+  prefix = "pw_software_update"
 }

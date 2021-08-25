@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-package pw.software_update;
+package pw_software_update;
 
 import "google/protobuf/timestamp.proto";
 
@@ -232,7 +232,7 @@ message MetaFileContent {
   // The Hash is the hex digest of the cryptographic function computed on the
   // target file. E.g.
   // "65b8c67f51c993d898250f40aa57a317d854900b3a04895464313e48785440da".
-  repeated Hash hashes = 2;
+  repeated Hash hashes = 3;
 }
 
 enum KeyType {

@@ -14,9 +14,9 @@
 
 syntax = "proto3";
 
-package pw.software_update;
+package pw_software_update;
 
-import "tuf.proto";
+import "pw_software_update/tuf.proto";
 
 message UpdateBundle {
   optional SignedMetadata root_metadata = 1;
