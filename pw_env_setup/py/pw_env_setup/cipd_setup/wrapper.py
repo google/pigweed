@@ -122,7 +122,10 @@ def arch_normalized():
 
     machine = platform.machine()
     if machine.startswith(('arm', 'aarch')):
-        return machine.replace('aarch', 'arm')
+        machine = machine.replace('aarch', 'arm')
+        if machine == 'arm64':
+            return machine
+        return 'armv6l'
     if machine.endswith('64'):
         return 'amd64'
     if machine.endswith('86'):
