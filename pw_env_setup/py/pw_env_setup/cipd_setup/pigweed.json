@@ -13,14 +13,16 @@
     ]
   },
   {
-    "path": "infra/ninja/${platform}",
+    "path": "infra/3pp/tools/ninja/${platform}",
     "platforms": [
       "linux-amd64",
+      "linux-arm64",
       "mac-amd64",
+      "mac-arm64",
       "windows-amd64"
     ],
     "tags": [
-      "version:1.9.0"
+      "version:2@1.10.2"
     ]
   },
   {
