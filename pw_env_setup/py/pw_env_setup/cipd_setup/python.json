@@ -6,11 +6,20 @@
       "linux-amd64",
       "linux-arm64",
       "mac-amd64",
-      "mac-arm64",
       "windows-amd64"
     ],
     "tags": [
       "version:2@3.9.5.chromium.19"
+    ]
+  },
+  {
+    "_comment": "TODO(pwbug/455) Use 3.9 for Macs too.",
+    "path": "infra/3pp/tools/cpython3/${platform}",
+    "platforms": [
+      "mac-arm64"
+    ],
+    "tags": [
+      "version:2@3.8.10.chromium.21"
     ]
   }
 ]
