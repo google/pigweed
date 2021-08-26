@@ -174,6 +174,9 @@ def install(
         if '__PYVENV_LAUNCHER__' in envcopy:
             del envcopy['__PYVENV_LAUNCHER__']
 
+        # TODO(spang): Pass --upgrade-deps and remove pip & setuptools
+        # upgrade below. This can only be done once the minimum python
+        # version is at least 3.9.
         cmd = [python, '-m', 'venv', '--upgrade']
         cmd += ['--system-site-packages'] if system_packages else []
         cmd += [venv_path]
@@ -201,7 +204,8 @@ def install(
         cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
         return _check_call(cmd)
 
-    pip_install('--upgrade', 'pip')
+    pip_install('--log', os.path.join(venv_path, 'pip-upgrade.log'),
+                '--upgrade', 'pip', 'setuptools')
 
     if requirements:
         requirement_args = tuple('--requirement={}'.format(req)
