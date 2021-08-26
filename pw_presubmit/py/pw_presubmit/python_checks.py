@@ -51,16 +51,8 @@ def gn_lint(ctx: pw_presubmit.PresubmitContext) -> None:
     build.ninja(ctx.output_dir, 'python.lint')
 
 
-# TODO(mohrr) Remove gn_check=False when it passes for all downstream projects.
-# TODO(pwbug/454) Remove after downstream projects switch to gn_python_check.
-@filter_paths(endswith=_PYTHON_EXTENSIONS)
-def test_python_packages(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, gn_check=False)
-    build.ninja(ctx.output_dir, 'python.tests')
-
-
 _LINT_CHECKS = (gn_lint, )
-_ALL_CHECKS = (gn_python_check, test_python_packages)
+_ALL_CHECKS = (gn_python_check, )
 
 
 # TODO(pwbug/454) Remove after downstream projects switch to using functions
