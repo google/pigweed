@@ -212,6 +212,17 @@ Added dependencies
 ``pw_tokenizer``
 ``pw_varint``
 
+--------------
+Python decoder
+--------------
+The python decoder can be used to convert the binary trace data into json data
+which can be viewed in chrome://tracing.
+
+``get_trace.py`` can be used for retrieveing trace data from devices which are
+using the trace_rpc_server.
+
+``trace_tokenized.py`` can be used to decode a binary file of trace data.
+
 --------
 Examples
 --------

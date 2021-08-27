@@ -13,12 +13,20 @@
 // the License.
 //==============================================================================
 /*
+
+NOTE
+To use this example you need to enable nanopb, one option is to set this in
+either your out/args.gn or the root .gn:
+default_args = {
+  dir_pw_third_party_nanopb = "<path to nanopb repo>"
+}
+
 BUILD
 ninja -C out
 host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
 
 RUN
-.out/host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
+./out/host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
 
 DECODE
 python pw_trace_tokenized/py/pw_trace_tokenized/get_trace.py

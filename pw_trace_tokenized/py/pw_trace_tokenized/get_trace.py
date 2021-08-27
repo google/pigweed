@@ -127,7 +127,13 @@ def _parse_args():
     parser.add_argument('proto_globs',
                         nargs='+',
                         help='glob pattern for .proto files')
-
+    parser.add_argument(
+        '-f',
+        '--ticks_per_second',
+        type=int,
+        dest='ticks_per_second',
+        default=1000,
+        help=('The clock rate of the trace events (Default 1000).'))
     return parser.parse_args()
 
 
@@ -137,7 +143,8 @@ def _main(args):
     _LOG.info(database.database_summary(token_database))
     client = get_hdlc_rpc_client(**vars(args))
     data = get_trace_data_from_device(client)
-    events = trace_tokenized.get_trace_events([token_database], data)
+    events = trace_tokenized.get_trace_events([token_database], data,
+                                              args.ticks_per_second)
     json_lines = trace.generate_trace_json(events)
     trace_tokenized.save_trace_file(json_lines, args.trace_output_file)
 
