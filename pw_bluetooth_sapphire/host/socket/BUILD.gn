@@ -37,6 +37,9 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-socket-tests") {

@@ -43,6 +43,9 @@ static_library("sdp") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//src/lib/fxl",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("tests") {
@@ -65,6 +68,9 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-sdp-tests") {

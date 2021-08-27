@@ -50,6 +50,9 @@ static_library("hci") {
     "//zircon/system/ulib/fzl",
     "//zircon/system/ulib/trace:trace-driver",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("testing") {
@@ -88,6 +91,9 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-hci-tests") {

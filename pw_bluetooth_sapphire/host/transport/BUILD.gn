@@ -46,6 +46,9 @@ static_library("transport") {
     "//zircon/system/ulib/fzl",
     "//zircon/system/ulib/trace:trace-driver",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("testing") {
@@ -74,6 +77,9 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-transport-tests") {
@@ -88,6 +94,9 @@ fuzzer("read_acl_data_packet_fuzzer") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 fuzzer("read_command_event_packet_fuzzer") {
@@ -97,4 +106,7 @@ fuzzer("read_command_event_packet_fuzzer") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }

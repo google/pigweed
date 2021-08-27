@@ -46,6 +46,9 @@ static_library("gatt") {
     "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host/att",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("testing") {
@@ -90,6 +93,9 @@ source_set("tests") {
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-gatt-tests") {
