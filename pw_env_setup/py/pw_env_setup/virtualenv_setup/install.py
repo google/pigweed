@@ -15,6 +15,7 @@
 
 from __future__ import print_function
 
+import contextlib
 import datetime
 import glob
 import os
@@ -154,6 +155,14 @@ def install(
     # The bin/ directory is called Scripts/ on Windows. Don't ask.
     venv_bin = os.path.join(venv_path, 'Scripts' if os.name == 'nt' else 'bin')
 
+    if env:
+        env.set('VIRTUAL_ENV', venv_path)
+        env.prepend('PATH', venv_bin)
+        env.clear('PYTHONHOME')
+        env.clear('__PYVENV_LAUNCHER__')
+    else:
+        env = contextlib.nullcontext()
+
     # Delete activation scripts. Typically they're created read-only and venv
     # will complain when trying to write over them fails.
     if os.path.isdir(venv_bin):
@@ -201,8 +210,9 @@ def install(
         os.unlink(egg_link)
 
     def pip_install(*args):
-        cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
-        return _check_call(cmd)
+        with env():
+            cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
+            return _check_call(cmd)
 
     pip_install('--log', os.path.join(venv_path, 'pip-upgrade.log'),
                 '--upgrade', 'pip', 'setuptools')
@@ -273,15 +283,7 @@ def install(
             )
 
     if gn_targets:
-        if env:
-            env.set('VIRTUAL_ENV', venv_path)
-            env.prepend('PATH', venv_bin)
-            env.clear('PYTHONHOME')
-            env.clear('__PYVENV_LAUNCHER__')
-            with env():
-                for gn_target in gn_targets:
-                    install_packages(gn_target)
-        else:
+        with env():
             for gn_target in gn_targets:
                 install_packages(gn_target)
 
