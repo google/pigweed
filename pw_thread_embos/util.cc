@@ -43,7 +43,7 @@ Status ForEachThread(const OS_TASK& starting_thread, ThreadCallback& cb) {
 }  // namespace internal
 
 Status ForEachThread(ThreadCallback& cb) {
-  return internal::ForEachThread(*OS_GetpCurrentTask(), cb);
+  return internal::ForEachThread(*OS_Global.pTask, cb);
 }
 
 }  // namespace pw::thread::embos
