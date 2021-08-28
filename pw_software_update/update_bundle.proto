@@ -19,18 +19,30 @@ package pw_software_update;
 import "pw_software_update/tuf.proto";
 
 message UpdateBundle {
-  optional SignedMetadata root_metadata = 1;
-  optional SignedMetadata timestamp_metadata = 2;
-  optional SignedMetadata snapshot_metadata = 3;
-  map<string, SignedMetadata> targets_metadata = 4;
+  // NOTE/TODO: SignedRootMetadata is not currently included as part of the
+  // UpdateBundle. Updating of the root metdata needs to be handled in a
+  // separate project-specific process. A standard upstream process can be added
+  // in the future.
 
-  // Map of target path to target payload bytes.
-  map<string, bytes> target_payload = 5;
+  optional SignedTimestampMetadata timestamp_metadata = 1;
+  optional SignedSnapshotMetadata snapshot_metadata = 2;
+
+  // Map of target metadata name to target metadata.
+  // Target metadata name can be an arbitrary name or a path that describes
+  // where the file lives relative to the base directory of the repository, as
+  // described in the snapshot metadata. e.g. "path/to/target/0".
+  map<string, SignedTargetsMetadata> target_metadata = 3;
+
+  // Map of target file name to target payload bytes.
+  // Target file name can be an arbitrary name or a path that describes where
+  // the file lives relative to the base directory of the repository, as
+  // described in the target metadata. e.g. "path/to/amber_tools/0".
+  map<string, bytes> target_payloads = 4;
 }
 
 // Update bundle metadata
 // Designed to inform the update server what the device currently has in-place.
 message Manifest {
-  optional Metadata snapshot_metadata = 1;
-  map<string, Metadata> targets_metadata = 2;
+  optional SnapshotMetadata snapshot_metadata = 1;
+  map<string, TargetsMetadata> targets_metadata = 2;
 }
