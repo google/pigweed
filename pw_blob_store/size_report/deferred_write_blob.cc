@@ -21,6 +21,10 @@
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
 
+using pw::blob_store::BlobStore;
+
+namespace {
+
 char working_buffer[256];
 volatile bool is_set;
 
@@ -38,6 +42,8 @@ pw::kvs::KeyValueStoreBuffer<kKvsMaxEntries, kMaxSectorCount> test_kvs(
     &pw::kvs::FlashTestPartition(), kvs_format);
 
 int volatile* unoptimizable;
+
+}  // namespace
 
 int main() {
   pw::bloat::BloatThisBinary();
@@ -87,7 +93,10 @@ int main() {
   blob.Init().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Use writer.
-  pw::blob_store::BlobStore::DeferredWriter writer(blob);
+  constexpr size_t kMetadataBufferSize =
+      BlobStore::BlobWriter::RequiredMetadataBufferSize(0);
+  std::array<std::byte, kMetadataBufferSize> metadata_buffer;
+  pw::blob_store::BlobStore::DeferredWriter writer(blob, metadata_buffer);
   writer.Open().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   writer.Write(write_data)
       .IgnoreError();            // TODO(pwbug/387): Handle Status properly

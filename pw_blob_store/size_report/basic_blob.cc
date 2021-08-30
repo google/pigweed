@@ -21,6 +21,11 @@
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
 
+using pw::blob_store::BlobStore;
+using pw::blob_store::BlobStoreBuffer;
+
+namespace {
+
 char working_buffer[256];
 volatile bool is_set;
 
@@ -38,6 +43,8 @@ pw::kvs::KeyValueStoreBuffer<kKvsMaxEntries, kMaxSectorCount> test_kvs(
     &pw::kvs::FlashTestPartition(), kvs_format);
 
 int volatile* unoptimizable;
+
+}  // namespace
 
 int main() {
   pw::bloat::BloatThisBinary();
@@ -82,19 +89,22 @@ int main() {
   // Start of basic blob **********************
   constexpr size_t kBufferSize = 1;
 
-  pw::blob_store::BlobStoreBuffer<kBufferSize> blob(
+  BlobStoreBuffer<kBufferSize> blob(
       name, pw::kvs::FlashTestPartition(), nullptr, test_kvs, kBufferSize);
   blob.Init().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Use writer.
-  pw::blob_store::BlobStore::BlobWriter writer(blob);
+  constexpr size_t kMetadataBufferSize =
+      BlobStore::BlobWriter::RequiredMetadataBufferSize(0);
+  std::array<std::byte, kMetadataBufferSize> metadata_buffer;
+  BlobStore::BlobWriter writer(blob, metadata_buffer);
   writer.Open().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   writer.Write(write_data)
       .IgnoreError();            // TODO(pwbug/387): Handle Status properly
   writer.Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
 
   // Use reader.
-  pw::blob_store::BlobStore::BlobReader reader(blob);
+  BlobStore::BlobReader reader(blob);
   reader.Open().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   pw::Result<pw::ConstByteSpan> get_result = reader.GetMemoryMappedBlob();
   PW_LOG_INFO("%d", get_result.ok());

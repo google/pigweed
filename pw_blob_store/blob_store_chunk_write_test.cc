@@ -66,7 +66,7 @@ class BlobStoreChunkTest : public ::testing::Test {
         name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
     EXPECT_EQ(OkStatus(), blob.Init());
 
-    BlobStore::BlobWriter writer(blob);
+    BlobStore::BlobWriter writer(blob, metadata_buffer_);
     EXPECT_EQ(OkStatus(), writer.Open());
     EXPECT_EQ(OkStatus(), writer.Erase());
 
@@ -110,9 +110,12 @@ class BlobStoreChunkTest : public ::testing::Test {
   static constexpr size_t kSectorSize = 2048;
   static constexpr size_t kSectorCount = 2;
   static constexpr size_t kBlobDataSize = (kSectorCount * kSectorSize);
+  static constexpr size_t kMetadataBufferSize =
+      BlobStore::BlobWriter::RequiredMetadataBufferSize(0);
 
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> flash_;
   kvs::FlashPartition partition_;
+  std::array<std::byte, kMetadataBufferSize> metadata_buffer_;
   std::array<std::byte, kBlobDataSize> source_buffer_;
 };
 

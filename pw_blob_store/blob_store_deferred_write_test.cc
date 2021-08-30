@@ -67,7 +67,7 @@ class DeferredWriteTest : public ::testing::Test {
         name, partition_, &checksum, kvs::TestKvs(), kWriteSize);
     EXPECT_EQ(OkStatus(), blob.Init());
 
-    BlobStore::DeferredWriter writer(blob);
+    BlobStore::DeferredWriter writer(blob, metadata_buffer_);
     EXPECT_EQ(OkStatus(), writer.Open());
 
     ByteSpan source = buffer_;
@@ -117,9 +117,12 @@ class DeferredWriteTest : public ::testing::Test {
   static constexpr size_t kSectorSize = 1024;
   static constexpr size_t kSectorCount = 4;
   static constexpr size_t kBufferSize = 2 * kSectorSize;
+  static constexpr size_t kMetadataBufferSize =
+      BlobStore::BlobWriter::RequiredMetadataBufferSize(0);
 
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> flash_;
   kvs::FlashPartition partition_;
+  std::array<std::byte, kMetadataBufferSize> metadata_buffer_;
   std::array<std::byte, kSectorCount * kSectorSize> buffer_;
 };
 

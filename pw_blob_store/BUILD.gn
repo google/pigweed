@@ -19,16 +19,22 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("pw_blob_store") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_blob_store/blob_store.h" ]
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_blob_store/blob_store.h",
+    "public/pw_blob_store/internal/metadata_format.h",
+  ]
   sources = [ "blob_store.cc" ]
   public_deps = [
+    dir_pw_bytes,
     dir_pw_kvs,
+    dir_pw_preprocessor,
     dir_pw_status,
     dir_pw_stream,
   ]

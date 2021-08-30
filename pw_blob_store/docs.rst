@@ -1,25 +1,80 @@
 .. _module-pw_blob_store:
 
--------------
+=============
 pw_blob_store
--------------
+=============
 ``pw_blob_store`` is a storage container library for storing a single blob of
-data. Blob_store is a flash-backed persistent storage system with integrated
+data. ``BlobStore`` is a flash-backed persistent storage system with integrated
 data integrity checking that serves as a lightweight alternative to a file
 system.
 
-Write and read are only done using the BlobWriter and BlobReader classes.
+=====
+Usage
+=====
+Most operations on a ``BlobStore`` are done using ``BlobReader`` and
+``BlobWriter`` objects that have been constructed using a ``BlobStore``. Though
+a ``BlobStore`` may have multiple open ``BlobReader`` objects, no other
+readers/writers may be active if a ``BlobWriter`` is opened on a blob store.
 
-Once a blob write is closed, reopening for write followed by a Discard(), Write(), or
-Erase() will discard the previous blob.
+----------------------
+Writing to a BlobStore
+----------------------
+``BlobWriter`` objects are ``pw::stream::Writer`` compatible, but do not support
+reading any of the blob's contents. Opening a ``BlobWriter`` on a ``BlobStore``
+that contains data will discard any existing data if ``Discard()``, ``Write
+()``, or ``Erase()`` are called. There is currently no mechanism to allow
+appending to existing data.
 
-Write blob:
-  0) Create BlobWriter instance
-  1) BlobWriter::Open().
-  2) Add data using BlobWriter::Write().
-  3) BlobWriter::Close().
+.. code-block:: cpp
 
-Read blob:
+  BlobStore::BlobWriter writer(my_blob_store);
+  writer.Open();
+  writer.Write(my_data);
+
+  // ...
+
+  // A close is implied when a BlobWriter is destroyed. Manually closing a
+  // BlobWriter enables error handling on Close() failure.
+  writer.Close();
+
+Erasing a BlobStore
+===================
+There are two distinctly different mechanisms to "erase" the contents of a BlobStore:
+
+#. ``Discard()``: Discards any ongoing writes and ensures ``BlobReader`` objects
+   see the ``BlobStore`` as empty. This is the fastest way to logically erase a
+   ``BlobStore``.
+#. ``Erase()``: Performs an explicit flash erase of the ``BlobStore``'s
+   underlying partition. This is useful for manually controlling when a flash
+   erase is performed before a ``BlobWriter`` starts to write data (as flash
+   erase operations may be time-consuming).
+
+Naming a BlobStore's contents
+=============================
+Data in a ``BlobStore`` May be named similarly to a file. This enables
+identification of a BlobStore's contents in cases where different data may be
+stored to a shared blob store. This requires an additional RAM buffer that can
+be used to encode the BlobStore's KVS metadata entry. Calling
+``MaxFileNameLength()`` on a ``BlobWriter`` will provide the max file name
+length based on the ``BlobWriter``'s metadata encode buffer size.
+
+``SetFileName()`` performs a copy of the provided file name, meaning it's safe
+for the ``std::string_view`` to be invalidated after the function returns.
+
+.. code-block:: cpp
+
+  std::array<std::byte, 48> metadata_encode_buffer;
+  BlobStore::BlobWriter writer(my_blob_store, metadata_encode_buffer);
+  writer.Open();
+  writer.SetFileName("stonks.jpg");
+  writer.Write(my_data);
+  // ...
+  writer.Close();
+
+------------------------
+Reading from a BlobStore
+------------------------
+
   0) Create BlobReader instance
   1) BlobReader::Open().
   2) Read data using BlobReader::Read() or
@@ -27,8 +82,9 @@ Read blob:
      BlobReader::Seek() to read from a desired offset.
   3) BlobReader::Close().
 
+===========
 Size report
------------
+===========
 The following size report showcases the memory usage of the blob store.
 
 .. include:: blob_size

@@ -27,13 +27,16 @@ pw_cc_library(
     srcs = ["blob_store.cc"],
     hdrs = [
         "public/pw_blob_store/blob_store.h",
+        "public/pw_blob_store/internal/metadata_format.h",
     ],
     includes = ["public"],
     deps = [
+        "//pw_bytes",
         "//pw_checksum",
         "//pw_containers",
         "//pw_kvs",
         "//pw_log",
+        "//pw_preprocessor",
         "//pw_span",
         "//pw_status",
         "//pw_stream",
