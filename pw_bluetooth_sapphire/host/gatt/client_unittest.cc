@@ -383,6 +383,32 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedAttrDataList) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
+TEST_F(ClientTest, DiscoverPrimaryResultsOutOfOrder) {
+  att::Status status;
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+
+  fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
+                                        6,           // data length: 6 (16-bit UUIDs)
+                                        0x12, 0x00,  // svc 0 start: 0x0012
+                                        0x13, 0x00,  // svc 0 end: 0x0013
+                                        0xEF, 0xBE,  // svc 0 uuid: 0xBEEF
+                                        0x10, 0x00,  // svc 1 start: 0x0010
+                                        0x11, 0x00,  // svc 1 end: 0x0011
+                                        0xAD, 0xDE   // svc 1 uuid: 0xDEAD
+                                        ));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+}
+
 // Tests that we handle an empty attribute data list. In practice, the
 // server would send an "Attribute Not Found" error instead but our stack treats
 // an empty data list as not an error.
@@ -719,6 +745,47 @@ TEST_F(ClientTest, DiscoverServicesInRangeMultipleRequests) {
   EXPECT_EQ(kTestUuid3, services[2].type);
 }
 
+TEST_F(ClientTest, DiscoverServicesInRangeFailsIfServiceResultIsOutOfRange) {
+  const att::Handle kRangeStart = 0x0010;
+  const att::Handle kRangeEnd = 0x0020;
+  const att::Handle kServiceStart = 0x0001;
+  const att::Handle kServiceEnd = 0x0011;
+
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
+                       0x00, 0x28  // type: primary service (0x2800)
+      );
+
+  const auto kResponse =
+      StaticByteBuffer(0x11,  // opcode: read by group type response
+                       0x06,  // data length: 6 (16-bit UUIDs)
+                       LowerBits(kServiceStart), UpperBits(kServiceStart),  // svc start
+                       LowerBits(kServiceEnd), UpperBits(kServiceEnd),      // svc end
+                       0xAD, 0xDE                                           // svc uuid: 0xDEAD
+      );
+
+  std::optional<att::Status> status;
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
+    client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+  fake_chan()->Receive(kResponse);
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(status->error(), HostError::kPacketMalformed);
+  EXPECT_EQ(0u, services.size());
+}
+
 TEST_F(ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
@@ -831,6 +898,30 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMalformedServiceRange) {
   // end handle 0xFFFF.
   EXPECT_FALSE(status);
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
+}
+
+TEST_F(ClientTest, DiscoverPrimaryWithUuidsServicesOutOfOrder) {
+  std::optional<att::Status> status;
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, res_cb] {
+    client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
+
+  // Return services out of order.
+  fake_chan()->Receive(StaticByteBuffer(0x07,        // opcode: find by type value response
+                                        0x05, 0x00,  // svc 0 start: 0x0005
+                                        0x06, 0x00,  // svc 0 end: 0x0006
+                                        0x01, 0x00,  // svc 1 start: 0x0001
+                                        0x02, 0x00   // svc 1 end: 0x0002
+                                        ));
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(status->error(), HostError::kPacketMalformed);
 }
 
 TEST_F(ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
@@ -1133,6 +1224,45 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   EXPECT_EQ(0x0006, services[1].range_start);
   EXPECT_EQ(0x0009, services[1].range_end);
   EXPECT_EQ(kTestUuid2, services[1].type);
+}
+
+TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeFailsOnResultNotInRequestedRange) {
+  const att::Handle kRangeStart = 0x0010;
+  const att::Handle kRangeEnd = 0x0020;
+  const att::Handle kServiceStart = 0x0002;
+  const att::Handle kServiceEnd = 0x0011;
+
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
+                       0x00, 0x28,  // type: primary service (0x2800)
+                       0xAD, 0xDE   // kTestUuid1
+      );
+  const auto kResponse =
+      StaticByteBuffer(0x07,  // opcode: find by type value response
+                       LowerBits(kServiceStart), UpperBits(kServiceStart),  // svc start
+                       LowerBits(kServiceEnd), UpperBits(kServiceEnd)       // svc end
+      );
+
+  std::optional<att::Status> status;
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
+    client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
+                                               res_cb, {kTestUuid1});
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(status->error(), HostError::kPacketMalformed);
+  EXPECT_EQ(0u, services.size());
 }
 
 TEST_F(ClientTest, CharacteristicDiscoveryHandlesEqual) {

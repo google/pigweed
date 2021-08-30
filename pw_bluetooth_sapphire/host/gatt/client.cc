@@ -214,7 +214,7 @@ class Impl final : public Client {
                                                         : types::kSecondaryService16);
 
     auto rsp_cb =
-        BindCallback([this, kind, range_end, svc_cb = std::move(svc_callback),
+        BindCallback([this, kind, range_start, range_end, svc_cb = std::move(svc_callback),
                       res_cb = status_callback.share()](const att::PacketReader& rsp) mutable {
           ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
           TRACE_DURATION("bluetooth", "gatt::Client::DiscoverServicesInRange rsp_cb", "size",
@@ -253,7 +253,7 @@ class Impl final : public Client {
             return;
           }
 
-          att::Handle last_handle = range_end;
+          std::optional<att::Handle> last_handle;
           while (attr_data_list.size()) {
             const auto& entry = attr_data_list.As<att::AttributeGroupDataEntry>();
 
@@ -262,6 +262,20 @@ class Impl final : public Client {
 
             if (end < start) {
               bt_log(DEBUG, "gatt", "received malformed service range values");
+              res_cb(att::Status(HostError::kPacketMalformed));
+              return;
+            }
+
+            if (start < range_start || start > range_end) {
+              bt_log(DEBUG, "gatt", "received service range values outside of requested range");
+              res_cb(att::Status(HostError::kPacketMalformed));
+              return;
+            }
+
+            // "The Attribute Data List is ordered sequentially based on the attribute handles."
+            // (Core Spec v5.3, Vol 3, Part F, Sec 3.4.4.10)
+            if (last_handle.has_value() && start <= last_handle.value()) {
+              bt_log(DEBUG, "gatt", "received services out of order");
               res_cb(att::Status(HostError::kPacketMalformed));
               return;
             }
@@ -280,13 +294,13 @@ class Impl final : public Client {
           }
 
           // The procedure is over if we have reached the end of the handle range.
-          if (last_handle == range_end) {
+          if (!last_handle.has_value() || last_handle.value() == range_end) {
             res_cb(att::Status());
             return;
           }
 
           // Request the next batch.
-          DiscoverServicesInRange(kind, last_handle + 1, range_end, std::move(svc_cb),
+          DiscoverServicesInRange(kind, last_handle.value() + 1, range_end, std::move(svc_cb),
                                   std::move(res_cb));
         });
 
@@ -359,58 +373,73 @@ class Impl final : public Client {
     MutableBufferView value_view(params->value, uuid_size_bytes);
     uuid.ToBytes(&value_view, /* allow 32 bit UUIDs */ false);
 
-    auto rsp_cb = BindCallback([this, kind, discovery_range_end = end,
-                                svc_cb = std::move(svc_callback), res_cb = status_callback.share(),
-                                uuid](const att::PacketReader& rsp) mutable {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
+    auto rsp_cb =
+        BindCallback([this, kind, discovery_range_start = start, discovery_range_end = end,
+                      svc_cb = std::move(svc_callback), res_cb = status_callback.share(),
+                      uuid](const att::PacketReader& rsp) mutable {
+          ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
 
-      size_t payload_size = rsp.payload_size();
-      if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
-        // Received malformed response. Disconnect the link.
-        bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
-               payload_size);
-        att_->ShutDown();
-        res_cb(att::Status(HostError::kPacketMalformed));
-        return;
-      }
+          size_t payload_size = rsp.payload_size();
+          if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
+            // Received malformed response. Disconnect the link.
+            bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
+                   payload_size);
+            att_->ShutDown();
+            res_cb(att::Status(HostError::kPacketMalformed));
+            return;
+          }
 
-      BufferView handle_list = rsp.payload_data();
+          BufferView handle_list = rsp.payload_data();
 
-      att::Handle last_handle = discovery_range_end;
-      while (handle_list.size()) {
-        const auto& entry = handle_list.As<att::HandlesInformationList>();
+          std::optional<att::Handle> last_handle;
+          while (handle_list.size()) {
+            const auto& entry = handle_list.As<att::HandlesInformationList>();
 
-        att::Handle start = le16toh(entry.handle);
-        att::Handle end = le16toh(entry.group_end_handle);
+            att::Handle start = le16toh(entry.handle);
+            att::Handle end = le16toh(entry.group_end_handle);
 
-        if (end < start) {
-          bt_log(DEBUG, "gatt", "received malformed service range values");
-          res_cb(att::Status(HostError::kPacketMalformed));
-          return;
-        }
+            if (end < start) {
+              bt_log(DEBUG, "gatt", "received malformed service range values");
+              res_cb(att::Status(HostError::kPacketMalformed));
+              return;
+            }
 
-        ServiceData service(kind, start, end, uuid);
+            if (start < discovery_range_start || start > discovery_range_end) {
+              bt_log(DEBUG, "gatt", "received service range values outside of requested range");
+              res_cb(att::Status(HostError::kPacketMalformed));
+              return;
+            }
 
-        // Notify the handler.
-        svc_cb(service);
+            // "The Handles Information List is ordered sequentially based on the found attribute
+            // handles." (Core Spec v5.3, Vol 3, Part F, Sec 3.4.3.4)
+            if (last_handle.has_value() && start <= last_handle.value()) {
+              bt_log(DEBUG, "gatt", "received services out of order");
+              res_cb(att::Status(HostError::kPacketMalformed));
+              return;
+            }
 
-        // HandlesInformationList is a single element of the list.
-        size_t entry_length = sizeof(att::HandlesInformationList);
-        handle_list = handle_list.view(entry_length);
+            ServiceData service(kind, start, end, uuid);
 
-        last_handle = service.range_end;
-      }
+            // Notify the handler.
+            svc_cb(service);
 
-      // The procedure is over if we have reached the end of the handle range.
-      if (last_handle == discovery_range_end) {
-        res_cb(att::Status());
-        return;
-      }
+            // HandlesInformationList is a single element of the list.
+            size_t entry_length = sizeof(att::HandlesInformationList);
+            handle_list = handle_list.view(entry_length);
 
-      // Request the next batch.
-      DiscoverServicesByUuidInRange(kind, last_handle + 1, discovery_range_end, std::move(svc_cb),
-                                    std::move(res_cb), uuid);
-    });
+            last_handle = service.range_end;
+          }
+
+          // The procedure is over if we have reached the end of the handle range.
+          if (!last_handle.has_value() || last_handle.value() == discovery_range_end) {
+            res_cb(att::Status());
+            return;
+          }
+
+          // Request the next batch.
+          DiscoverServicesByUuidInRange(kind, last_handle.value() + 1, discovery_range_end,
+                                        std::move(svc_cb), std::move(res_cb), uuid);
+        });
 
     auto error_cb = BindErrorCallback(
         [res_cb = status_callback.share()](att::Status status, att::Handle handle) {

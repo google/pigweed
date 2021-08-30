@@ -57,8 +57,8 @@ class Client {
   // Performs a modified version of the "Discover All Primary Services" procedure defined in v5.0,
   // Vol 3, Part G, 4.4.1, genericized over primary and secondary services.
   //
-  // |service_callback| is run for each discovered service. |status_callback| is run with the status
-  // of the operation.
+  // |service_callback| is run for each discovered service in order of start handle.
+  // |status_callback| is run with the status of the operation.
   //
   // The |kind| parameter can be used to control whether primary or secondary services get
   // discovered.
@@ -79,9 +79,9 @@ class Client {
                                        att::Handle range_end, ServiceCallback svc_callback,
                                        att::StatusCallback status_callback) = 0;
 
-  // Performs the "Discover All Primary Services by UUID" procedure defined in
-  // v5.0, Vol 3, Part G, 4.4.2. |service_callback| is run for each discovered
-  // service. |status_callback| is run with the result of the operation.
+  // Performs the "Discover All Primary Services by UUID" procedure defined in v5.0, Vol 3, Part G,
+  // 4.4.2. |service_callback| is run for each discovered service in order of start handle.
+  // |status_callback| is run with the result of the operation.
   //
   // The |kind| parameter can be used to control whether primary or secondary services get
   // discovered.
