@@ -61,15 +61,24 @@ bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
 
 bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
   switch (bytes.size()) {
-    case UUIDElemSize::k16Bit:
-      *out_uuid = UUID(le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
+    case UUIDElemSize::k16Bit: {
+      uint16_t dst;
+      memcpy(&dst, bytes.data(), sizeof(dst));
+      *out_uuid = UUID(le16toh(dst));
       return true;
-    case UUIDElemSize::k32Bit:
-      *out_uuid = UUID(le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
+    }
+    case UUIDElemSize::k32Bit: {
+      uint32_t dst;
+      memcpy(&dst, bytes.data(), sizeof(dst));
+      *out_uuid = UUID(le32toh(dst));
       return true;
-    case UUIDElemSize::k128Bit:
-      *out_uuid = UUID(*reinterpret_cast<const UInt128*>(bytes.data()));
+    }
+    case UUIDElemSize::k128Bit: {
+      UInt128 dst;
+      memcpy(dst.data(), bytes.data(), sizeof(dst));
+      *out_uuid = UUID(dst);
       return true;
+    }
   }
 
   return false;
@@ -101,16 +110,11 @@ bool UUID::operator==(uint32_t uuid32) const {
 bool UUID::operator==(const UInt128& uuid128) const { return value_ == uuid128; }
 
 bool UUID::CompareBytes(const ByteBuffer& bytes) const {
-  switch (bytes.size()) {
-    case UUIDElemSize::k16Bit:
-      return (*this == le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
-    case UUIDElemSize::k32Bit:
-      return (*this == le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
-    case UUIDElemSize::k128Bit:
-      return (*this == *reinterpret_cast<const UInt128*>(bytes.data()));
+  UUID other;
+  if (!FromBytes(bytes, &other)) {
+    return false;
   }
-
-  return false;
+  return *this == other;
 }
 
 std::string UUID::ToString() const {
@@ -150,7 +154,12 @@ BufferView UUID::CompactView(bool allow_32bit) const {
 }
 
 std::size_t UUID::Hash() const {
-  ZX_DEBUG_ASSERT(sizeof(value_) % sizeof(size_t) == 0);
+  static_assert(sizeof(value_) % sizeof(size_t) == 0);
+  // Morally we'd like to assert this, but:
+  //
+  // 'alignof' applied to an expression is a GNU extension.
+  //
+  // static_assert(alignof(value_) % alignof(size_t) == 0);
   size_t hash = 0;
   for (size_t i = 0; i < (sizeof(value_) / sizeof(size_t)); i++) {
     hash ^= *reinterpret_cast<const size_t*>(value_.data() + (i * sizeof(size_t)));

@@ -92,8 +92,14 @@ class ByteBuffer {
   // Converts the underlying buffer to the given type with bounds checking. The buffer is allowed
   // to be larger than T. The user is responsible for checking that the first sizeof(T) bytes
   // represent a valid instance of T.
+  //
+  // It is not possible to implement this function without either:
+  // (A) controlling the memory alignment of |data()|
+  // (B) violating memory alignment rules in C++ and triggering UB(SAN)
+  //
+  // The same is true of |AsMutable|.
   template <typename T>
-  const T& As() const {
+  const T& As() const __attribute__((no_sanitize("alignment"))) {
     // std::is_trivial_v would be a stronger guarantee that the buffer contains a valid T object,
     // but would disallow casting to types that have useful constructors, which might instead cause
     // uninitialized field(s) bugs for data encoding/decoding structs.
@@ -241,7 +247,7 @@ class MutableByteBuffer : public ByteBuffer {
   // The buffer is allowed to be larger than T. The user is responsible for checking that the first
   // sizeof(T) bytes represents a valid instance of T.
   template <typename T>
-  T& AsMutable() {
+  T& AsMutable() __attribute__((no_sanitize("alignment"))) {
     static_assert(std::is_trivially_copyable_v<T>, "Can not reinterpret bytes");
     ZX_ASSERT(size() >= sizeof(T));
     return *reinterpret_cast<T*>(mutable_data());

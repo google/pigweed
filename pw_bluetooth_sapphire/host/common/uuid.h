@@ -164,7 +164,7 @@ class UUID final {
   uint32_t ValueAs32Bit() const;
 
   Type type_ = Type::k128Bit;
-  UInt128 value_ = {};
+  UInt128 value_ alignas(size_t) = {};
 };
 
 // Returns true if the given |uuid_string| contains a valid UUID in the
