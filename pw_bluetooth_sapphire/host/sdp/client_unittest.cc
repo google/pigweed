@@ -93,7 +93,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
           ASSERT_LE(3u, packet->size());
           ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
           ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          request_tid = (*packet)[1] << 8 || (*packet)[2];
+          request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           success = true;
         },
         dispatcher());
@@ -172,7 +172,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
           ASSERT_LE(3u, packet->size());
           ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
           ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          request_tid = (*packet)[1] << 8 || (*packet)[2];
+          request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           success = true;
         },
         dispatcher());
@@ -248,7 +248,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
           ASSERT_LE(3u, packet->size());
           ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
           ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          request_tid = (*packet)[1] << 8 || (*packet)[2];
+          request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           sent_packets++;
         },
         dispatcher());
@@ -347,7 +347,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
         // First byte should be type.
         ASSERT_LE(5u, packet->size());
         ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
-        uint16_t request_tid = (*packet)[1] << 8 || (*packet)[2];
+        uint16_t request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
         ASSERT_EQ(kSearchExpectedParams, packet->view(5, kSearchExpectedParams.size()));
         // The stuff after the params is the continuation state.
         auto rsp_ptr = rsp.GetPDU(16 /* Max attribute bytes */, request_tid, kResponseMaxSize,
@@ -404,7 +404,7 @@ TEST_F(ClientTest, NoResults) {
         ASSERT_LE(3u, packet->size());
         ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
         ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-        request_tid = (*packet)[1] << 8 || (*packet)[2];
+        request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
         success = true;
       },
       dispatcher());
@@ -524,7 +524,7 @@ TEST_F(ClientTest, InvalidResponse) {
         ASSERT_LE(3u, packet->size());
         ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
         ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-        request_tid = (*packet)[1] << 8 || (*packet)[2];
+        request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
         requested = true;
       },
       dispatcher());
