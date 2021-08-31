@@ -108,6 +108,17 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "borrow",
+    hdrs = [
+        "public/pw_sync/borrow.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+    ],
+)
+
 pw_cc_facade(
     name = "mutex_facade",
     hdrs = [
@@ -330,6 +341,18 @@ pw_cc_library(
         "public/pw_sync/yield_core.h",
     ],
     includes = ["public"],
+)
+
+pw_cc_test(
+    name = "borrow_test",
+    srcs = [
+        "borrow_test.cc",
+    ],
+    deps = [
+        ":borrow",
+        "//pw_assert",
+        "//pw_unit_test",
+    ],
 )
 
 pw_cc_test(

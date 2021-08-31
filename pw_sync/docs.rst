@@ -948,6 +948,218 @@ the macro documentation after for more details:
    Documents functions that dynamically check to see if a lock is held, and fail
    if it is not held.
 
+-----------------------------
+Critical Section Lock Helpers
+-----------------------------
+
+Borrowable
+==========
+The Borrowable is a helper construct that enables callers to borrow an object
+which is guarded by a lock, enabling a containerized style of external locking.
+
+Users who need access to the guarded object can ask to acquire a
+``BorrowedPointer`` which permits access while the lock is held.
+
+This class is compatible with locks which comply with
+`BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_,
+`Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
+`TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_
+C++ named requirements.
+
+External vs Internal locking
+----------------------------
+Before we explain why Borrowable is useful, it's important to understand the
+trade-offs when deciding on using internal and/or external locking.
+
+Internal locking is when the lock is hidden from the caller entirely and is used
+internally to the API. For example:
+
+.. code-block:: cpp
+
+  class BankAccount {
+   public:
+    void Deposit(int amount) {
+      std::lock_guard lock(mutex_);
+      balance_ += amount;
+    }
+
+    void Withdraw(int amount) {
+      std::lock_guard lock(mutex_);
+      balance_ -= amount;
+    }
+
+    void Balance() const {
+      std::lock_guard lock(mutex_);
+      return balance_;
+    }
+
+   private:
+    int balance_ PW_GUARDED_BY(mutex_);
+    pw::sync::Mutex mutex_;
+  };
+
+Internal locking guarantees that any concurrent calls to its public member
+functions don't corrupt an instance of that class. This is typically ensured by
+having each member function acquire a lock on the object upon entry. This way,
+for any instance, there can only be one member function call active at any
+moment, serializing the operations.
+
+One common issue that pops up is that member functions may have to call other
+member functions which also require locks. This typically results in a
+duplication of the public API into an internal mirror where the lock is already
+held. This along with having to modify every thread-safe public member function
+may results in an increased code size.
+
+However, with the per-method locking approach, it is not possible to perform a
+multi-method thread-safe transaction. For example, what if we only wanted to
+withdraw money if the balance was high enough? With the current API there would
+be a risk that money is withdrawn after we've checked the balance.
+
+This is usually why external locking is used. This is when the lock is exposed
+to the caller and may be used externally to the public API. External locking
+can take may forms which may even include mixing internal and external locking.
+In its most simplistic form it is an external lock used along side each
+instance, e.g.:
+
+.. code-block:: cpp
+
+  class BankAccount {
+   public:
+    void Deposit(int amount) {
+      balance_ += amount;
+    }
+
+    void Withdraw(int amount) {
+      balance_ -= amount;
+    }
+
+    void Balance() const {
+      return balance_;
+    }
+
+   private:
+    int balance_;
+  };
+
+  pw::sync::Mutex bobs_account_mutex;
+  BankAccount bobs_account PW_GUARDED_BY(bobs_account_mutex);
+
+The lock is acquired before the bank account is used for a transaction. In
+addition, we do not have to modify every public function and its trivial to
+call other public member functions from a public member function. However, as
+you can imagine instantiating and passing around the instances and their locks
+can become error prone.
+
+This is why ``Borrowable`` exists.
+
+Why use Borrowable?
+-------------------
+``Borrowable`` offers code-size efficient way to enable external locking that is
+easy and safe to use. It is effectively a container which holds references to a
+protected instance and its lock which provides RAII-style access.
+
+.. code-block:: cpp
+
+  pw::sync::Mutex bobs_account_mutex;
+  BankAccount bobs_account PW_GUARDED_BY(bobs_account_mutex);
+  pw::sync::Borrowable<BankAccount&, pw::sync::Mutex> bobs_acount(
+      bobs_account_mutex, bobs_account);
+
+This construct is useful when sharing objects or data which are transactional in
+nature where making individual operations threadsafe is insufficient. See the
+section on internal vs external locking tradeoffs above.
+
+It can also offer a code-size and stack-usage efficient way to separate timeout
+constraints between the acquiring of the shared object and timeouts used for the
+shared object's API. For example, imagine you have an I2c bus which is used by
+several threads and you'd like to specify an ACK timeout of 50ms. It'd be ideal
+if the duration it takes to gain exclusive access to the I2c bus does not eat
+into the ACK timeout you'd like to use for the transaction. Borrowable can help
+you do exactly this if you provide access to the I2c bus through a
+``Borrowable``.
+
+C++
+---
+.. cpp:class:: template <typename GuardedType, typename Lock> pw::sync::BorrowedPointer
+
+  The BorrowedPointer is an RAII handle which wraps a pointer to a borrowed
+  object along with a held lock which is guarding the object. When destroyed,
+  the lock is released.
+
+  This object is moveable, but not copyable.
+
+  .. cpp:function:: GuardedType* operator->()
+
+     Provides access to the borrowed object's members.
+
+  .. cpp:function:: GuardedType& operator*()
+
+     Provides access to the borrowed object directly.
+
+     **Warning:** The member of pointer member access operator, operator->(), is
+     recommended over this API as this is prone to leaking references. However,
+     this is sometimes necessary.
+
+     **Warning:** Be careful not to leak references to the borrowed object.
+
+.. cpp:class:: template <typename GuardedReference, typename Lock> pw::sync::Borrowable
+
+  .. cpp:function:: BorrowedPointer<GuardedType, Lock> acquire()
+
+     Blocks indefinitely until the object can be borrowed. Failures are fatal.
+
+  .. cpp:function:: std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire()
+
+     Tries to borrow the object in a non-blocking manner. Returns a
+     BorrowedPointer on success, otherwise std::nullopt (nothing).
+
+  .. cpp:function:: template <class Rep, class Period> std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_for(std::chrono::duration<Rep, Period> timeout)
+
+     Tries to borrow the object. Blocks until the specified timeout has elapsed
+     or the object has been borrowed, whichever comes first. Returns a
+     BorrowedPointer on success, otherwise std::nullopt (nothing).
+
+  .. cpp:function:: template <class Rep, class Period> std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_until(std::chrono::duration<Rep, Period> deadline)
+
+     Tries to borrow the object. Blocks until the specified deadline has been
+     reached or the object has been borrowed, whichever comes first. Returns a
+     BorrowedPointer on success, otherwise std::nullopt (nothing).
+
+Example in C++
+^^^^^^^^^^^^^^
+
+.. code-block:: cpp
+
+  #include <chrono>
+
+  #include "pw_bytes/span.h"
+  #include "pw_i2c/initiator.h"
+  #include "pw_status/try.h"
+  #include "pw_status/result.h"
+  #include "pw_sync/borrow.h"
+  #include "pw_sync/mutex.h"
+
+  class ExampleI2c : public pw::i2c::Initiator;
+
+  pw::sync::Mutex i2c_mutex;
+  ExampleI2c i2c;
+  pw::sync::Borrowable<ExampleI2c&, pw::sync::Mutex> borrowable_i2c(
+      i2c_mutex, i2c);
+
+  pw::Result<ConstByteSpan> ReadI2cData(ByteSpan buffer) {
+    // Block indefinitely waiting to borrow the i2c bus.
+    pw::sync::BorrowedPointer<ExampleI2c, pw::sync::Mutex> borrowed_i2c =
+        borrowable_i2c.acquire();
+
+    // Execute a sequence of transactions to get the needed data.
+    PW_TRY(borrowed_i2c->WriteFor(kFirstWrite, std::chrono::milliseconds(50)));
+    PW_TRY(borrowed_i2c->WriteReadFor(kSecondWrite, buffer,
+                                      std::chrono::milliseconds(10)));
+
+    // Borrowed i2c pointer is returned when the scope exits.
+    return buffer;
+  }
+
 --------------------
 Signaling Primitives
 --------------------
