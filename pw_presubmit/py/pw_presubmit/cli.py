@@ -188,14 +188,10 @@ def run(
 
         return 0
 
-    if only_list_steps:
-        for step in program:
-            print(step.__name__)
-        return 0
-
     if presubmit.run(program,
                      root,
                      repositories,
+                     only_list_steps=only_list_steps,
                      output_directory=output_directory,
                      package_root=package_root,
                      **other_args):

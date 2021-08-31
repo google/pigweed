@@ -226,7 +226,7 @@ class Presubmit:
     def run(self, program: Program, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
-        checks = self._apply_filters(program)
+        checks = self.apply_filters(program)
 
         _LOG.debug('Running %s for %s', program.title(), self._root.name)
         _print_ui(_title(f'{self._root.name}: {program.title()}'))
@@ -250,7 +250,7 @@ class Presubmit:
 
         return not failed and not skipped
 
-    def _apply_filters(
+    def apply_filters(
             self, program: Sequence[Callable]
     ) -> List[Tuple['_Check', Sequence[Path]]]:
         """Returns list of (check, paths) for checks that should run."""
@@ -395,6 +395,7 @@ def run(program: Sequence[Callable],
         exclude: Sequence[Pattern] = (),
         output_directory: Optional[Path] = None,
         package_root: Path = None,
+        only_list_steps: bool = False,
         keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
@@ -418,6 +419,7 @@ def run(program: Sequence[Callable],
         exclude: regular expressions for Posix-style paths to exclude
         output_directory: where to place output files
         package_root: where to place package files
+        only_list_steps: print step names instead of running them
         keep_going: whether to continue running checks if an error occurs
 
     Returns:
@@ -455,6 +457,11 @@ def run(program: Sequence[Callable],
         paths=files,
         package_root=package_root,
     )
+
+    if only_list_steps:
+        for check, _ in presubmit.apply_filters(program):
+            print(check.name)
+        return True
 
     if not isinstance(program, Program):
         program = Program('', program)
