@@ -131,6 +131,13 @@ class FakePeer {
   bool force_pending_connect() const { return force_pending_connect_; }
   void set_force_pending_connect(bool value) { force_pending_connect_ = value; }
 
+  void set_last_connection_request_link_type(std::optional<hci::LinkType> type) {
+    last_connection_request_link_type_ = type;
+  }
+  const std::optional<hci::LinkType>& last_connection_request_link_type() const {
+    return last_connection_request_link_type_;
+  }
+
   void AddLink(hci::ConnectionHandle handle);
   void RemoveLink(hci::ConnectionHandle handle);
   bool HasLink(hci::ConnectionHandle handle) const;
@@ -182,6 +189,7 @@ class FakePeer {
   hci::StatusCode connect_status_;
   hci::StatusCode connect_response_;
   bool force_pending_connect_;  // Causes connection requests to remain pending.
+  std::optional<hci::LinkType> last_connection_request_link_type_;
 
   hci::LEConnectionParameters le_params_;
 

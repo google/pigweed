@@ -356,6 +356,20 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr, hci::Connection
   });
 }
 
+void FakeController::SendConnectionRequest(const DeviceAddress& addr, hci::LinkType link_type) {
+  FakePeer* peer = FindPeer(addr);
+  ZX_ASSERT(peer);
+  peer->set_last_connection_request_link_type(link_type);
+
+  bt_log(DEBUG, "fake-hci", "sending connection request (addr: %s, link: %s)", bt_str(addr),
+         hci::LinkTypeToString(link_type).c_str());
+  hci::ConnectionRequestEventParams params;
+  std::memset(&params, 0, sizeof(params));
+  params.bd_addr = addr.value();
+  params.link_type = link_type;
+  SendEvent(hci::kConnectionRequestEventCode, BufferView(&params, sizeof(params)));
+}
+
 void FakeController::L2CAPConnectionParameterUpdate(
     const DeviceAddress& addr, const hci::LEPreferredConnectionParameters& params) {
   async::PostTask(dispatcher(), [addr, params, this] {
@@ -1494,10 +1508,39 @@ void FakeController::OnReadEncryptionKeySizeCommand(
   RespondWithCommandComplete(hci::kReadEncryptionKeySize, BufferView(&response, sizeof(response)));
 }
 
+void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
+    const hci::EnhancedAcceptSynchronousConnectionRequestCommandParams& params) {
+  DeviceAddress peer_address(DeviceAddress::Type::kBREDR, params.bd_addr);
+  FakePeer* peer = FindPeer(peer_address);
+  if (!peer || !peer->last_connection_request_link_type().has_value()) {
+    RespondWithCommandStatus(hci::kEnhancedAcceptSynchronousConnectionRequest,
+                             hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+
+  RespondWithCommandStatus(hci::kEnhancedAcceptSynchronousConnectionRequest,
+                           hci::StatusCode::kSuccess);
+
+  hci::ConnectionHandle sco_handle = ++next_conn_handle_;
+  peer->AddLink(sco_handle);
+
+  hci::SynchronousConnectionCompleteEventParams response;
+  response.status = hci::kSuccess;
+  response.connection_handle = htole16(sco_handle);
+  response.bd_addr = peer->address().value();
+  response.link_type = peer->last_connection_request_link_type().value();
+  response.transmission_interval = 1;
+  response.retransmission_window = 2;
+  response.rx_packet_length = 3;
+  response.tx_packet_length = 4;
+  response.air_coding_format = params.connection_parameters.transmit_coding_format.coding_format;
+  SendEvent(hci::kSynchronousConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
+}
+
 void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
     const hci::EnhancedSetupSynchronousConnectionCommandParams& params) {
-  const hci::ConnectionHandle handle = letoh16(params.connection_handle);
-  FakePeer* peer = FindByConnHandle(handle);
+  const hci::ConnectionHandle acl_handle = letoh16(params.connection_handle);
+  FakePeer* peer = FindByConnHandle(acl_handle);
   if (!peer) {
     RespondWithCommandStatus(hci::kEnhancedSetupSynchronousConnection,
                              hci::StatusCode::kUnknownConnectionId);
@@ -1506,17 +1549,19 @@ void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
 
   RespondWithCommandStatus(hci::kEnhancedSetupSynchronousConnection, hci::StatusCode::kSuccess);
 
+  hci::ConnectionHandle sco_handle = ++next_conn_handle_;
+  peer->AddLink(sco_handle);
+
   hci::SynchronousConnectionCompleteEventParams response;
   response.status = hci::kSuccess;
-  // SCO connection handle must be different from open ACL connections.
-  response.connection_handle = ++next_conn_handle_;
+  response.connection_handle = htole16(sco_handle);
   response.bd_addr = peer->address().value();
   response.link_type = hci::LinkType::kExtendedSCO;
   response.transmission_interval = 1;
   response.retransmission_window = 2;
   response.rx_packet_length = 3;
   response.tx_packet_length = 4;
-  response.air_coding_format = hci::CodingFormat::kMSbc;
+  response.air_coding_format = params.connection_parameters.transmit_coding_format.coding_format;
   SendEvent(hci::kSynchronousConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
 }
 
@@ -2381,6 +2426,12 @@ void FakeController::HandleReceivedCommandPacket(
     case hci::kReadEncryptionKeySize: {
       const auto& params = command_packet.payload<hci::ReadEncryptionKeySizeParams>();
       OnReadEncryptionKeySizeCommand(params);
+      break;
+    }
+    case hci::kEnhancedAcceptSynchronousConnectionRequest: {
+      const auto& params =
+          command_packet.payload<hci::EnhancedAcceptSynchronousConnectionRequestCommandParams>();
+      OnEnhancedAcceptSynchronousConnectionRequestCommand(params);
       break;
     }
     case hci::kEnhancedSetupSynchronousConnection: {

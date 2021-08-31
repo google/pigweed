@@ -306,8 +306,8 @@ bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
 }
 
 std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::OpenScoConnection(
-    PeerId peer_id, bool initiator, hci::SynchronousConnectionParameters parameters,
-    ScoConnectionCallback callback) {
+    PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+    sco::ScoConnectionManager::OpenConnectionCallback callback) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
     bt_log(WARN, "gap-bredr", "Can't open SCO connection to unconnected peer (peer: %s)",
@@ -315,8 +315,20 @@ std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::
     callback(fpromise::error(HostError::kNotFound));
     return std::nullopt;
   };
+  return conn_pair->second->OpenScoConnection(parameters, std::move(callback));
+}
 
-  return conn_pair->second->OpenScoConnection(initiator, parameters, std::move(callback));
+std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::AcceptScoConnection(
+    PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+    sco::ScoConnectionManager::AcceptConnectionCallback callback) {
+  auto conn_pair = FindConnectionById(peer_id);
+  if (!conn_pair) {
+    bt_log(WARN, "gap-bredr", "Can't accept SCO connection from unconnected peer (peer: %s)",
+           bt_str(peer_id));
+    callback(fpromise::error(HostError::kNotFound));
+    return std::nullopt;
+  };
+  return conn_pair->second->AcceptScoConnection(std::move(parameters), std::move(callback));
 }
 
 bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason) {

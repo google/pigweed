@@ -1606,9 +1606,11 @@ enum class ScoDataPath : uint8_t {
 
 // Bitmask values for allowed SCO packet types.
 enum class ScoPacketTypeBits : uint16_t {
+  // SCO packet types
   kHv1 = (1 << 0),
   kHv2 = (1 << 1),
   kHv3 = (1 << 2),
+  // eSCO packet types
   kEv3 = (1 << 3),
   kEv4 = (1 << 4),
   kEv5 = (1 << 5),

@@ -46,6 +46,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   struct ScoRequest : public fbl::RefCounted<ScoRequest> {
     std::optional<bt::gap::BrEdrConnectionManager::ScoRequestHandle> request_handle;
     fuchsia::bluetooth::bredr::ScoConnectionReceiverPtr receiver;
+    std::vector<fuchsia::bluetooth::bredr::ScoConnectionParameters> parameters;
   };
 
   // fuchsia::bluetooth::bredr::Profile overrides:
@@ -60,8 +61,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
                fuchsia::bluetooth::bredr::ConnectParameters connection,
                ConnectCallback callback) override;
   void ConnectSco(
-      ::fuchsia::bluetooth::PeerId peer_id, bool initiator,
-      fuchsia::bluetooth::bredr::ScoConnectionParameters params,
+      fuchsia::bluetooth::PeerId fidl_peer_id, bool initiator,
+      std::vector<fuchsia::bluetooth::bredr::ScoConnectionParameters> fidl_params,
       fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ScoConnectionReceiver> receiver) override;
 
   // Callback when clients close their connection targets
@@ -80,7 +81,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   // Callback for SCO connections requests.
   void OnScoConnectionResult(fbl::RefPtr<ScoRequest>,
-                             bt::sco::ScoConnectionManager::ConnectionResult);
+                             bt::sco::ScoConnectionManager::AcceptConnectionResult);
 
   // Callback when clients close their audio direction extension.
   void OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status);

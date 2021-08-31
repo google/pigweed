@@ -94,22 +94,15 @@ class BrEdrConnectionManager final {
                         BrEdrSecurityRequirements security_requirements,
                         l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
-  // Open a SCO connection to the peer identified by |peer_id|. A BR/EDR connection with the peer
-  // must already by established. Additional calls for the same peer made before previous SCO
-  // connection requests complete will cancel previous connection requests.
-  //
-  // |initiator| indicates whether a connection request should be sent or a connection request
-  // is expepected.
-  // |parameters| is the set of connection parameters that the connection should be configured with.
-  // |callback| will be called with the result of the connection procedure.
-  //
-  // Returns a handle that will cancel the pending request if destroyed. If a BR/EDR connection with
+  // See ScoConnectionManager for documentation. If a BR/EDR connection with
   // the peer does not exist, returns nullopt.
-  using ScoConnectionCallback = BrEdrConnection::ScoConnectionCallback;
   using ScoRequestHandle = BrEdrConnection::ScoRequestHandle;
-  std::optional<ScoRequestHandle> OpenScoConnection(PeerId peer_id, bool initiator,
-                                                    hci::SynchronousConnectionParameters parameters,
-                                                    ScoConnectionCallback callback);
+  std::optional<ScoRequestHandle> OpenScoConnection(
+      PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+      sco::ScoConnectionManager::OpenConnectionCallback callback);
+  std::optional<ScoRequestHandle> AcceptScoConnection(
+      PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+      sco::ScoConnectionManager::AcceptConnectionCallback callback);
 
   // Add a service search to be performed on new connected remote peers.
   // This search will happen on every peer connection.

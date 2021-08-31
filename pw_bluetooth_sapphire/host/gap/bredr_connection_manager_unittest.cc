@@ -1066,8 +1066,7 @@ const auto kUserPasskeyRequestNegativeReplyRsp = CreateStaticByteBuffer(
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
 // user declines or provides invalid input
-TEST_F(BrEdrConnectionManagerTest,
-       RespondToPasskeyEntryPairingAfterUserProvidesInvalidPasskey) {
+TEST_F(BrEdrConnectionManagerTest, RespondToPasskeyEntryPairingAfterUserProvidesInvalidPasskey) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1177,8 +1176,7 @@ TEST_F(BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
 // user provides the correct passkey
-TEST_F(BrEdrConnectionManagerTest,
-       EncryptAfterPasskeyEntryPairingAndUserProvidesAcceptedPasskey) {
+TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyEntryPairingAndUserProvidesAcceptedPasskey) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -3302,10 +3300,10 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConnectionFails) {
-  sco::ScoConnectionManager::ConnectionResult conn_result;
+  sco::ScoConnectionManager::OpenConnectionResult conn_result;
   auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
-  auto handle = connmgr()->OpenScoConnection(
-      PeerId(1), true, hci::SynchronousConnectionParameters{}, std::move(conn_cb));
+  auto handle = connmgr()->OpenScoConnection(PeerId(1), {hci::SynchronousConnectionParameters{}},
+                                             std::move(conn_cb));
   EXPECT_FALSE(handle.has_value());
   ASSERT_TRUE(conn_result.is_error());
   EXPECT_EQ(conn_result.error(), HostError::kNotFound);
@@ -3330,11 +3328,11 @@ TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
       testing::EnhancedSetupSynchronousConnectionPacket(kConnectionHandle, kScoConnectionParams),
       &setup_status_packet, &conn_complete_packet);
 
-  sco::ScoConnectionManager::ConnectionResult conn_result;
+  sco::ScoConnectionManager::OpenConnectionResult conn_result;
   auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
 
-  auto req_handle = connmgr()->OpenScoConnection(peer->identifier(), /*initiator=*/true,
-                                                 kScoConnectionParams, std::move(conn_cb));
+  auto req_handle =
+      connmgr()->OpenScoConnection(peer->identifier(), {kScoConnectionParams}, std::move(conn_cb));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.is_ok());
@@ -3358,14 +3356,17 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
 
-  constexpr hci::SynchronousConnectionParameters kScoConnectionParams = {};
-  sco::ScoConnectionManager::ConnectionResult conn;
-  auto conn_cb = [&conn](auto cb_conn) {
-    EXPECT_TRUE(cb_conn.is_ok());
-    conn = std::move(cb_conn);
+  hci::SynchronousConnectionParameters sco_conn_params = {};
+  sco_conn_params.packet_types =
+      static_cast<uint16_t>(GetParam() == hci::LinkType::kSCO ? hci::ScoPacketTypeBits::kHv3
+                                                              : hci::ScoPacketTypeBits::kEv3);
+  sco::ScoConnectionManager::AcceptConnectionResult conn_result;
+  auto conn_cb = [&conn_result](sco::ScoConnectionManager::AcceptConnectionResult result) {
+    EXPECT_TRUE(result.is_ok());
+    conn_result = std::move(result);
   };
-  auto req_handle = connmgr()->OpenScoConnection(peer->identifier(), /*initiator=*/false,
-                                                 kScoConnectionParams, std::move(conn_cb));
+  auto req_handle =
+      connmgr()->AcceptScoConnection(peer->identifier(), {sco_conn_params}, std::move(conn_cb));
 
   auto conn_req_packet =
       testing::ConnectionRequestPacket(peer->address(), /*link_type=*/GetParam());
@@ -3373,20 +3374,20 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
 
   auto accept_status_packet = testing::CommandStatusPacket(
       hci::kEnhancedAcceptSynchronousConnectionRequest, hci::StatusCode::kSuccess);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::EnhancedAcceptSynchronousConnectionRequestPacket(
-                            peer->address(), kScoConnectionParams),
-                        &accept_status_packet);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedAcceptSynchronousConnectionRequestPacket(peer->address(), sco_conn_params),
+      &accept_status_packet);
   RunLoopUntilIdle();
-  EXPECT_TRUE(conn.is_pending());
+  EXPECT_TRUE(conn_result.is_pending());
 
   constexpr hci::ConnectionHandle kScoConnectionHandle = 0x41;
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
-      kScoConnectionHandle, peer->address(), hci::LinkType::kSCO, hci::StatusCode::kSuccess));
+      kScoConnectionHandle, peer->address(), /*link_type=*/GetParam(), hci::StatusCode::kSuccess));
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(conn.is_ok());
-  EXPECT_EQ(conn.value()->handle(), kScoConnectionHandle);
+  ASSERT_TRUE(conn_result.is_ok());
+  EXPECT_EQ(conn_result.value().first->handle(), kScoConnectionHandle);
 
   // Disconnecting from a peer should first disconnect SCO connections, then disconnect the ACL
   // connection.

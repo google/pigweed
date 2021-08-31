@@ -58,19 +58,13 @@ class BrEdrConnection final {
   // the L2cap provided. Otherwise, calls |cb| with a nullptr.
   void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
-  // Open a SCO connection associated with this BR/EDR connection.
-  // |initiator| indicates whether a connection request should be sent or a connection
-  // request is expected.
-  // |parameters| is the set of SCO connection parameters that the connection should be configured
-  // with.
-  // |callback| will be called with the result of the procedure.
-  //
-  // Returns a handle that will cancel the pending request if destroyed.
-  using ScoConnectionCallback = sco::ScoConnectionManager::ConnectionCallback;
+  // See ScoConnectionManager for documentation.
   using ScoRequestHandle = sco::ScoConnectionManager::RequestHandle;
-  ScoRequestHandle OpenScoConnection(bool initiator,
-                                     hci::SynchronousConnectionParameters parameters,
-                                     ScoConnectionCallback callback);
+  ScoRequestHandle OpenScoConnection(hci::SynchronousConnectionParameters,
+                                     sco::ScoConnectionManager::OpenConnectionCallback callback);
+  ScoRequestHandle AcceptScoConnection(
+      std::vector<hci::SynchronousConnectionParameters> parameters,
+      sco::ScoConnectionManager::AcceptConnectionCallback callback);
 
   // Attach connection inspect node as a child of |parent| named |name|.
   void AttachInspect(inspect::Node& parent, std::string name);

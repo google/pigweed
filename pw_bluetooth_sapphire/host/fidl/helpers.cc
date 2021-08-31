@@ -1379,6 +1379,20 @@ fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   return fpromise::ok(out);
 }
 
+fpromise::result<std::vector<bt::hci::SynchronousConnectionParameters>> FidlToScoParametersVector(
+    const std::vector<fbredr::ScoConnectionParameters>& params) {
+  std::vector<bt::hci::SynchronousConnectionParameters> out;
+  out.reserve(params.size());
+  for (const fbredr::ScoConnectionParameters& param : params) {
+    fpromise::result<bt::hci::SynchronousConnectionParameters> result = FidlToScoParameters(param);
+    if (result.is_error()) {
+      return fpromise::error();
+    }
+    out.push_back(result.take_value());
+  }
+  return fpromise::ok(std::move(out));
+}
+
 }  // namespace bthost::fidl_helpers
 
 // static

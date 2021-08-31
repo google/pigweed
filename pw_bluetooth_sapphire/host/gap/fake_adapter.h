@@ -153,8 +153,14 @@ class FakeAdapter final : public Adapter {
     bool UnregisterService(RegistrationHandle handle) override { return false; }
 
     std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id, bool initiator, hci::SynchronousConnectionParameters parameters,
-        ScoConnectionCallback callback) override {
+        PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+        sco::ScoConnectionManager::OpenConnectionCallback callback) override {
+      return std::nullopt;
+    }
+
+    std::optional<ScoRequestHandle> AcceptScoConnection(
+        PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+        sco::ScoConnectionManager::AcceptConnectionCallback callback) override {
       return std::nullopt;
     }
 

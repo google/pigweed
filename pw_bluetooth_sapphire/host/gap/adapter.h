@@ -313,22 +313,28 @@ class Adapter {
     // Returns |true| if any records were removed.
     virtual bool UnregisterService(RegistrationHandle handle) = 0;
 
-    // Open a SCO connection to the peer identified by |peer_id|. A BR/EDR connection with the peer
-    // must already by established. Additional calls for the same peer made before previous SCO
-    // connection requests complete will cancel previous connection requests.
-    //
-    // |initiator| indicates whether a connection request should be sent or a connection request
-    // is expepected.
-    // |parameters| is the set of connection parameters that the connection should be configured
-    // with. |callback| will be called with the result of the connection procedure.
-    //
-    // Returns a handle that will cancel the pending request if destroyed. If a BR/EDR connection
-    // with the peer does not exist, returns nullopt.
-    using ScoConnectionCallback = BrEdrConnection::ScoConnectionCallback;
+    // Initiate and outbound connection. A request will be queued if a connection is already in
+    // progress. On error, |callback| will be called with an error result. The error will be
+    // |kCanceled| if a connection was never attempted, or |kFailed| if establishing a connection
+    // failed. Returns a handle that will cancel the request when dropped (if connection
+    // establishment has not started). If a BR/EDR connection with the peer does not exist, returns
+    // nullopt.
     using ScoRequestHandle = BrEdrConnection::ScoRequestHandle;
     virtual std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id, bool initiator, hci::SynchronousConnectionParameters parameters,
-        ScoConnectionCallback callback) = 0;
+        PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+        sco::ScoConnectionManager::OpenConnectionCallback callback) = 0;
+
+    // Accept inbound connection requests using the parameters given in order. The parameters will
+    // be tried in order until either a connection is successful, all parameters have been rejected,
+    // or the procedure is canceled. On success, |callback| will be called with the connection
+    // object and the index of the parameters used to establish the connection. On error, |callback|
+    // will be called with an error result. If another Open/Accept request is made before a
+    // connection request is received, this request will be canceled (with error |kCanceled|).
+    // Returns a handle that will cancel the request when destroyed (if connection establishment has
+    // not started). If a BR/EDR connection with the peer does not exist, returns nullopt.
+    virtual std::optional<ScoRequestHandle> AcceptScoConnection(
+        PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+        sco::ScoConnectionManager::AcceptConnectionCallback callback) = 0;
   };
 
   //  Returns nullptr if the controller does not support classic.

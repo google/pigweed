@@ -32,6 +32,9 @@ enum class HostError : uint8_t {
   // The operation was initiated with invalid parameters.
   kInvalidParameters,
 
+  // The parameters were rejected by the controller or peer.
+  kParametersRejected,
+
   // An advertising data blob is too large due to controller constraints.
   kAdvertisingDataTooLong,
 

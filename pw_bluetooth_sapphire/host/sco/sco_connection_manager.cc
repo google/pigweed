@@ -4,7 +4,9 @@
 
 #include "sco_connection_manager.h"
 
-#include "lib/async/default.h"
+#include <lib/async/default.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 
 namespace bt::sco {
 namespace {
@@ -33,6 +35,21 @@ hci::SynchronousConnectionParameters ConnectionParametersToLe(
   return params;
 }
 
+constexpr uint16_t kScoTransportPacketTypes = static_cast<uint16_t>(hci::ScoPacketTypeBits::kHv1) |
+                                              static_cast<uint16_t>(hci::ScoPacketTypeBits::kHv2) |
+                                              static_cast<uint16_t>(hci::ScoPacketTypeBits::kHv3);
+constexpr uint16_t kEscoTransportPacketTypes = static_cast<uint16_t>(hci::ScoPacketTypeBits::kEv3) |
+                                               static_cast<uint16_t>(hci::ScoPacketTypeBits::kEv4) |
+                                               static_cast<uint16_t>(hci::ScoPacketTypeBits::kEv5);
+
+bool ConnectionParametersSupportScoTransport(const hci::SynchronousConnectionParameters& params) {
+  return params.packet_types & kScoTransportPacketTypes;
+}
+
+bool ConnectionParametersSupportEscoTransport(const hci::SynchronousConnectionParameters& params) {
+  return params.packet_types & kEscoTransportPacketTypes;
+}
+
 }  // namespace
 
 ScoConnectionManager::ScoConnectionManager(PeerId peer_id, hci::ConnectionHandle acl_handle,
@@ -43,11 +60,10 @@ ScoConnectionManager::ScoConnectionManager(PeerId peer_id, hci::ConnectionHandle
       local_address_(local_address),
       peer_address_(peer_address),
       acl_handle_(acl_handle),
-      transport_(transport),
+      transport_(std::move(transport)),
       weak_ptr_factory_(this) {
   ZX_ASSERT(transport_);
 
-  // register event handlers
   AddEventHandler(hci::kSynchronousConnectionCompleteEventCode,
                   fit::bind_member(this, &ScoConnectionManager::OnSynchronousConnectionComplete));
   AddEventHandler(hci::kConnectionRequestEventCode,
@@ -81,13 +97,22 @@ ScoConnectionManager::~ScoConnectionManager() {
 }
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
-    hci::SynchronousConnectionParameters params, ConnectionCallback callback) {
-  return QueueRequest(/*initiator=*/true, params, std::move(callback));
+    hci::SynchronousConnectionParameters parameters, OpenConnectionCallback callback) {
+  return QueueRequest(/*initiator=*/true, {parameters},
+                      [cb = std::move(callback)](ConnectionResult result) mutable {
+                        // Convert result type.
+                        if (result.is_error()) {
+                          cb(fpromise::error(result.take_error()));
+                          return;
+                        }
+                        cb(fpromise::ok(std::move(result.value().first)));
+                      });
 }
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
-    hci::SynchronousConnectionParameters params, ConnectionCallback callback) {
-  return QueueRequest(/*initiator=*/false, params, std::move(callback));
+    std::vector<hci::SynchronousConnectionParameters> parameters,
+    AcceptConnectionCallback callback) {
+  return QueueRequest(/*initiator=*/false, std::move(parameters), std::move(callback));
 }
 
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
@@ -118,10 +143,12 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   }
 
   auto status = event.ToStatus();
-  if (bt_is_error(status, INFO, "gap-sco", "SCO connection failed to be established (peer: %s)",
-                  bt_str(peer_id_))) {
+  if (bt_is_error(
+          status, INFO, "gap-sco",
+          "SCO connection failed to be established; trying next parameters if available (peer: %s)",
+          bt_str(peer_id_))) {
     // A request must be in progress for this event to be generated.
-    CompleteRequest(fpromise::error(HostError::kFailed));
+    CompleteRequestOrTryNextParameters(fpromise::error(HostError::kFailed));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -150,7 +177,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   ZX_ASSERT_MSG(success, "SCO connection already exists with handle %#.4x (peer: %s)",
                 connection_handle, bt_str(peer_id_));
 
-  CompleteRequest(fpromise::ok(std::move(conn)));
+  CompleteRequest(
+      fpromise::ok(std::make_pair(std::move(conn), in_progress_request_->current_param_index)));
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
@@ -172,24 +200,26 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
   }
 
   if (!in_progress_request_ || in_progress_request_->initiator) {
-    bt_log(INFO, "gap-sco", "reject unexpected SCO connection request (peer: %s)",
-           bt_str(peer_id_));
-
-    auto reject =
-        hci::CommandPacket::New(hci::kRejectSynchronousConnectionRequest,
-                                sizeof(hci::RejectSynchronousConnectionRequestCommandParams));
-    auto reject_params =
-        reject->mutable_payload<hci::RejectSynchronousConnectionRequestCommandParams>();
-    reject_params->bd_addr = params.bd_addr;
-    reject_params->reason = hci::StatusCode::kConnectionRejectedBadBdAddr;
-
-    transport_->command_channel()->SendCommand(std::move(reject), nullptr,
-                                               hci::kCommandStatusEventCode);
+    bt_log(INFO, "sco", "reject unexpected %s connection request (peer: %s)",
+           hci::LinkTypeToString(params.link_type).c_str(), bt_str(peer_id_));
+    SendRejectConnectionCommand(params.bd_addr, hci::StatusCode::kConnectionRejectedBadBdAddr);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  bt_log(INFO, "gap-bredr", "accepting incoming (e)SCO connection from %s (peer: %s)",
-         bt_str(params.bd_addr), bt_str(peer_id_));
+  // Skip to the next parameters that support the requested link type. The controller rejects
+  // parameters that don't include packet types for the requested link type.
+  if ((params.link_type == hci::LinkType::kSCO && !FindNextParametersThatSupportSco()) ||
+      (params.link_type == hci::LinkType::kExtendedSCO && !FindNextParametersThatSupportEsco())) {
+    bt_log(DEBUG, "sco",
+           "in progress request parameters don't support the requested transport (%s); rejecting",
+           hci::LinkTypeToString(params.link_type).c_str());
+    SendRejectConnectionCommand(params.bd_addr, hci::StatusCode::kUnacceptableConnectionParameters);
+    CompleteRequest(fpromise::error(HostError::kParametersRejected));
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  bt_log(INFO, "sco", "accepting incoming %s connection from %s (peer: %s)",
+         hci::LinkTypeToString(params.link_type).c_str(), bt_str(params.bd_addr), bt_str(peer_id_));
 
   auto accept =
       hci::CommandPacket::New(hci::kEnhancedAcceptSynchronousConnectionRequest,
@@ -197,7 +227,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
   auto accept_params =
       accept->mutable_payload<hci::EnhancedAcceptSynchronousConnectionRequestCommandParams>();
   accept_params->bd_addr = params.bd_addr;
-  accept_params->connection_parameters = ConnectionParametersToLe(in_progress_request_->parameters);
+  accept_params->connection_parameters = ConnectionParametersToLe(
+      in_progress_request_->parameters[in_progress_request_->current_param_index]);
   SendCommandWithStatusCallback(std::move(accept), [self = weak_ptr_factory_.GetWeakPtr(),
                                                     peer_id = peer_id_](hci::Status status) {
     if (!self || status.is_success()) {
@@ -217,9 +248,41 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
+bool ScoConnectionManager::FindNextParametersThatSupportSco() {
+  ZX_ASSERT(in_progress_request_);
+  while (in_progress_request_->current_param_index < in_progress_request_->parameters.size()) {
+    hci::SynchronousConnectionParameters& params =
+        in_progress_request_->parameters[in_progress_request_->current_param_index];
+    if (ConnectionParametersSupportScoTransport(params)) {
+      return true;
+    }
+    in_progress_request_->current_param_index++;
+  }
+  return false;
+}
+
+bool ScoConnectionManager::FindNextParametersThatSupportEsco() {
+  ZX_ASSERT(in_progress_request_);
+  while (in_progress_request_->current_param_index < in_progress_request_->parameters.size()) {
+    hci::SynchronousConnectionParameters& params =
+        in_progress_request_->parameters[in_progress_request_->current_param_index];
+    if (ConnectionParametersSupportEscoTransport(params)) {
+      return true;
+    }
+    in_progress_request_->current_param_index++;
+  }
+  return false;
+}
+
 ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
-    bool initiator, hci::SynchronousConnectionParameters params, ConnectionCallback cb) {
+    bool initiator, std::vector<hci::SynchronousConnectionParameters> params,
+    ConnectionCallback cb) {
   ZX_ASSERT(cb);
+
+  if (params.empty()) {
+    cb(fpromise::error(HostError::kInvalidParameters));
+    return RequestHandle([]() {});
+  }
 
   if (queued_request_) {
     CancelRequestWithId(queued_request_->id);
@@ -229,7 +292,7 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
   queued_request_ = {.id = req_id,
                      .initiator = initiator,
                      .received_request = false,
-                     .parameters = params,
+                     .parameters = std::move(params),
                      .callback = std::move(cb)};
 
   TryCreateNextConnection();
@@ -258,7 +321,8 @@ void ScoConnectionManager::TryCreateNextConnection() {
     bt_log(DEBUG, "gap-sco", "Initiating SCO connection (peer: %s)", bt_str(peer_id_));
     hci::EnhancedSetupSynchronousConnectionCommandParams command;
     command.connection_handle = htole16(acl_handle_);
-    command.connection_parameters = ConnectionParametersToLe(in_progress_request_->parameters);
+    command.connection_parameters = ConnectionParametersToLe(
+        in_progress_request_->parameters[in_progress_request_->current_param_index]);
 
     auto packet =
         hci::CommandPacket::New(hci::kEnhancedSetupSynchronousConnection, sizeof(command));
@@ -274,6 +338,34 @@ void ScoConnectionManager::TryCreateNextConnection() {
 
     SendCommandWithStatusCallback(std::move(packet), std::move(status_cb));
   }
+}
+
+void ScoConnectionManager::CompleteRequestOrTryNextParameters(ConnectionResult result) {
+  ZX_ASSERT(in_progress_request_);
+
+  // Multiple parameter attempts are not supported for initiator requests.
+  if (result.is_ok() || in_progress_request_->initiator) {
+    CompleteRequest(std::move(result));
+    return;
+  }
+
+  // Check if all accept request parameters have been exhausted.
+  if (in_progress_request_->current_param_index + 1 >= in_progress_request_->parameters.size()) {
+    bt_log(DEBUG, "sco", "all accept SCO parameters exhausted");
+    CompleteRequest(fpromise::error(HostError::kParametersRejected));
+    return;
+  }
+
+  // If a request was queued after the connection request event (blocking cancelation at that time),
+  // cancel the current request.
+  if (queued_request_) {
+    CompleteRequest(fpromise::error(HostError::kCanceled));
+    return;
+  }
+
+  // Wait for the next inbound connection request and accept it with the next parameters.
+  in_progress_request_->received_request = false;
+  in_progress_request_->current_param_index++;
 }
 
 void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
@@ -298,6 +390,20 @@ void ScoConnectionManager::SendCommandWithStatusCallback(
     };
   }
   transport_->command_channel()->SendCommand(std::move(command_packet), std::move(command_cb));
+}
+
+void ScoConnectionManager::SendRejectConnectionCommand(DeviceAddressBytes addr,
+                                                       hci::StatusCode reason) {
+  auto reject =
+      hci::CommandPacket::New(hci::kRejectSynchronousConnectionRequest,
+                              sizeof(hci::RejectSynchronousConnectionRequestCommandParams));
+  auto reject_params =
+      reject->mutable_payload<hci::RejectSynchronousConnectionRequestCommandParams>();
+  reject_params->bd_addr = addr;
+  reject_params->reason = reason;
+
+  transport_->command_channel()->SendCommand(std::move(reject), nullptr,
+                                             hci::kCommandStatusEventCode);
 }
 
 void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {

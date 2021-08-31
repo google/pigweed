@@ -88,12 +88,14 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
 }
 
 BrEdrConnection::ScoRequestHandle BrEdrConnection::OpenScoConnection(
-    bool initiator, hci::SynchronousConnectionParameters parameters,
-    ScoConnectionCallback callback) {
-  if (initiator) {
-    return sco_manager_->OpenConnection(parameters, std::move(callback));
-  }
-  return sco_manager_->AcceptConnection(parameters, std::move(callback));
+    hci::SynchronousConnectionParameters parameters,
+    sco::ScoConnectionManager::OpenConnectionCallback callback) {
+  return sco_manager_->OpenConnection(parameters, std::move(callback));
+}
+BrEdrConnection::ScoRequestHandle BrEdrConnection::AcceptScoConnection(
+    std::vector<hci::SynchronousConnectionParameters> parameters,
+    sco::ScoConnectionManager::AcceptConnectionCallback callback) {
+  return sco_manager_->AcceptConnection(std::move(parameters), std::move(callback));
 }
 
 void BrEdrConnection::AttachInspect(inspect::Node& parent, std::string name) {

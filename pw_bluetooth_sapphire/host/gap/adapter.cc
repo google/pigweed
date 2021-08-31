@@ -206,10 +206,16 @@ class AdapterImpl final : public Adapter {
     }
 
     std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id, bool initiator, hci::SynchronousConnectionParameters parameters,
-        ScoConnectionCallback callback) override {
-      return adapter_->bredr_connection_manager_->OpenScoConnection(peer_id, initiator, parameters,
+        PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+        sco::ScoConnectionManager::OpenConnectionCallback callback) override {
+      return adapter_->bredr_connection_manager_->OpenScoConnection(peer_id, parameters,
                                                                     std::move(callback));
+    }
+    std::optional<ScoRequestHandle> AcceptScoConnection(
+        PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+        sco::ScoConnectionManager::AcceptConnectionCallback callback) override {
+      return adapter_->bredr_connection_manager_->AcceptScoConnection(peer_id, parameters,
+                                                                      std::move(callback));
     }
 
    private:

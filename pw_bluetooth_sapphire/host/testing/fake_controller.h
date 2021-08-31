@@ -257,6 +257,9 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   void ConnectLowEnergy(const DeviceAddress& addr,
                         hci::ConnectionRole role = hci::ConnectionRole::kSlave);
 
+  // Sends an HCI Connection Request event.
+  void SendConnectionRequest(const DeviceAddress& addr, hci::LinkType link_type);
+
   // Tells a fake device to initiate the L2CAP Connection Parameter Update
   // procedure using the given |params|. Has no effect if a connected fake
   // device with the given |addr| is not found.
@@ -605,6 +608,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Called when a HCI_Read_Encryption_Key_Size command is received.
   void OnReadEncryptionKeySizeCommand(const hci::ReadEncryptionKeySizeParams& params);
+
+  // Called when a HCI_Enhanced_Accept_Synchronous_Connection_Request command is received.
+  void OnEnhancedAcceptSynchronousConnectionRequestCommand(
+      const hci::EnhancedAcceptSynchronousConnectionRequestCommandParams& params);
 
   // Called when a HCI_Enhanced_Setup_Synchronous_Connection command is received.
   void OnEnhancedSetupSynchronousConnectionCommand(

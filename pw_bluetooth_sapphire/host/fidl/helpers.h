@@ -169,6 +169,8 @@ bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
 
 fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
     const fuchsia::bluetooth::bredr::ScoConnectionParameters& params);
+fpromise::result<std::vector<bt::hci::SynchronousConnectionParameters>> FidlToScoParametersVector(
+    const std::vector<fuchsia::bluetooth::bredr::ScoConnectionParameters>& params);
 
 }  // namespace bthost::fidl_helpers
 

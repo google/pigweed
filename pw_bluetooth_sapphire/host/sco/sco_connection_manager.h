@@ -49,23 +49,31 @@ class ScoConnectionManager final {
   // |kCanceled| if a connection was never attempted, or |kFailed| if establishing a connection
   // failed. Returns a handle that will cancel the request when dropped (if connection establishment
   // has not started).
-  using ConnectionResult = fpromise::result<fbl::RefPtr<ScoConnection>, HostError>;
-  using ConnectionCallback = fit::callback<void(ConnectionResult)>;
+  using OpenConnectionResult = fpromise::result<fbl::RefPtr<ScoConnection>, HostError>;
+  using OpenConnectionCallback = fit::callback<void(OpenConnectionResult)>;
   RequestHandle OpenConnection(hci::SynchronousConnectionParameters parameters,
-                               ConnectionCallback callback);
+                               OpenConnectionCallback callback);
 
-  // Accept the next inbound connection request and establish a new SCO connection using
-  // |parameters|.
-  // On error, |callback| will be called with an error result.
-  // If another Open/Accept request is made before the peer sends a connection request, this request
-  // will be cancelled.
-  // Returns a handle that will cancel the request when dropped (if connection establishment has not
-  // started).
-  RequestHandle AcceptConnection(hci::SynchronousConnectionParameters parameters,
-                                 ConnectionCallback callback);
+  // Accept inbound connection requests using the parameters given in order. The parameters will be
+  // tried in order until either a connection is successful, all parameters have been rejected, or
+  // the procedure is canceled. On success, |callback| will be called with the connection object and
+  // the index of the parameters used to establish the connection. On error, |callback| will be
+  // called with an error result. If another Open/Accept request is made before a connection request
+  // is received, this request will be canceled (with error |kCanceled|). Returns a handle that will
+  // cancel the request when destroyed (if connection establishment has not started).
+  using AcceptConnectionResult =
+      fpromise::result<std::pair<fbl::RefPtr<ScoConnection>, size_t /*index of parameters used*/>,
+                       HostError>;
+  using AcceptConnectionCallback = fit::callback<void(AcceptConnectionResult)>;
+  RequestHandle AcceptConnection(std::vector<hci::SynchronousConnectionParameters> parameters,
+                                 AcceptConnectionCallback callback);
 
  private:
   using ScoRequestId = uint64_t;
+  using ConnectionResult =
+      fpromise::result<std::pair<fbl::RefPtr<ScoConnection>, size_t /*index of parameters used*/>,
+                       HostError>;
+  using ConnectionCallback = fit::callback<void(ConnectionResult)>;
 
   class ConnectionRequest final {
    public:
@@ -81,7 +89,8 @@ class ScoConnectionManager final {
     ScoRequestId id;
     bool initiator;
     bool received_request;
-    hci::SynchronousConnectionParameters parameters;
+    size_t current_param_index = 0;
+    std::vector<hci::SynchronousConnectionParameters> parameters;
     ConnectionCallback callback;
   };
 
@@ -93,16 +102,25 @@ class ScoConnectionManager final {
       const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
 
-  ScoConnectionManager::RequestHandle QueueRequest(bool initiator,
-                                                   hci::SynchronousConnectionParameters,
-                                                   ConnectionCallback);
+  // Returns true if parameters matching the corresponding transport were found in the current
+  // request, or false otherwise. Mutates the current request's parameter index to that of the
+  // matching parameters (or past the end on failure).
+  bool FindNextParametersThatSupportSco();
+  bool FindNextParametersThatSupportEsco();
+
+  ScoConnectionManager::RequestHandle QueueRequest(
+      bool initiator, std::vector<hci::SynchronousConnectionParameters>, ConnectionCallback);
 
   void TryCreateNextConnection();
+
+  void CompleteRequestOrTryNextParameters(ConnectionResult);
 
   void CompleteRequest(ConnectionResult);
 
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
                                      hci::StatusCallback cb);
+
+  void SendRejectConnectionCommand(DeviceAddressBytes addr, hci::StatusCode reason);
 
   // If either the queued or in progress request has the given id and can be cancelled, cancel it.
   // Called when a RequestHandle is dropped.
