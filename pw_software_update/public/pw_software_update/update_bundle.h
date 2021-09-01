@@ -17,13 +17,13 @@
 #include <cstddef>
 
 #include "pw_blob_store/blob_store.h"
+#include "pw_software_update/update_backend.h"
 
 namespace pw::software_update {
 
 // TODO(pwbug/456): Place-holder declaration for now. To be imlemented
 // and moved elsewhere.
 class ElementPayloadReader {};
-class BundledUpdateHelper {};
 class Manifest;
 
 // UpdateBundle is responsible for parsing, verifying and providing
@@ -76,8 +76,8 @@ class UpdateBundle {
   // update_bundle - The software update bundle data on storage.
   // helper - project-specific BundledUpdateHelper
   UpdateBundle(blob_store::BlobStore& update_bundle,
-               BundledUpdateHelper& helper)
-      : bundle_(update_bundle), helper_(helper) {}
+               BundledUpdateBackend& backend)
+      : bundle_(update_bundle), backend_(backend) {}
 
   // Opens and verifies the software update bundle, using the TUF process.
   //
@@ -120,7 +120,7 @@ class UpdateBundle {
 
  private:
   blob_store::BlobStore& bundle_;
-  BundledUpdateHelper& helper_;
+  BundledUpdateBackend& backend_;
 };
 
 }  // namespace pw::software_update

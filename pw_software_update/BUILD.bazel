@@ -46,6 +46,26 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "update_backend",
+    hdrs = ["public/pw_software_update/update_backend.h"],
+    includes = ["public"],
+    deps = [
+        ":update_bundle_proto",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "update_service",
+    srcs = ["service.cc"],
+    hdrs = ["public/pw_software_update/service.h"],
+    includes = ["public"],
+    deps = [
+        ":update_bundle_proto",
+    ],
+)
+
 pw_cc_test(
     name = "update_bundle_test",
     srcs = ["update_bundle_test.cc"],

@@ -1,0 +1,99 @@
+// Copyright 2021 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+syntax = "proto3";
+
+package pw_software_update;
+
+import "pw_software_update/tuf.proto";
+import "pw_software_update/update_bundle.proto";
+import "pw_protobuf_protos/common.proto";
+import "google/protobuf/any.proto";
+
+message BundledUpdateState {
+  enum State {
+    UNKNOWN = 0;
+    INACTIVE = 1;
+    READY_FOR_UPDATE = 2;
+    VERIFYING_UPDATE_BUNDLE = 3;
+    VERIFIED_AND_READY_TO_APPLY = 4;
+    APPLYING_UPDATE = 5;
+  }
+
+  State manager_state = 1;
+
+  // This is the percentage of estimated progress for the current update
+  // state in hundreths of a percent. (e.g. 5.00% = 500u)
+  optional uint32 current_state_progress_hundreth_percent = 2;
+}
+
+message OperationResult {
+  BundledUpdateState state = 1;
+  optional google.protobuf.Any extended_status = 2;
+}
+
+message PrepareUpdateResult {
+  OperationResult result = 1;
+  optional uint32 transfer_endpoint = 2;
+}
+
+// TODO(pwbug/478): add documentation for details of api contract
+service BundledUpdateService {
+  // Abort any current software update in progress.
+  //
+  // Safe to call at any point.
+  rpc Abort(pw.protobuf.Empty) returns (OperationResult) {};
+
+  // Get current state of software update.
+  //
+  // Safe to call at any point.
+  rpc SoftwareUpdateState(pw.protobuf.Empty) returns (OperationResult) {};
+
+  // Get the manifest of the software currently active on the device.
+  //
+  // Safe to call at any point.
+  rpc GetCurrentManifest(pw.protobuf.Empty) returns (stream Manifest) {};
+
+  // Verify the manifest of the software currently active on device. Do any
+  // device-specific checks of device contents as needed.
+  //
+  // Safe to call at any point.
+  rpc VerifyCurrentManifest(pw.protobuf.Empty) returns (OperationResult) {};
+
+  // Get the manifest of any verified and staged update.
+  //
+  // Safe to call at any point.
+  rpc GetStagedManifest(pw.protobuf.Empty) returns (Manifest) {};
+
+  // Prepare for software update. Do any device-specific tasks needed to be
+  // ready for update. Open pw_transfer channel used for staging bundle. Device
+  // UpdateState set to READY_FOR_UPDATE.
+  //
+  // Device UpdateState should be INACTIVE when calling, will otherwise be
+  // rejected.
+  rpc PrepareForUpdate(pw.protobuf.Empty) returns (OperationResult) {};
+
+  // Verify the bundle that has been transferred to the staging area. Close the
+  // pw_transfer channel used for staging bundle.
+  //
+  // Device UpdateState should be READY_FOR_UPDATE when calling, will otherwise
+  // be rejected.
+  rpc VerifyStagedBundle(pw.protobuf.Empty) returns (OperationResult) {};
+
+  // Trigger the application of the device, which might result in a device
+  // becoming slow to respond and possibly reboot.
+  //
+  // Device UpdateState should be VERIFIED_AND_READY_TO_APPLY when calling, will
+  // otherwise be rejected.
+  rpc ApplyUpdate(pw.protobuf.Empty) returns (OperationResult) {};
+}

@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/test_key_value_store.h"
+#include "pw_software_update/update_backend.h"
 
 namespace pw::software_update {
 namespace {
@@ -31,27 +32,27 @@ class UpdateBundleTest : public testing::Test {
   UpdateBundleTest()
       : blob_flash_(kFlashAlignment),
         blob_partition_(&blob_flash_),
-        bunble_blob_("TestBundle",
+        bundle_blob_("TestBundle",
                      blob_partition_,
                      nullptr,
                      kvs::TestKvs(),
                      kBufferSize) {}
 
-  blob_store::BlobStoreBuffer<kBufferSize>& bunble_blob() {
-    return bunble_blob_;
+  blob_store::BlobStoreBuffer<kBufferSize>& bundle_blob() {
+    return bundle_blob_;
   }
 
-  BundledUpdateHelper& helper() { return helper_; }
+  BundledUpdateBackend& backend() { return backend_; }
 
  private:
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> blob_flash_;
   kvs::FlashPartition blob_partition_;
-  blob_store::BlobStoreBuffer<kBufferSize> bunble_blob_;
-  BundledUpdateHelper helper_;
+  blob_store::BlobStoreBuffer<kBufferSize> bundle_blob_;
+  BundledUpdateBackend backend_;
 };
 
 }  // namespace
 
-TEST_F(UpdateBundleTest, Create) { UpdateBundle(bunble_blob(), helper()); }
+TEST_F(UpdateBundleTest, Create) { UpdateBundle(bundle_blob(), backend()); }
 
 }  // namespace pw::software_update
