@@ -34,6 +34,10 @@ declare_args() {
 
   # List of application image GN targets specific to the Pigweed target.
   pw_TARGET_APPLICATIONS = []
+
+  # Whether to run integration tests, which may involve multiple processes
+  # communicating over a socket.
+  pw_RUN_INTEGRATION_TESTS = host_os == "linux"
 }
 
 # Enumerate all of the different targets that upstream Pigweed will build by
@@ -125,20 +129,16 @@ group("docs") {
   deps = [ "$dir_pigweed/docs($dir_pigweed/targets/docs)" ]
 }
 
-_default_toolchain = _default_toolchain_prefix + pw_default_optimization_level
-
-# Tests larger than unit tests, typically run in a specific configuration.
+# Tests larger than unit tests, typically run in a specific configuration. Only
+# added if pw_RUN_INTEGRATION_TESTS is true.
 group("integration_tests") {
-  deps = []
-
-  if (host_os != "win") {
-    deps += [
-      "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_toolchain)",
-      "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_toolchain)",
-      "$dir_pw_unit_test/py:rpc_service_test.action($_default_toolchain)",
+  if (pw_RUN_INTEGRATION_TESTS) {
+    _default_tc = _default_toolchain_prefix + pw_default_optimization_level
+    deps = [
+      "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_tc)",
+      "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_tc)",
+      "$dir_pw_unit_test/py:rpc_service_test.action($_default_tc)",
     ]
-  } else {
-    not_needed([ "_default_toolchain" ])
   }
 }
 

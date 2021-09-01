@@ -61,7 +61,9 @@ def _at_all_optimization_levels(target):
 # Build presubmit checks
 #
 def gn_clang_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
+    build.gn_gen(ctx.root,
+                 ctx.output_dir,
+                 pw_RUN_INTEGRATION_TESTS=(sys.platform != 'win32'))
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_clang'))
 
 
