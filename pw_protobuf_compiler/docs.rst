@@ -30,6 +30,9 @@ Protobuf code generation is currently supported for the following generators:
 | Python      | ``python``     | Compiles using the standard Python protobuf   |
 |             |                | plugin, creating a ``pw_python_package``.     |
 +-------------+----------------+-----------------------------------------------+
+| Typescript  | ``typescript`` | Compilation is supported in Bazel via         |
+|             |                | @rules_proto_grpc.                            |
++-------------+----------------+-----------------------------------------------+
 
 GN template
 ===========
