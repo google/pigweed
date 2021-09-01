@@ -23,7 +23,8 @@ Read blob:
   0) Create BlobReader instance
   1) BlobReader::Open().
   2) Read data using BlobReader::Read() or
-     BlobReader::GetMemoryMappedBlob().
+     BlobReader::GetMemoryMappedBlob(). BlobReader is seekable. Use
+     BlobReader::Seek() to read from a desired offset.
   3) BlobReader::Close().
 
 Size report

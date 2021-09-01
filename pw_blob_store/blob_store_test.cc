@@ -311,6 +311,34 @@ TEST_F(BlobStoreTest, OffsetRead) {
   VerifyFlash(read_buffer, kOffset);
 }
 
+TEST_F(BlobStoreTest, SeekOffsetRead) {
+  InitSourceBufferToRandom(0x11309);
+  WriteTestBlock();
+
+  constexpr size_t kOffset = 10;
+  ASSERT_LT(kOffset, kBlobDataSize);
+
+  kvs::ChecksumCrc16 checksum;
+
+  char name[16] = "TestBlobBlock";
+  constexpr size_t kBufferSize = 16;
+  BlobStoreBuffer<kBufferSize> blob(
+      name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
+  EXPECT_EQ(OkStatus(), blob.Init());
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+  ASSERT_EQ(OkStatus(), reader.Seek(kOffset));
+
+  std::array<std::byte, kBlobDataSize - kOffset> read_buffer;
+  ByteSpan read_span = read_buffer;
+  ASSERT_EQ(read_span.size_bytes(), reader.ConservativeReadLimit());
+
+  auto result = reader.Read(read_span);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(OkStatus(), reader.Close());
+  VerifyFlash(read_buffer, kOffset);
+}
+
 TEST_F(BlobStoreTest, InvalidReadOffset) {
   InitSourceBufferToRandom(0x11309);
   WriteTestBlock();
@@ -326,6 +354,24 @@ TEST_F(BlobStoreTest, InvalidReadOffset) {
   EXPECT_EQ(OkStatus(), blob.Init());
   BlobStore::BlobReader reader(blob);
   ASSERT_EQ(Status::InvalidArgument(), reader.Open(kOffset));
+}
+
+TEST_F(BlobStoreTest, InvalidSeekOffset) {
+  InitSourceBufferToRandom(0x11309);
+  WriteTestBlock();
+
+  constexpr size_t kOffset = kBlobDataSize;
+
+  kvs::ChecksumCrc16 checksum;
+
+  char name[16] = "TestBlobBlock";
+  constexpr size_t kBufferSize = 16;
+  BlobStoreBuffer<kBufferSize> blob(
+      name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
+  EXPECT_EQ(OkStatus(), blob.Init());
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+  ASSERT_EQ(Status::OutOfRange(), reader.Seek(kOffset));
 }
 
 // Test reading with a read buffer larger than the available data in the

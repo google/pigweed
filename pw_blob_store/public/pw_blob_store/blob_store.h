@@ -16,10 +16,13 @@
 #include <span>
 
 #include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
+#include "pw_stream/seek.h"
 #include "pw_stream/stream.h"
 
 namespace pw::blob_store {
@@ -187,7 +190,7 @@ class BlobStore {
 
   // Implement stream::Reader interface for BlobStore. Multiple readers may be
   // open at the same time, but readers may not be open with a writer open.
-  class BlobReader final : public stream::NonSeekableReader {
+  class BlobReader final : public stream::SeekableReader {
    public:
     constexpr BlobReader(BlobStore& store)
         : store_(store), open_(false), offset_(0) {}
@@ -255,6 +258,24 @@ class BlobStore {
     Result<ConstByteSpan> GetMemoryMappedBlob() {
       PW_DASSERT(open_);
       return store_.GetMemoryMappedBlob();
+    }
+
+    size_t DoTell() const override {
+      PW_DASSERT(open_);
+      return offset_;
+    }
+
+    Status DoSeek(ssize_t offset, Whence origin) override {
+      PW_DASSERT(open_);
+      // Note that Open ensures it is ValidToRead() which
+      // in turn guarantees store_.ReadableDataBytes() > 0.
+
+      size_t pos = offset_;
+      PW_TRY(
+          CalculateSeek(offset, origin, store_.ReadableDataBytes() - 1, pos));
+      offset_ = pos;
+
+      return OkStatus();
     }
 
    private:
