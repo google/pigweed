@@ -17,15 +17,15 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_toolchain/universal_tools.gni")
 
 declare_args() {
-  # Regular expression matching the names of the source files to output
-  # diagnostics from. The option is not provided by clang-tidy, even
-  # though --header-filter is. Example:
+  # Glob-style patterns matching the paths of the source files to be excluded
+  # from the analysis. clang-tidy provides no alternative option.
+  # Example:
   #
   #   gn gen out \
-  #     --args='pw_toolchain_STATIC_ANALYSIS_SOURCE_FILTER="^((?!third_party).)*$"'
+  #     --args='pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE=["third_party/.*"]'
   #
   # disables clang-tidy on all files in the third_party directory.
-  pw_toolchain_STATIC_ANALYSIS_SOURCE_FILTER = ".*"
+  pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE = []
 }
 
 # Creates a toolchain target for static analysis.
@@ -41,9 +41,14 @@ template("pw_static_analysis_toolchain") {
   # Clang tidy is invoked by a wrapper script which implements the missing
   # option --source-filter.
   _clang_tidy_py_path =
-      rebase_path("$dir_pw_toolchain/py/pw_toolchain/clang_tidy.py")
+      rebase_path("$dir_pw_toolchain/py/pw_toolchain/clang_tidy.py",
+                  root_build_dir)
   _clang_tidy_py = "${python_path} ${_clang_tidy_py_path}"
-  _source_filter = pw_toolchain_STATIC_ANALYSIS_SOURCE_FILTER
+  _source_root = rebase_path("//", root_build_dir)
+  _source_exclude = ""
+  foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE) {
+    _source_exclude = _source_exclude + " --source-exclude '${pattern}'"
+  }
 
   toolchain(target_name) {
     # Uncomment this line to see which toolchains generate other toolchains.
@@ -68,8 +73,9 @@ template("pw_static_analysis_toolchain") {
       command = string_join(" ",
                             [
                               _clang_tidy_py,
-                              "--source-filter '${_source_filter}'",
+                              _source_exclude,
                               "--source-file {{source}}",
+                              "--source-root '${_source_root}'",
                               "--export-fixes {{output}}.yaml",
                               "--",
                               invoker.cc,
@@ -93,8 +99,9 @@ template("pw_static_analysis_toolchain") {
       command = string_join(" ",
                             [
                               _clang_tidy_py,
-                              "--source-filter '${_source_filter}'",
+                              _source_exclude,
                               "--source-file {{source}}",
+                              "--source-root '${_source_root}'",
                               "--export-fixes {{output}}.yaml",
                               "--",
                               invoker.cxx,

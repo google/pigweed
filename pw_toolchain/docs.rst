@@ -87,8 +87,8 @@ Additionally, ``generate_toolchain`` implements a boolean flag
 toolchain ``${target_name}.static_analysis`` using
 ``pw_generate_static_analysis_toolchain`` and the toolchain options.
 
-The build argument ``pw_toolchain_STATIC_ANALYSIS_SOURCE_FILTER`` may be
-used to select and/or exclude source files to output diagnostics from.
+The build argument ``pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE`` may be
+used to exclude source files from the analysis.
 
 ``pw_toolchain`` provides static analysis GN toolchains that may be used to
 test host targets:
@@ -98,6 +98,9 @@ test host targets:
  - pw_toolchain_host_clang.size_optimized.static_analysis
  - pw_toolchain_host_clang.fuzz.static_analysis
    (if pw_toolchain_OSS_FUZZ_ENABLED is false)
+ - pw_toolchain_arm_clang.debug.static_analysis
+ - pw_toolchain_arm_clang.speed_optimized.static_analysis
+ - pw_toolchain_arm_clang.size_optimized.static_analysis
 
  For example, to run ``clang-tidy`` on all source dependencies of the
  ``default`` target:
@@ -112,3 +115,9 @@ test host targets:
   group("static_analysis") {
     deps = [ ":default(my_toolchain.static_analysis)" ]
   }
+
+.. warning::
+    The status of the static analysis checks might change when
+    any relevant .clang-tidy file is updated. You should
+    clean the output directory before invoking
+    ``clang-tidy``.

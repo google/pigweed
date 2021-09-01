@@ -125,6 +125,8 @@ _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
 }
 
 # Run clang-tidy on pigweed_default with host_clang_debug toolchain options.
+# Make sure to invoke gn clean out when any relevant .clang-tidy
+# file is updated.
 group("static_analysis") {
   _toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
   deps = [ ":pigweed_default(${_toolchain_prefix}debug.static_analysis)" ]
