@@ -280,6 +280,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_containers:tests",
       "$dir_pw_cpu_exception_cortex_m:tests",
       "$dir_pw_crypto:tests",
+      "$dir_pw_file:tests",
       "$dir_pw_function:tests",
       "$dir_pw_fuzzer:tests",
       "$dir_pw_hdlc:tests",

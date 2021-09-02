@@ -29,3 +29,17 @@ that can access a FileSystem service are granted equal permissions.
 .. literalinclude:: file.proto
   :language: protobuf
   :lines: 14-
+
+------------------------------
+Flat FileSystem implementation
+------------------------------
+This module provides the ``FlatFileSystemService``, an optional implementation
+of the FileSystem RPC service with a virtual interface that allows different
+data storage implementations to expose logical files. As the name implies, the
+file system is treated as a flat file system; it does not support any
+directory-like interactions.
+
+The ``FlatFileSystemService`` implementation requires a static, fixed list of
+``FileSystemEntry`` pointers. Each ``FileSystemEntry`` represents a potential
+file, and acts as an interface boundary that is backed by some kind of storage
+mechanism (e.g. ``BlobStore``, ``PersistentBuffer``).

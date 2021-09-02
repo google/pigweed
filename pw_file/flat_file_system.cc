@@ -1,0 +1,175 @@
+// Copyright 2021 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#define PW_LOG_MODULE_NAME "FS"
+
+#include "pw_file/flat_file_system.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <string_view>
+
+#include "pw_assert/check.h"
+#include "pw_bytes/span.h"
+#include "pw_file/file.pwpb.h"
+#include "pw_log/log.h"
+#include "pw_protobuf/decoder.h"
+#include "pw_protobuf/encoder.h"
+#include "pw_protobuf/serialized_size.h"
+#include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
+
+namespace pw::file {
+
+using FileSystemEntry = FlatFileSystemService::FileSystemEntry;
+
+Status FlatFileSystemService::EnumerateFile(
+    FileSystemEntry& entry,
+    pw::file::ListResponse::StreamEncoder& output_encoder) {
+  StatusWithSize sws = entry.Name(file_name_buffer_);
+  if (!sws.ok()) {
+    return sws.status();
+  }
+  {
+    pw::file::Path::StreamEncoder encoder = output_encoder.GetPathsEncoder();
+
+    encoder.WritePath(reinterpret_cast<const char*>(file_name_buffer_.data()),
+                      sws.size());
+    encoder.WriteSizeBytes(entry.SizeBytes());
+    encoder.WritePermissions(entry.Permissions());
+    encoder.WriteFileId(entry.FileId());
+  }
+  return output_encoder.status();
+}
+
+void FlatFileSystemService::EnumerateAllFiles(RawServerWriter& writer) {
+  for (FileSystemEntry* entry : entries_) {
+    PW_DCHECK_NOTNULL(entry);
+    // For now, don't try to pack entries.
+    pw::file::ListResponse::MemoryEncoder encoder(writer.PayloadBuffer());
+    if (Status status = EnumerateFile(*entry, encoder); !status.ok()) {
+      PW_LOG_ERROR("Failed to enumerate file (id: %u) with status %d",
+                   static_cast<unsigned>(entry->FileId()),
+                   static_cast<int>(status.code()));
+      continue;
+    }
+
+    Status write_status = writer.Write(encoder);
+    if (!write_status.ok()) {
+      writer.Finish(write_status);
+      return;
+    }
+  }
+  writer.Finish(OkStatus());
+}
+
+void FlatFileSystemService::List(ServerContext&,
+                                 ConstByteSpan request,
+                                 RawServerWriter& writer) {
+  protobuf::Decoder decoder(request);
+  // If a file name was provided, try and find and enumerate the file.
+  while (decoder.Next().ok()) {
+    if (decoder.FieldNumber() !=
+        static_cast<uint32_t>(pw::file::ListRequest::Fields::PATH)) {
+      continue;
+    }
+
+    std::string_view file_name_view;
+    if (!decoder.ReadString(&file_name_view).ok() ||
+        file_name_view.length() == 0) {
+      writer.Finish(Status::DataLoss());
+      return;
+    }
+
+    // Find and enumerate the file requested.
+    Result<FileSystemEntry*> result = FindFile(file_name_view);
+    if (!result.ok()) {
+      writer.Finish(result.status());
+      return;
+    }
+
+    pw::file::ListResponse::MemoryEncoder encoder(writer.PayloadBuffer());
+    Status proto_encode_status = EnumerateFile(*result.value(), encoder);
+    if (!proto_encode_status.ok()) {
+      writer.Finish(proto_encode_status);
+      return;
+    }
+
+    writer.Finish(writer.Write(encoder));
+    return;
+  }
+
+  // If no path was provided in the ListRequest, just enumerate everything.
+  EnumerateAllFiles(writer);
+}
+
+StatusWithSize FlatFileSystemService::Delete(ServerContext&,
+                                             ConstByteSpan request,
+                                             ByteSpan) {
+  protobuf::Decoder decoder(request);
+  while (decoder.Next().ok()) {
+    if (decoder.FieldNumber() !=
+        static_cast<uint32_t>(pw::file::DeleteRequest::Fields::PATH)) {
+      continue;
+    }
+
+    std::string_view file_name_view;
+    if (!decoder.ReadString(&file_name_view).ok()) {
+      return StatusWithSize(Status::DataLoss(), 0);
+    }
+    return StatusWithSize(FindAndDeleteFile(file_name_view), 0);
+  }
+  return StatusWithSize(Status::InvalidArgument(), 0);
+}
+
+Result<FileSystemEntry*> FlatFileSystemService::FindFile(
+    std::string_view file_name) {
+  Status search_status;
+  for (FileSystemEntry* entry : entries_) {
+    PW_DCHECK_NOTNULL(entry);
+    StatusWithSize sws = entry->Name(file_name_buffer_);
+
+    // If there not an exact file name length match, don't try and check against
+    // a prefix.
+    if (!sws.ok() || file_name.length() != sws.size()) {
+      if (sws.status() != Status::NotFound()) {
+        PW_LOG_ERROR("Failed to read file name (id: %u) with status %d",
+                     static_cast<unsigned>(entry->FileId()),
+                     static_cast<int>(sws.status().code()));
+      }
+      continue;
+    }
+
+    if (memcmp(file_name.data(), file_name_buffer_.data(), file_name.size()) ==
+        0) {
+      return entry;
+    }
+  }
+
+  search_status.Update(Status::NotFound());
+  return search_status;
+}
+
+Status FlatFileSystemService::FindAndDeleteFile(std::string_view file_name) {
+  Result<FileSystemEntry*> result = FindFile(file_name);
+  if (!result.ok()) {
+    return result.status();
+  }
+
+  return result.value()->Delete();
+}
+
+}  // namespace pw::file
