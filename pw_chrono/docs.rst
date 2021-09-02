@@ -156,5 +156,5 @@ Examples in C++
   pw::chrono::SystemTimer foo_timer(DoFoo);
 
   void DoFooLater() {
-    foo.InvokeAfter(42ms);  // DoFoo will be invoked after 42ms.
+    foo_timer.InvokeAfter(42ms);  // DoFoo will be invoked after 42ms.
   }
