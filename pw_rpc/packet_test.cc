@@ -21,13 +21,14 @@
 namespace pw::rpc::internal {
 namespace {
 
+using protobuf::FieldKey;
 using std::byte;
 
 constexpr auto kPayload = bytes::Array<0x82, 0x02, 0xff, 0xff>();
 
 constexpr auto kEncoded = bytes::Array<
     // Payload
-    MakeKey(5, protobuf::WireType::kDelimited),
+    uint32_t(FieldKey(5, protobuf::WireType::kDelimited)),
     0x04,
     0x82,
     0x02,
@@ -35,29 +36,29 @@ constexpr auto kEncoded = bytes::Array<
     0xff,
 
     // Packet type
-    MakeKey(1, protobuf::WireType::kVarint),
+    uint32_t(FieldKey(1, protobuf::WireType::kVarint)),
     1,  // RESPONSE
 
     // Channel ID
-    MakeKey(2, protobuf::WireType::kVarint),
+    uint32_t(FieldKey(2, protobuf::WireType::kVarint)),
     1,
 
     // Service ID
-    MakeKey(3, protobuf::WireType::kFixed32),
+    uint32_t(FieldKey(3, protobuf::WireType::kFixed32)),
     42,
     0,
     0,
     0,
 
     // Method ID
-    MakeKey(4, protobuf::WireType::kFixed32),
+    uint32_t(FieldKey(4, protobuf::WireType::kFixed32)),
     100,
     0,
     0,
     0
 
     // Status (not encoded if it is zero)
-    // MakeKey(6, protobuf::WireType::kVarint),
+    // FieldKey(6, protobuf::WireType::kVarint),
     // 0x00
     >();
 

@@ -45,8 +45,9 @@ inline constexpr size_t kMaxSizeOfFieldKey = varint::kMaxVarint32SizeBytes;
 inline constexpr size_t kMaxSizeOfLength = varint::kMaxVarint32SizeBytes;
 
 constexpr size_t SizeOfFieldKey(uint32_t field_number) {
-  // The wiretype is ignored as this does not impact the serialized size.
-  return varint::EncodedSize(field_number << kFieldNumberShift);
+  // The wiretype does not impact the serialized size, so use kVarint (0), which
+  // will be optimized out by the compiler.
+  return varint::EncodedSize(FieldKey(field_number, WireType::kVarint));
 }
 
 }  // namespace pw::protobuf

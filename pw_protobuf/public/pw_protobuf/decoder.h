@@ -64,6 +64,12 @@ class Decoder {
   Status Next();
 
   // Returns the field number of the field at the current cursor position.
+  //
+  // A return value of 0 indicates that the field number is invalid. An invalid
+  // field number terminates the decode operation; any subsequent calls to
+  // Next() or Read*() will return DATA_LOSS.
+  //
+  // TODO(frolv): This should be refactored to return a Result<uint32_t>.
   uint32_t FieldNumber() const;
 
   // Reads a proto int32 value from the current cursor.

@@ -50,7 +50,10 @@ Status Decoder::SkipField() {
 uint32_t Decoder::FieldNumber() const {
   uint64_t key;
   varint::Decode(proto_, &key);
-  return key >> kFieldNumberShift;
+  if (!FieldKey::IsValidKey(key)) {
+    return 0;
+  }
+  return FieldKey(key).field_number();
 }
 
 Status Decoder::ReadUint32(uint32_t* out) {
@@ -113,16 +116,15 @@ Status Decoder::ReadString(std::string_view* out) {
 size_t Decoder::FieldSize() const {
   uint64_t key;
   size_t key_size = varint::Decode(proto_, &key);
-  if (key_size == 0) {
+  if (key_size == 0 || !FieldKey::IsValidKey(key)) {
     return 0;
   }
 
   std::span<const std::byte> remainder = proto_.subspan(key_size);
-  WireType wire_type = static_cast<WireType>(key & kWireTypeMask);
   uint64_t value = 0;
   size_t expected_size = 0;
 
-  switch (wire_type) {
+  switch (FieldKey(key).wire_type()) {
     case WireType::kVarint:
       expected_size = varint::Decode(remainder, &value);
       if (expected_size == 0) {
@@ -162,8 +164,11 @@ Status Decoder::ConsumeKey(WireType expected_type) {
     return Status::FailedPrecondition();
   }
 
-  WireType wire_type = static_cast<WireType>(key & kWireTypeMask);
-  if (wire_type != expected_type) {
+  if (!FieldKey::IsValidKey(key)) {
+    return Status::DataLoss();
+  }
+
+  if (FieldKey(key).wire_type() != expected_type) {
     return Status::FailedPrecondition();
   }
 

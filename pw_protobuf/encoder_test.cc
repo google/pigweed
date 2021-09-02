@@ -392,7 +392,7 @@ TEST(StreamEncoder, EmptyChildWrites) {
   ASSERT_EQ(parent.status(), OkStatus());
   const size_t kExpectedSize =
       varint::EncodedSize(
-          MakeKey(kTestProtoNestedField, WireType::kDelimited)) +
+          FieldKey(kTestProtoNestedField, WireType::kDelimited)) +
       varint::EncodedSize(0);
   ASSERT_EQ(parent.size(), kExpectedSize);
 }

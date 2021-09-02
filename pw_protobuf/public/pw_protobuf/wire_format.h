@@ -14,6 +14,9 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
+
+#include "pw_assert/assert.h"
 
 namespace pw::protobuf {
 
@@ -24,6 +27,19 @@ constexpr static uint32_t kMaxFieldNumber = (1u << 29) - 1;
 constexpr static uint32_t kFirstReservedNumber = 19000;
 constexpr static uint32_t kLastReservedNumber = 19999;
 
+constexpr bool ValidFieldNumber(uint32_t field_number) {
+  return field_number != 0 && field_number <= kMaxFieldNumber &&
+         !(field_number >= kFirstReservedNumber &&
+           field_number <= kLastReservedNumber);
+}
+
+constexpr bool ValidFieldNumber(uint64_t field_number) {
+  if (field_number > std::numeric_limits<uint32_t>::max()) {
+    return false;
+  }
+  return ValidFieldNumber(static_cast<uint32_t>(field_number));
+}
+
 enum class WireType {
   kVarint = 0,
   kFixed64 = 1,
@@ -32,17 +48,51 @@ enum class WireType {
   kFixed32 = 5,
 };
 
-inline constexpr unsigned int kFieldNumberShift = 3u;
-inline constexpr unsigned int kWireTypeMask = (1u << kFieldNumberShift) - 1u;
+// Represents a protobuf field key, storing a field number and wire type.
+class FieldKey {
+ public:
+  // Checks if the given encoded protobuf key is valid. Must be called before
+  // instantiating a FieldKey object with it.
+  static constexpr bool IsValidKey(uint64_t key) {
+    uint64_t field_number = key >> kFieldNumberShift;
+    uint32_t wire_type = key & kWireTypeMask;
 
-constexpr uint32_t MakeKey(uint32_t field_number, WireType wire_type) {
-  return (field_number << kFieldNumberShift | static_cast<uint32_t>(wire_type));
-}
+    return ValidFieldNumber(field_number) && (wire_type <= 2 || wire_type == 5);
+  }
 
-constexpr bool ValidFieldNumber(uint32_t field_number) {
-  return field_number != 0 && field_number <= kMaxFieldNumber &&
-         !(field_number >= kFirstReservedNumber &&
-           field_number <= kLastReservedNumber);
+  // Creates a field key with the given field number and type.
+  //
+  // Precondition: The field number is valid.
+  constexpr FieldKey(uint32_t field_number, WireType wire_type)
+      : key_(field_number << kFieldNumberShift |
+             static_cast<uint32_t>(wire_type)) {
+    PW_DASSERT(ValidFieldNumber(field_number));
+  }
+
+  // Parses a field key from its encoded representation.
+  //
+  // Precondition: The field number is valid. Call IsValidKey(key) first.
+  constexpr FieldKey(uint32_t key) : key_(key) {
+    PW_DASSERT(ValidFieldNumber(field_number()));
+  }
+
+  constexpr operator uint32_t() { return key_; }
+
+  constexpr uint32_t field_number() const { return key_ >> kFieldNumberShift; }
+  constexpr WireType wire_type() const {
+    return static_cast<WireType>(key_ & kWireTypeMask);
+  }
+
+ private:
+  static constexpr unsigned int kFieldNumberShift = 3u;
+  static constexpr unsigned int kWireTypeMask = (1u << kFieldNumberShift) - 1u;
+
+  uint32_t key_;
+};
+
+[[deprecated("Use the FieldKey class")]] constexpr uint32_t MakeKey(
+    uint32_t field_number, WireType wire_type) {
+  return FieldKey(field_number, wire_type);
 }
 
 }  // namespace pw::protobuf

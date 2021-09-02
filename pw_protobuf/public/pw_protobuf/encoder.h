@@ -507,7 +507,7 @@ class StreamEncoder {
       return status_;
     }
 
-    WriteVarint(MakeKey(field_number, WireType::kDelimited))
+    WriteVarint(FieldKey(field_number, WireType::kDelimited))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     WriteVarint(payload_size)
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
