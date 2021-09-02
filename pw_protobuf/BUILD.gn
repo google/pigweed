@@ -57,12 +57,14 @@ pw_source_set("pw_protobuf") {
     "public/pw_protobuf/encoder.h",
     "public/pw_protobuf/find.h",
     "public/pw_protobuf/serialized_size.h",
+    "public/pw_protobuf/stream_decoder.h",
     "public/pw_protobuf/wire_format.h",
   ]
   sources = [
     "decoder.cc",
     "encoder.cc",
     "find.cc",
+    "stream_decoder.cc",
   ]
 }
 
@@ -81,6 +83,7 @@ pw_test_group("tests") {
     ":encoder_test",
     ":encoder_fuzzer",
     ":find_test",
+    ":stream_decoder_test",
     ":varint_size_test",
   ]
 }
@@ -103,6 +106,11 @@ pw_test("find_test") {
 pw_test("codegen_test") {
   deps = [ ":codegen_test_protos.pwpb" ]
   sources = [ "codegen_test.cc" ]
+}
+
+pw_test("stream_decoder_test") {
+  deps = [ ":pw_protobuf" ]
+  sources = [ "stream_decoder_test.cc" ]
 }
 
 config("one_byte_varint") {

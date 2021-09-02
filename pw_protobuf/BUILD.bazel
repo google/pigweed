@@ -38,12 +38,14 @@ pw_cc_library(
         "decoder.cc",
         "encoder.cc",
         "find.cc",
+        "stream_decoder.cc",
     ],
     hdrs = [
         "public/pw_protobuf/decoder.h",
         "public/pw_protobuf/encoder.h",
         "public/pw_protobuf/find.h",
         "public/pw_protobuf/serialized_size.h",
+        "public/pw_protobuf/stream_decoder.h",
         "public/pw_protobuf/wire_format.h",
     ],
     includes = ["public"],
@@ -91,6 +93,15 @@ pw_cc_fuzz_test(
 pw_cc_test(
     name = "find_test",
     srcs = ["find_test.cc"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "stream_decoder_test",
+    srcs = ["stream_decoder_test.cc"],
     deps = [
         ":pw_protobuf",
         "//pw_unit_test",

@@ -264,6 +264,150 @@ Example ``example_client.cc``:
 ========
 Decoding
 ========
+``pw_protobuf`` provides two decoder implementations, which are described below.
+
+Decoder
+=======
+The ``Decoder`` class operates on an protobuf message located in a buffer in
+memory. It provides an iterator-style API for processing a message. Calling
+``Next()`` advances the decoder to the next proto field, which can then be read
+by calling the appropriate ``Read*`` function for the field number.
+
+When reading ``bytes`` and ``string`` fields, the decoder returns a view of that
+field within the buffer; no data is copied out.
+
+.. note::
+
+  ``pw::protobuf::Decoder`` will soon be renamed ``pw::protobuf::MemoryDecoder``
+  for clarity and consistency.
+
+.. code-block:: c++
+
+  #include "pw_protobuf/decoder.h"
+  #include "pw_status/try.h"
+
+  pw::Status DecodeProtoFromBuffer(std::span<const std::byte> buffer) {
+    pw::protobuf::Decoder decoder(buffer);
+    pw::Status status;
+
+    uint32_t uint32_field;
+    std::string_view string_field;
+
+    // Iterate over the fields in the message. A return value of OK indicates
+    // that a valid field has been found and can be read. When the decoder
+    // reaches the end of the message, Next() will return OUT_OF_RANGE.
+    // Other return values indicate an error trying to decode the message.
+    while ((status = decoder.Next()).ok()) {
+      switch (decoder.FieldNumber()) {
+        case 1:
+          PW_TRY(decoder.ReadUint32(&uint32_field));
+          break;
+        case 2:
+          // The passed-in string_view will point to the contents of the string
+          // field within the buffer.
+          PW_TRY(decoder.ReadString(&string_field));
+          break;
+      }
+    }
+
+    // Do something with the fields...
+
+    return status.IsOutOfRange() ? OkStatus() : status;
+  }
+
+StreamDecoder
+=============
+Sometimes, a serialized protobuf message may be too large to fit into an
+in-memory buffer. To faciliate working with that type of data, ``pw_protobuf``
+provides a ``StreamDecoder`` which reads data from a
+``pw::stream::SeekableReader``.
+
+.. admonition:: When to use a stream decoder
+
+  The ``StreamDecoder`` should only be used in cases where the protobuf data
+  cannot be read directly from a buffer. It is unadvisable to use a
+  ``StreamDecoder`` with a ``MemoryStream`` --- the decoding operations will be
+  far less efficient than the ``Decoder``, which is optimized for in-memory
+  messages.
+
+The general usage of a ``StreamDecoder`` is similar to the basic ``Decoder``,
+with the exception of ``bytes`` and ``string`` fields, which must be copied out
+of the stream into a provided buffer.
+
+.. code-block:: c++
+
+  #include "pw_protobuf/decoder.h"
+  #include "pw_status/try.h"
+
+  pw::Status DecodeProtoFromStream(pw::stream::SeekableReader& reader) {
+    pw::protobuf::StreamDecoder decoder(reader);
+    pw::Status status;
+
+    uint32_t uint32_field;
+    char string_field[16];
+
+    // Iterate over the fields in the message. A return value of OK indicates
+    // that a valid field has been found and can be read. When the decoder
+    // reaches the end of the message, Next() will return OUT_OF_RANGE.
+    // Other return values indicate an error trying to decode the message.
+    while ((status = decoder.Next()).ok()) {
+      // FieldNumber() returns a Result<uint32_t> as it may fail sometimes.
+      // However, FieldNumber() is guaranteed to be valid after a call to Next()
+      // that returns OK, so the value can be used directly here.
+      switch (decoder.FieldNumber().value()) {
+        case 1: {
+          Result<uint32_t> result = decoder.ReadUint32();
+          if (result.ok()) {
+            uint32_field = result.value();
+          }
+          break;
+        }
+
+        case 2:
+          // The string field is copied into the provided buffer. If the buffer
+          // is too small to fit the string, RESOURCE_EXHAUSTED is returned and
+          // the decoder is not advanced, allowing the field to be re-read.
+          PW_TRY(decoder.ReadString(string_field));
+          break;
+      }
+    }
+
+    // Do something with the fields...
+
+    return status.IsOutOfRange() ? OkStatus() : status;
+  }
+
+The ``StreamDecoder`` can also return a ``Stream::SeekableReader`` for reading
+bytes fields, avoiding the need to copy data out directly.
+
+.. code-block:: c++
+
+  if (decoder.FieldNumber() == 3) {
+    // bytes my_bytes_field = 3;
+    pw::protobuf::StreamDecoder::BytesReader bytes_reader =
+        decoder.GetBytesReader();
+
+    // Read data incrementally through the bytes_reader. While the reader is
+    // active, any attempts to use the decoder will result in a crash. When the
+    // reader goes out of scope, it will close itself and reactive the decoder.
+  }
+
+If the current field is a nested protobuf message, the ``StreamDecoder`` can
+provide a decoder for the nested message. While the nested decoder is active,
+its parent decoder cannot be used.
+
+.. code-block:: c++
+
+  if (decoder.FieldNumber() == 4) {
+    pw::protobuf::StreamDecoder nested_decoder = decoder.GetNestedDecoder();
+
+    while (nested_decoder.Next().ok()) {
+      // Process the nested message.
+    }
+
+    // Once the nested decoder goes out of scope, it closes itself, and the
+    // parent decoder can be used again.
+  }
 
 Size report
 ===========

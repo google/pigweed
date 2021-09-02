@@ -42,6 +42,7 @@
 //
 namespace pw::protobuf {
 
+// TODO(frolv): Rename this to MemoryDecoder to match the encoder naming.
 class Decoder {
  public:
   constexpr Decoder(std::span<const std::byte> proto)
