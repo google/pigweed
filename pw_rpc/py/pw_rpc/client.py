@@ -26,7 +26,7 @@ from pw_rpc import descriptors, packets
 from pw_rpc.descriptors import Channel, Service, Method
 from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger(__package__)
 
 
 class Error(Exception):
@@ -67,6 +67,8 @@ class PendingRpcs:
                      rpc: PendingRpc,
                      request: Optional[Message],
                      context: object,
+                     *,
+                     ignore_errors: bool = False,
                      override_pending: bool = False) -> Any:
         """Starts the provided RPC and sends the request packet to the channel.
 
@@ -74,11 +76,17 @@ class PendingRpcs:
           the previous context object or None
         """
         previous = self.open(rpc, context, override_pending)
+        packet = packets.encode_request(rpc, request)
 
-        # TODO(hepler): Remove `type: ignore` on this and similar lines when
-        #     https://github.com/python/mypy/issues/5485 is fixed
-        rpc.channel.output(  # type: ignore
-            packets.encode_request(rpc, request))
+        # TODO(hepler): Remove `type: ignore[misc]` below when
+        #     https://github.com/python/mypy/issues/10711 is fixed.
+        if ignore_errors:
+            try:
+                rpc.channel.output(packet)  # type: ignore[misc]
+            except Exception as err:  # pylint: disable=broad-except
+                _LOG.debug('Ignoring exception when starting RPC: %s', err)
+        else:
+            rpc.channel.output(packet)  # type: ignore[misc]
 
         return previous
 

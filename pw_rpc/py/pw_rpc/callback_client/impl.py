@@ -97,18 +97,21 @@ class _MethodClient:
             f'\n\n{textwrap.indent(docstring, "  ")}\n\n'
             f'  Returns {annotation}.')
 
-    def _start_call(self, call_type: Type[CallType],
-                    request: Optional[Message], timeout_s: OptionalTimeout,
+    def _start_call(self,
+                    call_type: Type[CallType],
+                    request: Optional[Message],
+                    timeout_s: OptionalTimeout,
                     on_next: Optional[OnNextCallback],
                     on_completed: Optional[OnCompletedCallback],
-                    on_error: Optional[OnErrorCallback]) -> CallType:
+                    on_error: Optional[OnErrorCallback],
+                    ignore_errors: bool = False) -> CallType:
         """Creates the Call object and invokes the RPC using it."""
         if timeout_s is UseDefault.VALUE:
             timeout_s = self.default_timeout_s
 
         call = call_type(self._rpcs, self._rpc, timeout_s, on_next,
                          on_completed, on_error)
-        call._invoke(request)  # pylint: disable=protected-access
+        call._invoke(request, ignore_errors)  # pylint: disable=protected-access
         return call
 
     def _client_streaming_call_type(self,
@@ -178,6 +181,18 @@ class _UnaryMethodClient(_MethodClient):
                                 self.method.get_request(request, request_args),
                                 timeout_s, on_next, on_completed, on_error)
 
+    def open(self,
+             request: Message = None,
+             on_next: OnNextCallback = None,
+             on_completed: OnCompletedCallback = None,
+             on_error: OnErrorCallback = None,
+             *,
+             request_args: Dict[str, Any] = None) -> UnaryCall:
+        """Invokes the unary RPC and returns a call object."""
+        return self._start_call(UnaryCall,
+                                self.method.get_request(request, request_args),
+                                None, on_next, on_completed, on_error, True)
+
 
 class _ServerStreamingMethodClient(_MethodClient):
     def invoke(
@@ -195,6 +210,22 @@ class _ServerStreamingMethodClient(_MethodClient):
                                 self.method.get_request(request, request_args),
                                 timeout_s, on_next, on_completed, on_error)
 
+    def open(self,
+             request: Message = None,
+             on_next: OnNextCallback = None,
+             on_completed: OnCompletedCallback = None,
+             on_error: OnErrorCallback = None,
+             *,
+             request_args: Dict[str, Any] = None) -> ServerStreamingCall:
+        """Returns a call object for the RPC, even if the RPC cannot be invoked.
+
+        Can be used to listen for responses from an RPC server that may yet be
+        available.
+        """
+        return self._start_call(ServerStreamingCall,
+                                self.method.get_request(request, request_args),
+                                None, on_next, on_completed, on_error, True)
+
 
 class _ClientStreamingMethodClient(_MethodClient):
     def invoke(
@@ -208,7 +239,20 @@ class _ClientStreamingMethodClient(_MethodClient):
         """Invokes the client streaming RPC and returns a call object"""
         return self._start_call(
             self._client_streaming_call_type(ClientStreamingCall), None,
-            timeout_s, on_next, on_completed, on_error)
+            timeout_s, on_next, on_completed, on_error, True)
+
+    def open(self,
+             on_next: OnNextCallback = None,
+             on_completed: OnCompletedCallback = None,
+             on_error: OnErrorCallback = None) -> ClientStreamingCall:
+        """Returns a call object for the RPC, even if the RPC cannot be invoked.
+
+        Can be used to listen for responses from an RPC server that may yet be
+        available.
+        """
+        return self._start_call(
+            self._client_streaming_call_type(ClientStreamingCall), None, None,
+            on_next, on_completed, on_error, True)
 
     def __call__(
             self,
@@ -219,7 +263,6 @@ class _ClientStreamingMethodClient(_MethodClient):
 
 
 class _BidirectionalStreamingMethodClient(_MethodClient):
-    """Invokes the bidirectional streaming RPC and returns a call object."""
     def invoke(
         self,
         on_next: OnNextCallback = None,
@@ -228,9 +271,23 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
         *,
         timeout_s: OptionalTimeout = UseDefault.VALUE
     ) -> BidirectionalStreamingCall:
+        """Invokes the bidirectional streaming RPC and returns a call object."""
         return self._start_call(
             self._client_streaming_call_type(BidirectionalStreamingCall), None,
             timeout_s, on_next, on_completed, on_error)
+
+    def open(self,
+             on_next: OnNextCallback = None,
+             on_completed: OnCompletedCallback = None,
+             on_error: OnErrorCallback = None) -> BidirectionalStreamingCall:
+        """Returns a call object for the RPC, even if the RPC cannot be invoked.
+
+        Can be used to listen for responses from an RPC server that may yet be
+        available.
+        """
+        return self._start_call(
+            self._client_streaming_call_type(BidirectionalStreamingCall), None,
+            None, on_next, on_completed, on_error, True)
 
     def __call__(
             self,

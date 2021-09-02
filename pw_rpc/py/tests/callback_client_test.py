@@ -16,7 +16,7 @@
 
 import unittest
 from unittest import mock
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
@@ -71,6 +71,8 @@ class _CallbackClientImplTestBase(unittest.TestCase):
         self.requests: List[packet_pb2.RpcPacket] = []
         self._next_packets: List[Tuple[bytes, Status]] = []
         self.send_responses_after_packets: float = 1
+
+        self.output_exception: Optional[Exception] = None
 
     def last_request(self) -> packet_pb2.RpcPacket:
         assert self.requests
@@ -127,12 +129,18 @@ class _CallbackClientImplTestBase(unittest.TestCase):
              process_status))
 
     def _handle_packet(self, data: bytes) -> None:
+        if self.output_exception:
+            raise self.output_exception  # pylint: disable=raising-bad-type
+
         self.requests.append(packets.decode(data))
 
         if self.send_responses_after_packets > 1:
             self.send_responses_after_packets -= 1
             return
 
+        self._process_enqueued_packets()
+
+    def _process_enqueued_packets(self) -> None:
         # Set send_responses_after_packets to infinity to prevent potential
         # infinite recursion when a packet causes another packet to send.
         send_after_count = self.send_responses_after_packets
@@ -274,8 +282,8 @@ class UnaryTest(_CallbackClientImplTestBase):
                                    self.method.response_type(payload='0_o'))
 
             callback = mock.Mock()
-            call = self._service.SomeUnary.invoke(
-                self._request(magic_number=5), callback, callback)
+            call = self.rpc.invoke(self._request(magic_number=5), callback,
+                                   callback)
 
             callback.assert_has_calls([
                 mock.call(call, self.method.response_type(payload='0_o')),
@@ -285,6 +293,25 @@ class UnaryTest(_CallbackClientImplTestBase):
             self.assertEqual(
                 5,
                 self._sent_payload(self.method.request_type).magic_number)
+
+    def test_open(self) -> None:
+        self.output_exception = IOError('something went wrong sending!')
+
+        for _ in range(3):
+            self._enqueue_response(1, self.method, Status.ABORTED,
+                                   self.method.response_type(payload='0_o'))
+
+            callback = mock.Mock()
+            call = self.rpc.open(self._request(magic_number=5), callback,
+                                 callback)
+            self.assertEqual(self.requests, [])
+
+            self._process_enqueued_packets()
+
+            callback.assert_has_calls([
+                mock.call(call, self.method.response_type(payload='0_o')),
+                mock.call(call, Status.ABORTED)
+            ])
 
     def test_blocking_server_error(self) -> None:
         for _ in range(3):
@@ -412,8 +439,8 @@ class ServerStreamingTest(_CallbackClientImplTestBase):
             self._enqueue_response(1, self.method, Status.ABORTED)
 
             callback = mock.Mock()
-            call = self._service.SomeServerStreaming.invoke(
-                self._request(magic_number=3), callback, callback)
+            call = self.rpc.invoke(self._request(magic_number=3), callback,
+                                   callback)
 
             callback.assert_has_calls([
                 mock.call(call, self.method.response_type(payload='!!!')),
@@ -424,6 +451,29 @@ class ServerStreamingTest(_CallbackClientImplTestBase):
             self.assertEqual(
                 3,
                 self._sent_payload(self.method.request_type).magic_number)
+
+    def test_open(self) -> None:
+        self.output_exception = IOError('something went wrong sending!')
+        rep1 = self.method.response_type(payload='!!!')
+        rep2 = self.method.response_type(payload='?')
+
+        for _ in range(3):
+            self._enqueue_server_stream(1, self.method, rep1)
+            self._enqueue_server_stream(1, self.method, rep2)
+            self._enqueue_response(1, self.method, Status.ABORTED)
+
+            callback = mock.Mock()
+            call = self.rpc.open(self._request(magic_number=3), callback,
+                                 callback)
+            self.assertEqual(self.requests, [])
+
+            self._process_enqueued_packets()
+
+            callback.assert_has_calls([
+                mock.call(call, self.method.response_type(payload='!!!')),
+                mock.call(call, self.method.response_type(payload='?')),
+                mock.call(call, Status.ABORTED),
+            ])
 
     def test_nonblocking_cancel(self) -> None:
         resp = self.rpc.method.response_type(payload='!!!')
@@ -564,6 +614,24 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
             self.assertIs(Status.OK, stream.status)
             self.assertIsNone(stream.error)
             self.assertEqual(payload_1, stream.response)
+
+    def test_open(self) -> None:
+        self.output_exception = IOError('something went wrong sending!')
+        payload = self.method.response_type(payload='-_-')
+
+        for _ in range(3):
+            self._enqueue_response(1, self.method, Status.OK, payload)
+
+            callback = mock.Mock()
+            call = self.rpc.open(callback, callback, callback)
+            self.assertEqual(self.requests, [])
+
+            self._process_enqueued_packets()
+
+            callback.assert_has_calls([
+                mock.call(call, payload),
+                mock.call(call, Status.OK),
+            ])
 
     def test_nonblocking_finish(self) -> None:
         """Tests a client streaming RPC ended by the client."""
@@ -745,6 +813,28 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
 
             self.assertIs(Status.OK, stream.status)
             self.assertIsNone(stream.error)
+
+    def test_open(self) -> None:
+        self.output_exception = IOError('something went wrong sending!')
+        rep1 = self.method.response_type(payload='!!!')
+        rep2 = self.method.response_type(payload='?')
+
+        for _ in range(3):
+            self._enqueue_server_stream(1, self.method, rep1)
+            self._enqueue_server_stream(1, self.method, rep2)
+            self._enqueue_response(1, self.method, Status.OK)
+
+            callback = mock.Mock()
+            call = self.rpc.open(callback, callback, callback)
+            self.assertEqual(self.requests, [])
+
+            self._process_enqueued_packets()
+
+            callback.assert_has_calls([
+                mock.call(call, self.method.response_type(payload='!!!')),
+                mock.call(call, self.method.response_type(payload='?')),
+                mock.call(call, Status.OK),
+            ])
 
     @mock.patch('pw_rpc.callback_client.call.Call._default_response')
     def test_nonblocking(self, callback) -> None:

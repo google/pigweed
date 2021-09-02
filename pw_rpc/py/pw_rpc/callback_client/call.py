@@ -86,11 +86,12 @@ class Call:
         self.on_completed = on_completed or Call._default_completion
         self.on_error = on_error or Call._default_error
 
-    def _invoke(self, request: Optional[Message]) -> None:
+    def _invoke(self, request: Optional[Message], ignore_errors: bool) -> None:
         """Calls the RPC. This must be called immediately after __init__."""
         previous = self._rpcs.send_request(self._rpc,
                                            request,
                                            self,
+                                           ignore_errors=ignore_errors,
                                            override_pending=True)
 
         # TODO(hepler): Remove the cancel_duplicate_calls option.
