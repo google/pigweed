@@ -153,14 +153,6 @@ class MultiSink {
     Status PopEntry(const PeekedEntry& entry)
         PW_LOCKS_EXCLUDED(multisink_->lock_);
 
-    [[deprecated(
-        "Use PopEntry() instead. This method will be removed in the "
-        "future")]] Result<ConstByteSpan>
-    GetEntry(ByteSpan buffer, uint32_t& drop_count_out)
-        PW_LOCKS_EXCLUDED(multisink_->lock_) {
-      return PopEntry(buffer, drop_count_out);
-    }
-
     // Returns a copy of the next available entry if it exists and acquires the
     // latest drop count, without moving the drain forward, except if there is a
     // DATA_LOSS or RESOURCE_EXHAUSTED error when peeking, in which case the
