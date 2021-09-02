@@ -22,7 +22,7 @@
 namespace pw::rpc::internal {
 
 void RawMethod::SynchronousUnaryInvoker(const Method& method,
-                                        ServerCall& call,
+                                        CallContext& call,
                                         const Packet& request) {
   Channel::OutputBuffer response_buffer = call.channel().AcquireBuffer();
   std::span payload_buffer = response_buffer.payload(request);
@@ -48,7 +48,7 @@ void RawMethod::SynchronousUnaryInvoker(const Method& method,
 }
 
 void RawMethod::ServerStreamingInvoker(const Method& method,
-                                       ServerCall& call,
+                                       CallContext& call,
                                        const Packet& request) {
   RawServerWriter server_writer(call);
   static_cast<const RawMethod&>(method).function_.unary_request(
@@ -56,14 +56,14 @@ void RawMethod::ServerStreamingInvoker(const Method& method,
 }
 
 void RawMethod::ClientStreamingInvoker(const Method& method,
-                                       ServerCall& call,
+                                       CallContext& call,
                                        const Packet&) {
   RawServerReader reader(call);
   static_cast<const RawMethod&>(method).function_.stream_request(call, reader);
 }
 
 void RawMethod::BidirectionalStreamingInvoker(const Method& method,
-                                              ServerCall& call,
+                                              CallContext& call,
                                               const Packet&) {
   RawServerReaderWriter reader_writer(call);
   static_cast<const RawMethod&>(method).function_.stream_request(call,

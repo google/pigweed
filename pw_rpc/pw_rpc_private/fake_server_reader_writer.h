@@ -41,7 +41,7 @@ class FakeServerReaderWriter : private internal::Responder {
       : FakeServerReaderWriter(MethodType::kBidirectionalStreaming) {}
 
   // On a real reader/writer, this constructor would not be exposed.
-  FakeServerReaderWriter(ServerCall& context,
+  FakeServerReaderWriter(CallContext& context,
                          MethodType type = MethodType::kBidirectionalStreaming)
       : Responder(context, type) {}
 
@@ -80,7 +80,7 @@ class FakeServerWriter : private FakeServerReaderWriter {
  public:
   constexpr FakeServerWriter()
       : FakeServerReaderWriter(MethodType::kServerStreaming) {}
-  FakeServerWriter(ServerCall& context)
+  FakeServerWriter(CallContext& context)
       : FakeServerReaderWriter(context, MethodType::kServerStreaming) {}
   FakeServerWriter(FakeServerWriter&&) = default;
 
@@ -101,7 +101,7 @@ class FakeServerReader : private FakeServerReaderWriter {
   constexpr FakeServerReader()
       : FakeServerReaderWriter(MethodType::kClientStreaming) {}
 
-  FakeServerReader(ServerCall& context)
+  FakeServerReader(CallContext& context)
       : FakeServerReaderWriter(context, MethodType::kClientStreaming) {}
 
   FakeServerReader(FakeServerReader&&) = default;

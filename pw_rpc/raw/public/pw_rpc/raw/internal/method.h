@@ -38,7 +38,7 @@ class RawMethod : public Method {
   template <auto kMethod>
   static constexpr RawMethod Unary(uint32_t id) {
     constexpr SynchronousUnaryFunction wrapper =
-        [](ServerCall& call, ConstByteSpan req, ByteSpan res) {
+        [](CallContext& call, ConstByteSpan req, ByteSpan res) {
           return CallMethodImplFunction<kMethod>(call, req, res);
         };
     return RawMethod(
@@ -48,7 +48,7 @@ class RawMethod : public Method {
   template <auto kMethod>
   static constexpr RawMethod ServerStreaming(uint32_t id) {
     constexpr UnaryRequestFunction wrapper =
-        [](ServerCall& call, ConstByteSpan request, RawServerWriter& writer) {
+        [](CallContext& call, ConstByteSpan request, RawServerWriter& writer) {
           return CallMethodImplFunction<kMethod>(call, request, writer);
         };
     return RawMethod(
@@ -58,7 +58,7 @@ class RawMethod : public Method {
   template <auto kMethod>
   static constexpr RawMethod ClientStreaming(uint32_t id) {
     constexpr StreamRequestFunction wrapper =
-        [](ServerCall& call, RawServerReaderWriter& reader) {
+        [](CallContext& call, RawServerReaderWriter& reader) {
           return CallMethodImplFunction<kMethod>(
               call, static_cast<RawServerReader&>(reader));
         };
@@ -69,7 +69,7 @@ class RawMethod : public Method {
   template <auto kMethod>
   static constexpr RawMethod BidirectionalStreaming(uint32_t id) {
     constexpr StreamRequestFunction wrapper =
-        [](ServerCall& call, RawServerReaderWriter& reader_writer) {
+        [](CallContext& call, RawServerReaderWriter& reader_writer) {
           return CallMethodImplFunction<kMethod>(call, reader_writer);
         };
     return RawMethod(
@@ -81,15 +81,15 @@ class RawMethod : public Method {
 
  private:
   // Generic versions of the user-defined functions.
-  using SynchronousUnaryFunction = StatusWithSize (*)(ServerCall&,
+  using SynchronousUnaryFunction = StatusWithSize (*)(CallContext&,
                                                       ConstByteSpan,
                                                       ByteSpan);
 
-  using UnaryRequestFunction = void (*)(ServerCall&,
+  using UnaryRequestFunction = void (*)(CallContext&,
                                         ConstByteSpan,
                                         RawServerWriter&);
 
-  using StreamRequestFunction = void (*)(ServerCall&, RawServerReaderWriter&);
+  using StreamRequestFunction = void (*)(CallContext&, RawServerReaderWriter&);
 
   union Function {
     SynchronousUnaryFunction synchronous_unary;
@@ -101,19 +101,19 @@ class RawMethod : public Method {
       : Method(id, invoker), function_(function) {}
 
   static void SynchronousUnaryInvoker(const Method& method,
-                                      ServerCall& call,
+                                      CallContext& call,
                                       const Packet& request);
 
   static void ServerStreamingInvoker(const Method& method,
-                                     ServerCall& call,
+                                     CallContext& call,
                                      const Packet& request);
 
   static void ClientStreamingInvoker(const Method& method,
-                                     ServerCall& call,
+                                     CallContext& call,
                                      const Packet&);
 
   static void BidirectionalStreamingInvoker(const Method& method,
-                                            ServerCall& call,
+                                            CallContext& call,
                                             const Packet&);
 
   // Stores the user-defined RPC.

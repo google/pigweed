@@ -41,7 +41,7 @@ class GenericNanopbResponder : public internal::Responder {
   constexpr GenericNanopbResponder(MethodType type)
       : internal::Responder(type) {}
 
-  GenericNanopbResponder(const ServerCall& call, MethodType type)
+  GenericNanopbResponder(const CallContext& call, MethodType type)
       : internal::Responder(call, type) {}
 
  protected:
@@ -65,7 +65,7 @@ class GenericNanopbResponder : public internal::Responder {
 template <typename Request>
 class BaseNanopbServerReader : public GenericNanopbResponder {
  public:
-  BaseNanopbServerReader(const internal::ServerCall& call, MethodType type)
+  BaseNanopbServerReader(const internal::CallContext& call, MethodType type)
       : GenericNanopbResponder(call, type) {}
 
  protected:
@@ -132,7 +132,7 @@ class NanopbServerReaderWriter
   template <typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  NanopbServerReaderWriter(const internal::ServerCall& call)
+  NanopbServerReaderWriter(const internal::CallContext& call)
       : internal::BaseNanopbServerReader<Request>(
             call, MethodType::kBidirectionalStreaming) {}
 };
@@ -169,7 +169,7 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
   template <typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  NanopbServerReader(const internal::ServerCall& call)
+  NanopbServerReader(const internal::CallContext& call)
       : internal::BaseNanopbServerReader<Request>(
             call, MethodType::kClientStreaming) {}
 };
@@ -213,7 +213,7 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   template <typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  NanopbServerWriter(const internal::ServerCall& call)
+  NanopbServerWriter(const internal::CallContext& call)
       : internal::GenericNanopbResponder(call, MethodType::kServerStreaming) {}
 };
 

@@ -41,7 +41,7 @@ class TestMethod : public Method {
 
  private:
   static void InvokeForTest(const Method& method,
-                            ServerCall& call,
+                            CallContext& call,
                             const Packet& request) {
     const auto& test_method = static_cast<const TestMethod&>(method);
     test_method.last_channel_id_ = call.channel().id();

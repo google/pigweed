@@ -246,7 +246,7 @@ class BidiMethod : public BasicServer {
     ASSERT_TRUE(responder_.open());
   }
 
-  internal::ServerCall call_;
+  internal::CallContext call_;
   internal::test::FakeServerReaderWriter responder_;
 };
 
@@ -396,7 +396,7 @@ class ServerStreamingMethod : public BasicServer {
     ASSERT_TRUE(responder_.open());
   }
 
-  internal::ServerCall call_;
+  internal::CallContext call_;
   internal::test::FakeServerWriter responder_;
 };
 

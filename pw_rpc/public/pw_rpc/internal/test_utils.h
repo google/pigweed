@@ -136,7 +136,7 @@ class ServerContextForTest {
                             payload);
   }
 
-  internal::ServerCall& get() { return context_; }
+  internal::CallContext& get() { return context_; }
   auto& output() { return output_; }
   TestServer& server() { return static_cast<TestServer&>(server_); }
 
@@ -146,7 +146,7 @@ class ServerContextForTest {
   rpc::Server server_;
   Service service_;
 
-  internal::ServerCall context_;
+  internal::CallContext context_;
 };
 
 template <size_t kOutputBufferSize = 128,

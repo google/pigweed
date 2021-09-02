@@ -61,15 +61,15 @@ class Method {
   // calls the invoker function, which handles the RPC request and response
   // according to the RPC type and protobuf implementation and calls the
   // user-defined RPC function.
-  void Invoke(ServerCall& call, const Packet& request) const {
+  void Invoke(CallContext& call, const Packet& request) const {
     return invoker_(*this, call, request);
   }
 
  protected:
-  using Invoker = void (&)(const Method&, ServerCall&, const Packet&);
+  using Invoker = void (&)(const Method&, CallContext&, const Packet&);
 
   static constexpr void InvalidInvoker(const Method&,
-                                       ServerCall&,
+                                       CallContext&,
                                        const Packet&) {}
 
   constexpr Method(uint32_t id, Invoker invoker) : id_(id), invoker_(invoker) {}
@@ -112,9 +112,9 @@ template <auto kMethod>
 using Response = typename MethodTraits<decltype(kMethod)>::Response;
 
 // Function that calls a user-defined method implementation function from a
-// ServerCall object.
+// CallContext object.
 template <auto kMethod, typename... Args>
-constexpr auto CallMethodImplFunction(ServerCall& call, Args&&... args) {
+constexpr auto CallMethodImplFunction(CallContext& call, Args&&... args) {
   // If the method impl is a member function, deduce the type of the
   // user-defined service from it, then call the method on the service.
   if constexpr (std::is_member_function_pointer_v<decltype(kMethod)>) {

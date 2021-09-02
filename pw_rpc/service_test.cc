@@ -29,7 +29,7 @@ class ServiceTestHelper {
 namespace {
 
 void InvokeIt(const internal::Method&,
-              internal::ServerCall&,
+              internal::CallContext&,
               const internal::Packet&) {}
 
 class ServiceTestMethod : public internal::Method {

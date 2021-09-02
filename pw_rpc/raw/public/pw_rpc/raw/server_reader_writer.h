@@ -79,7 +79,7 @@ class RawServerReaderWriter : private internal::Responder {
   constexpr RawServerReaderWriter(MethodType type)
       : internal::Responder(type) {}
 
-  RawServerReaderWriter(const internal::ServerCall& call,
+  RawServerReaderWriter(const internal::CallContext& call,
                         MethodType type = MethodType::kBidirectionalStreaming)
       : internal::Responder(call, type) {}
 
@@ -122,7 +122,7 @@ class RawServerReader : private RawServerReaderWriter {
   template <typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  RawServerReader(const internal::ServerCall& call)
+  RawServerReader(const internal::CallContext& call)
       : RawServerReaderWriter(call, MethodType::kClientStreaming) {}
 };
 
@@ -154,7 +154,7 @@ class RawServerWriter : private RawServerReaderWriter {
 
   friend class internal::RawMethod;
 
-  RawServerWriter(const internal::ServerCall& call)
+  RawServerWriter(const internal::CallContext& call)
       : RawServerReaderWriter(call, MethodType::kServerStreaming) {}
 };
 

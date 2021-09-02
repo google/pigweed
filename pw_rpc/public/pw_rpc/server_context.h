@@ -23,11 +23,11 @@ namespace pw::rpc {
 // The ServerContext collects context for an RPC being invoked on a server. The
 // ServerContext is passed into RPC functions and is user-facing.
 //
-// The ServerContext is a public-facing view of the internal::ServerCall class.
+// The ServerContext is a public-facing view of the internal::CallContext class.
 // It uses inheritance to avoid copying or creating an extra reference to the
-// underlying ServerCall. Private inheritance prevents exposing the
-// internal-facing ServerCall interface.
-class ServerContext : private internal::ServerCall {
+// underlying CallContext. Private inheritance prevents exposing the
+// internal-facing CallContext interface.
+class ServerContext : private internal::CallContext {
  public:
   // Returns the ID for the channel this RPC is using.
   uint32_t channel_id() const { return channel().id(); }
@@ -40,12 +40,12 @@ class ServerContext : private internal::ServerCall {
   constexpr ServerContext(ServerContext&&) = delete;
   constexpr ServerContext& operator=(ServerContext&&) = delete;
 
-  friend class internal::ServerCall;  // Allow down-casting from ServerCall.
+  friend class internal::CallContext;  // Allow down-casting from CallContext.
 };
 
 namespace internal {
 
-inline ServerContext& ServerCall::context() {
+inline ServerContext& CallContext::context() {
   return static_cast<ServerContext&>(*this);
 }
 

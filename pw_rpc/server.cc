@@ -117,7 +117,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
         responder->HandleError(Status::Cancelled());
       }
 
-      internal::ServerCall call(
+      internal::CallContext call(
           static_cast<internal::Server&>(*this), *channel, *service, *method);
       method->Invoke(call, packet);
       break;

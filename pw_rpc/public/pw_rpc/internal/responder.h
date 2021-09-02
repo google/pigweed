@@ -106,7 +106,7 @@ class Responder : public IntrusiveList<Responder>::Item {
         client_stream_state_(kClientStreamClosed) {}
 
   // Creates a Responder for an open RPC.
-  Responder(const ServerCall& call, MethodType type);
+  Responder(const CallContext& call, MethodType type);
 
   // Initialize rpc_state_ to closed since move-assignment will check if the
   // Responder is open before moving into it.
@@ -161,7 +161,7 @@ class Responder : public IntrusiveList<Responder>::Item {
   // open when this is called.
   void Close();
 
-  ServerCall call_;
+  CallContext call_;
   Channel::OutputBuffer response_;
 
   // Called when the RPC is terminated due to an error.

@@ -30,30 +30,30 @@ class Method;
 class Server;
 
 // Collects information for an ongoing RPC being processed by the server.
-// The Server creates a ServerCall object to represent a method invocation. The
-// ServerCall is copied into a ServerWriter or ServerReader for streaming RPCs.
+// The Server creates a CallContext object to represent a method invocation. The
+// CallContext is copied into a ServerReader/Writer for streaming RPCs.
 //
-// ServerCall is a strictly internal class. ServerContext is the public
-// interface to the internal::ServerCall.
-class ServerCall {
+// CallContext is an internal class. ServerContext is the public server-side
+// interface to the internal::CallContext.
+class CallContext {
  public:
-  constexpr ServerCall()
+  constexpr CallContext()
       : server_(nullptr),
         channel_(nullptr),
         service_(nullptr),
         method_(nullptr) {}
 
-  constexpr ServerCall(Server& server,
-                       Channel& channel,
-                       Service& service,
-                       const internal::Method& method)
+  constexpr CallContext(Server& server,
+                        Channel& channel,
+                        Service& service,
+                        const internal::Method& method)
       : server_(&server),
         channel_(&channel),
         service_(&service),
         method_(&method) {}
 
-  constexpr ServerCall(const ServerCall&) = default;
-  constexpr ServerCall& operator=(const ServerCall&) = default;
+  constexpr CallContext(const CallContext&) = default;
+  constexpr CallContext& operator=(const CallContext&) = default;
 
   // Access the ServerContext for this call. Defined in pw_rpc/server_context.h.
   ServerContext& context();

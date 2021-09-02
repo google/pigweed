@@ -25,7 +25,7 @@ using std::byte;
 
 namespace internal {
 
-void NanopbMethod::CallSynchronousUnary(ServerCall& call,
+void NanopbMethod::CallSynchronousUnary(CallContext& call,
                                         const Packet& request,
                                         void* request_struct,
                                         void* response_struct) const {
@@ -38,7 +38,7 @@ void NanopbMethod::CallSynchronousUnary(ServerCall& call,
   SendResponse(call.channel(), request, response_struct, status);
 }
 
-void NanopbMethod::CallUnaryRequest(ServerCall& call,
+void NanopbMethod::CallUnaryRequest(CallContext& call,
                                     MethodType type,
                                     const Packet& request,
                                     void* request_struct) const {

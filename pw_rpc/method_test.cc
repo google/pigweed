@@ -53,7 +53,7 @@ TEST(Method, Invoke) {
   rpc::Server server(std::span(static_cast<rpc::Channel*>(&channel), 1));
   TestService service;
 
-  ServerCall call(
+  CallContext call(
       static_cast<internal::Server&>(server), channel, service, kTestMethod);
   Packet empty_packet;
 

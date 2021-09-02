@@ -136,7 +136,7 @@ class InvocationContext {
     return T(InvocationContext<Service, kMethodId>::server_call());
   }
 
-  internal::ServerCall& server_call() { return server_call_; }
+  internal::CallContext& server_call() { return server_call_; }
 
  private:
   static constexpr size_t kNoPayloadPacketSizeBytes =
@@ -147,7 +147,7 @@ class InvocationContext {
   rpc::Channel channel_;
   rpc::Server server_;
   Service service_;
-  internal::ServerCall server_call_;
+  internal::CallContext server_call_;
 };
 
 }  // namespace pw::rpc::internal::test

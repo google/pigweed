@@ -22,7 +22,7 @@
 namespace pw::rpc::internal {
 namespace {
 
-Packet ResponsePacket(const ServerCall& call,
+Packet ResponsePacket(const CallContext& call,
                       std::span<const std::byte> payload,
                       Status status) {
   return Packet(PacketType::RESPONSE,
@@ -33,7 +33,7 @@ Packet ResponsePacket(const ServerCall& call,
                 status);
 }
 
-Packet StreamPacket(const ServerCall& call,
+Packet StreamPacket(const CallContext& call,
                     std::span<const std::byte> payload) {
   return Packet(PacketType::SERVER_STREAM,
                 call.channel().id(),
@@ -44,7 +44,7 @@ Packet StreamPacket(const ServerCall& call,
 
 }  // namespace
 
-Responder::Responder(const ServerCall& call, MethodType type)
+Responder::Responder(const CallContext& call, MethodType type)
     : call_(call),
       rpc_state_(kOpen),
       type_(type),
