@@ -353,6 +353,30 @@ class StreamEncoder {
     return WriteLengthDelimitedField(field_number, value);
   }
 
+  // Writes a proto 'bytes' field from the stream bytes_reader.
+  //
+  // The payload for the value is provided through the stream::Reader
+  // `bytes_reader`. The method reads a chunk of the data from the reader using
+  // the `stream_pipe_buffer` and writes it to the encoder.
+  //
+  // Precondition: The stream_pipe_buffer.byte_size() >= 1
+  // Precondition: Encoder has no active child encoder.
+  //
+  // Returns:
+  // OK - Bytes field is written successfully.
+  // RESOURCE_EXHAUSTED - Exceeds write limits.
+  // OUT_OF_RANGE - `bytes_reader` is exhausted before `num_bytes` of
+  //                bytes is read.
+  //
+  // Other errors encountered by the writer will be returned as it is.
+  Status WriteBytesFromStream(uint32_t field_number,
+                              stream::Reader& bytes_reader,
+                              size_t num_bytes,
+                              ByteSpan stream_pipe_buffer) {
+    return WriteLengthDelimitedFieldFromStream(
+        field_number, bytes_reader, num_bytes, stream_pipe_buffer);
+  }
+
   // Writes a proto string key-value pair.
   //
   // Precondition: Encoder has no active child encoder.
@@ -365,6 +389,30 @@ class StreamEncoder {
   // Precondition: Encoder has no active child encoder.
   Status WriteString(uint32_t field_number, const char* value, size_t len) {
     return WriteBytes(field_number, std::as_bytes(std::span(value, len)));
+  }
+
+  // Writes a proto 'string' field from the stream bytes_reader.
+  //
+  // The payload for the value is provided through the stream::Reader
+  // `bytes_reader`. The method reads a chunk of the data from the reader using
+  // the `stream_pipe_buffer` and writes it to the encoder.
+  //
+  // Precondition: The stream_pipe_buffer.byte_size() >= 1
+  // Precondition: Encoder has no active child encoder.
+  //
+  // Returns:
+  // OK - String field is written successfully.
+  // RESOURCE_EXHAUSTED - Exceeds write limits.
+  // OUT_OF_RANGE - `bytes_reader` is exhausted before `num_bytes` of
+  //                bytes is read.
+  //
+  // Other errors encountered by the writer will be returned as it is.
+  Status WriteStringFromStream(uint32_t field_number,
+                               stream::Reader& bytes_reader,
+                               size_t num_bytes,
+                               ByteSpan stream_pipe_buffer) {
+    return WriteBytesFromStream(
+        field_number, bytes_reader, num_bytes, stream_pipe_buffer);
   }
 
  protected:
@@ -413,6 +461,12 @@ class StreamEncoder {
 
   // Implementation for encoding all length-delimited field types.
   Status WriteLengthDelimitedField(uint32_t field_number, ConstByteSpan data);
+
+  // Encoding of length-delimited field where payload comes from `bytes_reader`.
+  Status WriteLengthDelimitedFieldFromStream(uint32_t field_number,
+                                             stream::Reader& bytes_reader,
+                                             size_t num_bytes,
+                                             ByteSpan stream_pipe_buffer);
 
   // Implementation for encoding all fixed-length integer types.
   Status WriteFixed(uint32_t field_number, ConstByteSpan data);

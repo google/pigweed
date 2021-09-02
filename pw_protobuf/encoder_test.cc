@@ -54,6 +54,7 @@ constexpr uint32_t kTestProtoCyclesField = 3;
 constexpr uint32_t kTestProtoRatioField = 4;
 constexpr uint32_t kTestProtoErrorMessageField = 5;
 constexpr uint32_t kTestProtoNestedField = 6;
+constexpr uint32_t kTestProtoPayloadFromStreamField = 7;
 
 constexpr uint32_t kNestedProtoHelloField = 1;
 constexpr uint32_t kNestedProtoIdField = 2;
@@ -69,6 +70,7 @@ TEST(StreamEncoder, EncodePrimitives) {
   // tp.cycles = 0xdeadbeef8badf00d;
   // tp.ratio = 1.618034;
   // tp.error_message = "broken 💩";
+  // tp.payload_from_stream = "byreader"
 
   // Hand-encoded version of the above.
   // clang-format off
@@ -85,11 +87,12 @@ TEST(StreamEncoder, EncodePrimitives) {
     0x2a, 0x0b, 'b', 'r', 'o', 'k', 'e', 'n', ' ',
     // poop!
     0xf0, 0x9f, 0x92, 0xa9,
+    // payload_from_stream [delimited k=7]
+    0x3a, 0x08, 'b', 'y', 'r', 'e', 'a', 'd', 'e', 'r',
   };
   // clang-format on
-
-  std::byte encode_buffer[32];
-  std::byte dest_buffer[32];
+  std::byte encode_buffer[64];
+  std::byte dest_buffer[64];
   // This writer isn't necessary, it's just the most testable way to exercise
   // a stream interface. Use a MemoryEncoder when encoding a proto directly to
   // an in-memory buffer.
@@ -103,6 +106,15 @@ TEST(StreamEncoder, EncodePrimitives) {
             OkStatus());
   EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034), OkStatus());
   EXPECT_EQ(encoder.WriteString(kTestProtoErrorMessageField, "broken 💩"),
+            OkStatus());
+
+  const std::string_view kReaderMessage = "byreader";
+  stream::MemoryReader msg_reader(std::as_bytes(std::span(kReaderMessage)));
+  std::byte stream_pipe_buffer[1];
+  EXPECT_EQ(encoder.WriteStringFromStream(kTestProtoPayloadFromStreamField,
+                                          msg_reader,
+                                          kReaderMessage.size(),
+                                          stream_pipe_buffer),
             OkStatus());
 
   ASSERT_EQ(encoder.status(), OkStatus());

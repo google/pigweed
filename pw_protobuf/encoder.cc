@@ -127,6 +127,40 @@ Status StreamEncoder::WriteLengthDelimitedField(uint32_t field_number,
   return status_;
 }
 
+Status StreamEncoder::WriteLengthDelimitedFieldFromStream(
+    uint32_t field_number,
+    stream::Reader& bytes_reader,
+    size_t num_bytes,
+    ByteSpan stream_pipe_buffer) {
+  PW_CHECK_UINT_GT(
+      stream_pipe_buffer.size(), 0, "transfer buffer cannot be 0 size");
+  PW_TRY(UpdateStatusForWrite(field_number, WireType::kDelimited, num_bytes));
+  // Ignore the error until we explicitly check status_ below to minimize
+  // the number of branches.
+  WriteVarint(MakeKey(field_number, WireType::kDelimited)).IgnoreError();
+  WriteVarint(num_bytes).IgnoreError();
+  PW_TRY(status_);
+
+  // Stream data from `bytes_reader` to `writer_`
+  // TODO(pwbug/468): move the following logic to pw_stream/copy.h at a later
+  // time.
+  for (size_t bytes_written = 0; bytes_written < num_bytes;) {
+    const size_t chunk_size_bytes =
+        std::min(num_bytes - bytes_written, stream_pipe_buffer.size_bytes());
+    const Result<ByteSpan> read_result =
+        bytes_reader.Read(stream_pipe_buffer.data(), chunk_size_bytes);
+    status_.Update(read_result.status());
+    PW_TRY(status_);
+
+    status_.Update(writer_.Write(read_result.value()));
+    PW_TRY(status_);
+
+    bytes_written += read_result.value().size();
+  }
+
+  return OkStatus();
+}
+
 Status StreamEncoder::WriteFixed(uint32_t field_number, ConstByteSpan data) {
   WireType type =
       data.size() == sizeof(uint32_t) ? WireType::kFixed32 : WireType::kFixed64;
