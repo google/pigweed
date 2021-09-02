@@ -96,32 +96,26 @@ template <typename Service,
           uint32_t kMethodId,
           size_t kMaxResponses,
           size_t kOutputSize>
-class RawInvocationContext : public InvocationContext<Service, kMethodId> {
+class RawInvocationContext
+    : public InvocationContext<RawFakeChannelOutput<kOutputSize, kMaxResponses>,
+                               Service,
+                               kMethodId> {
  public:
-  // Returns the responses that have been recorded. The maximum number of
-  // responses is responses().max_size(). responses().back() is always the most
-  // recent response, even if total_responses() > responses().max_size().
-  const Vector<ByteSpan>& responses() const { return output_.responses(); }
-
   // Gives access to the RPC's most recent response.
-  ConstByteSpan response() const {
-    PW_ASSERT(!responses().empty());
-    return responses().back();
-  }
+  ConstByteSpan response() const { return Base::output().last_response(); }
 
  protected:
   template <typename... Args>
   RawInvocationContext(Args&&... args)
-      : InvocationContext<Service, kMethodId>(
-            MethodLookup::GetRawMethod<Service, kMethodId>(),
-            output_,
-            std::forward<Args>(args)...),
-        output_(MethodTraits<decltype(kMethod)>::kType) {}
-
-  RawFakeChannelOutput<kOutputSize, kMaxResponses>& output() { return output_; }
+      : Base(MethodLookup::GetRawMethod<Service, kMethodId>(),
+             std::forward_as_tuple(MethodTraits<decltype(kMethod)>::kType),
+             std::forward<Args>(args)...) {}
 
  private:
-  RawFakeChannelOutput<kOutputSize, kMaxResponses> output_;
+  using Base =
+      InvocationContext<RawFakeChannelOutput<kOutputSize, kMaxResponses>,
+                        Service,
+                        kMethodId>;
 };
 
 // Method invocation context for a unary RPC. Returns the status in call() and
@@ -143,8 +137,8 @@ class UnaryContext
   StatusWithSize call(ConstByteSpan request) {
     Base::output().clear();
     ByteSpan& response = Base::output().AllocateResponse();
-    auto sws =
-        CallMethodImplFunction<kMethod>(Base::server_call(), request, response);
+    auto sws = CallMethodImplFunction<kMethod>(
+        Base::call_context(), request, response);
     response = response.first(sws.size());
     return sws;
   }

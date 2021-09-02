@@ -45,6 +45,12 @@ class TransferService : public generated::Transfer<TransferService> {
         max_chunk_size_bytes_(max_chunk_size_bytes),
         default_max_bytes_to_receive_(default_max_bytes_to_receive) {}
 
+  TransferService(const TransferService&) = delete;
+  TransferService(TransferService&&) = delete;
+
+  TransferService& operator=(const TransferService&) = delete;
+  TransferService& operator=(TransferService&&) = delete;
+
   void Read(ServerContext&, RawServerReaderWriter& reader_writer);
 
   void Write(ServerContext&, RawServerReaderWriter& reader_writer);

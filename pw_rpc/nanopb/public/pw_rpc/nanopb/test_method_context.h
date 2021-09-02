@@ -92,55 +92,51 @@ template <typename Service,
           uint32_t kMethodId,
           size_t kMaxResponses,
           size_t kOutputSize>
-class NanopbInvocationContext : public InvocationContext<Service, kMethodId> {
+class NanopbInvocationContext
+    : public InvocationContext<
+          NanopbFakeChannelOutput<internal::Response<kMethod>,
+                                  kMaxResponses,
+                                  kOutputSize>,
+          Service,
+          kMethodId> {
  public:
   using Request = internal::Request<kMethod>;
   using Response = internal::Response<kMethod>;
 
-  // Returns the responses that have been recorded. The maximum number of
-  // responses is responses().max_size(). responses().back() is always the most
-  // recent response, even if total_responses() > responses().max_size().
-  const Vector<Response>& responses() const { return output_.responses(); }
-
-  // Gives access to the RPC's response.
-  const Response& response() const {
-    PW_ASSERT(!responses().empty());
-    return responses().back();
-  }
+  // Gives access to the RPC's most recent response.
+  const Response& response() const { return Base::output().last_response(); }
 
  protected:
   template <typename... Args>
   NanopbInvocationContext(Args&&... args)
-      : InvocationContext<Service, kMethodId>(
-            kMethodInfo, output_, std::forward<Args>(args)...),
-        output_(
-            decltype(output_)::template Create<kMethod, kMethodId, Service>()) {
-  }
-
-  NanopbFakeChannelOutput<Response, kMaxResponses, kOutputSize>& output() {
-    return output_;
-  }
+      : Base(kMethodInfo,
+             std::forward_as_tuple(MethodTraits<decltype(kMethod)>::kType,
+                                   kMethodInfo),
+             std::forward<Args>(args)...) {}
 
   void SendClientStream(const Request& request) {
     // Borrow a buffer from the ChannelOutput for sending the request.
-    ChannelOutput& channel_output = static_cast<rpc::ChannelOutput&>(output());
+    ChannelOutput& channel_output = Base::output();
     std::span buffer = channel_output.AcquireBuffer();
 
-    InvocationContext<Service, kMethodId>::SendClientStream(buffer.first(
+    Base::SendClientStream(buffer.first(
         kMethodInfo.serde().EncodeRequest(&request, buffer).size()));
 
     channel_output.DiscardBuffer(buffer);
   }
 
  private:
+  using Base = InvocationContext<
+      NanopbFakeChannelOutput<Response, kMaxResponses, kOutputSize>,
+      Service,
+      kMethodId>;
+
   static constexpr NanopbMethod kMethodInfo =
       MethodLookup::GetNanopbMethod<Service, kMethodId>();
-
-  NanopbFakeChannelOutput<Response, kMaxResponses, kOutputSize> output_;
 };
 
 // Method invocation context for a unary RPC. Returns the status in
-// server_call() and provides the response through the response() method.
+// call_context() and provides the response through the response() method.
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
@@ -150,6 +146,7 @@ class UnaryContext : public NanopbInvocationContext<Service,
                                                     kMethodId,
                                                     1,
                                                     kOutputSize> {
+ private:
   using Base =
       NanopbInvocationContext<Service, kMethod, kMethodId, 1, kOutputSize>;
 
@@ -165,7 +162,7 @@ class UnaryContext : public NanopbInvocationContext<Service,
     Base::output().clear();
     Response& response = Base::output().AllocateResponse();
     return CallMethodImplFunction<kMethod>(
-        Base::server_call(), request, response);
+        Base::call_context(), request, response);
   }
 };
 

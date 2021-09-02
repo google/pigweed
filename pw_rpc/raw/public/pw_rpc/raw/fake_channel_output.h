@@ -26,10 +26,11 @@ namespace pw::rpc {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
 template <size_t kOutputSize, size_t kMaxResponses>
-class RawFakeChannelOutput final : public internal::test::FakeChannelOutput {
+class RawFakeChannelOutput final
+    : public internal::test::FakeChannelOutputBuffer<kOutputSize> {
  public:
   RawFakeChannelOutput(MethodType method_type)
-      : FakeChannelOutput(packet_buffer_, method_type) {}
+      : internal::test::FakeChannelOutputBuffer<kOutputSize>(method_type) {}
 
   const Vector<ByteSpan>& responses() const { return responses_; }
 
@@ -65,7 +66,6 @@ class RawFakeChannelOutput final : public internal::test::FakeChannelOutput {
     response_buffers_.clear();
   }
 
-  std::array<std::byte, kOutputSize> packet_buffer_;
   Vector<ByteSpan, kMaxResponses> responses_;
   Vector<std::array<std::byte, kOutputSize>, kMaxResponses> response_buffers_;
 };

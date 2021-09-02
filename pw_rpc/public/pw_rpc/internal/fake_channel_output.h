@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/method_type.h"
@@ -22,6 +24,12 @@ namespace pw::rpc::internal::test {
 // A ChannelOutput implementation that stores the outgoing payloads and status.
 class FakeChannelOutput : public ChannelOutput {
  public:
+  FakeChannelOutput(const FakeChannelOutput&) = delete;
+  FakeChannelOutput(FakeChannelOutput&&) = delete;
+
+  FakeChannelOutput& operator=(const FakeChannelOutput&) = delete;
+  FakeChannelOutput& operator=(FakeChannelOutput&&) = delete;
+
   Status last_status() const {
     PW_ASSERT(done());
     return last_status_;
@@ -35,9 +43,9 @@ class FakeChannelOutput : public ChannelOutput {
   void clear();
 
  protected:
-  constexpr FakeChannelOutput(ByteSpan buffer, MethodType method_type)
+  constexpr FakeChannelOutput(MethodType method_type, ByteSpan packet_buffer)
       : ChannelOutput("pw::rpc::internal::test::FakeChannelOutput"),
-        packet_buffer_(buffer),
+        packet_buffer_(packet_buffer),
         method_type_(method_type) {}
 
  private:
@@ -58,6 +66,16 @@ class FakeChannelOutput : public ChannelOutput {
   Status last_status_;
   bool done_ = false;
   const MethodType method_type_;
+};
+
+// Adds the packet output buffer to a FakeChannelOutput.
+template <size_t kOutputSizeBytes>
+class FakeChannelOutputBuffer : public FakeChannelOutput {
+ protected:
+  constexpr FakeChannelOutputBuffer(MethodType method_type)
+      : FakeChannelOutput(method_type, packet_bytes), packet_bytes{} {}
+
+  std::byte packet_bytes[kOutputSizeBytes];
 };
 
 }  // namespace pw::rpc::internal::test

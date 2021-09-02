@@ -31,7 +31,7 @@ class RawMethod;
 
 namespace test {
 
-template <typename, uint32_t>
+template <typename, typename, uint32_t>
 class InvocationContext;
 
 }  // namespace test
@@ -88,7 +88,7 @@ class RawServerReaderWriter : private internal::Responder {
  private:
   friend class internal::RawMethod;
 
-  template <typename, uint32_t>
+  template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 };
 
@@ -119,7 +119,7 @@ class RawServerReader : private RawServerReaderWriter {
  private:
   friend class internal::RawMethod;  // Needed for conversions from ReaderWriter
 
-  template <typename, uint32_t>
+  template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
   RawServerReader(const internal::CallContext& call)
@@ -149,7 +149,7 @@ class RawServerWriter : private RawServerReaderWriter {
  private:
   friend class RawServerReaderWriter;  // Needed for conversions.
 
-  template <typename, uint32_t>
+  template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
   friend class internal::RawMethod;

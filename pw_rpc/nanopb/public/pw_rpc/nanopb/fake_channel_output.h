@@ -13,8 +13,8 @@
 // the License.
 #pragma once
 
-#include <array>
 #include <cstddef>
+#include <cstdint>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
@@ -23,16 +23,11 @@
 #include "pw_rpc/nanopb/internal/method.h"
 
 namespace pw::rpc {
-namespace internal::test::nanopb {
-
-template <typename, auto, uint32_t, size_t, size_t>
-class NanopbInvocationContext;
-
-}  // namespace internal::test::nanopb
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
 template <typename Response, size_t kMaxResponses, size_t kOutputSize>
-class NanopbFakeChannelOutput final : public internal::test::FakeChannelOutput {
+class NanopbFakeChannelOutput final
+    : public internal::test::FakeChannelOutputBuffer<kOutputSize> {
  public:
   template <auto kMethod, uint32_t kMethodId, typename ServiceType>
   static NanopbFakeChannelOutput Create() {
@@ -40,6 +35,13 @@ class NanopbFakeChannelOutput final : public internal::test::FakeChannelOutput {
         internal::MethodLookup::GetNanopbMethod<ServiceType, kMethodId>(),
         internal::MethodTraits<decltype(kMethod)>::kType);
   }
+
+  // Private constructor, do not use. This constructor is exposed so this class
+  // can be constructed using std::make_from_tuple in InvocationContext.
+  NanopbFakeChannelOutput(MethodType method_type,
+                          const internal::NanopbMethod& kMethod)
+      : internal::test::FakeChannelOutputBuffer<kOutputSize>(method_type),
+        method_(kMethod) {}
 
   const Vector<Response>& responses() const { return responses_; }
 
@@ -56,13 +58,6 @@ class NanopbFakeChannelOutput final : public internal::test::FakeChannelOutput {
   }
 
  private:
-  template <typename, auto, uint32_t, size_t, size_t>
-  friend class NanopbInvocationContext;
-
-  NanopbFakeChannelOutput(const internal::NanopbMethod& kMethod,
-                          MethodType method_type)
-      : FakeChannelOutput(packet_buffer_, method_type), method_(kMethod) {}
-
   void AppendResponse(ConstByteSpan response) override {
     Response& response_struct = AllocateResponse();
     PW_ASSERT(method_.serde().DecodeResponse(response, &response_struct));
@@ -72,7 +67,6 @@ class NanopbFakeChannelOutput final : public internal::test::FakeChannelOutput {
 
   const internal::NanopbMethod& method_;
   Vector<Response, kMaxResponses> responses_;
-  std::array<std::byte, kOutputSize> packet_buffer_;
 };
 
 }  // namespace pw::rpc

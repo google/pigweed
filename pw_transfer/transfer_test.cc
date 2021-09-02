@@ -71,7 +71,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
   stream::MemoryReader reader_;
 };
 
-TEST(Tranfser, Read_SingleChunk) {
+TEST(Transfer, Read_SingleChunk) {
   constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
   SimpleReadTransfer handler(3, data);
 
@@ -108,7 +108,7 @@ TEST(Tranfser, Read_SingleChunk) {
   EXPECT_EQ(handler.finalize_read_status, OkStatus());
 }
 
-TEST(Tranfser, Read_MultiChunk) {
+TEST(Transfer, Read_MultiChunk) {
   constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
   SimpleReadTransfer handler(3, data);
 
@@ -157,7 +157,7 @@ TEST(Tranfser, Read_MultiChunk) {
   EXPECT_EQ(handler.finalize_read_status, OkStatus());
 }
 
-TEST(Tranfser, Read_MaxChunkSize_Client) {
+TEST(Transfer, Read_MaxChunkSize_Client) {
   constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
   SimpleReadTransfer handler(3, data);
 
@@ -212,7 +212,7 @@ TEST(Tranfser, Read_MaxChunkSize_Client) {
   EXPECT_EQ(handler.finalize_read_status, OkStatus());
 }
 
-TEST(Tranfser, Read_MaxChunkSize_Server) {
+TEST(Transfer, Read_MaxChunkSize_Server) {
   constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
   SimpleReadTransfer handler(3, data);
 
@@ -269,7 +269,7 @@ TEST(Tranfser, Read_MaxChunkSize_Server) {
   EXPECT_EQ(handler.finalize_read_status, OkStatus());
 }
 
-TEST(Tranfser, Read_ClientError) {
+TEST(Transfer, Read_ClientError) {
   constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
   SimpleReadTransfer handler(3, data);
 
@@ -294,7 +294,7 @@ TEST(Tranfser, Read_ClientError) {
   EXPECT_EQ(handler.finalize_read_status, Status::OutOfRange());
 }
 
-TEST(Tranfser, Read_MalformedParametersChunk) {
+TEST(Transfer, Read_MalformedParametersChunk) {
   constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
   SimpleReadTransfer handler(3, data);
 
@@ -318,7 +318,7 @@ TEST(Tranfser, Read_MalformedParametersChunk) {
   EXPECT_EQ(chunk.status.value(), Status::InvalidArgument());
 }
 
-TEST(Tranfser, Read_UnregisteredHandler) {
+TEST(Transfer, Read_UnregisteredHandler) {
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx(64, 64);
 
   ctx.call();
@@ -647,7 +647,7 @@ class SometimesUnavailableReadHandler final : public ReadOnlyHandler {
   int call_count_;
 };
 
-TEST(Tranfser, PrepareError) {
+TEST(Transfer, PrepareError) {
   constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
   SometimesUnavailableReadHandler handler(3, data);
 

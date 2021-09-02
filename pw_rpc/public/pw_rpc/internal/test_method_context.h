@@ -13,7 +13,6 @@
 // the License.
 #pragma once
 
-#include <array>
 #include <cstddef>
 
 #include "pw_assert/assert.h"
@@ -26,9 +25,15 @@
 namespace pw::rpc::internal::test {
 
 // Collects everything needed to invoke a particular RPC.
-template <typename Service, uint32_t kMethodId>
+template <typename Output, typename Service, uint32_t kMethodId>
 class InvocationContext {
  public:
+  InvocationContext(const InvocationContext&) = delete;
+  InvocationContext(InvocationContext&&) = delete;
+
+  InvocationContext& operator=(const InvocationContext&) = delete;
+  InvocationContext& operator=(InvocationContext&&) = delete;
+
   Service& service() { return service_; }
 
   // Sets the channel ID, which defaults to an arbitrary value.
@@ -37,6 +42,11 @@ class InvocationContext {
   // The total number of responses sent, which may be larger than
   // responses.max_size().
   size_t total_responses() const { return output_.total_responses(); }
+
+  // Returns the responses that have been recorded. The maximum number of
+  // responses is responses().max_size(). responses().back() is always the most
+  // recent response, even if total_responses() > responses().max_size().
+  const auto& responses() const { return output().responses(); }
 
   // True if the RPC has completed.
   bool done() const { return output_.done(); }
@@ -76,20 +86,27 @@ class InvocationContext {
   }
 
  protected:
-  template <typename... Args>
+  // Constructs the invocation context. The args for the ChannelOutput type are
+  // passed in a std::tuple. The args for the Service are forwarded directly
+  // from the callsite.
+  template <typename OutputArgTuple, typename... ServiceArgs>
   InvocationContext(const Method& method,
-                    FakeChannelOutput& output,
-                    Args&&... service_args)
-      : output_(output),
+                    OutputArgTuple&& output_args,
+                    ServiceArgs&&... service_args)
+      : output_(std::make_from_tuple<Output>(
+            std::forward<OutputArgTuple>(output_args))),
         channel_(Channel::Create<123>(&output_)),
         server_(std::span(&channel_, 1)),
-        service_(std::forward<Args>(service_args)...),
-        server_call_(static_cast<internal::Server&>(server_),
-                     static_cast<internal::Channel&>(channel_),
-                     service_,
-                     method) {
+        service_(std::forward<ServiceArgs>(service_args)...),
+        context_(static_cast<internal::Server&>(server_),
+                 static_cast<internal::Channel&>(channel_),
+                 service_,
+                 method) {
     server_.RegisterService(service_);
   }
+
+  const Output& output() const { return output_; }
+  Output& output() { return output_; }
 
   template <size_t kMaxPayloadSize = 32>
   void SendClientStream(ConstByteSpan payload) {
@@ -126,28 +143,26 @@ class InvocationContext {
     output_.clear();
     T responder = GetResponder<T>();
     return CallMethodImplFunction<kMethod>(
-        InvocationContext<Service, kMethodId>::server_call(),
-        std::forward<RequestArg>(request)...,
-        responder);
+        call_context(), std::forward<RequestArg>(request)..., responder);
   }
 
   template <typename T>
   T GetResponder() {
-    return T(InvocationContext<Service, kMethodId>::server_call());
+    return T(call_context());
   }
 
-  internal::CallContext& server_call() { return server_call_; }
+  internal::CallContext& call_context() { return context_; }
 
  private:
   static constexpr size_t kNoPayloadPacketSizeBytes =
       2 /* type */ + 2 /* channel */ + 5 /* service */ + 5 /* method */ +
       2 /* status */;
 
-  FakeChannelOutput& output_;
+  Output output_;
   rpc::Channel channel_;
   rpc::Server server_;
   Service service_;
-  internal::CallContext server_call_;
+  internal::CallContext context_;
 };
 
 }  // namespace pw::rpc::internal::test

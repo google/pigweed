@@ -30,7 +30,7 @@ class NanopbMethod;
 
 namespace test {
 
-template <typename, uint32_t>
+template <typename, typename, uint32_t>
 class InvocationContext;
 
 }  // namespace test
@@ -129,7 +129,7 @@ class NanopbServerReaderWriter
  private:
   friend class internal::NanopbMethod;
 
-  template <typename, uint32_t>
+  template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
   NanopbServerReaderWriter(const internal::CallContext& call)
@@ -166,7 +166,7 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
  private:
   friend class internal::NanopbMethod;
 
-  template <typename, uint32_t>
+  template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
   NanopbServerReader(const internal::CallContext& call)
@@ -210,7 +210,7 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
  private:
   friend class internal::NanopbMethod;
 
-  template <typename, uint32_t>
+  template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
   NanopbServerWriter(const internal::CallContext& call)
