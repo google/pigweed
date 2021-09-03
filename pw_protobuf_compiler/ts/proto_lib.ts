@@ -26,7 +26,7 @@ class ModuleMap extends Map<string, any> {}
  * A collection of protocol buffer modules
  */
 export class Library {
-  private fileDescriptorSet: FileDescriptorSet;
+  readonly fileDescriptorSet: FileDescriptorSet;
   private messages: MessageMap;
 
   /**

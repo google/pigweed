@@ -1,0 +1,51 @@
+// Copyright 2021 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+/* eslint-env browser, jasmine */
+import 'jasmine';
+
+import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
+import {AnotherMessage, SomeMessage} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb';
+
+import * as descriptors from './descriptors';
+
+const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
+
+describe('Descriptors', () => {
+  it('parses from ServiceDescriptor binary', async () => {
+    const lib = await Library.fromFileDescriptorSet(
+        TEST_PROTO_PATH, 'test_protos_tspb');
+    const sd = lib.fileDescriptorSet.getFileList()[0].getServiceList()[0];
+    const service = new descriptors.Service(sd, lib);
+
+    expect(service.name).toEqual('TheTestService')
+    expect(service.methods.size).toEqual(4);
+
+    const unaryMethod = service.methods.get('SomeUnary')!;
+    expect(unaryMethod.name).toEqual('SomeUnary');
+    expect(unaryMethod.clientStreaming).toBeFalse();
+    expect(unaryMethod.serverStreaming).toBeFalse();
+    expect(unaryMethod.service).toEqual(service);
+    expect(unaryMethod.inputType).toEqual(SomeMessage);
+    expect(unaryMethod.outputType).toEqual(AnotherMessage);
+
+    const someBidiStreaming = service.methods.get('SomeBidiStreaming')!;
+    expect(someBidiStreaming.name).toEqual('SomeBidiStreaming');
+    expect(someBidiStreaming.clientStreaming).toBeTrue();
+    expect(someBidiStreaming.serverStreaming).toBeTrue();
+    expect(someBidiStreaming.service).toEqual(service);
+    expect(someBidiStreaming.inputType).toEqual(SomeMessage);
+    expect(someBidiStreaming.outputType).toEqual(AnotherMessage);
+  });
+})
