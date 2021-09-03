@@ -25,6 +25,7 @@ add_subdirectory(system_server)
 pw_add_module_library(pw_rpc.server
   SOURCES
     call.cc
+    endpoint.cc
     server.cc
     service.cc
   PUBLIC_DEPS

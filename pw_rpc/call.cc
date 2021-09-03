@@ -17,7 +17,7 @@
 #include "pw_assert/check.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/internal/server.h"
+#include "pw_rpc/server.h"
 
 namespace pw::rpc::internal {
 namespace {
@@ -50,7 +50,7 @@ Call::Call(const CallContext& call, MethodType type)
       type_(type),
       client_stream_state_(HasClientStream(type) ? kClientStreamOpen
                                                  : kClientStreamClosed) {
-  call_.server().RegisterResponder(*this);
+  call_.server().RegisterCall(*this);
 }
 
 Call& Call::operator=(Call&& other) {
@@ -64,7 +64,7 @@ Call& Call::operator=(Call&& other) {
 
   if (other.open()) {
     other.Close();
-    other.call_.server().RegisterResponder(*this);
+    other.call_.server().RegisterCall(*this);
   }
 
   // Move the rest of the member variables.
@@ -130,7 +130,7 @@ void Call::ReleasePayloadBuffer() {
 void Call::Close() {
   PW_DCHECK(open());
 
-  call_.server().RemoveResponder(*this);
+  call_.server().UnregisterCall(*this);
   rpc_state_ = kClosed;
   client_stream_state_ = kClientStreamClosed;
 }

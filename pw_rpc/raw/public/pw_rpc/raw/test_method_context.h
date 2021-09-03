@@ -22,7 +22,6 @@
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/internal/server.h"
 #include "pw_rpc/internal/test_method_context.h"
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/raw/internal/method.h"

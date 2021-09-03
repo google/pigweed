@@ -26,7 +26,7 @@
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/internal/server.h"
+#include "pw_rpc/server.h"
 
 namespace pw::rpc::internal {
 
@@ -75,10 +75,10 @@ class TestOutput : public ChannelOutput {
   Status send_status_;
 };
 
-// Version of the internal::Server with extra methods exposed for testing.
+// Version of the Server with extra methods exposed for testing.
 class TestServer : public Server {
  public:
-  using internal::Server::writers;
+  using Server::FindCall;
 };
 
 template <typename Service,

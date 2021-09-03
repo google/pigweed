@@ -23,11 +23,11 @@ namespace pw::rpc {
 
 class ServerContext;
 class Service;
+class Server;
 
 namespace internal {
 
 class Method;
-class Server;
 
 // Collects information for an ongoing RPC being processed by the server.
 // The Server creates a CallContext object to represent a method invocation. The

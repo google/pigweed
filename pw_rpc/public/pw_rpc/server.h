@@ -21,19 +21,16 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
 
-class Server {
+class Server : public internal::Endpoint {
  public:
-  constexpr Server(std::span<Channel> channels)
-      : channels_(static_cast<internal::Channel*>(channels.data()),
-                  channels.size()) {}
-
-  ~Server();
+  constexpr Server(std::span<Channel> channels) : Endpoint(channels) {}
 
   // Registers a service with the server. This should not be called directly
   // with a Service; instead, use a generated class which inherits from it.
@@ -50,32 +47,21 @@ class Server {
   Status ProcessPacket(std::span<const std::byte> packet,
                        ChannelOutput& interface);
 
-  constexpr size_t channel_count() const { return channels_.size(); }
-
- protected:
-  IntrusiveList<internal::Call>& writers() { return responders_; }
-
  private:
+  friend class internal::Call;
+
   std::tuple<Service*, const internal::Method*> FindMethod(
       const internal::Packet& packet);
 
-  using ResponderIterator = IntrusiveList<internal::Call>::iterator;
-
   void HandleClientStreamPacket(const internal::Packet& packet,
                                 internal::Channel& channel,
-                                ResponderIterator responder) const;
+                                internal::Call* call) const;
+
   void HandleCancelPacket(const internal::Packet& packet,
                           internal::Channel& channel,
-                          ResponderIterator responder) const;
+                          internal::Call* call) const;
 
-  internal::Channel* FindChannel(uint32_t id) const;
-  internal::Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
-
-  std::span<internal::Channel> channels_;
   IntrusiveList<Service> services_;
-
-  // Any asynchronously handled RPCs.
-  IntrusiveList<internal::Call> responders_;
 };
 
 }  // namespace pw::rpc

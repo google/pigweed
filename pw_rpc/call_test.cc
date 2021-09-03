@@ -38,6 +38,8 @@ class TestService : public Service {
 namespace internal {
 namespace {
 
+constexpr Packet kPacket(PacketType::REQUEST, 99, 16, 8);
+
 using pw::rpc::internal::test::FakeServerWriter;
 using std::byte;
 
@@ -71,20 +73,16 @@ TEST(ServerWriter, Construct_RegistersWithServer) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
-  auto& writers = context.server().writers();
-  EXPECT_FALSE(writers.empty());
-  auto it = std::find_if(writers.begin(), writers.end(), [&](auto& w) {
-    return &w == &writer.as_responder();
-  });
-  ASSERT_NE(it, writers.end());
+  Call* call = context.server().FindCall(kPacket);
+  ASSERT_NE(call, nullptr);
+  EXPECT_EQ(static_cast<void*>(call), static_cast<void*>(&writer));
 }
 
 TEST(ServerWriter, Destruct_RemovesFromServer) {
   ServerContextForTest<TestService> context(TestService::method.method());
   { FakeServerWriter writer(context.get()); }
 
-  auto& writers = context.server().writers();
-  EXPECT_TRUE(writers.empty());
+  EXPECT_EQ(context.server().FindCall(kPacket), nullptr);
 }
 
 TEST(ServerWriter, Finish_RemovesFromServer) {
@@ -93,8 +91,7 @@ TEST(ServerWriter, Finish_RemovesFromServer) {
 
   EXPECT_EQ(OkStatus(), writer.Finish());
 
-  auto& writers = context.server().writers();
-  EXPECT_TRUE(writers.empty());
+  EXPECT_EQ(context.server().FindCall(kPacket), nullptr);
 }
 
 TEST(ServerWriter, Finish_SendsResponse) {

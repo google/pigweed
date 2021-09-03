@@ -20,7 +20,7 @@
 #include "pw_rpc/internal/fake_channel_output.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/internal/server.h"
+#include "pw_rpc/server.h"
 
 namespace pw::rpc::internal::test {
 
@@ -98,7 +98,7 @@ class InvocationContext {
         channel_(Channel::Create<123>(&output_)),
         server_(std::span(&channel_, 1)),
         service_(std::forward<ServiceArgs>(service_args)...),
-        context_(static_cast<internal::Server&>(server_),
+        context_(server_,
                  static_cast<internal::Channel&>(channel_),
                  service_,
                  method) {

@@ -143,22 +143,20 @@ TEST_F(BasicServer, ProcessPacket_NoChannel_SendsNothing) {
   EXPECT_EQ(output_.packet_count(), 0u);
 }
 
-TEST_F(BasicServer, ProcessPacket_NoService_SendsDataLoss) {
+TEST_F(BasicServer, ProcessPacket_NoService_SendsNothing) {
   EXPECT_EQ(Status::DataLoss(),
             server_.ProcessPacket(EncodeRequest(PacketType::REQUEST, 1, 0, 101),
                                   output_));
 
-  EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
-  EXPECT_EQ(output_.sent_packet().status(), Status::DataLoss());
+  EXPECT_EQ(output_.packet_count(), 0u);
 }
 
-TEST_F(BasicServer, ProcessPacket_NoMethod_SendsDataLoss) {
+TEST_F(BasicServer, ProcessPacket_NoMethod_SendsNothing) {
   EXPECT_EQ(Status::DataLoss(),
             server_.ProcessPacket(EncodeRequest(PacketType::REQUEST, 1, 42, 0),
                                   output_));
 
-  EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
-  EXPECT_EQ(output_.sent_packet().status(), Status::DataLoss());
+  EXPECT_EQ(output_.packet_count(), 0u);
 }
 
 TEST_F(BasicServer, ProcessPacket_InvalidMethod_NothingIsInvoked) {
@@ -258,7 +256,7 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsError) {
 class BidiMethod : public BasicServer {
  protected:
   BidiMethod()
-      : call_(static_cast<internal::Server&>(server_),
+      : call_(server_,
               static_cast<internal::Channel&>(channels_[0]),
               service_,
               service_.method(100)),
@@ -408,7 +406,7 @@ TEST_F(BidiMethod, ClientStreamEnd_ErrorWhenClosed) {
 class ServerStreamingMethod : public BasicServer {
  protected:
   ServerStreamingMethod()
-      : call_(static_cast<internal::Server&>(server_),
+      : call_(server_,
               static_cast<internal::Channel&>(channels_[0]),
               service_,
               service_.method(100)),

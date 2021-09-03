@@ -18,7 +18,6 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/internal/server.h"
 #include "pw_rpc/internal/test_method.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/server.h"
@@ -50,11 +49,10 @@ TEST(Method, Id) { EXPECT_EQ(kTestMethod.id(), 1234u); }
 
 TEST(Method, Invoke) {
   Channel channel(123, nullptr);
-  rpc::Server server(std::span(static_cast<rpc::Channel*>(&channel), 1));
+  Server server(std::span(static_cast<rpc::Channel*>(&channel), 1));
   TestService service;
 
-  CallContext call(
-      static_cast<internal::Server&>(server), channel, service, kTestMethod);
+  CallContext call(server, channel, service, kTestMethod);
   Packet empty_packet;
 
   EXPECT_EQ(kTestMethod.invocations(), 0u);
