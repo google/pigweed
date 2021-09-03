@@ -47,6 +47,7 @@ _pigweed_python_deps = [
   "$dir_pw_rpc/py",
   "$dir_pw_snapshot/py:pw_snapshot",
   "$dir_pw_snapshot/py:pw_snapshot_metadata",
+  "$dir_pw_software_update/py",
   "$dir_pw_status/py",
   "$dir_pw_stm32cube_build/py",
   "$dir_pw_symbolizer/py",

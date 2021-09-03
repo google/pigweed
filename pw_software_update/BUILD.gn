@@ -28,6 +28,7 @@ pw_proto_library("protos") {
     "update_bundle.proto",
   ]
   prefix = "pw_software_update"
+  python_package = "py"
 }
 
 pw_source_set("update_bundle") {
