@@ -21,9 +21,9 @@ class Server : public rpc::Server {
  public:
   Server() = delete;
 
-  void RegisterResponder(Responder& writer) { writers().push_front(writer); }
+  void RegisterResponder(Call& writer) { writers().push_front(writer); }
 
-  void RemoveResponder(const Responder& writer) { writers().remove(writer); }
+  void RemoveResponder(const Call& writer) { writers().remove(writer); }
 };
 
 }  // namespace pw::rpc::internal

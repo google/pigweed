@@ -53,13 +53,13 @@ class Server {
   constexpr size_t channel_count() const { return channels_.size(); }
 
  protected:
-  IntrusiveList<internal::Responder>& writers() { return responders_; }
+  IntrusiveList<internal::Call>& writers() { return responders_; }
 
  private:
   std::tuple<Service*, const internal::Method*> FindMethod(
       const internal::Packet& packet);
 
-  using ResponderIterator = IntrusiveList<internal::Responder>::iterator;
+  using ResponderIterator = IntrusiveList<internal::Call>::iterator;
 
   void HandleClientStreamPacket(const internal::Packet& packet,
                                 internal::Channel& channel,
@@ -75,7 +75,7 @@ class Server {
   IntrusiveList<Service> services_;
 
   // Any asynchronously handled RPCs.
-  IntrusiveList<internal::Responder> responders_;
+  IntrusiveList<internal::Call> responders_;
 };
 
 }  // namespace pw::rpc

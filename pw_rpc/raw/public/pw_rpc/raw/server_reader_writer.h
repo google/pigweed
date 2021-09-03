@@ -42,7 +42,7 @@ class RawServerWriter;
 
 // The RawServerReaderWriter is used to send and receive messages in a raw
 // bidirectional streaming RPC.
-class RawServerReaderWriter : private internal::Responder {
+class RawServerReaderWriter : private internal::Call {
  public:
   constexpr RawServerReaderWriter()
       : RawServerReaderWriter(MethodType::kBidirectionalStreaming) {}
@@ -50,14 +50,14 @@ class RawServerReaderWriter : private internal::Responder {
   RawServerReaderWriter(RawServerReaderWriter&&) = default;
   RawServerReaderWriter& operator=(RawServerReaderWriter&&) = default;
 
-  using internal::Responder::open;
+  using internal::Call::open;
 
-  using internal::Responder::channel_id;
+  using internal::Call::channel_id;
 
   // Functions for setting the callbacks.
-  using internal::Responder::set_on_client_stream_end;
-  using internal::Responder::set_on_error;
-  using internal::Responder::set_on_next;
+  using internal::Call::set_on_client_stream_end;
+  using internal::Call::set_on_error;
+  using internal::Call::set_on_next;
 
   // Returns a buffer in which a response payload can be built.
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
@@ -76,14 +76,13 @@ class RawServerReaderWriter : private internal::Responder {
 
  protected:
   // Constructor for derived classes to use.
-  constexpr RawServerReaderWriter(MethodType type)
-      : internal::Responder(type) {}
+  constexpr RawServerReaderWriter(MethodType type) : internal::Call(type) {}
 
   RawServerReaderWriter(const internal::CallContext& call,
                         MethodType type = MethodType::kBidirectionalStreaming)
-      : internal::Responder(call, type) {}
+      : internal::Call(call, type) {}
 
-  using internal::Responder::CloseAndSendResponse;
+  using internal::Call::CloseAndSendResponse;
 
  private:
   friend class internal::RawMethod;

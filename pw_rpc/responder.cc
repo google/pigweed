@@ -44,7 +44,7 @@ Packet StreamPacket(const CallContext& call,
 
 }  // namespace
 
-Responder::Responder(const CallContext& call, MethodType type)
+Call::Call(const CallContext& call, MethodType type)
     : call_(call),
       rpc_state_(kOpen),
       type_(type),
@@ -53,7 +53,7 @@ Responder::Responder(const CallContext& call, MethodType type)
   call_.server().RegisterResponder(*this);
 }
 
-Responder& Responder::operator=(Responder&& other) {
+Call& Call::operator=(Call&& other) {
   // If this RPC was running, complete it before moving in the other RPC.
   CloseAndSendResponse(OkStatus()).IgnoreError();
 
@@ -81,10 +81,10 @@ Responder& Responder::operator=(Responder&& other) {
   return *this;
 }
 
-uint32_t Responder::method_id() const { return call_.method().id(); }
+uint32_t Call::method_id() const { return call_.method().id(); }
 
-Status Responder::CloseAndSendResponse(std::span<const std::byte> response,
-                                       Status status) {
+Status Call::CloseAndSendResponse(std::span<const std::byte> response,
+                                  Status status) {
   if (!open()) {
     return Status::FailedPrecondition();
   }
@@ -106,7 +106,7 @@ Status Responder::CloseAndSendResponse(std::span<const std::byte> response,
   return packet_status;
 }
 
-std::span<std::byte> Responder::AcquirePayloadBuffer() {
+std::span<std::byte> Call::AcquirePayloadBuffer() {
   PW_DCHECK(open());
 
   // Only allow having one active buffer at a time.
@@ -117,18 +117,17 @@ std::span<std::byte> Responder::AcquirePayloadBuffer() {
   return response_.payload(StreamPacket(call_, {}));
 }
 
-Status Responder::SendPayloadBufferClientStream(
-    std::span<const std::byte> payload) {
+Status Call::SendPayloadBufferClientStream(std::span<const std::byte> payload) {
   PW_DCHECK(open());
   return call_.channel().Send(response_, StreamPacket(call_, payload));
 }
 
-void Responder::ReleasePayloadBuffer() {
+void Call::ReleasePayloadBuffer() {
   PW_DCHECK(open());
   call_.channel().Release(response_);
 }
 
-void Responder::Close() {
+void Call::Close() {
   PW_DCHECK(open());
 
   call_.server().RemoveResponder(*this);

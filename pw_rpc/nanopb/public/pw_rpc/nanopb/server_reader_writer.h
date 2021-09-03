@@ -36,13 +36,12 @@ class InvocationContext;
 }  // namespace test
 
 // Non-templated base so the methods are instantiated only once.
-class GenericNanopbResponder : public internal::Responder {
+class GenericNanopbResponder : public internal::Call {
  public:
-  constexpr GenericNanopbResponder(MethodType type)
-      : internal::Responder(type) {}
+  constexpr GenericNanopbResponder(MethodType type) : internal::Call(type) {}
 
   GenericNanopbResponder(const CallContext& call, MethodType type)
-      : internal::Responder(call, type) {}
+      : internal::Call(call, type) {}
 
  protected:
   Status SendClientStream(const void* response) {
@@ -75,7 +74,7 @@ class BaseNanopbServerReader : public GenericNanopbResponder {
   void set_on_next(Function<void(const Request& request)> on_next) {
     nanopb_on_next_ = std::move(on_next);
 
-    internal::Responder::set_on_next([this](ConstByteSpan payload) {
+    internal::Call::set_on_next([this](ConstByteSpan payload) {
       Request request_struct;
       DecodeRequest(payload, &request_struct);
       nanopb_on_next_(request_struct);
@@ -118,7 +117,7 @@ class NanopbServerReaderWriter
   }
 
   Status Finish(Status status = OkStatus()) {
-    return internal::Responder::CloseAndSendResponse(status);
+    return internal::Call::CloseAndSendResponse(status);
   }
 
   // Functions for setting RPC event callbacks.
@@ -204,7 +203,7 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   }
 
   Status Finish(Status status = OkStatus()) {
-    return internal::Responder::CloseAndSendResponse(status);
+    return internal::Call::CloseAndSendResponse(status);
   }
 
  private:

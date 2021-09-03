@@ -35,33 +35,33 @@ namespace internal {
 
 class Packet;
 
-// Internal RPC Responder class. The Responder is used to respond to any type of
-// RPC. Public classes like ServerWriters inherit from it with private
-// inheritance and provide a public API for their use case. The Responder's
-// public API is used by the Server class.
+// Internal RPC Call class. The Call is used to respond to any type of RPC.
+// Public classes like ServerWriters inherit from it with private inheritance
+// and provide a public API for their use case. The Call's public API is used by
+// the Server class.
 //
 // Private inheritance is used in place of composition or more complex
 // inheritance hierarchy so that these objects all inherit from a common
 // IntrusiveList::Item object. Private inheritance also gives the derived classs
 // full control over their interfaces.
-class Responder : public IntrusiveList<Responder>::Item {
+class Call : public IntrusiveList<Call>::Item {
  public:
-  Responder(const Responder&) = delete;
+  Call(const Call&) = delete;
 
-  ~Responder() { CloseAndSendResponse(OkStatus()).IgnoreError(); }
+  ~Call() { CloseAndSendResponse(OkStatus()).IgnoreError(); }
 
-  Responder& operator=(const Responder&) = delete;
+  Call& operator=(const Call&) = delete;
 
-  // True if the Responder is active and ready to send responses.
+  // True if the Call is active and ready to send responses.
   bool open() const { return rpc_state_ == kOpen; }
 
   uint32_t channel_id() const { return call_.channel().id(); }
   uint32_t service_id() const { return call_.service().id(); }
   uint32_t method_id() const;
 
-  // Closes the Responder and sends a RESPONSE packet, if it is open. Returns
-  // the status from sending the packet, or FAILED_PRECONDITION if the
-  // Responder is not open.
+  // Closes the Call and sends a RESPONSE packet, if it is open. Returns the
+  // status from sending the packet, or FAILED_PRECONDITION if the Call is not
+  // active.
   Status CloseAndSendResponse(std::span<const std::byte> response,
                               Status status);
 
@@ -99,22 +99,20 @@ class Responder : public IntrusiveList<Responder>::Item {
   }
 
  protected:
-  // Creates a Responder for a closed RPC.
-  constexpr Responder(MethodType type)
+  // Creates a Call for a closed RPC.
+  constexpr Call(MethodType type)
       : rpc_state_(kClosed),
         type_(type),
         client_stream_state_(kClientStreamClosed) {}
 
-  // Creates a Responder for an open RPC.
-  Responder(const CallContext& call, MethodType type);
+  // Creates a Call for an open RPC.
+  Call(const CallContext& call, MethodType type);
 
   // Initialize rpc_state_ to closed since move-assignment will check if the
-  // Responder is open before moving into it.
-  Responder(Responder&& other) : rpc_state_(kClosed) {
-    *this = std::move(other);
-  }
+  // Call is open before moving into it.
+  Call(Call&& other) : rpc_state_(kClosed) { *this = std::move(other); }
 
-  Responder& operator=(Responder&& other);
+  Call& operator=(Call&& other);
 
   const Method& method() const { return call_.method(); }
 
@@ -145,12 +143,12 @@ class Responder : public IntrusiveList<Responder>::Item {
 
   constexpr const Channel::OutputBuffer& buffer() const { return response_; }
 
-  // Acquires a buffer into which to write a payload. The Responder MUST be open
-  // when this is called!
+  // Acquires a buffer into which to write a payload. The Call MUST be open when
+  // this is called!
   std::span<std::byte> AcquirePayloadBuffer();
 
   // Releases the buffer, sending a client stream packet with the specified
-  // payload. The Responder MUST be open when this is called!
+  // payload. The Call MUST be open when this is called!
   Status SendPayloadBufferClientStream(std::span<const std::byte> payload);
 
   // Releases the buffer without sending a packet.

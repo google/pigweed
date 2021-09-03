@@ -33,9 +33,9 @@ namespace pw::rpc::internal::test {
 // classes use a single IntrusiveList::Item base and to avoid virtual methods or
 // virtual inheritance.
 //
-// Responder's public API is intended for rpc::Server, so hide the public
-// methods with private inheritance.
-class FakeServerReaderWriter : private internal::Responder {
+// Call's public API is intended for rpc::Server, so hide the public methods
+// with private inheritance.
+class FakeServerReaderWriter : private internal::Call {
  public:
   constexpr FakeServerReaderWriter()
       : FakeServerReaderWriter(MethodType::kBidirectionalStreaming) {}
@@ -43,16 +43,16 @@ class FakeServerReaderWriter : private internal::Responder {
   // On a real reader/writer, this constructor would not be exposed.
   FakeServerReaderWriter(CallContext& context,
                          MethodType type = MethodType::kBidirectionalStreaming)
-      : Responder(context, type) {}
+      : Call(context, type) {}
 
   FakeServerReaderWriter(FakeServerReaderWriter&&) = default;
   FakeServerReaderWriter& operator=(FakeServerReaderWriter&&) = default;
 
-  // Pull in protected functions from the hidden Responder base as needed.
-  using Responder::open;
-  using Responder::set_on_client_stream_end;
-  using Responder::set_on_error;
-  using Responder::set_on_next;
+  // Pull in protected functions from the hidden Call base as needed.
+  using Call::open;
+  using Call::set_on_client_stream_end;
+  using Call::set_on_error;
+  using Call::set_on_next;
 
   Status Finish(Status status = OkStatus()) {
     return CloseAndSendResponse(status);
@@ -67,13 +67,12 @@ class FakeServerReaderWriter : private internal::Responder {
   }
 
   // Expose a few additional methods for test use.
-  Responder& as_responder() { return *this; }
+  Call& as_responder() { return *this; }
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
   const Channel::OutputBuffer& output_buffer() { return buffer(); }
 
  protected:
-  constexpr FakeServerReaderWriter(MethodType type)
-      : internal::Responder(type) {}
+  constexpr FakeServerReaderWriter(MethodType type) : internal::Call(type) {}
 };
 
 class FakeServerWriter : private FakeServerReaderWriter {
