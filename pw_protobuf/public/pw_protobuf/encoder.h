@@ -51,6 +51,48 @@ static constexpr size_t MaxScratchBufferSize(size_t max_message_size,
   return max_message_size + max_nested_depth * config::kMaxVarintSize;
 }
 
+// Write a varint value to the writer.
+//
+// Args:
+//   value: The value of the varint to write
+//   writer: The writer for writing to output.
+//
+// Returns:
+// OK - varint is written successfully
+//
+// Errors encountered by the `writer` will be returned as it is.
+inline Status WriteVarint(uint64_t value, stream::Writer& writer) {
+  std::array<std::byte, varint::kMaxVarint64SizeBytes> varint_encode_buffer;
+  const size_t varint_size =
+      pw::varint::EncodeLittleEndianBase128(value, varint_encode_buffer);
+  return writer.Write(std::span(varint_encode_buffer).first(varint_size));
+}
+
+// Write the field key and length prefix for a length-delimited field. It is
+// up to the caller to ensure that this will be followed by an exact number
+// of bytes written for the field in order to form a valid proto message.
+//
+// Args:
+//   field_number: The field number for the field.
+//   payload_size: The size of the payload.
+//   writer: The output writer to write to
+//
+//
+// Returns:
+// OK - Field key is written successfully
+//
+// Errors encountered by the `writer` will be returned as it is.
+//
+// Precondition: The field_number must be a ValidFieldNumber.
+// Precondition: `data_size_bytes` must be smaller than
+//   std::numeric_limits<uint32_t>::max()
+inline Status WriteLengthDelimitedKeyAndLengthPrefix(uint32_t field_number,
+                                                     size_t payload_size,
+                                                     stream::Writer& writer) {
+  PW_TRY(WriteVarint(FieldKey(field_number, WireType::kDelimited), writer));
+  return WriteVarint(payload_size, writer);
+}
+
 // Forward declaration. StreamEncoder and MemoryEncoder are very tightly
 // coupled.
 class MemoryEncoder;
@@ -471,8 +513,14 @@ class StreamEncoder {
   // Implementation for encoding all fixed-length integer types.
   Status WriteFixed(uint32_t field_number, ConstByteSpan data);
 
-  // Encodes a base-128 varint to the buffer.
-  Status WriteVarint(uint64_t value);
+  // Encodes a base-128 varint to the buffer. This function assumes the caller
+  // has already checked UpdateStatusForWrite() to ensure the writer's
+  // conservative write limit indicates the Writer has sufficient buffer space.
+  Status WriteVarint(uint64_t value) {
+    PW_TRY(status_);
+    status_.Update(::pw::protobuf::WriteVarint(value, writer_));
+    return status_;
+  }
 
   Status WriteZigzagVarint(int64_t value) {
     return WriteVarint(varint::ZigZagEncode(value));

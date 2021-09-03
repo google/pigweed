@@ -20,6 +20,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_bytes/span.h"
+#include "pw_protobuf/serialized_size.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
@@ -119,10 +120,9 @@ Status StreamEncoder::WriteVarintField(uint32_t field_number, uint64_t value) {
 Status StreamEncoder::WriteLengthDelimitedField(uint32_t field_number,
                                                 ConstByteSpan data) {
   PW_TRY(UpdateStatusForWrite(field_number, WireType::kDelimited, data.size()));
-  WriteVarint(FieldKey(field_number, WireType::kDelimited))
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  WriteVarint(data.size_bytes())
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  status_.Update(WriteLengthDelimitedKeyAndLengthPrefix(
+      field_number, data.size(), writer_));
+  PW_TRY(status_);
   if (Status status = writer_.Write(data); !status.ok()) {
     status_ = status;
   }
@@ -137,10 +137,8 @@ Status StreamEncoder::WriteLengthDelimitedFieldFromStream(
   PW_CHECK_UINT_GT(
       stream_pipe_buffer.size(), 0, "Transfer buffer cannot be 0 size");
   PW_TRY(UpdateStatusForWrite(field_number, WireType::kDelimited, num_bytes));
-  // Ignore the error until we explicitly check status_ below to minimize
-  // the number of branches.
-  WriteVarint(FieldKey(field_number, WireType::kDelimited)).IgnoreError();
-  WriteVarint(num_bytes).IgnoreError();
+  status_.Update(
+      WriteLengthDelimitedKeyAndLengthPrefix(field_number, num_bytes, writer_));
   PW_TRY(status_);
 
   // Stream data from `bytes_reader` to `writer_`.
@@ -175,28 +173,6 @@ Status StreamEncoder::WriteFixed(uint32_t field_number, ConstByteSpan data) {
     status_ = status;
   }
   return status_;
-}
-
-// Encodes a base-128 varint to the buffer. This function assumes the caller
-// has already checked UpdateStatusForWrite() to ensure the writer's
-// conservative write limit indicates the Writer has sufficient buffer space.
-Status StreamEncoder::WriteVarint(uint64_t value) {
-  if (!status_.ok()) {
-    return status_;
-  }
-
-  std::array<std::byte, varint::kMaxVarint64SizeBytes> varint_encode_buffer;
-  size_t varint_size = pw::varint::EncodeLittleEndianBase128(
-      value, std::span(varint_encode_buffer));
-
-  if (Status status =
-          writer_.Write(std::span(varint_encode_buffer).first(varint_size));
-      !status.ok()) {
-    status_ = status;
-    return status_;
-  }
-
-  return OkStatus();
 }
 
 Status StreamEncoder::WritePackedFixed(uint32_t field_number,
@@ -236,23 +212,20 @@ Status StreamEncoder::UpdateStatusForWrite(uint32_t field_number,
                                            WireType type,
                                            size_t data_size) {
   PW_CHECK(!nested_encoder_open());
-  if (!status_.ok()) {
-    return status_;
-  }
+  PW_TRY(status_);
+
   if (!ValidFieldNumber(field_number)) {
-    status_ = Status::InvalidArgument();
-    return status_;
+    return status_ = Status::InvalidArgument();
   }
 
-  size_t size = varint::EncodedSize(FieldKey(field_number, type));
-  if (type == WireType::kDelimited) {
-    size += varint::EncodedSize(data_size);
-  }
-  size += data_size;
+  const Result<size_t> field_size = SizeOfField(field_number, type, data_size);
+  status_.Update(field_size.status());
+  PW_TRY(status_);
 
-  if (size > writer_.ConservativeWriteLimit()) {
+  if (field_size.value() > writer_.ConservativeWriteLimit()) {
     status_ = Status::ResourceExhausted();
   }
+
   return status_;
 }
 

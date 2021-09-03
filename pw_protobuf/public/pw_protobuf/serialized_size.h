@@ -44,10 +44,48 @@ inline constexpr size_t kMaxSizeOfFieldKey = varint::kMaxVarint32SizeBytes;
 
 inline constexpr size_t kMaxSizeOfLength = varint::kMaxVarint32SizeBytes;
 
+// Calculate the size of a proto field key in wire format, including the key
+// field number + wire type.
+// type).
+//
+// Args:
+//   field_number: The field number for the field.
+//
+// Returns:
+//   The size of the field key.
+//
+// Precondition: The field_number must be a ValidFieldNumber.
+// Precondition: The field_number must be a ValidFieldNumber.
 constexpr size_t SizeOfFieldKey(uint32_t field_number) {
   // The wiretype does not impact the serialized size, so use kVarint (0), which
   // will be optimized out by the compiler.
   return varint::EncodedSize(FieldKey(field_number, WireType::kVarint));
+}
+
+// Calculate the size of a proto field in wire format. This is the size of a
+// final serialized protobuf entry, including the key (field number + wire
+// type), encoded payload size (for length-delimited types), and data.
+//
+// Args:
+//   field_number: The field number for the field.
+//   type: The wire type of the field
+//   data_size: The size of the payload.
+//
+// Returns:
+//   The size of the field.
+//
+// Precondition: The field_number must be a ValidFieldNumber.
+// Precondition: `data_size_bytes` must be smaller than
+//   std::numeric_limits<uint32_t>::max()
+constexpr size_t SizeOfField(uint32_t field_number,
+                             WireType type,
+                             size_t data_size_bytes) {
+  size_t size = SizeOfFieldKey(field_number);
+  if (type == WireType::kDelimited) {
+    size += varint::EncodedSize(data_size_bytes);
+  }
+  size += data_size_bytes;
+  return size;
 }
 
 }  // namespace pw::protobuf

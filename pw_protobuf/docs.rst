@@ -409,6 +409,16 @@ its parent decoder cannot be used.
     // parent decoder can be used again.
   }
 
+Protobuf helpers
+================
+
+Some additional helpers for encoding more complex but common protobuf
+submessages (e.g. map<string, bytes>) are provided in
+``pw_protobuf/helpers.h``.
+
+.. Note::
+  The helper API are currently in-development and may not remain stable.
+
 Size report
 ===========
 
