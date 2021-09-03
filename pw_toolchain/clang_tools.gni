@@ -34,7 +34,4 @@ pw_toolchain_clang_tools = {
   ar += "llvm-ar"
   cc += "clang"
   cxx += "clang++"
-
-  # Static analysis always possible with clang toolchains.
-  static_analysis = true
 }
