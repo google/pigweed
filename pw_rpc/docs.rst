@@ -708,6 +708,9 @@ Example
   // Generated clients are namespaced with their proto library.
   using pw::rpc::nanopb::EchoServiceClient;
 
+  // RPC channel ID on which to make client calls.
+  constexpr uint32_t kDefaultChannelId = 1;
+
   EchoServiceClient::EchoCall echo_call;
 
   // Callback invoked when a response is received. This is called synchronously
@@ -724,15 +727,21 @@ Example
 
   }  // namespace
 
-
   void CallEcho(const char* message) {
+    // Create a client to call the EchoService.
+    EchoServiceClient echo_client(my_rpc_client, kDefaultChannelId);
+
     pw_rpc_EchoMessage request = pw_rpc_EchoMessage_init_default;
     pw::string::Copy(message, request.msg);
 
     // By assigning the returned ClientCall to the global echo_call, the RPC
     // call is kept alive until it completes. When a response is received, it
     // will be logged by the handler function and the call will complete.
-    echo_call = EchoServiceClient::Echo(my_channel, request, EchoResponse);
+    echo_call = echo_client.Echo(request, EchoResponse);
+    if (!echo_call.active()) {
+      // The RPC call was not sent. This could occur due to, for example, an
+      // invalid channel ID. Handle if necessary.
+    }
   }
 
 Client implementation details

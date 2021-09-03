@@ -31,6 +31,7 @@ class BaseNanopbClientCall : public BaseClientCall {
   Status SendRequest(const void* request_struct);
 
  protected:
+  // TODO(frolv): Migrate everything to the new constructor and deprecate this.
   constexpr BaseNanopbClientCall(rpc::Channel* channel,
                                  uint32_t service_id,
                                  uint32_t method_id,
@@ -38,6 +39,16 @@ class BaseNanopbClientCall : public BaseClientCall {
                                  NanopbMessageDescriptor request_fields,
                                  NanopbMessageDescriptor response_fields)
       : BaseClientCall(channel, service_id, method_id, handler),
+        serde_(request_fields, response_fields) {}
+
+  constexpr BaseNanopbClientCall(Client* client,
+                                 uint32_t client_id,
+                                 uint32_t service_id,
+                                 uint32_t method_id,
+                                 ResponseHandler handler,
+                                 NanopbMessageDescriptor request_fields,
+                                 NanopbMessageDescriptor response_fields)
+      : BaseClientCall(client, client_id, service_id, method_id, handler),
         serde_(request_fields, response_fields) {}
 
   constexpr BaseNanopbClientCall()
@@ -60,7 +71,7 @@ struct ErrorCallbacks {
 
   ErrorCallbacks(Function<void(Status)> error) : rpc_error(std::move(error)) {}
 
-  void InvokeRpcError(Status status) {
+  void InvokeRpcError(Status status) const {
     if (rpc_error != nullptr) {
       rpc_error(status);
     }
@@ -106,6 +117,7 @@ struct ServerStreamingCallbacks : public ErrorCallbacks {
 template <typename Callbacks>
 class NanopbClientCall : public internal::BaseNanopbClientCall {
  public:
+  // TODO(frolv): Migrate everything to the new constructor and deprecate this.
   constexpr NanopbClientCall(Channel* channel,
                              uint32_t service_id,
                              uint32_t method_id,
@@ -120,6 +132,22 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
                              response_fields),
         callbacks_(std::move(callbacks)) {}
 
+  constexpr NanopbClientCall(Client* client,
+                             uint32_t client_id,
+                             uint32_t service_id,
+                             uint32_t method_id,
+                             Callbacks callbacks,
+                             internal::NanopbMessageDescriptor request_fields,
+                             internal::NanopbMessageDescriptor response_fields)
+      : BaseNanopbClientCall(client,
+                             client_id,
+                             service_id,
+                             method_id,
+                             &ResponseHandler,
+                             request_fields,
+                             response_fields),
+        callbacks_(std::move(callbacks)) {}
+
   constexpr NanopbClientCall() : BaseNanopbClientCall(), callbacks_({}) {}
 
   NanopbClientCall(const NanopbClientCall&) = delete;
@@ -127,6 +155,8 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
 
   NanopbClientCall(NanopbClientCall&&) = default;
   NanopbClientCall& operator=(NanopbClientCall&&) = default;
+
+  constexpr const Callbacks& callbacks() const { return callbacks_; }
 
  private:
   using Response = typename Callbacks::Response;

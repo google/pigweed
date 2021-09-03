@@ -24,7 +24,8 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
   Unregister();
 
   active_ = other.active_;
-  channel_ = other.channel_;
+  client_ = other.client_;
+  channel_id_ = other.channel_id_;
   service_id_ = other.service_id_;
   method_id_ = other.method_id_;
   request_ = std::move(other.request_);
@@ -34,18 +35,26 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
     // If the call being assigned is active, replace it in the client's list
     // with a reference to the current object.
     other.Unregister();
-    other.channel_->client()
-        ->RegisterCall(*this)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+    // RegisterCall() only fails if there is already a call for the same
+    // (channel, service, method). As the existing call is unregistered, this
+    // error cannot happen.
+    other.client_->RegisterCall(*this).IgnoreError();
   }
 
   return *this;
 }
 
 void BaseClientCall::Cancel() {
-  if (active()) {
-    channel_->Send(NewPacket(PacketType::CANCEL))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  if (!active()) {
+    return;
+  }
+
+  rpc::Channel* channel = client_->GetChannel(channel_id_);
+  if (channel != nullptr) {
+    static_cast<Channel*>(channel)
+        ->Send(NewPacket(PacketType::CANCEL))
+        .IgnoreError();
   }
 }
 
@@ -54,7 +63,12 @@ std::span<std::byte> BaseClientCall::AcquirePayloadBuffer() {
     return {};
   }
 
-  request_ = channel_->AcquireBuffer();
+  rpc::Channel* channel = client_->GetChannel(channel_id_);
+  if (!channel) {
+    return {};
+  }
+
+  request_ = static_cast<Channel*>(channel)->AcquireBuffer();
   return request_.payload(NewPacket(PacketType::REQUEST));
 }
 
@@ -64,23 +78,30 @@ Status BaseClientCall::ReleasePayloadBuffer(
     return Status::FailedPrecondition();
   }
 
-  return channel_->Send(request_, NewPacket(PacketType::REQUEST, payload));
+  rpc::Channel* channel = client_->GetChannel(channel_id_);
+  if (!channel) {
+    return Status::NotFound();
+  }
+
+  return static_cast<Channel*>(channel)->Send(
+      request_, NewPacket(PacketType::REQUEST, payload));
 }
 
 Packet BaseClientCall::NewPacket(PacketType type,
                                  std::span<const std::byte> payload) const {
-  return Packet(type, channel_->id(), service_id_, method_id_, payload);
+  return Packet(type, channel_id_, service_id_, method_id_, payload);
 }
 
 void BaseClientCall::Register() {
-  channel_->client()
-      ->RegisterCall(*this)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  // TODO(frolv): This is broken. If you try to replace an exisitng call with a
+  // new call to the same method on the same channel, the new call will fail to
+  // register. Instead, the new call should replace the existing one.
+  client_->RegisterCall(*this).IgnoreError();
 }
 
 void BaseClientCall::Unregister() {
   if (active()) {
-    channel_->client()->RemoveCall(*this);
+    client_->RemoveCall(*this);
     active_ = false;
   }
 }

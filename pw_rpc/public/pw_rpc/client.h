@@ -47,6 +47,8 @@ class Client {
   //
   Status ProcessPacket(ConstByteSpan data);
 
+  Channel* GetChannel(uint32_t channel_id) const;
+
   size_t active_calls() const { return calls_.size(); }
 
  private:

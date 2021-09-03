@@ -25,7 +25,8 @@ TEST(BaseClientCall, RegistersAndRemovesItselfFromClient) {
   EXPECT_EQ(context.client().active_calls(), 0u);
 
   {
-    BaseClientCall call(&context.channel(),
+    BaseClientCall call(&context.client(),
+                        context.channel().id(),
                         context.service_id(),
                         context.method_id(),
                         [](BaseClientCall&, const Packet&) {});
@@ -39,7 +40,8 @@ TEST(BaseClientCall, Move_UnregistersOriginal) {
   ClientContextForTest context;
   EXPECT_EQ(context.client().active_calls(), 0u);
 
-  BaseClientCall moved(&context.channel(),
+  BaseClientCall moved(&context.client(),
+                       context.channel().id(),
                        context.service_id(),
                        context.method_id(),
                        [](BaseClientCall&, const Packet&) {});
@@ -76,11 +78,12 @@ TEST(BaseClientCall, TwoConcurrentClientCallsAssigned) {
 
 class FakeClientCall : public BaseClientCall {
  public:
-  constexpr FakeClientCall(rpc::Channel* channel,
+  constexpr FakeClientCall(Client* client,
+                           uint32_t channel_id,
                            uint32_t service_id,
                            uint32_t method_id,
                            ResponseHandler handler)
-      : BaseClientCall(channel, service_id, method_id, handler) {}
+      : BaseClientCall(client, channel_id, service_id, method_id, handler) {}
 
   Status SendPacket(std::span<const std::byte> payload) {
     std::span buffer = AcquirePayloadBuffer();
@@ -91,7 +94,8 @@ class FakeClientCall : public BaseClientCall {
 
 TEST(BaseClientCall, SendsPacketWithPayload) {
   ClientContextForTest context;
-  FakeClientCall call(&context.channel(),
+  FakeClientCall call(&context.client(),
+                      context.channel().id(),
                       context.service_id(),
                       context.method_id(),
                       [](BaseClientCall&, const Packet&) {});

@@ -214,29 +214,32 @@ TEST(NanopbCodegen, ClientCall_DefaultConstructor) {
 }
 
 TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
-  constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");
-  constexpr uint32_t method_id = internal::Hash("TestUnaryRpc");
+  constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");
+  constexpr uint32_t kMethodId = internal::Hash("TestUnaryRpc");
 
-  ClientContextForTest<128, 128, 99, service_id, method_id> context;
+  ClientContextForTest<128, 128, 99, kServiceId, kMethodId> context;
+
+  TestServiceClient test_client(context.client(), context.channel().id());
 
   struct {
     Status last_status = Status::Unknown();
     int response_value = -1;
   } result;
 
-  auto call = TestServiceClient::TestUnaryRpc(
-      context.channel(),
+  auto call = test_client.TestUnaryRpc(
       {.integer = 123, .status_code = 0},
       [&result](const pw_rpc_test_TestResponse& response, Status status) {
         result.last_status = status;
         result.response_value = response.value;
       });
 
+  EXPECT_TRUE(call.active());
+
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
   EXPECT_EQ(packet.channel_id(), context.channel().id());
-  EXPECT_EQ(packet.service_id(), service_id);
-  EXPECT_EQ(packet.method_id(), method_id);
+  EXPECT_EQ(packet.service_id(), kServiceId);
+  EXPECT_EQ(packet.method_id(), kMethodId);
   PW_DECODE_PB(pw_rpc_test_TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 123);
 
@@ -247,10 +250,12 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
 }
 
 TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
-  constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");
-  constexpr uint32_t method_id = internal::Hash("TestServerStreamRpc");
+  constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");
+  constexpr uint32_t kMethodId = internal::Hash("TestServerStreamRpc");
 
-  ClientContextForTest<128, 128, 99, service_id, method_id> context;
+  ClientContextForTest<128, 128, 99, kServiceId, kMethodId> context;
+
+  TestServiceClient test_client(context.client(), context.channel().id());
 
   struct {
     bool active = true;
@@ -258,8 +263,7 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
     int response_value = -1;
   } result;
 
-  auto call = TestServiceClient::TestServerStreamRpc(
-      context.channel(),
+  auto call = test_client.TestServerStreamRpc(
       {.integer = 123, .status_code = 0},
       [&result](const pw_rpc_test_TestStreamResponse& response) {
         result.active = true;
@@ -270,11 +274,13 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
         result.stream_status = status;
       });
 
+  EXPECT_TRUE(call.active());
+
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
   EXPECT_EQ(packet.channel_id(), context.channel().id());
-  EXPECT_EQ(packet.service_id(), service_id);
-  EXPECT_EQ(packet.method_id(), method_id);
+  EXPECT_EQ(packet.service_id(), kServiceId);
+  EXPECT_EQ(packet.method_id(), kMethodId);
   PW_DECODE_PB(pw_rpc_test_TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 123);
 
@@ -287,6 +293,120 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
   context.SendResponse(Status::NotFound());
   EXPECT_FALSE(result.active);
   EXPECT_EQ(result.stream_status, Status::NotFound());
+}
+
+TEST(NanopbCodegen, Client_StaticMethod_InvokesUnaryRpcWithCallback) {
+  constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");
+  constexpr uint32_t kMethodId = internal::Hash("TestUnaryRpc");
+
+  ClientContextForTest<128, 128, 99, kServiceId, kMethodId> context;
+
+  struct {
+    Status last_status = Status::Unknown();
+    int response_value = -1;
+  } result;
+
+  auto call = TestServiceClient::TestUnaryRpc(
+      context.client(),
+      context.channel().id(),
+      {.integer = 123, .status_code = 0},
+      [&result](const pw_rpc_test_TestResponse& response, Status status) {
+        result.last_status = status;
+        result.response_value = response.value;
+      });
+
+  EXPECT_TRUE(call.active());
+
+  EXPECT_EQ(context.output().packet_count(), 1u);
+  auto packet = context.output().sent_packet();
+  EXPECT_EQ(packet.channel_id(), context.channel().id());
+  EXPECT_EQ(packet.service_id(), kServiceId);
+  EXPECT_EQ(packet.method_id(), kMethodId);
+  PW_DECODE_PB(pw_rpc_test_TestRequest, sent_proto, packet.payload());
+  EXPECT_EQ(sent_proto.integer, 123);
+
+  PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
+  context.SendResponse(OkStatus(), response);
+  EXPECT_EQ(result.last_status, OkStatus());
+  EXPECT_EQ(result.response_value, 42);
+}
+
+TEST(NanopbCodegen, Client_StaticMethod_InvokesServerStreamingRpcWithCallback) {
+  constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");
+  constexpr uint32_t kMethodId = internal::Hash("TestServerStreamRpc");
+
+  ClientContextForTest<128, 128, 99, kServiceId, kMethodId> context;
+
+  struct {
+    bool active = true;
+    Status stream_status = Status::Unknown();
+    int response_value = -1;
+  } result;
+
+  auto call = TestServiceClient::TestServerStreamRpc(
+      context.client(),
+      context.channel().id(),
+      {.integer = 123, .status_code = 0},
+      [&result](const pw_rpc_test_TestStreamResponse& response) {
+        result.active = true;
+        result.response_value = response.number;
+      },
+      [&result](Status status) {
+        result.active = false;
+        result.stream_status = status;
+      });
+
+  EXPECT_TRUE(call.active());
+
+  EXPECT_EQ(context.output().packet_count(), 1u);
+  auto packet = context.output().sent_packet();
+  EXPECT_EQ(packet.channel_id(), context.channel().id());
+  EXPECT_EQ(packet.service_id(), kServiceId);
+  EXPECT_EQ(packet.method_id(), kMethodId);
+  PW_DECODE_PB(pw_rpc_test_TestRequest, sent_proto, packet.payload());
+  EXPECT_EQ(sent_proto.integer, 123);
+
+  PW_ENCODE_PB(
+      pw_rpc_test_TestStreamResponse, response, .chunk = {}, .number = 11u);
+  context.SendServerStream(response);
+  EXPECT_TRUE(result.active);
+  EXPECT_EQ(result.response_value, 11);
+
+  context.SendResponse(Status::NotFound());
+  EXPECT_FALSE(result.active);
+  EXPECT_EQ(result.stream_status, Status::NotFound());
+}
+
+TEST(NanopbCodegen, Client_InvalidChannel_DoesntMakeCall) {
+  constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");
+  constexpr uint32_t kMethodId = internal::Hash("TestUnaryRpc");
+
+  constexpr uint32_t kBadChannelId = 97;
+
+  ClientContextForTest<128, 128, 99, kServiceId, kMethodId> context;
+  TestServiceClient test_client(context.client(), kBadChannelId);
+
+  struct {
+    Status last_status = Status::Unknown();
+    int response_value = -1;
+  } result;
+
+  Status error = Status::Unknown();
+
+  auto call = test_client.TestUnaryRpc(
+      {.integer = 123, .status_code = 0},
+      [&result](const pw_rpc_test_TestResponse& response, Status status) {
+        result.last_status = status;
+        result.response_value = response.value;
+      },
+      [&error](Status rpc_error) { error = rpc_error; });
+
+  EXPECT_FALSE(call.active());
+
+  EXPECT_EQ(context.output().packet_count(), 0u);
+  EXPECT_EQ(result.last_status, Status::Unknown());
+  EXPECT_EQ(result.response_value, -1);
+  EXPECT_EQ(error, Status::Unavailable());
 }
 
 }  // namespace

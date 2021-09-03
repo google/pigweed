@@ -46,7 +46,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
   }
 
   auto call = std::find_if(calls_.begin(), calls_.end(), [&](auto& c) {
-    return c.channel().id() == packet.channel_id() &&
+    return c.channel_id() == packet.channel_id() &&
            c.service_id() == packet.service_id() &&
            c.method_id() == packet.method_id();
   });
@@ -86,9 +86,21 @@ Status Client::ProcessPacket(ConstByteSpan data) {
   return OkStatus();
 }
 
+Channel* Client::GetChannel(uint32_t channel_id) const {
+  auto channel = std::find_if(channels_.begin(), channels_.end(), [&](auto& c) {
+    return c.id() == channel_id;
+  });
+
+  if (channel == channels_.end()) {
+    return nullptr;
+  }
+
+  return channel;
+}
+
 Status Client::RegisterCall(BaseClientCall& call) {
   auto existing_call = std::find_if(calls_.begin(), calls_.end(), [&](auto& c) {
-    return c.channel().id() == call.channel().id() &&
+    return c.channel_id() == call.channel_id() &&
            c.service_id() == call.service_id() &&
            c.method_id() == call.method_id();
   });

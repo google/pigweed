@@ -28,21 +28,38 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
  public:
   using ResponseHandler = void (*)(BaseClientCall&, const Packet&);
 
+  // TODO(frolv): Migrate everything to the new constructor and deprecate this.
   constexpr BaseClientCall(rpc::Channel* channel,
                            uint32_t service_id,
                            uint32_t method_id,
                            ResponseHandler handler)
-      : channel_(static_cast<Channel*>(channel)),
+      : client_(static_cast<Channel*>(channel)->client()),
+        channel_id_(channel->id()),
         service_id_(service_id),
         method_id_(method_id),
         handler_(handler),
         active_(true) {
-    PW_ASSERT(channel_ != nullptr);
+    Register();
+  }
+
+  constexpr BaseClientCall(Client* client,
+                           uint32_t channel_id,
+                           uint32_t service_id,
+                           uint32_t method_id,
+                           ResponseHandler handler)
+      : client_(client),
+        channel_id_(channel_id),
+        service_id_(service_id),
+        method_id_(method_id),
+        handler_(handler),
+        active_(true) {
+    PW_ASSERT(client_ != nullptr);
     Register();
   }
 
   constexpr BaseClientCall()
-      : channel_(nullptr),
+      : client_(nullptr),
+        channel_id_(0),
         service_id_(0),
         method_id_(0),
         handler_(nullptr),
@@ -63,7 +80,7 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
   void Cancel();
 
  protected:
-  constexpr Channel& channel() const { return *channel_; }
+  constexpr uint32_t channel_id() const { return channel_id_; }
   constexpr uint32_t service_id() const { return service_id_; }
   constexpr uint32_t method_id() const { return method_id_; }
 
@@ -82,7 +99,8 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
   Packet NewPacket(PacketType type,
                    std::span<const std::byte> payload = {}) const;
 
-  Channel* channel_;
+  Client* client_;
+  uint32_t channel_id_;
   uint32_t service_id_;
   uint32_t method_id_;
   Channel::OutputBuffer request_;

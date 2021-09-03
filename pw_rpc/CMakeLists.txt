@@ -40,6 +40,7 @@ pw_add_module_library(pw_rpc.client
     client.cc
   PUBLIC_DEPS
     pw_rpc.common
+    pw_result
   PRIVATE_DEPS
     pw_log
 )

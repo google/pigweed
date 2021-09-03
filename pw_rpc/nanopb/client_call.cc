@@ -19,14 +19,28 @@ namespace internal {
 
 Status BaseNanopbClientCall::SendRequest(const void* request_struct) {
   std::span<std::byte> buffer = AcquirePayloadBuffer();
-
-  StatusWithSize sws = serde_.EncodeRequest(request_struct, buffer);
-  if (!sws.ok()) {
-    ReleasePayloadBuffer({});
-    return sws.status();
+  if (buffer.empty()) {
+    // Getting an empty buffer means that either the call is inactive or the
+    // channel does not exist.
+    Unregister();
+    return Status::Unavailable();
   }
 
-  return ReleasePayloadBuffer(buffer.first(sws.size()));
+  StatusWithSize sws = serde_.EncodeRequest(request_struct, buffer);
+  Status status = sws.status();
+
+  if (status.ok()) {
+    status = ReleasePayloadBuffer(buffer.first(sws.size()));
+  } else {
+    ReleasePayloadBuffer({});
+  }
+
+  if (!status.ok()) {
+    // Failing to send the initial request ends the RPC call.
+    Unregister();
+  }
+
+  return status;
 }
 
 }  // namespace internal

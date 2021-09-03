@@ -36,6 +36,7 @@ pw_cc_library(
     deps = [
         ":common",
         "//pw_containers:intrusive_list",
+        "//pw_result",
     ],
 )
 

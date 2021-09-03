@@ -140,25 +140,35 @@ Bidirectional streaming RPC
 Client-side
 -----------
 A corresponding client class is generated for every service defined in the proto
-file. Like the service class, it is placed under the ``generated`` namespace.
-The class is named after the service, with a ``Client`` suffix. For example, the
-``ChatService`` would create a ``generated::ChatServiceClient``.
+file. To allow multiple types of clients to exist, it is placed under the
+``nanopb`` namespace. The class is named after the service, with a ``Client``
+suffix. For example, the ``ChatService`` would create a
+``nanopb::ChatServiceClient``.
 
-The client class contains static methods to call each of the service's methods.
-It is not meant to be instantiated.
+Service clients are instantiated with a reference to the RPC client through
+which they will send requests, and the channel ID they will use.
 
 .. code-block:: c++
 
-  static GetRoomInformationCall GetRoomInformation(
-      Channel& channel,
-      const RoomInfoRequest& request,
-      ::pw::Function<void(Status, const RoomInfoResponse&)> on_response,
-      ::pw::Function<void(Status)> on_rpc_error = nullptr);
+  class ChatServiceClient {
+   public:
+    ChatServiceClient(::pw::rpc::Client& client, uint32_t default_channel_id);
 
-The ``NanopbClientCall`` object returned by the RPC invocation stores the active
-RPC's context. For more information on ``ClientCall`` objects, refer to the
-:ref:`core RPC documentation <module-pw_rpc-making-calls>`. The type of the
-returned object is complex, so it is aliased using the method name.
+    GetRoomInformationCall GetRoomInformation(
+        const RoomInfoRequest& request,
+        ::pw::Function<void(Status, const RoomInfoResponse&)> on_response,
+        ::pw::Function<void(Status)> on_rpc_error = nullptr);
+
+    // ...and more (see below).
+  };
+
+The client class has member functions for each method defined within the
+service's protobuf descriptor. The arguments to these methods vary depending on
+the type of RPC. Each method returns a ``NanopbClientCall`` object which stores
+the context of the ongoing RPC call. For more information on ``ClientCall``
+objects, refer to the :ref:`core RPC docs <module-pw_rpc-making-calls>`. The
+type of the returned object is complex, so it is aliased using the method
+name.
 
 .. admonition:: Callback invocation
 
@@ -166,8 +176,7 @@ returned object is complex, so it is aliased using the method name.
 
 Method APIs
 ^^^^^^^^^^^
-The first argument to each client call method is the channel through which to
-send the RPC. Following that, the arguments depend on the method type.
+The arguments provided when invoking a method depend on its type.
 
 Unary RPC
 ~~~~~~~~~
@@ -179,8 +188,7 @@ An optional second callback can be provided to handle internal errors.
 
 .. code-block:: c++
 
-  static GetRoomInformationCall GetRoomInformation(
-      Channel& channel,
+  GetRoomInformationCall GetRoomInformation(
       const RoomInfoRequest& request,
       ::pw::Function<void(const RoomInfoResponse&, Status)> on_response,
       ::pw::Function<void(Status)> on_rpc_error = nullptr);
@@ -195,8 +203,7 @@ An optional third callback can be provided to handle internal errors.
 
 .. code-block:: c++
 
-  static ListUsersInRoomCall ListUsersInRoom(
-      Channel& channel,
+  ListUsersInRoomCall ListUsersInRoom(
       const ListUsersRequest& request,
       ::pw::Function<void(const ListUsersResponse&)> on_response,
       ::pw::Function<void(Status)> on_stream_end,
@@ -213,7 +220,7 @@ service client and receive the response.
 
   namespace {
     MyChannelOutput output;
-    pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<0>(&output)};
+    pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<1>(&output)};
     pw::rpc::Client client(channels);
 
     // Callback function for GetRoomInformation.
@@ -221,13 +228,22 @@ service client and receive the response.
   }
 
   void InvokeSomeRpcs() {
-    // The RPC will remain active as long as `call` is alive.
-    auto call = ChatServiceClient::GetRoomInformation(channels[0],
-                                                      {.room = "pigweed"},
-                                                      LogRoomInformation);
+    // Instantiate a service client to call ChatService methods on channel 1.
+    ChatServiceClient chat_client(client, 1);
 
-    // For simplicity, block here. An actual implementation would likely
-    // std::move the call somewhere to keep it active while doing other work.
+    // The RPC will remain active as long as `call` is alive.
+    auto call = chat_client.GetRoomInformation(
+        {.room = "pigweed"}, LogRoomInformation);
+    if (!call.active()) {
+      // The invocation may fail. This could occur due to an invalid channel ID,
+      // for example. The failure status is forwarded to the to call's
+      // on_rpc_error callback.
+      return;
+    }
+
+    // For simplicity, block until the call completes. An actual implementation
+    // would likely std::move the call somewhere to keep it active while doing
+    // other work.
     while (call.active()) {
       Wait();
     }

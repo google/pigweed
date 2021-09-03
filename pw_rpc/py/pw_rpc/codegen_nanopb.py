@@ -93,7 +93,8 @@ class _CallbackFunction(NamedTuple):
         return param
 
 
-def _generate_code_for_client_method(method: ProtoServiceMethod,
+def _generate_code_for_client_method(class_name: str,
+                                     method: ProtoServiceMethod,
                                      output: OutputFile) -> None:
     """Outputs client code for a single RPC method."""
 
@@ -133,11 +134,17 @@ def _generate_code_for_client_method(method: ProtoServiceMethod,
 
     call_alias = f'{method.name()}Call'
 
+    moved_functions = list(f'std::move({function.name})'
+                           for function in functions)
+
     output.write_line()
     output.write_line(
         f'using {call_alias} = {RPC_NAMESPACE}::NanopbClientCall<')
     output.write_line(f'    {callbacks}<{res}>>;')
     output.write_line()
+
+    # TODO(frolv): Deprecate this channel-based API.
+    # ======== Deprecated API ========
     output.write_line(f'static {call_alias} {method.name()}(')
     with output.indent(4):
         output.write_line(f'{RPC_NAMESPACE}::Channel& channel,')
@@ -156,17 +163,78 @@ def _generate_code_for_client_method(method: ProtoServiceMethod,
             output.write_line('kServiceId,')
             output.write_line(
                 f'0x{method_id:08x},  // Hash of "{method.name()}"')
-
-            moved_functions = (f'std::move({function.name})'
-                               for function in functions)
             output.write_line(f'{callbacks}({", ".join(moved_functions)}),')
-
             output.write_line(f'{req}_fields,')
             output.write_line(f'{res}_fields);')
         output.write_line('call.SendRequest(&request);')
         output.write_line('return call;')
 
     output.write_line('}')
+    output.write_line()
+
+    # ======== End deprecated API ========
+
+    output.write_line(f'{call_alias} {method.name()}(')
+    with output.indent(4):
+        output.write_line(f'const {req}& request,')
+
+        # Write out each of the callback functions for the method type.
+        for i, function in enumerate(functions):
+            if i == len(functions) - 1:
+                output.write_line(f'{function}) {{')
+            else:
+                output.write_line(f'{function},')
+
+    with output.indent():
+        output.write_line()
+        output.write_line(f'{call_alias} call(client_,')
+        with output.indent(len(call_alias) + 6):
+            output.write_line('default_channel_id_,')
+            output.write_line('kServiceId,')
+            output.write_line(
+                f'0x{method_id:08x},  // Hash of "{method.name()}"')
+            output.write_line(f'{callbacks}({", ".join(moved_functions)}),')
+            output.write_line(f'{req}_fields,')
+            output.write_line(f'{res}_fields);')
+
+        # Unary and server streaming RPCs send the initial request immediately.
+        if method.type() in (ProtoServiceMethod.Type.UNARY,
+                             ProtoServiceMethod.Type.SERVER_STREAMING):
+            output.write_line()
+            output.write_line('if (::pw::Status status = '
+                              'call.SendRequest(&request); !status.ok()) {')
+            with output.indent():
+                output.write_line('call.callbacks().InvokeRpcError(status);')
+            output.write_line('}')
+            output.write_line()
+
+        output.write_line('return call;')
+
+    output.write_line('}')
+    output.write_line()
+
+    # Generate a static wrapper method that instantiates a client.
+    output.write_line(f'static {call_alias} {method.name()}(')
+
+    with output.indent(4):
+        output.write_line(f'{RPC_NAMESPACE}::Client& client,')
+        output.write_line('uint32_t channel_id,')
+        output.write_line(f'const {req}& request,')
+
+        # Write out each of the callback functions for the method type.
+        for i, function in enumerate(functions):
+            if i == len(functions) - 1:
+                output.write_line(f'{function}) {{')
+            else:
+                output.write_line(f'{function},')
+
+    with output.indent():
+        output.write_line(
+            f'return {class_name}(client, channel_id).{method.name()}(')
+        output.write_line(f'    request, {", ".join(moved_functions)});')
+
+    output.write_line('}')
+    output.write_line()
 
 
 def _generate_code_for_client(service: ProtoService, root: ProtoNode,
@@ -180,10 +248,23 @@ def _generate_code_for_client(service: ProtoService, root: ProtoNode,
     output.write_line(' public:')
 
     with output.indent():
-        output.write_line(f'{class_name}() = delete;')
+        output.write_line(
+            f'constexpr {class_name}({RPC_NAMESPACE}::Client& client,'
+            ' uint32_t default_channel_id)')
+        output.write_line(
+            '    : client_(&client), default_channel_id_(default_channel_id) {}'
+        )
+
+        output.write_line()
+        output.write_line(f'{class_name}(const {class_name}&) = default;')
+        output.write_line(f'{class_name}({class_name}&&) = default;')
+        output.write_line(
+            f'{class_name}& operator=(const {class_name}&) = default;')
+        output.write_line(
+            f'{class_name}& operator=({class_name}&&) = default;')
 
         for method in service.methods():
-            _generate_code_for_client_method(method, output)
+            _generate_code_for_client_method(class_name, method, output)
 
     service_name_hash = pw_rpc.ids.calculate(service.proto_path())
     output.write_line('\n private:')
@@ -194,14 +275,19 @@ def _generate_code_for_client(service: ProtoService, root: ProtoNode,
             f'static constexpr uint32_t kServiceId = 0x{service_name_hash:08x};'
         )
 
+        output.write_line()
+        output.write_line(f'{RPC_NAMESPACE}::Client* client_;')
+        output.write_line('uint32_t default_channel_id_;')
+
     output.write_line('};')
 
     output.write_line('\n}  // namespace nanopb\n')
 
 
 def includes(proto_file, unused_package: ProtoNode) -> Iterator[str]:
-    yield '#include "pw_rpc/nanopb/internal/method_union.h"'
+    yield '#include "pw_rpc/client.h"'
     yield '#include "pw_rpc/nanopb/client_call.h"'
+    yield '#include "pw_rpc/nanopb/internal/method_union.h"'
 
     # Include the corresponding nanopb header file for this proto file, in which
     # the file's messages and enums are generated. All other files imported from
