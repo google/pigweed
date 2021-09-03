@@ -805,8 +805,6 @@ def renode_check(ctx: PresubmitContext):
 #
 
 OTHER_CHECKS = (
-    # TODO(pwbug/45): Remove clang-tidy from OTHER_CHECKS when it passes.
-    clang_tidy,
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
     oss_fuzz_build,
@@ -828,6 +826,7 @@ OTHER_CHECKS = (
 )
 
 _LINTFORMAT = (
+    clang_tidy,
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(),
