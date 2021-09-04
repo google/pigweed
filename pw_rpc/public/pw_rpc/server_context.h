@@ -16,7 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/call_context.h"
 
 namespace pw::rpc {
 

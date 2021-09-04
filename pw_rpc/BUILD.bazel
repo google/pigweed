@@ -42,7 +42,7 @@ pw_cc_library(
 pw_cc_library(
     name = "server",
     srcs = [
-        "public/pw_rpc/internal/call.h",
+        "public/pw_rpc/internal/call_context.h",
         "public/pw_rpc/internal/hash.h",
         "public/pw_rpc/internal/method.h",
         "public/pw_rpc/internal/method_lookup.h",

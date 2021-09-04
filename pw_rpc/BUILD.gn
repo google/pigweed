@@ -57,7 +57,7 @@ pw_source_set("server") {
     "public/pw_rpc/service.h",
   ]
   sources = [
-    "public/pw_rpc/internal/call.h",
+    "public/pw_rpc/internal/call_context.h",
     "public/pw_rpc/internal/hash.h",
     "public/pw_rpc/internal/method.h",
     "public/pw_rpc/internal/method_lookup.h",

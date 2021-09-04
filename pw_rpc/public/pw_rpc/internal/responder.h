@@ -19,7 +19,7 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_function/function.h"
-#include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/call_context.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"

@@ -16,7 +16,7 @@
 #include <cstring>
 
 #include "pw_bytes/span.h"
-#include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/call_context.h"
 #include "pw_rpc/method_type.h"
 
 namespace pw::rpc::internal::test {
