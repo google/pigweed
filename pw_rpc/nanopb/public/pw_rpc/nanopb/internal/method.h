@@ -20,9 +20,9 @@
 #include <type_traits>
 
 #include "pw_function/function.h"
+#include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"
-#include "pw_rpc/internal/responder.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc/nanopb/server_reader_writer.h"
