@@ -241,10 +241,17 @@ Status StreamDecoder::ReadFieldKey() {
     }
 
     delimited_field_size_ = varint;
+    delimited_field_offset_ = reader_.Tell();
   }
 
   field_consumed_ = false;
   return OkStatus();
+}
+
+Result<StreamDecoder::Bounds> StreamDecoder::GetLengthDelimitedPayloadBounds() {
+  PW_TRY(CheckOkToRead(WireType::kDelimited));
+  return StreamDecoder::Bounds{delimited_field_offset_,
+                               delimited_field_size_ + delimited_field_offset_};
 }
 
 // Consumes the current protobuf field, advancing the stream to the key of the

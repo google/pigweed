@@ -12,17 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_protobuf/helpers.h"
+#include "pw_protobuf/map_utils.h"
 
 #include <cstddef>
 
+#include "pw_bytes/span.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_protobuf/serialized_size.h"
+#include "pw_stream/stream.h"
 
 namespace pw::protobuf {
 
-// TODO(pwbug/456): Generalize and move this helper to pw_protobuf
-//
 // Note that a map<string, bytes> is essentially
 //
 // message Entry {

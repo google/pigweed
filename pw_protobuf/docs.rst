@@ -409,12 +409,147 @@ its parent decoder cannot be used.
     // parent decoder can be used again.
   }
 
-Protobuf helpers
-================
+Proto map encoding utils
+========================
 
 Some additional helpers for encoding more complex but common protobuf
 submessages (e.g. map<string, bytes>) are provided in
-``pw_protobuf/helpers.h``.
+``pw_protobuf/map_utils.h``.
+
+.. Note::
+  The helper API are currently in-development and may not remain stable.
+
+Message
+=======
+
+The module implements a message parsing class ``Message``, in
+``pw_protobuf/message.h``, to faciliate proto message parsing and field access.
+The class provides interfaces for searching fields in a proto message and
+creating helper classes for it according to its interpreted field type, i.e.
+uint32, bytes, string, map<>, repeated etc. The class works on top of
+``StreamDecoder`` and thus requires a ``pw::stream::SeekableReader`` for proto
+message access. The following gives examples for using the class to process
+different fields in a proto message:
+
+.. code-block:: c++
+
+  // Consider the proto messages defined as follows:
+  //
+  // message Nested {
+  //   string nested_str = 1;
+  //   bytes nested_bytes = 2;
+  // }
+  //
+  // message {
+  //   uint32 integer = 1;
+  //   string str = 2;
+  //   bytes bytes = 3;
+  //   Nested nested = 4;
+  //   repeated string rep_str = 5;
+  //   repeated Nested rep_nested  = 6;
+  //   map<string, bytes> str_to_bytes = 7;
+  //   map<string, Nested> str_to_nested = 8;
+  // }
+
+  // Given a seekable `reader` that reads the top-level proto message, and
+  // a <proto_size> that gives the size of the proto message:
+  Message message(reader, proto_size);
+
+  // Parse a proto integer field
+  Uint32 integer = messasge_parser.AsUint32(1);
+  if (!integer.ok()) {
+    // handle parsing error. i.e. return integer.status().
+  }
+  uint32_t integer_value = integer.value(); // obtained the value
+
+  // Parse a string field
+  String str = message.AsString(2);
+  if (!str.ok()) {
+    // handle parsing error. i.e. return str.status();
+  }
+
+  // check string equal
+  Result<bool> str_check = str.Equal("foo");
+
+  // Parse a bytes field
+  Bytes bytes = message.AsBytes(3);
+  if (!bytes.ok()) {
+    // handle parsing error. i.e. return bytes.status();
+  }
+
+  // Get a reader to the bytes.
+  stream::IntervalReader bytes_reader = bytes.GetBytesReader();
+
+  // Parse nested message `Nested nested = 4;`
+  Message nested = message.AsMessage(4).
+  // Get the fields in the nested message.
+  String nested_str = nested.AsString(1);
+  Bytes nested_bytes = nested.AsBytes(2);
+
+  // Parse repeated field `repeated string rep_str = 5;`
+  RepeatedStrings rep_str = message.AsRepeatedString(5);
+  // Iterate through the entries. For iteration
+  for (String element : rep_str) {
+    // Process str
+  }
+
+  // Parse repeated field `repeated Nested rep_nested = 6;`
+  RepeatedStrings rep_str = message.AsRepeatedString(6);
+  // Iterate through the entries. For iteration
+  for (Message element : rep_rep_nestedstr) {
+    // Process element
+  }
+
+  // Parse map field `map<string, bytes> str_to_bytes = 7;`
+  StringToBytesMap str_to_bytes = message.AsStringToBytesMap(7);
+  // Access the entry by a given key value
+  Bytes bytes_for_key = str_to_bytes["key"];
+  // Or iterate through map entries
+  for (StringToBytesMapEntry entry : str_to_bytes) {
+    String key = entry.Key();
+    Bytes value = entry.Value();
+    // process entry
+  }
+
+  // Parse map field `map<string, Nested> str_to_nested = 8;`
+  StringToMessageMap str_to_nested = message.AsStringToBytesMap(8);
+  // Access the entry by a given key value
+  Message nested_for_key = str_to_nested["key"];
+  // Or iterate through map entries
+  for (StringToMessageMapEntry entry : str_to_nested) {
+    String key = entry.Key();
+    Message value = entry.Value();
+    // process entry
+  }
+
+The methods in ``Message`` for parsing a single field, i.e. everty `AsXXX()`
+method except AsRepeatedXXX() and AsStringMapXXX(), internally performs a
+linear scan of the entire proto message to find the field with the given
+field number. This can be expensive if performed multiple times, especially
+on slow reader. The same applies to the ``operator[]`` of StringToXXXXMap
+helper class. Therefore, for performance consideration, whenever possible, it
+is recommended to use the following for-range style to iterate and process
+single fields directly.
+
+
+.. code-block:: c++
+
+  for (Message::Field field : message) {
+    if (field.field_number() == 1) {
+      Uint32 integer = field.As<Uint32>();
+      ...
+    } else if (field.field_number() == 2) {
+      String str = field.As<String>();
+      ...
+    } else if (field.field_number() == 3) {
+      Bytes bytes = field.As<Bytes>();
+      ...
+    } else if (field.field_number() == 4) {
+      Message nested = field.As<Message>();
+      ...
+    }
+  }
+
 
 .. Note::
   The helper API are currently in-development and may not remain stable.

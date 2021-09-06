@@ -514,5 +514,37 @@ TEST(StreamDecoder, Decode_BytesReader_InvalidField) {
   EXPECT_EQ(decoder.Next(), Status::DataLoss());
 }
 
+TEST(StreamDecoder, GetLengthDelimitedPayloadBounds) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // bytes key=1, length=14
+    0x0a, 0x0e,
+
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d,
+    // End bytes
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  ASSERT_EQ(OkStatus(), decoder.Next());
+  Result<StreamDecoder::Bounds> field_bound =
+      decoder.GetLengthDelimitedPayloadBounds();
+  ASSERT_EQ(OkStatus(), field_bound.status());
+  ASSERT_EQ(field_bound.value().low, 2ULL);
+  ASSERT_EQ(field_bound.value().high, 16ULL);
+
+  ASSERT_EQ(OkStatus(), decoder.Next());
+  ASSERT_EQ(Status::NotFound(),
+            decoder.GetLengthDelimitedPayloadBounds().status());
+}
+
 }  // namespace
 }  // namespace pw::protobuf

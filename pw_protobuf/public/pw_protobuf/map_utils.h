@@ -18,8 +18,12 @@
 #pragma once
 
 #include <cstddef>
+#include <string_view>
 
+#include "pw_assert/check.h"
+#include "pw_protobuf/stream_decoder.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
 #include "pw_stream/stream.h"
 
 namespace pw::protobuf {

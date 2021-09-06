@@ -12,10 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_protobuf/helpers.h"
+#include "pw_protobuf/map_utils.h"
+
+#include <string_view>
 
 #include "gtest/gtest.h"
-#include "pw_protobuf/encoder.h"
+#include "pw_stream/memory_stream.h"
+#include "pw_stream/stream.h"
+
+#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 
 namespace pw::protobuf {
 
@@ -78,14 +83,13 @@ TEST(ProtoHelper, WriteProtoStringToBytesMapEntry) {
   for (auto ele : kMapData) {
     stream::MemoryReader key_reader(std::as_bytes(std::span{ele.key}));
     stream::MemoryReader value_reader(std::as_bytes(std::span{ele.value}));
-    ASSERT_TRUE(WriteProtoStringToBytesMapEntry(ele.field_number,
-                                                key_reader,
-                                                ele.key.size(),
-                                                value_reader,
-                                                ele.value.size(),
-                                                stream_pipe_buffer,
-                                                writer)
-                    .ok());
+    ASSERT_OK(WriteProtoStringToBytesMapEntry(ele.field_number,
+                                              key_reader,
+                                              ele.key.size(),
+                                              value_reader,
+                                              ele.value.size(),
+                                              stream_pipe_buffer,
+                                              writer));
   }
 
   ASSERT_EQ(memcmp(dst_buffer, encoded_proto, sizeof(dst_buffer)), 0);

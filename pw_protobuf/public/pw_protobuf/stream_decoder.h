@@ -101,6 +101,7 @@ class StreamDecoder {
         stream_bounds_({0, std::numeric_limits<size_t>::max()}),
         current_field_(kInitialFieldKey),
         delimited_field_size_(0),
+        delimited_field_offset_(0),
         parent_(nullptr),
         field_consumed_(true),
         nested_reader_open_(false),
@@ -283,6 +284,16 @@ class StreamDecoder {
   // See the example in GetBytesReader() above for RAII semantics and usage.
   StreamDecoder GetNestedDecoder();
 
+  struct Bounds {
+    size_t low;
+    size_t high;
+  };
+
+  // Get the interval of the payload part of a length-delimited field. That is,
+  // the interval exluding the field key and the length prefix. The bounds are
+  // relative to the given reader.
+  Result<Bounds> GetLengthDelimitedPayloadBounds();
+
  private:
   friend class BytesReader;
 
@@ -301,6 +312,7 @@ class StreamDecoder {
         stream_bounds_({low, high}),
         current_field_(kInitialFieldKey),
         delimited_field_size_(0),
+        delimited_field_offset_(0),
         parent_(parent),
         field_consumed_(true),
         nested_reader_open_(false),
@@ -315,6 +327,7 @@ class StreamDecoder {
         stream_bounds_({0, std::numeric_limits<size_t>::max()}),
         current_field_(kInitialFieldKey),
         delimited_field_size_(0),
+        delimited_field_offset_(0),
         parent_(parent),
         field_consumed_(true),
         nested_reader_open_(false),
@@ -352,13 +365,11 @@ class StreamDecoder {
   Status CheckOkToRead(WireType type);
 
   stream::SeekableReader& reader_;
-  struct {
-    size_t low;
-    size_t high;
-  } stream_bounds_;
+  Bounds stream_bounds_;
 
   FieldKey current_field_;
   size_t delimited_field_size_;
+  size_t delimited_field_offset_;
 
   StreamDecoder* parent_;
 
@@ -366,6 +377,8 @@ class StreamDecoder {
   bool nested_reader_open_;
 
   Status status_;
+
+  friend class Message;
 };
 
 }  // namespace pw::protobuf

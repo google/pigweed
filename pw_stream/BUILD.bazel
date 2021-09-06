@@ -70,6 +70,13 @@ pw_cc_library(
     deps = [":pw_stream"],
 )
 
+pw_cc_library(
+    name = "interval_reader",
+    srcs = ["interval_reader.cc"],
+    hdrs = ["public/pw_stream/interval_reader.h"],
+    deps = [":pw_stream"],
+)
+
 pw_cc_test(
     name = "memory_stream_test",
     srcs = ["memory_stream_test.cc"],
@@ -93,6 +100,15 @@ pw_cc_test(
     srcs = ["stream_test.cc"],
     deps = [
         ":pw_stream",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "interval_reader_test",
+    srcs = ["interval_reader_test.cc"],
+    deps = [
+        ":interval_reader",
         "//pw_unit_test",
     ],
 )

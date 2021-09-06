@@ -45,8 +45,10 @@ pw_source_set("pw_protobuf") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
+    "$dir_pw_stream:interval_reader",
     dir_pw_assert,
     dir_pw_bytes,
+    dir_pw_log,
     dir_pw_result,
     dir_pw_status,
     dir_pw_stream,
@@ -56,7 +58,9 @@ pw_source_set("pw_protobuf") {
     "public/pw_protobuf/decoder.h",
     "public/pw_protobuf/encoder.h",
     "public/pw_protobuf/find.h",
-    "public/pw_protobuf/helpers.h",
+    "public/pw_protobuf/internal/proto_integer_base.h",
+    "public/pw_protobuf/map_utils.h",
+    "public/pw_protobuf/message.h",
     "public/pw_protobuf/serialized_size.h",
     "public/pw_protobuf/stream_decoder.h",
     "public/pw_protobuf/wire_format.h",
@@ -65,7 +69,8 @@ pw_source_set("pw_protobuf") {
     "decoder.cc",
     "encoder.cc",
     "find.cc",
-    "helpers.cc",
+    "map_utils.cc",
+    "message.cc",
     "stream_decoder.cc",
   ]
 }
@@ -85,8 +90,9 @@ pw_test_group("tests") {
     ":encoder_test",
     ":encoder_fuzzer",
     ":find_test",
+    ":map_utils_test",
+    ":message_test",
     ":stream_decoder_test",
-    ":helpers_test",
     ":varint_size_test",
   ]
 }
@@ -116,9 +122,14 @@ pw_test("stream_decoder_test") {
   sources = [ "stream_decoder_test.cc" ]
 }
 
-pw_test("helpers_test") {
+pw_test("map_utils_test") {
   deps = [ ":pw_protobuf" ]
-  sources = [ "helpers_test.cc" ]
+  sources = [ "map_utils_test.cc" ]
+}
+
+pw_test("message_test") {
+  deps = [ ":pw_protobuf" ]
+  sources = [ "message_test.cc" ]
 }
 
 config("one_byte_varint") {

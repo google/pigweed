@@ -65,12 +65,24 @@ pw_source_set("std_file_stream") {
   sources = [ "std_file_stream.cc" ]
 }
 
+pw_source_set("interval_reader") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":pw_stream",
+    dir_pw_assert,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_stream/interval_reader.h" ]
+  sources = [ "interval_reader.cc" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {
   tests = [
+    ":interval_reader_test",
     ":memory_stream_test",
     ":seek_test",
     ":stream_test",
@@ -90,4 +102,9 @@ pw_test("seek_test") {
 pw_test("stream_test") {
   sources = [ "stream_test.cc" ]
   deps = [ ":pw_stream" ]
+}
+
+pw_test("interval_reader_test") {
+  sources = [ "interval_reader_test.cc" ]
+  deps = [ ":interval_reader" ]
 }

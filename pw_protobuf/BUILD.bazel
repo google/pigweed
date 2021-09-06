@@ -38,14 +38,17 @@ pw_cc_library(
         "decoder.cc",
         "encoder.cc",
         "find.cc",
-        "helpers.cc",
+        "map_utils.cc",
+        "message.cc",
         "stream_decoder.cc",
     ],
     hdrs = [
         "public/pw_protobuf/decoder.h",
         "public/pw_protobuf/encoder.h",
         "public/pw_protobuf/find.h",
-        "public/pw_protobuf/helpers.h",
+        "public/pw_protobuf/internal/proto_integer_base.h",
+        "public/pw_protobuf/map_utils.h",
+        "public/pw_protobuf/message.h",
         "public/pw_protobuf/serialized_size.h",
         "public/pw_protobuf/stream_decoder.h",
         "public/pw_protobuf/wire_format.h",
@@ -59,6 +62,7 @@ pw_cc_library(
         "//pw_span",
         "//pw_status",
         "//pw_stream",
+        "//pw_stream:interval_reader",
         "//pw_varint",
     ],
 )
@@ -111,8 +115,17 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "helpers_test",
-    srcs = ["helpers_test.cc"],
+    name = "map_utils_test",
+    srcs = ["map_utils_test.cc"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "message_test",
+    srcs = ["message_test.cc"],
     deps = [
         ":pw_protobuf",
         "//pw_unit_test",
