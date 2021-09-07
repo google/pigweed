@@ -86,7 +86,7 @@ class RegisterDevice : public Device {
   //   buffer: Since we need a buffer to construct the write data that consists
   //           of the register address and the register data, the buffer should
   //           be big enough such that the two can be concatenated.
-  //   for_at_least: timeout that's used for both lock and transaction (ms).
+  //   timeout: timeout that's used for both lock and transaction.
   // Returns:
   //   Ok: Successful.
   //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
@@ -99,22 +99,22 @@ class RegisterDevice : public Device {
   Status WriteRegisters(uint32_t register_address,
                         ConstByteSpan register_data,
                         ByteSpan buffer,
-                        chrono::SystemClock::duration for_at_least);
+                        chrono::SystemClock::duration timeout);
 
   Status WriteRegisters8(uint32_t register_address,
                          std::span<const uint8_t> register_data,
                          ByteSpan buffer,
-                         chrono::SystemClock::duration for_at_least);
+                         chrono::SystemClock::duration timeout);
 
   Status WriteRegisters16(uint32_t register_address,
                           std::span<const uint16_t> register_data,
                           ByteSpan buffer,
-                          chrono::SystemClock::duration for_at_least);
+                          chrono::SystemClock::duration timeout);
 
   Status WriteRegisters32(uint32_t register_address,
                           std::span<const uint32_t> register_data,
                           ByteSpan buffer,
-                          chrono::SystemClock::duration for_at_least);
+                          chrono::SystemClock::duration timeout);
 
   // Reads data chunk starting at specific offset or register.
   // ReadRegisters has byte addressable capabilities and it is up to the user
@@ -128,7 +128,7 @@ class RegisterDevice : public Device {
   // device. Args:
   //   register_address: Register address to send.
   //   return_data: Area to read data to.
-  //   for_at_least: Timeout that's used for both lock and transaction (ms).
+  //   timeout: Timeout that's used for both lock and transaction.
   // Returns:
   //   Ok: Successful.
   //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
@@ -139,19 +139,19 @@ class RegisterDevice : public Device {
   //   Unavailable: if NACK and device did not respond in time.
   Status ReadRegisters(uint32_t register_address,
                        ByteSpan return_data,
-                       chrono::SystemClock::duration for_at_least);
+                       chrono::SystemClock::duration timeout);
 
   Status ReadRegisters8(uint32_t register_address,
                         std::span<uint8_t> return_data,
-                        chrono::SystemClock::duration for_at_least);
+                        chrono::SystemClock::duration timeout);
 
   Status ReadRegisters16(uint32_t register_address,
                          std::span<uint16_t> return_data,
-                         chrono::SystemClock::duration for_at_least);
+                         chrono::SystemClock::duration timeout);
 
   Status ReadRegisters32(uint32_t register_address,
                          std::span<uint32_t> return_data,
-                         chrono::SystemClock::duration for_at_least);
+                         chrono::SystemClock::duration timeout);
 
   // Writes the register address first before data.
   // User should be careful which WriteRegister* API is used and should use
@@ -162,7 +162,7 @@ class RegisterDevice : public Device {
   // Args:
   //   register_address: Register address to send.
   //   register_data: Data to write.
-  //   for_at_least: Timeout that's used for both lock and transaction (ms).
+  //   timeout: Timeout that's used for both lock and transaction.
   // Returns:
   //   Ok: Successful.
   //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
@@ -173,19 +173,19 @@ class RegisterDevice : public Device {
   //   Unavailable: if NACK and device did not respond in time.
   Status WriteRegister(uint32_t register_address,
                        std::byte register_data,
-                       chrono::SystemClock::duration for_at_least);
+                       chrono::SystemClock::duration timeout);
 
   Status WriteRegister8(uint32_t register_address,
                         uint8_t register_data,
-                        chrono::SystemClock::duration for_at_least);
+                        chrono::SystemClock::duration timeout);
 
   Status WriteRegister16(uint32_t register_address,
                          uint16_t register_data,
-                         chrono::SystemClock::duration for_at_least);
+                         chrono::SystemClock::duration timeout);
 
   Status WriteRegister32(uint32_t register_address,
                          uint32_t register_data,
-                         chrono::SystemClock::duration for_at_least);
+                         chrono::SystemClock::duration timeout);
 
   // Reads data from the device after sending the register address first.
   // User should be careful which ReadRegister* API is used and should use
@@ -195,7 +195,7 @@ class RegisterDevice : public Device {
   // constructor.
   // Args:
   //   register_address: Register address to send.
-  //   for_at_least: Timeout that's used for both lock and transaction (ms).
+  //   timeout: Timeout that's used for both lock and transaction.
   // Returns:
   //   Ok: Successful.
   //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
@@ -205,16 +205,16 @@ class RegisterDevice : public Device {
   //   InvalidArgument: Device_address is larger than the 10 bit address space.
   //   Unavailable: if NACK and device did not respond in time.
   Result<std::byte> ReadRegister(uint32_t register_address,
-                                 chrono::SystemClock::duration for_at_least);
+                                 chrono::SystemClock::duration timeout);
 
   Result<uint8_t> ReadRegister8(uint32_t register_address,
-                                chrono::SystemClock::duration for_at_least);
+                                chrono::SystemClock::duration timeout);
 
   Result<uint16_t> ReadRegister16(uint32_t register_address,
-                                  chrono::SystemClock::duration for_at_least);
+                                  chrono::SystemClock::duration timeout);
 
   Result<uint32_t> ReadRegister32(uint32_t register_address,
-                                  chrono::SystemClock::duration for_at_least);
+                                  chrono::SystemClock::duration timeout);
 
  private:
   // Helper write registers.
@@ -222,7 +222,7 @@ class RegisterDevice : public Device {
                         ConstByteSpan register_data,
                         const size_t register_data_size,
                         ByteSpan buffer,
-                        chrono::SystemClock::duration for_at_least);
+                        chrono::SystemClock::duration timeout);
 
   const std::endian order_;
   const RegisterAddressSize register_address_size_;
@@ -232,118 +232,118 @@ inline Status RegisterDevice::WriteRegisters(
     uint32_t register_address,
     ConstByteSpan register_data,
     ByteSpan buffer,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   return WriteRegisters(register_address,
                         register_data,
                         sizeof(decltype(register_data)::value_type),
                         buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::WriteRegisters8(
     uint32_t register_address,
     std::span<const uint8_t> register_data,
     ByteSpan buffer,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   return WriteRegisters(register_address,
                         std::as_bytes(register_data),
                         sizeof(decltype(register_data)::value_type),
                         buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::WriteRegisters16(
     uint32_t register_address,
     std::span<const uint16_t> register_data,
     ByteSpan buffer,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   return WriteRegisters(register_address,
                         std::as_bytes(register_data),
                         sizeof(decltype(register_data)::value_type),
                         buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::WriteRegisters32(
     uint32_t register_address,
     std::span<const uint32_t> register_data,
     ByteSpan buffer,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   return WriteRegisters(register_address,
                         std::as_bytes(register_data),
                         sizeof(decltype(register_data)::value_type),
                         buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::WriteRegister(
     uint32_t register_address,
     std::byte register_data,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   std::array<std::byte, sizeof(register_data) + sizeof(register_address)>
       byte_buffer;
   return WriteRegisters(register_address,
                         std::span(&register_data, 1),
                         sizeof(register_data),
                         byte_buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::WriteRegister8(
     uint32_t register_address,
     uint8_t register_data,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   std::array<std::byte, sizeof(register_data) + sizeof(register_address)>
       byte_buffer;
   return WriteRegisters(register_address,
                         std::as_bytes(std::span(&register_data, 1)),
                         sizeof(register_data),
                         byte_buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::WriteRegister16(
     uint32_t register_address,
     uint16_t register_data,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   std::array<std::byte, sizeof(register_data) + sizeof(register_address)>
       byte_buffer;
   return WriteRegisters(register_address,
                         std::as_bytes(std::span(&register_data, 1)),
                         sizeof(register_data),
                         byte_buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::WriteRegister32(
     uint32_t register_address,
     uint32_t register_data,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   std::array<std::byte, sizeof(register_data) + sizeof(register_address)>
       byte_buffer;
   return WriteRegisters(register_address,
                         std::as_bytes(std::span(&register_data, 1)),
                         sizeof(register_data),
                         byte_buffer,
-                        for_at_least);
+                        timeout);
 }
 
 inline Status RegisterDevice::ReadRegisters8(
     uint32_t register_address,
     std::span<uint8_t> return_data,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   // For a single byte, there's no endian data, and so we can return the
   // data as is.
   return ReadRegisters(
-      register_address, std::as_writable_bytes(return_data), for_at_least);
+      register_address, std::as_writable_bytes(return_data), timeout);
 }
 
 inline Status RegisterDevice::ReadRegisters16(
     uint32_t register_address,
     std::span<uint16_t> return_data,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   PW_TRY(ReadRegisters(
-      register_address, std::as_writable_bytes(return_data), for_at_least));
+      register_address, std::as_writable_bytes(return_data), timeout));
 
   // Post process endian information.
   for (uint16_t& register_value : return_data) {
@@ -356,9 +356,9 @@ inline Status RegisterDevice::ReadRegisters16(
 inline Status RegisterDevice::ReadRegisters32(
     uint32_t register_address,
     std::span<uint32_t> return_data,
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   PW_TRY(ReadRegisters(
-      register_address, std::as_writable_bytes(return_data), for_at_least));
+      register_address, std::as_writable_bytes(return_data), timeout));
 
   // TODO(b/185952662): Extend endian in pw_byte to support this conversion
   //                    as optimization.
@@ -371,30 +371,30 @@ inline Status RegisterDevice::ReadRegisters32(
 }
 
 inline Result<std::byte> RegisterDevice::ReadRegister(
-    uint32_t register_address, chrono::SystemClock::duration for_at_least) {
+    uint32_t register_address, chrono::SystemClock::duration timeout) {
   std::byte data = {};
-  PW_TRY(ReadRegisters(register_address, std::span(&data, 1), for_at_least));
+  PW_TRY(ReadRegisters(register_address, std::span(&data, 1), timeout));
   return data;
 }
 
 inline Result<uint8_t> RegisterDevice::ReadRegister8(
-    uint32_t register_address, chrono::SystemClock::duration for_at_least) {
+    uint32_t register_address, chrono::SystemClock::duration timeout) {
   uint8_t data = 0;
-  PW_TRY(ReadRegisters8(register_address, std::span(&data, 1), for_at_least));
+  PW_TRY(ReadRegisters8(register_address, std::span(&data, 1), timeout));
   return data;
 }
 
 inline Result<uint16_t> RegisterDevice::ReadRegister16(
-    uint32_t register_address, chrono::SystemClock::duration for_at_least) {
+    uint32_t register_address, chrono::SystemClock::duration timeout) {
   std::array<uint16_t, 1> data = {};
-  PW_TRY(ReadRegisters16(register_address, data, for_at_least));
+  PW_TRY(ReadRegisters16(register_address, data, timeout));
   return data[0];
 }
 
 inline Result<uint32_t> RegisterDevice::ReadRegister32(
-    uint32_t register_address, chrono::SystemClock::duration for_at_least) {
+    uint32_t register_address, chrono::SystemClock::duration timeout) {
   std::array<uint32_t, 1> data = {};
-  PW_TRY(ReadRegisters32(register_address, data, for_at_least));
+  PW_TRY(ReadRegisters32(register_address, data, timeout));
   return data[0];
 }
 

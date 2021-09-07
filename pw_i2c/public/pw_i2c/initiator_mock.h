@@ -25,18 +25,18 @@ namespace pw::i2c {
 class Transaction {
  public:
   // Same set of parameters as  Initiator::DoWriteReadFor(), with the exception
-  // of optional parameter for_at_least.
+  // of optional parameter timeout.
   constexpr Transaction(
       Status expected_return_value,
       Address device_address,
       ConstByteSpan write_buffer,
       ConstByteSpan read_buffer,
-      std::optional<chrono::SystemClock::duration> for_at_least = std::nullopt)
+      std::optional<chrono::SystemClock::duration> timeout = std::nullopt)
       : return_value_(expected_return_value),
         read_buffer_(read_buffer),
         write_buffer_(write_buffer),
         address_(device_address),
-        for_at_least_(for_at_least) {}
+        timeout_(timeout) {}
 
   // Gets the buffer that is virtually read.
   ConstByteSpan read_buffer() const { return read_buffer_; }
@@ -45,8 +45,8 @@ class Transaction {
   ConstByteSpan write_buffer() const { return write_buffer_; }
 
   // Gets the min duration for a blocking i2c transaction.
-  std::optional<chrono::SystemClock::duration> for_at_least() const {
-    return for_at_least_;
+  std::optional<chrono::SystemClock::duration> timeout() const {
+    return timeout_;
   }
 
   // Gets the i2c address that the i2c transaction is targetting.
@@ -60,7 +60,7 @@ class Transaction {
   const ConstByteSpan read_buffer_;
   const ConstByteSpan write_buffer_;
   const Address address_;
-  const std::optional<chrono::SystemClock::duration> for_at_least_;
+  const std::optional<chrono::SystemClock::duration> timeout_;
 };
 
 // Read transaction is a helper that constructs a read only transaction.
@@ -68,12 +68,12 @@ constexpr Transaction ReadTransaction(
     Status expected_return_value,
     Address device_address,
     ConstByteSpan read_buffer,
-    std::optional<chrono::SystemClock::duration> for_at_least = std::nullopt) {
+    std::optional<chrono::SystemClock::duration> timeout = std::nullopt) {
   return Transaction(expected_return_value,
                      device_address,
                      ConstByteSpan(),
                      read_buffer,
-                     for_at_least);
+                     timeout);
 }
 
 // WriteTransaction is a helper that constructs a write only transaction.
@@ -81,12 +81,12 @@ constexpr Transaction WriteTransaction(
     Status expected_return_value,
     Address device_address,
     ConstByteSpan write_buffer,
-    std::optional<chrono::SystemClock::duration> for_at_least = std::nullopt) {
+    std::optional<chrono::SystemClock::duration> timeout = std::nullopt) {
   return Transaction(expected_return_value,
                      device_address,
                      write_buffer,
                      ConstByteSpan(),
-                     for_at_least);
+                     timeout);
 }
 
 // MockInitiator takes a series of read and/or write transactions and
@@ -133,7 +133,7 @@ class MockInitiator : public Initiator {
   Status DoWriteReadFor(Address device_address,
                         ConstByteSpan tx_buffer,
                         ByteSpan rx_buffer,
-                        chrono::SystemClock::duration for_at_least) override;
+                        chrono::SystemClock::duration timeout) override;
 
   std::span<Transaction> expected_transactions_;
   size_t expected_transaction_index_;

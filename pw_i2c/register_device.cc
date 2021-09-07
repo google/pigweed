@@ -84,12 +84,11 @@ Status PutRegisterData32InByteBuilder(ByteBuilder& byte_builder,
 
 }  // namespace
 
-Status RegisterDevice::WriteRegisters(
-    const uint32_t register_address,
-    ConstByteSpan register_data,
-    const size_t register_data_size,
-    ByteSpan buffer,
-    chrono::SystemClock::duration for_at_least) {
+Status RegisterDevice::WriteRegisters(const uint32_t register_address,
+                                      ConstByteSpan register_data,
+                                      const size_t register_data_size,
+                                      ByteSpan buffer,
+                                      chrono::SystemClock::duration timeout) {
   // Make sure the buffer is big enough to handle the address and data.
   if (buffer.size() <
       register_data.size() + static_cast<uint32_t>(register_address_size_)) {
@@ -123,13 +122,12 @@ Status RegisterDevice::WriteRegisters(
   }
 
   ConstByteSpan write_buffer(builder.data(), builder.size());
-  return WriteFor(write_buffer, for_at_least);
+  return WriteFor(write_buffer, timeout);
 }
 
-Status RegisterDevice::ReadRegisters(
-    uint32_t register_address,
-    ByteSpan return_data,
-    chrono::SystemClock::duration for_at_least) {
+Status RegisterDevice::ReadRegisters(uint32_t register_address,
+                                     ByteSpan return_data,
+                                     chrono::SystemClock::duration timeout) {
   ByteBuffer<sizeof(register_address)> byte_buffer;
 
   PutRegisterAddressInByteBuilder(
@@ -143,7 +141,7 @@ Status RegisterDevice::ReadRegisters(
                       byte_buffer.size(),
                       return_data.data(),
                       return_data.size(),
-                      for_at_least);
+                      timeout);
 }
 
 }  // namespace i2c

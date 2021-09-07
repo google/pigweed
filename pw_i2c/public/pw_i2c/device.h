@@ -66,21 +66,21 @@ class Device {
   //    enabled.
   Status WriteReadFor(ConstByteSpan tx_buffer,
                       ByteSpan rx_buffer,
-                      chrono::SystemClock::duration for_at_least) {
+                      chrono::SystemClock::duration timeout) {
     return initiator_.WriteReadFor(
-        device_address_, tx_buffer, rx_buffer, for_at_least);
+        device_address_, tx_buffer, rx_buffer, timeout);
   }
   Status WriteReadFor(const void* tx_buffer,
                       size_t tx_size_bytes,
                       void* rx_buffer,
                       size_t rx_size_bytes,
-                      chrono::SystemClock::duration for_at_least) {
+                      chrono::SystemClock::duration timeout) {
     return initiator_.WriteReadFor(device_address_,
                                    tx_buffer,
                                    tx_size_bytes,
                                    rx_buffer,
                                    rx_size_bytes,
-                                   for_at_least);
+                                   timeout);
   }
 
   // Write bytes. The signal on the bus should appear as follows:
@@ -103,14 +103,14 @@ class Device {
   // FailedPrecondition - The interface is not currently initialized and/or
   //    enabled.
   Status WriteFor(ConstByteSpan tx_buffer,
-                  chrono::SystemClock::duration for_at_least) {
-    return initiator_.WriteFor(device_address_, tx_buffer, for_at_least);
+                  chrono::SystemClock::duration timeout) {
+    return initiator_.WriteFor(device_address_, tx_buffer, timeout);
   }
   Status WriteFor(const void* tx_buffer,
                   size_t tx_size_bytes,
-                  chrono::SystemClock::duration for_at_least) {
+                  chrono::SystemClock::duration timeout) {
     return initiator_.WriteFor(
-        device_address_, tx_buffer, tx_size_bytes, for_at_least);
+        device_address_, tx_buffer, tx_size_bytes, timeout);
   }
 
   // Read bytes. The signal on the bus should appear as follows:
@@ -132,15 +132,14 @@ class Device {
   //   not respond or was unable to process the request.
   // FailedPrecondition - The interface is not currently initialized and/or
   //    enabled.
-  Status ReadFor(ByteSpan rx_buffer,
-                 chrono::SystemClock::duration for_at_least) {
-    return initiator_.ReadFor(device_address_, rx_buffer, for_at_least);
+  Status ReadFor(ByteSpan rx_buffer, chrono::SystemClock::duration timeout) {
+    return initiator_.ReadFor(device_address_, rx_buffer, timeout);
   }
   Status ReadFor(void* rx_buffer,
                  size_t rx_size_bytes,
-                 chrono::SystemClock::duration for_at_least) {
+                 chrono::SystemClock::duration timeout) {
     return initiator_.ReadFor(
-        device_address_, rx_buffer, rx_size_bytes, for_at_least);
+        device_address_, rx_buffer, rx_size_bytes, timeout);
   }
 
   // Probes the device for an I2C ACK after only writing the address.
@@ -162,8 +161,8 @@ class Device {
   //   not respond or was unable to process the request.
   // FailedPrecondition - The interface is not currently initialized and/or
   //    enabled.
-  Status ProbeFor(chrono::SystemClock::duration for_at_least) {
-    return initiator_.ProbeDeviceFor(device_address_, for_at_least);
+  Status ProbeFor(chrono::SystemClock::duration timeout) {
+    return initiator_.ProbeDeviceFor(device_address_, timeout);
   }
 
  private:

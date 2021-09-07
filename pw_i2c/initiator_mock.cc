@@ -18,21 +18,20 @@
 
 namespace pw::i2c {
 
-Status MockInitiator::DoWriteReadFor(
-    Address device_address,
-    ConstByteSpan tx_buffer,
-    ByteSpan rx_buffer,
-    chrono::SystemClock::duration for_at_least) {
+Status MockInitiator::DoWriteReadFor(Address device_address,
+                                     ConstByteSpan tx_buffer,
+                                     ByteSpan rx_buffer,
+                                     chrono::SystemClock::duration timeout) {
   PW_CHECK_INT_LT(expected_transaction_index_, expected_transactions_.size());
 
   EXPECT_EQ(
       expected_transactions_[expected_transaction_index_].address().GetTenBit(),
       device_address.GetTenBit());
 
-  auto expected_for_at_least =
-      expected_transactions_[expected_transaction_index_].for_at_least();
-  if (expected_for_at_least.has_value()) {
-    EXPECT_EQ(expected_for_at_least.value(), for_at_least);
+  auto expected_timeout =
+      expected_transactions_[expected_transaction_index_].timeout();
+  if (expected_timeout.has_value()) {
+    EXPECT_EQ(expected_timeout.value(), timeout);
   }
 
   ConstByteSpan expected_tx_buffer =

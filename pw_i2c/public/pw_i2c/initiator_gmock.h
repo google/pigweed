@@ -25,7 +25,7 @@ class GmockInitiator : public Initiator {
               (Address device_address,
                ConstByteSpan tx_buffer,
                ByteSpan rx_buffer,
-               chrono::SystemClock::duration for_at_least),
+               chrono::SystemClock::duration timeout),
               (override));
 };
 

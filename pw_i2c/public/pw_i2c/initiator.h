@@ -72,20 +72,20 @@ class Initiator {
   Status WriteReadFor(Address device_address,
                       ConstByteSpan tx_buffer,
                       ByteSpan rx_buffer,
-                      chrono::SystemClock::duration for_at_least) {
-    return DoWriteReadFor(device_address, tx_buffer, rx_buffer, for_at_least);
+                      chrono::SystemClock::duration timeout) {
+    return DoWriteReadFor(device_address, tx_buffer, rx_buffer, timeout);
   }
   Status WriteReadFor(Address device_address,
                       const void* tx_buffer,
                       size_t tx_size_bytes,
                       void* rx_buffer,
                       size_t rx_size_bytes,
-                      chrono::SystemClock::duration for_at_least) {
+                      chrono::SystemClock::duration timeout) {
     return WriteReadFor(
         device_address,
         std::span(static_cast<const std::byte*>(tx_buffer), tx_size_bytes),
         std::span(static_cast<std::byte*>(rx_buffer), rx_size_bytes),
-        for_at_least);
+        timeout);
   }
 
   // Write bytes. The signal on the bus should appear as follows:
@@ -109,17 +109,17 @@ class Initiator {
   //    enabled.
   Status WriteFor(Address device_address,
                   ConstByteSpan tx_buffer,
-                  chrono::SystemClock::duration for_at_least) {
-    return WriteReadFor(device_address, tx_buffer, ByteSpan(), for_at_least);
+                  chrono::SystemClock::duration timeout) {
+    return WriteReadFor(device_address, tx_buffer, ByteSpan(), timeout);
   }
   Status WriteFor(Address device_address,
                   const void* tx_buffer,
                   size_t tx_size_bytes,
-                  chrono::SystemClock::duration for_at_least) {
+                  chrono::SystemClock::duration timeout) {
     return WriteFor(
         device_address,
         std::span(static_cast<const std::byte*>(tx_buffer), tx_size_bytes),
-        for_at_least);
+        timeout);
   }
 
   // Read bytes. The signal on the bus should appear as follows:
@@ -143,17 +143,16 @@ class Initiator {
   //    enabled.
   Status ReadFor(Address device_address,
                  ByteSpan rx_buffer,
-                 chrono::SystemClock::duration for_at_least) {
-    return WriteReadFor(
-        device_address, ConstByteSpan(), rx_buffer, for_at_least);
+                 chrono::SystemClock::duration timeout) {
+    return WriteReadFor(device_address, ConstByteSpan(), rx_buffer, timeout);
   }
   Status ReadFor(Address device_address,
                  void* rx_buffer,
                  size_t rx_size_bytes,
-                 chrono::SystemClock::duration for_at_least) {
+                 chrono::SystemClock::duration timeout) {
     return ReadFor(device_address,
                    std::span(static_cast<std::byte*>(rx_buffer), rx_size_bytes),
-                   for_at_least);
+                   timeout);
   }
 
   // Probes the device for an I2C ACK after only writing the address.
@@ -176,17 +175,17 @@ class Initiator {
   // FailedPrecondition - The interface is not currently initialized and/or
   //    enabled.
   Status ProbeDeviceFor(Address device_address,
-                        chrono::SystemClock::duration for_at_least) {
+                        chrono::SystemClock::duration timeout) {
     std::byte ignored_buffer[1] = {};  // Read a byte to probe.
     return WriteReadFor(
-        device_address, ConstByteSpan(), ignored_buffer, for_at_least);
+        device_address, ConstByteSpan(), ignored_buffer, timeout);
   }
 
  private:
   virtual Status DoWriteReadFor(Address device_address,
                                 ConstByteSpan tx_buffer,
                                 ByteSpan rx_buffer,
-                                chrono::SystemClock::duration for_at_least) = 0;
+                                chrono::SystemClock::duration timeout) = 0;
 };
 
 }  // namespace pw::i2c
