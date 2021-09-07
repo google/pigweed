@@ -327,7 +327,7 @@ PrefixedEntryRingBufferMulti::EntryInfo
 PrefixedEntryRingBufferMulti::FrontEntryInfo(const Reader& reader) const {
   Result<PrefixedEntryRingBufferMulti::EntryInfo> entry_info =
       RawFrontEntryInfo(reader.read_idx_);
-  PW_DCHECK_OK(entry_info.status());
+  PW_CHECK_OK(entry_info.status());
   return entry_info.value();
 }
 

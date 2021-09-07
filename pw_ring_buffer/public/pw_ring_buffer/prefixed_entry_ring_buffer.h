@@ -72,6 +72,9 @@ class PrefixedEntryRingBufferMulti {
     // the provided destination std::span. The number of bytes read is written
     // to bytes_read
     //
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
+    //
     // Return values:
     // OK - Data successfully read from the ring buffer.
     // FAILED_PRECONDITION - Buffer not initialized.
@@ -89,6 +92,9 @@ class PrefixedEntryRingBufferMulti {
     }
 
     // Peek the front entry's preamble only to avoid copying data unnecessarily.
+    //
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
     Status PeekFrontPreamble(uint32_t& user_preamble_out) const {
       return buffer_->InternalPeekFrontPreamble(*this, user_preamble_out);
     }
@@ -114,6 +120,9 @@ class PrefixedEntryRingBufferMulti {
     // Pop and discard the oldest stored data chunk of data from the ring
     // buffer.
     //
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
+    //
     // Return values:
     // OK - Data successfully read from the ring buffer.
     // FAILED_PRECONDITION - Buffer not initialized.
@@ -122,12 +131,18 @@ class PrefixedEntryRingBufferMulti {
 
     // Get the size in bytes of the next chunk, not including preamble, to be
     // read.
+    //
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
     size_t FrontEntryDataSizeBytes() const {
       return buffer_->InternalFrontEntryDataSizeBytes(*this);
     }
 
     // Get the size in bytes of the next chunk, including preamble and data
     // chunk, to be read.
+    //
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
     size_t FrontEntryTotalSizeBytes() const {
       return buffer_->InternalFrontEntryTotalSizeBytes(*this);
     }
@@ -311,6 +326,9 @@ class PrefixedEntryRingBufferMulti {
   // entry. It is only used if user_preamble was set at class construction
   // time. It is varint-encoded before insertion into the buffer.
   //
+  // Precondition: the buffer data must not be corrupt, otherwise there will
+  // be a crash.
+  //
   // Return values:
   // OK - Data successfully written to the ring buffer.
   // INVALID_ARGUMENT - Size of data to write is zero bytes
@@ -349,6 +367,9 @@ class PrefixedEntryRingBufferMulti {
   // the provided destination std::span. The number of bytes read is written to
   // `bytes_read_out`.
   //
+  // Precondition: the buffer data must not be corrupt, otherwise there will
+  // be a crash.
+  //
   // Return values:
   // OK - Data successfully read from the ring buffer.
   // FAILED_PRECONDITION - Buffer not initialized.
@@ -372,6 +393,9 @@ class PrefixedEntryRingBufferMulti {
                                        ReadOutput output) const;
 
   // Pop and discard the oldest stored data chunk of data from the ring buffer.
+  //
+  // Precondition: the buffer data must not be corrupt, otherwise there will
+  // be a crash.
   //
   // Return values:
   // OK - Data successfully read from the ring buffer.
@@ -421,7 +445,8 @@ class PrefixedEntryRingBufferMulti {
   // multiple readers if multiple are slow.
   //
   // Precondition: This function requires that at least one reader is attached
-  // and has at least one entry to pop.
+  // and has at least one entry to pop. There will be a crash if data is
+  // corrupted.
   void InternalPopFrontAll();
 
   // Returns a the slowest reader in the list.
@@ -434,14 +459,17 @@ class PrefixedEntryRingBufferMulti {
 
   // Get info struct with the size of the preamble and data chunk for the next
   // entry to be read. Calls RawFrontEntryInfo and asserts on failure.
+  //
+  // Precondition: the buffer data must not be corrupt, otherwise there will
+  // be a crash.
   EntryInfo FrontEntryInfo(const Reader& reader) const;
 
   // Get info struct with the size of the preamble and data chunk for the next
   // entry to be read.
   //
   // Returns:
-  // Ok - EntryInfo containing the next entry metadata.
-  // DataLoss - Failed to read the metadata at this location.
+  // OK - EntryInfo containing the next entry metadata.
+  // DATA_LOSS - Failed to read the metadata at this location.
   Result<EntryInfo> RawFrontEntryInfo(size_t source_idx) const;
 
   // Get the raw number of available bytes free in the ring buffer. This is

@@ -118,6 +118,8 @@ class MultiSink {
     //     } while (!result.IsOutOfRange());
     //   }
     // }
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
     //
     // Return values:
     // OK - An entry was successfully read from the multisink.
@@ -125,8 +127,6 @@ class MultiSink {
     // FAILED_PRECONDITION - The drain must be attached to a sink.
     // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
     // the next available entry, which was discarded.
-    // DATA_LOSS - An entry that did not match the expected format was read and
-    // discarded.
     Result<ConstByteSpan> PopEntry(ByteSpan buffer, uint32_t& drop_count_out)
         PW_LOCKS_EXCLUDED(multisink_->lock_);
 
@@ -147,6 +147,9 @@ class MultiSink {
     //  }
     //  PW_CHECK_OK(PopEntry(peek_result.value());
     //
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
+    //
     // Return values:
     // OK - the entry or entries were removed from the multisink succesfully.
     // FAILED_PRECONDITION - The drain must be attached to a sink.
@@ -155,10 +158,13 @@ class MultiSink {
 
     // Returns a copy of the next available entry if it exists and acquires the
     // latest drop count, without moving the drain forward, except if there is a
-    // DATA_LOSS or RESOURCE_EXHAUSTED error when peeking, in which case the
-    // drain is automatically advanced.
+    // RESOURCE_EXHAUSTED error when peeking, in which case the drain is
+    // automatically advanced.
     // The `drop_count_out` follows the same logic as `PopEntry`. The user must
     // call `PopEntry` once the data in peek was used successfully.
+    //
+    // Precondition: the buffer data must not be corrupt, otherwise there will
+    // be a crash.
     //
     // Return values:
     // OK - An entry was successfully read from the multisink.
@@ -166,8 +172,6 @@ class MultiSink {
     // FAILED_PRECONDITION - The drain must be attached to a sink.
     // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
     // the next available entry, which was discarded.
-    // DATA_LOSS - An entry that did not match the expected format was read and
-    // discarded.
     Result<PeekedEntry> PeekEntry(ByteSpan buffer, uint32_t& drop_count_out)
         PW_LOCKS_EXCLUDED(multisink_->lock_);
 
@@ -211,8 +215,6 @@ class MultiSink {
     virtual void OnNewEntryAvailable() = 0;
   };
 
-  class Iterator;
-
   class iterator {
    public:
     iterator& operator++() {
@@ -239,6 +241,13 @@ class MultiSink {
       return it_ != rhs.it_;
     }
 
+    // Returns the status of the last iteration operation. If the iterator
+    // fails to read an entry, it will move to iterator::end() and indicate
+    // the failure reason here.
+    //
+    // Return values:
+    // OK - iteration is successful and iterator points to the next entry.
+    // DATA_LOSS - Failed to read the metadata at this location.
     Status status() const { return it_.status(); }
 
    private:
@@ -250,7 +259,6 @@ class MultiSink {
 
     ring_buffer::PrefixedEntryRingBufferMulti::iterator it_;
     ConstByteSpan entry_;
-    Status iteration_status_;
   };
 
   class UnsafeIterationWrapper {
@@ -346,6 +354,9 @@ class MultiSink {
   // to `Request::kPop`. Drains use this API to strip away sequence ID
   // information for drop calculation.
   //
+  // Precondition: the buffer data must not be corrupt, otherwise there will
+  // be a crash.
+  //
   // Returns:
   // OK - An entry was successfully read from the multisink. The
   // `drop_count_out` is set to the difference between the current sequence ID
@@ -354,8 +365,6 @@ class MultiSink {
   // a multisink.
   // RESOURCE_EXHAUSTED - The provided buffer was not large enough to store
   // the next available entry, which was discarded.
-  // DATA_LOSS - An entry that did not match the expected format was read and
-  // discarded.
   Result<ConstByteSpan> PeekOrPopEntry(Drain& drain,
                                        ByteSpan buffer,
                                        Request request,

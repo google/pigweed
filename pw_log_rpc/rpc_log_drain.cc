@@ -87,8 +87,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
     uint32_t drop_count = 0;
     Result<multisink::MultiSink::Drain::PeekedEntry> possible_entry =
         PeekEntry(log_entry_buffer_, drop_count);
-    if (possible_entry.status().IsResourceExhausted() ||
-        possible_entry.status().IsDataLoss()) {
+    if (possible_entry.status().IsResourceExhausted()) {
       continue;
     }
 
