@@ -17,12 +17,12 @@
 
 namespace pw::thread {
 
-// The class thread::id is a lightweight, trivially copyable class that serves
+// The class thread::Id is a lightweight, trivially copyable class that serves
 // as a unique identifier of Thread objects.
 //
 // Instances of this class may also hold the special distinct value that does
-// not represent any thread. Once a thread has finished, the value of
-// Thread::id may be reused by another thread.
+// not represent any thread. Once a thread has finished, the value of its
+// thread::Id may be reused by another thread.
 //
 // This class is designed for use as key in associative containers, both
 // ordered and unordered.

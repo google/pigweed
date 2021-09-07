@@ -26,12 +26,12 @@ using pw::chrono::SystemClock;
 
 namespace pw::this_thread {
 
-void sleep_for(chrono::SystemClock::duration for_at_least) {
+void sleep_for(chrono::SystemClock::duration sleep_duration) {
   // Ensure we are invoking this from a thread.
   PW_DCHECK(get_id() != thread::Id());
 
   // Yield for negative and zero length durations.
-  if (for_at_least <= SystemClock::duration::zero()) {
+  if (sleep_duration <= SystemClock::duration::zero()) {
     OS_Yield();
     return;
   }
@@ -43,13 +43,13 @@ void sleep_for(chrono::SystemClock::duration for_at_least) {
   // the loop must ensure that timeout + 1 is less than the max timeout.
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::embos::kMaxTimeout - SystemClock::duration(1);
-  while (for_at_least > kMaxTimeoutMinusOne) {
+  while (sleep_duration > kMaxTimeoutMinusOne) {
     OS_Delay(static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()));
-    for_at_least -= kMaxTimeoutMinusOne;
+    sleep_duration -= kMaxTimeoutMinusOne;
   }
   // On a tick based kernel we cannot tell how far along we are on the current
   // tick, ergo we add one whole tick to the final duration.
-  OS_Delay(static_cast<OS_TIME>(for_at_least.count()) + 1);
+  OS_Delay(static_cast<OS_TIME>(sleep_duration.count()) + 1);
 }
 
 }  // namespace pw::this_thread

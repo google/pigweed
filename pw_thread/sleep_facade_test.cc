@@ -28,9 +28,8 @@ namespace {
 extern "C" {
 
 // Functions defined in sleep_facade_test_c.c which call the API from C.
-void pw_this_thread_CallSleepFor(pw_chrono_SystemClock_Duration for_at_least);
-void pw_this_thread_CallSleepUntil(
-    pw_chrono_SystemClock_TimePoint until_at_least);
+void pw_this_thread_CallSleepFor(pw_chrono_SystemClock_Duration sleep_duration);
+void pw_this_thread_CallSleepUntil(pw_chrono_SystemClock_TimePoint wakeup_time);
 
 }  // extern "C"
 

@@ -17,11 +17,12 @@
 
 #include "pw_thread/sleep.h"
 
-void pw_this_thread_CallSleepFor(pw_chrono_SystemClock_Duration for_at_least) {
-  pw_this_thread_SleepFor(for_at_least);
+void pw_this_thread_CallSleepFor(
+    pw_chrono_SystemClock_Duration sleep_duration) {
+  pw_this_thread_SleepFor(sleep_duration);
 }
 
 void pw_this_thread_CallSleepUntil(
-    pw_chrono_SystemClock_TimePoint until_at_least) {
-  pw_this_thread_SleepUntil(until_at_least);
+    pw_chrono_SystemClock_TimePoint wakeup_time) {
+  pw_this_thread_SleepUntil(wakeup_time);
 }

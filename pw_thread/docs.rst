@@ -10,6 +10,142 @@ execution.
   This module is still under construction, the API is not yet stable.
 
 ---------------
+Thread Sleeping
+---------------
+C++
+===
+.. cpp:function:: void pw::this_thread::sleep_for(chrono::SystemClock::duration sleep_duration)
+
+   Blocks the execution of the current thread for at least the specified
+   duration. This function may block for longer due to scheduling or resource
+   contention delays.
+
+   A sleep duration of 0 will at minimum yield, meaning it will provide a hint
+   to the implementation to reschedule the execution of threads, allowing other
+   threads to run.
+
+   **Precondition:** This can only be called from a thread, meaning the
+   scheduler is running.
+
+.. cpp:function:: void pw::this_thread::sleep_until(chrono::SystemClock::time_point wakeup_time)
+
+   Blocks the execution of the current thread until at least the specified
+   time has been reached. This function may block for longer due to scheduling
+   or resource contention delays.
+
+   A sleep deadline in the past up to the current time will at minimum yield
+   meaning it will provide a hint to the implementation to reschedule the
+   execution of threads, allowing other threads to run.
+
+   **Precondition:** This can only be called from a thread, meaning the
+   scheduler is running.
+
+Examples in C++
+---------------
+.. code-block:: cpp
+
+  #include <chrono>
+
+  #include "pw_chrono/system_clock.h"
+  #include "pw_thread/sleep.h"
+
+  using std::literals::chrono_literals::ms;
+
+  void FunctionInvokedByThread() {
+    pw::this_thread::sleep_for(42ms);
+  }
+
+  void AnotherFunctionInvokedByThread() {
+    pw::this_thread::sleep_until(pw::chrono::SystemClock::now() + 42ms);
+  }
+
+C
+=
+.. cpp:function:: void pw_this_thread_SleepFor(pw_chrono_SystemClock_Duration sleep_duration)
+
+   Invokes ``pw::this_thread::sleep_until(sleep_duration)``.
+
+.. cpp:function:: void pw_this_thread_SleepUntil(pw_chrono_SystemClock_TimePoint wakeup_time)
+
+   Invokes ``pw::this_thread::sleep_until(wakeup_time)``.
+
+
+---------------
+Thread Yielding
+---------------
+C++
+===
+.. cpp:function:: void pw::this_thread::yield() noexcept
+
+   Provides a hint to the implementation to reschedule the execution of threads,
+   allowing other threads to run.
+
+   The exact behavior of this function depends on the implementation, in
+   particular on the mechanics of the OS scheduler in use and the state of the
+   system.
+
+   **Precondition:** This can only be called from a thread, meaning the
+   scheduler is running.
+
+Example in C++
+---------------
+.. code-block:: cpp
+
+  #include "pw_thread/yield.h"
+
+  void FunctionInvokedByThread() {
+    pw::this_thread::yield();
+  }
+
+C
+=
+.. cpp:function:: void pw_this_thread_Yield(void)
+
+   Invokes ``pw::this_thread::yield()``.
+
+---------------------
+Thread Identification
+---------------------
+The class ``pw::thread::Id`` is a lightweight, trivially copyable class that
+serves as a unique identifier of Thread objects.
+
+Instances of this class may also hold the special distinct value that does
+not represent any thread. Once a thread has finished, the value of its
+Thread::id may be reused by another thread.
+
+This class is designed for use as key in associative containers, both ordered
+and unordered.
+
+Although the current API is similar to C++11 STL
+`std::thread::id <https://en.cppreference.com/w/cpp/thread/thread/id>`_, it is
+missing the required hashing and streaming operators and may diverge further in
+the future.
+
+A thread's identification (``pw::thread::Id``) can be acquired only in C++ in
+one of two ways:
+
+1) Using the ``pw::thread::Thread`` handle's ``pw::thread::Id get_id() const``
+   method.
+2) While executing the thread using
+   ``pw::thread::Id pw::this_thread::get_id() noexcept``.
+
+.. cpp:function:: pw::thread::Id pw::this_thread::get_id() noexcept
+
+   This is thread safe, not IRQ safe. It is implementation defined whether this
+   is safe before the scheduler has started.
+
+
+Example
+=======
+.. code-block:: cpp
+
+  #include "pw_thread/id.h"
+
+  void FunctionInvokedByThread() {
+    const pw::thread::Id my_id = pw::this_thread::get_id();
+  }
+
+---------------
 Thread Creation
 ---------------
 The class ``pw::thread::Thread`` can represent a single thread of execution.
@@ -98,12 +234,85 @@ starting a thread.
 
 Please see the thread creation backend documentation for how their Options work.
 
-.. Note::
-  Options have a default constructor, however default options are not portable!
-  Default options can only work if threads are dynamically allocated by default,
-  meaning default options cannot work on backends which require static thread
-  allocations. In addition on some schedulers, default options will not work
-  for other reasons.
+Portable Thread Creation
+========================
+Due to the fact that ``pw::thread::Options`` cannot be created in portable code,
+some extra work must be done in order to permit portable thread creation.
+Namely, a reference to the portable ``pw::thread::Options`` base class interface
+must be provided through a header or extern which points to an instantiation in
+non-portable code.
+
+This can be most easily done through a facade and set of backends. This approach
+can be powerful; enabling multithreaded unit/integration testing which can run
+on both the host and on a device with the device's exact thread options.
+
+Alternatively, it can also be be injected at build time by instantiating backend
+specific build rule which share the same common portable source file(s) but
+select backend specific source files and/or dependencies which provide the
+non-portable option instantiations.
+
+As an example, let's say we want to create a thread on the host and on a device
+running FreeRTOS. They could use a facade which contains a ``threads.h`` header
+with the following contents:
+
+.. code-block:: cpp
+
+  // Contents of my_app/threads.h
+  #pragma once
+
+  #include "pw_thread/options.h"
+
+  namespace my_app {
+
+  const pw::thread::Options& HellowWorldThreadOptions();
+
+  }  // namespace my_app
+
+This could then be backed by two different backend implementations based on
+the thread backend. For example for the STL the backend's ``stl_threads.cc``
+source file may look something like:
+
+.. code-block:: cpp
+
+  // Contents of my_app/stl_threads.cc
+  #include "my_app/threads.h"
+  #include "pw_thread_stl/options.h"
+
+  namespace my_app {
+
+  const pw::thread::Options& HelloWorldThreadOptions() {
+    static constexpr auto options = pw::thread::stl::Options();
+    return options;
+  }
+
+  }  // namespace my_app
+
+While for FreeRTOS the backend's ``freertos_threads.cc`` source file may look
+something like:
+
+.. code-block:: cpp
+
+  // Contents of my_app/freertos_threads.cc
+  #include "FreeRTOS.h"
+  #include "my_app/threads.h"
+  #include "pw_thread_freertos/context.h"
+  #include "pw_thread_freertos/options.h"
+  #include "task.h"
+
+  namespace my_app {
+
+  StaticContextWithStack<kHelloWorldStackWords> hello_world_thread_context;
+  const pw::thread::Options& HelloWorldThreadOptions() {
+    static constexpr auto options =
+        pw::thread::freertos::Options()
+            .set_name("HelloWorld")
+            .set_static_context(hello_world_thread_context)
+            .set_priority(kHelloWorldThreadPriority);
+    return options;
+  }
+
+  }  // namespace my_app
+
 
 Detaching & Joining
 ===================

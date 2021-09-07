@@ -17,10 +17,10 @@
 
 namespace pw::this_thread {
 
-inline void sleep_until(chrono::SystemClock::time_point until_at_least) {
+inline void sleep_until(chrono::SystemClock::time_point wakeup_time) {
   // Note that if this deadline is in the future, it will get rounded up by
   // one whole tick due to how sleep_for is implemented.
-  return sleep_for(until_at_least - chrono::SystemClock::now());
+  return sleep_for(wakeup_time - chrono::SystemClock::now());
 }
 
 }  // namespace pw::this_thread

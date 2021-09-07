@@ -28,19 +28,21 @@ namespace pw::this_thread {
 // to the implementation to reschedule the execution of threads, allowing other
 // threads to run.
 //
-// This can only be called from a thread, meaning the scheduler is running.
-void sleep_for(chrono::SystemClock::duration for_at_least);
+// Precondition: This can only be called from a thread, meaning the scheduler
+// is running.
+void sleep_for(chrono::SystemClock::duration sleep_duration);
 
 // Blocks the execution of the current thread until at least the specified
-// deadline. This function may block for longer due to scheduling or resource
-// contention delays.
+// time has been reached. This function may block for longer due to scheduling
+// or resource contention delays.
 //
 // A sleep deadline in the past up to the current time will at minimum yield
 // meaning it will provide a hint to the implementation to reschedule the
 // execution of threads, allowing other threads to run.
 //
-// This can only be called from a thread, meaning the scheduler is running.
-void sleep_until(chrono::SystemClock::time_point until_at_least);
+// Precondition: This can only be called from a thread, meaning the scheduler
+// is running.
+void sleep_until(chrono::SystemClock::time_point wakeup_time);
 
 }  // namespace pw::this_thread
 
@@ -53,7 +55,7 @@ void sleep_until(chrono::SystemClock::time_point until_at_least);
 
 PW_EXTERN_C_START
 
-void pw_this_thread_SleepFor(pw_chrono_SystemClock_Duration for_at_least);
-void pw_this_thread_SleepUntil(pw_chrono_SystemClock_TimePoint until_at_least);
+void pw_this_thread_SleepFor(pw_chrono_SystemClock_Duration sleep_duration);
+void pw_this_thread_SleepUntil(pw_chrono_SystemClock_TimePoint wakeup_time);
 
 PW_EXTERN_C_END
