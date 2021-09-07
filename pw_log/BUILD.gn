@@ -114,5 +114,8 @@ pw_doc_group("docs") {
     "docs.rst",
     "protobuf.rst",
   ]
-  inputs = [ "log.proto" ]
+  inputs = [
+    "example_layer_diagram.svg",
+    "log.proto",
+  ]
 }

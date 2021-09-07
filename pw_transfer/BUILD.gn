@@ -82,7 +82,11 @@ pw_test("transfer_test") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
-  inputs = [ "transfer.proto" ]
+  inputs = [
+    "transfer.proto",
+    "read.svg",
+    "write.svg",
+  ]
 }
 
 pw_proto_library("test_server_proto") {

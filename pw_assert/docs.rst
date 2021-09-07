@@ -88,16 +88,10 @@ The module is split into two components:
    backend. This is also where application or product specific crash handling
    would go.
 
-.. code-block::
+.. mermaid::
 
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  blockdiag {
-    default_fontsize = 16;
-    facade  [label = "facade"];
-    backend [label = "backend"];
-    facade -> backend
-  }
+  graph LR
+    facade --> backend
 
 See the Backend API section below for more details.
 

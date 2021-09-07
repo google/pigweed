@@ -530,112 +530,26 @@ Unary RPC
 In a unary RPC, the client sends a single request and the server sends a single
 response.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "request",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client <- server [
-        label = "response",
-        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
-    ];
-  }
+.. image:: unary_rpc.svg
 
 The client may attempt to cancel a unary RPC by sending a ``CANCEL`` packet. The
 server sends no response to a cancelled RPC. If the server processes the unary
 RPC synchronously (the handling thread sends the response), it may not be
 possible to cancel the RPC.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "request",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "cancel",
-        leftnote  = "PacketType.CANCEL\nchannel ID\nservice ID\nmethod ID"
-    ];
-  }
+.. image:: unary_rpc_cancelled.svg
 
 Server streaming RPC
 ^^^^^^^^^^^^^^^^^^^^
 In a server streaming RPC, the client sends a single request and the server
 sends any number of ``SERVER_STREAM`` packets followed by a ``RESPONSE`` packet.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "request",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client <-- server [
-        noactivate,
-        label = "messages (zero or more)",
-        rightnote = "PacketType.SERVER_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client <- server [
-        label = "done",
-        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\nstatus"
-    ];
-  }
+.. image:: server_streaming_rpc.svg
 
 The client may terminate a server streaming RPC by sending a ``CANCEL`` packet.
 The server sends no response.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "request",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client <-- server [
-        noactivate,
-        label = "messages (zero or more)",
-        rightnote = "PacketType.SERVER_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "cancel",
-        leftnote  = "PacketType.CANCEL\nchannel ID\nservice ID\nmethod ID"
-    ];
-  }
+.. image:: server_streaming_rpc_cancelled.svg
 
 Client streaming RPC
 ^^^^^^^^^^^^^^^^^^^^
@@ -644,68 +558,13 @@ packet with no payload. It then sends any number of messages in
 ``CLIENT_STREAM`` packets, followed by a ``CLIENT_STREAM_END``. The server sends
 a single ``RESPONSE`` to finish the RPC.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "start",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID"
-    ];
-
-    client --> server [
-        noactivate,
-        label = "messages (zero or more)",
-        leftnote = "PacketType.CLIENT_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "done",
-        leftnote = "PacketType.CLIENT_STREAM_END\nchannel ID\nservice ID\nmethod ID"
-    ];
-
-    client <- server [
-        label = "response",
-        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
-    ];
-  }
+.. image:: client_streaming_rpc.svg
 
 The server may finish the RPC at any time by sending its ``RESPONSE`` packet,
 even if it has not yet received the ``CLIENT_STREAM_END`` packet. The client may
 terminate the RPC at any time by sending a ``CANCEL`` packet.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "start",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID"
-    ];
-
-    client --> server [
-        noactivate,
-        label = "messages (zero or more)",
-        leftnote = "PacketType.CLIENT_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "cancel",
-        rightnote = "PacketType.CANCEL\nchannel ID\nservice ID\nmethod ID"
-    ];
-  }
+.. image:: client_streaming_rpc_cancelled.svg
 
 Bidirectional streaming RPC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -715,82 +574,13 @@ a ``REQUEST`` with no payload. It sends a ``CLIENT_STREAM_END`` packet when it
 has finished sending requests. The server sends a ``RESPONSE`` packet to finish
 the RPC.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "start",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID"
-    ];
-
-    client --> server [
-        noactivate,
-        label = "messages (zero or more)",
-        leftnote = "PacketType.CLIENT_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    ... (messages in any order) ...
-
-    client <-- server [
-        noactivate,
-        label = "messages (zero or more)",
-        rightnote = "PacketType.SERVER_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "done",
-        leftnote = "PacketType.CLIENT_STREAM_END\nchannel ID\nservice ID\nmethod ID"
-    ];
-
-    client <- server [
-        label = "done",
-        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\nstatus"
-    ];
-  }
+.. image:: bidirectional_streaming_rpc.svg
 
 The server may finish the RPC at any time by sending the ``RESPONSE`` packet,
 even if it has not received the ``CLIENT_STREAM_END`` packet. The client may
 terminate the RPC at any time by sending a ``CANCEL`` packet.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "start",
-        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID"
-    ];
-
-    client --> server [
-        noactivate,
-        label = "messages (zero or more)",
-        leftnote = "PacketType.CLIENT_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client <-- server [
-        noactivate,
-        label = "messages (zero or more)",
-        rightnote = "PacketType.SERVER_STREAM\nchannel ID\nservice ID\nmethod ID\npayload"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "cancel",
-        leftnote = "PacketType.CANCEL\nchannel ID\nservice ID\nmethod ID"
-    ];
-  }
+.. image:: bidirectional_streaming_rpc_cancelled.svg
 
 RPC server
 ==========
@@ -837,55 +627,12 @@ Packet flow
 Requests
 ~~~~~~~~
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  blockdiag {
-    packets [shape = beginpoint];
-
-    group {
-      label = "pw_rpc library";
-
-      server [label = "Server"];
-      service [label = "Service"];
-      method [label = "internal::Method"];
-    }
-
-    stubs [label = "generated services", shape = ellipse];
-    user [label = "user-defined RPCs", shape = roundedbox];
-
-    packets -> server -> service -> method -> stubs -> user;
-    packets -> server [folded];
-    method -> stubs [folded];
-  }
+.. image:: request_packets.svg
 
 Responses
 ~~~~~~~~~
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  blockdiag {
-    user -> stubs [folded];
-
-    group {
-      label = "pw_rpc library";
-
-      server [label = "Server"];
-      method [label = "internal::Method"];
-      channel [label = "Channel"];
-    }
-
-    stubs [label = "generated services", shape = ellipse];
-    user [label = "user-defined RPCs", shape = roundedbox];
-    packets [shape = beginpoint];
-
-    user -> stubs -> method [folded];
-    method -> server -> channel;
-    channel -> packets [folded];
-  }
+.. image:: response_packets.svg
 
 RPC client
 ==========

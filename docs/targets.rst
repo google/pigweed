@@ -25,26 +25,14 @@ makes use of this heavily; it defines basic compiler-only configurations, uses
 these as a base for board-specific toolchains, then creates its final targets on
 top of those.
 
-.. code-block::
+.. mermaid::
 
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  blockdiag {
-    default_fontsize = 14;
-    orientation = portrait;
-
-    arm_gcc  [label = "arm_gcc"];
-    arm_gcc_cortex_m4  [label = "cortex_m4"];
-    arm_gcc_cortex_m4f  [label = "cortex_m4f"];
-    arm_gcc_cortex_m4f_debug  [label = "cortex_m4f_debug"];
-    arm_gcc_cortex_m4f_size_optimized  [label = "cortex_m4f_size_optimized"];
-    stm32f429i_disc1_debug  [label = "stm32f429i_disc1_debug"];
-    arm_gcc -> arm_gcc_cortex_m4
-    arm_gcc -> arm_gcc_cortex_m4f
-    arm_gcc_cortex_m4f -> arm_gcc_cortex_m4f_debug
-    arm_gcc_cortex_m4f -> arm_gcc_cortex_m4f_size_optimized
-    arm_gcc_cortex_m4f_debug -> stm32f429i_disc1_debug
-  }
+  graph TD
+    arm_gcc --> arm_gcc_cortex_m4
+    arm_gcc --> arm_gcc_cortex_m4f
+    arm_gcc_cortex_m4f --> arm_gcc_cortex_m4f_debug
+    arm_gcc_cortex_m4f --> arm_gcc_cortex_m4f_size_optimized
+    arm_gcc_cortex_m4f_debug --> stm32f429i_disc1_debug
 
 Toolchain target variables
 --------------------------

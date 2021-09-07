@@ -118,91 +118,12 @@ Protocol buffer definition
 
 Server to client transfer (read)
 ================================
-.. code-block::
+.. image:: read.svg
 
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "set transfer parameters",
-        leftnote = "transfer_id\noffset\npending_bytes\nmax_chunk_size\nchunk_delay"
-    ];
-
-    client <-- server [
-        noactivate,
-        label = "requested bytes\n(zero or more chunks)",
-        rightnote = "transfer_id\noffset\ndata\n(remaining_bytes)"
-    ];
-
-    client --> server [
-        noactivate,
-        label = "update transfer parameters\n(as needed)",
-        leftnote = "transfer_id\noffset\npending_bytes\n(max_chunk_size)\n(chunk_delay)"
-    ];
-
-    client <- server [
-        noactivate,
-        label = "final chunk",
-        rightnote = "transfer_id\noffset\ndata\nremaining_bytes=0"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "acknowledge completion",
-        leftnote = "transfer_id\nstatus=OK"
-    ];
-  }
 
 Client to server transfer (write)
 =================================
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  :scale: 110
-
-  seqdiag {
-    default_note_color = aliceblue;
-
-    client -> server [
-        label = "start",
-        leftnote = "transfer_id"
-    ];
-
-    client <- server [
-        noactivate,
-        label = "set transfer parameters",
-        rightnote = "transfer_id\noffset\npending_bytes\nmax_chunk_size\nchunk_delay"
-    ];
-
-    client --> server [
-        noactivate,
-        label = "requested bytes\n(zero or more chunks)",
-        leftnote = "transfer_id\noffset\ndata\n(remaining_bytes)"
-    ];
-
-    client <-- server [
-        noactivate,
-        label = "update transfer parameters\n(as needed)",
-        rightnote = "transfer_id\noffset\npending_bytes\n(max_chunk_size)\n(chunk_delay)"
-    ];
-
-    client -> server [
-        noactivate,
-        label = "final chunk",
-        leftnote = "transfer_id\noffset\ndata\nremaining_bytes=0"
-    ];
-
-    client <- server [
-        noactivate,
-        label = "acknowledge completion",
-        rightnote = "transfer_id\nstatus=OK"
-    ];
-  }
+.. image:: write.svg
 
 Errors
 ======

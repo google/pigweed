@@ -68,34 +68,7 @@ Below is an example diagram showing how the modules connect together for the
 turn outputs to the STM32F429 bare metal backend for ``pw_sys_io``, which is
 ``pw_sys_io_baremetal_stm32f429i``.
 
-.. code-block::
-
-  # TODO(hepler): Migrate this image away from blockdiag.
-
-  blockdiag {
-    default_fontsize = 14;
-    orientation = portrait;
-
-    group {
-      color = "#AAAAAA";
-      label = "Microcontroller"
-
-      app       [label = "App code"];
-      facade    [label = "pw_log"];
-      backend   [label = "pw_log_basic"];
-      sys_io    [label = "pw_sys_io"];
-      sys_io_bm [label = "pw_sys_io_\nstm32f429"];
-      uart      [label = "UART pins"];
-    }
-    ftdi     [label = "FTDI cable"];
-    computer [label = "Minicom"];
-
-    app -> facade -> backend -> sys_io -> sys_io_bm -> uart -> ftdi -> computer;
-
-    //app -> facade [folded];
-    //backend -> sys_io [folded];
-    //uart -> ftdi [folded];
-  }
+.. image:: example_layer_diagram.svg
 
 Logging macros
 --------------
