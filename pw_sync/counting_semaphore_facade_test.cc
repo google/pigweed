@@ -38,10 +38,10 @@ bool pw_sync_CountingSemaphore_CallTryAcquire(
     pw_sync_CountingSemaphore* semaphore);
 bool pw_sync_CountingSemaphore_CallTryAcquireFor(
     pw_sync_CountingSemaphore* semaphore,
-    pw_chrono_SystemClock_Duration for_at_least);
+    pw_chrono_SystemClock_Duration timeout);
 bool pw_sync_CountingSemaphore_CallTryAcquireUntil(
     pw_sync_CountingSemaphore* semaphore,
-    pw_chrono_SystemClock_TimePoint until_at_least);
+    pw_chrono_SystemClock_TimePoint deadline);
 ptrdiff_t pw_sync_CountingSemaphore_CallMax(void);
 
 }  // extern "C"

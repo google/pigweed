@@ -34,14 +34,14 @@ bool pw_sync_BinarySemaphore_CallTryAcquire(
 
 bool pw_sync_BinarySemaphore_CallTryAcquireFor(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_Duration for_at_least) {
-  return pw_sync_BinarySemaphore_TryAcquireFor(semaphore, for_at_least);
+    pw_chrono_SystemClock_Duration timeout) {
+  return pw_sync_BinarySemaphore_TryAcquireFor(semaphore, timeout);
 }
 
 bool pw_sync_BinarySemaphore_CallTryAcquireUntil(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_TimePoint until_at_least) {
-  return pw_sync_BinarySemaphore_TryAcquireUntil(semaphore, until_at_least);
+    pw_chrono_SystemClock_TimePoint deadline) {
+  return pw_sync_BinarySemaphore_TryAcquireUntil(semaphore, deadline);
 }
 
 ptrdiff_t pw_sync_BinarySemaphore_CallMax(void) {

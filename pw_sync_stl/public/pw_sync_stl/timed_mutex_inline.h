@@ -18,14 +18,13 @@
 
 namespace pw::sync {
 
-inline bool TimedMutex::try_lock_for(
-    chrono::SystemClock::duration for_at_least) {
-  return native_handle().try_lock_for(for_at_least);
+inline bool TimedMutex::try_lock_for(chrono::SystemClock::duration timeout) {
+  return native_handle().try_lock_for(timeout);
 }
 
 inline bool TimedMutex::try_lock_until(
-    chrono::SystemClock::time_point until_at_least) {
-  return native_handle().try_lock_until(until_at_least);
+    chrono::SystemClock::time_point deadline) {
+  return native_handle().try_lock_until(deadline);
 }
 
 }  // namespace pw::sync

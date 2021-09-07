@@ -78,7 +78,7 @@ C++
 
   .. cpp:function:: bool try_lock()
 
-     Attempts to lock the mutex in a non-blocking manner.
+     Tries to lock the mutex in a non-blocking manner.
      Returns true if the mutex was successfully acquired.
 
      **Precondition:** The lock isn't already held by this thread. Recursive
@@ -249,25 +249,26 @@ C++
 
   .. cpp:function:: bool try_lock()
 
-     Attempts to lock the mutex in a non-blocking manner.
+     Tries to lock the mutex in a non-blocking manner.
      Returns true if the mutex was successfully acquired.
 
      **Precondition:** The lock isn't already held by this thread. Recursive
      locking is undefined behavior.
 
-  .. cpp:function:: bool try_lock_for(chrono::SystemClock::duration for_at_least)
 
-     Attempts to lock the mutex where, if needed, blocking for at least the
-     specified duration.
+  .. cpp:function:: bool try_lock_for(const chrono::SystemClock::duration& timeout)
+
+     Tries to lock the mutex. Blocks until specified the timeout has elapsed or
+     the lock is acquired, whichever comes first.
      Returns true if the mutex was successfully acquired.
 
      **Precondition:** The lock isn't already held by this thread. Recursive
      locking is undefined behavior.
 
-  .. cpp:function:: bool try_lock_until(chrono::SystemClock::time_point until_at_least)
+  .. cpp:function:: bool try_lock_until(const chrono::SystemClock::time_point& deadline)
 
-     Attempts to lock the mutex where, if needed, blocking until at least the
-     specified time_point.
+     Tries to lock the mutex. Blocks until specified deadline has been reached
+     or the lock is acquired, whichever comes first.
      Returns true if the mutex was successfully acquired.
 
      **Precondition:** The lock isn't already held by this thread. Recursive
@@ -371,11 +372,11 @@ The TimedMutex must be created in C++, however it can be passed into C using the
 
   Invokes the ``TimedMutex::try_lock`` member function on the given ``mutex``.
 
-.. cpp:function:: bool pw_sync_TimedMutex_TryLockFor(pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_Duration for_at_least)
+.. cpp:function:: bool pw_sync_TimedMutex_TryLockFor(pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_Duration timeout)
 
   Invokes the ``TimedMutex::try_lock_for`` member function on the given ``mutex``.
 
-.. cpp:function:: bool pw_sync_TimedMutex_TryLockUntil(pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_TimePoint until_at_least)
+.. cpp:function:: bool pw_sync_TimedMutex_TryLockUntil(pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_TimePoint deadline)
 
   Invokes the ``TimedMutex::try_lock_until`` member function on the given ``mutex``.
 
@@ -485,7 +486,7 @@ C++
 
   .. cpp:function:: bool try_lock()
 
-      Attempts to lock the spinlock in a non-blocking manner.
+      Tries to lock the spinlock in a non-blocking manner.
       Returns true if the spinlock was successfully acquired.
 
       **Precondition:** Recursive locking is undefined behavior.

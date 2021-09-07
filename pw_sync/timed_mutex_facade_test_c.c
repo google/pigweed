@@ -27,14 +27,14 @@ bool pw_sync_TimedMutex_CallTryLock(pw_sync_TimedMutex* mutex) {
   return pw_sync_TimedMutex_TryLock(mutex);
 }
 
-bool pw_sync_TimedMutex_CallTryLockFor(
-    pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_Duration for_at_least) {
-  return pw_sync_TimedMutex_TryLockFor(mutex, for_at_least);
+bool pw_sync_TimedMutex_CallTryLockFor(pw_sync_TimedMutex* mutex,
+                                       pw_chrono_SystemClock_Duration timeout) {
+  return pw_sync_TimedMutex_TryLockFor(mutex, timeout);
 }
 
 bool pw_sync_TimedMutex_CallTryLockUntil(
-    pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_TimePoint until_at_least) {
-  return pw_sync_TimedMutex_TryLockUntil(mutex, until_at_least);
+    pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_TimePoint deadline) {
+  return pw_sync_TimedMutex_TryLockUntil(mutex, deadline);
 }
 
 void pw_sync_TimedMutex_CallUnlock(pw_sync_TimedMutex* mutex) {

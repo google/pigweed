@@ -32,11 +32,10 @@ void pw_sync_BinarySemaphore_CallRelease(pw_sync_BinarySemaphore* semaphore);
 void pw_sync_BinarySemaphore_CallAcquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_CallTryAcquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_CallTryAcquireFor(
-    pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_Duration for_at_least);
+    pw_sync_BinarySemaphore* semaphore, pw_chrono_SystemClock_Duration timeout);
 bool pw_sync_BinarySemaphore_CallTryAcquireUntil(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_TimePoint until_at_least);
+    pw_chrono_SystemClock_TimePoint deadline);
 ptrdiff_t pw_sync_BinarySemaphore_CallMax(void);
 
 }  // extern "C"

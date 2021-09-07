@@ -24,14 +24,14 @@ inline BinarySemaphore::BinarySemaphore()
 inline BinarySemaphore::~BinarySemaphore() {}
 
 inline bool BinarySemaphore::try_acquire_for(
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   // Due to spurious condition variable wakeups we prefer not to use wait_for()
   // as we may grossly extend the effective deadline after a spruious wakeup.
   // Ergo we instead use the derived deadline which can be re-used many times
   // without shifting the effective deadline. For more details on spurious
   // wakeups and CVs on Windows and POSIX see:
   //   https://en.wikipedia.org/wiki/Spurious_wakeup
-  return try_acquire_until(chrono::SystemClock::now() + for_at_least);
+  return try_acquire_until(chrono::SystemClock::TimePointAfterAtLeast(timeout));
 }
 
 inline BinarySemaphore::native_handle_type BinarySemaphore::native_handle() {

@@ -26,12 +26,12 @@ using pw::chrono::SystemClock;
 
 namespace pw::sync {
 
-bool TimedMutex::try_lock_for(SystemClock::duration for_at_least) {
+bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
   // Enforce the pw::sync::TimedMutex IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
 
   // Use non-blocking try_lock for negative or zero length durations.
-  if (for_at_least <= SystemClock::duration::zero()) {
+  if (timeout <= SystemClock::duration::zero()) {
     return try_lock();
   }
 
@@ -39,17 +39,17 @@ bool TimedMutex::try_lock_for(SystemClock::duration for_at_least) {
   // tick, ergo we add one whole tick to the final duration.
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::threadx::kMaxTimeout - SystemClock::duration(1);
-  while (for_at_least > kMaxTimeoutMinusOne) {
+  while (timeout > kMaxTimeoutMinusOne) {
     const UINT result = tx_mutex_get(
         &native_type_, static_cast<ULONG>(kMaxTimeoutMinusOne.count()));
     if (result != TX_NOT_AVAILABLE) {
       PW_CHECK_UINT_EQ(TX_SUCCESS, result);
       return true;
     }
-    for_at_least -= kMaxTimeoutMinusOne;
+    timeout -= kMaxTimeoutMinusOne;
   }
   const UINT result =
-      tx_mutex_get(&native_type_, static_cast<ULONG>(for_at_least.count() + 1));
+      tx_mutex_get(&native_type_, static_cast<ULONG>(timeout.count() + 1));
   if (result == TX_NOT_AVAILABLE) {
     return false;
   }

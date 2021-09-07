@@ -45,11 +45,10 @@ bool CountingSemaphore::try_acquire() noexcept {
   return false;
 }
 
-bool CountingSemaphore::try_acquire_until(
-    SystemClock::time_point until_at_least) {
+bool CountingSemaphore::try_acquire_until(SystemClock::time_point deadline) {
   std::unique_lock lock(native_type_.mutex);
   if (native_type_.condition.wait_until(
-          lock, until_at_least, [&] { return native_type_.count != 0; })) {
+          lock, deadline, [&] { return native_type_.count != 0; })) {
     --native_type_.count;
     return true;
   }

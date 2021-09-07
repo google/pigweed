@@ -19,10 +19,10 @@
 namespace pw::sync {
 
 inline bool TimedMutex::try_lock_until(
-    chrono::SystemClock::time_point until_at_least) {
+    chrono::SystemClock::time_point deadline) {
   // Note that if this deadline is in the future, it will get rounded up by
   // one whole tick due to how try_lock_for is implemented.
-  return try_lock_for(until_at_least - chrono::SystemClock::now());
+  return try_lock_for(deadline - chrono::SystemClock::now());
 }
 
 }  // namespace pw::sync

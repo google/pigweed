@@ -26,11 +26,11 @@ using pw::chrono::SystemClock;
 
 namespace pw::sync {
 
-bool TimedMutex::try_lock_for(SystemClock::duration for_at_least) {
+bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
   // Use non-blocking try_lock for negative and zero length durations.
-  if (for_at_least <= SystemClock::duration::zero()) {
+  if (timeout <= SystemClock::duration::zero()) {
     return try_lock();
   }
 
@@ -38,17 +38,17 @@ bool TimedMutex::try_lock_for(SystemClock::duration for_at_least) {
   // tick, ergo we add one whole tick to the final duration.
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::embos::kMaxTimeout - SystemClock::duration(1);
-  while (for_at_least > kMaxTimeoutMinusOne) {
+  while (timeout > kMaxTimeoutMinusOne) {
     const int lock_count = OS_UseTimed(
         &native_handle(), static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()));
     if (lock_count != 0) {
       PW_CHECK_UINT_EQ(1, lock_count, "Recursive locking is not permitted");
       return true;
     }
-    for_at_least -= kMaxTimeoutMinusOne;
+    timeout -= kMaxTimeoutMinusOne;
   }
-  const int lock_count = OS_UseTimed(
-      &native_handle(), static_cast<OS_TIME>(for_at_least.count() + 1));
+  const int lock_count =
+      OS_UseTimed(&native_handle(), static_cast<OS_TIME>(timeout.count() + 1));
   PW_CHECK_UINT_LE(1, lock_count, "Recursive locking is not permitted");
   return lock_count == 1;
 }

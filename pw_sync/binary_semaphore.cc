@@ -33,15 +33,15 @@ extern "C" bool pw_sync_BinarySemaphore_TryAcquire(
 
 extern "C" bool pw_sync_BinarySemaphore_TryAcquireFor(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_Duration for_at_least) {
-  return semaphore->try_acquire_for(SystemClock::duration(for_at_least.ticks));
+    pw_chrono_SystemClock_Duration timeout) {
+  return semaphore->try_acquire_for(SystemClock::duration(timeout.ticks));
 }
 
 extern "C" bool pw_sync_BinarySemaphore_TryAcquireUntil(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_TimePoint until_at_least) {
+    pw_chrono_SystemClock_TimePoint deadline) {
   return semaphore->try_acquire_until(SystemClock::time_point(
-      SystemClock::duration(until_at_least.duration_since_epoch.ticks)));
+      SystemClock::duration(deadline.duration_since_epoch.ticks)));
 }
 
 extern "C" ptrdiff_t pw_sync_BinarySemaphore_Max(void) {

@@ -60,7 +60,7 @@ class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
   // Precondition: Recursive locking is undefined behavior.
   void lock() PW_EXCLUSIVE_LOCK_FUNCTION();
 
-  // Attempts to lock the spinlock in a non-blocking manner.
+  // Tries to lock the spinlock in a non-blocking manner.
   // Returns true if the spinlock was successfully acquired.
   //
   // Precondition: Recursive locking is undefined behavior.

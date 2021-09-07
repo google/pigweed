@@ -58,26 +58,26 @@ class BinarySemaphore {
 
   // Decrements the internal counter to 0 or blocks indefinitely until it can.
   // This is thread safe.
-
-  //   update <= max() - counter
   void acquire();
 
-  // Attempts to decrement by the internal counter to 0 without blocking.
+  // Tries to decrement by the internal counter to 0 without blocking.
   // Returns true if the internal counter was reset successfully.
   // This is IRQ safe.
   bool try_acquire() noexcept;
 
-  // Attempts to decrement the internal counter to 0 where, if needed, blocking
-  // for at least the specified duration.
+  // Tries to decrement the internal counter to 0. Blocks until the specified
+  // timeout has elapsed or the counter was decremented to 0, whichever comes
+  // first.
   // Returns true if the internal counter was decremented successfully.
   // This is thread safe.
-  bool try_acquire_for(chrono::SystemClock::duration for_at_least);
+  bool try_acquire_for(chrono::SystemClock::duration timeout);
 
-  // Attempts to decrement the internal counter to 0 where, if needed, blocking
-  // until at least the specified time point.
+  // Tries to decrement the internal counter to 0. Blocks until the specified
+  // deadline has been reached or the counter was decremented  to 0, whichever
+  // comes first.
   // Returns true if the internal counter was decremented successfully.
   // This is thread safe.
-  bool try_acquire_until(chrono::SystemClock::time_point until_at_least);
+  bool try_acquire_until(chrono::SystemClock::time_point deadline);
 
   static constexpr ptrdiff_t max() noexcept {
     return backend::kBinarySemaphoreMaxValue;
@@ -108,11 +108,10 @@ void pw_sync_BinarySemaphore_Release(pw_sync_BinarySemaphore* semaphore);
 void pw_sync_BinarySemaphore_Acquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_TryAcquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_TryAcquireFor(
-    pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_Duration for_at_least);
+    pw_sync_BinarySemaphore* semaphore, pw_chrono_SystemClock_Duration timeout);
 bool pw_sync_BinarySemaphore_TryAcquireUntil(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_TimePoint until_at_least);
+    pw_chrono_SystemClock_TimePoint deadline);
 ptrdiff_t pw_sync_BinarySemaphore_Max(void);
 
 PW_EXTERN_C_END

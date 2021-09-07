@@ -44,24 +44,24 @@ class TimedMutex : public Mutex {
   TimedMutex& operator=(const TimedMutex&) = delete;
   TimedMutex& operator=(TimedMutex&&) = delete;
 
-  // Attempts to lock the mutex where, if needed, blocking for at least the
-  // specified duration.
+  // Tries to lock the mutex. Blocks until specified the timeout has elapsed or
+  // the lock is acquired, whichever comes first.
   // Returns true if the mutex was successfully acquired.
   //
   // PRECONDITION:
   //   The lock isn't already held by this thread. Recursive locking is
   //   undefined behavior.
-  bool try_lock_for(chrono::SystemClock::duration for_at_least)
+  bool try_lock_for(chrono::SystemClock::duration timeout)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
-  // Attempts to lock the mutex where, if needed, blocking until at least the
-  // specified time_point.
+  // Tries to lock the mutex. Blocks until specified deadline has been reached
+  // or the lock is acquired, whichever comes first.
   // Returns true if the mutex was successfully acquired.
   //
   // PRECONDITION:
   //   The lock isn't already held by this thread. Recursive locking is
   //   undefined behavior.
-  bool try_lock_until(chrono::SystemClock::time_point until_at_least)
+  bool try_lock_until(chrono::SystemClock::time_point deadline)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 };
 
@@ -84,11 +84,11 @@ void pw_sync_TimedMutex_Lock(pw_sync_TimedMutex* mutex)
 bool pw_sync_TimedMutex_TryLock(pw_sync_TimedMutex* mutex)
     PW_NO_LOCK_SAFETY_ANALYSIS;
 bool pw_sync_TimedMutex_TryLockFor(pw_sync_TimedMutex* mutex,
-                                   pw_chrono_SystemClock_Duration for_at_least)
+                                   pw_chrono_SystemClock_Duration timeout)
     PW_NO_LOCK_SAFETY_ANALYSIS;
-bool pw_sync_TimedMutex_TryLockUntil(
-    pw_sync_TimedMutex* mutex,
-    pw_chrono_SystemClock_TimePoint until_at_least) PW_NO_LOCK_SAFETY_ANALYSIS;
+bool pw_sync_TimedMutex_TryLockUntil(pw_sync_TimedMutex* mutex,
+                                     pw_chrono_SystemClock_TimePoint deadline)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
 void pw_sync_TimedMutex_Unlock(pw_sync_TimedMutex* mutex)
     PW_NO_LOCK_SAFETY_ANALYSIS;
 

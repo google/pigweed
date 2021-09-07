@@ -40,11 +40,11 @@ void CountingSemaphore::release(ptrdiff_t update) {
   }
 }
 
-bool CountingSemaphore::try_acquire_for(SystemClock::duration for_at_least) {
+bool CountingSemaphore::try_acquire_for(SystemClock::duration timeout) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
   // Use non-blocking try_acquire for negative and zero length durations.
-  if (for_at_least <= SystemClock::duration::zero()) {
+  if (timeout <= SystemClock::duration::zero()) {
     return try_acquire();
   }
 
@@ -52,15 +52,15 @@ bool CountingSemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   // tick, ergo we add one whole tick to the final duration.
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::embos::kMaxTimeout - SystemClock::duration(1);
-  while (for_at_least > kMaxTimeoutMinusOne) {
+  while (timeout > kMaxTimeoutMinusOne) {
     if (OS_WaitCSemaTimed(&native_type_,
                           static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()))) {
       return true;
     }
-    for_at_least -= kMaxTimeoutMinusOne;
+    timeout -= kMaxTimeoutMinusOne;
   }
   return OS_WaitCSemaTimed(&native_type_,
-                           static_cast<OS_TIME>(for_at_least.count() + 1));
+                           static_cast<OS_TIME>(timeout.count() + 1));
 }
 
 }  // namespace pw::sync

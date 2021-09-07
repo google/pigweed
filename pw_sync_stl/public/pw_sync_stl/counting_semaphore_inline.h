@@ -26,9 +26,9 @@ inline CountingSemaphore::CountingSemaphore()
 inline CountingSemaphore::~CountingSemaphore() {}
 
 inline bool CountingSemaphore::try_acquire_for(
-    chrono::SystemClock::duration for_at_least) {
+    chrono::SystemClock::duration timeout) {
   // Due to spurious condition variable wakeups this cannot use wait_for().
-  return try_acquire_until(chrono::SystemClock::now() + for_at_least);
+  return try_acquire_until(chrono::SystemClock::TimePointAfterAtLeast(timeout));
 }
 
 inline CountingSemaphore::native_handle_type
