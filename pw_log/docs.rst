@@ -68,7 +68,9 @@ Below is an example diagram showing how the modules connect together for the
 turn outputs to the STM32F429 bare metal backend for ``pw_sys_io``, which is
 ``pw_sys_io_baremetal_stm32f429i``.
 
-.. blockdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
 
   blockdiag {
     default_fontsize = 14;

@@ -88,7 +88,9 @@ The module is split into two components:
    backend. This is also where application or product specific crash handling
    would go.
 
-.. blockdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
 
   blockdiag {
     default_fontsize = 16;

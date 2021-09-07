@@ -118,7 +118,10 @@ Protocol buffer definition
 
 Server to client transfer (read)
 ================================
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -156,7 +159,10 @@ Server to client transfer (read)
 
 Client to server transfer (write)
 =================================
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {

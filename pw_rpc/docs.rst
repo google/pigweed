@@ -530,7 +530,10 @@ Unary RPC
 In a unary RPC, the client sends a single request and the server sends a single
 response.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -552,7 +555,10 @@ server sends no response to a cancelled RPC. If the server processes the unary
 RPC synchronously (the handling thread sends the response), it may not be
 possible to cancel the RPC.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -575,7 +581,10 @@ Server streaming RPC
 In a server streaming RPC, the client sends a single request and the server
 sends any number of ``SERVER_STREAM`` packets followed by a ``RESPONSE`` packet.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -601,7 +610,10 @@ sends any number of ``SERVER_STREAM`` packets followed by a ``RESPONSE`` packet.
 The client may terminate a server streaming RPC by sending a ``CANCEL`` packet.
 The server sends no response.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -632,7 +644,10 @@ packet with no payload. It then sends any number of messages in
 ``CLIENT_STREAM`` packets, followed by a ``CLIENT_STREAM_END``. The server sends
 a single ``RESPONSE`` to finish the RPC.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -665,7 +680,10 @@ The server may finish the RPC at any time by sending its ``RESPONSE`` packet,
 even if it has not yet received the ``CLIENT_STREAM_END`` packet. The client may
 terminate the RPC at any time by sending a ``CANCEL`` packet.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -697,7 +715,10 @@ a ``REQUEST`` with no payload. It sends a ``CLIENT_STREAM_END`` packet when it
 has finished sending requests. The server sends a ``RESPONSE`` packet to finish
 the RPC.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -738,7 +759,10 @@ The server may finish the RPC at any time by sending the ``RESPONSE`` packet,
 even if it has not received the ``CLIENT_STREAM_END`` packet. The client may
 terminate the RPC at any time by sending a ``CANCEL`` packet.
 
-.. seqdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
+
   :scale: 110
 
   seqdiag {
@@ -813,7 +837,9 @@ Packet flow
 Requests
 ~~~~~~~~
 
-.. blockdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
 
   blockdiag {
     packets [shape = beginpoint];
@@ -837,7 +863,9 @@ Requests
 Responses
 ~~~~~~~~~
 
-.. blockdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
 
   blockdiag {
     user -> stubs [folded];

@@ -25,7 +25,9 @@ makes use of this heavily; it defines basic compiler-only configurations, uses
 these as a base for board-specific toolchains, then creates its final targets on
 top of those.
 
-.. blockdiag::
+.. code-block::
+
+  # TODO(hepler): Migrate this image away from blockdiag.
 
   blockdiag {
     default_fontsize = 14;
@@ -77,7 +79,7 @@ Example Pigweed target
 The code below demonstrates how a project might configure one of its Pigweed
 targets.
 
-.. code::
+.. code-block::
 
   import("//build_overrides/pigweed.gni")
 

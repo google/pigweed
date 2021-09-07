@@ -41,14 +41,6 @@ pygments_dark_style = 'pigweed-code'
 extensions = [
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
     'sphinx.ext.napoleon',  # Parses Google-style docstrings
-
-    # Blockdiag suite of diagram generators.
-    'sphinxcontrib.blockdiag',
-    'sphinxcontrib.nwdiag',
-    'sphinxcontrib.seqdiag',
-    'sphinxcontrib.actdiag',
-    'sphinxcontrib.rackdiag',
-    'sphinxcontrib.packetdiag',
     'sphinxcontrib.mermaid',
     'sphinx_design',
 ]
