@@ -84,8 +84,8 @@ class BrEdrConnection final {
   bool ready_;
   PeerId peer_id_;
   std::unique_ptr<hci::Connection> link_;
-  std::unique_ptr<PairingState> pairing_state_;
   std::optional<Request> request_;
+  std::unique_ptr<PairingState> pairing_state_;
   fbl::RefPtr<l2cap::L2cap> domain_;
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
   // Time this object was constructed.

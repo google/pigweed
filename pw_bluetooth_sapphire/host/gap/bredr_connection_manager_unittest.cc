@@ -3190,6 +3190,11 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
 
   FakePairingDelegate pairing_delegate_no_io(sm::IOCapability::kNoInputNoOutput);
   connmgr()->SetPairingDelegate(pairing_delegate_no_io.GetWeakPtr());
+  pairing_delegate_no_io.SetConfirmPairingCallback([&peer](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(true);
+  });
   pairing_delegate_no_io.SetCompletePairingCallback(
       [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
 
@@ -3252,6 +3257,11 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
 
   FakePairingDelegate pairing_delegate_no_io(sm::IOCapability::kNoInputNoOutput);
   connmgr()->SetPairingDelegate(pairing_delegate_no_io.GetWeakPtr());
+  pairing_delegate_no_io.SetConfirmPairingCallback([&peer](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(true);
+  });
   pairing_delegate_no_io.SetCompletePairingCallback(
       [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
 

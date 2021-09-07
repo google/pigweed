@@ -14,10 +14,11 @@ using hci::AuthRequirements;
 using hci::IOCapability;
 using sm::util::IOCapabilityForHci;
 
-PairingState::PairingState(PeerId peer_id, hci::Connection* link, PeerCache* peer_cache,
-                           fit::closure auth_cb, StatusCallback status_cb)
+PairingState::PairingState(PeerId peer_id, hci::Connection* link, bool link_initiated,
+                           PeerCache* peer_cache, fit::closure auth_cb, StatusCallback status_cb)
     : peer_id_(peer_id),
       link_(link),
+      outgoing_connection_(link_initiated),
       peer_cache_(peer_cache),
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
@@ -67,7 +68,7 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
     // TODO(fxbug.dev/55770): If current IO capabilities would make meeting security requirements
     // impossible, skip pairing and report failure immediately.
 
-    current_pairing_ = Pairing::MakeInitiator(security_requirements);
+    current_pairing_ = Pairing::MakeInitiator(security_requirements, outgoing_connection_);
     PairingRequest request{.security_requirements = security_requirements,
                            .status_callback = std::move(status_cb)};
     request_queue_.push_back(std::move(request));
@@ -105,7 +106,7 @@ void PairingState::InitiateNextPairingRequest() {
 
   PairingRequest& request = request_queue_.front();
 
-  current_pairing_ = Pairing::MakeInitiator(request.security_requirements);
+  current_pairing_ = Pairing::MakeInitiator(request.security_requirements, outgoing_connection_);
   bt_log(DEBUG, "gap-bredr", "Initiating queued pairing on %#.4x (id %s)", handle(),
          bt_str(peer_id()));
   state_ = State::kInitiatorWaitLinkKeyRequest;
@@ -123,7 +124,7 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
   // no pairing delegate. This corresponds to the non-bondable state as outlined in spec v5.2 Vol.
   // 3 Part C 4.3.1.
   if (!pairing_delegate()) {
-    bt_log(ERROR, "gap-bredr", "No pairing delegate set; not pairing link %#.4x (peer: %s)",
+    bt_log(WARN, "gap-bredr", "No pairing delegate set; not pairing link %#.4x (peer: %s)",
            handle(), bt_str(peer_id()));
     // We set the state_ to Idle instead of Failed because it is possible that a PairingDelegate
     // will be set before the next pairing attempt, allowing it to succeed.
@@ -150,7 +151,7 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
 void PairingState::OnIoCapabilityResponse(IOCapability peer_iocap) {
   if (state() == State::kIdle) {
     ZX_ASSERT(!is_pairing());
-    current_pairing_ = Pairing::MakeResponder(peer_iocap);
+    current_pairing_ = Pairing::MakeResponder(peer_iocap, outgoing_connection_);
 
     // Defer gathering local IO Capability until OnIoCapabilityRequest, where
     // the pairing can be rejected if there's no pairing delegate.
@@ -178,42 +179,38 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
   ZX_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
+  bt_log_scope("%#.4x, id: %s", handle(), bt_str(peer_id()));
 
+  if (current_pairing_->action == PairingAction::kAutomatic) {
+    if (!outgoing_connection_) {
+      bt_log(ERROR, "gap-bredr", "automatically rejecting incoming link pairing");
+    } else {
+      bt_log(DEBUG, "gap-bredr", "automatically confirming outgoing link pairing");
+    }
+    cb(outgoing_connection_);
+    return;
+  }
+  auto confirm_cb = [cb = std::move(cb), log_ctx = capture_log_context(),
+                     pairing = current_pairing_->GetWeakPtr()](bool confirm) mutable {
+    if (!pairing) {
+      return;
+    }
+    add_parent_context(log_ctx);
+    bt_log(DEBUG, "gap-bredr", "%sing User Confirmation Request", confirm ? "Confirm" : "Cancel");
+    cb(confirm);
+  };
   // PairingAction::kDisplayPasskey indicates that this device has a display and performs "Numeric
   // Comparison with automatic confirmation" but auto-confirmation is delegated to PairingDelegate.
   if (current_pairing_->action == PairingAction::kDisplayPasskey ||
       current_pairing_->action == PairingAction::kComparePasskey) {
-    auto pairing = current_pairing_->GetWeakPtr();
-    auto confirm_cb = [this, cb = std::move(cb), pairing](bool confirm) mutable {
-      if (!pairing) {
-        return;
-      }
-
-      bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): %sing User Confirmation Request", handle(),
-             bt_str(peer_id()), confirm ? "Confirm" : "Cancel");
-      cb(confirm);
-    };
     pairing_delegate()->DisplayPasskey(peer_id(), numeric_value,
                                        PairingDelegate::DisplayMethod::kComparison,
                                        std::move(confirm_cb));
   } else if (current_pairing_->action == PairingAction::kGetConsent) {
-    auto pairing = current_pairing_->GetWeakPtr();
-    auto confirm_cb = [this, cb = std::move(cb), pairing](bool confirm) mutable {
-      if (!pairing) {
-        return;
-      }
-      bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): %sing User Confirmation Request", handle(),
-             bt_str(peer_id()), confirm ? "Confirm" : "Cancel");
-      cb(confirm);
-    };
     pairing_delegate()->ConfirmPairing(peer_id(), std::move(confirm_cb));
   } else {
-    ZX_ASSERT_MSG(current_pairing_->action == PairingAction::kAutomatic,
-                  "%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
-                  current_pairing_->action);
-    bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): automatically confirming User Confirmation Request",
-           handle(), bt_str(peer_id()));
-    cb(true);
+    ZX_PANIC("%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
+             current_pairing_->action);
   }
 }
 
@@ -459,18 +456,18 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
-    BrEdrSecurityRequirements security_requirements) {
+    BrEdrSecurityRequirements security_requirements, bool outgoing) {
   // Private ctor is inaccessible to std::make_unique.
-  std::unique_ptr<Pairing> pairing(new Pairing);
+  std::unique_ptr<Pairing> pairing(new Pairing(outgoing));
   pairing->initiator = true;
   pairing->preferred_security = security_requirements;
   return pairing;
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
-    hci::IOCapability peer_iocap) {
+    hci::IOCapability peer_iocap, bool outgoing) {
   // Private ctor is inaccessible to std::make_unique.
-  std::unique_ptr<Pairing> pairing(new Pairing);
+  std::unique_ptr<Pairing> pairing(new Pairing(outgoing));
   pairing->initiator = false;
   pairing->peer_iocap = peer_iocap;
   // Don't try to upgrade security as responder.
@@ -484,14 +481,17 @@ void PairingState::Pairing::ComputePairingData() {
   } else {
     action = GetResponderPairingAction(peer_iocap, local_iocap);
   }
+  if (!outgoing_ && action == PairingAction::kAutomatic) {
+    action = PairingAction::kGetConsent;
+  }
   expected_event = GetExpectedEvent(local_iocap, peer_iocap);
   ZX_DEBUG_ASSERT(GetStateForPairingEvent(expected_event) != State::kFailed);
   authenticated = IsPairingAuthenticated(local_iocap, peer_iocap);
   bt_log(DEBUG, "gap-bredr",
-         "As %s with local %hhu/peer %hhu capabilities, expecting an %sauthenticated %u pairing "
+         "As %s %s with local %hhu/peer %hhu capabilities, expecting an %sauthenticated %u pairing "
          "using %#x",
-         initiator ? "initiator" : "responder", local_iocap, peer_iocap, authenticated ? "" : "un",
-         action, expected_event);
+         outgoing_ ? "outgoing" : "incoming", initiator ? "initiator" : "responder", local_iocap,
+         peer_iocap, authenticated ? "" : "un", action, expected_event);
 }
 
 const char* PairingState::ToString(PairingState::State state) {

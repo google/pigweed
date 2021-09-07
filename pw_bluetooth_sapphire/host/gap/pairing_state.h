@@ -162,20 +162,21 @@ class PairingState final {
   // proceed in the order of events expected.
   using StatusCallback = fit::function<void(hci::ConnectionHandle, hci::Status)>;
 
-  // Constructs a PairingState for the ACL connection |link| to |peer_id|. This
-  // object will receive its "encryption change" callbacks. Successful pairing
-  // is reported through |status_cb| after encryption is enabled. When errors
-  // occur, this object will be put in a "failed" state and the owner shall
-  // disconnect the link and destroy its PairingState.  When destroyed, status
-  // callbacks for any waiting pairings are called. |status_cb| is not called
-  // on destruction.
+  // Constructs a PairingState for the ACL connection |link| to |peer_id|.
+  // |link_initiated| should be true if this device connected, and false if it
+  // was an incoming connection.
+  // This object will receive "encryption change" callbacks associate with |peer_id|.
+  // Successful pairing is reported through |status_cb| after encryption is enabled. When errors
+  // occur, this object will be put in a "failed" state and the owner shall disconnect the link and
+  // destroy its PairingState.  When destroyed, status callbacks for any waiting pairings are
+  // called. |status_cb| is not called on destruction.
   //
-  //  |auth_cb| will be called to indicate that the caller should send an Authentication Request for
-  //  this peer.
+  // |auth_cb| will be called to indicate that the caller should send an Authentication Request for
+  // this peer.
   //
   // |link| must be valid for the lifetime of this object.
-  PairingState(PeerId peer_id, hci::Connection* link, PeerCache* peer_cache, fit::closure auth_cb,
-               StatusCallback status_cb);
+  PairingState(PeerId peer_id, hci::Connection* link, bool link_initiated, PeerCache* peer_cache,
+               fit::closure auth_cb, StatusCallback status_cb);
   PairingState(PairingState&&) = default;
   PairingState& operator=(PairingState&&) = default;
   ~PairingState();
@@ -300,8 +301,10 @@ class PairingState final {
   // through PairingDelegate.
   class Pairing final {
    public:
-    static std::unique_ptr<Pairing> MakeInitiator(BrEdrSecurityRequirements security_requirements);
-    static std::unique_ptr<Pairing> MakeResponder(hci::IOCapability peer_iocap);
+    static std::unique_ptr<Pairing> MakeInitiator(BrEdrSecurityRequirements security_requirements,
+                                                  bool link_initiated);
+    static std::unique_ptr<Pairing> MakeResponder(hci::IOCapability peer_iocap,
+                                                  bool link_inititated);
 
     // For a Pairing whose |initiator|, |local_iocap|, and |peer_iocap| are already set, compute and
     // set |action|, |expected_event|, |authenticated|, and |security_properties| for the pairing
@@ -337,7 +340,10 @@ class PairingState final {
     BrEdrSecurityRequirements preferred_security;
 
    private:
-    Pairing() : weak_ptr_factory_(this) {}
+    explicit Pairing(bool outgoing) : outgoing_(outgoing), weak_ptr_factory_(this) {}
+
+    // True if the link for this pairing was initiated locally.
+    bool outgoing_;
 
     fxl::WeakPtrFactory<Pairing> weak_ptr_factory_;
   };
@@ -390,6 +396,9 @@ class PairingState final {
 
   // The BR/EDR link whose pairing is being driven by this object.
   hci::Connection* link_;
+
+  // True when the BR/EDR |link_| was locally requested.
+  bool outgoing_connection_;
 
   // Used to restore link keys.
   PeerCache* peer_cache_;

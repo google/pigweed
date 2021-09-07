@@ -23,8 +23,10 @@ BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection
     : ready_(false),
       peer_id_(peer_id),
       link_(std::move(link)),
+      request_(std::move(request)),
       pairing_state_(std::make_unique<PairingState>(
-          peer_id, link_.get(), peer_cache, std::move(send_auth_request_cb),
+          peer_id, link_.get(), request_ && request_->AwaitingOutgoing(), peer_cache,
+          std::move(send_auth_request_cb),
           [peer_id, disconnect_cb = std::move(disconnect_cb)](auto, hci::Status status) {
             if (bt_is_error(status, DEBUG, "gap-bredr",
                             "PairingState error status, disconnecting (peer id: %s)",
@@ -32,7 +34,6 @@ BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection
               disconnect_cb();
             }
           })),
-      request_(std::move(request)),
       domain_(std::move(l2cap)),
       sco_manager_(std::make_unique<sco::ScoConnectionManager>(
           peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)),
