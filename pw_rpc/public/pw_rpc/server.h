@@ -55,11 +55,11 @@ class Server : public internal::Endpoint {
 
   void HandleClientStreamPacket(const internal::Packet& packet,
                                 internal::Channel& channel,
-                                internal::Call* call) const;
+                                internal::ServerCall* call) const;
 
   void HandleCancelPacket(const internal::Packet& packet,
                           internal::Channel& channel,
-                          internal::Call* call) const;
+                          internal::ServerCall* call) const;
 
   IntrusiveList<Service> services_;
 };

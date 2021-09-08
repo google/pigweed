@@ -34,6 +34,7 @@ class Server;
 
 namespace internal {
 
+class Endpoint;
 class Packet;
 
 // Internal RPC Call class. The Call is used to respond to any type of RPC.
@@ -49,9 +50,13 @@ class Call : public IntrusiveList<Call>::Item {
  public:
   Call(const Call&) = delete;
 
+  // Move support is provided to derived classes through the MoveFrom function.
+  Call(Call&&) = delete;
+
   ~Call() { CloseAndSendResponse(OkStatus()).IgnoreError(); }
 
   Call& operator=(const Call&) = delete;
+  Call& operator=(Call&&) = delete;
 
   // True if the Call is active and ready to send responses.
   [[nodiscard]] bool active() const { return rpc_state_ == kActive; }
@@ -63,9 +68,9 @@ class Call : public IntrusiveList<Call>::Item {
     return active();
   }
 
-  uint32_t channel_id() const { return call_.channel().id(); }
-  uint32_t service_id() const { return call_.service().id(); }
-  uint32_t method_id() const;
+  uint32_t channel_id() const { return channel().id(); }
+  uint32_t service_id() const { return service_id_; }
+  uint32_t method_id() const { return method_id_; }
 
   // Closes the Call and sends a RESPONSE packet, if it is active. Returns the
   // status from sending the packet, or FAILED_PRECONDITION if the Call is not
@@ -96,16 +101,6 @@ class Call : public IntrusiveList<Call>::Item {
     }
   }
 
-  void EndClientStream() {
-    client_stream_state_ = kClientStreamInactive;
-
-#if PW_RPC_CLIENT_STREAM_END_CALLBACK
-    if (on_client_stream_end_) {
-      on_client_stream_end_();
-    }
-#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
-  }
-
   bool has_client_stream() const { return HasClientStream(type_); }
 
   bool client_stream_open() const {
@@ -115,22 +110,26 @@ class Call : public IntrusiveList<Call>::Item {
  protected:
   // Creates a Call for a closed RPC.
   constexpr Call(MethodType type)
-      : rpc_state_(kInactive),
+      : endpoint_(nullptr),
+        channel_(nullptr),
+        service_id_(0),
+        method_id_(0),
+        rpc_state_(kInactive),
         type_(type),
         client_stream_state_(kClientStreamInactive) {}
 
   // Creates a Call for an active RPC.
   Call(const CallContext& call, MethodType type);
 
-  // Initialize rpc_state_ to closed since move-assignment will check if the
-  // Call is active before moving into it.
-  Call(Call&& other) : rpc_state_(kInactive) { *this = std::move(other); }
+  // Constructor for use when move-initializing a call. Initialize rpc_state_ to
+  // closed since move-assignment will check if the Call is active before moving
+  // into it.
+  Call() : rpc_state_(kInactive) {}
 
-  Call& operator=(Call&& other);
+  void MoveFrom(Call& other);
 
-  const Method& method() const { return call_.method(); }
-
-  const Channel& channel() const { return call_.channel(); }
+  Endpoint& endpoint() const { return *endpoint_; }
+  Channel& channel() const { return *channel_; }
 
   void set_on_error(Function<void(Status)> on_error) {
     on_error_ = std::move(on_error);
@@ -140,19 +139,8 @@ class Call : public IntrusiveList<Call>::Item {
     on_next_ = std::move(on_next);
   }
 
-  // set_on_client_stream_end is templated so that it can be conditionally
-  // disabled with a helpful static_assert message.
-  template <typename UnusedType = void>
-  void set_on_client_stream_end(
-      [[maybe_unused]] Function<void()> on_client_stream_end) {
-    static_assert(
-        cfg::kClientStreamEndCallbackEnabled<UnusedType>,
-        "The client stream end callback is disabled, so "
-        "set_on_client_stream_end cannot be called. To enable the client end "
-        "callback, set PW_RPC_CLIENT_STREAM_END_CALLBACK to 1.");
-#if PW_RPC_CLIENT_STREAM_END_CALLBACK
-    on_client_stream_end_ = std::move(on_client_stream_end);
-#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+  void MarkClientStreamCompleted() {
+    client_stream_state_ = kClientStreamInactive;
   }
 
   constexpr const Channel::OutputBuffer& buffer() const { return response_; }
@@ -169,6 +157,14 @@ class Call : public IntrusiveList<Call>::Item {
   void ReleasePayloadBuffer();
 
  private:
+  Packet StreamPacket(std::span<const std::byte> payload) const {
+    return Packet(PacketType::SERVER_STREAM,
+                  channel_id(),
+                  service_id(),
+                  method_id(),
+                  payload);
+  }
+
   Status CloseAndSendFinalPacket(PacketType type,
                                  std::span<const std::byte> response,
                                  Status status);
@@ -177,7 +173,11 @@ class Call : public IntrusiveList<Call>::Item {
   // active when this is called.
   void Close();
 
-  CallContext call_;
+  internal::Endpoint* endpoint_;
+  internal::Channel* channel_;
+  uint32_t service_id_;
+  uint32_t method_id_;
+
   Channel::OutputBuffer response_;
 
   // Called when the RPC is terminated due to an error.
@@ -187,17 +187,68 @@ class Call : public IntrusiveList<Call>::Item {
   // The raw payload buffer is passed to the callback.
   Function<void(std::span<const std::byte> payload)> on_next_;
 
-#if PW_RPC_CLIENT_STREAM_END_CALLBACK
-  // Called when a client stream completes.
-  Function<void()> on_client_stream_end_;
-#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
-
   enum : bool { kInactive, kActive } rpc_state_;
   MethodType type_;
   enum : bool {
     kClientStreamInactive,
     kClientStreamActive,
   } client_stream_state_;
+};
+
+// A Call object, as used by an RPC server.
+class ServerCall : public Call {
+ public:
+  void EndClientStream() {
+    MarkClientStreamCompleted();
+
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
+    if (on_client_stream_end_) {
+      on_client_stream_end_();
+    }
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+  }
+
+ protected:
+  ServerCall(ServerCall&& other) : Call() { *this = std::move(other); }
+
+  ServerCall& operator=(ServerCall&& other);
+
+  constexpr ServerCall(MethodType type) : Call(type) {}
+
+  ServerCall(const CallContext& call, MethodType type) : Call(call, type) {}
+
+  // set_on_client_stream_end is templated so that it can be conditionally
+  // disabled with a helpful static_assert message.
+  template <typename UnusedType = void>
+  void set_on_client_stream_end(
+      [[maybe_unused]] Function<void()> on_client_stream_end) {
+    static_assert(
+        cfg::kClientStreamEndCallbackEnabled<UnusedType>,
+        "The client stream end callback is disabled, so "
+        "set_on_client_stream_end cannot be called. To enable the client end "
+        "callback, set PW_RPC_CLIENT_STREAM_END_CALLBACK to 1.");
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
+    on_client_stream_end_ = std::move(on_client_stream_end);
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+  }
+
+ private:
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
+  // Called when a client stream completes.
+  Function<void()> on_client_stream_end_;
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+};
+
+// A Call object, as used by an RPC client.
+// TODO(hepler): Refactor client calls to use this class.
+class ClientCall : public Call {
+ protected:
+  ClientCall(ClientCall&& other) { *this = std::move(other); }
+
+  ClientCall& operator=(ClientCall&& other);
+
+ private:
+  Function<void(Status)> on_completed_;
 };
 
 }  // namespace internal

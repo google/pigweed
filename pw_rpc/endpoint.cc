@@ -54,15 +54,15 @@ Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
   return result;
 }
 
-Call* Endpoint::FindCall(const Packet& packet) {
-  for (Call& call : calls_) {
-    if (packet.channel_id() == call.channel_id() &&
-        packet.service_id() == call.service_id() &&
-        packet.method_id() == call.method_id()) {
-      return &call;
-    }
+void Endpoint::RegisterCall(Call& call) {
+  Call* const existing_call =
+      FindCallById(call.channel_id(), call.service_id(), call.method_id());
+
+  if (existing_call != nullptr) {
+    existing_call->HandleError(Status::Cancelled());
   }
-  return nullptr;
+
+  RegisterUniqueCall(call);
 }
 
 Channel* Endpoint::GetInternalChannel(uint32_t id) const {
@@ -83,6 +83,18 @@ Channel* Endpoint::AssignChannel(uint32_t id, ChannelOutput& interface) {
 
   *channel = Channel(id, &interface);
   return channel;
+}
+
+Call* Endpoint::FindCallById(uint32_t channel_id,
+                             uint32_t service_id,
+                             uint32_t method_id) {
+  for (Call& call : calls_) {
+    if (channel_id == call.channel_id() && service_id == call.service_id() &&
+        method_id == call.method_id()) {
+      return &call;
+    }
+  }
+  return nullptr;
 }
 
 }  // namespace pw::rpc::internal

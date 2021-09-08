@@ -168,42 +168,43 @@ TEST(ServerWriter, Closed_IgnoresFinish) {
 
 TEST(ServerWriter, DefaultConstructor_NoClientStream) {
   FakeServerWriter writer;
-  EXPECT_FALSE(writer.as_responder().has_client_stream());
-  EXPECT_FALSE(writer.as_responder().client_stream_open());
+  EXPECT_FALSE(writer.as_server_call().has_client_stream());
+  EXPECT_FALSE(writer.as_server_call().client_stream_open());
 }
 
 TEST(ServerWriter, Open_NoClientStream) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
-  EXPECT_FALSE(writer.as_responder().has_client_stream());
-  EXPECT_FALSE(writer.as_responder().client_stream_open());
+  EXPECT_FALSE(writer.as_server_call().has_client_stream());
+  EXPECT_FALSE(writer.as_server_call().client_stream_open());
 }
 
 TEST(ServerReader, DefaultConstructor_ClientStreamClosed) {
   test::FakeServerReader reader;
-  EXPECT_TRUE(reader.as_responder().has_client_stream());
-  EXPECT_FALSE(reader.as_responder().client_stream_open());
+  EXPECT_TRUE(reader.as_server_call().has_client_stream());
+  EXPECT_FALSE(reader.as_server_call().client_stream_open());
 }
 
 TEST(ServerReader, Open_ClientStreamStartsOpen) {
   ServerContextForTest<TestService> context(TestService::method.method());
   test::FakeServerReader reader(context.get());
 
-  EXPECT_TRUE(reader.as_responder().has_client_stream());
-  EXPECT_TRUE(reader.as_responder().client_stream_open());
+  EXPECT_TRUE(reader.as_server_call().has_client_stream());
+  EXPECT_TRUE(reader.as_server_call().client_stream_open());
 }
 
 TEST(ServerReader, Close_ClosesClientStream) {
   ServerContextForTest<TestService> context(TestService::method.method());
   test::FakeServerReader reader(context.get());
 
-  EXPECT_TRUE(reader.as_responder().active());
-  EXPECT_TRUE(reader.as_responder().client_stream_open());
-  EXPECT_EQ(OkStatus(), reader.as_responder().CloseAndSendResponse(OkStatus()));
+  EXPECT_TRUE(reader.as_server_call().active());
+  EXPECT_TRUE(reader.as_server_call().client_stream_open());
+  EXPECT_EQ(OkStatus(),
+            reader.as_server_call().CloseAndSendResponse(OkStatus()));
 
-  EXPECT_FALSE(reader.as_responder().active());
-  EXPECT_FALSE(reader.as_responder().client_stream_open());
+  EXPECT_FALSE(reader.as_server_call().active());
+  EXPECT_FALSE(reader.as_server_call().client_stream_open());
 }
 
 TEST(ServerReader, HandleClientStream_OnlyClosesClientStream) {
@@ -211,11 +212,11 @@ TEST(ServerReader, HandleClientStream_OnlyClosesClientStream) {
   test::FakeServerReader reader(context.get());
 
   EXPECT_TRUE(reader.active());
-  EXPECT_TRUE(reader.as_responder().client_stream_open());
-  reader.as_responder().EndClientStream();
+  EXPECT_TRUE(reader.as_server_call().client_stream_open());
+  reader.as_server_call().EndClientStream();
 
   EXPECT_TRUE(reader.active());
-  EXPECT_FALSE(reader.as_responder().client_stream_open());
+  EXPECT_FALSE(reader.as_server_call().client_stream_open());
 }
 
 TEST(ServerReaderWriter, Move_MaintainsClientStream) {
@@ -223,11 +224,11 @@ TEST(ServerReaderWriter, Move_MaintainsClientStream) {
   test::FakeServerReaderWriter reader_writer(context.get());
   test::FakeServerReaderWriter destination;
 
-  EXPECT_FALSE(destination.as_responder().client_stream_open());
+  EXPECT_FALSE(destination.as_server_call().client_stream_open());
 
   destination = std::move(reader_writer);
-  EXPECT_TRUE(destination.as_responder().has_client_stream());
-  EXPECT_TRUE(destination.as_responder().client_stream_open());
+  EXPECT_TRUE(destination.as_server_call().has_client_stream());
+  EXPECT_TRUE(destination.as_server_call().client_stream_open());
 }
 
 TEST(ServerReaderWriter, Move_MovesCallbacks) {
@@ -243,9 +244,9 @@ TEST(ServerReaderWriter, Move_MovesCallbacks) {
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
   test::FakeServerReaderWriter destination(std::move(reader_writer));
-  destination.as_responder().HandleClientStream({});
-  destination.as_responder().EndClientStream();
-  destination.as_responder().HandleError(Status::Unknown());
+  destination.as_server_call().HandleClientStream({});
+  destination.as_server_call().EndClientStream();
+  destination.as_server_call().HandleError(Status::Unknown());
 
   EXPECT_EQ(calls, 2 + PW_RPC_CLIENT_STREAM_END_CALLBACK);
 }

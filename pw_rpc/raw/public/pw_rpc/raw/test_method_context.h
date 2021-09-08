@@ -138,8 +138,8 @@ class UnaryContext
       Base::output().clear();
 
       ByteSpan& response = Base::output().AllocateResponse();
-      auto sws = CallMethodImplFunction<kMethod>(
-          Base::call_context(), request, response);
+      auto sws =
+          CallMethodImplFunction<kMethod>(Base::service(), request, response);
       response = response.first(sws.size());
       return sws;
     } else {

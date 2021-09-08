@@ -16,34 +16,43 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_rpc/internal/call_context.h"
-
 namespace pw::rpc {
 
+class ServerContext;
+
+namespace internal {
+
+ServerContext& GlobalServerContextStub();
+
+}  // namespace internal
+
 // The ServerContext class is DEPRECATED and will be removed from pw_rpc. All
-// information in the ServerContext is accessible through the
+// information formerly in the ServerContext is accessible through the
 // ServerReader/Writer object.
 //
 // The only case where the information in a ServerContext is not available is
 // synchronous unary RPCs. If information like channel_id() is needed in a unary
 // RPC, just use an asynchronous unary RPC.
-class ServerContext : private internal::CallContext {
+class ServerContext {
  public:
-  constexpr ServerContext() = delete;
-
   constexpr ServerContext(const ServerContext&) = delete;
   constexpr ServerContext& operator=(const ServerContext&) = delete;
 
   constexpr ServerContext(ServerContext&&) = delete;
   constexpr ServerContext& operator=(ServerContext&&) = delete;
 
-  friend class internal::CallContext;  // Allow down-casting from CallContext.
+ private:
+  constexpr ServerContext() = default;
+
+  // Allow GlobalServerContextStub() to create a global instance.
+  friend ServerContext& internal::GlobalServerContextStub();
 };
 
 namespace internal {
 
-inline ServerContext& CallContext::context() {
-  return static_cast<ServerContext&>(*this);
+inline ServerContext& GlobalServerContextStub() {
+  static ServerContext global_server_context_stub;
+  return global_server_context_stub;
 }
 
 }  // namespace internal

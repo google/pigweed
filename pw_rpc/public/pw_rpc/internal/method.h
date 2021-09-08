@@ -18,8 +18,13 @@
 #include <utility>
 
 #include "pw_rpc/internal/call_context.h"
+#include "pw_rpc/server_context.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
+
+class Service;
+
+namespace internal {
 
 class Packet;
 
@@ -61,16 +66,14 @@ class Method {
   // calls the invoker function, which handles the RPC request and response
   // according to the RPC type and protobuf implementation and calls the
   // user-defined RPC function.
-  void Invoke(CallContext& call, const Packet& request) const {
-    return invoker_(*this, call, request);
+  void Invoke(const CallContext& context, const Packet& request) const {
+    return invoker_(context, request);
   }
 
  protected:
-  using Invoker = void (&)(const Method&, CallContext&, const Packet&);
+  using Invoker = void (&)(const CallContext&, const Packet&);
 
-  static constexpr void InvalidInvoker(const Method&,
-                                       CallContext&,
-                                       const Packet&) {}
+  static constexpr void InvalidInvoker(const CallContext&, const Packet&) {}
 
   constexpr Method(uint32_t id, Invoker invoker) : id_(id), invoker_(invoker) {}
 
@@ -111,18 +114,17 @@ using Request = typename MethodTraits<decltype(kMethod)>::Request;
 template <auto kMethod>
 using Response = typename MethodTraits<decltype(kMethod)>::Response;
 
-// Function that calls a user-defined method implementation function from a
-// CallContext object.
+// Function that calls a user-defined RPC function on the given Service.
 template <auto kMethod, typename... Args>
-constexpr auto CallMethodImplFunction(CallContext& call, Args&&... args) {
+constexpr auto CallMethodImplFunction(Service& service, Args&&... args) {
   // If the method impl is a member function, deduce the type of the
   // user-defined service from it, then call the method on the service.
   if constexpr (std::is_member_function_pointer_v<decltype(kMethod)>) {
     return (static_cast<typename MethodTraits<decltype(kMethod)>::Service&>(
-                call.service()).*
-            kMethod)(call.context(), std::forward<Args>(args)...);
+                service).*
+            kMethod)(GlobalServerContextStub(), std::forward<Args>(args)...);
   } else {
-    return kMethod(call.context(), std::forward<Args>(args)...);
+    return kMethod(GlobalServerContextStub(), std::forward<Args>(args)...);
   }
 }
 
@@ -136,4 +138,5 @@ template <typename Service>
 using GeneratedService =
     decltype(BaseFromMember(&Service::_PwRpcInternalGeneratedBase));
 
-}  // namespace pw::rpc::internal
+}  // namespace internal
+}  // namespace pw::rpc

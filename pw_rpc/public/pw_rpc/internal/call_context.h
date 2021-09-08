@@ -16,73 +16,44 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_assert/assert.h"
 #include "pw_rpc/internal/channel.h"
 
 namespace pw::rpc {
 
 class ServerContext;
 class Service;
-class Server;
 
 namespace internal {
 
+class Endpoint;
 class Method;
 
-// Collects information for an ongoing RPC being processed by the server.
 // The Server creates a CallContext object to represent a method invocation. The
-// CallContext is copied into a ServerReader/Writer for streaming RPCs.
-//
-// CallContext is an internal class. ServerContext is the public server-side
-// interface to the internal::CallContext.
+// CallContext is used to initialize a call object for the RPC.
 class CallContext {
  public:
-  constexpr CallContext()
-      : server_(nullptr),
-        channel_(nullptr),
-        service_(nullptr),
-        method_(nullptr) {}
-
-  constexpr CallContext(Server& server,
+  constexpr CallContext(Endpoint& endpoint,
                         Channel& channel,
                         Service& service,
                         const internal::Method& method)
-      : server_(&server),
-        channel_(&channel),
-        service_(&service),
-        method_(&method) {}
+      : endpoint_(endpoint),
+        channel_(channel),
+        service_(service),
+        method_(method) {}
 
-  constexpr CallContext(const CallContext&) = default;
-  constexpr CallContext& operator=(const CallContext&) = default;
+  Endpoint& endpoint() const { return endpoint_; }
 
-  // Access the ServerContext for this call. Defined in pw_rpc/server_context.h.
-  ServerContext& context();
+  Channel& channel() const { return channel_; }
 
-  Server& server() const {
-    PW_DASSERT(server_ != nullptr);
-    return *server_;
-  }
+  Service& service() const { return service_; }
 
-  Channel& channel() const {
-    PW_DASSERT(channel_ != nullptr);
-    return *channel_;
-  }
-
-  Service& service() const {
-    PW_DASSERT(service_ != nullptr);
-    return *service_;
-  }
-
-  const internal::Method& method() const {
-    PW_DASSERT(method_ != nullptr);
-    return *method_;
-  }
+  const internal::Method& method() const { return method_; }
 
  private:
-  Server* server_;
-  Channel* channel_;
-  Service* service_;
-  const internal::Method* method_;
+  Endpoint& endpoint_;
+  Channel& channel_;
+  Service& service_;
+  const internal::Method& method_;
 };
 
 }  // namespace internal

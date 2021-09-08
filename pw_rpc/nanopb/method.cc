@@ -25,30 +25,30 @@ using std::byte;
 
 namespace internal {
 
-void NanopbMethod::CallSynchronousUnary(CallContext& call,
+void NanopbMethod::CallSynchronousUnary(const CallContext& context,
                                         const Packet& request,
                                         void* request_struct,
                                         void* response_struct) const {
-  if (!DecodeRequest(call.channel(), request, request_struct)) {
+  if (!DecodeRequest(context.channel(), request, request_struct)) {
     return;
   }
 
-  GenericNanopbResponder responder(call, MethodType::kUnary);
-  const Status status =
-      function_.synchronous_unary(call, request_struct, response_struct);
+  GenericNanopbResponder responder(context, MethodType::kUnary);
+  const Status status = function_.synchronous_unary(
+      context.service(), request_struct, response_struct);
   responder.SendResponse(response_struct, status).IgnoreError();
 }
 
-void NanopbMethod::CallUnaryRequest(CallContext& call,
+void NanopbMethod::CallUnaryRequest(const CallContext& context,
                                     MethodType type,
                                     const Packet& request,
                                     void* request_struct) const {
-  if (!DecodeRequest(call.channel(), request, request_struct)) {
+  if (!DecodeRequest(context.channel(), request, request_struct)) {
     return;
   }
 
-  GenericNanopbResponder server_writer(call, type);
-  function_.unary_request(call, request_struct, server_writer);
+  GenericNanopbResponder server_writer(context, type);
+  function_.unary_request(context.service(), request_struct, server_writer);
 }
 
 bool NanopbMethod::DecodeRequest(Channel& channel,

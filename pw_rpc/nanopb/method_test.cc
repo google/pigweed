@@ -135,16 +135,18 @@ NanopbServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestResponse>
 NanopbServerReaderWriter<pw_rpc_test_TestRequest, pw_rpc_test_TestResponse>
     last_reader_writer;
 
+Status DoNothing(ServerContext&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
+  return Status::Unknown();
+}
+
 void AddFive(ServerContext&,
              const pw_rpc_test_TestRequest& request,
              NanopbServerResponder<pw_rpc_test_TestResponse>& responder) {
   last_request = request;
-  responder.Finish({.value = static_cast<int32_t>(request.integer + 5)},
-                   Status::Unauthenticated());
-}
-
-Status DoNothing(ServerContext&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
-  return Status::Unknown();
+  ASSERT_EQ(
+      OkStatus(),
+      responder.Finish({.value = static_cast<int32_t>(request.integer + 5)},
+                       Status::Unauthenticated()));
 }
 
 void StartStream(ServerContext&,
@@ -186,23 +188,23 @@ class FakeService : public Service {
           pw_rpc_test_TestResponse_fields)};
 };
 
-constexpr const NanopbMethod& kDoNothing =
+constexpr const NanopbMethod& kSyncUnary =
     std::get<0>(FakeService::kMethods).nanopb_method();
-constexpr const NanopbMethod& kAddFive =
+constexpr const NanopbMethod& kAsyncUnary =
     std::get<1>(FakeService::kMethods).nanopb_method();
-constexpr const NanopbMethod& kStartStream =
+constexpr const NanopbMethod& kServerStream =
     std::get<2>(FakeService::kMethods).nanopb_method();
 constexpr const NanopbMethod& kClientStream =
     std::get<3>(FakeService::kMethods).nanopb_method();
 constexpr const NanopbMethod& kBidirectionalStream =
     std::get<4>(FakeService::kMethods).nanopb_method();
 
-TEST(NanopbMethod, UnaryRpc_SendsResponse) {
+TEST(NanopbMethod, AsyncUnaryRpc_SendsResponse) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = 123, .status_code = 0);
 
-  ServerContextForTest<FakeService> context(kAddFive);
-  kAddFive.Invoke(context.get(), context.request(request));
+  ServerContextForTest<FakeService> context(kAsyncUnary);
+  kAsyncUnary.Invoke(context.get(), context.request(request));
 
   const Packet& response = context.output().sent_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
@@ -218,37 +220,37 @@ TEST(NanopbMethod, UnaryRpc_SendsResponse) {
   EXPECT_EQ(123, last_request.integer);
 }
 
-TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
+TEST(NanopbMethod, SyncUnaryRpc_InvalidPayload_SendsError) {
   std::array<byte, 8> bad_payload{byte{0xFF}, byte{0xAA}, byte{0xDD}};
 
-  ServerContextForTest<FakeService> context(kDoNothing);
-  kDoNothing.Invoke(context.get(), context.request(bad_payload));
+  ServerContextForTest<FakeService> context(kSyncUnary);
+  kSyncUnary.Invoke(context.get(), context.request(bad_payload));
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::DataLoss(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
-  EXPECT_EQ(kDoNothing.id(), packet.method_id());
+  EXPECT_EQ(kSyncUnary.id(), packet.method_id());
 }
 
-TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
+TEST(NanopbMethod, AsyncUnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   constexpr int64_t value = 0x7FFFFFFF'FFFFFF00ll;
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = value, .status_code = 0);
 
   // Output buffer is too small for the response, but can fit an error packet.
-  ServerContextForTest<FakeService, 22> context(kAddFive);
+  ServerContextForTest<FakeService, 22> context(kAsyncUnary);
   ASSERT_LT(
       context.output().buffer_size(),
       context.request(request).MinEncodedSizeBytes() + request.size() + 1);
 
-  kAddFive.Invoke(context.get(), context.request(request));
+  kAsyncUnary.Invoke(context.get(), context.request(request));
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::Internal(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
-  EXPECT_EQ(kAddFive.id(), packet.method_id());
+  EXPECT_EQ(kAsyncUnary.id(), packet.method_id());
 
   EXPECT_EQ(value, last_request.integer);
 }
@@ -257,18 +259,18 @@ TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = 555, .status_code = 0);
 
-  ServerContextForTest<FakeService> context(kStartStream);
+  ServerContextForTest<FakeService> context(kServerStream);
 
-  kStartStream.Invoke(context.get(), context.request(request));
+  kServerStream.Invoke(context.get(), context.request(request));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(555, last_request.integer);
 }
 
 TEST(NanopbMethod, ServerWriter_SendsResponse) {
-  ServerContextForTest<FakeService> context(kStartStream);
+  ServerContextForTest<FakeService> context(kServerStream);
 
-  kStartStream.Invoke(context.get(), context.request({}));
+  kServerStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Write({.value = 100}));
 
@@ -285,18 +287,18 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
 }
 
 TEST(NanopbMethod, ServerWriter_WriteWhenClosed_ReturnsFailedPrecondition) {
-  ServerContextForTest<FakeService> context(kStartStream);
+  ServerContextForTest<FakeService> context(kServerStream);
 
-  kStartStream.Invoke(context.get(), context.request({}));
+  kServerStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Finish());
   EXPECT_TRUE(last_writer.Write({.value = 100}).IsFailedPrecondition());
 }
 
 TEST(NanopbMethod, ServerWriter_WriteAfterMoved_ReturnsFailedPrecondition) {
-  ServerContextForTest<FakeService> context(kStartStream);
+  ServerContextForTest<FakeService> context(kServerStream);
 
-  kStartStream.Invoke(context.get(), context.request({}));
+  kServerStream.Invoke(context.get(), context.request({}));
   NanopbServerWriter<pw_rpc_test_TestResponse> new_writer =
       std::move(last_writer);
 
@@ -315,7 +317,8 @@ TEST(NanopbMethod,
       0 /* payload (when empty) */ + 0 /* status (when OK)*/;
 
   // Make the buffer barely fit a packet with no payload.
-  ServerContextForTest<FakeService, kNoPayloadPacketSize> context(kStartStream);
+  ServerContextForTest<FakeService, kNoPayloadPacketSize> context(
+      kServerStream);
 
   // Verify that the encoded size of a packet with an empty payload is correct.
   std::array<byte, 128> encoded_response = {};
@@ -323,7 +326,7 @@ TEST(NanopbMethod,
   ASSERT_EQ(OkStatus(), encoded.status());
   ASSERT_EQ(kNoPayloadPacketSize, encoded.value().size());
 
-  kStartStream.Invoke(context.get(), context.request({}));
+  kServerStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Write({}));  // Barely fits
   EXPECT_EQ(Status::Internal(), last_writer.Write({.value = 1}));  // Too big
@@ -332,10 +335,10 @@ TEST(NanopbMethod,
 TEST(NanopbMethod, ServerReader_HandlesRequests) {
   ServerContextForTest<FakeService> context(kClientStream);
 
-  kBidirectionalStream.Invoke(context.get(), context.request({}));
+  kClientStream.Invoke(context.get(), context.request({}));
 
   pw_rpc_test_TestRequest request_struct{};
-  last_reader_writer.set_on_next(
+  last_reader.set_on_next(
       [&request_struct](const pw_rpc_test_TestRequest& req) {
         request_struct = req;
       });
@@ -383,15 +386,15 @@ TEST(NanopbMethod, ServerReaderWriter_HandlesRequests) {
       });
 
   PW_ENCODE_PB(
-      pw_rpc_test_TestRequest, request, .integer = 1 << 30, .status_code = 9);
+      pw_rpc_test_TestRequest, request, .integer = 1 << 29, .status_code = 8);
   std::array<byte, 128> encoded_request = {};
   auto encoded = context.client_stream(request).Encode(encoded_request);
   ASSERT_EQ(OkStatus(), encoded.status());
   ASSERT_EQ(OkStatus(),
             context.server().ProcessPacket(*encoded, context.output()));
 
-  EXPECT_EQ(request_struct.integer, 1 << 30);
-  EXPECT_EQ(request_struct.status_code, 9u);
+  EXPECT_EQ(request_struct.integer, 1 << 29);
+  EXPECT_EQ(request_struct.status_code, 8u);
 }
 
 }  // namespace

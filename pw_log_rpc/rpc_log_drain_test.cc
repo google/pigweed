@@ -158,8 +158,9 @@ TEST(RpcLogDrain, TryReopenOpenedDrain) {
   rpc::RawServerWriter second_writer =
       rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
           server, drain_id, log_service);
+  ASSERT_FALSE(writer.open());
   ASSERT_TRUE(second_writer.open());
-  EXPECT_EQ(drain.Open(second_writer), Status::AlreadyExists());
+  EXPECT_EQ(drain.Open(second_writer), OkStatus());
 }
 
 }  // namespace

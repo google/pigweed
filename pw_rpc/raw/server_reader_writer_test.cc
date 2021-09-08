@@ -64,6 +64,21 @@ TEST(RawServerResponder, Open_ReturnsUsableResponder) {
                "hello from pw_rpc");
 }
 
+TEST(RawServerResponder, Open_MultipleTimes_CancelsPrevious) {
+  ReaderWriterTestContext ctx(MethodType::kUnary);
+
+  RawServerResponder one = RawServerResponder::Open<TestService::TestUnaryRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+
+  ASSERT_TRUE(one.active());
+
+  RawServerResponder two = RawServerResponder::Open<TestService::TestUnaryRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+
+  ASSERT_FALSE(one.active());
+  ASSERT_TRUE(two.active());
+}
+
 TEST(RawServerWriter, Open_ReturnsUsableWriter) {
   ReaderWriterTestContext ctx(MethodType::kServerStreaming);
   RawServerWriter call =

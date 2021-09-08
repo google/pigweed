@@ -15,33 +15,25 @@
 #include "pw_rpc/internal/call.h"
 
 #include "pw_assert/check.h"
+#include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc::internal {
-namespace {
-
-Packet StreamPacket(const CallContext& call,
-                    std::span<const std::byte> payload) {
-  return Packet(PacketType::SERVER_STREAM,
-                call.channel().id(),
-                call.service().id(),
-                call.method().id(),
-                payload);
-}
-
-}  // namespace
 
 Call::Call(const CallContext& call, MethodType type)
-    : call_(call),
+    : endpoint_(&call.endpoint()),
+      channel_(&call.channel()),
+      service_id_(call.service().id()),
+      method_id_(call.method().id()),
       rpc_state_(kActive),
       type_(type),
       client_stream_state_(HasClientStream(type) ? kClientStreamActive
                                                  : kClientStreamInactive) {
-  call_.server().RegisterCall(*this);
+  endpoint().RegisterCall(*this);
 }
 
-Call& Call::operator=(Call&& other) {
+void Call::MoveFrom(Call& other) {
   // If this RPC was running, complete it before moving in the other RPC.
   CloseAndSendResponse(OkStatus()).IgnoreError();
 
@@ -50,26 +42,24 @@ Call& Call::operator=(Call&& other) {
   type_ = other.type_;
   client_stream_state_ = other.client_stream_state_;
 
+  endpoint_ = other.endpoint_;
+  channel_ = other.channel_;
+  service_id_ = other.service_id_;
+  method_id_ = other.method_id_;
+
   if (other.active()) {
     other.Close();
-    other.call_.server().RegisterCall(*this);
+
+    // This call is known to be unique since the other call was just closed.
+    endpoint().RegisterUniqueCall(*this);
   }
 
   // Move the rest of the member variables.
-  call_ = std::move(other.call_);
   response_ = std::move(other.response_);
 
   on_error_ = std::move(other.on_error_);
   on_next_ = std::move(other.on_next_);
-
-#if PW_RPC_CLIENT_STREAM_END_CALLBACK
-  on_client_stream_end_ = std::move(other.on_client_stream_end_);
-#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
-
-  return *this;
 }
-
-uint32_t Call::method_id() const { return call_.method().id(); }
 
 Status Call::CloseAndSendFinalPacket(PacketType type,
                                      std::span<const std::byte> payload,
@@ -82,12 +72,12 @@ Status Call::CloseAndSendFinalPacket(PacketType type,
 
   // Acquire a buffer to use for the outgoing packet if none is available.
   if (response_.empty()) {
-    response_ = call_.channel().AcquireBuffer();
+    response_ = channel().AcquireBuffer();
   }
 
   // Send a packet indicating that the RPC has terminated and optionally
   // containing the final payload.
-  packet_status = call_.channel().Send(
+  packet_status = channel().Send(
       response_,
       Packet(type, channel_id(), service_id(), method_id(), payload, status));
 
@@ -101,28 +91,46 @@ std::span<std::byte> Call::AcquirePayloadBuffer() {
 
   // Only allow having one active buffer at a time.
   if (response_.empty()) {
-    response_ = call_.channel().AcquireBuffer();
+    response_ = channel().AcquireBuffer();
   }
 
-  return response_.payload(StreamPacket(call_, {}));
+  return response_.payload(StreamPacket({}));
 }
 
 Status Call::SendPayloadBufferClientStream(std::span<const std::byte> payload) {
   PW_DCHECK(active());
-  return call_.channel().Send(response_, StreamPacket(call_, payload));
+  return channel().Send(response_, StreamPacket(payload));
 }
 
 void Call::ReleasePayloadBuffer() {
   PW_DCHECK(active());
-  call_.channel().Release(response_);
+  channel().Release(response_);
 }
 
 void Call::Close() {
   PW_DCHECK(active());
 
-  call_.server().UnregisterCall(*this);
+  endpoint().UnregisterCall(*this);
   rpc_state_ = kInactive;
   client_stream_state_ = kClientStreamInactive;
+}
+
+ServerCall& ServerCall::operator=(ServerCall&& other) {
+  MoveFrom(other);
+
+#if PW_RPC_CLIENT_STREAM_END_CALLBACK
+  on_client_stream_end_ = std::move(other.on_client_stream_end_);
+#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+
+  return *this;
+}
+
+ClientCall& ClientCall::operator=(ClientCall&& other) {
+  MoveFrom(other);
+
+  on_completed_ = std::move(other.on_completed_);
+
+  return *this;
 }
 
 }  // namespace pw::rpc::internal

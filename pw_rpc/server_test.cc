@@ -41,7 +41,7 @@ class TestService : public Service {
   TestService(uint32_t service_id)
       : Service(service_id, methods_),
         methods_{
-            TestMethod(100),
+            TestMethod(100, MethodType::kBidirectionalStreaming),
             TestMethod(200),
         } {}
 
@@ -256,23 +256,22 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsError) {
 class BidiMethod : public BasicServer {
  protected:
   BidiMethod()
-      : call_(server_,
-              static_cast<internal::Channel&>(channels_[0]),
-              service_,
-              service_.method(100)),
-        responder_(call_) {
+      : responder_(
+            internal::CallContext(server_,
+                                  static_cast<internal::Channel&>(channels_[0]),
+                                  service_,
+                                  service_.method(100))) {
     ASSERT_TRUE(responder_.active());
   }
 
-  internal::CallContext call_;
   internal::test::FakeServerReaderWriter responder_;
 };
 
 TEST_F(BidiMethod, DuplicateCall_CancelsExistingThenCallsAgain) {
-  bool cancelled = false;
+  int cancelled = 0;
   responder_.set_on_error([&cancelled](Status error) {
     if (error.IsCancelled()) {
-      cancelled = true;
+      cancelled += 1;
     }
   });
 
@@ -282,7 +281,7 @@ TEST_F(BidiMethod, DuplicateCall_CancelsExistingThenCallsAgain) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(PacketForRpc(PacketType::REQUEST), output_));
 
-  EXPECT_TRUE(cancelled);
+  EXPECT_EQ(cancelled, 1);
   EXPECT_EQ(method.invocations(), 1u);
 }
 

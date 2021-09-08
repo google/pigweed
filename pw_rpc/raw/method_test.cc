@@ -107,6 +107,8 @@ struct {
 } last_request;
 
 RawServerWriter last_writer;
+RawServerReader last_reader;
+RawServerReaderWriter last_reader_writer;
 
 void DecodeRawTestRequest(ConstByteSpan request) {
   protobuf::Decoder decoder(request);
@@ -126,16 +128,23 @@ void DecodeRawTestRequest(ConstByteSpan request) {
   }
 };
 
-StatusWithSize AddFive(ServerContext&,
-                       ConstByteSpan request,
-                       ByteSpan response) {
+StatusWithSize DoNothing(ServerContext&, ConstByteSpan, ByteSpan) {
+  return StatusWithSize::Unknown();
+}
+
+void AddFive(ServerContext&,
+             ConstByteSpan request,
+             RawServerResponder& responder) {
   DecodeRawTestRequest(request);
 
+  std::array<std::byte, 32> response;
   TestResponse::MemoryEncoder test_response(response);
   EXPECT_EQ(OkStatus(), test_response.WriteValue(last_request.integer + 5));
   ConstByteSpan payload(test_response);
 
-  return StatusWithSize::Unauthenticated(payload.size());
+  ASSERT_EQ(OkStatus(),
+            responder.Finish(std::span(response).first(payload.size()),
+                             Status::Unauthenticated()));
 }
 
 void StartStream(ServerContext&,
@@ -145,26 +154,47 @@ void StartStream(ServerContext&,
   last_writer = std::move(writer);
 }
 
+void ClientStream(ServerContext&, RawServerReader& reader) {
+  last_reader = std::move(reader);
+}
+
+void BidirectionalStream(ServerContext&, RawServerReaderWriter& reader_writer) {
+  last_reader_writer = std::move(reader_writer);
+}
+
 class FakeService : public Service {
  public:
   FakeService(uint32_t id) : Service(id, kMethods) {}
 
-  static constexpr std::array<RawMethodUnion, 2> kMethods = {
-      RawMethod::SynchronousUnary<AddFive>(10u),
-      RawMethod::ServerStreaming<StartStream>(11u),
+  static constexpr std::array<RawMethodUnion, 5> kMethods = {
+      RawMethod::SynchronousUnary<DoNothing>(10u),
+      RawMethod::AsynchronousUnary<AddFive>(11u),
+      RawMethod::ServerStreaming<StartStream>(12u),
+      RawMethod::ClientStreaming<ClientStream>(13u),
+      RawMethod::BidirectionalStreaming<BidirectionalStream>(14u),
   };
 };
 
-TEST(RawMethod, UnaryRpc_SendsResponse) {
+constexpr const RawMethod& kSyncUnary =
+    std::get<0>(FakeService::kMethods).raw_method();
+constexpr const RawMethod& kAsyncUnary =
+    std::get<1>(FakeService::kMethods).raw_method();
+constexpr const RawMethod& kServerStream =
+    std::get<2>(FakeService::kMethods).raw_method();
+constexpr const RawMethod& kClientStream =
+    std::get<3>(FakeService::kMethods).raw_method();
+constexpr const RawMethod& kBidirectionalStream =
+    std::get<4>(FakeService::kMethods).raw_method();
+
+TEST(RawMethod, AsyncUnaryRpc_SendsResponse) {
   std::byte buffer[16];
   stream::MemoryWriter writer(buffer);
   TestRequest::StreamEncoder test_request(writer, ByteSpan());
   ASSERT_EQ(OkStatus(), test_request.WriteInteger(456));
   ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(7));
 
-  const RawMethod& method = std::get<0>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService> context(method);
-  method.Invoke(context.get(), context.request(writer.WrittenData()));
+  ServerContextForTest<FakeService> context(kAsyncUnary);
+  kAsyncUnary.Invoke(context.get(), context.request(writer.WrittenData()));
 
   EXPECT_EQ(last_request.integer, 456);
   EXPECT_EQ(last_request.status_code, 7u);
@@ -179,6 +209,18 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
   EXPECT_EQ(value, 461);
 }
 
+TEST(RawMethod, SyncUnaryRpc_SendsResponse) {
+  ServerContextForTest<FakeService> context(kSyncUnary);
+
+  kSyncUnary.Invoke(context.get(), context.request({}));
+
+  const Packet& packet = context.output().sent_packet();
+  EXPECT_EQ(PacketType::RESPONSE, packet.type());
+  EXPECT_EQ(Status::Unknown(), packet.status());
+  EXPECT_EQ(context.service_id(), packet.service_id());
+  EXPECT_EQ(kSyncUnary.id(), packet.method_id());
+}
+
 TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   std::byte buffer[16];
   stream::MemoryWriter writer(buffer);
@@ -186,10 +228,8 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   ASSERT_EQ(OkStatus(), test_request.WriteInteger(777));
   ASSERT_EQ(OkStatus(), test_request.WriteStatusCode(2));
 
-  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService> context(method);
-
-  method.Invoke(context.get(), context.request(writer.WrittenData()));
+  ServerContextForTest<FakeService> context(kServerStream);
+  kServerStream.Invoke(context.get(), context.request(writer.WrittenData()));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(777, last_request.integer);
@@ -198,11 +238,46 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   EXPECT_EQ(OkStatus(), last_writer.Finish());
 }
 
-TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
-  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService> context(method);
+TEST(RawMethod, ServerReader_HandlesRequests) {
+  ServerContextForTest<FakeService> context(kClientStream);
+  kClientStream.Invoke(context.get(), context.request({}));
 
-  method.Invoke(context.get(), context.request({}));
+  ConstByteSpan request;
+  last_reader.set_on_next([&request](ConstByteSpan req) { request = req; });
+
+  constexpr const char kRequestValue[] = "This is a request payload!!!";
+  std::array<std::byte, 128> encoded_request = {};
+  auto encoded = context.client_stream(std::as_bytes(std::span(kRequestValue)))
+                     .Encode(encoded_request);
+  ASSERT_EQ(OkStatus(), encoded.status());
+  ASSERT_EQ(OkStatus(),
+            context.server().ProcessPacket(*encoded, context.output()));
+
+  EXPECT_STREQ(reinterpret_cast<const char*>(request.data()), kRequestValue);
+}
+
+TEST(RawMethod, ServerReaderWriter_WritesResponses) {
+  ServerContextForTest<FakeService> context(kBidirectionalStream);
+  kBidirectionalStream.Invoke(context.get(), context.request({}));
+
+  constexpr const char kRequestValue[] = "O_o";
+  const auto kRequestBytes = std::as_bytes(std::span(kRequestValue));
+  EXPECT_EQ(OkStatus(), last_reader_writer.Write(kRequestBytes));
+
+  std::array<std::byte, 128> encoded_response = {};
+  auto encoded = context.server_stream(kRequestBytes).Encode(encoded_response);
+  ASSERT_EQ(OkStatus(), encoded.status());
+
+  ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
+  EXPECT_EQ(0,
+            std::memcmp(encoded.value().data(),
+                        context.output().sent_data().data(),
+                        encoded.value().size()));
+}
+
+TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
+  ServerContextForTest<FakeService> context(kServerStream);
+  kServerStream.Invoke(context.get(), context.request({}));
 
   auto buffer = last_writer.PayloadBuffer();
 
@@ -221,10 +296,8 @@ TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
 }
 
 TEST(RawServerWriter, Write_SendsExternalBuffer) {
-  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService> context(method);
-
-  method.Invoke(context.get(), context.request({}));
+  ServerContextForTest<FakeService> context(kServerStream);
+  kServerStream.Invoke(context.get(), context.request({}));
 
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
   EXPECT_EQ(last_writer.Write(data), OkStatus());
@@ -239,10 +312,8 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
 }
 
 TEST(RawServerWriter, Write_EmptyBuffer) {
-  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService> context(method);
-
-  method.Invoke(context.get(), context.request({}));
+  ServerContextForTest<FakeService> context(kServerStream);
+  kServerStream.Invoke(context.get(), context.request({}));
 
   ASSERT_EQ(last_writer.Write({}), OkStatus());
 
@@ -256,10 +327,8 @@ TEST(RawServerWriter, Write_EmptyBuffer) {
 }
 
 TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
-  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService> context(method);
-
-  method.Invoke(context.get(), context.request({}));
+  ServerContextForTest<FakeService> context(kServerStream);
+  kServerStream.Invoke(context.get(), context.request({}));
 
   EXPECT_EQ(OkStatus(), last_writer.Finish());
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
@@ -267,10 +336,8 @@ TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
 }
 
 TEST(RawServerWriter, Write_BufferTooSmall_ReturnsOutOfRange) {
-  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService, 16> context(method);
-
-  method.Invoke(context.get(), context.request({}));
+  ServerContextForTest<FakeService, 16> context(kServerStream);
+  kServerStream.Invoke(context.get(), context.request({}));
 
   constexpr auto data =
       bytes::Array<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>();
@@ -279,10 +346,8 @@ TEST(RawServerWriter, Write_BufferTooSmall_ReturnsOutOfRange) {
 
 TEST(RawServerWriter,
      Destructor_ReleasesAcquiredBufferWithoutSendingAndCloses) {
-  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService> context(method);
-
-  method.Invoke(context.get(), context.request({}));
+  ServerContextForTest<FakeService> context(kServerStream);
+  kServerStream.Invoke(context.get(), context.request({}));
 
   {
     RawServerWriter writer = std::move(last_writer);

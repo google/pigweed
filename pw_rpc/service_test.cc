@@ -28,9 +28,7 @@ class ServiceTestHelper {
 
 namespace {
 
-void InvokeIt(const internal::Method&,
-              internal::CallContext&,
-              const internal::Packet&) {}
+void InvokeIt(const internal::CallContext&, const internal::Packet&) {}
 
 class ServiceTestMethod : public internal::Method {
  public:

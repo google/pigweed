@@ -51,14 +51,10 @@ class Endpoint {
 
   // Finds a call object for an ongoing call associated with this packet, if
   // any. Returns nullptr if no matching call exists.
-  Call* FindCall(const Packet& packet);
-
-  // Adds a call to the internal call registry. This immediately registers the
-  // call and does NOT check if the call is unique.
-  void RegisterCall(Call& call) { calls_.push_front(call); }
-
-  // Removes the provided call from the call registry.
-  void UnregisterCall(const Call& call) { calls_.remove(call); }
+  Call* FindCall(const Packet& packet) {
+    return FindCallById(
+        packet.channel_id(), packet.service_id(), packet.method_id());
+  }
 
   // Finds an internal:::Channel with this ID or nullptr if none matches.
   Channel* GetInternalChannel(uint32_t id) const;
@@ -69,6 +65,24 @@ class Endpoint {
   Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
  private:
+  // Give Call access to the register/unregister functions.
+  friend class Call;
+
+  // Adds a call to the internal call registry. If a matching call already
+  // exists, it is cancelled locally (on_error called, no packet sent).
+  void RegisterCall(Call& call);
+
+  // Registers a call that is known to be unique. The calls list is NOT checked
+  // for existing calls.
+  void RegisterUniqueCall(Call& call) { calls_.push_front(call); }
+
+  // Removes the provided call from the call registry.
+  void UnregisterCall(const Call& call) { calls_.remove(call); }
+
+  Call* FindCallById(uint32_t channel_id,
+                     uint32_t service_id,
+                     uint32_t method_id);
+
   std::span<Channel> channels_;
   IntrusiveList<Call> calls_;
 };

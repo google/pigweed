@@ -147,7 +147,7 @@ class InvocationContext {
     output_.clear();
     T responder = GetResponder<T>();
     CallMethodImplFunction<kMethod>(
-        call_context(), std::forward<RequestArg>(request)..., responder);
+        service(), std::forward<RequestArg>(request)..., responder);
   }
 
   template <typename T>
@@ -155,7 +155,7 @@ class InvocationContext {
     return T(call_context());
   }
 
-  internal::CallContext& call_context() { return context_; }
+  const internal::CallContext& call_context() const { return context_; }
 
  private:
   static constexpr size_t kNoPayloadPacketSizeBytes =
@@ -166,7 +166,7 @@ class InvocationContext {
   rpc::Channel channel_;
   rpc::Server server_;
   Service service_;
-  internal::CallContext context_;
+  const internal::CallContext context_;
 };
 
 }  // namespace pw::rpc::internal::test

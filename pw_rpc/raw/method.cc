@@ -21,49 +21,48 @@
 
 namespace pw::rpc::internal {
 
-void RawMethod::SynchronousUnaryInvoker(const Method& method,
-                                        CallContext& call,
+void RawMethod::SynchronousUnaryInvoker(const CallContext& context,
                                         const Packet& request) {
-  RawServerResponder responder(call);
+  RawServerResponder responder(context);
   std::span payload_buffer = responder.AcquirePayloadBuffer();
 
   StatusWithSize sws =
-      static_cast<const RawMethod&>(method).function_.synchronous_unary(
-          call, request.payload(), payload_buffer);
+      static_cast<const RawMethod&>(context.method())
+          .function_.synchronous_unary(
+              context.service(), request.payload(), payload_buffer);
 
   responder.Finish(payload_buffer.first(sws.size()), sws.status())
       .IgnoreError();
 }
 
-void RawMethod::AsynchronousUnaryInvoker(const Method& method,
-                                         CallContext& call,
+void RawMethod::AsynchronousUnaryInvoker(const CallContext& context,
                                          const Packet& request) {
-  RawServerResponder responder(call);
-  static_cast<const RawMethod&>(method).function_.asynchronous_unary(
-      call, request.payload(), responder);
+  RawServerResponder responder(context);
+  static_cast<const RawMethod&>(context.method())
+      .function_.asynchronous_unary(
+          context.service(), request.payload(), responder);
 }
 
-void RawMethod::ServerStreamingInvoker(const Method& method,
-                                       CallContext& call,
+void RawMethod::ServerStreamingInvoker(const CallContext& context,
                                        const Packet& request) {
-  RawServerWriter server_writer(call);
-  static_cast<const RawMethod&>(method).function_.server_streaming(
-      call, request.payload(), server_writer);
+  RawServerWriter server_writer(context);
+  static_cast<const RawMethod&>(context.method())
+      .function_.server_streaming(
+          context.service(), request.payload(), server_writer);
 }
 
-void RawMethod::ClientStreamingInvoker(const Method& method,
-                                       CallContext& call,
+void RawMethod::ClientStreamingInvoker(const CallContext& context,
                                        const Packet&) {
-  RawServerReader reader(call);
-  static_cast<const RawMethod&>(method).function_.stream_request(call, reader);
+  RawServerReader reader(context);
+  static_cast<const RawMethod&>(context.method())
+      .function_.stream_request(context.service(), reader);
 }
 
-void RawMethod::BidirectionalStreamingInvoker(const Method& method,
-                                              CallContext& call,
+void RawMethod::BidirectionalStreamingInvoker(const CallContext& context,
                                               const Packet&) {
-  RawServerReaderWriter reader_writer(call);
-  static_cast<const RawMethod&>(method).function_.stream_request(call,
-                                                                 reader_writer);
+  RawServerReaderWriter reader_writer(context);
+  static_cast<const RawMethod&>(context.method())
+      .function_.stream_request(context.service(), reader_writer);
 }
 
 }  // namespace pw::rpc::internal

@@ -48,15 +48,23 @@ const TestMethod& kTestMethod = TestService::kMethods.front().test_method();
 TEST(Method, Id) { EXPECT_EQ(kTestMethod.id(), 1234u); }
 
 TEST(Method, Invoke) {
-  Channel channel(123, nullptr);
+  class NullChannelOutput final : public ChannelOutput {
+   public:
+    constexpr NullChannelOutput() : ChannelOutput("NullChannelOutput") {}
+
+    ByteSpan AcquireBuffer() override { return {}; }
+    Status SendAndReleaseBuffer(ConstByteSpan) override { return OkStatus(); }
+  } channel_output;
+
+  Channel channel(123, &channel_output);
   Server server(std::span(static_cast<rpc::Channel*>(&channel), 1));
   TestService service;
 
-  CallContext call(server, channel, service, kTestMethod);
+  const CallContext context(server, channel, service, kTestMethod);
   Packet empty_packet;
 
   EXPECT_EQ(kTestMethod.invocations(), 0u);
-  kTestMethod.Invoke(call, empty_packet);
+  kTestMethod.Invoke(context, empty_packet);
   EXPECT_EQ(kTestMethod.invocations(), 1u);
 }
 

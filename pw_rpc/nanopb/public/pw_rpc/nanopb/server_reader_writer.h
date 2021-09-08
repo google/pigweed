@@ -23,6 +23,7 @@
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/open_call.h"
+#include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc {
@@ -39,12 +40,15 @@ class InvocationContext;
 }  // namespace test
 
 // Non-templated base so the methods are instantiated only once.
-class GenericNanopbResponder : public internal::Call {
+class GenericNanopbResponder : public internal::ServerCall {
  public:
-  constexpr GenericNanopbResponder(MethodType type) : internal::Call(type) {}
+  constexpr GenericNanopbResponder(MethodType type)
+      : internal::ServerCall(type), serde_(nullptr) {}
 
-  GenericNanopbResponder(const CallContext& call, MethodType type)
-      : internal::Call(call, type) {}
+  GenericNanopbResponder(const CallContext& context, MethodType type);
+
+  GenericNanopbResponder(GenericNanopbResponder&&) = default;
+  GenericNanopbResponder& operator=(GenericNanopbResponder&&) = default;
 
   Status SendResponse(const void* response, Status status) {
     return SendClientStreamOrResponse(response, &status);
@@ -55,10 +59,14 @@ class GenericNanopbResponder : public internal::Call {
     return SendClientStreamOrResponse(response, nullptr);
   }
 
-  void DecodeRequest(ConstByteSpan payload, void* request_struct) const;
+  void DecodeRequest(ConstByteSpan payload, void* request_struct) const {
+    serde_->DecodeRequest(payload, request_struct);
+  }
 
  private:
   Status SendClientStreamOrResponse(const void* response, const Status* status);
+
+  const NanopbMethodSerde* serde_;
 };
 
 // The BaseNanopbServerReader serves as the base for the ServerReader and
@@ -67,8 +75,8 @@ class GenericNanopbResponder : public internal::Call {
 template <typename Request>
 class BaseNanopbServerReader : public GenericNanopbResponder {
  public:
-  BaseNanopbServerReader(const internal::CallContext& call, MethodType type)
-      : GenericNanopbResponder(call, type) {}
+  BaseNanopbServerReader(const internal::CallContext& context, MethodType type)
+      : GenericNanopbResponder(context, type) {}
 
  protected:
   constexpr BaseNanopbServerReader(MethodType type)
@@ -156,9 +164,9 @@ class NanopbServerReaderWriter
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  NanopbServerReaderWriter(const internal::CallContext& call)
+  NanopbServerReaderWriter(const internal::CallContext& context)
       : internal::BaseNanopbServerReader<Request>(
-            call, MethodType::kBidirectionalStreaming) {}
+            context, MethodType::kBidirectionalStreaming) {}
 };
 
 // The NanopbServerReader is used to receive messages and send a response in a
@@ -216,9 +224,9 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  NanopbServerReader(const internal::CallContext& call)
+  NanopbServerReader(const internal::CallContext& context)
       : internal::BaseNanopbServerReader<Request>(
-            call, MethodType::kClientStreaming) {}
+            context, MethodType::kClientStreaming) {}
 };
 
 // The NanopbServerWriter is used to send responses in a Nanopb server streaming
@@ -279,8 +287,9 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  NanopbServerWriter(const internal::CallContext& call)
-      : internal::GenericNanopbResponder(call, MethodType::kServerStreaming) {}
+  NanopbServerWriter(const internal::CallContext& context)
+      : internal::GenericNanopbResponder(context,
+                                         MethodType::kServerStreaming) {}
 };
 
 template <typename Response>
@@ -334,8 +343,8 @@ class NanopbServerResponder : private internal::GenericNanopbResponder {
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  NanopbServerResponder(const internal::CallContext& call)
-      : internal::GenericNanopbResponder(call, MethodType::kUnary) {}
+  NanopbServerResponder(const internal::CallContext& context)
+      : internal::GenericNanopbResponder(context, MethodType::kUnary) {}
 };
 // TODO(hepler): "pw::rpc::ServerWriter" should not be specific to Nanopb.
 template <typename T>

@@ -164,7 +164,7 @@ class UnaryContext : public NanopbInvocationContext<Service,
 
       Response& response = Base::output().AllocateResponse();
       return CallMethodImplFunction<kMethod>(
-          Base::call_context(), request, response);
+          Base::service(), request, response);
     } else {
       Base::template call<kMethod, NanopbServerResponder<Response>>(request);
     }

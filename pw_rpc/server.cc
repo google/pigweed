@@ -33,8 +33,9 @@ using internal::PacketType;
 
 Status Server::ProcessPacket(std::span<const byte> data,
                              ChannelOutput& interface) {
-  internal::Call* call;
-  Result<Packet> result = Endpoint::ProcessPacket(data, Packet::kServer, call);
+  internal::Call* base;
+  Result<Packet> result = Endpoint::ProcessPacket(data, Packet::kServer, base);
+  internal::ServerCall* const call = static_cast<internal::ServerCall*>(base);
 
   if (!result.ok()) {
     return result.status();
@@ -72,12 +73,9 @@ Status Server::ProcessPacket(std::span<const byte> data,
 
   switch (packet.type()) {
     case PacketType::REQUEST: {
-      // If the REQUEST is for an ongoing RPC, cancel it, then call it again.
-      if (call != nullptr) {
-        call->HandleError(Status::Cancelled());
-      }
-
-      internal::CallContext context(*this, *channel, *service, *method);
+      // If the REQUEST is for an ongoing RPC, the existing call will be
+      // cancelled when the new call object is created.
+      const internal::CallContext context(*this, *channel, *service, *method);
       method->Invoke(context, packet);
       break;
     }
@@ -120,7 +118,7 @@ std::tuple<Service*, const internal::Method*> Server::FindMethod(
 
 void Server::HandleClientStreamPacket(const internal::Packet& packet,
                                       internal::Channel& channel,
-                                      internal::Call* call) const {
+                                      internal::ServerCall* call) const {
   if (call == nullptr) {
     PW_LOG_DEBUG(
         "Received client stream packet for method that is not pending");
@@ -150,7 +148,7 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
 
 void Server::HandleCancelPacket(const Packet& packet,
                                 internal::Channel& channel,
-                                internal::Call* call) const {
+                                internal::ServerCall* call) const {
   if (call == nullptr) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly

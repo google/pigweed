@@ -18,6 +18,12 @@
 
 namespace pw::rpc::internal {
 
+GenericNanopbResponder::GenericNanopbResponder(const CallContext& context,
+                                               MethodType type)
+    : internal::ServerCall(context, type),
+      serde_(&static_cast<const internal::NanopbMethod&>(context.method())
+                  .serde()) {}
+
 Status GenericNanopbResponder::SendClientStreamOrResponse(
     const void* response, const Status* status) {
   if (!active()) {
@@ -28,9 +34,7 @@ Status GenericNanopbResponder::SendClientStreamOrResponse(
 
   // Cast the method to a NanopbMethod. Access the Nanopb
   // serializer/deserializer object and encode the response with it.
-  StatusWithSize result = static_cast<const internal::NanopbMethod&>(method())
-                              .serde()
-                              .EncodeResponse(response, payload_buffer);
+  StatusWithSize result = serde_->EncodeResponse(response, payload_buffer);
 
   if (!result.ok()) {
     return CloseAndSendServerError(Status::Internal());
@@ -42,12 +46,6 @@ Status GenericNanopbResponder::SendClientStreamOrResponse(
     return CloseAndSendResponse(payload_buffer, *status);
   }
   return SendPayloadBufferClientStream(payload_buffer);
-}
-
-void GenericNanopbResponder::DecodeRequest(ConstByteSpan payload,
-                                           void* request_struct) const {
-  static_cast<const internal::NanopbMethod&>(method()).serde().DecodeRequest(
-      payload, request_struct);
 }
 
 }  // namespace pw::rpc::internal
