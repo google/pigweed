@@ -20,7 +20,7 @@ namespace pw::rpc::internal {
 
 Status GenericNanopbResponder::SendClientStreamOrResponse(const void* response,
                                                           Status* status) {
-  if (!open()) {
+  if (!active()) {
     return Status::FailedPrecondition();
   }
 

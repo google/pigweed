@@ -45,6 +45,18 @@ streaming RPCs, though the server may not have an opportunity to cancel a
 synchronously handled unary RPC before it completes. The same RPC may be invoked
 multiple times simultaneously if the invocations are on different channels.
 
+Unrequested responses
+---------------------
+``pw_rpc`` supports sending responses to RPCs that have not yet been invoked by
+a client. This is useful in testing and in situations like an RPC that triggers
+reboot. After the reboot, the device opens the writer object and sends its
+response to the client.
+
+.. admonition:: Under construction
+
+  The ``ReaderWriter::Open()`` API is cumbersome, but a more streamlined API
+  will be added to the generated RPC code.
+
 Creating an RPC
 ===============
 

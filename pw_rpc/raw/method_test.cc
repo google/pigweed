@@ -188,7 +188,7 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(777, last_request.integer);
   EXPECT_EQ(2u, last_request.status_code);
-  EXPECT_TRUE(last_writer.open());
+  EXPECT_TRUE(last_writer.active());
   EXPECT_EQ(OkStatus(), last_writer.Finish());
 }
 

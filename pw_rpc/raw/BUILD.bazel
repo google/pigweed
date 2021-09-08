@@ -104,6 +104,18 @@ pw_cc_test(
     ],
 )
 
+# TODO(hepler): Make this a pw_cc_test when raw RPC generated headers are supported.
+filegroup(
+    name = "server_reader_writer_test",
+    srcs = ["server_reader_writer_test.cc"],
+    # deps = [
+    #     "..:test_protos.raw_rpc",
+    #     ":test_method_context",
+    #     "//pw_rpc:internal_test_utils",
+    #     ":method",
+    # ],
+)
+
 pw_cc_test(
     name = "stub_generation_test",
     srcs = ["stub_generation_test.cc"],

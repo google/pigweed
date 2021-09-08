@@ -48,7 +48,7 @@ TEST(ServerWriter, ConstructWithContext_StartsOpen) {
 
   FakeServerWriter writer(context.get());
 
-  EXPECT_TRUE(writer.open());
+  EXPECT_TRUE(writer.active());
 }
 
 TEST(ServerWriter, Move_ClosesOriginal) {
@@ -58,15 +58,15 @@ TEST(ServerWriter, Move_ClosesOriginal) {
   FakeServerWriter writer(std::move(moved));
 
 #ifndef __clang_analyzer__
-  EXPECT_FALSE(moved.open());
+  EXPECT_FALSE(moved.active());
 #endif  // ignore use-after-move
-  EXPECT_TRUE(writer.open());
+  EXPECT_TRUE(writer.active());
 }
 
 TEST(ServerWriter, DefaultConstruct_Closed) {
   FakeServerWriter writer;
 
-  EXPECT_FALSE(writer.open());
+  EXPECT_FALSE(writer.active());
 }
 
 TEST(ServerWriter, Construct_RegistersWithServer) {
@@ -121,9 +121,9 @@ TEST(ServerWriter, Close) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
-  ASSERT_TRUE(writer.open());
+  ASSERT_TRUE(writer.active());
   EXPECT_EQ(OkStatus(), writer.Finish());
-  EXPECT_FALSE(writer.open());
+  EXPECT_FALSE(writer.active());
   EXPECT_EQ(Status::FailedPrecondition(), writer.Finish());
 }
 
@@ -131,12 +131,12 @@ TEST(ServerWriter, Close_ReleasesBuffer) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
-  ASSERT_TRUE(writer.open());
+  ASSERT_TRUE(writer.active());
   auto buffer = writer.PayloadBuffer();
   buffer[0] = std::byte{0};
   EXPECT_FALSE(writer.output_buffer().empty());
   EXPECT_EQ(OkStatus(), writer.Finish());
-  EXPECT_FALSE(writer.open());
+  EXPECT_FALSE(writer.active());
   EXPECT_TRUE(writer.output_buffer().empty());
 }
 
@@ -198,11 +198,11 @@ TEST(ServerReader, Close_ClosesClientStream) {
   ServerContextForTest<TestService> context(TestService::method.method());
   test::FakeServerReader reader(context.get());
 
-  EXPECT_TRUE(reader.as_responder().open());
+  EXPECT_TRUE(reader.as_responder().active());
   EXPECT_TRUE(reader.as_responder().client_stream_open());
   EXPECT_EQ(OkStatus(), reader.as_responder().CloseAndSendResponse(OkStatus()));
 
-  EXPECT_FALSE(reader.as_responder().open());
+  EXPECT_FALSE(reader.as_responder().active());
   EXPECT_FALSE(reader.as_responder().client_stream_open());
 }
 
@@ -210,11 +210,11 @@ TEST(ServerReader, HandleClientStream_OnlyClosesClientStream) {
   ServerContextForTest<TestService> context(TestService::method.method());
   test::FakeServerReader reader(context.get());
 
-  EXPECT_TRUE(reader.open());
+  EXPECT_TRUE(reader.active());
   EXPECT_TRUE(reader.as_responder().client_stream_open());
   reader.as_responder().EndClientStream();
 
-  EXPECT_TRUE(reader.open());
+  EXPECT_TRUE(reader.active());
   EXPECT_FALSE(reader.as_responder().client_stream_open());
 }
 

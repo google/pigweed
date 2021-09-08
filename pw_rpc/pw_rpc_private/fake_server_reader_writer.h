@@ -49,7 +49,7 @@ class FakeServerReaderWriter : private internal::Call {
   FakeServerReaderWriter& operator=(FakeServerReaderWriter&&) = default;
 
   // Pull in protected functions from the hidden Call base as needed.
-  using Call::open;
+  using Call::active;
   using Call::set_on_client_stream_end;
   using Call::set_on_error;
   using Call::set_on_next;
@@ -84,8 +84,8 @@ class FakeServerWriter : private FakeServerReaderWriter {
   FakeServerWriter(FakeServerWriter&&) = default;
 
   // Common reader/writer functions.
+  using FakeServerReaderWriter::active;
   using FakeServerReaderWriter::Finish;
-  using FakeServerReaderWriter::open;
   using FakeServerReaderWriter::set_on_error;
   using FakeServerReaderWriter::Write;
 
@@ -105,8 +105,8 @@ class FakeServerReader : private FakeServerReaderWriter {
 
   FakeServerReader(FakeServerReader&&) = default;
 
+  using FakeServerReaderWriter::active;
   using FakeServerReaderWriter::as_responder;
-  using FakeServerReaderWriter::open;
 
   // Functions for test use.
   using FakeServerReaderWriter::PayloadBuffer;

@@ -261,7 +261,7 @@ class BidiMethod : public BasicServer {
               service_,
               service_.method(100)),
         responder_(call_) {
-    ASSERT_TRUE(responder_.open());
+    ASSERT_TRUE(responder_.active());
   }
 
   internal::CallContext call_;
@@ -290,7 +290,7 @@ TEST_F(BidiMethod, Cancel_ClosesServerWriter) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(PacketForRpc(PacketType::CANCEL), output_));
 
-  EXPECT_FALSE(responder_.open());
+  EXPECT_FALSE(responder_.active());
 }
 
 TEST_F(BidiMethod, Cancel_SendsNoResponse) {
@@ -305,7 +305,7 @@ TEST_F(BidiMethod, ClientError_ClosesServerWriterWithoutResponse) {
       OkStatus(),
       server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_ERROR), output_));
 
-  EXPECT_FALSE(responder_.open());
+  EXPECT_FALSE(responder_.active());
   EXPECT_EQ(output_.packet_count(), 0u);
 }
 
@@ -337,7 +337,7 @@ TEST_F(BidiMethod, Cancel_IncorrectChannel) {
 
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::FailedPrecondition());
-  EXPECT_TRUE(responder_.open());
+  EXPECT_TRUE(responder_.active());
 }
 
 TEST_F(BidiMethod, Cancel_IncorrectService) {
@@ -349,7 +349,7 @@ TEST_F(BidiMethod, Cancel_IncorrectService) {
   EXPECT_EQ(output_.sent_packet().status(), Status::NotFound());
   EXPECT_EQ(output_.sent_packet().service_id(), 43u);
   EXPECT_EQ(output_.sent_packet().method_id(), 100u);
-  EXPECT_TRUE(responder_.open());
+  EXPECT_TRUE(responder_.active());
 }
 
 TEST_F(BidiMethod, Cancel_IncorrectMethod) {
@@ -358,7 +358,7 @@ TEST_F(BidiMethod, Cancel_IncorrectMethod) {
                                   output_));
   EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::NotFound());
-  EXPECT_TRUE(responder_.open());
+  EXPECT_TRUE(responder_.active());
 }
 
 TEST_F(BidiMethod, ClientStream_CallsCallback) {
@@ -411,7 +411,7 @@ class ServerStreamingMethod : public BasicServer {
               service_,
               service_.method(100)),
         responder_(call_) {
-    ASSERT_TRUE(responder_.open());
+    ASSERT_TRUE(responder_.active());
   }
 
   internal::CallContext call_;

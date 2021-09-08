@@ -29,11 +29,12 @@ template <typename Response, size_t kMaxResponses, size_t kOutputSize>
 class NanopbFakeChannelOutput final
     : public internal::test::FakeChannelOutputBuffer<kOutputSize> {
  public:
-  template <auto kMethod, uint32_t kMethodId, typename ServiceType>
+  // Creates a NanopbFakeChannelOutput for the specified method.
+  template <typename ServiceType, auto kMethod, uint32_t kMethodId>
   static NanopbFakeChannelOutput Create() {
     return NanopbFakeChannelOutput(
-        internal::MethodLookup::GetNanopbMethod<ServiceType, kMethodId>(),
-        internal::MethodTraits<decltype(kMethod)>::kType);
+        internal::MethodTraits<decltype(kMethod)>::kType,
+        internal::MethodLookup::GetNanopbMethod<ServiceType, kMethodId>());
   }
 
   // Private constructor, do not use. This constructor is exposed so this class

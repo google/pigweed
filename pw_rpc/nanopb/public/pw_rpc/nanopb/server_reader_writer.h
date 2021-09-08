@@ -20,6 +20,8 @@
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/method_lookup.h"
+#include "pw_rpc/internal/open_call.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc {
@@ -93,6 +95,26 @@ template <typename Request, typename Response>
 class NanopbServerReaderWriter
     : private internal::BaseNanopbServerReader<Request> {
  public:
+  // Creates a NanopbServerReaderWriter that is ready to send responses for a
+  // particular RPC. This can be used for testing or to send responses to an RPC
+  // that has not been started by a client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static NanopbServerReaderWriter Open(Server& server,
+                                                     uint32_t channel_id,
+                                                     ServiceImpl& service) {
+    static_assert(std::is_same_v<Request, internal::Request<kMethod>>,
+                  "The request type of a NanopbServerReaderWriter must match "
+                  "the method.");
+    static_assert(std::is_same_v<Response, internal::Response<kMethod>>,
+                  "The response type of a NanopbServerReaderWriter must match "
+                  "the method.");
+    return {internal::OpenCall<kMethod, MethodType::kBidirectionalStreaming>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+  }
+
   constexpr NanopbServerReaderWriter()
       : internal::BaseNanopbServerReader<Request>(
             MethodType::kBidirectionalStreaming) {}
@@ -100,7 +122,7 @@ class NanopbServerReaderWriter
   NanopbServerReaderWriter(NanopbServerReaderWriter&&) = default;
   NanopbServerReaderWriter& operator=(NanopbServerReaderWriter&&) = default;
 
-  using internal::GenericNanopbResponder::open;
+  using internal::GenericNanopbResponder::active;
 
   using internal::GenericNanopbResponder::channel_id;
 
@@ -141,6 +163,26 @@ class NanopbServerReaderWriter
 template <typename Request, typename Response>
 class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
  public:
+  // Creates a NanopbServerReader that is ready to send a response to a
+  // particular RPC. This can be used for testing or to finish an RPC that has
+  // not been started by the client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static NanopbServerReader Open(Server& server,
+                                               uint32_t channel_id,
+                                               ServiceImpl& service) {
+    static_assert(
+        std::is_same_v<Request, internal::Request<kMethod>>,
+        "The request type of a NanopbServerReader must match the method.");
+    static_assert(
+        std::is_same_v<Response, internal::Response<kMethod>>,
+        "The response type of a NanopbServerReader must match the method.");
+    return {internal::OpenCall<kMethod, MethodType::kClientStreaming>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+  }
+
   // Allow default construction so that users can declare a variable into which
   // to move NanopbServerReaders from RPC calls.
   constexpr NanopbServerReader()
@@ -150,6 +192,7 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
   NanopbServerReader(NanopbServerReader&&) = default;
   NanopbServerReader& operator=(NanopbServerReader&&) = default;
 
+  using internal::GenericNanopbResponder::active;
   using internal::GenericNanopbResponder::channel_id;
 
   // Functions for setting RPC event callbacks.
@@ -178,6 +221,23 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
 template <typename Response>
 class NanopbServerWriter : private internal::GenericNanopbResponder {
  public:
+  // Creates a NanopbServerWriter that is ready to send responses for a
+  // particular RPC. This can be used for testing or to send responses to an RPC
+  // that has not been started by a client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static NanopbServerWriter Open(Server& server,
+                                               uint32_t channel_id,
+                                               ServiceImpl& service) {
+    static_assert(
+        std::is_same_v<Response, internal::Response<kMethod>>,
+        "The response type of a NanopbServerWriter must match the method.");
+    return {internal::OpenCall<kMethod, MethodType::kServerStreaming>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+  }
+
   // Allow default construction so that users can declare a variable into which
   // to move ServerWriters from RPC calls.
   constexpr NanopbServerWriter()
@@ -186,9 +246,9 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   NanopbServerWriter(NanopbServerWriter&&) = default;
   NanopbServerWriter& operator=(NanopbServerWriter&&) = default;
 
-  using internal::GenericNanopbResponder::open;
-
+  using internal::GenericNanopbResponder::active;
   using internal::GenericNanopbResponder::channel_id;
+  using internal::GenericNanopbResponder::open;
 
   // Writes a response struct. Returns the following Status codes:
   //

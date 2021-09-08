@@ -46,10 +46,10 @@ Packet StreamPacket(const CallContext& call,
 
 Call::Call(const CallContext& call, MethodType type)
     : call_(call),
-      rpc_state_(kOpen),
+      rpc_state_(kActive),
       type_(type),
-      client_stream_state_(HasClientStream(type) ? kClientStreamOpen
-                                                 : kClientStreamClosed) {
+      client_stream_state_(HasClientStream(type) ? kClientStreamActive
+                                                 : kClientStreamInactive) {
   call_.server().RegisterCall(*this);
 }
 
@@ -62,7 +62,7 @@ Call& Call::operator=(Call&& other) {
   type_ = other.type_;
   client_stream_state_ = other.client_stream_state_;
 
-  if (other.open()) {
+  if (other.active()) {
     other.Close();
     other.call_.server().RegisterCall(*this);
   }
@@ -85,7 +85,7 @@ uint32_t Call::method_id() const { return call_.method().id(); }
 
 Status Call::CloseAndSendResponse(std::span<const std::byte> response,
                                   Status status) {
-  if (!open()) {
+  if (!active()) {
     return Status::FailedPrecondition();
   }
 
@@ -107,7 +107,7 @@ Status Call::CloseAndSendResponse(std::span<const std::byte> response,
 }
 
 std::span<std::byte> Call::AcquirePayloadBuffer() {
-  PW_DCHECK(open());
+  PW_DCHECK(active());
 
   // Only allow having one active buffer at a time.
   if (response_.empty()) {
@@ -118,21 +118,21 @@ std::span<std::byte> Call::AcquirePayloadBuffer() {
 }
 
 Status Call::SendPayloadBufferClientStream(std::span<const std::byte> payload) {
-  PW_DCHECK(open());
+  PW_DCHECK(active());
   return call_.channel().Send(response_, StreamPacket(call_, payload));
 }
 
 void Call::ReleasePayloadBuffer() {
-  PW_DCHECK(open());
+  PW_DCHECK(active());
   call_.channel().Release(response_);
 }
 
 void Call::Close() {
-  PW_DCHECK(open());
+  PW_DCHECK(active());
 
   call_.server().UnregisterCall(*this);
-  rpc_state_ = kClosed;
-  client_stream_state_ = kClientStreamClosed;
+  rpc_state_ = kInactive;
+  client_stream_state_ = kClientStreamInactive;
 }
 
 }  // namespace pw::rpc::internal

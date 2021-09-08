@@ -51,6 +51,7 @@ pw_cc_library(
         "public/pw_rpc/internal/method.h",
         "public/pw_rpc/internal/method_lookup.h",
         "public/pw_rpc/internal/method_union.h",
+        "public/pw_rpc/internal/open_call.h",
         "server.cc",
         "service.cc",
     ],
@@ -198,6 +199,7 @@ filegroup(
         "nanopb/public/pw_rpc/nanopb/test_method_context.h",
         "nanopb/pw_rpc_nanopb_private/internal_test_utils.h",
         "nanopb/server_reader_writer.cc",
+        "nanopb/server_reader_writer_test.cc",
         "nanopb/stub_generation_test.cc",
     ],
 )

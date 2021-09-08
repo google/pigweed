@@ -19,7 +19,7 @@
 namespace pw::rpc {
 
 Status RawServerReaderWriter::Write(ConstByteSpan response) {
-  if (!open()) {
+  if (!active()) {
     return Status::FailedPrecondition();
   }
 

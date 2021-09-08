@@ -53,13 +53,20 @@ class Call : public IntrusiveList<Call>::Item {
   Call& operator=(const Call&) = delete;
 
   // True if the Call is active and ready to send responses.
-  bool open() const { return rpc_state_ == kOpen; }
+  [[nodiscard]] bool active() const { return rpc_state_ == kActive; }
+
+  // DEPRECATED: open() was renamed to active() because it is clearer and does
+  //     not conflict with Open() in ReaderWriter classes.
+  // TODO(pwbug/472): Remove the open() method.
+  /* [[deprecated("Renamed to active()")]] */ bool open() const {
+    return active();
+  }
 
   uint32_t channel_id() const { return call_.channel().id(); }
   uint32_t service_id() const { return call_.service().id(); }
   uint32_t method_id() const;
 
-  // Closes the Call and sends a RESPONSE packet, if it is open. Returns the
+  // Closes the Call and sends a RESPONSE packet, if it is active. Returns the
   // status from sending the packet, or FAILED_PRECONDITION if the Call is not
   // active.
   Status CloseAndSendResponse(std::span<const std::byte> response,
@@ -83,7 +90,7 @@ class Call : public IntrusiveList<Call>::Item {
   }
 
   void EndClientStream() {
-    client_stream_state_ = kClientStreamClosed;
+    client_stream_state_ = kClientStreamInactive;
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK
     if (on_client_stream_end_) {
@@ -95,22 +102,22 @@ class Call : public IntrusiveList<Call>::Item {
   bool has_client_stream() const { return HasClientStream(type_); }
 
   bool client_stream_open() const {
-    return client_stream_state_ == kClientStreamOpen;
+    return client_stream_state_ == kClientStreamActive;
   }
 
  protected:
   // Creates a Call for a closed RPC.
   constexpr Call(MethodType type)
-      : rpc_state_(kClosed),
+      : rpc_state_(kInactive),
         type_(type),
-        client_stream_state_(kClientStreamClosed) {}
+        client_stream_state_(kClientStreamInactive) {}
 
-  // Creates a Call for an open RPC.
+  // Creates a Call for an active RPC.
   Call(const CallContext& call, MethodType type);
 
   // Initialize rpc_state_ to closed since move-assignment will check if the
-  // Call is open before moving into it.
-  Call(Call&& other) : rpc_state_(kClosed) { *this = std::move(other); }
+  // Call is active before moving into it.
+  Call(Call&& other) : rpc_state_(kInactive) { *this = std::move(other); }
 
   Call& operator=(Call&& other);
 
@@ -143,12 +150,12 @@ class Call : public IntrusiveList<Call>::Item {
 
   constexpr const Channel::OutputBuffer& buffer() const { return response_; }
 
-  // Acquires a buffer into which to write a payload. The Call MUST be open when
-  // this is called!
+  // Acquires a buffer into which to write a payload. The Call MUST be active
+  // when this is called!
   std::span<std::byte> AcquirePayloadBuffer();
 
   // Releases the buffer, sending a client stream packet with the specified
-  // payload. The Call MUST be open when this is called!
+  // payload. The Call MUST be active when this is called!
   Status SendPayloadBufferClientStream(std::span<const std::byte> payload);
 
   // Releases the buffer without sending a packet.
@@ -156,7 +163,7 @@ class Call : public IntrusiveList<Call>::Item {
 
  private:
   // Removes the RPC from the server & marks as closed. The responder must be
-  // open when this is called.
+  // active when this is called.
   void Close();
 
   CallContext call_;
@@ -174,9 +181,12 @@ class Call : public IntrusiveList<Call>::Item {
   Function<void()> on_client_stream_end_;
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
-  enum : bool { kClosed, kOpen } rpc_state_;
+  enum : bool { kInactive, kActive } rpc_state_;
   MethodType type_;
-  enum : bool { kClientStreamClosed, kClientStreamOpen } client_stream_state_;
+  enum : bool {
+    kClientStreamInactive,
+    kClientStreamActive,
+  } client_stream_state_;
 };
 
 }  // namespace internal

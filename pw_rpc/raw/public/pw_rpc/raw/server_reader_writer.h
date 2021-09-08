@@ -21,6 +21,7 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/method_lookup.h"
+#include "pw_rpc/internal/open_call.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc {
@@ -50,8 +51,21 @@ class RawServerReaderWriter : private internal::Call {
   RawServerReaderWriter(RawServerReaderWriter&&) = default;
   RawServerReaderWriter& operator=(RawServerReaderWriter&&) = default;
 
-  using internal::Call::open;
+  // Creates a RawServerReaderWriter that is ready to send responses for a
+  // particular RPC. This can be used for testing or to send responses to an RPC
+  // that has not been started by a client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static RawServerReaderWriter Open(Server& server,
+                                                  uint32_t channel_id,
+                                                  ServiceImpl& service) {
+    return {internal::OpenCall<kMethod, MethodType::kBidirectionalStreaming>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+  }
 
+  using internal::Call::active;
   using internal::Call::channel_id;
 
   // Functions for setting the callbacks.
@@ -83,6 +97,7 @@ class RawServerReaderWriter : private internal::Call {
       : internal::Call(call, type) {}
 
   using internal::Call::CloseAndSendResponse;
+  using internal::Call::open;  // Deprecated; renamed to active()
 
  private:
   friend class internal::RawMethod;
@@ -95,14 +110,27 @@ class RawServerReaderWriter : private internal::Call {
 // raw client streaming RPC.
 class RawServerReader : private RawServerReaderWriter {
  public:
+  // Creates a RawServerReader that is ready to send a response to a particular
+  // RPC. This can be used for testing or to finish an RPC that has not been
+  // started by the client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static RawServerReader Open(Server& server,
+                                            uint32_t channel_id,
+                                            ServiceImpl& service) {
+    return {internal::OpenCall<kMethod, MethodType::kClientStreaming>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+  }
+
   constexpr RawServerReader()
       : RawServerReaderWriter(MethodType::kClientStreaming) {}
 
   RawServerReader(RawServerReader&&) = default;
   RawServerReader& operator=(RawServerReader&&) = default;
 
-  using RawServerReaderWriter::open;
-
+  using RawServerReaderWriter::active;
   using RawServerReaderWriter::channel_id;
 
   using RawServerReaderWriter::set_on_client_stream_end;
@@ -128,15 +156,29 @@ class RawServerReader : private RawServerReaderWriter {
 // The RawServerWriter is used to send responses in a raw server streaming RPC.
 class RawServerWriter : private RawServerReaderWriter {
  public:
+  // Creates a RawServerWriter that is ready to send responses for a particular
+  // RPC. This can be used for testing or to send responses to an RPC that has
+  // not been started by a client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static RawServerWriter Open(Server& server,
+                                            uint32_t channel_id,
+                                            ServiceImpl& service) {
+    return {internal::OpenCall<kMethod, MethodType::kServerStreaming>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+  }
+
   constexpr RawServerWriter()
       : RawServerReaderWriter(MethodType::kServerStreaming) {}
 
   RawServerWriter(RawServerWriter&&) = default;
   RawServerWriter& operator=(RawServerWriter&&) = default;
 
-  using RawServerReaderWriter::open;
-
+  using RawServerReaderWriter::active;
   using RawServerReaderWriter::channel_id;
+  using RawServerReaderWriter::open;
 
   using RawServerReaderWriter::set_on_error;
 
