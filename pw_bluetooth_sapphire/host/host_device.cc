@@ -14,9 +14,6 @@
 namespace bthost {
 namespace {
 
-// bt-gatt-svc devices are published for HID-over-GATT only.
-constexpr bt::UUID kHogUuid(uint16_t{0x1812});
-
 const char* kDeviceName = "bt_host";
 
 }  // namespace
@@ -113,8 +110,6 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
         // DDK will call Unbind here to clean up.
       } else {
         bt_log(DEBUG, "bt-host", "adapter initialized; make device visible");
-        host_->gatt()->RegisterRemoteServiceWatcher(
-            fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
         txn.Reply(ZX_OK);
         return;
       }
@@ -127,10 +122,6 @@ void HostDevice::DdkUnbind(ddk::UnbindTxn txn) {
 
   {
     std::lock_guard<std::mutex> lock(mtx_);
-
-    // Do this immediately to stop receiving new service callbacks.
-    bt_log(TRACE, "bt-host", "removing GATT service watcher");
-    ignore_gatt_services_ = true;
 
     async::PostTask(loop_.dispatcher(), [this] {
       std::lock_guard<std::mutex> lock(mtx_);
@@ -168,28 +159,6 @@ void HostDevice::Open(OpenRequestView request, OpenCompleter::Sync& completer) {
   async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(request->channel)]() mutable {
     host->BindHostInterface(std::move(chan));
   });
-}
-
-void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
-                                          fbl::RefPtr<bt::gatt::RemoteService> service) {
-  TRACE_DURATION("bluetooth", "HostDevice::OnRemoteGattServiceAdded");
-
-  // Only publish children for HID-over-GATT.
-  if (service->uuid() != kHogUuid) {
-    return;
-  }
-
-  std::lock_guard<std::mutex> lock(mtx_);
-
-  if (ignore_gatt_services_) {
-    return;
-  }
-
-  // This is run on the host event loop. Bind(), Init() and Unbind() should maintain the invariant
-  // that  host_ are initialized when the event loop is running.
-  ZX_DEBUG_ASSERT(host_);
-
-  __UNUSED zx_status_t status = GattRemoteServiceDevice::Publish(zxdev(), peer_id, service);
 }
 
 fpromise::result<bt_vendor_protocol_t, zx_status_t> HostDevice::GetVendorProtocol() {

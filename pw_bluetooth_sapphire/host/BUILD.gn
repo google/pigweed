@@ -34,8 +34,6 @@ fuchsia_driver_component("driver") {
 
 source_set("sources") {
   sources = [
-    "gatt_remote_service_device.cc",
-    "gatt_remote_service_device.h",
     "host.cc",
     "host.h",
     "host_device.cc",
@@ -50,7 +48,6 @@ source_set("sources") {
   public_deps = [
     ":stack",
     "fidl",
-    "//sdk/banjo/fuchsia.hardware.bt.gattsvc:fuchsia.hardware.bt.gattsvc_banjo_cpp",
     "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_llcpp",
     "//src/connectivity/bluetooth/fidl:host",

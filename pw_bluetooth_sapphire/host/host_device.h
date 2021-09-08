@@ -17,7 +17,6 @@
 #include <ddktl/device.h>
 #include <fbl/macros.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/gatt_remote_service_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/host.h"
 
 namespace bthost {
@@ -44,17 +43,10 @@ class HostDevice final : public HostDeviceType {
   // Returns the status of the fidl send operation.
   void Open(OpenRequestView request, OpenCompleter::Sync& completer);
 
-  // Called when a new remote GATT service has been found.
-  void OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
-                                fbl::RefPtr<bt::gatt::RemoteService> service);
-
   fpromise::result<bt_vendor_protocol_t, zx_status_t> GetVendorProtocol();
 
   // Guards access to members below.
   std::mutex mtx_;
-
-  // Used to ignore new gatt services during & after unbinding.
-  bool ignore_gatt_services_ __TA_GUARDED(mtx_) = false;
 
   // HCI protocol struct
   bt_hci_protocol_t hci_proto_;
