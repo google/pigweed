@@ -90,7 +90,7 @@ class Stream {
   //
   //   OK - Between 1 and dest.size_bytes() were successfully read. Returns the
   //       span of read bytes.
-  //   UNIMPLEMENTED - This stream does not support writing.
+  //   UNIMPLEMENTED - This stream does not support reading.
   //   FAILED_PRECONDITION - The Reader  is not in state to read data.
   //   RESOURCE_EXHAUSTED - Unable to read any bytes at this time. No bytes
   //       read. Try again once bytes become available.
