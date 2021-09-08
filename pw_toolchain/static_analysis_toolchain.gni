@@ -36,7 +36,6 @@ declare_args() {
 #   cc: (required) String indicating the C compiler to use.
 #   cxx: (required) String indicating the C++ compiler to use.
 template("pw_static_analysis_toolchain") {
-  # Determine OS of toolchain, which is the builtin argument "current_os".
   invoker_toolchain_args = invoker.defaults
 
   # Clang tidy is invoked by a wrapper script which implements the missing
