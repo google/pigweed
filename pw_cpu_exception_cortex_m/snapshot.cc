@@ -67,6 +67,7 @@ Status CaptureMainStack(
       .stack_low_addr = stack_low_addr,
       .stack_high_addr = stack_high_addr,
       .stack_pointer = stack_pointer,
+      .stack_pointer_est_peak = std::nullopt,
   };
   return thread::SnapshotStack(thread_ctx, encoder, thread_stack_callback);
 }

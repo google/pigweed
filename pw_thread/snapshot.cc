@@ -35,6 +35,9 @@ Status SnapshotStack(const StackContext& stack,
   encoder.WriteStackStartPointer(stack.stack_high_addr);
   encoder.WriteStackEndPointer(stack.stack_low_addr);
   encoder.WriteStackPointer(stack.stack_pointer);
+  if (stack.stack_pointer_est_peak.has_value()) {
+    encoder.WriteStackPointerEstPeak(stack.stack_pointer_est_peak.value());
+  }
   PW_LOG_DEBUG("Active stack: 0x%08x-0x%08x (%ld bytes)",
                stack.stack_high_addr,
                stack.stack_pointer,

@@ -34,6 +34,7 @@ struct StackContext {
   uintptr_t stack_low_addr;
   uintptr_t stack_high_addr;
   uintptr_t stack_pointer;
+  std::optional<uintptr_t> stack_pointer_est_peak;
 };
 
 // Takes the provided StackContext, and writes stack context to the provided

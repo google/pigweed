@@ -132,6 +132,7 @@ Status SnapshotThread(TaskHandle_t thread,
       .stack_low_addr = stack_low_addr,
       .stack_high_addr = reinterpret_cast<uintptr_t>(tcb.pxEndOfStack),
       .stack_pointer = stack_pointer,
+      .stack_pointer_est_peak = std::nullopt,
   };
   return SnapshotStack(thread_ctx, encoder, thread_stack_callback);
 #else

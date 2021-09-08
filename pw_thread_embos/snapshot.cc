@@ -132,6 +132,8 @@ Status SnapshotThread(const OS_TASK& thread,
       .stack_pointer = reinterpret_cast<uintptr_t>(
           ThreadIsRunning(thread) ? running_thread_stack_pointer
                                   : thread.pStack),
+      .stack_pointer_est_peak = reinterpret_cast<uintptr_t>(thread.pStackBot) +
+                                thread.StackSize - OS_GetStackUsed(&thread),
   };
 
   return SnapshotStack(thread_ctx, encoder, thread_stack_callback);

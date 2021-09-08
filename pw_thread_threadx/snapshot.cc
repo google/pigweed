@@ -144,6 +144,7 @@ Status SnapshotThread(const TX_THREAD& thread,
       .stack_pointer = reinterpret_cast<uintptr_t>(
           ThreadIsRunning(thread) ? running_thread_stack_pointer
                                   : thread.tx_thread_stack_ptr),
+      .stack_pointer_est_peak = std::nullopt,
   };
 
   return SnapshotStack(thread_ctx, encoder, thread_stack_callback);

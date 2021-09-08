@@ -67,6 +67,18 @@ class StackInfo:
         used_str += f', {100*self.stack_used()/self.stack_size_limit():.2f}%'
         return used_str
 
+    def _stack_pointer_est_peak_str(self) -> str:
+        if not self.has_stack_pointer_est_peak():
+            return 'size unknown'
+
+        high_used_str = f'{self.stack_pointer_est_peak()} bytes'
+        if not self.has_stack_size_limit():
+            return high_used_str
+        high_water_mark_percent = (100 * self.stack_pointer_est_peak() /
+                                   self.stack_size_limit())
+        high_used_str += f', {high_water_mark_percent:.2f}%'
+        return high_used_str
+
     def _stack_used_range_str(self) -> str:
         start_str = (f'0x{self._thread.stack_start_pointer:08x}'
                      if self._thread.HasField('stack_start_pointer') else
@@ -124,11 +136,29 @@ class StackInfo:
         return abs(self._thread.stack_start_pointer -
                    self._thread.stack_pointer)
 
+    def has_stack_pointer_est_peak(self) -> bool:
+        """Returns true if there's enough info to calculate estimate
+        used stack.
+        """
+        return (self._thread.HasField('stack_start_pointer')
+                and self._thread.HasField('stack_pointer_est_peak'))
+
+    def stack_pointer_est_peak(self) -> int:
+        """Returns the max estimated used stack usage in bytes.
+
+        Precondition:
+            has_stack_estimated_used_bytes() must be true.
+        """
+        assert self.has_stack_pointer_est_peak(), 'Missing stack est. peak'
+        return abs(self._thread.stack_start_pointer -
+                   self._thread.stack_pointer_est_peak)
+
     def __str__(self) -> str:
         output = [
             'Stack info',
-            f'  Stack used:   {self._stack_used_range_str()}',
-            f'  Stack limits: {self._stack_limit_range_str()}',
+            f'  Stack cur used:  {self._stack_used_range_str()}',
+            f'  Stack max used:  {self._stack_pointer_est_peak_str()}',
+            f'  Stack limits:    {self._stack_limit_range_str()}',
         ]
         return '\n'.join(output)
 
