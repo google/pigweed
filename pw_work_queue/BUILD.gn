@@ -67,15 +67,13 @@ pw_test_group("tests") {
   tests = [ ":stl_work_queue_test" ]
 }
 
-if (pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread") {
-  pw_source_set("stl_test_thread") {
-    sources = [ "stl_test_thread.cc" ]
-    deps = [
-      ":test_thread",
-      "$dir_pw_thread:thread",
-      "$dir_pw_thread_stl:thread",
-    ]
-  }
+pw_source_set("stl_test_thread") {
+  sources = [ "stl_test_thread.cc" ]
+  deps = [
+    ":test_thread",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
+  ]
 }
 
 pw_test("stl_work_queue_test") {

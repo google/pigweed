@@ -90,15 +90,13 @@ pw_test("multisink_test") {
   deps = [ ":pw_multisink" ]
 }
 
-if (pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread") {
-  pw_source_set("stl_test_thread") {
-    sources = [ "stl_test_thread.cc" ]
-    deps = [
-      ":test_thread",
-      "$dir_pw_thread:thread",
-      "$dir_pw_thread_stl:thread",
-    ]
-  }
+pw_source_set("stl_test_thread") {
+  sources = [ "stl_test_thread.cc" ]
+  deps = [
+    ":test_thread",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
+  ]
 }
 
 pw_test("stl_multisink_threaded_test") {

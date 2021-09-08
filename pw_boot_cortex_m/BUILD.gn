@@ -54,6 +54,9 @@ if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m") {
     ]
     sources = [ "core_init.c" ]
   }
+} else {
+  group("armv7m") {
+  }
 }
 
 if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv8m") {
@@ -67,6 +70,9 @@ if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv8m") {
       pw_boot_cortex_m_LINKER_SCRIPT,
     ]
     sources = [ "core_init.c" ]
+  }
+} else {
+  group("armv8m") {
   }
 }
 
