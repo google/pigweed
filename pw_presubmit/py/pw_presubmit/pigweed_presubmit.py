@@ -526,6 +526,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # Configuration
     r'^(?:.+/)?\..+$',
     r'\bPW_PLUGINS$',
+    r'\bconstraint.list$',
     # Metadata
     r'^docker/tag$',
     r'\bAUTHORS$',

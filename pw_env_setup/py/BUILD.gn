@@ -33,6 +33,7 @@ pw_python_package("py") {
     "pw_env_setup/env_setup.py",
     "pw_env_setup/environment.py",
     "pw_env_setup/json_visitor.py",
+    "pw_env_setup/python_packages.py",
     "pw_env_setup/shell_visitor.py",
     "pw_env_setup/spinner.py",
     "pw_env_setup/virtualenv_setup/__init__.py",
@@ -42,6 +43,7 @@ pw_python_package("py") {
   ]
   tests = [
     "environment_test.py",
+    "python_packages_test.py",
     "json_visitor_test.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"

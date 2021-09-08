@@ -128,7 +128,7 @@ def _check_venv(python, version, venv_path, pyvenv_cfg):
             shutil.rmtree(venv_path)
 
 
-def install(
+def install(  # pylint: disable=too-many-arguments
     project_root,
     venv_path,
     full_envsetup=True,
@@ -139,6 +139,7 @@ def install(
     python=sys.executable,
     env=None,
     system_packages=False,
+    use_pinned_pip_packages=True,
 ):
     """Creates a venv and installs all packages in this Git repo."""
 
@@ -249,6 +250,9 @@ def install(
                 gn_cmd = ['gn', 'gen', build_dir]
 
                 args = list(gn_args)
+                if not use_pinned_pip_packages:
+                    args.append('pw_build_PIP_CONSTRAINTS=[]')
+
                 args.append('dir_pigweed="{}"'.format(pw_root))
                 gn_cmd.append('--args={}'.format(' '.join(args)))
 

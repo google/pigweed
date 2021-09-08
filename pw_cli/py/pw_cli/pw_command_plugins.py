@@ -30,6 +30,8 @@ def _register_builtin_plugins(registry: plugins.Registry) -> None:
 
     # Register these by name to avoid circular dependencies.
     registry.register_by_name('doctor', 'pw_doctor.doctor', 'main')
+    registry.register_by_name('python-packages',
+                              'pw_env_setup.python_packages', 'main')
     registry.register_by_name('format', 'pw_presubmit.format_code', 'main')
     registry.register_by_name('logdemo', 'pw_cli.log', 'main')
     registry.register_by_name('module-check', 'pw_module.check', 'main')

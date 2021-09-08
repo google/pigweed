@@ -294,6 +294,24 @@ set the following environment variables.
  - ``PW_MYPROJECTNAME_CIPD_INSTALL_DIR``
  - ``PW_PIGWEED_CIPD_INSTALL_DIR``
 
+Pinning Python Packages
+***********************
+Python modules usually express dependencies as ranges, which makes it easier to
+install many Python packages that might otherwise have conflicting dependencies.
+However, this means version of packages can often change underneath us and
+builds will not be hermetic.
+
+To ensure versions don't change without approval, run
+``pw python-packages list <path/to/constraints/file>`` and then add
+``pw_build_PIP_CONSTRAINTS = ["//path/to/constraints/file"]`` to your project's
+``.gn`` file (see `Pigweed's .gn file` for an example).
+
+.. _Pigweed's .gn file: https://cs.opensource.google/pigweed/pigweed/+/main:.gn
+
+To update packages, remove the ``pw_build_PIP_CONSTRAINTS`` line, delete the
+environment, and bootstrap again. Then run the ``list`` command from above
+again, and run ``pw presubmit``.
+
 Environment Variables
 *********************
 The following environment variables affect env setup behavior. Most users will

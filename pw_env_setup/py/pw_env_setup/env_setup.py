@@ -173,7 +173,8 @@ class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  virtualenv_root, strict, virtualenv_gn_out_dir, json_file,
-                 project_root, config_file, use_existing_cipd):
+                 project_root, config_file, use_existing_cipd,
+                 use_pinned_pip_packages):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -198,6 +199,7 @@ class EnvSetup(object):
         self._virtualenv_requirements = []
         self._virtualenv_gn_targets = []
         self._virtualenv_gn_args = []
+        self._use_pinned_pip_packages = use_pinned_pip_packages
         self._optional_submodules = []
         self._required_submodules = []
         self._virtualenv_system_packages = False
@@ -534,6 +536,7 @@ Then use `set +x` to go back to normal.
                 python=new_python3,
                 env=self._env,
                 system_packages=self._virtualenv_system_packages,
+                use_pinned_pip_packages=self._use_pinned_pip_packages,
         ):
             return result(_Result.Status.FAILED)
 
@@ -645,6 +648,13 @@ def parse(argv=None):
         '--strict',
         help='Fail if there are any warnings.',
         action='store_true',
+    )
+
+    parser.add_argument(
+        '--unpin-pip-packages',
+        dest='use_pinned_pip_packages',
+        help='Do not use pins of pip packages.',
+        action='store_false',
     )
 
     args = parser.parse_args(argv)

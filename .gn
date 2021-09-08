@@ -13,3 +13,8 @@
 # the License.
 
 buildconfig = "//BUILDCONFIG.gn"
+
+default_args = {
+  pw_build_PIP_CONSTRAINTS =
+      [ "//pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list" ]
+}
