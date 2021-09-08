@@ -158,6 +158,7 @@ group("fuzzers") {
 
 pw_python_group("python") {
   python_deps = [
+    "$dir_pigweed/docs:sphinx_themes",
     "$dir_pw_env_setup:python",
     "$dir_pw_env_setup:target_support_packages",
   ]
