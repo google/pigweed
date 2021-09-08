@@ -38,10 +38,6 @@ declare_args() {
 template("pw_static_analysis_toolchain") {
   # Determine OS of toolchain, which is the builtin argument "current_os".
   invoker_toolchain_args = invoker.defaults
-  toolchain_os = ""
-  if (defined(invoker_toolchain_args.current_os)) {
-    toolchain_os = invoker_toolchain_args.current_os
-  }
 
   # Clang tidy is invoked by a wrapper script which implements the missing
   # option --source-filter.
