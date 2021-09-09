@@ -69,6 +69,16 @@ TEST(Client, ProcessPacket_SendsClientErrorOnUnregisteredCall) {
   EXPECT_EQ(packet.status(), Status::FailedPrecondition());
 }
 
+TEST(Client, ProcessPacket_ServerErrorOnUnregisteredCall_SendsNothing) {
+  internal::ClientContextForTest context;
+
+  EXPECT_EQ(
+      context.SendPacket(internal::PacketType::SERVER_ERROR, OkStatus(), {}),
+      Status::NotFound());
+
+  EXPECT_EQ(context.output().packet_count(), 0u);
+}
+
 TEST(Client, ProcessPacket_ReturnsDataLossOnBadPacket) {
   internal::ClientContextForTest context;
 

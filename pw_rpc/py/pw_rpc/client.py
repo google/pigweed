@@ -557,5 +557,7 @@ class Client:
 
 def _send_client_error(client: ChannelClient, packet: RpcPacket,
                        error: Status) -> None:
-    client.channel.output(  # type: ignore
-        packets.encode_client_error(packet, error))
+    # Never send responses to SERVER_ERRORs.
+    if packet.type != PacketType.SERVER_ERROR:
+        client.channel.output(  # type: ignore
+            packets.encode_client_error(packet, error))

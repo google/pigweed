@@ -106,7 +106,7 @@ class Call:
         _LOG.info('%s completed: %s', self._rpc, status)
 
     def _default_error(self, error: Status) -> None:
-        _LOG.warning('%s termianted due to an error: %s', self._rpc, error)
+        _LOG.warning('%s terminated due to an error: %s', self._rpc, error)
 
     @property
     def method(self) -> Method:

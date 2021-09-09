@@ -117,16 +117,16 @@ class _CallbackClientImplTestBase(unittest.TestCase):
 
     def _enqueue_error(self,
                        channel_id: int,
+                       service,
                        method,
                        status: Status,
                        process_status=Status.OK) -> None:
-        self._next_packets.append(
-            (packet_pb2.RpcPacket(type=packet_pb2.PacketType.SERVER_ERROR,
-                                  channel_id=channel_id,
-                                  service_id=method.service.id,
-                                  method_id=method.id,
-                                  status=status.value).SerializeToString(),
-             process_status))
+        self._next_packets.append((packet_pb2.RpcPacket(
+            type=packet_pb2.PacketType.SERVER_ERROR,
+            channel_id=channel_id,
+            service_id=service if isinstance(service, int) else service.id,
+            method_id=method if isinstance(method, int) else method.id,
+            status=status.value).SerializeToString(), process_status))
 
     def _handle_packet(self, data: bytes) -> None:
         if self.output_exception:
@@ -202,6 +202,29 @@ class CallbackClientImplTest(_CallbackClientImplTestBase):
         status, response = self._service.SomeUnary(magic_number=6)
         self.assertIs(Status.OK, status)
         self.assertEqual('', response.payload)
+
+    def test_server_error_for_unknown_call_sends_no_errors(self) -> None:
+        method = self._service.SomeUnary.method
+        service_id = method.service.id
+
+        # Unknown channel
+        self._enqueue_error(999,
+                            service_id,
+                            method,
+                            Status.NOT_FOUND,
+                            process_status=Status.NOT_FOUND)
+        # Bad service
+        self._enqueue_error(1, 999, method.id, Status.INVALID_ARGUMENT)
+        # Bad method
+        self._enqueue_error(1, service_id, 999, Status.INVALID_ARGUMENT)
+        # For RPC not pending
+        self._enqueue_error(1, service_id,
+                            self._service.SomeBidiStreaming.method.id,
+                            Status.NOT_FOUND)
+
+        self._process_enqueued_packets()
+
+        self.assertEqual(self.requests, [])
 
     def test_exception_if_payload_fails_to_decode(self) -> None:
         method = self._service.SomeUnary.method
@@ -315,7 +338,8 @@ class UnaryTest(_CallbackClientImplTestBase):
 
     def test_blocking_server_error(self) -> None:
         for _ in range(3):
-            self._enqueue_error(1, self.method, Status.NOT_FOUND)
+            self._enqueue_error(1, self.method.service, self.method,
+                                Status.NOT_FOUND)
 
             with self.assertRaises(callback_client.RpcError) as context:
                 self._service.SomeUnary(
@@ -577,7 +601,8 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
         requests = [self.method.request_type(magic_number=123)]
 
         # Send after len(requests) and the client stream end packet.
-        self._enqueue_error(1, self.method, Status.NOT_FOUND)
+        self._enqueue_error(1, self.method.service, self.method,
+                            Status.NOT_FOUND)
 
         with self.assertRaises(callback_client.RpcError) as context:
             self.rpc(requests)
@@ -678,7 +703,8 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
         for _ in range(3):
             stream = self._service.SomeClientStreaming.invoke()
 
-            self._enqueue_error(1, self.method, Status.INVALID_ARGUMENT)
+            self._enqueue_error(1, self.method.service, self.method,
+                                Status.INVALID_ARGUMENT)
             stream.send(magic_number=2**32 - 1)
 
             with self.assertRaises(callback_client.RpcError) as context:
@@ -691,7 +717,8 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
             stream = self._service.SomeClientStreaming.invoke()
 
             # Error will be sent in response to the CLIENT_STREAM_END packet.
-            self._enqueue_error(1, self.method, Status.INVALID_ARGUMENT)
+            self._enqueue_error(1, self.method.service, self.method,
+                                Status.INVALID_ARGUMENT)
 
             with self.assertRaises(callback_client.RpcError) as context:
                 stream.finish_and_wait()
@@ -719,7 +746,8 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
         self.assertEqual(result, call.finish_and_wait())
 
     def test_nonblocking_finish_after_error(self) -> None:
-        self._enqueue_error(1, self.method, Status.UNAVAILABLE)
+        self._enqueue_error(1, self.method.service, self.method,
+                            Status.UNAVAILABLE)
 
         call = self.rpc.invoke()
 
@@ -766,7 +794,8 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
         requests = [self.method.request_type(magic_number=123)]
 
         # Send after len(requests) and the client stream end packet.
-        self._enqueue_error(1, self.method, Status.NOT_FOUND)
+        self._enqueue_error(1, self.method.service, self.method,
+                            Status.NOT_FOUND)
 
         with self.assertRaises(callback_client.RpcError) as context:
             self.rpc(requests)
@@ -861,7 +890,8 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
             self.assertFalse(stream.completed())
             self.assertEqual([rep1], responses)
 
-            self._enqueue_error(1, self.method, Status.OUT_OF_RANGE)
+            self._enqueue_error(1, self.method.service, self.method,
+                                Status.OUT_OF_RANGE)
 
             stream.send(magic_number=99999)
             self.assertTrue(stream.completed())
@@ -879,7 +909,8 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
             stream = self._service.SomeBidiStreaming.invoke()
 
             # Error will be sent in response to the CLIENT_STREAM_END packet.
-            self._enqueue_error(1, self.method, Status.INVALID_ARGUMENT)
+            self._enqueue_error(1, self.method.service, self.method,
+                                Status.INVALID_ARGUMENT)
 
             with self.assertRaises(callback_client.RpcError) as context:
                 stream.finish_and_wait()
@@ -910,7 +941,8 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
     def test_nonblocking_finish_after_error(self) -> None:
         reply = self.method.response_type(payload='!?')
         self._enqueue_server_stream(1, self.method, reply)
-        self._enqueue_error(1, self.method, Status.UNAVAILABLE)
+        self._enqueue_error(1, self.method.service, self.method,
+                            Status.UNAVAILABLE)
 
         call = self.rpc.invoke()
 

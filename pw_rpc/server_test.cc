@@ -170,6 +170,14 @@ TEST_F(BasicServer, ProcessPacket_InvalidMethod_NothingIsInvoked) {
   EXPECT_EQ(0u, service_.method(200).last_channel_id());
 }
 
+TEST_F(BasicServer, ProcessPacket_ClientErrorWithInvalidMethod_NoResponse) {
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(
+                EncodeRequest(PacketType::CLIENT_ERROR, 1, 42, 101), output_));
+
+  EXPECT_EQ(0u, output_.packet_count());
+}
+
 TEST_F(BasicServer, ProcessPacket_InvalidMethod_SendsError) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::REQUEST, 1, 42, 27),
@@ -219,6 +227,18 @@ TEST_F(BasicServer,
   EXPECT_EQ(packet.channel_id(), 99u);
   EXPECT_EQ(packet.service_id(), 42u);
   EXPECT_EQ(packet.method_id(), 27u);
+}
+
+TEST_F(BasicServer, ProcessPacket_ClientErrorOnUnassignedChannel_NoResponse) {
+  channels_[2] = Channel::Create<3>(&output_);  // Occupy only available channel
+
+  EXPECT_EQ(
+      OkStatus(),
+      server_.ProcessPacket(
+          EncodeRequest(PacketType::CLIENT_ERROR, /*channel_id=*/99, 42, 27),
+          output_));
+
+  EXPECT_EQ(0u, output_.packet_count());
 }
 
 TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsError) {

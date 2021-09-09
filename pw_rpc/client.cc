@@ -62,8 +62,11 @@ Status Client::ProcessPacket(ConstByteSpan data) {
 
   if (call == calls_.end()) {
     PW_LOG_WARN("RPC client received a packet for a request it did not make");
-    channel->Send(Packet::ClientError(packet, Status::FailedPrecondition()))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    // Don't send responses to errors to avoid infinite error cycles.
+    if (packet.type() != PacketType::SERVER_ERROR) {
+      channel->Send(Packet::ClientError(packet, Status::FailedPrecondition()))
+          .IgnoreError();
+    }
     return Status::NotFound();
   }
 

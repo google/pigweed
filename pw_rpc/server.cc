@@ -85,21 +85,27 @@ Status Server::ProcessPacket(std::span<const byte> data,
     // If the requested channel doesn't exist, try to dynamically assign one.
     channel = AssignChannel(packet.channel_id(), interface);
     if (channel == nullptr) {
-      // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error.
-      internal::Channel temp_channel(packet.channel_id(), &interface);
-      temp_channel
-          .Send(Packet::ServerError(packet, Status::ResourceExhausted()))
-          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-      return OkStatus();   // OK since the packet was handled
+      // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error. Never
+      // send responses to error messages, though, to avoid infinite cycles.
+      if (packet.type() != PacketType::CLIENT_ERROR) {
+        internal::Channel temp_channel(packet.channel_id(), &interface);
+        temp_channel
+            .Send(Packet::ServerError(packet, Status::ResourceExhausted()))
+            .IgnoreError();
+      }
+      return OkStatus();  // OK since the packet was handled
     }
   }
 
   const auto [service, method] = FindMethod(packet);
 
   if (method == nullptr) {
-    channel->Send(Packet::ServerError(packet, Status::NotFound()))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    return OkStatus();
+    // Don't send responses to errors to avoid infinite error cycles.
+    if (packet.type() != PacketType::CLIENT_ERROR) {
+      channel->Send(Packet::ServerError(packet, Status::NotFound()))
+          .IgnoreError();
+    }
+    return OkStatus();  // OK since the packet was handled.
   }
 
   // Find an existing reader/writer for this RPC, if any.
