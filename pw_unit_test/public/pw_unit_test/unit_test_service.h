@@ -24,7 +24,7 @@ class UnitTestService final : public generated::UnitTest<UnitTestService> {
  public:
   UnitTestService() : handler_(*this), verbose_(false) {}
 
-  void Run(ServerContext& ctx, ConstByteSpan request, RawServerWriter& writer);
+  void Run(ServerContext&, ConstByteSpan request, RawServerWriter& writer);
 
  private:
   friend class internal::RpcEventHandler;

@@ -20,18 +20,15 @@
 
 namespace pw::rpc {
 
-// The ServerContext collects context for an RPC being invoked on a server. The
-// ServerContext is passed into RPC functions and is user-facing.
+// The ServerContext class is DEPRECATED and will be removed from pw_rpc. All
+// information in the ServerContext is accessible through the
+// ServerReader/Writer object.
 //
-// The ServerContext is a public-facing view of the internal::CallContext class.
-// It uses inheritance to avoid copying or creating an extra reference to the
-// underlying CallContext. Private inheritance prevents exposing the
-// internal-facing CallContext interface.
+// The only case where the information in a ServerContext is not available is
+// synchronous unary RPCs. If information like channel_id() is needed in a unary
+// RPC, just use an asynchronous unary RPC.
 class ServerContext : private internal::CallContext {
  public:
-  // Returns the ID for the channel this RPC is using.
-  uint32_t channel_id() const { return channel().id(); }
-
   constexpr ServerContext() = delete;
 
   constexpr ServerContext(const ServerContext&) = delete;

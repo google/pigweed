@@ -19,10 +19,10 @@
 
 namespace pw::log_rpc {
 
-void LogService::Listen(ServerContext& context,
+void LogService::Listen(ServerContext&,
                         ConstByteSpan,
                         rpc::RawServerWriter& writer) {
-  uint32_t channel_id = context.channel_id();
+  uint32_t channel_id = writer.channel_id();
   Result<RpcLogDrain*> drain = drains_.GetDrainFromChannelId(channel_id);
   if (!drain.ok()) {
     return;

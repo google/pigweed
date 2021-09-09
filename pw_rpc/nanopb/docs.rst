@@ -91,7 +91,7 @@ the request succeeded.
 
 .. code:: c++
 
-  pw::Status GetRoomInformation(pw::rpc::ServerContext& ctx,
+  pw::Status GetRoomInformation(pw::rpc::ServerContext&,
                                 const RoomInfoRequest& request,
                                 RoomInfoResponse& response);
 
@@ -102,7 +102,7 @@ A server streaming RPC receives the client's request message alongside a
 
 .. code:: c++
 
-  void ListUsersInRoom(pw::rpc::ServerContext& ctx,
+  void ListUsersInRoom(pw::rpc::ServerContext&,
                        const ListUsersRequest& request,
                        pw::rpc::ServerWriter<ListUsersResponse>& writer);
 

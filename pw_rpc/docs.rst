@@ -194,14 +194,14 @@ A Nanopb implementation of this service would be as follows:
 
   class TheService : public generated::TheService<TheService> {
    public:
-    pw::Status MethodOne(ServerContext& ctx,
+    pw::Status MethodOne(ServerContext&,
                          const foo_bar_Request& request,
                          foo_bar_Response& response) {
       // implementation
       return pw::OkStatus();
     }
 
-    void MethodTwo(ServerContext& ctx,
+    void MethodTwo(ServerContext&,
                    const foo_bar_Request& request,
                    ServerWriter<foo_bar_Response>& response) {
       // implementation
