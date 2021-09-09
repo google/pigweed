@@ -22,6 +22,8 @@
 
 #ifdef __cplusplus
 
+#include "pw_sync/virtual_basic_lockable.h"
+
 namespace pw::sync {
 
 // The TimedMutex is a synchronization primitive that can be used to protect
@@ -63,6 +65,34 @@ class TimedMutex : public Mutex {
   //   undefined behavior.
   bool try_lock_until(chrono::SystemClock::time_point deadline)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
+};
+
+class PW_LOCKABLE("pw::sync::VirtualTimedMutex") VirtualTimedMutex final
+    : public VirtualBasicLockable {
+ public:
+  VirtualTimedMutex() = default;
+
+  VirtualTimedMutex(const VirtualTimedMutex&) = delete;
+  VirtualTimedMutex(VirtualTimedMutex&&) = delete;
+  VirtualTimedMutex& operator=(const VirtualTimedMutex&) = delete;
+  VirtualTimedMutex& operator=(VirtualTimedMutex&&) = delete;
+
+  TimedMutex& timed_mutex() { return timed_mutex_; }
+
+ private:
+  void DoLockOperation(Operation operation) override
+      PW_NO_LOCK_SAFETY_ANALYSIS {
+    switch (operation) {
+      case Operation::kLock:
+        return timed_mutex_.lock();
+
+      case Operation::kUnlock:
+      default:
+        return timed_mutex_.unlock();
+    }
+  }
+
+  TimedMutex timed_mutex_;
 };
 
 }  // namespace pw::sync

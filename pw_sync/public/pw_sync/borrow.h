@@ -19,13 +19,14 @@
 #include <type_traits>
 
 #include "pw_assert/assert.h"
+#include "pw_sync/virtual_basic_lockable.h"
 
 namespace pw::sync {
 
 // The BorrowedPointer is an RAII handle which wraps a pointer to a borrowed
 // object along with a held lock which is guarding the object. When destroyed,
 // the lock is released.
-template <typename GuardedType, typename Lock>
+template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
 class BorrowedPointer {
  public:
   // Release the lock on destruction.
@@ -86,7 +87,8 @@ class BorrowedPointer {
 //
 // This class is compatible with locks which comply with BasicLockable,
 // Lockable, and TimedLockable C++ named requirements.
-template <typename GuardedReference, typename Lock>
+template <typename GuardedReference,
+          typename Lock = pw::sync::VirtualBasicLockable>
 class Borrowable {
  public:
   static_assert(std::is_reference<GuardedReference>::value,

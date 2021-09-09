@@ -19,5 +19,6 @@ pw_add_facade(pw_sync.mutex
     mutex.cc
   PUBLIC_DEPS
     pw_chrono.system_clock
+    pw_polyfill
     pw_preprocessor
 )

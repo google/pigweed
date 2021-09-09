@@ -114,6 +114,22 @@ TEST(TimedMutex, TryLockUnlockUntil) {
   }
 }
 
+TEST(VirtualTimedMutex, LockUnlock) {
+  pw::sync::VirtualTimedMutex mutex;
+  mutex.lock();
+  // TODO(pwbug/291): Ensure it fails to lock when already held.
+  // EXPECT_FALSE(mutex.try_lock());
+  mutex.unlock();
+}
+
+VirtualTimedMutex static_virtual_mutex;
+TEST(VirtualTimedMutex, LockUnlockStatic) {
+  static_virtual_mutex.lock();
+  // TODO(pwbug/291): Ensure it fails to lock when already held.
+  // EXPECT_FALSE(static_virtual_mutex.try_lock());
+  static_virtual_mutex.unlock();
+}
+
 TEST(TimedMutex, LockUnlockInC) {
   pw::sync::TimedMutex mutex;
   pw_sync_TimedMutex_CallLock(&mutex);

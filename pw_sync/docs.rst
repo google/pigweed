@@ -952,6 +952,34 @@ the macro documentation after for more details:
 Critical Section Lock Helpers
 -----------------------------
 
+Virtual Lock Interfaces
+=======================
+Virtual lock interfaces can be useful when lock selection cannot be templated.
+
+Why use virtual locks?
+----------------------
+Virtual locks enable depending on locks without templating implementation code
+on the type, while retaining flexibility with respect to the concrete lock type.
+Pigweed tries to avoid pushing policy on to users, and virtual locks are one way
+to accomplish that without templating everything.
+
+A case when virtual locks are useful is when the concrete lock type changes at
+run time. For example, access to flash may be protected at run time by an
+internal mutex, however at crash time we may want to switch to a no-op lock. A
+virtual lock interface could be used here to minimize the code-size cost that
+would occur otherwise if the flash driver were templated.
+
+VirtualBasicLock
+----------------
+The ``VirtualBasicLock`` interface meets the
+`BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_ C++
+named requirement. Our critical section lock primitives offer optional virtual
+versions, including:
+
+* ``pw::sync::VirtualMutex``
+* ``pw::sync::VirtualTimedMutex``
+* ``pw::sync::VirtualInterruptSpinLock``
+
 Borrowable
 ==========
 The Borrowable is a helper construct that enables callers to borrow an object
@@ -965,6 +993,9 @@ This class is compatible with locks which comply with
 `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
 `TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_
 C++ named requirements.
+
+By default the selected lock type is a ``pw::sync::VirtualBasicLockable``. If
+this virtual interface is used, the templated lock parameter can be skipped.
 
 External vs Internal locking
 ----------------------------
@@ -1080,7 +1111,7 @@ you do exactly this if you provide access to the I2c bus through a
 
 C++
 ---
-.. cpp:class:: template <typename GuardedType, typename Lock> pw::sync::BorrowedPointer
+.. cpp:class:: template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable> pw::sync::BorrowedPointer
 
   The BorrowedPointer is an RAII handle which wraps a pointer to a borrowed
   object along with a held lock which is guarding the object. When destroyed,
@@ -1102,7 +1133,7 @@ C++
 
      **Warning:** Be careful not to leak references to the borrowed object.
 
-.. cpp:class:: template <typename GuardedReference, typename Lock> pw::sync::Borrowable
+.. cpp:class:: template <typename GuardedReference, typename Lock = pw::sync::VirtualBasicLockable> pw::sync::Borrowable
 
   .. cpp:function:: BorrowedPointer<GuardedType, Lock> acquire()
 
@@ -1141,14 +1172,13 @@ Example in C++
 
   class ExampleI2c : public pw::i2c::Initiator;
 
-  pw::sync::Mutex i2c_mutex;
+  pw::sync::VirtualMutex i2c_mutex;
   ExampleI2c i2c;
-  pw::sync::Borrowable<ExampleI2c&, pw::sync::Mutex> borrowable_i2c(
-      i2c_mutex, i2c);
+  pw::sync::Borrowable<ExampleI2c&> borrowable_i2c(i2c_mutex, i2c);
 
   pw::Result<ConstByteSpan> ReadI2cData(ByteSpan buffer) {
     // Block indefinitely waiting to borrow the i2c bus.
-    pw::sync::BorrowedPointer<ExampleI2c, pw::sync::Mutex> borrowed_i2c =
+    pw::sync::BorrowedPointer<ExampleI2c> borrowed_i2c =
         borrowable_i2c.acquire();
 
     // Execute a sequence of transactions to get the needed data.

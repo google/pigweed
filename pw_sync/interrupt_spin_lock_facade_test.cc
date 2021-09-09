@@ -58,6 +58,22 @@ TEST(InterruptSpinLock, TryLockUnlock) {
   }
 }
 
+TEST(VirtualInterruptSpinLock, LockUnlock) {
+  pw::sync::VirtualInterruptSpinLock interrupt_spin_lock;
+  interrupt_spin_lock.lock();
+  // TODO(pwbug/291): Ensure it fails to lock when already held.
+  // EXPECT_FALSE(interrupt_spin_lock.try_lock());
+  interrupt_spin_lock.unlock();
+}
+
+VirtualInterruptSpinLock static_virtual_interrupt_spin_lock;
+TEST(VirtualInterruptSpinLock, LockUnlockStatic) {
+  static_virtual_interrupt_spin_lock.lock();
+  // TODO(pwbug/291): Ensure it fails to lock when already held.
+  // EXPECT_FALSE(static_virtual_interrupt_spin_lock.try_lock());
+  static_virtual_interrupt_spin_lock.unlock();
+}
+
 TEST(InterruptSpinLock, LockUnlockInC) {
   pw::sync::InterruptSpinLock interrupt_spin_lock;
   pw_sync_InterruptSpinLock_CallLock(&interrupt_spin_lock);

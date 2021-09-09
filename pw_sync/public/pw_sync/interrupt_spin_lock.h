@@ -20,6 +20,7 @@
 
 #ifdef __cplusplus
 
+#include "pw_sync/virtual_basic_lockable.h"
 #include "pw_sync_backend/interrupt_spin_lock_native.h"
 
 namespace pw::sync {
@@ -77,6 +78,34 @@ class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
  private:
   // This may be a wrapper around a native type with additional members.
   backend::NativeInterruptSpinLock native_type_;
+};
+
+class PW_LOCKABLE("pw::sync::VirtualInterruptSpinLock")
+    VirtualInterruptSpinLock final : public VirtualBasicLockable {
+ public:
+  VirtualInterruptSpinLock() = default;
+
+  VirtualInterruptSpinLock(const VirtualInterruptSpinLock&) = delete;
+  VirtualInterruptSpinLock(VirtualInterruptSpinLock&&) = delete;
+  VirtualInterruptSpinLock& operator=(const VirtualInterruptSpinLock&) = delete;
+  VirtualInterruptSpinLock& operator=(VirtualInterruptSpinLock&&) = delete;
+
+  InterruptSpinLock& interrupt_spin_lock() { return interrupt_spin_lock_; }
+
+ private:
+  void DoLockOperation(Operation operation) override
+      PW_NO_LOCK_SAFETY_ANALYSIS {
+    switch (operation) {
+      case Operation::kLock:
+        return interrupt_spin_lock_.lock();
+
+      case Operation::kUnlock:
+      default:
+        return interrupt_spin_lock_.unlock();
+    }
+  }
+
+  InterruptSpinLock interrupt_spin_lock_;
 };
 
 }  // namespace pw::sync

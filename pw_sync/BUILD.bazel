@@ -115,7 +115,20 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":virtual_basic_lockable",
         "//pw_assert",
+    ],
+)
+
+pw_cc_library(
+    name = "virtual_basic_lockable",
+    hdrs = [
+        "public/pw_sync/virtual_basic_lockable.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":lock_annotations",
+        "//pw_polyfill",
     ],
 )
 
@@ -127,6 +140,7 @@ pw_cc_facade(
     includes = ["public"],
     deps = [
         ":lock_annotations",
+        ":virtual_basic_lockable",
         "//pw_preprocessor",
     ],
 )
@@ -163,6 +177,7 @@ pw_cc_facade(
     deps = [
         ":lock_annotations",
         ":mutex_facade",
+        ":virtual_basic_lockable",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
     ],
@@ -176,6 +191,7 @@ pw_cc_library(
     deps = [
         ":mutex",
         ":timed_mutex_facade",
+        ":virtual_basic_lockable",
         "@pigweed_config//:pw_sync_timed_mutex_backend",
     ],
 )
@@ -200,6 +216,7 @@ pw_cc_facade(
     includes = ["public"],
     deps = [
         ":lock_annotations",
+        ":virtual_basic_lockable",
         "//pw_preprocessor",
     ],
 )
@@ -350,6 +367,7 @@ pw_cc_test(
     ],
     deps = [
         ":borrow",
+        ":virtual_basic_lockable",
         "//pw_assert",
         "//pw_unit_test",
     ],

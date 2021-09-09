@@ -62,7 +62,19 @@ pw_source_set("lock_annotations") {
 pw_source_set("borrow") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/borrow.h" ]
-  public_deps = [ dir_pw_assert ]
+  public_deps = [
+    ":virtual_basic_lockable",
+    dir_pw_assert,
+  ]
+}
+
+pw_source_set("virtual_basic_lockable") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/virtual_basic_lockable.h" ]
+  public_deps = [
+    ":lock_annotations",
+    dir_pw_polyfill,
+  ]
 }
 
 pw_facade("mutex") {
@@ -71,6 +83,7 @@ pw_facade("mutex") {
   public = [ "public/pw_sync/mutex.h" ]
   public_deps = [
     ":lock_annotations",
+    ":virtual_basic_lockable",
     "$dir_pw_preprocessor",
   ]
   sources = [ "mutex.cc" ]
@@ -82,6 +95,7 @@ pw_facade("timed_mutex") {
   public = [ "public/pw_sync/timed_mutex.h" ]
   public_deps = [
     ":mutex",
+    ":virtual_basic_lockable",
     "$dir_pw_chrono:system_clock",
     "$dir_pw_preprocessor",
   ]
@@ -94,6 +108,7 @@ pw_facade("interrupt_spin_lock") {
   public = [ "public/pw_sync/interrupt_spin_lock.h" ]
   public_deps = [
     ":lock_annotations",
+    ":virtual_basic_lockable",
     "$dir_pw_preprocessor",
   ]
   sources = [ "interrupt_spin_lock.cc" ]
@@ -174,6 +189,7 @@ pw_test("borrow_test") {
   sources = [ "borrow_test.cc" ]
   deps = [
     ":borrow",
+    ":virtual_basic_lockable",
     dir_pw_assert,
   ]
 }

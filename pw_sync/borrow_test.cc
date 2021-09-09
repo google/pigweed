@@ -19,6 +19,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
+#include "pw_sync/virtual_basic_lockable.h"
 
 namespace pw::sync {
 namespace {
@@ -43,22 +44,30 @@ class BorrowableTest : public ::testing::Test {
   Borrowable<Foo&, Lock> borrowable_foo_;
 };
 
-class BasicLockable {
+class BasicLockable : public VirtualBasicLockable {
  public:
-  void lock() {
-    PW_CHECK(!locked_, "Recursive lock detected");
-    locked_ = true;
-  }
-
-  void unlock() {
-    PW_CHECK(locked_, "Unlock while unlocked detected");
-    locked_ = false;
-  }
+  virtual ~BasicLockable() = default;
 
   bool locked() const { return locked_; }
 
  protected:
   bool locked_ = false;
+
+ private:
+  void DoLockOperation(Operation operation) override {
+    switch (operation) {
+      case Operation::kLock:
+        PW_CHECK(!locked_, "Recursive lock detected");
+        locked_ = true;
+        return;
+
+      case Operation::kUnlock:
+      default:
+        PW_CHECK(locked_, "Unlock while unlocked detected");
+        locked_ = false;
+        return;
+    }
+  }
 };
 
 using BorrowableBasicLockableTest = BorrowableTest<BasicLockable>;
