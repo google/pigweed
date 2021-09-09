@@ -24,14 +24,22 @@ message UpdateBundle {
   // separate project-specific process. A standard upstream process can be added
   // in the future.
 
+  // The timestamp role is used for freshness check of the snapshot. Any
+  // project-specific update metadata should go in the top-level
+  // targets_metadata or with the TargetFile information
   optional SignedTimestampMetadata timestamp_metadata = 1;
+
+  // The snapshot role is used to ensure that the collection of targets_metadata
+  // files is securely consistent (no target metadata mix and match). Any
+  // project-specific update metadata should go in the top-level
+  // targets_metadata or with the TargetFile information
   optional SignedSnapshotMetadata snapshot_metadata = 2;
 
   // Map of target metadata name to target metadata.
   // Target metadata name can be an arbitrary name or a path that describes
   // where the file lives relative to the base directory of the repository, as
   // described in the snapshot metadata. e.g. "path/to/target/0".
-  map<string, SignedTargetsMetadata> target_metadata = 3;
+  map<string, SignedTargetsMetadata> targets_metadata = 3;
 
   // Map of target file name to target payload bytes.
   // Target file name can be an arbitrary name or a path that describes where
@@ -43,6 +51,5 @@ message UpdateBundle {
 // Update bundle metadata
 // Designed to inform the update server what the device currently has in-place.
 message Manifest {
-  optional SnapshotMetadata snapshot_metadata = 1;
   map<string, TargetsMetadata> targets_metadata = 2;
 }

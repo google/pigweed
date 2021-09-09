@@ -114,7 +114,9 @@ message RootMetadata {
   reserved 65 to 255;  // Reserved for project-specific usage.
 }
 
-// This content is signed.
+// The timestamp role is used for freshness check of the snapshot. Any
+// project-specific update metadata should go in the top-level targets_metadata
+// or with the TargetFile information
 message TimestampMetadata {
   CommonMetadata common_metadata = 1;
 
@@ -129,7 +131,10 @@ message TimestampMetadata {
   reserved 65 to 255;  // Reserved for project-specific usage.
 }
 
-// This content is signed.
+// The snapshot role is used to ensure that the collection of targets_metadata
+// files is securely consistent (no target metadata mix and match). Any
+// project-specific update metadata should go in the top-level targets_metadata
+// or with the TargetFile information
 message SnapshotMetadata {
   CommonMetadata common_metadata = 1;
 
@@ -147,7 +152,13 @@ message SnapshotMetadata {
   reserved 65 to 255;  // Reserved for project-specific usage.
 }
 
-// This content is signed.
+// The targets role describes the target files that comprise the software
+// update. Targets metadata is organized in to a top-level targets metadata file
+// and optional multiple deligated targets metadata files
+//
+// The top-level targets metatdata is the correct place to put any
+// project-specific build version information, including build ID, hardware rev,
+// etc.
 message TargetsMetadata {
   CommonMetadata common_metadata = 1;
 
@@ -156,6 +167,9 @@ message TargetsMetadata {
   // Target file name can be an arbitrary name or a path that describes where
   // the file lives relative to the base directory of the repository, e.g.
   // "path/to/amber_tools/0".
+
+  // TODO: When it is time to support delegation, add delegation information
+  // here.
 
   // This is NOT a part of the TUF Specification.
   reserved 9 to 31;  // Reserved for TUF Specification changes.
@@ -255,7 +269,7 @@ message TargetFile {
 message MetadataFile {
   // Target file name can be an arbitrary name or a path that describes where
   // the file lives relative to the base directory of the repository, e.g.
-  // "path/to/amber_tools/0".
+  // "path/to/target/0".
   optional string file_name = 1;
 
   // Metadata file version. E.g. 3.
