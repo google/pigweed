@@ -158,11 +158,16 @@ class UnaryContext : public NanopbInvocationContext<Service,
   UnaryContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
 
   // Invokes the RPC with the provided request. Returns the status.
-  Status call(const Request& request) {
-    Base::output().clear();
-    Response& response = Base::output().AllocateResponse();
-    return CallMethodImplFunction<kMethod>(
-        Base::call_context(), request, response);
+  auto call(const Request& request) {
+    if constexpr (MethodTraits<decltype(kMethod)>::kSynchronous) {
+      Base::output().clear();
+
+      Response& response = Base::output().AllocateResponse();
+      return CallMethodImplFunction<kMethod>(
+          Base::call_context(), request, response);
+    } else {
+      Base::template call<kMethod, NanopbServerResponder<Response>>(request);
+    }
   }
 };
 

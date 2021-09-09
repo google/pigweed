@@ -45,19 +45,19 @@ class GenericNanopbResponder : public internal::Call {
   GenericNanopbResponder(const CallContext& call, MethodType type)
       : internal::Call(call, type) {}
 
+  Status SendResponse(const void* response, Status status) {
+    return SendClientStreamOrResponse(response, &status);
+  }
+
  protected:
   Status SendClientStream(const void* response) {
     return SendClientStreamOrResponse(response, nullptr);
   }
 
-  Status SendResponse(const void* response, Status status) {
-    return SendClientStreamOrResponse(response, &status);
-  }
-
   void DecodeRequest(ConstByteSpan payload, void* request_struct) const;
 
  private:
-  Status SendClientStreamOrResponse(const void* response, Status* status);
+  Status SendClientStreamOrResponse(const void* response, const Status* status);
 };
 
 // The BaseNanopbServerReader serves as the base for the ServerReader and
@@ -276,6 +276,58 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
       : internal::GenericNanopbResponder(call, MethodType::kServerStreaming) {}
 };
 
+template <typename Response>
+class NanopbServerResponder : private internal::GenericNanopbResponder {
+ public:
+  // Creates a NanopbServerResponder that is ready to send a response for a
+  // particular RPC. This can be used for testing or to send responses to an RPC
+  // that has not been started by a client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static NanopbServerResponder Open(Server& server,
+                                                  uint32_t channel_id,
+                                                  ServiceImpl& service) {
+    static_assert(
+        std::is_same_v<Response, internal::Response<kMethod>>,
+        "The response type of a NanopbServerResponder must match the method.");
+    return {internal::OpenCall<kMethod, MethodType::kUnary>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+  }
+
+  // Allow default construction so that users can declare a variable into which
+  // to move ServerWriters from RPC calls.
+  constexpr NanopbServerResponder()
+      : internal::GenericNanopbResponder(MethodType::kUnary) {}
+
+  NanopbServerResponder(NanopbServerResponder&&) = default;
+  NanopbServerResponder& operator=(NanopbServerResponder&&) = default;
+
+  using internal::GenericNanopbResponder::active;
+  using internal::GenericNanopbResponder::channel_id;
+
+  // Sends the response. Returns the following Status codes:
+  //
+  //   OK - the response was successfully sent
+  //   FAILED_PRECONDITION - the writer is closed
+  //   INTERNAL - pw_rpc was unable to encode the Nanopb protobuf
+  //   other errors - the ChannelOutput failed to send the packet; the error
+  //       codes are determined by the ChannelOutput implementation
+  //
+  Status Finish(const Response& response, Status status = OkStatus()) {
+    return internal::GenericNanopbResponder::SendResponse(&response, status);
+  }
+
+ private:
+  friend class internal::NanopbMethod;
+
+  template <typename, typename, uint32_t>
+  friend class internal::test::InvocationContext;
+
+  NanopbServerResponder(const internal::CallContext& call)
+      : internal::GenericNanopbResponder(call, MethodType::kUnary) {}
+};
 // TODO(hepler): "pw::rpc::ServerWriter" should not be specific to Nanopb.
 template <typename T>
 using ServerWriter = NanopbServerWriter<T>;

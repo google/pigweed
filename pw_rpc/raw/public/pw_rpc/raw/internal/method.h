@@ -36,7 +36,7 @@ class RawMethod : public Method {
   }
 
   template <auto kMethod>
-  static constexpr RawMethod Unary(uint32_t id) {
+  static constexpr RawMethod SynchronousUnary(uint32_t id) {
     constexpr SynchronousUnaryFunction wrapper =
         [](CallContext& call, ConstByteSpan req, ByteSpan res) {
           return CallMethodImplFunction<kMethod>(call, req, res);
@@ -46,13 +46,25 @@ class RawMethod : public Method {
   }
 
   template <auto kMethod>
+  static constexpr RawMethod AsynchronousUnary(uint32_t id) {
+    constexpr AsynchronousUnaryFunction wrapper =
+        [](CallContext& call,
+           ConstByteSpan req,
+           RawServerResponder& responder) {
+          return CallMethodImplFunction<kMethod>(call, req, responder);
+        };
+    return RawMethod(
+        id, AsynchronousUnaryInvoker, Function{.asynchronous_unary = wrapper});
+  }
+
+  template <auto kMethod>
   static constexpr RawMethod ServerStreaming(uint32_t id) {
-    constexpr UnaryRequestFunction wrapper =
+    constexpr ServerStreamingFunction wrapper =
         [](CallContext& call, ConstByteSpan request, RawServerWriter& writer) {
           return CallMethodImplFunction<kMethod>(call, request, writer);
         };
     return RawMethod(
-        id, ServerStreamingInvoker, Function{.unary_request = wrapper});
+        id, ServerStreamingInvoker, Function{.server_streaming = wrapper});
   }
 
   template <auto kMethod>
@@ -85,15 +97,20 @@ class RawMethod : public Method {
                                                       ConstByteSpan,
                                                       ByteSpan);
 
-  using UnaryRequestFunction = void (*)(CallContext&,
-                                        ConstByteSpan,
-                                        RawServerWriter&);
+  using AsynchronousUnaryFunction = void (*)(CallContext&,
+                                             ConstByteSpan,
+                                             RawServerResponder&);
+
+  using ServerStreamingFunction = void (*)(CallContext&,
+                                           ConstByteSpan,
+                                           RawServerWriter&);
 
   using StreamRequestFunction = void (*)(CallContext&, RawServerReaderWriter&);
 
   union Function {
     SynchronousUnaryFunction synchronous_unary;
-    UnaryRequestFunction unary_request;
+    AsynchronousUnaryFunction asynchronous_unary;
+    ServerStreamingFunction server_streaming;
     StreamRequestFunction stream_request;
   };
 
@@ -103,6 +120,10 @@ class RawMethod : public Method {
   static void SynchronousUnaryInvoker(const Method& method,
                                       CallContext& call,
                                       const Packet& request);
+
+  static void AsynchronousUnaryInvoker(const Method& method,
+                                       CallContext& call,
+                                       const Packet& request);
 
   static void ServerStreamingInvoker(const Method& method,
                                      CallContext& call,
@@ -124,27 +145,46 @@ class RawMethod : public Method {
 using RawSynchronousUnary = StatusWithSize(ServerContext&,
                                            ConstByteSpan,
                                            ByteSpan);
+using RawAsynchronousUnary = void(ServerContext&,
+                                  ConstByteSpan,
+                                  RawServerResponder&);
 using RawServerStreaming = void(ServerContext&,
                                 ConstByteSpan,
                                 RawServerWriter&);
 using RawClientStreaming = void(ServerContext&, RawServerReader&);
 using RawBidirectionalStreaming = void(ServerContext&, RawServerReaderWriter&);
 
-// MethodTraits specialization for a static raw unary method.
+// MethodTraits specialization for a static synchronous raw unary method.
 template <>
 struct MethodTraits<RawSynchronousUnary*> {
   using Implementation = RawMethod;
 
   static constexpr MethodType kType = MethodType::kUnary;
+  static constexpr bool kSynchronous = true;
+
   static constexpr bool kServerStreaming = false;
   static constexpr bool kClientStreaming = false;
 };
 
-// MethodTraits specialization for a raw unary method.
+// MethodTraits specialization for a synchronous raw unary method.
 template <typename T>
 struct MethodTraits<RawSynchronousUnary(T::*)>
     : MethodTraits<RawSynchronousUnary*> {
   using Service = T;
+};
+
+// MethodTraits specialization for a static asynchronous raw unary method.
+template <>
+struct MethodTraits<RawAsynchronousUnary*>
+    : MethodTraits<RawSynchronousUnary*> {
+  static constexpr bool kSynchronous = false;
+};
+
+// MethodTraits specialization for an asynchronous raw unary method.
+template <typename T>
+struct MethodTraits<RawAsynchronousUnary(T::*)>
+    : MethodTraits<RawSynchronousUnary(T::*)> {
+  static constexpr bool kSynchronous = false;
 };
 
 // MethodTraits specialization for a static raw server streaming method.

@@ -36,15 +36,17 @@ struct CreationArgs {};
 // The TestService class must inherit from Service and provide the following
 // methods with valid signatures for RPCs:
 //
-//   - Unary: a valid unary RPC member function
-//   - StaticUnary: valid unary RPC static member function
-//   - ServerStreaming: valid server streaming RPC member function
-//   - StaticServerStreaming: valid server streaming static RPC member function
-//   - ClientStreaming: valid client streaming RPC member function
-//   - StaticClientStreaming: valid client streaming static RPC member function
-//   - BidirectionalStreaming: valid bidirectional streaming RPC member function
+//   - Unary: synchronous unary RPC member function
+//   - StaticUnary: synchronous unary RPC static member function
+//   - AsyncUnary: asynchronous unary RPC member function
+//   - StaticAsyncUnary: asynchronous unary RPC static member function
+//   - ServerStreaming: server streaming RPC member function
+//   - StaticServerStreaming: server streaming static RPC member function
+//   - ClientStreaming: client streaming RPC member function
+//   - StaticClientStreaming: client streaming static RPC member function
+//   - BidirectionalStreaming: bidirectional streaming RPC member function
 //   - StaticBidirectionalStreaming: bidirectional streaming static RPC
-//     member function
+//         member function
 //
 template <typename MethodImpl, typename TestService>
 class MethodImplTests {
@@ -65,6 +67,11 @@ class MethodImplTests {
     static_assert(
         MethodImpl::template matches<&TestService::Unary, ExtraTypes...>());
     static_assert(MethodImpl::template matches<&TestService::StaticUnary,
+                                               ExtraTypes...>());
+
+    static_assert(MethodImpl::template matches<&TestService::AsyncUnary,
+                                               ExtraTypes...>());
+    static_assert(MethodImpl::template matches<&TestService::StaticAsyncUnary,
                                                ExtraTypes...>());
 
     static_assert(MethodImpl::template matches<&TestService::ServerStreaming,
@@ -121,20 +128,36 @@ class MethodImplTests {
 
     static_assert(MethodTraits<decltype(&TestService::Unary)>::kType ==
                   MethodType::kUnary);
+    static_assert(MethodTraits<decltype(&TestService::Unary)>::kSynchronous);
     static_assert(MethodTraits<decltype(&TestService::StaticUnary)>::kType ==
                   MethodType::kUnary);
+    static_assert(
+        MethodTraits<decltype(&TestService::StaticUnary)>::kSynchronous);
+
+    static_assert(MethodTraits<decltype(&TestService::AsyncUnary)>::kType ==
+                  MethodType::kUnary);
+    static_assert(
+        !MethodTraits<decltype(&TestService::AsyncUnary)>::kSynchronous);
+    static_assert(
+        MethodTraits<decltype(&TestService::StaticAsyncUnary)>::kType ==
+        MethodType::kUnary);
+    static_assert(
+        !MethodTraits<decltype(&TestService::StaticAsyncUnary)>::kSynchronous);
+
     static_assert(
         MethodTraits<decltype(&TestService::ServerStreaming)>::kType ==
         MethodType::kServerStreaming);
     static_assert(
         MethodTraits<decltype(&TestService::StaticServerStreaming)>::kType ==
         MethodType::kServerStreaming);
+
     static_assert(
         MethodTraits<decltype(&TestService::ClientStreaming)>::kType ==
         MethodType::kClientStreaming);
     static_assert(
         MethodTraits<decltype(&TestService::StaticClientStreaming)>::kType ==
         MethodType::kClientStreaming);
+
     static_assert(
         MethodTraits<decltype(&TestService::BidirectionalStreaming)>::kType ==
         MethodType::kBidirectionalStreaming);
@@ -150,42 +173,54 @@ class MethodImplTests {
     constexpr bool Pass() const { return true; }
 
     static constexpr MethodImpl kUnaryMethod =
-        MethodImpl::template Unary<&TestService::Unary>(1, extra_args...);
+        MethodImpl::template SynchronousUnary<&TestService::Unary>(
+            1, extra_args...);
     static_assert(kUnaryMethod.id() == 1);
 
     static constexpr MethodImpl kStaticUnaryMethod =
-        MethodImpl::template Unary<&TestService::StaticUnary>(2, extra_args...);
+        MethodImpl::template SynchronousUnary<&TestService::StaticUnary>(
+            2, extra_args...);
     static_assert(kStaticUnaryMethod.id() == 2);
+
+    static constexpr MethodImpl kAsyncUnaryMethod =
+        MethodImpl::template AsynchronousUnary<&TestService::AsyncUnary>(
+            3, extra_args...);
+    static_assert(kAsyncUnaryMethod.id() == 3);
+
+    static constexpr MethodImpl kStaticAsyncUnaryMethod =
+        MethodImpl::template AsynchronousUnary<&TestService::StaticAsyncUnary>(
+            4, extra_args...);
+    static_assert(kStaticAsyncUnaryMethod.id() == 4);
 
     static constexpr MethodImpl kServerStreamingMethod =
         MethodImpl::template ServerStreaming<&TestService::ServerStreaming>(
-            3, extra_args...);
-    static_assert(kServerStreamingMethod.id() == 3);
+            5, extra_args...);
+    static_assert(kServerStreamingMethod.id() == 5);
 
     static constexpr MethodImpl kStaticServerStreamingMethod =
         MethodImpl::template ServerStreaming<
-            &TestService::StaticServerStreaming>(4, extra_args...);
-    static_assert(kStaticServerStreamingMethod.id() == 4);
+            &TestService::StaticServerStreaming>(6, extra_args...);
+    static_assert(kStaticServerStreamingMethod.id() == 6);
 
     static constexpr MethodImpl kClientStreamingMethod =
         MethodImpl::template ClientStreaming<&TestService::ClientStreaming>(
-            5, extra_args...);
-    static_assert(kClientStreamingMethod.id() == 5);
+            7, extra_args...);
+    static_assert(kClientStreamingMethod.id() == 7);
 
     static constexpr MethodImpl kStaticClientStreamingMethod =
         MethodImpl::template ClientStreaming<
-            &TestService::StaticClientStreaming>(6, extra_args...);
-    static_assert(kStaticClientStreamingMethod.id() == 6);
+            &TestService::StaticClientStreaming>(8, extra_args...);
+    static_assert(kStaticClientStreamingMethod.id() == 8);
 
     static constexpr MethodImpl kBidirectionalStreamingMethod =
         MethodImpl::template BidirectionalStreaming<
-            &TestService::BidirectionalStreaming>(7, extra_args...);
-    static_assert(kBidirectionalStreamingMethod.id() == 7);
+            &TestService::BidirectionalStreaming>(9, extra_args...);
+    static_assert(kBidirectionalStreamingMethod.id() == 9);
 
     static constexpr MethodImpl kStaticBidirectionalStreamingMethod =
         MethodImpl::template BidirectionalStreaming<
-            &TestService::StaticBidirectionalStreaming>(8, extra_args...);
-    static_assert(kStaticBidirectionalStreamingMethod.id() == 8);
+            &TestService::StaticBidirectionalStreaming>(10, extra_args...);
+    static_assert(kStaticBidirectionalStreamingMethod.id() == 10);
 
     // Test that there is an Invalid method creation function.
     static constexpr MethodImpl kInvalidMethod = MethodImpl::Invalid();

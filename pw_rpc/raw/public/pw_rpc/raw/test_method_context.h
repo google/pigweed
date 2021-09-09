@@ -133,13 +133,18 @@ class UnaryContext
   UnaryContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
 
   // Invokes the RPC with the provided request. Returns RPC's StatusWithSize.
-  StatusWithSize call(ConstByteSpan request) {
-    Base::output().clear();
-    ByteSpan& response = Base::output().AllocateResponse();
-    auto sws = CallMethodImplFunction<kMethod>(
-        Base::call_context(), request, response);
-    response = response.first(sws.size());
-    return sws;
+  auto call(ConstByteSpan request) {
+    if constexpr (MethodTraits<decltype(kMethod)>::kSynchronous) {
+      Base::output().clear();
+
+      ByteSpan& response = Base::output().AllocateResponse();
+      auto sws = CallMethodImplFunction<kMethod>(
+          Base::call_context(), request, response);
+      response = response.first(sws.size());
+      return sws;
+    } else {
+      Base::template call<kMethod, RawServerResponder>(request);
+    }
   }
 };
 

@@ -18,31 +18,30 @@
 
 namespace pw::rpc::internal {
 
-Status GenericNanopbResponder::SendClientStreamOrResponse(const void* response,
-                                                          Status* status) {
+Status GenericNanopbResponder::SendClientStreamOrResponse(
+    const void* response, const Status* status) {
   if (!active()) {
     return Status::FailedPrecondition();
   }
 
-  std::span<std::byte> buffer = AcquirePayloadBuffer();
+  std::span<std::byte> payload_buffer = AcquirePayloadBuffer();
 
   // Cast the method to a NanopbMethod. Access the Nanopb
   // serializer/deserializer object and encode the response with it.
-  auto result = static_cast<const internal::NanopbMethod&>(method())
-                    .serde()
-                    .EncodeResponse(response, buffer);
-  if (!result.ok()) {
-    ReleasePayloadBuffer();
+  StatusWithSize result = static_cast<const internal::NanopbMethod&>(method())
+                              .serde()
+                              .EncodeResponse(response, payload_buffer);
 
-    // If the Nanopb encode failed, the channel output may not have provided a
-    // large enough buffer or something went wrong in Nanopb. Return INTERNAL to
-    // indicate that the problem is internal to the server.
-    return Status::Internal();
+  if (!result.ok()) {
+    return CloseAndSendServerError(Status::Internal());
   }
+
+  payload_buffer = payload_buffer.first(result.size());
+
   if (status != nullptr) {
-    return CloseAndSendResponse(buffer.first(result.size()), *status);
+    return CloseAndSendResponse(payload_buffer, *status);
   }
-  return SendPayloadBufferClientStream(buffer.first(result.size()));
+  return SendPayloadBufferClientStream(payload_buffer);
 }
 
 void GenericNanopbResponder::DecodeRequest(ConstByteSpan payload,

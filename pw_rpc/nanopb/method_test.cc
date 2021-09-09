@@ -43,6 +43,14 @@ class TestNanopbService final : public Service {
     return Status();
   }
 
+  void AsyncUnary(ServerContext&,
+                  const FakePb&,
+                  NanopbServerResponder<FakePb>&) {}
+
+  static void StaticAsyncUnary(ServerContext&,
+                               const FakePb&,
+                               NanopbServerResponder<FakePb>&) {}
+
   Status UnaryWrongArg(ServerContext&, FakePb&, FakePb&) { return Status(); }
 
   static void StaticUnaryVoidReturn(ServerContext&, const FakePb&, FakePb&) {}
@@ -127,12 +135,12 @@ NanopbServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestResponse>
 NanopbServerReaderWriter<pw_rpc_test_TestRequest, pw_rpc_test_TestResponse>
     last_reader_writer;
 
-Status AddFive(ServerContext&,
-               const pw_rpc_test_TestRequest& request,
-               pw_rpc_test_TestResponse& response) {
+void AddFive(ServerContext&,
+             const pw_rpc_test_TestRequest& request,
+             NanopbServerResponder<pw_rpc_test_TestResponse>& responder) {
   last_request = request;
-  response.value = request.integer + 5;
-  return Status::Unauthenticated();
+  responder.Finish({.value = static_cast<int32_t>(request.integer + 5)},
+                   Status::Unauthenticated());
 }
 
 Status DoNothing(ServerContext&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
@@ -164,9 +172,9 @@ class FakeService : public Service {
   FakeService(uint32_t id) : Service(id, kMethods) {}
 
   static constexpr std::array<NanopbMethodUnion, 5> kMethods = {
-      NanopbMethod::Unary<DoNothing>(
+      NanopbMethod::SynchronousUnary<DoNothing>(
           10u, pw_rpc_test_Empty_fields, pw_rpc_test_Empty_fields),
-      NanopbMethod::Unary<AddFive>(
+      NanopbMethod::AsynchronousUnary<AddFive>(
           11u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
       NanopbMethod::ServerStreaming<StartStream>(
           12u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),

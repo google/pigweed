@@ -138,11 +138,11 @@ class InvocationContext {
 
   // Invokes the RPC, optionally with a request argument.
   template <auto kMethod, typename T, typename... RequestArg>
-  auto call(RequestArg&&... request) {
+  void call(RequestArg&&... request) {
     static_assert(sizeof...(request) <= 1);
     output_.clear();
     T responder = GetResponder<T>();
-    return CallMethodImplFunction<kMethod>(
+    CallMethodImplFunction<kMethod>(
         call_context(), std::forward<RequestArg>(request)..., responder);
   }
 

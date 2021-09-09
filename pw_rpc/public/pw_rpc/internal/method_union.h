@@ -113,7 +113,13 @@ constexpr auto GetMethodFor(uint32_t id, Args&&... args) {
   if constexpr (MethodTraits<decltype(kMethod)>::kType != kType) {
     return InvalidMethod<kMethod, kType>(id);
   } else if constexpr (kType == MethodType::kUnary) {
-    return MethodImpl::template Unary<kMethod>(id, std::forward<Args>(args)...);
+    if constexpr (MethodTraits<decltype(kMethod)>::kSynchronous) {
+      return MethodImpl::template SynchronousUnary<kMethod>(
+          id, std::forward<Args>(args)...);
+    } else {
+      return MethodImpl::template AsynchronousUnary<kMethod>(
+          id, std::forward<Args>(args)...);
+    }
   } else if constexpr (kType == MethodType::kServerStreaming) {
     return MethodImpl::template ServerStreaming<kMethod>(
         id, std::forward<Args>(args)...);

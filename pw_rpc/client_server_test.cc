@@ -40,7 +40,7 @@ class FakeService : public Service {
   FakeService(uint32_t id) : Service(id, kMethods) {}
 
   static constexpr std::array<RawMethodUnion, 1> kMethods = {
-      RawMethod::Unary<FakeMethod>(kFakeMethodId),
+      RawMethod::SynchronousUnary<FakeMethod>(kFakeMethodId),
   };
 };
 

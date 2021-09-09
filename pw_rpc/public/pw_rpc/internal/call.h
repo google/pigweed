@@ -23,6 +23,7 @@
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/packet.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
@@ -70,10 +71,16 @@ class Call : public IntrusiveList<Call>::Item {
   // status from sending the packet, or FAILED_PRECONDITION if the Call is not
   // active.
   Status CloseAndSendResponse(std::span<const std::byte> response,
-                              Status status);
+                              Status status) {
+    return CloseAndSendFinalPacket(PacketType::RESPONSE, response, status);
+  }
 
   Status CloseAndSendResponse(Status status) {
     return CloseAndSendResponse({}, status);
+  }
+
+  Status CloseAndSendServerError(Status error) {
+    return CloseAndSendFinalPacket(PacketType::SERVER_ERROR, {}, error);
   }
 
   void HandleError(Status status) {
@@ -162,6 +169,10 @@ class Call : public IntrusiveList<Call>::Item {
   void ReleasePayloadBuffer();
 
  private:
+  Status CloseAndSendFinalPacket(PacketType type,
+                                 std::span<const std::byte> response,
+                                 Status status);
+
   // Removes the RPC from the server & marks as closed. The responder must be
   // active when this is called.
   void Close();

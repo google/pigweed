@@ -67,6 +67,14 @@ class TestService final : public generated::TestService<TestService> {
     return StatusWithSize(status, test_response.size());
   }
 
+  static void TestAnotherUnaryRpc(ServerContext& ctx,
+                                  ConstByteSpan request,
+                                  RawServerResponder& responder) {
+    ByteSpan response = responder.PayloadBuffer();
+    StatusWithSize sws = TestUnaryRpc(ctx, request, response);
+    responder.Finish(response.first(sws.size()), sws.status());
+  }
+
   void TestServerStreamRpc(ServerContext&,
                            ConstByteSpan request,
                            RawServerWriter& writer) {
@@ -177,6 +185,26 @@ TEST(RawCodegen, Server_InvokeUnaryRpc) {
 
   auto sws = context.call(EncodeRequest(123, OkStatus()));
   EXPECT_EQ(OkStatus(), sws.status());
+
+  protobuf::Decoder decoder(context.response());
+
+  while (decoder.Next().ok()) {
+    switch (static_cast<test::TestResponse::Fields>(decoder.FieldNumber())) {
+      case test::TestResponse::Fields::VALUE: {
+        int32_t value;
+        EXPECT_EQ(OkStatus(), decoder.ReadInt32(&value));
+        EXPECT_EQ(value, 124);
+        break;
+      }
+    }
+  }
+}
+
+TEST(RawCodegen, Server_InvokeAsyncUnaryRpc) {
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) context;
+
+  context.call(EncodeRequest(123, OkStatus()));
+  EXPECT_EQ(OkStatus(), context.status());
 
   protobuf::Decoder decoder(context.response());
 

@@ -27,6 +27,9 @@ class TestService final : public test::generated::TestService<TestService> {
     return StatusWithSize(0);
   }
 
+  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawServerResponder&) {
+  }
+
   void TestServerStreamRpc(ServerContext&, ConstByteSpan, RawServerWriter&) {}
 
   void TestClientStreamRpc(ServerContext&, RawServerReader&) {}

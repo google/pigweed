@@ -33,9 +33,10 @@ void NanopbMethod::CallSynchronousUnary(CallContext& call,
     return;
   }
 
+  GenericNanopbResponder responder(call, MethodType::kUnary);
   const Status status =
       function_.synchronous_unary(call, request_struct, response_struct);
-  SendResponse(call.channel(), request, response_struct, status);
+  responder.SendResponse(response_struct, status).IgnoreError();
 }
 
 void NanopbMethod::CallUnaryRequest(CallContext& call,
@@ -61,42 +62,6 @@ bool NanopbMethod::DecodeRequest(Channel& channel,
               unsigned(channel.id()));
   channel.Send(Packet::ServerError(request, Status::DataLoss()));
   return false;
-}
-
-void NanopbMethod::SendResponse(Channel& channel,
-                                const Packet& request,
-                                const void* response_struct,
-                                Status status) const {
-  Channel::OutputBuffer response_buffer = channel.AcquireBuffer();
-  std::span payload_buffer = response_buffer.payload(request);
-
-  StatusWithSize encoded =
-      serde_.EncodeResponse(response_struct, payload_buffer);
-
-  if (encoded.ok()) {
-    Packet response = Packet::Response(request);
-
-    response.set_payload(payload_buffer.first(encoded.size()));
-    response.set_status(status);
-    pw::Status send_status = channel.Send(response_buffer, response);
-    if (send_status.ok()) {
-      return;
-    }
-
-    PW_LOG_WARN("Failed to send response packet for channel %u, status %u",
-                unsigned(channel.id()),
-                send_status.code());
-
-    // Re-acquire the buffer to encode an error packet.
-    response_buffer = channel.AcquireBuffer();
-  } else {
-    PW_LOG_WARN(
-        "Nanopb failed to encode response packet for channel %u, status %u",
-        unsigned(channel.id()),
-        encoded.status().code());
-  }
-  channel.Send(response_buffer,
-               Packet::ServerError(request, Status::Internal()));
 }
 
 }  // namespace internal

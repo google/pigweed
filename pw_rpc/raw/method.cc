@@ -24,34 +24,30 @@ namespace pw::rpc::internal {
 void RawMethod::SynchronousUnaryInvoker(const Method& method,
                                         CallContext& call,
                                         const Packet& request) {
-  Channel::OutputBuffer response_buffer = call.channel().AcquireBuffer();
-  std::span payload_buffer = response_buffer.payload(request);
+  RawServerResponder responder(call);
+  std::span payload_buffer = responder.AcquirePayloadBuffer();
 
   StatusWithSize sws =
       static_cast<const RawMethod&>(method).function_.synchronous_unary(
           call, request.payload(), payload_buffer);
-  Packet response = Packet::Response(request);
 
-  response.set_payload(payload_buffer.first(sws.size()));
-  response.set_status(sws.status());
-  if (call.channel().Send(response_buffer, response).ok()) {
-    return;
-  }
-
-  PW_LOG_WARN(
-      "Failed to send response packet for channel %u; terminating RPC with "
-      "INTERNAL error",
-      unsigned(call.channel().id()));
-  call.channel()
-      .Send(Packet::ServerError(request, Status::Internal()))
+  responder.Finish(payload_buffer.first(sws.size()), sws.status())
       .IgnoreError();
+}
+
+void RawMethod::AsynchronousUnaryInvoker(const Method& method,
+                                         CallContext& call,
+                                         const Packet& request) {
+  RawServerResponder responder(call);
+  static_cast<const RawMethod&>(method).function_.asynchronous_unary(
+      call, request.payload(), responder);
 }
 
 void RawMethod::ServerStreamingInvoker(const Method& method,
                                        CallContext& call,
                                        const Packet& request) {
   RawServerWriter server_writer(call);
-  static_cast<const RawMethod&>(method).function_.unary_request(
+  static_cast<const RawMethod&>(method).function_.server_streaming(
       call, request.payload(), server_writer);
 }
 

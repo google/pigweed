@@ -42,6 +42,11 @@ using NanopbSynchronousUnary = Status(ServerContext&,
                                       Response&);
 
 template <typename Request, typename Response>
+using NanopbAsynchronousUnary = void(ServerContext&,
+                                     const Request&,
+                                     NanopbServerResponder<Response>&);
+
+template <typename Request, typename Response>
 using NanopbServerStreaming = void(ServerContext&,
                                    const Request&,
                                    NanopbServerWriter<Response>&);
@@ -54,7 +59,7 @@ template <typename Request, typename Response>
 using NanopbBidirectionalStreaming =
     void(ServerContext&, NanopbServerReaderWriter<Request, Response>&);
 
-// MethodTraits specialization for a static unary method.
+// MethodTraits specialization for a static synchronous unary method.
 template <typename Req, typename Resp>
 struct MethodTraits<NanopbSynchronousUnary<Req, Resp>*> {
   using Implementation = NanopbMethod;
@@ -62,15 +67,31 @@ struct MethodTraits<NanopbSynchronousUnary<Req, Resp>*> {
   using Response = Resp;
 
   static constexpr MethodType kType = MethodType::kUnary;
+  static constexpr bool kSynchronous = true;
+
   static constexpr bool kServerStreaming = false;
   static constexpr bool kClientStreaming = false;
 };
 
-// MethodTraits specialization for a unary method.
+// MethodTraits specialization for a synchronous unary method.
 template <typename T, typename Req, typename Resp>
 struct MethodTraits<NanopbSynchronousUnary<Req, Resp>(T::*)>
     : MethodTraits<NanopbSynchronousUnary<Req, Resp>*> {
   using Service = T;
+};
+
+// MethodTraits specialization for a static asynchronous unary method.
+template <typename Req, typename Resp>
+struct MethodTraits<NanopbAsynchronousUnary<Req, Resp>*>
+    : MethodTraits<NanopbSynchronousUnary<Req, Resp>*> {
+  static constexpr bool kSynchronous = false;
+};
+
+// MethodTraits specialization for an asynchronous unary method.
+template <typename T, typename Req, typename Resp>
+struct MethodTraits<NanopbAsynchronousUnary<Req, Resp>(T::*)>
+    : MethodTraits<NanopbSynchronousUnary<Req, Resp>(T::*)> {
+  static constexpr bool kSynchronous = false;
 };
 
 // MethodTraits specialization for a static server streaming method.
@@ -151,9 +172,10 @@ class NanopbMethod : public Method {
 
   // Creates a NanopbMethod for a synchronous unary RPC.
   template <auto kMethod>
-  static constexpr NanopbMethod Unary(uint32_t id,
-                                      NanopbMessageDescriptor request,
-                                      NanopbMessageDescriptor response) {
+  static constexpr NanopbMethod SynchronousUnary(
+      uint32_t id,
+      NanopbMessageDescriptor request,
+      NanopbMessageDescriptor response) {
     // Define a wrapper around the user-defined function that takes the
     // request and response protobuf structs as void*. This wrapper is stored
     // generically in the Function union, defined below.
@@ -172,6 +194,33 @@ class NanopbMethod : public Method {
         SynchronousUnaryInvoker<AllocateSpaceFor<Request<kMethod>>(),
                                 AllocateSpaceFor<Response<kMethod>>()>,
         Function{.synchronous_unary = wrapper},
+        request,
+        response);
+  }
+
+  // Creates a NanopbMethod for an asynchronous unary RPC.
+  template <auto kMethod>
+  static constexpr NanopbMethod AsynchronousUnary(
+      uint32_t id,
+      NanopbMessageDescriptor request,
+      NanopbMessageDescriptor response) {
+    // Define a wrapper around the user-defined function that takes the
+    // request and response protobuf structs as void*. This wrapper is stored
+    // generically in the Function union, defined below.
+    //
+    // In optimized builds, the compiler inlines the user-defined function into
+    // this wrapper, elminating any overhead.
+    constexpr UnaryRequestFunction wrapper =
+        [](CallContext& call, const void* req, GenericNanopbResponder& resp) {
+          return CallMethodImplFunction<kMethod>(
+              call,
+              *static_cast<const Request<kMethod>*>(req),
+              static_cast<NanopbServerResponder<Response<kMethod>>&>(resp));
+        };
+    return NanopbMethod(
+        id,
+        AsynchronousUnaryInvoker<AllocateSpaceFor<Request<kMethod>>()>,
+        Function{.unary_request = wrapper},
         request,
         response);
   }
@@ -319,6 +368,21 @@ class NanopbMethod : public Method {
         call, request, &request_struct, &response_struct);
   }
 
+  // Invoker function for asynchronous unary RPCs. Allocates space for a request
+  // struct. Ignores the payload buffer since resposnes are sent through the
+  // NanopbServerResponder.
+  template <size_t kRequestSize>
+  static void AsynchronousUnaryInvoker(const Method& method,
+                                       CallContext& call,
+                                       const Packet& request) {
+    _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
+    std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
+        request_struct{};
+
+    static_cast<const NanopbMethod&>(method).CallUnaryRequest(
+        call, MethodType::kUnary, request, &request_struct);
+  }
+
   // Invoker function for server streaming RPCs. Allocates space for a request
   // struct. Ignores the payload buffer since resposnes are sent through the
   // NanopbServerWriter.
@@ -360,12 +424,6 @@ class NanopbMethod : public Method {
   bool DecodeRequest(Channel& channel,
                      const Packet& request,
                      void* proto_struct) const;
-
-  // Encodes a response and sends it over the provided channel.
-  void SendResponse(Channel& channel,
-                    const Packet& request,
-                    const void* response_struct,
-                    Status status) const;
 
   // Stores the user-defined RPC in a generic wrapper.
   Function function_;

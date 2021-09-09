@@ -33,6 +33,7 @@ message Empty {}
 
 service TestService {
   rpc TestUnaryRpc(TestRequest) returns (TestResponse);
+  rpc TestAnotherUnaryRpc(TestRequest) returns (TestResponse);
   rpc TestServerStreamRpc(TestRequest) returns (stream TestStreamResponse);
   rpc TestClientStreamRpc(stream TestRequest) returns (TestStreamResponse);
   rpc TestBidirectionalStreamRpc(stream TestRequest)

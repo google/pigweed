@@ -16,22 +16,10 @@
 
 #include "pw_assert/check.h"
 #include "pw_rpc/internal/method.h"
-#include "pw_rpc/internal/packet.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc::internal {
 namespace {
-
-Packet ResponsePacket(const CallContext& call,
-                      std::span<const std::byte> payload,
-                      Status status) {
-  return Packet(PacketType::RESPONSE,
-                call.channel().id(),
-                call.service().id(),
-                call.method().id(),
-                payload,
-                status);
-}
 
 Packet StreamPacket(const CallContext& call,
                     std::span<const std::byte> payload) {
@@ -83,8 +71,9 @@ Call& Call::operator=(Call&& other) {
 
 uint32_t Call::method_id() const { return call_.method().id(); }
 
-Status Call::CloseAndSendResponse(std::span<const std::byte> response,
-                                  Status status) {
+Status Call::CloseAndSendFinalPacket(PacketType type,
+                                     std::span<const std::byte> payload,
+                                     Status status) {
   if (!active()) {
     return Status::FailedPrecondition();
   }
@@ -98,8 +87,9 @@ Status Call::CloseAndSendResponse(std::span<const std::byte> response,
 
   // Send a packet indicating that the RPC has terminated and optionally
   // containing the final payload.
-  packet_status =
-      call_.channel().Send(response_, ResponsePacket(call_, response, status));
+  packet_status = call_.channel().Send(
+      response_,
+      Packet(type, channel_id(), service_id(), method_id(), payload, status));
 
   Close();
 

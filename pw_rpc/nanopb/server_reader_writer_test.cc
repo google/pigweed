@@ -29,6 +29,10 @@ class TestService final : public test::generated::TestService<TestService> {
     return OkStatus();
   }
 
+  void TestAnotherUnaryRpc(ServerContext&,
+                           const pw_rpc_test_TestRequest&,
+                           NanopbServerResponder<pw_rpc_test_TestResponse>&) {}
+
   void TestServerStreamRpc(
       ServerContext&,
       const pw_rpc_test_TestRequest&,

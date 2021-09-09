@@ -46,6 +46,12 @@ class TestRawService final : public Service {
     return StatusWithSize(0);
   }
 
+  void AsyncUnary(ServerContext&, ConstByteSpan, RawServerResponder&) {}
+
+  static void StaticAsyncUnary(ServerContext&,
+                               ConstByteSpan,
+                               RawServerResponder&) {}
+
   StatusWithSize UnaryWrongArg(ServerContext&, ConstByteSpan, ConstByteSpan) {
     return StatusWithSize(0);
   }
@@ -144,7 +150,7 @@ class FakeService : public Service {
   FakeService(uint32_t id) : Service(id, kMethods) {}
 
   static constexpr std::array<RawMethodUnion, 2> kMethods = {
-      RawMethod::Unary<AddFive>(10u),
+      RawMethod::SynchronousUnary<AddFive>(10u),
       RawMethod::ServerStreaming<StartStream>(11u),
   };
 };

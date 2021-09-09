@@ -31,6 +31,14 @@ class TestService final : public generated::TestService<TestService> {
     return static_cast<Status::Code>(request.status_code);
   }
 
+  void TestAnotherUnaryRpc(
+      ServerContext& ctx,
+      const pw_rpc_test_TestRequest& request,
+      NanopbServerResponder<pw_rpc_test_TestResponse>& responder) {
+    pw_rpc_test_TestResponse response{};
+    responder.Finish(response, TestUnaryRpc(ctx, request, response));
+  }
+
   static void TestServerStreamRpc(
       ServerContext&,
       const pw_rpc_test_TestRequest& request,
@@ -84,6 +92,20 @@ TEST(NanopbCodegen, Server_InvokeUnaryRpc) {
   EXPECT_EQ(Status::InvalidArgument(),
             context.call({.integer = 999,
                           .status_code = Status::InvalidArgument().code()}));
+  EXPECT_EQ(1000, context.response().value);
+}
+
+TEST(NanopbCodegen, Server_InvokeAsyncUnaryRpc) {
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) context;
+
+  context.call({.integer = 123, .status_code = OkStatus().code()});
+
+  EXPECT_EQ(OkStatus(), context.status());
+  EXPECT_EQ(124, context.response().value);
+
+  context.call(
+      {.integer = 999, .status_code = Status::InvalidArgument().code()});
+  EXPECT_EQ(Status::InvalidArgument(), context.status());
   EXPECT_EQ(1000, context.response().value);
 }
 

@@ -100,7 +100,7 @@ class RawServerReaderWriter : private internal::Call {
   using internal::Call::open;  // Deprecated; renamed to active()
 
  private:
-  friend class internal::RawMethod;
+  friend class internal::RawMethod;  // Needed to construct
 
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
@@ -188,8 +188,6 @@ class RawServerWriter : private RawServerReaderWriter {
   using RawServerReaderWriter::Write;
 
  private:
-  friend class RawServerReaderWriter;  // Needed for conversions.
-
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
@@ -197,6 +195,50 @@ class RawServerWriter : private RawServerReaderWriter {
 
   RawServerWriter(const internal::CallContext& call)
       : RawServerReaderWriter(call, MethodType::kServerStreaming) {}
+};
+
+// The RawServerResponder is used to send a response in a raw unary RPC.
+class RawServerResponder : private RawServerReaderWriter {
+ public:
+  // Creates a RawServerResponder that is ready to send responses for a
+  // particular RPC. This can be used for testing or to send responses to an RPC
+  // that has not been started by a client.
+  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  [[nodiscard]] static RawServerResponder Open(Server& server,
+                                               uint32_t channel_id,
+                                               ServiceImpl& service) {
+    return {internal::OpenCall<kMethod, MethodType::kUnary>(
+        server,
+        channel_id,
+        service,
+        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+  }
+
+  constexpr RawServerResponder() : RawServerReaderWriter(MethodType::kUnary) {}
+
+  RawServerResponder(RawServerResponder&&) = default;
+  RawServerResponder& operator=(RawServerResponder&&) = default;
+
+  using RawServerReaderWriter::active;
+  using RawServerReaderWriter::channel_id;
+
+  using RawServerReaderWriter::set_on_error;
+
+  using RawServerReaderWriter::PayloadBuffer;
+  using RawServerReaderWriter::ReleaseBuffer;
+
+  Status Finish(ConstByteSpan response, Status status = OkStatus()) {
+    return CloseAndSendResponse(response, status);
+  }
+
+ private:
+  template <typename, typename, uint32_t>
+  friend class internal::test::InvocationContext;
+
+  friend class internal::RawMethod;
+
+  RawServerResponder(const internal::CallContext& call)
+      : RawServerReaderWriter(call, MethodType::kUnary) {}
 };
 
 }  // namespace pw::rpc
