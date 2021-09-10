@@ -12,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
@@ -193,6 +194,26 @@ TEST(AdvertisingDataTest, ServiceData) {
   EXPECT_EQ(13u, data->service_data(eddystone).size());
 
   EXPECT_TRUE(ContainersEqual(bytes.view(8), data->service_data(eddystone)));
+}
+
+TEST(AdvertisingDataTest, MaxOutServiceUuids) {
+  // Space for 16 bit UUIDs + length + type fields
+  const uint64_t kExpectedBuffSize = (2 + kMax16BitUuids * UUIDElemSize::k16Bit);
+  DynamicByteBuffer bytes(kExpectedBuffSize);
+  uint64_t offset = 0;
+  bytes.Write(StaticByteBuffer{
+      kMax16BitUuids * UUIDElemSize::k16Bit + 1,                  // Size byte
+      static_cast<uint8_t>(DataType::kComplete16BitServiceUuids)  // Type byte
+  });
+  offset += 2;
+  for (uint16_t i = 0; i < kMax16BitUuids; ++i) {
+    UUID uuid(i);
+    bytes.Write(uuid.CompactView(), offset);
+    offset += uuid.CompactSize();
+  }
+  std::optional<AdvertisingData> adv_result = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(adv_result.has_value());
+  EXPECT_EQ(kMax16BitUuids, adv_result->service_uuids().size());
 }
 
 TEST(AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {

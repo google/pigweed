@@ -18,15 +18,12 @@
 namespace bt {
 
 namespace {
-
-// Return true to indicate that the UUID was processed successfully, false to indicate failure.
-using UuidFunction = fit::function<bool(const UUID&)>;
-
 // Parses `data` into `data.size()` / `uuid_size` UUIDs, callling `func` with each parsed UUID.
-// Returns false without further parsing if `uuid_size` does not evenly divide `data.size()` or
-// `func` returns false for any UUID, otherwise returns true.
-bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
-  ZX_DEBUG_ASSERT(func);
+// Returns false without further parsing if `uuid_size` does not evenly divide `data.size()`,
+// otherwise returns true.
+bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size,
+                fit::function<void(UUID)> uuid_handler) {
+  ZX_ASSERT(uuid_handler);
 
   if (data.size() % uuid_size) {
     bt_log(WARN, "gap-le", "malformed service UUIDs list");
@@ -37,8 +34,10 @@ bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction fun
   for (size_t i = 0; i < uuid_count; i++) {
     const BufferView uuid_bytes(data.data() + (i * uuid_size), uuid_size);
     UUID uuid;
-    if (!UUID::FromBytes(uuid_bytes, &uuid) || !func(uuid))
+    if (!UUID::FromBytes(uuid_bytes, &uuid)) {
       return false;
+    }
+    uuid_handler(uuid);
   }
 
   return true;
@@ -160,7 +159,7 @@ std::string DecodeUri(const std::string& uri) {
   }
   // `uri` is not a c-string, so URIs that start with '\0' after c_str conversion (i.e. both empty
   // URIs and URIs with leading null bytes '\0') are caught by the code_point < 2 check. We check
-  // "< 2" instead of "== 0" for redundancy (extra safety!) with the kUndefindScheme check above.
+  // "< 2" instead of "== 0" for redundancy (extra safety!) with the kUndefinedScheme check above.
   if (code_point >= kUriSchemesSize + 2 || code_point < 2) {
     bt_log(ERROR, "gap-le",
            "Failed to decode URI - supplied UTF-8 encoding scheme codepoint %u must be in the "
@@ -241,8 +240,14 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
       case DataType::kComplete32BitServiceUuids:
       case DataType::kIncomplete128BitServiceUuids:
       case DataType::kComplete128BitServiceUuids: {
-        if (!ParseUuids(field, SizeForType(type),
-                        fit::bind_member(&out_ad, &AdvertisingData::AddServiceUuid))) {
+        auto uuid_cb = [&out_ad](UUID uuid) {
+          // AddServiceUuid only fails when the number of N bit UUIDs exceed the kMaxNBitUuids
+          // bounds. Because these bounds are defined based on the number of UUIDs that fit in the
+          // wire (byte) representation of an AdvertisingData, it is impossible for the number of N
+          // bit service UUIDs to be exceeded when parsing an AdvertisingData from bytes.
+          ZX_ASSERT(out_ad.AddServiceUuid(uuid));
+        };
+        if (!ParseUuids(field, SizeForType(type), uuid_cb)) {
           return std::nullopt;
         }
         break;
