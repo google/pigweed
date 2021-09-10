@@ -13,9 +13,10 @@
 
 #include <memory>
 
+#include <fbl/ref_counted.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/lib/fxl/memory/ref_counted.h"
 
 namespace bthost {
 
@@ -46,7 +47,7 @@ class HostServer;
 //
 // THREAD SAFETY: This class IS NOT thread-safe. All of its public methods
 // should be called on the Host thread only.
-class Host final : public fxl::RefCountedThreadSafe<Host> {
+class Host final : public fbl::RefCounted<Host> {
  public:
   // Initializes the system and reports the status in |success|.
   using InitCallback = fit::function<void(bool success)>;
@@ -62,8 +63,8 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
   bt::gatt::GATT* gatt() const { return gatt_.get(); }
 
  private:
-  FRIEND_MAKE_REF_COUNTED(Host);
-  FRIEND_REF_COUNTED_THREAD_SAFE(Host);
+  friend class HostDevice;
+  friend class ::fbl::RefPtr<Host>;
 
   explicit Host(const bt_hci_protocol_t& hci_proto,
                 std::optional<bt_vendor_protocol_t> vendor_proto);

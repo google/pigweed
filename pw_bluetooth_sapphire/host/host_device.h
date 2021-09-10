@@ -66,7 +66,7 @@ class HostDevice final : public HostDeviceType {
   // This is necessary as Host owns FIDL bindings which require a
   // single-threaded dispatcher.
   async::Loop loop_;
-  fxl::RefPtr<Host> host_ __TA_GUARDED(mtx_);
+  fbl::RefPtr<Host> host_ __TA_GUARDED(mtx_);
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostDevice);
 };

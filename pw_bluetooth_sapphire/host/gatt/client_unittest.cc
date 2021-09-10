@@ -86,7 +86,7 @@ class ClientTest : public l2cap::testing::FakeChannelTest {
 
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
-  fxl::RefPtr<att::Bearer> att_;
+  fbl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ClientTest);

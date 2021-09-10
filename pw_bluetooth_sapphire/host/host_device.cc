@@ -95,7 +95,7 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
     bt_log(TRACE, "bt-host", "host thread start");
 
     std::lock_guard<std::mutex> lock(mtx_);
-    host_ = fxl::MakeRefCounted<Host>(hci_proto_, vendor_proto_);
+    host_ = fbl::AdoptRef(new Host(hci_proto_, vendor_proto_));
     bt_host_node_ = inspect_.GetRoot().CreateChild("bt-host");
     host_->Initialize(bt_host_node_, [this, txn{std::move(txn)}](bool success) mutable {
       std::lock_guard<std::mutex> lock(mtx_);

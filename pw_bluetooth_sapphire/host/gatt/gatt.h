@@ -17,7 +17,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-#include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {

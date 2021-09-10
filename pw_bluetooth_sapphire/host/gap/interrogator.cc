@@ -71,7 +71,7 @@ void Interrogator::Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCal
   };
 
   auto interrogation_ref =
-      fxl::MakeRefCounted<Interrogation>(peer_id, handle, std::move(result_cb_wrapped));
+      fbl::AdoptRef(new Interrogation(peer_id, handle, std::move(result_cb_wrapped)));
 
   auto [it, inserted] = pending_.try_emplace(peer_id, interrogation_ref->GetWeakPtr());
   ZX_ASSERT_MSG(inserted, "interrogating peer %s twice at once", bt_str(peer_id));

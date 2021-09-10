@@ -9,6 +9,8 @@
 #include <memory>
 
 #include <fbl/macros.h>
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
@@ -16,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/memory/ref_counted.h"
 
 namespace bt::att {
 
@@ -32,7 +33,7 @@ namespace bt::att {
 //
 // This class is not thread-safe. The constructor/destructor and all public
 // methods must be called on the same thread.
-class Database final : public fxl::RefCountedThreadSafe<Database> {
+class Database final : public fbl::RefCounted<Database> {
   using GroupingList = std::list<AttributeGrouping>;
 
  public:
@@ -85,9 +86,9 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // Note: This is to make it easy for the GATT layer to group service
   // declarations with 16-bit UUIDs and 128-bit UUIDs separately as recommended
   // by the GATT specification (see Vol 3, Part G, 3.1). By default
-  inline static fxl::RefPtr<Database> Create(Handle range_start = kHandleMin,
+  inline static fbl::RefPtr<Database> Create(Handle range_start = kHandleMin,
                                              Handle range_end = kHandleMax) {
-    return fxl::AdoptRef(new Database(range_start, range_end));
+    return fbl::AdoptRef(new Database(range_start, range_end));
   }
 
   // Returns an iterator that covers the handle range defined by |start| and
@@ -155,7 +156,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
                          const sm::SecurityProperties& security, WriteCallback callback);
 
  private:
-  FRIEND_REF_COUNTED_THREAD_SAFE(Database);
+  friend class ::fbl::RefPtr<Database>;
 
   Database(Handle range_start, Handle range_end);
   ~Database() = default;

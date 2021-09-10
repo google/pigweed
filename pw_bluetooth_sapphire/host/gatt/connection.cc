@@ -15,8 +15,8 @@
 
 namespace bt::gatt::internal {
 
-Connection::Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
-                       fxl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
+Connection::Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
+                       fbl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
                        async_dispatcher_t* gatt_dispatcher)
     : att_(att_bearer), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(att_bearer);

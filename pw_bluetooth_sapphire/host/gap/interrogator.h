@@ -12,6 +12,7 @@
 #include <memory>
 
 #include <fbl/macros.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -20,7 +21,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
-#include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -60,7 +60,7 @@ class Interrogator {
   // InterrogationRefPtr is passed to command callbacks to ensure correctness in waiting for all
   // callbacks to complete (i.e. interrogation to complete). When all RefPtrs to an Interrogation
   // have been dropped, |release_cb| is called, which calls Interrogation::Complete.
-  class Interrogation : public fxl::RefCountedThreadSafe<Interrogation> {
+  class Interrogation : public fbl::RefCounted<Interrogation> {
    public:
     Interrogation(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback result_cb);
     ~Interrogation();
@@ -92,7 +92,7 @@ class Interrogator {
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Interrogation);
   };
 
-  using InterrogationRefPtr = fxl::RefPtr<Interrogation>;
+  using InterrogationRefPtr = fbl::RefPtr<Interrogation>;
 
   // Send initial command channel interrogation commands. Called when interrogation starts.
   // A copy of |interrogation| must be passed to all command callbacks to detect when they complete.

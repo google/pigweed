@@ -17,7 +17,7 @@
 
 namespace bt::gatt {
 
-Server::Server(PeerId peer_id, fxl::RefPtr<att::Database> database, fxl::RefPtr<att::Bearer> bearer)
+Server::Server(PeerId peer_id, fbl::RefPtr<att::Database> database, fbl::RefPtr<att::Bearer> bearer)
     : peer_id_(peer_id), db_(database), att_(bearer), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(db_);
   ZX_DEBUG_ASSERT(att_);

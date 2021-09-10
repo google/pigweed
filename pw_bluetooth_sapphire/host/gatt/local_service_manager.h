@@ -5,14 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_LOCAL_SERVICE_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_LOCAL_SERVICE_MANAGER_H_
 
-#include <fbl/macros.h>
-
 #include <unordered_map>
+
+#include <fbl/macros.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-#include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt::gatt {
 
@@ -99,12 +99,12 @@ class LocalServiceManager final {
     service_changed_callback_ = std::move(callback);
   }
 
-  fxl::RefPtr<att::Database> database() const { return db_; }
+  fbl::RefPtr<att::Database> database() const { return db_; }
 
  private:
   class ServiceData;
 
-  fxl::RefPtr<att::Database> db_;
+  fbl::RefPtr<att::Database> db_;
   IdType next_service_id_;
 
   // Mapping from service instance ids to ServiceData.

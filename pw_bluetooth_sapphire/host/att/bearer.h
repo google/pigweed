@@ -15,6 +15,8 @@
 #include <unordered_map>
 
 #include <fbl/macros.h>
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
@@ -25,7 +27,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
-#include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::att {
@@ -45,11 +46,11 @@ namespace bt::att {
 //
 // This class is intended to be created, accessed, and destroyed on the same
 // thread. All callbacks will be invoked on a Bearer's creation thread.
-class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
+class Bearer final : public fbl::RefCounted<Bearer> {
  public:
   // Creates a new ATT Bearer. Returns nullptr if |chan| cannot be activated.
   // This can happen if the link is closed.
-  static fxl::RefPtr<Bearer> Create(fbl::RefPtr<l2cap::Channel> chan);
+  static fbl::RefPtr<Bearer> Create(fbl::RefPtr<l2cap::Channel> chan);
 
   // Returns true if the underlying channel is open.
   bool is_open() const { return static_cast<bool>(chan_); }
@@ -158,7 +159,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   bool ReplyWithError(TransactionId id, Handle handle, ErrorCode error_code);
 
  private:
-  FRIEND_REF_COUNTED_THREAD_SAFE(Bearer);
+  friend class ::fbl::RefPtr<Bearer>;
 
   explicit Bearer(fbl::RefPtr<l2cap::Channel> chan);
   ~Bearer();

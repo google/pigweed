@@ -29,7 +29,7 @@ namespace bt::gatt {
 class Client {
  public:
   // Constructs a new Client bearer.
-  static std::unique_ptr<Client> Create(fxl::RefPtr<att::Bearer> bearer);
+  static std::unique_ptr<Client> Create(fbl::RefPtr<att::Bearer> bearer);
 
   virtual ~Client() = default;
 

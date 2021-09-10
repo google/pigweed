@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_SERVER_H_
 
+#include <fbl/ref_ptr.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -33,7 +34,7 @@ class Server final {
   // |peer_id| is the unique system identifier for the peer device.
   // |database| will be queried by the Server to resolve transactions.
   // |bearer| is the ATT data bearer that this Server operates on.
-  Server(PeerId peer_id, fxl::RefPtr<att::Database> database, fxl::RefPtr<att::Bearer> bearer);
+  Server(PeerId peer_id, fbl::RefPtr<att::Database> database, fbl::RefPtr<att::Bearer> bearer);
   ~Server();
 
   // Sends a Handle-Value notification or indication PDU with the given
@@ -73,8 +74,8 @@ class Server final {
                                   std::list<const att::Attribute*>* out_results);
 
   PeerId peer_id_;
-  fxl::RefPtr<att::Database> db_;
-  fxl::RefPtr<att::Bearer> att_;
+  fbl::RefPtr<att::Database> db_;
+  fbl::RefPtr<att::Bearer> att_;
 
   // The queue data structure used for queued writes (see Vol 3, Part F, 3.4.6).
   att::PrepareWriteQueue prepare_queue_;

@@ -159,8 +159,8 @@ OpCode MatchingTransactionCode(OpCode transaction_end_code) {
 }  // namespace
 
 // static
-fxl::RefPtr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
-  auto bearer = fxl::AdoptRef(new Bearer(std::move(chan)));
+fbl::RefPtr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
+  auto bearer = fbl::AdoptRef(new Bearer(std::move(chan)));
   return bearer->Activate() ? bearer : nullptr;
 }
 

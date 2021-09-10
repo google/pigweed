@@ -412,7 +412,7 @@ class DatabaseIteratorManyTest : public ::testing::Test {
   Database* db() const { return db_.get(); }
 
  private:
-  fxl::RefPtr<Database> db_;
+  fbl::RefPtr<Database> db_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(DatabaseIteratorManyTest);
 };
@@ -599,7 +599,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
   ErrorCode ecode_ = ErrorCode::kNoError;
   Handle handle_in_error_ = kInvalidHandle;
   int callback_count_ = 0;
-  fxl::RefPtr<Database> db_;
+  fbl::RefPtr<Database> db_;
   std::queue<PendingWrite> pending_writes_;
 
   // Handles of the test attributes.

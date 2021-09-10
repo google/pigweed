@@ -61,8 +61,8 @@ class ServerTest : public l2cap::testing::FakeChannelTest {
   att::Bearer* att() const { return att_.get(); }
 
  private:
-  fxl::RefPtr<att::Database> db_;
-  fxl::RefPtr<att::Bearer> att_;
+  fbl::RefPtr<att::Database> db_;
+  fbl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServerTest);
@@ -2503,8 +2503,7 @@ class ServerTestSecurity : public ServerTest {
     return true;
   }
 
-  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, att::ErrorCode),
-            bool IsWrite>
+  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, att::ErrorCode), bool IsWrite>
   void RunTest() {
     const att::ErrorCode kNotPermittedError =
         IsWrite ? att::ErrorCode::kWriteNotPermitted : att::ErrorCode::kReadNotPermitted;
@@ -2539,9 +2538,7 @@ class ServerTestSecurity : public ServerTest {
                                        att::ErrorCode::kNoError));  // success
   }
 
-  void RunReadByTypeTest() {
-    RunTest<&ServerTestSecurity::EmulateReadByTypeRequest, false>();
-  }
+  void RunReadByTypeTest() { RunTest<&ServerTestSecurity::EmulateReadByTypeRequest, false>(); }
   void RunReadBlobTest() { RunTest<&ServerTestSecurity::EmulateReadBlobRequest, false>(); }
   void RunReadRequestTest() { RunTest<&ServerTestSecurity::EmulateReadRequest, false>(); }
   void RunWriteRequestTest() { RunTest<&ServerTestSecurity::EmulateWriteRequest, true>(); }
