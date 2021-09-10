@@ -93,7 +93,8 @@ def gn_full_build_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'),
                 *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
-                'python.tests', 'python.lint', 'docs')
+                'python.tests', 'python.lint', 'docs',
+                'pw_env_setup:build_pigweed_python_source_tree')
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
