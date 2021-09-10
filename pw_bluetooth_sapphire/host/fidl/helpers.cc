@@ -12,6 +12,7 @@
 
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -574,18 +575,24 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
   }
 
   if (peer.le()) {
-    if (auto adv = bt::AdvertisingData::FromBytes(peer.le()->advertising_data())) {
-      if (adv->appearance().has_value()) {
-        if (auto appearance = AppearanceToFidl(adv->appearance().value())) {
+    bt::AdvertisingData::ParseResult adv_result =
+        bt::AdvertisingData::FromBytes(peer.le()->advertising_data());
+    if (adv_result.is_ok()) {
+      if (adv_result->appearance().has_value()) {
+        if (auto appearance = AppearanceToFidl(adv_result->appearance().value())) {
           output.set_appearance(appearance.value());
         } else {
           bt_log(DEBUG, "fidl", "omitting unencodeable appearance %#.4x of peer %s",
-                 adv->appearance().value(), bt_str(peer.identifier()));
+                 adv_result->appearance().value(), bt_str(peer.identifier()));
         }
       }
-      if (adv->tx_power()) {
-        output.set_tx_power(adv->tx_power().value());
+      if (adv_result->tx_power()) {
+        output.set_tx_power(adv_result->tx_power().value());
       }
+    } else {
+      bt_log(WARN, "fidl", "failed to parse stored advertising data: %s (peer: %s)",
+             bt::AdvertisingData::ParseErrorToString(adv_result.error_value()).c_str(),
+             bt_str(peer.identifier()));
     }
   }
   if (peer.bredr() && peer.bredr()->device_class()) {
@@ -744,13 +751,15 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
 
   // Initialize advertising data only if its non-empty.
   if (le.advertising_data().size() != 0u) {
-    std::optional<bt::AdvertisingData> ad = bt::AdvertisingData::FromBytes(le.advertising_data());
-    if (!ad.has_value()) {
-      bt_log(INFO, "fidl", "advertising data failed to parse (peer: %s)",
+    bt::AdvertisingData::ParseResult adv_result =
+        bt::AdvertisingData::FromBytes(peer.le()->advertising_data());
+    if (!adv_result.is_ok()) {
+      bt_log(WARN, "fidl", "failed to parse advertising data: %s (peer: %s)",
+             bt::AdvertisingData::ParseErrorToString(adv_result.error_value()).c_str(),
              bt_str(peer.identifier()));
       return nullptr;
     }
-    auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(ad.value());
+    auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(adv_result.value());
     fidl_device->advertising_data =
         std::make_unique<fble::AdvertisingDataDeprecated>(std::move(data));
   }
@@ -1050,15 +1059,19 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   }
 
   if (peer.le()->advertising_data().size() != 0u) {
-    std::optional<bt::AdvertisingData> advertising_data =
+    bt::AdvertisingData::ParseResult advertising_data =
         bt::AdvertisingData::FromBytes(peer.le()->advertising_data());
     std::optional<zx::time> timestamp = peer.le()->advertising_data_timestamp();
 
     // We populate |output|'s AdvertisingData & ScanData fields if we can parse the payload. We
     // leave them blank otherwise.
-    if (advertising_data) {
+    if (advertising_data.is_ok()) {
       output.set_advertising_data(AdvertisingDataToFidl(advertising_data.value()));
       output.set_data(AdvertisingDataToFidlScanData(advertising_data.value(), timestamp.value()));
+    } else {
+      bt_log(WARN, "fidl", "failed to parse stored advertising data: %s (peer: %s)",
+             bt::AdvertisingData::ParseErrorToString(advertising_data.error_value()).c_str(),
+             bt_str(peer.identifier()));
     }
   }
 

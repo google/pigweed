@@ -16,9 +16,9 @@ void fuzz(const uint8_t* data, size_t size) {
   auto write_buffer_size = fuzzed_data.ConsumeIntegralInRange(0, 2000);
   auto adv_data = fuzzed_data.ConsumeRemainingBytes<uint8_t>();
 
-  auto result = AdvertisingData::FromBytes(BufferView(adv_data));
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(BufferView(adv_data));
 
-  if (result.has_value()) {
+  if (result.is_ok()) {
     DynamicByteBuffer write_buffer(write_buffer_size);
     result->WriteBlock(&write_buffer, include_adv_flags ? std::optional(adv_flags) : std::nullopt);
   }

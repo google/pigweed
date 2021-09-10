@@ -26,7 +26,6 @@ bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size,
   ZX_ASSERT(uuid_handler);
 
   if (data.size() % uuid_size) {
-    bt_log(WARN, "gap-le", "malformed service UUIDs list");
     return false;
   }
 
@@ -192,11 +191,32 @@ AdvertisingData& AdvertisingData::operator=(AdvertisingData&& other) noexcept {
   return *this;
 }
 
-std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data) {
+std::string AdvertisingData::ParseErrorToString(ParseError e) {
+  switch (e) {
+    case ParseError::kInvalidTlvFormat:
+      return "provided bytes are not a valid type-length-value container";
+    case ParseError::kTxPowerLevelMalformed:
+      return "malformed tx power level";
+    case ParseError::kLocalNameTooLong:
+      return fxl::StringPrintf("local name field of exceeds BT spec limit of %u", kMaxNameLength);
+    case ParseError::kUuidsMalformed:
+      return "malformed service UUIDs list";
+    case ParseError::kManufacturerSpecificDataTooSmall:
+      return "manufacturer specific data too small";
+    case ParseError::kServiceDataTooSmall:
+      return "service data too small to fit UUIDs";
+    case ParseError::kServiceDataUuidMalformed:
+      return "UUIDs associated with service data are malformed";
+    case ParseError::kAppearanceMalformed:
+      return "malformed appearance field";
+  }
+}
+
+AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) {
   AdvertisingData out_ad;
   SupplementDataReader reader(data);
   if (!reader.is_valid()) {
-    return std::nullopt;
+    return fitx::error(ParseError::kInvalidTlvFormat);
   }
 
   DataType type;
@@ -208,8 +228,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
     switch (type) {
       case DataType::kTxPowerLevel: {
         if (field.size() != kTxPowerLevelSize) {
-          bt_log(WARN, "gap-le", "received malformed Tx Power Level");
-          return std::nullopt;
+          return fitx::error(ParseError::kTxPowerLevelMalformed);
         }
 
         out_ad.SetTxPower(static_cast<int8_t>(field[0]));
@@ -226,11 +245,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         }
       case DataType::kCompleteLocalName: {
         if (!out_ad.SetLocalName(field.ToString())) {
-          bt_log(WARN, "gap-le",
-                 "attempted to decode AD with local name field of length %zu which exceeds BT spec "
-                 "limit of %u",
-                 field.size(), kMaxNameLength);
-          return std::nullopt;
+          return fitx::error(ParseError::kLocalNameTooLong);
         }
         break;
       }
@@ -248,14 +263,13 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
           ZX_ASSERT(out_ad.AddServiceUuid(uuid));
         };
         if (!ParseUuids(field, SizeForType(type), uuid_cb)) {
-          return std::nullopt;
+          return fitx::error(ParseError::kUuidsMalformed);
         }
         break;
       }
       case DataType::kManufacturerSpecificData: {
         if (field.size() < kManufacturerSpecificDataSizeMin) {
-          bt_log(WARN, "gap-le", "manufacturer specific data too small");
-          return std::nullopt;
+          return fitx::error(ParseError::kManufacturerSpecificDataTooSmall);
         }
 
         uint16_t id = le16toh(*reinterpret_cast<const uint16_t*>(field.data()));
@@ -271,12 +285,14 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         UUID uuid;
         size_t uuid_size = SizeForType(type);
         if (field.size() < uuid_size) {
-          bt_log(WARN, "gap-le", "service data too small for UUID");
-          return std::nullopt;
+          return fitx::error(ParseError::kServiceDataTooSmall);
         }
         const BufferView uuid_bytes(field.data(), uuid_size);
         if (!UUID::FromBytes(uuid_bytes, &uuid)) {
-          return std::nullopt;
+          // This is impossible given that uuid_bytes.size() is guaranteed to be a valid UUID size,
+          // and the current UUID::FromBytes implementation only fails if given an invalid size. We
+          // leave it in anyway in case this implementation changes in the future.
+          return fitx::error(ParseError::kServiceDataUuidMalformed);
         }
         const BufferView service_data(field.data() + uuid_size, field.size() - uuid_size);
         ZX_ASSERT(out_ad.SetServiceData(uuid, service_data));
@@ -287,8 +303,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         // device appearance, as it can be obtained either from advertising data
         // or via GATT.
         if (field.size() != kAppearanceSize) {
-          bt_log(WARN, "gap-le", "received malformed Appearance");
-          return std::nullopt;
+          return fitx::error(ParseError::kAppearanceMalformed);
         }
 
         out_ad.SetAppearance(le16toh(field.As<uint16_t>()));
@@ -310,7 +325,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
     }
   }
 
-  return out_ad;
+  return fitx::ok(std::move(out_ad));
 }
 
 void AdvertisingData::Copy(AdvertisingData* out) const {
@@ -410,8 +425,6 @@ std::optional<int8_t> AdvertisingData::tx_power() const { return tx_power_; }
 
 [[nodiscard]] bool AdvertisingData::SetLocalName(const std::string& name) {
   if (name.size() > kMaxNameLength) {
-    bt_log(WARN, "gap-le", "rejecting name %s which exceeds maximum allowed name length %u",
-           name.c_str(), kMaxNameLength);
     return false;
   }
   local_name_ = name;

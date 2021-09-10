@@ -97,8 +97,8 @@ TEST(AdvertisingDataTest, ParseBlock) {
       // TX Power
       0x02, 0x0A, 0x8F);
 
-  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
-  ASSERT_TRUE(data.has_value());
+  AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.is_ok());
 
   EXPECT_EQ(3u, data->service_uuids().size());
   EXPECT_TRUE(data->local_name());
@@ -119,8 +119,8 @@ TEST(AdvertisingDataTest, ParseBlockUnknownDataType) {
       0x03, 0x03, lower_byte, upper_byte,
       // 0x40, the second octet, is not a recognized DataType (see common/supplement_data.h).
       0x05, 0x40, 0x34, 0x12, 0x34, 0x12};
-  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
-  ASSERT_TRUE(data.has_value());
+  AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.is_ok());
 
   // The second field of `bytes` was valid (in that its length byte matched its length), but its
   // Data Type was unknown, so it should be ignored (i.e. the only field in the `data` should be the
@@ -137,9 +137,9 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
     DynamicByteBuffer name(kMaxNameLength);
     name.Fill('a');
     bytes.Write(name, /*pos=*/2);
-    std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
-    ASSERT_TRUE(data.has_value());
-    EXPECT_EQ(data->local_name(), std::string(kMaxNameLength, 'a'));
+    AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
+    ASSERT_TRUE(result.is_ok());
+    EXPECT_EQ(result->local_name(), std::string(kMaxNameLength, 'a'));
   }
   // A block with a name of kMaxNameLength+1 (==249) bytes should be rejected.
   {
@@ -149,8 +149,9 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
     DynamicByteBuffer name(kMaxNameLength + 1);
     name.Fill('a');
     bytes.Write(name, /*pos=*/2);
-    std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
-    ASSERT_FALSE(data.has_value());
+    AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(AdvertisingData::ParseError::kLocalNameTooLong, result.error_value());
   }
 }
 
@@ -163,8 +164,8 @@ TEST(AdvertisingDataTest, ManufacturerZeroLength) {
 
   EXPECT_EQ(0u, AdvertisingData().manufacturer_data_ids().size());
 
-  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
-  ASSERT_TRUE(data.has_value());
+  AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.is_ok());
 
   EXPECT_EQ(1u, data->manufacturer_data_ids().count(0x1234));
   EXPECT_EQ(0u, data->manufacturer_data(0x1234).size());
@@ -185,8 +186,8 @@ TEST(AdvertisingDataTest, ServiceData) {
 
   EXPECT_EQ(0u, AdvertisingData().service_data_uuids().size());
 
-  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
-  ASSERT_TRUE(data.has_value());
+  AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.is_ok());
 
   UUID eddystone(uint16_t{0xFEAA});
 
@@ -211,9 +212,44 @@ TEST(AdvertisingDataTest, MaxOutServiceUuids) {
     bytes.Write(uuid.CompactView(), offset);
     offset += uuid.CompactSize();
   }
-  std::optional<AdvertisingData> adv_result = AdvertisingData::FromBytes(bytes);
-  ASSERT_TRUE(adv_result.has_value());
+  AdvertisingData::ParseResult adv_result = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(adv_result.is_ok());
   EXPECT_EQ(kMax16BitUuids, adv_result->service_uuids().size());
+}
+
+TEST(AdvertisingDataTest, InvalidTlvFormat) {
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(DynamicByteBuffer());
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kInvalidTlvFormat, result.error_value());
+}
+
+TEST(AdvertisingDataTest, TxPowerLevelMalformed) {
+  StaticByteBuffer service_data{/*length=*/0x01, static_cast<uint8_t>(DataType::kTxPowerLevel)};
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kTxPowerLevelMalformed, result.error_value());
+}
+
+TEST(AdvertisingDataTest, UuidsMalformed) {
+  StaticByteBuffer service_data{
+      0x02,  // Length
+      static_cast<uint8_t>(DataType::kComplete16BitServiceUuids),
+      0x12  // The length of a valid 16-bit UUID byte array be a multiple of 2 (and 1 % 2 == 1).
+  };
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kUuidsMalformed, result.error_value());
+}
+
+TEST(AdvertisingDataTest, ManufacturerSpecificDataTooSmall) {
+  StaticByteBuffer service_data{
+      0x02,  // Length
+      static_cast<uint8_t>(DataType::kManufacturerSpecificData),
+      0x12  // Manufacturer-specific data must be at least 2 bytes
+  };
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kManufacturerSpecificDataTooSmall, result.error_value());
 }
 
 TEST(AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {
@@ -223,9 +259,21 @@ TEST(AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {
                        0xAA  // First byte of incomplete UUID
       );
 
-  EXPECT_FALSE(AdvertisingData::FromBytes(service_data));
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kServiceDataTooSmall, result.error_value());
 }
 
+TEST(AdvertisingDataTest, AppearanceMalformed) {
+  StaticByteBuffer service_data{
+      0x02,  // Length
+      static_cast<uint8_t>(DataType::kAppearance),
+      0x12  // Appearance is supposed to be 2 bytes
+  };
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kAppearanceMalformed, result.error_value());
+}
 TEST(AdvertisingDataTest, Equality) {
   AdvertisingData one, two;
 
@@ -359,8 +407,8 @@ TEST(AdvertisingDataTest, Uris) {
       // Invalid URI should be ignored - UTF-8 U+0000 doesn't correspond to an encoding scheme.
       0x03, DataType::kURI, 0x00, 0x00);
 
-  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
-  ASSERT_TRUE(data.has_value());
+  AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.is_ok());
 
   auto uris = data->uris();
   EXPECT_EQ(3u, uris.size());

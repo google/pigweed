@@ -149,11 +149,11 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   ASSERT_TRUE(handle);
   const LEAdvertisingState& st = test_device()->extended_advertising_state(handle.value());
 
-  std::optional<AdvertisingData> actual_ad = AdvertisingData::FromBytes(st.advertised_view());
-  std::optional<AdvertisingData> actual_scan_rsp = AdvertisingData::FromBytes(st.scan_rsp_view());
+  AdvertisingData::ParseResult actual_ad = AdvertisingData::FromBytes(st.advertised_view());
+  AdvertisingData::ParseResult actual_scan_rsp = AdvertisingData::FromBytes(st.scan_rsp_view());
 
-  ASSERT_TRUE(actual_ad);
-  ASSERT_TRUE(actual_scan_rsp);
+  ASSERT_TRUE(actual_ad.is_ok());
+  ASSERT_TRUE(actual_scan_rsp.is_ok());
   EXPECT_EQ(kLEAdvertisingTxPowerMax, actual_ad.value().tx_power());
   EXPECT_EQ(kLEAdvertisingTxPowerMax, actual_scan_rsp.value().tx_power());
 }

@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ADVERTISING_DATA_H_
 
 #include <lib/fit/function.h>
+#include <lib/fitx/result.h>
 
 #include <cstddef>
 #include <limits>
@@ -99,6 +100,26 @@ constexpr uint8_t kMax128BitUuids = (kMaxUint8 - 1) / UUIDElemSize::k128Bit;
 // information.
 class AdvertisingData {
  public:
+  // Possible failure modes for parsing an AdvertisingData from raw bytes.
+  enum class ParseError {
+    // The bytes provided are not a valid type-length-value container.
+    kInvalidTlvFormat,
+    // The length of a TxPowerLevel-type field does not match the TxPowerLevel value size.
+    kTxPowerLevelMalformed,
+    // The length of a LocalName-type field exceeds the length allowed by the spec (kMaxNameLength).
+    kLocalNameTooLong,
+    // A UUID-type field is malformed.
+    kUuidsMalformed,
+    // A ManufacturerSpecificData-type field is smaller than the minimum allowable length.
+    kManufacturerSpecificDataTooSmall,
+    // A ServiceData-type field is too small to fit its expected UUID size.
+    kServiceDataTooSmall,
+    // A UUID associated with a ServiceData-type field is malformed.
+    kServiceDataUuidMalformed,
+    // The length of an Appearance-type field does not match the Appearance value size.
+    kAppearanceMalformed,
+  };
+
   // Creates an empty advertising data.
   AdvertisingData() = default;
   ~AdvertisingData() = default;
@@ -110,7 +131,9 @@ class AdvertisingData {
 
   // Construct from the raw Bluetooth field block |data|. Returns std::nullopt if |data| is not
   // formatted correctly or on a parsing error.
-  static std::optional<AdvertisingData> FromBytes(const ByteBuffer& data);
+  using ParseResult = fitx::result<ParseError, AdvertisingData>;
+  static ParseResult FromBytes(const ByteBuffer& data);
+  static std::string ParseErrorToString(ParseError e);
 
   // Copies all of the data in this object to |out|, including making a copy of
   // any data in manufacturing data or service data.
