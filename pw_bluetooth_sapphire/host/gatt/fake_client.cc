@@ -6,6 +6,8 @@
 
 #include <zircon/assert.h>
 
+#include <unordered_set>
+
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 
 namespace bt::gatt::testing {
@@ -31,35 +33,41 @@ void FakeClient::ExchangeMTU(MTUCallback callback) {
 
 void FakeClient::DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
                                   StatusCallback status_callback) {
-  async::PostTask(dispatcher_, [this, svc_callback = std::move(svc_callback),
-                                status_callback = std::move(status_callback), kind] {
-    att::Status status = kind == ServiceKind::PRIMARY ? primary_service_discovery_status_
-                                                      : secondary_service_discovery_status_;
-    if (status.is_success()) {
-      for (const auto& svc : services_) {
-        if (svc.kind == kind) {
-          svc_callback(svc);
-        }
-      }
-    }
-    status_callback(status);
-  });
+  DiscoverServicesInRange(kind, /*start=*/att::kHandleMin, /*end=*/att::kHandleMax,
+                          std::move(svc_callback), std::move(status_callback));
+}
+
+void FakeClient::DiscoverServicesInRange(ServiceKind kind, att::Handle start, att::Handle end,
+                                         ServiceCallback svc_callback,
+                                         att::StatusCallback status_callback) {
+  DiscoverServicesWithUuidsInRange(kind, start, end, std::move(svc_callback),
+                                   std::move(status_callback), /*uuids=*/{});
 }
 
 void FakeClient::DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
                                            att::StatusCallback status_callback,
-                                           std::vector<UUID> services) {
-  ZX_ASSERT(!services.empty());
+                                           std::vector<UUID> uuids) {
+  DiscoverServicesWithUuidsInRange(kind, /*start=*/att::kHandleMin, /*end=*/att::kHandleMax,
+                                   std::move(svc_callback), std::move(status_callback),
+                                   std::move(uuids));
+}
 
-  att::Status status = kind == ServiceKind::PRIMARY ? primary_service_discovery_status_
-                                                    : secondary_service_discovery_status_;
+void FakeClient::DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle start,
+                                                  att::Handle end, ServiceCallback svc_callback,
+                                                  att::StatusCallback status_callback,
+                                                  std::vector<UUID> uuids) {
+  att::Status status;
+  if (discover_services_callback_) {
+    status = discover_services_callback_(kind);
+  }
+
+  std::unordered_set<UUID> uuids_set(uuids.cbegin(), uuids.cend());
 
   if (status.is_success()) {
-    for (UUID uuid : services) {
-      for (const auto& svc : services_) {
-        if (svc.kind == kind && svc.type == uuid) {
-          async::PostTask(dispatcher_, [svc, cb = svc_callback.share()] { cb(svc); });
-        }
+    for (const ServiceData& svc : services_) {
+      bool uuid_matches = uuids.empty() || uuids_set.find(svc.type) != uuids_set.end();
+      if (svc.kind == kind && uuid_matches && svc.range_start >= start && svc.range_start <= end) {
+        async::PostTask(dispatcher_, [svc, cb = svc_callback.share()] { cb(svc); });
       }
     }
   }

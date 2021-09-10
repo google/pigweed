@@ -151,8 +151,10 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 };
 
 TEST_F(RemoteServiceManagerTest, InitializeNoServices) {
-  std::vector<fbl::RefPtr<RemoteService>> services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  ServiceList services;
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -175,7 +177,9 @@ TEST_F(RemoteServiceManagerTest, Initialize) {
   fake_client()->set_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -191,11 +195,18 @@ TEST_F(RemoteServiceManagerTest, Initialize) {
 }
 
 TEST_F(RemoteServiceManagerTest, InitializeFailure) {
-  fake_client()->set_primary_service_discovery_status(
-      att::Status(att::ErrorCode::kRequestNotSupported));
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    if (kind == ServiceKind::PRIMARY) {
+      return att::Status(att::ErrorCode::kRequestNotSupported);
+    }
+    return att::Status();
+  });
 
   ServiceList watcher_services;
-  mgr()->set_service_watcher([&watcher_services](auto svc) { watcher_services.push_back(svc); });
+  mgr()->set_service_watcher(
+      [&watcher_services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+        watcher_services.insert(watcher_services.end(), added.begin(), added.end());
+      });
 
   ServiceList services;
   mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
@@ -216,8 +227,10 @@ TEST_F(RemoteServiceManagerTest, InitializeFailure) {
 }
 
 TEST_F(RemoteServiceManagerTest, InitializeByUUIDNoServices) {
-  std::vector<fbl::RefPtr<RemoteService>> services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  ServiceList services;
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; }, {kTestServiceUuid1});
@@ -241,7 +254,9 @@ TEST_F(RemoteServiceManagerTest, InitializeWithUuids) {
   fake_client()->set_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; },
@@ -256,11 +271,18 @@ TEST_F(RemoteServiceManagerTest, InitializeWithUuids) {
 }
 
 TEST_F(RemoteServiceManagerTest, InitializeByUUIDFailure) {
-  fake_client()->set_primary_service_discovery_status(
-      att::Status(att::ErrorCode::kRequestNotSupported));
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    if (kind == ServiceKind::PRIMARY) {
+      return att::Status(att::ErrorCode::kRequestNotSupported);
+    }
+    return att::Status();
+  });
 
   ServiceList watcher_services;
-  mgr()->set_service_watcher([&watcher_services](auto svc) { watcher_services.push_back(svc); });
+  mgr()->set_service_watcher(
+      [&watcher_services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+        watcher_services.insert(watcher_services.end(), added.begin(), added.end());
+      });
 
   ServiceList services;
   mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
@@ -286,7 +308,9 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServices) {
   fake_client()->set_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -307,7 +331,9 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServices) {
   fake_client()->set_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -329,7 +355,9 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOfOrder
   fake_client()->set_services({{svc1, svc2}});
 
   ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -343,11 +371,17 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOfOrder
 
 // Tests that an ATT error that occurs during secondary service aborts initialization.
 TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
-  fake_client()->set_secondary_service_discovery_status(
-      att::Status(att::ErrorCode::kRequestNotSupported));
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    if (kind == ServiceKind::SECONDARY) {
+      return att::Status(att::ErrorCode::kRequestNotSupported);
+    }
+    return att::Status();
+  });
 
-  ServiceList watcher_services;
-  mgr()->set_service_watcher([&watcher_services](auto svc) { watcher_services.push_back(svc); });
+  ServiceList services;
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status;
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -356,16 +390,22 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
   EXPECT_FALSE(status);
   EXPECT_TRUE(status.is_protocol_error());
   EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
-  EXPECT_TRUE(watcher_services.empty());
+  EXPECT_TRUE(services.empty());
 }
 
 // Tests that the "unsupported group type" error is treated as a failure for primary services.
 TEST_F(RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedGroupType) {
-  fake_client()->set_primary_service_discovery_status(
-      att::Status(att::ErrorCode::kUnsupportedGroupType));
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    if (kind == ServiceKind::PRIMARY) {
+      return att::Status(att::ErrorCode::kUnsupportedGroupType);
+    }
+    return att::Status();
+  });
 
-  ServiceList watcher_services;
-  mgr()->set_service_watcher([&watcher_services](auto svc) { watcher_services.push_back(svc); });
+  ServiceList services;
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status;
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -374,27 +414,32 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedGroupT
   EXPECT_FALSE(status);
   EXPECT_TRUE(status.is_protocol_error());
   EXPECT_EQ(att::ErrorCode::kUnsupportedGroupType, status.protocol_error());
-  EXPECT_TRUE(watcher_services.empty());
+  EXPECT_TRUE(services.empty());
 }
 
 // Tests that the "unsupported group type" error is NOT treated as a failure for secondary services.
-TEST_F(RemoteServiceManagerTest,
-       InitializeSecondaryServicesErrorUnsupportedGroupTypeIsIgnored) {
+TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesErrorUnsupportedGroupTypeIsIgnored) {
   ServiceData svc1(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   fake_client()->set_services({{svc1}});
-  fake_client()->set_secondary_service_discovery_status(
-      att::Status(att::ErrorCode::kUnsupportedGroupType));
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    if (kind == ServiceKind::SECONDARY) {
+      return att::Status(att::ErrorCode::kUnsupportedGroupType);
+    }
+    return att::Status();
+  });
 
-  ServiceList watcher_services;
-  mgr()->set_service_watcher([&watcher_services](auto svc) { watcher_services.push_back(svc); });
+  ServiceList services;
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status;
   mgr()->Initialize([&status](att::Status val) { status = val; });
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status);
-  EXPECT_EQ(1u, watcher_services.size());
-  EXPECT_EQ(svc1, watcher_services[0]->info());
+  EXPECT_EQ(1u, services.size());
+  EXPECT_EQ(svc1, services[0]->info());
 }
 
 TEST_F(RemoteServiceManagerTest, ListServicesBeforeInit) {
@@ -448,25 +493,33 @@ TEST_F(RemoteServiceManagerTest, ListServicesByUuid) {
   std::vector<ServiceData> fake_services{{svc1, svc2}};
   fake_client()->set_services(std::move(fake_services));
 
+  ServiceList service_watcher_services;
+  mgr()->set_service_watcher(
+      [&service_watcher_services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+        service_watcher_services.insert(service_watcher_services.end(), added.begin(), added.end());
+      });
+
   att::Status list_services_status;
-  ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  ServiceList list_services;
   mgr()->ListServices(std::move(uuids), [&](att::Status cb_status, ServiceList cb_services) {
     list_services_status = cb_status;
-    services = std::move(cb_services);
+    list_services = std::move(cb_services);
   });
-  ASSERT_TRUE(services.empty());
+  ASSERT_TRUE(service_watcher_services.empty());
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
 
   RunLoopUntilIdle();
-
   EXPECT_TRUE(status);
   EXPECT_TRUE(list_services_status);
-  EXPECT_EQ(1u, services.size());
-  EXPECT_EQ(svc1.range_start, services[0]->handle());
-  EXPECT_EQ(svc1.type, services[0]->uuid());
+  // Only svc1 has a type in |uuids|.
+  EXPECT_EQ(1u, list_services.size());
+  EXPECT_EQ(svc1.range_start, list_services[0]->handle());
+  EXPECT_EQ(svc1.type, list_services[0]->uuid());
+  // All services should be discovered and returned to service watcher because Initialize() was not
+  // called with a list of uuids to discover.
+  EXPECT_EQ(2u, service_watcher_services.size());
 }
 
 TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsAfterShutDown) {
@@ -1322,8 +1375,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErrorIgno
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
-TEST_F(RemoteServiceManagerTest,
-       ReadLongCharacteristicAttributeNotLongErrorOnFirstReadRequest) {
+TEST_F(RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErrorOnFirstReadRequest) {
   constexpr uint16_t kOffset = 0;
   constexpr size_t kMaxBytes = 1000;
   constexpr int kExpectedBlobCount = 1;
@@ -3251,8 +3303,244 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflowHand
   EXPECT_TRUE(status->is_success()) << bt_str(status.value());
 }
 
-TEST_F(RemoteServiceManagerTest,
-       InitializeGattProfileServiceWithServiceChangedCharacteristicAndReceiveNotification) {
+class RemoteServiceManagerServiceChangedTest : public RemoteServiceManagerTest {
+ public:
+  RemoteServiceManagerServiceChangedTest() = default;
+  ~RemoteServiceManagerServiceChangedTest() override = default;
+
+ protected:
+  struct ServiceWatcherData {
+    std::vector<att::Handle> removed;
+    ServiceList added;
+    ServiceList modified;
+  };
+
+  void SetUp() override {
+    RemoteServiceManagerTest::SetUp();
+    fake_client()->set_services({gatt_service()});
+    fake_client()->set_characteristics({service_changed_characteristic()});
+    fake_client()->set_descriptors({ccc_descriptor()});
+
+    mgr()->set_service_watcher([this](auto removed, ServiceList added, ServiceList modified) {
+      svc_watcher_data_.push_back({removed, added, modified});
+    });
+
+    // Expect a Service Changed Client Characteristic Config descriptor write that enables
+    // indications.
+    fake_client()->set_write_request_callback(
+        [this](att::Handle handle, const auto& value, auto status_callback) {
+          write_request_count_++;
+          EXPECT_EQ(ccc_descriptor_handle_, handle);
+          EXPECT_TRUE(ContainersEqual(kCCCIndicateValue, value));
+          status_callback(att::Status());
+        });
+
+    att::Status status(HostError::kFailed);
+    mgr()->Initialize([&status](att::Status val) { status = val; });
+    RunLoopUntilIdle();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(write_request_count_, 1);
+    ASSERT_EQ(1u, svc_watcher_data_.size());
+    ASSERT_EQ(1u, svc_watcher_data_[0].added.size());
+    EXPECT_EQ(gatt_svc_start_handle_, svc_watcher_data_[0].added[0]->handle());
+    EXPECT_EQ(types::kGenericAttributeService, svc_watcher_data_[0].added[0]->uuid());
+    // Clear data so that tests start with index 0
+    svc_watcher_data_.clear();
+  }
+
+  void TearDown() override { RemoteServiceManagerTest::TearDown(); }
+
+  ServiceData gatt_service() const {
+    return ServiceData(ServiceKind::PRIMARY, gatt_svc_start_handle_, gatt_svc_end_handle_,
+                       types::kGenericAttributeService);
+  }
+
+  CharacteristicData service_changed_characteristic() const {
+    return CharacteristicData(Property::kIndicate, std::nullopt, svc_changed_char_handle_,
+                              svc_changed_char_value_handle_, types::kServiceChangedCharacteristic);
+  }
+
+  DescriptorData ccc_descriptor() const {
+    return DescriptorData(ccc_descriptor_handle_, types::kClientCharacteristicConfig);
+  }
+
+  const std::vector<ServiceWatcherData>& svc_watcher_data() { return svc_watcher_data_; }
+
+  int service_changed_ccc_write_count() const { return write_request_count_; }
+
+ private:
+  std::vector<ServiceWatcherData> svc_watcher_data_;
+  int write_request_count_ = 0;
+  const att::Handle gatt_svc_start_handle_ = 1;
+  const att::Handle svc_changed_char_handle_ = 2;
+  const att::Handle svc_changed_char_value_handle_ = 3;
+  const att::Handle ccc_descriptor_handle_ = 4;
+  const att::Handle gatt_svc_end_handle_ = 4;
+};
+
+TEST_F(RemoteServiceManagerServiceChangedTest, ServiceChangedNotificationWrongSizeBuffer) {
+  const att::Handle kSvc1StartHandle(5);
+  const att::Handle kSvc1EndHandle(kSvc1StartHandle);
+  ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
+  fake_client()->set_services({gatt_service(), svc1});
+
+  // Send a too small notification.
+  auto svc_changed_range_buffer_too_small = StaticByteBuffer(0x01);
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer_too_small, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  // The notification should have been safely ignored.
+  ASSERT_EQ(0u, svc_watcher_data().size());
+
+  // Send a too large notification.
+  StaticByteBuffer<sizeof(ServiceChangedCharacteristicValue) + 1>
+      svc_changed_range_buffer_too_large = StaticByteBuffer(0x01, 0x02, 0x03, 0x04, 0x05);
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer_too_large, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  // The notification should have been safely ignored.
+  ASSERT_EQ(0u, svc_watcher_data().size());
+}
+
+TEST_F(RemoteServiceManagerServiceChangedTest,
+       ServiceChangedNotificationRangeStartGreaterThanRangeEnd) {
+  const att::Handle kSvc1StartHandle(6);
+  const att::Handle kSvc1EndHandle(7);
+  ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
+  fake_client()->set_services({gatt_service(), svc1});
+
+  // Send notification with start/end handles swapped.
+  auto svc_changed_range_buffer = StaticByteBuffer(
+      LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle),     // start handle of affected range
+      LowerBits(kSvc1StartHandle), UpperBits(kSvc1StartHandle)  // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  // The notification should have been safely ignored.
+  ASSERT_EQ(0u, svc_watcher_data().size());
+}
+
+TEST_F(RemoteServiceManagerServiceChangedTest, AddModifyAndRemoveService) {
+  // Add a test service to ensure that service discovery occurs after the Service Changed
+  // characteristic is configured. The test service has a characteristic that supports indications
+  // in order to test that notifications aren't disabled when the service is modified or removed.
+  const att::Handle kSvc1StartHandle(5);
+  const att::Handle kSvc1ChrcHandle(6);
+  const att::Handle kSvc1ChrcValueHandle(7);
+  const att::Handle kSvc1CCCHandle(8);
+  const UUID kSvc1ChrcUuid(kTestUuid3);
+  const att::Handle kSvc1EndHandle(kSvc1CCCHandle);
+
+  ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
+  CharacteristicData svc1_characteristic(Property::kIndicate, std::nullopt, kSvc1ChrcHandle,
+                                         kSvc1ChrcValueHandle, kSvc1ChrcUuid);
+  DescriptorData svc1_descriptor(kSvc1CCCHandle, types::kClientCharacteristicConfig);
+  fake_client()->set_services({gatt_service(), svc1});
+  fake_client()->set_characteristics({service_changed_characteristic(), svc1_characteristic});
+  fake_client()->set_descriptors({ccc_descriptor(), svc1_descriptor});
+
+  // Send a notification that svc1 has been added.
+  auto svc_changed_range_buffer = StaticByteBuffer(
+      LowerBits(kSvc1StartHandle),
+      UpperBits(kSvc1StartHandle),                          // start handle of affected range
+      LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)  // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, svc_watcher_data().size());
+  ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[0].added[0]->handle());
+  bool original_service_removed = false;
+  svc_watcher_data()[0].added[0]->AddRemovedHandler([&]() { original_service_removed = true; });
+
+  // Discover the characteristic with the CCC descriptor before enabling characteristic value
+  // notifications.
+  svc_watcher_data()[0].added[0]->DiscoverCharacteristics(
+      [&](att::Status status, const CharacteristicMap& characteristics) {
+        EXPECT_TRUE(status.is_success());
+        EXPECT_EQ(characteristics.size(), 1u);
+      });
+  RunLoopUntilIdle();
+
+  // Expect writes to the service's CCC descriptor when notifications are enabled.
+  int svc1_ccc_write_request_count = 0;
+  fake_client()->set_write_request_callback(
+      [&](att::Handle handle, const auto& value, auto status_callback) {
+        svc1_ccc_write_request_count++;
+        EXPECT_EQ(kSvc1CCCHandle, handle);
+        EXPECT_TRUE(ContainersEqual(kCCCIndicateValue, value));
+        status_callback(att::Status());
+      });
+
+  std::optional<att::Status> original_notification_status;
+  svc_watcher_data()[0].added[0]->EnableNotifications(
+      bt::gatt::CharacteristicHandle(kSvc1ChrcValueHandle), NopValueCallback,
+      [&](att::Status cb_status, IdType cb_id) { original_notification_status = cb_status; });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(original_notification_status);
+  EXPECT_TRUE(original_notification_status->is_success());
+  EXPECT_EQ(svc1_ccc_write_request_count, 1);
+
+  // Send a notification that svc1 has been modified. Service Changed notifications guarantee that
+  // all services within their range have been modified if they are still present after a fresh
+  // service discovery, so we can just send the same range again. (Core Spec v5.3, Vol 3, Part G,
+  // Sec 7.1)
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(original_service_removed);
+  // CCC should not be written to when the service is modified.
+  EXPECT_EQ(svc1_ccc_write_request_count, 1);
+  ASSERT_EQ(2u, svc_watcher_data().size());
+  EXPECT_EQ(0u, svc_watcher_data()[1].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[1].removed.size());
+  ASSERT_EQ(1u, svc_watcher_data()[1].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[1].modified[0]->handle());
+  bool modified_service_removed = false;
+  svc_watcher_data()[1].modified[0]->AddRemovedHandler([&]() { modified_service_removed = true; });
+
+  svc_watcher_data()[1].modified[0]->DiscoverCharacteristics(
+      [&](att::Status status, const CharacteristicMap& characteristics) {
+        EXPECT_TRUE(status.is_success());
+        EXPECT_EQ(characteristics.size(), 1u);
+      });
+  RunLoopUntilIdle();
+
+  std::optional<att::Status> modified_notification_status;
+  svc_watcher_data()[1].modified[0]->EnableNotifications(
+      bt::gatt::CharacteristicHandle(kSvc1ChrcValueHandle), NopValueCallback,
+      [&](att::Status cb_status, IdType cb_id) { modified_notification_status = cb_status; });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(modified_notification_status);
+  EXPECT_TRUE(modified_notification_status->is_success());
+  EXPECT_EQ(svc1_ccc_write_request_count, 2);
+
+  // Remove svc1.
+  fake_client()->set_services({gatt_service()});
+
+  // Send a notification that svc1 has been removed.
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(modified_service_removed);
+  // CCC should not be written to when the service is removed.
+  EXPECT_EQ(svc1_ccc_write_request_count, 2);
+  ASSERT_EQ(3u, svc_watcher_data().size());
+  EXPECT_EQ(0u, svc_watcher_data()[2].added.size());
+  ASSERT_EQ(1u, svc_watcher_data()[2].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[2].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[2].removed[0]);
+  EXPECT_EQ(svc1_ccc_write_request_count, 2);
+}
+
+// A Service Changed notification received during initialization (service discovery) should be
+// queued and processed after service discovery completes (as the last step of initialization). The
+// service watcher should only be called once.
+TEST_F(RemoteServiceManagerTest, ServiceChangedDuringInitialization) {
   const att::Handle kGattSvcStartHandle(1);
   const att::Handle kSvcChangedChrcHandle(2);
   const att::Handle kSvcChangedChrcValueHandle(3);
@@ -3267,15 +3555,36 @@ TEST_F(RemoteServiceManagerTest,
                                           kSvcChangedChrcValueHandle,
                                           types::kServiceChangedCharacteristic);
   DescriptorData ccc_descriptor(kCCCDescriptorHandle, types::kClientCharacteristicConfig);
-  // Add a test service to ensure that service discovery occurs after the Service Changed
-  // characteristic is configured.
   ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
   fake_client()->set_services({gatt_svc, svc1});
   fake_client()->set_characteristics({service_changed_chrc});
   fake_client()->set_descriptors({ccc_descriptor});
 
-  ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  int svc_watcher_count = 0;
+  mgr()->set_service_watcher(
+      [&](std::vector<att::Handle> removed, ServiceList added, ServiceList modified) {
+        EXPECT_EQ(0u, removed.size());
+        EXPECT_EQ(2u, added.size());
+        EXPECT_EQ(0u, modified.size());
+        svc_watcher_count++;
+      });
+
+  // Send a notification during primary service discovery (i.e. the second discovery, as the first
+  // is for discovering the GATT Service).
+  int discover_services_count = 0;
+  fake_client()->set_discover_services_callback([&](ServiceKind /*kind*/) {
+    if (discover_services_count == 1) {
+      auto svc_changed_range_buffer = StaticByteBuffer(
+          LowerBits(kSvc1StartHandle),
+          UpperBits(kSvc1StartHandle),                          // start handle of affected range
+          LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)  // end handle of affected range
+      );
+      fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
+                                      svc_changed_range_buffer, /*maybe_truncated=*/false);
+    }
+    discover_services_count++;
+    return att::Status();
+  });
 
   // Expect a Service Changed Client Characteristic Config descriptor write that enables
   // indications.
@@ -3289,26 +3598,256 @@ TEST_F(RemoteServiceManagerTest,
       });
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  mgr()->Initialize([&](att::Status val) {
+    status = val;
+    EXPECT_EQ(1, svc_watcher_count);
+  });
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
-  EXPECT_EQ(write_request_count, 1);
-  ASSERT_EQ(2u, services.size());
-  EXPECT_EQ(gatt_svc.range_start, services[0]->handle());
-  EXPECT_EQ(gatt_svc.type, services[0]->uuid());
-  EXPECT_EQ(svc1.range_start, services[1]->handle());
-  EXPECT_EQ(svc1.type, services[1]->uuid());
+  EXPECT_EQ(1, write_request_count);
+  EXPECT_EQ(1, svc_watcher_count);
+}
 
-  // Send a notification that svc1 has changed.
+TEST_F(RemoteServiceManagerServiceChangedTest, SecondServiceChangedNotificationIsQueued) {
+  const att::Handle kSvc1StartHandle(5);
+  const att::Handle kSvc1EndHandle(kSvc1StartHandle);
+
+  // Add a test service to ensure that service discovery occurs after the Service Changed
+  // characteristic is configured.
+  ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
+  fake_client()->set_services({gatt_service(), svc1});
+
+  // Send a notification that svc1 has been added.
   auto svc_changed_range_buffer = StaticByteBuffer(
       LowerBits(kSvc1StartHandle), UpperBits(kSvc1StartHandle),  // start handle of affected range
       LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)       // end handle of affected range
   );
-  fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+
+  RunLoopUntilIdle();
+  ASSERT_EQ(2u, svc_watcher_data().size());
+
+  ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[0].added[0]->handle());
+
+  EXPECT_EQ(0u, svc_watcher_data()[1].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[1].removed.size());
+  ASSERT_EQ(1u, svc_watcher_data()[1].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[1].modified[0]->handle());
+}
+
+TEST_F(RemoteServiceManagerServiceChangedTest, ServiceUuidChanged) {
+  const att::Handle kSvcStartHandle(5);
+  const att::Handle kSvcEndHandle(kSvcStartHandle);
+
+  ServiceData svc1(ServiceKind::PRIMARY, kSvcStartHandle, kSvcEndHandle, kTestServiceUuid1);
+  fake_client()->set_services({gatt_service(), svc1});
+
+  // Send a notification that svc1 has been added.
+  auto svc_changed_range_buffer = StaticByteBuffer(
+      LowerBits(kSvcStartHandle), UpperBits(kSvcStartHandle),  // start handle of affected range
+      LowerBits(kSvcEndHandle), UpperBits(kSvcEndHandle)       // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, svc_watcher_data().size());
+
+  ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].modified.size());
+  EXPECT_EQ(kSvcStartHandle, svc_watcher_data()[0].added[0]->handle());
+  EXPECT_EQ(kTestServiceUuid1, svc_watcher_data()[0].added[0]->uuid());
+
+  ServiceData svc2(ServiceKind::PRIMARY, kSvcStartHandle, kSvcEndHandle, kTestServiceUuid2);
+  fake_client()->set_services({gatt_service(), svc2});
+
+  // Send a notification that svc2 has replaced svc1.
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
                                   svc_changed_range_buffer, /*maybe_truncated=*/false);
   RunLoopUntilIdle();
-  // TODO(fxbug.dev/71986): Add expectations around service changed notification
-  // once the facilities in RemoteServiceManager are available to do so.
+  ASSERT_EQ(2u, svc_watcher_data().size());
+
+  ASSERT_EQ(1u, svc_watcher_data()[1].added.size());
+  ASSERT_EQ(1u, svc_watcher_data()[1].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[1].modified.size());
+  EXPECT_EQ(kSvcStartHandle, svc_watcher_data()[1].removed[0]);
+  EXPECT_EQ(kSvcStartHandle, svc_watcher_data()[1].added[0]->handle());
+  EXPECT_EQ(kTestServiceUuid2, svc_watcher_data()[1].added[0]->uuid());
+}
+
+TEST_F(
+    RemoteServiceManagerServiceChangedTest,
+    AddServiceThenRemoveServiceAndAddTwoMoreServicesBeforeAndAfterRemovedServiceWithSameNotification) {
+  const att::Handle kSvc1StartHandle(7);
+  const att::Handle kSvc1EndHandle(kSvc1StartHandle);
+  const att::Handle kSvc2StartHandle(6);
+  const att::Handle kSvc2EndHandle(kSvc2StartHandle);
+  const att::Handle kSvc3StartHandle(8);
+  const att::Handle kSvc3EndHandle(kSvc3StartHandle);
+
+  ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
+  fake_client()->set_services({gatt_service(), svc1});
+
+  // Send a notification that svc1 has been added.
+  auto svc_changed_range_buffer_0 = StaticByteBuffer(
+      LowerBits(kSvc1StartHandle), UpperBits(kSvc1StartHandle),  // start handle of affected range
+      LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)       // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer_0, /*maybe_truncated=*/false);
+
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, svc_watcher_data().size());
+  ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[0].added[0]->handle());
+
+  ServiceData svc2(ServiceKind::PRIMARY, kSvc2StartHandle, kSvc2EndHandle, kTestServiceUuid2);
+  ServiceData svc3(ServiceKind::PRIMARY, kSvc3StartHandle, kSvc3EndHandle, kTestServiceUuid3);
+  fake_client()->set_services({gatt_service(), svc2, svc3});
+
+  // Range includes all 3 services.
+  auto svc_changed_range_buffer_1 = StaticByteBuffer(
+      LowerBits(kSvc2StartHandle), UpperBits(kSvc2StartHandle),  // start handle of affected range
+      LowerBits(kSvc3EndHandle), UpperBits(kSvc3EndHandle)       // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer_1, /*maybe_truncated=*/false);
+
+  RunLoopUntilIdle();
+  ASSERT_EQ(2u, svc_watcher_data().size());
+  ASSERT_EQ(2u, svc_watcher_data()[1].added.size());
+  ASSERT_EQ(1u, svc_watcher_data()[1].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[1].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[1].removed[0]);
+  EXPECT_EQ(kSvc2StartHandle, svc_watcher_data()[1].added[0]->handle());
+  EXPECT_EQ(kSvc3StartHandle, svc_watcher_data()[1].added[1]->handle());
+}
+
+class RemoteServiceManagerServiceChangedTestWithServiceKindParam
+    : public RemoteServiceManagerServiceChangedTest,
+      public ::testing::WithParamInterface<ServiceKind> {};
+
+TEST_P(RemoteServiceManagerServiceChangedTestWithServiceKindParam,
+       ServiceChangedServiceDiscoveryFailureThenSuccess) {
+  const ServiceKind kKind = GetParam();
+
+  const att::Handle kSvc1StartHandle(5);
+  const att::Handle kSvc1EndHandle(kSvc1StartHandle);
+  ServiceData svc1(kKind, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
+  const att::Handle kSvc2StartHandle(7);
+  const att::Handle kSvc2EndHandle(kSvc2StartHandle);
+  ServiceData svc2(kKind, kSvc2StartHandle, kSvc2EndHandle, kTestServiceUuid2);
+  fake_client()->set_services({gatt_service(), svc1, svc2});
+
+  // Cause only the first service discovery to fail.
+  int discover_services_count = 0;
+  fake_client()->set_discover_services_callback([&](ServiceKind kind) {
+    if (kind == kKind) {
+      discover_services_count++;
+      if (discover_services_count == 1) {
+        return att::Status(HostError::kFailed);
+      }
+    }
+    return att::Status();
+  });
+
+  auto svc1_changed_range_buffer = StaticByteBuffer(
+      LowerBits(kSvc1StartHandle), UpperBits(kSvc1StartHandle),  // start handle of affected range
+      LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)       // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc1_changed_range_buffer, /*maybe_truncated=*/false);
+
+  // This second notification should be queued and processed after the first service discovery
+  // fails.
+  auto svc2_changed_range_buffer = StaticByteBuffer(
+      LowerBits(kSvc2StartHandle), UpperBits(kSvc2StartHandle),  // start handle of affected range
+      LowerBits(kSvc2EndHandle), UpperBits(kSvc2EndHandle)       // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc2_changed_range_buffer, /*maybe_truncated=*/false);
+
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, svc_watcher_data().size());
+  ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].modified.size());
+  EXPECT_EQ(kSvc2StartHandle, svc_watcher_data()[0].added[0]->handle());
+}
+
+INSTANTIATE_TEST_SUITE_P(ServiceKind, RemoteServiceManagerServiceChangedTestWithServiceKindParam,
+                         ::testing::Values(ServiceKind::PRIMARY, ServiceKind::SECONDARY));
+
+TEST_F(RemoteServiceManagerServiceChangedTest,
+       SecondaryServiceDiscoveryIgnoresUnsupportedGroupTypeError) {
+  const att::Handle kSvc1StartHandle(5);
+  const att::Handle kSvc1EndHandle(kSvc1StartHandle);
+
+  ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid1);
+  fake_client()->set_services({gatt_service(), svc1});
+
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    if (kind == ServiceKind::SECONDARY) {
+      return att::Status(att::ErrorCode::kUnsupportedGroupType);
+    }
+    return att::Status();
+  });
+
+  // Send a notification that svc1 has been added.
+  auto svc_changed_range_buffer = StaticByteBuffer(
+      LowerBits(kSvc1StartHandle), UpperBits(kSvc1StartHandle),  // start handle of affected range
+      LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)       // end handle of affected range
+  );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, svc_watcher_data().size());
+  ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].modified.size());
+  EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[0].added[0]->handle());
+}
+
+TEST_F(RemoteServiceManagerServiceChangedTest, GattProfileServiceChanged) {
+  EXPECT_EQ(1, service_changed_ccc_write_count());
+
+  auto svc_changed_range_buffer =
+      StaticByteBuffer(LowerBits(gatt_service().range_start),
+                       UpperBits(gatt_service().range_start),  // start handle of affected range
+                       LowerBits(gatt_service().range_end),
+                       UpperBits(gatt_service().range_end)  // end handle of affected range
+      );
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, svc_watcher_data().size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
+  ASSERT_EQ(1u, svc_watcher_data()[0].modified.size());
+  EXPECT_EQ(gatt_service().range_start, svc_watcher_data()[0].modified[0]->handle());
+  EXPECT_EQ(1, service_changed_ccc_write_count());
+
+  // The handler for notifications should remain configured.
+  fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
+                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  ASSERT_EQ(2u, svc_watcher_data().size());
+  EXPECT_EQ(0u, svc_watcher_data()[1].added.size());
+  EXPECT_EQ(0u, svc_watcher_data()[1].removed.size());
+  ASSERT_EQ(1u, svc_watcher_data()[1].modified.size());
+  EXPECT_EQ(gatt_service().range_start, svc_watcher_data()[1].modified[0]->handle());
+  EXPECT_EQ(1, service_changed_ccc_write_count());
+  // A new service should not have been created for the modified GATT Profile service.
+  EXPECT_EQ(svc_watcher_data()[0].modified[0], svc_watcher_data()[1].modified[0]);
 }
 
 TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
@@ -3317,8 +3856,12 @@ TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
   std::vector<ServiceData> fake_services{{gatt_svc, svc1}};
   fake_client()->set_services(std::move(fake_services));
 
-  fake_client()->set_primary_service_discovery_status(
-      att::Status(att::ErrorCode::kRequestNotSupported));
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    if (kind == ServiceKind::PRIMARY) {
+      return att::Status(att::ErrorCode::kRequestNotSupported);
+    }
+    return att::Status();
+  });
 
   std::optional<att::Status> status;
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -3347,7 +3890,9 @@ TEST_F(RemoteServiceManagerTest, InitializeEmptyGattProfileService) {
   fake_client()->set_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -3378,7 +3923,9 @@ TEST_F(RemoteServiceManagerTest, EnableServiceChangedNotificationsReturnsError) 
   fake_client()->set_descriptors({ccc_descriptor});
 
   ServiceList services;
-  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto /*removed*/, ServiceList added, auto /*modified*/) {
+    services.insert(services.end(), added.begin(), added.end());
+  });
 
   // Return an error when a Service Changed Client Characteristic Config descriptor write is
   // performed.

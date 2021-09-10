@@ -96,7 +96,7 @@ RemoteService::~RemoteService() {
   ZX_DEBUG_ASSERT(!alive());
 }
 
-void RemoteService::ShutDown() {
+void RemoteService::ShutDown(bool service_changed) {
   ZX_DEBUG_ASSERT(IsOnGattThread());
 
   std::vector<PendingClosure> rm_handlers;
@@ -107,8 +107,9 @@ void RemoteService::ShutDown() {
       return;
     }
 
-    for (auto& chr : characteristics_)
-      chr.second.ShutDown();
+    for (auto& chr : characteristics_) {
+      chr.second.ShutDown(service_changed);
+    }
 
     shut_down_ = true;
     rm_handlers = std::move(rm_handlers_);

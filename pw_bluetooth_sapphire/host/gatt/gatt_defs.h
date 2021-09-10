@@ -177,6 +177,12 @@ struct CharacteristicDeclarationAttributeValue {
   att::AttributeType<Format> value_uuid;
 } __PACKED;
 
+// Service Changed Characteristic attribute value (Core Spec v5.2, Vol 3, Part G, Sec 7.1).
+struct ServiceChangedCharacteristicValue {
+  att::Handle range_start_handle;
+  att::Handle range_end_handle;
+} __PACKED;
+
 }  // namespace bt::gatt
 
 // Specialization of std::hash for std::unordered_set, std::unordered_map, etc.

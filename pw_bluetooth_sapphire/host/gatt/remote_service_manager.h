@@ -16,6 +16,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/att/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -39,8 +40,13 @@ class RemoteServiceManager final {
   RemoteServiceManager(std::unique_ptr<Client> client, async_dispatcher_t* gatt_dispatcher);
   ~RemoteServiceManager();
 
-  // Adds a handler to be notified when a new service is added.
-  void set_service_watcher(RemoteServiceWatcher watcher) {
+  // Adds a handler to be notified when services are removed, added, or modified.
+  // NOTE: `removed` services should be handled first because they may share handles with `added`
+  // services.
+  using ServiceWatcher = fit::function<void(std::vector<att::Handle> removed,
+                                            std::vector<fbl::RefPtr<RemoteService>> added,
+                                            std::vector<fbl::RefPtr<RemoteService>> modified)>;
+  void set_service_watcher(ServiceWatcher watcher) {
     ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     svc_watcher_ = std::move(watcher);
   }
@@ -86,9 +92,16 @@ class RemoteServiceManager final {
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
   };
 
-  fbl::RefPtr<RemoteService> GattProfileService();
+  // State of the current Service Changed notification procedure.
+  struct ServiceChangedState {
+    ServiceChangedCharacteristicValue value;
+    // The cache of services discovered in the changed range.
+    std::map<att::Handle, ServiceData> services;
+  };
 
-  void OnServiceChangedNotification(const ByteBuffer& value);
+  // If the GATT Profile service has been discovered, returns the service. Returns
+  // nullptr otherwise.
+  fbl::RefPtr<RemoteService> GattProfileService();
 
   // Attempt to discover the GATT Profile service. This method must complete before discovery of
   // other services. Notifies |callback| with a status of HostError::kNotFound if the GATT Profile
@@ -118,6 +131,10 @@ class RemoteServiceManager final {
   // If |service_uuids| is non-empty, only discovers services with the given UUIDs.
   // |status_cb| will be called when the operation completes.
   void DiscoverServices(std::vector<UUID> service_uuids, att::StatusCallback status_cb);
+  void DiscoverPrimaryAndSecondaryServicesInRange(std::vector<UUID> service_uuids,
+                                                  att::Handle start, att::Handle end,
+                                                  ServiceCallback service_cb,
+                                                  att::StatusCallback status_cb);
 
   // Shuts down and cleans up all services.
   void ClearServices();
@@ -126,17 +143,48 @@ class RemoteServiceManager final {
   void OnNotification(bool ind, att::Handle value_handle, const ByteBuffer& value,
                       bool maybe_truncated);
 
+  // Handler of notifications from the Service Changed Characteristic
+  void OnServiceChangedNotification(const ByteBuffer& buffer);
+
+  // If a service changed notification is queued and none are currently being handled, start
+  // processing the next notification.
+  // |on_complete| is called when all pending service changed notifications have been processed
+  // (immediately if there are none).
+  void MaybeHandleNextServiceChangedNotification(fit::callback<void()> on_complete = nullptr);
+
+  // Apply service changed discovery results to |services_|. If initialization is complete, notify
+  // |svc_watcher_|.
+  void ProcessServiceChangedDiscoveryResults(const ServiceChangedState& service_changed);
+
+  // Calculate the difference between the current services and the services discovered in the
+  // Service Changed notification range. Results are appended to the parameters vectors.
+  void CalculateServiceChanges(
+      const ServiceChangedState& service_changed,
+      std::vector<ServiceMap::iterator>& removed_services, std::vector<ServiceData>& added_services,
+      std::vector<std::pair<ServiceMap::iterator, ServiceData>>& modified_services);
+
   async_dispatcher_t* gatt_dispatcher_;
   std::unique_ptr<Client> client_;
 
   bool initialized_;
-  RemoteServiceWatcher svc_watcher_;
+  ServiceWatcher svc_watcher_;
 
   // Requests queued during calls ListServices() before initialization.
-  std::queue<ServiceListRequest> pending_;
+  std::queue<ServiceListRequest> pending_list_services_requests_;
 
   // Services are sorted by handle.
   ServiceMap services_;
+
+  // Queue of unprocessed Service Changed notification changes.
+  std::queue<ServiceChangedCharacteristicValue> queued_service_changes_;
+
+  // Service Changed notification that is currently being processed by performing service
+  // discovery.
+  std::optional<ServiceChangedState> current_service_change_;
+
+  // Callbacks passed to MaybeHandleNextServiceChangedNotification. Will be called when all queued
+  // service changes have been processed.
+  std::vector<fit::callback<void()>> service_changes_complete_callbacks_;
 
   fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<RemoteServiceManager> weak_ptr_factory_;

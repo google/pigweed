@@ -27,7 +27,16 @@ Connection::Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
   server_ = std::make_unique<gatt::Server>(peer_id, local_db, att_);
   remote_service_manager_ =
       std::make_unique<RemoteServiceManager>(gatt::Client::Create(att_), gatt_dispatcher);
-  remote_service_manager_->set_service_watcher(std::move(svc_watcher));
+
+  // Wrap  the service watcher callback to convert the parameters to match `RemoteServiceWatcher`.
+  // TODO(fxbug.dev/71986): Propagate removed & modified services to higher layers.
+  remote_service_manager_->set_service_watcher(
+      [svc_watcher = std::move(svc_watcher)](
+          auto /*removed*/, std::vector<fbl::RefPtr<RemoteService>> added, auto /*modified*/) {
+        for (auto& svc : added) {
+          svc_watcher(std::move(svc));
+        }
+      });
 }
 
 void Connection::Initialize(std::vector<UUID> service_uuids) {

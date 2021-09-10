@@ -45,17 +45,27 @@ class RemoteServiceManager;
 // A RemoteService can be accessed from multiple threads. All continuations
 // provided in |callback| parameters below will run on the GATT thread unless an
 // dispatcher is explicitly provided.
+// TODO(fxbug.dev/83509): Remove thread safety mechanisms, including message passing and RefPtr
+// usage.
 class RemoteService final : public fbl::RefCounted<RemoteService> {
  public:
   // In production, a RemoteService should only be constructed by a RemoteServiceManager.
   // The constructor and destructor are made available for testing.
   RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client,
                 async_dispatcher_t* gatt_dispatcher);
+  // TODO(fxbug.dev/83509): Perform clean up in the destructor.
   ~RemoteService();
 
-  // Shuts down this service. Called when the service gets removed (e.g. due to
-  // disconnection or because it was removed by the peer).
-  void ShutDown();
+  // Shuts down this service. Called when the service gets removed (e.g. due to disconnection or
+  // because it was removed by the peer) or modified (via the Service Changed notification).
+  // `service_changed` indicates whether shut down is occurring due to a Service Changed
+  // notification, in which case this service may no longer exist or may have been modified (and so
+  // no writes should be performed).
+  //
+  // This method is used for clean up instead of the destructor because
+  // ownership is shared across threads and clean up needs to be thread safe.
+  // TODO(fxbug.dev/83509): Remove this method and perform clean up in the destructor.
+  void ShutDown(bool service_changed = false);
 
   const ServiceData& info() const { return service_data_; }
 

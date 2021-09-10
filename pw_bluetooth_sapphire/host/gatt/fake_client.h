@@ -19,13 +19,6 @@ class FakeClient final : public Client {
 
   void set_services(std::vector<ServiceData> services) { services_ = std::move(services); }
 
-  void set_primary_service_discovery_status(att::Status status) {
-    primary_service_discovery_status_ = status;
-  }
-  void set_secondary_service_discovery_status(att::Status status) {
-    secondary_service_discovery_status_ = status;
-  }
-
   void set_characteristics(std::vector<CharacteristicData> chrcs) { chrcs_ = std::move(chrcs); }
 
   void set_descriptors(std::vector<DescriptorData> descs) { descs_ = std::move(descs); }
@@ -50,6 +43,12 @@ class FakeClient final : public Client {
 
   size_t chrc_discovery_count() const { return chrc_discovery_count_; }
   size_t desc_discovery_count() const { return desc_discovery_count_; }
+
+  // Sets a callback which will run when DiscoverServices gets called.
+  using DiscoverServicesCallback = fit::function<att::Status(ServiceKind)>;
+  void set_discover_services_callback(DiscoverServicesCallback callback) {
+    discover_services_callback_ = std::move(callback);
+  }
 
   // Sets a callback which will run when ReadRequest gets called.
   using ReadRequestCallback = fit::function<void(att::Handle, ReadCallback)>;
@@ -122,7 +121,7 @@ class FakeClient final : public Client {
                         att::StatusCallback status_callback) override;
   void DiscoverServicesInRange(ServiceKind kind, att::Handle start, att::Handle end,
                                ServiceCallback svc_callback,
-                               att::StatusCallback status_callback) override {}
+                               att::StatusCallback status_callback) override;
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                att::StatusCallback status_callback) override;
@@ -131,11 +130,11 @@ class FakeClient final : public Client {
                            att::StatusCallback status_callback) override;
   void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
                                  att::StatusCallback status_callback,
-                                 std::vector<UUID> services) override;
+                                 std::vector<UUID> uuids) override;
   void DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle start, att::Handle end,
                                         ServiceCallback svc_callback,
                                         att::StatusCallback status_callback,
-                                        std::vector<UUID> uuids) override {}
+                                        std::vector<UUID> uuids) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                          ReadByTypeCallback callback) override;
@@ -182,6 +181,7 @@ class FakeClient final : public Client {
   att::Handle last_desc_discovery_end_handle_ = 0;
   size_t desc_discovery_count_ = 0;
 
+  DiscoverServicesCallback discover_services_callback_;
   ReadRequestCallback read_request_callback_;
   ReadByTypeRequestCallback read_by_type_request_callback_;
   ReadBlobRequestCallback read_blob_request_callback_;

@@ -76,12 +76,12 @@ class Impl final : public GATT {
       return;
     }
 
-    connections_.try_emplace(
-        peer_id, peer_id, att_bearer, local_services_->database(),
-        [this, peer_id](auto added_service) {
-          this->OnServiceAdded(peer_id, std::move(added_service));
-        },
-        async_get_default_dispatcher());
+    auto service_watcher = [this, peer_id](fbl::RefPtr<RemoteService> added_service) {
+      this->OnServiceAdded(peer_id, std::move(added_service));
+    };
+
+    connections_.try_emplace(peer_id, peer_id, att_bearer, local_services_->database(),
+                             std::move(service_watcher), async_get_default_dispatcher());
 
     if (retrieve_service_changed_ccc_callback_) {
       auto optional_service_changed_ccc_data = retrieve_service_changed_ccc_callback_(peer_id);

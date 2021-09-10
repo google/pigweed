@@ -39,7 +39,7 @@ class Client;
 //
 // The ID that gets assigned to a RemoteCharacteristic is its value_handle
 // The ID that gets assigned to a Descriptor is its handle. Looking up a descriptor by id from the
-// service is linear in the number of characteristics.
+// service is logarithmic in the number of descriptors.
 //
 // THREAD-SAFETY:
 //
@@ -55,6 +55,7 @@ class RemoteCharacteristic final {
   using DescriptorMap = std::map<DescriptorHandle, DescriptorData>;
 
   RemoteCharacteristic(fxl::WeakPtr<Client> client, const CharacteristicData& info);
+  // TODO(fxbug.dev/83509): Perform clean up in the destructor.
   ~RemoteCharacteristic() = default;
 
   // The move constructor allows this move-only type to be stored in a vector
@@ -90,7 +91,10 @@ class RemoteCharacteristic final {
   // except the destructor will be called on the GATT thread.
 
   // Cleans up all state associated with this characteristic.
-  void ShutDown();
+  // `service_changed` indicates whether shut down is occurring due to a Service Changed
+  // notification, in which case this characteristic may no longer exist or may have been changed.
+  // TODO(fxbug.dev/83509): Perform clean up in the destructor.
+  void ShutDown(bool service_changed = false);
 
   // Updates the CharacteristicData |info_| with the Extended Properties that are read from the
   // descriptors discovered in |DiscoverDescriptors|.

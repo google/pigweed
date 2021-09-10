@@ -78,7 +78,7 @@ RemoteCharacteristic::RemoteCharacteristic(RemoteCharacteristic&& other)
   other.weak_ptr_factory_.InvalidateWeakPtrs();
 }
 
-void RemoteCharacteristic::ShutDown() {
+void RemoteCharacteristic::ShutDown(bool service_changed) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   // Make sure that all weak pointers are invalidated on the GATT thread.
@@ -87,12 +87,17 @@ void RemoteCharacteristic::ShutDown() {
 
   ResolvePendingNotifyRequests(att::Status(HostError::kFailed));
 
-  // Clear the CCC if we have enabled notifications.
-  // TODO(armansito): Don't write to the descriptor if ShutDown() was called
-  // as a result of a "Service Changed" indication.
+  // Clear the CCC if we have enabled notifications and ShutDown() was not called as a result of a
+  // Service Changed notification.
   if (!notify_handlers_.empty()) {
     notify_handlers_.clear();
-    DisableNotificationsInternal();
+    // Don't disable notifications if the service changed as this characteristic may no longer
+    // exist, may have been changed, or may have moved. If the characteristic is still valid, the
+    // server may continue to send notifications, but they will be ignored until a new handler is
+    // registered.
+    if (!service_changed) {
+      DisableNotificationsInternal();
+    }
   }
 }
 

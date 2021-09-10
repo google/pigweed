@@ -58,7 +58,7 @@ RemoteServiceManager::~RemoteServiceManager() {
   // Resolve all pending requests with an error.
   att::Status status(HostError::kFailed);
 
-  auto pending = std::move(pending_);
+  auto pending = std::move(pending_list_services_requests_);
   while (!pending.empty()) {
     // This copies |services|.
     pending.front().Complete(status, services_);
@@ -71,8 +71,9 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 
-  auto init_cb = [self, user_init_cb = std::move(cb)](att::Status status) {
+  auto init_cb = [self, user_init_cb = std::move(cb)](att::Status status) mutable {
     TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::Initialize::init_cb");
+    bt_log(DEBUG, "gatt", "RemoteServiceManager initialization complete");
 
     // The Client's Bearer may outlive this object.
     if (!self) {
@@ -81,13 +82,22 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
 
     self->initialized_ = true;
 
-    user_init_cb(status);
+    if (status.is_success() && self->svc_watcher_) {
+      // Notify all discovered services here.
+      TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::svc_watcher_");
+      ServiceList added;
+      std::transform(self->services_.begin(), self->services_.end(), std::back_inserter(added),
+                     [](ServiceMap::value_type& svc) { return svc.second; });
+      self->svc_watcher_(/*removed=*/{}, std::move(added), /*modified=*/{});
+    }
 
     // Notify pending ListService() requests.
-    while (!self->pending_.empty()) {
-      self->pending_.front().Complete(status, self->services_);
-      self->pending_.pop();
+    while (!self->pending_list_services_requests_.empty()) {
+      self->pending_list_services_requests_.front().Complete(status, self->services_);
+      self->pending_list_services_requests_.pop();
     }
+
+    user_init_cb(status);
   };
 
   client_->ExchangeMTU([self, init_cb = std::move(init_cb), services = std::move(services)](
@@ -102,21 +112,39 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::vector<UUID> 
       return;
     }
 
-    self->InitializeGattProfileService(
-        [self, init_cb = std::move(init_cb),
-         services = std::move(services)](att::Status status) mutable {
-          if (status.error() == HostError::kNotFound) {
-            // The GATT Profile service's Service Changed characteristic is optional. Its absence
-            // implies that the set of GATT services on the server is fixed, so the kNotFound error
-            // can be safely ignored.
-            bt_log(DEBUG, "gatt", "GATT Profile service not found. Assuming services are fixed.");
-          } else if (!status.is_success()) {
-            init_cb(status);
-            return;
-          }
+    self->InitializeGattProfileService([self, init_cb = std::move(init_cb),
+                                        services =
+                                            std::move(services)](att::Status status) mutable {
+      if (status.error() == HostError::kNotFound) {
+        // The GATT Profile service's Service Changed characteristic is optional. Its absence
+        // implies that the set of GATT services on the server is fixed, so the kNotFound error
+        // can be safely ignored.
+        bt_log(DEBUG, "gatt", "GATT Profile service not found. Assuming services are fixed.");
+      } else if (!status.is_success()) {
+        init_cb(status);
+        return;
+      }
 
-          self->DiscoverServices(std::move(services), std::move(init_cb));
-        });
+      self->DiscoverServices(
+          std::move(services), [self, init_cb = std::move(init_cb)](att::Status status) mutable {
+            if (!status.is_success()) {
+              init_cb(status);
+              return;
+            }
+
+            // Handle Service Changed notifications received during service discovery. Skip
+            // notifying the service watcher callback as it will be notified in the init_cb
+            // callback. We handle Service Changed notifications before notifying the service
+            // watcher and init_cb in order to reduce the likelihood that returned services are
+            // instantly invalidated by Service Changed notifications. It is likely that bonded
+            // peers will send a Service Changed notification upon connection to indicate that
+            // services changed since the last connection, and such notifications will probably be
+            // received before service discovery completes. (Core Spec v5.3, Vol 3, Part G,
+            // Sec 2.5.2)
+            self->MaybeHandleNextServiceChangedNotification(
+                [self, init_cb = std::move(init_cb)]() mutable { init_cb(att::Status()); });
+          });
+    });
   });
 }
 
@@ -125,11 +153,6 @@ fbl::RefPtr<RemoteService> RemoteServiceManager::GattProfileService() {
     return s.second->uuid() == types::kGenericAttributeService;
   });
   return service_iter == services_.end() ? nullptr : service_iter->second;
-}
-
-void RemoteServiceManager::OnServiceChangedNotification(const ByteBuffer& value) {
-  // TODO(fxbug.dev/71986): Handle service changed notification.
-  bt_log(WARN, "gatt", "Ignoring service changed notification");
 }
 
 void RemoteServiceManager::ConfigureServiceChangedNotifications(
@@ -320,25 +343,35 @@ void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
     if (bt_is_error(status, TRACE, "gatt", "failed to discover services")) {
       // Clear services that were buffered so far.
       self->ClearServices();
-    } else if (self->svc_watcher_) {
-      // Notify all discovered services here.
-      for (auto& iter : self->services_) {
-        TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::svc_watcher_");
-        self->svc_watcher_(iter.second);
-      }
     }
 
     status_cb(status);
   };
 
-  auto primary_discov_cb = [self, service_uuids, status_cb_wrapper = std::move(status_cb_wrapper)](
-                               att::Status status) mutable {
+  ServiceCallback svc_cb = [self](const ServiceData& service_data) {
+    // The Client's Bearer may outlive this object.
+    if (self) {
+      self->AddService(service_data);
+    }
+  };
+
+  DiscoverPrimaryAndSecondaryServicesInRange(std::move(service_uuids), att::kHandleMin,
+                                             att::kHandleMax, std::move(svc_cb),
+                                             std::move(status_cb_wrapper));
+}
+
+void RemoteServiceManager::DiscoverPrimaryAndSecondaryServicesInRange(
+    std::vector<UUID> service_uuids, att::Handle start, att::Handle end, ServiceCallback service_cb,
+    att::StatusCallback status_cb) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto primary_discov_cb = [self, service_uuids, start, end, svc_cb = service_cb.share(),
+                            status_cb = std::move(status_cb)](att::Status status) mutable {
     if (!self || !status) {
-      status_cb_wrapper(status);
+      status_cb(status);
       return;
     }
 
-    auto secondary_discov_cb = [cb = std::move(status_cb_wrapper)](att::Status status) mutable {
+    auto secondary_discov_cb = [cb = std::move(status_cb)](att::Status status) mutable {
       // Not all GATT servers support the "secondary service" group type. We suppress the
       // "Unsupported Group Type" error code and simply report no services instead of treating it
       // as a fatal condition (errors propagated up the stack from here will cause the connection
@@ -352,12 +385,24 @@ void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
       cb(status);
     };
 
-    self->DiscoverServicesOfKind(ServiceKind::SECONDARY, std::move(service_uuids),
-                                 std::move(secondary_discov_cb));
+    if (!service_uuids.empty()) {
+      self->client_->DiscoverServicesWithUuidsInRange(
+          ServiceKind::SECONDARY, start, end, std::move(svc_cb), std::move(secondary_discov_cb),
+          std::move(service_uuids));
+    } else {
+      self->client_->DiscoverServicesInRange(ServiceKind::SECONDARY, start, end, std::move(svc_cb),
+                                             std::move(secondary_discov_cb));
+    }
   };
 
-  DiscoverServicesOfKind(ServiceKind::PRIMARY, std::move(service_uuids),
-                         std::move(primary_discov_cb));
+  if (!service_uuids.empty()) {
+    client_->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, start, end,
+                                              std::move(service_cb), std::move(primary_discov_cb),
+                                              std::move(service_uuids));
+  } else {
+    client_->DiscoverServicesInRange(ServiceKind::PRIMARY, start, end, std::move(service_cb),
+                                     std::move(primary_discov_cb));
+  }
 }
 
 void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
@@ -366,7 +411,7 @@ void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
   if (initialized_) {
     request.Complete(att::Status(), services_);
   } else {
-    pending_.push(std::move(request));
+    pending_list_services_requests_.push(std::move(request));
   }
 }
 
@@ -382,7 +427,7 @@ void RemoteServiceManager::ClearServices() {
   }
 }
 
-void RemoteServiceManager::OnNotification(bool ind, att::Handle value_handle,
+void RemoteServiceManager::OnNotification(bool /*indication*/, att::Handle value_handle,
                                           const ByteBuffer& value, bool maybe_truncated) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
@@ -402,6 +447,212 @@ void RemoteServiceManager::OnNotification(bool ind, att::Handle value_handle,
 
   if (svc->info().range_end >= value_handle) {
     svc->HandleNotification(value_handle, value, maybe_truncated);
+  }
+}
+
+void RemoteServiceManager::OnServiceChangedNotification(const ByteBuffer& buffer) {
+  bt_log(DEBUG, "gatt", "received service changed notification");
+
+  if (buffer.size() != sizeof(ServiceChangedCharacteristicValue)) {
+    bt_log(WARN, "gatt", "service changed notification value malformed; ignoring (size: %zu)",
+           buffer.size());
+    return;
+  }
+
+  ServiceChangedCharacteristicValue value;
+  value.range_start_handle =
+      letoh16(buffer.ReadMember<&ServiceChangedCharacteristicValue::range_start_handle>());
+  value.range_end_handle =
+      letoh16(buffer.ReadMember<&ServiceChangedCharacteristicValue::range_end_handle>());
+  if (value.range_start_handle > value.range_end_handle) {
+    bt_log(WARN, "gatt", "service changed notification value malformed; ignoring (start > end)");
+    return;
+  }
+
+  queued_service_changes_.push(value);
+
+  // Bonded devices may send service changed notifications upon connection if services changed while
+  // the device was disconnected (Core Spec v5.3, Vol 3, Part G, Sec 7.1). These notifications may
+  // be received during the initial service discovery procedure. Queue the service changes and
+  // process them as the last step of initialization.
+  if (!initialized_) {
+    bt_log(DEBUG, "gatt",
+           "Received service changed notification before RemoteServiceManager initialization "
+           "complete; queueing.");
+    return;
+  }
+
+  MaybeHandleNextServiceChangedNotification();
+}
+
+void RemoteServiceManager::MaybeHandleNextServiceChangedNotification(
+    fit::callback<void()> on_complete) {
+  if (on_complete) {
+    service_changes_complete_callbacks_.push_back(std::move(on_complete));
+  }
+
+  if (current_service_change_.has_value()) {
+    return;
+  }
+
+  if (queued_service_changes_.empty()) {
+    for (auto& cb : service_changes_complete_callbacks_) {
+      cb();
+    }
+    service_changes_complete_callbacks_.clear();
+    return;
+  }
+
+  bt_log(DEBUG, "gatt", "handling next Service Changed notification");
+
+  current_service_change_ = ServiceChangedState{.value = queued_service_changes_.front()};
+  queued_service_changes_.pop();
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  ServiceCallback svc_cb = [self](const ServiceData& service_data) {
+    if (self) {
+      ZX_ASSERT(self->current_service_change_.has_value());
+      // gatt::Client verifies that service discovery results are in the requested range.
+      ZX_ASSERT(service_data.range_start >=
+                self->current_service_change_->value.range_start_handle);
+      ZX_ASSERT(service_data.range_start <= self->current_service_change_->value.range_end_handle);
+      self->current_service_change_->services.emplace(service_data.range_start, service_data);
+    }
+  };
+
+  att::StatusCallback status_cb = [self](att::Status status) mutable {
+    if (!self) {
+      return;
+    }
+
+    if (!bt_is_error(status, WARN, "gatt",
+                     "service discovery for service changed notification failed")) {
+      ZX_ASSERT(self->current_service_change_.has_value());
+      self->ProcessServiceChangedDiscoveryResults(self->current_service_change_.value());
+    }
+
+    self->current_service_change_.reset();
+    self->MaybeHandleNextServiceChangedNotification();
+  };
+
+  DiscoverPrimaryAndSecondaryServicesInRange(
+      /*service_uuids=*/{}, self->current_service_change_->value.range_start_handle,
+      self->current_service_change_->value.range_end_handle, std::move(svc_cb),
+      std::move(status_cb));
+}
+
+void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
+    const ServiceChangedState& service_changed) {
+  std::vector<ServiceMap::iterator> removed_iters;
+  std::vector<ServiceData> added_data;
+  std::vector<std::pair<ServiceMap::iterator, ServiceData>> modified_iters_and_data;
+  CalculateServiceChanges(service_changed, removed_iters, added_data, modified_iters_and_data);
+
+  bt_log(INFO, "gatt",
+         "service changed notification added %zu, removed %zu, and modified %zu services",
+         added_data.size(), removed_iters.size(), modified_iters_and_data.size());
+
+  std::vector<att::Handle> removed_service_handles;
+  for (ServiceMap::iterator& service_iter : removed_iters) {
+    removed_service_handles.push_back(service_iter->first);
+    service_iter->second->ShutDown(/*service_changed=*/true);
+    services_.erase(service_iter);
+  }
+
+  ServiceList modified_services;
+  modified_services.reserve(modified_iters_and_data.size());
+  for (auto& [service_iter, new_service_data] : modified_iters_and_data) {
+    if (service_iter->second->uuid() == types::kGenericAttributeService) {
+      // The specification is ambiguous about what to do if the GATT Profile Service changes, but it
+      // implies that it means the Database Hash or Server Supported Features values have changed.
+      // At the very least, the Service Changed Characteristic is not supposed to change if the
+      // server is bonded with any client. We don't want to reset the service and potentially miss
+      // notifications until characteristics have been rediscovered. See Core Spec v5.3, Vol 3, Part
+      // G, Sec 7.1.
+      bt_log(INFO, "gatt",
+             "GATT Profile Service changed; assuming same characteristics (server values probably "
+             "changed)");
+      modified_services.push_back(service_iter->second);
+      continue;
+    }
+
+    // Destroy the old service and replace with a new service in order to easily cancel ongoing
+    // procedures and ensure clients handle service change.
+    service_iter->second->ShutDown(/*service_changed=*/true);
+    auto new_service =
+        fbl::AdoptRef(new RemoteService(new_service_data, client_->AsWeakPtr(), gatt_dispatcher_));
+    ZX_ASSERT(new_service->handle() == service_iter->first);
+    service_iter->second = new_service;
+    modified_services.push_back(std::move(new_service));
+  }
+
+  ServiceList added_services;
+  added_services.reserve(added_data.size());
+  for (ServiceData service_data : added_data) {
+    auto service =
+        fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr(), gatt_dispatcher_));
+    auto [_, inserted] = services_.try_emplace(service->handle(), service);
+    ZX_ASSERT_MSG(inserted, "service with handle (%#.4x) already exists", service->handle());
+    added_services.push_back(std::move(service));
+  }
+
+  // Skip notifying the service watcher callback during initialization as it will be notified in the
+  // init_cb callback.
+  if (initialized_) {
+    svc_watcher_(std::move(removed_service_handles), std::move(added_services),
+                 std::move(modified_services));
+  }
+}
+
+void RemoteServiceManager::CalculateServiceChanges(
+    const ServiceChangedState& service_changed, std::vector<ServiceMap::iterator>& removed_services,
+    std::vector<ServiceData>& added_services,
+    std::vector<std::pair<ServiceMap::iterator, ServiceData>>& modified_services) {
+  // iterator to first service greater than or equal to the start of the affected range.
+  auto services_iter = services_.lower_bound(service_changed.value.range_start_handle);
+  // iterator to first service greater than the end of the affected range.
+  auto services_end = services_.upper_bound(service_changed.value.range_end_handle);
+  auto new_services_iter = service_changed.services.begin();
+  auto new_services_end = service_changed.services.end();
+
+  // Iterate through the lists of services and calculate the difference.  Both the old and new
+  // services are stored in ordered maps, so we can iterate through both linearly in one pass.
+  while (services_iter != services_end && new_services_iter != new_services_end) {
+    if (services_iter->first < new_services_iter->first) {
+      removed_services.push_back(services_iter);
+      services_iter++;
+    } else if (services_iter->first == new_services_iter->first) {
+      if (services_iter->second->uuid() == new_services_iter->second.type) {
+        // Assume service with same handle & UUID has been modified, since all services in the
+        // Service Change range must be affected, by definition: "The Service Changed Characteristic
+        // Value [...] indicates the beginning and ending Attribute Handles affected by an addition,
+        // removal, or modification to a GATT-based service on the server" (Core Spec v5.3, Vol 3,
+        // Part G, Sec 7.1).
+        modified_services.emplace_back(services_iter, new_services_iter->second);
+      } else {
+        // A new service has been added with the same handle but different type.
+        removed_services.push_back(services_iter);
+        added_services.push_back(new_services_iter->second);
+      }
+      services_iter++;
+      new_services_iter++;
+    } else {
+      added_services.push_back(new_services_iter->second);
+      new_services_iter++;
+    }
+  }
+
+  // Remaining old services must have been removed.
+  while (services_iter != services_end) {
+    removed_services.push_back(services_iter);
+    services_iter++;
+  }
+
+  // Remaining new services must have been added.
+  if (new_services_iter != new_services_end) {
+    std::transform(
+        new_services_iter, new_services_end, std::back_inserter(added_services),
+        [](const std::map<att::Handle, ServiceData>::value_type& value) { return value.second; });
   }
 }
 
