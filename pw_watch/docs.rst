@@ -19,16 +19,15 @@ Module Usage
 ============
 The simplest way to get started with ``pw_watch`` is to launch it from a shell
 using the Pigweed environment as ``pw watch``. By default, ``pw_watch`` watches
-for repository changes and triggers the default Ninja build target for an
-automatically located build directory (typically ``$PW_ROOT/out``). To override
-this behavior, provide the ``-C`` argument to ``pw watch``.
+for repository changes and triggers the default Ninja build target at out/. To
+override this behavior, provide the ``-C`` argument to ``pw watch``.
 
 .. code:: sh
 
-  # Find a build directory and build the default target
+  # Use ./out/ as the build directory and build the default target
   pw watch
 
-  # Find a build directory and build the stm32f429i target
+  # Use ./out/ as the build directory and build the stm32f429i target
   pw watch python.lint stm32f429i
 
   # Build pw_run_tests.modules in the out/cmake directory
@@ -37,7 +36,7 @@ this behavior, provide the ``-C`` argument to ``pw watch``.
   # Build the default target in out/ and pw_apps in out/cmake
   pw watch -C out -C out/cmake pw_apps
 
-  # Find a directory and build python.tests, and build pw_apps in out/cmake
+  # Build python.tests in out/ and build pw_apps in out/cmake
   pw watch python.tests -C out/cmake pw_apps
 
   # Build the default target, but only run up to 8 jobs in parallel.

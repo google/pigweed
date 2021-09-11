@@ -256,27 +256,47 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         env['PW_USE_COLOR'] = '1'
 
         for i, cmd in enumerate(self.build_commands, 1):
-            command = ['ninja', *self._extra_ninja_args, '-C', *cmd.args()]
+            index = f'[{i}/{num_builds}]'
+            self.builds_succeeded.append(self._run_build(index, cmd, env))
 
-            _LOG.info('[%d/%d] Starting build: %s', i, num_builds,
-                      ' '.join(shlex.quote(arg) for arg in command))
-
-            # Run the build. Put a blank before/after for visual separation.
-            print()
-            self._current_build = subprocess.Popen(command, env=env)
-            returncode = self._current_build.wait()
-            print()
-
-            build_ok = (returncode == 0)
-            if build_ok:
+            if self.builds_succeeded[-1]:
                 level = logging.INFO
                 tag = '(OK)'
             else:
                 level = logging.ERROR
                 tag = '(FAIL)'
-            _LOG.log(level, '[%d/%d] Finished build: %s %s', i, num_builds,
-                     cmd, tag)
-            self.builds_succeeded.append(build_ok)
+
+            _LOG.log(level, '%s Finished build: %s %s', index, cmd, tag)
+
+    def _run_build(self, index: str, cmd: BuildCommand, env: dict) -> bool:
+        # Make sure there is a build.ninja file for Ninja to use.
+        build_ninja = cmd.build_dir / 'build.ninja'
+        if not build_ninja.exists():
+            # If this is a CMake directory, prompt the user to re-run CMake.
+            if cmd.build_dir.joinpath('CMakeCache.txt').exists():
+                _LOG.error('%s %s does not exist; re-run CMake to generate it',
+                           index, build_ninja)
+                return False
+
+            _LOG.warning('%s %s does not exist; running gn gen %s', index,
+                         build_ninja, cmd.build_dir)
+            if not self._execute_command(['gn', 'gen', cmd.build_dir], env):
+                return False
+
+        command = ['ninja', *self._extra_ninja_args, '-C', *cmd.args()]
+        _LOG.info('%s Starting build: %s', index,
+                  ' '.join(shlex.quote(arg) for arg in command))
+
+        return self._execute_command(command, env)
+
+    def _execute_command(self, command: list, env: dict) -> bool:
+        """Runs a command with a blank before/after for visual separation."""
+        print()
+        self._current_build = subprocess.Popen(command, env=env)
+        returncode = self._current_build.wait()
+        print()
+
+        return returncode == 0
 
     # Implementation of DebouncedFunction.cancel()
     def cancel(self) -> bool:
@@ -386,9 +406,9 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
         default=[],
         help=('Automatically locate a build directory and build these '
               'targets. For example, `host docs` searches for a Ninja '
-              'build directory (starting with out/) and builds the '
-              '`host` and `docs` targets. To specify one or more '
-              'directories, ust the -C / --build_directory option.'))
+              'build directory at out/ and builds the `host` and `docs` '
+              'targets. To specify one or more directories, ust the '
+              '-C / --build_directory option.'))
     parser.add_argument(
         '-C',
         '--build_directory',
@@ -564,21 +584,6 @@ def get_common_excludes() -> List[Path]:
     return exclude_list
 
 
-def _find_build_dir(default_build_dir: Path = Path('out')) -> Optional[Path]:
-    """Searches for a build directory, returning the first it finds."""
-    # Give priority to out/, then something under out/.
-    if default_build_dir.joinpath('build.ninja').exists():
-        return default_build_dir
-
-    for path in default_build_dir.glob('**/build.ninja'):
-        return path.parent
-
-    for path in Path.cwd().glob('**/build.ninja'):
-        return path.parent
-
-    return None
-
-
 # pylint: disable=R0914 # too many local variables
 def watch(default_build_targets: List[str], build_directories: List[str],
           patterns: str, ignore_patterns_string: str, exclude_list: List[Path],
@@ -602,16 +607,14 @@ def watch(default_build_targets: List[str], build_directories: List[str],
         for build_dir in build_directories
     ]
 
-    # If no build directory was specified, search the tree for a build.ninja.
+    # If no build directory was specified, check for out/build.ninja.
     if default_build_targets or not build_directories:
-        build_dir = _find_build_dir()
-
         # Make sure we found something; if not, bail.
-        if build_dir is None:
+        if not Path('out').exists():
             _die("No build dirs found. Did you forget to run 'gn gen out'?")
 
         build_commands.append(
-            BuildCommand(build_dir, tuple(default_build_targets)))
+            BuildCommand(Path('out'), tuple(default_build_targets)))
 
     # Verify that the build output directories exist.
     for i, build_target in enumerate(build_commands, 1):
@@ -630,7 +633,8 @@ def watch(default_build_targets: List[str], build_directories: List[str],
             logging.getLogger('httpwatcher').setLevel(logging.CRITICAL)
             logging.getLogger('tornado').setLevel(logging.CRITICAL)
 
-            docs_path = build_dir.joinpath(serve_docs_path.joinpath('html'))
+            docs_path = build_commands[0].build_dir.joinpath(
+                serve_docs_path.joinpath('html'))
             httpwatcher.watch(docs_path,
                               host="127.0.0.1",
                               port=serve_docs_port)
