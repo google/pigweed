@@ -152,9 +152,9 @@ For example, the generated RPC header for ``"foo_bar/the_service.proto"`` is
 
 The generated header defines a base class for each RPC service declared in the
 ``.proto`` file. A service named ``TheService`` in package ``foo.bar`` would
-generate the following base class:
+generate the following base class for Nanopb:
 
-.. cpp:class:: template <typename Implementation> foo::bar::generated::TheService
+.. cpp:class:: template <typename Implementation> foo::bar::pw_rpc::nanopb::TheService::Service
 
 3. RPC service definition
 -------------------------
@@ -192,7 +192,7 @@ A Nanopb implementation of this service would be as follows:
 
   namespace foo::bar {
 
-  class TheService : public generated::TheService<TheService> {
+  class TheService : public pw_rpc::nanopb::TheService::Service<TheService> {
    public:
     pw::Status MethodOne(ServerContext&,
                          const foo_bar_Request& request,

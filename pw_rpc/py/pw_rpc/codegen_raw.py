@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -17,10 +17,10 @@ import os
 from typing import Iterable
 
 from pw_protobuf.output_file import OutputFile
-from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
+from pw_protobuf.proto_tree import ProtoServiceMethod
 from pw_protobuf.proto_tree import build_node_tree
 from pw_rpc import codegen
-from pw_rpc.codegen import RPC_NAMESPACE
+from pw_rpc.codegen import CodeGenerator, RPC_NAMESPACE
 
 PROTO_H_EXTENSION = '.pb.h'
 
@@ -37,48 +37,38 @@ def _proto_filename_to_stub_header(proto_file: str) -> str:
     return f'{filename}.raw_rpc.stub{PROTO_H_EXTENSION}'
 
 
-def _generate_method_descriptor(method: ProtoServiceMethod, method_id: int,
-                                output: OutputFile) -> None:
-    """Generates a method descriptor for a raw RPC method."""
+class RawCodeGenerator(CodeGenerator):
+    """Generates an RPC service and client using the raw buffers API."""
+    def name(self) -> str:
+        return 'raw'
 
-    impl_method = f'&Implementation::{method.name()}'
+    def method_union_name(self) -> str:
+        return 'RawMethodUnion'
 
-    output.write_line(
-        f'{RPC_NAMESPACE}::internal::GetRawMethodFor<{impl_method}, '
-        f'{method.type().cc_enum()}>(')
-    output.write_line(f'    0x{method_id:08x}),  // Hash of "{method.name()}"')
+    def includes(self, unused_proto_file_name: str) -> Iterable[str]:
+        yield '#include "pw_rpc/raw/internal/method_union.h"'
 
+    def aliases(self) -> None:
+        self.line(f'using RawServerWriter = {RPC_NAMESPACE}::RawServerWriter;')
+        self.line(f'using RawServerReader = {RPC_NAMESPACE}::RawServerReader;')
+        self.line('using RawServerReaderWriter = '
+                  f'{RPC_NAMESPACE}::RawServerReaderWriter;')
 
-def _generate_aliases(output: OutputFile) -> None:
-    output.write_line(
-        f'using RawServerWriter = {RPC_NAMESPACE}::RawServerWriter;')
-    output.write_line(
-        f'using RawServerReader = {RPC_NAMESPACE}::RawServerReader;')
-    output.write_line('using RawServerReaderWriter = '
-                      f'{RPC_NAMESPACE}::RawServerReaderWriter;')
+    def method_descriptor(self, method: ProtoServiceMethod,
+                          method_id: int) -> None:
+        impl_method = f'&Implementation::{method.name()}'
 
+        self.line(f'{RPC_NAMESPACE}::internal::GetRawMethodFor<{impl_method}, '
+                  f'{method.type().cc_enum()}>(')
+        self.line(f'    0x{method_id:08x}),  // Hash of "{method.name()}"')
 
-def _generate_code_for_client(unused_service: ProtoService,
-                              unused_root: ProtoNode,
-                              output: OutputFile) -> None:
-    """Outputs client code for an RPC service."""
-    output.write_line('// Raw RPC clients are not yet implemented.\n')
+    def client_member_function(self, method: ProtoServiceMethod) -> None:
+        self.line('// Raw RPC clients are not yet implemented.')
+        self.line(f'void {method.name()}();')
 
-
-def _generate_code_for_service(service: ProtoService, root: ProtoNode,
-                               output: OutputFile) -> None:
-    """Generates a C++ base class for a raw RPC service."""
-    codegen.service_class(service, root, output, _generate_aliases,
-                          'RawMethodUnion', _generate_method_descriptor)
-
-
-def _generate_code_for_package(proto_file, package: ProtoNode,
-                               output: OutputFile) -> None:
-    """Generates code for a header file corresponding to a .proto file."""
-    includes = lambda *_: ['#include "pw_rpc/raw/internal/method_union.h"']
-
-    codegen.package(proto_file, package, output, includes,
-                    _generate_code_for_service, _generate_code_for_client)
+    def client_static_function(self, method: ProtoServiceMethod) -> None:
+        self.line('// Raw RPC clients are not yet implemented.')
+        self.line(f'static void {method.name()}();')
 
 
 class StubGenerator(codegen.StubGenerator):
@@ -116,10 +106,12 @@ def process_proto_file(proto_file) -> Iterable[OutputFile]:
 
     _, package_root = build_node_tree(proto_file)
     output_filename = _proto_filename_to_generated_header(proto_file.name)
-    output_file = OutputFile(output_filename)
-    _generate_code_for_package(proto_file, package_root, output_file)
 
-    output_file.write_line()
-    codegen.package_stubs(package_root, output_file, StubGenerator())
+    generator = RawCodeGenerator(output_filename)
+    codegen.generate_package(proto_file, package_root, generator)
 
-    return [output_file]
+    generator.line()
+
+    codegen.package_stubs(package_root, generator.output, StubGenerator())
+
+    return [generator.output]

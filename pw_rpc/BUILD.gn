@@ -83,6 +83,7 @@ pw_source_set("client") {
   public = [
     "public/pw_rpc/client.h",
     "public/pw_rpc/internal/base_client_call.h",
+    "public/pw_rpc/internal/service_client.h",
   ]
   sources = [
     "base_client_call.cc",

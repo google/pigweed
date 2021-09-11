@@ -119,7 +119,9 @@ pw_cc_library(
         ":pw_unit_test",
         ":unit_test_pwpb",
         "//pw_log",
+        # TODO(hepler): RPC deps not used directly should be provided by the proto library
         "//pw_rpc:server",
+        "//pw_rpc:client",
         "//pw_rpc/raw:method_union",
     ],
 )

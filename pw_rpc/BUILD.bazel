@@ -32,6 +32,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_rpc/client.h",
         "public/pw_rpc/internal/base_client_call.h",
+        "public/pw_rpc/internal/service_client.h",
     ],
     deps = [
         ":common",
@@ -89,6 +90,8 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":benchmark_pwpb",
+        # TODO(hepler): RPC deps not used directly should be provided by the proto library
+        ":client",
         ":server",
         "//pw_rpc/raw:method_union",
     ],

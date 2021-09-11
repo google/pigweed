@@ -27,7 +27,7 @@ version of that library in the code implementing the service.
     sources = [ "chat_protos/chat_service.proto" ]
   }
 
-  # Library that implements the ChatService.
+  # Library that implements the Chat service.
   pw_source_set("chat_service") {
     sources = [
       "chat_service.cc",
@@ -51,7 +51,7 @@ All examples in this document use the following RPC service definition.
 
   syntax = "proto3";
 
-  service ChatService {
+  service Chat {
     // Returns information about a chatroom.
     rpc GetRoomInformation(RoomInfoRequest) returns (RoomInfoResponse) {}
 
@@ -69,7 +69,7 @@ All examples in this document use the following RPC service definition.
 Server-side
 -----------
 A C++ class is generated for each service in the .proto file. The class is
-located within a special ``generated`` sub-namespace of the file's package.
+located within a special ``pw_rpc::nanopb`` sub-namespace of the file's package.
 
 The generated class is a base class which must be derived to implement the
 service's methods. The base class is templated on the derived class.
@@ -78,7 +78,7 @@ service's methods. The base class is templated on the derived class.
 
   #include "chat_protos/chat_service.rpc.pb.h"
 
-  class ChatService final : public generated::ChatService<ChatService> {
+  class ChatService final : public pw_rpc::nanopb::Chat::Service<ChatService> {
    public:
     // Implementations of the service's RPC methods; see below.
   };
@@ -141,18 +141,19 @@ Client-side
 -----------
 A corresponding client class is generated for every service defined in the proto
 file. To allow multiple types of clients to exist, it is placed under the
-``nanopb`` namespace. The class is named after the service, with a ``Client``
-suffix. For example, the ``ChatService`` would create a
-``nanopb::ChatServiceClient``.
+``pw_rpc::nanopb`` namespace. The ``Client`` class is nested under
+``pw_rpc::nanopb::ServiceName``. For example, the ``Chat`` service would create
+``pw_rpc::nanopb::Chat::Client``.
 
 Service clients are instantiated with a reference to the RPC client through
 which they will send requests, and the channel ID they will use.
 
 .. code-block:: c++
 
-  class ChatServiceClient {
+  // Nested under pw_rpc::nanopb::ServiceName.
+  class Client {
    public:
-    ChatServiceClient(::pw::rpc::Client& client, uint32_t default_channel_id);
+    Client(::pw::rpc::Client& client, uint32_t channel_id);
 
     GetRoomInformationCall GetRoomInformation(
         const RoomInfoRequest& request,
@@ -161,6 +162,13 @@ which they will send requests, and the channel ID they will use.
 
     // ...and more (see below).
   };
+
+RPCs can also be invoked individually as free functions:
+
+.. code-block:: c++
+
+    GetRoomInformationCall call = pw_rpc::nanopb::Chat::GetRoomInformation(
+        client, channel_id, request, on_response, on_rpc_error);
 
 The client class has member functions for each method defined within the
 service's protobuf descriptor. The arguments to these methods vary depending on

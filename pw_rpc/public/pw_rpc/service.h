@@ -33,6 +33,12 @@ namespace pw::rpc {
 // size of the concrete MethodUnion object.
 class Service : public IntrusiveList<Service>::Item {
  public:
+  Service(const Service&) = delete;
+  Service(Service&&) = delete;
+
+  Service& operator=(const Service&) = delete;
+  Service& operator=(Service&&) = delete;
+
   uint32_t id() const { return id_; }
 
  protected:

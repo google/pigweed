@@ -328,7 +328,7 @@ TEST(NanopbCodegen, Client_StaticMethod_InvokesUnaryRpcWithCallback) {
     int response_value = -1;
   } result;
 
-  auto call = TestServiceClient::TestUnaryRpc(
+  auto call = test::pw_rpc::nanopb::TestService::TestUnaryRpc(
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
@@ -365,7 +365,7 @@ TEST(NanopbCodegen, Client_StaticMethod_InvokesServerStreamingRpcWithCallback) {
     int response_value = -1;
   } result;
 
-  auto call = TestServiceClient::TestServerStreamRpc(
+  auto call = test::pw_rpc::nanopb::TestService::TestServerStreamRpc(
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
