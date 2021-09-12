@@ -96,8 +96,10 @@ Status RegisterDevice::WriteRegisters(const uint32_t register_address,
   }
 
   ByteBuilder builder = ByteBuilder(buffer);
-  PutRegisterAddressInByteBuilder(
-      builder, register_address, order_, register_address_size_);
+  PutRegisterAddressInByteBuilder(builder,
+                                  register_address,
+                                  register_address_order_,
+                                  register_address_size_);
 
   switch (register_data_size) {
     case 1:
@@ -105,11 +107,11 @@ Status RegisterDevice::WriteRegisters(const uint32_t register_address,
       break;
 
     case 2:
-      PutRegisterData16InByteBuilder(builder, register_data, order_);
+      PutRegisterData16InByteBuilder(builder, register_data, data_order_);
       break;
 
     case 4:
-      PutRegisterData32InByteBuilder(builder, register_data, order_)
+      PutRegisterData32InByteBuilder(builder, register_data, data_order_)
           .IgnoreError();  // TODO(pwbug/387): Handle Status properly
       break;
 
@@ -130,8 +132,10 @@ Status RegisterDevice::ReadRegisters(uint32_t register_address,
                                      chrono::SystemClock::duration timeout) {
   ByteBuffer<sizeof(register_address)> byte_buffer;
 
-  PutRegisterAddressInByteBuilder(
-      byte_buffer, register_address, order_, register_address_size_);
+  PutRegisterAddressInByteBuilder(byte_buffer,
+                                  register_address,
+                                  register_address_order_,
+                                  register_address_size_);
 
   if (!byte_buffer.ok()) {
     return pw::Status::Internal();

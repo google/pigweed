@@ -751,6 +751,71 @@ TEST(RegisterDevice, ReadRegister16With2ByteAddressAndBigEndian) {
   }
 }
 
+TEST(RegisterDevice, ReadRegister16With2ByteBigEndianAddress) {
+  TestInitiator initiator;
+  RegisterDevice device(initiator,
+                        kTestDeviceAddress,
+                        std::endian::big,
+                        std::endian::little,
+                        RegisterAddressSize::k2Bytes);
+
+  std::array<std::byte, 2> register_data = {std::byte{0x98}, std::byte{0x76}};
+  initiator.SetReadData(register_data);
+
+  constexpr uint32_t kRegisterAddress = 0xABEF;
+  Result<uint16_t> result = device.ReadRegister16(kRegisterAddress, kTimeout);
+  EXPECT_TRUE(result.ok());
+  uint16_t read_data = result.value_or(kErrorValue);
+
+  // Check address.
+  ByteBuilder& address_buffer = initiator.GetWriteBuffer();
+  EXPECT_EQ(static_cast<uint32_t>(RegisterAddressSize::k2Bytes),
+            address_buffer.size());
+
+  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
+      const_cast<std::byte*>(address_buffer.data())));
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+            kActualAddress);
+
+  // Check data.
+  uint8_t* read_pointer = reinterpret_cast<uint8_t*>(&read_data);
+  for (uint32_t i = 0; i < sizeof(read_data); i++) {
+    EXPECT_EQ(read_pointer[i], static_cast<uint8_t>(register_data[i]));
+  }
+}
+
+TEST(RegisterDevice, WriteRegister16with2ByteBigEndianAddress) {
+  TestInitiator initiator;
+  RegisterDevice device(initiator,
+                        kTestDeviceAddress,
+                        std::endian::big,
+                        std::endian::little,
+                        RegisterAddressSize::k2Bytes);
+
+  constexpr uint32_t kRegisterAddress = 0xAB11;
+  constexpr uint16_t kRegisterData = 0xBCDF;
+  EXPECT_EQ(device.WriteRegister16(kRegisterAddress, kRegisterData, kTimeout),
+            pw::OkStatus());
+
+  constexpr uint32_t kAddressSize =
+      static_cast<uint32_t>(RegisterAddressSize::k2Bytes);
+  ByteBuilder& test_device_builder = initiator.GetWriteBuffer();
+  EXPECT_EQ(test_device_builder.size(), kAddressSize + sizeof(kRegisterData));
+
+  // Check address.
+  const uint16_t kActualAddress = *(reinterpret_cast<uint16_t*>(
+      const_cast<std::byte*>(test_device_builder.data())));
+  EXPECT_EQ(bytes::ReadInOrder<uint16_t>(std::endian::big, &kRegisterAddress),
+            kActualAddress);
+
+  // Check data.
+  for (uint32_t i = 0; i < test_device_builder.size() - kAddressSize; i++) {
+    EXPECT_EQ(
+        (kRegisterData >> (8 * i)) & 0xFF,
+        static_cast<uint16_t>(test_device_builder.data()[i + kAddressSize]));
+  }
+}
+
 }  // namespace
 }  // namespace i2c
 }  // namespace pw

@@ -61,6 +61,22 @@ class RegisterDevice : public Device {
   // Args:
   //   initiator: I2C initiator for the bus the device is on.
   //   address: I2C device address.
+  //   register_address_order: Endianness of the register address.
+  //   data_order: Endianness of the data.
+  //   register_address_size: Size of the register address.
+  constexpr RegisterDevice(Initiator& initiator,
+                           Address address,
+                           std::endian register_address_order,
+                           std::endian data_order,
+                           RegisterAddressSize register_address_size)
+      : Device(initiator, address),
+        register_address_order_(register_address_order),
+        data_order_(data_order),
+        register_address_size_(register_address_size) {}
+
+  // Args:
+  //   initiator: I2C initiator for the bus the device is on.
+  //   address: I2C device address.
   //   order: Endianness of the register address and data.
   //   register_address_size: Size of the register address.
   constexpr RegisterDevice(Initiator& initiator,
@@ -68,7 +84,8 @@ class RegisterDevice : public Device {
                            std::endian order,
                            RegisterAddressSize register_address_size)
       : Device(initiator, address),
-        order_(order),
+        register_address_order_(order),
+        data_order_(order),
         register_address_size_(register_address_size) {}
 
   // Writes data to multiple contiguous registers starting at specific register.
@@ -224,7 +241,8 @@ class RegisterDevice : public Device {
                         ByteSpan buffer,
                         chrono::SystemClock::duration timeout);
 
-  const std::endian order_;
+  const std::endian register_address_order_;
+  const std::endian data_order_;
   const RegisterAddressSize register_address_size_;
 };
 
@@ -347,7 +365,7 @@ inline Status RegisterDevice::ReadRegisters16(
 
   // Post process endian information.
   for (uint16_t& register_value : return_data) {
-    register_value = bytes::ReadInOrder<uint16_t>(order_, &register_value);
+    register_value = bytes::ReadInOrder<uint16_t>(data_order_, &register_value);
   }
 
   return pw::OkStatus();
@@ -364,7 +382,7 @@ inline Status RegisterDevice::ReadRegisters32(
   //                    as optimization.
   // Post process endian information.
   for (uint32_t& register_value : return_data) {
-    register_value = bytes::ReadInOrder<uint32_t>(order_, &register_value);
+    register_value = bytes::ReadInOrder<uint32_t>(data_order_, &register_value);
   }
 
   return pw::OkStatus();
