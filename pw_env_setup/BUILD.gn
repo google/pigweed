@@ -95,7 +95,9 @@ pw_create_python_source_tree("build_pigweed_python_source_tree") {
   packages = _pigweed_python_deps
   include_tests = true
   extra_files = [
+    "$dir_pigweed/pw_build/py/BUILD.bazel > pw_build/BUILD.bazel",
     "$dir_pigweed/pw_cli/py/BUILD.bazel > pw_cli/BUILD.bazel",
+    "$dir_pigweed/pw_hdlc/py/BUILD.bazel > pw_hdlc/BUILD.bazel",
     "$dir_pigweed/pw_protobuf/py/BUILD.bazel > pw_protobuf/BUILD.bazel",
     "$dir_pigweed/pw_protobuf_compiler/py/BUILD.bazel > pw_protobuf_compiler/BUILD.bazel",
     "$dir_pigweed/pw_rpc/py/BUILD.bazel > pw_rpc/BUILD.bazel",
