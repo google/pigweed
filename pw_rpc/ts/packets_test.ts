@@ -39,7 +39,7 @@ describe('Packets', () => {
 
     const dataPacket = new RpcPacket();
     dataPacket.setStatus(321);
-    const data = packets.encodeRequest(1, 2, 3, dataPacket);
+    const data = packets.encodeRequest([1, 2, 3], dataPacket);
     const packet = RpcPacket.deserializeBinary(data);
 
     expect(packet.toObject()).toEqual(goldenRequest.toObject());
@@ -52,7 +52,7 @@ describe('Packets', () => {
 
     const dataPacket = new RpcPacket();
     dataPacket.setStatus(321);
-    const data = packets.encodeResponse(1, 2, 3, dataPacket);
+    const data = packets.encodeResponse([1, 2, 3], dataPacket);
     const packet = RpcPacket.deserializeBinary(data);
 
     expect(packet.toObject()).toEqual(goldenResponse.toObject());
@@ -73,6 +73,18 @@ describe('Packets', () => {
     golden.setStatus(Status.NOT_FOUND);
 
     expect(errorPacket.toObject()).toEqual(golden.toObject());
+  });
+
+  it('encodeCancel sets packet fields', () => {
+    const goldenCancel = new RpcPacket();
+    goldenCancel.setType(PacketType.CANCEL);
+    goldenCancel.setChannelId(1);
+    goldenCancel.setServiceId(2);
+    goldenCancel.setMethodId(3);
+
+    const data = packets.encodeCancel([1, 2, 3]);
+    const packet = RpcPacket.deserializeBinary(data);
+    expect(packet.toObject()).toEqual(goldenCancel.toObject());
   });
 
   it('decode with serialized request returns request', () => {

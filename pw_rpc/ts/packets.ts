@@ -15,17 +15,20 @@
 /** Functions for working with pw_rpc packets. */
 
 import {Message} from 'google-protobuf';
+import {MethodDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
 import * as packetPb from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
 import {Status} from 'pigweed/pw_status/ts/status';
+
+// Channel, Service, Method
+type idSet = [number, number, number];
 
 export function decode(data: Uint8Array): packetPb.RpcPacket {
   return packetPb.RpcPacket.deserializeBinary(data);
 }
 
-export function decodePayload(packet: any, payloadType: any) {
-  const payload = new payloadType();
-  payload.deserializeBinary(packet);
-  return payload;
+export function decodePayload(payload: Uint8Array, payloadType: any): Message {
+  const message = payloadType.deserializeBinary(payload);
+  return message;
 }
 
 export function forServer(packet: packetPb.RpcPacket): boolean {
@@ -43,30 +46,35 @@ export function encodeClientError(
   return errorPacket.serializeBinary();
 }
 
-export function encodeRequest(
-    channelId: number, serviceId: number, methodId: number, request?: Message):
-    Uint8Array {
+export function encodeRequest(ids: idSet, request?: Message): Uint8Array {
   const payload: Uint8Array = (typeof request !== 'undefined') ?
       request.serializeBinary() :
       new Uint8Array();
 
   const packet = new packetPb.RpcPacket();
   packet.setType(packetPb.PacketType.REQUEST);
-  packet.setChannelId(channelId);
-  packet.setServiceId(serviceId);
-  packet.setMethodId(methodId);
+  packet.setChannelId(ids[0]);
+  packet.setServiceId(ids[1]);
+  packet.setMethodId(ids[2]);
   packet.setPayload(payload);
   return packet.serializeBinary();
 }
 
-export function encodeResponse(
-    channelId: number, serviceId: number, methodId: number, response: Message):
-    Uint8Array {
+export function encodeResponse(ids: idSet, response: Message): Uint8Array {
   const packet = new packetPb.RpcPacket();
   packet.setType(packetPb.PacketType.RESPONSE);
-  packet.setChannelId(channelId);
-  packet.setServiceId(serviceId);
-  packet.setMethodId(methodId);
+  packet.setChannelId(ids[0]);
+  packet.setServiceId(ids[1]);
+  packet.setMethodId(ids[2]);
   packet.setPayload(response.serializeBinary());
+  return packet.serializeBinary();
+}
+
+export function encodeCancel(ids: idSet): Uint8Array {
+  const packet = new packetPb.RpcPacket();
+  packet.setType(packetPb.PacketType.CANCEL);
+  packet.setChannelId(ids[0]);
+  packet.setServiceId(ids[1]);
+  packet.setMethodId(ids[2]);
   return packet.serializeBinary();
 }
