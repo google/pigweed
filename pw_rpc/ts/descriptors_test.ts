@@ -26,26 +26,27 @@ describe('Descriptors', () => {
   it('parses from ServiceDescriptor binary', async () => {
     const lib = await Library.fromFileDescriptorSet(
         TEST_PROTO_PATH, 'test_protos_tspb');
-    const sd = lib.fileDescriptorSet.getFileList()[0].getServiceList()[0];
-    const service = new descriptors.Service(sd, lib);
+    const fd = lib.fileDescriptorSet.getFileList()[0];
+    const sd = fd.getServiceList()[0];
+    const service = new descriptors.Service(sd, lib, fd.getPackage()!);
 
-    expect(service.name).toEqual('TheTestService')
+    expect(service.name).toEqual('pw.rpc.test1.TheTestService')
     expect(service.methods.size).toEqual(4);
 
-    const unaryMethod = service.methods.get('SomeUnary')!;
+    const unaryMethod = service.methodsByName.get('SomeUnary')!;
     expect(unaryMethod.name).toEqual('SomeUnary');
     expect(unaryMethod.clientStreaming).toBeFalse();
     expect(unaryMethod.serverStreaming).toBeFalse();
     expect(unaryMethod.service).toEqual(service);
-    expect(unaryMethod.inputType).toEqual(SomeMessage);
-    expect(unaryMethod.outputType).toEqual(AnotherMessage);
+    expect(unaryMethod.requestType).toEqual(SomeMessage);
+    expect(unaryMethod.responseType).toEqual(AnotherMessage);
 
-    const someBidiStreaming = service.methods.get('SomeBidiStreaming')!;
+    const someBidiStreaming = service.methodsByName.get('SomeBidiStreaming')!;
     expect(someBidiStreaming.name).toEqual('SomeBidiStreaming');
     expect(someBidiStreaming.clientStreaming).toBeTrue();
     expect(someBidiStreaming.serverStreaming).toBeTrue();
     expect(someBidiStreaming.service).toEqual(service);
-    expect(someBidiStreaming.inputType).toEqual(SomeMessage);
-    expect(someBidiStreaming.outputType).toEqual(AnotherMessage);
+    expect(someBidiStreaming.requestType).toEqual(SomeMessage);
+    expect(someBidiStreaming.responseType).toEqual(AnotherMessage);
   });
 })

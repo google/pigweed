@@ -12,27 +12,56 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Message} from 'google-protobuf';
 import {MethodDescriptorProto, ServiceDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
 import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
 
 import {hash} from './hash';
 
+interface ChannelOutput {
+  (data: Uint8Array): void;
+}
+
+export class Channel {
+  readonly id: number;
+  private output: ChannelOutput;
+
+  constructor(id: number, output: ChannelOutput = () => {}) {
+    this.id = id;
+    this.output = output;
+  }
+
+  send(data: Uint8Array) {
+    this.output(data);
+  }
+}
+
 /** Describes an RPC service. */
 export class Service {
   readonly name: string;
   readonly id: number;
-  readonly methods = new Map<string, Method>();
+  readonly methods = new Map<number, Method>();
+  readonly methodsByName = new Map<string, Method>();
 
-  constructor(descriptor: ServiceDescriptorProto, protoLibrary: Library) {
-    this.name = descriptor.getName()!;
+  constructor(
+      descriptor: ServiceDescriptorProto,
+      protoLibrary: Library,
+      packageName: string) {
+    this.name = packageName + '.' + descriptor.getName()!;
     this.id = hash(this.name);
     descriptor.getMethodList().forEach(
         (methodDescriptor: MethodDescriptorProto) => {
           const method = new Method(methodDescriptor, protoLibrary, this);
-          this.methods.set(method.name, method);
+          this.methods.set(method.id, method);
+          this.methodsByName.set(method.name, method);
         });
   }
+}
+
+export enum MethodType {
+  UNARY,
+  SERVER_STREAMING,
+  CLIENT_STREAMING,
+  BIDIRECTIONAL_STREAMING
 }
 
 /** Describes an RPC method. */
@@ -42,8 +71,8 @@ export class Method {
   readonly id: number;
   readonly clientStreaming: boolean;
   readonly serverStreaming: boolean;
-  readonly inputType: any;
-  readonly outputType: any;
+  readonly requestType: any;
+  readonly responseType: any;
 
   constructor(
       descriptor: MethodDescriptorProto,
@@ -55,13 +84,26 @@ export class Method {
     this.serverStreaming = descriptor.getServerStreaming()!;
     this.clientStreaming = descriptor.getClientStreaming()!;
 
-    const inputTypePath = descriptor.getInputType()!;
-    const outputTypePath = descriptor.getOutputType()!;
+    const requestTypePath = descriptor.getInputType()!;
+    const responseTypePath = descriptor.getOutputType()!;
 
     // Remove leading period if it exists.
-    this.inputType =
-        protoLibrary.getMessageCreator(inputTypePath.replace(/^\./, ''))!;
-    this.outputType =
-        protoLibrary.getMessageCreator(outputTypePath.replace(/^\./, ''))!;
+    this.requestType =
+        protoLibrary.getMessageCreator(requestTypePath.replace(/^\./, ''))!;
+    this.responseType =
+        protoLibrary.getMessageCreator(responseTypePath.replace(/^\./, ''))!;
+  }
+
+  get type(): MethodType {
+    if (this.clientStreaming && this.serverStreaming) {
+      return MethodType.BIDIRECTIONAL_STREAMING;
+    } else if (this.clientStreaming && !this.serverStreaming) {
+      return MethodType.CLIENT_STREAMING;
+    } else if (!this.clientStreaming && this.serverStreaming) {
+      return MethodType.SERVER_STREAMING;
+    } else if (!this.clientStreaming && !this.serverStreaming) {
+      return MethodType.UNARY;
+    }
+    throw Error('Unhandled streaming condition');
   }
 }

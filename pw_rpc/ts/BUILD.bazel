@@ -21,12 +21,12 @@ package(default_visibility = ["//visibility:public"])
 ts_library(
     name = "rpc_utils",
     srcs = [
+        "call.ts",
         "descriptors.ts",
         "hash.ts",
+        "method.ts",
         "packets.ts",
-    ],
-    data = [
-        ":test_protos",
+        "rpc_classes.ts",
     ],
     module_name = "pigweed/pw_rpc/ts",
     deps = [
@@ -39,9 +39,15 @@ ts_library(
 
 ts_library(
     name = "rpc",
-    srcs = [],
+    srcs = ["client.ts"],
     module_name = "pigweed/pw_rpc/ts",
-    deps = [":rpc_utils"],
+    deps = [
+        ":rpc_utils",
+        "//pw_protobuf_compiler/ts:proto_lib",
+        "//pw_rpc:packet_proto_tspb",
+        "//pw_status/ts:pw_status",
+        "@npm//@types/google-protobuf",
+    ],
 )
 
 ts_library(
@@ -60,9 +66,28 @@ ts_library(
     ],
 )
 
+ts_library(
+    name = "rpc_test_lib",
+    srcs = [
+        "client_test.ts",
+    ],
+    data = [
+        ":test_protos",
+    ],
+    deps = [
+        ":rpc",
+        ":rpc_utils",  # TODO(jaredweinstein): remove dependency.
+        "//pw_protobuf_compiler/ts:proto_lib",
+        "//pw_rpc:packet_proto_tspb",
+        "@npm//@types/jasmine",
+        "@npm//@types/node",
+    ],
+)
+
 jasmine_node_test(
     name = "rpc_test",
     srcs = [
+        ":rpc_test_lib",
         ":rpc_utils_test_lib",
     ],
 )
@@ -71,6 +96,7 @@ proto_library(
     name = "test_protos",
     srcs = [
         "test.proto",
+        "test2.proto",
     ],
 )
 
