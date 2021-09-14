@@ -14,6 +14,7 @@
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/comparison.h"
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -69,6 +70,8 @@ const fsys::PeerKey kTestKeyFidl{
     .data = fsys::Key{.value = kTestKeyValue},
 };
 const fsys::Ltk kTestLtkFidl{.key = kTestKeyFidl, .ediv = 0, .rand = 0};
+
+using HelpersTestWithLoop = ::gtest::TestLoopFixture;
 
 TEST(HelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kFailed));
@@ -897,9 +900,7 @@ TEST(HelpersTest, LePairingDataFromFidl) {
   EXPECT_EQ(kTestKey, *result.csrk);
 }
 
-TEST(HelpersTest, BredrKeyFromFidlEmpty) {
-  EXPECT_FALSE(BredrKeyFromFidl(fsys::BredrBondData()));
-}
+TEST(HelpersTest, BredrKeyFromFidlEmpty) { EXPECT_FALSE(BredrKeyFromFidl(fsys::BredrBondData())); }
 
 TEST(HelpersTest, BredrKeyFromFidl) {
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
@@ -1228,7 +1229,9 @@ TEST(HelpersTest, AdvertisingDataToFidlScanDataOmitsNonEnumeratedAppearance) {
   EXPECT_TRUE(AdvertisingDataToFidlScanData(input, zx::time()).has_appearance());
 }
 
-TEST(HelpersTest, PeerToFidlLeWithAllFields) {
+TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
+  RunLoopFor(zx::duration(2));
+
   const bt::PeerId kPeerId(1);
   const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
   bt::gap::PeerMetrics metrics;
@@ -1252,12 +1255,13 @@ TEST(HelpersTest, PeerToFidlLeWithAllFields) {
   EXPECT_EQ(fidl_peer.rssi(), kRssi);
   ASSERT_TRUE(fidl_peer.has_data());
   EXPECT_THAT(fidl_peer.data().uris(), ::testing::ElementsAre("https://abc.xyz"));
-  EXPECT_FALSE(fidl_peer.has_last_updated());
+  ASSERT_TRUE(fidl_peer.has_last_updated());
+  EXPECT_EQ(fidl_peer.last_updated(), 2);
   ASSERT_TRUE(fidl_peer.data().has_timestamp());
-  EXPECT_EQ(fidl_peer.data().timestamp(), zx::time(1).get());
+  EXPECT_EQ(fidl_peer.data().timestamp(), 1);
 }
 
-TEST(HelpersTest, PeerToFidlLeWithoutAdvertisingData) {
+TEST_F(HelpersTestWithLoop, PeerToFidlLeWithoutAdvertisingData) {
   const bt::PeerId kPeerId(1);
   const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
   bt::gap::PeerMetrics metrics;
@@ -1272,7 +1276,8 @@ TEST(HelpersTest, PeerToFidlLeWithoutAdvertisingData) {
   EXPECT_FALSE(fidl_peer.has_name());
   EXPECT_FALSE(fidl_peer.has_rssi());
   EXPECT_FALSE(fidl_peer.has_data());
-  EXPECT_FALSE(fidl_peer.has_last_updated());
+  ASSERT_TRUE(fidl_peer.has_last_updated());
+  EXPECT_EQ(fidl_peer.last_updated(), 0);
 }
 
 }  // namespace

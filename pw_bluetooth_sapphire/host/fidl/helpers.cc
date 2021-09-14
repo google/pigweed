@@ -1080,8 +1080,7 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   }
 
   output.set_bonded(peer.bonded());
-
-  // TODO(fxbug.dev/36373): Set last_updated field
+  output.set_last_updated(peer.last_updated().get());
 
   return output;
 }

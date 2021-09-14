@@ -433,6 +433,17 @@ class Peer final {
   // non-connectable and connectable advertisements (e.g. when it is a beacon).
   void set_connectable(bool connectable) { connectable_.Set(connectable); }
 
+  // The time when the most recent update occurred. Updates include:
+  // * LE advertising data updated
+  // * LE connection state updated
+  // * LE bond state updated
+  // * BR/EDR connection state updated
+  // * BR/EDR inquiry data updated
+  // * BR/EDR bond data updated
+  // * BR/EDR services updated
+  // * name is updated
+  zx::time last_updated() const { return last_updated_; }
+
   fxl::WeakPtr<Peer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
@@ -467,8 +478,11 @@ class Peer final {
   // Mark this device as dual mode and signal the cache.
   void MakeDualMode();
 
-  // Set static and lazy inspect properties.
-  void InitializeInspect();
+  // Updates the peer last updated timestamp.
+  void OnPeerUpdate();
+
+  // Updates the peer last updated timestamp an notifies listeners.
+  void UpdatePeerAndNotifyListeners(NotifyListenersChange change);
 
   inspect::Node node_;
 
@@ -507,6 +521,9 @@ class Peer final {
 
   // Metrics counters used across all peer objects. Weak reference.
   PeerMetrics* peer_metrics_;
+
+  // The time when the most recent update occurred.
+  zx::time last_updated_;
 
   fxl::WeakPtrFactory<Peer> weak_ptr_factory_;
 

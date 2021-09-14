@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
+
 #include <lib/async/cpp/executor.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 
@@ -10,7 +12,6 @@
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 
 namespace bt::gap {
@@ -25,6 +26,19 @@ const auto kAdvData = StaticByteBuffer(0x05,  // Length
                                        0x09,  // AD type: Complete Local Name
                                        'T', 'e', 's', 't');
 
+const bt::sm::LTK kLTK;
+
+const DeviceAddress kAddrBrEdr(DeviceAddress::Type::kBREDR, {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
+// LE Public Device Address that has the same value as a BR/EDR BD_ADDR, e.g. on
+// a dual-mode device.
+const DeviceAddress kAddrLeAlias(DeviceAddress::Type::kLEPublic,
+                                 {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
+
+const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
+                                                         true /*secure_connections*/,
+                                                         sm::kMaxEncryptionKeySize),
+                                  hci::LinkKey(UInt128{4}, 5, 6));
+
 class PeerTest : public ::gtest::TestLoopFixture {
  public:
   PeerTest() = default;
@@ -32,6 +46,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
   void SetUp() override {
     TestLoopFixture::SetUp();
     auto connectable = true;
+    address_ = kAddrBrEdr;
     peer_ = std::make_unique<Peer>(fit::bind_member(this, &PeerTest::NotifyListenersCallback),
                                    fit::bind_member(this, &PeerTest::UpdateExpiryCallback),
                                    fit::bind_member(this, &PeerTest::DualModeCallback),
@@ -231,9 +246,134 @@ TEST_F(PeerTest, LowEnergyAdvertisingDataTimestamp) {
   ASSERT_TRUE(peer().MutLe().advertising_data_timestamp());
   EXPECT_EQ(peer().MutLe().advertising_data_timestamp().value(), zx::time(1));
 
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData,zx::time(2));
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(2));
   ASSERT_TRUE(peer().MutLe().advertising_data_timestamp());
   EXPECT_EQ(peer().MutLe().advertising_data_timestamp().value(), zx::time(2));
+}
+
+TEST_F(PeerTest, SettingLowEnergyAdvertisingDataUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(1));
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, SettingLowEnergyConnectionStateUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  peer().MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, SettingLowEnergyBondDataUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  peer().MutLe().SetBondData(data);
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, SettingBrEdrConnectionStateUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  hci::InquiryResult ir;
+  ir.bd_addr = kAddrLeAlias.value();
+  peer().MutBrEdr().SetInquiryData(ir);
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, SettingBrEdrBondDataUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, SettingAddingBrEdrServiceUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, SettingNameUpdatesLastUpdated) {
+  EXPECT_EQ(peer().last_updated(), zx::time(0));
+
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
+    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    notify_count++;
+  });
+
+  RunLoopFor(zx::duration(2));
+  peer().SetName("name");
+  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_GE(notify_count, 1);
 }
 
 }  // namespace

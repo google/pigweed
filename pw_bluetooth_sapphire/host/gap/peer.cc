@@ -4,6 +4,8 @@
 
 #include "peer.h"
 
+#include <lib/async/cpp/time.h>
+#include <lib/async/default.h>
 #include <zircon/assert.h>
 
 #include <iomanip>
@@ -81,7 +83,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data
     }
   }
 
-  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
@@ -115,7 +117,7 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
   }
 
   peer_->UpdateExpiry();
-  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::LowEnergyData::SetConnectionParameters(const hci::LEConnectionParameters& params) {
@@ -146,7 +148,7 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
   }
 
   // PeerCache notifies listeners of new bonds, so no need to request that here.
-  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::LowEnergyData::ClearBondData() {
@@ -219,7 +221,7 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
 
   conn_state_.Set(state);
   peer_->UpdateExpiry();
-  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 
   // Become non-temporary if we became connected. BR/EDR device remain
   // non-temporary afterwards.
@@ -250,6 +252,8 @@ void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_of
   if (eir_data.size() && SetEirData(eir_data)) {
     notify_listeners = true;
   }
+
+  peer_->OnPeerUpdate();
 
   if (notify_listeners) {
     peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
@@ -291,7 +295,7 @@ void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
   link_key_.Set(link_key);
 
   // PeerCache notifies listeners of new bonds, so no need to request that here.
-  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::BrEdrData::ClearBondData() {
@@ -304,7 +308,7 @@ void Peer::BrEdrData::AddService(UUID uuid) {
   if (inserted) {
     auto update_bond =
         bonded() ? NotifyListenersChange::kBondUpdated : NotifyListenersChange::kBondNotUpdated;
-    peer_->NotifyListeners(update_bond);
+    peer_->UpdatePeerAndNotifyListeners(update_bond);
   }
 }
 
@@ -332,6 +336,7 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       temporary_(true),
       rssi_(hci::kRSSIInvalid),
       peer_metrics_(peer_metrics),
+      last_updated_(async::Now(async_get_default_dispatcher())),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(notify_listeners_callback_);
   ZX_DEBUG_ASSERT(update_expiry_callback_);
@@ -407,9 +412,8 @@ std::string Peer::ToString() const {
 void Peer::SetName(const std::string& name) {
   if (SetNameInternal(name)) {
     UpdateExpiry();
-
     // TODO(fxbug.dev/61739): Update the bond when this happens
-    NotifyListeners(NotifyListenersChange::kBondNotUpdated);
+    UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
   }
 }
 
@@ -468,7 +472,7 @@ bool Peer::TryMakeNonTemporary() {
   if (*temporary_) {
     temporary_.Set(false);
     UpdateExpiry();
-    NotifyListeners(NotifyListenersChange::kBondNotUpdated);
+    UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
   }
 
   return true;
@@ -494,6 +498,13 @@ void Peer::MakeDualMode() {
   }
   ZX_DEBUG_ASSERT(dual_mode_callback_);
   dual_mode_callback_(*this);
+}
+
+void Peer::OnPeerUpdate() { last_updated_ = async::Now(async_get_default_dispatcher()); }
+
+void Peer::UpdatePeerAndNotifyListeners(NotifyListenersChange change) {
+  OnPeerUpdate();
+  NotifyListeners(change);
 }
 
 }  // namespace bt::gap
