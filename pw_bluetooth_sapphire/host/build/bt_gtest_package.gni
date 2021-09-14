@@ -44,15 +44,6 @@ template("bt_gtest_package") {
     deps += [ "//src/connectivity/bluetooth/core/bt-host/testing:gtest_main" ]
     if (with_death_tests) {
       metadata = {
-        # Used by the fuchsia_test_component_manifest() template in v1.
-        test_component_manifest_cmx = [
-          {
-            sandbox = {
-              services = [ "fuchsia.process.Launcher" ]
-            }
-          },
-        ]
-
         # Used by the fuchsia_test_component_manifest() template in v2.
         test_component_manifest_cml = [
           {
@@ -69,8 +60,10 @@ template("bt_gtest_package") {
   }
 
   fuchsia_unittest_package(package_name) {
-    # TODO(fxbug.dev/70289): Use v2 unit test components once GTest test runner issues are fixed.
-    v2 = false
+    v2 = true
+
+    # Use the ELF test runner instead of the GTest test runner.
+    deprecated_legacy_test_execution = true
     deps = [ ":tests_executable" ]
   }
 }
