@@ -19,7 +19,6 @@ These checks assume that they are running in a preconfigured Python environment.
 import logging
 import os
 import sys
-from typing import Callable, Tuple
 
 try:
     import pw_presubmit
@@ -47,30 +46,3 @@ def gn_python_check(ctx: PresubmitContext):
 def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, 'python.lint')
-
-
-# TODO(mohrr) Remove gn_lint when downstream projects no longer reference it.
-gn_lint = gn_python_lint
-
-# TODO(pwbug/454) Remove after downstream projects switch to using functions
-# directly.
-_LINT_CHECKS = (gn_python_lint, )
-_ALL_CHECKS = (gn_python_check, )
-
-
-# TODO(pwbug/454) Remove after downstream projects switch to using functions
-# directly.
-def lint_checks(endswith: str = '.py',
-                **filter_paths_args) -> Tuple[Callable, ...]:
-    return tuple(
-        filter_paths(endswith=endswith, **filter_paths_args)(function)
-        for function in _LINT_CHECKS)
-
-
-# TODO(pwbug/454) Remove after downstream projects switch to using functions
-# directly.
-def all_checks(endswith: str = '.py',
-               **filter_paths_args) -> Tuple[Callable, ...]:
-    return tuple(
-        filter_paths(endswith=endswith, **filter_paths_args)(function)
-        for function in _ALL_CHECKS)
