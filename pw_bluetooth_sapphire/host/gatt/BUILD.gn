@@ -77,6 +77,7 @@ source_set("tests") {
 
   sources = [
     "client_unittest.cc",
+    "gatt_unittest.cc",
     "generic_attribute_service_unittest.cc",
     "local_service_manager_unittest.cc",
     "remote_service_manager_unittest.cc",

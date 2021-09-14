@@ -50,7 +50,11 @@ class GATT {
   // |att_chan|: The ATT fixed channel over which the ATT protocol bearer will
   //             operate. The bearer will be associated with the link that
   //             underlies this channel.
-  virtual void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) = 0;
+  // |client|: The GATT client that operates on |att_chan|. This can be a production |Client| or a
+  //           |FakeClient| for testing.
+  // TODO(fxbug.dev/83231): Replace att_bearer with gatt::Server to facilitate testing.
+  virtual void AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
+                             std::unique_ptr<Client> client) = 0;
 
   // Unregisters the GATT profile connection to the peer with Id |peer_id|.
   virtual void RemoveConnection(PeerId peer_id) = 0;
@@ -128,11 +132,12 @@ class GATT {
   // If |service_uuids| is non-empty, only discover services with the given UUIDs.
   virtual void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) = 0;
 
-  // Register a handler that will be notified when a remote service gets
-  // discovered on a connected peer.
-  using RemoteServiceWatcher =
-      fit::function<void(PeerId peer_id, fbl::RefPtr<RemoteService> service)>;
-  virtual void RegisterRemoteServiceWatcher(RemoteServiceWatcher watcher) = 0;
+  // Register a handler that will be notified when remote services are discovered or changed.
+  using PeerRemoteServiceWatcher =
+      fit::function<void(PeerId peer_id, const std::vector<att::Handle>& removed,
+                         const std::vector<fbl::RefPtr<RemoteService>>& added,
+                         const std::vector<fbl::RefPtr<RemoteService>>& modified)>;
+  virtual void RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher watcher) = 0;
 
   // Returns the list of remote services that were found on the device with
   // |peer_id|. If |peer_id| was registered but DiscoverServices() has not been

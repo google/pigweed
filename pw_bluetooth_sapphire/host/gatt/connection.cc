@@ -16,27 +16,17 @@
 namespace bt::gatt::internal {
 
 Connection::Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
-                       fbl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
-                       async_dispatcher_t* gatt_dispatcher)
-    : att_(att_bearer), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(att_bearer);
-  ZX_DEBUG_ASSERT(local_db);
-  ZX_DEBUG_ASSERT(svc_watcher);
-  ZX_DEBUG_ASSERT(gatt_dispatcher);
+                       std::unique_ptr<Client> client, fbl::RefPtr<att::Database> local_db,
+                       RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher)
+    : att_(std::move(att_bearer)), weak_ptr_factory_(this) {
+  ZX_ASSERT(att_);
+  ZX_ASSERT(local_db);
+  ZX_ASSERT(svc_watcher);
 
-  server_ = std::make_unique<gatt::Server>(peer_id, local_db, att_);
+  server_ = std::make_unique<gatt::Server>(peer_id, std::move(local_db), att_);
   remote_service_manager_ =
-      std::make_unique<RemoteServiceManager>(gatt::Client::Create(att_), gatt_dispatcher);
-
-  // Wrap  the service watcher callback to convert the parameters to match `RemoteServiceWatcher`.
-  // TODO(fxbug.dev/71986): Propagate removed & modified services to higher layers.
-  remote_service_manager_->set_service_watcher(
-      [svc_watcher = std::move(svc_watcher)](
-          auto /*removed*/, std::vector<fbl::RefPtr<RemoteService>> added, auto /*modified*/) {
-        for (auto& svc : added) {
-          svc_watcher(std::move(svc));
-        }
-      });
+      std::make_unique<RemoteServiceManager>(std::move(client), gatt_dispatcher);
+  remote_service_manager_->set_service_watcher(std::move(svc_watcher));
 }
 
 void Connection::Initialize(std::vector<UUID> service_uuids) {

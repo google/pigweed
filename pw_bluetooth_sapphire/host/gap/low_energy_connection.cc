@@ -60,8 +60,8 @@ LowEnergyConnection::LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Co
       [this](auto, auto reason) { peer_disconnect_callback_(reason); });
 
   RegisterEventHandlers();
-  InitializeFixedChannels();
   StartConnectionPauseTimeout();
+  InitializeFixedChannels();
 }
 
 LowEnergyConnection::~LowEnergyConnection() {
@@ -467,9 +467,20 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
   }
 }
 
-void LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att,
+void LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel,
                                          std::optional<UUID> service_uuid) {
-  gatt_->AddConnection(peer_id_, std::move(att));
+  fbl::RefPtr<att::Bearer> att_bearer = att::Bearer::Create(att_channel);
+  if (!att_bearer) {
+    // This can happen if the link closes before the Bearer activates the
+    // channel.
+    bt_log(WARN, "gatt", "failed to initialize ATT bearer");
+    // Post task to prevent calling error callback in constructor.
+    async::PostTask(async_get_default_dispatcher(),
+                    [att_channel] { att_channel->SignalLinkError(); });
+    return;
+  }
+  std::unique_ptr<gatt::Client> gatt_client = gatt::Client::Create(att_bearer);
+  gatt_->AddConnection(peer_id_, std::move(att_bearer), std::move(gatt_client));
 
   std::vector<UUID> service_uuids;
   if (service_uuid) {

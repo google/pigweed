@@ -20,9 +20,14 @@
 
 namespace bt::gatt {
 
-// Callback type invoked to notify when GATT services get discovered.
 class RemoteService;
-using RemoteServiceWatcher = fit::function<void(fbl::RefPtr<RemoteService>)>;
+
+// Callback type invoked when GATT services are removed, added, or modified.
+// NOTE: `removed` services should be handled first because they may share handles with `added`
+// services.
+using RemoteServiceWatcher = fit::function<void(std::vector<att::Handle> removed,
+                                                std::vector<fbl::RefPtr<RemoteService>> added,
+                                                std::vector<fbl::RefPtr<RemoteService>> modified)>;
 
 using ServiceList = std::vector<fbl::RefPtr<RemoteService>>;
 using ServiceListCallback = fit::function<void(att::Status, ServiceList)>;

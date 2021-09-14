@@ -42,7 +42,8 @@ class Connection final {
   // |local_db| is the local attribute database that the GATT server will
   // operate on.
   // |att_bearer| is the ATT protocol data transport for this connection.
-  Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
+  // |client| is the ATT client for this connection, which uses |att_bearer| in production.
+  Connection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer, std::unique_ptr<Client> client,
              fbl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
              async_dispatcher_t* gatt_dispatcher);
   ~Connection() = default;

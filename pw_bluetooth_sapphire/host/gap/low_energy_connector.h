@@ -80,8 +80,9 @@ class LowEnergyConnector final {
   void RequestCreateConnection();
   void OnConnectResult(hci::Status status, hci::ConnectionPtr link);
 
-  // Creates LowEnergyConnection and initializes fixed chanels & timers.
-  void InitializeConnection(hci::ConnectionPtr link);
+  // Creates LowEnergyConnection and initializes fixed channels & timers.
+  // Returns true on success, false on failure.
+  bool InitializeConnection(hci::ConnectionPtr link);
 
   void StartInterrogation();
   void OnInterrogationComplete(hci::Status status);

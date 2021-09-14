@@ -1432,8 +1432,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWithBrE
 
 // Tests that the central accepts the connection parameters that are sent from
 // a fake peripheral and eventually applies them to the link.
-TEST_F(LowEnergyConnectionManagerTest,
-       CentralAppliesL2capConnectionParameterUpdateRequestParams) {
+TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpdateRequestParams) {
   // Set up a fake peer and a connection over which to process the L2CAP
   // request.
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
@@ -1507,6 +1506,75 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   att_chan->SignalLinkError();
 
   RunLoopUntilIdle();
+  EXPECT_TRUE(connected_peers().empty());
+}
+
+TEST_F(LowEnergyConnectionManagerTest, ATTChannelActivateFails) {
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+
+  fbl::RefPtr<l2cap::testing::FakeChannel> att_chan;
+  auto l2cap_chan_cb = [&att_chan](fbl::RefPtr<l2cap::testing::FakeChannel> chan) {
+    if (chan->id() == l2cap::kATTChannelId) {
+      // Cause att::Bearer construction/activation to fail.
+      chan->set_activate_fails(true);
+      att_chan = std::move(chan);
+    }
+  };
+  fake_l2cap()->set_channel_callback(l2cap_chan_cb);
+
+  std::optional<fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>> result;
+  auto conn_cb =
+      [&](fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError> cb_result) {
+        result = std::move(cb_result);
+      };
+  conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(att_chan);
+  EXPECT_TRUE(att_chan->link_error());
+  ASSERT_TRUE(result.has_value());
+  ASSERT_TRUE(result->is_error());
+  EXPECT_EQ(result->error(), HostError::kFailed);
+  EXPECT_TRUE(connected_peers().empty());
+}
+
+TEST_F(LowEnergyConnectionManagerTest, LinkErrorDuringInterrogation) {
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+
+  // Get an arbitrary channel in order to signal a link error.
+  fbl::RefPtr<l2cap::testing::FakeChannel> chan;
+  auto l2cap_chan_cb = [&chan](fbl::RefPtr<l2cap::testing::FakeChannel> cb_chan) {
+    chan = std::move(cb_chan);
+  };
+  fake_l2cap()->set_channel_callback(l2cap_chan_cb);
+
+  // Cause interrogation to stall so that we can simulate a link error.
+  fit::closure send_read_remote_features_rsp;
+  test_device()->pause_responses_for_opcode(hci::kLEReadRemoteFeatures, [&](fit::closure unpause) {
+    send_read_remote_features_rsp = std::move(unpause);
+  });
+
+  std::optional<fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>> result;
+  auto conn_cb =
+      [&](fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError> cb_result) {
+        result = std::move(cb_result);
+      };
+  conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(chan);
+  fake_l2cap()->TriggerLinkError(chan->link_handle());
+
+  send_read_remote_features_rsp();
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result.has_value());
+  ASSERT_TRUE(result->is_error());
+  EXPECT_EQ(result->error(), HostError::kFailed);
   EXPECT_TRUE(connected_peers().empty());
 }
 
@@ -2640,8 +2708,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   EXPECT_TRUE(peer_0->le()->connected());
 }
 
-TEST_F(LowEnergyConnectionManagerTest,
-       SynchonousInterrogationAndNoCallbackRetainsConnectionRef) {
+TEST_F(LowEnergyConnectionManagerTest, SynchonousInterrogationAndNoCallbackRetainsConnectionRef) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   ASSERT_TRUE(peer->le());
 

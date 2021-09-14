@@ -43,10 +43,7 @@ class RemoteServiceManager final {
   // Adds a handler to be notified when services are removed, added, or modified.
   // NOTE: `removed` services should be handled first because they may share handles with `added`
   // services.
-  using ServiceWatcher = fit::function<void(std::vector<att::Handle> removed,
-                                            std::vector<fbl::RefPtr<RemoteService>> added,
-                                            std::vector<fbl::RefPtr<RemoteService>> modified)>;
-  void set_service_watcher(ServiceWatcher watcher) {
+  void set_service_watcher(RemoteServiceWatcher watcher) {
     ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     svc_watcher_ = std::move(watcher);
   }
@@ -167,7 +164,7 @@ class RemoteServiceManager final {
   std::unique_ptr<Client> client_;
 
   bool initialized_;
-  ServiceWatcher svc_watcher_;
+  RemoteServiceWatcher svc_watcher_;
 
   // Requests queued during calls ListServices() before initialization.
   std::queue<ServiceListRequest> pending_list_services_requests_;

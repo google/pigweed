@@ -300,19 +300,26 @@ void LowEnergyConnector::OnConnectResult(hci::Status status, hci::ConnectionPtr 
 
   bt_log(INFO, "gap-le", "connection request successful (peer: %s)", bt_str(peer_id_));
 
-  InitializeConnection(std::move(link));
-  StartInterrogation();
+  if (InitializeConnection(std::move(link))) {
+    StartInterrogation();
+  }
 }
 
-void LowEnergyConnector::InitializeConnection(hci::ConnectionPtr link) {
+bool LowEnergyConnector::InitializeConnection(hci::ConnectionPtr link) {
   ZX_ASSERT(link);
 
   auto peer_disconnect_cb = fit::bind_member(this, &LowEnergyConnector::OnPeerDisconnect);
   auto error_cb = [this]() { NotifyFailure(); };
 
-  connection_ = std::make_unique<LowEnergyConnection>(
+  auto connection = std::make_unique<LowEnergyConnection>(
       peer_id_, std::move(link), options_, peer_disconnect_cb, error_cb, le_connection_manager_,
       l2cap_, gatt_, transport_);
+  if (*state_ == State::kFailed) {
+    bt_log(WARN, "gap-le", "connection initialization failed (peer: %s)", bt_str(peer_id_));
+    return false;
+  }
+  connection_ = std::move(connection);
+  return true;
 }
 
 void LowEnergyConnector::StartInterrogation() {

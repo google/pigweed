@@ -58,7 +58,8 @@ class Impl final : public GATT {
 
   // GATT overrides:
 
-  void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override {
+  void AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
+                     std::unique_ptr<Client> client) override {
     bt_log(DEBUG, "gatt", "add connection %s", bt_str(peer_id));
 
     auto iter = connections_.find(peer_id);
@@ -67,21 +68,16 @@ class Impl final : public GATT {
       return;
     }
 
-    auto att_bearer = att::Bearer::Create(att_chan);
-    if (!att_bearer) {
-      // This can happen if the link closes before the Bearer activates the
-      // channel.
-      bt_log(ERROR, "gatt", "failed to initialize ATT bearer");
-      att_chan->SignalLinkError();
-      return;
-    }
-
-    auto service_watcher = [this, peer_id](fbl::RefPtr<RemoteService> added_service) {
-      this->OnServiceAdded(peer_id, std::move(added_service));
+    RemoteServiceWatcher service_watcher = [this, peer_id](
+                                               std::vector<att::Handle> removed,
+                                               std::vector<fbl::RefPtr<RemoteService>> added,
+                                               std::vector<fbl::RefPtr<RemoteService>> modified) {
+      OnServicesChanged(peer_id, removed, added, modified);
     };
 
-    connections_.try_emplace(peer_id, peer_id, att_bearer, local_services_->database(),
-                             std::move(service_watcher), async_get_default_dispatcher());
+    connections_.try_emplace(peer_id, peer_id, std::move(att_bearer), std::move(client),
+                             local_services_->database(), std::move(service_watcher),
+                             async_get_default_dispatcher());
 
     if (retrieve_service_changed_ccc_callback_) {
       auto optional_service_changed_ccc_data = retrieve_service_changed_ccc_callback_(peer_id);
@@ -158,7 +154,7 @@ class Impl final : public GATT {
     iter->second.Initialize(std::move(service_uuids));
   }
 
-  void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) override {
+  void RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher callback) override {
     ZX_DEBUG_ASSERT(callback);
     remote_service_callbacks_.emplace_back(std::move(callback));
   }
@@ -186,13 +182,12 @@ class Impl final : public GATT {
   }
 
  private:
-  // Called when a new remote GATT service is discovered.
-  void OnServiceAdded(PeerId peer_id, fbl::RefPtr<RemoteService> svc) {
-    bt_log(DEBUG, "gatt", "service added (peer_id: %s, handle: %#.4x, uuid: %s", bt_str(peer_id),
-           svc->handle(), bt_str(svc->uuid()));
+  void OnServicesChanged(PeerId peer_id, const std::vector<att::Handle>& removed,
+                         const std::vector<fbl::RefPtr<RemoteService>>& added,
+                         const std::vector<fbl::RefPtr<RemoteService>>& modified) {
     for (auto& handler : remote_service_callbacks_) {
-      TRACE_DURATION("bluetooth", "GATT::OnServiceAdded handler.Notify()");
-      handler.Notify(peer_id, svc);
+      TRACE_DURATION("bluetooth", "GATT::OnServicesChanged handler.Notify()");
+      handler.Notify(peer_id, removed, added, modified);
     }
   }
 
@@ -212,17 +207,20 @@ class Impl final : public GATT {
 
   // All registered remote service handlers.
   struct RemoteServiceHandler {
-    RemoteServiceHandler(RemoteServiceWatcher watcher) : watcher_(std::move(watcher)) {}
+    explicit RemoteServiceHandler(PeerRemoteServiceWatcher watcher)
+        : watcher_(std::move(watcher)) {}
 
     RemoteServiceHandler() = default;
     RemoteServiceHandler(RemoteServiceHandler&&) = default;
 
-    void Notify(PeerId peer_id, fbl::RefPtr<RemoteService> svc) {
-      watcher_(peer_id, std::move(svc));
+    void Notify(PeerId peer_id, const std::vector<att::Handle>& removed,
+                const std::vector<fbl::RefPtr<RemoteService>>& added,
+                const std::vector<fbl::RefPtr<RemoteService>>& modified) {
+      watcher_(peer_id, removed, added, modified);
     }
 
    private:
-    RemoteServiceWatcher watcher_;
+    PeerRemoteServiceWatcher watcher_;
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceHandler);
   };

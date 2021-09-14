@@ -26,13 +26,14 @@ std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddPe
   peer.services.push_back(service);
 
   if (notify && remote_service_watcher_) {
-    remote_service_watcher_(peer_id, service);
+    remote_service_watcher_(peer_id, /*removed=*/{}, /*added=*/{service}, /*modified=*/{});
   }
 
   return {service, peer.fake_client.AsFakeWeakPtr()};
 }
 
-void FakeLayer::AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) {
+void FakeLayer::AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
+                              std::unique_ptr<Client> client) {
   peers_.try_emplace(peer_id);
 }
 
@@ -77,16 +78,22 @@ void FakeLayer::DiscoverServices(PeerId peer_id, std::vector<UUID> uuids) {
     return;
   }
 
-  for (auto& s : iter->second.services) {
-    auto uuid_iter =
-        std::find_if(uuids.begin(), uuids.end(), [&s](auto uuid) { return s->uuid() == uuid; });
-    if (uuids.empty() || uuid_iter != uuids.end()) {
-      remote_service_watcher_(peer_id, s);
+  std::vector<fbl::RefPtr<RemoteService>> added;
+  if (uuids.empty()) {
+    added = iter->second.services;
+  } else {
+    for (auto& s : iter->second.services) {
+      auto uuid_iter =
+          std::find_if(uuids.begin(), uuids.end(), [&s](auto uuid) { return s->uuid() == uuid; });
+      if (uuid_iter != uuids.end()) {
+        added.push_back(s);
+      }
     }
   }
+  remote_service_watcher_(peer_id, /*removed=*/{}, /*added=*/added, /*modified=*/{});
 }
 
-void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) {
+void FakeLayer::RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher callback) {
   remote_service_watcher_ = std::move(callback);
 }
 

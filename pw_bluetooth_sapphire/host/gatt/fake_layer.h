@@ -53,7 +53,8 @@ class FakeLayer final : public GATT {
       PeerId peer_id);
 
   // GATT overrides:
-  void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override;
+  void AddConnection(PeerId peer_id, fbl::RefPtr<att::Bearer> att_bearer,
+                     std::unique_ptr<Client> client) override;
   void RemoveConnection(PeerId peer_id) override;
   void RegisterService(ServicePtr service, ServiceIdCallback callback, ReadHandler read_handler,
                        WriteHandler write_handler, ClientConfigCallback ccc_callback) override;
@@ -63,7 +64,7 @@ class FakeLayer final : public GATT {
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override;
   void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) override;
   void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) override;
-  void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) override;
+  void RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher callback) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
   void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;
 
@@ -74,7 +75,7 @@ class FakeLayer final : public GATT {
   SetRetrieveServiceChangedCCCCallbackCallback set_retrieve_service_changed_ccc_cb_cb_;
 
   // Emulated callbacks
-  RemoteServiceWatcher remote_service_watcher_;
+  PeerRemoteServiceWatcher remote_service_watcher_;
 
   PersistServiceChangedCCCCallback persist_service_changed_ccc_cb_;
   RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_cb_;
