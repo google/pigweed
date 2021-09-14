@@ -15,13 +15,15 @@
 /* eslint-env browser, jasmine */
 import 'jasmine';
 
+import {Message} from 'google-protobuf';
 import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
-import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
+import {Library, MessageCreator} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
 import {Status} from 'pigweed/pw_status/ts/status';
 import {Request} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb'
 
 import {Client} from './client';
-import {Channel} from './descriptors';
+import {Channel, Method} from './descriptors';
+import {MethodStub} from './method';
 import * as packets from './packets';
 
 const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
@@ -129,4 +131,152 @@ describe('Client', () => {
     expect(lastPacketSent.getType()).toEqual(PacketType.CLIENT_ERROR);
     expect(lastPacketSent.getStatus()).toEqual(Status.FAILED_PRECONDITION);
   });
-})
+});
+
+describe('RPC', () => {
+  let lib: Library;
+  let client: Client;
+  let lastPacketSent: RpcPacket;
+  let requests: RpcPacket[] = [];
+  let nextPackets: [Uint8Array, Status][] = [];
+  let responseLock = false;
+
+  beforeEach(async () => {
+    lib = await Library.fromFileDescriptorSet(
+        TEST_PROTO_PATH, 'test_protos_tspb');
+    const channels = [new Channel(1, handlePacket), new Channel(2, () => {})];
+    client = Client.fromProtoSet(channels, lib);
+  });
+
+  function enqueueResponse(
+      channelId: number,
+      method: Method,
+      status: Status,
+      payload: Uint8Array = new Uint8Array()) {
+    const packet = new RpcPacket();
+    packet.setType(PacketType.RESPONSE);
+    packet.setChannelId(channelId);
+    packet.setServiceId(method.service.id);
+    packet.setMethodId(method.id);
+    packet.setStatus(status)
+    packet.setPayload(payload);
+
+    nextPackets.push([packet.serializeBinary(), Status.OK]);
+  }
+
+  function enqueueServerStream(
+      channelId: number,
+      method: Method,
+      response: Uint8Array,
+      status: Status = Status.OK) {
+    const packet = new RpcPacket();
+    packet.setType(PacketType.SERVER_STREAM);
+    packet.setChannelId(channelId);
+    packet.setServiceId(method.service.id);
+    packet.setMethodId(method.id);
+    packet.setPayload(response);
+    nextPackets.push([packet.serializeBinary(), status]);
+  }
+
+
+  function lastRequest(): RpcPacket {
+    if (requests.length == 0) {
+      throw Error('Tried to fetch request from empty list');
+    }
+    return requests[requests.length - 1];
+  }
+
+  function sentPayload(messageType: typeof Message): any {
+    return messageType.deserializeBinary(lastRequest().getPayload_asU8());
+  }
+
+  function handlePacket(data: Uint8Array): void {
+    requests.push(packets.decode(data));
+
+    if (responseLock == true) {
+      return;
+    }
+
+    // Avoid infinite recursion when processing a packet causes another packet
+    // to send.
+    responseLock = true;
+    for (const [packet, status] of nextPackets) {
+      expect(client.processPacket(packet)).toEqual(status);
+    }
+    nextPackets = [];
+    responseLock = false;
+  }
+
+  describe('Unary', () => {
+    let unaryStub: MethodStub;
+    let request: any;
+    let requestType: MessageCreator;
+    let responseType: MessageCreator;
+
+    beforeEach(async () => {
+      unaryStub = client.channel()?.methodStub(
+          'pw.rpc.test1.TheTestService.SomeUnary')!;
+      requestType = unaryStub.method.requestType;
+      responseType = unaryStub.method.responseType;
+      request = new requestType();
+    });
+
+
+    it('nonblocking call', () => {
+      for (let i = 0; i < 3; i++) {
+        const response: any = new responseType();
+        response.setPayload('hello world');
+        const payload = response.serializeBinary();
+        enqueueResponse(1, unaryStub.method, Status.ABORTED, payload);
+
+        request.setMagicNumber(5);
+
+        const onNext = jasmine.createSpy();
+        const onCompleted = jasmine.createSpy();
+        const onError = jasmine.createSpy();
+        const call = unaryStub.invoke(request, onNext, onCompleted, onError);
+
+        expect(sentPayload(unaryStub.method.requestType).getMagicNumber())
+            .toEqual(5);
+        expect(onNext).toHaveBeenCalledOnceWith(response);
+        expect(onError).not.toHaveBeenCalled();
+        expect(onCompleted).toHaveBeenCalledOnceWith(Status.ABORTED);
+      }
+    });
+
+    it('nonblocking call cancel', () => {
+      request.setMagicNumber(5);
+
+      let onNext = jasmine.createSpy();
+      const call = unaryStub.invoke(request, onNext, () => {}, () => {});
+
+      expect(requests.length).toBeGreaterThan(0);
+      requests = [];
+
+      expect(call.cancel()).toBeTrue()
+      expect(call.cancel()).toBeFalse()
+      expect(onNext).not.toHaveBeenCalled()
+    });
+
+    it('nonblocking duplicate calls first is cancelled', () => {
+      const firstCall = unaryStub.invoke(request, () => {}, () => {}, () => {});
+      expect(firstCall.completed()).toBeFalse();
+
+      const secondCall =
+          unaryStub.invoke(request, () => {}, () => {}, () => {});
+      expect(firstCall.error).toEqual(Status.CANCELLED);
+      expect(secondCall.completed()).toBeFalse();
+    });
+
+    it('nonblocking exception in callback', () => {
+      const errorCallback = () => {
+        throw Error('Something went wrong!');
+      };
+
+      enqueueResponse(1, unaryStub.method, Status.OK);
+      const call = unaryStub.invoke(request, errorCallback, () => {}, () => {});
+      expect(call.callbackException!.name).toEqual('Error');
+      expect(call.callbackException!.message).toEqual('Something went wrong!');
+    });
+  })
+});

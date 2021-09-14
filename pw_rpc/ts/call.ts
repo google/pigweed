@@ -19,6 +19,19 @@ import {PendingCalls, Rpc} from './rpc_classes';
 
 export type Callback = (a: any) => any;
 
+class RpcError extends Error {
+  constructor(rpc: Rpc, status: Status) {
+    let message = '';
+    if (status === Status.NOT_FOUND) {
+      message = ': the RPC server does not support this RPC';
+    } else if (status === Status.DATA_LOSS) {
+      message = ': an error occurred while decoding the RPC payload';
+    }
+
+    super(`${rpc.method} failed with error ${Status[status]}${message}`);
+  }
+}
+
 /** Represent an in-progress or completed RPC call. */
 export class Call {
   private rpcs: PendingCalls;
@@ -33,7 +46,6 @@ export class Call {
   private status?: Status;
   error?: Status;
   callbackException?: Error;
-
 
   constructor(
       rpcs: PendingCalls,
@@ -82,6 +94,11 @@ export class Call {
     this.invokeCallback(callback)
   }
 
+  handleError(error: Status): void {
+    this.error = error;
+    this.invokeCallback(() => this.onError(error));
+  }
+
   cancel(): boolean {
     if (this.completed()) {
       return false;
@@ -91,10 +108,14 @@ export class Call {
     return this.rpcs.sendCancel(this.rpc);
   }
 
-  handleError(error: Status): void {
-    this.error = error
-    const callback = () => this.onError(2);
-    this.invokeCallback(callback);
+
+  private checkErrors(): void {
+    if (this.callbackException !== undefined) {
+      throw this.callbackException;
+    }
+    if (this.error !== undefined) {
+      throw new RpcError(this.rpc, this.error);
+    }
   }
 }
 

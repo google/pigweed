@@ -58,3 +58,37 @@ method is found by searching based on the full name:
 
   const channel = client.channel()!;
   const stub = channel.methodStub('pw.rpc.test1.TheTestService.SomeUnary')!;
+
+Calling an RPC
+==============
+
+Unary RPC
+---------
+Only non blocking calls are currently supported.
+
+.. code-block:: typescript
+
+  unaryStub = client.channel()?.methodStub(
+      'pw.rpc.test1.TheTestService.SomeUnary')!;
+  request = new unaryStub.method.requestType();
+  request.setFooProperty('hello world');
+  const call = unaryStub.invoke(request, (response) => {
+    console.log(response);
+  });
+
+Server Streaming RPC
+--------------------
+Unsupported
+
+Client Streaming RPC
+--------------------
+Unsupported
+
+Bidirectional Stream RPC
+------------------------
+Unsupported
+
+.. attention::
+
+  RPC timeout is currently unsupported on all RPC types.
+

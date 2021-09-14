@@ -81,6 +81,7 @@ ts_library(
         "//pw_protobuf_compiler/ts:proto_lib",
         "//pw_rpc:packet_proto_tspb",
         "//pw_status/ts:pw_status",
+        "@npm//@types/google-protobuf",
         "@npm//@types/jasmine",
         "@npm//@types/node",
     ],

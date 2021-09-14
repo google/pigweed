@@ -14,7 +14,7 @@
 
 import {Message} from 'google-protobuf';
 
-import {Call, Callback} from './call';
+import {Call, Callback, ServerStreamingCall, UnaryCall} from './call';
 import {Channel, Method, MethodType, Service} from './descriptors';
 import {PendingCalls, Rpc} from './rpc_classes';
 
@@ -32,13 +32,11 @@ export function methodStubFactory(
   }
 }
 
-export abstract class MethodStub {
+export class MethodStub {
   readonly method: Method;
-  private rpcs: PendingCalls;
-  private rpc: Rpc;
+  readonly rpcs: PendingCalls;
+  readonly rpc: Rpc;
   private channel: Channel;
-
-  private callType: typeof Call = Call;
 
   constructor(rpcs: PendingCalls, channel: Channel, method: Method) {
     this.method = method;
@@ -47,11 +45,13 @@ export abstract class MethodStub {
     this.rpc = new Rpc(channel, method.service, method)
   }
 
-  abstract invoke(
-      request: Message,
-      onNext: Callback,
-      onCompleted: Callback,
-      onError: Callback): Call;
+  invoke(
+      request?: Message,
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): UnaryCall {
+    throw Error('invoke() not implemented');
+  }
 }
 
 class UnaryMethodStub extends MethodStub {
@@ -59,21 +59,24 @@ class UnaryMethodStub extends MethodStub {
   // invokeBlocking(request) {...}
 
   invoke(
-      request: Message,
+      request?: Message,
       onNext: Callback = () => {},
       onCompleted: Callback = () => {},
-      onError: Callback = () => {}): Call {
-    throw Error('ServerStreaming invoke() not implemented');
+      onError: Callback = () => {}): UnaryCall {
+    const call =
+        new UnaryCall(this.rpcs, this.rpc, onNext, onCompleted, onError);
+    call.invoke(request!);
+    return call;
   }
 }
 
 class ServerStreamingMethodStub extends MethodStub {
   invoke(
-      request: Message,
+      request?: Message,
       onNext: Callback = () => {},
       onCompleted: Callback = () => {},
-      onError: Callback = () => {}): Call {
-    throw Error('ServerStreaming invoke() not implemented');
+      onError: Callback = () => {}): ServerStreamingCall {
+    throw Error('ClientStreaming invoke() not implemented');
   }
 }
 
