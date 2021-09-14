@@ -20,6 +20,7 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "rpc_utils",
+    package_name = "pigweed/pw_rpc/ts",
     srcs = [
         "call.ts",
         "descriptors.ts",
@@ -28,7 +29,6 @@ ts_library(
         "packets.ts",
         "rpc_classes.ts",
     ],
-    module_name = "pigweed/pw_rpc/ts",
     deps = [
         "//pw_protobuf_compiler/ts:proto_lib",
         "//pw_rpc:packet_proto_tspb",
@@ -40,8 +40,8 @@ ts_library(
 
 ts_library(
     name = "rpc",
+    package_name = "pigweed/pw_rpc/ts",
     srcs = ["client.ts"],
-    module_name = "pigweed/pw_rpc/ts",
     deps = [
         ":rpc_utils",
         "//pw_protobuf_compiler/ts:proto_lib",

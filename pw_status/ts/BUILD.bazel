@@ -18,8 +18,8 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "pw_status",
+    package_name = "pigweed/pw_status/ts",
     srcs = [
         "status.ts",
     ],
-    module_name = "pigweed/pw_status/ts",
 )

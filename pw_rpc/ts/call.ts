@@ -82,13 +82,16 @@ export class Call {
     return (this.status !== undefined || this.error !== undefined);
   }
 
-  private invokeCallback(f: any) {
+  private invokeCallback(func: () => {}) {
     try {
-      f();
-    } catch (err) {
-      console.error(
-          `An exception was raised while invoking a callback: ${err}`);
-      this.callbackException = err
+      func();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error(
+            `An exception was raised while invoking a callback: ${err}`);
+        this.callbackException = err;
+      }
+      console.error(`Unexpected item thrown while invoking callback: ${err}`);
     }
   }
 
@@ -114,8 +117,8 @@ export class Call {
   /**
    * Yields responses up the specified count as they are added.
    *
-   * Throws an error as soon as it is received even if there are still responses
-   * in the queue.
+   * Throws an error as soon as it is received even if there are still
+   * responses in the queue.
    *
    * Usage
    * ```

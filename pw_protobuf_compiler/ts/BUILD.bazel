@@ -19,8 +19,8 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "proto_lib",
+    package_name = "pigweed/pw_protobuf_compiler/ts",
     srcs = ["proto_lib.ts"],
-    module_name = "pigweed/pw_protobuf_compiler/ts",
     deps = [
         "//pw_rpc:packet_proto_tspb",
         "@npm//@types/google-protobuf",
