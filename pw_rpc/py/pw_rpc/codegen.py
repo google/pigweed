@@ -85,6 +85,13 @@ class CodeGenerator(abc.ABC):
     def client_static_function(self, method: ProtoServiceMethod) -> None:
         """Generates method static functions that instantiate a Client."""
 
+    @abc.abstractmethod
+    def method_info_specialization(self, method: ProtoServiceMethod) -> None:
+        """Generates impl-specific additions to the MethodInfo specialization.
+
+        May be empty if the generator has nothing to add to the MethodInfo.
+        """
+
 
 def generate_package(file_descriptor_proto, proto_package: ProtoNode,
                      gen: CodeGenerator) -> None:
@@ -102,8 +109,10 @@ def generate_package(file_descriptor_proto, proto_package: ProtoNode,
     gen.line('#include <type_traits>\n')
 
     include_lines = [
+        '#include "pw_rpc/internal/method_info.h"',
         '#include "pw_rpc/internal/method_lookup.h"',
         '#include "pw_rpc/internal/service_client.h"',
+        '#include "pw_rpc/method_type.h"',
         '#include "pw_rpc/server_context.h"',
         '#include "pw_rpc/service.h"',
     ]
@@ -144,6 +153,12 @@ def generate_package(file_descriptor_proto, proto_package: ProtoNode,
 
     if file_namespace:
         gen.line('}  // namespace ' + file_namespace)
+
+    gen.line()
+    gen.line('// Specialize MethodInfo for each RPC to provide metadata at '
+             'compile time.')
+    for service in services:
+        _generate_info(gen, file_namespace, service)
 
 
 def _generate_service_and_client(gen: CodeGenerator,
@@ -197,6 +212,39 @@ def _generate_client(gen: CodeGenerator, service: ProtoService) -> None:
     gen.line('// corresponding RPC.')
     for method in service.methods():
         gen.client_static_function(method)
+        gen.line()
+
+
+def _generate_info(gen: CodeGenerator, namespace: str,
+                   service: ProtoService) -> None:
+    """Generates MethodInfo for each method."""
+    service_id = f'0x{pw_rpc.ids.calculate(service.proto_path()):08x}'
+    info = f'struct {RPC_NAMESPACE.lstrip(":")}::internal::MethodInfo'
+
+    for method in service.methods():
+        gen.line('template <>')
+        gen.line(f'{info}<{namespace}::pw_rpc::{gen.name()}::'
+                 f'{service.name()}::{method.name()}> {{')
+
+        with gen.indent():
+            gen.line(f'static constexpr uint32_t kServiceId = {service_id};')
+            gen.line(f'static constexpr uint32_t kMethodId = '
+                     f'0x{pw_rpc.ids.calculate(method.name()):08x};')
+            gen.line(f'static constexpr {RPC_NAMESPACE}::MethodType kType = '
+                     f'{method.type().cc_enum()};')
+            gen.line()
+
+            gen.line('template <typename ServiceImpl>')
+            gen.line('static constexpr auto Function() {')
+
+            with gen.indent():
+                gen.line(f'return &ServiceImpl::{method.name()};')
+
+            gen.line('}')
+
+            gen.method_info_specialization(method)
+
+        gen.line('};')
         gen.line()
 
 

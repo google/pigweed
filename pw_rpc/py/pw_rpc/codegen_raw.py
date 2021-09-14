@@ -70,6 +70,9 @@ class RawCodeGenerator(CodeGenerator):
         self.line('// Raw RPC clients are not yet implemented.')
         self.line(f'static void {method.name()}();')
 
+    def method_info_specialization(self, method: ProtoServiceMethod) -> None:
+        pass
+
 
 class StubGenerator(codegen.StubGenerator):
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
@@ -109,8 +112,6 @@ def process_proto_file(proto_file) -> Iterable[OutputFile]:
 
     generator = RawCodeGenerator(output_filename)
     codegen.generate_package(proto_file, package_root, generator)
-
-    generator.line()
 
     codegen.package_stubs(package_root, generator.output, StubGenerator())
 

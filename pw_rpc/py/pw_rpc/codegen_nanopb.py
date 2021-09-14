@@ -218,6 +218,21 @@ class NanopbCodeGenerator(CodeGenerator):
 
         self.line('}')
 
+    def method_info_specialization(self, method: ProtoServiceMethod) -> None:
+        self.line()
+        self.line(f'using Request = {method.request_type().nanopb_name()};')
+        self.line(f'using Response = {method.response_type().nanopb_name()};')
+        self.line()
+        self.line(f'static constexpr {RPC_NAMESPACE}::internal::'
+                  'NanopbMethodSerde serde() {')
+
+        with self.indent():
+            self.line('return {'
+                      f'{method.request_type().nanopb_name()}_fields, '
+                      f'{method.response_type().nanopb_name()}_fields}};')
+
+        self.line('}')
+
 
 def _client_functions(method: ProtoServiceMethod) -> tuple:
     res = method.response_type().nanopb_name()
@@ -308,7 +323,6 @@ def process_proto_file(proto_file) -> Iterable[OutputFile]:
     generator = NanopbCodeGenerator(output_filename)
     codegen.generate_package(proto_file, package_root, generator)
 
-    generator.line()
     codegen.package_stubs(package_root, generator.output, StubGenerator())
 
     return [generator.output]

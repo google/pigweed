@@ -79,9 +79,9 @@ class Method {
   Invoker invoker_;
 };
 
-// Traits struct that determines the type of an RPC service method from its
-// signature. Derived Methods should provide specializations for their method
-// types.
+// MethodTraits inspects an RPC implementation function. It determines which
+// Method API is in use and the type of the RPC based on the function signature.
+// pw_rpc Method implementations specialize MethodTraits for each RPC type.
 template <typename Method>
 struct MethodTraits {
   // Specializations must set Implementation as an alias for their method

@@ -51,6 +51,7 @@ pw_cc_library(
         "public/pw_rpc/internal/endpoint.h",
         "public/pw_rpc/internal/hash.h",
         "public/pw_rpc/internal/method.h",
+        "public/pw_rpc/internal/method_info.h",
         "public/pw_rpc/internal/method_lookup.h",
         "public/pw_rpc/internal/method_union.h",
         "public/pw_rpc/internal/open_call.h",
@@ -160,6 +161,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_rpc/internal/fake_channel_output.h",
         "public/pw_rpc/internal/method_impl_tester.h",
+        "public/pw_rpc/internal/method_info_tester.h",
         "public/pw_rpc/internal/test_method.h",
         "public/pw_rpc/internal/test_method_context.h",
         "public/pw_rpc/internal/test_utils.h",
@@ -190,6 +192,7 @@ filegroup(
         "nanopb/common.cc",
         "nanopb/echo_service_test.cc",
         "nanopb/method.cc",
+        "nanopb/method_info_test.cc",
         "nanopb/method_lookup_test.cc",
         "nanopb/method_test.cc",
         "nanopb/method_union_test.cc",

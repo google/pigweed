@@ -118,6 +118,7 @@ pw_source_set("common") {
     "channel.cc",
     "packet.cc",
     "public/pw_rpc/internal/channel.h",
+    "public/pw_rpc/internal/method_info.h",
     "public/pw_rpc/internal/packet.h",
     "public/pw_rpc/method_type.h",
   ]
@@ -145,6 +146,7 @@ pw_source_set("test_utils") {
   public = [
     "public/pw_rpc/internal/fake_channel_output.h",
     "public/pw_rpc/internal/method_impl_tester.h",
+    "public/pw_rpc/internal/method_info_tester.h",
     "public/pw_rpc/internal/test_method.h",
     "public/pw_rpc/internal/test_method_context.h",
     "public/pw_rpc/internal/test_utils.h",

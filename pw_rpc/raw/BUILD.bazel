@@ -92,6 +92,20 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "method_info_test",
+    srcs = [
+        "method_info_test.cc",
+    ],
+    deps = [
+        "//pw_rpc:common",
+        "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_pwpb",
+        # TODO(hepler): RPC deps not used directly should be provided by the proto library
+        "//pw_rpc/raw:method_union",
+    ],
+)
+
+pw_cc_test(
     name = "method_union_test",
     srcs = [
         "method_union_test.cc",
