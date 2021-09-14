@@ -118,9 +118,9 @@ C/C++ headers is ``#pragma once``. This is enabled by adding
 
 Python Checks
 =============
-There are two checks in the ``pw_presubmit.python_checks`` module, ``gn_lint``
+There are two checks in the ``pw_presubmit.python_checks`` module, ``gn_pylint``
 and ``gn_python_check``. They assume there's a top-level ``python`` GN target.
-``gn_lint`` runs Pylint and Mypy checks and ``gn_python_check`` runs Pylint,
+``gn_pylint`` runs Pylint and Mypy checks and ``gn_python_check`` runs Pylint,
 Mypy, and all Python tests.
 
 Inclusive Language
@@ -228,7 +228,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       # Include the upstream inclusive language check.
       inclusive_language.inclusive_language,
       # Include just the lint-related Python checks.
-      python_checks.lint_checks(exclude=PATH_EXCLUSIONS),
+      python_checks.gn_pylint.with_filter(exclude=PATH_EXCLUSIONS),
   )
 
   FULL = (
@@ -236,7 +236,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       release_build,
       # Use the upstream Python checks, with custom path filters applied.
       # Checks listed multiple times are only run once.
-      python_checks.all_checks(exclude=PATH_EXCLUSIONS),
+      python_checks.gn_python_check.with_filter(exclude=PATH_EXCLUSIONS),
   )
 
   PROGRAMS = pw_presubmit.Programs(quick=QUICK, full=FULL)

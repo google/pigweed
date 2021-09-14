@@ -37,6 +37,8 @@ pragma_once function for an example.
 See pigweed_presbumit.py for an example of how to define presubmit checks.
 """
 
+from __future__ import annotations
+
 import collections
 import contextlib
 import dataclasses
@@ -251,12 +253,12 @@ class Presubmit:
         return not failed and not skipped
 
     def apply_filters(
-            self, program: Sequence[Callable]
-    ) -> List[Tuple['_Check', Sequence[Path]]]:
+            self,
+            program: Sequence[Callable]) -> List[Tuple[Check, Sequence[Path]]]:
         """Returns list of (check, paths) for checks that should run."""
-        checks = [c if isinstance(c, _Check) else _Check(c) for c in program]
+        checks = [c if isinstance(c, Check) else Check(c) for c in program]
         filter_to_checks: Dict[_Filter,
-                               List[_Check]] = collections.defaultdict(list)
+                               List[Check]] = collections.defaultdict(list)
 
         for check in checks:
             filter_to_checks[check.filter].append(check)
@@ -265,9 +267,9 @@ class Presubmit:
         return [(c, check_to_paths[c]) for c in checks if c in check_to_paths]
 
     def _map_checks_to_paths(
-        self, filter_to_checks: Dict[_Filter, List['_Check']]
-    ) -> Dict['_Check', Sequence[Path]]:
-        checks_to_paths: Dict[_Check, Sequence[Path]] = {}
+        self, filter_to_checks: Dict[_Filter, List[Check]]
+    ) -> Dict[Check, Sequence[Path]]:
+        checks_to_paths: Dict[Check, Sequence[Path]] = {}
 
         posix_paths = tuple(p.as_posix() for p in self._relative_paths)
 
@@ -469,7 +471,11 @@ def run(program: Sequence[Callable],
     return presubmit.run(program, keep_going)
 
 
-class _Check:
+def _make_str_tuple(value: Union[Iterable[str], str]) -> Tuple[str, ...]:
+    return tuple([value] if isinstance(value, str) else value)
+
+
+class Check:
     """Wraps a presubmit check function.
 
     This class consolidates the logic for running and logging a presubmit check.
@@ -485,8 +491,21 @@ class _Check:
         self.filter: _Filter = path_filter
         self.always_run: bool = always_run
 
-        # Since _Check wraps a presubmit function, adopt that function's name.
+        # Since Check wraps a presubmit function, adopt that function's name.
         self.__name__ = self._check.__name__
+
+    def with_filter(
+        self,
+        endswith: Iterable[str] = '',
+        exclude: Iterable[Union[Pattern[str], str]] = ()
+    ) -> Check:
+        return Check(check_function=self._check,
+                     path_filter=_Filter(endswith=self.filter.endswith +
+                                         _make_str_tuple(endswith),
+                                         exclude=self.filter.exclude +
+                                         tuple(re.compile(e)
+                                               for e in exclude)),
+                     always_run=self.always_run)
 
     @property
     def name(self):
@@ -530,7 +549,7 @@ class _Check:
         return _Result.PASS
 
     def __call__(self, ctx: PresubmitContext, *args, **kwargs):
-        """Calling a _Check calls its underlying function directly.
+        """Calling a Check calls its underlying function directly.
 
       This makes it possible to call functions wrapped by @filter_paths. The
       prior filters are ignored, so new filters may be applied.
@@ -564,13 +583,9 @@ def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
              if required_args else ''))
 
 
-def _make_str_tuple(value: Iterable[str]) -> Tuple[str, ...]:
-    return tuple([value] if isinstance(value, str) else value)
-
-
-def filter_paths(endswith: Iterable[str] = (''),
+def filter_paths(endswith: Iterable[str] = '',
                  exclude: Iterable[Union[Pattern[str], str]] = (),
-                 always_run: bool = False) -> Callable[[Callable], _Check]:
+                 always_run: bool = False) -> Callable[[Callable], Check]:
     """Decorator for filtering the paths list for a presubmit check function.
 
     Path filters only apply when the function is used as a presubmit check.
@@ -586,10 +601,10 @@ def filter_paths(endswith: Iterable[str] = (''),
         a wrapped version of the presubmit function
     """
     def filter_paths_for_function(function: Callable):
-        return _Check(function,
-                      _Filter(_make_str_tuple(endswith),
-                              tuple(re.compile(e) for e in exclude)),
-                      always_run=always_run)
+        return Check(function,
+                     _Filter(_make_str_tuple(endswith),
+                             tuple(re.compile(e) for e in exclude)),
+                     always_run=always_run)
 
     return filter_paths_for_function
 

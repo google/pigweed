@@ -840,7 +840,7 @@ _LINTFORMAT = (
 
 LINTFORMAT = (
     _LINTFORMAT,
-    python_checks.gn_lint,
+    python_checks.gn_python_lint,
 )
 
 QUICK = (

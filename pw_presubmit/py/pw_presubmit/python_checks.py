@@ -46,12 +46,17 @@ def gn_python_check(ctx: PresubmitContext):
 
 # TODO(mohrr) Remove gn_check=False when it passes for all downstream projects.
 @filter_paths(endswith=_PYTHON_EXTENSIONS)
-def gn_lint(ctx: pw_presubmit.PresubmitContext) -> None:
+def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
     build.gn_gen(ctx.root, ctx.output_dir, gn_check=False)
     build.ninja(ctx.output_dir, 'python.lint')
 
 
-_LINT_CHECKS = (gn_lint, )
+# TODO(mohrr) Remove gn_lint when downstream projects no longer reference it.
+gn_lint = gn_python_lint
+
+# TODO(pwbug/454) Remove after downstream projects switch to using functions
+# directly.
+_LINT_CHECKS = (gn_python_lint, )
 _ALL_CHECKS = (gn_python_check, )
 
 
