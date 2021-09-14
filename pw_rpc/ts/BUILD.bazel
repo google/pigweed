@@ -77,8 +77,10 @@ ts_library(
     deps = [
         ":rpc",
         ":rpc_utils",  # TODO(jaredweinstein): remove dependency.
+        ":test_protos_tspb",
         "//pw_protobuf_compiler/ts:proto_lib",
         "//pw_rpc:packet_proto_tspb",
+        "//pw_status/ts:pw_status",
         "@npm//@types/jasmine",
         "@npm//@types/node",
     ],

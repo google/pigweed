@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import {Message} from 'google-protobuf';
 import {Status} from 'pigweed/pw_status/ts/status';
 
 import {PendingCalls, Rpc} from './rpc_classes';
@@ -27,6 +28,13 @@ export class Call {
   private onCompleted: Callback;
   private onError: Callback;
 
+  // TODO(jaredweinstein): support async timeout.
+  // private timeout: number;
+  private status?: Status;
+  error?: Status;
+  callbackException?: Error;
+
+
   constructor(
       rpcs: PendingCalls,
       rpc: Rpc,
@@ -39,6 +47,54 @@ export class Call {
     this.onNext = onNext;
     this.onCompleted = onCompleted;
     this.onError = onError;
+  }
+
+  /* Calls the RPC. This must be called immediately after construction. */
+  invoke(request?: Message): void {
+    const previous = this.rpcs.sendRequest(this.rpc, this, request);
+
+    if (previous !== undefined && !previous.completed()) {
+      previous.handleError(Status.CANCELLED)
+    }
+  }
+
+  private invokeCallback(f: any) {
+    try {
+      f();
+    } catch (err) {
+      console.error(
+          `An exception was raised while invoking a callback: ${err}`);
+      this.callbackException = err
+    }
+  }
+
+  completed(): boolean {
+    return (this.status !== undefined || this.error !== undefined);
+  }
+
+  handleResponse(response: Message): void {
+    const callback = () => this.onNext(response);
+    this.invokeCallback(callback)
+  }
+
+  handleCompletion(status: Status) {
+    const callback = () => this.onCompleted(status);
+    this.invokeCallback(callback)
+  }
+
+  cancel(): boolean {
+    if (this.completed()) {
+      return false;
+    }
+
+    this.error = Status.CANCELLED
+    return this.rpcs.sendCancel(this.rpc);
+  }
+
+  handleError(error: Status): void {
+    this.error = error
+    const callback = () => this.onError(2);
+    this.invokeCallback(callback);
   }
 }
 

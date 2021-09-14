@@ -14,11 +14,16 @@
 
 /** Provides a pw_rpc client for TypeScript. */
 
+import {Message} from 'google-protobuf';
+import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
 import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
+import {Status} from 'pigweed/pw_status/ts/status';
 
 import {Channel, Service} from './descriptors';
 import {MethodStub, methodStubFactory} from './method';
-import {PendingCalls} from './rpc_classes';
+import * as packets from './packets';
+import {PendingCalls, Rpc} from './rpc_classes';
+
 
 /**
  * Object for managing RPC service and contained methods.
@@ -96,9 +101,9 @@ class ChannelClient {
  * ```
  */
 export class Client {
-  private services = new Map<number, Service>();
   private channelsById = new Map<number, ChannelClient>();
   readonly rpcs: PendingCalls;
+  readonly services = new Map<number, Service>();
 
   constructor(channels: Channel[], services: Service[]) {
     this.rpcs = new PendingCalls();
@@ -144,5 +149,134 @@ export class Client {
       return this.channelsById.values().next().value;
     }
     return this.channelsById.get(id);
+  }
+
+  /**
+   * Creates a new RPC object holding channel, method, and service info.
+   * Returns undefined if the service or method does not exist.
+   */
+  private rpc(packet: RpcPacket, channelClient: ChannelClient): Rpc|undefined {
+    const service = this.services.get(packet.getServiceId());
+    if (service == undefined) {
+      return undefined;
+    }
+    const method = service.methods.get(packet.getMethodId());
+    if (method == undefined) {
+      return undefined;
+    }
+    return new Rpc(channelClient.channel, service, method);
+  }
+
+  private decodeStatus(rpc: Rpc, packet: RpcPacket): Status|undefined {
+    if (packet.getType() === PacketType.SERVER_STREAM) {
+      return;
+    }
+    return packet.getStatus();
+  }
+
+  private decodePayload(rpc: Rpc, packet: RpcPacket): Message|undefined {
+    if (packet.getType() === PacketType.SERVER_ERROR) {
+      return undefined;
+    }
+
+    if (packet.getType() === PacketType.RESPONSE &&
+        rpc.method.serverStreaming) {
+      return undefined;
+    }
+
+    const payload = packet.getPayload_asU8();
+    return packets.decodePayload(payload, rpc.method.responseType);
+  }
+
+  private sendClientError(
+      client: ChannelClient, packet: RpcPacket, error: Status) {
+    client.channel.send(packets.encodeClientError(packet, error));
+  }
+
+  /**
+   * Processes an incoming packet.
+   *
+   * @param {Uint8Array} rawPacketData binary data for a pw_rpc packet.
+   * @return {Status} The status of processing the packet.
+   *    - OK: the packet was processed by the client
+   *    - DATA_LOSS: the packet could not be decoded
+   *    - INVALID_ARGUMENT: the packet is for a server, not a client
+   *    - NOT_FOUND: the packet's channel ID is not known to this client
+   */
+  processPacket(rawPacketData: Uint8Array): Status {
+    let packet;
+    try {
+      packet = packets.decode(rawPacketData)
+    } catch (err) {
+      console.warn(`Failed to decode packet: ${err}`);
+      console.debug(`Raw packet: ${rawPacketData}`);
+      return Status.DATA_LOSS;
+    }
+
+    if (packets.forServer(packet)) {
+      return Status.INVALID_ARGUMENT;
+    }
+
+    const channelClient = this.channelsById.get(packet.getChannelId())
+    if (channelClient == undefined) {
+      console.warn(`Unrecognized channel ID: ${packet.getChannelId()}`)
+      return Status.NOT_FOUND;
+    }
+
+    const rpc = this.rpc(packet, channelClient)
+    if (rpc == undefined) {
+      this.sendClientError(channelClient, packet, Status.NOT_FOUND);
+      console.warn('rpc service/method not found');
+      return Status.OK;
+    }
+
+    if (packet.getType() !== PacketType.RESPONSE &&
+        packet.getType() !== PacketType.SERVER_STREAM &&
+        packet.getType() !== PacketType.SERVER_ERROR) {
+      console.error(`${rpc}: Unexpected packet type ${packet.getType()}`)
+      console.debug(`Packet: ${packet}`);
+      return Status.OK;
+    }
+
+    let status = this.decodeStatus(rpc, packet);
+    let payload;
+    try {
+      payload = this.decodePayload(rpc, packet);
+    } catch (error) {
+      this.sendClientError(channelClient, packet, Status.DATA_LOSS);
+      console.warn(`Failed to decode response: ${error}`);
+      console.debug(`Raw payload: ${packet.getPayload()}`);
+
+      // Make this an error packet so the error handler is called.
+      packet.setType(PacketType.SERVER_ERROR);
+      status = Status.DATA_LOSS
+    }
+
+    let call = this.rpcs.getPending(rpc, status);
+    if (call === undefined) {
+      this.sendClientError(channelClient, packet, Status.FAILED_PRECONDITION);
+      console.debug(`Discarding response for ${rpc}, which is not pending`);
+      return Status.OK;
+    }
+
+    if (packet.getType() === PacketType.SERVER_ERROR) {
+      if (status === Status.OK) {
+        throw 'Unexpected OK status on SERVER_ERROR';
+      }
+      if (status === undefined) {
+        throw 'Missing status on SERVER_ERROR';
+      }
+      console.warn(`${rpc}: invocation failed with Status: ${Status[status]}`);
+      call.handleError(status);
+      return Status.OK;
+    }
+
+    if (payload !== undefined) {
+      call.handleResponse(payload);
+    }
+    if (status !== undefined) {
+      call.handleCompletion(status);
+    }
+    return Status.OK;
   }
 }
