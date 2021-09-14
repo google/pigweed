@@ -54,7 +54,7 @@ class Client {
  private:
   friend class internal::BaseClientCall;
 
-  Status RegisterCall(internal::BaseClientCall& call);
+  void RegisterCall(internal::BaseClientCall& call);
   void RemoveCall(const internal::BaseClientCall& call) { calls_.remove(call); }
 
   std::span<internal::Channel> channels_;

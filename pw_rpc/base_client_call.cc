@@ -35,11 +35,7 @@ BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
     // If the call being assigned is active, replace it in the client's list
     // with a reference to the current object.
     other.Unregister();
-
-    // RegisterCall() only fails if there is already a call for the same
-    // (channel, service, method). As the existing call is unregistered, this
-    // error cannot happen.
-    other.client_->RegisterCall(*this).IgnoreError();
+    other.client_->RegisterCall(*this);
   }
 
   return *this;
@@ -92,12 +88,7 @@ Packet BaseClientCall::NewPacket(PacketType type,
   return Packet(type, channel_id_, service_id_, method_id_, payload);
 }
 
-void BaseClientCall::Register() {
-  // TODO(frolv): This is broken. If you try to replace an exisitng call with a
-  // new call to the same method on the same channel, the new call will fail to
-  // register. Instead, the new call should replace the existing one.
-  client_->RegisterCall(*this).IgnoreError();
-}
+void BaseClientCall::Register() { client_->RegisterCall(*this); }
 
 void BaseClientCall::Unregister() {
   if (active()) {

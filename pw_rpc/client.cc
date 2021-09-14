@@ -98,20 +98,24 @@ Channel* Client::GetChannel(uint32_t channel_id) const {
   return channel;
 }
 
-Status Client::RegisterCall(BaseClientCall& call) {
+void Client::RegisterCall(BaseClientCall& call) {
   auto existing_call = std::find_if(calls_.begin(), calls_.end(), [&](auto& c) {
     return c.channel_id() == call.channel_id() &&
            c.service_id() == call.service_id() &&
            c.method_id() == call.method_id();
   });
+
   if (existing_call != calls_.end()) {
-    PW_LOG_WARN(
-        "RPC client tried to call same method multiple times; aborting.");
-    return Status::FailedPrecondition();
+    PW_LOG_DEBUG(
+        "RPC client called same method multiple times; canceling existing "
+        "call.");
+
+    // TODO(frolv): Invoke the existing_call's error callback once client calls
+    // are refactored as generic Calls.
+    existing_call->Unregister();
   }
 
   calls_.push_front(call);
-  return OkStatus();
 }
 
 }  // namespace pw::rpc

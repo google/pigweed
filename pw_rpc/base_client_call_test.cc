@@ -36,6 +36,28 @@ TEST(BaseClientCall, RegistersAndRemovesItselfFromClient) {
   EXPECT_EQ(context.client().active_calls(), 0u);
 }
 
+TEST(BaseClientCall, Register_ReplacesExistingCall) {
+  ClientContextForTest context;
+  EXPECT_EQ(context.client().active_calls(), 0u);
+
+  BaseClientCall first(&context.client(),
+                       context.channel().id(),
+                       context.service_id(),
+                       context.method_id(),
+                       [](BaseClientCall&, const Packet&) {});
+  EXPECT_TRUE(first.active());
+  EXPECT_EQ(context.client().active_calls(), 1u);
+
+  BaseClientCall second(&context.client(),
+                        context.channel().id(),
+                        context.service_id(),
+                        context.method_id(),
+                        [](BaseClientCall&, const Packet&) {});
+  EXPECT_TRUE(second.active());
+  EXPECT_EQ(context.client().active_calls(), 1u);
+  EXPECT_FALSE(first.active());
+}
+
 TEST(BaseClientCall, Move_UnregistersOriginal) {
   ClientContextForTest context;
   EXPECT_EQ(context.client().active_calls(), 0u);
