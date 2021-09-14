@@ -140,7 +140,11 @@ Python
 Typescript
 ^^^^^^^^^^
 
-.. js:method:: uiFrame(address, data)
+Encoder
+-------
+The Encoder class provides a way to build complete, escaped HDLC UI frames.
+
+.. js:method:: Encoder.uiFrame(address, data)
 
     :param number address: frame address.
     :param Uint8Array data: frame data.
@@ -150,6 +154,11 @@ Decoder
 -------
 The decoder class unescapes received bytes and adds them to a buffer. Complete,
 valid HDLC frames are yielded as they are received.
+
+.. js:method:: Decoder.process(bytes)
+
+    :param Uint8Array bytes: bytes received from the medium.
+    :yields: Frame complete frames.
 
 C++
 ^^^
