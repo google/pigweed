@@ -37,17 +37,15 @@ _LOG = logging.getLogger(__name__)
 _PYTHON_EXTENSIONS = ('.py', '.gn', '.gni')
 
 
-# TODO(mohrr) Remove gn_check=False when it passes for all downstream projects.
 @filter_paths(endswith=_PYTHON_EXTENSIONS)
 def gn_python_check(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, gn_check=False)
+    build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, 'python.tests', 'python.lint')
 
 
-# TODO(mohrr) Remove gn_check=False when it passes for all downstream projects.
 @filter_paths(endswith=_PYTHON_EXTENSIONS)
 def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
-    build.gn_gen(ctx.root, ctx.output_dir, gn_check=False)
+    build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, 'python.lint')
 
 
