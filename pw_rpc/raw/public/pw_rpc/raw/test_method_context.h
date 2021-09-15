@@ -74,10 +74,10 @@ namespace pw::rpc {
 //   PW_RAW_TEST_METHOD_CONTEXT(MyService, BestMethod, 3, 256) context;
 //   ASSERT_EQ(3u, context.responses().max_size());
 //
-#define PW_RAW_TEST_METHOD_CONTEXT(service, method, ...)                \
-  ::pw::rpc::RawTestMethodContext<service,                              \
-                                  &service::method,                     \
-                                  ::pw::rpc::CalculateMethodId(#method) \
+#define PW_RAW_TEST_METHOD_CONTEXT(service, method, ...)             \
+  ::pw::rpc::RawTestMethodContext<service,                           \
+                                  &service::method,                  \
+                                  ::pw::rpc::internal::Hash(#method) \
                                       PW_COMMA_ARGS(__VA_ARGS__)>
 template <typename Service,
           auto kMethod,

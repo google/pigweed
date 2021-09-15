@@ -20,6 +20,7 @@
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/open_call.h"
 #include "pw_rpc/server.h"
@@ -54,15 +55,17 @@ class RawServerReaderWriter : private internal::Call {
   // Creates a RawServerReaderWriter that is ready to send responses for a
   // particular RPC. This can be used for testing or to send responses to an RPC
   // that has not been started by a client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static RawServerReaderWriter Open(Server& server,
                                                   uint32_t channel_id,
                                                   ServiceImpl& service) {
-    return {internal::OpenCall<kMethod, MethodType::kBidirectionalStreaming>(
+    return {internal::OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetRawMethod<
+            ServiceImpl,
+            internal::MethodInfo<kMethod>::kMethodId>())};
   }
 
   using internal::Call::active;
@@ -113,15 +116,17 @@ class RawServerReader : private RawServerReaderWriter {
   // Creates a RawServerReader that is ready to send a response to a particular
   // RPC. This can be used for testing or to finish an RPC that has not been
   // started by the client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static RawServerReader Open(Server& server,
                                             uint32_t channel_id,
                                             ServiceImpl& service) {
-    return {internal::OpenCall<kMethod, MethodType::kClientStreaming>(
+    return {internal::OpenContext<kMethod, MethodType::kClientStreaming>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetRawMethod<
+            ServiceImpl,
+            internal::MethodInfo<kMethod>::kMethodId>())};
   }
 
   constexpr RawServerReader()
@@ -159,15 +164,17 @@ class RawServerWriter : private RawServerReaderWriter {
   // Creates a RawServerWriter that is ready to send responses for a particular
   // RPC. This can be used for testing or to send responses to an RPC that has
   // not been started by a client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static RawServerWriter Open(Server& server,
                                             uint32_t channel_id,
                                             ServiceImpl& service) {
-    return {internal::OpenCall<kMethod, MethodType::kServerStreaming>(
+    return {internal::OpenContext<kMethod, MethodType::kServerStreaming>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetRawMethod<
+            ServiceImpl,
+            internal::MethodInfo<kMethod>::kMethodId>())};
   }
 
   constexpr RawServerWriter()
@@ -203,15 +210,17 @@ class RawServerResponder : private RawServerReaderWriter {
   // Creates a RawServerResponder that is ready to send responses for a
   // particular RPC. This can be used for testing or to send responses to an RPC
   // that has not been started by a client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static RawServerResponder Open(Server& server,
                                                uint32_t channel_id,
                                                ServiceImpl& service) {
-    return {internal::OpenCall<kMethod, MethodType::kUnary>(
+    return {internal::OpenContext<kMethod, MethodType::kUnary>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetRawMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetRawMethod<
+            ServiceImpl,
+            internal::MethodInfo<kMethod>::kMethodId>())};
   }
 
   constexpr RawServerResponder() : RawServerReaderWriter(MethodType::kUnary) {}

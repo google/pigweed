@@ -52,10 +52,23 @@ a client. This is useful in testing and in situations like an RPC that triggers
 reboot. After the reboot, the device opens the writer object and sends its
 response to the client.
 
-.. admonition:: Under construction
+The C++ API for opening a server reader/writer takes the generated RPC function
+as a template parameter. The server to use, channel ID, and service instance are
+passed as arguments. The API is the same for all RPC types, except the
+appropriate reader/writer class must be used.
 
-  The ``ReaderWriter::Open()`` API is cumbersome, but a more streamlined API
-  will be added to the generated RPC code.
+.. code-block:: c++
+
+  // Open a ServerWriter for a server streaming RPC.
+  auto writer = RawServerWriter::Open<pw_rpc::raw::ServiceName::MethodName>(
+      server, channel_id, service_instance);
+
+  // Send some responses, even though the client has not yet called this RPC.
+  CHECK_OK(writer.Write(encoded_response_1));
+  CHECK_OK(writer.Write(encoded_response_2));
+
+  // Finish the RPC.
+  CHECK_OK(writer.Finish(OkStatus()));
 
 Creating an RPC
 ===============

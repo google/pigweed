@@ -24,24 +24,28 @@ namespace pw::rpc::internal {
 
 // Creates a call context for a particular RPC. Unlike the CallContext
 // constructor, this function checks the type of RPC at compile time.
-template <auto kMethod, MethodType kExpected, typename MethodImpl>
-CallContext OpenCall(Server& server,
-                     uint32_t channel_id,
-                     Service& service,
-                     const MethodImpl& method) {
+template <auto kMethod,
+          MethodType kExpected,
+          typename ServiceImpl,
+          typename MethodImpl>
+CallContext OpenContext(Server& server,
+                        uint32_t channel_id,
+                        ServiceImpl& service,
+                        const MethodImpl& method) {
+  using Info = internal::MethodInfo<kMethod>;
   if constexpr (kExpected == MethodType::kUnary) {
-    static_assert(internal::MethodTraits<decltype(kMethod)>::kType == kExpected,
+    static_assert(Info::kType == kExpected,
                   "ServerResponse objects may only be opened for unary RPCs.");
   } else if constexpr (kExpected == MethodType::kServerStreaming) {
     static_assert(
-        MethodTraits<decltype(kMethod)>::kType == kExpected,
+        Info::kType == kExpected,
         "ServerWriters may only be opened for server streaming RPCs.");
   } else if constexpr (kExpected == MethodType::kClientStreaming) {
     static_assert(
-        MethodTraits<decltype(kMethod)>::kType == kExpected,
+        Info::kType == kExpected,
         "ServerReaders may only be opened for client streaming RPCs.");
   } else if constexpr (kExpected == MethodType::kBidirectionalStreaming) {
-    static_assert(internal::MethodTraits<decltype(kMethod)>::kType == kExpected,
+    static_assert(Info::kType == kExpected,
                   "ServerReaderWriters may only be opened for bidirectional "
                   "streaming RPCs.");
   }

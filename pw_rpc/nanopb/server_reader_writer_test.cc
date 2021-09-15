@@ -21,7 +21,8 @@
 
 namespace pw::rpc {
 
-class TestService final : public test::generated::TestService<TestService> {
+class TestServiceImpl final
+    : public test::generated::TestService<TestServiceImpl> {
  public:
   Status TestUnaryRpc(ServerContext&,
                       const pw_rpc_test_TestRequest&,
@@ -49,28 +50,43 @@ class TestService final : public test::generated::TestService<TestService> {
                                pw_rpc_test_TestStreamResponse>&) {}
 };
 
-template <auto kMethod, uint32_t kMethodId>
+template <auto kMethod>
 struct ReaderWriterTestContext {
+  using Info = internal::MethodInfo<kMethod>;
+
   ReaderWriterTestContext()
-      : output(decltype(output)::
-                   template Create<TestService, kMethod, kMethodId>()),
+      : output(decltype(output)::template Create<
+               TestServiceImpl,
+               Info::template Function<TestServiceImpl>(),
+               Info::kMethodId>()),
         channel(Channel::Create<1>(&output)),
         server(std::span(&channel, 1)) {}
 
-  TestService service;
-  NanopbFakeChannelOutput<internal::Response<kMethod>, 4, 128> output;
+  TestServiceImpl service;
+  NanopbFakeChannelOutput<typename Info::Response, 4, 128> output;
   Channel channel;
   Server server;
 };
 
+using test::pw_rpc::nanopb::TestService;
+
+TEST(NanopbServerResponder, Open_ReturnsUsableResponder) {
+  ReaderWriterTestContext<TestService::TestUnaryRpc> ctx;
+  NanopbServerResponder responder =
+      NanopbServerResponder<pw_rpc_test_TestResponse>::Open<
+          TestService::TestUnaryRpc>(ctx.server, ctx.channel.id(), ctx.service);
+
+  responder.Finish({.value = 4321});
+
+  EXPECT_EQ(ctx.output.last_response().value, 4321);
+  EXPECT_EQ(ctx.output.last_status(), OkStatus());
+}
+
 TEST(NanopbServerWriter, Open_ReturnsUsableWriter) {
-  ReaderWriterTestContext<&TestService::TestServerStreamRpc,
-                          CalculateMethodId("TestServerStreamRpc")>
-      ctx;
+  ReaderWriterTestContext<TestService::TestServerStreamRpc> ctx;
   NanopbServerWriter responder =
       NanopbServerWriter<pw_rpc_test_TestStreamResponse>::Open<
-          &TestService::TestServerStreamRpc,
-          CalculateMethodId("TestServerStreamRpc")>(
+          TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
   responder.Write({.chunk = {}, .number = 321});
@@ -81,14 +97,11 @@ TEST(NanopbServerWriter, Open_ReturnsUsableWriter) {
 }
 
 TEST(NanopbServerReader, Open_ReturnsUsableReader) {
-  ReaderWriterTestContext<&TestService::TestClientStreamRpc,
-                          CalculateMethodId("TestClientStreamRpc")>
-      ctx;
+  ReaderWriterTestContext<TestService::TestClientStreamRpc> ctx;
   NanopbServerReader responder =
       NanopbServerReader<pw_rpc_test_TestRequest,
                          pw_rpc_test_TestStreamResponse>::
-          Open<&TestService::TestClientStreamRpc,
-               CalculateMethodId("TestClientStreamRpc")>(
+          Open<TestService::TestClientStreamRpc>(
               ctx.server, ctx.channel.id(), ctx.service);
 
   responder.Finish({.chunk = {}, .number = 321});
@@ -97,14 +110,11 @@ TEST(NanopbServerReader, Open_ReturnsUsableReader) {
 }
 
 TEST(NanopbServerReaderWriter, Open_ReturnsUsableReaderWriter) {
-  ReaderWriterTestContext<&TestService::TestBidirectionalStreamRpc,
-                          CalculateMethodId("TestBidirectionalStreamRpc")>
-      ctx;
+  ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
   NanopbServerReaderWriter responder =
       NanopbServerReaderWriter<pw_rpc_test_TestRequest,
                                pw_rpc_test_TestStreamResponse>::
-          Open<&TestService::TestBidirectionalStreamRpc,
-               CalculateMethodId("TestBidirectionalStreamRpc")>(
+          Open<TestService::TestBidirectionalStreamRpc>(
               ctx.server, ctx.channel.id(), ctx.service);
 
   responder.Write({.chunk = {}, .number = 321});

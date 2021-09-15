@@ -20,6 +20,7 @@
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/open_call.h"
 #include "pw_rpc/server.h"
@@ -98,21 +99,23 @@ class NanopbServerReaderWriter
   // Creates a NanopbServerReaderWriter that is ready to send responses for a
   // particular RPC. This can be used for testing or to send responses to an RPC
   // that has not been started by a client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static NanopbServerReaderWriter Open(Server& server,
                                                      uint32_t channel_id,
                                                      ServiceImpl& service) {
-    static_assert(std::is_same_v<Request, internal::Request<kMethod>>,
+    using Info = internal::MethodInfo<kMethod>;
+    static_assert(std::is_same_v<Request, typename Info::Request>,
                   "The request type of a NanopbServerReaderWriter must match "
                   "the method.");
-    static_assert(std::is_same_v<Response, internal::Response<kMethod>>,
+    static_assert(std::is_same_v<Response, typename Info::Response>,
                   "The response type of a NanopbServerReaderWriter must match "
                   "the method.");
-    return {internal::OpenCall<kMethod, MethodType::kBidirectionalStreaming>(
+    return {internal::OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl,
+                                                Info::kMethodId>())};
   }
 
   constexpr NanopbServerReaderWriter()
@@ -166,21 +169,23 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
   // Creates a NanopbServerReader that is ready to send a response to a
   // particular RPC. This can be used for testing or to finish an RPC that has
   // not been started by the client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static NanopbServerReader Open(Server& server,
                                                uint32_t channel_id,
                                                ServiceImpl& service) {
+    using Info = internal::MethodInfo<kMethod>;
     static_assert(
-        std::is_same_v<Request, internal::Request<kMethod>>,
+        std::is_same_v<Request, typename Info::Request>,
         "The request type of a NanopbServerReader must match the method.");
     static_assert(
-        std::is_same_v<Response, internal::Response<kMethod>>,
+        std::is_same_v<Response, typename Info::Response>,
         "The response type of a NanopbServerReader must match the method.");
-    return {internal::OpenCall<kMethod, MethodType::kClientStreaming>(
+    return {internal::OpenContext<kMethod, MethodType::kClientStreaming>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl,
+                                                Info::kMethodId>())};
   }
 
   // Allow default construction so that users can declare a variable into which
@@ -224,18 +229,20 @@ class NanopbServerWriter : private internal::GenericNanopbResponder {
   // Creates a NanopbServerWriter that is ready to send responses for a
   // particular RPC. This can be used for testing or to send responses to an RPC
   // that has not been started by a client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static NanopbServerWriter Open(Server& server,
                                                uint32_t channel_id,
                                                ServiceImpl& service) {
+    using Info = internal::MethodInfo<kMethod>;
     static_assert(
-        std::is_same_v<Response, internal::Response<kMethod>>,
+        std::is_same_v<Response, typename Info::Response>,
         "The response type of a NanopbServerWriter must match the method.");
-    return {internal::OpenCall<kMethod, MethodType::kServerStreaming>(
+    return {internal::OpenContext<kMethod, MethodType::kServerStreaming>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl,
+                                                Info::kMethodId>())};
   }
 
   // Allow default construction so that users can declare a variable into which
@@ -282,18 +289,20 @@ class NanopbServerResponder : private internal::GenericNanopbResponder {
   // Creates a NanopbServerResponder that is ready to send a response for a
   // particular RPC. This can be used for testing or to send responses to an RPC
   // that has not been started by a client.
-  template <auto kMethod, uint32_t kMethodId, typename ServiceImpl>
+  template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static NanopbServerResponder Open(Server& server,
                                                   uint32_t channel_id,
                                                   ServiceImpl& service) {
+    using Info = internal::MethodInfo<kMethod>;
     static_assert(
-        std::is_same_v<Response, internal::Response<kMethod>>,
+        std::is_same_v<Response, typename Info::Response>,
         "The response type of a NanopbServerResponder must match the method.");
-    return {internal::OpenCall<kMethod, MethodType::kUnary>(
+    return {internal::OpenContext<kMethod, MethodType::kUnary>(
         server,
         channel_id,
         service,
-        internal::MethodLookup::GetNanopbMethod<ServiceImpl, kMethodId>())};
+        internal::MethodLookup::GetNanopbMethod<ServiceImpl,
+                                                Info::kMethodId>())};
   }
 
   // Allow default construction so that users can declare a variable into which

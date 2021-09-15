@@ -21,7 +21,8 @@
 
 namespace pw::rpc {
 
-class TestService final : public test::generated::TestService<TestService> {
+class TestServiceImpl final
+    : public test::generated::TestService<TestServiceImpl> {
  public:
   static StatusWithSize TestUnaryRpc(ServerContext&, ConstByteSpan, ByteSpan) {
     return StatusWithSize(0);
@@ -43,17 +44,30 @@ struct ReaderWriterTestContext {
         channel(Channel::Create<1>(&output)),
         server(std::span(&channel, 1)) {}
 
-  TestService service;
+  TestServiceImpl service;
   RawFakeChannelOutput<128, 4> output;
   Channel channel;
   Server server;
 };
 
+using test::pw_rpc::raw::TestService;
+
+TEST(RawServerResponder, Open_ReturnsUsableResponder) {
+  ReaderWriterTestContext ctx(MethodType::kUnary);
+  RawServerResponder call = RawServerResponder::Open<TestService::TestUnaryRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+
+  EXPECT_EQ(call.channel_id(), ctx.channel.id());
+  call.Finish(std::as_bytes(std::span("hello from pw_rpc")));
+
+  EXPECT_STREQ(reinterpret_cast<const char*>(ctx.output.last_response().data()),
+               "hello from pw_rpc");
+}
+
 TEST(RawServerWriter, Open_ReturnsUsableWriter) {
   ReaderWriterTestContext ctx(MethodType::kServerStreaming);
   RawServerWriter call =
-      RawServerWriter::Open<&TestService::TestServerStreamRpc,
-                            CalculateMethodId("TestServerStreamRpc")>(
+      RawServerWriter::Open<TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
@@ -66,8 +80,7 @@ TEST(RawServerWriter, Open_ReturnsUsableWriter) {
 TEST(RawServerReader, Open_ReturnsUsableReader) {
   ReaderWriterTestContext ctx(MethodType::kClientStreaming);
   RawServerReader call =
-      RawServerReader::Open<&TestService::TestClientStreamRpc,
-                            CalculateMethodId("TestClientStreamRpc")>(
+      RawServerReader::Open<TestService::TestClientStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
@@ -80,9 +93,7 @@ TEST(RawServerReader, Open_ReturnsUsableReader) {
 TEST(RawServerReaderWriter, Open_ReturnsUsableReaderWriter) {
   ReaderWriterTestContext ctx(MethodType::kBidirectionalStreaming);
   RawServerReaderWriter call =
-      RawServerReaderWriter::Open<&TestService::TestBidirectionalStreamRpc,
-                                  CalculateMethodId(
-                                      "TestBidirectionalStreamRpc")>(
+      RawServerReaderWriter::Open<TestService::TestBidirectionalStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
