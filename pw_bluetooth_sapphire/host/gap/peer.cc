@@ -37,7 +37,6 @@ std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
 
 Peer::LowEnergyData::LowEnergyData(Peer* owner)
     : peer_(owner),
-      conn_state_(ConnectionState::kNotConnected, &ConnectionStateToString),
       bond_data_(std::nullopt,
                  [](const std::optional<sm::PairingData>& p) { return p.has_value(); }),
       auto_conn_behavior_(AutoConnectBehavior::kAlways),
@@ -51,7 +50,9 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
 
 void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name) {
   node_ = parent.CreateChild(name);
-  conn_state_.AttachInspect(node_, LowEnergyData::kInspectConnectionStateName);
+  inspect_properties_.connection_state =
+      node_.CreateString(LowEnergyData::kInspectConnectionStateName,
+                         Peer::ConnectionStateToString(connection_state()));
   bond_data_.AttachInspect(node_, LowEnergyData::kInspectBondDataName);
   features_.AttachInspect(node_, LowEnergyData::kInspectFeaturesName);
 }
@@ -86,38 +87,45 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data
   peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
-void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
-  ZX_DEBUG_ASSERT(peer_->connectable() || state == ConnectionState::kNotConnected);
+Peer::InitializingConnectionToken Peer::LowEnergyData::RegisterInitializingConnection() {
+  ConnectionState prev_state = connection_state();
+  initializing_tokens_count_++;
+  OnConnectionStateMaybeChanged(prev_state);
 
-  if (state == connection_state()) {
-    bt_log(DEBUG, "gap-le", "LE connection state already \"%s\"!",
-           ConnectionStateToString(state).c_str());
-    return;
-  }
+  auto unregister_cb = [self = peer_->GetWeakPtr(), this] {
+    if (!self) {
+      return;
+    }
 
-  bt_log(DEBUG, "gap-le", "peer (%s) LE connection state changed from \"%s\" to \"%s\"",
-         bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
-         ConnectionStateToString(state).c_str());
+    ConnectionState prev_state = connection_state();
+    initializing_tokens_count_--;
+    OnConnectionStateMaybeChanged(prev_state);
+  };
 
-  conn_state_.Set(state);
+  return InitializingConnectionToken(std::move(unregister_cb));
+}
 
-  if (state == ConnectionState::kConnected) {
-    peer_->peer_metrics_->LogLeConnection();
-  } else if (state == ConnectionState::kNotConnected) {
+Peer::ConnectionToken Peer::LowEnergyData::RegisterConnection() {
+  // The high-level connection state is the same whether one or many registered
+  // connections exist, but we track each connection in metrics to support multiple
+  // connections to the same peer.
+  peer_->peer_metrics_->LogLeConnection();
+
+  ConnectionState prev_state = connection_state();
+  connection_tokens_count_++;
+  OnConnectionStateMaybeChanged(prev_state);
+
+  auto unregister_cb = [self = peer_->GetWeakPtr(), this] {
+    if (!self) {
+      return;
+    }
+
+    connection_tokens_count_--;
     peer_->peer_metrics_->LogLeDisconnection();
-  }
+    OnConnectionStateMaybeChanged(/*previous=*/ConnectionState::kConnected);
+  };
 
-  // Become non-temporary if connected or a connection attempt is in progress.
-  // Otherwise, become temporary again if the identity is unknown.
-  if (state == ConnectionState::kInitializing || state == ConnectionState::kConnected) {
-    peer_->TryMakeNonTemporary();
-  } else if (state == ConnectionState::kNotConnected && !peer_->identity_known()) {
-    bt_log(DEBUG, "gap", "became temporary: %s:", bt_str(*peer_));
-    peer_->temporary_.Set(true);
-  }
-
-  peer_->UpdateExpiry();
-  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  return ConnectionToken(std::move(unregister_cb));
 }
 
 void Peer::LowEnergyData::SetConnectionParameters(const hci::LEConnectionParameters& params) {
@@ -157,6 +165,30 @@ void Peer::LowEnergyData::ClearBondData() {
     peer_->set_identity_known(false);
   }
   bond_data_.Set(std::nullopt);
+}
+
+void Peer::LowEnergyData::OnConnectionStateMaybeChanged(ConnectionState previous) {
+  if (connection_state() == previous) {
+    return;
+  }
+
+  bt_log(DEBUG, "gap-le",
+         "peer (%s) LE connection state changed from %s to %s (initializing count: %hu, "
+         "connection count: %hu)",
+         bt_str(peer_->identifier()), ConnectionStateToString(previous).c_str(),
+         ConnectionStateToString(connection_state()).c_str(), initializing_tokens_count_,
+         connection_tokens_count_);
+
+  inspect_properties_.connection_state.Set(ConnectionStateToString(connection_state()));
+
+  if (previous == ConnectionState::kNotConnected) {
+    peer_->TryMakeNonTemporary();
+  } else if (connection_state() == ConnectionState::kNotConnected) {
+    peer_->TryMakeTemporary();
+  }
+
+  peer_->UpdateExpiry();
+  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 Peer::BrEdrData::BrEdrData(Peer* owner)
@@ -476,6 +508,15 @@ bool Peer::TryMakeNonTemporary() {
   }
 
   return true;
+}
+
+bool Peer::TryMakeTemporary() {
+  if (le() && le()->connection_state() == ConnectionState::kNotConnected && !identity_known()) {
+    bt_log(DEBUG, "gap", "became temporary: %s:", bt_str(*this));
+    temporary_.Set(true);
+    return true;
+  }
+  return false;
 }
 
 void Peer::UpdateExpiry() {

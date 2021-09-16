@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 
+#include <lib/fit/defer.h>
 #include <lib/sys/inspect/cpp/component.h>
 
 #include <string>
@@ -102,6 +103,30 @@ class Peer final {
   // Attach peer as child node of |parent| with specified |name|.
   void AttachInspect(inspect::Node& parent, std::string name = "peer");
 
+  enum class TokenType { kInitializing, kConnection };
+  template <TokenType T>
+  class TokenWithCallback {
+   public:
+    explicit TokenWithCallback(fit::callback<void()> on_destruction)
+        : on_destruction_(std::move(on_destruction)) {}
+    ~TokenWithCallback() = default;
+    TokenWithCallback(TokenWithCallback&&) noexcept = default;
+    TokenWithCallback& operator=(TokenWithCallback&&) noexcept = default;
+
+   private:
+    fit::deferred_callback on_destruction_;
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TokenWithCallback);
+  };
+
+  // InitializingConnectionToken is meant to be held by a connection request object. When the
+  // request object is destroyed, the specified callback will be called to update the connection
+  // state.
+  using InitializingConnectionToken = TokenWithCallback<TokenType::kInitializing>;
+
+  // ConnectionToken is meant to be held by a connection object. When the connection object is
+  // destroyed, the specified callback will be called to update the connection state.
+  using ConnectionToken = TokenWithCallback<TokenType::kConnection>;
+
   // Contains Peer data that apply only to the LE transport.
   class LowEnergyData final {
    public:
@@ -110,13 +135,19 @@ class Peer final {
     static constexpr const char* kInspectBondDataName = "bonded";
     static constexpr const char* kInspectFeaturesName = "features";
 
-    LowEnergyData(Peer* owner);
+    explicit LowEnergyData(Peer* owner);
 
     void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName);
 
     // Current connection state.
-    ConnectionState connection_state() const { return *conn_state_; }
-    bool connected() const { return connection_state() == ConnectionState::kConnected; }
+    ConnectionState connection_state() const {
+      return connected()      ? ConnectionState::kConnected
+             : initializing() ? ConnectionState::kInitializing
+                              : ConnectionState::kNotConnected;
+    }
+    bool connected() const { return connection_tokens_count_ > 0; }
+    bool initializing() const { return !connected() && initializing_tokens_count_ > 0; }
+
     bool bonded() const { return bond_data_->has_value(); }
     bool should_auto_connect() const {
       return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
@@ -151,8 +182,15 @@ class Peer final {
     // and updates the known RSSI and timestamp with the given values.
     void SetAdvertisingData(int8_t rssi, const ByteBuffer& data, zx::time timestamp);
 
-    // Updates the connection state and notifies listeners if necessary.
-    void SetConnectionState(ConnectionState state);
+    // Register a connection that is in the request/initializing state. A token is returned that
+    // should be owned until the initialization is complete or canceled. The connection state may be
+    // updated and listeners may be notified. Multiple initializating connections may be registered.
+    [[nodiscard]] InitializingConnectionToken RegisterInitializingConnection();
+
+    // Register a connection that is in the connected state. A token is returned that should be
+    // owned until the connection is disconnected. The connection state may be updated and listeners
+    // may be notified. Multiple connections may be registered.
+    [[nodiscard]] ConnectionToken RegisterConnection();
 
     // Modify the current or preferred connection parameters.
     // The device must be connectable.
@@ -186,11 +224,20 @@ class Peer final {
     // addresses.
 
    private:
+    struct InspectProperties {
+      inspect::StringProperty connection_state;
+    };
+
+    // Called when the connection state changes.
+    void OnConnectionStateMaybeChanged(ConnectionState previous);
+
     Peer* peer_;  // weak
 
     inspect::Node node_;
+    InspectProperties inspect_properties_;
 
-    StringInspectable<ConnectionState> conn_state_;
+    uint16_t initializing_tokens_count_ = 0;
+    uint16_t connection_tokens_count_ = 0;
     std::optional<hci::LEConnectionParameters> conn_params_;
     std::optional<hci::LEPreferredConnectionParameters> preferred_conn_params_;
 
@@ -467,6 +514,10 @@ class Peer final {
   // implement bonding procedures. This method is here to remind us that these
   // conditions are subtle and not fully supported yet.
   bool TryMakeNonTemporary();
+
+  // Marks this device as temporary. This operation may fail due to one of
+  // the conditions described above the |temporary()| method.
+  bool TryMakeTemporary();
 
   // Tells the owning PeerCache to update the expiry state of this
   // device.

@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 
 #include <lib/async/cpp/executor.h>
+#include <lib/fpromise/single_threaded_executor.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 
 #include <gmock/gmock.h>
@@ -28,6 +29,8 @@ const auto kAdvData = StaticByteBuffer(0x05,  // Length
 
 const bt::sm::LTK kLTK;
 
+const DeviceAddress kAddrLePublic(DeviceAddress::Type::kLEPublic, {1, 2, 3, 4, 5, 6});
+const DeviceAddress kAddrLeRandom(DeviceAddress::Type::kLERandom, {1, 2, 3, 4, 5, 6});
 const DeviceAddress kAddrBrEdr(DeviceAddress::Type::kBREDR, {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
 // LE Public Device Address that has the same value as a BR/EDR BD_ADDR, e.g. on
 // a dual-mode device.
@@ -39,18 +42,24 @@ const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, tru
                                                          sm::kMaxEncryptionKeySize),
                                   hci::LinkKey(UInt128{4}, 5, 6));
 
+inspect::Hierarchy ReadInspect(inspect::Inspector& inspector) {
+  fpromise::single_threaded_executor executor;
+  fpromise::result<inspect::Hierarchy> hierarchy;
+  executor.schedule_task(inspect::ReadFromInspector(inspector).then(
+      [&](fpromise::result<inspect::Hierarchy>& res) { hierarchy = std::move(res); }));
+  executor.run();
+  ZX_ASSERT(hierarchy.is_ok());
+  return hierarchy.take_value();
+}
+
 class PeerTest : public ::gtest::TestLoopFixture {
  public:
   PeerTest() = default;
 
   void SetUp() override {
     TestLoopFixture::SetUp();
-    auto connectable = true;
-    address_ = kAddrBrEdr;
-    peer_ = std::make_unique<Peer>(fit::bind_member(this, &PeerTest::NotifyListenersCallback),
-                                   fit::bind_member(this, &PeerTest::UpdateExpiryCallback),
-                                   fit::bind_member(this, &PeerTest::DualModeCallback),
-                                   RandomPeerId(), address_, connectable, &metrics_);
+    // Set up a default peer.
+    SetUpPeer(/*address=*/kAddrLePublic, /*connectable=*/true);
   }
 
   void TearDown() override {
@@ -59,7 +68,59 @@ class PeerTest : public ::gtest::TestLoopFixture {
   }
 
  protected:
+  // Can be used to override or reset the default peer. Resets metrics to prevent interference
+  // between peers (e.g. by metrics updated in construction).
+  void SetUpPeer(const DeviceAddress& address, bool connectable) {
+    address_ = address;
+    peer_ = std::make_unique<Peer>(fit::bind_member(this, &PeerTest::NotifyListenersCallback),
+                                   fit::bind_member(this, &PeerTest::UpdateExpiryCallback),
+                                   fit::bind_member(this, &PeerTest::DualModeCallback), PeerId(1),
+                                   address_, connectable, &metrics_);
+    peer_->AttachInspect(peer_inspector_.GetRoot());
+    // Reset metrics as they should only apply to the new peer under test.
+    metrics_.AttachInspect(metrics_inspector_.GetRoot());
+  }
   Peer& peer() { return *peer_; }
+
+  inspect::Hierarchy ReadPeerInspect() { return ReadInspect(peer_inspector_); }
+
+  template <class PropertyValue>
+  std::optional<std::remove_reference_t<decltype(std::declval<PropertyValue>().value())>>
+  InspectPropertyValueAtPath(inspect::Inspector& inspector, const std::vector<std::string>& path,
+                             const std::string& property) {
+    inspect::Hierarchy hierarchy = ReadInspect(inspector);
+    auto node = hierarchy.GetByPath(path);
+    if (!node) {
+      return std::nullopt;
+    }
+    const PropertyValue* prop_value = node->node().get_property<PropertyValue>(property);
+    if (!prop_value) {
+      return std::nullopt;
+    }
+    return prop_value->value();
+  }
+
+  std::string InspectLowEnergyConnectionState() {
+    std::optional<std::string> val = InspectPropertyValueAtPath<inspect::StringPropertyValue>(
+        peer_inspector_, {"peer", "le_data"}, Peer::LowEnergyData::kInspectConnectionStateName);
+    ZX_ASSERT(val);
+    return *val;
+  }
+
+  uint64_t MetricsLowEnergyConnections() {
+    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "le"}, "connection_events");
+    ZX_ASSERT(val);
+    return *val;
+  }
+
+  uint64_t MetricsLowEnergyDisconnections() {
+    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "le"}, "disconnection_events");
+    ZX_ASSERT(val);
+    return *val;
+  }
+
   void set_notify_listeners_cb(Peer::NotifyListenersCallback cb) {
     notify_listeners_cb_ = std::move(cb);
   }
@@ -90,25 +151,20 @@ class PeerTest : public ::gtest::TestLoopFixture {
   Peer::NotifyListenersCallback notify_listeners_cb_;
   Peer::PeerCallback update_expiry_cb_;
   Peer::PeerCallback dual_mode_cb_;
+  inspect::Inspector metrics_inspector_;
   PeerMetrics metrics_;
+  inspect::Inspector peer_inspector_;
 };
 
 TEST_F(PeerTest, InspectHierarchy) {
-  inspect::Inspector inspector;
-  peer().AttachInspect(inspector.GetRoot());
-
   peer().set_version(hci::HCIVersion::k5_0, kManufacturer, kSubversion);
-  ASSERT_TRUE(peer().bredr().has_value());
 
-  // Initialize le_data
   peer().MutLe();
   ASSERT_TRUE(peer().le().has_value());
 
   peer().MutLe().SetFeatures(hci::LESupportedFeatures{0x0000000000000001});
 
   peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
-
-  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
 
   // clang-format off
   auto bredr_data_matcher = AllOf(
@@ -145,7 +201,8 @@ TEST_F(PeerTest, InspectHierarchy) {
         ))),
     ChildrenMatch(UnorderedElementsAre(bredr_data_matcher, le_data_matcher)));
   // clang-format on
-  EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
+  inspect::Hierarchy hierarchy = ReadPeerInspect();
+  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
 }
 
 TEST_F(PeerTest, BrEdrDataAddServiceNotifiesListeners) {
@@ -266,7 +323,7 @@ TEST_F(PeerTest, SettingLowEnergyAdvertisingDataUpdatesLastUpdated) {
   EXPECT_GE(notify_count, 1);
 }
 
-TEST_F(PeerTest, SettingLowEnergyConnectionStateUpdatesLastUpdated) {
+TEST_F(PeerTest, RegisteringLowEnergyInitializingConnectionUpdatesLastUpdated) {
   EXPECT_EQ(peer().last_updated(), zx::time(0));
 
   int notify_count = 0;
@@ -276,7 +333,7 @@ TEST_F(PeerTest, SettingLowEnergyConnectionStateUpdatesLastUpdated) {
   });
 
   RunLoopFor(zx::duration(2));
-  peer().MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
+  Peer::InitializingConnectionToken token = peer().MutLe().RegisterInitializingConnection();
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
 }
@@ -315,6 +372,7 @@ TEST_F(PeerTest, SettingBrEdrConnectionStateUpdatesLastUpdated) {
 }
 
 TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
+  SetUpPeer(/*address=*/kAddrLeAlias, /*connectable=*/true);
   EXPECT_EQ(peer().last_updated(), zx::time(0));
 
   int notify_count = 0;
@@ -374,6 +432,232 @@ TEST_F(PeerTest, SettingNameUpdatesLastUpdated) {
   peer().SetName("name");
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterTwoLowEnergyConnections) {
+  SetUpPeer(/*address=*/kAddrLeRandom, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::ConnectionToken> token_0 = peer().MutLe().RegisterConnection();
+  // A notification and expiry update are sent when the peer becomes non-temporary, and a second
+  // notification and update expiry are sent because the connection is registered.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+  EXPECT_EQ(MetricsLowEnergyConnections(), 1u);
+
+  std::optional<Peer::ConnectionToken> token_1 = peer().MutLe().RegisterConnection();
+  // The second connection should not update expiry or notify.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+  // Although the second connection does not change the high-level connection state, we track it in
+  // metrics to support multiple connections to the same peer.
+  EXPECT_EQ(MetricsLowEnergyConnections(), 2u);
+  EXPECT_EQ(MetricsLowEnergyDisconnections(), 0u);
+
+  token_0.reset();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+  EXPECT_EQ(MetricsLowEnergyDisconnections(), 1u);
+
+  token_1.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 3);
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+  EXPECT_EQ(MetricsLowEnergyDisconnections(), 2u);
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterLowEnergyConnectionsWhenIdentityKnown) {
+  EXPECT_TRUE(peer().identity_known());
+  std::optional<Peer::ConnectionToken> token = peer().MutLe().RegisterConnection();
+  EXPECT_FALSE(peer().temporary());
+  token.reset();
+  // The peer's identity is known, so it should stay non-temporary upon disconnection.
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterInitializingLowEnergyConnectionsWhenIdentityKnown) {
+  EXPECT_TRUE(peer().identity_known());
+  std::optional<Peer::InitializingConnectionToken> token =
+      peer().MutLe().RegisterInitializingConnection();
+  EXPECT_FALSE(peer().temporary());
+  token.reset();
+  // The peer's identity is known, so it should stay non-temporary upon disconnection.
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterLowEnergyConnectionDuringInitializingConnection) {
+  SetUpPeer(/*address=*/kAddrLeRandom, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::InitializingConnectionToken> init_token =
+      peer().MutLe().RegisterInitializingConnection();
+  // A notification and expiry update are sent when the peer becomes non-temporary, and a second
+  // notification and update expiry are sent because the initializing connection is registered.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  std::optional<Peer::ConnectionToken> conn_token = peer().MutLe().RegisterConnection();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 3);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  conn_token.reset();
+  EXPECT_EQ(update_expiry_count, 4);
+  EXPECT_EQ(notify_count, 4);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  init_token.reset();
+  EXPECT_EQ(update_expiry_count, 5);
+  EXPECT_EQ(notify_count, 5);
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterInitializingLowEnergyConnectionDuringConnection) {
+  SetUpPeer(/*address=*/kAddrLeRandom, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::ConnectionToken> conn_token = peer().MutLe().RegisterConnection();
+  // A notification and expiry update are sent when the peer becomes non-temporary, and a second
+  // notification and update expiry are sent because the initializing connection is registered.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  std::optional<Peer::InitializingConnectionToken> init_token =
+      peer().MutLe().RegisterInitializingConnection();
+  // Initializing connections should not affect the expiry or notify listeners for peers that are
+  // already connected.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  init_token.reset();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  conn_token.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 3);
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterTwoLowEnergyInitializingConnections) {
+  SetUpPeer(/*address=*/kAddrLeRandom, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::InitializingConnectionToken> token_0 =
+      peer().MutLe().RegisterInitializingConnection();
+  // A notification and expiry update are sent when the peer becomes non-temporary, and a second
+  // notification and update expiry are sent because the initializing connection is registered.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  std::optional<Peer::InitializingConnectionToken> token_1 =
+      peer().MutLe().RegisterInitializingConnection();
+  // The second initializing connection should not update expiry or notify.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  token_0.reset();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+  token_1.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 3);
+  // The peer's identity is not known, so it should become temporary upon disconnection.
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectLowEnergyConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, MovingLowEnergyConnectionTokenWorksAsExpected) {
+  std::optional<Peer::ConnectionToken> token_0 = peer().MutLe().RegisterConnection();
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+
+  std::optional<Peer::ConnectionToken> token_1 = std::move(token_0);
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+
+  token_0.reset();
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kConnected);
+
+  token_1.reset();
+  EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
 }
 
 }  // namespace

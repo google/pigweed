@@ -44,7 +44,8 @@ class PeerFuzzer final {
     using FuzzMemberFunction = decltype(&PeerFuzzer::FuzzOneField);
     constexpr FuzzMemberFunction kFuzzFunctions[] = {
         &PeerFuzzer::LEDataSetAdvertisingData,
-        &PeerFuzzer::LEDataSetConnectionState,
+        &PeerFuzzer::LEDataRegisterInitializingConnection,
+        &PeerFuzzer::LEDataRegisterConnection,
         &PeerFuzzer::LEDataSetConnectionParameters,
         &PeerFuzzer::LEDataSetPreferredConnectionParameters,
         &PeerFuzzer::LEDataSetBondData,
@@ -73,12 +74,23 @@ class PeerFuzzer final {
   void LEDataSetAdvertisingData() {
     peer_.MutLe().SetAdvertisingData(
         fdp().ConsumeIntegral<uint8_t>(),
-        DynamicByteBuffer(BufferView(fdp().ConsumeBytes<uint8_t>(kMaxLeAdvDataLength))), zx::time());
+        DynamicByteBuffer(BufferView(fdp().ConsumeBytes<uint8_t>(kMaxLeAdvDataLength))),
+        zx::time());
   }
 
-  void LEDataSetConnectionState() {
-    if (peer_.connectable()) {
-      peer_.MutLe().SetConnectionState(MakeConnectionState());
+  void LEDataRegisterInitializingConnection() {
+    if (peer_.connectable() && fdp().ConsumeBool()) {
+      init_conn_tokens_.emplace_back(peer_.MutLe().RegisterInitializingConnection());
+    } else if (!init_conn_tokens_.empty()) {
+      init_conn_tokens_.pop_back();
+    }
+  }
+
+  void LEDataRegisterConnection() {
+    if (peer_.connectable() && fdp().ConsumeBool()) {
+      conn_tokens_.emplace_back(peer_.MutLe().RegisterConnection());
+    } else if (!conn_tokens_.empty()) {
+      conn_tokens_.pop_back();
     }
   }
 
@@ -244,6 +256,8 @@ class PeerFuzzer final {
 
   FuzzedDataProvider &fuzzed_data_provider_;
   Peer &peer_;
+  std::vector<Peer::ConnectionToken> conn_tokens_;
+  std::vector<Peer::InitializingConnectionToken> init_conn_tokens_;
 };
 
 }  // namespace gap::testing

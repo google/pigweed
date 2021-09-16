@@ -180,9 +180,8 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
     return;
   }
 
-  peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
-
-  internal::LowEnergyConnectionRequest request(peer_id, std::move(callback), connection_options);
+  internal::LowEnergyConnectionRequest request(peer_id, std::move(callback), connection_options,
+                                               peer->MutLe().RegisterInitializingConnection());
   request.AttachInspect(inspect_pending_requests_node_,
                         inspect_pending_requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
   pending_requests_.emplace(peer_id, std::move(request));
@@ -200,12 +199,6 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
   auto request_iter = pending_requests_.find(peer_id);
   if (request_iter != pending_requests_.end()) {
     ZX_ASSERT(current_request_->request.peer_id() != peer_id);
-    Peer* peer = peer_cache_->FindById(peer_id);
-    // Only update peer connection state if a remote initiated connection isn't already established
-    // in order to avoid marking a connected peer as kNotConnected.
-    if (peer && connections_.find(peer_id) == connections_.end()) {
-      peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
-    }
     request_iter->second.NotifyCallbacks(fpromise::error(HostError::kCanceled));
     pending_requests_.erase(request_iter);
   }
@@ -323,9 +316,8 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   }
 
   LowEnergyConnectionOptions connection_options{.bondable_mode = bondable_mode};
-  internal::LowEnergyConnectionRequest request(peer_id, std::move(callback), connection_options);
-
-  peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
+  internal::LowEnergyConnectionRequest request(peer_id, std::move(callback), connection_options,
+                                               peer->MutLe().RegisterInitializingConnection());
 
   auto result_cb = std::bind(&LowEnergyConnectionManager::OnRemoteInitiatedConnectResult, this,
                              peer_id, std::placeholders::_1);
@@ -459,7 +451,6 @@ void LowEnergyConnectionManager::ProcessConnectResult(
     // A separate connection may have been established in the other direction while this connection
     // was connecting, in which case the peer state should not be updated.
     if (peer && connections_.find(peer->identifier()) == connections_.end()) {
-      peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
       if (request.connection_options().auto_connect && err.is_protocol_error() &&
           ShouldStopAlwaysAutoConnecting(err.protocol_error())) {
         // We may see a peer's connectable advertisements, but fail to establish a connection to the
@@ -503,6 +494,9 @@ bool LowEnergyConnectionManager::InitializeConnection(
     return false;
   }
 
+  Peer* peer = peer_cache_->FindById(peer_id);
+  ZX_ASSERT(peer);
+
   connection->AttachInspect(inspect_connections_node_,
                             inspect_connections_node_.UniqueName(kInspectConnectionNodePrefix));
   connection->set_peer_disconnect_callback(std::bind(&LowEnergyConnectionManager::OnPeerDisconnect,
@@ -512,13 +506,13 @@ bool LowEnergyConnectionManager::InitializeConnection(
 
   auto [conn_iter, inserted] = connections_.try_emplace(peer_id, std::move(connection));
   ZX_ASSERT(inserted);
+
+  conn_iter->second->set_peer_conn_token(peer->MutLe().RegisterConnection());
+
   // Create first ref to ensure that connection is cleaned up on early returns or if first request
   // callback does not retain a ref.
   auto first_ref = conn_iter->second->AddRef();
 
-  Peer* peer = peer_cache_->FindById(peer_id);
-  ZX_ASSERT(peer);
-  peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
   UpdatePeerWithLink(*conn_iter->second->link());
 
   bt_log(TRACE, "gap-le", "notifying connection request callbacks (peer: %s)", bt_str(peer_id));
@@ -537,8 +531,6 @@ void LowEnergyConnectionManager::CleanUpConnection(
   Peer* peer = peer_cache_->FindById(conn->peer_id());
   ZX_ASSERT_MSG(peer, "A connection was active for an unknown peer! (id: %s)",
                 bt_str(conn->peer_id()));
-  peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
-
   conn.reset();
 }
 

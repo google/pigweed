@@ -372,7 +372,7 @@ TEST_F(PeerCacheTest, BrEdrPeerBecomesDualModeWhenConnectedOverLowEnergy) {
   ASSERT_TRUE(peer()->bredr());
   ASSERT_FALSE(peer()->le());
 
-  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken conn_token = peer()->MutLe().RegisterConnection();
   EXPECT_TRUE(peer()->le());
   EXPECT_EQ(TechnologyType::kDualMode, peer()->technology());
 
@@ -458,7 +458,7 @@ TEST_F(PeerCacheTest, InitialAutoConnectBehavior) {
   EXPECT_TRUE(peer()->le()->should_auto_connect());
 
   // Connecting peer leaves `should_auto_connect` unaffected.
-  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken conn_token = peer()->MutLe().RegisterConnection();
 
   EXPECT_TRUE(peer()->le()->should_auto_connect());
 }
@@ -974,7 +974,7 @@ TEST_F(PeerCacheTestBondingTest, RemoveDisconnectedPeerOnUnconnectedPeer) {
 }
 
 TEST_F(PeerCacheTestBondingTest, RemoveDisconnectedPeerOnConnectedPeer) {
-  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken conn_token = peer()->MutLe().RegisterConnection();
   ASSERT_TRUE(peer()->connected());
   const PeerId id = peer()->identifier();
   EXPECT_FALSE(cache()->RemoveDisconnectedPeer(id));
@@ -1066,17 +1066,14 @@ class PeerCacheTest_UpdateCallbackTest : public PeerCacheTest {
 };
 
 using PeerCacheBrEdrUpdateCallbackTest = PeerCacheTest_UpdateCallbackTest<&kAddrBrEdr>;
-using PeerCacheLowEnergyUpdateCallbackTest =
-    PeerCacheTest_UpdateCallbackTest<&kAddrLeAlias>;
+using PeerCacheLowEnergyUpdateCallbackTest = PeerCacheTest_UpdateCallbackTest<&kAddrLeAlias>;
 
-TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
-       ChangingLEConnectionStateTriggersUpdateCallback) {
-  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest, ChangingLEConnectionStateTriggersUpdateCallback) {
+  Peer::ConnectionToken conn_token = peer()->MutLe().RegisterConnection();
   EXPECT_TRUE(was_called());
 }
 
-TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
-       SetAdvertisingDataTriggersUpdateCallbackOnNameSet) {
+TEST_F(PeerCacheLowEnergyUpdateCallbackTest, SetAdvertisingDataTriggersUpdateCallbackOnNameSet) {
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
   EXPECT_TRUE(was_called());
   ASSERT_TRUE(peer()->name());
@@ -1132,8 +1129,7 @@ TEST_F(PeerCacheLowEnergyUpdateCallbackTest, BecomingDualModeTriggersUpdateCallB
   EXPECT_EQ(call_count, 2U);
 }
 
-TEST_F(PeerCacheBrEdrUpdateCallbackTest,
-       ChangingBrEdrConnectionStateTriggersUpdateCallback) {
+TEST_F(PeerCacheBrEdrUpdateCallbackTest, ChangingBrEdrConnectionStateTriggersUpdateCallback) {
   peer()->MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
   EXPECT_TRUE(was_called());
 }
@@ -1409,7 +1405,7 @@ TEST_F(PeerCacheExpirationTest, CanMakeNonTemporaryJustBeforeSixtySeconds) {
   // At last possible moment, make peer non-temporary,
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken conn_token = GetDefaultPeer()->MutLe().RegisterConnection();
   ASSERT_FALSE(GetDefaultPeer()->temporary());
 
   // Verify that the peer survives.
@@ -1419,7 +1415,7 @@ TEST_F(PeerCacheExpirationTest, CanMakeNonTemporaryJustBeforeSixtySeconds) {
 
 TEST_F(PeerCacheExpirationTest, LEConnectedPeerLivesMuchMoreThanSixtySeconds) {
   ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken conn_token = GetDefaultPeer()->MutLe().RegisterConnection();
   RunLoopFor(kCacheTimeout * 10);
   ASSERT_TRUE(IsDefaultPeerPresent());
   EXPECT_FALSE(GetDefaultPeer()->temporary());
@@ -1438,7 +1434,8 @@ TEST_F(PeerCacheExpirationTest, LePeerBecomesNonTemporaryWhenConnecting) {
   ASSERT_EQ(kAddrLeAlias, GetDefaultPeer()->address());
   ASSERT_TRUE(GetDefaultPeer()->temporary());
 
-  GetDefaultPeer()->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
+  Peer::InitializingConnectionToken init_token =
+      GetDefaultPeer()->MutLe().RegisterInitializingConnection();
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 
   RunLoopFor(kCacheTimeout);
@@ -1448,14 +1445,15 @@ TEST_F(PeerCacheExpirationTest, LePeerBecomesNonTemporaryWhenConnecting) {
 TEST_F(PeerCacheExpirationTest, LEPublicPeerRemainsNonTemporaryOnDisconnect) {
   ASSERT_TRUE(IsDefaultPeerPresent());
   ASSERT_EQ(kAddrLeAlias, GetDefaultPeer()->address());
-  GetDefaultPeer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
-  ASSERT_FALSE(GetDefaultPeer()->temporary());
+  {
+    Peer::ConnectionToken conn_token = GetDefaultPeer()->MutLe().RegisterConnection();
+    ASSERT_FALSE(GetDefaultPeer()->temporary());
 
-  RunLoopFor(zx::sec(61));
-  ASSERT_TRUE(IsDefaultPeerPresent());
-  ASSERT_TRUE(GetDefaultPeer()->identity_known());
-
-  GetDefaultPeer()->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
+    RunLoopFor(kCacheTimeout + zx::sec(1));
+    ASSERT_TRUE(IsDefaultPeerPresent());
+    ASSERT_TRUE(GetDefaultPeer()->identity_known());
+    // Destroy conn_token at end of scope
+  }
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 
   RunLoopFor(kCacheTimeout);
@@ -1465,6 +1463,7 @@ TEST_F(PeerCacheExpirationTest, LEPublicPeerRemainsNonTemporaryOnDisconnect) {
 TEST_F(PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
   // Create our Peer, and get it into the kConnected state.
   PeerId custom_peer_id;
+  std::optional<Peer::ConnectionToken> conn_token;
   {
     auto* custom_peer = NewPeer(kAddrLeRandom, true);
     ASSERT_TRUE(custom_peer);
@@ -1472,7 +1471,7 @@ TEST_F(PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
     ASSERT_FALSE(custom_peer->identity_known());
     custom_peer_id = custom_peer->identifier();
 
-    custom_peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+    conn_token = custom_peer->MutLe().RegisterConnection();
     ASSERT_FALSE(custom_peer->temporary());
     ASSERT_FALSE(custom_peer->identity_known());
   }
@@ -1487,7 +1486,7 @@ TEST_F(PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
     ASSERT_TRUE(custom_peer);
     ASSERT_FALSE(custom_peer->identity_known());
 
-    custom_peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
+    conn_token.reset();
     EXPECT_TRUE(custom_peer->temporary());
     EXPECT_FALSE(custom_peer->identity_known());
   }
@@ -1501,10 +1500,11 @@ TEST_F(PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
 TEST_F(PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
   // Create our Peer, and get it into the kConnected state.
   PeerId custom_peer_id;
+  std::optional<Peer::ConnectionToken> conn_token;
   {
     auto* custom_peer = NewPeer(kAddrLePublic, true);
     ASSERT_TRUE(custom_peer);
-    custom_peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+    conn_token = custom_peer->MutLe().RegisterConnection();
     custom_peer_id = custom_peer->identifier();
   }
 
@@ -1519,7 +1519,7 @@ TEST_F(PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
     ASSERT_TRUE(custom_peer->identity_known());
     EXPECT_FALSE(custom_peer->temporary());
 
-    custom_peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
+    conn_token.reset();
     ASSERT_TRUE(GetPeerById(custom_peer_id));
     EXPECT_FALSE(custom_peer->temporary());
   }

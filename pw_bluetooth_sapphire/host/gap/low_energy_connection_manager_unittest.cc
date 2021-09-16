@@ -776,14 +776,15 @@ TEST_F(LowEnergyConnectionManagerTest, Destructor) {
 }
 
 TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionWhileAwaitingScanStart) {
-  auto peer_0 = peer_cache()->NewPeer(kAddress0, true);
-  auto peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  auto peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  auto peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
 
   int conn_cb_0_count = 0;
   auto conn_cb_0 = [&](auto result) {
     ASSERT_TRUE(result.is_error());
     EXPECT_EQ(result.error(), HostError::kCanceled);
+    EXPECT_EQ(peer_0->le()->connection_state(), Peer::ConnectionState::kNotConnected);
     conn_cb_0_count++;
   };
 
@@ -811,14 +812,15 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionWhileAwaitingS
 
 TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionDuringScan) {
   // Don't add FakePeer for peer_0 in order to stall during scanning.
-  auto peer_0 = peer_cache()->NewPeer(kAddress0, true);
-  auto peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  auto peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  auto peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
 
   int conn_cb_0_count = 0;
   auto conn_cb_0 = [&](auto result) {
     ASSERT_TRUE(result.is_error());
     EXPECT_EQ(result.error(), HostError::kCanceled);
+    EXPECT_EQ(peer_0->le()->connection_state(), Peer::ConnectionState::kNotConnected);
     conn_cb_0_count++;
   };
 
@@ -900,6 +902,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto conn_cb_0 = [&](auto result) {
     ASSERT_TRUE(result.is_error());
     EXPECT_EQ(result.error(), HostError::kCanceled);
+    EXPECT_EQ(peer_0->le()->connection_state(), Peer::ConnectionState::kNotConnected);
     conn_cb_0_count++;
   };
 
@@ -907,6 +910,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto conn_cb_1 = [&](auto result) {
     ASSERT_TRUE(result.is_error());
     EXPECT_EQ(result.error(), HostError::kCanceled);
+    EXPECT_EQ(peer_1->le()->connection_state(), Peer::ConnectionState::kNotConnected);
     conn_cb_1_count++;
   };
 
@@ -3491,39 +3495,6 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
   EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
-}
-
-// Tests for assertions that enforce invariants.
-class LowEnergyConnectionManagerDeathTest : public LowEnergyConnectionManagerTest {};
-
-// Tests that a disconnection event that occurs after a peer gets removed is handled gracefully.
-TEST_F(LowEnergyConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
-  // Set up a connection.
-  auto* peer = peer_cache()->NewPeer(kAddress0, true);
-  EXPECT_TRUE(peer->temporary());
-
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  test_device()->AddPeer(std::move(fake_peer));
-
-  std::unique_ptr<LowEnergyConnectionHandle> conn;
-  conn_mgr()->Connect(peer->identifier(), MakeConnectionResultCallback(conn), kConnectionOptions);
-  RunLoopUntilIdle();
-  ASSERT_TRUE(conn);
-
-  hci::ConnectionHandle handle = conn->handle();
-
-  EXPECT_DEATH_IF_SUPPORTED(
-      {
-        // Remove the peer without removing it from the cache. Normally this is not recommended as
-        // implied by the name of the function but it is possible for this invariant to be broken
-        // due to programmer error. The connection manager should assert this invariant.
-        peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
-        __UNUSED auto _ = peer_cache()->RemoveDisconnectedPeer(peer->identifier());
-
-        test_device()->SendDisconnectionCompleteEvent(handle);
-        RunLoopUntilIdle();
-      },
-      ".*");
 }
 
 // Test fixture for tests that disconnect a connection in various ways and expect that
