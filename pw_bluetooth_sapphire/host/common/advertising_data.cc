@@ -18,12 +18,15 @@
 namespace bt {
 
 namespace {
+
+// Return true to indicate that the UUID was processed successfully, false to indicate failure.
+using UuidFunction = fit::function<bool(const UUID&)>;
+
 // Parses `data` into `data.size()` / `uuid_size` UUIDs, callling `func` with each parsed UUID.
-// Returns false without further parsing if `uuid_size` does not evenly divide `data.size()`,
-// otherwise returns true.
-bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size,
-                fit::function<void(UUID)> uuid_handler) {
-  ZX_ASSERT(uuid_handler);
+// Returns false without further parsing if `uuid_size` does not evenly divide `data.size()` or
+// `func` returns false for any UUID, otherwise returns true.
+bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
+  ZX_ASSERT(func);
 
   if (data.size() % uuid_size) {
     return false;
@@ -33,10 +36,9 @@ bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size,
   for (size_t i = 0; i < uuid_count; i++) {
     const BufferView uuid_bytes(data.data() + (i * uuid_size), uuid_size);
     UUID uuid;
-    if (!UUID::FromBytes(uuid_bytes, &uuid)) {
+    if (!UUID::FromBytes(uuid_bytes, &uuid) || !func(uuid)) {
       return false;
     }
-    uuid_handler(uuid);
   }
 
   return true;
@@ -255,14 +257,14 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
       case DataType::kComplete32BitServiceUuids:
       case DataType::kIncomplete128BitServiceUuids:
       case DataType::kComplete128BitServiceUuids: {
-        auto uuid_cb = [&out_ad](UUID uuid) {
-          // AddServiceUuid only fails when the number of N bit UUIDs exceed the kMaxNBitUuids
-          // bounds. Because these bounds are defined based on the number of UUIDs that fit in the
-          // wire (byte) representation of an AdvertisingData, it is impossible for the number of N
-          // bit service UUIDs to be exceeded when parsing an AdvertisingData from bytes.
-          ZX_ASSERT(out_ad.AddServiceUuid(uuid));
-        };
-        if (!ParseUuids(field, SizeForType(type), uuid_cb)) {
+        // AddServiceUuid fails when the number of N bit UUIDs exceed the kMaxNBitUuids bounds.
+        // These bounds are based on the number of UUIDs that fit in the wire (byte) representation
+        // of an AdvertisingData, so for valid AdvertisingData packets, the number of N bit service
+        // UUIDs cannot exceed the bounds limits. However, because invalid packets may provide
+        // multiple DataType fields for the same UUID (not allowed by CSS v9 Part A 1.1.1), this
+        // limit may be exceeded, in which case we reject the packet.
+        if (!ParseUuids(field, SizeForType(type),
+                        fit::bind_member(&out_ad, &AdvertisingData::AddServiceUuid))) {
           return fitx::error(ParseError::kUuidsMalformed);
         }
         break;

@@ -80,8 +80,10 @@ constexpr uint8_t kMaxEncodedServiceDataLength = kMaxUint8 - 1;
 // The length of an encoded URI together with its 1-byte type field must not exceed uint8_t limits
 constexpr uint8_t kMaxEncodedUriLength = kMaxUint8 - 1;
 
-// For each UUID size, 1 (type byte) + # of UUIDs * UUID size = length of that size's encoded UUIDs.
-// This length must fit in a uint8_t, hence there is a per-UUID-size limit on the # of UUIDs.
+// "A packet or data block shall not contain more than one instance for each Service UUID data
+// size." (Core Specification Supplement v9 Part A 1.1.1). For each UUID size, 1 (type byte) + # of
+// UUIDs * UUID size = length of that size's encoded UUIDs. This length must fit in a uint8_t, hence
+// there is a per-UUID-size limit on the # of UUIDs.
 constexpr uint8_t kMax16BitUuids = (kMaxUint8 - 1) / UUIDElemSize::k16Bit;
 constexpr uint8_t kMax32BitUuids = (kMaxUint8 - 1) / UUIDElemSize::k32Bit;
 constexpr uint8_t kMax128BitUuids = (kMaxUint8 - 1) / UUIDElemSize::k128Bit;

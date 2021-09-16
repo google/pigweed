@@ -197,24 +197,47 @@ TEST(AdvertisingDataTest, ServiceData) {
   EXPECT_TRUE(ContainersEqual(bytes.view(8), data->service_data(eddystone)));
 }
 
-TEST(AdvertisingDataTest, MaxOutServiceUuids) {
-  // Space for 16 bit UUIDs + length + type fields
-  const uint64_t kExpectedBuffSize = (2 + kMax16BitUuids * UUIDElemSize::k16Bit);
+// Per CSS v9 Part A 1.1.1, "A packet or data block shall not contain more than one instance for
+// each Service UUID data size". We enforce this by failing to parse AdvertisingData with UUIDs of a
+// particular size which exceed the amount that can fit in one TLV field.
+TEST(AdvertisingDataTest, TooManyUuidsOfSizeRejected) {
+  // Space for the maximum # of 16 bit UUIDs + length + type fields.
+  const uint64_t kMaxAllowed16BitUuidsSize = (2 + kMax16BitUuids * UUIDElemSize::k16Bit);
+  // Space for one more UUID + type and length fields
+  const uint64_t kExpectedBuffSize = kMaxAllowed16BitUuidsSize + (2 + UUIDElemSize::k16Bit);
+
   DynamicByteBuffer bytes(kExpectedBuffSize);
   uint64_t offset = 0;
+  // Write first TLV field with maximum # of UUIDs
   bytes.Write(StaticByteBuffer{
       kMax16BitUuids * UUIDElemSize::k16Bit + 1,                  // Size byte
       static_cast<uint8_t>(DataType::kComplete16BitServiceUuids)  // Type byte
   });
   offset += 2;
   for (uint16_t i = 0; i < kMax16BitUuids; ++i) {
-    UUID uuid(i);
+    UUID uuid(static_cast<uint16_t>(i + 'a'));
     bytes.Write(uuid.CompactView(), offset);
     offset += uuid.CompactSize();
   }
-  AdvertisingData::ParseResult adv_result = AdvertisingData::FromBytes(bytes);
+  // Verify that we successfully parse an AD with the maximum amount of 16 bit UUIDs
+  AdvertisingData::ParseResult adv_result =
+      AdvertisingData::FromBytes(bytes.view(/*pos=*/0, /*size=*/kMaxAllowed16BitUuidsSize));
   ASSERT_TRUE(adv_result.is_ok());
   EXPECT_EQ(kMax16BitUuids, adv_result->service_uuids().size());
+  // Write second Complete 16 bit Service UUIDs TLV field with one more UUID
+  bytes.Write(
+      StaticByteBuffer{
+          UUIDElemSize::k16Bit + 1,                                   // Size byte
+          static_cast<uint8_t>(DataType::kComplete16BitServiceUuids)  // Type byte
+      },
+      offset);
+  offset += 2;
+  UUID uuid(static_cast<uint16_t>(kMax16BitUuids + 'a'));
+  bytes.Write(uuid.CompactView(), offset);
+
+  adv_result = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(adv_result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kUuidsMalformed, adv_result.error_value());
 }
 
 TEST(AdvertisingDataTest, InvalidTlvFormat) {
