@@ -33,13 +33,14 @@ class GenUnsignedUpdateBundleTest(unittest.TestCase):
             (temp_root / 'foo.bin').write_bytes(foo_bytes)
             (temp_root / 'bar.bin').write_bytes(bar_bytes)
             (temp_root / 'baz.bin').write_bytes(baz_bytes)
-            (temp_root / 'qux.exe').write_bytes(qux_bytes)
+            (temp_root / 'subdir').mkdir()
+            (temp_root / 'subdir' / 'qux.exe').write_bytes(qux_bytes)
             bundle = update_bundle.gen_unsigned_update_bundle(temp_root)
 
         self.assertEqual(foo_bytes, bundle.target_payloads['foo.bin'])
         self.assertEqual(bar_bytes, bundle.target_payloads['bar.bin'])
         self.assertEqual(baz_bytes, bundle.target_payloads['baz.bin'])
-        self.assertEqual(qux_bytes, bundle.target_payloads['qux.exe'])
+        self.assertEqual(qux_bytes, bundle.target_payloads['subdir/qux.exe'])
 
     def test_excludes(self):
         """Checks that excludes are excluded from update bundles."""

@@ -50,11 +50,15 @@ def gen_unsigned_update_bundle(
     if not tuf_repo.is_dir():
         raise ValueError('TUF repository must be a directory.')
     target_payloads = {}
-    for path in tuf_repo.glob('*'):
+    for path in tuf_repo.glob('**/*'):
+        if path.is_dir():
+            continue
+
         rel_path = path.relative_to(tuf_repo)
         if rel_path in exclude:
             continue
-        target_file_name = str(rel_path)
+
+        target_file_name = str(rel_path.as_posix())
         if remap_paths:
             if rel_path in remap_paths:
                 target_file_name = remap_paths[rel_path]
@@ -107,15 +111,17 @@ def parse_args():
                         '--out',
                         type=Path,
                         help='Output path for serialized UpdateBundle')
-    parser.add_argument('-e'
+    parser.add_argument('-e',
                         '--exclude',
                         type=Path,
                         nargs='+',
+                        default=tuple(),
                         help='Exclude a path from the TUF repository')
     parser.add_argument('-r',
                         '--remap',
                         type=str,
                         nargs='+',
+                        default=tuple(),
                         help='Remap a path to a custom target file name')
     return parser.parse_args()
 
