@@ -75,7 +75,7 @@ describe('Client', () => {
   it('processPacket with invalid proto data', () => {
     const textEncoder = new TextEncoder();
     const data = textEncoder.encode('NOT a packet!');
-    expect(client.processPacket(data)).toEqual(Status.DATA_LOSS)
+    expect(client.processPacket(data)).toEqual(Status.DATA_LOSS);
   });
 
   it('processPacket not for client', () => {
@@ -158,7 +158,7 @@ describe('RPC', () => {
     packet.setChannelId(channelId);
     packet.setServiceId(method.service.id);
     packet.setMethodId(method.id);
-    packet.setStatus(status)
+    packet.setStatus(status);
     packet.setPayload(payload);
 
     nextPackets.push([packet.serializeBinary(), Status.OK]);
@@ -253,9 +253,9 @@ describe('RPC', () => {
       expect(requests.length).toBeGreaterThan(0);
       requests = [];
 
-      expect(call.cancel()).toBeTrue()
-      expect(call.cancel()).toBeFalse()
-      expect(onNext).not.toHaveBeenCalled()
+      expect(call.cancel()).toBeTrue();
+      expect(call.cancel()).toBeFalse();
+      expect(onNext).not.toHaveBeenCalled();
     });
 
     it('nonblocking duplicate calls first is cancelled', () => {
@@ -279,4 +279,79 @@ describe('RPC', () => {
       expect(call.callbackException!.message).toEqual('Something went wrong!');
     });
   })
+
+  describe('ServerStreaming', () => {
+    let serverStreaming: MethodStub;
+    let request: any;
+    let requestType: any;
+    let responseType: any;
+
+    beforeEach(async () => {
+      serverStreaming = client.channel()?.methodStub(
+          'pw.rpc.test1.TheTestService.SomeServerStreaming')!;
+      requestType = serverStreaming.method.requestType;
+      responseType = serverStreaming.method.responseType;
+      request = new requestType();
+    });
+
+    it('non-blocking call', () => {
+      const response1 = new responseType();
+      response1.setPayload('!!!');
+      const response2 = new responseType();
+      response2.setPayload('?');
+
+      const request = new requestType()
+      request.setMagicNumber(4);
+
+      for (let i = 0; i < 3; i++) {
+        enqueueServerStream(
+            1, serverStreaming.method, response1.serializeBinary());
+        enqueueServerStream(
+            1, serverStreaming.method, response2.serializeBinary());
+        enqueueResponse(1, serverStreaming.method, Status.ABORTED);
+
+        const onNext = jasmine.createSpy();
+        const onCompleted = jasmine.createSpy();
+        const onError = jasmine.createSpy();
+        serverStreaming.invoke(request, onNext, onCompleted, onError);
+
+        expect(onNext).toHaveBeenCalledWith(response1);
+        expect(onNext).toHaveBeenCalledWith(response2);
+        expect(onError).not.toHaveBeenCalled();
+        expect(onCompleted).toHaveBeenCalledOnceWith(Status.ABORTED);
+
+        expect(sentPayload(serverStreaming.method.requestType).getMagicNumber())
+            .toEqual(4);
+      }
+    });
+
+    it('non-blocking cancel', () => {
+      const response = new responseType();
+      response.setPayload('!!!');
+      enqueueServerStream(
+          1, serverStreaming.method, response.serializeBinary());
+      const request = new requestType();
+      request.setMagicNumber(3);
+
+      const onNext = jasmine.createSpy();
+      const onCompleted = jasmine.createSpy();
+      const onError = jasmine.createSpy();
+      let call = serverStreaming.invoke(request, onNext, () => {}, () => {});
+      expect(onNext).toHaveBeenCalledOnceWith(response);
+
+      onNext.calls.reset();
+
+      call.cancel();
+      expect(lastRequest().getType()).toEqual(PacketType.CANCEL);
+
+      // Ensure the RPC can be called after being cancelled.
+      enqueueServerStream(
+          1, serverStreaming.method, response.serializeBinary());
+      enqueueResponse(1, serverStreaming.method, Status.OK);
+      call = serverStreaming.invoke(request, onNext, onCompleted, onError);
+      expect(onNext).toHaveBeenCalledWith(response);
+      expect(onError).not.toHaveBeenCalled();
+      expect(onCompleted).toHaveBeenCalledOnceWith(Status.OK);
+    });
+  });
 });

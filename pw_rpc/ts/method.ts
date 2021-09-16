@@ -76,7 +76,10 @@ class ServerStreamingMethodStub extends MethodStub {
       onNext: Callback = () => {},
       onCompleted: Callback = () => {},
       onError: Callback = () => {}): ServerStreamingCall {
-    throw Error('ClientStreaming invoke() not implemented');
+    const call = new ServerStreamingCall(
+        this.rpcs, this.rpc, onNext, onCompleted, onError);
+    call.invoke(request);
+    return call;
   }
 }
 

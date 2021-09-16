@@ -78,7 +78,15 @@ Only non blocking calls are currently supported.
 
 Server Streaming RPC
 --------------------
-Unsupported
+Once the server stream is invoked, responses are read via the ``onNext``
+callback.
+
+.. code-block:: typescript
+
+  serverStreamRpc = client.channel()?.methodStub(
+      'pw.rpc.test1.TheTestService.SomeUnary')!;
+  const onNext = (response) => {console.log(response)};
+  const call = serverStreamRpc.invoke(undefined, onNext);
 
 Client Streaming RPC
 --------------------
