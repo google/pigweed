@@ -94,7 +94,9 @@ pw_cc_test(
         "rpc_log_drain_test.cc",
     ],
     deps = [
+        ":log_service",
         ":rpc_log_drain",
+        "//pw_rpc/raw:test_method_context",
         "//pw_unit_test",
     ],
 )

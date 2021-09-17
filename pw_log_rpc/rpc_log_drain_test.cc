@@ -19,8 +19,12 @@
 #include <span>
 
 #include "gtest/gtest.h"
+#include "pw_log_rpc/log_service.h"
 #include "pw_log_rpc/rpc_log_drain_map.h"
 #include "pw_multisink/multisink.h"
+#include "pw_rpc/channel.h"
+#include "pw_rpc/raw/fake_channel_output.h"
+#include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_status/status.h"
 #include "pw_sync/mutex.h"
 
@@ -32,11 +36,11 @@ static constexpr size_t kBufferSize =
 TEST(RpcLogDrain, TryFlushDrainWithClosedWriter) {
   // Drain without a writer.
   const uint32_t drain_id = 1;
-  std::array<std::byte, kBufferSize> buffer1;
+  std::array<std::byte, kBufferSize> buffer;
   sync::Mutex mutex;
   RpcLogDrain drain(
       drain_id,
-      buffer1,
+      buffer,
       mutex,
       RpcLogDrain::LogDrainErrorHandling::kCloseStreamOnWriterError);
   EXPECT_EQ(drain.channel_id(), drain_id);
@@ -87,8 +91,76 @@ TEST(RpcLogDrainMap, GetDrainsByIdFromDrainMap) {
   }
 }
 
-// TODO(cachinchilla): add tests for passing an open RawServerWriter when there
-// is a way to create an one manually.
+TEST(RpcLogDrain, FlushingDrainWithOpenWriter) {
+  const uint32_t drain_id = 1;
+  std::array<std::byte, kBufferSize> buffer;
+  sync::Mutex mutex;
+  std::array<RpcLogDrain, 1> drains{
+      RpcLogDrain(
+          drain_id,
+          buffer,
+          mutex,
+          RpcLogDrain::LogDrainErrorHandling::kCloseStreamOnWriterError),
+  };
+  RpcLogDrainMap drain_map(drains);
+  LogService log_service(drain_map);
+
+  rpc::RawFakeChannelOutput<128, 1> output(rpc::MethodType::kServerStreaming);
+  rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
+  rpc::Server server(std::span(&channel, 1));
+
+  // Attach drain to a MultiSink.
+  RpcLogDrain& drain = drains[0];
+  std::array<std::byte, kBufferSize * 2> multisink_buffer;
+  multisink::MultiSink multisink(multisink_buffer);
+  multisink.AttachDrain(drain);
+  EXPECT_EQ(drain.Flush(), Status::Unavailable());
+
+  rpc::RawServerWriter writer =
+      rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
+          server, drain_id, log_service);
+  ASSERT_TRUE(writer.open());
+  EXPECT_EQ(drain.Open(writer), OkStatus());
+  EXPECT_EQ(drain.Flush(), OkStatus());
+  // Can call multliple times until closed on error.
+  EXPECT_EQ(drain.Flush(), OkStatus());
+  EXPECT_EQ(drain.Close(), OkStatus());
+  rpc::RawServerWriter& writer_ref = writer;
+  ASSERT_FALSE(writer_ref.open());
+  EXPECT_EQ(drain.Flush(), Status::Unavailable());
+}
+
+TEST(RpcLogDrain, TryReopenOpenedDrain) {
+  const uint32_t drain_id = 1;
+  std::array<std::byte, kBufferSize> buffer;
+  sync::Mutex mutex;
+  std::array<RpcLogDrain, 1> drains{
+      RpcLogDrain(
+          drain_id,
+          buffer,
+          mutex,
+          RpcLogDrain::LogDrainErrorHandling::kCloseStreamOnWriterError),
+  };
+  RpcLogDrainMap drain_map(drains);
+  LogService log_service(drain_map);
+
+  rpc::RawFakeChannelOutput<128, 1> output(rpc::MethodType::kServerStreaming);
+  rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
+  rpc::Server server(std::span(&channel, 1));
+
+  // Open Drain and try to open with a new writer.
+  rpc::RawServerWriter writer =
+      rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
+          server, drain_id, log_service);
+  ASSERT_TRUE(writer.open());
+  RpcLogDrain& drain = drains[0];
+  EXPECT_EQ(drain.Open(writer), OkStatus());
+  rpc::RawServerWriter second_writer =
+      rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
+          server, drain_id, log_service);
+  ASSERT_TRUE(second_writer.open());
+  EXPECT_EQ(drain.Open(second_writer), Status::AlreadyExists());
+}
 
 }  // namespace
 }  // namespace pw::log_rpc

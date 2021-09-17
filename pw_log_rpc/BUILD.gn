@@ -91,7 +91,11 @@ pw_test("log_service_test") {
 
 pw_test("rpc_log_drain_test") {
   sources = [ "rpc_log_drain_test.cc" ]
-  deps = [ ":rpc_log_drain" ]
+  deps = [
+    ":log_service",
+    ":rpc_log_drain",
+    "$dir_pw_rpc/raw:test_method_context",
+  ]
 }
 
 # TODO(cachinchilla): update docs.
