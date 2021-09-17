@@ -81,7 +81,7 @@ service BundledUpdateService {
   //
   // Device UpdateState should be INACTIVE when calling, will otherwise be
   // rejected.
-  rpc PrepareForUpdate(pw.protobuf.Empty) returns (OperationResult) {};
+  rpc PrepareForUpdate(pw.protobuf.Empty) returns (PrepareUpdateResult) {};
 
   // Verify the bundle that has been transferred to the staging area. Close the
   // pw_transfer channel used for staging bundle.
