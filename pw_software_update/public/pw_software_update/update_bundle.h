@@ -17,14 +17,16 @@
 #include <cstddef>
 
 #include "pw_blob_store/blob_store.h"
+#include "pw_protobuf/map_utils.h"
+#include "pw_protobuf/message.h"
 #include "pw_software_update/update_backend.h"
+#include "pw_stream/memory_stream.h"
 
 namespace pw::software_update {
 
-// TODO(pwbug/456): Place-holder declaration for now. To be imlemented
+// TODO(pwbug/456): Place-holder declaration for now. To be implemented
 // and moved elsewhere.
-class ElementPayloadReader {};
-class Manifest;
+class Manifest {};
 
 // UpdateBundle is responsible for parsing, verifying and providing
 // target payload access of a software update bundle. It takes the following as
@@ -74,10 +76,10 @@ class UpdateBundle {
  public:
   // UpdateBundle
   // update_bundle - The software update bundle data on storage.
-  // helper - project-specific BundledUpdateHelper
+  // backend - project-specific BundledUpdateBackend
   UpdateBundle(blob_store::BlobStore& update_bundle,
                BundledUpdateBackend& backend)
-      : bundle_(update_bundle), backend_(backend) {}
+      : bundle_(update_bundle), backend_(backend), bundle_reader_(bundle_) {}
 
   // Opens and verifies the software update bundle, using the TUF process.
   //
@@ -116,11 +118,13 @@ class UpdateBundle {
   // Returns:
   // A reader instance for the target file.
   // TODO(pwbug/456): Figure out a way to propagate error.
-  ElementPayloadReader GetTargetPayload(std::string_view target_file);
+  stream::IntervalReader GetTargetPayload(std::string_view target_file);
 
  private:
   blob_store::BlobStore& bundle_;
   BundledUpdateBackend& backend_;
+  blob_store::BlobStore::BlobReader bundle_reader_;
+  protobuf::Message decoder_;
 };
 
 }  // namespace pw::software_update

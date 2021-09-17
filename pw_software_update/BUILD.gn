@@ -52,10 +52,6 @@ if (dir_pw_third_party_protobuf != "") {
   }
 }
 
-pw_test_group("tests") {
-  tests = [ ":update_bundle_test" ]
-}
-
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
@@ -83,6 +79,7 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
   pw_source_set("update_bundle") {
     public_configs = [ ":public_include_path" ]
     public_deps = [
+      ":protos.pwpb",
       ":update_backend",
       dir_pw_blob_store,
       dir_pw_kvs,
@@ -92,6 +89,7 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
       "public/pw_software_update/config.h",
       "public/pw_software_update/update_bundle.h",
     ]
+    sources = [ "update_bundle.cc" ]
   }
 } else {
   group("rpc_service") {
@@ -100,14 +98,36 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
   }
 }
 
+pw_python_action("generate_test_bundle") {
+  header_output = "$target_gen_dir/$target_name/test_bundles.h"
+  script = "py/pw_software_update/generate_test_bundle.py"
+  python_deps = [
+    ":protos.python",
+    "py",
+  ]
+  outputs = [ header_output ]
+  args = [ rebase_path(header_output) ]
+}
+
+config("generated_test_bundle_include") {
+  _generated_outputs = get_target_outputs(":generate_test_bundle")
+  include_dirs = [ get_path_info(_generated_outputs[0], "dir") ]
+}
+
 pw_test("update_bundle_test") {
   enable_if =
       dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != ""
   sources = [ "update_bundle_test.cc" ]
   public_deps = [
+    ":generate_test_bundle",
     ":rpc_service",
     ":update_bundle",
     "$dir_pw_kvs:fake_flash",
     "$dir_pw_kvs:fake_flash_test_key_value_store",
   ]
+  configs = [ ":generated_test_bundle_include" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":update_bundle_test" ]
 }

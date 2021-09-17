@@ -104,6 +104,8 @@ class Bytes {
   Status status() { return reader_.status(); }
 
   // Check whether the bytes value equals the given `bytes`.
+  // TODO(pwbug/456): Should this return `bool`? In the case of error, is it ok
+  // to just return false?
   Result<bool> Equal(ConstByteSpan bytes);
 
  private:
@@ -229,9 +231,9 @@ class Message {
     // template specialization.
     template <typename FieldType>
     FieldType As() {
-      protobuf::StreamDecoder decoder(field_reader_.Reset());
+      StreamDecoder decoder(field_reader_.Reset());
       PW_TRY(decoder.Next());
-      Result<protobuf::StreamDecoder::Bounds> payload_bounds =
+      Result<StreamDecoder::Bounds> payload_bounds =
           decoder.GetLengthDelimitedPayloadBounds();
       PW_TRY(payload_bounds.status());
       // The bounds is relative to the given stream::IntervalReader. Convert
