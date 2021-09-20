@@ -279,6 +279,22 @@ Arguments
     directory. Parent directories are automatically created for each file. If a
     file would be overwritten an error is raised.
 
+- ``generate_setup_cfg`` - If included, create a merged ``setup.cfg`` for all
+  python Packages using a ``common_config_file`` as a base. That file should
+  contain the required fields in the ``metadata`` and ``options`` sections as
+  shown in
+  `Configuring setup() using setup.cfg files <https://setuptools.pypa.io/en/latest/userguide/declarative_config.html>`_.
+  ``append_git_sha_to_version`` and ``append_date_to_version`` will optionally
+  append the current git SHA or date to the package version string after a ``+``
+  sign.
+
+  .. code-block::
+
+     generate_setup_cfg = {
+       common_config_file = "pypi_common_setup.cfg"
+       append_git_sha_to_version = true
+       append_date_to_version = true
+     }
 
 Example
 -------
@@ -302,6 +318,11 @@ Example
        "//some_python_package/py/BUILD.bazel > some_python_package/BUILD.bazel",
        "//another_python_package/py/BUILD.bazel > another_python_package/BUILD.bazel",
      ]
+     generate_setup_cfg = {
+       common_config_file = "pypi_common_setup.cfg"
+       append_git_sha_to_version = true
+       append_date_to_version = true
+     }
    }
 
 :octicon:`file-directory;1em` ./out/obj/pw_env_setup/build_python_source_tree/
@@ -310,6 +331,7 @@ Example
 
    $ tree ./out/obj/pw_env_setup/build_python_source_tree/
    ├── README.md
+   ├── setup.cfg
    ├── some_python_package
    │   ├── BUILD.bazel
    │   ├── __init__.py

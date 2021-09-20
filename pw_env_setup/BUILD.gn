@@ -105,3 +105,16 @@ pw_create_python_source_tree("build_pigweed_python_source_tree") {
     "$dir_pigweed/pw_status/py/BUILD.bazel > pw_status/BUILD.bazel",
   ]
 }
+
+pw_create_python_source_tree("pypi_pigweed_python_source_tree") {
+  packages = _pigweed_python_deps
+  generate_setup_cfg = {
+    common_config_file = "pypi_common_setup.cfg"
+    append_git_sha_to_version = true
+  }
+  extra_files = [
+    "$dir_pigweed/LICENSE > LICENSE",
+    "$dir_pigweed/README.md > README.md",
+    "pypi_pyproject.toml > pyproject.toml",
+  ]
+}

@@ -150,12 +150,20 @@ template("pw_create_python_source_tree") {
   _metadata_json_file_list =
       "${target_gen_dir}/${target_name}_metadata_path_list.txt"
 
-  # Convert extra_file strings to input, outputs and create_python_tree.py args.
-  _delimiter = ">"
+  # If generating a setup.cfg file a common base file must be provided.
+  if (defined(invoker.generate_setup_cfg)) {
+    generate_setup_cfg = invoker.generate_setup_cfg
+    assert(defined(generate_setup_cfg.common_config_file),
+           "'common_config_file' is required in generate_setup_cfg")
+  }
+
   _extra_file_inputs = []
-  _extra_file_outputs = []
   _extra_file_args = []
+
+  # Convert extra_file strings to input, outputs and create_python_tree.py args.
   if (defined(invoker.extra_files)) {
+    _delimiter = ">"
+    _extra_file_outputs = []
     foreach(input, invoker.extra_files) {
       # Remove spaces before and after the delimiter
       input = string_replace(input, " $_delimiter", _delimiter)
@@ -206,6 +214,22 @@ template("pw_create_python_source_tree") {
       "--input-list-files",
       rebase_path(_metadata_json_file_list, root_build_dir),
     ]
+
+    # Add required setup.cfg args if we are generating a merged config.
+    if (defined(generate_setup_cfg)) {
+      if (defined(generate_setup_cfg.common_config_file)) {
+        args += [
+          "--setupcfg-common-file",
+          rebase_path(generate_setup_cfg.common_config_file, root_build_dir),
+        ]
+      }
+      if (defined(generate_setup_cfg.append_git_sha_to_version)) {
+        args += [ "--setupcfg-version-append-git-sha" ]
+      }
+      if (defined(generate_setup_cfg.append_date_to_version)) {
+        args += [ "--setupcfg-version-append-date" ]
+      }
+    }
 
     if (_extra_file_args == []) {
       # No known output files - stamp instead.

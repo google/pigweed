@@ -197,7 +197,15 @@ def _get_paths_from_command(source_dir: Path, *args, **kwargs) -> Set[Path]:
 
 
 # Finds string literals with '.' in them.
-_MAYBE_A_PATH = re.compile(r'"([^\n"]+\.[^\n"]+)"')
+_MAYBE_A_PATH = re.compile(
+    r'"'  # Starting double quote.
+    # Start capture group 1 - the whole filename:
+    #   File basename, a single period, file extension.
+    r'([^\n" ]+\.[^\n" ]+)'
+    # Non-capturing group 2 (optional).
+    r'(?: > [^\n"]+)?'  # pw_zip style string "input_file.txt > output_file.txt"
+    r'"'  # Ending double quote.
+)
 
 
 def _search_files_for_paths(build_files: Iterable[Path]) -> Iterable[Path]:

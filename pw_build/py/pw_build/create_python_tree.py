@@ -14,11 +14,15 @@
 """Build a Python Source tree."""
 
 import argparse
+import configparser
+from datetime import datetime
+import io
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import tempfile
 from typing import Iterable, List
 
@@ -35,10 +39,25 @@ def _parse_args():
     parser.add_argument('--include-tests',
                         action='store_true',
                         help='Include tests in the tests dir.')
+
+    parser.add_argument('--setupcfg-common-file',
+                        type=Path,
+                        help='A file containing the common set of options for'
+                        'incluing in the merged setup.cfg provided version.')
+    parser.add_argument('--setupcfg-version-append-git-sha',
+                        action='store_true',
+                        help='Append the current git SHA to the setup.cfg '
+                        'version.')
+    parser.add_argument('--setupcfg-version-append-date',
+                        action='store_true',
+                        help='Append the current date to the setup.cfg '
+                        'version.')
+
     parser.add_argument(
         '--extra-files',
         nargs='+',
         help='Paths to extra files that should be included in the output dir.')
+
     parser.add_argument(
         '--input-list-files',
         nargs='+',
@@ -49,9 +68,139 @@ def _parse_args():
     return parser.parse_args()
 
 
-# TODO(tonymd): Implement a way to merge all configs into one.
-def merge_configs():
-    pass
+class UnknownGitSha(Exception):
+    "Exception thrown when the current git SHA cannot be found."
+
+
+def get_current_git_sha() -> str:
+    git_command = 'git log -1 --pretty=format:%h'
+    process = subprocess.run(git_command.split(),
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+    gitsha = process.stdout.decode()
+    if process.returncode != 0 or not gitsha:
+        error_output = f'\n"{git_command}" failed with:' f'\n{gitsha}'
+        if process.stderr:
+            error_output += f'\n{process.stderr.decode()}'
+        raise UnknownGitSha('Could not determine the current git SHA.' +
+                            error_output)
+    return gitsha.strip()
+
+
+def get_current_date() -> str:
+    return datetime.now().strftime('%Y%m%d%H%M')
+
+
+class UnexpectedConfigSection(Exception):
+    "Exception thrown when the common configparser contains unexpected values."
+
+
+def load_common_config(common_config: Path,
+                       append_git_sha: bool = False,
+                       append_date: bool = False) -> configparser.ConfigParser:
+    """Load an existing ConfigParser file and update metadata.version."""
+    config = configparser.ConfigParser()
+    config.read(common_config)
+
+    # Check for existing values that should not be present
+    if config.has_option('options', 'packages'):
+        value = str(config['options']['packages'])
+        raise UnexpectedConfigSection(
+            f'[options] packages already defined as: {value}')
+
+    if config.has_section('options.package_data'):
+        raise UnexpectedConfigSection(
+            '[options.package_data] already defined as:\n' +
+            str(dict(config['options.package_data'].items())))
+
+    if config.has_section('options.entry_points'):
+        raise UnexpectedConfigSection(
+            '[options.entry_points] already defined as:\n' +
+            str(dict(config['options.entry_points'].items())))
+
+    # Metadata and option sections should already be defined.
+    assert config.has_section('metadata')
+    assert config.has_section('options')
+
+    # Append build metadata if applicable.
+    build_metadata = []
+    if append_date:
+        build_metadata.append(get_current_date())
+    if append_git_sha:
+        build_metadata.append(get_current_git_sha())
+    if build_metadata:
+        version_prefix = config['metadata']['version']
+        build_metadata_text = '.'.join(build_metadata)
+        config['metadata']['version'] = (
+            f'{version_prefix}+{build_metadata_text}')
+    return config
+
+
+def update_config_with_packages(
+    config: configparser.ConfigParser,
+    python_packages: Iterable[PythonPackage],
+) -> None:
+    """Merge setup.cfg files from a set of python packages."""
+    config['options']['packages'] = 'find:'
+    config['options.package_data'] = {}
+    config['options.entry_points'] = {}
+
+    # Save a list of packages being bundled.
+    included_packages = [pkg.package_name for pkg in python_packages]
+
+    for pkg in python_packages:
+        assert pkg.config
+
+        # Collect install_requires
+        if pkg.config.has_option('options', 'install_requires'):
+            existing_requires = config['options'].get('install_requires', '\n')
+            # Requires are delimited by newlines or semicolons.
+            # Split existing list on either one.
+            this_requires = re.split(r' *[\n;] *',
+                                     pkg.config['options']['install_requires'])
+            new_requires = existing_requires.splitlines() + this_requires
+            # Remove requires already included in this merged config.
+            new_requires = [
+                line for line in new_requires
+                if line and line not in included_packages
+            ]
+            # Remove duplictes and sort require list.
+            new_requires_text = '\n' + '\n'.join(sorted(set(new_requires)))
+            config['options']['install_requires'] = new_requires_text
+
+        # Collect package_data
+        if pkg.config.has_section('options.package_data'):
+            for key, value in pkg.config['options.package_data'].items():
+                config['options.package_data'][key] = value
+
+        # Collect entry_points
+        if pkg.config.has_section('options.entry_points'):
+            for key, value in pkg.config['options.entry_points'].items():
+                existing_entry_points = config['options.entry_points'].get(
+                    key, '')
+                new_entry_points = '\n'.join([existing_entry_points, value])
+                # Remove any empty lines
+                new_entry_points = new_entry_points.replace('\n\n', '\n')
+                config['options.entry_points'][key] = new_entry_points
+
+
+def write_config(
+    common_config: Path,
+    final_config: configparser.ConfigParser,
+    tree_destination_dir: Path,
+) -> None:
+    """Write a the final setup.cfg file with license comment block."""
+    # Get the license comment block from the common_config.
+    comment_block_text = ''
+    comment_block_match = re.search(r'((^#.*?[\r\n])*)([^#])',
+                                    common_config.read_text(), re.MULTILINE)
+    if comment_block_match:
+        comment_block_text = comment_block_match.group(1)
+
+    setup_cfg_file = tree_destination_dir.resolve() / 'setup.cfg'
+    setup_cfg_text = io.StringIO()
+    final_config.write(setup_cfg_text)
+    setup_cfg_file.write_text(comment_block_text + setup_cfg_text.getvalue())
 
 
 def load_packages(input_list_files: Iterable[Path]) -> List[PythonPackage]:
@@ -166,6 +315,18 @@ def main():
                       tree_destination_dir=args.tree_destination_dir,
                       include_tests=args.include_tests)
     copy_extra_files(args.extra_files)
+
+    if args.setupcfg_common_file:
+        config = load_common_config(
+            common_config=args.setupcfg_common_file,
+            append_git_sha=args.setupcfg_version_append_git_sha,
+            append_date=args.setupcfg_version_append_date)
+
+        update_config_with_packages(config=config, python_packages=py_packages)
+
+        write_config(common_config=args.setupcfg_common_file,
+                     final_config=config,
+                     tree_destination_dir=args.tree_destination_dir)
 
 
 if __name__ == '__main__':
