@@ -333,12 +333,16 @@ class ProtoServiceMethod:
             """Returns the pw_rpc MethodType C++ enum for this method type."""
             return '::pw::rpc::MethodType::' + self.value
 
-    def __init__(self, name: str, method_type: Type, request_type: ProtoNode,
-                 response_type: ProtoNode):
+    def __init__(self, service: ProtoService, name: str, method_type: Type,
+                 request_type: ProtoNode, response_type: ProtoNode):
+        self._service = service
         self._name = name
         self._type = method_type
         self._request_type = request_type
         self._response_type = response_type
+
+    def service(self) -> ProtoService:
+        return self._service
 
     def name(self) -> str:
         return self._name
@@ -457,7 +461,7 @@ def _add_service_methods(global_root: ProtoNode, package_root: ProtoNode,
                                              method.output_type)
 
         service.add_method(
-            ProtoServiceMethod(method.name, method_type, request_node,
+            ProtoServiceMethod(service, method.name, method_type, request_node,
                                response_node))
 
 

@@ -114,6 +114,8 @@ class NanopbCodeGenerator(CodeGenerator):
 
         # TODO(frolv): Deprecate this channel-based API.
         # ======== Deprecated API ========
+        self.line('// This function is DEPRECATED. Use pw_rpc::nanopb::'
+                  f'{method.service().name()}::{method.name()}() instead.')
         self.line(f'static {call_alias} {method.name()}(')
         with self.indent(4):
             self.line(f'{RPC_NAMESPACE}::Channel& channel,')

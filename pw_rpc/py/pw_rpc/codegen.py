@@ -263,15 +263,19 @@ def _generate_deprecated_aliases(gen: CodeGenerator,
     gen.line()
     gen.line('}  // namespace generated')
     gen.line()
-    gen.line(f'namespace {gen.name()} {{')
-    gen.line()
 
-    for service in services:
-        gen.line(f'using {service.name()}Client = '
-                 f'pw_rpc::{gen.name()}::{service.name()}::Client;')
+    # Only generate aliases for the Nanopb client since the raw client will
+    # never have the deprecated structure.
+    if gen.name() == 'nanopb':
+        gen.line(f'namespace {gen.name()} {{')
+        gen.line()
 
-    gen.line()
-    gen.line(f'}}  // namespace {gen.name()}')
+        for service in services:
+            gen.line(f'using {service.name()}Client = '
+                     f'pw_rpc::{gen.name()}::{service.name()}::Client;')
+
+        gen.line()
+        gen.line(f'}}  // namespace {gen.name()}')
 
 
 def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
