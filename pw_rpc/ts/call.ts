@@ -21,6 +21,8 @@ import {PendingCalls, Rpc} from './rpc_classes';
 export type Callback = (a: any) => any;
 
 class RpcError extends Error {
+  status: Status;
+
   constructor(rpc: Rpc, status: Status) {
     let message = '';
     if (status === Status.NOT_FOUND) {
@@ -30,6 +32,7 @@ class RpcError extends Error {
     }
 
     super(`${rpc.method} failed with error ${Status[status]}${message}`);
+    this.status = status;
   }
 }
 
@@ -37,6 +40,7 @@ class RpcError extends Error {
 export class Call {
   // Responses ordered by arrival time. Undefined signifies stream completion.
   private responseQueue = new WaitQueue<Message|undefined>();
+  protected responses: Message[] = [];
 
   private rpcs: PendingCalls;
   private rpc: Rpc;
@@ -47,7 +51,7 @@ export class Call {
 
   // TODO(jaredweinstein): support async timeout.
   // private timeout: number;
-  private status?: Status;
+  status?: Status;
   error?: Status;
   callbackException?: Error;
 
@@ -89,16 +93,15 @@ export class Call {
   }
 
   handleResponse(response: Message): void {
+    this.responses.push(response);
     this.responseQueue.push(response);
-    const callback = () => this.onNext(response);
-    this.invokeCallback(callback)
+    this.invokeCallback(() => this.onNext(response))
   }
 
   handleCompletion(status: Status) {
     this.status = status;
     this.responseQueue.push(undefined);
-    const callback = () => this.onCompleted(status);
-    this.invokeCallback(callback)
+    this.invokeCallback(() => this.onCompleted(status))
   }
 
   handleError(error: Status): void {
@@ -134,10 +137,11 @@ export class Call {
     let remaining = count ?? Number.POSITIVE_INFINITY;
     while (remaining > 0) {
       const response = await this.responseQueue.shift();
+
+      this.checkErrors();
       if (response === undefined) {
         return;
       }
-      this.checkErrors();
       yield response!;
       remaining -= 1;
     }
@@ -152,7 +156,6 @@ export class Call {
     return this.rpcs.sendCancel(this.rpc);
   }
 
-
   private checkErrors(): void {
     if (this.callbackException !== undefined) {
       throw this.callbackException;
@@ -161,8 +164,34 @@ export class Call {
       throw new RpcError(this.rpc, this.error);
     }
   }
-}
 
+  protected async streamWait(): Promise<[Status, Message[]]> {
+    for await (const response of this.getResponses()) {
+    }
+    if (this.status === undefined) {
+      throw Error('Unexpected undefined status at end of stream');
+    }
+    return [this.status!, this.responses];
+  }
+
+  protected sendClientStream(request: Message) {
+    this.checkErrors();
+    if (this.status !== undefined) {
+      throw new RpcError(this.rpc, Status.FAILED_PRECONDITION);
+    }
+    this.rpcs.sendClientStream(this.rpc, request);
+  }
+
+  protected finishClientStream(requests: Message[]) {
+    for (let request of requests) {
+      this.sendClientStream(request);
+    }
+
+    if (!this.completed()) {
+      this.rpcs.sendClientStreamEnd(this.rpc);
+    }
+  }
+}
 
 /** Tracks the state of a unary RPC call. */
 export class UnaryCall extends Call {
@@ -171,7 +200,23 @@ export class UnaryCall extends Call {
 
 /** Tracks the state of a client streaming RPC call. */
 export class ClientStreamingCall extends Call {
-  // TODO(jaredweinstein): Complete client streaming invocation logic.
+  /** Gets the last server message, if it exists */
+  get response(): Message|undefined {
+    return (this.responses.length > 0) ?
+        this.responses[this.responses.length - 1] :
+        undefined;
+  }
+
+  /** Sends a message from the client. */
+  send(request: Message) {
+    this.sendClientStream(request);
+  }
+
+  /** Ends the client stream and waits for the RPC to complete. */
+  async finishAndWait(requests: Message[] = []): Promise<[Status, Message[]]> {
+    this.finishClientStream(requests);
+    return await this.streamWait();
+  }
 }
 
 /** Tracks the state of a server streaming RPC call. */

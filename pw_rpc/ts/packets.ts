@@ -46,6 +46,25 @@ export function encodeClientError(
   return errorPacket.serializeBinary();
 }
 
+export function encodeClientStream(ids: idSet, message: Message): Uint8Array {
+  const streamPacket = new packetPb.RpcPacket();
+  streamPacket.setType(packetPb.PacketType.CLIENT_STREAM);
+  streamPacket.setChannelId(ids[0]);
+  streamPacket.setServiceId(ids[1]);
+  streamPacket.setMethodId(ids[2]);
+  streamPacket.setPayload(message.serializeBinary());
+  return streamPacket.serializeBinary();
+}
+
+export function encodeClientStreamEnd(ids: idSet): Uint8Array {
+  const streamEnd = new packetPb.RpcPacket();
+  streamEnd.setType(packetPb.PacketType.CLIENT_STREAM_END);
+  streamEnd.setChannelId(ids[0]);
+  streamEnd.setServiceId(ids[1]);
+  streamEnd.setMethodId(ids[2]);
+  return streamEnd.serializeBinary();
+}
+
 export function encodeRequest(ids: idSet, request?: Message): Uint8Array {
   const payload: Uint8Array = (typeof request !== 'undefined') ?
       request.serializeBinary() :

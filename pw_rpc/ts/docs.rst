@@ -107,7 +107,24 @@ the ``onNext`` callback or using the promise API.
 
 Client Streaming RPC
 --------------------
-Unsupported
+.. code-block:: typescript
+
+  clientStreamRpc = client.channel()!.methodStub(
+    'pw.rpc.test1.TheTestService.SomeClientStreaming')!
+    as ClientStreamingMethodStub;
+  clientStreamRpc.invoke();
+  const request = new clientStreamRpc.method.requestType();
+  request.setFooProperty('foo_test');
+  clientStreamRpc.send(request);
+
+  // Send three more requests, end the stream, and wait for a response.
+  request.finishAndWait([request, request, request])
+      .then(() => {
+        console.log('Client stream finished successfully');
+      })
+      .catch((reason) => {
+        console.log(`Client stream error: ${reason}`);
+      });
 
 Bidirectional Stream RPC
 ------------------------

@@ -47,8 +47,8 @@ export class Rpc {
   }
 
   toString(): string {
-    return `RPC ${this.service.name}.${this.method.name} on channel ` +
-        `${this.channel.id})`;
+    return `${this.service.name}.${this.method.name} on channel ` +
+        `${this.channel.id}`;
   }
 }
 
@@ -84,12 +84,18 @@ export class PendingCalls {
     return previous;
   }
 
-  sendClientStream() {
-    throw new Error('Method not implemented.');
+  sendClientStream(rpc: Rpc, message: Message) {
+    if (this.getPending(rpc) === undefined) {
+      throw new Error(`Attempt to send client stream for inactive RPC: ${rpc}`);
+    }
+    rpc.channel.send(packets.encodeClientStream(rpc.idSet, message));
   }
 
-  sendClientStreamEnd() {
-    throw new Error('Method not implemented.');
+  sendClientStreamEnd(rpc: Rpc) {
+    if (this.getPending(rpc) === undefined) {
+      throw new Error(`Attempt to send client stream for inactive RPC: ${rpc}`);
+    }
+    rpc.channel.send(packets.encodeClientStreamEnd(rpc.idSet));
   }
 
   /** Cancels the RPC. Returns the CANCEL packet to send. */

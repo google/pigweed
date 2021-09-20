@@ -266,7 +266,7 @@ export class Client {
       if (status === undefined) {
         throw 'Missing status on SERVER_ERROR';
       }
-      console.warn(`${rpc}: invocation failed with Status: ${Status[status]}`);
+      console.warn(`${rpc}: invocation failed with status: ${Status[status]}`);
       call.handleError(status);
       return Status.OK;
     }

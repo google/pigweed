@@ -23,7 +23,7 @@ import {Request} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb'
 
 import {Client} from './client';
 import {Channel, Method} from './descriptors';
-import {ServerStreamingMethodStub, UnaryMethodStub} from './method';
+import {ClientStreamingMethodStub, ServerStreamingMethodStub, UnaryMethodStub} from './method';
 import * as packets from './packets';
 
 const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
@@ -175,9 +175,24 @@ describe('RPC', () => {
     packet.setServiceId(method.service.id);
     packet.setMethodId(method.id);
     packet.setPayload(response);
+    packet.setStatus(status);
     nextPackets.push([packet.serializeBinary(), status]);
   }
 
+  function enqueueError(
+      channelId: number,
+      method: Method,
+      status: Status,
+      processStatus: Status) {
+    const packet = new RpcPacket();
+    packet.setType(PacketType.SERVER_ERROR);
+    packet.setChannelId(channelId);
+    packet.setServiceId(method.service.id);
+    packet.setMethodId(method.id);
+    packet.setStatus(status);
+
+    nextPackets.push([packet.serializeBinary(), processStatus]);
+  }
 
   function lastRequest(): RpcPacket {
     if (requests.length == 0) {
@@ -354,6 +369,188 @@ describe('RPC', () => {
       expect(onNext).toHaveBeenCalledWith(response);
       expect(onError).not.toHaveBeenCalled();
       expect(onCompleted).toHaveBeenCalledOnceWith(Status.OK);
+    });
+  });
+
+  describe('ClientStreaming', () => {
+    let clientStreaming: ClientStreamingMethodStub;
+    let requestType: any;
+    let responseType: any;
+
+    beforeEach(async () => {
+      clientStreaming =
+          client.channel()?.methodStub(
+              'pw.rpc.test1.TheTestService.SomeClientStreaming')! as
+          ClientStreamingMethodStub;
+      requestType = clientStreaming.method.requestType;
+      responseType = clientStreaming.method.responseType;
+    });
+
+    it('non-blocking call', () => {
+      const response = new responseType();
+      response.setPayload('-_-');
+
+      for (let i = 0; i < 3; i++) {
+        const onNext = jasmine.createSpy();
+        const stream = clientStreaming.invoke(onNext);
+        expect(stream.completed()).toBeFalse();
+
+        let request = new requestType();
+        request.setMagicNumber(31);
+        stream.send(request);
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
+        expect(sentPayload(requestType).getMagicNumber()).toEqual(31);
+        expect(stream.completed()).toBeFalse();
+
+        // Enqueue the server response to be sent after the next message.
+        enqueueResponse(
+            1, clientStreaming.method, Status.OK, response.serializeBinary());
+
+        request.setMagicNumber(32);
+        stream.send(request);
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
+        expect(sentPayload(requestType).getMagicNumber()).toEqual(32);
+
+        expect(onNext).toHaveBeenCalledOnceWith(response);
+        expect(stream.completed()).toBeTrue();
+        expect(stream.status).toEqual(Status.OK);
+        expect(stream.error).toBeUndefined();
+      }
+    });
+
+    it('non-blocking call ended by client', () => {
+      const response = new responseType();
+      response.setPayload('-_-');
+
+      for (let i = 0; i < 3; i++) {
+        const onNext = jasmine.createSpy();
+        const stream = clientStreaming.invoke(onNext);
+        expect(stream.completed()).toBeFalse();
+
+        let request = new requestType();
+        request.setMagicNumber(31);
+        stream.send(request);
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
+        expect(sentPayload(requestType).getMagicNumber()).toEqual(31);
+        expect(stream.completed()).toBeFalse();
+
+        // Enqueue the server response to be sent after the next message.
+        enqueueResponse(
+            1, clientStreaming.method, Status.OK, response.serializeBinary());
+
+        stream.finishAndWait();
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM_END);
+
+        expect(onNext).toHaveBeenCalledOnceWith(response);
+        expect(stream.completed()).toBeTrue();
+        expect(stream.status).toEqual(Status.OK);
+        expect(stream.error).toBeUndefined();
+      }
+    });
+
+    it('non-blocking call cancelled', () => {
+      for (let i = 0; i < 3; i++) {
+        const stream = clientStreaming.invoke();
+        let request = new requestType();
+        request.setMagicNumber(31);
+        stream.send(request)
+
+        expect(stream.cancel()).toBeTrue();
+        expect(lastRequest().getType()).toEqual(PacketType.CANCEL);
+        expect(stream.cancel()).toBeFalse();
+        expect(stream.completed()).toBeTrue();
+        expect(stream.error).toEqual(Status.CANCELLED);
+      }
+    });
+
+    it('non-blocking call server error', async () => {
+      for (let i = 0; i < 3; i++) {
+        const stream = clientStreaming.invoke();
+        enqueueError(
+            1, clientStreaming.method, Status.INVALID_ARGUMENT, Status.OK);
+
+        const request = new requestType();
+        request.setMagicNumber(31);
+        stream.send(request);
+
+        await stream.finishAndWait()
+            .then(() => {
+              fail('Promise should not be resolved');
+            })
+            .catch((reason) => {
+              expect(reason.status).toEqual(Status.INVALID_ARGUMENT);
+            });
+      }
+    });
+
+    it('non-blocking call server error after stream end', async () => {
+      for (let i = 0; i < 3; i++) {
+        const stream = clientStreaming.invoke();
+        // Error will be sent in response to the CLIENT_STREAM_END packet.
+        enqueueError(
+            1, clientStreaming.method, Status.INVALID_ARGUMENT, Status.OK);
+
+        await stream.finishAndWait()
+            .then(() => {
+              fail('Promise should not be resolved');
+            })
+            .catch((reason) => {
+              expect(reason.status).toEqual(Status.INVALID_ARGUMENT);
+            });
+      }
+    });
+
+    it('non-blocking call send after cancelled', () => {
+      const stream = clientStreaming.invoke();
+      expect(stream.cancel()).toBeTrue();
+
+      const request = new requestType();
+      request.setMagicNumber(31);
+      expect(() => stream.send(request))
+          .toThrowMatching(error => error.status === Status.CANCELLED);
+    });
+
+    it('non-blocking finish after completed', async () => {
+      const enqueuedResponse = new responseType();
+      enqueuedResponse.setPayload('?!');
+      enqueueResponse(
+          1,
+          clientStreaming.method,
+          Status.UNAVAILABLE,
+          enqueuedResponse.serializeBinary());
+
+      const stream = clientStreaming.invoke();
+      const result = await stream.finishAndWait();
+      expect(result[1]).toEqual([enqueuedResponse]);
+
+      expect(await stream.finishAndWait()).toEqual(result);
+      expect(await stream.finishAndWait()).toEqual(result);
+    });
+
+    it('non-blocking finish after error', async () => {
+      enqueueError(1, clientStreaming.method, Status.UNAVAILABLE, Status.OK);
+      const stream = clientStreaming.invoke();
+
+      for (let i = 0; i < 3; i++) {
+        await stream.finishAndWait()
+            .then(() => {
+              fail('Promise should not be resolved');
+            })
+            .catch((reason) => {
+              expect(reason.status).toEqual(Status.UNAVAILABLE);
+              expect(stream.error).toEqual(Status.UNAVAILABLE);
+              expect(stream.response).toBeUndefined();
+            });
+      }
+    });
+
+    it('non-blocking duplicate calls first is cancelled', () => {
+      const firstCall = clientStreaming.invoke();
+      expect(firstCall.completed()).toBeFalse();
+
+      const secondCall = clientStreaming.invoke();
+      expect(firstCall.error).toEqual(Status.CANCELLED);
+      expect(secondCall.completed()).toBeFalse();
     });
   });
 });
