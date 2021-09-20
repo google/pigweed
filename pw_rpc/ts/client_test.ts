@@ -23,7 +23,7 @@ import {Request} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb'
 
 import {Client} from './client';
 import {Channel, Method} from './descriptors';
-import {MethodStub} from './method';
+import {ServerStreamingMethodStub, UnaryMethodStub} from './method';
 import * as packets from './packets';
 
 const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
@@ -208,14 +208,15 @@ describe('RPC', () => {
   }
 
   describe('Unary', () => {
-    let unaryStub: MethodStub;
+    let unaryStub: UnaryMethodStub;
     let request: any;
     let requestType: MessageCreator;
     let responseType: MessageCreator;
 
     beforeEach(async () => {
-      unaryStub = client.channel()?.methodStub(
-          'pw.rpc.test1.TheTestService.SomeUnary')!;
+      unaryStub =
+          client.channel()?.methodStub(
+              'pw.rpc.test1.TheTestService.SomeUnary')! as UnaryMethodStub;
       requestType = unaryStub.method.requestType;
       responseType = unaryStub.method.responseType;
       request = new requestType();
@@ -248,7 +249,7 @@ describe('RPC', () => {
       request.setMagicNumber(5);
 
       let onNext = jasmine.createSpy();
-      const call = unaryStub.invoke(request, onNext, () => {}, () => {});
+      const call = unaryStub.invoke(request, onNext);
 
       expect(requests.length).toBeGreaterThan(0);
       requests = [];
@@ -259,11 +260,10 @@ describe('RPC', () => {
     });
 
     it('nonblocking duplicate calls first is cancelled', () => {
-      const firstCall = unaryStub.invoke(request, () => {}, () => {}, () => {});
+      const firstCall = unaryStub.invoke(request);
       expect(firstCall.completed()).toBeFalse();
 
-      const secondCall =
-          unaryStub.invoke(request, () => {}, () => {}, () => {});
+      const secondCall = unaryStub.invoke(request);
       expect(firstCall.error).toEqual(Status.CANCELLED);
       expect(secondCall.completed()).toBeFalse();
     });
@@ -274,21 +274,23 @@ describe('RPC', () => {
       };
 
       enqueueResponse(1, unaryStub.method, Status.OK);
-      const call = unaryStub.invoke(request, errorCallback, () => {}, () => {});
+      const call = unaryStub.invoke(request, errorCallback);
       expect(call.callbackException!.name).toEqual('Error');
       expect(call.callbackException!.message).toEqual('Something went wrong!');
     });
   })
 
   describe('ServerStreaming', () => {
-    let serverStreaming: MethodStub;
+    let serverStreaming: ServerStreamingMethodStub;
     let request: any;
     let requestType: any;
     let responseType: any;
 
     beforeEach(async () => {
-      serverStreaming = client.channel()?.methodStub(
-          'pw.rpc.test1.TheTestService.SomeServerStreaming')!;
+      serverStreaming =
+          client.channel()?.methodStub(
+              'pw.rpc.test1.TheTestService.SomeServerStreaming')! as
+          ServerStreamingMethodStub;
       requestType = serverStreaming.method.requestType;
       responseType = serverStreaming.method.responseType;
       request = new requestType();
@@ -336,7 +338,7 @@ describe('RPC', () => {
       const onNext = jasmine.createSpy();
       const onCompleted = jasmine.createSpy();
       const onError = jasmine.createSpy();
-      let call = serverStreaming.invoke(request, onNext, () => {}, () => {});
+      let call = serverStreaming.invoke(request, onNext);
       expect(onNext).toHaveBeenCalledOnceWith(response);
 
       onNext.calls.reset();

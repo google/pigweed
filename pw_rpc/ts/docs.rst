@@ -61,6 +61,8 @@ method is found by searching based on the full name:
 
 Calling an RPC
 ==============
+``channel.methodStub()`` returns a general methodStub. It must be typecast
+before invoke can be called with the correct parameters.
 
 Unary RPC
 ---------
@@ -69,7 +71,8 @@ Only non blocking calls are currently supported.
 .. code-block:: typescript
 
   unaryStub = client.channel()?.methodStub(
-      'pw.rpc.test1.TheTestService.SomeUnary')!;
+      'pw.rpc.test1.TheTestService.SomeUnary')!
+      as UnaryMethodStub;
   request = new unaryStub.method.requestType();
   request.setFooProperty('hello world');
   const call = unaryStub.invoke(request, (response) => {
@@ -84,7 +87,8 @@ callback.
 .. code-block:: typescript
 
   serverStreamRpc = client.channel()?.methodStub(
-      'pw.rpc.test1.TheTestService.SomeUnary')!;
+      'pw.rpc.test1.TheTestService.SomeUnary')!
+      as ServerStreamingMethodStub;
   const onNext = (response) => {console.log(response)};
   const call = serverStreamRpc.invoke(undefined, onNext);
 

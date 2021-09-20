@@ -14,7 +14,7 @@
 
 import {Message} from 'google-protobuf';
 
-import {Call, Callback, ServerStreamingCall, UnaryCall} from './call';
+import {BidirectionalStreamingCall, Call, Callback, ClientStreamingCall, ServerStreamingCall, UnaryCall} from './call';
 import {Channel, Method, MethodType, Service} from './descriptors';
 import {PendingCalls, Rpc} from './rpc_classes';
 
@@ -32,7 +32,7 @@ export function methodStubFactory(
   }
 }
 
-export class MethodStub {
+export abstract class MethodStub {
   readonly method: Method;
   readonly rpcs: PendingCalls;
   readonly rpc: Rpc;
@@ -44,22 +44,14 @@ export class MethodStub {
     this.channel = channel;
     this.rpc = new Rpc(channel, method.service, method)
   }
-
-  invoke(
-      request?: Message,
-      onNext: Callback = () => {},
-      onCompleted: Callback = () => {},
-      onError: Callback = () => {}): UnaryCall {
-    throw Error('invoke() not implemented');
-  }
 }
 
-class UnaryMethodStub extends MethodStub {
+export class UnaryMethodStub extends MethodStub {
   // TODO(jaredweinstein): Add blocking invocation.
   // invokeBlocking(request) {...}
 
   invoke(
-      request?: Message,
+      request: Message,
       onNext: Callback = () => {},
       onCompleted: Callback = () => {},
       onError: Callback = () => {}): UnaryCall {
@@ -70,7 +62,7 @@ class UnaryMethodStub extends MethodStub {
   }
 }
 
-class ServerStreamingMethodStub extends MethodStub {
+export class ServerStreamingMethodStub extends MethodStub {
   invoke(
       request?: Message,
       onNext: Callback = () => {},
@@ -85,20 +77,18 @@ class ServerStreamingMethodStub extends MethodStub {
 
 class ClientStreamingMethodStub extends MethodStub {
   invoke(
-      request: Message,
-      onNext: Callback,
-      onCompleted: Callback,
-      onError: Callback): Call {
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): ClientStreamingCall {
     throw Error('ClientStreaming invoke() not implemented');
   }
 }
 
 class BidirectionStreamingMethodStub extends MethodStub {
   invoke(
-      request: Message,
-      onNext: Callback,
-      onCompleted: Callback,
-      onError: Callback): Call {
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): BidirectionalStreamingCall {
     throw Error('BidirectionalStreaming invoke() not implemented');
   }
 }
