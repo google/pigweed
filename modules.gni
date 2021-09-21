@@ -31,6 +31,7 @@ declare_args() {
   dir_pw_boot_cortex_m = get_path_info("pw_boot_cortex_m", "abspath")
   dir_pw_build = get_path_info("pw_build", "abspath")
   dir_pw_build_info = get_path_info("pw_build_info", "abspath")
+  dir_pw_build_mcuxpresso = get_path_info("pw_build_mcuxpresso", "abspath")
   dir_pw_bytes = get_path_info("pw_bytes", "abspath")
   dir_pw_checksum = get_path_info("pw_checksum", "abspath")
   dir_pw_chrono = get_path_info("pw_chrono", "abspath")
