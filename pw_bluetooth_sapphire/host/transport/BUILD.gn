@@ -40,9 +40,9 @@ static_library("transport") {
     "//src/lib/ddk",
     "//src/lib/files",
     "//src/lib/fxl",
-    "//zircon/public/lib/fbl",
     "//zircon/system/ulib/async-loop:async-loop-cpp",
     "//zircon/system/ulib/async-loop:async-loop-default",
+    "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/fzl",
     "//zircon/system/ulib/trace:trace-driver",
   ]

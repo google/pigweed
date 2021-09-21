@@ -85,8 +85,8 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//src/lib/fxl",
     "//src/lib/uuid",
-    "//zircon/public/lib/fbl",
     "//zircon/public/lib/zx",
+    "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/inspect",
   ]
 

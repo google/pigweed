@@ -58,8 +58,8 @@ source_set("sources") {
     "//sdk/lib/fit",
     "//src/lib/ddk:ddk-deprecated-binding-headers",
     "//src/lib/fxl",
-    "//zircon/public/lib/fbl",
     "//zircon/public/lib/zx",
+    "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/trace:trace-driver",
   ]
 }

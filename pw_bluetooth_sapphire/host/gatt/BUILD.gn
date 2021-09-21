@@ -68,7 +68,7 @@ source_set("testing") {
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/lib/fxl",
-    "//zircon/public/lib/fbl",
+    "//zircon/system/ulib/fbl",
   ]
 }
 
