@@ -592,7 +592,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
   // Remove from the denylist if we successfully connect.
   deny_incoming_.remove(peer->address());
 
-  peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
+  peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
 
   if (discoverer_.search_count()) {
     l2cap_->OpenL2capChannel(handle, l2cap::kSDP, l2cap::ChannelParameters(),
@@ -1128,7 +1128,7 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
     pending_iter->second.AddCallback(std::move(on_connection_result));
     return true;
   }
-  // If we are not already connected or pending, initiate a new connection
+  // If we are not already connected or pending, add a pending request.
   peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
   auto [request_iter, _] = connection_requests_.try_emplace(peer_id, peer->address(), peer_id,
                                                             std::move(on_connection_result));

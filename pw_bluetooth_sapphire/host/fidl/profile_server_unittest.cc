@@ -312,7 +312,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
     EXPECT_TRUE(status);
     ASSERT_TRUE(connection_);
     EXPECT_EQ(peer_->identifier(), connection_->peer_id());
-    EXPECT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer_->bredr()->connection_state());
+    EXPECT_NE(bt::gap::Peer::ConnectionState::kNotConnected, peer_->bredr()->connection_state());
   }
 
   void TearDown() override {

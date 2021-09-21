@@ -376,8 +376,7 @@ TEST_F(HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   EXPECT_TRUE(confirm_cb_value);
 }
 
-TEST_F(HostServerTest,
-       HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparisonPairingOverFidl) {
+TEST_F(HostServerTest, HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparisonPairingOverFidl) {
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
@@ -899,7 +898,6 @@ TEST_F(HostServerTest, ConnectBredr) {
 
   EXPECT_FALSE(peer->le());
   ASSERT_TRUE(peer->bredr());
-  EXPECT_TRUE(peer->bredr()->connected());
 
   // bt-host should only attempt to connect the BR/EDR transport.
   EXPECT_EQ(0, test_device()->le_create_connection_command_count());
@@ -920,7 +918,6 @@ TEST_F(HostServerTest, ConnectDualMode) {
   ASSERT_FALSE(result->is_error());
 
   // bt-host should only attempt to connect the BR/EDR transport.
-  EXPECT_TRUE(peer->bredr()->connected());
   EXPECT_FALSE(peer->le()->connected());
   EXPECT_EQ(0, test_device()->le_create_connection_command_count());
   EXPECT_EQ(1, test_device()->acl_create_connection_command_count());

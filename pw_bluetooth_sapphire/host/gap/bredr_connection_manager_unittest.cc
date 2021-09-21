@@ -525,6 +525,55 @@ const hci::DataBufferInfo kLeBufferInfo(1024, 1);
 
 constexpr l2cap::ChannelParameters kChannelParams;
 
+::testing::AssertionResult IsInitializing(Peer* peer) {
+  if (Peer::ConnectionState::kInitializing != peer->bredr()->connection_state()) {
+    return ::testing::AssertionFailure()
+           << "Expected peer connection_state: kInitializing, found "
+           << Peer::ConnectionStateToString(peer->bredr()->connection_state());
+  }
+  return ::testing::AssertionSuccess() << "Peer connection state is kInitializing";
+}
+::testing::AssertionResult IsConnected(Peer* peer) {
+  if (Peer::ConnectionState::kConnected != peer->bredr()->connection_state()) {
+    return ::testing::AssertionFailure()
+           << "Expected peer to be in a connected state: kConnected, found "
+           << Peer::ConnectionStateToString(peer->bredr()->connection_state());
+  }
+  if (peer->temporary()) {
+    return ::testing::AssertionFailure()
+           << "Expected peer to be non-temporary, but found temporary";
+  }
+  return ::testing::AssertionSuccess() << "Peer connection state is kConnected";
+}
+::testing::AssertionResult IsNotConnected(Peer* peer) {
+  if (Peer::ConnectionState::kNotConnected != peer->bredr()->connection_state()) {
+    return ::testing::AssertionFailure()
+           << "Expected peer connection_state: kNotConnected, found "
+           << Peer::ConnectionStateToString(peer->bredr()->connection_state());
+  }
+  return ::testing::AssertionSuccess() << "Peer connection state is kNotConnected";
+  ;
+}
+
+::testing::AssertionResult HasConnectionTo(Peer* peer, BrEdrConnection* conn) {
+  if (!conn) {
+    return ::testing::AssertionFailure() << "Expected BrEdrConnection, but found nullptr";
+  }
+  if (peer->identifier() != conn->peer_id()) {
+    return ::testing::AssertionFailure()
+           << "Expected connection peer_id " << bt_str(peer->identifier()) << " but found "
+           << bt_str(conn->peer_id());
+  }
+  return ::testing::AssertionSuccess()
+         << "Peer " << bt_str(peer->identifier()) << " connected to the connection given";
+}
+
+#define CALLBACK_EXPECT_FAILURE(status_param)       \
+  ([&status_param](auto cb_status, auto conn_ref) { \
+    EXPECT_FALSE(conn_ref);                         \
+    status_param = cb_status;                       \
+  })
+
 class BrEdrConnectionManagerTest : public TestingBase {
  public:
   BrEdrConnectionManagerTest() = default;
@@ -1127,7 +1176,7 @@ TEST_F(BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
   ASSERT_FALSE(peer->bonded());
 
   EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
@@ -1149,7 +1198,7 @@ TEST_F(BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
       BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_FALSE(peer->connected());
+  ASSERT_TRUE(IsNotConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
   QueueSuccessfulIncomingConn();
@@ -1159,13 +1208,15 @@ TEST_F(BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
-  ASSERT_TRUE(peer->connected());
+  ASSERT_TRUE(IsInitializing(peer));
 
   EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestReply, &kLinkKeyRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
   RunLoopUntilIdle();
+  /// Peer is still initializing until the Pairing is complete (OnPairingComplete)
+  ASSERT_TRUE(IsInitializing(peer));
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
@@ -1184,7 +1235,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyEntryPairingAndUserProvide
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
@@ -1221,6 +1272,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyEntryPairingAndUserProvide
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(IsConnected(peer));
   EXPECT_TRUE(peer->bonded());
 
   QueueDisconnection(kConnectionHandle);
@@ -1237,7 +1289,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
@@ -1266,6 +1318,9 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   pairing_delegate.SetCompletePairingCallback(
       [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
 
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(IsInitializing(peer));
+
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
 
@@ -1274,6 +1329,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(IsConnected(peer));
   EXPECT_TRUE(peer->bonded());
 
   QueueDisconnection(kConnectionHandle);
@@ -1290,7 +1346,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAn
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
@@ -1322,6 +1378,9 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAn
   pairing_delegate.SetCompletePairingCallback(
       [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
 
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(IsInitializing(peer));
+
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
 
@@ -1330,6 +1389,7 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAn
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(IsConnected(peer));
   EXPECT_TRUE(peer->bonded());
 
   EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestReply, &kLinkKeyRequestReplyRsp);
@@ -1352,13 +1412,14 @@ TEST_F(BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
 
   // Change the link key.
   test_device()->SendCommandChannelPacket(kLinkKeyNotificationChanged);
 
   RunLoopUntilIdle();
+  ASSERT_FALSE(IsConnected(peer));
   EXPECT_FALSE(peer->bonded());
 
   EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply, &kLinkKeyRequestReplyRsp);
@@ -1367,6 +1428,7 @@ TEST_F(BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
 
   RunLoopUntilIdle();
 
+  ASSERT_FALSE(IsConnected(peer));
   EXPECT_FALSE(peer->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
@@ -1382,7 +1444,7 @@ const auto kLinkKeyNotificationLegacy =
                            0x00                     // key type (Combination Key)
     );
 
-// Test: don't bond if the link key resulted from legacy pairing
+// Test: don't bond or mark successfully connected if the link key resulted from legacy pairing
 TEST_F(BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
   QueueSuccessfulIncomingConn();
 
@@ -1394,7 +1456,7 @@ TEST_F(BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
 
   test_device()->SendCommandChannelPacket(kLinkKeyNotificationLegacy);
@@ -1408,6 +1470,7 @@ TEST_F(BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
 
   RunLoopUntilIdle();
 
+  ASSERT_FALSE(IsConnected(peer));
   EXPECT_FALSE(peer->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
@@ -1434,7 +1497,7 @@ TEST_F(BrEdrConnectionManagerTest, DisconnectOnLinkError) {
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 }
 
-TEST_F(BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
+TEST_F(BrEdrConnectionManagerTest, InitializingPeerDoesNotTimeout) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1445,20 +1508,26 @@ TEST_F(BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  EXPECT_TRUE(peer->connected());
+  EXPECT_FALSE(IsNotConnected(peer));
+  EXPECT_FALSE(peer->bonded());
 
-  // We want to make sure the connection doesn't expire.
+  // We want to make sure the connection doesn't expire just because they didn't pair.
   RunLoopFor(zx::sec(600));
+
+  auto* peer_still = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer_still);
+  ASSERT_EQ(peer->identifier(), peer_still->identifier());
 
   // Remote end disconnects.
   test_device()->SendCommandChannelPacket(kDisconnectionComplete);
 
   RunLoopUntilIdle();
 
-  // Peer should still be there, but not connected anymore
+  // Peer should still be there, but not connected anymore, until they time out.
   peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  EXPECT_FALSE(peer->connected());
+  EXPECT_TRUE(IsNotConnected(peer));
+  EXPECT_FALSE(peer->bonded());
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 }
 
@@ -1507,7 +1576,6 @@ TEST_F(BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSear
   ASSERT_EQ(1u, search_cb_count);
 
   // Prior connections' services retained and newly discovered service added.
-  ASSERT_TRUE(peer->connected());
   EXPECT_EQ(1u, peer->bredr()->services().count(kServiceUuid1));
   EXPECT_EQ(1u, peer->bredr()->services().count(kServiceUuid2));
 
@@ -1554,7 +1622,6 @@ TEST_F(BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOf
   // Search callback isn't called by empty attribute list from peer.
   ASSERT_EQ(0u, search_cb_count);
 
-  ASSERT_TRUE(peer->connected());
   EXPECT_EQ(1u, peer->bredr()->services().count(kServiceUuid));
 
   QueueDisconnection(kConnectionHandle);
@@ -1775,7 +1842,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
 
   std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
@@ -1825,12 +1892,16 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   // We should not have a channel because the L2CAP open callback shouldn't have been called, but
   // the LTK should be stored since the link key got received.
   ASSERT_FALSE(connected_chan);
+  // We should be initializing, since we have not completed pairing.
+  ASSERT_TRUE(IsInitializing(peer));
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
   l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41, kChannelParams);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
+  // We should signal to PeerCache as connected once we finish pairing.
+  ASSERT_TRUE(IsConnected(peer));
 
   // The socket should be returned.
   ASSERT_TRUE(connected_chan);
@@ -1857,7 +1928,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
       BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_FALSE(peer->connected());
+  ASSERT_TRUE(IsNotConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
@@ -1870,7 +1941,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
 
   std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
@@ -1891,6 +1962,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
   // L2CAP connect shouldn't have been called, and callback shouldn't be called.
   // We should not have a socket.
   ASSERT_FALSE(connected_chan);
+  ASSERT_FALSE(IsNotConnected(peer));
 
   // The authentication flow will request the existing link key, which should be
   // returned and stored, and then the authentication is complete.
@@ -1914,6 +1986,9 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
 
   RunLoopUntilIdle();
 
+  // Once the L2CAP channel has connected, we have connected.
+  ASSERT_TRUE(IsConnected(peer));
+
   // The socket should be connected.
   ASSERT_TRUE(connected_chan);
 
@@ -1934,7 +2009,7 @@ TEST_F(BrEdrConnectionManagerTest,
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
 
   std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
@@ -1982,7 +2057,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -2065,7 +2140,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComple
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
 
   std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
@@ -2152,7 +2227,7 @@ TEST_F(BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNotL2c
   EXPECT_EQ(4, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_FALSE(peer->bredr()->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bredr()->bonded());
 
   // Approve pairing requests
@@ -2240,17 +2315,17 @@ TEST_F(BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  EXPECT_FALSE(IsNotConnected(peer));
 
   QueueDisconnection(kConnectionHandle);
 
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
-  EXPECT_FALSE(peer->bredr()->connected());
+  EXPECT_TRUE(IsNotConnected(peer));
 
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
-  EXPECT_FALSE(peer->bredr()->connected());
+  EXPECT_TRUE(IsNotConnected(peer));
 }
 
 TEST_F(BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
@@ -2262,12 +2337,12 @@ TEST_F(BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
 
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
 
   QueueDisconnection(kConnectionHandle);
 
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
-  EXPECT_FALSE(peer->bredr()->connected());
+  ASSERT_TRUE(IsNotConnected(peer));
 
   // Try to disconnect again while the first disconnect is in progress (HCI
   // Disconnection Complete not yet received).
@@ -2276,7 +2351,7 @@ TEST_F(BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
-  EXPECT_FALSE(peer->bredr()->connected());
+  ASSERT_TRUE(IsNotConnected(peer));
 
   // Try to disconnect once more, now that the link is gone.
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
@@ -2291,13 +2366,13 @@ TEST_F(BrEdrConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnection) {
 
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(IsNotConnected(peer));
 
   QueueDisconnection(kConnectionHandle);
 
   const PeerId id = peer->identifier();
   EXPECT_TRUE(connmgr()->Disconnect(id, DisconnectReason::kApiRequest));
-  ASSERT_FALSE(peer->bredr()->connected());
+  ASSERT_TRUE(IsNotConnected(peer));
 
   // Remove the peer from PeerCache before receiving HCI Disconnection Complete.
   EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(id));
@@ -2371,65 +2446,6 @@ TEST_F(BrEdrConnectionManagerTest, AddServiceSearchAll) {
   QueueDisconnection(kConnectionHandle);
 }
 
-std::string FormatConnectionState(Peer::ConnectionState s) {
-  switch (s) {
-    case Peer::ConnectionState::kConnected:
-      return "kConnected";
-    case Peer::ConnectionState::kInitializing:
-      return "kInitializing";
-    case Peer::ConnectionState::kNotConnected:
-      return "kNotConnected";
-  }
-  return "<Invalid state>";
-}
-
-::testing::AssertionResult IsInitializing(Peer* peer) {
-  if (Peer::ConnectionState::kInitializing != peer->bredr()->connection_state()) {
-    return ::testing::AssertionFailure()
-           << "Expected peer connection_state: kInitializing, found "
-           << FormatConnectionState(peer->bredr()->connection_state());
-  }
-  return ::testing::AssertionSuccess();
-}
-::testing::AssertionResult IsConnected(Peer* peer) {
-  if (Peer::ConnectionState::kConnected != peer->bredr()->connection_state()) {
-    return ::testing::AssertionFailure()
-           << "Expected peer connection_state: kConnected, found "
-           << FormatConnectionState(peer->bredr()->connection_state());
-  }
-  if (peer->temporary()) {
-    return ::testing::AssertionFailure()
-           << "Expected peer to be non-temporary, but found temporary";
-  }
-  return ::testing::AssertionSuccess();
-}
-::testing::AssertionResult NotConnected(Peer* peer) {
-  if (Peer::ConnectionState::kNotConnected != peer->bredr()->connection_state()) {
-    return ::testing::AssertionFailure()
-           << "Expected peer connection_state: kNotConnected, found "
-           << FormatConnectionState(peer->bredr()->connection_state());
-  }
-  return ::testing::AssertionSuccess();
-}
-
-::testing::AssertionResult HasConnectionTo(Peer* peer, BrEdrConnection* conn) {
-  if (!conn) {
-    return ::testing::AssertionFailure() << "Expected BrEdrConnection, but found nullptr";
-  }
-  if (peer->identifier() != conn->peer_id()) {
-    return ::testing::AssertionFailure()
-           << "Expected connection peer_id " << bt_str(peer->identifier()) << " but found "
-           << bt_str(conn->peer_id());
-  }
-  return ::testing::AssertionSuccess();
-}
-
-#define CALLBACK_EXPECT_FAILURE(status_param)       \
-  ([&status_param](auto cb_status, auto conn_ref) { \
-    EXPECT_FALSE(conn_ref);                         \
-    status_param = cb_status;                       \
-  })
-
 // An error is received via the HCI Command cb_status event
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
@@ -2437,7 +2453,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRspError);
 
   ASSERT_TRUE(peer->bredr());
-  EXPECT_TRUE(NotConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 
   hci::Status status;
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), CALLBACK_EXPECT_FAILURE(status)));
@@ -2446,7 +2462,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
 
   EXPECT_TRUE(status.is_protocol_error());
   EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished, status.protocol_error());
-  EXPECT_TRUE(NotConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 }
 
 ::testing::AssertionResult StatusEqual(hci::StatusCode expected, hci::StatusCode actual) {
@@ -2484,7 +2500,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
   EXPECT_TRUE(status.is_protocol_error());
   EXPECT_TRUE(
       StatusEqual(hci::StatusCode::kConnectionFailedToBeEstablished, status.protocol_error()));
-  EXPECT_TRUE(NotConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
@@ -2507,7 +2523,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
   RunLoopFor(kBrEdrCreateConnectionTimeout);
   EXPECT_FALSE(status);
   EXPECT_EQ(HostError::kTimedOut, status.error()) << status.ToString();
-  EXPECT_TRUE(NotConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 }
 
 // Successful connection to single peer
@@ -2537,7 +2553,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kMaster);
 }
 
@@ -2574,7 +2590,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
 
   EXPECT_FALSE(status);
   EXPECT_EQ(HostError::kNotSupported, status.error()) << status.ToString();
-  EXPECT_TRUE(NotConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 }
 
 // Connecting to an already connected peer should complete instantly
@@ -2607,7 +2623,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 1);
 
   // Attempt to connect again to the already connected peer. callback should be called
@@ -2617,7 +2633,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
 }
 
 // Initiating Two Connections to the same (currently unconnected) peer should
@@ -2657,7 +2673,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 2);
 }
 
@@ -2699,7 +2715,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInt
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 2);
 }
 
@@ -2752,8 +2768,8 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   EXPECT_TRUE(status_b);
   EXPECT_EQ(status_b.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer_b, connection));
-  EXPECT_TRUE(NotConnected(peer_a));
-  EXPECT_TRUE(IsConnected(peer_b));
+  EXPECT_TRUE(IsNotConnected(peer_a));
+  EXPECT_FALSE(IsNotConnected(peer_b));
 }
 
 TEST_F(BrEdrConnectionManagerTest, DisconnectPendingConnections) {
@@ -2790,14 +2806,14 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   QueueSuccessfulIncomingConn(kTestDevAddr);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RETURN_IF_FATAL(RunLoopUntilIdle());
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
 
   // Disconnect locally from an API Request.
   QueueDisconnection(kConnectionHandle);
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
-  EXPECT_FALSE(IsConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 
   // Peer tries to connect to us. We should reject the connection.
   auto status_event =
@@ -2810,6 +2826,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(IsNotConnected(peer));
 
   // After the cooldown time, a successful incoming connection can happen.
   RunLoopFor(BrEdrConnectionManager::kLocalDisconnectCooldownDuration);
@@ -2817,14 +2834,14 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   QueueRepeatIncomingConn(kTestDevAddr);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RETURN_IF_FATAL(RunLoopUntilIdle());
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
 
   // Can still connect out if we disconnect locally.
   QueueDisconnection(kConnectionHandle);
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  EXPECT_FALSE(IsConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 
   QueueSuccessfulCreateConnection(peer, kConnectionHandle);
   // Interrogation is short because the peer is already known
@@ -2848,28 +2865,28 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer, connection));
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
 
   // Remote disconnections can reconnect immediately
   test_device()->SendCommandChannelPacket(kDisconnectionComplete);
   RETURN_IF_FATAL(RunLoopUntilIdle());
-  EXPECT_FALSE(IsConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 
   QueueRepeatIncomingConn(kTestDevAddr);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RETURN_IF_FATAL(RunLoopUntilIdle());
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
 
   // If the reason is not kApiRequest, then the remote peer can reconnect immediately.
   QueueDisconnection(kConnectionHandle);
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kPairingFailed));
   RETURN_IF_FATAL(RunLoopUntilIdle());
-  EXPECT_FALSE(IsConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 
   QueueRepeatIncomingConn(kTestDevAddr);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RETURN_IF_FATAL(RunLoopUntilIdle());
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
 
   // Queue disconnection for teardown.
   QueueDisconnection(kConnectionHandle);
@@ -2901,12 +2918,12 @@ TEST_F(BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
-  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_FALSE(IsNotConnected(peer));
 
   test_device()->SendCommandChannelPacket(kDisconnectionComplete);
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(IsConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 }
 
 TEST_F(BrEdrConnectionManagerTest,
@@ -2967,7 +2984,7 @@ TEST_F(BrEdrConnectionManagerTest,
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(IsConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 
   // Packet for |kConnectionHandle2| should have been sent.
   EXPECT_EQ(2u, packet_count);
@@ -3004,7 +3021,7 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
@@ -3031,10 +3048,12 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
   };
 
   connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
   RunLoopUntilIdle();
 
   ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
   QueueDisconnection(kConnectionHandle);
@@ -3050,7 +3069,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_TRUE(IsInitializing(peer));
   ASSERT_FALSE(peer->bonded());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
@@ -3080,6 +3099,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
   RunLoopUntilIdle();
 
   ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
   pairing_error = HostError::kPacketMalformed;
@@ -3174,7 +3194,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) 
       kConnectionHandle, hci::StatusCode::kConnectionTerminatedMICFailure));
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(NotConnected(peer));
+  EXPECT_TRUE(IsNotConnected(peer));
 }
 
 TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
@@ -3490,7 +3510,7 @@ TEST_F(BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
 
 TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
-  ASSERT_TRUE(peer->bredr() && NotConnected(peer));
+  ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
 
   hci::Status status(HostError::kFailed);
   BrEdrConnection* conn_ref = nullptr;
@@ -3526,16 +3546,17 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   // We expect to connect and begin interrogation, and for our connect() callback to have been run
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   RunLoopUntilIdle();
-  EXPECT_TRUE(peer->bredr()->connected());
   EXPECT_TRUE(status.is_success());
 
+  // Peers are marked as initializing until a pairing procedure finishes.
+  EXPECT_TRUE(IsInitializing(peer));
   // Prepare for disconnection upon teardown.
   QueueDisconnection(kConnectionHandle);
 }
 
 TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
-  ASSERT_TRUE(peer->bredr() && NotConnected(peer));
+  ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
   hci::Status status(HostError::kFailed);
   BrEdrConnection* conn_ref = nullptr;
   auto should_succeed = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
@@ -3564,16 +3585,17 @@ TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   // been executed when the incoming connection succeeded.
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   RunLoopUntilIdle();
-  EXPECT_TRUE(peer->bredr()->connected());
   EXPECT_TRUE(status.is_success());
 
+  // Peers are marked as initializing until a pairing procedure finishes.
+  EXPECT_TRUE(IsInitializing(peer));
   // Prepare for disconnection upon teardown.
   QueueDisconnection(kConnectionHandle);
 }
 
 TEST_F(BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerRejected) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
-  ASSERT_TRUE(peer->bredr() && NotConnected(peer));
+  ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
 
   // Our first request should be accepted - we send back a success status, not the connection
   // complete yet
@@ -3600,7 +3622,7 @@ TEST_F(BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerRejec
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(peer->bredr()->connected());
+  EXPECT_FALSE(IsNotConnected(peer));
 
   // Prepare for disconnection upon teardown.
   QueueDisconnection(kConnectionHandle);
@@ -3653,7 +3675,7 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
   RunLoopUntilIdle();
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kInitializing);
 
   auto empty_requests_matcher =
       AllOf(NodeMatches(NameMatches("connection_requests")), ChildrenMatch(::testing::IsEmpty()));
@@ -3708,7 +3730,7 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
   RunLoopUntilIdle();
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kInitializing);
 
   // Request an outbound connection in order to get a pointer to the existing connection.
   // No packets should be sent.
@@ -3735,7 +3757,7 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeWithFailureStatusAfterInboundConnec
   RunLoopUntilIdle();
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kInitializing);
 
   // Request an outbound connection in order to get a pointer to the existing connection.
   // No packets should be sent.
@@ -3763,7 +3785,7 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
   RunLoopUntilIdle();
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
-  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kInitializing);
 
   // Request an outbound connection in order to get a pointer to the existing connection.
   // No packets should be sent.

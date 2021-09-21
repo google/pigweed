@@ -251,13 +251,19 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
     peer_->peer_metrics_->LogBrEdrDisconnection();
   }
 
+  ConnectionState from_state = connection_state();
   conn_state_.Set(state);
   peer_->UpdateExpiry();
-  peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  // Transition to or from Connected state is a notifyable change.
+  if ((from_state == ConnectionState::kConnected) || (state == ConnectionState::kConnected)) {
+    peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  }
 
-  // Become non-temporary if we became connected. BR/EDR device remain
-  // non-temporary afterwards.
-  if (state == ConnectionState::kConnected) {
+  // Become non-temporary if we successfully connect or are initializing. BR/EDR device remain
+  // non-temporary afterwards if bonded, and temporary again if disconnect without bonding.
+  if (state == ConnectionState::kNotConnected) {
+    peer_->TryMakeTemporary();
+  } else {
     peer_->TryMakeNonTemporary();
   }
 }
@@ -512,7 +518,12 @@ bool Peer::TryMakeNonTemporary() {
 
 bool Peer::TryMakeTemporary() {
   if (le() && le()->connection_state() == ConnectionState::kNotConnected && !identity_known()) {
-    bt_log(DEBUG, "gap", "became temporary: %s:", bt_str(*this));
+    bt_log(DEBUG, "gap", "LE became temporary: %s:", bt_str(*this));
+    temporary_.Set(true);
+    return true;
+  }
+  if (bredr() && !bredr()->bonded()) {
+    bt_log(DEBUG, "gap", "BR/EDR became temporary: %s:", bt_str(*this));
     temporary_.Set(true);
     return true;
   }

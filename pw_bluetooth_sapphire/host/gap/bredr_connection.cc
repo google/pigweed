@@ -27,11 +27,18 @@ BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection
       pairing_state_(std::make_unique<PairingState>(
           peer_id, link_.get(), request_ && request_->AwaitingOutgoing(), peer_cache,
           std::move(send_auth_request_cb),
-          [peer_id, disconnect_cb = std::move(disconnect_cb)](auto, hci::Status status) {
+          [peer_cache, peer_id, disconnect_cb = std::move(disconnect_cb)](auto,
+                                                                          hci::Status status) {
             if (bt_is_error(status, DEBUG, "gap-bredr",
                             "PairingState error status, disconnecting (peer id: %s)",
                             bt_str(peer_id))) {
               disconnect_cb();
+              return;
+            }
+            // Once pairing succeeds, the transition from Initializing -> Connected can happen
+            auto peer = peer_cache->FindById(peer_id);
+            if (peer && peer->bredr()->connection_state() == Peer::ConnectionState::kInitializing) {
+              peer->MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
             }
           })),
       domain_(std::move(l2cap)),

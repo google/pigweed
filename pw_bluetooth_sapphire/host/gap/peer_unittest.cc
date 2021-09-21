@@ -371,6 +371,36 @@ TEST_F(PeerTest, SettingBrEdrConnectionStateUpdatesLastUpdated) {
   EXPECT_GE(notify_count, 1);
 }
 
+TEST_F(PeerTest, SettingBrEdrConnectionStateUpdatesTemporary) {
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kInitializing);
+  ASSERT_FALSE(peer().temporary());
+  // Notifications: one for non-temporary.
+  EXPECT_EQ(notify_count, 1);
+
+  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kNotConnected);
+  ASSERT_TRUE(peer().temporary());
+  EXPECT_EQ(notify_count, 1);
+
+  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kInitializing);
+  ASSERT_FALSE(peer().temporary());
+  // +1 notification (non-temporary)
+  EXPECT_EQ(notify_count, 2);
+
+  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
+  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
+  ASSERT_FALSE(peer().temporary());
+  // +2 notification (connected, bonded)
+  EXPECT_EQ(notify_count, 4);
+
+  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kNotConnected);
+  ASSERT_FALSE(peer().temporary());
+  // +1 notification (connection state)
+  EXPECT_EQ(notify_count, 5);
+}
+
 TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
   SetUpPeer(/*address=*/kAddrLeAlias, /*connectable=*/true);
   EXPECT_EQ(peer().last_updated(), zx::time(0));
