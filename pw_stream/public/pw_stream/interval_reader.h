@@ -34,7 +34,8 @@ namespace pw::stream {
 //
 // The reader additionally embedds a `Status` to indicate whether itself
 // is valid. This is a workaround for Reader not being compatibile with
-// Result<>.
+// Result<>. TODO(pwbug/363): Migrate this to Result<> once we have StatusOr
+// like support.
 class IntervalReader : public SeekableReader {
  public:
   constexpr IntervalReader() : status_(Status::Unavailable()) {}

@@ -28,6 +28,9 @@ class ProtoIntegerBase {
  public:
   constexpr ProtoIntegerBase(Result<Integer> value) : value_(value) {}
   constexpr ProtoIntegerBase(Status status) : value_(status) {}
+
+  // TODO(pwbug/363): Migrate this to Result<> once we have StatusOr like
+  // support.
   bool ok() { return value_.ok(); }
   Status status() { return value_.status(); }
   Integer value() { return value_.value(); }
