@@ -16,9 +16,11 @@
 These checks assume that they are running in a preconfigured Python environment.
 """
 
+import json
 import logging
 import os
 import sys
+from typing import Optional
 
 try:
     import pw_presubmit
@@ -29,7 +31,14 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import build, filter_paths, PresubmitContext
+from pw_env_setup import python_packages
+from pw_presubmit import (
+    build,
+    Check,
+    filter_paths,
+    PresubmitContext,
+    PresubmitFailure,
+)
 
 _LOG = logging.getLogger(__name__)
 
@@ -46,3 +55,27 @@ def gn_python_check(ctx: PresubmitContext):
 def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, 'python.lint')
+
+
+@Check
+def check_python_versions(ctx: PresubmitContext):
+    """Checks that the list of installed packages is as expected."""
+
+    build.gn_gen(ctx.root, ctx.output_dir)
+    constraint_file: Optional[str] = None
+    try:
+        for arg in build.get_gn_args(ctx.output_dir):
+            if arg['name'] == 'pw_build_PIP_CONSTRAINTS':
+                constraint_file = json.loads(
+                    arg['current']['value'])[0].strip('/')
+    except json.JSONDecodeError:
+        _LOG.warning('failed to parse GN args json')
+        return
+
+    if not constraint_file:
+        _LOG.warning('could not find pw_build_PIP_CONSTRAINTS GN arg')
+        return
+
+    with (ctx.root / constraint_file).open('r') as ins:
+        if python_packages.diff(ins) != 0:
+            raise PresubmitFailure

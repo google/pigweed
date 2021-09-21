@@ -551,9 +551,9 @@ class Check:
     def __call__(self, ctx: PresubmitContext, *args, **kwargs):
         """Calling a Check calls its underlying function directly.
 
-      This makes it possible to call functions wrapped by @filter_paths. The
-      prior filters are ignored, so new filters may be applied.
-      """
+        This makes it possible to call functions wrapped by @filter_paths. The
+        prior filters are ignored, so new filters may be applied.
+        """
         return self._check(ctx, *args, **kwargs)
 
 
@@ -609,17 +609,12 @@ def filter_paths(endswith: Iterable[str] = '',
     return filter_paths_for_function
 
 
-@filter_paths(endswith='.h', exclude=(r'\.pb\.h$', ))
-def pragma_once(ctx: PresubmitContext) -> None:
-    """Presubmit check that ensures all header files contain '#pragma once'."""
-
-    for path in ctx.paths:
-        with open(path) as file:
-            for line in file:
-                if line.startswith('#pragma once'):
-                    break
-            else:
-                raise PresubmitFailure('#pragma once is missing!', path=path)
+# TODO(mohrr) Remove after updating downstream projects to use cpp_checks.
+@filter_paths(endswith=('.h'))
+def pragma_once(ctx: PresubmitContext):
+    # pylint: disable=import-outside-toplevel
+    from pw_presubmit import cpp_checks
+    return cpp_checks.pragma_once(ctx)
 
 
 def call(*args, **kwargs) -> None:
@@ -647,20 +642,9 @@ def call(*args, **kwargs) -> None:
         raise PresubmitFailure
 
 
+# TODO(mohrr) Remove after updating downstream projects to use build.bazel_lint.
 @filter_paths(endswith=('.bzl', '.bazel'))
 def bazel_lint(ctx: PresubmitContext):
-    """Runs buildifier with lint on Bazel files.
-
-    Should be run after bazel_format since that will give more useful output
-    for formatting-only issues.
-    """
-
-    failure = False
-    for path in ctx.paths:
-        try:
-            call('buildifier', '--lint=warn', '--mode=check', path)
-        except PresubmitFailure:
-            failure = True
-
-    if failure:
-        raise PresubmitFailure
+    # pylint: disable=import-outside-toplevel
+    from pw_presubmit import build
+    return build.bazel_lint(ctx)

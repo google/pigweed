@@ -175,9 +175,18 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       sys.exit(2)
 
   import pw_presubmit
-  from pw_presubmit import build, cli, environment, format_code, git_repo
-  from pw_presubmit import inclusive_language, filter_paths, python_checks
-  from pw_presubmit import PresubmitContext
+  from pw_presubmit import (
+      build,
+      cli,
+      cpp_checks,
+      environment,
+      format_code,
+      git_repo,
+      inclusive_language,
+      filter_paths,
+      python_checks,
+      PresubmitContext,
+  )
   from pw_presubmit.install_hook import install_hook
 
   # Set up variables for key project paths.
@@ -213,7 +222,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
   # filters with @filter_paths.
   @filter_paths(endswith='.h', exclude=PATH_EXCLUSIONS)
   def pragma_once(ctx: PresubmitContext):
-      pw_presubmit.pragma_once(ctx)
+      cpp_checks.pragma_once(ctx)
 
 
   #

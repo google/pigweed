@@ -59,7 +59,7 @@ def diff(expected: TextIO) -> int:
     expected_lines = set(expected.read().splitlines())
 
     if actual_lines == expected_lines:
-        _stderr('files are identical')
+        _stderr('package versions are identical')
         return 0
 
     removed_entries: Dict[str, str] = dict(

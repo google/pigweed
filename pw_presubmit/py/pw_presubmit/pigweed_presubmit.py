@@ -37,10 +37,21 @@ except ImportError:
 
 import pw_package.pigweed_packages
 
-from pw_presubmit import build, cli, format_code, git_repo, call, filter_paths
-import pw_presubmit.inclusive_language
-from pw_presubmit import plural, PresubmitContext, PresubmitFailure, Programs
-from pw_presubmit import python_checks
+from pw_presubmit import (
+    build,
+    cli,
+    cpp_checks,
+    format_code,
+    git_repo,
+    call,
+    filter_paths,
+    inclusive_language,
+    plural,
+    PresubmitContext,
+    PresubmitFailure,
+    Programs,
+    python_checks,
+)
 from pw_presubmit.install_hook import install_hook
 
 _LOG = logging.getLogger(__name__)
@@ -792,11 +803,6 @@ def static_analysis(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
-@filter_paths(exclude=(r'\byarn.lock$', ))
-def inclusive_language(ctx: PresubmitContext):
-    pw_presubmit.inclusive_language.inclusive_language(ctx)
-
-
 def renode_check(ctx: PresubmitContext):
     """Placeholder for future check."""
     _LOG.info('%s %s', ctx.root, ctx.output_dir)
@@ -832,15 +838,17 @@ _LINTFORMAT = (
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(),
-    inclusive_language,
-    pw_presubmit.pragma_once,
-    pw_presubmit.bazel_lint,
+    inclusive_language.inclusive_language.with_filter(
+        exclude=(r'\byarn.lock$', )),
+    cpp_checks.pragma_once,
+    build.bazel_lint,
     source_is_in_build_files,
 )
 
 LINTFORMAT = (
     _LINTFORMAT,
     python_checks.gn_python_lint,
+    pw_presubmit.python_checks.check_python_versions,
 )
 
 QUICK = (

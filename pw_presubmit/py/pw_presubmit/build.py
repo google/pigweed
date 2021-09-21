@@ -27,7 +27,15 @@ from typing import (Collection, Container, Dict, Iterable, List, Mapping, Set,
                     Tuple, Union)
 
 from pw_package import package_manager
-from pw_presubmit import call, log_run, plural, PresubmitFailure, tools
+from pw_presubmit import (
+    call,
+    filter_paths,
+    log_run,
+    plural,
+    PresubmitContext,
+    PresubmitFailure,
+    tools,
+)
 
 _LOG = logging.getLogger(__name__)
 
@@ -107,6 +115,13 @@ def gn_gen(gn_source_dir: Path,
 def ninja(directory: Path, *args, **kwargs) -> None:
     """Runs ninja in the specified directory."""
     call('ninja', '-C', directory, *args, **kwargs)
+
+
+def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
+    """Dumps GN variables to JSON."""
+    proc = subprocess.run(['gn', 'args', directory, '--list', '--json'],
+                          stdout=subprocess.PIPE)
+    return json.loads(proc.stdout)
 
 
 def cmake(source_dir: Path,
@@ -284,3 +299,22 @@ def test_server(executable: str, output_dir: Path):
 
         finally:
             proc.terminate()
+
+
+@filter_paths(endswith=('.bzl', '.bazel'))
+def bazel_lint(ctx: PresubmitContext):
+    """Runs buildifier with lint on Bazel files.
+
+    Should be run after bazel_format since that will give more useful output
+    for formatting-only issues.
+    """
+
+    failure = False
+    for path in ctx.paths:
+        try:
+            call('buildifier', '--lint=warn', '--mode=check', path)
+        except PresubmitFailure:
+            failure = True
+
+    if failure:
+        raise PresubmitFailure
