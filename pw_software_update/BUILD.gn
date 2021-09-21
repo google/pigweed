@@ -56,6 +56,28 @@ pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
+pw_source_set("update_bundle") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    dir_pw_blob_store,
+    dir_pw_kvs,
+    dir_pw_protobuf,
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+  public = [
+    "public/pw_software_update/bundled_update_backend.h",
+    "public/pw_software_update/config.h",
+    "public/pw_software_update/manifest.h",
+    "public/pw_software_update/update_bundle.h",
+  ]
+  deps = [
+    ":protos.pwpb",
+    dir_pw_log,
+  ]
+  sources = [ "update_bundle.cc" ]
+}
+
 if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
   pw_source_set("rpc_service") {
     public_configs = [ ":public_include_path" ]
@@ -66,35 +88,8 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
       "service.cc",
     ]
   }
-
-  pw_source_set("update_backend") {
-    public_configs = [ ":public_include_path" ]
-    public_deps = [
-      ":protos.nanopb",
-      dir_pw_status,
-    ]
-    sources = [ "public/pw_software_update/update_backend.h" ]
-  }
-
-  pw_source_set("update_bundle") {
-    public_configs = [ ":public_include_path" ]
-    public_deps = [
-      ":protos.pwpb",
-      ":update_backend",
-      dir_pw_blob_store,
-      dir_pw_kvs,
-    ]
-    deps = [ dir_pw_log ]
-    public = [
-      "public/pw_software_update/config.h",
-      "public/pw_software_update/update_bundle.h",
-    ]
-    sources = [ "update_bundle.cc" ]
-  }
 } else {
   group("rpc_service") {
-  }
-  group("update_bundle") {
   }
 }
 

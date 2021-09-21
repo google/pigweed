@@ -19,21 +19,18 @@
 #include "pw_blob_store/blob_store.h"
 #include "pw_protobuf/map_utils.h"
 #include "pw_protobuf/message.h"
-#include "pw_software_update/update_backend.h"
+#include "pw_software_update/bundled_update_backend.h"
+#include "pw_software_update/manifest.h"
 #include "pw_stream/memory_stream.h"
 
 namespace pw::software_update {
-
-// TODO(pwbug/456): Place-holder declaration for now. To be implemented
-// and moved elsewhere.
-class Manifest {};
 
 // UpdateBundle is responsible for parsing, verifying and providing
 // target payload access of a software update bundle. It takes the following as
 // inputs:
 //
 // 1. A software update bundle via `BlobStore`.
-// 2. A `BundledUpdateHelper`, which implements project-specific update
+// 2. A `BundledUpdateBackend`, which implements project-specific update
 //    operations such as enforcing project update policies and
 //    verifying/applying target files on device.
 //

@@ -36,7 +36,9 @@ pw_cc_library(
     name = "update_bundle",
     srcs = ["update_bundle.cc"],
     hdrs = [
+        "public/pw_software_update/bundled_update_backend.h",
         "public/pw_software_update/config.h",
+        "public/pw_software_update/manifest.h",
         "public/pw_software_update/update_bundle.h",
     ],
     includes = ["public"],
@@ -44,16 +46,9 @@ pw_cc_library(
         "//pw_blob_store",
         "//pw_kvs",
         "//pw_log",
-    ],
-)
-
-pw_cc_library(
-    name = "update_backend",
-    hdrs = ["public/pw_software_update/update_backend.h"],
-    includes = ["public"],
-    deps = [
-        ":update_bundle_proto",
+        "//pw_protobuf",
         "//pw_status",
+        "//pw_stream",
     ],
 )
 

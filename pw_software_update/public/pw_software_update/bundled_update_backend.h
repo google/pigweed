@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include "pw_software_update/update_bundle.pb.h"
+#include "pw_software_update/manifest.h"
 #include "pw_status/status.h"
+#include "pw_stream/stream.h"
 
 namespace pw::software_update {
 
@@ -37,8 +38,7 @@ class BundledUpdateBackend {
 
   // Perform any product-specific bundle verification tasks (e.g. hw version
   // match check), done after TUF bundle verification process.
-  virtual Status VerifyMetadata(
-      [[maybe_unused]] const pw_software_update_Manifest& manifest) {
+  virtual Status VerifyMetadata([[maybe_unused]] const Manifest& manifest) {
     return OkStatus();
   };
 
@@ -50,7 +50,7 @@ class BundledUpdateBackend {
   // (e.g. by checksum, if failed abort partial update and wipe/mark-invalid
   // running manifest)
   virtual Status VerifyTargetFile(
-      [[maybe_unused]] const pw_software_update_Manifest& manifest,
+      [[maybe_unused]] const Manifest& manifest,
       [[maybe_unused]] std::string_view target_file_name) {
     return OkStatus();
   };
@@ -64,18 +64,18 @@ class BundledUpdateBackend {
   virtual int64_t GetStatus() { return 0; }
 
   // Update the specific target file on the device.
-  virtual Status ApplyTargetFile(
-      [[maybe_unused]] std::string_view target_file_name,
-      [[maybe_unused]] stream::Reader& target_payload) {
-    return OkStatus();
-  };
+  virtual Status ApplyTargetFile(std::string_view target_file_name,
+                                 stream::Reader& target_payload) = 0;
 
   // Do any work needed to finalize the update including doing a required
   // reboot of the device! This is called after all software update state and
   // breadcrumbs have been cleaned up.
   //
   // After the reboot the update is fully complete.
-  PW_NO_RETURN virtual void FinalizeUpdate() = 0;
+  //
+  // NOTE: If successful this method does not return and reboots the device, it
+  // only returns on failure to finalize.
+  virtual Status FinalizeUpdate() = 0;
 
   // Get reader of the device's current manifest.
   virtual Status GetCurrentManifestReader(
