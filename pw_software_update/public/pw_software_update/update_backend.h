@@ -70,15 +70,40 @@ class BundledUpdateBackend {
     return OkStatus();
   };
 
-  // Perform any product-specific tasks needed after completion of the update.
-  virtual Status AfterUpdateComplete() { return OkStatus(); };
+  // Do any work needed to finalize the update including doing a required
+  // reboot of the device! This is called after all software update state and
+  // breadcrumbs have been cleaned up.
+  //
+  // After the reboot the update is fully complete.
+  PW_NO_RETURN virtual void FinalizeUpdate() = 0;
+
+  // Get reader of the device's current manifest.
+  virtual Status GetCurrentManifestReader(
+      [[maybe_unused]] stream::Reader* out) {
+    return Status::Unimplemented();
+  };
+
+  // Use a reader that provides a new manifest for the device to save.
+  virtual Status UpdateCurrentManifest(
+      [[maybe_unused]] stream::Reader& root_metadata) {
+    return OkStatus();
+  };
 
   // Get reader of the device's root metadata.
+  //
+  // This method ALWAYS needs to be able to return a valid root metadata.
+  // Failure to have a safe update can result in inability to do future
+  // updates due to not having required metadata.
   virtual Status GetRootMetadataReader([[maybe_unused]] stream::Reader* out) {
     return Status::Unimplemented();
   };
 
   // Use a reader that provides a new root metadata for the device to save.
+  //
+  // This method needs to do updates in a reliable and failsafe way with no
+  // window of vulnerability. It needs to ALWAYS be able to return a valid root
+  // metadata. Failure to have a safe update can result in inability to do
+  // future updates due to not having required metadata.
   virtual Status UpdateRootMetadata(
       [[maybe_unused]] stream::Reader& root_metadata) {
     return OkStatus();
