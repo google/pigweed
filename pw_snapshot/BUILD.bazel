@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -23,12 +24,18 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "uuid",
+    srcs = [
+        "uuid.cc",
+    ],
     hdrs = [
         "public/pw_snapshot/uuid.h",
     ],
     includes = ["public"],
     deps = [
+        ":metadata_proto",
         "//pw_bytes",
+        "//pw_protobuf",
+        "//pw_status",
     ],
 )
 
@@ -54,5 +61,20 @@ filegroup(
     name = "cpp_compile_test",
     srcs = [
         "cpp_compile_test.cc",
+    ],
+)
+
+pw_cc_test(
+    name = "uuid_test",
+    srcs = [
+        "uuid_test.cc",
+    ],
+    deps = [
+        ":metadata_proto",
+        ":uuid",
+        "//pw_bytes",
+        "//pw_protobuf",
+        "//pw_result",
+        "//pw_status",
     ],
 )

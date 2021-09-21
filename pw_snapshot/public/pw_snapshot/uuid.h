@@ -17,6 +17,7 @@
 #include <span>
 
 #include "pw_bytes/span.h"
+#include "pw_result/result.h"
 
 namespace pw::snapshot {
 
@@ -27,5 +28,16 @@ inline constexpr size_t kUuidSizeBytes = 16;
 
 using UuidSpan = std::span<std::byte, kUuidSizeBytes>;
 using ConstUuidSpan = std::span<const std::byte, kUuidSizeBytes>;
+
+// Reads the snapshot UUID from an in memory snapshot, if present, and returns
+// the subspan of `output` that contains the read snapshot.
+//
+// Returns:
+//   OK - UUID found, status with size indicates number of bytes written to
+//     `output`.
+//   RESOURCE_EXHUASTED - UUID found, but `output` was too small to fit it.
+//   NOT_FOUND - No snapshot UUID found in the provided snapshot.
+Result<ConstByteSpan> ReadUuidFromSnapshot(ConstByteSpan snapshot,
+                                           UuidSpan output);
 
 }  // namespace pw::snapshot

@@ -27,7 +27,16 @@ config("public_include_path") {
 pw_source_set("uuid") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_snapshot/uuid.h" ]
-  public_deps = [ dir_pw_bytes ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
+  ]
+  deps = [
+    ":metadata_proto.pwpb",
+    dir_pw_protobuf,
+  ]
+  sources = [ "uuid.cc" ]
 }
 
 group("pw_snapshot") {
@@ -71,7 +80,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":cpp_compile_test" ]
+  tests = [
+    ":cpp_compile_test",
+    ":uuid_test",
+  ]
 }
 
 # An empty test to ensure the proto libraries compile correctly.
@@ -80,5 +92,17 @@ pw_test("cpp_compile_test") {
   deps = [
     ":snapshot_proto.pwpb",
     dir_pw_protobuf,
+  ]
+}
+
+pw_test("uuid_test") {
+  sources = [ "uuid_test.cc" ]
+  deps = [
+    ":metadata_proto.pwpb",
+    ":uuid",
+    dir_pw_bytes,
+    dir_pw_protobuf,
+    dir_pw_result,
+    dir_pw_status,
   ]
 }

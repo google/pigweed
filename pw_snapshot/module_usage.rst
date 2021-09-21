@@ -176,3 +176,34 @@ Here's an example implementation that uses the device name:
       matcher: processor.ElfMatcher = lambda snapshot: _snapshot_elf_matcher(
           fw_bundle_dir, snapshot)
       return processor.process_snapshots(snapshot, DETOKENIZER, matcher)
+
+-------------
+C++ Utilities
+-------------
+
+UUID utilities
+==============
+Snapshot UUIDs are used to uniquely identify snapshots. Pigweed strongly
+recommends using randomly generated data as a snapshot UUID. The
+more entropy and random bits, the lower the probability that two devices will
+produce the same UUID for a snapshot. 16 bytes should be sufficient for most
+projects, so this module provides ``UuidSpan`` and ``ConstUuidSpan`` types that
+can be helpful for referring to UUID-sized byte spans.
+
+Reading a snapshot's UUID
+-------------------------
+An in-memory snapshot's UUID may be read using ``ReadUuidFromSnapshot()``.
+
+.. code-block:: cpp
+
+  void NotifyNewSnapshot(ConstByteSpan snapshot) {
+    std::array<std::byte, pw::snapshot::kUuidSizeBytes> uuid;
+    pw::Result<pw::ConstByteSpan> result =
+        pw::snapshot::ReadUuidFromSnapshot(snapshot, uuid);
+    if (!result.ok()) {
+      PW_LOG_ERROR("Failed to read UUID from new snapshot, error code %d",
+                   static_cast<int>(result.status().code()));
+      return;
+    }
+    LogNewSnapshotUuid(result.value());
+  }
