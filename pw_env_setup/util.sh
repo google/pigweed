@@ -186,7 +186,6 @@ pw_deactivate() {
 # The next three functions use the following variables.
 # * PW_BANNER_FUNC: function to print banner
 # * PW_BOOTSTRAP_PYTHON: specific Python interpreter to use for bootstrap
-# * PW_USE_GCS_ENVSETUP: attempt to grab env setup executable from GCS if "true"
 # * PW_ROOT: path to Pigweed root
 # * PW_ENVSETUP_QUIET: limit output if "true"
 #
@@ -226,10 +225,6 @@ pw_bootstrap() {
     pw_red "  Please install Python on your system, add it to your PATH"
     pw_red "  and re-try running bootstrap."
     return
-  fi
-
-  if [ -n "$PW_USE_GCS_ENVSETUP" ]; then
-    _PW_ENV_SETUP="$("$PW_ROOT/pw_env_setup/get_pw_env_setup.sh")"
   fi
 
   if [ -n "$_PW_ENV_SETUP" ]; then

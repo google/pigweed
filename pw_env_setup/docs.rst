@@ -318,11 +318,15 @@ The following environment variables affect env setup behavior. Most users will
 never need to set these.
 
 ``CIPD_CACHE_DIR``
-  Location of CIPD cache dir. Defaults to ``$HOME/.cipd-cache-dir``.
+  Location of CIPD cache dir. Read by CIPD, but if unset will be defaulted to
+  ``$HOME/.cipd-cache-dir``.
 
 ``PW_ACTIVATE_SKIP_CHECKS``
   If set, skip running ``pw doctor`` at end of bootstrap/activate. Intended to
   be used by automated tools but not interactively.
+
+``PW_BANNER_FUNC``
+  Command to print a banner at the beginning of bootstrap.
 
 ``PW_BOOTSTRAP_PYTHON``
   Python executable to be used, for example "python2" or "python3". Defaults to
@@ -336,8 +340,47 @@ never need to set these.
   Disable the spinner during env setup. Intended to be used when the output is
   being redirected to a log.
 
+``PW_ENVSETUP_DISABLE_SPINNER``
+  Disable the console spinner that runs when waiting for env setup steps to
+  complete.
+
+``PW_ENVSETUP_NO_BANNER``
+  Skip printing the banner.
+
 ``PW_ENVSETUP_QUIET``
   Disables all non-error output.
+
+``PW_PROJECT_ROOT``
+  The absolute path of the project using Pigweed's env setup. For Pigweed this
+  is the same as ``PW_ROOT``. This should be set by the project's bootstrap
+  script.
+
+``PW_ROOT``
+  The absolute path to the Pigweed repository within ``PW_PROJECT_ROOT``. This
+  should be set by the project's bootstrap script.
+
+The following environment variables are set by env setup.
+
+``PATH``
+  System executable search path. Many of the environment variables below are
+  also added to this variable.
+
+``_PW_ACTUAL_ENVIRONMENT_ROOT``
+  Location the environment was installed into. Separate from
+  ``PW_ENVIRONMENT_ROOT`` because setting that implicitly and switching to
+  another project directory causes unexpected behavior.
+
+``PW_CIPD_INSTALL_DIR``
+  Top-level CIPD install directory. This is where the ``cipd`` executable is.
+
+``PW_*_CIPD_INSTALL_DIR``
+  Each CIPD package file is installed into its own directory. This allows other
+  tools to determine what those directories are. The ``*`` is replaced with an
+  all-caps version of the basename of the package file, without the extension.
+  (E.g., "path/foo.json" becomes ``PW_FOO_CIPD_INSTALL_DIR``.)
+
+``VIRTUAL_ENV``
+  Path to Pigweed's virtualenv.
 
 Non-Shell Environments
 **********************

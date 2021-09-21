@@ -19,7 +19,8 @@ import sys
 import threading
 import time
 
-PW_ENVSETUP_DISABLE_SPINNER = os.environ.get('PW_ENVSETUP_DISABLE_SPINNER')
+PW_ENVSETUP_DISABLE_SPINNER = (os.environ.get('PW_ENVSETUP_DISABLE_SPINNER')
+                               or os.environ.get('PW_ENVSETUP_QUIET'))
 
 
 def _disabled():
