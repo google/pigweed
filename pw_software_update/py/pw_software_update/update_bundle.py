@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Facilities for generating and serializing update bundles."""
+"""Generate and serialize update bundles."""
 
 import argparse
 import logging
@@ -116,13 +116,13 @@ def parse_args():
                         type=Path,
                         nargs='+',
                         default=tuple(),
-                        help='Exclude a path from the TUF repository')
+                        help='Exclude paths from the TUF repository')
     parser.add_argument('-r',
                         '--remap',
                         type=str,
                         nargs='+',
                         default=tuple(),
-                        help='Remap a path to a custom target file name')
+                        help='Remap paths to custom target file names')
     return parser.parse_args()
 
 
