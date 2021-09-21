@@ -623,20 +623,27 @@ def call(*args, **kwargs) -> None:
     _LOG.debug('[RUN] %s\n%s', attributes, command)
 
     env = pw_cli.env.pigweed_environment()
-    if not env.PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE:
-        kwargs["stdout"] = subprocess.PIPE
+    kwargs['stdout'] = subprocess.PIPE
+    kwargs['stderr'] = subprocess.STDOUT
 
-    process = subprocess.run(args, stderr=subprocess.STDOUT, **kwargs)
+    process = subprocess.Popen(args, **kwargs)
+    assert process.stdout
+
+    if env.PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE:
+        while True:
+            line = process.stdout.readline().decode(errors='backslashreplace')
+            if not line:
+                break
+            _LOG.info(line.rstrip())
+
+    stdout, _ = process.communicate()
+
     logfunc = _LOG.warning if process.returncode else _LOG.debug
-
     logfunc('[FINISHED]\n%s', command)
     logfunc('[RESULT] %s with return code %d',
             'Failed' if process.returncode else 'Passed', process.returncode)
-
-    if kwargs.get('stdout'):
-        output = process.stdout.decode(errors='backslashreplace')
-        if output:
-            logfunc('[OUTPUT]\n%s', output)
+    if stdout:
+        logfunc('[OUTPUT]\n%s', stdout.decode(errors='backslashreplace'))
 
     if process.returncode:
         raise PresubmitFailure
