@@ -17,7 +17,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_transfer/handler.h"
-#include "pw_transfer/internal/context.h"
+#include "pw_transfer/internal/server_context.h"
 #include "pw_transfer/transfer.raw_rpc.pb.h"
 
 namespace pw::transfer {
@@ -40,8 +40,8 @@ class TransferService : public generated::Transfer<TransferService> {
   // loss.
   constexpr TransferService(size_t max_chunk_size_bytes,
                             size_t default_max_bytes_to_receive)
-      : read_transfers_(internal::Context::kRead, handlers_),
-        write_transfers_(internal::Context::kWrite, handlers_),
+      : read_transfers_(internal::ServerContext::kRead, handlers_),
+        write_transfers_(internal::ServerContext::kWrite, handlers_),
         max_chunk_size_bytes_(max_chunk_size_bytes),
         default_max_bytes_to_receive_(default_max_bytes_to_receive) {}
 
@@ -70,12 +70,10 @@ class TransferService : public generated::Transfer<TransferService> {
 
   // Sends a out data chunk for a read transfer. Returns true if the data was
   // sent successfully.
-  bool SendNextReadChunk(internal::Context& context);
+  bool SendNextReadChunk(internal::ServerContext& context);
 
   void OnReadMessage(ConstByteSpan message);
   void OnWriteMessage(ConstByteSpan message);
-
-  size_t MaxWriteChunkSize(const internal::Context& transfer) const;
 
   // All registered transfer handlers.
   IntrusiveList<internal::Handler> handlers_;
@@ -85,8 +83,8 @@ class TransferService : public generated::Transfer<TransferService> {
   RawServerReaderWriter read_stream_;
   RawServerReaderWriter write_stream_;
 
-  internal::ContextPool read_transfers_;
-  internal::ContextPool write_transfers_;
+  internal::ServerContextPool read_transfers_;
+  internal::ServerContextPool write_transfers_;
 
   size_t max_chunk_size_bytes_;
   size_t default_max_bytes_to_receive_;

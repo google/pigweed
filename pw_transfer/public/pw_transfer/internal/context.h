@@ -13,21 +13,17 @@
 // the License.
 #pragma once
 
-#include "pw_assert/assert.h"
-#include "pw_containers/intrusive_list.h"
-#include "pw_result/result.h"
-#include "pw_transfer/handler.h"
+#include <cinttypes>
+#include <cstddef>
+#include <limits>
 
 namespace pw::transfer::internal {
 
 // Information about a single transfer.
 class Context {
  public:
-  enum Type { kRead, kWrite };
-
   constexpr Context()
-      : type_(kRead),
-        handler_(nullptr),
+      : transfer_id_(0),
         offset_(0),
         pending_bytes_(0),
         max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()) {}
@@ -37,22 +33,7 @@ class Context {
   Context& operator=(const Context&) = delete;
   Context& operator=(Context&&) = delete;
 
-  Status Start(Type type, Handler& handler);
-  void Finish(Status status);
-
-  constexpr bool active() const { return handler_ != nullptr; }
-
-  constexpr uint32_t transfer_id() const { return handler().id(); }
-
-  stream::Reader& reader() const {
-    PW_DASSERT(type_ == kRead);
-    return handler().reader();
-  }
-
-  stream::Writer& writer() const {
-    PW_DASSERT(type_ == kWrite);
-    return handler().writer();
-  }
+  constexpr uint32_t transfer_id() const { return transfer_id_; }
 
   constexpr uint32_t offset() const { return offset_; }
   constexpr void set_offset(size_t offset) { offset_ = offset; }
@@ -69,40 +50,36 @@ class Context {
     max_chunk_size_bytes_ = max_chunk_size_bytes;
   }
 
+ protected:
+  constexpr Context(uint32_t transfer_id)
+      : transfer_id_(transfer_id),
+        offset_(0),
+        pending_bytes_(0),
+        max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()) {}
+
+  constexpr void set_transfer_id(uint32_t transfer_id) {
+    transfer_id_ = transfer_id;
+  }
+
  private:
-  constexpr Handler& handler() {
-    PW_DASSERT(active());
-    return *handler_;
-  }
-
-  constexpr const Handler& handler() const {
-    PW_DASSERT(active());
-    return *handler_;
-  }
-
-  Type type_;
-  Handler* handler_;
+  uint32_t transfer_id_;
   size_t offset_;
   size_t pending_bytes_;
   size_t max_chunk_size_bytes_;
 };
 
-class ContextPool {
- public:
-  constexpr ContextPool(Context::Type type,
-                        IntrusiveList<internal::Handler>& handlers)
-      : type_(type), handlers_(handlers) {}
-
-  Result<Context*> GetOrStartTransfer(uint32_t id);
-
- private:
-  // TODO(frolv): Initially, only one transfer at a time is supported. Once that
-  // is updated, this should be made configurable.
-  static constexpr int kMaxConcurrentTransfers = 1;
-
-  Context::Type type_;
-  std::array<Context, kMaxConcurrentTransfers> transfers_;
-  IntrusiveList<internal::Handler>& handlers_;
-};
+// Calculates the maximum size of actual data that can be sent within a single
+// client write transfer chunk, accounting for the overhead of the transfer
+// protocol and RPC system.
+//
+// Note: This function relies on RPC protocol internals. This is generally a
+// *bad* idea, but is necessary here due to limitations of the RPC system and
+// its asymmetric ingress and egress paths.
+//
+// TODO(frolv): This should be investigated further and perhaps addressed within
+// the RPC system, at the least through a helper function.
+size_t MaxWriteChunkSize(const Context& transfer,
+                         size_t max_chunk_size_bytes,
+                         uint32_t channel_id);
 
 }  // namespace pw::transfer::internal

@@ -19,7 +19,6 @@
 #include "pw_status/try.h"
 #include "pw_transfer/transfer.pwpb.h"
 #include "pw_transfer_private/chunk.h"
-#include "pw_varint/varint.h"
 
 namespace pw::transfer {
 
@@ -54,7 +53,7 @@ void TransferService::SendStatusChunk(RawServerReaderWriter& stream,
   }
 }
 
-bool TransferService::SendNextReadChunk(internal::Context& context) {
+bool TransferService::SendNextReadChunk(internal::ServerContext& context) {
   if (context.pending_bytes() == 0) {
     return false;
   }
@@ -123,7 +122,7 @@ void TransferService::OnReadMessage(ConstByteSpan message) {
     return;
   }
 
-  Result<internal::Context*> result =
+  Result<internal::ServerContext*> result =
       read_transfers_.GetOrStartTransfer(parameters.transfer_id);
   if (!result.ok()) {
     PW_LOG_ERROR("Error handling read transfer %u: %d",
@@ -133,7 +132,7 @@ void TransferService::OnReadMessage(ConstByteSpan message) {
     return;
   }
 
-  internal::Context& transfer = *result.value();
+  internal::ServerContext& transfer = *result.value();
 
   if (parameters.status.has_value()) {
     // Transfer has been terminated (successfully or not).
@@ -194,7 +193,7 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
 
   // Try to find an active write transfer for the requested ID, or start a new
   // one if a writable TransferHandler is registered for it.
-  Result<internal::Context*> maybe_context =
+  Result<internal::ServerContext*> maybe_context =
       write_transfers_.GetOrStartTransfer(chunk.transfer_id);
   if (!maybe_context.ok()) {
     PW_LOG_ERROR("Error handling write transfer %u: %d",
@@ -204,7 +203,7 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
     return;
   }
 
-  internal::Context& transfer = *maybe_context.value();
+  internal::ServerContext& transfer = *maybe_context.value();
 
   // Check for a client-side error terminating the transfer.
   if (chunk.status.has_value()) {
@@ -268,7 +267,8 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
   parameters.transfer_id = transfer.transfer_id();
   parameters.offset = transfer.offset();
   parameters.pending_bytes = transfer.pending_bytes();
-  parameters.max_chunk_size_bytes = MaxWriteChunkSize(transfer);
+  parameters.max_chunk_size_bytes = MaxWriteChunkSize(
+      transfer, max_chunk_size_bytes_, write_stream_.channel_id());
 
   // If the parameters can't be encoded or sent, it most likely indicates a
   // transport-layer issue, so there isn't much that can be done by the transfer
@@ -289,64 +289,6 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
     write_stream_.ReleaseBuffer();
     transfer.Finish(Status::Internal());
   }
-}
-
-// Calculates the maximum size of actual data that can be sent within a single
-// client write transfer chunk, accounting for the overhead of the transfer
-// protocol and RPC system.
-//
-// Note: This function relies on RPC protocol internals. This is generally a
-// *bad* idea, but is necessary here due to limitations of the RPC system and
-// its asymmetric ingress and egress paths.
-//
-// TODO(frolv): This should be investigated further and perhaps addressed within
-// the RPC system, at the least through a helper function.
-size_t TransferService::MaxWriteChunkSize(
-    const internal::Context& transfer) const {
-  // Start with the user-provided maximum chunk size, which should be the usable
-  // payload length on the RPC ingress path after any transport overhead.
-  ssize_t max_size = max_chunk_size_bytes_;
-
-  // Subtract the RPC overhead (pw_rpc/internal/packet.proto).
-  //
-  //   type:       1 byte key, 1 byte value (CLIENT_STREAM)
-  //   channel_id: 1 byte key, varint value (calculate from stream)
-  //   service_id: 1 byte key, 4 byte value
-  //   method_id:  1 byte key, 4 byte value
-  //   payload:    1 byte key, varint length (remaining space)
-  //   status:     0 bytes (not set in stream packets)
-  //
-  //   TOTAL: 14 bytes + encoded channel_id size + encoded payload length
-  //
-  max_size -= 14;
-  max_size -= varint::EncodedSize(write_stream_.channel_id());
-  max_size -= varint::EncodedSize(max_size);
-
-  // Subtract the transfer service overhead for a client write chunk
-  // (pw_transfer/transfer.proto).
-  //
-  //   transfer_id: 1 byte key, varint value (calculate)
-  //   offset:      1 byte key, varint value (calculate)
-  //   data:        1 byte key, varint length (remaining space)
-  //
-  //   TOTAL: 3 + encoded transfer_id + encoded offset + encoded data length
-  //
-  size_t max_offset_in_window = transfer.offset() + transfer.pending_bytes();
-  max_size -= 3;
-  max_size -= varint::EncodedSize(transfer.transfer_id());
-  max_size -= varint::EncodedSize(max_offset_in_window);
-  max_size -= varint::EncodedSize(max_size);
-
-  // A resulting value of zero (or less) renders write transfers unusable, as
-  // there is no space to send any payload. This should be considered a
-  // programmer error in the transfer service setup.
-  PW_CHECK_INT_GT(
-      max_size,
-      0,
-      "Transfer service maximum chunk size is too small to fit a payload. "
-      "Increase max_chunk_size_bytes to support write transfers.");
-
-  return max_size;
 }
 
 }  // namespace pw::transfer

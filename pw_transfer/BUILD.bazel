@@ -24,18 +24,17 @@ licenses(["notice"])
 pw_cc_library(
     name = "pw_transfer",
     srcs = [
-        "chunk.cc",
-        "context.cc",
-        "pw_transfer_private/chunk.h",
+        "public/pw_transfer/internal/server_context.h",
+        "server_context.cc",
         "transfer.cc",
     ],
     hdrs = [
         "public/pw_transfer/handler.h",
-        "public/pw_transfer/internal/context.h",
         "public/pw_transfer/transfer.h",
     ],
     includes = ["public"],
     deps = [
+        ":common",
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers:intrusive_list",
@@ -50,6 +49,50 @@ pw_cc_library(
         "//pw_rpc/raw:method_union",
         # "//pw_rpc/raw:test_method_context",
         "//pw_rpc:internal_test_utils",
+    ],
+)
+
+pw_cc_library(
+    name = "client",
+    srcs = [
+        "client.cc",
+        "client_context.cc",
+        "public/pw_transfer/internal/client_context.h",
+    ],
+    hdrs = [
+        "public/pw_transfer/client.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":common",
+        "//pw_assert",
+        "//pw_function",
+        "//pw_log",
+        "//pw_stream",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_work_queue",
+    ],
+)
+
+pw_cc_library(
+    name = "common",
+    srcs = [
+        "chunk.cc",
+        "context.cc",
+        "pw_transfer_private/chunk.h",
+    ],
+    hdrs = [
+        "public/pw_transfer/internal/context.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_bytes",
+        "//pw_containers:intrusive_list",
+        "//pw_protobuf",
+        "//pw_result",
+        "//pw_status",
+        "//pw_varint",
     ],
 )
 
@@ -68,6 +111,15 @@ pw_cc_test(
     deps = [
         ":pw_transfer",
         "//pw_rpc/raw:test_method_context",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "client_test",
+    srcs = ["client_test.cc"],
+    deps = [
+        ":client",
         "//pw_unit_test",
     ],
 )

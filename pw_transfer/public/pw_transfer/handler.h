@@ -69,7 +69,7 @@ class Handler : public IntrusiveList<Handler>::Item {
   void set_writer(stream::Writer& writer) { writer_ = &writer; }
 
  private:
-  friend class Context;
+  friend class ServerContext;
 
   // Only valid after a PrepareRead() call that returns OK.
   stream::Reader& reader() const {

@@ -27,28 +27,69 @@ pw_source_set("pw_transfer") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":proto.raw_rpc",
-    "$dir_pw_containers:intrusive_list",
     dir_pw_assert,
-    dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
     dir_pw_stream,
   ]
   deps = [
+    ":common",
     ":proto.pwpb",
     dir_pw_log,
-    dir_pw_varint,
   ]
   public = [
     "public/pw_transfer/handler.h",
     "public/pw_transfer/transfer.h",
   ]
   sources = [
+    "public/pw_transfer/internal/server_context.h",
+    "server_context.cc",
+    "transfer.cc",
+  ]
+}
+
+pw_source_set("client") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":proto.raw_rpc",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    dir_pw_assert,
+    dir_pw_function,
+    dir_pw_stream,
+    dir_pw_work_queue,
+  ]
+  deps = [
+    ":common",
+    ":proto.pwpb",
+    dir_pw_log,
+  ]
+  public = [ "public/pw_transfer/client.h" ]
+  sources = [
+    "client.cc",
+    "client_context.cc",
+    "public/pw_transfer/internal/client_context.h",
+  ]
+}
+
+pw_source_set("common") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_containers:intrusive_list",
+    dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
+  ]
+  deps = [
+    ":proto.pwpb",
+    dir_pw_protobuf,
+    dir_pw_varint,
+  ]
+  sources = [
     "chunk.cc",
     "context.cc",
     "public/pw_transfer/internal/context.h",
     "pw_transfer_private/chunk.h",
-    "transfer.cc",
   ]
   friend = [ ":*" ]
 }
@@ -61,6 +102,7 @@ pw_proto_library("proto") {
 
 pw_test_group("tests") {
   tests = [
+    ":client_test",
     ":handler_test",
     ":transfer_test",
   ]
@@ -74,10 +116,16 @@ pw_test("handler_test") {
 pw_test("transfer_test") {
   sources = [ "transfer_test.cc" ]
   deps = [
+    ":common",
     ":proto.pwpb",
     ":pw_transfer",
     "$dir_pw_rpc/raw:test_method_context",
   ]
+}
+
+pw_test("client_test") {
+  sources = [ "client_test.cc" ]
+  deps = [ ":client" ]
 }
 
 pw_doc_group("docs") {

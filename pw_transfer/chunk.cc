@@ -15,6 +15,7 @@
 #include "pw_transfer_private/chunk.h"
 
 #include "pw_protobuf/decoder.h"
+#include "pw_status/try.h"
 #include "pw_transfer/transfer.pwpb.h"
 
 namespace pw::transfer::internal {
@@ -80,36 +81,30 @@ Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
 Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
   ProtoChunk::MemoryEncoder encoder(buffer);
 
-  encoder.WriteTransferId(chunk.transfer_id)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  encoder.WriteTransferId(chunk.transfer_id).IgnoreError();
 
   if (chunk.pending_bytes.has_value()) {
-    encoder.WritePendingBytes(chunk.pending_bytes.value())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    encoder.WritePendingBytes(chunk.pending_bytes.value()).IgnoreError();
   }
   if (chunk.max_chunk_size_bytes.has_value()) {
     encoder.WriteMaxChunkSizeBytes(chunk.max_chunk_size_bytes.value())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();
   }
   if (chunk.min_delay_microseconds.has_value()) {
     encoder.WriteMinDelayMicroseconds(chunk.min_delay_microseconds.value())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();
   }
   if (chunk.offset != 0) {
-    encoder.WriteOffset(chunk.offset)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    encoder.WriteOffset(chunk.offset).IgnoreError();
   }
   if (!chunk.data.empty()) {
-    encoder.WriteData(chunk.data)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    encoder.WriteData(chunk.data).IgnoreError();
   }
   if (chunk.remaining_bytes.has_value()) {
-    encoder.WriteRemainingBytes(chunk.remaining_bytes.value())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    encoder.WriteRemainingBytes(chunk.remaining_bytes.value()).IgnoreError();
   }
   if (chunk.status.has_value()) {
-    encoder.WriteStatus(chunk.status.value().code())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    encoder.WriteStatus(chunk.status.value().code()).IgnoreError();
   }
 
   PW_TRY(encoder.status());

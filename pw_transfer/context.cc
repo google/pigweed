@@ -16,68 +16,57 @@
 
 #include "pw_assert/check.h"
 #include "pw_status/try.h"
+#include "pw_varint/varint.h"
 
 namespace pw::transfer::internal {
 
-Status Context::Start(Type type, Handler& handler) {
-  PW_DCHECK(!active());
+size_t MaxWriteChunkSize(const Context& transfer,
+                         size_t max_chunk_size_bytes,
+                         uint32_t channel_id) {
+  // Start with the user-provided maximum chunk size, which should be the usable
+  // payload length on the RPC ingress path after any transport overhead.
+  ssize_t max_size = max_chunk_size_bytes;
 
-  if (type == kRead) {
-    PW_TRY(handler.PrepareRead());
-  } else {
-    PW_TRY(handler.PrepareWrite());
-  }
+  // Subtract the RPC overhead (pw_rpc/internal/packet.proto).
+  //
+  //   type:       1 byte key, 1 byte value (CLIENT_STREAM)
+  //   channel_id: 1 byte key, varint value (calculate from stream)
+  //   service_id: 1 byte key, 4 byte value
+  //   method_id:  1 byte key, 4 byte value
+  //   payload:    1 byte key, varint length (remaining space)
+  //   status:     0 bytes (not set in stream packets)
+  //
+  //   TOTAL: 14 bytes + encoded channel_id size + encoded payload length
+  //
+  max_size -= 14;
+  max_size -= varint::EncodedSize(channel_id);
+  max_size -= varint::EncodedSize(max_size);
 
-  type_ = type;
-  handler_ = &handler;
-  offset_ = 0;
-  pending_bytes_ = 0;
+  // Subtract the transfer service overhead for a client write chunk
+  // (pw_transfer/transfer.proto).
+  //
+  //   transfer_id: 1 byte key, varint value (calculate)
+  //   offset:      1 byte key, varint value (calculate)
+  //   data:        1 byte key, varint length (remaining space)
+  //
+  //   TOTAL: 3 + encoded transfer_id + encoded offset + encoded data length
+  //
+  size_t max_offset_in_window = transfer.offset() + transfer.pending_bytes();
+  max_size -= 3;
+  max_size -= varint::EncodedSize(transfer.transfer_id());
+  max_size -= varint::EncodedSize(max_offset_in_window);
+  max_size -= varint::EncodedSize(max_size);
 
-  return OkStatus();
-}
+  // A resulting value of zero (or less) renders write transfers unusable, as
+  // there is no space to send any payload. This should be considered a
+  // programmer error in the transfer service setup.
+  PW_CHECK_INT_GT(
+      max_size,
+      0,
+      "Transfer service maximum chunk size is too small to fit a payload. "
+      "Increase max_chunk_size_bytes to support write transfers.");
 
-void Context::Finish(Status status) {
-  PW_DCHECK(active());
-
-  if (type_ == kRead) {
-    handler_->FinalizeRead(status);
-  } else {
-    handler_->FinalizeWrite(status);
-  }
-
-  handler_ = nullptr;
-}
-
-Result<Context*> ContextPool::GetOrStartTransfer(uint32_t id) {
-  internal::Context* new_transfer = nullptr;
-
-  // Check if the ID belongs to an active transfer. If not, pick an inactive
-  // slot to start a new transfer.
-  for (Context& transfer : transfers_) {
-    if (transfer.active()) {
-      if (transfer.transfer_id() == id) {
-        return &transfer;
-      }
-    } else {
-      new_transfer = &transfer;
-    }
-  }
-
-  if (!new_transfer) {
-    return Status::ResourceExhausted();
-  }
-
-  // Try to start the new transfer by checking if a handler for it exists.
-  auto handler = std::find_if(handlers_.begin(), handlers_.end(), [&](auto& h) {
-    return h.id() == id;
-  });
-
-  if (handler == handlers_.end()) {
-    return Status::NotFound();
-  }
-
-  PW_TRY(new_transfer->Start(type_, *handler));
-  return new_transfer;
+  return max_size;
 }
 
 }  // namespace pw::transfer::internal
