@@ -14,6 +14,7 @@
 
 import {Message} from 'google-protobuf';
 import {Status} from 'pigweed/pw_status/ts/status';
+import WaitQueue = require('wait-queue')
 
 import {PendingCalls, Rpc} from './rpc_classes';
 
@@ -34,6 +35,9 @@ class RpcError extends Error {
 
 /** Represent an in-progress or completed RPC call. */
 export class Call {
+  // Responses ordered by arrival time. Undefined signifies stream completion.
+  private responseQueue = new WaitQueue<Message|undefined>();
+
   private rpcs: PendingCalls;
   private rpc: Rpc;
 
@@ -85,18 +89,58 @@ export class Call {
   }
 
   handleResponse(response: Message): void {
+    this.responseQueue.push(response);
     const callback = () => this.onNext(response);
     this.invokeCallback(callback)
   }
 
   handleCompletion(status: Status) {
+    this.status = status;
+    this.responseQueue.push(undefined);
     const callback = () => this.onCompleted(status);
     this.invokeCallback(callback)
   }
 
   handleError(error: Status): void {
     this.error = error;
+    this.responseQueue.push(undefined);
     this.invokeCallback(() => this.onError(error));
+  }
+
+  /**
+   * Yields responses up the specified count as they are added.
+   *
+   * Throws an error as soon as it is received even if there are still responses
+   * in the queue.
+   *
+   * Usage
+   * ```
+   * for await (const response of call.getResponses(5)) {
+   *  console.log(response);
+   * }
+   * ```
+   *
+   * @param {number} count The number of responses to read before returning.
+   *    If no value is specified, getResponses will block until the stream
+   *    either ends or hits an error.
+   */
+  async * getResponses(count?: number): AsyncGenerator<Message> {
+    this.checkErrors();
+
+    if (this.completed() && this.responseQueue.length == 0) {
+      return;
+    }
+
+    let remaining = count ?? Number.POSITIVE_INFINITY;
+    while (remaining > 0) {
+      const response = await this.responseQueue.shift();
+      if (response === undefined) {
+        return;
+      }
+      this.checkErrors();
+      yield response!;
+      remaining -= 1;
+    }
   }
 
   cancel(): boolean {

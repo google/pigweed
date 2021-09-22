@@ -49,7 +49,8 @@
     "rxjs": "^7.2.0",
     "tmp": "0.2.1",
     "ts-protoc-gen": "^0.15.0",
-    "typescript": "^4.3.5"
+    "typescript": "^4.3.5",
+    "wait-queue": "^1.1.4"
   },
   "scripts": {
     "check": "gts check",

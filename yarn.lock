@@ -4865,6 +4865,11 @@ void-elements@^2.0.0:
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-2.0.1.tgz#c066afb582bb1cb4128d60ea92392e94d5e9dbec"
   integrity sha1-wGavtYK7HLQSjWDqkjkulNXp2+w=
 
+wait-queue@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/wait-queue/-/wait-queue-1.1.4.tgz#344f9bdd6e011ddc0bb1e3252eeb41234f7a8a85"
+  integrity sha512-/VdMghiBDG/Ch43ZRp3d8OSd8A0dx8hfkBO7AfWCDzMn2blHquMf+3gqHHhYcggSBpKf7VTzA939bb0DevYKBA==
+
 which-boxed-primitive@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/which-boxed-primitive/-/which-boxed-primitive-1.0.2.tgz#13757bc89b209b049fe5d86430e21cf40a89a8e6"

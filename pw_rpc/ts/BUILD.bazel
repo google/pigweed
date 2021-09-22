@@ -34,6 +34,7 @@ ts_library(
         "//pw_rpc:packet_proto_tspb",
         "//pw_status/ts:pw_status",
         "@npm//@types/google-protobuf",
+        "@npm//wait-queue",
     ],
 )
 
@@ -53,6 +54,7 @@ ts_library(
 ts_library(
     name = "rpc_utils_test_lib",
     srcs = [
+        "call_test.ts",
         "descriptors_test.ts",
         "packets_test.ts",
     ],

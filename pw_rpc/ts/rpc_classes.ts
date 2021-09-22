@@ -21,9 +21,9 @@ import * as packets from './packets';
 
 /** Data class for a pending RPC call. */
 export class Rpc {
-  channel: Channel;
-  service: Service;
-  method: Method;
+  readonly channel: Channel;
+  readonly service: Service;
+  readonly method: Method;
 
   constructor(channel: Channel, service: Service, method: Method) {
     this.channel = channel;
@@ -78,7 +78,7 @@ export class PendingCalls {
    * server streaming RPC prior to any clients invoking it.
    */
   open(rpc: Rpc, call: Call): Call|undefined {
-    console.debug('Starting %s', rpc);
+    console.debug(`Starting ${rpc}`);
     const previous = this.pending.get(rpc.idString);
     this.pending.set(rpc.idString, call)
     return previous;
