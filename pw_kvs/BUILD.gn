@@ -96,7 +96,10 @@ pw_source_set("flash_test_partition") {
 
 pw_source_set("test_key_value_store") {
   public = [ "public/pw_kvs/test_key_value_store.h" ]
-  public_deps = [ ":pw_kvs" ]
+  public_deps = [
+    ":pw_kvs",
+    "$dir_pw_sync:borrow",
+  ]
 }
 
 pw_source_set("fake_flash") {
@@ -295,6 +298,7 @@ pw_source_set("test_key_value_store_test") {
   deps = [
     ":pw_kvs",
     ":test_key_value_store",
+    "$dir_pw_sync:borrow",
     dir_pw_unit_test,
   ]
   sources = [ "test_key_value_store_test.cc" ]
@@ -504,6 +508,7 @@ pw_test("fake_flash_test_key_value_store_test") {
   deps = [
     ":fake_flash_test_key_value_store",
     ":test_key_value_store_test",
+    "$dir_pw_sync:borrow",
   ]
 }
 

@@ -17,17 +17,18 @@
 #include "gtest/gtest.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_status/status.h"
+#include "pw_sync/borrow.h"
 
 namespace pw::kvs {
 namespace {
 
 // Simple test to verify that the TestKvs() does basic function.
 TEST(TestKvs, PutGetValue) {
-  KeyValueStore& kvs = TestKvs();
-  ASSERT_EQ(OkStatus(), kvs.Put("key", uint32_t(0xfeedbeef)));
+  sync::BorrowedPointer<KeyValueStore> kvs = TestKvs().acquire();
+  ASSERT_EQ(OkStatus(), kvs->Put("key", uint32_t(0xfeedbeef)));
 
   uint32_t value = 0;
-  EXPECT_EQ(OkStatus(), kvs.Get("key", &value));
+  EXPECT_EQ(OkStatus(), kvs->Get("key", &value));
   EXPECT_EQ(uint32_t(0xfeedbeef), value);
 }
 

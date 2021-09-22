@@ -183,6 +183,7 @@ pw_cc_library(
         ":crc16",
         ":fake_flash",
         ":pw_kvs",
+        "//pw_sync:borrow",
     ],
 )
 
@@ -441,6 +442,7 @@ pw_cc_test(
         ":pw_kvs",
         "//pw_log",
         "//pw_status",
+        "//pw_sync:borrow",
         "//pw_unit_test",
     ],
 )

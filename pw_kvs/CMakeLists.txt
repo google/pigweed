@@ -18,6 +18,7 @@ pw_auto_add_simple_module(pw_kvs
   PUBLIC_DEPS
     pw_containers
     pw_status
+    pw_sync.borrow
   PRIVATE_DEPS
     pw_assert
     pw_bytes

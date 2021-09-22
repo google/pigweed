@@ -27,6 +27,7 @@
 #include "pw_status/try.h"
 #include "pw_stream/seek.h"
 #include "pw_stream/stream.h"
+#include "pw_sync/borrow.h"
 
 namespace pw::blob_store {
 
@@ -386,7 +387,7 @@ class BlobStore {
   BlobStore(std::string_view name,
             kvs::FlashPartition& partition,
             kvs::ChecksumAlgorithm* checksum_algo,
-            kvs::KeyValueStore& kvs,
+            sync::Borrowable<kvs::KeyValueStore>& kvs,
             ByteSpan write_buffer,
             size_t flash_write_size_bytes)
       : name_(name),
@@ -577,7 +578,7 @@ class BlobStore {
   kvs::FlashPartition& partition_;
   // checksum_algo_ of nullptr indicates no checksum algorithm.
   kvs::ChecksumAlgorithm* const checksum_algo_;
-  kvs::KeyValueStore& kvs_;
+  sync::Borrowable<kvs::KeyValueStore>& kvs_;
   ByteSpan write_buffer_;
 
   // Size in bytes of flash write operations. This should be chosen to balance
@@ -640,7 +641,7 @@ class BlobStoreBuffer : public BlobStore {
   explicit BlobStoreBuffer(std::string_view name,
                            kvs::FlashPartition& partition,
                            kvs::ChecksumAlgorithm* checksum_algo,
-                           kvs::KeyValueStore& kvs,
+                           sync::Borrowable<kvs::KeyValueStore>& kvs,
                            size_t flash_write_size_bytes)
       : BlobStore(name,
                   partition,

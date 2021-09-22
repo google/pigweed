@@ -253,7 +253,8 @@ TEST_F(BlobStoreTest, FileName) {
     EXPECT_EQ(OkStatus(), writer.SetFileName(kFileName));
     EXPECT_EQ(OkStatus(), writer.Write(tmp_buffer));
     EXPECT_EQ(OkStatus(), writer.Close());
-    EXPECT_EQ(OkStatus(), kvs::TestKvs().Get(kBlobTitle, tmp_buffer).status());
+    EXPECT_EQ(OkStatus(),
+              kvs::TestKvs().acquire()->Get(kBlobTitle, tmp_buffer).status());
   }
 
   BlobStoreBuffer<kBufferSize> blob(
@@ -389,11 +390,13 @@ TEST_F(BlobStoreTest, V1MetadataBackwardsCompatible) {
 
   // Read the written data in the current format.
   internal::BlobMetadataHeader current_metadata;
-  ASSERT_EQ(OkStatus(), kvs::TestKvs().Get(kBlobTitle, &current_metadata));
+  ASSERT_EQ(OkStatus(),
+            kvs::TestKvs().acquire()->Get(kBlobTitle, &current_metadata));
 
   // Re-save only the V1 metadata contents.
-  ASSERT_EQ(OkStatus(),
-            kvs::TestKvs().Put(kBlobTitle, current_metadata.v1_metadata));
+  ASSERT_EQ(
+      OkStatus(),
+      kvs::TestKvs().acquire()->Put(kBlobTitle, current_metadata.v1_metadata));
 
   // Ensure the BlobStore's contents aren't invalid.
   BlobStore::BlobReader reader(blob);
@@ -426,17 +429,18 @@ TEST_F(BlobStoreTest, Discard) {
 
   // The write does an implicit erase so there should be no key for this blob.
   EXPECT_EQ(Status::NotFound(),
-            kvs::TestKvs().Get(blob_title, tmp_buffer).status());
+            kvs::TestKvs().acquire()->Get(blob_title, tmp_buffer).status());
   EXPECT_EQ(OkStatus(), writer.Close());
 
-  EXPECT_EQ(OkStatus(), kvs::TestKvs().Get(blob_title, tmp_buffer).status());
+  EXPECT_EQ(OkStatus(),
+            kvs::TestKvs().acquire()->Get(blob_title, tmp_buffer).status());
 
   EXPECT_EQ(OkStatus(), writer.Open());
   EXPECT_EQ(OkStatus(), writer.Discard());
   EXPECT_EQ(OkStatus(), writer.Close());
 
   EXPECT_EQ(Status::NotFound(),
-            kvs::TestKvs().Get(blob_title, tmp_buffer).status());
+            kvs::TestKvs().acquire()->Get(blob_title, tmp_buffer).status());
 }
 
 TEST_F(BlobStoreTest, MultipleErase) {

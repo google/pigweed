@@ -31,6 +31,8 @@ pw_cc_binary(
         "//pw_kvs:fake_flash_12_byte_partition",
         "//pw_kvs:flash_test_partition",
         "//pw_log",
+        "//pw_sync:borrow",
+        "//pw_sync:virtual_basic_lockable",
     ],
 )
 
@@ -45,6 +47,8 @@ pw_cc_binary(
         "//pw_kvs:fake_flash_12_byte_partition",
         "//pw_kvs:flash_test_partition",
         "//pw_log",
+        "//pw_sync:borrow",
+        "//pw_sync:virtual_basic_lockable",
     ],
 )
 
@@ -59,5 +63,7 @@ pw_cc_binary(
         "//pw_kvs:fake_flash_12_byte_partition",
         "//pw_kvs:flash_test_partition",
         "//pw_log",
+        "//pw_sync:borrow",
+        "//pw_sync:virtual_basic_lockable",
     ],
 )

@@ -19,6 +19,8 @@
 #include "pw_kvs/flash_test_partition.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
+#include "pw_sync/borrow.h"
+#include "pw_sync/virtual_basic_lockable.h"
 
 char working_buffer[256];
 volatile bool is_set;
@@ -35,6 +37,8 @@ volatile size_t kvs_entry_count;
 
 pw::kvs::KeyValueStoreBuffer<kKvsMaxEntries, kMaxSectorCount> test_kvs(
     &pw::kvs::FlashTestPartition(), kvs_format);
+pw::sync::Borrowable<pw::kvs::KeyValueStore> borrowable_kvs(
+    test_kvs, pw::sync::NoOpLock::Instance());
 
 int volatile* unoptimizable;
 
@@ -50,19 +54,21 @@ int main() {
       std::memset((void*)working_buffer, sizeof(working_buffer), 0x55);
   is_set = (result != nullptr);
 
-  test_kvs.Init().IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  {
+    pw::sync::BorrowedPointer<pw::kvs::KeyValueStore> kvs =
+        borrowable_kvs.acquire();
 
-  unsigned kvs_value = 42;
-  test_kvs.Put("example_key", kvs_value)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    kvs->Init().IgnoreError();
 
-  kvs_entry_count = test_kvs.size();
+    unsigned kvs_value = 42;
+    kvs->Put("example_key", kvs_value).IgnoreError();
 
-  unsigned read_value = 0;
-  test_kvs.Get("example_key", &read_value)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  test_kvs.Delete("example_key")
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    kvs_entry_count = kvs->size();
+
+    unsigned read_value = 0;
+    kvs->Get("example_key", &read_value).IgnoreError();
+    kvs->Delete("example_key").IgnoreError();
+  }
 
   auto val = pw::kvs::FlashTestPartition().PartitionAddressToMcuAddress(0);
   PW_LOG_INFO("Use the variable. %u", unsigned(*val));

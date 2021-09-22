@@ -17,6 +17,8 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_kvs/test_key_value_store.h"
+#include "pw_sync/borrow.h"
+#include "pw_sync/virtual_basic_lockable.h"
 
 namespace pw::kvs {
 
@@ -63,14 +65,16 @@ constexpr EntryFormat kvs_format = {.magic = 0xc40fd8a8,
 
 KeyValueStoreBuffer<kKvsTestMaxEntries, kFlashTestSectors, kKvsTestRedundancy>
     test_kvs(&test_partition, kvs_format);
+sync::Borrowable<KeyValueStore> borrowable_kvs(test_kvs,
+                                               sync::NoOpLock::Instance());
 
 }  // namespace
 
-KeyValueStore& TestKvs() {
+sync::Borrowable<KeyValueStore>& TestKvs() {
   if (!test_kvs.initialized()) {
     test_kvs.Init().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
-  return test_kvs;
+  return borrowable_kvs;
 }
 }  // namespace pw::kvs

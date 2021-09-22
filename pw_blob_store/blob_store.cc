@@ -75,7 +75,7 @@ Status BlobStore::LoadMetadata() {
   // BlobMetadataHeaderV2 will be populated. If a file name is present,
   // kvs_.Get() will return RESOURCE_EXHAUSTED as the file name won't fit in the
   // BlobMetadtataHeader object, which is intended behavior.
-  if (StatusWithSize sws = kvs_.Get(
+  if (StatusWithSize sws = kvs_.acquire()->Get(
           MetadataKey(), std::as_writable_bytes(std::span(&metadata, 1)));
       !sws.ok() && !sws.IsResourceExhausted()) {
     return Status::NotFound();
@@ -139,9 +139,9 @@ StatusWithSize BlobStore::GetFileName(std::span<char> dest) const {
   // Read file name from KVS.
   constexpr size_t kFileNameOffset = sizeof(BlobMetadataHeader);
   const StatusWithSize kvs_read_sws =
-      kvs_.Get(MetadataKey(),
-               std::as_writable_bytes(dest.first(bytes_to_read)),
-               kFileNameOffset);
+      kvs_.acquire()->Get(MetadataKey(),
+                          std::as_writable_bytes(dest.first(bytes_to_read)),
+                          kFileNameOffset);
   status.Update(kvs_read_sws.status());
   return StatusWithSize(status, kvs_read_sws.size());
 }
@@ -451,7 +451,7 @@ Status BlobStore::Invalidate() {
   flash_address_ = 0;
   file_name_length_ = 0;
 
-  Status status = kvs_.Delete(MetadataKey());
+  Status status = kvs_.acquire()->Delete(MetadataKey());
 
   return (status.ok() || status.IsNotFound()) ? OkStatus() : Status::Internal();
 }
@@ -593,8 +593,8 @@ Status BlobStore::BlobWriter::WriteMetadata() {
   PW_DCHECK(metadata_buffer_.size_bytes() >= bytes_to_write);
 
   // Do final commit to KVS.
-  return store_.kvs_.Put(store_.MetadataKey(),
-                         metadata_buffer_.first(bytes_to_write));
+  return store_.kvs_.acquire()->Put(store_.MetadataKey(),
+                                    metadata_buffer_.first(bytes_to_write));
 }
 
 Status BlobStore::BlobWriter::Close() {
