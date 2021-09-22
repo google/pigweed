@@ -41,6 +41,10 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
   Status ApplyTargetFile(std::string_view, stream::Reader&) override {
     return OkStatus();
   }
+
+  Result<uint32_t> EnableBundleTransferHandler() override { return 0; }
+
+  void DisableBundleTransferHandler() override {}
 };
 
 class UpdateBundleTest : public testing::Test {

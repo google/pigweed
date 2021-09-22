@@ -24,6 +24,7 @@ from pw_package.packages import chromium_verifier  # pylint: disable=unused-impo
 from pw_package.packages import mbedtls  # pylint: disable=unused-import
 from pw_package.packages import micro_ecc  # pylint: disable=unused-import
 from pw_package.packages import crlset  # pylint: disable=unused-import
+from pw_package.packages import protobuf  # pylint: disable=unused-import
 
 
 def initialize():

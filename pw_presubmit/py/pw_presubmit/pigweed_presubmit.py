@@ -218,6 +218,23 @@ def gn_teensy_build(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_software_update_build(ctx: PresubmitContext):
+    build.install_package(ctx.package_root, 'nanopb')
+    build.install_package(ctx.package_root, 'protobuf')
+    build.gn_gen(ctx.root,
+                 ctx.output_dir,
+                 dir_pw_third_party_protobuf='"{}"'.format(ctx.package_root /
+                                                           'protobuf'),
+                 dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
+                                                         'nanopb'))
+    build.ninja(
+        ctx.output_dir,
+        *_at_all_optimization_levels('stm32f429i'),
+        *_at_all_optimization_levels('host_clang'),
+    )
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'))
@@ -824,6 +841,7 @@ OTHER_CHECKS = (
     gn_crypto_mbedtls_build,
     gn_crypto_boringssl_build,
     gn_crypto_micro_ecc_build,
+    gn_software_update_build,
     gn_full_build_check,
     gn_full_qemu_check,
     gn_clang_build,
