@@ -35,12 +35,32 @@ class FakeChannelOutput : public ChannelOutput {
     return last_status_;
   }
 
-  size_t total_responses() const { return total_responses_; }
+  // Tracks the count for all the responses.
+  size_t total_responses() const {
+    return total_response_packets_ + total_stream_packets_;
+  }
+  // Track individual packet type counts.
+  size_t total_response_packets() const { return total_response_packets_; }
+  size_t total_stream_packets() const { return total_stream_packets_; }
 
   // Set to true if a RESPONSE packet is seen.
-  bool done() const { return done_; }
+  bool done() const { return total_response_packets_ > 0; }
 
   void clear();
+
+  // Returns `status` for all future SendAndReleaseBuffer calls. Enables packet
+  // processing if `status` is OK.
+  void set_send_status(Status status) {
+    send_status_ = status;
+    return_after_packet_count_ = status.ok() ? -1 : 0;
+  }
+  // Returns `status` once after the specified positive number of packets.
+  void set_send_status(Status status, int return_after_packet_count) {
+    PW_ASSERT(!status.ok());
+    PW_ASSERT(return_after_packet_count > 0);
+    send_status_ = status;
+    return_after_packet_count_ = return_after_packet_count;
+  }
 
  protected:
   constexpr FakeChannelOutput(MethodType method_type, ByteSpan packet_buffer)
@@ -51,20 +71,26 @@ class FakeChannelOutput : public ChannelOutput {
  private:
   ByteSpan AcquireBuffer() final { return packet_buffer_; }
 
+  // Processes buffer according to packet type and `return_after_packet_count_`
+  // value as follows:
+  // When positive, returns `send_status_` once,
+  // When equals 0, returns `send_status_` in all future calls,
+  // When negative, ignores `send_status_` processes buffer.
   Status SendAndReleaseBuffer(ConstByteSpan buffer) final;
 
   virtual void AppendResponse(ConstByteSpan response) = 0;
   virtual void ClearResponses() = 0;
 
-  void ProcessResponse(ConstByteSpan response) {
-    AppendResponse(response);
-    total_responses_ += 1;
-  }
+  void ProcessResponse(ConstByteSpan response) { AppendResponse(response); }
 
+  size_t total_response_packets_ = 0;
+  size_t total_stream_packets_ = 0;
+
+  int return_after_packet_count_ = -1;
+
+  Status send_status_ = OkStatus();
   const ByteSpan packet_buffer_;
-  size_t total_responses_ = 0;
   Status last_status_;
-  bool done_ = false;
   const MethodType method_type_;
 };
 

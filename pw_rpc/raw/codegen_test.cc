@@ -226,7 +226,7 @@ TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
   context.call(EncodeRequest(5, Status::Unauthenticated()));
   EXPECT_TRUE(context.done());
   EXPECT_EQ(Status::Unauthenticated(), context.status());
-  EXPECT_EQ(context.total_responses(), 5u);
+  EXPECT_EQ(context.total_stream_packets(), 5u);
 
   protobuf::Decoder decoder(context.responses().back());
   while (decoder.Next().ok()) {
@@ -285,7 +285,7 @@ TEST(RawCodegen, Server_InvokeBidirectionalStreamingRpc) {
 
   ASSERT_TRUE(ctx.done());
   EXPECT_EQ(Status::NotFound(), ctx.status());
-  ASSERT_EQ(ctx.total_responses(), 1u);
+  ASSERT_EQ(ctx.total_response_packets(), 1u);
   EXPECT_EQ(ReadResponseNumber(ctx.responses().back()), 456);
 }
 

@@ -29,6 +29,12 @@ template <size_t kOutputSize, size_t kMaxResponses>
 class RawFakeChannelOutput final
     : public internal::test::FakeChannelOutputBuffer<kOutputSize> {
  public:
+  using internal::test::FakeChannelOutput::clear;
+  using internal::test::FakeChannelOutput::done;
+  using internal::test::FakeChannelOutput::total_response_packets;
+  using internal::test::FakeChannelOutput::total_responses;
+  using internal::test::FakeChannelOutput::total_stream_packets;
+
   RawFakeChannelOutput(MethodType method_type)
       : internal::test::FakeChannelOutputBuffer<kOutputSize>(method_type) {}
 

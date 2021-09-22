@@ -241,6 +241,7 @@ pw_test_group("tests") {
     ":channel_test",
     ":client_test",
     ":client_server_test",
+    ":fake_channel_output_test",
     ":method_test",
     ":ids_test",
     ":packet_test",
@@ -354,4 +355,9 @@ pw_test("server_test") {
     dir_pw_assert,
   ]
   sources = [ "server_test.cc" ]
+}
+
+pw_test("fake_channel_output_test") {
+  deps = [ ":test_utils" ]
+  sources = [ "fake_channel_output_test.cc" ]
 }

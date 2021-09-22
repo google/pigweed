@@ -42,6 +42,10 @@ class InvocationContext {
   // The total number of responses sent, which may be larger than
   // responses.max_size().
   size_t total_responses() const { return output_.total_responses(); }
+  size_t total_response_packets() const {
+    return output_.total_response_packets();
+  }
+  size_t total_stream_packets() const { return output_.total_stream_packets(); }
 
   // Returns the responses that have been recorded. The maximum number of
   // responses is responses().max_size(). responses().back() is always the most

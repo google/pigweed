@@ -117,12 +117,12 @@ TEST(NanopbCodegen, Server_InvokeServerStreamingRpc) {
   EXPECT_EQ(Status::Aborted(), context.status());
   EXPECT_TRUE(context.done());
   EXPECT_TRUE(context.responses().empty());
-  EXPECT_EQ(0u, context.total_responses());
+  EXPECT_EQ(0u, context.total_stream_packets());
 
   context.call({.integer = 4, .status_code = OkStatus().code()});
 
   ASSERT_EQ(4u, context.responses().size());
-  ASSERT_EQ(4u, context.total_responses());
+  ASSERT_EQ(4u, context.total_stream_packets());
 
   for (size_t i = 0; i < context.responses().size(); ++i) {
     EXPECT_EQ(context.responses()[i].number, i);
@@ -141,7 +141,7 @@ TEST(NanopbCodegen,
   context.call({.integer = 5, .status_code = Status::NotFound().code()});
 
   ASSERT_EQ(3u, context.responses().size());
-  ASSERT_EQ(5u, context.total_responses());
+  ASSERT_EQ(5u, context.total_stream_packets());
 
   EXPECT_EQ(context.responses()[0].number, 0u);
   EXPECT_EQ(context.responses()[1].number, 1u);
@@ -167,7 +167,7 @@ TEST(NanopbCodegen, Server_InvokeServerStreamingRpc_ManualWriting) {
   EXPECT_EQ(Status::Cancelled(), context.status());
 
   ASSERT_EQ(3u, context.responses().size());
-  ASSERT_EQ(3u, context.total_responses());
+  ASSERT_EQ(3u, context.total_stream_packets());
 
   EXPECT_EQ(context.responses()[0].number, 3u);
   EXPECT_EQ(context.responses()[1].number, 6u);

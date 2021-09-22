@@ -313,6 +313,12 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "fake_channel_output_test",
+    srcs = ["fake_channel_output_test.cc"],
+    deps = [":internal_test_utils"],
+)
+
 proto_library(
     name = "internal_packet_proto",
     srcs = ["internal/packet.proto"],

@@ -29,6 +29,12 @@ template <typename Response, size_t kMaxResponses, size_t kOutputSize>
 class NanopbFakeChannelOutput final
     : public internal::test::FakeChannelOutputBuffer<kOutputSize> {
  public:
+  using internal::test::FakeChannelOutput::clear;
+  using internal::test::FakeChannelOutput::done;
+  using internal::test::FakeChannelOutput::total_response_packets;
+  using internal::test::FakeChannelOutput::total_responses;
+  using internal::test::FakeChannelOutput::total_stream_packets;
+
   // Creates a NanopbFakeChannelOutput for the specified method.
   template <typename ServiceType, auto kMethod, uint32_t kMethodId>
   static NanopbFakeChannelOutput Create() {

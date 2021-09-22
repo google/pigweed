@@ -22,9 +22,11 @@ namespace pw::rpc::internal::test {
 
 void FakeChannelOutput::clear() {
   ClearResponses();
-  total_responses_ = 0;
+  total_response_packets_ = 0;
+  total_stream_packets_ = 0;
   last_status_ = Status::Unknown();
-  done_ = false;
+  send_status_ = OkStatus();
+  return_after_packet_count_ = -1;
 }
 
 Status FakeChannelOutput::SendAndReleaseBuffer(
@@ -36,7 +38,15 @@ Status FakeChannelOutput::SendAndReleaseBuffer(
     return OkStatus();
   }
 
-  PW_CHECK(!done_);
+  if (return_after_packet_count_ == 0) {
+    return send_status_;
+  }
+  if (return_after_packet_count_ > 0 &&
+      return_after_packet_count_ == static_cast<int>(total_responses())) {
+    // Disable behavior.
+    return_after_packet_count_ = -1;
+    return send_status_;
+  }
 
   Result<Packet> result = Packet::FromBuffer(buffer);
   PW_CHECK_OK(result.status());
@@ -49,12 +59,13 @@ Status FakeChannelOutput::SendAndReleaseBuffer(
       if (!HasServerStream(method_type_)) {
         ProcessResponse(result.value().payload());
       }
-      done_ = true;
+      ++total_response_packets_;
       break;
     case PacketType::SERVER_ERROR:
       PW_CRASH("Server error: %s", result.value().status().str());
     case PacketType::SERVER_STREAM:
       ProcessResponse(result.value().payload());
+      ++total_stream_packets_;
       break;
     default:
       PW_CRASH("Unhandled PacketType %d",
