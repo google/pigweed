@@ -386,6 +386,60 @@ Benchmarking and stress testing
 ``pw_rpc`` provides an RPC service and Python module for stress testing and
 benchmarking a ``pw_rpc`` deployment. See :ref:`module-pw_rpc-benchmark`.
 
+Naming
+======
+
+Reserved names
+--------------
+``pw_rpc`` reserves a few service method names so they can be used for generated
+classes. The following names cannnot be used for service methods:
+
+- ``Client``
+- ``Service``
+- Any reserved words in the languages ``pw_rpc`` supports (e.g. ``class``).
+
+``pw_rpc`` does not reserve any service names, but the restriction of avoiding
+reserved words in supported languages applies.
+
+Service naming style
+--------------------
+``pw_rpc`` service names should use capitalized camel case and should not use
+the term "Service". Appending "Service" to a service name is redundant, similar
+to appending "Class" or "Function" to a class or function name. The
+C++ implementation class may use "Service" in its name, however.
+
+For example, a service for accessing a file system should simply be named
+``service FileSystem``, rather than ``service FileSystemService``, in the
+``.proto`` file.
+
+.. code-block:: protobuf
+
+  // file.proto
+  package pw.file;
+
+  service FileSystem {
+      rpc List(ListRequest) returns (stream ListResponse);
+  }
+
+The C++ service implementation class may append "Service" to the name.
+
+.. code-block:: cpp
+
+  // file_system_service.h
+  #include "pw_file/file.raw_rpc.pb.h"
+
+  namespace pw::file {
+
+  class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
+    void List(ServerContext&, ConstByteSpan request, RawServerWriter& writer);
+  };
+
+  }
+
+For upstream Pigweed services, this naming style is a requirement. Note that
+some services created before this was established may use non-compliant
+names. For Pigweed users, this naming style is a suggestion.
+
 Protocol description
 ====================
 Pigweed RPC servers and clients communicate using ``pw_rpc`` packets. These
