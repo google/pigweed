@@ -14,11 +14,12 @@
 
 #include "pw_software_update/update_bundle.h"
 
+#include <array>
+
 #include "gtest/gtest.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/test_key_value_store.h"
-#include "pw_software_update/update_backend.h"
-#include "pw_software_update/update_bundle.pwpb.h"
+#include "pw_software_update/bundled_update_backend.h"
 #include "test_bundles.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
@@ -30,6 +31,17 @@ constexpr size_t kBufferSize = 256;
 static constexpr size_t kFlashAlignment = 16;
 constexpr size_t kSectorSize = 2048;
 constexpr size_t kSectorCount = 2;
+constexpr size_t kMetadataBufferSize =
+    blob_store::BlobStore::BlobWriter::RequiredMetadataBufferSize(0);
+
+class TestBundledUpdateBackend final : public BundledUpdateBackend {
+ public:
+  Status FinalizeApply() override { return OkStatus(); }
+
+  Status ApplyTargetFile(std::string_view, stream::Reader&) override {
+    return OkStatus();
+  }
+};
 
 class UpdateBundleTest : public testing::Test {
  public:
@@ -50,7 +62,8 @@ class UpdateBundleTest : public testing::Test {
 
   void StageTestBundle(ConstByteSpan bundle_data) {
     ASSERT_OK(bundle_blob_.Init());
-    blob_store::BlobStore::BlobWriter blob_writer(bundle_blob());
+    blob_store::BlobStore::BlobWriter blob_writer(bundle_blob(),
+                                                  metadata_buffer_);
     ASSERT_OK(blob_writer.Open());
     ASSERT_OK(blob_writer.Write(bundle_data));
     ASSERT_OK(blob_writer.Close());
@@ -60,7 +73,8 @@ class UpdateBundleTest : public testing::Test {
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> blob_flash_;
   kvs::FlashPartition blob_partition_;
   blob_store::BlobStoreBuffer<kBufferSize> bundle_blob_;
-  BundledUpdateBackend backend_;
+  std::array<std::byte, kMetadataBufferSize> metadata_buffer_;
+  TestBundledUpdateBackend backend_;
 };
 
 }  // namespace
