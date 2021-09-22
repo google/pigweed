@@ -299,16 +299,12 @@ def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
                  f'{{ return "{service.name()}"; }}')
 
         gen.line()
-        gen.line(
-            '// Used by MethodLookup to identify the generated service base.')
-        gen.line('constexpr void _PwRpcInternalGeneratedBase() const {}')
-        gen.line()
 
     gen.line(' protected:')
 
     with gen.indent():
-        gen.line(
-            f'constexpr Service() : {base_class}(kServiceId, kMethods) {{}}')
+        gen.line('constexpr Service() : '
+                 f'{base_class}(kServiceId, kPwRpcMethods) {{}}')
 
     gen.line()
     gen.line(' private:')
@@ -320,7 +316,7 @@ def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
         # Generate the method table
         gen.line('static constexpr std::array<'
                  f'{RPC_NAMESPACE}::internal::{gen.method_union_name()},'
-                 f' {len(service.methods())}> kMethods = {{')
+                 f' {len(service.methods())}> kPwRpcMethods = {{')
 
         with gen.indent(4):
             for method in service.methods():
@@ -338,7 +334,7 @@ def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
 def _method_lookup_table(gen: CodeGenerator, service: ProtoService) -> None:
     """Generates array of method IDs for looking up methods at compile time."""
     gen.line('static constexpr std::array<uint32_t, '
-             f'{len(service.methods())}> kMethodIds = {{')
+             f'{len(service.methods())}> kPwRpcMethodIds = {{')
 
     with gen.indent(4):
         for method in service.methods():

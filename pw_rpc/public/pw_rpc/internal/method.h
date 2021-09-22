@@ -128,15 +128,5 @@ constexpr auto CallMethodImplFunction(Service& service, Args&&... args) {
   }
 }
 
-// Identifies a base class from a member function it defines. This should be
-// used with decltype to retrieve the base service class.
-template <typename T, typename U>
-T BaseFromMember(U T::*);
-
-// The base generated service of an RPC service class.
-template <typename Service>
-using GeneratedService =
-    decltype(BaseFromMember(&Service::_PwRpcInternalGeneratedBase));
-
 }  // namespace internal
 }  // namespace pw::rpc
