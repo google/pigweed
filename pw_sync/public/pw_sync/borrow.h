@@ -90,7 +90,7 @@ class BorrowedPointer {
 template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
 class Borrowable {
  public:
-  constexpr Borrowable(Lock& lock, GuardedType& object)
+  constexpr Borrowable(GuardedType& object, Lock& lock)
       : lock_(&lock), object_(&object) {}
 
   Borrowable(const Borrowable&) = default;

@@ -1094,7 +1094,7 @@ protected instance and its lock which provides RAII-style access.
   pw::sync::Mutex bobs_account_mutex;
   BankAccount bobs_account PW_GUARDED_BY(bobs_account_mutex);
   pw::sync::Borrowable<BankAccount, pw::sync::Mutex> bobs_acount(
-      bobs_account_mutex, bobs_account);
+      bobs_account, bobs_account_mutex);
 
 This construct is useful when sharing objects or data which are transactional in
 nature where making individual operations threadsafe is insufficient. See the
@@ -1174,7 +1174,7 @@ Example in C++
 
   pw::sync::VirtualMutex i2c_mutex;
   ExampleI2c i2c;
-  pw::sync::Borrowable<ExampleI2c> borrowable_i2c(i2c_mutex, i2c);
+  pw::sync::Borrowable<ExampleI2c> borrowable_i2c(i2c, i2c_mutex);
 
   pw::Result<ConstByteSpan> ReadI2cData(ByteSpan buffer) {
     // Block indefinitely waiting to borrow the i2c bus.

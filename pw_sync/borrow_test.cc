@@ -30,7 +30,7 @@ class BorrowableTest : public ::testing::Test {
   static constexpr int kInitialValue = 42;
 
   BorrowableTest()
-      : foo_{.value = kInitialValue}, borrowable_foo_(lock_, foo_) {}
+      : foo_{.value = kInitialValue}, borrowable_foo_(foo_, lock_) {}
 
   void SetUp() override {
     EXPECT_FALSE(lock_.locked());  // Ensure it's not locked on construction.
