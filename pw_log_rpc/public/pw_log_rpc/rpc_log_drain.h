@@ -91,7 +91,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
         committed_entry_drop_count_(0),
         mutex_(mutex) {
     PW_ASSERT(log_entry_buffer.size_bytes() >= kMinEntryBufferSize);
-    PW_ASSERT(writer.open());
+    PW_ASSERT(writer.active());
   }
 
   // Creates a closed log stream with a writer that can be set at a later time.
@@ -157,7 +157,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
 
   // Fills the outgoing buffer with as many entries as possible.
   LogDrainState EncodeOutgoingPacket(log::LogEntries::MemoryEncoder& encoder,
-                                     uint32_t packed_entry_count_out)
+                                     uint32_t& packed_entry_count_out)
       PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const uint32_t channel_id_;

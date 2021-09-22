@@ -175,6 +175,6 @@ message LogEntries {
 }
 
 // RPC service for accessing logs.
-service LogService {
+service Logs {
   rpc Listen(LogRequest) returns (stream LogEntries);
 }

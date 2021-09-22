@@ -45,11 +45,11 @@ Result<ConstByteSpan> CreateEncodedDropMessage(
 }  // namespace
 
 Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
-  if (!writer.open()) {
+  if (!writer.active()) {
     return Status::FailedPrecondition();
   }
   std::lock_guard lock(mutex_);
-  if (server_writer_.open()) {
+  if (server_writer_.active()) {
     return Status::AlreadyExists();
   }
   server_writer_ = std::move(writer);
@@ -62,7 +62,7 @@ Status RpcLogDrain::Flush() {
   LogDrainState log_sink_state = LogDrainState::kMoreEntriesRemaining;
   std::lock_guard lock(mutex_);
   do {
-    if (!server_writer_.open()) {
+    if (!server_writer_.active()) {
       return Status::Unavailable();
     }
     log::LogEntries::MemoryEncoder encoder(server_writer_.PayloadBuffer());
@@ -80,7 +80,7 @@ Status RpcLogDrain::Flush() {
 }
 
 RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
-    log::LogEntries::MemoryEncoder& encoder, uint32_t packed_entry_count_out) {
+    log::LogEntries::MemoryEncoder& encoder, uint32_t& packed_entry_count_out) {
   const size_t total_buffer_size = encoder.ConservativeWriteLimit();
   do {
     // Get entry and drop count from drain.
