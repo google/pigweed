@@ -25,26 +25,6 @@ class BundledUpdateBackend {
  public:
   virtual ~BundledUpdateBackend() = default;
 
-  // Perform any product-specific abort tasks before mark as aborted in bundled
-  // updater.
-  // This should set any downstream state to a default no-update-pending state.
-  virtual Status BeforeUpdateAbort() { return OkStatus(); };
-
-  // Perform any product-specific tasks needed before starting update sequence.
-  virtual Status BeforeUpdateStart() { return OkStatus(); };
-
-  // Perform any product-specific tasks needed before starting verification.
-  virtual Status BeforeUpdateVerify() { return OkStatus(); };
-
-  // Perform any product-specific bundle verification tasks (e.g. hw version
-  // match check), done after TUF bundle verification process.
-  virtual Status VerifyMetadata([[maybe_unused]] const Manifest& manifest) {
-    return OkStatus();
-  };
-
-  // Perform product-specific tasks after all bundle verifications are complete.
-  virtual Status AfterBundleVerified() { return OkStatus(); };
-
   // Optionally verify that the instance/content of the target file in use
   // on-device matches the metadata in the given manifest, called before apply.
   // (e.g. by checksum, if failed abort partial update and wipe/mark-invalid
@@ -55,8 +35,28 @@ class BundledUpdateBackend {
     return OkStatus();
   };
 
+  // Perform any product-specific tasks needed before starting update sequence.
+  virtual Status BeforeUpdateStart() { return OkStatus(); };
+
+  // Perform any product-specific abort tasks before mark as aborted in bundled
+  // updater.
+  // This should set any downstream state to a default no-update-pending state.
+  virtual Status BeforeUpdateAbort() { return OkStatus(); };
+
+  // Perform any product-specific tasks needed before starting verification.
+  virtual Status BeforeBundleVerify() { return OkStatus(); };
+
+  // Perform any product-specific bundle verification tasks (e.g. hw version
+  // match check), done after TUF bundle verification process.
+  virtual Status VerifyMetadata([[maybe_unused]] const Manifest& manifest) {
+    return OkStatus();
+  };
+
+  // Perform product-specific tasks after all bundle verifications are complete.
+  virtual Status AfterBundleVerified() { return OkStatus(); };
+
   // Perform any product-specific tasks before apply sequence started
-  virtual Status BeforeUpdateApply() { return OkStatus(); };
+  virtual Status BeforeApply() { return OkStatus(); };
 
   // Get status information from update backend. This will not be called when
   // BundledUpdater is in a step where it has entire control with no operation
@@ -67,16 +67,6 @@ class BundledUpdateBackend {
   virtual Status ApplyTargetFile(std::string_view target_file_name,
                                  stream::Reader& target_payload) = 0;
 
-  // Do any work needed to finalize the update including doing a required
-  // reboot of the device! This is called after all software update state and
-  // breadcrumbs have been cleaned up.
-  //
-  // After the reboot the update is fully complete.
-  //
-  // NOTE: If successful this method does not return and reboots the device, it
-  // only returns on failure to finalize.
-  virtual Status FinalizeUpdate() = 0;
-
   // Get reader of the device's current manifest.
   virtual Status GetCurrentManifestReader(
       [[maybe_unused]] stream::Reader* out) {
@@ -85,9 +75,19 @@ class BundledUpdateBackend {
 
   // Use a reader that provides a new manifest for the device to save.
   virtual Status UpdateCurrentManifest(
-      [[maybe_unused]] stream::Reader& root_metadata) {
+      [[maybe_unused]] stream::Reader& manifest) {
     return OkStatus();
   };
+
+  // Do any work needed to finalize the update including doing a required
+  // reboot of the device! This is called after all software update state and
+  // breadcrumbs have been cleaned up.
+  //
+  // After the reboot the update is fully complete.
+  //
+  // NOTE: If successful this method does not return and reboots the device, it
+  // only returns on failure to finalize.
+  virtual Status FinalizeApply() = 0;
 
   // Get reader of the device's root metadata.
   //
