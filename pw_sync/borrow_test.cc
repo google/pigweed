@@ -41,7 +41,7 @@ class BorrowableTest : public ::testing::Test {
   };
   Lock lock_;
   Foo foo_;
-  Borrowable<Foo&, Lock> borrowable_foo_;
+  Borrowable<Foo, Lock> borrowable_foo_;
 };
 
 class BasicLockable : public VirtualBasicLockable {
@@ -103,7 +103,7 @@ TEST_F(BorrowableBasicLockableTest, RepeatedAcquire) {
 }
 
 TEST_F(BorrowableBasicLockableTest, Moveable) {
-  Borrowable<Foo&, BasicLockable> borrowable_foo = std::move(borrowable_foo_);
+  Borrowable<Foo, BasicLockable> borrowable_foo = std::move(borrowable_foo_);
   {
     BorrowedPointer<Foo, BasicLockable> borrowed_foo = borrowable_foo.acquire();
     EXPECT_TRUE(lock_.locked());  // Ensure the lock is held.
@@ -114,8 +114,8 @@ TEST_F(BorrowableBasicLockableTest, Moveable) {
 }
 
 TEST_F(BorrowableBasicLockableTest, Copyable) {
-  const Borrowable<Foo&, BasicLockable>& other = borrowable_foo_;
-  Borrowable<Foo&, BasicLockable> borrowable_foo(other);
+  const Borrowable<Foo, BasicLockable>& other = borrowable_foo_;
+  Borrowable<Foo, BasicLockable> borrowable_foo(other);
   {
     BorrowedPointer<Foo, BasicLockable> borrowed_foo = borrowable_foo.acquire();
     EXPECT_TRUE(lock_.locked());  // Ensure the lock is held.

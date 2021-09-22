@@ -87,16 +87,10 @@ class BorrowedPointer {
 //
 // This class is compatible with locks which comply with BasicLockable,
 // Lockable, and TimedLockable C++ named requirements.
-template <typename GuardedReference,
-          typename Lock = pw::sync::VirtualBasicLockable>
+template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
 class Borrowable {
  public:
-  static_assert(std::is_reference<GuardedReference>::value,
-                "GuardedReference must be a reference type");
-
-  using guarded_type = typename std::remove_reference<GuardedReference>::type;
-
-  constexpr Borrowable(Lock& lock, GuardedReference object)
+  constexpr Borrowable(Lock& lock, GuardedType& object)
       : lock_(&lock), object_(&object) {}
 
   Borrowable(const Borrowable&) = default;
@@ -105,50 +99,50 @@ class Borrowable {
   Borrowable& operator=(Borrowable&& other) = default;
 
   // Blocks indefinitely until the object can be borrowed. Failures are fatal.
-  BorrowedPointer<guarded_type, Lock> acquire() {
+  BorrowedPointer<GuardedType, Lock> acquire() {
     std::unique_lock unique_lock(*lock_);
-    return BorrowedPointer<guarded_type, Lock>(std::move(unique_lock), object_);
+    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
   }
 
   // Tries to borrow the object in a non-blocking manner. Returns a
   // BorrowedPointer on success, otherwise std::nullopt (nothing).
-  std::optional<BorrowedPointer<guarded_type, Lock>> try_acquire() {
+  std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire() {
     std::unique_lock unique_lock(*lock_, std::defer_lock);
     if (!unique_lock.try_lock()) {
       return std::nullopt;
     }
-    return BorrowedPointer<guarded_type, Lock>(std::move(unique_lock), object_);
+    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
   }
 
   // Tries to borrow the object. Blocks until the specified timeout has elapsed
   // or the object has been borrowed, whichever comes first. Returns a
   // BorrowedPointer on success, otherwise std::nullopt (nothing).
   template <class Rep, class Period>
-  std::optional<BorrowedPointer<guarded_type, Lock>> try_acquire_for(
+  std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_for(
       std::chrono::duration<Rep, Period> timeout) {
     std::unique_lock unique_lock(*lock_, std::defer_lock);
     if (!unique_lock.try_lock_for(timeout)) {
       return std::nullopt;
     }
-    return BorrowedPointer<guarded_type, Lock>(std::move(unique_lock), object_);
+    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
   }
 
   // Tries to borrow the object. Blocks until the specified deadline has passed
   // or the object has been borrowed, whichever comes first. Returns a
   // BorrowedPointer on success, otherwise std::nullopt (nothing).
   template <class Clock, class Duration>
-  std::optional<BorrowedPointer<guarded_type, Lock>> try_acquire_until(
+  std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_until(
       std::chrono::time_point<Clock, Duration> deadline) {
     std::unique_lock unique_lock(*lock_, std::defer_lock);
     if (!unique_lock.try_lock_until(deadline)) {
       return std::nullopt;
     }
-    return BorrowedPointer<guarded_type, Lock>(std::move(unique_lock), object_);
+    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
   }
 
  private:
   Lock* lock_;
-  guarded_type* object_;
+  GuardedType* object_;
 };
 
 }  // namespace pw::sync

@@ -1093,7 +1093,7 @@ protected instance and its lock which provides RAII-style access.
 
   pw::sync::Mutex bobs_account_mutex;
   BankAccount bobs_account PW_GUARDED_BY(bobs_account_mutex);
-  pw::sync::Borrowable<BankAccount&, pw::sync::Mutex> bobs_acount(
+  pw::sync::Borrowable<BankAccount, pw::sync::Mutex> bobs_acount(
       bobs_account_mutex, bobs_account);
 
 This construct is useful when sharing objects or data which are transactional in
@@ -1133,7 +1133,7 @@ C++
 
      **Warning:** Be careful not to leak references to the borrowed object.
 
-.. cpp:class:: template <typename GuardedReference, typename Lock = pw::sync::VirtualBasicLockable> pw::sync::Borrowable
+.. cpp:class:: template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable> pw::sync::Borrowable
 
   .. cpp:function:: BorrowedPointer<GuardedType, Lock> acquire()
 
@@ -1174,7 +1174,7 @@ Example in C++
 
   pw::sync::VirtualMutex i2c_mutex;
   ExampleI2c i2c;
-  pw::sync::Borrowable<ExampleI2c&> borrowable_i2c(i2c_mutex, i2c);
+  pw::sync::Borrowable<ExampleI2c> borrowable_i2c(i2c_mutex, i2c);
 
   pw::Result<ConstByteSpan> ReadI2cData(ByteSpan buffer) {
     // Block indefinitely waiting to borrow the i2c bus.
