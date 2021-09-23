@@ -14,4 +14,10 @@
 
 #pragma once
 
-#include "pw_software_update/service.rpc.pb.h"
+namespace pw::software_update {
+
+// TODO(pwbug/456): Place-holder declaration for now. To be implemented
+// and moved elsewhere.
+class ManifestAccessor {};
+
+}  // namespace pw::software_update

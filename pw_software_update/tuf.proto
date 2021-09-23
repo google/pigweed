@@ -17,7 +17,7 @@
 
 syntax = "proto3";
 
-package pw_software_update;
+package pw.software_update;
 
 import "google/protobuf/timestamp.proto";
 

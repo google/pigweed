@@ -20,12 +20,12 @@
 #include "pw_protobuf/map_utils.h"
 #include "pw_protobuf/message.h"
 #include "pw_software_update/bundled_update_backend.h"
-#include "pw_software_update/manifest.h"
+#include "pw_software_update/manifest_accessor.h"
 #include "pw_stream/memory_stream.h"
 
 namespace pw::software_update {
 
-// UpdateBundle is responsible for parsing, verifying and providing
+// UpdateBundleAccessor is responsible for parsing, verifying and providing
 // target payload access of a software update bundle. It takes the following as
 // inputs:
 //
@@ -39,7 +39,7 @@ namespace pw::software_update {
 //
 // Exmple of use:
 //
-// UpdateBundle bundle(blob,helper);
+// UpdateBundleAccessor bundle(blob,helper);
 // auto status = bundle.OpenAndVerify(current_manifest);
 // if (!status.ok()) {
 //   // handle error
@@ -69,13 +69,13 @@ namespace pw::software_update {
 //   // handle error
 //   ...
 // }
-class UpdateBundle {
+class UpdateBundleAccessor {
  public:
-  // UpdateBundle
+  // UpdateBundleAccessor
   // update_bundle - The software update bundle data on storage.
   // backend - project-specific BundledUpdateBackend
-  UpdateBundle(blob_store::BlobStore& update_bundle,
-               BundledUpdateBackend& backend)
+  constexpr UpdateBundleAccessor(blob_store::BlobStore& update_bundle,
+                                 BundledUpdateBackend& backend)
       : bundle_(update_bundle), backend_(backend), bundle_reader_(bundle_) {}
 
   // Opens and verifies the software update bundle, using the TUF process.
@@ -83,7 +83,7 @@ class UpdateBundle {
   // Returns:
   // OK - Bundle was successfully opened and verified.
   // TODO(pwbug/456): Add error codes.
-  Status OpenAndVerify(const Manifest& current_manifest);
+  Status OpenAndVerify(const ManifestAccessor& current_manifest);
 
   // Closes the bundle by invalidating the verification and closing
   // the reader to release the read-only lock
@@ -116,6 +116,8 @@ class UpdateBundle {
   // A reader instance for the target file.
   // TODO(pwbug/456): Figure out a way to propagate error.
   stream::IntervalReader GetTargetPayload(std::string_view target_file);
+
+  protobuf::Message GetDecoder() { return decoder_; }
 
  private:
   blob_store::BlobStore& bundle_;

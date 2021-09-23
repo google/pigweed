@@ -13,7 +13,7 @@
 // the License.
 syntax = "proto3";
 
-package pw_software_update;
+package pw.software_update;
 
 import "pw_software_update/tuf.proto";
 import "pw_software_update/update_bundle.proto";
@@ -44,11 +44,11 @@ message OperationResult {
 
 message PrepareUpdateResult {
   OperationResult result = 1;
-  optional uint32 transfer_endpoint = 2;
+  optional uint32 transfer_id = 2;
 }
 
 // TODO(pwbug/478): add documentation for details of api contract
-service BundledUpdateService {
+service BundledUpdate {
   // Abort any current software update in progress.
   //
   // Safe to call at any point.
@@ -83,17 +83,31 @@ service BundledUpdateService {
   // rejected.
   rpc PrepareForUpdate(pw.protobuf.Empty) returns (PrepareUpdateResult) {};
 
-  // Verify the bundle that has been transferred to the staging area. Close the
-  // pw_transfer channel used for staging bundle.
+  // Verifies the bundle that has been transferred to the traging area. Closes
+  // the pw_transfer channel used for the staging bundle. If the verification is
+  // successful it immediately triggers the update of the device, which might
+  // result in a device becoming slow to respond and possibly reboot.
   //
   // Device UpdateState should be READY_FOR_UPDATE when calling, will otherwise
   // be rejected.
+  rpc VerifyAndApplyStagedBundle(pw.protobuf.Empty) returns (OperationResult) {
+  };
+
+  // Verify the bundle that has been transferred to the staging area. Closes the
+  // pw_transfer channel used for the staging bundle.
+  //
+  // Device UpdateState should be READY_FOR_UPDATE when calling, will otherwise
+  // be rejected.
+  //
+  // Note: VerifyAndApplyStagedBundle is preferred if possible to minimize the
+  // duration of time between verification and the apply from a data integrity
+  // and security risk point of view.
   rpc VerifyStagedBundle(pw.protobuf.Empty) returns (OperationResult) {};
 
-  // Trigger the application of the device, which might result in a device
+  // Trigger the update of the device, which might result in a device
   // becoming slow to respond and possibly reboot.
   //
   // Device UpdateState should be VERIFIED_AND_READY_TO_APPLY when calling, will
   // otherwise be rejected.
-  rpc ApplyUpdate(pw.protobuf.Empty) returns (OperationResult) {};
+  rpc ApplyStagedBundle(pw.protobuf.Empty) returns (OperationResult) {};
 }

@@ -12,12 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#pragma once
+#include "pw_software_update/update_manager.h"
 
-namespace pw::software_update {
+#include "gtest/gtest.h"
 
-// TODO(pwbug/456): Place-holder declaration for now. To be implemented
-// and moved elsewhere.
-class Manifest {};
-
-}  // namespace pw::software_update
+TEST(UpdateManager, Compiles) {}

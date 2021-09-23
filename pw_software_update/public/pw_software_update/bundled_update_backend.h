@@ -14,8 +14,10 @@
 
 #pragma once
 
+#include <string_view>
+
 #include "pw_result/result.h"
-#include "pw_software_update/manifest.h"
+#include "pw_software_update/manifest_accessor.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
@@ -31,7 +33,7 @@ class BundledUpdateBackend {
   // (e.g. by checksum, if failed abort partial update and wipe/mark-invalid
   // running manifest)
   virtual Status VerifyTargetFile(
-      [[maybe_unused]] const Manifest& manifest,
+      [[maybe_unused]] const ManifestAccessor& manifest,
       [[maybe_unused]] std::string_view target_file_name) {
     return OkStatus();
   };
@@ -57,7 +59,8 @@ class BundledUpdateBackend {
 
   // Perform any product-specific bundle verification tasks (e.g. hw version
   // match check), done after TUF bundle verification process.
-  virtual Status VerifyMetadata([[maybe_unused]] const Manifest& manifest) {
+  virtual Status VerifyMetadata(
+      [[maybe_unused]] const ManifestAccessor& manifest) {
     return OkStatus();
   };
 
