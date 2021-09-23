@@ -126,6 +126,34 @@ class TransferManagerTest(unittest.TestCase):
         self.assertTrue(self._sent_chunks[-1].HasField('status'))
         self.assertEqual(self._sent_chunks[-1].status, 0)
 
+    def test_read_transfer_progress_callback(self):
+        manager = transfer.Manager(self._service,
+                                   default_response_timeout_s=0.3)
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            ((
+                transfer_pb2.Chunk(
+                    transfer_id=3, offset=0, data=b'abc', remaining_bytes=3),
+                transfer_pb2.Chunk(
+                    transfer_id=3, offset=3, data=b'def', remaining_bytes=0),
+            ), ),
+        )
+
+        progress = []
+
+        data = manager.read(3, progress.append)
+        self.assertEqual(data, b'abcdef')
+        self.assertEqual(len(self._sent_chunks), 2)
+        self.assertTrue(self._sent_chunks[-1].HasField('status'))
+        self.assertEqual(self._sent_chunks[-1].status, 0)
+        self.assertEqual(len(progress), 3)
+        self.assertEqual(progress, [
+            transfer.ProgressStats(None, 3, 3),
+            transfer.ProgressStats(None, 6, 6),
+            transfer.ProgressStats(None, 6, 6)
+        ])
+
     def test_read_transfer_retry_bad_offset(self):
         """Server responds with an unexpected offset in a read transfer."""
         manager = transfer.Manager(self._service,
@@ -298,6 +326,39 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._received_data(), b'data to write')
         self.assertEqual(self._sent_chunks[1].data, b'data to ')
         self.assertEqual(self._sent_chunks[2].data, b'write')
+
+    def test_write_transfer_progress_callback(self):
+        manager = transfer.Manager(self._service,
+                                   default_response_timeout_s=0.3)
+
+        self._enqueue_server_responses(
+            _Method.WRITE,
+            (
+                (transfer_pb2.Chunk(transfer_id=4,
+                                    offset=0,
+                                    pending_bytes=8,
+                                    max_chunk_size_bytes=8), ),
+                (transfer_pb2.Chunk(transfer_id=4,
+                                    offset=8,
+                                    pending_bytes=8,
+                                    max_chunk_size_bytes=8), ),
+                (transfer_pb2.Chunk(transfer_id=4, status=Status.OK.value), ),
+            ),
+        )
+
+        progress = []
+
+        manager.write(4, b'data to write', progress.append)
+        self.assertEqual(len(self._sent_chunks), 3)
+        self.assertEqual(self._received_data(), b'data to write')
+        self.assertEqual(self._sent_chunks[1].data, b'data to ')
+        self.assertEqual(self._sent_chunks[2].data, b'write')
+        self.assertEqual(len(progress), 3)
+        self.assertEqual(progress, [
+            transfer.ProgressStats(13, 0, 8),
+            transfer.ProgressStats(13, 8, 13),
+            transfer.ProgressStats(13, 13, 13)
+        ])
 
     def test_write_transfer_rewind(self):
         """Write transfer in which the server re-requests an earlier offset."""

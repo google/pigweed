@@ -78,7 +78,7 @@ transfer service using their transfer IDs.
 Python
 ======
 .. automodule:: pw_transfer.transfer
-  :members: Manager, Error
+  :members: ProgressStats, Manager, Error
 
 **Example**
 
