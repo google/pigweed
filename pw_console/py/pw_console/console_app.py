@@ -184,9 +184,6 @@ class ConsoleApp:
         # Two space separator
         self.message.append(('', '  '))
 
-        self.message.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator('Ctrl-W', 'Quit'))
-
         # Auto-generated keybindings list for all active panes
         self.keybind_help_window = HelpWindow(self, title='Keyboard Shortcuts')
 
@@ -419,50 +416,50 @@ class ConsoleApp:
             MenuItem(
                 '[View]',
                 children=[
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Move Window Up         Ctrl-Alt-k',
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Move Window Up         Ctrl-Alt-Up',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
                                  self.window_manager.move_pane_up)),
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Move Window Down       Ctrl-Alt-j',
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Move Window Down     Ctrl-Alt-Down',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
                                  self.window_manager.move_pane_down)),
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Move Window Left       Ctrl-Alt-h',
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Move Window Left     Ctrl-Alt-Left',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
                                  self.window_manager.move_pane_left)),
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Move Window Right      Ctrl-Alt-l',
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Move Window Right   Ctrl-Alt-Right',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
                                  self.window_manager.move_pane_right)),
                     MenuItem('-'),
 
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Enlarge Window Height       Alt-=',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.enlarge_pane)),
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Shrink Window Height    Alt-Minus',
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Shrink Height            Alt-Minus',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
                                  self.window_manager.shrink_pane)),
-                    MenuItem('-'),
-
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Enlarge Column Split        Alt-.',
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Enlarge Height               Alt-=',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
-                                 self.window_manager.enlarge_split)),
-                    #         [Menu Item            ][Keybind  ]
-                    MenuItem('Shrink Column Split         Alt-,',
+                                 self.window_manager.enlarge_pane)),
+                    MenuItem('-'),
+
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Shrink Column                Alt-,',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
                                  self.window_manager.shrink_split)),
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Enlarge Column               Alt-.',
+                             handler=functools.partial(
+                                 self.run_pane_menu_option,
+                                 self.window_manager.enlarge_split)),
                     MenuItem('-'),
 
                     #         [Menu Item            ][Keybind  ]

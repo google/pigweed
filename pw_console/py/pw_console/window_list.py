@@ -124,16 +124,11 @@ class WindowList:
 
         if self.display_mode == DisplayMode.TABBED:
             self.focused_pane_index = 0
+            # Un-hide all panes, they must be visible to switch between tabs.
+            for pane in self.active_panes:
+                pane.show_pane = True
 
         self.application.focus_main_menu()
-        self.refresh_ui()
-
-    def set_display_mode_stack(self):
-        self.display_mode = DisplayMode.STACK
-        self.refresh_ui()
-
-    def set_display_mode_tabbed(self):
-        self.display_mode = DisplayMode.TABBED
         self.refresh_ui()
 
     def refresh_ui(self):

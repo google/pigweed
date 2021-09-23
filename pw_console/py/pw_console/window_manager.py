@@ -258,6 +258,12 @@ class WindowManager:
 
     def toggle_pane(self, pane):
         """Toggle a pane on or off."""
+        window_list, _pane_index = (
+            self._find_window_list_and_pane_index(pane))
+
+        # Don't hide if tabbed mode is enabled, the container can't be rendered.
+        if window_list.display_mode == DisplayMode.TABBED:
+            return
         pane.show_pane = not pane.show_pane
         self.application.update_menu_items()
         self.update_root_container_body()

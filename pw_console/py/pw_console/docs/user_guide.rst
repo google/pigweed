@@ -23,8 +23,7 @@ Exiting
 ~~~~~~~
 
 1.  Click the :guilabel:`[File]` menu and then :guilabel:`Exit`.
-2.  Type ``quit`` or ``exit`` in the Python Input window.
-3.  The keyboard shortcut :kbd:`Ctrl-W` also quits.
+2.  Type ``quit`` or ``exit`` in the Python Input window and press :kbd:`Enter`.
 
 
 Interface Layout
@@ -424,10 +423,10 @@ Enlarge vertical split width                  :kbd:`Alt-,`
 Shrink vertical split width                   :kbd:`Alt-.`
 Reset window sizes                            :kbd:`Ctrl-u`
 
-Move window up                                :kbd:`Ctrl-Alt-k`
-Move window down                              :kbd:`Ctrl-Alt-j`
-Move window left                              :kbd:`Ctrl-Alt-h`
-Move window right                             :kbd:`Ctrl-Alt-l`
+Move window up                                :kbd:`Ctrl-Alt-Up`
+Move window down                              :kbd:`Ctrl-Alt-Down`
+Move window left                              :kbd:`Ctrl-Alt-Left`
+Move window right                             :kbd:`Ctrl-Alt-Right`
 ============================================  =====================
 
 Moving windows left and right will create a new vertical splits. Each vertical

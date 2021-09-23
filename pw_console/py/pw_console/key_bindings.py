@@ -49,27 +49,23 @@ def create_key_bindings(console_app):
     # F3 is ptpython history
 
     @bindings.add('escape', 'c-left')  # Alt-Ctrl-
-    @bindings.add('escape', 'c-h')  # Alt-Ctrl-
     def move_pane_left(event):
         """Move window pane left."""
         console_app.window_manager.move_pane_left()
 
     @bindings.add('escape', 'c-right')  # Alt-Ctrl-
-    @bindings.add('escape', 'c-l')  # Alt-Ctrl-
     def move_pane_right(event):
         """Move window pane right."""
         console_app.window_manager.move_pane_right()
 
     # NOTE: c-up and c-down seem swapped in prompt_toolkit
     @bindings.add('escape', 'c-up')  # Alt-Ctrl-
-    @bindings.add('escape', 'c-j')  # Alt-Ctrl-
     def move_pane_down(event):
         """Move window pane down."""
         console_app.window_manager.move_pane_down()
 
     # NOTE: c-up and c-down seem swapped in prompt_toolkit
     @bindings.add('escape', 'c-down')  # Alt-Ctrl-
-    @bindings.add('escape', 'c-k')  # Alt-Ctrl-
     def move_pane_up(event):
         """Move window pane up."""
         console_app.window_manager.move_pane_up()
@@ -99,7 +95,6 @@ def create_key_bindings(console_app):
         """Balance all window sizes."""
         console_app.window_manager.balance_window_sizes()
 
-    @bindings.add('c-w')
     @bindings.add('c-q')
     def exit_(event):
         """Quit the console application."""
