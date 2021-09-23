@@ -84,4 +84,4 @@ def main(out: Optional[Path] = None) -> None:
 
 if __name__ == '__main__':
     logging.basicConfig()
-    gen_ecdsa_sha2_nistp256_keypair(**vars(parse_args()))
+    main(**vars(parse_args()))
