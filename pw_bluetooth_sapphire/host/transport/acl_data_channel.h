@@ -17,6 +17,7 @@
 #include <queue>
 #include <unordered_map>
 
+#include "lib/inspect/cpp/vmo/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
@@ -99,6 +100,10 @@ class AclDataChannel {
   // should be called based on what is reported by the controller.
   virtual void Initialize(const DataBufferInfo& bredr_buffer_info,
                           const DataBufferInfo& le_buffer_info) = 0;
+
+  // Attach inspect node as a child node of |parent|.
+  static constexpr const char* const kInspectNodeName = "acl_data_channel";
+  virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
 
   // Unregisters event handlers and cleans up.
   // NOTE: Initialize() and ShutDown() MUST be called on the same thread. These

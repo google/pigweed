@@ -85,6 +85,11 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
   return true;
 }
 
+void Transport::AttachInspect(inspect::Node& parent) {
+  ZX_ASSERT(acl_data_channel_);
+  acl_data_channel_->AttachInspect(parent, AclDataChannel::kInspectNodeName);
+}
+
 bt_vendor_features_t Transport::GetVendorFeatures() { return hci_device_->GetVendorFeatures(); }
 
 fpromise::result<DynamicByteBuffer> Transport::EncodeVendorCommand(bt_vendor_command_t command,

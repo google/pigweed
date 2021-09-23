@@ -4,6 +4,7 @@
 
 #include "transport.h"
 
+#include "lib/inspect/cpp/inspector.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -14,13 +15,8 @@ namespace bt::hci {
 
 namespace {
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
-
-class TransportTest : public TestingBase {
- public:
-  TransportTest() = default;
-  ~TransportTest() override = default;
-};
+using TransportTest = bt::testing::ControllerTest<bt::testing::MockController>;
+using TransportDeathTest = TransportTest;
 
 TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
   size_t closed_cb_count = 0;
@@ -66,6 +62,11 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
   RunLoopFor(kCommandTimeout);
   EXPECT_EQ(2u, cb_count);
   EXPECT_EQ(1u, closed_cb_count);
+}
+
+TEST_F(TransportDeathTest, AttachInspectBeforeInitializeACLDataChannelCrashes) {
+  inspect::Inspector inspector;
+  EXPECT_DEATH_IF_SUPPORTED(transport()->AttachInspect(inspector.GetRoot()), ".*");
 }
 
 }  // namespace

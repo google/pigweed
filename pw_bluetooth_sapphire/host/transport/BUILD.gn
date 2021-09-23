@@ -74,6 +74,7 @@ source_set("tests") {
 
   deps = [
     ":transport",
+    "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]

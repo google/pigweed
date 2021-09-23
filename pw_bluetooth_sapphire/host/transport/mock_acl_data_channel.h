@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_
 
+#include "lib/inspect/cpp/vmo/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 namespace bt::hci::testing {
@@ -40,6 +41,7 @@ class MockAclDataChannel final : public AclDataChannel {
   // AclDataChannel overrides:
   void Initialize(const DataBufferInfo& bredr_buffer_info,
                   const DataBufferInfo& le_buffer_info) override {}
+  void AttachInspect(inspect::Node& /*unused*/, std::string /*unused*/) override {}
   void ShutDown() override {}
   void SetDataRxHandler(ACLPacketHandler rx_callback) override {}
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,

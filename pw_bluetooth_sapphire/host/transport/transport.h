@@ -19,6 +19,7 @@
 
 #include <fbl/macros.h>
 
+#include "lib/inspect/cpp/vmo/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/lib/fxl/memory/ref_counted.h"
@@ -56,6 +57,9 @@ class Transport final {
   // called successfully prior to calling this method.
   bool InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
                                 const DataBufferInfo& le_buffer_info);
+
+  // Attach command and data channel inspect nodes as children of |parent| using default names
+  void AttachInspect(inspect::Node& parent);
 
   bt_vendor_features_t GetVendorFeatures();
 

@@ -26,12 +26,19 @@ adapter:
     le_max_data_length
     lmp_features
     le_features
+    acl_data_channel:
+        num_queue_packets
+        bredr:
+            num_sent_packets
+        le:
+            num_sent_packets
+            independent_from_bredr
     low_energy_discovery_manager:
-       state
-       paused
-       failed_count
-       scan_interval_ms
-       scan_window_ms
+        state
+        paused
+        failed_count
+        scan_interval_ms
+        scan_window_ms
     metrics:
         bredr:
             open_l2cap_channel_requests

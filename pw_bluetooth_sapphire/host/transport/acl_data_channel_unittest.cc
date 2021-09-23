@@ -5,9 +5,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 #include <lib/async/cpp/task.h>
+#include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
 #include <unordered_map>
+
+#include <gmock/gmock.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -1173,8 +1176,7 @@ const std::array<std::pair<hci::AclPriority, bool>, 4> kPriorityParams = {
      {hci::AclPriority::kSource, true},
      {hci::AclPriority::kSink, true},
      {hci::AclPriority::kNormal, true}}};
-INSTANTIATE_TEST_SUITE_P(ACLDataChannelTest, AclPriorityTest,
-                         ::testing::ValuesIn(kPriorityParams));
+INSTANTIATE_TEST_SUITE_P(ACLDataChannelTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
 
 TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeFails) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
@@ -1510,6 +1512,61 @@ TEST_F(ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts
   RunLoopUntilIdle();
 
   EXPECT_EQ(2u, packet_count);
+}
+
+TEST_F(ACLDataChannelDeathTest, AttachInspectBeforeInitializeCrashes) {
+  zx::channel acl_chan0, acl_chan1;
+  ASSERT_EQ(ZX_OK, zx::channel::create(0, &acl_chan0, &acl_chan1));
+  auto acl_data_channel = AclDataChannel::Create(transport(), std::move(acl_chan0));
+  inspect::Inspector inspector;
+  EXPECT_DEATH_IF_SUPPORTED(
+      acl_data_channel->AttachInspect(inspector.GetRoot(), AclDataChannel::kInspectNodeName), ".*");
+}
+
+TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
+  using namespace ::inspect::testing;
+  constexpr size_t kMaxMtu = 4;
+  constexpr size_t kMaxNumPackets = 2;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr ConnectionHandle kHandle1 = 0x0002;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
+                           DataBufferInfo(kMaxMtu, kMaxNumPackets));
+
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
+
+  // Fill up both LE and BR/EDR controller buffers, leaving one additional packet in the queue of
+  // each type
+  for (ConnectionHandle handle : {kHandle0, kHandle1}) {
+    for (size_t i = 0; i < kMaxNumPackets + 1; ++i) {
+      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                                 AclDataChannel::PacketPriority::kLow));
+    }
+  }
+  RunLoopUntilIdle();
+
+  inspect::Inspector inspector;
+  const std::string kNodeName = "adc_node_name";
+  acl_data_channel()->AttachInspect(inspector.GetRoot(), kNodeName);
+
+  auto bredr_matcher = NodeMatches(AllOf(
+      NameMatches("bredr"), PropertyList(ElementsAre(UintIs("num_sent_packets", kMaxNumPackets)))));
+
+  auto le_matcher = NodeMatches(
+      AllOf(NameMatches("le"),
+            PropertyList(UnorderedElementsAre(UintIs("num_sent_packets", kMaxNumPackets),
+                                              BoolIs("independent_from_bredr", true)))));
+
+  auto adc_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches(kNodeName),
+                              PropertyList(ElementsAre(UintIs("num_queued_packets", 2))))),
+            ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher)));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
+  EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(adc_matcher)));
 }
 
 }  // namespace

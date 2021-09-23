@@ -7,6 +7,7 @@
 #include <endian.h>
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
+#include <lib/sys/inspect/cpp/component.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
@@ -14,7 +15,9 @@
 #include <numeric>
 
 #include "lib/fit/function.h"
+#include "lib/inspect/cpp/vmo/types.h"
 #include "slab_allocators.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
@@ -75,6 +78,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   // AclDataChannel overrides
   void Initialize(const DataBufferInfo& bredr_buffer_info,
                   const DataBufferInfo& le_buffer_info) override;
+  void AttachInspect(inspect::Node& parent, std::string name) override;
   void ShutDown() override;
   void SetDataRxHandler(ACLPacketHandler rx_callback) override;
   bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
@@ -167,8 +171,15 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Handler for HCI_Buffer_Overflow_event
   CommandChannel::EventCallbackResult DataBufferOverflowCallback(const EventPacket& event);
 
-  // Used to assert that certain public functions are only called on the
-  // creation thread.
+  // Links this node to the inspect tree. Initialized as needed by AttachInspect.
+  inspect::Node node_;
+
+  // Contents of |node_|. Retained as members so that they last as long as a class instance.
+  inspect::Node le_subnode_;
+  inspect::BoolProperty le_subnode_shared_with_bredr_property_;
+  inspect::Node bredr_subnode_;
+
+  // Used to assert that certain public functions are only called on the creation thread.
   fit::thread_checker thread_checker_;
 
   // The Transport object that owns this instance.
@@ -208,8 +219,8 @@ class AclDataChannelImpl final : public AclDataChannel {
   // The current count of the number of ACL data packets that have been sent to
   // the controller. |le_num_sent_packets_| is ignored if the controller uses
   // one buffer for LE and BR/EDR.
-  size_t num_sent_packets_;
-  size_t le_num_sent_packets_;
+  UintInspectable<size_t> num_sent_packets_;
+  UintInspectable<size_t> le_num_sent_packets_;
 
   // Counts of automatically-discarded packets on each channel due to overflow. Cleared by
   // LogDroppedOverflowPackets.
@@ -227,13 +238,15 @@ class AclDataChannelImpl final : public AclDataChannel {
   //     bt::LinkType, would let us replace std::list<QueuedDataPacket>
   //     with LinkedList<ACLDataPacket> which has a more efficient
   //     memory layout.
-  DataPacketQueue send_queue_;
+  using InspectableDataPacketQueue = Inspectable<DataPacketQueue, inspect::UintProperty, size_t>;
+  InspectableDataPacketQueue send_queue_ =
+      InspectableDataPacketQueue(std::mem_fn(&DataPacketQueue::size));
 
   // Returns an iterator to the location new packets should be inserted into |send_queue_| based on
   // their |priority|:
   // If |priority| is |kLow|: returns past-the-end of |send_queue_|.
   // If |priority| is |kHigh|: returns the location of the first |kLow| priority packet.
-  DataPacketQueue::iterator SendQueueInsertLocationForPriority(PacketPriority priority);
+  DataPacketQueue::const_iterator SendQueueInsertLocationForPriority(PacketPriority priority);
 
   // Stores the link type of connections on which we have a pending packet that
   // has been sent to the controller. Entries are removed on the HCI Number Of
@@ -243,7 +256,7 @@ class AclDataChannelImpl final : public AclDataChannel {
 
     // We initialize the packet count at 1 since a new entry will only be
     // created once.
-    PendingPacketData(bt::LinkType ll_type) : ll_type(ll_type), count(1u) {}
+    explicit PendingPacketData(bt::LinkType ll_type) : ll_type(ll_type), count(1u) {}
 
     bt::LinkType ll_type;
     size_t count;
@@ -268,9 +281,7 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, zx::channel hci_acl
       is_initialized_(false),
       num_completed_packets_event_handler_id_(0u),
       data_buffer_overflow_event_handler_id_(0u),
-      io_dispatcher_(nullptr),
-      num_sent_packets_(0u),
-      le_num_sent_packets_(0u) {
+      io_dispatcher_(nullptr) {
   // TODO(armansito): We'll need to pay attention to ZX_CHANNEL_WRITABLE as
   // well.
   ZX_DEBUG_ASSERT(transport_);
@@ -323,6 +334,20 @@ void AclDataChannelImpl::Initialize(const DataBufferInfo& bredr_buffer_info,
   bt_log(INFO, "hci", "initialized");
 }
 
+void AclDataChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
+  ZX_ASSERT_MSG(is_initialized_, "Must be initialized before attaching to inspect tree");
+  node_ = parent.CreateChild(std::move(name));
+  send_queue_.SetProperty(node_.CreateUint("num_queued_packets", 0));
+
+  bredr_subnode_ = node_.CreateChild("bredr");
+  num_sent_packets_.AttachInspect(bredr_subnode_, "num_sent_packets");
+
+  le_subnode_ = node_.CreateChild("le");
+  le_num_sent_packets_.AttachInspect(le_subnode_, "num_sent_packets");
+  le_subnode_shared_with_bredr_property_ =
+      le_subnode_.CreateBool("independent_from_bredr", le_buffer_info_.IsAvailable());
+}
+
 void AclDataChannelImpl::ShutDown() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (!is_initialized_)
@@ -346,7 +371,7 @@ void AclDataChannelImpl::ShutDown() {
   transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
 
   is_initialized_ = false;
-  send_queue_.clear();
+  send_queue_.Mutable()->clear();
   io_dispatcher_ = nullptr;
   num_completed_packets_event_handler_id_ = 0u;
   data_buffer_overflow_event_handler_id_ = 0u;
@@ -417,7 +442,7 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
         DropOverflowPacket(queue_packet);
       }
     }
-    send_queue_.insert(insert_iter, std::move(queue_packet));
+    send_queue_.Mutable()->insert(insert_iter, std::move(queue_packet));
   }
 
   TrySendNextQueuedPackets();
@@ -449,11 +474,11 @@ void AclDataChannelImpl::UnregisterLink(hci::ConnectionHandle handle) {
 }
 
 void AclDataChannelImpl::DropQueuedPackets(AclPacketPredicate predicate) {
-  const size_t before_count = send_queue_.size();
-  send_queue_.remove_if([&predicate](const QueuedDataPacket& packet) {
+  const size_t before_count = send_queue_->size();
+  send_queue_.Mutable()->remove_if([&predicate](const QueuedDataPacket& packet) {
     return predicate(packet.packet, packet.channel_id);
   });
-  const size_t removed_count = before_count - send_queue_.size();
+  const size_t removed_count = before_count - send_queue_->size();
   if (removed_count > 0) {
     bt_log(TRACE, "hci", "packets dropped from send queue (count: %lu)", removed_count);
   }
@@ -660,8 +685,8 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
 }
 
 void AclDataChannelImpl::DropOverflowPacket(const QueuedDataPacket& archetypal_packet) {
-  TRACE_DURATION("bluetooth", "ACLDataChannel::DropOverflowPacket", "send_queue_.size",
-                 send_queue_.size());
+  TRACE_DURATION("bluetooth", "ACLDataChannel::DropOverflowPacket", "send_queue_->size",
+                 send_queue_->size());
 
   // TODO(fxbug.dev/71061): Performance of these O(N) searches is not amazing, taking tens of µs
   // on low-end ARM when kMaxAclPacketsPerChannel=64. The std::list nodes do seem to have decent
@@ -681,20 +706,20 @@ void AclDataChannelImpl::DropOverflowPacket(const QueuedDataPacket& archetypal_p
            a.channel_id == b.channel_id && is_head(b);
   };
   const size_t queued_similar_pdu_count =
-      std::count_if(send_queue_.begin(), send_queue_.end(), is_similar_and_head);
+      std::count_if(send_queue_->begin(), send_queue_->end(), is_similar_and_head);
   if (queued_similar_pdu_count < kMaxAclPacketsPerChannel) {
     return;
   }
 
   const auto to_drop_iter =
-      std::find_if(send_queue_.begin(), send_queue_.end(), is_similar_and_head);
-  ZX_ASSERT(to_drop_iter != send_queue_.end());
-  const auto next_packet_iter = std::find_if(std::next(to_drop_iter), send_queue_.end(), is_head);
+      std::find_if(send_queue_->begin(), send_queue_->end(), is_similar_and_head);
+  ZX_ASSERT(to_drop_iter != send_queue_->end());
+  const auto next_packet_iter = std::find_if(std::next(to_drop_iter), send_queue_->end(), is_head);
 
   dropped_packet_counts_[{archetypal_packet.packet->connection_handle(),
                           archetypal_packet.channel_id}] +=
       std::distance(to_drop_iter, next_packet_iter);
-  send_queue_.erase(to_drop_iter, next_packet_iter);
+  send_queue_.Mutable()->erase(to_drop_iter, next_packet_iter);
 
   // Schedule a deadline to log this drop and any other drops that occur until the logging drains
   // the counters.
@@ -754,7 +779,7 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
   size_t avail_bredr_packets = GetNumFreeBREDRPackets();
   size_t avail_le_packets = GetNumFreeLEPackets();
 
-  auto to_send = TakePacketsToSend(send_queue_, avail_bredr_packets, avail_le_packets);
+  auto to_send = TakePacketsToSend(*send_queue_.Mutable(), avail_bredr_packets, avail_le_packets);
 
   if (to_send.empty())
     return;
@@ -794,21 +819,21 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
 }
 
 size_t AclDataChannelImpl::GetNumFreeBREDRPackets() const {
-  ZX_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >= num_sent_packets_);
-  return bredr_buffer_info_.max_num_packets() - num_sent_packets_;
+  ZX_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >= *num_sent_packets_);
+  return bredr_buffer_info_.max_num_packets() - *num_sent_packets_;
 }
 
 size_t AclDataChannelImpl::GetNumFreeLEPackets() const {
   if (!le_buffer_info_.IsAvailable())
     return GetNumFreeBREDRPackets();
 
-  ZX_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= le_num_sent_packets_);
-  return le_buffer_info_.max_num_packets() - le_num_sent_packets_;
+  ZX_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= *le_num_sent_packets_);
+  return le_buffer_info_.max_num_packets() - *le_num_sent_packets_;
 }
 
 void AclDataChannelImpl::DecrementTotalNumPackets(size_t count) {
-  ZX_DEBUG_ASSERT(num_sent_packets_ >= count);
-  num_sent_packets_ -= count;
+  ZX_DEBUG_ASSERT(*num_sent_packets_ >= count);
+  *num_sent_packets_.Mutable() -= count;
 }
 
 void AclDataChannelImpl::DecrementLETotalNumPackets(size_t count) {
@@ -817,13 +842,13 @@ void AclDataChannelImpl::DecrementLETotalNumPackets(size_t count) {
     return;
   }
 
-  ZX_DEBUG_ASSERT(le_num_sent_packets_ >= count);
-  le_num_sent_packets_ -= count;
+  ZX_DEBUG_ASSERT(*le_num_sent_packets_ >= count);
+  *le_num_sent_packets_.Mutable() -= count;
 }
 
 void AclDataChannelImpl::IncrementTotalNumPackets(size_t count) {
-  ZX_DEBUG_ASSERT(num_sent_packets_ + count <= bredr_buffer_info_.max_num_packets());
-  num_sent_packets_ += count;
+  ZX_DEBUG_ASSERT(*num_sent_packets_ + count <= bredr_buffer_info_.max_num_packets());
+  *num_sent_packets_.Mutable() += count;
 }
 
 void AclDataChannelImpl::IncrementLETotalNumPackets(size_t count) {
@@ -832,8 +857,8 @@ void AclDataChannelImpl::IncrementLETotalNumPackets(size_t count) {
     return;
   }
 
-  ZX_DEBUG_ASSERT(le_num_sent_packets_ + count <= le_buffer_info_.max_num_packets());
-  le_num_sent_packets_ += count;
+  ZX_DEBUG_ASSERT(*le_num_sent_packets_ + count <= le_buffer_info_.max_num_packets());
+  *le_num_sent_packets_.Mutable() += count;
 }
 
 void AclDataChannelImpl::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
@@ -881,17 +906,17 @@ void AclDataChannelImpl::OnChannelReady(async_dispatcher_t* dispatcher, async::W
   }
 }
 
-AclDataChannelImpl::DataPacketQueue::iterator
+AclDataChannelImpl::DataPacketQueue::const_iterator
 AclDataChannelImpl::SendQueueInsertLocationForPriority(PacketPriority priority) {
   // insert low priority packets at the end of the queue
   if (priority == PacketPriority::kLow) {
-    return send_queue_.end();
+    return send_queue_->end();
   }
 
   // insert high priority packets before first low priority packet
-  return std::find_if(send_queue_.begin(), send_queue_.end(), [&](const QueuedDataPacket& packet) {
-    return packet.priority == PacketPriority::kLow;
-  });
+  return std::find_if(
+      send_queue_->begin(), send_queue_->end(),
+      [&](const QueuedDataPacket& packet) { return packet.priority == PacketPriority::kLow; });
 }
 
 CommandChannel::EventCallbackResult AclDataChannelImpl::DataBufferOverflowCallback(
