@@ -496,6 +496,7 @@ class Check:
 
     def with_filter(
         self,
+        *,
         endswith: Iterable[str] = '',
         exclude: Iterable[Union[Pattern[str], str]] = ()
     ) -> Check:
