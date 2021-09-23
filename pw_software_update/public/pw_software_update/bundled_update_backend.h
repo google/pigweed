@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_result/result.h"
 #include "pw_software_update/manifest.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
@@ -37,6 +38,14 @@ class BundledUpdateBackend {
 
   // Perform any product-specific tasks needed before starting update sequence.
   virtual Status BeforeUpdateStart() { return OkStatus(); };
+
+  // Attempts to enable the transfer service transfer handler, returning the
+  // transfer_id if successful. This is invoked after BeforeUpdateStart();
+  virtual Result<uint32_t> EnableBundleTransferHandler() = 0;
+
+  // Disables the transfer service transfer handler. This is invoked after
+  // either BeforeUpdateAbort() or BeforeBundleVerify().
+  virtual void DisableBundleTransferHandler() = 0;
 
   // Perform any product-specific abort tasks before mark as aborted in bundled
   // updater.

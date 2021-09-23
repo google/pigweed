@@ -62,6 +62,7 @@ pw_source_set("update_bundle") {
     dir_pw_blob_store,
     dir_pw_kvs,
     dir_pw_protobuf,
+    dir_pw_result,
     dir_pw_status,
     dir_pw_stream,
   ]
