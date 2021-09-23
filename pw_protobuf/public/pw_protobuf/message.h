@@ -96,7 +96,7 @@ class Bytes {
   Bytes() = default;
   Bytes(Status status) : reader_(status) {}
   Bytes(stream::IntervalReader reader) : reader_(reader) {}
-  const stream::IntervalReader& GetBytesReader() { return reader_; }
+  stream::IntervalReader GetBytesReader() { return reader_; }
 
   // TODO(pwbug/363): Migrate this to Result<> once we have StatusOr like
   // support.
