@@ -104,7 +104,7 @@ message RootMetadata {
   SignatureRequirement root_signature_requirement = 4;
   SignatureRequirement timestamp_signature_requirement = 5;
   SignatureRequirement snapshot_signature_requirement = 6;
-  SignatureRequirement target_signature_requirement = 7;
+  SignatureRequirement targets_signature_requirement = 7;
 
   // This is NOT a part of the TUF Specification.
   reserved 8 to 31;  // Reserved for TUF Specification changes.

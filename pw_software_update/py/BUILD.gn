@@ -32,12 +32,14 @@ pw_python_package("py") {
     "pw_software_update/generate_test_bundle.py",
     "pw_software_update/keys.py",
     "pw_software_update/metadata.py",
+    "pw_software_update/root_metadata.py",
     "pw_software_update/update_bundle.py",
   ]
 
   tests = [
     "keys_test.py",
     "metadata_test.py",
+    "root_metadata_test.py",
     "update_bundle_test.py",
   ]
 
