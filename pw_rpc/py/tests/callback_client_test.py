@@ -726,7 +726,7 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
             self.assertIs(context.exception.status, Status.INVALID_ARGUMENT)
 
     def test_nonblocking_send_after_cancelled(self) -> None:
-        call = self._service.SomeBidiStreaming.invoke()
+        call = self._service.SomeClientStreaming.invoke()
         self.assertTrue(call.cancel())
 
         with self.assertRaises(callback_client.RpcError) as context:
