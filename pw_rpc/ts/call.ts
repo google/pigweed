@@ -95,7 +95,6 @@ export class Call {
     }
   }
 
-
   handleResponse(response: Message): void {
     this.responses.push(response);
     this.responseQueue.push(response);
@@ -230,5 +229,15 @@ export class ServerStreamingCall extends Call {
 
 /** Tracks the state of a bidirectional streaming RPC call. */
 export class BidirectionalStreamingCall extends Call {
-  // TODO(jaredweinstein): Complete bidirectional streaming invocation logic.
+  /** Sends a message from the client. */
+  send(request: Message) {
+    this.sendClientStream(request);
+  }
+
+  /** Ends the client stream and waits for the RPC to complete. */
+  async finishAndWait(requests: Array<Message> = []):
+      Promise<[Status, Array<Message>]> {
+    this.finishClientStream(requests);
+    return await this.streamWait();
+  }
 }

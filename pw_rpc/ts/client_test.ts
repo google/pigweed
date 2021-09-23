@@ -23,7 +23,7 @@ import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/
 
 import {Client} from './client';
 import {Channel, Method} from './descriptors';
-import {ClientStreamingMethodStub, ServerStreamingMethodStub, UnaryMethodStub} from './method';
+import {BidirectionalStreamingMethodStub, ClientStreamingMethodStub, ServerStreamingMethodStub, UnaryMethodStub} from './method';
 import * as packets from './packets';
 
 const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
@@ -140,8 +140,12 @@ describe('RPC', () => {
   let requests: RpcPacket[] = [];
   let nextPackets: [Uint8Array, Status][] = [];
   let responseLock = false;
+  let sendResponsesAfterPackets = 0;
 
   beforeEach(async () => {
+    sendResponsesAfterPackets = 0
+    responseLock = false;
+    nextPackets = []
     lib = await Library.fromFileDescriptorSet(
         TEST_PROTO_PATH, 'test_protos_tspb');
     const channels = [new Channel(1, handlePacket), new Channel(2, () => {})];
@@ -220,6 +224,11 @@ describe('RPC', () => {
   function handlePacket(data: Uint8Array): void {
     requests.push(packets.decode(data));
 
+    if (sendResponsesAfterPackets > 1) {
+      sendResponsesAfterPackets -= 1;
+      return;
+    }
+
     if (responseLock == true) {
       return;
     }
@@ -255,8 +264,7 @@ describe('RPC', () => {
         const call =
             unaryStub.invoke(newRequest(5), onNext, onCompleted, onError);
 
-        expect(sentPayload(unaryStub.method.requestType).getMagicNumber())
-            .toEqual(5);
+        expect(sentPayload(Request).getMagicNumber()).toEqual(5);
         expect(onNext).toHaveBeenCalledOnceWith(response);
         expect(onError).not.toHaveBeenCalled();
         expect(onCompleted).toHaveBeenCalledOnceWith(Status.ABORTED);
@@ -508,6 +516,178 @@ describe('RPC', () => {
       expect(firstCall.completed).toBeFalse();
 
       const secondCall = clientStreaming.invoke();
+      expect(firstCall.error).toEqual(Status.CANCELLED);
+      expect(secondCall.completed).toBeFalse();
+    });
+  });
+
+  describe('BidirectionalStreaming', () => {
+    let bidiStreaming: BidirectionalStreamingMethodStub;
+
+    beforeEach(async () => {
+      bidiStreaming = client.channel()?.methodStub(
+                          'pw.rpc.test1.TheTestService.SomeBidiStreaming')! as
+          BidirectionalStreamingMethodStub;
+    });
+
+    it('blocking call', async () => {
+      const testRequests = [newRequest(123), newRequest(456)];
+
+      sendResponsesAfterPackets = 3;
+      enqueueResponse(1, bidiStreaming.method, Status.NOT_FOUND);
+
+      const results = await bidiStreaming.call(testRequests);
+      expect(results[0]).toEqual(Status.NOT_FOUND);
+      expect(results[1]).toEqual([]);
+    });
+
+    it('blocking server error', async () => {
+      const testRequests = [newRequest(123)];
+      enqueueError(1, bidiStreaming.method, Status.NOT_FOUND, Status.OK);
+
+      await bidiStreaming.call(testRequests)
+          .then(() => {
+            fail('Promise should not be resolved');
+          })
+          .catch((reason) => {
+            expect(reason.status).toEqual(Status.NOT_FOUND);
+          });
+    });
+
+    it('non-blocking call', () => {
+      const rep1 = newResponse('!!!');
+      const rep2 = newResponse('?');
+
+      for (let i = 0; i < 3; i++) {
+        const testResponses: Array<Message> = [];
+        const stream = bidiStreaming.invoke((response) => {
+          testResponses.push(response);
+        });
+        expect(stream.completed).toBeFalse();
+
+        stream.send(newRequest(55));
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
+        expect(sentPayload(Request).getMagicNumber()).toEqual(55);
+        expect(stream.completed).toBeFalse();
+        expect(testResponses).toEqual([]);
+
+        enqueueServerStream(1, bidiStreaming.method, rep1);
+        enqueueServerStream(1, bidiStreaming.method, rep2);
+
+        stream.send(newRequest(66));
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
+        expect(sentPayload(Request).getMagicNumber()).toEqual(66);
+        expect(stream.completed).toBeFalse();
+        expect(testResponses).toEqual([rep1, rep2]);
+
+        enqueueResponse(1, bidiStreaming.method, Status.OK);
+
+        stream.send(newRequest(77));
+        expect(stream.completed).toBeTrue();
+        expect(testResponses).toEqual([rep1, rep2]);
+        expect(stream.status).toEqual(Status.OK);
+        expect(stream.error).toBeUndefined();
+      }
+    });
+
+    it('non-blocking server error', async () => {
+      const response = newResponse('!!!');
+
+      for (let i = 0; i < 3; i++) {
+        const testResponses: Array<Message> = [];
+        const stream = bidiStreaming.invoke((response) => {
+          testResponses.push(response);
+        });
+        expect(stream.completed).toBeFalse();
+
+        enqueueServerStream(1, bidiStreaming.method, response);
+
+        stream.send(newRequest(55));
+        expect(stream.completed).toBeFalse();
+        expect(testResponses).toEqual([response]);
+
+        enqueueError(1, bidiStreaming.method, Status.OUT_OF_RANGE, Status.OK);
+
+        stream.send(newRequest(999));
+        expect(stream.completed).toBeTrue();
+        expect(testResponses).toEqual([response]);
+        expect(stream.status).toBeUndefined();
+        expect(stream.error).toEqual(Status.OUT_OF_RANGE);
+
+        await stream.finishAndWait()
+            .then(() => {
+              fail('Promise should not be resolved');
+            })
+            .catch((reason) => {
+              expect(reason.status).toEqual(Status.OUT_OF_RANGE);
+            });
+      }
+    });
+    it('non-blocking server error after stream end', async () => {
+      for (let i = 0; i < 3; i++) {
+        const stream = bidiStreaming.invoke();
+
+        // Error is sent in response to CLIENT_STREAM_END packet.
+        enqueueError(
+            1, bidiStreaming.method, Status.INVALID_ARGUMENT, Status.OK);
+
+        await stream.finishAndWait()
+            .then(() => {
+              fail('Promise should not be resolved');
+            })
+            .catch((reason) => {
+              expect(reason.status).toEqual(Status.INVALID_ARGUMENT);
+            });
+      }
+    });
+
+    it('non-blocking send after cancelled', async () => {
+      const stream = bidiStreaming.invoke();
+      expect(stream.cancel()).toBeTrue();
+
+      try {
+        stream.send(newRequest())
+        fail('send should have failed');
+      } catch (e: any) {
+        expect(e.status).toBe(Status.CANCELLED);
+      }
+    });
+
+    it('non-blocking finish after completed', async () => {
+      const response = newResponse('!?');
+      enqueueServerStream(1, bidiStreaming.method, response);
+      enqueueResponse(1, bidiStreaming.method, Status.UNAVAILABLE);
+
+      const stream = bidiStreaming.invoke();
+      const result = await stream.finishAndWait();
+      expect(result[1]).toEqual([response]);
+
+      expect(await stream.finishAndWait()).toEqual(result);
+      expect(await stream.finishAndWait()).toEqual(result);
+    });
+
+    it('non-blocking finish after error', async () => {
+      const response = newResponse('!?');
+      enqueueServerStream(1, bidiStreaming.method, response);
+      enqueueError(1, bidiStreaming.method, Status.UNAVAILABLE, Status.OK);
+
+      const stream = bidiStreaming.invoke();
+
+      for (let i = 0; i < 3; i++) {
+        await stream.finishAndWait()
+            .then(() => {
+              fail('Promise should not be resolved');
+            })
+            .catch((reason) => {
+              expect(reason.status).toEqual(Status.UNAVAILABLE);
+              expect(stream.error).toEqual(Status.UNAVAILABLE);
+            });
+      }
+    });
+    it('non-blocking duplicate calls first is cancelled', () => {
+      const firstCall = bidiStreaming.invoke();
+      expect(firstCall.completed).toBeFalse();
+      const secondCall = bidiStreaming.invoke();
       expect(firstCall.error).toEqual(Status.CANCELLED);
       expect(secondCall.completed).toBeFalse();
     });

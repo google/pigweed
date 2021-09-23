@@ -128,7 +128,31 @@ Client Streaming RPC
 
 Bidirectional Stream RPC
 ------------------------
-Unsupported
+.. code-block:: typescript
+
+  bidiStreamingRpc = client.channel()!.methodStub(
+    'pw.rpc.test1.TheTestService.SomeBidiStreaming')!
+    as BidirectionalStreamingMethodStub;
+  bidiStreamingRpc.invoke();
+  const request = new bidiStreamingRpc.method.requestType();
+  request.setFooProperty('foo_test');
+
+  // Send requests
+  bidiStreamingRpc.send(request);
+
+  // Receive responses
+  for await (const response of call.getResponses(1)) {
+   console.log(response);
+  }
+
+  // Send three more requests, end the stream, and wait for a response.
+  request.finishAndWait([request, request, request])
+      .then(() => {
+        console.log('Bidirectional stream finished successfully');
+      })
+      .catch((reason) => {
+        console.log(`Bidirectional stream error: ${reason}`);
+      });
 
 .. attention::
 

@@ -22,7 +22,7 @@ export function methodStubFactory(
     rpcs: PendingCalls, channel: Channel, method: Method): MethodStub {
   switch (method.type) {
     case MethodType.BIDIRECTIONAL_STREAMING:
-      return new BidirectionStreamingMethodStub(rpcs, channel, method);
+      return new BidirectionalStreamingMethodStub(rpcs, channel, method);
     case MethodType.CLIENT_STREAMING:
       return new ClientStreamingMethodStub(rpcs, channel, method);
     case MethodType.SERVER_STREAMING:
@@ -85,13 +85,24 @@ export class ClientStreamingMethodStub extends MethodStub {
     call.invoke();
     return call;
   }
+
+  async call(requests: Array<Message> = []) {
+    return this.invoke().finishAndWait(requests);
+  }
 }
 
-class BidirectionStreamingMethodStub extends MethodStub {
+export class BidirectionalStreamingMethodStub extends MethodStub {
   invoke(
       onNext: Callback = () => {},
       onCompleted: Callback = () => {},
       onError: Callback = () => {}): BidirectionalStreamingCall {
-    throw Error('BidirectionalStreaming invoke() not implemented');
+    const call = new BidirectionalStreamingCall(
+        this.rpcs, this.rpc, onNext, onCompleted, onError);
+    call.invoke();
+    return call;
+  }
+
+  async call(requests: Array<Message> = []) {
+    return this.invoke().finishAndWait(requests);
   }
 }
