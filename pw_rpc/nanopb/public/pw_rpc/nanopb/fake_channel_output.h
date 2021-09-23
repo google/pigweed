@@ -71,7 +71,7 @@ class NanopbPayloadsView {
   using Base =
       containers::WrappedIterator<iterator, PayloadsView::iterator, Payload>;
 
-  template <typename, size_t, size_t, size_t>
+  template <size_t, size_t, size_t>
   friend class NanopbFakeChannelOutput;
 
   template <typename... Args>
@@ -83,21 +83,24 @@ class NanopbPayloadsView {
 };
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
-template <typename Response,
-          size_t kMaxPackets,
+template <size_t kMaxPackets,
           size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes = 128>
 class NanopbFakeChannelOutput final
     : public internal::test::FakeChannelOutputBuffer<kOutputSize,
                                                      kMaxPackets,
                                                      kPayloadsBufferSizeBytes> {
+ private:
+  template <auto kMethod>
+  using Response = typename internal::MethodInfo<kMethod>::Response;
+
  public:
   NanopbFakeChannelOutput() = default;
 
   template <auto kMethod>
-  NanopbPayloadsView<Response> responses(
+  NanopbPayloadsView<Response<kMethod>> responses(
       uint32_t channel_id = Channel::kUnassignedChannelId) const {
-    return NanopbPayloadsView<Response>(
+    return NanopbPayloadsView<Response<kMethod>>(
         internal::MethodInfo<kMethod>::serde().response(),
         Base::packets(),
         internal::MethodInfo<kMethod>::kType,
@@ -106,18 +109,19 @@ class NanopbFakeChannelOutput final
         internal::MethodInfo<kMethod>::kMethodId);
   }
 
-  NanopbPayloadsView<Response> responses(const internal::NanopbSerde& serde,
-                                         MethodType type,
-                                         uint32_t channel_id,
-                                         uint32_t service_id,
-                                         uint32_t method_id) const {
-    return NanopbPayloadsView<Response>(
+  template <typename ResponseType>
+  NanopbPayloadsView<ResponseType> responses(const internal::NanopbSerde& serde,
+                                             MethodType type,
+                                             uint32_t channel_id,
+                                             uint32_t service_id,
+                                             uint32_t method_id) const {
+    return NanopbPayloadsView<ResponseType>(
         serde, Base::packets(), type, channel_id, service_id, method_id);
   }
 
   template <auto kMethod>
-  Response last_response() const {
-    NanopbPayloadsView<Response> payloads = responses<kMethod>();
+  Response<kMethod> last_response() const {
+    NanopbPayloadsView<Response<kMethod>> payloads = responses<kMethod>();
     PW_ASSERT(!payloads.empty());
     return payloads.back();
   }

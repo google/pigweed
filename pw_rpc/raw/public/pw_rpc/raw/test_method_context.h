@@ -98,8 +98,8 @@ template <typename Service,
           size_t kMaxPackets,
           size_t kOutputSize>
 class RawInvocationContext
-    : public InvocationContext<RawFakeChannelOutput<kOutputSize,
-                                                    kMaxPackets,
+    : public InvocationContext<RawFakeChannelOutput<kMaxPackets,
+                                                    kOutputSize,
                                                     kPayloadsBufferSizeBytes>,
                                Service,
                                kMethodId> {
@@ -116,7 +116,7 @@ class RawInvocationContext
 
  private:
   using Base = InvocationContext<
-      RawFakeChannelOutput<kOutputSize, kMaxPackets, kPayloadsBufferSizeBytes>,
+      RawFakeChannelOutput<kMaxPackets, kOutputSize, kPayloadsBufferSizeBytes>,
       Service,
       kMethodId>;
 };
@@ -141,7 +141,7 @@ class UnaryContext
     if constexpr (MethodTraits<decltype(kMethod)>::kSynchronous) {
       Base::output().clear();
 
-      auto responder = Base::template GetResponder<RawServerResponder>();
+      auto responder = Base::template GetResponder<RawUnaryResponder>();
       ByteSpan response = responder.PayloadBuffer();
       auto sws =
           CallMethodImplFunction<kMethod>(Base::service(), request, response);
@@ -149,7 +149,7 @@ class UnaryContext
           responder.Finish(response.first(sws.size()), sws.status()).ok());
       return sws;
     } else {
-      Base::template call<kMethod, RawServerResponder>(request);
+      Base::template call<kMethod, RawUnaryResponder>(request);
     }
   }
 };

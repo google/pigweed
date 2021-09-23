@@ -16,7 +16,7 @@
 import abc
 from datetime import datetime
 import os
-from typing import cast, Any, Iterable, Sequence
+from typing import cast, Any, Iterable, Sequence, Union
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
@@ -43,6 +43,27 @@ STUB_READER_WRITER_TODO = (
     'appropriate for your application')
 
 
+def get_id(item: Union[ProtoService, ProtoServiceMethod]) -> str:
+    name = item.proto_path() if isinstance(item, ProtoService) else item.name()
+    return f'0x{pw_rpc.ids.calculate(name):08x}'
+
+
+def client_call_type(method: ProtoServiceMethod, prefix: str) -> str:
+    """Returns Client ReaderWriter/Reader/Writer/Recevier for the call."""
+    if method.type() is ProtoServiceMethod.Type.UNARY:
+        call_class = 'UnaryReceiver'
+    elif method.type() is ProtoServiceMethod.Type.SERVER_STREAMING:
+        call_class = 'ClientReader'
+    elif method.type() is ProtoServiceMethod.Type.CLIENT_STREAMING:
+        call_class = 'ClientWriter'
+    elif method.type() is ProtoServiceMethod.Type.BIDIRECTIONAL_STREAMING:
+        call_class = 'ClientReaderWriter'
+    else:
+        raise NotImplementedError(f'Unknown {method.type()}')
+
+    return f'{RPC_NAMESPACE}::{prefix}{call_class}'
+
+
 class CodeGenerator(abc.ABC):
     """Generates RPC code for services and clients."""
     def __init__(self, output_filename: str) -> None:
@@ -55,6 +76,14 @@ class CodeGenerator(abc.ABC):
     def line(self, value: str = '') -> None:
         """Writes a line to the output."""
         self.output.write_line(value)
+
+    def indented_list(self, *args: str, end: str = ',') -> None:
+        """Outputs each arg one per line; adds end to teh last arg."""
+        with self.indent(4):
+            for arg in args[:-1]:
+                self.line(arg + ',')
+
+            self.line(args[-1] + end)
 
     @abc.abstractmethod
     def name(self) -> str:
@@ -69,12 +98,11 @@ class CodeGenerator(abc.ABC):
         """Yields #include lines."""
 
     @abc.abstractmethod
-    def aliases(self) -> None:
+    def service_aliases(self) -> None:
         """Generates reader/writer aliases."""
 
     @abc.abstractmethod
-    def method_descriptor(self, method: ProtoServiceMethod,
-                          method_id: int) -> None:
+    def method_descriptor(self, method: ProtoServiceMethod) -> None:
         """Generates code for a service method."""
 
     @abc.abstractmethod
@@ -85,12 +113,14 @@ class CodeGenerator(abc.ABC):
     def client_static_function(self, method: ProtoServiceMethod) -> None:
         """Generates method static functions that instantiate a Client."""
 
-    @abc.abstractmethod
     def method_info_specialization(self, method: ProtoServiceMethod) -> None:
         """Generates impl-specific additions to the MethodInfo specialization.
 
         May be empty if the generator has nothing to add to the MethodInfo.
         """
+
+    def private_additions(self, service: ProtoService) -> None:
+        """Additions to the private section of the outer generated class."""
 
 
 def generate_package(file_descriptor_proto, proto_package: ProtoNode,
@@ -182,10 +212,17 @@ def _generate_service_and_client(gen: CodeGenerator,
 
     with gen.indent():
         gen.line(f'// Hash of "{service.proto_path()}".')
-        service_id = pw_rpc.ids.calculate(service.proto_path())
-        gen.line(f'static constexpr uint32_t kServiceId = 0x{service_id:08x};')
+        gen.line(f'static constexpr uint32_t kServiceId = {get_id(service)};')
 
     gen.line('};')
+
+
+def _check_method_name(method: ProtoServiceMethod) -> None:
+    if method.name() in ('Service', 'Client'):
+        raise ValueError(
+            f'"{method.service().proto_path()}.{method.name()}" is not a '
+            f'valid method name! The name "{method.name()}" is reserved '
+            'for internal use by pw_rpc.')
 
 
 def _generate_client(gen: CodeGenerator, service: ProtoService) -> None:
@@ -206,11 +243,12 @@ def _generate_client(gen: CodeGenerator, service: ProtoService) -> None:
     gen.line('};')
     gen.line()
 
-    gen.line('// Static functions for invoking RPCs on a pw_rpc server.')
-    gen.line('// These functions are equivalent to instantiating a Client and '
-             'calling the')
-    gen.line('// corresponding RPC.')
+    gen.line('// Static functions for invoking RPCs on a pw_rpc server. '
+             'These functions are ')
+    gen.line('// equivalent to instantiating a Client and calling the '
+             'corresponding RPC.')
     for method in service.methods():
+        _check_method_name(method)
         gen.client_static_function(method)
         gen.line()
 
@@ -218,7 +256,7 @@ def _generate_client(gen: CodeGenerator, service: ProtoService) -> None:
 def _generate_info(gen: CodeGenerator, namespace: str,
                    service: ProtoService) -> None:
     """Generates MethodInfo for each method."""
-    service_id = f'0x{pw_rpc.ids.calculate(service.proto_path()):08x}'
+    service_id = get_id(service)
     info = f'struct {RPC_NAMESPACE.lstrip(":")}::internal::MethodInfo'
 
     for method in service.methods():
@@ -229,7 +267,7 @@ def _generate_info(gen: CodeGenerator, namespace: str,
         with gen.indent():
             gen.line(f'static constexpr uint32_t kServiceId = {service_id};')
             gen.line(f'static constexpr uint32_t kMethodId = '
-                     f'0x{pw_rpc.ids.calculate(method.name()):08x};')
+                     f'{get_id(method)};')
             gen.line(f'static constexpr {RPC_NAMESPACE}::MethodType kType = '
                      f'{method.type().cc_enum()};')
             gen.line()
@@ -292,7 +330,7 @@ def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
 
     with gen.indent():
         gen.line(f'using ServerContext = {RPC_NAMESPACE}::ServerContext;')
-        gen.aliases()
+        gen.service_aliases()
 
         gen.line()
         gen.line(f'static constexpr const char* name() '
@@ -320,8 +358,7 @@ def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
 
         with gen.indent(4):
             for method in service.methods():
-                gen.method_descriptor(method,
-                                      pw_rpc.ids.calculate(method.name()))
+                gen.method_descriptor(method)
 
         gen.line('};\n')
 
@@ -338,8 +375,7 @@ def _method_lookup_table(gen: CodeGenerator, service: ProtoService) -> None:
 
     with gen.indent(4):
         for method in service.methods():
-            method_id = pw_rpc.ids.calculate(method.name())
-            gen.line(f'0x{method_id:08x},  // Hash of "{method.name()}"')
+            gen.line(f'{get_id(method)},  // Hash of "{method.name()}"')
 
     gen.line('};')
 

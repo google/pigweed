@@ -15,21 +15,35 @@
 #include "pw_rpc/internal/call.h"
 
 #include "pw_assert/check.h"
+#include "pw_rpc/client.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc::internal {
 
-Call::Call(const CallContext& call, MethodType type)
-    : endpoint_(&call.endpoint()),
-      channel_(&call.channel()),
-      service_id_(call.service().id()),
-      method_id_(call.method().id()),
+Call::Call(Endpoint& endpoint_ref,
+           uint32_t channel_id,
+           uint32_t service_id,
+           uint32_t method_id,
+           MethodType type,
+           CallType call_type)
+    : endpoint_(&endpoint_ref),
+      channel_(endpoint().GetInternalChannel(channel_id)),
+      service_id_(service_id),
+      method_id_(method_id),
       rpc_state_(kActive),
       type_(type),
+      call_type_(call_type),
       client_stream_state_(HasClientStream(type) ? kClientStreamActive
                                                  : kClientStreamInactive) {
+  // TODO(pwbug/505): Defer channel lookup until it's needed to support dynamic
+  // registration/removal of channels.
+  PW_CHECK_NOTNULL(channel_,
+                   "An RPC call was created for channel %u, but that channel "
+                   "is not known to the server/client.",
+                   static_cast<unsigned>(channel_id));
+
   endpoint().RegisterCall(*this);
 }
 
@@ -40,6 +54,7 @@ void Call::MoveFrom(Call& other) {
   // Move the state variables, which may change when the other client closes.
   rpc_state_ = other.rpc_state_;
   type_ = other.type_;
+  call_type_ = other.call_type_;
   client_stream_state_ = other.client_stream_state_;
 
   endpoint_ = other.endpoint_;
@@ -62,31 +77,17 @@ void Call::MoveFrom(Call& other) {
 }
 
 Status Call::CloseAndSendFinalPacket(PacketType type,
-                                     std::span<const std::byte> payload,
+                                     ConstByteSpan payload,
                                      Status status) {
   if (!active()) {
     return Status::FailedPrecondition();
   }
-
-  Status packet_status;
-
-  // Acquire a buffer to use for the outgoing packet if none is available.
-  if (response_.empty()) {
-    response_ = channel().AcquireBuffer();
-  }
-
-  // Send a packet indicating that the RPC has terminated and optionally
-  // containing the final payload.
-  packet_status = channel().Send(
-      response_,
-      Packet(type, channel_id(), service_id(), method_id(), payload, status));
-
+  const Status packet_status = SendPacket(type, payload, status);
   Close();
-
   return packet_status;
 }
 
-std::span<std::byte> Call::AcquirePayloadBuffer() {
+ByteSpan Call::AcquirePayloadBuffer() {
   PW_DCHECK(active());
 
   // Only allow having one active buffer at a time.
@@ -94,12 +95,38 @@ std::span<std::byte> Call::AcquirePayloadBuffer() {
     response_ = channel().AcquireBuffer();
   }
 
-  return response_.payload(StreamPacket({}));
+  // The packet type is only used to size the payload buffer.
+  // TODO(pwrev/506): Replace the packet header calculation with a constant
+  //     rather than creating a packet.
+  return response_.payload(MakePacket(PacketType::CLIENT_STREAM, {}));
 }
 
-Status Call::SendPayloadBufferClientStream(std::span<const std::byte> payload) {
+Status Call::Write(ConstByteSpan payload) {
+  if (!active()) {
+    return Status::FailedPrecondition();
+  }
+  return SendPacket(call_type_ == kServerCall ? PacketType::SERVER_STREAM
+                                              : PacketType::CLIENT_STREAM,
+                    payload);
+}
+
+Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   PW_DCHECK(active());
-  return channel().Send(response_, StreamPacket(payload));
+  const Packet packet = MakePacket(type, payload, status);
+
+  if (buffer().Contains(payload)) {
+    return channel().Send(response_, packet);
+  }
+
+  ByteSpan buffer = AcquirePayloadBuffer();
+
+  if (payload.size() > buffer.size()) {
+    ReleasePayloadBuffer();
+    return Status::OutOfRange();
+  }
+
+  std::memcpy(buffer.data(), payload.data(), payload.size());
+  return channel().Send(response_, packet);
 }
 
 void Call::ReleasePayloadBuffer() {
@@ -125,11 +152,24 @@ ServerCall& ServerCall::operator=(ServerCall&& other) {
   return *this;
 }
 
-ClientCall& ClientCall::operator=(ClientCall&& other) {
+void ClientCall::SendInitialRequest(ConstByteSpan payload) {
+  if (const Status status = SendPacket(PacketType::REQUEST, payload);
+      !status.ok()) {
+    HandleError(status);
+  }
+}
+
+UnaryResponseClientCall& UnaryResponseClientCall::operator=(
+    UnaryResponseClientCall&& other) {
   MoveFrom(other);
-
   on_completed_ = std::move(other.on_completed_);
+  return *this;
+}
 
+StreamResponseClientCall& StreamResponseClientCall::operator=(
+    StreamResponseClientCall&& other) {
+  MoveFrom(other);
+  on_completed_ = std::move(other.on_completed_);
   return *this;
 }
 

@@ -28,7 +28,7 @@ class MixedService1 : public test::generated::TestService<MixedService1> {
 
   void TestAnotherUnaryRpc(ServerContext&,
                            const pw_rpc_test_TestRequest&,
-                           NanopbServerResponder<pw_rpc_test_TestResponse>&) {
+                           NanopbUnaryResponder<pw_rpc_test_TestResponse>&) {
     called_async_unary_method = true;
   }
 
@@ -63,7 +63,7 @@ class MixedService2 : public test::generated::TestService<MixedService2> {
     return Status::Unauthenticated();
   }
 
-  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawServerResponder&) {
+  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawUnaryResponder&) {
     called_async_unary_method = true;
   }
 

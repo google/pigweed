@@ -28,8 +28,7 @@ class TestServiceImpl final
     return StatusWithSize(0);
   }
 
-  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawServerResponder&) {
-  }
+  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawUnaryResponder&) {}
 
   void TestServerStreamRpc(ServerContext&, ConstByteSpan, RawServerWriter&) {}
 
@@ -43,16 +42,16 @@ struct ReaderWriterTestContext {
       : channel(Channel::Create<1>(&output)), server(std::span(&channel, 1)) {}
 
   TestServiceImpl service;
-  RawFakeChannelOutput<128, 4> output;
+  RawFakeChannelOutput<4, 128> output;
   Channel channel;
   Server server;
 };
 
 using test::pw_rpc::raw::TestService;
 
-TEST(RawServerResponder, Open_ReturnsUsableResponder) {
+TEST(RawUnaryResponder, Open_ReturnsUsableResponder) {
   ReaderWriterTestContext ctx;
-  RawServerResponder call = RawServerResponder::Open<TestService::TestUnaryRpc>(
+  RawUnaryResponder call = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
       ctx.server, ctx.channel.id(), ctx.service);
 
   EXPECT_EQ(call.channel_id(), ctx.channel.id());
@@ -64,15 +63,15 @@ TEST(RawServerResponder, Open_ReturnsUsableResponder) {
       "hello from pw_rpc");
 }
 
-TEST(RawServerResponder, Open_MultipleTimes_CancelsPrevious) {
+TEST(RawUnaryResponder, Open_MultipleTimes_CancelsPrevious) {
   ReaderWriterTestContext ctx;
 
-  RawServerResponder one = RawServerResponder::Open<TestService::TestUnaryRpc>(
+  RawUnaryResponder one = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
       ctx.server, ctx.channel.id(), ctx.service);
 
   ASSERT_TRUE(one.active());
 
-  RawServerResponder two = RawServerResponder::Open<TestService::TestUnaryRpc>(
+  RawUnaryResponder two = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
       ctx.server, ctx.channel.id(), ctx.service);
 
   ASSERT_FALSE(one.active());

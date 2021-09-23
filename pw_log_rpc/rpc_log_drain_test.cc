@@ -105,7 +105,7 @@ TEST(RpcLogDrain, FlushingDrainWithOpenWriter) {
   RpcLogDrainMap drain_map(drains);
   LogService log_service(drain_map);
 
-  rpc::RawFakeChannelOutput<128, 3> output;
+  rpc::RawFakeChannelOutput<3, 128> output;
   rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 
@@ -144,7 +144,7 @@ TEST(RpcLogDrain, TryReopenOpenedDrain) {
   RpcLogDrainMap drain_map(drains);
   LogService log_service(drain_map);
 
-  rpc::RawFakeChannelOutput<128, 1> output;
+  rpc::RawFakeChannelOutput<1, 128> output;
   rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 

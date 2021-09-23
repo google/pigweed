@@ -17,20 +17,20 @@
 #include <span>
 
 #include "pw_bytes/span.h"
-#include "pw_rpc/internal/base_client_call.h"
+#include "pw_rpc/channel.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/endpoint.h"
 
 namespace pw::rpc {
 
-class Client {
+class Client : public internal::Endpoint {
  public:
   // Creates a client that uses a set of RPC channels. Channels can be shared
   // between a client and a server, but not between multiple clients.
-  constexpr Client(std::span<Channel> channels)
-      : channels_(static_cast<internal::Channel*>(channels.data()),
-                  channels.size()) {
-    for (Channel& channel : channels_) {
-      channel.set_client(this);
+  constexpr Client(std::span<Channel> channels) : Endpoint(channels) {
+    // TODO(hepler): Remove the Client* from Channel.
+    for (Channel& channel : channels) {
+      static_cast<internal::Channel&>(channel).set_client(this);
     };
   }
 
@@ -41,24 +41,9 @@ class Client {
   //   OK - The packet was processed by the client.
   //   DATA_LOSS - Failed to decode the packet.
   //   INVALID_ARGUMENT - The packet is intended for a server, not a client.
-  //   NOT_FOUND - The packet belongs to an unknown RPC call.
-  //   UNIMPLEMENTED - Received a type of packet that the client doesn't know
-  //       how to handle.
+  //   UNAVAILABLE - No RPC channel with the requested ID was found.
   //
   Status ProcessPacket(ConstByteSpan data);
-
-  Channel* GetChannel(uint32_t channel_id) const;
-
-  size_t active_calls() const { return calls_.size(); }
-
- private:
-  friend class internal::BaseClientCall;
-
-  void RegisterCall(internal::BaseClientCall& call);
-  void RemoveCall(const internal::BaseClientCall& call) { calls_.remove(call); }
-
-  std::span<internal::Channel> channels_;
-  IntrusiveList<internal::BaseClientCall> calls_;
 };
 
 }  // namespace pw::rpc

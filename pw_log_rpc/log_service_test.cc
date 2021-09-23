@@ -414,7 +414,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
 
   LogService log_service(drain_map_);
   const uint32_t output_buffer_size = 100;
-  rpc::RawFakeChannelOutput<output_buffer_size, 10, 512> output;
+  rpc::RawFakeChannelOutput<10, output_buffer_size, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 
@@ -438,7 +438,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   EXPECT_TRUE(output.done());
 
   // Make sure not all packets were sent.
-  ASSERT_EQ(output.total_stream_packets(), successful_packets_sent);
+  ASSERT_EQ(output.payloads<Logs::Listen>().size(), successful_packets_sent);
 
   // Verify data in responses.
   Vector<ConstByteSpan, total_entries> message_stack;
@@ -491,7 +491,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
 
   LogService log_service(drain_map_);
   const uint32_t output_buffer_size = 100;
-  rpc::RawFakeChannelOutput<output_buffer_size, 10, 768> output;
+  rpc::RawFakeChannelOutput<10, output_buffer_size, 768> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 
@@ -515,7 +515,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   EXPECT_FALSE(output.done());
 
   // Make some packets were sent.
-  ASSERT_GE(output.total_stream_packets(), min_packets_sent);
+  ASSERT_GE(output.payloads<Logs::Listen>().size(), min_packets_sent);
 
   // Verify that not all the entries were sent.
   size_t entries_found = 0;
@@ -554,11 +554,13 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   }
 
   // More calls to flush with errors will not affect this stubborn drain.
-  const size_t previous_stream_packet_count = output.total_stream_packets();
+  const size_t previous_stream_packet_count =
+      output.payloads<Logs::Listen>().size();
   output.set_send_status(Status::Unavailable());
   EXPECT_EQ(drain.value()->Flush(), OkStatus());
   EXPECT_FALSE(output.done());
-  ASSERT_EQ(output.total_stream_packets(), previous_stream_packet_count);
+  ASSERT_EQ(output.payloads<Logs::Listen>().size(),
+            previous_stream_packet_count);
 
   output.clear();
   EXPECT_EQ(drain.value()->Close(), OkStatus());

@@ -515,10 +515,10 @@ Client-to-server packets
 |                   |                                     |
 +-------------------+-------------------------------------+
 
-**Errors**
+**Client errors**
 
 The client sends ``CLIENT_ERROR`` packets to a server when it receives a packet
-it did not request. If the RPC is a streaming RPC, the server should abort it.
+it did not request. If possible, the server should abort it.
 
 The status code indicates the type of error. The status code is logged, but all
 status codes result in the same action by the server: aborting the RPC.
@@ -528,6 +528,8 @@ status codes result in the same action by the server: aborting the RPC.
 * ``FAILED_PRECONDITION`` -- Received a packet for a service method that the
   client did not invoke.
 * ``DATA_LOSS`` -- Received a corrupt packet for a pending service method.
+* ``INVALID_ARGUMENT`` -- The server sent a packet type to an RPC that does not
+  support it (a ``SERVER_STREAM`` was sent to an RPC with no server stream).
 
 Server-to-client packets
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -567,7 +569,7 @@ Server-to-client packets
 |                   |                                     |
 +-------------------+-------------------------------------+
 
-**Errors**
+**Server errors**
 
 The server sends ``SERVER_ERROR`` packets when it receives a packet it cannot
 process. The client should abort any RPC for which it receives an error. The
@@ -577,7 +579,7 @@ status field indicates the type of error.
 * ``FAILED_PRECONDITION`` -- A client stream or cancel packet was sent for an
   RPC that is not pending.
 * ``INVALID_ARGUMENT`` -- The client sent a packet type to an RPC that does not
-  support it (e.g. a ``CLIENT_STREAM`` was sent to a server streaming RPC).
+  support it (a ``CLIENT_STREAM`` was sent to an RPC with no client stream).
 * ``RESOURCE_EXHAUSTED`` -- The request came on a new channel, but a channel
   could not be allocated for it.
 * ``INTERNAL`` -- The server was unable to respond to an RPC due to an

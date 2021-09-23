@@ -20,7 +20,8 @@ from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoServiceMethod
 from pw_protobuf.proto_tree import build_node_tree
 from pw_rpc import codegen
-from pw_rpc.codegen import CodeGenerator, RPC_NAMESPACE
+from pw_rpc.codegen import (client_call_type, get_id, CodeGenerator,
+                            RPC_NAMESPACE)
 
 PROTO_H_EXTENSION = '.pb.h'
 
@@ -37,6 +38,25 @@ def _proto_filename_to_stub_header(proto_file: str) -> str:
     return f'{filename}.raw_rpc.stub{PROTO_H_EXTENSION}'
 
 
+def _function(method: ProtoServiceMethod) -> str:
+    return f'{client_call_type(method, "Raw")} {method.name()}'
+
+
+def _user_args(method: ProtoServiceMethod) -> Iterable[str]:
+    if not method.client_streaming():
+        yield '::pw::ConstByteSpan request'
+
+    if method.server_streaming():
+        yield '::pw::Function<void(ConstByteSpan)> on_next = nullptr'
+        yield '::pw::Function<void(::pw::Status)> on_completed = nullptr'
+    else:
+        yield (
+            '::pw::Function<void(ConstByteSpan, ::pw::Status)> on_completed '
+            '= nullptr')
+
+    yield '::pw::Function<void(::pw::Status)> on_error = nullptr'
+
+
 class RawCodeGenerator(CodeGenerator):
     """Generates an RPC service and client using the raw buffers API."""
     def name(self) -> str:
@@ -46,32 +66,73 @@ class RawCodeGenerator(CodeGenerator):
         return 'RawMethodUnion'
 
     def includes(self, unused_proto_file_name: str) -> Iterable[str]:
+        yield '#include "pw_rpc/raw/client_reader_writer.h"'
         yield '#include "pw_rpc/raw/internal/method_union.h"'
+        yield '#include "pw_rpc/raw/server_reader_writer.h"'
 
-    def aliases(self) -> None:
+    def service_aliases(self) -> None:
         self.line(f'using RawServerWriter = {RPC_NAMESPACE}::RawServerWriter;')
         self.line(f'using RawServerReader = {RPC_NAMESPACE}::RawServerReader;')
         self.line('using RawServerReaderWriter = '
                   f'{RPC_NAMESPACE}::RawServerReaderWriter;')
 
-    def method_descriptor(self, method: ProtoServiceMethod,
-                          method_id: int) -> None:
+    def method_descriptor(self, method: ProtoServiceMethod) -> None:
         impl_method = f'&Implementation::{method.name()}'
 
         self.line(f'{RPC_NAMESPACE}::internal::GetRawMethodFor<{impl_method}, '
                   f'{method.type().cc_enum()}>(')
-        self.line(f'    0x{method_id:08x}),  // Hash of "{method.name()}"')
+        self.line(f'    {get_id(method)}),  // Hash of "{method.name()}"')
 
     def client_member_function(self, method: ProtoServiceMethod) -> None:
-        self.line('// Raw RPC clients are not yet implemented.')
-        self.line(f'void {method.name()}();')
+        self.line(f'{_function(method)}(')
+        self.indented_list(*_user_args(method), end=') const {')
+
+        with self.indent():
+            base = 'Stream' if method.server_streaming() else 'Unary'
+            self.line(f'return {RPC_NAMESPACE}::internal::'
+                      f'{base}ResponseClientCall::'
+                      f'Start<{client_call_type(method, "Raw")}>(')
+
+            service_client = RPC_NAMESPACE + '::internal::ServiceClient'
+            arg = ['std::move(on_next)'] if method.server_streaming() else []
+
+            self.indented_list(
+                f'{service_client}::client()',
+                f'{service_client}::channel_id()',
+                'kServiceId',
+                get_id(method),
+                *arg,
+                'std::move(on_completed)',
+                'std::move(on_error)',
+                '{}' if method.client_streaming() else 'request',
+                end=');')
+
+        self.line('}')
 
     def client_static_function(self, method: ProtoServiceMethod) -> None:
-        self.line('// Raw RPC clients are not yet implemented.')
-        self.line(f'static void {method.name()}();')
+        self.line(f'static {_function(method)}(')
+        self.indented_list(f'{RPC_NAMESPACE}::Client& client',
+                           'uint32_t channel_id',
+                           *_user_args(method),
+                           end=') {')
 
-    def method_info_specialization(self, method: ProtoServiceMethod) -> None:
-        pass
+        with self.indent():
+            self.line(f'return Client(client, channel_id).{method.name()}(')
+
+            args = []
+
+            if not method.client_streaming():
+                args.append('request')
+
+            if method.server_streaming():
+                args.append('std::move(on_next)')
+
+            self.indented_list(*args,
+                               'std::move(on_completed)',
+                               'std::move(on_error)',
+                               end=');')
+
+        self.line('}')
 
 
 class StubGenerator(codegen.StubGenerator):

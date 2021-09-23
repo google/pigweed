@@ -16,106 +16,73 @@
 
 #include "pw_log/log.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_status/try.h"
 
 namespace pw::rpc {
 namespace {
 
-using internal::BaseClientCall;
 using internal::Packet;
 using internal::PacketType;
 
 }  // namespace
 
 Status Client::ProcessPacket(ConstByteSpan data) {
-  Result<Packet> result = Packet::FromBuffer(data);
-  if (!result.ok()) {
-    PW_LOG_WARN("RPC client failed to decode incoming packet");
-    return Status::DataLoss();
-  }
+  internal::Call* base;
+  Result<Packet> result = Endpoint::ProcessPacket(data, Packet::kClient, base);
 
-  Packet& packet = result.value();
+  PW_TRY(result.status());
 
-  if (packet.destination() != Packet::kClient) {
-    return Status::InvalidArgument();
-  }
+  Packet& packet = *result;
 
-  if (packet.channel_id() == Channel::kUnassignedChannelId ||
-      packet.service_id() == 0 || packet.method_id() == 0) {
-    PW_LOG_WARN("RPC client received a malformed packet");
-    return Status::DataLoss();
-  }
-
-  auto call = std::find_if(calls_.begin(), calls_.end(), [&](auto& c) {
-    return c.channel_id() == packet.channel_id() &&
-           c.service_id() == packet.service_id() &&
-           c.method_id() == packet.method_id();
-  });
-
-  auto channel = std::find_if(channels_.begin(), channels_.end(), [&](auto& c) {
-    return c.id() == packet.channel_id();
-  });
-
-  if (channel == channels_.end()) {
+  internal::Channel* channel = GetInternalChannel(packet.channel_id());
+  if (channel == nullptr) {
     PW_LOG_WARN("RPC client received a packet for an unregistered channel");
-    return Status::NotFound();
+    return Status::Unavailable();
   }
 
-  if (call == calls_.end()) {
+  if (base == nullptr) {
     PW_LOG_WARN("RPC client received a packet for a request it did not make");
     // Don't send responses to errors to avoid infinite error cycles.
     if (packet.type() != PacketType::SERVER_ERROR) {
       channel->Send(Packet::ClientError(packet, Status::FailedPrecondition()))
           .IgnoreError();
     }
-    return Status::NotFound();
+    return OkStatus();  // OK since the packet was handled
   }
+
+  internal::ClientCall& call = *static_cast<internal::ClientCall*>(base);
 
   switch (packet.type()) {
     case PacketType::RESPONSE:
+      // RPCs without a server stream include a payload with the final packet.
+      if (call.has_server_stream()) {
+        static_cast<internal::StreamResponseClientCall&>(call).HandleCompleted(
+            packet.status());
+      } else {
+        static_cast<internal::UnaryResponseClientCall&>(call).HandleCompleted(
+            packet.payload(), packet.status());
+      }
+      break;
     case PacketType::SERVER_ERROR:
-      call->HandleResponse(packet);
-      call->Unregister();
+      call.HandleError(packet.status());
       break;
     case PacketType::SERVER_STREAM:
-      call->HandleResponse(packet);
+      if (call.has_server_stream()) {
+        call.HandlePayload(packet.payload());
+      } else {
+        PW_LOG_DEBUG("Received SERVER_STREAM for RPC without a server stream");
+        call.HandleError(Status::InvalidArgument());
+        // Report the error to the server so it can abort the RPC.
+        channel->Send(Packet::ClientError(packet, Status::InvalidArgument()))
+            .IgnoreError();  // Errors are logged in Channel::Send.
+      }
       break;
     default:
-      return Status::Unimplemented();
+      PW_LOG_WARN("pw_rpc server unable to handle packet of type %u",
+                  static_cast<unsigned>(packet.type()));
   }
 
-  return OkStatus();
-}
-
-Channel* Client::GetChannel(uint32_t channel_id) const {
-  auto channel = std::find_if(channels_.begin(), channels_.end(), [&](auto& c) {
-    return c.id() == channel_id;
-  });
-
-  if (channel == channels_.end()) {
-    return nullptr;
-  }
-
-  return channel;
-}
-
-void Client::RegisterCall(BaseClientCall& call) {
-  auto existing_call = std::find_if(calls_.begin(), calls_.end(), [&](auto& c) {
-    return c.channel_id() == call.channel_id() &&
-           c.service_id() == call.service_id() &&
-           c.method_id() == call.method_id();
-  });
-
-  if (existing_call != calls_.end()) {
-    PW_LOG_DEBUG(
-        "RPC client called same method multiple times; canceling existing "
-        "call.");
-
-    // TODO(frolv): Invoke the existing_call's error callback once client calls
-    // are refactored as generic Calls.
-    existing_call->Unregister();
-  }
-
-  calls_.push_front(call);
+  return OkStatus();  // OK since the packet was handled
 }
 
 }  // namespace pw::rpc

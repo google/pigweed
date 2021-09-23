@@ -26,9 +26,6 @@ namespace pw::rpc::internal {
 template <typename...>
 struct MatchesTypes {};
 
-template <auto...>
-struct CreationArgs {};
-
 // This class tests Method implementation classes and MethodTraits
 // specializations. It verifies that they provide the expected functions and
 // that they correctly identify and construct the various method types.
@@ -51,11 +48,12 @@ struct CreationArgs {};
 template <typename MethodImpl, typename TestService>
 class MethodImplTests {
  public:
-  template <typename... ExtraTypes, auto... extra_args>
-  constexpr bool Pass(const MatchesTypes<ExtraTypes...>& = {},
-                      const CreationArgs<extra_args...>& = {}) const {
+  template <typename... ExtraTypes, typename... CreationArgs>
+  constexpr bool Pass(
+      const MatchesTypes<ExtraTypes...>& = {},
+      const std::tuple<CreationArgs...>& creation_args = {}) const {
     return Matches<ExtraTypes...>().Pass() && Type().Pass() &&
-           Creation<extra_args...>().Pass();
+           Creation().Pass(creation_args);
   }
 
  private:
@@ -168,63 +166,120 @@ class MethodImplTests {
   };
 
   // Test method creation.
-  template <auto... extra_args>
-  struct Creation {
-    constexpr bool Pass() const { return true; }
+  class Creation {
+   public:
+    template <typename... Args>
+    constexpr bool Pass(const std::tuple<Args...>& args) const {
+      return UnaryMethod(args).id() == 1 && StaticUnaryMethod(args).id() == 2 &&
+             AsyncUnaryMethod(args).id() == 3 &&
+             StaticAsyncUnaryMethod(args).id() == 4 &&
+             ServerStreamingMethod(args).id() == 5 &&
+             StaticServerStreamingMethod(args).id() == 6 &&
+             ClientStreamingMethod(args).id() == 7 &&
+             StaticClientStreamingMethod(args).id() == 8 &&
+             BidirectionalStreamingMethod(args).id() == 9 &&
+             StaticBidirectionalStreamingMethod(args).id() == 10 &&
+             InvalidMethod().id() == 0;
+    }
 
-    static constexpr MethodImpl kUnaryMethod =
-        MethodImpl::template SynchronousUnary<&TestService::Unary>(
-            1, extra_args...);
-    static_assert(kUnaryMethod.id() == 1);
+   private:
+    template <typename... Args>
+    constexpr MethodImpl UnaryMethod(const std::tuple<Args...>& args) const {
+      return Call(
+          MethodImpl::template SynchronousUnary<&TestService::Unary>, 1, args);
+    }
 
-    static constexpr MethodImpl kStaticUnaryMethod =
-        MethodImpl::template SynchronousUnary<&TestService::StaticUnary>(
-            2, extra_args...);
-    static_assert(kStaticUnaryMethod.id() == 2);
+    template <typename... Args>
+    constexpr MethodImpl StaticUnaryMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(
+          MethodImpl::template SynchronousUnary<&TestService::StaticUnary>,
+          2,
+          args);
+    }
 
-    static constexpr MethodImpl kAsyncUnaryMethod =
-        MethodImpl::template AsynchronousUnary<&TestService::AsyncUnary>(
-            3, extra_args...);
-    static_assert(kAsyncUnaryMethod.id() == 3);
+    template <typename... Args>
+    constexpr MethodImpl AsyncUnaryMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(
+          MethodImpl::template AsynchronousUnary<&TestService::AsyncUnary>,
+          3,
+          args);
+    }
 
-    static constexpr MethodImpl kStaticAsyncUnaryMethod =
-        MethodImpl::template AsynchronousUnary<&TestService::StaticAsyncUnary>(
-            4, extra_args...);
-    static_assert(kStaticAsyncUnaryMethod.id() == 4);
+    template <typename... Args>
+    constexpr MethodImpl StaticAsyncUnaryMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(MethodImpl::template AsynchronousUnary<
+                      &TestService::StaticAsyncUnary>,
+                  4,
+                  args);
+    }
 
-    static constexpr MethodImpl kServerStreamingMethod =
-        MethodImpl::template ServerStreaming<&TestService::ServerStreaming>(
-            5, extra_args...);
-    static_assert(kServerStreamingMethod.id() == 5);
+    template <typename... Args>
+    constexpr MethodImpl ServerStreamingMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(
+          MethodImpl::template ServerStreaming<&TestService::ServerStreaming>,
+          5,
+          args);
+    }
 
-    static constexpr MethodImpl kStaticServerStreamingMethod =
-        MethodImpl::template ServerStreaming<
-            &TestService::StaticServerStreaming>(6, extra_args...);
-    static_assert(kStaticServerStreamingMethod.id() == 6);
+    template <typename... Args>
+    constexpr MethodImpl StaticServerStreamingMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(MethodImpl::template ServerStreaming<
+                      &TestService::StaticServerStreaming>,
+                  6,
+                  args);
+    }
 
-    static constexpr MethodImpl kClientStreamingMethod =
-        MethodImpl::template ClientStreaming<&TestService::ClientStreaming>(
-            7, extra_args...);
-    static_assert(kClientStreamingMethod.id() == 7);
+    template <typename... Args>
+    constexpr MethodImpl ClientStreamingMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(
+          MethodImpl::template ClientStreaming<&TestService::ClientStreaming>,
+          7,
+          args);
+    }
 
-    static constexpr MethodImpl kStaticClientStreamingMethod =
-        MethodImpl::template ClientStreaming<
-            &TestService::StaticClientStreaming>(8, extra_args...);
-    static_assert(kStaticClientStreamingMethod.id() == 8);
+    template <typename... Args>
+    constexpr MethodImpl StaticClientStreamingMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(MethodImpl::template ClientStreaming<
+                      &TestService::StaticClientStreaming>,
+                  8,
+                  args);
+    }
 
-    static constexpr MethodImpl kBidirectionalStreamingMethod =
-        MethodImpl::template BidirectionalStreaming<
-            &TestService::BidirectionalStreaming>(9, extra_args...);
-    static_assert(kBidirectionalStreamingMethod.id() == 9);
+    template <typename... Args>
+    constexpr MethodImpl BidirectionalStreamingMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(MethodImpl::template BidirectionalStreaming<
+                      &TestService::BidirectionalStreaming>,
+                  9,
+                  args);
+    }
 
-    static constexpr MethodImpl kStaticBidirectionalStreamingMethod =
-        MethodImpl::template BidirectionalStreaming<
-            &TestService::StaticBidirectionalStreaming>(10, extra_args...);
-    static_assert(kStaticBidirectionalStreamingMethod.id() == 10);
+    template <typename... Args>
+    constexpr MethodImpl StaticBidirectionalStreamingMethod(
+        const std::tuple<Args...>& args) const {
+      return Call(MethodImpl::template BidirectionalStreaming<
+                      &TestService::StaticBidirectionalStreaming>,
+                  10,
+                  args);
+    }
 
     // Test that there is an Invalid method creation function.
-    static constexpr MethodImpl kInvalidMethod = MethodImpl::Invalid();
-    static_assert(kInvalidMethod.id() == 0);
+    constexpr MethodImpl InvalidMethod() const { return MethodImpl::Invalid(); }
+
+    // Invokes the method creation function with the ID and extra args.
+    template <typename Function, typename... Args>
+    static constexpr MethodImpl Call(Function&& function,
+                                     uint32_t id,
+                                     const std::tuple<Args...>& args) {
+      return std::apply(function, std::tuple_cat(std::tuple(id), args));
+    }
   };
 };
 

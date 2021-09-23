@@ -15,5 +15,6 @@
 # List all ports used by Pigweed RPC integration tests. These ports are listed
 # in one place to prevent accidental conflicts between tests.
 pw_rpc_PYTHON_CLIENT_CPP_SERVER_TEST_PORT = 30576
-pw_transfer_PYTHON_CPP_TRANSFER_TEST_PORT = 30577
-pw_unit_test_RPC_SERVICE_TEST_PORT = 30578
+pw_rpc_CPP_CLIENT_INTEGRATION_TEST_PORT = 30577
+pw_transfer_PYTHON_CPP_TRANSFER_TEST_PORT = 30578
+pw_unit_test_RPC_SERVICE_TEST_PORT = 30579

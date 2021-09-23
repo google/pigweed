@@ -48,7 +48,7 @@ class RawMethod : public Method {
   template <auto kMethod>
   static constexpr RawMethod AsynchronousUnary(uint32_t id) {
     constexpr AsynchronousUnaryFunction wrapper =
-        [](Service& service, ConstByteSpan req, RawServerResponder& responder) {
+        [](Service& service, ConstByteSpan req, RawUnaryResponder& responder) {
           return CallMethodImplFunction<kMethod>(service, req, responder);
         };
     return RawMethod(
@@ -97,7 +97,7 @@ class RawMethod : public Method {
 
   using AsynchronousUnaryFunction = void (*)(Service&,
                                              ConstByteSpan,
-                                             RawServerResponder&);
+                                             RawUnaryResponder&);
 
   using ServerStreamingFunction = void (*)(Service&,
                                            ConstByteSpan,
@@ -139,7 +139,7 @@ using RawSynchronousUnary = StatusWithSize(ServerContext&,
                                            ByteSpan);
 using RawAsynchronousUnary = void(ServerContext&,
                                   ConstByteSpan,
-                                  RawServerResponder&);
+                                  RawUnaryResponder&);
 using RawServerStreaming = void(ServerContext&,
                                 ConstByteSpan,
                                 RawServerWriter&);

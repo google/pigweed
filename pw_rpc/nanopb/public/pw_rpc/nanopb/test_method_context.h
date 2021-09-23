@@ -96,8 +96,7 @@ template <typename Service,
           size_t kPayloadsBufferSizeBytes>
 class NanopbInvocationContext
     : public InvocationContext<
-          NanopbFakeChannelOutput<internal::Response<kMethod>,
-                                  kMaxPackets,
+          NanopbFakeChannelOutput<kMaxPackets,
                                   kOutputSize,
                                   kPayloadsBufferSizeBytes>,
           Service,
@@ -115,11 +114,12 @@ class NanopbInvocationContext
   }
 
   NanopbPayloadsView<Response> responses() const {
-    return Base::output().responses(kMethodInfo.serde().response(),
-                                    MethodTraits<decltype(kMethod)>::kType,
-                                    Base::channel_id(),
-                                    Base::service().id(),
-                                    kMethodId);
+    return Base::output().template responses<Response>(
+        kMethodInfo.serde().response(),
+        MethodTraits<decltype(kMethod)>::kType,
+        Base::channel_id(),
+        Base::service().id(),
+        kMethodId);
   }
 
  protected:
@@ -142,8 +142,7 @@ class NanopbInvocationContext
 
  private:
   using Base =
-      InvocationContext<NanopbFakeChannelOutput<Response,
-                                                kMaxPackets,
+      InvocationContext<NanopbFakeChannelOutput<kMaxPackets,
                                                 kOutputSize,
                                                 kPayloadsBufferSizeBytes>,
                         Service,
@@ -186,8 +185,8 @@ class UnaryContext : public NanopbInvocationContext<Service,
     if constexpr (MethodTraits<decltype(kMethod)>::kSynchronous) {
       Base::output().clear();
 
-      NanopbServerResponder<Response> responder =
-          Base::template GetResponder<NanopbServerResponder<Response>>();
+      NanopbUnaryResponder<Response> responder =
+          Base::template GetResponder<NanopbUnaryResponder<Response>>();
       Response response = {};
       Status status =
           CallMethodImplFunction<kMethod>(Base::service(), request, response);
@@ -195,7 +194,7 @@ class UnaryContext : public NanopbInvocationContext<Service,
       return status;
 
     } else {
-      Base::template call<kMethod, NanopbServerResponder<Response>>(request);
+      Base::template call<kMethod, NanopbUnaryResponder<Response>>(request);
     }
   }
 };
@@ -323,7 +322,7 @@ class BidirectionalStreamingContext
 
   // Returns a server reader which writes responses into the context's buffer.
   // This should not be called alongside call(); use one or the other.
-  NanopbServerReader<Request, Response> reader() {
+  NanopbServerReaderWriter<Request, Response> reader_writer() {
     return Base::template GetResponder<
         NanopbServerReaderWriter<Request, Response>>();
   }

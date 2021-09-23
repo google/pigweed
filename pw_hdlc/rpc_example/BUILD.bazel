@@ -32,6 +32,6 @@ pw_cc_library(
         "//pw_hdlc",
         "//pw_hdlc:pw_rpc",
         "//pw_log",
-        "//pw_rpc:server",
+        "//pw_rpc",
     ],
 )

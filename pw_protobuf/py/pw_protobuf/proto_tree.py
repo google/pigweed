@@ -351,12 +351,12 @@ class ProtoServiceMethod:
         return self._type
 
     def server_streaming(self) -> bool:
-        return (self._type is self.Type.SERVER_STREAMING
-                or self._type is self.Type.BIDIRECTIONAL_STREAMING)
+        return self._type in (self.Type.SERVER_STREAMING,
+                              self.Type.BIDIRECTIONAL_STREAMING)
 
     def client_streaming(self) -> bool:
-        return (self._type is self.Type.CLIENT_STREAMING
-                or self._type is self.Type.BIDIRECTIONAL_STREAMING)
+        return self._type in (self.Type.CLIENT_STREAMING,
+                              self.Type.BIDIRECTIONAL_STREAMING)
 
     def request_type(self) -> ProtoNode:
         return self._request_type

@@ -101,9 +101,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
       HandleClientStreamPacket(packet, *channel, call);
       break;
     default:
-      channel->Send(Packet::ServerError(packet, Status::Unimplemented()))
-          .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-      PW_LOG_WARN("Unable to handle packet of type %u",
+      PW_LOG_WARN("pw_rpc server unable to handle packet of type %u",
                   unsigned(packet.type()));
   }
   return OkStatus();
@@ -133,24 +131,24 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
         static_cast<unsigned>(packet.service_id()),
         static_cast<unsigned>(packet.method_id()));
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // Errors are logged in Channel::Send.
     return;
   }
 
   if (!call->has_client_stream()) {
     channel.Send(Packet::ServerError(packet, Status::InvalidArgument()))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // Errors are logged in Channel::Send.
     return;
   }
 
   if (!call->client_stream_open()) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        .IgnoreError();  // Errors are logged in Channel::Send.
     return;
   }
 
   if (packet.type() == PacketType::CLIENT_STREAM) {
-    call->HandleClientStream(packet.payload());
+    call->HandlePayload(packet.payload());
   } else {  // Handle PacketType::CLIENT_STREAM_END.
     call->EndClientStream();
   }

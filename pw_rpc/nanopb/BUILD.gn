@@ -24,10 +24,11 @@ config("public") {
   visibility = [ ":*" ]
 }
 
-pw_source_set("method") {
+pw_source_set("server_api") {
   public_configs = [ ":public" ]
   public = [
     "public/pw_rpc/nanopb/internal/method.h",
+    "public/pw_rpc/nanopb/internal/method_union.h",
     "public/pw_rpc/nanopb/server_reader_writer.h",
   ]
   sources = [
@@ -36,37 +37,32 @@ pw_source_set("method") {
   ]
   public_deps = [
     ":common",
+    "$dir_pw_rpc/raw:server_api",
     "..:config",
     "..:server",
     dir_pw_bytes,
   ]
   deps = [ dir_pw_log ]
+  allow_circular_includes_from = [ ":common" ]
 }
 
-pw_source_set("method_union") {
-  public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/nanopb/internal/method_union.h" ]
-  public_deps = [
-    ":method",
-    "$dir_pw_rpc/raw:method_union",
-  ]
-}
-
-pw_source_set("client") {
+pw_source_set("client_api") {
   public_configs = [ ":public" ]
   public_deps = [
     ":common",
     "..:client",
     dir_pw_function,
   ]
-  public = [ "public/pw_rpc/nanopb/client_call.h" ]
-  sources = [ "client_call.cc" ]
+  public = [ "public/pw_rpc/nanopb/client_reader_writer.h" ]
 }
 
 pw_source_set("common") {
   public_deps = [ dir_pw_bytes ]
   public_configs = [ ":public" ]
-  deps = [ dir_pw_log ]
+  deps = [
+    "..:common",
+    dir_pw_log,
+  ]
   public = [ "public/pw_rpc/nanopb/internal/common.h" ]
   sources = [ "common.cc" ]
 
@@ -82,10 +78,19 @@ pw_source_set("test_method_context") {
     "public/pw_rpc/nanopb/test_method_context.h",
   ]
   public_deps = [
-    ":method",
+    ":server_api",
     "..:test_utils",
     dir_pw_assert,
     dir_pw_containers,
+  ]
+}
+
+pw_source_set("client_testing") {
+  public = [ "public/pw_rpc/nanopb/client_testing.h" ]
+  public_deps = [
+    ":test_method_context",
+    "..:client",
+    "../raw:client_testing",
   ]
 }
 
@@ -110,6 +115,7 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":client_call_test",
+    ":client_reader_writer_test",
     ":codegen_test",
     ":echo_service_test",
     ":method_lookup_test",
@@ -123,7 +129,7 @@ pw_test_group("tests") {
 
 pw_test("client_call_test") {
   deps = [
-    ":client",
+    ":client_api",
     ":internal_test_utils",
     "..:test_protos.nanopb",
     "..:test_utils",
@@ -132,12 +138,22 @@ pw_test("client_call_test") {
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
+pw_test("client_reader_writer_test") {
+  deps = [
+    ":client_api",
+    ":client_testing",
+    "..:test_protos.nanopb_rpc",
+  ]
+  sources = [ "client_reader_writer_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
 pw_test("codegen_test") {
   deps = [
-    ":client",
+    ":client_api",
     ":internal_test_utils",
+    ":server_api",
     ":test_method_context",
-    "..:server",
     "..:test_protos.nanopb_rpc",
     "..:test_utils",
   ]
@@ -148,8 +164,8 @@ pw_test("codegen_test") {
 pw_test("method_test") {
   deps = [
     ":internal_test_utils",
-    ":method_union",
-    "..:server",
+    ":server_api",
+    ":server_api",
     "..:test_protos.nanopb",
     "..:test_utils",
   ]
@@ -169,7 +185,7 @@ pw_test("method_info_test") {
 
 pw_test("method_lookup_test") {
   deps = [
-    ":method",
+    ":server_api",
     ":test_method_context",
     "..:test_protos.nanopb_rpc",
     "..:test_utils",
@@ -182,7 +198,7 @@ pw_test("method_lookup_test") {
 pw_test("method_union_test") {
   deps = [
     ":internal_test_utils",
-    ":method_union",
+    ":server_api",
     "..:test_protos.nanopb",
     "..:test_utils",
   ]
@@ -193,7 +209,7 @@ pw_test("method_union_test") {
 pw_test("echo_service_test") {
   deps = [
     ":echo_service",
-    ":method",
+    ":server_api",
     ":test_method_context",
   ]
   sources = [ "echo_service_test.cc" ]
@@ -202,7 +218,7 @@ pw_test("echo_service_test") {
 
 pw_test("server_reader_writer_test") {
   deps = [
-    ":method",
+    ":server_api",
     ":test_method_context",
     "..:test_protos.nanopb_rpc",
   ]

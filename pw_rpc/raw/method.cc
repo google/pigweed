@@ -23,7 +23,7 @@ namespace pw::rpc::internal {
 
 void RawMethod::SynchronousUnaryInvoker(const CallContext& context,
                                         const Packet& request) {
-  RawServerResponder responder(context);
+  RawUnaryResponder responder(context);
   std::span payload_buffer = responder.AcquirePayloadBuffer();
 
   StatusWithSize sws =
@@ -37,7 +37,7 @@ void RawMethod::SynchronousUnaryInvoker(const CallContext& context,
 
 void RawMethod::AsynchronousUnaryInvoker(const CallContext& context,
                                          const Packet& request) {
-  RawServerResponder responder(context);
+  RawUnaryResponder responder(context);
   static_cast<const RawMethod&>(context.method())
       .function_.asynchronous_unary(
           context.service(), request.payload(), responder);

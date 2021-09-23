@@ -13,19 +13,15 @@
 // the License.
 #pragma once
 
-#include <array>
 #include <cstddef>
 
-#include "pw_assert/assert.h"
-#include "pw_bytes/span.h"
 #include "pw_rpc/internal/fake_channel_output.h"
-#include "pw_rpc/raw/internal/method.h"
 
 namespace pw::rpc {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
-template <size_t kOutputSize,
-          size_t kMaxPackets,
+template <size_t kMaxPackets,
+          size_t kOutputSize,
           size_t kPayloadsBufferSizeBytes = 128>
 class RawFakeChannelOutput final
     : public internal::test::FakeChannelOutputBuffer<kOutputSize,

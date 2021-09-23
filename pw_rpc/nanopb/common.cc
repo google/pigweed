@@ -16,7 +16,11 @@
 
 #include "pb_decode.h"
 #include "pb_encode.h"
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_result/result.h"
+#include "pw_rpc/nanopb/server_reader_writer.h"
+#include "pw_status/try.h"
 
 namespace pw::rpc::internal {
 namespace {
@@ -33,6 +37,19 @@ struct NanopbTraits<bool(pb_istream_t*, FieldsType, void*)> {
 };
 
 using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
+
+Result<ByteSpan> EncodeToPayloadBuffer(Call& call,
+                                       const void* payload,
+                                       NanopbSerde serde) {
+  std::span<std::byte> payload_buffer = call.AcquirePayloadBuffer();
+
+  StatusWithSize result = serde.Encode(payload, payload_buffer);
+  if (!result.ok()) {
+    call.ReleasePayloadBuffer();
+    return result.status();
+  }
+  return payload_buffer.first(result.size());
+}
 
 }  // namespace
 
@@ -58,7 +75,6 @@ StatusWithSize NanopbSerde::Encode(const void* proto_struct,
     PW_RPC_LOG_NANOPB_FAILURE("Nanopb protobuf encode failed", output);
     return StatusWithSize::Internal();
   }
-
   return StatusWithSize(output.bytes_written);
 }
 
@@ -73,5 +89,41 @@ bool NanopbSerde::Decode(ConstByteSpan buffer, void* proto_struct) const {
 }
 
 #undef PW_RPC_LOG_NANOPB_FAILURE
+
+void NanopbSendInitialRequest(ClientCall& call,
+                              NanopbSerde serde,
+                              const void* payload) {
+  PW_DCHECK(call.active());
+
+  Result<ByteSpan> result = EncodeToPayloadBuffer(call, payload, serde);
+  if (result.ok()) {
+    call.SendInitialRequest(*result);
+  } else {
+    call.HandleError(result.status());
+  }
+}
+
+Status NanopbSendStream(Call& call, const void* payload, NanopbSerde serde) {
+  PW_DCHECK(call.active());
+
+  Result<ByteSpan> result = EncodeToPayloadBuffer(call, payload, serde);
+  PW_TRY(result.status());
+  return call.Write(*result);
+}
+
+Status SendFinalResponse(NanopbServerCall& call,
+                         const void* payload,
+                         const Status status) {
+  if (!call.active()) {
+    return Status::FailedPrecondition();
+  }
+
+  Result<ByteSpan> result =
+      EncodeToPayloadBuffer(call, payload, call.serde().response());
+  if (!result.ok()) {
+    return call.CloseAndSendServerError(Status::Internal());
+  }
+  return call.CloseAndSendResponse(*result, status);
+}
 
 }  // namespace pw::rpc::internal

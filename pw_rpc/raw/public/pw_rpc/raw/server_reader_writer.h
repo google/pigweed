@@ -46,8 +46,7 @@ class RawServerWriter;
 // bidirectional streaming RPC.
 class RawServerReaderWriter : private internal::ServerCall {
  public:
-  constexpr RawServerReaderWriter()
-      : RawServerReaderWriter(MethodType::kBidirectionalStreaming) {}
+  constexpr RawServerReaderWriter() = default;
 
   RawServerReaderWriter(RawServerReaderWriter&&) = default;
   RawServerReaderWriter& operator=(RawServerReaderWriter&&) = default;
@@ -76,29 +75,25 @@ class RawServerReaderWriter : private internal::ServerCall {
   using internal::Call::set_on_next;
   using internal::ServerCall::set_on_client_stream_end;
 
+  // Sends a response packet with the given raw payload. The payload can either
+  // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary
+  // external buffer.
+  using internal::Call::Write;
+
   // Returns a buffer in which a response payload can be built.
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
 
   // Releases a buffer acquired from PayloadBuffer() without sending any data.
   void ReleaseBuffer() { ReleasePayloadBuffer(); }
 
-  // Sends a response packet with the given raw payload. The payload can either
-  // be in the buffer previously acquired from PayloadBuffer(), or an arbitrary
-  // external buffer.
-  Status Write(ConstByteSpan response);
-
   Status Finish(Status status = OkStatus()) {
     return CloseAndSendResponse(status);
   }
 
  protected:
-  // Constructor for derived classes to use.
-  constexpr RawServerReaderWriter(MethodType type)
-      : internal::ServerCall(type) {}
-
-  RawServerReaderWriter(const internal::CallContext& call,
+  RawServerReaderWriter(const internal::CallContext& context,
                         MethodType type = MethodType::kBidirectionalStreaming)
-      : internal::ServerCall(call, type) {}
+      : internal::ServerCall(context, type) {}
 
   using internal::Call::CloseAndSendResponse;
   using internal::Call::open;  // Deprecated; renamed to active()
@@ -130,8 +125,7 @@ class RawServerReader : private RawServerReaderWriter {
             internal::MethodInfo<kMethod>::kMethodId>())};
   }
 
-  constexpr RawServerReader()
-      : RawServerReaderWriter(MethodType::kClientStreaming) {}
+  constexpr RawServerReader() = default;
 
   RawServerReader(RawServerReader&&) = default;
   RawServerReader& operator=(RawServerReader&&) = default;
@@ -155,8 +149,8 @@ class RawServerReader : private RawServerReaderWriter {
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
 
-  RawServerReader(const internal::CallContext& call)
-      : RawServerReaderWriter(call, MethodType::kClientStreaming) {}
+  RawServerReader(const internal::CallContext& context)
+      : RawServerReaderWriter(context, MethodType::kClientStreaming) {}
 };
 
 // The RawServerWriter is used to send responses in a raw server streaming RPC.
@@ -178,8 +172,7 @@ class RawServerWriter : private RawServerReaderWriter {
             internal::MethodInfo<kMethod>::kMethodId>())};
   }
 
-  constexpr RawServerWriter()
-      : RawServerReaderWriter(MethodType::kServerStreaming) {}
+  constexpr RawServerWriter() = default;
 
   RawServerWriter(RawServerWriter&&) = default;
   RawServerWriter& operator=(RawServerWriter&&) = default;
@@ -201,20 +194,20 @@ class RawServerWriter : private RawServerReaderWriter {
 
   friend class internal::RawMethod;
 
-  RawServerWriter(const internal::CallContext& call)
-      : RawServerReaderWriter(call, MethodType::kServerStreaming) {}
+  RawServerWriter(const internal::CallContext& context)
+      : RawServerReaderWriter(context, MethodType::kServerStreaming) {}
 };
 
-// The RawServerResponder is used to send a response in a raw unary RPC.
-class RawServerResponder : private RawServerReaderWriter {
+// The RawUnaryResponder is used to send a response in a raw unary RPC.
+class RawUnaryResponder : private RawServerReaderWriter {
  public:
-  // Creates a RawServerResponder that is ready to send responses for a
+  // Creates a RawUnaryResponder that is ready to send responses for a
   // particular RPC. This can be used for testing or to send responses to an RPC
   // that has not been started by a client.
   template <auto kMethod, typename ServiceImpl>
-  [[nodiscard]] static RawServerResponder Open(Server& server,
-                                               uint32_t channel_id,
-                                               ServiceImpl& service) {
+  [[nodiscard]] static RawUnaryResponder Open(Server& server,
+                                              uint32_t channel_id,
+                                              ServiceImpl& service) {
     return {internal::OpenContext<kMethod, MethodType::kUnary>(
         server,
         channel_id,
@@ -224,10 +217,10 @@ class RawServerResponder : private RawServerReaderWriter {
             internal::MethodInfo<kMethod>::kMethodId>())};
   }
 
-  constexpr RawServerResponder() : RawServerReaderWriter(MethodType::kUnary) {}
+  constexpr RawUnaryResponder() = default;
 
-  RawServerResponder(RawServerResponder&&) = default;
-  RawServerResponder& operator=(RawServerResponder&&) = default;
+  RawUnaryResponder(RawUnaryResponder&&) = default;
+  RawUnaryResponder& operator=(RawUnaryResponder&&) = default;
 
   using RawServerReaderWriter::active;
   using RawServerReaderWriter::channel_id;
@@ -247,8 +240,8 @@ class RawServerResponder : private RawServerReaderWriter {
 
   friend class internal::RawMethod;
 
-  RawServerResponder(const internal::CallContext& call)
-      : RawServerReaderWriter(call, MethodType::kUnary) {}
+  RawUnaryResponder(const internal::CallContext& context)
+      : RawServerReaderWriter(context, MethodType::kUnary) {}
 };
 
 }  // namespace pw::rpc

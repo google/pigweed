@@ -40,10 +40,10 @@ class FakeChannelOutput : public ChannelOutput {
     return packets_.back().status();
   }
 
+  // Returns a view of the payloads seen for this RPC.
   template <auto kMethod>
   PayloadsView payloads(
       uint32_t channel_id = Channel::kUnassignedChannelId) const {
-    PW_ASSERT(!packets_.empty());
     return PayloadsView(packets_,
                         MethodInfo<kMethod>::kType,
                         channel_id,
@@ -55,23 +55,42 @@ class FakeChannelOutput : public ChannelOutput {
                         uint32_t channel_id,
                         uint32_t service_id,
                         uint32_t method_id) const {
-    PW_ASSERT(!packets_.empty());
     return PayloadsView(packets_, type, channel_id, service_id, method_id);
   }
 
+  // Returns a view of the final statuses seen for this RPC.
+  template <auto kMethod>
+  StatusView completions(
+      uint32_t channel_id = Channel::kUnassignedChannelId) const {
+    return StatusView(packets_,
+                      internal::PacketType::RESPONSE,
+                      internal::PacketType::RESPONSE,
+                      channel_id,
+                      MethodInfo<kMethod>::kServiceId,
+                      MethodInfo<kMethod>::kMethodId);
+  }
+
+  template <auto kMethod>
+  StatusView errors(uint32_t channel_id = Channel::kUnassignedChannelId) const {
+    return StatusView(packets_,
+                      internal::PacketType::CLIENT_ERROR,
+                      internal::PacketType::SERVER_ERROR,
+                      channel_id,
+                      MethodInfo<kMethod>::kServiceId,
+                      MethodInfo<kMethod>::kMethodId);
+  }
+
+  // The maximum number of packets this FakeChannelOutput can store. Attempting
+  // to store more packets than this is an error.
   size_t max_packets() const { return packets_.max_size(); }
 
-  // Tracks the count for all the responses.
-  size_t total_responses() const {
-    return total_response_packets_ + total_stream_packets_;
-  }
-  // Track individual packet type counts.
-  size_t total_response_packets() const { return total_response_packets_; }
-  size_t total_stream_packets() const { return total_stream_packets_; }
+  // The total number of packets that have been sent.
+  size_t total_packets() const { return packets_.size(); }
 
   // Set to true if a RESPONSE packet is seen.
   bool done() const { return total_response_packets_ > 0; }
 
+  // Clears and resets the FakeChannelOutput.
   void clear();
 
   // Returns `status` for all future SendAndReleaseBuffer calls. Enables packet
@@ -112,10 +131,8 @@ class FakeChannelOutput : public ChannelOutput {
 
   void CopyPayloadToBuffer(const ConstByteSpan& payload);
 
-  size_t total_response_packets_ = 0;
-  size_t total_stream_packets_ = 0;
-
   int return_after_packet_count_ = -1;
+  unsigned total_response_packets_ = 0;
 
   Vector<Packet>& packets_;
   Vector<std::byte>& payloads_;

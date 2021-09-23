@@ -34,7 +34,7 @@ class TestService final : public generated::TestService<TestService> {
   void TestAnotherUnaryRpc(
       ServerContext& ctx,
       const pw_rpc_test_TestRequest& request,
-      NanopbServerResponder<pw_rpc_test_TestResponse>& responder) {
+      NanopbUnaryResponder<pw_rpc_test_TestResponse>& responder) {
     pw_rpc_test_TestResponse response{};
     responder.Finish(response, TestUnaryRpc(ctx, request, response));
   }
@@ -116,13 +116,11 @@ TEST(NanopbCodegen, Server_InvokeServerStreamingRpc) {
 
   EXPECT_EQ(Status::Aborted(), context.status());
   EXPECT_TRUE(context.done());
-  EXPECT_TRUE(context.responses().empty());
-  EXPECT_EQ(0u, context.total_stream_packets());
+  EXPECT_EQ(context.total_responses(), 0u);
 
   context.call({.integer = 4, .status_code = OkStatus().code()});
 
   ASSERT_EQ(4u, context.responses().size());
-  ASSERT_EQ(4u, context.total_stream_packets());
 
   for (size_t i = 0; i < context.responses().size(); ++i) {
     EXPECT_EQ(context.responses()[i].number, i);
@@ -150,7 +148,6 @@ TEST(NanopbCodegen, Server_InvokeServerStreamingRpc_ManualWriting) {
   EXPECT_EQ(Status::Cancelled(), context.status());
 
   ASSERT_EQ(3u, context.responses().size());
-  ASSERT_EQ(3u, context.total_stream_packets());
 
   EXPECT_EQ(context.responses()[0].number, 3u);
   EXPECT_EQ(context.responses()[1].number, 6u);
@@ -200,23 +197,12 @@ TEST(NanopbCodegen, Server_InvokeBidirectionalStreamingRpc) {
   EXPECT_EQ(Status::NotFound(), context.status());
 }
 
-using TestServiceClient = test::nanopb::TestServiceClient;
-
-TEST(NanopbCodegen, Client_GeneratesCallAliases) {
-  static_assert(
-      std::is_same_v<TestServiceClient::TestUnaryRpcCall,
-                     NanopbClientCall<
-                         internal::UnaryCallbacks<pw_rpc_test_TestResponse>>>);
-  static_assert(
-      std::is_same_v<TestServiceClient::TestServerStreamRpcCall,
-                     NanopbClientCall<internal::ServerStreamingCallbacks<
-                         pw_rpc_test_TestStreamResponse>>>);
-}
-
 TEST(NanopbCodegen, ClientCall_DefaultConstructor) {
-  TestServiceClient::TestUnaryRpcCall unary_call;
-  TestServiceClient::TestServerStreamRpcCall server_streaming_call;
+  NanopbUnaryReceiver<pw_rpc_test_TestResponse> unary_call;
+  NanopbClientReader<pw_rpc_test_TestStreamResponse> server_streaming_call;
 }
+
+using TestServiceClient = test::nanopb::TestServiceClient;
 
 TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");
@@ -252,6 +238,8 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   context.SendResponse(OkStatus(), response);
   EXPECT_EQ(result.last_status, OkStatus());
   EXPECT_EQ(result.response_value, 42);
+
+  EXPECT_FALSE(call.active());
 }
 
 TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
@@ -380,38 +368,6 @@ TEST(NanopbCodegen, Client_StaticMethod_InvokesServerStreamingRpcWithCallback) {
   context.SendResponse(Status::NotFound());
   EXPECT_FALSE(result.active);
   EXPECT_EQ(result.stream_status, Status::NotFound());
-}
-
-TEST(NanopbCodegen, Client_InvalidChannel_DoesntMakeCall) {
-  constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");
-  constexpr uint32_t kMethodId = internal::Hash("TestUnaryRpc");
-
-  constexpr uint32_t kBadChannelId = 97;
-
-  ClientContextForTest<128, 128, 99, kServiceId, kMethodId> context;
-  TestServiceClient test_client(context.client(), kBadChannelId);
-
-  struct {
-    Status last_status = Status::Unknown();
-    int response_value = -1;
-  } result;
-
-  Status error = Status::Unknown();
-
-  auto call = test_client.TestUnaryRpc(
-      {.integer = 123, .status_code = 0},
-      [&result](const pw_rpc_test_TestResponse& response, Status status) {
-        result.last_status = status;
-        result.response_value = response.value;
-      },
-      [&error](Status rpc_error) { error = rpc_error; });
-
-  EXPECT_FALSE(call.active());
-
-  EXPECT_EQ(context.output().packet_count(), 0u);
-  EXPECT_EQ(result.last_status, Status::Unknown());
-  EXPECT_EQ(result.response_value, -1);
-  EXPECT_EQ(error, Status::Unavailable());
 }
 
 }  // namespace

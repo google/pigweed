@@ -23,55 +23,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
-    name = "client",
-    srcs = [
-        "base_client_call.cc",
-        "client.cc",
-    ],
-    hdrs = [
-        "public/pw_rpc/client.h",
-        "public/pw_rpc/internal/base_client_call.h",
-        "public/pw_rpc/internal/service_client.h",
-    ],
-    deps = [
-        ":common",
-        "//pw_containers:intrusive_list",
-        "//pw_result",
-    ],
-)
-
-pw_cc_library(
-    name = "server",
-    srcs = [
-        "call.cc",
-        "endpoint.cc",
-        "public/pw_rpc/internal/call.h",
-        "public/pw_rpc/internal/call_context.h",
-        "public/pw_rpc/internal/endpoint.h",
-        "public/pw_rpc/internal/hash.h",
-        "public/pw_rpc/internal/method.h",
-        "public/pw_rpc/internal/method_info.h",
-        "public/pw_rpc/internal/method_lookup.h",
-        "public/pw_rpc/internal/method_union.h",
-        "public/pw_rpc/internal/open_call.h",
-        "server.cc",
-        "service.cc",
-    ],
-    hdrs = [
-        "public/pw_rpc/server.h",
-        "public/pw_rpc/server_context.h",
-        "public/pw_rpc/service.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":common",
-        ":internal_packet_pwpb",
-        "//pw_containers",
-        "//pw_rpc/system_server",
-    ],
-)
-
 proto_library(
     name = "benchmark_proto",
     srcs = [
@@ -92,9 +43,9 @@ pw_cc_library(
     deps = [
         ":benchmark_pwpb",
         # TODO(hepler): RPC deps not used directly should be provided by the proto library
-        ":client",
-        ":server",
-        "//pw_rpc/raw:method_union",
+        ":pw_rpc",
+        "//pw_rpc/raw:server_api",
+        "//pw_rpc/raw:client_api",
     ],
 )
 
@@ -113,32 +64,52 @@ pw_cc_library(
     name = "client_server",
     srcs = ["client_server.cc"],
     hdrs = ["public/pw_rpc/client_server.h"],
-    deps = [
-        ":client",
-        ":server",
-    ],
+    deps = [":pw_rpc"],
 )
 
 pw_cc_library(
-    name = "common",
+    name = "pw_rpc",
     srcs = [
+        "call.cc",
         "channel.cc",
+        "client.cc",
+        "endpoint.cc",
         "packet.cc",
+        "public/pw_rpc/internal/call.h",
+        "public/pw_rpc/internal/call_context.h",
         "public/pw_rpc/internal/channel.h",
         "public/pw_rpc/internal/config.h",
+        "public/pw_rpc/internal/endpoint.h",
+        "public/pw_rpc/internal/hash.h",
+        "public/pw_rpc/internal/method.h",
+        "public/pw_rpc/internal/method_info.h",
+        "public/pw_rpc/internal/method_lookup.h",
+        "public/pw_rpc/internal/method_union.h",
+        "public/pw_rpc/internal/open_call.h",
         "public/pw_rpc/internal/packet.h",
         "public/pw_rpc/method_type.h",
+        "server.cc",
+        "service.cc",
     ],
     hdrs = [
         "public/pw_rpc/channel.h",
+        "public/pw_rpc/client.h",
+        "public/pw_rpc/internal/service_client.h",
+        "public/pw_rpc/server.h",
+        "public/pw_rpc/server_context.h",
+        "public/pw_rpc/service.h",
     ],
     includes = ["public"],
     deps = [
         ":internal_packet_pwpb",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_containers",
+        "//pw_containers:intrusive_list",
         "//pw_function",
         "//pw_log",
+        "//pw_result",
+        "//pw_rpc/system_server",
         "//pw_span",
         "//pw_status",
     ],
@@ -149,7 +120,7 @@ pw_cc_library(
     hdrs = ["public/pw_rpc/synchronized_channel_output.h"],
     includes = ["public"],
     deps = [
-        ":common",
+        ":pw_rpc",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
     ],
@@ -174,8 +145,7 @@ pw_cc_library(
     ],
     visibility = [":__subpackages__"],
     deps = [
-        ":client",
-        ":server",
+        ":pw_rpc",
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers:filtered_view",
@@ -185,13 +155,19 @@ pw_cc_library(
     ],
 )
 
-# TODO(hepler): Cannot build nanopb-dependent code in Bazel at the moment. Need
+# TODO(pwbug/507): Add the client integration test to the build.
+filegroup(
+    name = "client_integration_test",
+    srcs = ["client_integration_test.cc"],
+)
+
+# TODO(pwbug/507): Cannot build nanopb-dependent code in Bazel at the moment. Need
 # to determine how best to support Nanopb builds and protobuf generation.
 filegroup(
     name = "nanopb",
     srcs = [
-        "nanopb/client_call.cc",
         "nanopb/client_call_test.cc",
+        "nanopb/client_reader_writer_test.cc",
         "nanopb/codegen_test.cc",
         "nanopb/common.cc",
         "nanopb/echo_service_test.cc",
@@ -201,7 +177,8 @@ filegroup(
         "nanopb/method_test.cc",
         "nanopb/method_union_test.cc",
         "nanopb/public/pw_rpc/echo_service_nanopb.h",
-        "nanopb/public/pw_rpc/nanopb/client_call.h",
+        "nanopb/public/pw_rpc/nanopb/client_reader_writer.h",
+        "nanopb/public/pw_rpc/nanopb/client_testing.h",
         "nanopb/public/pw_rpc/nanopb/fake_channel_output.h",
         "nanopb/public/pw_rpc/nanopb/internal/common.h",
         "nanopb/public/pw_rpc/nanopb/internal/method.h",
@@ -222,29 +199,7 @@ pw_cc_test(
     ],
     deps = [
         ":internal_test_utils",
-        ":server",
-    ],
-)
-
-pw_cc_test(
-    name = "base_client_call_test",
-    srcs = [
-        "base_client_call_test.cc",
-    ],
-    deps = [
-        ":client",
-        ":internal_test_utils",
-    ],
-)
-
-pw_cc_test(
-    name = "client_test",
-    srcs = [
-        "client_test.cc",
-    ],
-    deps = [
-        ":client",
-        ":internal_test_utils",
+        ":pw_rpc",
     ],
 )
 
@@ -253,7 +208,7 @@ pw_cc_test(
     srcs = ["channel_test.cc"],
     deps = [
         ":internal_test_utils",
-        ":server",
+        ":pw_rpc",
     ],
 )
 
@@ -262,7 +217,7 @@ pw_cc_test(
     srcs = ["method_test.cc"],
     deps = [
         ":internal_test_utils",
-        ":server",
+        ":pw_rpc",
     ],
 )
 
@@ -272,7 +227,7 @@ pw_cc_test(
         "packet_test.cc",
     ],
     deps = [
-        ":server",
+        ":pw_rpc",
     ],
 )
 
@@ -282,7 +237,7 @@ pw_cc_test(
     deps = [
         ":client_server",
         ":internal_test_utils",
-        "//pw_rpc/raw:method_union",
+        "//pw_rpc/raw:server_api",
     ],
 )
 
@@ -300,7 +255,7 @@ pw_cc_test(
     ],
     deps = [
         ":internal_test_utils",
-        ":server",
+        ":pw_rpc",
         "//pw_assert",
     ],
 )
@@ -312,7 +267,7 @@ pw_cc_test(
     ],
     deps = [
         ":internal_test_utils",
-        ":server",
+        ":pw_rpc",
         "//pw_assert",
     ],
 )

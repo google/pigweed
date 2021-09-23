@@ -32,7 +32,6 @@ pw_source_set("flat_file_system") {
   public_deps = [
     ":proto.pwpb",
     ":proto.raw_rpc",
-    "$dir_pw_rpc/raw:method",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_log,

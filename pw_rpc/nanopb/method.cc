@@ -33,10 +33,10 @@ void NanopbMethod::CallSynchronousUnary(const CallContext& context,
     return;
   }
 
-  GenericNanopbResponder responder(context, MethodType::kUnary);
+  NanopbServerCall responder(context, MethodType::kUnary);
   const Status status = function_.synchronous_unary(
       context.service(), request_struct, response_struct);
-  responder.SendResponse(response_struct, status).IgnoreError();
+  responder.SendUnaryResponse(response_struct, status).IgnoreError();
 }
 
 void NanopbMethod::CallUnaryRequest(const CallContext& context,
@@ -47,7 +47,7 @@ void NanopbMethod::CallUnaryRequest(const CallContext& context,
     return;
   }
 
-  GenericNanopbResponder server_writer(context, type);
+  NanopbServerCall server_writer(context, type);
   function_.unary_request(context.service(), request_struct, server_writer);
 }
 

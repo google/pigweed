@@ -15,6 +15,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/internal/method_union.h"
+#include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc/nanopb/internal/method.h"
 #include "pw_rpc/raw/internal/method_union.h"
 
@@ -44,14 +45,11 @@ class NanopbMethodUnion : public MethodUnion {
 // function's signature.
 template <auto kMethod, MethodType kType, typename Request, typename Response>
 constexpr auto GetNanopbOrRawMethodFor(
-    uint32_t id,
-    [[maybe_unused]] NanopbMessageDescriptor request_fields,
-    [[maybe_unused]] NanopbMessageDescriptor response_fields) {
+    uint32_t id, [[maybe_unused]] const NanopbMethodSerde& serde) {
   if constexpr (RawMethod::matches<kMethod>()) {
     return GetMethodFor<kMethod, RawMethod, kType>(id);
   } else if constexpr (NanopbMethod::matches<kMethod, Request, Response>()) {
-    return GetMethodFor<kMethod, NanopbMethod, kType>(
-        id, request_fields, response_fields);
+    return GetMethodFor<kMethod, NanopbMethod, kType>(id, serde);
   } else {
     return InvalidMethod<kMethod, kType, RawMethod>(id);
   }

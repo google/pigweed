@@ -37,8 +37,7 @@ namespace pw::rpc::internal::test {
 // with private inheritance.
 class FakeServerReaderWriter : private internal::ServerCall {
  public:
-  constexpr FakeServerReaderWriter()
-      : FakeServerReaderWriter(MethodType::kBidirectionalStreaming) {}
+  constexpr FakeServerReaderWriter() = default;
 
   // On a real reader/writer, this constructor would not be exposed.
   FakeServerReaderWriter(const CallContext& context,
@@ -58,28 +57,18 @@ class FakeServerReaderWriter : private internal::ServerCall {
     return CloseAndSendResponse(status);
   }
 
-  Status Write(ConstByteSpan response) {
-    std::span buffer = AcquirePayloadBuffer();
-    std::memcpy(buffer.data(),
-                response.data(),
-                std::min(buffer.size(), response.size()));
-    return SendPayloadBufferClientStream(buffer.first(response.size()));
-  }
+  using Call::Write;
 
   // Expose a few additional methods for test use.
   ServerCall& as_server_call() { return *this; }
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
   const Channel::OutputBuffer& output_buffer() { return buffer(); }
-
- protected:
-  constexpr FakeServerReaderWriter(MethodType type)
-      : internal::ServerCall(type) {}
 };
 
 class FakeServerWriter : private FakeServerReaderWriter {
  public:
-  constexpr FakeServerWriter()
-      : FakeServerReaderWriter(MethodType::kServerStreaming) {}
+  constexpr FakeServerWriter() = default;
+
   FakeServerWriter(const CallContext& context)
       : FakeServerReaderWriter(context, MethodType::kServerStreaming) {}
   FakeServerWriter(FakeServerWriter&&) = default;
@@ -98,8 +87,7 @@ class FakeServerWriter : private FakeServerReaderWriter {
 
 class FakeServerReader : private FakeServerReaderWriter {
  public:
-  constexpr FakeServerReader()
-      : FakeServerReaderWriter(MethodType::kClientStreaming) {}
+  constexpr FakeServerReader() = default;
 
   FakeServerReader(const CallContext& context)
       : FakeServerReaderWriter(context, MethodType::kClientStreaming) {}

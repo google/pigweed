@@ -182,4 +182,72 @@ class PayloadsView {
   internal::test::PacketsView view_;
 };
 
+// Class for iterating over RPC statuses associated witha particular RPC. This
+// is used to iterate over the user RPC statuses and or protocol errors for a
+// particular RPC.
+class StatusView {
+ public:
+  class iterator : public containers::WrappedIterator<
+                       iterator,
+                       internal::test::PacketsView::iterator,
+                       Status> {
+   public:
+    constexpr iterator() = default;
+
+    // Access the status (rather than packet) with operator* and operator->.
+    const Status& operator*() const { return value().status(); }
+    const Status* operator->() const { return &value().status(); }
+
+   private:
+    friend class StatusView;
+
+    constexpr iterator(const internal::test::PacketsView::iterator& it)
+        : containers::WrappedIterator<iterator,
+                                      internal::test::PacketsView::iterator,
+                                      Status>(it) {}
+  };
+
+  using const_iterator = iterator;
+
+  const Status& operator[](size_t index) const {
+    auto it = begin();
+    std::advance(it, index);
+    return *it;
+  }
+
+  // Number of statuses in this view.
+  size_t size() const { return view_.size(); }
+  bool empty() const { return begin() == end(); }
+
+  // Returns the first/last payload for the RPC. size() must be > 0.
+  const Status& front() const { return *begin(); }
+  const Status& back() const { return *std::prev(end()); }
+
+  iterator begin() const { return iterator(view_.begin()); }
+  iterator end() const { return iterator(view_.end()); }
+
+ private:
+  friend class internal::test::FakeChannelOutput;
+
+  template <auto kMethod>
+  using MethodInfo = internal::MethodInfo<kMethod>;
+
+  using PacketType = internal::PacketType;
+
+  constexpr StatusView(const Vector<internal::Packet>& packets,
+                       PacketType client_packet_type,
+                       PacketType server_packet_type,
+                       uint32_t channel_id,
+                       uint32_t service_id,
+                       uint32_t method_id)
+      : view_(packets,
+              internal::test::PacketFilter(client_packet_type,
+                                           server_packet_type,
+                                           channel_id,
+                                           service_id,
+                                           method_id)) {}
+
+  internal::test::PacketsView view_;
+};
+
 }  // namespace pw::rpc

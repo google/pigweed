@@ -36,22 +36,30 @@ class FakeGeneratedService : public Service {
                               MethodType::kUnary,
                               pw_rpc_test_Empty,
                               pw_rpc_test_Empty>(
-          10u, pw_rpc_test_Empty_fields, pw_rpc_test_Empty_fields),
+          10u,
+          kNanopbMethodSerde<pw_rpc_test_Empty_fields,
+                             pw_rpc_test_Empty_fields>),
       GetNanopbOrRawMethodFor<&Implementation::RawStream,
                               MethodType::kServerStreaming,
                               pw_rpc_test_TestRequest,
                               pw_rpc_test_TestResponse>(
-          11u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
+          11u,
+          kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                             pw_rpc_test_TestResponse_fields>),
       GetNanopbOrRawMethodFor<&Implementation::AddFive,
                               MethodType::kUnary,
                               pw_rpc_test_TestRequest,
                               pw_rpc_test_TestResponse>(
-          12u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
+          12u,
+          kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                             pw_rpc_test_TestResponse_fields>),
       GetNanopbOrRawMethodFor<&Implementation::StartStream,
                               MethodType::kServerStreaming,
                               pw_rpc_test_TestRequest,
                               pw_rpc_test_TestResponse>(
-          13u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
+          13u,
+          kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                             pw_rpc_test_TestResponse_fields>),
   };
 };
 

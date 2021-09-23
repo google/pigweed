@@ -28,8 +28,7 @@ class TestService final
     return StatusWithSize(0);
   }
 
-  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawServerResponder&) {
-  }
+  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawUnaryResponder&) {}
 
   void TestServerStreamRpc(ServerContext&, ConstByteSpan, RawServerWriter&) {}
 

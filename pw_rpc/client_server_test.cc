@@ -71,9 +71,9 @@ TEST(ClientServer, ProcessPacket_CallsClient) {
   Result result = packet.Encode(buffer);
   EXPECT_EQ(result.status(), OkStatus());
 
-  // No calls are registered on the client, so this should fail.
-  EXPECT_EQ(client_server.ProcessPacket(result.value(), output),
-            Status::NotFound());
+  // No calls are registered on the client, so nothing should happen. The
+  // ProcessPacket call still returns OK since the client handled it.
+  EXPECT_EQ(client_server.ProcessPacket(result.value(), output), OkStatus());
 }
 
 TEST(ClientServer, ProcessPacket_BadData) {

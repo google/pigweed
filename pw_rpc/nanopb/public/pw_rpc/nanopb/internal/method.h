@@ -43,7 +43,7 @@ using NanopbSynchronousUnary = Status(ServerContext&,
 template <typename Request, typename Response>
 using NanopbAsynchronousUnary = void(ServerContext&,
                                      const Request&,
-                                     NanopbServerResponder<Response>&);
+                                     NanopbUnaryResponder<Response>&);
 
 template <typename Request, typename Response>
 using NanopbServerStreaming = void(ServerContext&,
@@ -172,9 +172,7 @@ class NanopbMethod : public Method {
   // Creates a NanopbMethod for a synchronous unary RPC.
   template <auto kMethod>
   static constexpr NanopbMethod SynchronousUnary(
-      uint32_t id,
-      NanopbMessageDescriptor request,
-      NanopbMessageDescriptor response) {
+      uint32_t id, const NanopbMethodSerde& serde) {
     // Define a wrapper around the user-defined function that takes the
     // request and response protobuf structs as void*. This wrapper is stored
     // generically in the Function union, defined below.
@@ -193,16 +191,13 @@ class NanopbMethod : public Method {
         SynchronousUnaryInvoker<AllocateSpaceFor<Request<kMethod>>(),
                                 AllocateSpaceFor<Response<kMethod>>()>,
         Function{.synchronous_unary = wrapper},
-        request,
-        response);
+        serde);
   }
 
   // Creates a NanopbMethod for an asynchronous unary RPC.
   template <auto kMethod>
   static constexpr NanopbMethod AsynchronousUnary(
-      uint32_t id,
-      NanopbMessageDescriptor request,
-      NanopbMessageDescriptor response) {
+      uint32_t id, const NanopbMethodSerde& serde) {
     // Define a wrapper around the user-defined function that takes the
     // request and response protobuf structs as void*. This wrapper is stored
     // generically in the Function union, defined below.
@@ -210,32 +205,29 @@ class NanopbMethod : public Method {
     // In optimized builds, the compiler inlines the user-defined function into
     // this wrapper, elminating any overhead.
     constexpr UnaryRequestFunction wrapper =
-        [](Service& service, const void* req, GenericNanopbResponder& resp) {
+        [](Service& service, const void* req, NanopbServerCall& resp) {
           return CallMethodImplFunction<kMethod>(
               service,
               *static_cast<const Request<kMethod>*>(req),
-              static_cast<NanopbServerResponder<Response<kMethod>>&>(resp));
+              static_cast<NanopbUnaryResponder<Response<kMethod>>&>(resp));
         };
     return NanopbMethod(
         id,
         AsynchronousUnaryInvoker<AllocateSpaceFor<Request<kMethod>>()>,
         Function{.unary_request = wrapper},
-        request,
-        response);
+        serde);
   }
 
   // Creates a NanopbMethod for a server-streaming RPC.
   template <auto kMethod>
   static constexpr NanopbMethod ServerStreaming(
-      uint32_t id,
-      NanopbMessageDescriptor request,
-      NanopbMessageDescriptor response) {
+      uint32_t id, const NanopbMethodSerde& serde) {
     // Define a wrapper around the user-defined function that takes the request
-    // struct as void* and a GenericNanopbResponder instead of the
+    // struct as void* and a NanopbServerCall instead of the
     // templated NanopbServerWriter class. This wrapper is stored generically in
     // the Function union, defined below.
     constexpr UnaryRequestFunction wrapper =
-        [](Service& service, const void* req, GenericNanopbResponder& writer) {
+        [](Service& service, const void* req, NanopbServerCall& writer) {
           return CallMethodImplFunction<kMethod>(
               service,
               *static_cast<const Request<kMethod>*>(req),
@@ -245,19 +237,15 @@ class NanopbMethod : public Method {
         id,
         ServerStreamingInvoker<AllocateSpaceFor<Request<kMethod>>()>,
         Function{.unary_request = wrapper},
-        request,
-        response);
+        serde);
   }
 
   // Creates a NanopbMethod for a client-streaming RPC.
   template <auto kMethod>
   static constexpr NanopbMethod ClientStreaming(
-      uint32_t id,
-      NanopbMessageDescriptor request,
-      NanopbMessageDescriptor response) {
+      uint32_t id, const NanopbMethodSerde& serde) {
     constexpr StreamRequestFunction wrapper = [](Service& service,
-                                                 GenericNanopbResponder&
-                                                     reader) {
+                                                 NanopbServerCall& reader) {
       return CallMethodImplFunction<kMethod>(
           service,
           static_cast<NanopbServerReader<Request<kMethod>, Response<kMethod>>&>(
@@ -266,18 +254,15 @@ class NanopbMethod : public Method {
     return NanopbMethod(id,
                         ClientStreamingInvoker<Request<kMethod>>,
                         Function{.stream_request = wrapper},
-                        request,
-                        response);
+                        serde);
   }
 
   // Creates a NanopbMethod for a bidirectional-streaming RPC.
   template <auto kMethod>
   static constexpr NanopbMethod BidirectionalStreaming(
-      uint32_t id,
-      NanopbMessageDescriptor request,
-      NanopbMessageDescriptor response) {
+      uint32_t id, const NanopbMethodSerde& serde) {
     constexpr StreamRequestFunction wrapper =
-        [](Service& service, GenericNanopbResponder& reader_writer) {
+        [](Service& service, NanopbServerCall& reader_writer) {
           return CallMethodImplFunction<kMethod>(
               service,
               static_cast<NanopbServerReaderWriter<Request<kMethod>,
@@ -287,13 +272,12 @@ class NanopbMethod : public Method {
     return NanopbMethod(id,
                         BidirectionalStreamingInvoker<Request<kMethod>>,
                         Function{.stream_request = wrapper},
-                        request,
-                        response);
+                        serde);
   }
 
   // Represents an invalid method. Used to reduce error message verbosity.
   static constexpr NanopbMethod Invalid() {
-    return {0, InvalidInvoker, {}, nullptr, nullptr};
+    return {0, InvalidInvoker, {}, NanopbMethodSerde(nullptr, nullptr)};
   }
 
   // Give access to the serializer/deserializer object for converting requests
@@ -310,11 +294,11 @@ class NanopbMethod : public Method {
   // RPCs.
   using UnaryRequestFunction = void (*)(Service&,
                                         const void* request,
-                                        GenericNanopbResponder& writer);
+                                        NanopbServerCall& writer);
 
   // Generic function signature for client and bidirectional streaming RPCs.
   using StreamRequestFunction = void (*)(Service&,
-                                         GenericNanopbResponder& reader_writer);
+                                         NanopbServerCall& reader_writer);
 
   // The Function union stores a pointer to a generic version of the
   // user-defined RPC function. Using a union instead of void* avoids
@@ -335,9 +319,8 @@ class NanopbMethod : public Method {
   constexpr NanopbMethod(uint32_t id,
                          Invoker invoker,
                          Function function,
-                         NanopbMessageDescriptor request,
-                         NanopbMessageDescriptor response)
-      : Method(id, invoker), function_(function), serde_(request, response) {}
+                         const NanopbMethodSerde& serde)
+      : Method(id, invoker), function_(function), serde_(serde) {}
 
   void CallSynchronousUnary(const CallContext& context,
                             const Packet& request,
@@ -369,7 +352,7 @@ class NanopbMethod : public Method {
 
   // Invoker function for asynchronous unary RPCs. Allocates space for a request
   // struct. Ignores the payload buffer since resposnes are sent through the
-  // NanopbServerResponder.
+  // NanopbUnaryResponder.
   template <size_t kRequestSize>
   static void AsynchronousUnaryInvoker(const CallContext& context,
                                        const Packet& request) {
@@ -427,7 +410,7 @@ class NanopbMethod : public Method {
   Function function_;
 
   // Serde used to encode and decode Nanopb structs.
-  NanopbMethodSerde serde_;
+  const NanopbMethodSerde& serde_;
 };
 
 }  // namespace pw::rpc::internal

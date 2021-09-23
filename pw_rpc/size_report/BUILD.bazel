@@ -28,7 +28,7 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
-        "//pw_rpc:server",
+        "//pw_rpc",
         "//pw_sys_io",
     ],
 )
@@ -40,7 +40,7 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
-        "//pw_rpc:server",
+        "//pw_rpc",
         "//pw_sys_io",
     ],
 )

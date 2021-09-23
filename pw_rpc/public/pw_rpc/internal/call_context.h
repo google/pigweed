@@ -20,7 +20,6 @@
 
 namespace pw::rpc {
 
-class ServerContext;
 class Service;
 
 namespace internal {
@@ -32,25 +31,25 @@ class Method;
 // CallContext is used to initialize a call object for the RPC.
 class CallContext {
  public:
-  constexpr CallContext(Endpoint& endpoint,
+  constexpr CallContext(Endpoint& server,
                         Channel& channel,
                         Service& service,
                         const internal::Method& method)
-      : endpoint_(endpoint),
+      : server_(server),
         channel_(channel),
         service_(service),
         method_(method) {}
 
-  Endpoint& endpoint() const { return endpoint_; }
+  constexpr Endpoint& server() const { return server_; }
 
-  Channel& channel() const { return channel_; }
+  constexpr Channel& channel() const { return channel_; }
 
-  Service& service() const { return service_; }
+  constexpr Service& service() const { return service_; }
 
-  const internal::Method& method() const { return method_; }
+  constexpr const internal::Method& method() const { return method_; }
 
  private:
-  Endpoint& endpoint_;
+  Endpoint& server_;
   Channel& channel_;
   Service& service_;
   const internal::Method& method_;

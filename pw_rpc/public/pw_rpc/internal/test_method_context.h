@@ -40,13 +40,7 @@ class InvocationContext {
   // Sets the channel ID, which defaults to an arbitrary value.
   void set_channel_id(uint32_t id) { channel_ = Channel(id, &output_); }
 
-  // The total number of responses sent, which may be larger than
-  // responses.max_size().
-  size_t total_responses() const { return output_.total_responses(); }
-  size_t total_response_packets() const {
-    return output_.total_response_packets();
-  }
-  size_t total_stream_packets() const { return output_.total_stream_packets(); }
+  size_t total_responses() const { return responses().size(); }
 
   size_t max_packets() const { return output_.max_packets(); }
 
@@ -174,7 +168,7 @@ class InvocationContext {
   rpc::Channel channel_;
   rpc::Server server_;
   Service service_;
-  const internal::CallContext context_;
+  internal::CallContext context_;
 };
 
 }  // namespace pw::rpc::internal::test

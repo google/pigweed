@@ -27,13 +27,13 @@ class ServiceClient {
   constexpr ServiceClient(const ServiceClient&) = default;
   constexpr ServiceClient& operator=(const ServiceClient&) = default;
 
- protected:
-  constexpr ServiceClient(Client& client, uint32_t channel_id)
-      : client_(&client), channel_id_(channel_id) {}
-
   constexpr Client& client() const { return *client_; }
 
   constexpr uint32_t channel_id() const { return channel_id_; }
+
+ protected:
+  constexpr ServiceClient(Client& client, uint32_t channel_id)
+      : client_(&client), channel_id_(channel_id) {}
 
  private:
   Client* client_;

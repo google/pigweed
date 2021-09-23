@@ -33,7 +33,7 @@ class TestService final : public GeneratedService::Service<TestService> {
 
   void TestAnotherUnaryRpc(ServerContext&,
                            const pw_rpc_test_TestRequest&,
-                           NanopbServerResponder<pw_rpc_test_TestResponse>&) {}
+                           NanopbUnaryResponder<pw_rpc_test_TestResponse>&) {}
 
   static void TestServerStreamRpc(
       ServerContext&,

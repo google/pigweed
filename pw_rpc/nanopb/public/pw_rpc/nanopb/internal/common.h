@@ -13,13 +13,14 @@
 // the License.
 #pragma once
 
+#include "pb_common.h"
 #include "pw_bytes/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {
 
 // Use a void* to cover both Nanopb 3's pb_field_s and Nanopb 4's pb_msgdesc_s.
-using NanopbMessageDescriptor = const void*;
+using NanopbMessageDescriptor = const pb_msgdesc_s*;
 
 // Serializer/deserializer for a Nanopb protobuf message.
 class NanopbSerde {
@@ -48,8 +49,8 @@ class NanopbMethodSerde {
                               NanopbMessageDescriptor response_fields)
       : request_fields_(request_fields), response_fields_(response_fields) {}
 
-  NanopbMethodSerde(const NanopbMethodSerde&) = default;
-  NanopbMethodSerde& operator=(const NanopbMethodSerde&) = default;
+  NanopbMethodSerde(const NanopbMethodSerde&) = delete;
+  NanopbMethodSerde& operator=(const NanopbMethodSerde&) = delete;
 
   StatusWithSize EncodeRequest(const void* proto_struct,
                                ByteSpan buffer) const {
@@ -74,5 +75,28 @@ class NanopbMethodSerde {
   NanopbSerde request_fields_;
   NanopbSerde response_fields_;
 };
+
+template <NanopbMessageDescriptor kRequest, NanopbMessageDescriptor kResponse>
+inline constexpr NanopbMethodSerde kNanopbMethodSerde(kRequest, kResponse);
+
+class Call;
+class ClientCall;
+class NanopbServerCall;
+
+// [Client] Encodes and sends the initial request message for the call.
+// active() must be true.
+void NanopbSendInitialRequest(ClientCall& call,
+                              NanopbSerde serde,
+                              const void* payload);
+
+// [Client/Server] Encodes and sends a client or server stream message.
+// active() must be true.
+Status NanopbSendStream(Call& call, const void* payload, NanopbSerde serde);
+
+// [Server] Encodes and sends the final response message.
+// Returns Status::FailedPrecondition if active() is false.
+Status SendFinalResponse(NanopbServerCall& call,
+                         const void* payload,
+                         Status status);
 
 }  // namespace pw::rpc::internal

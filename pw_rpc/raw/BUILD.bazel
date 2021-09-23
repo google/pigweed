@@ -23,30 +23,31 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "method",
+    name = "server_api",
     srcs = [
         "method.cc",
-        "server_reader_writer.cc",
     ],
     hdrs = [
         "public/pw_rpc/raw/internal/method.h",
+        "public/pw_rpc/raw/internal/method_union.h",
         "public/pw_rpc/raw/server_reader_writer.h",
     ],
     includes = ["public"],
     deps = [
         "//pw_bytes",
+        "//pw_rpc",
         "//pw_rpc:internal_packet_pwpb",
-        "//pw_rpc:server",
     ],
 )
 
 pw_cc_library(
-    name = "method_union",
-    hdrs = [
-        "public/pw_rpc/raw/internal/method_union.h",
-    ],
+    name = "client_api",
+    hdrs = ["public/pw_rpc/raw/client_reader_writer.h"],
+    includes = ["public"],
     deps = [
-        ":method",
+        "//pw_bytes",
+        "//pw_rpc",
+        "//pw_rpc:internal_packet_pwpb",
     ],
 )
 
@@ -58,9 +59,32 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        ":method_union",
+        ":server_api",
         "//pw_assert",
         "//pw_containers",
+        "//pw_rpc:internal_test_utils",
+    ],
+)
+
+pw_cc_library(
+    name = "client_testing",
+    srcs = ["client_testing.cc"],
+    hdrs = ["public/pw_rpc/raw/client_testing.h"],
+    deps = [
+        ":test_method_context",
+        "//pw_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "client_test",
+    srcs = [
+        "client_test.cc",
+    ],
+    deps = [
+        ":client_api",
+        ":client_testing",
+        "//pw_rpc:internal_test_utils",
     ],
 )
 
@@ -70,7 +94,9 @@ pw_cc_test(
         "codegen_test.cc",
     ],
     deps = [
-        ":method_union",
+        ":client_api",
+        ":client_testing",
+        ":server_api",
         ":test_method_context",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
@@ -84,7 +110,7 @@ pw_cc_test(
         "method_test.cc",
     ],
     deps = [
-        ":method_union",
+        ":server_api",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
@@ -97,11 +123,12 @@ pw_cc_test(
         "method_info_test.cc",
     ],
     deps = [
-        "//pw_rpc:common",
+        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
         # TODO(hepler): RPC deps not used directly should be provided by the proto library
-        "//pw_rpc/raw:method_union",
+        "//pw_rpc/raw:client_api",
+        "//pw_rpc/raw:server_api",
     ],
 )
 
@@ -111,7 +138,7 @@ pw_cc_test(
         "method_union_test.cc",
     ],
     deps = [
-        ":method_union",
+        ":server_api",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",
@@ -135,9 +162,9 @@ pw_cc_test(
     srcs = ["stub_generation_test.cc"],
     deps = [
         # TODO(hepler): RPC deps not used directly should be provided by the proto library
-        "//pw_rpc:client",
+        "//pw_rpc",
         "//pw_rpc:pw_rpc_test_pwpb",
-        "//pw_rpc:server",
-        "//pw_rpc/raw:method_union",
+        ":server_api",
+        ":client_api",
     ],
 )

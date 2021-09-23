@@ -186,8 +186,8 @@ template("_pw_nanopb_rpc_proto_library") {
     public_deps = [
                     ":${invoker.base_target}.nanopb",
                     "$dir_pw_rpc:server",
-                    "$dir_pw_rpc/nanopb:client",
-                    "$dir_pw_rpc/nanopb:method_union",
+                    "$dir_pw_rpc/nanopb:client_api",
+                    "$dir_pw_rpc/nanopb:server_api",
                     "$dir_pw_third_party/nanopb",
                   ] + invoker.deps
     public = invoker.outputs
@@ -264,7 +264,8 @@ template("_pw_raw_rpc_proto_library") {
     deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
     public_deps = [
                     "$dir_pw_rpc:server",
-                    "$dir_pw_rpc/raw:method_union",
+                    "$dir_pw_rpc/raw:client_api",
+                    "$dir_pw_rpc/raw:server_api",
                   ] + invoker.deps
     public = invoker.outputs
     check_includes = false

@@ -45,11 +45,11 @@ class TestNanopbService final : public Service {
 
   void AsyncUnary(ServerContext&,
                   const FakePb&,
-                  NanopbServerResponder<FakePb>&) {}
+                  NanopbUnaryResponder<FakePb>&) {}
 
   static void StaticAsyncUnary(ServerContext&,
                                const FakePb&,
-                               NanopbServerResponder<FakePb>&) {}
+                               NanopbUnaryResponder<FakePb>&) {}
 
   Status UnaryWrongArg(ServerContext&, FakePb&, FakePb&) { return Status(); }
 
@@ -126,7 +126,9 @@ static_assert(!NanopbMethod::template matches<&TestNanopbService::StaticBidirect
 // clang-format on
 
 static_assert(MethodImplTests<NanopbMethod, TestNanopbService>().Pass(
-    MatchesTypes<FakePb, FakePb>(), CreationArgs<nullptr, nullptr>()));
+    MatchesTypes<FakePb, FakePb>(),
+    std::tuple<const NanopbMethodSerde&>(
+        kNanopbMethodSerde<nullptr, nullptr>)));
 
 pw_rpc_test_TestRequest last_request;
 NanopbServerWriter<pw_rpc_test_TestResponse> last_writer;
@@ -141,7 +143,7 @@ Status DoNothing(ServerContext&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
 
 void AddFive(ServerContext&,
              const pw_rpc_test_TestRequest& request,
-             NanopbServerResponder<pw_rpc_test_TestResponse>& responder) {
+             NanopbUnaryResponder<pw_rpc_test_TestResponse>& responder) {
   last_request = request;
   ASSERT_EQ(
       OkStatus(),
@@ -175,17 +177,25 @@ class FakeService : public Service {
 
   static constexpr std::array<NanopbMethodUnion, 5> kMethods = {
       NanopbMethod::SynchronousUnary<DoNothing>(
-          10u, pw_rpc_test_Empty_fields, pw_rpc_test_Empty_fields),
+          10u,
+          kNanopbMethodSerde<pw_rpc_test_Empty_fields,
+                             pw_rpc_test_Empty_fields>),
       NanopbMethod::AsynchronousUnary<AddFive>(
-          11u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
+          11u,
+          kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                             pw_rpc_test_TestResponse_fields>),
       NanopbMethod::ServerStreaming<StartStream>(
-          12u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
+          12u,
+          kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                             pw_rpc_test_TestResponse_fields>),
       NanopbMethod::ClientStreaming<ClientStream>(
-          13u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
+          13u,
+          kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                             pw_rpc_test_TestResponse_fields>),
       NanopbMethod::BidirectionalStreaming<BidirectionalStream>(
           14u,
-          pw_rpc_test_TestRequest_fields,
-          pw_rpc_test_TestResponse_fields)};
+          kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                             pw_rpc_test_TestResponse_fields>)};
 };
 
 constexpr const NanopbMethod& kSyncUnary =

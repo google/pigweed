@@ -12,9 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <optional>
+
 #include "gtest/gtest.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_rpc/internal/hash.h"
+#include "pw_rpc/raw/client_testing.h"
 #include "pw_rpc/raw/test_method_context.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
@@ -69,7 +72,7 @@ class TestService final : public generated::TestService<TestService> {
 
   static void TestAnotherUnaryRpc(ServerContext& ctx,
                                   ConstByteSpan request,
-                                  RawServerResponder& responder) {
+                                  RawUnaryResponder& responder) {
     ByteSpan response = responder.PayloadBuffer();
     StatusWithSize sws = TestUnaryRpc(ctx, request, response);
     responder.Finish(response.first(sws.size()), sws.status());
@@ -174,7 +177,7 @@ class TestService final : public generated::TestService<TestService> {
 
 namespace {
 
-TEST(RawCodegen, CompilesProperly) {
+TEST(RawCodegen, Server_CompilesProperly) {
   test::TestService service;
   EXPECT_EQ(service.id(), internal::Hash("pw.rpc.test.TestService"));
   EXPECT_STREQ(service.name(), "TestService");
@@ -226,7 +229,7 @@ TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
   context.call(EncodeRequest(5, Status::Unauthenticated()));
   EXPECT_TRUE(context.done());
   EXPECT_EQ(Status::Unauthenticated(), context.status());
-  EXPECT_EQ(context.total_stream_packets(), 5u);
+  EXPECT_EQ(context.total_responses(), 5u);
 
   protobuf::Decoder decoder(context.responses().back());
   while (decoder.Next().ok()) {
@@ -285,8 +288,223 @@ TEST(RawCodegen, Server_InvokeBidirectionalStreamingRpc) {
 
   ASSERT_TRUE(ctx.done());
   EXPECT_EQ(Status::NotFound(), ctx.status());
-  ASSERT_EQ(ctx.total_response_packets(), 1u);
+  ASSERT_EQ(ctx.total_responses(), 1u);
   EXPECT_EQ(ReadResponseNumber(ctx.responses().back()), 456);
+}
+
+TEST(RawCodegen, Client_ClientClass) {
+  RawClientTestContext context;
+
+  test::pw_rpc::raw::TestService::Client service_client(context.client(),
+                                                        context.channel().id());
+
+  EXPECT_EQ(service_client.channel_id(), context.channel().id());
+  EXPECT_EQ(&service_client.client(), &context.client());
+}
+
+class RawCodegenClientTest : public ::testing::Test {
+ protected:
+  RawCodegenClientTest()
+      : service_client_(context_.client(), context_.channel().id()) {}
+
+  // Assumes the payload is a null-terminated string, not a protobuf.
+  Function<void(ConstByteSpan)> OnNext() {
+    return [this](ConstByteSpan c_string) { CopyPayload(c_string); };
+  }
+
+  Function<void(Status)> OnCompleted() {
+    return [this](Status status) { status_ = status; };
+  }
+
+  Function<void(ConstByteSpan, Status)> UnaryOnCompleted() {
+    return [this](ConstByteSpan c_string, Status status) {
+      CopyPayload(c_string);
+      status_ = status;
+    };
+  }
+
+  Function<void(Status)> OnError() {
+    return [this](Status error) { error_ = error; };
+  }
+
+  RawClientTestContext<> context_;
+
+  test::pw_rpc::raw::TestService::Client service_client_;
+
+  std::optional<const char*> payload_;
+  std::optional<Status> status_;
+  std::optional<Status> error_;
+
+ private:
+  void CopyPayload(ConstByteSpan c_string) {
+    ASSERT_LE(c_string.size(), sizeof(buffer_));
+    std::memcpy(buffer_, c_string.data(), c_string.size());
+    payload_ = buffer_;
+  }
+
+  char buffer_[64];
+};
+
+TEST_F(RawCodegenClientTest, InvokeUnaryRpc_Ok) {
+  RawUnaryReceiver call = test::pw_rpc::raw::TestService::TestUnaryRpc(
+      context_.client(),
+      context_.channel().id(),
+      std::as_bytes(std::span("This is the request")),
+      UnaryOnCompleted(),
+      OnError());
+
+  context_.server().SendResponse<test::pw_rpc::raw::TestService::TestUnaryRpc>(
+      std::as_bytes(std::span("(ㆆ_ㆆ)")), OkStatus());
+
+  EXPECT_STREQ(payload_.value(), "(ㆆ_ㆆ)");
+  EXPECT_EQ(status_, OkStatus());
+  EXPECT_FALSE(error_.has_value());
+}
+
+TEST_F(RawCodegenClientTest, InvokeUnaryRpc_Error) {
+  RawUnaryReceiver call = service_client_.TestUnaryRpc(
+      std::as_bytes(std::span("This is the request")),
+      UnaryOnCompleted(),
+      OnError());
+
+  context_.server()
+      .SendServerError<test::pw_rpc::raw::TestService::TestUnaryRpc>(
+          Status::NotFound());
+
+  EXPECT_FALSE(payload_.has_value());
+  EXPECT_FALSE(status_.has_value());
+  EXPECT_EQ(error_, Status::NotFound());
+}
+
+TEST_F(RawCodegenClientTest, InvokeServerStreamRpc_Ok) {
+  RawClientReader call = test::pw_rpc::raw::TestService::TestServerStreamRpc(
+      context_.client(),
+      context_.channel().id(),
+      std::as_bytes(std::span("This is the request")),
+      OnNext(),
+      OnCompleted(),
+      OnError());
+
+  context_.server()
+      .SendServerStream<test::pw_rpc::raw::TestService::TestServerStreamRpc>(
+          std::as_bytes(std::span("(⌐□_□)")));
+
+  EXPECT_STREQ(payload_.value(), "(⌐□_□)");
+
+  context_.server()
+      .SendServerStream<test::pw_rpc::raw::TestService::TestServerStreamRpc>(
+          std::as_bytes(std::span("(o_O)")));
+
+  EXPECT_STREQ(payload_.value(), "(o_O)");
+
+  context_.server()
+      .SendResponse<test::pw_rpc::raw::TestService::TestServerStreamRpc>(
+          Status::InvalidArgument());
+
+  EXPECT_EQ(status_, Status::InvalidArgument());
+  EXPECT_FALSE(error_.has_value());
+}
+
+TEST_F(RawCodegenClientTest, InvokeServerStreamRpc_Error) {
+  RawClientReader call = service_client_.TestServerStreamRpc(
+      std::as_bytes(std::span("This is the request")),
+      OnNext(),
+      OnCompleted(),
+      OnError());
+
+  context_.server()
+      .SendServerError<test::pw_rpc::raw::TestService::TestServerStreamRpc>(
+          Status::FailedPrecondition());
+
+  EXPECT_FALSE(payload_.has_value());
+  EXPECT_FALSE(status_.has_value());
+  EXPECT_EQ(error_, Status::FailedPrecondition());
+}
+
+TEST_F(RawCodegenClientTest, InvokeClientStreamRpc_Ok) {
+  RawClientWriter call = test::pw_rpc::raw::TestService::TestClientStreamRpc(
+      context_.client(),
+      context_.channel().id(),
+      UnaryOnCompleted(),
+      OnError());
+
+  EXPECT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("(•‿•)"))));
+  EXPECT_STREQ(
+      reinterpret_cast<const char*>(
+          context_.output()
+              .payloads<test::pw_rpc::raw::TestService::TestClientStreamRpc>()
+              .back()
+              .data()),
+      "(•‿•)");
+
+  context_.server()
+      .SendResponse<test::pw_rpc::raw::TestService::TestClientStreamRpc>(
+          std::as_bytes(std::span("(⌐□_□)")), Status::InvalidArgument());
+
+  EXPECT_STREQ(payload_.value(), "(⌐□_□)");
+  EXPECT_EQ(status_, Status::InvalidArgument());
+  EXPECT_FALSE(error_.has_value());
+}
+
+TEST_F(RawCodegenClientTest, InvokeClientStreamRpc_Error) {
+  RawClientWriter call =
+      service_client_.TestClientStreamRpc(UnaryOnCompleted(), OnError());
+
+  context_.server()
+      .SendServerError<test::pw_rpc::raw::TestService::TestClientStreamRpc>(
+          Status::FailedPrecondition());
+
+  EXPECT_FALSE(payload_.has_value());
+  EXPECT_FALSE(status_.has_value());
+  EXPECT_EQ(error_, Status::FailedPrecondition());
+}
+
+TEST_F(RawCodegenClientTest, InvokeBidirectionalStreamRpc_Ok) {
+  RawClientReaderWriter call =
+      test::pw_rpc::raw::TestService::TestBidirectionalStreamRpc(
+          context_.client(),
+          context_.channel().id(),
+          OnNext(),
+          OnCompleted(),
+          OnError());
+
+  EXPECT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("(•‿•)"))));
+  EXPECT_STREQ(
+      reinterpret_cast<const char*>(
+          context_.output()
+              .payloads<
+                  test::pw_rpc::raw::TestService::TestBidirectionalStreamRpc>()
+              .back()
+              .data()),
+      "(•‿•)");
+
+  context_.server()
+      .SendServerStream<
+          test::pw_rpc::raw::TestService::TestBidirectionalStreamRpc>(
+          std::as_bytes(std::span("(⌐□_□)")));
+
+  EXPECT_STREQ(payload_.value(), "(⌐□_□)");
+
+  context_.server()
+      .SendResponse<test::pw_rpc::raw::TestService::TestBidirectionalStreamRpc>(
+          Status::InvalidArgument());
+
+  EXPECT_EQ(status_, Status::InvalidArgument());
+  EXPECT_FALSE(error_.has_value());
+}
+
+TEST_F(RawCodegenClientTest, InvokeBidirectionalStreamRpc_Error) {
+  RawClientReaderWriter call = service_client_.TestBidirectionalStreamRpc(
+      OnNext(), OnCompleted(), OnError());
+
+  context_.server()
+      .SendServerError<
+          test::pw_rpc::raw::TestService::TestBidirectionalStreamRpc>(
+          Status::Internal());
+
+  EXPECT_FALSE(payload_.has_value());
+  EXPECT_FALSE(status_.has_value());
+  EXPECT_EQ(error_, Status::Internal());
 }
 
 }  // namespace

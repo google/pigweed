@@ -24,8 +24,6 @@ namespace pw::rpc::internal::test {
 void FakeChannelOutput::clear() {
   payloads_.clear();
   packets_.clear();
-  total_response_packets_ = 0;
-  total_stream_packets_ = 0;
   send_status_ = OkStatus();
   return_after_packet_count_ = -1;
 }
@@ -43,7 +41,7 @@ Status FakeChannelOutput::SendAndReleaseBuffer(
     return send_status_;
   }
   if (return_after_packet_count_ > 0 &&
-      return_after_packet_count_ == static_cast<int>(total_responses())) {
+      return_after_packet_count_ == static_cast<int>(total_packets())) {
     // Disable behavior.
     return_after_packet_count_ = -1;
     return send_status_;
@@ -62,19 +60,30 @@ Status FakeChannelOutput::SendAndReleaseBuffer(
   CopyPayloadToBuffer(packets_.back().payload());
 
   switch (result.value().type()) {
+    case PacketType::REQUEST:
+      return OkStatus();
     case PacketType::RESPONSE:
-      ++total_response_packets_;
-      break;
-    case PacketType::SERVER_ERROR:
-      PW_CRASH("Server error: %s", result.value().status().str());
-    case PacketType::SERVER_STREAM:
-      ++total_stream_packets_;
-      break;
-    default:
-      PW_CRASH("Unhandled PacketType %d",
+      total_response_packets_ += 1;
+      return OkStatus();
+    case PacketType::CLIENT_STREAM:
+      return OkStatus();
+    case PacketType::DEPRECATED_SERVER_STREAM_END:
+      PW_CRASH("Deprecated PacketType %d",
                static_cast<int>(result.value().type()));
+    case PacketType::CLIENT_ERROR:
+      PW_LOG_WARN("FakeChannelOutput received client error: %s",
+                  result.value().status().str());
+      return OkStatus();
+    case PacketType::SERVER_ERROR:
+      PW_LOG_WARN("FakeChannelOutput received server error: %s",
+                  result.value().status().str());
+      return OkStatus();
+    case PacketType::CANCEL:
+    case PacketType::SERVER_STREAM:
+    case PacketType::CLIENT_STREAM_END:
+      return OkStatus();
   }
-  return OkStatus();
+  PW_CRASH("Unhandled PacketType %d", static_cast<int>(result.value().type()));
 }
 
 void FakeChannelOutput::CopyPayloadToBuffer(const ConstByteSpan& payload) {

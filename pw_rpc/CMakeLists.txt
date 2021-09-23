@@ -36,7 +36,6 @@ pw_add_module_library(pw_rpc.server
 
 pw_add_module_library(pw_rpc.client
   SOURCES
-    base_client_call.cc
     client.cc
   PUBLIC_DEPS
     pw_rpc.common

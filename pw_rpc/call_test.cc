@@ -182,7 +182,7 @@ TEST(ServerWriter, Open_NoClientStream) {
 
 TEST(ServerReader, DefaultConstructor_ClientStreamClosed) {
   test::FakeServerReader reader;
-  EXPECT_TRUE(reader.as_server_call().has_client_stream());
+  EXPECT_FALSE(reader.as_server_call().active());
   EXPECT_FALSE(reader.as_server_call().client_stream_open());
 }
 
@@ -207,7 +207,7 @@ TEST(ServerReader, Close_ClosesClientStream) {
   EXPECT_FALSE(reader.as_server_call().client_stream_open());
 }
 
-TEST(ServerReader, HandleClientStream_OnlyClosesClientStream) {
+TEST(ServerReader, EndClientStream_OnlyClosesClientStream) {
   ServerContextForTest<TestService> context(TestService::method.method());
   test::FakeServerReader reader(context.get());
 
@@ -244,7 +244,7 @@ TEST(ServerReaderWriter, Move_MovesCallbacks) {
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
   test::FakeServerReaderWriter destination(std::move(reader_writer));
-  destination.as_server_call().HandleClientStream({});
+  destination.as_server_call().HandlePayload({});
   destination.as_server_call().EndClientStream();
   destination.as_server_call().HandleError(Status::Unknown());
 

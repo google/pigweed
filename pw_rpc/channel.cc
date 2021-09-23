@@ -31,15 +31,37 @@ Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
   Result encoded = packet.Encode(buffer.buffer_);
 
   if (!encoded.ok()) {
-    PW_LOG_ERROR("Failed to encode RPC response packet to channel %u buffer",
-                 static_cast<unsigned>(id()));
+    PW_LOG_ERROR(
+        "Failed to encode RPC packet type %u to channel %u buffer, status %u",
+        static_cast<unsigned>(packet.type()),
+        static_cast<unsigned>(id()),
+        encoded.status().code());
     output().DiscardBuffer(buffer.buffer_);
     buffer.buffer_ = {};
     return Status::Internal();
   }
 
   buffer.buffer_ = {};
-  return output().SendAndReleaseBuffer(encoded.value());
+  Status status = output().SendAndReleaseBuffer(encoded.value());
+
+  if (!status.ok()) {
+    PW_LOG_DEBUG("Channel %u failed to send packet with status %u",
+                 static_cast<unsigned>(id()),
+                 status.code());
+
+    // TODO(pwbug/503): It is important that pw_rpc provide a consistent set of
+    //     status codes in its APIs. This status comes from a user class and
+    //     should not be returned directly unless it maps to a standardized
+    //     code. For now, just remap FAILED_PRECONDITION because that value is
+    //     used within the RPC system for another purpose (attempted to use a
+    //     closed RPC call object). Long term, the statuses need to be
+    //     standardized across all APIs. For example, this might return OK,
+    //     UNAVAILABLE, or DATA_LOSS and other codes are mapped to UNKNOWN.
+    if (status.IsFailedPrecondition()) {
+      status = Status::Unknown();
+    }
+  }
+  return status;
 }
 
 }  // namespace pw::rpc::internal

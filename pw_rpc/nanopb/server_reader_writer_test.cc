@@ -12,10 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_rpc/nanopb/server_reader_writer.h"
 
 #include "gtest/gtest.h"
 #include "pw_rpc/nanopb/fake_channel_output.h"
+#include "pw_rpc/nanopb/test_method_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 
@@ -32,7 +33,7 @@ class TestServiceImpl final
 
   void TestAnotherUnaryRpc(ServerContext&,
                            const pw_rpc_test_TestRequest&,
-                           NanopbServerResponder<pw_rpc_test_TestResponse>&) {}
+                           NanopbUnaryResponder<pw_rpc_test_TestResponse>&) {}
 
   void TestServerStreamRpc(
       ServerContext&,
@@ -58,17 +59,17 @@ struct ReaderWriterTestContext {
       : channel(Channel::Create<1>(&output)), server(std::span(&channel, 1)) {}
 
   TestServiceImpl service;
-  NanopbFakeChannelOutput<typename Info::Response, 4, 128> output;
+  NanopbFakeChannelOutput<4, 128> output;
   Channel channel;
   Server server;
 };
 
 using test::pw_rpc::nanopb::TestService;
 
-TEST(NanopbServerResponder, Open_ReturnsUsableResponder) {
+TEST(NanopbUnaryResponder, Open_ReturnsUsableResponder) {
   ReaderWriterTestContext<TestService::TestUnaryRpc> ctx;
-  NanopbServerResponder responder =
-      NanopbServerResponder<pw_rpc_test_TestResponse>::Open<
+  NanopbUnaryResponder responder =
+      NanopbUnaryResponder<pw_rpc_test_TestResponse>::Open<
           TestService::TestUnaryRpc>(ctx.server, ctx.channel.id(), ctx.service);
 
   responder.Finish({.value = 4321});
@@ -121,6 +122,86 @@ TEST(NanopbServerReaderWriter, Open_ReturnsUsableReaderWriter) {
                 .number,
             321u);
   EXPECT_EQ(ctx.output.last_status(), Status::NotFound());
+}
+
+TEST(NanopbUnaryResponder, DefaultConstructed) {
+  NanopbUnaryResponder<pw_rpc_test_TestStreamResponse> call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(),
+            call.Finish(pw_rpc_test_TestStreamResponse{}));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerWriter, DefaultConstructed) {
+  NanopbServerWriter<pw_rpc_test_TestStreamResponse> call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(),
+            call.Write(pw_rpc_test_TestStreamResponse{}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerReader, DefaultConstructed) {
+  NanopbServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>
+      call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(),
+            call.Finish(pw_rpc_test_TestStreamResponse{}));
+
+  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerReaderWriter, DefaultConstructed) {
+  NanopbServerReaderWriter<pw_rpc_test_TestRequest,
+                           pw_rpc_test_TestStreamResponse>
+      call;
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(),
+            call.Write(pw_rpc_test_TestStreamResponse{}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
+
+  call.set_on_next([](const pw_rpc_test_TestRequest&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(NanopbServerReader, CallbacksMoveCorrectly) {
+  PW_NANOPB_TEST_METHOD_CONTEXT(TestServiceImpl, TestClientStreamRpc) ctx;
+
+  NanopbServerReader call_1 = ctx.reader();
+
+  ASSERT_TRUE(call_1.active());
+
+  pw_rpc_test_TestRequest received_request = {.integer = 12345678,
+                                              .status_code = 1};
+
+  call_1.set_on_next([&received_request](const pw_rpc_test_TestRequest& value) {
+    received_request = value;
+  });
+
+  NanopbServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>
+      call_2;
+  call_2 = std::move(call_1);
+
+  constexpr pw_rpc_test_TestRequest request{.integer = 600613,
+                                            .status_code = 2};
+  ctx.SendClientStream(request);
+  EXPECT_EQ(request.integer, received_request.integer);
+  EXPECT_EQ(request.status_code, received_request.status_code);
 }
 
 }  // namespace pw::rpc

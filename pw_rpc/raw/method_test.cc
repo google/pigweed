@@ -46,11 +46,11 @@ class TestRawService final : public Service {
     return StatusWithSize(0);
   }
 
-  void AsyncUnary(ServerContext&, ConstByteSpan, RawServerResponder&) {}
+  void AsyncUnary(ServerContext&, ConstByteSpan, RawUnaryResponder&) {}
 
   static void StaticAsyncUnary(ServerContext&,
                                ConstByteSpan,
-                               RawServerResponder&) {}
+                               RawUnaryResponder&) {}
 
   StatusWithSize UnaryWrongArg(ServerContext&, ConstByteSpan, ConstByteSpan) {
     return StatusWithSize(0);
@@ -134,7 +134,7 @@ StatusWithSize DoNothing(ServerContext&, ConstByteSpan, ByteSpan) {
 
 void AddFive(ServerContext&,
              ConstByteSpan request,
-             RawServerResponder& responder) {
+             RawUnaryResponder& responder) {
   DecodeRawTestRequest(request);
 
   std::array<std::byte, 32> response;

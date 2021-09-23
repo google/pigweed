@@ -52,7 +52,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":pw_hdlc",
-        "//pw_rpc:server",
+        "//pw_rpc",
     ],
 )
 
@@ -63,7 +63,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":pw_hdlc",
-        "//pw_rpc:server",
+        "//pw_rpc",
     ],
 )
 

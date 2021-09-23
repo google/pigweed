@@ -128,21 +128,25 @@ class Channel {
     PW_ASSERT(id != kUnassignedChannelId);
   }
 
+  // TODO(pwbug/504): Remove client_'s setter/getter from Channel.
+  constexpr Client& client() const {
+    PW_DASSERT(client_ != nullptr);
+    return *client_;
+  }
+
+  constexpr void set_client(Client* client) { client_ = client; }
+
   ChannelOutput& output() const {
     PW_ASSERT(output_ != nullptr);
     return *output_;
   }
 
+  void set_channel_id(uint32_t channel_id) { id_ = channel_id; }
+
  private:
-  friend class internal::BaseClientCall;
-  friend class Client;
-
-  constexpr Client* client() const { return client_; }
-  constexpr void set_client(Client* client) { client_ = client; }
-
   uint32_t id_;
   ChannelOutput* output_;
-  Client* client_;
+  Client* client_;  // TODO(pwbug/504): Remove client_ from Channel.
 };
 
 }  // namespace pw::rpc

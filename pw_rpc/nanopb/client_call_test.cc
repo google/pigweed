@@ -12,10 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/nanopb/client_call.h"
+#include <optional>
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/test_utils.h"
+#include "pw_rpc/nanopb/client_reader_writer.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
@@ -30,42 +31,66 @@ constexpr uint32_t kServerStreamingMethodId = 112;
 
 class FakeGeneratedServiceClient {
  public:
-  static NanopbClientCall<internal::UnaryCallbacks<pw_rpc_test_TestResponse>>
-  TestUnaryRpc(
-      Channel& channel,
+  static NanopbUnaryReceiver<pw_rpc_test_TestResponse> TestUnaryRpc(
+      Client& client,
+      uint32_t channel_id,
       const pw_rpc_test_TestRequest& request,
       Function<void(const pw_rpc_test_TestResponse&, Status)> on_response,
       Function<void(Status)> on_error = nullptr) {
-    auto call = NanopbClientCall(
-        &channel,
-        kServiceId,
-        kUnaryMethodId,
-        internal::UnaryCallbacks(std::move(on_response), std::move(on_error)),
-        pw_rpc_test_TestRequest_fields,
-        pw_rpc_test_TestResponse_fields);
-    call.SendRequest(&request);
-    return call;
+    return pw::rpc::internal::
+        NanopbUnaryResponseClientCall<pw_rpc_test_TestResponse>::Start<
+            pw::rpc::NanopbUnaryReceiver<pw_rpc_test_TestResponse>>(
+            client,
+            channel_id,
+            kServiceId,
+            kUnaryMethodId,
+            internal::kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                                         pw_rpc_test_TestResponse_fields>,
+            std::move(on_response),
+            std::move(on_error),
+            request);
   }
 
-  static NanopbClientCall<
-      internal::ServerStreamingCallbacks<pw_rpc_test_TestStreamResponse>>
-  TestServerStreamRpc(
-      Channel& channel,
+  static NanopbUnaryReceiver<pw_rpc_test_TestResponse> TestAnotherUnaryRpc(
+      Client& client,
+      uint32_t channel_id,
+      const pw_rpc_test_TestRequest& request,
+      Function<void(const pw_rpc_test_TestResponse&, Status)> on_response,
+      Function<void(Status)> on_error = nullptr) {
+    return pw::rpc::internal::
+        NanopbUnaryResponseClientCall<pw_rpc_test_TestResponse>::Start<
+            pw::rpc::NanopbUnaryReceiver<pw_rpc_test_TestResponse>>(
+            client,
+            channel_id,
+            kServiceId,
+            kUnaryMethodId,
+            internal::kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                                         pw_rpc_test_TestResponse_fields>,
+            std::move(on_response),
+            std::move(on_error),
+            request);
+  }
+
+  static NanopbClientReader<pw_rpc_test_TestStreamResponse> TestServerStreamRpc(
+      Client& client,
+      uint32_t channel_id,
       const pw_rpc_test_TestRequest& request,
       Function<void(const pw_rpc_test_TestStreamResponse&)> on_response,
       Function<void(Status)> on_stream_end,
       Function<void(Status)> on_error = nullptr) {
-    auto call = NanopbClientCall(
-        &channel,
-        kServiceId,
-        kServerStreamingMethodId,
-        internal::ServerStreamingCallbacks(std::move(on_response),
-                                           std::move(on_stream_end),
-                                           std::move(on_error)),
-        pw_rpc_test_TestRequest_fields,
-        pw_rpc_test_TestStreamResponse_fields);
-    call.SendRequest(&request);
-    return call;
+    return pw::rpc::internal::
+        NanopbStreamResponseClientCall<pw_rpc_test_TestStreamResponse>::Start<
+            pw::rpc::NanopbClientReader<pw_rpc_test_TestStreamResponse>>(
+            client,
+            channel_id,
+            kServiceId,
+            kServerStreamingMethodId,
+            internal::kNanopbMethodSerde<pw_rpc_test_TestRequest_fields,
+                                         pw_rpc_test_TestStreamResponse_fields>,
+            std::move(on_response),
+            std::move(on_stream_end),
+            std::move(on_error),
+            request);
   }
 };
 
@@ -73,7 +98,10 @@ TEST(NanopbClientCall, Unary_SendsRequestPacket) {
   ClientContextForTest context;
 
   auto call = FakeGeneratedServiceClient::TestUnaryRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, nullptr);
+      context.client(),
+      context.channel().id(),
+      {.integer = 123, .status_code = 0},
+      nullptr);
 
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
@@ -87,8 +115,8 @@ TEST(NanopbClientCall, Unary_SendsRequestPacket) {
 
 class UnaryClientCall : public ::testing::Test {
  protected:
-  Status last_status_ = Status::Unknown();
-  Status last_error_ = Status::Unknown();
+  std::optional<Status> last_status_;
+  std::optional<Status> last_error_;
   int responses_received_ = 0;
   int last_response_value_ = 0;
 };
@@ -97,7 +125,8 @@ TEST_F(UnaryClientCall, InvokesCallbackOnValidResponse) {
   ClientContextForTest context;
 
   auto call = FakeGeneratedServiceClient::TestUnaryRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
         ++responses_received_;
@@ -117,7 +146,10 @@ TEST_F(UnaryClientCall, DoesNothingOnNullCallback) {
   ClientContextForTest context;
 
   auto call = FakeGeneratedServiceClient::TestUnaryRpc(
-      context.channel(), {.integer = 123, .status_code = 0}, nullptr);
+      context.client(),
+      context.channel().id(),
+      {.integer = 123, .status_code = 0},
+      nullptr);
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
   context.SendResponse(OkStatus(), response);
@@ -129,7 +161,8 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnInvalidResponse) {
   ClientContextForTest context;
 
   auto call = FakeGeneratedServiceClient::TestUnaryRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
         ++responses_received_;
@@ -143,6 +176,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnInvalidResponse) {
   context.SendResponse(OkStatus(), bad_payload);
 
   EXPECT_EQ(responses_received_, 0);
+  ASSERT_TRUE(last_error_.has_value());
   EXPECT_EQ(last_error_, Status::DataLoss());
 }
 
@@ -150,7 +184,8 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
   ClientContextForTest context;
 
   auto call = FakeGeneratedServiceClient::TestUnaryRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
         ++responses_received_;
@@ -169,7 +204,8 @@ TEST_F(UnaryClientCall, DoesNothingOnErrorWithoutCallback) {
   ClientContextForTest context;
 
   auto call = FakeGeneratedServiceClient::TestUnaryRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
         ++responses_received_;
@@ -188,7 +224,8 @@ TEST_F(UnaryClientCall, OnlyReceivesOneResponse) {
   ClientContextForTest context;
 
   auto call = FakeGeneratedServiceClient::TestUnaryRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 123, .status_code = 0},
       [this](const pw_rpc_test_TestResponse& response, Status status) {
         ++responses_received_;
@@ -211,8 +248,8 @@ TEST_F(UnaryClientCall, OnlyReceivesOneResponse) {
 class ServerStreamingClientCall : public ::testing::Test {
  protected:
   bool active_ = true;
-  Status stream_status_ = Status::Unknown();
-  Status rpc_error_ = Status::Unknown();
+  std::optional<Status> stream_status_;
+  std::optional<Status> rpc_error_;
   int responses_received_ = 0;
   int last_response_number_ = 0;
 };
@@ -222,7 +259,11 @@ TEST_F(ServerStreamingClientCall, SendsRequestPacket) {
       context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
-      context.channel(), {.integer = 71, .status_code = 0}, nullptr, nullptr);
+      context.client(),
+      context.channel().id(),
+      {.integer = 71, .status_code = 0},
+      nullptr,
+      nullptr);
 
   EXPECT_EQ(context.output().packet_count(), 1u);
   auto packet = context.output().sent_packet();
@@ -239,7 +280,8 @@ TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
       context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 71, .status_code = 0},
       [this](const pw_rpc_test_TestStreamResponse& response) {
         ++responses_received_;
@@ -274,7 +316,8 @@ TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
       context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 71, .status_code = 0},
       [this](const pw_rpc_test_TestStreamResponse& response) {
         ++responses_received_;
@@ -308,7 +351,8 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
       context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
-      context.channel(),
+      context.client(),
+      context.channel().id(),
       {.integer = 71, .status_code = 0},
       [this](const pw_rpc_test_TestStreamResponse& response) {
         ++responses_received_;
@@ -327,6 +371,7 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
   context.SendServerStream(bad_payload);
   EXPECT_EQ(responses_received_, 1);
+  ASSERT_TRUE(rpc_error_.has_value());
   EXPECT_EQ(rpc_error_, Status::DataLoss());
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);

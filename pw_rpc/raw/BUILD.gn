@@ -23,16 +23,14 @@ config("public") {
   visibility = [ ":*" ]
 }
 
-pw_source_set("method") {
+pw_source_set("server_api") {
   public_configs = [ ":public" ]
   public = [
     "public/pw_rpc/raw/internal/method.h",
+    "public/pw_rpc/raw/internal/method_union.h",
     "public/pw_rpc/raw/server_reader_writer.h",
   ]
-  sources = [
-    "method.cc",
-    "server_reader_writer.cc",
-  ]
+  sources = [ "method.cc" ]
   public_deps = [
     "..:server",
     dir_pw_bytes,
@@ -40,29 +38,46 @@ pw_source_set("method") {
   deps = [ dir_pw_log ]
 }
 
-pw_source_set("method_union") {
+pw_source_set("client_api") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/raw/internal/method_union.h" ]
-  public_deps = [ ":method" ]
+  public = [ "public/pw_rpc/raw/client_reader_writer.h" ]
+  public_deps = [
+    "..:client",
+    dir_pw_bytes,
+  ]
+}
+
+pw_source_set("fake_channel_output") {
+  public = [ "public/pw_rpc/raw/fake_channel_output.h" ]
+  public_configs = [ ":public" ]
+  public_deps = [ "..:fake_channel_output" ]
 }
 
 pw_source_set("test_method_context") {
   public_configs = [ ":public" ]
-  public = [
-    "public/pw_rpc/raw/fake_channel_output.h",
-    "public/pw_rpc/raw/test_method_context.h",
-  ]
+  public = [ "public/pw_rpc/raw/test_method_context.h" ]
   public_deps = [
-    ":method",
+    ":fake_channel_output",
+    ":server_api",
     "..:test_utils",
     dir_pw_assert,
     dir_pw_containers,
   ]
 }
 
+pw_source_set("client_testing") {
+  public = [ "public/pw_rpc/raw/client_testing.h" ]
+  sources = [ "client_testing.cc" ]
+  public_deps = [
+    ":fake_channel_output",
+    "..:client",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":codegen_test",
+    ":client_test",
     ":method_test",
     ":method_info_test",
     ":method_union_test",
@@ -73,6 +88,7 @@ pw_test_group("tests") {
 
 pw_test("codegen_test") {
   deps = [
+    ":client_testing",
     ":test_method_context",
     "..:test_protos.pwpb",
     "..:test_protos.raw_rpc",
@@ -81,10 +97,18 @@ pw_test("codegen_test") {
   sources = [ "codegen_test.cc" ]
 }
 
+pw_test("client_test") {
+  deps = [
+    ":client_api",
+    ":client_testing",
+    "..:test_utils",
+  ]
+  sources = [ "client_test.cc" ]
+}
+
 pw_test("method_test") {
   deps = [
-    ":method",
-    ":method_union",
+    ":server_api",
     "..:test_protos.pwpb",
     "..:test_protos.raw_rpc",
     "..:test_utils",
@@ -104,7 +128,7 @@ pw_test("method_info_test") {
 
 pw_test("method_union_test") {
   deps = [
-    ":method_union",
+    ":server_api",
     "..:test_protos.pwpb",
     "..:test_utils",
     dir_pw_protobuf,
@@ -114,7 +138,7 @@ pw_test("method_union_test") {
 
 pw_test("server_reader_writer_test") {
   deps = [
-    ":method",
+    ":server_api",
     ":test_method_context",
     "..:test_protos.raw_rpc",
   ]
