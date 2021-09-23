@@ -73,9 +73,13 @@ export class Call {
   invoke(request?: Message): void {
     const previous = this.rpcs.sendRequest(this.rpc, this, request);
 
-    if (previous !== undefined && !previous.completed()) {
+    if (previous !== undefined && !previous.completed) {
       previous.handleError(Status.CANCELLED)
     }
+  }
+
+  get completed(): boolean {
+    return (this.status !== undefined || this.error !== undefined);
   }
 
   private invokeCallback(f: any) {
@@ -88,9 +92,6 @@ export class Call {
     }
   }
 
-  completed(): boolean {
-    return (this.status !== undefined || this.error !== undefined);
-  }
 
   handleResponse(response: Message): void {
     this.responses.push(response);
@@ -130,7 +131,7 @@ export class Call {
   async * getResponses(count?: number): AsyncGenerator<Message> {
     this.checkErrors();
 
-    if (this.completed() && this.responseQueue.length == 0) {
+    if (this.completed && this.responseQueue.length == 0) {
       return;
     }
 
@@ -148,7 +149,7 @@ export class Call {
   }
 
   cancel(): boolean {
-    if (this.completed()) {
+    if (this.completed) {
       return false;
     }
 
@@ -187,7 +188,7 @@ export class Call {
       this.sendClientStream(request);
     }
 
-    if (!this.completed()) {
+    if (!this.completed) {
       this.rpcs.sendClientStreamEnd(this.rpc);
     }
   }

@@ -16,7 +16,7 @@
 import 'jasmine';
 
 import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
-import {AnotherMessage, SomeMessage} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb';
+import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb';
 
 import * as descriptors from './descriptors';
 
@@ -38,15 +38,15 @@ describe('Descriptors', () => {
     expect(unaryMethod.clientStreaming).toBeFalse();
     expect(unaryMethod.serverStreaming).toBeFalse();
     expect(unaryMethod.service).toEqual(service);
-    expect(unaryMethod.requestType).toEqual(SomeMessage);
-    expect(unaryMethod.responseType).toEqual(AnotherMessage);
+    expect(unaryMethod.requestType).toEqual(Request);
+    expect(unaryMethod.responseType).toEqual(Response);
 
     const someBidiStreaming = service.methodsByName.get('SomeBidiStreaming')!;
     expect(someBidiStreaming.name).toEqual('SomeBidiStreaming');
     expect(someBidiStreaming.clientStreaming).toBeTrue();
     expect(someBidiStreaming.serverStreaming).toBeTrue();
     expect(someBidiStreaming.service).toEqual(service);
-    expect(someBidiStreaming.requestType).toEqual(SomeMessage);
-    expect(someBidiStreaming.responseType).toEqual(AnotherMessage);
+    expect(someBidiStreaming.requestType).toEqual(Request);
+    expect(someBidiStreaming.responseType).toEqual(Response);
   });
 })

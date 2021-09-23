@@ -15,11 +15,11 @@ syntax = "proto3";
 
 package pw.rpc.test1;
 
-message SomeMessage {
+message Request {
   uint32 magic_number = 1;
 }
 
-message AnotherMessage {
+message Response {
   enum Result {
     FAILED = 0;
     FAILED_MISERABLY = 1;
@@ -32,14 +32,14 @@ message AnotherMessage {
 
 service TheTestService {
   // Unary RPC for testing
-  rpc SomeUnary(SomeMessage) returns (AnotherMessage) {}
+  rpc SomeUnary(Request) returns (Response) {}
 
   // Server streaming RPC for testing
-  rpc SomeServerStreaming(SomeMessage) returns (stream AnotherMessage) {}
+  rpc SomeServerStreaming(Request) returns (stream Response) {}
 
   // Client streaming RPC for testing
-  rpc SomeClientStreaming(stream SomeMessage) returns (AnotherMessage) {}
+  rpc SomeClientStreaming(stream Request) returns (Response) {}
 
   // Bidirectional streaming RPC for testing
-  rpc SomeBidiStreaming(stream SomeMessage) returns (stream AnotherMessage) {}
+  rpc SomeBidiStreaming(stream Request) returns (stream Response) {}
 }

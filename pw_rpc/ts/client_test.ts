@@ -19,7 +19,7 @@ import {Message} from 'google-protobuf';
 import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
 import {Library, MessageCreator} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
 import {Status} from 'pigweed/pw_status/ts/status';
-import {Request} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb'
+import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb'
 
 import {Client} from './client';
 import {Channel, Method} from './descriptors';
@@ -148,33 +148,45 @@ describe('RPC', () => {
     client = Client.fromProtoSet(channels, lib);
   });
 
+  function newRequest(magicNumber: number = 123): Message {
+    const request = new Request();
+    request.setMagicNumber(magicNumber);
+    return request;
+  }
+
+  function newResponse(payload: string = '._.'): Message {
+    const response = new Response();
+    response.setPayload(payload);
+    return response;
+  }
+
   function enqueueResponse(
-      channelId: number,
-      method: Method,
-      status: Status,
-      payload: Uint8Array = new Uint8Array()) {
+      channelId: number, method: Method, status: Status, response?: Message) {
     const packet = new RpcPacket();
     packet.setType(PacketType.RESPONSE);
     packet.setChannelId(channelId);
     packet.setServiceId(method.service.id);
     packet.setMethodId(method.id);
     packet.setStatus(status);
-    packet.setPayload(payload);
-
+    if (response === undefined) {
+      packet.setPayload(new Uint8Array());
+    } else {
+      packet.setPayload(response.serializeBinary());
+    }
     nextPackets.push([packet.serializeBinary(), Status.OK]);
   }
 
   function enqueueServerStream(
       channelId: number,
       method: Method,
-      response: Uint8Array,
+      response: Message,
       status: Status = Status.OK) {
     const packet = new RpcPacket();
     packet.setType(PacketType.SERVER_STREAM);
     packet.setChannelId(channelId);
     packet.setServiceId(method.service.id);
     packet.setMethodId(method.id);
-    packet.setPayload(response);
+    packet.setPayload(response.serializeBinary());
     packet.setStatus(status);
     nextPackets.push([packet.serializeBinary(), status]);
   }
@@ -224,33 +236,24 @@ describe('RPC', () => {
 
   describe('Unary', () => {
     let unaryStub: UnaryMethodStub;
-    let request: any;
-    let requestType: MessageCreator;
-    let responseType: MessageCreator;
 
     beforeEach(async () => {
       unaryStub =
           client.channel()?.methodStub(
               'pw.rpc.test1.TheTestService.SomeUnary')! as UnaryMethodStub;
-      requestType = unaryStub.method.requestType;
-      responseType = unaryStub.method.responseType;
-      request = new requestType();
     });
 
 
     it('nonblocking call', () => {
       for (let i = 0; i < 3; i++) {
-        const response: any = new responseType();
-        response.setPayload('hello world');
-        const payload = response.serializeBinary();
-        enqueueResponse(1, unaryStub.method, Status.ABORTED, payload);
-
-        request.setMagicNumber(5);
+        const response = newResponse('hello world');
+        enqueueResponse(1, unaryStub.method, Status.ABORTED, response);
 
         const onNext = jasmine.createSpy();
         const onCompleted = jasmine.createSpy();
         const onError = jasmine.createSpy();
-        const call = unaryStub.invoke(request, onNext, onCompleted, onError);
+        const call =
+            unaryStub.invoke(newRequest(5), onNext, onCompleted, onError);
 
         expect(sentPayload(unaryStub.method.requestType).getMagicNumber())
             .toEqual(5);
@@ -261,10 +264,8 @@ describe('RPC', () => {
     });
 
     it('nonblocking call cancel', () => {
-      request.setMagicNumber(5);
-
       let onNext = jasmine.createSpy();
-      const call = unaryStub.invoke(request, onNext);
+      const call = unaryStub.invoke(newRequest(), onNext);
 
       expect(requests.length).toBeGreaterThan(0);
       requests = [];
@@ -275,12 +276,12 @@ describe('RPC', () => {
     });
 
     it('nonblocking duplicate calls first is cancelled', () => {
-      const firstCall = unaryStub.invoke(request);
-      expect(firstCall.completed()).toBeFalse();
+      const firstCall = unaryStub.invoke(newRequest());
+      expect(firstCall.completed).toBeFalse();
 
-      const secondCall = unaryStub.invoke(request);
+      const secondCall = unaryStub.invoke(newRequest());
       expect(firstCall.error).toEqual(Status.CANCELLED);
-      expect(secondCall.completed()).toBeFalse();
+      expect(secondCall.completed).toBeFalse();
     });
 
     it('nonblocking exception in callback', () => {
@@ -289,7 +290,7 @@ describe('RPC', () => {
       };
 
       enqueueResponse(1, unaryStub.method, Status.OK);
-      const call = unaryStub.invoke(request, errorCallback);
+      const call = unaryStub.invoke(newRequest(), errorCallback);
       expect(call.callbackException!.name).toEqual('Error');
       expect(call.callbackException!.message).toEqual('Something went wrong!');
     });
@@ -297,40 +298,27 @@ describe('RPC', () => {
 
   describe('ServerStreaming', () => {
     let serverStreaming: ServerStreamingMethodStub;
-    let request: any;
-    let requestType: any;
-    let responseType: any;
 
     beforeEach(async () => {
       serverStreaming =
           client.channel()?.methodStub(
               'pw.rpc.test1.TheTestService.SomeServerStreaming')! as
           ServerStreamingMethodStub;
-      requestType = serverStreaming.method.requestType;
-      responseType = serverStreaming.method.responseType;
-      request = new requestType();
     });
 
     it('non-blocking call', () => {
-      const response1 = new responseType();
-      response1.setPayload('!!!');
-      const response2 = new responseType();
-      response2.setPayload('?');
-
-      const request = new requestType()
-      request.setMagicNumber(4);
+      const response1 = newResponse('!!!');
+      const response2 = newResponse('?');
 
       for (let i = 0; i < 3; i++) {
-        enqueueServerStream(
-            1, serverStreaming.method, response1.serializeBinary());
-        enqueueServerStream(
-            1, serverStreaming.method, response2.serializeBinary());
+        enqueueServerStream(1, serverStreaming.method, response1);
+        enqueueServerStream(1, serverStreaming.method, response2);
         enqueueResponse(1, serverStreaming.method, Status.ABORTED);
 
         const onNext = jasmine.createSpy();
         const onCompleted = jasmine.createSpy();
         const onError = jasmine.createSpy();
-        serverStreaming.invoke(request, onNext, onCompleted, onError);
+        serverStreaming.invoke(newRequest(4), onNext, onCompleted, onError);
 
         expect(onNext).toHaveBeenCalledWith(response1);
         expect(onNext).toHaveBeenCalledWith(response2);
@@ -343,18 +331,14 @@ describe('RPC', () => {
     });
 
     it('non-blocking cancel', () => {
-      const response = new responseType();
-      response.setPayload('!!!');
-      enqueueServerStream(
-          1, serverStreaming.method, response.serializeBinary());
-      const request = new requestType();
-      request.setMagicNumber(3);
+      const testResponse = newResponse('!!!');
+      enqueueServerStream(1, serverStreaming.method, testResponse);
 
       const onNext = jasmine.createSpy();
       const onCompleted = jasmine.createSpy();
       const onError = jasmine.createSpy();
-      let call = serverStreaming.invoke(request, onNext);
-      expect(onNext).toHaveBeenCalledOnceWith(response);
+      let call = serverStreaming.invoke(newRequest(3), onNext);
+      expect(onNext).toHaveBeenCalledOnceWith(testResponse);
 
       onNext.calls.reset();
 
@@ -362,11 +346,10 @@ describe('RPC', () => {
       expect(lastRequest().getType()).toEqual(PacketType.CANCEL);
 
       // Ensure the RPC can be called after being cancelled.
-      enqueueServerStream(
-          1, serverStreaming.method, response.serializeBinary());
+      enqueueServerStream(1, serverStreaming.method, testResponse);
       enqueueResponse(1, serverStreaming.method, Status.OK);
-      call = serverStreaming.invoke(request, onNext, onCompleted, onError);
-      expect(onNext).toHaveBeenCalledWith(response);
+      call = serverStreaming.invoke(newRequest(), onNext, onCompleted, onError);
+      expect(onNext).toHaveBeenCalledWith(testResponse);
       expect(onError).not.toHaveBeenCalled();
       expect(onCompleted).toHaveBeenCalledOnceWith(Status.OK);
     });
@@ -374,75 +357,61 @@ describe('RPC', () => {
 
   describe('ClientStreaming', () => {
     let clientStreaming: ClientStreamingMethodStub;
-    let requestType: any;
-    let responseType: any;
 
     beforeEach(async () => {
       clientStreaming =
           client.channel()?.methodStub(
               'pw.rpc.test1.TheTestService.SomeClientStreaming')! as
           ClientStreamingMethodStub;
-      requestType = clientStreaming.method.requestType;
-      responseType = clientStreaming.method.responseType;
     });
 
     it('non-blocking call', () => {
-      const response = new responseType();
-      response.setPayload('-_-');
+      const testResponse = newResponse('-.-');
 
       for (let i = 0; i < 3; i++) {
         const onNext = jasmine.createSpy();
         const stream = clientStreaming.invoke(onNext);
-        expect(stream.completed()).toBeFalse();
+        expect(stream.completed).toBeFalse();
 
-        let request = new requestType();
-        request.setMagicNumber(31);
-        stream.send(request);
+        stream.send(newRequest(31));
         expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
-        expect(sentPayload(requestType).getMagicNumber()).toEqual(31);
-        expect(stream.completed()).toBeFalse();
+        expect(sentPayload(Request).getMagicNumber()).toEqual(31);
+        expect(stream.completed).toBeFalse();
 
         // Enqueue the server response to be sent after the next message.
-        enqueueResponse(
-            1, clientStreaming.method, Status.OK, response.serializeBinary());
+        enqueueResponse(1, clientStreaming.method, Status.OK, testResponse);
 
-        request.setMagicNumber(32);
-        stream.send(request);
+        stream.send(newRequest(32));
         expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
-        expect(sentPayload(requestType).getMagicNumber()).toEqual(32);
+        expect(sentPayload(Request).getMagicNumber()).toEqual(32);
 
-        expect(onNext).toHaveBeenCalledOnceWith(response);
-        expect(stream.completed()).toBeTrue();
+        expect(onNext).toHaveBeenCalledOnceWith(testResponse);
+        expect(stream.completed).toBeTrue();
         expect(stream.status).toEqual(Status.OK);
         expect(stream.error).toBeUndefined();
       }
     });
 
     it('non-blocking call ended by client', () => {
-      const response = new responseType();
-      response.setPayload('-_-');
-
+      const testResponse = newResponse('0.o');
       for (let i = 0; i < 3; i++) {
         const onNext = jasmine.createSpy();
         const stream = clientStreaming.invoke(onNext);
-        expect(stream.completed()).toBeFalse();
+        expect(stream.completed).toBeFalse();
 
-        let request = new requestType();
-        request.setMagicNumber(31);
-        stream.send(request);
+        stream.send(newRequest(31));
         expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
-        expect(sentPayload(requestType).getMagicNumber()).toEqual(31);
-        expect(stream.completed()).toBeFalse();
+        expect(sentPayload(Request).getMagicNumber()).toEqual(31);
+        expect(stream.completed).toBeFalse();
 
         // Enqueue the server response to be sent after the next message.
-        enqueueResponse(
-            1, clientStreaming.method, Status.OK, response.serializeBinary());
+        enqueueResponse(1, clientStreaming.method, Status.OK, testResponse);
 
         stream.finishAndWait();
         expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM_END);
 
-        expect(onNext).toHaveBeenCalledOnceWith(response);
-        expect(stream.completed()).toBeTrue();
+        expect(onNext).toHaveBeenCalledOnceWith(testResponse);
+        expect(stream.completed).toBeTrue();
         expect(stream.status).toEqual(Status.OK);
         expect(stream.error).toBeUndefined();
       }
@@ -451,14 +420,12 @@ describe('RPC', () => {
     it('non-blocking call cancelled', () => {
       for (let i = 0; i < 3; i++) {
         const stream = clientStreaming.invoke();
-        let request = new requestType();
-        request.setMagicNumber(31);
-        stream.send(request)
+        stream.send(newRequest())
 
         expect(stream.cancel()).toBeTrue();
         expect(lastRequest().getType()).toEqual(PacketType.CANCEL);
         expect(stream.cancel()).toBeFalse();
-        expect(stream.completed()).toBeTrue();
+        expect(stream.completed).toBeTrue();
         expect(stream.error).toEqual(Status.CANCELLED);
       }
     });
@@ -469,9 +436,7 @@ describe('RPC', () => {
         enqueueError(
             1, clientStreaming.method, Status.INVALID_ARGUMENT, Status.OK);
 
-        const request = new requestType();
-        request.setMagicNumber(31);
-        stream.send(request);
+        stream.send(newRequest());
 
         await stream.finishAndWait()
             .then(() => {
@@ -504,20 +469,14 @@ describe('RPC', () => {
       const stream = clientStreaming.invoke();
       expect(stream.cancel()).toBeTrue();
 
-      const request = new requestType();
-      request.setMagicNumber(31);
-      expect(() => stream.send(request))
+      expect(() => stream.send(newRequest()))
           .toThrowMatching(error => error.status === Status.CANCELLED);
     });
 
     it('non-blocking finish after completed', async () => {
-      const enqueuedResponse = new responseType();
-      enqueuedResponse.setPayload('?!');
+      const enqueuedResponse = newResponse('?!');
       enqueueResponse(
-          1,
-          clientStreaming.method,
-          Status.UNAVAILABLE,
-          enqueuedResponse.serializeBinary());
+          1, clientStreaming.method, Status.UNAVAILABLE, enqueuedResponse);
 
       const stream = clientStreaming.invoke();
       const result = await stream.finishAndWait();
@@ -546,11 +505,11 @@ describe('RPC', () => {
 
     it('non-blocking duplicate calls first is cancelled', () => {
       const firstCall = clientStreaming.invoke();
-      expect(firstCall.completed()).toBeFalse();
+      expect(firstCall.completed).toBeFalse();
 
       const secondCall = clientStreaming.invoke();
       expect(firstCall.error).toEqual(Status.CANCELLED);
-      expect(secondCall.completed()).toBeFalse();
+      expect(secondCall.completed).toBeFalse();
     });
   });
 });

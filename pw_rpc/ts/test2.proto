@@ -15,16 +15,16 @@ syntax = "proto2";
 
 package pw.test2;
 
-message Request {
+message SomeMessage {
   optional float magic_number = 1;
 }
 
-message Response {}
+message AnotherMessage {}
 
 service Alpha {
-  rpc Unary(Request) returns (Response) {}
+  rpc Unary(SomeMessage) returns (AnotherMessage) {}
 }
 
 service Bravo {
-  rpc BidiStreaming(stream Request) returns (stream Response) {}
+  rpc BidiStreaming(stream SomeMessage) returns (stream AnotherMessage) {}
 }

@@ -15,7 +15,7 @@
 /* eslint-env browser, jasmine */
 import 'jasmine';
 
-import {Request} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb'
+import {SomeMessage} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb'
 
 import {Call} from './call';
 import {Channel, Method, Service} from './descriptors';
@@ -41,8 +41,8 @@ describe('Call', () => {
     call = new Call(pendingCalls, rpc, noop, noop, noop);
   });
 
-  function newMessage(magicNumber: number = 1): Request {
-    const message = new Request();
+  function newMessage(magicNumber: number = 1): SomeMessage {
+    const message = new SomeMessage();
     message.setMagicNumber(magicNumber);
     return message;
   }
@@ -104,10 +104,10 @@ describe('Call', () => {
       call.handleResponse(message1);
       call.handleResponse(message2);
       call.handleCompletion(0);
-      expect(call.completed()).toBeTrue();
+      expect(call.completed).toBeTrue();
     }, 200);
 
-    expect(call.completed()).toBeFalse();
+    expect(call.completed).toBeFalse();
     expect((await responses.next()).value).toEqual(message1);
     expect((await responses.next()).value).toEqual(message2);
     expect((await responses.next()).done).toBeTrue();
@@ -124,10 +124,10 @@ describe('Call', () => {
     setTimeout(() => {
       call.handleResponse(message2);
       call.handleCompletion(0);
-      expect(call.completed()).toBeTrue();
+      expect(call.completed).toBeTrue();
     }, 200);
 
-    expect(call.completed()).toBeFalse();
+    expect(call.completed).toBeFalse();
     expect((await responses.next()).value).toEqual(message2);
     expect((await responses.next()).done).toBeTrue();
   });
