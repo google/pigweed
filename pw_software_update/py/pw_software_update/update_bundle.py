@@ -106,10 +106,12 @@ def parse_args():
     parser.add_argument('-t',
                         '--tuf-repo',
                         type=Path,
+                        required=True,
                         help='Directory to ingest as TUF repository')
     parser.add_argument('-o',
                         '--out',
                         type=Path,
+                        required=True,
                         help='Output path for serialized UpdateBundle')
     parser.add_argument('-e',
                         '--exclude',
