@@ -83,6 +83,12 @@ class IntervalReader : public SeekableReader {
   Status DoSeek(ssize_t offset, Whence origin) final;
   size_t DoTell() const final { return current_ - start_; }
   void Check();
+  size_t ConservativeLimit(LimitType limit) const override {
+    if (limit == LimitType::kRead) {
+      return end_ - current_;
+    }
+    return 0;
+  }
 
   SeekableReader* source_reader_ = nullptr;
   size_t start_ = 0;
