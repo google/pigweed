@@ -18,7 +18,7 @@ import asyncio
 from dataclasses import dataclass
 import logging
 import threading
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
 from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
@@ -109,13 +109,15 @@ class _Transfer(abc.ABC):
     def progress_stats(self) -> ProgressStats:
         """Returns the current progress of the transfer."""
 
-    def finish(self, status: Status) -> None:
+    def finish(self, status: Status, skip_callback: bool = False) -> None:
         """Ends the transfer with the specified status."""
         self._response_timer.stop()
         self.status = status
         self._invoke_progress_callback()
         self.done.set()
-        self._end_transfer(self)
+
+        if not skip_callback:
+            self._end_transfer(self)
 
     def _invoke_progress_callback(self) -> None:
         """Invokes the provided progress callback, if any, with the progress."""
@@ -143,9 +145,10 @@ class _WriteTransfer(_Transfer):
         response_timeout_s: float,
         progress_callback: ProgressCallback = None,
     ):
-        super().__init__(transfer_id, data, send_chunk, end_transfer,
-                         _Timer(lambda: self.finish(Status.DEADLINE_EXCEEDED)),
-                         progress_callback)
+        super().__init__(
+            transfer_id, data, send_chunk, end_transfer,
+            _Timer(lambda: self._send_error(Status.DEADLINE_EXCEEDED)),
+            progress_callback)
 
         self._offset = 0
         self._bytes_acknowledged = 0
@@ -228,14 +231,13 @@ class _WriteTransfer(_Transfer):
     def _next_chunk(self) -> Chunk:
         """Returns the next Chunk message to send in the data transfer."""
         chunk = Chunk(transfer_id=self.id, offset=self._offset)
+        max_bytes_in_chunk = min(self._max_chunk_size, self._max_bytes_to_send)
 
-        if len(self.data) - self._offset <= self._max_chunk_size:
-            # Final chunk of the transfer.
-            chunk.data = self.data[self._offset:]
+        chunk.data = self.data[self._offset:self._offset + max_bytes_in_chunk]
+
+        # Mark the final chunk of the transfer.
+        if len(self.data) - self._offset <= max_bytes_in_chunk:
             chunk.remaining_bytes = 0
-        else:
-            chunk.data = self.data[self._offset:self._offset +
-                                   self._max_chunk_size]
 
         return chunk
 
@@ -439,7 +441,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
     def write(self,
               transfer_id: int,
-              data: bytes,
+              data: Union[bytes, str],
               progress_callback: ProgressCallback = None) -> None:
         """Transmits ("uploads") data to the server.
 
@@ -453,6 +455,9 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         Raises:
           Error: the transfer failed to complete
         """
+
+        if isinstance(data, str):
+            data = data.encode()
 
         if transfer_id in self._write_transfers:
             raise ValueError(f'Write transfer {transfer_id} already exists')
@@ -576,7 +581,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self._read_stream = None
 
             for _, transfer in self._read_transfers.items():
-                transfer.finish(Status.INTERNAL)
+                transfer.finish(Status.INTERNAL, skip_callback=True)
             self._read_transfers = {}
 
             _LOG.error('Read stream shut down: %s', status)
@@ -603,7 +608,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self._write_stream = None
 
             for _, transfer in self._write_transfers.items():
-                transfer.finish(Status.INTERNAL)
+                transfer.finish(Status.INTERNAL, skip_callback=True)
             self._write_transfers = {}
 
             _LOG.error('Write stream shut down: %s', status)

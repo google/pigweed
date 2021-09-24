@@ -230,6 +230,15 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
       transfer.set_offset(transfer.offset() + chunk.data.size());
       transfer.set_pending_bytes(transfer.pending_bytes() - chunk.data.size());
       chunk_data_processed = true;
+    } else {
+      // End the transfer, as this indcates a bug with the client implementation
+      // where it doesn't respect pending_bytes. Trying to recover from here
+      // could potentially result in an infinite transfer loop.
+      PW_LOG_ERROR(
+          "Received more data than what was requested; terminating transfer.");
+      SendStatusChunk(write_stream_, chunk.transfer_id, Status::Internal());
+      transfer.Finish(Status::Internal());
+      return;
     }
   } else {
     // Bad offset; reset pending_bytes to send another parameters chunk.
@@ -261,10 +270,24 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
   parameters.pending_bytes = transfer.pending_bytes();
   parameters.max_chunk_size_bytes = MaxWriteChunkSize(transfer);
 
-  if (auto data =
-          internal::EncodeChunk(parameters, write_stream_.PayloadBuffer());
-      data.ok()) {
-    write_stream_.Write(*data);
+  // If the parameters can't be encoded or sent, it most likely indicates a
+  // transport-layer issue, so there isn't much that can be done by the transfer
+  // service. The client will time out and can try to restart the transfer.
+  Result<ConstByteSpan> data =
+      internal::EncodeChunk(parameters, write_stream_.PayloadBuffer());
+  if (data.ok()) {
+    if (Status status = write_stream_.Write(*data); !status.ok()) {
+      PW_LOG_ERROR("Failed to write parameters for transfer %u: %d",
+                   static_cast<unsigned>(parameters.transfer_id),
+                   status.code());
+      transfer.Finish(Status::Internal());
+    }
+  } else {
+    PW_LOG_ERROR("Failed to encode parameters for transfer %u: %d",
+                 static_cast<unsigned>(parameters.transfer_id),
+                 data.status().code());
+    write_stream_.ReleaseBuffer();
+    transfer.Finish(Status::Internal());
   }
 }
 

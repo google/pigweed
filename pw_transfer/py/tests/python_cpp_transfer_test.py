@@ -110,6 +110,22 @@ class TransferServiceIntegrationTest(unittest.TestCase):
             self.manager.write(31, b'*' * 512)
             self.assertEqual(self.get_content(31), '*' * 512)
 
+    def test_write_very_large_amount_of_data(self) -> None:
+        self.set_content(31, 'junk')
+
+        for _ in range(ITERATIONS):
+            # Larger than the transfer service's configured pending_bytes.
+            self.manager.write(31, b'*' * 4096)
+            self.assertEqual(self.get_content(31), '*' * 4096)
+
+    def test_write_string(self) -> None:
+        self.set_content(32, 'junk')
+
+        for _ in range(ITERATIONS):
+            # Write a string instead of bytes.
+            self.manager.write(32, 'hello world')
+            self.assertEqual(self.get_content(32), 'hello world')
+
 
 def _main(test_server_command: List[str], port: int, unittest_args: List[str],
           directory: str) -> None:

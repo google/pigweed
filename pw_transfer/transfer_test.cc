@@ -52,7 +52,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
         reader_(data) {}
 
   Status PrepareRead() final {
-    // reader_.Seek(0);
+    reader_.Seek(0);
     set_reader(reader_);
     prepare_read_called = true;
     return OkStatus();
@@ -342,7 +342,7 @@ class SimpleWriteTransfer final : public WriteOnlyHandler {
         writer_(data) {}
 
   Status PrepareWrite() final {
-    // writer_.Seek(0);
+    writer_.Seek(0);
     set_writer(writer_);
     prepare_write_called = true;
     return OkStatus();
@@ -582,6 +582,51 @@ TEST(Transfer, Write_UnexpectedOffset) {
   EXPECT_TRUE(handler.finalize_write_called);
   EXPECT_EQ(handler.finalize_write_status, OkStatus());
   EXPECT_EQ(std::memcmp(buffer.data(), data.data(), data.size()), 0);
+}
+
+TEST(Transfer, Write_TooMuchData) {
+  constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
+  std::array<std::byte, sizeof(data)> buffer = {};
+  SimpleWriteTransfer handler(7, buffer);
+
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Write) ctx(64, 16);
+  ctx.service().RegisterHandler(handler);
+
+  EXPECT_FALSE(handler.prepare_write_called);
+  EXPECT_FALSE(handler.finalize_write_called);
+
+  ctx.call();
+  ctx.SendClientStream(EncodeChunk({.transfer_id = 7}));
+
+  EXPECT_TRUE(handler.prepare_write_called);
+  EXPECT_FALSE(handler.finalize_write_called);
+
+  ASSERT_EQ(ctx.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx.responses()[0]);
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  ASSERT_TRUE(chunk.pending_bytes.has_value());
+  EXPECT_EQ(chunk.pending_bytes.value(), 16u);
+
+  // pending_bytes = 16
+  ctx.SendClientStream<64>(EncodeChunk(
+      {.transfer_id = 7, .offset = 0, .data = std::span(data).first(8)}));
+  ASSERT_EQ(ctx.total_responses(), 1u);
+
+  // pending_bytes = 8
+  ctx.SendClientStream<64>(EncodeChunk(
+      {.transfer_id = 7, .offset = 8, .data = std::span(data).subspan(8, 4)}));
+  ASSERT_EQ(ctx.total_responses(), 1u);
+
+  // pending_bytes = 4 but send 8 instead
+  ctx.SendClientStream<64>(
+      EncodeChunk({.transfer_id = 7,
+                   .offset = 12,
+                   .data = std::span(data).subspan(12, 8)}));
+  ASSERT_EQ(ctx.total_responses(), 2u);
+  chunk = DecodeChunk(ctx.responses()[1]);
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), Status::Internal());
 }
 
 TEST(Transfer, Write_UnregisteredHandler) {
