@@ -10,7 +10,10 @@
 #include <lib/async/default.h>
 #include <lib/sys/inspect/cpp/component.h>
 
+#include <optional>
 #include <queue>
+
+#include "lib/zx/time.h"
 
 namespace bt {
 
@@ -25,8 +28,12 @@ template <typename NumericPropertyT, typename ValueT>
 class WindowedInspectNumericProperty {
  public:
   // |expiry_duration| is the time duration after which changes should be reversed.
-  explicit WindowedInspectNumericProperty(zx::duration expiry_duration = zx::min(10))
-      : expiry_duration_(expiry_duration) {}
+  // |min_resolution| is the smallest duration between changes such that they are reversed
+  // independently. Changes closer to this interval may be batched together for expiry, biased
+  // towards earlier expiry than |expiry_duration|. May be 0 (default) to disable batching.
+  explicit WindowedInspectNumericProperty(zx::duration expiry_duration = zx::min(10),
+                                          zx::duration min_resolution = zx::duration())
+      : expiry_duration_(expiry_duration), min_resolution_(min_resolution) {}
   virtual ~WindowedInspectNumericProperty() = default;
 
   // Allow moving, disallow copying.
@@ -54,9 +61,16 @@ class WindowedInspectNumericProperty {
 
   // Add the given value to the value of this numeric metric.
   void Add(ValueT value) {
-    zx::time now = async::Now(async_get_default_dispatcher());
-    values_.push({now, value});
     property_.Add(value);
+    zx::time now = async::Now(async_get_default_dispatcher());
+    if (!values_.empty()) {
+      // If the most recent change's age is less than |min_resolution_|, merge this change to it
+      if (now < values_.back().first + min_resolution_) {
+        values_.back().second += value;
+        return;
+      }
+    }
+    values_.push({now, value});
     StartExpiryTimeout();
   }
 
@@ -89,6 +103,7 @@ class WindowedInspectNumericProperty {
 
   NumericPropertyT property_;
   zx::duration expiry_duration_;
+  zx::duration min_resolution_;
 
   using SelfT = WindowedInspectNumericProperty<NumericPropertyT, ValueT>;
   async::TaskClosureMethod<SelfT, &SelfT::OnExpiryTimeout> expiry_task_{this};

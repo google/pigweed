@@ -117,6 +117,38 @@ TEST_F(WindowedInspectNumericPropertyTest, AddValueThenExpireThenAddValue) {
   EXPECT_EQ(value, 0);
 }
 
+TEST_F(WindowedInspectNumericPropertyTest,
+       AddTwoValuesWithinResolutionIntervalExpiresBothSimultaneously) {
+  constexpr zx::duration kExpiryDuration = zx::min(3);
+  constexpr zx::duration kResolution = zx::sec(3);
+  WindowedProperty windowed_prop(kExpiryDuration, kResolution);
+  int value = 0;
+  auto value_cb = [&](auto val) { value = val; };
+  windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
+
+  // First two values are within kResolution of each other in time.
+  windowed_prop.Add(1);
+  constexpr zx::duration kTinyDuration = zx::msec(1);
+  RunLoopFor(kTinyDuration);
+  windowed_prop.Add(1);
+  EXPECT_EQ(value, 2);
+
+  // Third value is spaced kResolution apart from the first value.
+  RunLoopFor(kResolution - kTinyDuration);
+  windowed_prop.Add(1);
+  EXPECT_EQ(value, 3);
+
+  // Let first value expire.
+  RunLoopFor(kExpiryDuration - kResolution);
+
+  // First and second values should have expired because they were merged.
+  EXPECT_EQ(value, 1);
+
+  // Let third value expire.
+  RunLoopFor(kResolution);
+  EXPECT_EQ(value, 0);
+}
+
 TEST_F(WindowedInspectNumericPropertyTest, SetPropertyClearsValueAndTimer) {
   constexpr zx::duration kExpiryDuration = zx::min(3);
   WindowedProperty windowed_prop(kExpiryDuration);
