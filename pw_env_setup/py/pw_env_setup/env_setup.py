@@ -298,6 +298,10 @@ class EnvSetup(object):
     def _check_submodules(self):
         unitialized = set()
 
+        # Don't check submodule presence if using the Android Repo Tool.
+        if os.path.isdir(os.path.join(self._project_root, '.repo')):
+            return
+
         cmd = ['git', 'submodule', 'status', '--recursive']
 
         for line in subprocess.check_output(
