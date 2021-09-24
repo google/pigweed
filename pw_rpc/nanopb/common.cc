@@ -50,12 +50,11 @@ using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 
 #endif  // PB_NO_ERRMSG
 
-StatusWithSize NanopbMethodSerde::Encode(NanopbMessageDescriptor fields,
-                                         const void* proto_struct,
-                                         ByteSpan buffer) const {
+StatusWithSize NanopbSerde::Encode(const void* proto_struct,
+                                   ByteSpan buffer) const {
   auto output = pb_ostream_from_buffer(
       reinterpret_cast<pb_byte_t*>(buffer.data()), buffer.size());
-  if (!pb_encode(&output, static_cast<Fields>(fields), proto_struct)) {
+  if (!pb_encode(&output, static_cast<Fields>(fields_), proto_struct)) {
     PW_RPC_LOG_NANOPB_FAILURE("Nanopb protobuf encode failed", output);
     return StatusWithSize::Internal();
   }
@@ -63,12 +62,10 @@ StatusWithSize NanopbMethodSerde::Encode(NanopbMessageDescriptor fields,
   return StatusWithSize(output.bytes_written);
 }
 
-bool NanopbMethodSerde::Decode(NanopbMessageDescriptor fields,
-                               ConstByteSpan buffer,
-                               void* proto_struct) const {
+bool NanopbSerde::Decode(ConstByteSpan buffer, void* proto_struct) const {
   auto input = pb_istream_from_buffer(
       reinterpret_cast<const pb_byte_t*>(buffer.data()), buffer.size());
-  bool result = pb_decode(&input, static_cast<Fields>(fields), proto_struct);
+  bool result = pb_decode(&input, static_cast<Fields>(fields_), proto_struct);
   if (!result) {
     PW_RPC_LOG_NANOPB_FAILURE("Nanopb protobuf decode failed", input);
   }

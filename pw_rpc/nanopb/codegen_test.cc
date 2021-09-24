@@ -131,28 +131,11 @@ TEST(NanopbCodegen, Server_InvokeServerStreamingRpc) {
   EXPECT_EQ(OkStatus().code(), context.status());
 }
 
-TEST(NanopbCodegen,
-     Server_InvokeServerStreamingRpc_ContextKeepsFixedNumberOfResponses) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc, 3)
-  context;
-
-  ASSERT_EQ(3u, context.responses().max_size());
-
-  context.call({.integer = 5, .status_code = Status::NotFound().code()});
-
-  ASSERT_EQ(3u, context.responses().size());
-  ASSERT_EQ(5u, context.total_stream_packets());
-
-  EXPECT_EQ(context.responses()[0].number, 0u);
-  EXPECT_EQ(context.responses()[1].number, 1u);
-  EXPECT_EQ(context.responses()[2].number, 4u);
-}
-
 TEST(NanopbCodegen, Server_InvokeServerStreamingRpc_ManualWriting) {
-  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc, 3)
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestServerStreamRpc, 4)
   context;
 
-  ASSERT_EQ(3u, context.responses().max_size());
+  ASSERT_EQ(4u, context.max_packets());
 
   auto writer = context.writer();
 

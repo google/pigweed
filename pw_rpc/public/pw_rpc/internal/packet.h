@@ -104,7 +104,7 @@ class Packet {
   constexpr uint32_t service_id() const { return service_id_; }
   constexpr uint32_t method_id() const { return method_id_; }
   constexpr const ConstByteSpan& payload() const { return payload_; }
-  constexpr Status status() const { return status_; }
+  constexpr const Status& status() const { return status_; }
 
   constexpr void set_type(PacketType type) { type_ = type; }
   constexpr void set_channel_id(uint32_t channel_id) {

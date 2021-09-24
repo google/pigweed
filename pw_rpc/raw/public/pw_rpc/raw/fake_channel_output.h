@@ -18,62 +18,21 @@
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
-#include "pw_containers/vector.h"
 #include "pw_rpc/internal/fake_channel_output.h"
 #include "pw_rpc/raw/internal/method.h"
 
 namespace pw::rpc {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
-template <size_t kOutputSize, size_t kMaxResponses>
+template <size_t kOutputSize,
+          size_t kMaxPackets,
+          size_t kPayloadsBufferSizeBytes = 128>
 class RawFakeChannelOutput final
-    : public internal::test::FakeChannelOutputBuffer<kOutputSize> {
+    : public internal::test::FakeChannelOutputBuffer<kOutputSize,
+                                                     kMaxPackets,
+                                                     kPayloadsBufferSizeBytes> {
  public:
-  using internal::test::FakeChannelOutput::clear;
-  using internal::test::FakeChannelOutput::done;
-  using internal::test::FakeChannelOutput::total_response_packets;
-  using internal::test::FakeChannelOutput::total_responses;
-  using internal::test::FakeChannelOutput::total_stream_packets;
-
-  RawFakeChannelOutput(MethodType method_type)
-      : internal::test::FakeChannelOutputBuffer<kOutputSize>(method_type) {}
-
-  const Vector<ByteSpan>& responses() const { return responses_; }
-
-  ConstByteSpan last_response() const {
-    PW_ASSERT(!responses_.empty());
-    return responses_.back();
-  }
-
-  // Allocates a response buffer and returns a reference to the response span
-  // for it.
-  ByteSpan& AllocateResponse() {
-    // If we run out of space, the back message is always the most recent.
-    response_buffers_.emplace_back();
-    response_buffers_.back() = {};
-
-    responses_.emplace_back();
-    responses_.back() = {response_buffers_.back().data(),
-                         response_buffers_.back().size()};
-    return responses_.back();
-  }
-
- private:
-  void AppendResponse(ConstByteSpan response) override {
-    ByteSpan& response_span = AllocateResponse();
-    PW_ASSERT(response.size() <= response_span.size());
-
-    std::memcpy(response_span.data(), response.data(), response.size());
-    response_span = response_span.first(response.size());
-  }
-
-  void ClearResponses() override {
-    responses_.clear();
-    response_buffers_.clear();
-  }
-
-  Vector<ByteSpan, kMaxResponses> responses_;
-  Vector<std::array<std::byte, kOutputSize>, kMaxResponses> response_buffers_;
+  RawFakeChannelOutput() = default;
 };
 
 }  // namespace pw::rpc

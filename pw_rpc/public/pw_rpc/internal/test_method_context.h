@@ -35,6 +35,7 @@ class InvocationContext {
   InvocationContext& operator=(InvocationContext&&) = delete;
 
   Service& service() { return service_; }
+  const Service& service() const { return service_; }
 
   // Sets the channel ID, which defaults to an arbitrary value.
   void set_channel_id(uint32_t id) { channel_ = Channel(id, &output_); }
@@ -47,10 +48,15 @@ class InvocationContext {
   }
   size_t total_stream_packets() const { return output_.total_stream_packets(); }
 
+  size_t max_packets() const { return output_.max_packets(); }
+
   // Returns the responses that have been recorded. The maximum number of
   // responses is responses().max_size(). responses().back() is always the most
   // recent response, even if total_responses() > responses().max_size().
-  const auto& responses() const { return output().responses(); }
+  auto responses() const {
+    return output().payloads(
+        method_type_, channel_.id(), service().id(), kMethodId);
+  }
 
   // True if the RPC has completed.
   bool done() const { return output_.done(); }
@@ -93,12 +99,11 @@ class InvocationContext {
   // Constructs the invocation context. The args for the ChannelOutput type are
   // passed in a std::tuple. The args for the Service are forwarded directly
   // from the callsite.
-  template <typename OutputArgTuple, typename... ServiceArgs>
+  template <typename... ServiceArgs>
   InvocationContext(const Method& method,
-                    OutputArgTuple&& output_args,
+                    MethodType method_type,
                     ServiceArgs&&... service_args)
-      : output_(std::make_from_tuple<Output>(
-            std::forward<OutputArgTuple>(output_args))),
+      : method_type_(method_type),
         channel_(Channel::Create<123>(&output_)),
         server_(std::span(&channel_, 1)),
         service_(std::forward<ServiceArgs>(service_args)...),
@@ -111,6 +116,8 @@ class InvocationContext {
 
   const Output& output() const { return output_; }
   Output& output() { return output_; }
+
+  uint32_t channel_id() const { return channel_.id(); }
 
   template <size_t kMaxPayloadSize = 32>
   void SendClientStream(ConstByteSpan payload) {
@@ -162,6 +169,7 @@ class InvocationContext {
       2 /* type */ + 2 /* channel */ + 5 /* service */ + 5 /* method */ +
       2 /* status */;
 
+  const MethodType method_type_;
   Output output_;
   rpc::Channel channel_;
   rpc::Server server_;

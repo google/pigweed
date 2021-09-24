@@ -150,6 +150,7 @@ pw_source_set("test_utils") {
     "public/pw_rpc/internal/test_method.h",
     "public/pw_rpc/internal/test_method_context.h",
     "public/pw_rpc/internal/test_utils.h",
+    "public/pw_rpc/payloads_view.h",
     "pw_rpc_private/fake_server_reader_writer.h",
   ]
   sources = [ "fake_channel_output.cc" ]
@@ -157,6 +158,9 @@ pw_source_set("test_utils") {
   public_deps = [
     ":client",
     ":server",
+    "$dir_pw_containers:filtered_view",
+    "$dir_pw_containers:vector",
+    "$dir_pw_containers:wrapped_iterator",
     dir_pw_assert,
     dir_pw_bytes,
   ]

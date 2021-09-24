@@ -112,7 +112,7 @@ class ReadTransfer : public ::testing::Test {
   }
 
   SimpleReadTransfer handler_;
-  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read, 5) ctx_;
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx_;
 };
 
 TEST_F(ReadTransfer, SingleChunk) {

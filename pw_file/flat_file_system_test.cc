@@ -129,7 +129,7 @@ void ComparePathToEntry(ConstByteSpan serialized_path,
 
 size_t ValidateExpectedPaths(
     std::span<FlatFileSystemService::Entry*> flat_file_system,
-    const Vector<ByteSpan>& results) {
+    const rpc::PayloadsView& results) {
   size_t serialized_path_entry_count = 0;
   size_t file_system_index = 0;
   for (ConstByteSpan response : results) {

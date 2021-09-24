@@ -21,7 +21,26 @@ namespace pw::rpc::internal {
 // Use a void* to cover both Nanopb 3's pb_field_s and Nanopb 4's pb_msgdesc_s.
 using NanopbMessageDescriptor = const void*;
 
-// Serializer/deserializer for nanopb message request and response structs in an
+// Serializer/deserializer for a Nanopb protobuf message.
+class NanopbSerde {
+ public:
+  explicit constexpr NanopbSerde(NanopbMessageDescriptor fields)
+      : fields_(fields) {}
+
+  NanopbSerde(const NanopbSerde&) = default;
+  NanopbSerde& operator=(const NanopbSerde&) = default;
+
+  // Encodes a Nanopb protobuf struct to the serialized wire format.
+  StatusWithSize Encode(const void* proto_struct, ByteSpan buffer) const;
+
+  // Decodes a serialized protobuf to a Nanopb struct.
+  bool Decode(ConstByteSpan buffer, void* proto_struct) const;
+
+ private:
+  NanopbMessageDescriptor fields_;
+};
+
+// Serializer/deserializer for Nanopb message request and response structs in an
 // RPC method.
 class NanopbMethodSerde {
  public:
@@ -29,35 +48,31 @@ class NanopbMethodSerde {
                               NanopbMessageDescriptor response_fields)
       : request_fields_(request_fields), response_fields_(response_fields) {}
 
+  NanopbMethodSerde(const NanopbMethodSerde&) = default;
+  NanopbMethodSerde& operator=(const NanopbMethodSerde&) = default;
+
   StatusWithSize EncodeRequest(const void* proto_struct,
                                ByteSpan buffer) const {
-    return Encode(request_fields_, proto_struct, buffer);
+    return request_fields_.Encode(proto_struct, buffer);
   }
   StatusWithSize EncodeResponse(const void* proto_struct,
                                 ByteSpan buffer) const {
-    return Encode(response_fields_, proto_struct, buffer);
+    return response_fields_.Encode(proto_struct, buffer);
   }
 
   bool DecodeRequest(ConstByteSpan buffer, void* proto_struct) const {
-    return Decode(request_fields_, buffer, proto_struct);
+    return request_fields_.Decode(buffer, proto_struct);
   }
   bool DecodeResponse(ConstByteSpan buffer, void* proto_struct) const {
-    return Decode(response_fields_, buffer, proto_struct);
+    return response_fields_.Decode(buffer, proto_struct);
   }
 
+  const NanopbSerde& request() const { return request_fields_; }
+  const NanopbSerde& response() const { return response_fields_; }
+
  private:
-  // Encodes a nanopb protobuf struct to serialized wire format.
-  StatusWithSize Encode(NanopbMessageDescriptor fields,
-                        const void* proto_struct,
-                        ByteSpan buffer) const;
-
-  // Decodes a serialized protobuf to a nanopb struct.
-  bool Decode(NanopbMessageDescriptor fields,
-              ConstByteSpan buffer,
-              void* proto_struct) const;
-
-  NanopbMessageDescriptor request_fields_;
-  NanopbMessageDescriptor response_fields_;
+  NanopbSerde request_fields_;
+  NanopbSerde response_fields_;
 };
 
 }  // namespace pw::rpc::internal

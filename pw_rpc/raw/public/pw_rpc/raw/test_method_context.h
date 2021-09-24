@@ -66,7 +66,7 @@ namespace pw::rpc {
 //
 // PW_RAW_TEST_METHOD_CONTEXT takes two optional arguments:
 //
-//   size_t kMaxResponses: maximum responses to store; ignored unless streaming
+//   size_t kMaxPackets: maximum packets to store
 //   size_t kOutputSizeBytes: buffer size; must be large enough for a packet
 //
 // Example:
@@ -82,39 +82,43 @@ namespace pw::rpc {
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponses = 4,
+          size_t kMaxPackets = 6,
           size_t kOutputSizeBytes = 128>
 class RawTestMethodContext;
 
 // Internal classes that implement RawTestMethodContext.
 namespace internal::test::raw {
 
+inline constexpr size_t kPayloadsBufferSizeBytes = 256;
+
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponses,
+          size_t kMaxPackets,
           size_t kOutputSize>
 class RawInvocationContext
-    : public InvocationContext<RawFakeChannelOutput<kOutputSize, kMaxResponses>,
+    : public InvocationContext<RawFakeChannelOutput<kOutputSize,
+                                                    kMaxPackets,
+                                                    kPayloadsBufferSizeBytes>,
                                Service,
                                kMethodId> {
  public:
   // Gives access to the RPC's most recent response.
-  ConstByteSpan response() const { return Base::output().last_response(); }
+  const ConstByteSpan& response() const { return Base::responses().back(); }
 
  protected:
   template <typename... Args>
   RawInvocationContext(Args&&... args)
       : Base(MethodLookup::GetRawMethod<Service, kMethodId>(),
-             std::forward_as_tuple(MethodTraits<decltype(kMethod)>::kType),
+             MethodTraits<decltype(kMethod)>::kType,
              std::forward<Args>(args)...) {}
 
  private:
-  using Base =
-      InvocationContext<RawFakeChannelOutput<kOutputSize, kMaxResponses>,
-                        Service,
-                        kMethodId>;
+  using Base = InvocationContext<
+      RawFakeChannelOutput<kOutputSize, kMaxPackets, kPayloadsBufferSizeBytes>,
+      Service,
+      kMethodId>;
 };
 
 // Method invocation context for a unary RPC. Returns the status in call() and
@@ -137,10 +141,12 @@ class UnaryContext
     if constexpr (MethodTraits<decltype(kMethod)>::kSynchronous) {
       Base::output().clear();
 
-      ByteSpan& response = Base::output().AllocateResponse();
+      auto responder = Base::template GetResponder<RawServerResponder>();
+      ByteSpan response = responder.PayloadBuffer();
       auto sws =
           CallMethodImplFunction<kMethod>(Base::service(), request, response);
-      response = response.first(sws.size());
+      PW_ASSERT(
+          responder.Finish(response.first(sws.size()), sws.status()).ok());
       return sws;
     } else {
       Base::template call<kMethod, RawServerResponder>(request);
@@ -152,17 +158,17 @@ class UnaryContext
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponses,
+          size_t kMaxPackets,
           size_t kOutputSize>
 class ServerStreamingContext : public RawInvocationContext<Service,
                                                            kMethod,
                                                            kMethodId,
-                                                           kMaxResponses,
+                                                           kMaxPackets,
                                                            kOutputSize> {
   using Base = RawInvocationContext<Service,
                                     kMethod,
                                     kMethodId,
-                                    kMaxResponses,
+                                    kMaxPackets,
                                     kOutputSize>;
 
  public:
@@ -185,17 +191,17 @@ class ServerStreamingContext : public RawInvocationContext<Service,
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponses,
+          size_t kMaxPackets,
           size_t kOutputSize>
 class ClientStreamingContext : public RawInvocationContext<Service,
                                                            kMethod,
                                                            kMethodId,
-                                                           kMaxResponses,
+                                                           kMaxPackets,
                                                            kOutputSize> {
   using Base = RawInvocationContext<Service,
                                     kMethod,
                                     kMethodId,
-                                    kMaxResponses,
+                                    kMaxPackets,
                                     kOutputSize>;
 
  public:
@@ -220,17 +226,17 @@ class ClientStreamingContext : public RawInvocationContext<Service,
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponses,
+          size_t kMaxPackets,
           size_t kOutputSize>
 class BidirectionalStreamingContext : public RawInvocationContext<Service,
                                                                   kMethod,
                                                                   kMethodId,
-                                                                  kMaxResponses,
+                                                                  kMaxPackets,
                                                                   kOutputSize> {
   using Base = RawInvocationContext<Service,
                                     kMethod,
                                     kMethodId,
-                                    kMaxResponses,
+                                    kMaxPackets,
                                     kOutputSize>;
 
  public:
@@ -257,7 +263,7 @@ class BidirectionalStreamingContext : public RawInvocationContext<Service,
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponses,
+          size_t kMaxPackets,
           size_t kOutputSize>
 using Context = std::tuple_element_t<
     static_cast<size_t>(MethodTraits<decltype(kMethod)>::kType),
@@ -265,17 +271,17 @@ using Context = std::tuple_element_t<
                ServerStreamingContext<Service,
                                       kMethod,
                                       kMethodId,
-                                      kMaxResponses,
+                                      kMaxPackets,
                                       kOutputSize>,
                ClientStreamingContext<Service,
                                       kMethod,
                                       kMethodId,
-                                      kMaxResponses,
+                                      kMaxPackets,
                                       kOutputSize>,
                BidirectionalStreamingContext<Service,
                                              kMethod,
                                              kMethodId,
-                                             kMaxResponses,
+                                             kMaxPackets,
                                              kOutputSize>>>;
 
 }  // namespace internal::test::raw
@@ -283,24 +289,18 @@ using Context = std::tuple_element_t<
 template <typename Service,
           auto kMethod,
           uint32_t kMethodId,
-          size_t kMaxResponses,
+          size_t kMaxPackets,
           size_t kOutputSizeBytes>
 class RawTestMethodContext
-    : public internal::test::raw::Context<Service,
-                                          kMethod,
-                                          kMethodId,
-                                          kMaxResponses,
-                                          kOutputSizeBytes> {
+    : public internal::test::raw::
+          Context<Service, kMethod, kMethodId, kMaxPackets, kOutputSizeBytes> {
  public:
   // Forwards constructor arguments to the service class.
   template <typename... ServiceArgs>
   RawTestMethodContext(ServiceArgs&&... service_args)
-      : internal::test::raw::Context<Service,
-                                     kMethod,
-                                     kMethodId,
-                                     kMaxResponses,
-                                     kOutputSizeBytes>(
-            std::forward<ServiceArgs>(service_args)...) {}
+      : internal::test::raw::
+            Context<Service, kMethod, kMethodId, kMaxPackets, kOutputSizeBytes>(
+                std::forward<ServiceArgs>(service_args)...) {}
 };
 
 }  // namespace pw::rpc

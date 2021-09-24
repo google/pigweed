@@ -35,8 +35,10 @@
 namespace pw::log_rpc {
 namespace {
 
+using log::pw_rpc::raw::Logs;
+
 #define LOG_SERVICE_METHOD_CONTEXT \
-  PW_RAW_TEST_METHOD_CONTEXT(LogService, Listen)
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, Listen, 6, 128)
 
 constexpr size_t kMaxMessageSize = 50;
 static_assert(RpcLogDrain::kMaxDropMessageSize < kMaxMessageSize);
@@ -412,8 +414,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
 
   LogService log_service(drain_map_);
   const uint32_t output_buffer_size = 100;
-  rpc::RawFakeChannelOutput<output_buffer_size, 10> output(
-      rpc::MethodType::kServerStreaming);
+  rpc::RawFakeChannelOutput<output_buffer_size, 10, 512> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 
@@ -429,9 +430,8 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   output.set_send_status(Status::Unavailable(), successful_packets_sent);
 
   // Request logs.
-  rpc::RawServerWriter writer =
-      rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
-          server, drain_channel_id, log_service);
+  rpc::RawServerWriter writer = rpc::RawServerWriter::Open<Logs::Listen>(
+      server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
   // This drain closes on errors.
   EXPECT_EQ(drain.value()->Flush(), Status::Aborted());
@@ -447,7 +447,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
         std::as_bytes(std::span(std::string_view(kMessage))));
   }
   size_t entries_found = 0;
-  for (auto& response : output.responses()) {
+  for (auto& response : output.payloads<Logs::Listen>()) {
     protobuf::Decoder entry_decoder(response);
     entries_found += VerifyLogEntries(entry_decoder, message_stack);
   }
@@ -457,7 +457,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
 
   // Reset channel output and resume log stream with a new writer.
   output.clear();
-  writer = rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
+  writer = rpc::RawServerWriter::Open<Logs::Listen>(
       server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
   EXPECT_EQ(drain.value()->Flush(), OkStatus());
@@ -476,7 +476,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   message.Format("Dropped %u", static_cast<unsigned int>(total_drop_count));
   message_stack.push_back(std::as_bytes(std::span(std::string_view(message))));
 
-  for (auto& response : output.responses()) {
+  for (auto& response : output.payloads<Logs::Listen>()) {
     protobuf::Decoder entry_decoder(response);
     entries_found += VerifyLogEntries(entry_decoder, message_stack);
   }
@@ -491,8 +491,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
 
   LogService log_service(drain_map_);
   const uint32_t output_buffer_size = 100;
-  rpc::RawFakeChannelOutput<output_buffer_size, 10> output(
-      rpc::MethodType::kServerStreaming);
+  rpc::RawFakeChannelOutput<output_buffer_size, 10, 768> output;
   rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
   rpc::Server server(std::span(&channel, 1));
 
@@ -508,9 +507,8 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   output.set_send_status(Status::Unavailable(), min_packets_sent);
 
   // Request logs.
-  rpc::RawServerWriter writer =
-      rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
-          server, drain_channel_id, log_service);
+  rpc::RawServerWriter writer = rpc::RawServerWriter::Open<Logs::Listen>(
+      server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
   // This drain ignores errors.
   EXPECT_EQ(drain.value()->Flush(), OkStatus());
@@ -521,7 +519,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
 
   // Verify that not all the entries were sent.
   size_t entries_found = 0;
-  for (auto& response : output.responses()) {
+  for (auto& response : output.payloads<Logs::Listen>()) {
     protobuf::Decoder entry_decoder(response);
     entries_found += CountLogEntries(entry_decoder);
   }
@@ -550,7 +548,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
         std::as_bytes(std::span(std::string_view(kMessage))));
   }
 
-  for (auto& response : output.responses()) {
+  for (auto& response : output.payloads<Logs::Listen>()) {
     protobuf::Decoder entry_decoder(response);
     VerifyLogEntries(entry_decoder, message_stack);
   }

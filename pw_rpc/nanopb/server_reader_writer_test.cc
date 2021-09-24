@@ -55,12 +55,7 @@ struct ReaderWriterTestContext {
   using Info = internal::MethodInfo<kMethod>;
 
   ReaderWriterTestContext()
-      : output(decltype(output)::template Create<
-               TestServiceImpl,
-               Info::template Function<TestServiceImpl>(),
-               Info::kMethodId>()),
-        channel(Channel::Create<1>(&output)),
-        server(std::span(&channel, 1)) {}
+      : channel(Channel::Create<1>(&output)), server(std::span(&channel, 1)) {}
 
   TestServiceImpl service;
   NanopbFakeChannelOutput<typename Info::Response, 4, 128> output;
@@ -78,7 +73,7 @@ TEST(NanopbServerResponder, Open_ReturnsUsableResponder) {
 
   responder.Finish({.value = 4321});
 
-  EXPECT_EQ(ctx.output.last_response().value, 4321);
+  EXPECT_EQ(ctx.output.last_response<TestService::TestUnaryRpc>().value, 4321);
   EXPECT_EQ(ctx.output.last_status(), OkStatus());
 }
 
@@ -92,7 +87,8 @@ TEST(NanopbServerWriter, Open_ReturnsUsableWriter) {
   responder.Write({.chunk = {}, .number = 321});
   responder.Finish();
 
-  EXPECT_EQ(ctx.output.last_response().number, 321u);
+  EXPECT_EQ(ctx.output.last_response<TestService::TestServerStreamRpc>().number,
+            321u);
   EXPECT_EQ(ctx.output.last_status(), OkStatus());
 }
 
@@ -106,7 +102,8 @@ TEST(NanopbServerReader, Open_ReturnsUsableReader) {
 
   responder.Finish({.chunk = {}, .number = 321});
 
-  EXPECT_EQ(ctx.output.last_response().number, 321u);
+  EXPECT_EQ(ctx.output.last_response<TestService::TestClientStreamRpc>().number,
+            321u);
 }
 
 TEST(NanopbServerReaderWriter, Open_ReturnsUsableReaderWriter) {
@@ -120,7 +117,9 @@ TEST(NanopbServerReaderWriter, Open_ReturnsUsableReaderWriter) {
   responder.Write({.chunk = {}, .number = 321});
   responder.Finish(Status::NotFound());
 
-  EXPECT_EQ(ctx.output.last_response().number, 321u);
+  EXPECT_EQ(ctx.output.last_response<TestService::TestBidirectionalStreamRpc>()
+                .number,
+            321u);
   EXPECT_EQ(ctx.output.last_status(), Status::NotFound());
 }
 

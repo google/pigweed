@@ -165,6 +165,7 @@ pw_cc_library(
         "public/pw_rpc/internal/test_method.h",
         "public/pw_rpc/internal/test_method_context.h",
         "public/pw_rpc/internal/test_utils.h",
+        "public/pw_rpc/payloads_view.h",
         "pw_rpc_private/fake_server_reader_writer.h",
     ],
     includes = [
@@ -177,6 +178,9 @@ pw_cc_library(
         ":server",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_containers:filtered_view",
+        "//pw_containers:vector",
+        "//pw_containers:wrapped_iterator",
         "//pw_span",
     ],
 )

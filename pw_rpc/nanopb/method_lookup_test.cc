@@ -23,7 +23,7 @@ namespace {
 class MixedService1 : public test::generated::TestService<MixedService1> {
  public:
   StatusWithSize TestUnaryRpc(ServerContext&, ConstByteSpan, ByteSpan) {
-    return StatusWithSize(123);
+    return StatusWithSize(5);
   }
 
   void TestAnotherUnaryRpc(ServerContext&,
@@ -91,7 +91,7 @@ TEST(MixedService1, CallRawMethod_SyncUnary) {
   PW_RAW_TEST_METHOD_CONTEXT(MixedService1, TestUnaryRpc) context;
   StatusWithSize sws = context.call({});
   EXPECT_TRUE(sws.ok());
-  EXPECT_EQ(123u, sws.size());
+  EXPECT_EQ(5u, sws.size());
 }
 
 TEST(MixedService1, CallNanopbMethod_AsyncUnary) {

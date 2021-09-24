@@ -24,6 +24,7 @@
 
 namespace pw::rpc::internal::test {
 namespace {
+
 constexpr size_t kOutputSize = 50;
 constexpr uint32_t kChannelId = 1;
 constexpr uint32_t kServiceId = 1;
@@ -32,32 +33,27 @@ constexpr std::array<std::byte, 3> kPayload = {
     std::byte(1), std::byte(2), std::byte(3)};
 
 class TestFakeChannelOutput final
-    : public FakeChannelOutputBuffer<kOutputSize> {
+    : public FakeChannelOutputBuffer<kOutputSize, 9, 128> {
  public:
-  TestFakeChannelOutput(MethodType method_type)
-      : FakeChannelOutputBuffer<kOutputSize>(method_type) {}
+  TestFakeChannelOutput() = default;
 
-  ConstByteSpan last_response() { return last_response_; }
-
- private:
-  void AppendResponse(ConstByteSpan response) override {
-    last_response_ = response;
+  const ConstByteSpan& last_response(MethodType type) {
+    return payloads(type, kChannelId, kServiceId, kMethodId).back();
   }
-  void ClearResponses() override { last_response_ = {}; }
-
-  ConstByteSpan last_response_;
 };
 
 TEST(FakeChannelOutput, SendAndClear) {
-  TestFakeChannelOutput output(MethodType::kServerStreaming);
+  TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
   const internal::Packet server_stream_packet(
       PacketType::SERVER_STREAM, kChannelId, kServiceId, kMethodId, kPayload);
   ASSERT_EQ(channel.Send(server_stream_packet), OkStatus());
-  ASSERT_EQ(output.last_response().size(), kPayload.size());
+  ASSERT_EQ(output.last_response(MethodType::kServerStreaming).size(),
+            kPayload.size());
   EXPECT_EQ(
-      std::memcmp(
-          output.last_response().data(), kPayload.data(), kPayload.size()),
+      std::memcmp(output.last_response(MethodType::kServerStreaming).data(),
+                  kPayload.data(),
+                  kPayload.size()),
       0);
   EXPECT_EQ(output.total_stream_packets(), 1u);
   EXPECT_EQ(output.total_response_packets(), 0u);
@@ -65,7 +61,6 @@ TEST(FakeChannelOutput, SendAndClear) {
   EXPECT_FALSE(output.done());
 
   output.clear();
-  EXPECT_EQ(output.last_response().size(), 0u);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), 0u);
   EXPECT_EQ(output.total_responses(), 0u);
@@ -73,12 +68,11 @@ TEST(FakeChannelOutput, SendAndClear) {
 }
 
 TEST(FakeChannelOutput, SendAndFakeFutureResults) {
-  TestFakeChannelOutput output(MethodType::kServerStreaming);
+  TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
   const internal::Packet response_packet(
       PacketType::RESPONSE, kChannelId, kServiceId, kMethodId, kPayload);
   EXPECT_EQ(channel.Send(response_packet), OkStatus());
-  EXPECT_EQ(output.last_response().size(), 0u);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), 1u);
   EXPECT_EQ(output.total_responses(), 1u);
@@ -89,7 +83,6 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
   EXPECT_EQ(channel.Send(response_packet), Status::Unknown());
   EXPECT_EQ(channel.Send(response_packet), Status::Unknown());
   EXPECT_EQ(channel.Send(response_packet), Status::Unknown());
-  EXPECT_EQ(output.last_response().size(), 0u);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), 1u);
   EXPECT_EQ(output.total_responses(), 1u);
@@ -97,7 +90,6 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
   // Turn off error status behavior.
   output.set_send_status(OkStatus());
   EXPECT_EQ(channel.Send(response_packet), OkStatus());
-  EXPECT_EQ(output.last_response().size(), 0u);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), 2u);
   EXPECT_EQ(output.total_responses(), 2u);
@@ -105,11 +97,11 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
   const internal::Packet server_stream_packet(
       PacketType::SERVER_STREAM, kChannelId, kServiceId, kMethodId, kPayload);
   EXPECT_EQ(channel.Send(server_stream_packet), OkStatus());
-  ASSERT_EQ(output.last_response().size(), kPayload.size());
-  EXPECT_EQ(
-      std::memcmp(
-          output.last_response().data(), kPayload.data(), kPayload.size()),
-      0);
+  ASSERT_EQ(output.last_response(MethodType::kUnary).size(), kPayload.size());
+  EXPECT_EQ(std::memcmp(output.last_response(MethodType::kUnary).data(),
+                        kPayload.data(),
+                        kPayload.size()),
+            0);
   EXPECT_EQ(output.total_stream_packets(), 1u);
   EXPECT_EQ(output.total_response_packets(), 2u);
   EXPECT_EQ(output.total_responses(), 3u);
@@ -117,7 +109,7 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
 }
 
 TEST(FakeChannelOutput, SendAndFakeSingleResult) {
-  TestFakeChannelOutput output(MethodType::kBidirectionalStreaming);
+  TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
   const internal::Packet response_packet(
       PacketType::RESPONSE, kChannelId, kServiceId, kMethodId, kPayload);
@@ -134,7 +126,6 @@ TEST(FakeChannelOutput, SendAndFakeSingleResult) {
 
   const size_t total_response_packets =
       static_cast<size_t>(2 * packet_count_fail);
-  EXPECT_EQ(output.last_response().size(), 0u);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), total_response_packets);
   EXPECT_EQ(output.total_responses(), total_response_packets);
@@ -142,23 +133,22 @@ TEST(FakeChannelOutput, SendAndFakeSingleResult) {
   // Turn off error status behavior.
   output.set_send_status(OkStatus());
   EXPECT_EQ(channel.Send(response_packet), OkStatus());
-  EXPECT_EQ(output.last_response().size(), 0u);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), total_response_packets + 1);
   EXPECT_EQ(output.total_responses(), total_response_packets + 1);
 }
 
 TEST(FakeChannelOutput, SendResponseUpdated) {
-  TestFakeChannelOutput output(MethodType::kUnary);
+  TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
   const internal::Packet response_packet(
       PacketType::RESPONSE, kChannelId, kServiceId, kMethodId, kPayload);
   ASSERT_EQ(channel.Send(response_packet), OkStatus());
-  ASSERT_EQ(output.last_response().size(), kPayload.size());
-  EXPECT_EQ(
-      std::memcmp(
-          output.last_response().data(), kPayload.data(), kPayload.size()),
-      0);
+  ASSERT_EQ(output.last_response(MethodType::kUnary).size(), kPayload.size());
+  EXPECT_EQ(std::memcmp(output.last_response(MethodType::kUnary).data(),
+                        kPayload.data(),
+                        kPayload.size()),
+            0);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), 1u);
   EXPECT_EQ(output.total_responses(), 1u);
@@ -168,7 +158,7 @@ TEST(FakeChannelOutput, SendResponseUpdated) {
   const internal::Packet packet_empty_payload(
       PacketType::RESPONSE, kChannelId, kServiceId, kMethodId, {});
   EXPECT_EQ(channel.Send(packet_empty_payload), OkStatus());
-  EXPECT_EQ(output.last_response().size(), 0u);
+  EXPECT_EQ(output.last_response(MethodType::kUnary).size(), 0u);
   EXPECT_EQ(output.total_stream_packets(), 0u);
   EXPECT_EQ(output.total_response_packets(), 1u);
   EXPECT_EQ(output.total_responses(), 1u);
@@ -177,10 +167,12 @@ TEST(FakeChannelOutput, SendResponseUpdated) {
   const internal::Packet server_stream_packet(
       PacketType::SERVER_STREAM, kChannelId, kServiceId, kMethodId, kPayload);
   ASSERT_EQ(channel.Send(server_stream_packet), OkStatus());
-  ASSERT_EQ(output.last_response().size(), kPayload.size());
+  ASSERT_EQ(output.last_response(MethodType::kServerStreaming).size(),
+            kPayload.size());
   EXPECT_EQ(
-      std::memcmp(
-          output.last_response().data(), kPayload.data(), kPayload.size()),
+      std::memcmp(output.last_response(MethodType::kServerStreaming).data(),
+                  kPayload.data(),
+                  kPayload.size()),
       0);
   EXPECT_EQ(output.total_stream_packets(), 1u);
   EXPECT_EQ(output.total_response_packets(), 1u);
