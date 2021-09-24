@@ -205,6 +205,25 @@ def generate_styles(theme_name='dark'):
         'filter-bar-delete': '{}'.format(theme.red_accent),
         'filter-bar': 'bg:{}'.format(theme.inactive_bg),
         'filter-bar-delimiter': '{}'.format(theme.purple_accent),
+
+        # Progress Bar Styles
+        # Entire set of ProgressBars - no title is used in pw_console
+        "title": "",
+        # Bar title
+        "label": "bold",
+        "percentage": "{}".format(theme.green_accent),
+        "bar": "{}".format(theme.magenta_accent),
+        # Filled part of the bar
+        "bar-a": "{} bold".format(theme.cyan_accent),
+        # End of current progress
+        "bar-b": "{} bold".format(theme.purple_accent),
+        # Empty part of the bar
+        "bar-c": "",
+        # current/total counts
+        "current": "{}".format(theme.cyan_accent),
+        "total": "{}".format(theme.cyan_accent),
+        "time-elapsed": "{}".format(theme.purple_accent),
+        "time-left": "{}".format(theme.magenta_accent),
     } # yapf: disable
 
     return Style.from_dict(pw_console_styles)

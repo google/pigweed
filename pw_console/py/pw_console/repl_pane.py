@@ -37,6 +37,7 @@ from prompt_toolkit.layout.dimension import AnyDimension
 from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.layout import (
     ConditionalContainer,
+    DynamicContainer,
     Dimension,
     FloatContainer,
     FormattedTextControl,
@@ -54,6 +55,7 @@ import pw_console.mouse
 import pw_console.style
 import pw_console.widgets.focus_on_click_overlay
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
+from pw_console.progress_bar.progress_bar_state import TASKS_CONTEXTVAR
 
 _LOG = logging.getLogger(__package__)
 
@@ -303,6 +305,9 @@ class ReplPane:
         self.bottom_toolbar = ReplPaneBottomToolbarBar(self)
 
         self.results_toolbar = self._create_output_toolbar()
+
+        self.progress_state = TASKS_CONTEXTVAR.get()
+
         # ReplPane root container
         self.container = ConditionalContainer(
             FloatContainer(
@@ -314,7 +319,14 @@ class ReplPane:
                             [
                                 # 1. Repl Output
                                 self.output_field,
-                                # 2. Static separator toolbar.
+                                # 2. Progress bars if any
+                                ConditionalContainer(
+                                    DynamicContainer(
+                                        self.get_progress_bar_task_container),
+                                    filter=Condition(
+                                        lambda: not self.progress_state.
+                                        all_tasks_complete)),
+                                # 3. Static separator toolbar.
                                 self.results_toolbar,
                             ],
                             # Output area only dimensions
@@ -346,6 +358,12 @@ class ReplPane:
                     ),
                 ]),
             filter=Condition(lambda: self.show_pane))
+
+    def get_progress_bar_task_container(self):
+        bar_container = self.progress_state.get_container()
+        if bar_container:
+            return bar_container
+        return Window()
 
     def get_output_height(self) -> AnyDimension:
         # pylint: disable=no-self-use
@@ -496,7 +514,7 @@ class ReplPane:
         """Run tasks after the last UI render."""
 
     def run_code(self):
-        """Trigger a repl code execution."""
+        """Trigger a repl code execution on mouse click."""
         self.pw_ptpython_repl.default_buffer.validate_and_handle()
 
     def ctrl_c(self):
@@ -525,6 +543,7 @@ class ReplPane:
         if code:
             code.future.cancel()
             code.output = 'Canceled'
+            self.progress_state.cancel_all_tasks()
         self.pw_ptpython_repl.clear_last_result()
         self.update_output_buffer('repl_pane.interrupt_last_code_execution')
 
