@@ -12,6 +12,8 @@
 #include <gtest/gtest.h>
 
 #include "lib/gtest/test_loop_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 
@@ -26,6 +28,11 @@ constexpr uint16_t kSubversion = 0x0002;
 const auto kAdvData = StaticByteBuffer(0x05,  // Length
                                        0x09,  // AD type: Complete Local Name
                                        'T', 'e', 's', 't');
+const StaticByteBuffer kInvalidAdvData{
+    // 32 bit service UUIDs are supposed to be 4 bytes, but the value in this TLV field is only 3
+    // bytes long, hence the AdvertisingData is not valid.
+    0x04, static_cast<uint8_t>(DataType::kComplete32BitServiceUuids), 0x01, 0x02, 0x03,
+};
 
 const bt::sm::LTK kLTK;
 
@@ -85,9 +92,9 @@ class PeerTest : public ::gtest::TestLoopFixture {
   inspect::Hierarchy ReadPeerInspect() { return ReadInspect(peer_inspector_); }
 
   template <class PropertyValue>
-  std::optional<std::remove_reference_t<decltype(std::declval<PropertyValue>().value())>>
-  InspectPropertyValueAtPath(inspect::Inspector& inspector, const std::vector<std::string>& path,
-                             const std::string& property) {
+  std::optional<typename PropertyValue::value_type> InspectPropertyValueAtPath(
+      inspect::Inspector& inspector, const std::vector<std::string>& path,
+      const std::string& property) {
     inspect::Hierarchy hierarchy = ReadInspect(inspector);
     auto node = hierarchy.GetByPath(path);
     if (!node) {
@@ -103,6 +110,22 @@ class PeerTest : public ::gtest::TestLoopFixture {
   std::string InspectLowEnergyConnectionState() {
     std::optional<std::string> val = InspectPropertyValueAtPath<inspect::StringPropertyValue>(
         peer_inspector_, {"peer", "le_data"}, Peer::LowEnergyData::kInspectConnectionStateName);
+    ZX_ASSERT(val);
+    return *val;
+  }
+
+  int64_t InspectAdvertisingDataParseFailureCount() {
+    std::optional<int64_t> val = InspectPropertyValueAtPath<inspect::IntPropertyValue>(
+        peer_inspector_, {"peer", "le_data"},
+        Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName);
+    ZX_ASSERT(val);
+    return *val;
+  }
+
+  std::string InspectLastAdvertisingDataParseFailure() {
+    std::optional<std::string> val = InspectPropertyValueAtPath<inspect::StringPropertyValue>(
+        peer_inspector_, {"peer", "le_data"},
+        Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName);
     ZX_ASSERT(val);
     return *val;
   }
@@ -183,6 +206,8 @@ TEST_F(PeerTest, InspectHierarchy) {
       PropertyList(UnorderedElementsAre(
         StringIs(Peer::LowEnergyData::kInspectConnectionStateName,
                  Peer::ConnectionStateToString(peer().le()->connection_state())),
+        IntIs(Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName, 0),
+        StringIs(Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName, ""),
         BoolIs(Peer::LowEnergyData::kInspectBondDataName, peer().le()->bonded()),
         StringIs(Peer::LowEnergyData::kInspectFeaturesName, "0x0000000000000001")
         )))));
@@ -298,14 +323,20 @@ TEST_F(PeerTest, SetNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
 }
 
 TEST_F(PeerTest, LowEnergyAdvertisingDataTimestamp) {
-  EXPECT_FALSE(peer().MutLe().advertising_data_timestamp());
+  EXPECT_FALSE(peer().MutLe().parsed_advertising_data_timestamp());
   peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(1));
-  ASSERT_TRUE(peer().MutLe().advertising_data_timestamp());
-  EXPECT_EQ(peer().MutLe().advertising_data_timestamp().value(), zx::time(1));
+  ASSERT_TRUE(peer().MutLe().parsed_advertising_data_timestamp());
+  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(), zx::time(1));
 
   peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(2));
-  ASSERT_TRUE(peer().MutLe().advertising_data_timestamp());
-  EXPECT_EQ(peer().MutLe().advertising_data_timestamp().value(), zx::time(2));
+  ASSERT_TRUE(peer().MutLe().parsed_advertising_data_timestamp());
+  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(), zx::time(2));
+
+  // SetAdvertisingData with data that fails to parse should not update the advertising data
+  // timestamp.
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kInvalidAdvData, zx::time(3));
+  ASSERT_TRUE(peer().MutLe().parsed_advertising_data_timestamp());
+  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(), zx::time(2));
 }
 
 TEST_F(PeerTest, SettingLowEnergyAdvertisingDataUpdatesLastUpdated) {
@@ -688,6 +719,30 @@ TEST_F(PeerTest, MovingLowEnergyConnectionTokenWorksAsExpected) {
 
   token_1.reset();
   EXPECT_EQ(peer().le()->connection_state(), Peer::ConnectionState::kNotConnected);
+}
+
+TEST_F(PeerTest, SetValidAdvertisingData) {
+  constexpr const char* kLocalName = "Test";
+  StaticByteBuffer raw_data{
+      // Length - Type - Value formatted Local name
+      0x05,          static_cast<uint8_t>(DataType::kCompleteLocalName),
+      kLocalName[0], kLocalName[1],
+      kLocalName[2], kLocalName[3],
+  };
+  peer().MutLe().SetAdvertisingData(/*rssi=*/32, raw_data, zx::time());
+  // Setting an AdvertisingData with a local name field should update the peer's local name.
+  ASSERT_TRUE(peer().name().has_value());
+  EXPECT_EQ(kLocalName, peer().name().value());
+  EXPECT_EQ(0, InspectAdvertisingDataParseFailureCount());
+  EXPECT_EQ("", InspectLastAdvertisingDataParseFailure());
+}
+
+TEST_F(PeerTest, SetInvalidAdvertisingData) {
+  peer().MutLe().SetAdvertisingData(/*rssi=*/32, kInvalidAdvData, zx::time());
+
+  EXPECT_EQ(1, InspectAdvertisingDataParseFailureCount());
+  EXPECT_EQ(AdvertisingData::ParseErrorToString(AdvertisingData::ParseError::kUuidsMalformed),
+            InspectLastAdvertisingDataParseFailure());
 }
 
 }  // namespace

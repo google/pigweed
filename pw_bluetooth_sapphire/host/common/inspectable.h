@@ -87,7 +87,7 @@ class Inspectable {
     UpdateProperty();
   }
 
-  // Cosntruct with null property (updates will be no-ops).
+  // Construct with null property (updates will be no-ops).
   explicit Inspectable(ValueT initial_value, ConvertFunction convert = &Inspectable::DefaultConvert)
       : value_(std::move(initial_value)), convert_(std::move(convert)) {}
 

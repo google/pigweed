@@ -483,8 +483,6 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
 void LowEnergyCentralServer::OnScanResult(const bt::gap::Peer& peer) {
   auto fidl_device = fidl_helpers::NewLERemoteDevice(peer);
   if (!fidl_device) {
-    bt_log(WARN, "fidl", "%s: ignoring malformed scan result (peer: %s)", __FUNCTION__,
-           bt_str(peer.identifier()));
     return;
   }
 

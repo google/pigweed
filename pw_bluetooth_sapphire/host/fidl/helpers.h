@@ -124,7 +124,8 @@ std::vector<bt::UUID> BredrServicesFromFidl(const fuchsia::bluetooth::sys::Bredr
 fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapter& adapter,
                                                            const bt::gap::Peer& peer);
 
-// Functions to construct FIDL LE library objects from library objects.
+// Functions to construct FIDL LE library objects from library objects. Returns nullptr if the peer
+// is not LE or if the peer's advertising data failed to parse.
 fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer);
 
 // Validates the contents of a ScanFilter.

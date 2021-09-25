@@ -132,6 +132,10 @@ class Peer final {
    public:
     static constexpr const char* kInspectNodeName = "le_data";
     static constexpr const char* kInspectConnectionStateName = "connection_state";
+    static constexpr const char* kInspectAdvertisingDataParseFailureCountName =
+        "adv_data_parse_failure_count";
+    static constexpr const char* kInspectLastAdvertisingDataParseFailureName =
+        "last_adv_data_parse_failure";
     static constexpr const char* kInspectBondDataName = "bonded";
     static constexpr const char* kInspectFeaturesName = "features";
 
@@ -156,7 +160,16 @@ class Peer final {
     // Advertising (and optionally scan response) data obtained during
     // discovery.
     const ByteBuffer& advertising_data() const { return adv_data_buffer_; }
-    std::optional<zx::time> advertising_data_timestamp() const { return adv_timestamp_; }
+
+    // Note that it is possible for `advertising_data()` to return a non-empty buffer while this
+    // method returns std::nullopt, as AdvertisingData is only stored if it is parsed correctly.
+    // TODO(fxbug.dev/85368): Migrate clients off of advertising_data, so that we do not need to
+    // store the raw buffer after parsing it.
+    const std::optional<AdvertisingData>& parsed_advertising_data() const {
+      return parsed_adv_data_;
+    }
+    // Returns the timestamp associated with the most recently successfully parsed AdvertisingData.
+    std::optional<zx::time> parsed_advertising_data_timestamp() const { return adv_timestamp_; }
 
     // Most recently used LE connection parameters. Has no value if the peer
     // has never been connected.
@@ -226,6 +239,7 @@ class Peer final {
    private:
     struct InspectProperties {
       inspect::StringProperty connection_state;
+      inspect::StringProperty last_adv_data_parse_failure;
     };
 
     // Called when the connection state changes.
@@ -246,10 +260,14 @@ class Peer final {
     // duplicate entries are possible. It is OK to assume that fields repeated in scan response
     // data supercede those in the original advertising data when processing fields in order.
     DynamicByteBuffer adv_data_buffer_;
-    // Time when advertising data was last updated.
+    // Time when advertising data was last updated and successfully parsed.
     std::optional<zx::time> adv_timestamp_;
+    // AdvertisingData parsed out of the adv_data_buffer_, if it is present and parses correctly.
+    std::optional<AdvertisingData> parsed_adv_data_;
 
     BoolInspectable<std::optional<sm::PairingData>> bond_data_;
+
+    IntInspectable<int64_t> adv_data_parse_failure_count_;
 
     AutoConnectBehavior auto_conn_behavior_ = AutoConnectBehavior::kAlways;
 

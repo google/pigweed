@@ -20,6 +20,11 @@
 #include "src/lib/fxl/strings/utf_codecs.h"
 
 namespace bt::gap {
+namespace {
+// To prevent log spam, we only log every Nth failure to parse AdvertisingData from each peer.
+// This value controls N.
+const int64_t kAdvDataParseFailureWarnLogInterval = 25;
+}  // namespace
 
 std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
   switch (state) {
@@ -53,6 +58,10 @@ void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name)
   inspect_properties_.connection_state =
       node_.CreateString(LowEnergyData::kInspectConnectionStateName,
                          Peer::ConnectionStateToString(connection_state()));
+  inspect_properties_.last_adv_data_parse_failure =
+      node_.CreateString(LowEnergyData::kInspectLastAdvertisingDataParseFailureName, "");
+  adv_data_parse_failure_count_.AttachInspect(
+      node_, LowEnergyData::kInspectAdvertisingDataParseFailureCountName);
   bond_data_.AttachInspect(node_, LowEnergyData::kInspectBondDataName);
   features_.AttachInspect(node_, LowEnergyData::kInspectFeaturesName);
 }
@@ -65,22 +74,35 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data
   peer_->SetRssiInternal(rssi);
 
   // Update the advertising data
-  // TODO(armansito): Validate that the advertising data is not malformed?
   adv_data_buffer_ = DynamicByteBuffer(data.size());
   data.Copy(&adv_data_buffer_);
-  adv_timestamp_ = timestamp;
+  AdvertisingData::ParseResult res = AdvertisingData::FromBytes(adv_data_buffer_);
+  if (!res.is_ok()) {
+    int64_t current_failure_count = *adv_data_parse_failure_count_;
+    adv_data_parse_failure_count_.Set(current_failure_count + 1);
+    inspect_properties_.last_adv_data_parse_failure.Set(
+        AdvertisingData::ParseErrorToString(res.error_value()));
+    std::string message =
+        fxl::StringPrintf("failed to parse advertising data: %s (peer: %s)",
+                          bt::AdvertisingData::ParseErrorToString(res.error_value()).c_str(),
+                          bt_str(peer_->identifier()));
+    // To prevent log spam, we only log the first, and then every Nth failure to parse
+    // AdvertisingData from each peer at WARN level. Other failures are logged at DEBUG level.
+    if (*adv_data_parse_failure_count_ % kAdvDataParseFailureWarnLogInterval == 1) {
+      bt_log(WARN, "gap-le", "%s", message.c_str());
+    } else {
+      bt_log(DEBUG, "gap-le", "%s", message.c_str());
+    }
+  } else {
+    // Only update the adv_timestamp if the AdvertisingData parsed successfully
+    adv_timestamp_ = timestamp;
 
-  // Walk through the advertising data and update common fields.
-  SupplementDataReader reader(data);
-  DataType type;
-  BufferView view;
-  while (reader.GetNextField(&type, &view)) {
-    if (type == DataType::kCompleteLocalName || type == DataType::kShortenedLocalName) {
-      // TODO(armansito): Parse more advertising data fields, such as preferred
-      // connection parameters.
-      // TODO(fxbug.dev/793): SetName should be a no-op if a name was obtained via
+    parsed_adv_data_ = std::move(*res);
+    // TODO(fxbug.dev/85365): Populate more Peer fields with relevant fields from parsed_adv_data_.
+    if (parsed_adv_data_->local_name().has_value()) {
+      // TODO(fxbug.dev/65914): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.
-      peer_->SetNameInternal(view.ToString());
+      peer_->SetNameInternal(parsed_adv_data_->local_name().value());
     }
   }
 
