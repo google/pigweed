@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_software_update/update_manager.h"
+#include "pw_software_update/bundled_update_service.h"
 
 #include "gtest/gtest.h"
 
-TEST(UpdateManager, Compiles) {}
+TEST(BundledUpdateService, Compiles) {}

@@ -15,18 +15,19 @@
 #pragma once
 
 #include "pw_software_update/bundled_update.rpc.pb.h"
-#include "pw_software_update/update_manager.h"
+#include "pw_software_update/bundled_update_backend.h"
+#include "pw_software_update/update_bundle_accessor.h"
 #include "pw_status/status.h"
 
 namespace pw::software_update {
 
-// Implementation class for pw_software_update.BundledUpdate.
+// Implementation class for pw.software_update.BundledUpdate.
 class BundledUpdateService
     : public generated::BundledUpdate<BundledUpdateService> {
  public:
-  explicit constexpr BundledUpdateService(
-      pw::software_update::BundledUpdateManager& manager)
-      : manager_(manager) {}
+  constexpr BundledUpdateService(UpdateBundleAccessor& bundle,
+                                 BundledUpdateBackend& backend)
+      : backend_(backend), bundle_(bundle), bundle_open_(false) {}
 
   Status Abort(ServerContext&,
                const pw_protobuf_Empty& request,
@@ -66,7 +67,17 @@ class BundledUpdateService
                            pw_software_update_OperationResult& response);
 
  private:
-  pw::software_update::BundledUpdateManager& manager_;
+  BundledUpdateBackend& backend_;
+  UpdateBundleAccessor& bundle_;
+
+  std::optional<uint32_t> transfer_id_;
+  bool bundle_open_;
+
+  // Will disable the transfer_id if needed via the BundledUpdateBackend.
+  void DisableTransferId();
+
+  Status VerifyUpdate();
+  Status ApplyUpdate();
 };
 
 }  // namespace pw::software_update

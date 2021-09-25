@@ -14,16 +14,114 @@
 
 #include "pw_software_update/bundled_update_service.h"
 
+#include <string_view>
+
+#include "pw_log/log.h"
 #include "pw_result/result.h"
+#include "pw_software_update/manifest_accessor.h"
+#include "pw_software_update/update_bundle.pwpb.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
 namespace pw::software_update {
 
+void BundledUpdateService::DisableTransferId() {
+  if (!transfer_id_.has_value()) {
+    return;  // Nothing to do, already disabled.
+  }
+  backend_.DisableBundleTransferHandler();
+}
+
+pw::Status BundledUpdateService::VerifyUpdate() {
+  DisableTransferId();
+  PW_TRY(backend_.BeforeBundleVerify());
+  ManifestAccessor manifest;  // TODO(pwbug/456): Place-holder for now.
+  PW_TRY(bundle_.OpenAndVerify(manifest));
+  bundle_open_ = true;
+  return backend_.AfterBundleVerified();
+}
+
+Status BundledUpdateService::ApplyUpdate() {
+  PW_LOG_DEBUG("Attempting to apply the update");
+  protobuf::StringToMessageMap signed_targets_metadata_map =
+      bundle_.GetDecoder().AsStringToMessageMap(static_cast<uint32_t>(
+          pw::software_update::UpdateBundle::Fields::TARGETS_METADATA));
+  if (const Status status = signed_targets_metadata_map.status();
+      !status.ok()) {
+    PW_LOG_ERROR("Update bundle does not contain the targets_metadata map: %d",
+                 static_cast<int>(status.code()));
+    return status;
+  }
+
+  // There should only be one element in the map, which is the top-level
+  // targets metadata.
+  constexpr std::string_view kTopLevelTargetsName = "targets";
+  protobuf::Message signed_targets_metadata =
+      signed_targets_metadata_map[kTopLevelTargetsName];
+  if (const Status status = signed_targets_metadata.status(); !status.ok()) {
+    PW_LOG_ERROR(
+        "The targets_metadata map does not contain the targets entry: %d",
+        static_cast<int>(status.code()));
+    return status;
+  }
+
+  protobuf::Message targets_metadata = signed_targets_metadata.AsMessage(
+      static_cast<uint32_t>(pw::software_update::SignedTargetsMetadata::Fields::
+                                SERIALIZED_TARGETS_METADATA));
+  if (const Status status = targets_metadata.status(); !status.ok()) {
+    PW_LOG_ERROR(
+        "The targets targets_metadata entry does not contain the "
+        "serialized_target_metadata: %d",
+        static_cast<int>(status.code()));
+    return status;
+  }
+
+  protobuf::RepeatedMessages target_files =
+      targets_metadata.AsRepeatedMessages(static_cast<uint32_t>(
+          pw::software_update::TargetsMetadata::Fields::TARGET_FILES));
+  if (const Status status = target_files.status(); !status.ok()) {
+    PW_LOG_ERROR(
+        "The serialized_target_metadata does not contain target_files: %d",
+        static_cast<int>(status.code()));
+    return status;
+  }
+
+  for (pw::protobuf::Message file_name : target_files) {
+    // TODO: Use a config.h parameter for this.
+    constexpr size_t kFileNameMaxSize = 32;
+    std::array<std::byte, kFileNameMaxSize> buf = {};
+    protobuf::String name = file_name.AsString(static_cast<uint32_t>(
+        pw::software_update::TargetFile::Fields::FILE_NAME));
+    PW_TRY(name.status());
+    const Result<ByteSpan> read_result = name.GetBytesReader().Read(buf);
+    PW_TRY(read_result.status());
+    const ConstByteSpan file_name_span = read_result.value();
+    const std::string_view file_name_view(
+        reinterpret_cast<const char*>(file_name_span.data()),
+        file_name_span.size_bytes());
+    stream::IntervalReader file_reader =
+        bundle_.GetTargetPayload(file_name_view);
+    if (const Status status =
+            backend_.ApplyTargetFile(file_name_view, file_reader);
+        !status.ok()) {
+      PW_LOG_ERROR("Failed to apply target file: %d",
+                   static_cast<int>(status.code()));
+      return status;
+    }
+  }
+
+  return backend_.FinalizeApply();
+}
+
 Status BundledUpdateService::Abort(ServerContext&,
                                    const pw_protobuf_Empty&,
                                    pw_software_update_OperationResult&) {
-  return manager_.Abort();
+  DisableTransferId();
+  PW_TRY(backend_.BeforeUpdateAbort());
+  if (bundle_open_) {
+    bundle_.Close();
+  }
+  return OkStatus();
 }
 
 Status BundledUpdateService::SoftwareUpdateState(
@@ -67,10 +165,16 @@ Status BundledUpdateService::PrepareForUpdate(
   response.has_result = true;
   response.result = result;
   response.has_transfer_id = true;
-  const pw::Result<uint32_t> possible_transfer_id = manager_.GetTransferId();
-  PW_TRY(possible_transfer_id.status());
-  response.transfer_id = possible_transfer_id.value();
-  return manager_.BeforeUpdate();
+
+  if (!transfer_id_.has_value()) {
+    Result<uint32_t> possible_transfer_id =
+        backend_.EnableBundleTransferHandler();
+    PW_TRY(possible_transfer_id.status());
+    transfer_id_ = possible_transfer_id.value();
+  }
+  response.transfer_id = transfer_id_.value();
+
+  return backend_.BeforeUpdateStart();
 }
 
 // TODO: dedupe this with VerifyStagedBundle.
@@ -86,10 +190,11 @@ Status BundledUpdateService::VerifyAndApplyStagedBundle(
       pw_software_update_BundledUpdateState_State_VERIFIED_AND_READY_TO_APPLY;
   response.state = state;
   // TODO: defer this handling to the work queue so we can respond here.
-  PW_TRY(manager_.VerifyUpdate());
-  return manager_.ApplyUpdate();
+  PW_TRY(VerifyUpdate());
+  return ApplyUpdate();
 }
 
+// TODO: Consider a config.h parameter to require VerifyAndApplyStagedBundle.
 Status BundledUpdateService::VerifyStagedBundle(
     ServerContext&,
     const pw_protobuf_Empty&,
@@ -102,15 +207,16 @@ Status BundledUpdateService::VerifyStagedBundle(
       pw_software_update_BundledUpdateState_State_VERIFIED_AND_READY_TO_APPLY;
   response.state = state;
   // TODO: defer this handling to the work queue so we can respond here.
-  return manager_.VerifyUpdate();
+  return VerifyUpdate();
 }
 
+// TODO: Consider a config.h parameter to require VerifyAndApplyStagedBundle.
 Status BundledUpdateService::ApplyStagedBundle(
     ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_OperationResult&) {
   // TODO: defer this handling to the work queue so we can respond here.
-  return manager_.ApplyUpdate();
+  return ApplyUpdate();
 }
 
 }  // namespace pw::software_update

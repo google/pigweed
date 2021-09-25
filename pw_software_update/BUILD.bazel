@@ -34,12 +34,12 @@ proto_library(
 
 pw_cc_library(
     name = "update_bundle",
-    srcs = ["update_bundle.cc"],
+    srcs = ["update_bundle_accessor.cc"],
     hdrs = [
         "public/pw_software_update/bundled_update_backend.h",
         "public/pw_software_update/config.h",
-        "public/pw_software_update/manifest.h",
-        "public/pw_software_update/update_bundle.h",
+        "public/pw_software_update/manifest_accessor.h",
+        "public/pw_software_update/update_bundle_accessor.h",
     ],
     includes = ["public"],
     deps = [
@@ -53,12 +53,16 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "update_service",
-    srcs = ["service.cc"],
-    hdrs = ["public/pw_software_update/service.h"],
+    name = "bundled_update_service",
+    srcs = ["bundled_update_service.cc"],
+    hdrs = ["public/pw_software_update/bundled_update_service.h"],
     includes = ["public"],
     deps = [
+        ":update_bundle",
         ":update_bundle_proto",
+        "//pw_log",
+        "//pw_result",
+        "//pw_status",
     ],
 )
 
@@ -68,6 +72,15 @@ pw_cc_test(
     deps = [
         ":update_bundle",
         "//pw_kvs:fake_flash_test_key_value_store",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "bundled_update_service_test",
+    srcs = ["bundled_update_service_test.cc"],
+    deps = [
+        ":bundled_update_service",
         "//pw_unit_test",
     ],
 )

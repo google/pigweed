@@ -85,9 +85,14 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
     public_configs = [ ":public_include_path" ]
     public_deps = [
       ":protos.nanopb_rpc",
-      ":update_manager",
+      ":update_bundle",
+      dir_pw_result,
+      dir_pw_status,
     ]
-    deps = [ dir_pw_log ]
+    deps = [
+      ":protos.pwpb",
+      dir_pw_log,
+    ]
     public = [ "public/pw_software_update/bundled_update_service.h" ]
     sources = [ "bundled_update_service.cc" ]
   }
@@ -129,21 +134,13 @@ pw_test("update_bundle_test") {
 pw_test_group("tests") {
   tests = [
     ":update_bundle_test",
-    ":update_manager_test",
+    ":bundled_update_service_test",
   ]
 }
 
-pw_test("update_manager_test") {
+pw_test("bundled_update_service_test") {
   enable_if =
       dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != ""
-  sources = [ "update_manager_test.cc" ]
-  public_deps = [ ":update_manager" ]
-}
-
-pw_source_set("update_manager") {
-  public_configs = [ ":public_include_path" ]
-  public_deps = [ ":update_bundle" ]
-  deps = [ ":protos.pwpb" ]
-  public = [ "public/pw_software_update/update_manager.h" ]
-  sources = [ "update_manager.cc" ]
+  sources = [ "bundled_update_service_test.cc" ]
+  public_deps = [ ":bundled_update_service" ]
 }
