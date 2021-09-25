@@ -1285,6 +1285,9 @@ TEST_F(ACLDataChannelTest,
   acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
   acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
+  inspect::Inspector inspector;
+  acl_data_channel()->AttachInspect(inspector.GetRoot(), AclDataChannel::kInspectNodeName);
+
   // Fill up both LE and BR/EDR controller buffers
   for (ConnectionHandle handle : {kHandle0, kHandle1}) {
     for (size_t i = 0; i < kMaxNumPackets; ++i) {
@@ -1336,6 +1339,14 @@ TEST_F(ACLDataChannelTest,
   RunLoopUntilIdle();
 
   EXPECT_EQ(2u, packet_count);
+
+  using namespace ::inspect::testing;
+  auto adc_matcher = NodeMatches(
+      PropertyList(AllOf(Contains(UintIs("num_overflow_packets", packet_count)),
+                         Contains(UintIs("num_recent_overflow_packets", packet_count)))));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
+  EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(adc_matcher)));
 }
 
 TEST_F(ACLDataChannelTest,
@@ -1524,7 +1535,6 @@ TEST_F(ACLDataChannelDeathTest, AttachInspectBeforeInitializeCrashes) {
 }
 
 TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
-  using namespace ::inspect::testing;
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
   constexpr ConnectionHandle kHandle0 = 0x0001;
@@ -1552,6 +1562,7 @@ TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
   const std::string kNodeName = "adc_node_name";
   acl_data_channel()->AttachInspect(inspector.GetRoot(), kNodeName);
 
+  using namespace ::inspect::testing;
   auto bredr_matcher = NodeMatches(AllOf(
       NameMatches("bredr"), PropertyList(ElementsAre(UintIs("num_sent_packets", kMaxNumPackets)))));
 
@@ -1560,10 +1571,12 @@ TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
             PropertyList(UnorderedElementsAre(UintIs("num_sent_packets", kMaxNumPackets),
                                               BoolIs("independent_from_bredr", true)))));
 
-  auto adc_matcher =
-      AllOf(NodeMatches(AllOf(NameMatches(kNodeName),
-                              PropertyList(ElementsAre(UintIs("num_queued_packets", 2))))),
-            ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher)));
+  auto adc_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches(kNodeName),
+                        PropertyList(UnorderedElementsAre(
+                            UintIs("num_queued_packets", 2), UintIs("num_overflow_packets", 0),
+                            UintIs("num_recent_overflow_packets", 0))))),
+      ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(adc_matcher)));

@@ -28,6 +28,8 @@ adapter:
     le_features
     acl_data_channel:
         num_queue_packets
+        num_overflow_packets
+        num_recent_overflow_packets
         bredr:
             num_sent_packets
         le:

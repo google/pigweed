@@ -20,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"
@@ -226,6 +227,11 @@ class AclDataChannelImpl final : public AclDataChannel {
   // LogDroppedOverflowPackets.
   std::map<std::pair<hci::ConnectionHandle, UniqueChannelId>, int64_t> dropped_packet_counts_;
 
+  // Lifetime and recent counts of overflow packets that have been dropped.
+  UintInspectable<size_t> num_overflow_packets_;
+  WindowedInspectUintProperty num_recent_overflow_packets_ =
+      WindowedInspectUintProperty(zx::min(3), zx::min(3) / 100);
+
   async::TaskClosureMethod<AclDataChannelImpl, &AclDataChannelImpl::LogDroppedOverflowPackets>
       log_dropped_overflow_task_{this};
 
@@ -338,6 +344,8 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent, std::string name) 
   ZX_ASSERT_MSG(is_initialized_, "Must be initialized before attaching to inspect tree");
   node_ = parent.CreateChild(std::move(name));
   send_queue_.SetProperty(node_.CreateUint("num_queued_packets", 0));
+  num_overflow_packets_.AttachInspect(node_, "num_overflow_packets");
+  num_recent_overflow_packets_.AttachInspect(node_, "num_recent_overflow_packets");
 
   bredr_subnode_ = node_.CreateChild("bredr");
   num_sent_packets_.AttachInspect(bredr_subnode_, "num_sent_packets");
@@ -716,9 +724,11 @@ void AclDataChannelImpl::DropOverflowPacket(const QueuedDataPacket& archetypal_p
   ZX_ASSERT(to_drop_iter != send_queue_->end());
   const auto next_packet_iter = std::find_if(std::next(to_drop_iter), send_queue_->end(), is_head);
 
+  const size_t num_dropped = std::distance(to_drop_iter, next_packet_iter);
   dropped_packet_counts_[{archetypal_packet.packet->connection_handle(),
-                          archetypal_packet.channel_id}] +=
-      std::distance(to_drop_iter, next_packet_iter);
+                          archetypal_packet.channel_id}] += num_dropped;
+  *num_overflow_packets_.Mutable() += num_dropped;
+  num_recent_overflow_packets_.Add(num_dropped);
   send_queue_.Mutable()->erase(to_drop_iter, next_packet_iter);
 
   // Schedule a deadline to log this drop and any other drops that occur until the logging drains
