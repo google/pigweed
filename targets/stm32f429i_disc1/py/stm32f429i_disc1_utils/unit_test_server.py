@@ -12,7 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Launch a pw_test_server server to use for multi-device testing."""
+"""Launch a pw_target_runner server to use for multi-device testing."""
 
 import argparse
 import logging
