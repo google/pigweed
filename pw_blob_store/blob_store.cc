@@ -81,9 +81,12 @@ Status BlobStore::LoadMetadata() {
   metadata.reset();
 
   // For kVersion1 metadata versions, only the first member of
-  // BlobMetadataHeaderV2 will be populated.
-  if (!kvs_.Get(MetadataKey(), std::as_writable_bytes(std::span(&metadata, 1)))
-           .ok()) {
+  // BlobMetadataHeaderV2 will be populated. If a file name is present,
+  // kvs_.Get() will return RESOURCE_EXHAUSTED as the file name won't fit in the
+  // BlobMetadtataHeader object, which is intended behavior.
+  if (StatusWithSize sws = kvs_.Get(
+          MetadataKey(), std::as_writable_bytes(std::span(&metadata, 1)));
+      !sws.ok() && !sws.IsResourceExhausted()) {
     return Status::NotFound();
   }
 

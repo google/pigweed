@@ -244,20 +244,27 @@ TEST_F(BlobStoreTest, FileName) {
   std::array<std::byte, kEncodeBufferSize> metadata_buffer = {};
   std::array<std::byte, 64> tmp_buffer = {};
   static_assert(kFileName.size() <= tmp_buffer.size());
-
   kvs::ChecksumCrc16 checksum;
   constexpr size_t kBufferSize = 256;
+  {
+    // Create/init a blob store in a nested scope so it can be re-initialized
+    // later when checking the read.
+    BlobStoreBuffer<kBufferSize> blob(
+        kBlobTitle, partition_, &checksum, kvs::TestKvs(), kBufferSize);
+    EXPECT_EQ(OkStatus(), blob.Init());
+
+    BlobStore::BlobWriter writer(blob, metadata_buffer);
+
+    EXPECT_EQ(OkStatus(), writer.Open());
+    EXPECT_EQ(OkStatus(), writer.SetFileName(kFileName));
+    EXPECT_EQ(OkStatus(), writer.Write(tmp_buffer));
+    EXPECT_EQ(OkStatus(), writer.Close());
+    EXPECT_EQ(OkStatus(), kvs::TestKvs().Get(kBlobTitle, tmp_buffer).status());
+  }
+
   BlobStoreBuffer<kBufferSize> blob(
       kBlobTitle, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(OkStatus(), blob.Init());
-
-  BlobStore::BlobWriter writer(blob, metadata_buffer);
-
-  EXPECT_EQ(OkStatus(), writer.Open());
-  EXPECT_EQ(OkStatus(), writer.SetFileName(kFileName));
-  EXPECT_EQ(OkStatus(), writer.Write(tmp_buffer));
-  EXPECT_EQ(OkStatus(), writer.Close());
-  EXPECT_EQ(OkStatus(), kvs::TestKvs().Get(kBlobTitle, tmp_buffer).status());
 
   // Ensure the file name can be read from a reader.
   BlobStore::BlobReader reader(blob);
