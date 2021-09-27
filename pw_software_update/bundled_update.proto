@@ -15,99 +15,161 @@ syntax = "proto3";
 
 package pw.software_update;
 
-import "pw_software_update/tuf.proto";
-import "pw_software_update/update_bundle.proto";
 import "pw_protobuf_protos/common.proto";
+import "pw_tokenizer/proto/options.proto";
 import "google/protobuf/any.proto";
 
 message BundledUpdateState {
-  enum State {
-    UNKNOWN = 0;
-    INACTIVE = 1;
-    READY_FOR_UPDATE = 2;
-    VERIFYING_UPDATE_BUNDLE = 3;
-    VERIFIED_AND_READY_TO_APPLY = 4;
-    APPLYING_UPDATE = 5;
-  }
+  enum Enum {
+    UNKNOWN = 0;  // Not an expected state in the OTA system; only for proto.
 
-  State manager_state = 1;
+    // Valid methods in this state: Start()
+    //
+    // Transition:
+    //   Start() succeeds --> TRANSFERRING
+    //   Start() fails    --> FINISHED
+    INACTIVE = 1;
+
+    // Valid methods in this state: GetStatus(), Abort().
+    //
+    // Transitions:
+    //   Transfer completes --> TRANSFERRED
+    //   Transfer fails     --> FINISHED
+    //   Abort() called     --> ABORTING
+    TRANSFERRING = 2;
+
+    // Valid methods in this state: GetStatus(), Abort(), Verify().
+    //
+    // Transitions:
+    //   Verify() called    --> VERIFYING
+    //   Apply() called     --> VERIFYING
+    //   Abort() called     --> ABORTING
+    TRANSFERRED = 3;
+
+    // Valid methods in this state: GetStatus(), Abort().
+    //
+    // Transitions:
+    //   Verifying finished --> VERIFIED
+    //   Verifying failed   --> FINISHED
+    //   Abort() called     --> ABORTING
+    VERIFYING = 4;
+
+    // Valid methods in this state: GetStatus(), Abort(), Apply().
+    //
+    // Transitions:
+    //   Apply() called --> APPLYING
+    //   Abort() called --> ABORTING
+    VERIFIED = 5;
+
+    // Valid methods in this state: GetStatus().
+    //
+    // Transitions:
+    //   Apply() finished --> FINISHED; may require persisting across a reboot.
+    //   Apply() failed   --> FINISHED; with error set.
+    APPLYING = 6;
+
+    // Valid methods in this state: GetStatus().
+    //
+    // Transitions:
+    //   Abort finishes --> FINISHED
+    //   Abort fails    --> FINISHED
+    ABORTING = 7;
+
+    // Valid methods in this state: GetStatus(), Reset().
+    //
+    // Terminal state indicating a finished update; whether successful or
+    // not. Additional termination information available in completion_state
+    // and possibly note.
+    //
+    // Transitions:
+    //   Reset() succeeds --> INACTIVE
+    //   Reset() fails    --> FINISHED
+    FINISHED = 8;
+  }
+}
+
+message BundledUpdateResult {
+  enum Enum {
+    UNKNOWN = 0;
+    SUCCESS = 1;
+    UNKNOWN_ERROR = 2;
+    ABORTED = 3;
+    TRANSFER_FAILED = 4;
+    VERIFY_FAILED = 5;
+    APPLY_FAILED = 6;
+  }
+}
+
+message BundledUpdateStatus {
+  BundledUpdateState.Enum state = 1;
+
+  optional BundledUpdateResult.Enum result = 2;
 
   // This is the percentage of estimated progress for the current update
   // state in hundreths of a percent. (e.g. 5.00% = 500u)
-  optional uint32 current_state_progress_hundreth_percent = 2;
+  optional uint32 current_state_progress_hundreth_percent = 3;
+
+  // If present, the active transfer ID for the update.
+  optional uint32 transfer_id = 4;
+
+  // The name of the update bundle. Not present when in INACTIVE state. This is
+  // useful for enabling resuming of transfers across reboots or disconnects,
+  // without transferring an expensive manifest.
+  optional string bundle_filename = 5;
+
+  // Additional information related to the state may be provided here.
+  // Examples: "Failed verifying: ml_model.bin", "Flash partition couldn't be
+  // acquired and was busy", etc. Can provide more granular information than
+  // just the completion result.
+  optional bytes note = 6 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+
+  // Custom application data.
+  optional google.protobuf.Any extended_status = 7;
 }
 
-message OperationResult {
-  BundledUpdateState state = 1;
-  optional google.protobuf.Any extended_status = 2;
+message StartRequest {
+  // If present, the filename for the staged file. This should persist across
+  // reboots, and will be returned from GetStatus() until either the update
+  // applies or is aborted.
+  optional string bundle_filename = 1;
 }
 
-message PrepareUpdateResult {
-  OperationResult result = 1;
-  optional uint32 transfer_id = 2;
-}
-
-// TODO(pwbug/478): add documentation for details of api contract
+// TODO(pwbug/478): Add documentation and details of the API contract.
 service BundledUpdate {
+  // TODO: Offer GetCurrentManifest & GetStagedManifest() methods that leverage
+  // pw_transfer to upload the manifest off the device, to enable host logic.
+
+  // Get current status of software update.
+  rpc GetStatus(pw.protobuf.Empty) returns (BundledUpdateStatus);
+
+  // Start a software update. Do any device-specific tasks needed to be ready
+  // for update. Open pw_transfer channel used for staging bundle.
+  // Returned status includes the transfer ID to use for bundle transfer.
+  //
+  // Precondition: Device update state must be INACTIVE.
+  rpc Start(StartRequest) returns (BundledUpdateStatus);
+
+  // Verify the bundle in the staging area. Returns immediately, but
+  // verification runs asynchronously. Poll for completion with GetStatus().
+  //
+  // Precondition: Device update state must be TRANSFERRED.
+  rpc Verify(pw.protobuf.Empty) returns (BundledUpdateStatus);
+
+  // Apply the staged update. The update process will verify the staged bundle
+  // or ensure that it was verified, apply the bundle, and in some cases reboot
+  // the device. During this process, the device may be slow to respond.
+  //
+  // The RPC is async; callers must fetch status with GetStatus().
+  //
+  // Precondition: Device update state must be TRANSFERRED or VERIFIED.
+  rpc Apply(pw.protobuf.Empty) returns (BundledUpdateStatus);
+
   // Abort any current software update in progress.
-  //
-  // Safe to call at any point.
-  rpc Abort(pw.protobuf.Empty) returns (OperationResult) {};
+  // Precondition: Device update state must not be INACTIVE or FINISHED.
+  rpc Abort(pw.protobuf.Empty) returns (BundledUpdateStatus);
 
-  // Get current state of software update.
+  // Reset after a finished update. Device goes into INACTIVE state after.
   //
-  // Safe to call at any point.
-  rpc SoftwareUpdateState(pw.protobuf.Empty) returns (OperationResult) {};
-
-  // Get the manifest of the software currently active on the device.
-  //
-  // Safe to call at any point.
-  rpc GetCurrentManifest(pw.protobuf.Empty) returns (stream Manifest) {};
-
-  // Verify the manifest of the software currently active on device. Do any
-  // device-specific checks of device contents as needed.
-  //
-  // Safe to call at any point.
-  rpc VerifyCurrentManifest(pw.protobuf.Empty) returns (OperationResult) {};
-
-  // Get the manifest of any verified and staged update.
-  //
-  // Safe to call at any point.
-  rpc GetStagedManifest(pw.protobuf.Empty) returns (Manifest) {};
-
-  // Prepare for software update. Do any device-specific tasks needed to be
-  // ready for update. Open pw_transfer channel used for staging bundle. Device
-  // UpdateState set to READY_FOR_UPDATE.
-  //
-  // Device UpdateState should be INACTIVE when calling, will otherwise be
-  // rejected.
-  rpc PrepareForUpdate(pw.protobuf.Empty) returns (PrepareUpdateResult) {};
-
-  // Verifies the bundle that has been transferred to the traging area. Closes
-  // the pw_transfer channel used for the staging bundle. If the verification is
-  // successful it immediately triggers the update of the device, which might
-  // result in a device becoming slow to respond and possibly reboot.
-  //
-  // Device UpdateState should be READY_FOR_UPDATE when calling, will otherwise
-  // be rejected.
-  rpc VerifyAndApplyStagedBundle(pw.protobuf.Empty) returns (OperationResult) {
-  };
-
-  // Verify the bundle that has been transferred to the staging area. Closes the
-  // pw_transfer channel used for the staging bundle.
-  //
-  // Device UpdateState should be READY_FOR_UPDATE when calling, will otherwise
-  // be rejected.
-  //
-  // Note: VerifyAndApplyStagedBundle is preferred if possible to minimize the
-  // duration of time between verification and the apply from a data integrity
-  // and security risk point of view.
-  rpc VerifyStagedBundle(pw.protobuf.Empty) returns (OperationResult) {};
-
-  // Trigger the update of the device, which might result in a device
-  // becoming slow to respond and possibly reboot.
-  //
-  // Device UpdateState should be VERIFIED_AND_READY_TO_APPLY when calling, will
-  // otherwise be rejected.
-  rpc ApplyStagedBundle(pw.protobuf.Empty) returns (OperationResult) {};
+  // Precondition: Device update state must be FINISHED.
+  rpc Reset(pw.protobuf.Empty) returns (BundledUpdateStatus);
 }

@@ -18,75 +18,75 @@
 #include "pw_software_update/bundled_update_backend.h"
 #include "pw_software_update/update_bundle_accessor.h"
 #include "pw_status/status.h"
+#include "pw_sync/lock_annotations.h"
+#include "pw_sync/mutex.h"
 #include "pw_work_queue/work_queue.h"
 
 namespace pw::software_update {
 
 // Implementation class for pw.software_update.BundledUpdate.
+// See bundled_update.proto for RPC method documentation.
 class BundledUpdateService
     : public generated::BundledUpdate<BundledUpdateService> {
  public:
-  constexpr BundledUpdateService(UpdateBundleAccessor& bundle,
-                                 BundledUpdateBackend& backend,
-                                 work_queue::WorkQueue& work_queue)
-      : backend_(backend),
+  BundledUpdateService(UpdateBundleAccessor& bundle,
+                       BundledUpdateBackend& backend,
+                       work_queue::WorkQueue& work_queue)
+      : status_{},
+        backend_(backend),
         bundle_(bundle),
+        bundle_open_(false),
         work_queue_(work_queue),
-        state_(pw_software_update_BundledUpdateState_State_INACTIVE),
-        bundle_open_(false) {}
+        work_enqueued_(false) {
+    status_.state = pw_software_update_BundledUpdateState_Enum_INACTIVE;
+  }
 
+  Status GetStatus(ServerContext&,
+                   const pw_protobuf_Empty& request,
+                   pw_software_update_BundledUpdateStatus& response);
+
+  // Sync
+  Status Start(ServerContext&,
+               const pw_software_update_StartRequest& request,
+               pw_software_update_BundledUpdateStatus& response);
+
+  // Async
+  Status Verify(ServerContext&,
+                const pw_protobuf_Empty& request,
+                pw_software_update_BundledUpdateStatus& response);
+
+  // Async
+  Status Apply(ServerContext&,
+               const pw_protobuf_Empty& request,
+               pw_software_update_BundledUpdateStatus& response);
+
+  // Currently sync, should be async.
+  // TODO: Make this async to support aborting verify/apply.
   Status Abort(ServerContext&,
                const pw_protobuf_Empty& request,
-               pw_software_update_OperationResult& response);
+               pw_software_update_BundledUpdateStatus& response);
 
-  Status SoftwareUpdateState(ServerContext&,
-                             const pw_protobuf_Empty& request,
-                             pw_software_update_OperationResult& response);
+  // Sync
+  Status Reset(ServerContext&,
+               const pw_protobuf_Empty& request,
+               pw_software_update_BundledUpdateStatus& response);
 
-  void GetCurrentManifest(ServerContext&,
-                          const pw_protobuf_Empty& request,
-                          ServerWriter<pw_software_update_Manifest>& writer);
-
-  Status VerifyCurrentManifest(ServerContext&,
-                               const pw_protobuf_Empty& request,
-                               pw_software_update_OperationResult& response);
-
-  Status GetStagedManifest(ServerContext&,
-                           const pw_protobuf_Empty& request,
-                           pw_software_update_Manifest& response);
-
-  Status PrepareForUpdate(ServerContext&,
-                          const pw_protobuf_Empty& request,
-                          pw_software_update_PrepareUpdateResult& response);
-
-  Status VerifyAndApplyStagedBundle(
-      ServerContext&,
-      const pw_protobuf_Empty& request,
-      pw_software_update_OperationResult& response);
-
-  Status VerifyStagedBundle(ServerContext&,
-                            const pw_protobuf_Empty& request,
-                            pw_software_update_OperationResult& response);
-
-  Status ApplyStagedBundle(ServerContext&,
-                           const pw_protobuf_Empty& request,
-                           pw_software_update_OperationResult& response);
+  // TODO:
+  // NotifyTransferFinished or even move the transfer handler upstream.
+  // VerifyProgress - to update % complete.
+  // ApplyProgress - to update % complete.
 
  private:
-  BundledUpdateBackend& backend_;
-  UpdateBundleAccessor& bundle_;
-  work_queue::WorkQueue& work_queue_;
+  pw_software_update_BundledUpdateStatus status_ PW_GUARDED_BY(mutex_);
+  BundledUpdateBackend& backend_ PW_GUARDED_BY(mutex_);
+  UpdateBundleAccessor& bundle_ PW_GUARDED_BY(mutex_);
+  bool bundle_open_ PW_GUARDED_BY(mutex_);
+  work_queue::WorkQueue& work_queue_ PW_GUARDED_BY(mutex_);
+  bool work_enqueued_ PW_GUARDED_BY(mutex_);
+  sync::Mutex mutex_;
 
-  pw_software_update_BundledUpdateState_State state_;
-  std::optional<uint32_t> transfer_id_;
-  bool bundle_open_;
-
-  // Will disable the transfer_id if needed via the BundledUpdateBackend.
-  void DisableTransferId();
-
-  Status VerifyUpdate();
-  Status ApplyUpdate();
-  Status DoApplyUpdate();
+  void DoVerify();
+  void DoApply();
 };
 
 }  // namespace pw::software_update

@@ -43,15 +43,19 @@ class BundledUpdateBackend {
 
   // Attempts to enable the transfer service transfer handler, returning the
   // transfer_id if successful. This is invoked after BeforeUpdateStart();
-  virtual Result<uint32_t> EnableBundleTransferHandler() = 0;
+  virtual Result<uint32_t> EnableBundleTransferHandler(
+      std::string_view bundle_filename) = 0;
 
   // Disables the transfer service transfer handler. This is invoked after
   // either BeforeUpdateAbort() or BeforeBundleVerify().
   virtual void DisableBundleTransferHandler() = 0;
 
-  // Perform any product-specific abort tasks before mark as aborted in bundled
-  // updater.
-  // This should set any downstream state to a default no-update-pending state.
+  // Perform any product-specific abort tasks before marking the update as
+  // aborted in bundled updater.  This should set any downstream state to a
+  // default no-update-pending state.
+  // TODO: Revisit invariants; should this instead be "Abort()"? This is called
+  // for all error paths in the service and needs to reset. Furthermore, should
+  // this be async?
   virtual Status BeforeUpdateAbort() { return OkStatus(); };
 
   // Perform any product-specific tasks needed before starting verification.

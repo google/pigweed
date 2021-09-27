@@ -44,24 +44,30 @@ if (dir_pw_third_party_protobuf != "") {
     deps = [
       "$dir_pw_protobuf:common_protos",
       "$dir_pw_third_party/protobuf:wellknown_types",
+      "$dir_pw_tokenizer:proto",
     ]
     sources = [
       "bundled_update.proto",
       "tuf.proto",
       "update_bundle.proto",
     ]
+    inputs = [ "bundled_update.options" ]
     prefix = "pw_software_update"
     python_package = "py"
   }
 } else {
   # placeholder target to allow py package to build
   pw_proto_library("protos") {
-    deps = [ "$dir_pw_protobuf:common_protos" ]
+    deps = [
+      "$dir_pw_protobuf:common_protos",
+      "$dir_pw_tokenizer:proto",
+    ]
     sources = [
       "bundled_update.proto",
       "tuf.proto",
       "update_bundle.proto",
     ]
+    inputs = [ "bundled_update.options" ]
     prefix = "pw_software_update"
     python_package = "py"
   }
@@ -107,7 +113,11 @@ if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
     deps = [
       ":config",
       ":protos.pwpb",
+      "$dir_pw_sync:lock_annotations",
+      "$dir_pw_sync:mutex",
       dir_pw_log,
+      dir_pw_string,
+      dir_pw_tokenizer,
     ]
     public = [ "public/pw_software_update/bundled_update_service.h" ]
     sources = [ "bundled_update_service.cc" ]
