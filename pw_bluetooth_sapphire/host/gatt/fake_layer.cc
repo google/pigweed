@@ -25,8 +25,8 @@ std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddPe
       new RemoteService(info, peer.fake_client.AsWeakPtr(), async_get_default_dispatcher()));
   peer.services.push_back(service);
 
-  if (notify && remote_service_watcher_) {
-    remote_service_watcher_(peer_id, /*removed=*/{}, /*added=*/{service}, /*modified=*/{});
+  if (notify && remote_service_watchers_.count(peer_id)) {
+    remote_service_watchers_[peer_id](/*removed=*/{}, /*added=*/{service}, /*modified=*/{});
   }
 
   return {service, peer.fake_client.AsFakeWeakPtr()};
@@ -74,7 +74,7 @@ void FakeLayer::DiscoverServices(PeerId peer_id, std::vector<UUID> uuids) {
   }
 
   auto iter = peers_.find(peer_id);
-  if (!remote_service_watcher_ || iter == peers_.end()) {
+  if (iter == peers_.end()) {
     return;
   }
 
@@ -90,11 +90,23 @@ void FakeLayer::DiscoverServices(PeerId peer_id, std::vector<UUID> uuids) {
       }
     }
   }
-  remote_service_watcher_(peer_id, /*removed=*/{}, /*added=*/added, /*modified=*/{});
+
+  if (remote_service_watchers_.count(peer_id)) {
+    remote_service_watchers_[peer_id](/*removed=*/{}, /*added=*/added, /*modified=*/{});
+  }
 }
 
-void FakeLayer::RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher callback) {
-  remote_service_watcher_ = std::move(callback);
+GATT::RemoteServiceWatcherId FakeLayer::RegisterRemoteServiceWatcherForPeer(
+    PeerId peer_id, RemoteServiceWatcher watcher) {
+  ZX_ASSERT(remote_service_watchers_.count(peer_id) == 0);
+  remote_service_watchers_[peer_id] = std::move(watcher);
+  // Use the PeerId as the watcher ID because FakeLayer only needs to support 1 watcher per peer.
+  return peer_id.value();
+}
+bool FakeLayer::UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) {
+  bool result = remote_service_watchers_.count(PeerId(watcher_id));
+  remote_service_watchers_.erase(PeerId(watcher_id));
+  return result;
 }
 
 void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,

@@ -34,6 +34,8 @@ namespace gatt {
 //   * L2CAP ATT fixed channels
 class GATT {
  public:
+  using RemoteServiceWatcherId = uint64_t;
+
   // Constructs a production GATT object.
   static std::unique_ptr<GATT> Create();
 
@@ -132,12 +134,14 @@ class GATT {
   // If |service_uuids| is non-empty, only discover services with the given UUIDs.
   virtual void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) = 0;
 
-  // Register a handler that will be notified when remote services are discovered or changed.
-  using PeerRemoteServiceWatcher =
-      fit::function<void(PeerId peer_id, const std::vector<att::Handle>& removed,
-                         const std::vector<fbl::RefPtr<RemoteService>>& added,
-                         const std::vector<fbl::RefPtr<RemoteService>>& modified)>;
-  virtual void RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher watcher) = 0;
+  // Register a handler that will be notified when remote services are added, modified, or
+  // removed on the peer |peer_id|. Returns an ID that can be used to unregister the handler.
+  virtual RemoteServiceWatcherId RegisterRemoteServiceWatcherForPeer(
+      PeerId peer_id, RemoteServiceWatcher watcher) = 0;
+
+  // Remove the remote service watcher with ID |watcher_id|. Returns true if the handler
+  // existed and was successfully removed.
+  virtual bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) = 0;
 
   // Returns the list of remote services that were found on the device with
   // |peer_id|. If |peer_id| was registered but DiscoverServices() has not been

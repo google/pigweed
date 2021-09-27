@@ -64,7 +64,9 @@ class FakeLayer final : public GATT {
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override;
   void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) override;
   void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) override;
-  void RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher callback) override;
+  RemoteServiceWatcherId RegisterRemoteServiceWatcherForPeer(PeerId peer_id,
+                                                             RemoteServiceWatcher watcher) override;
+  bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
   void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;
 
@@ -75,7 +77,7 @@ class FakeLayer final : public GATT {
   SetRetrieveServiceChangedCCCCallbackCallback set_retrieve_service_changed_ccc_cb_cb_;
 
   // Emulated callbacks
-  PeerRemoteServiceWatcher remote_service_watcher_;
+  std::unordered_map<PeerId, RemoteServiceWatcher> remote_service_watchers_;
 
   PersistServiceChangedCCCCallback persist_service_changed_ccc_cb_;
   RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_cb_;

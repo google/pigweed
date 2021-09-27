@@ -53,7 +53,6 @@ class Impl final : public GATT {
     connections_.clear();
     gatt_service_ = nullptr;
     local_services_ = nullptr;
-    remote_service_callbacks_.clear();
   }
 
   // GATT overrides:
@@ -154,9 +153,25 @@ class Impl final : public GATT {
     iter->second.Initialize(std::move(service_uuids));
   }
 
-  void RegisterRemoteServiceWatcher(PeerRemoteServiceWatcher callback) override {
-    ZX_DEBUG_ASSERT(callback);
-    remote_service_callbacks_.emplace_back(std::move(callback));
+  RemoteServiceWatcherId RegisterRemoteServiceWatcherForPeer(
+      PeerId peer_id, RemoteServiceWatcher watcher) override {
+    ZX_ASSERT(watcher);
+
+    RemoteServiceWatcherId id = next_watcher_id_++;
+    peer_remote_service_watchers_.emplace(peer_id, std::make_pair(id, std::move(watcher)));
+    return id;
+  }
+
+  bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) override {
+    for (auto it = peer_remote_service_watchers_.begin();
+         it != peer_remote_service_watchers_.end();) {
+      if (watcher_id == it->second.first) {
+        it = peer_remote_service_watchers_.erase(it);
+        return true;
+      }
+      it++;
+    }
+    return false;
   }
 
   void ListServices(PeerId peer_id, std::vector<UUID> uuids,
@@ -185,9 +200,10 @@ class Impl final : public GATT {
   void OnServicesChanged(PeerId peer_id, const std::vector<att::Handle>& removed,
                          const std::vector<fbl::RefPtr<RemoteService>>& added,
                          const std::vector<fbl::RefPtr<RemoteService>>& modified) {
-    for (auto& handler : remote_service_callbacks_) {
-      TRACE_DURATION("bluetooth", "GATT::OnServicesChanged handler.Notify()");
-      handler.Notify(peer_id, removed, added, modified);
+    auto peer_watcher_range = peer_remote_service_watchers_.equal_range(peer_id);
+    for (auto it = peer_watcher_range.first; it != peer_watcher_range.second; it++) {
+      TRACE_DURATION("bluetooth", "GATT::OnServiceChanged notify watcher");
+      it->second.second(removed, added, modified);
     }
   }
 
@@ -205,27 +221,9 @@ class Impl final : public GATT {
   // Callback to fetch CCC for Service Changed indications from upper layers.
   RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_callback_;
 
-  // All registered remote service handlers.
-  struct RemoteServiceHandler {
-    explicit RemoteServiceHandler(PeerRemoteServiceWatcher watcher)
-        : watcher_(std::move(watcher)) {}
-
-    RemoteServiceHandler() = default;
-    RemoteServiceHandler(RemoteServiceHandler&&) = default;
-
-    void Notify(PeerId peer_id, const std::vector<att::Handle>& removed,
-                const std::vector<fbl::RefPtr<RemoteService>>& added,
-                const std::vector<fbl::RefPtr<RemoteService>>& modified) {
-      watcher_(peer_id, removed, added, modified);
-    }
-
-   private:
-    PeerRemoteServiceWatcher watcher_;
-
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceHandler);
-  };
-
-  std::vector<RemoteServiceHandler> remote_service_callbacks_;
+  RemoteServiceWatcherId next_watcher_id_ = 0u;
+  std::unordered_multimap<PeerId, std::pair<RemoteServiceWatcherId, RemoteServiceWatcher>>
+      peer_remote_service_watchers_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
