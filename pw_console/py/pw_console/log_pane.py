@@ -235,12 +235,12 @@ class LogContentControl(FormattedTextControl):
             return None
 
         if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            self.log_pane.log_view.scroll_down()
+            self.log_pane.log_view.scroll_down(lines=5)
             # Mouse event handled, return None.
             return None
 
         if mouse_event.event_type == MouseEventType.SCROLL_UP:
-            self.log_pane.log_view.scroll_up()
+            self.log_pane.log_view.scroll_up(lines=5)
             # Mouse event handled, return None.
             return None
 

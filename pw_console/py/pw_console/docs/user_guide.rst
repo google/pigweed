@@ -96,16 +96,18 @@ Log Window Scrolling
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Scroll logs up                                :guilabel:`Mouse Wheel Up`
-                                              :kbd:`Up`
+Scroll logs up (1 line)                       :kbd:`Up`
                                               :kbd:`k`
 
-Scroll logs down                              :guilabel:`Mouse Wheel Down`
-                                              :kbd:`Down`
+Scroll logs down (1 line)                     :kbd:`Down`
                                               :kbd:`j`
+
+Scroll logs up (5 lines)                      :guilabel:`Mouse Wheel Up`
+Scroll logs down (5 lines)                    :guilabel:`Mouse Wheel Down`
 
 Scroll logs up one page                       :kbd:`PageUp`
 Scroll logs down one page                     :kbd:`PageDown`
+
 Jump to the beginning                         :kbd:`g`
 Jump to the end                               :kbd:`G`
 
