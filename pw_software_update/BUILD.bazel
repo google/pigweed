@@ -63,6 +63,7 @@ pw_cc_library(
         "//pw_log",
         "//pw_result",
         "//pw_status",
+        "//pw_work_queue",
     ],
 )
 

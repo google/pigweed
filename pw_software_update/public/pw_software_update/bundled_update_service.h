@@ -18,6 +18,7 @@
 #include "pw_software_update/bundled_update_backend.h"
 #include "pw_software_update/update_bundle_accessor.h"
 #include "pw_status/status.h"
+#include "pw_work_queue/work_queue.h"
 
 namespace pw::software_update {
 
@@ -26,8 +27,13 @@ class BundledUpdateService
     : public generated::BundledUpdate<BundledUpdateService> {
  public:
   constexpr BundledUpdateService(UpdateBundleAccessor& bundle,
-                                 BundledUpdateBackend& backend)
-      : backend_(backend), bundle_(bundle), bundle_open_(false) {}
+                                 BundledUpdateBackend& backend,
+                                 work_queue::WorkQueue& work_queue)
+      : backend_(backend),
+        bundle_(bundle),
+        work_queue_(work_queue),
+        state_(pw_software_update_BundledUpdateState_State_INACTIVE),
+        bundle_open_(false) {}
 
   Status Abort(ServerContext&,
                const pw_protobuf_Empty& request,
@@ -69,7 +75,9 @@ class BundledUpdateService
  private:
   BundledUpdateBackend& backend_;
   UpdateBundleAccessor& bundle_;
+  work_queue::WorkQueue& work_queue_;
 
+  pw_software_update_BundledUpdateState_State state_;
   std::optional<uint32_t> transfer_id_;
   bool bundle_open_;
 
@@ -78,6 +86,7 @@ class BundledUpdateService
 
   Status VerifyUpdate();
   Status ApplyUpdate();
+  Status DoApplyUpdate();
 };
 
 }  // namespace pw::software_update

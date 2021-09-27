@@ -12,12 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_software_update/bundled_update_service.h"
+#include "pw_software_update/config.h"
+
+#define PW_LOG_LEVEL PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL
 
 #include <string_view>
 
 #include "pw_log/log.h"
 #include "pw_result/result.h"
+#include "pw_software_update/bundled_update_service.h"
 #include "pw_software_update/manifest_accessor.h"
 #include "pw_software_update/update_bundle.pwpb.h"
 #include "pw_status/status.h"
@@ -30,6 +33,7 @@ void BundledUpdateService::DisableTransferId() {
     return;  // Nothing to do, already disabled.
   }
   backend_.DisableBundleTransferHandler();
+  transfer_id_.reset();
 }
 
 pw::Status BundledUpdateService::VerifyUpdate() {
@@ -42,6 +46,20 @@ pw::Status BundledUpdateService::VerifyUpdate() {
 }
 
 Status BundledUpdateService::ApplyUpdate() {
+  // Note that the backend's FinalizeApply as part of DoApplyUpdate() shall be
+  // configured such that this RPC can send out the reply before the device
+  // reboots.
+  return work_queue_.PushWork([this] {
+    const Status status = this->DoApplyUpdate();
+    if (!status.ok()) {
+      PW_LOG_CRITICAL(
+          "The target failed to apply the update; Currently this requires a "
+          "manual device reboot to retry");
+    }
+  });
+}
+
+Status BundledUpdateService::DoApplyUpdate() {
   PW_LOG_DEBUG("Attempting to apply the update");
   protobuf::StringToMessageMap signed_targets_metadata_map =
       bundle_.GetDecoder().AsStringToMessageMap(static_cast<uint32_t>(
@@ -110,17 +128,26 @@ Status BundledUpdateService::ApplyUpdate() {
     }
   }
 
+  // TODO(davidrogers): Ensure the backend documentation and API contract is
+  // clear in regards to the flushing expectations for RPCs and logs surrounding
+  // the reboot inside of this call.
   return backend_.FinalizeApply();
 }
 
 Status BundledUpdateService::Abort(ServerContext&,
                                    const pw_protobuf_Empty&,
                                    pw_software_update_OperationResult&) {
-  DisableTransferId();
+  if (state_ == pw_software_update_BundledUpdateState_State_APPLYING_UPDATE) {
+    PW_LOG_WARN("Cannot abort an in-progress apply");
+    return Status::Unavailable();
+  }
+
   PW_TRY(backend_.BeforeUpdateAbort());
+  DisableTransferId();
   if (bundle_open_) {
     bundle_.Close();
   }
+  state_ = pw_software_update_BundledUpdateState_State_INACTIVE;
   return OkStatus();
 }
 
@@ -155,12 +182,20 @@ Status BundledUpdateService::PrepareForUpdate(
     ServerContext&,
     [[maybe_unused]] const pw_protobuf_Empty& request,
     pw_software_update_PrepareUpdateResult& response) {
+  if (state_ != pw_software_update_BundledUpdateState_State_INACTIVE) {
+    PW_LOG_WARN(
+        "PrepareForUpdate can only be called from INACTIVE state, "
+        "current state: %d. Abort must be called first.",
+        state_);
+    return Status::FailedPrecondition();
+  }
+
   pw_software_update_OperationResult result;
   result.has_extended_status = false;
   result.has_state = true;
   pw_software_update_BundledUpdateState state;
-  state.manager_state =
-      pw_software_update_BundledUpdateState_State_READY_FOR_UPDATE;
+  state_ = pw_software_update_BundledUpdateState_State_READY_FOR_UPDATE;
+  state.manager_state = state_;
   result.state = state;
   response.has_result = true;
   response.result = result;
@@ -182,15 +217,25 @@ Status BundledUpdateService::VerifyAndApplyStagedBundle(
     ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_OperationResult& response) {
+  // TODO(ewout): Fix this to be a proper precondition once we refactor the
+  // state enum.
+  if (state_ == pw_software_update_BundledUpdateState_State_APPLYING_UPDATE) {
+    PW_LOG_WARN("Cannot verify and apply during an in-progress apply");
+    return Status::Unavailable();
+  }
+
+  PW_TRY(VerifyUpdate());
+  state_ =
+      pw_software_update_BundledUpdateState_State_VERIFIED_AND_READY_TO_APPLY;
+
   // TODO: upstream verification logic
   response.has_extended_status = false;
   response.has_state = true;
   pw_software_update_BundledUpdateState state;
-  state.manager_state =
-      pw_software_update_BundledUpdateState_State_VERIFIED_AND_READY_TO_APPLY;
+  state_ = pw_software_update_BundledUpdateState_State_APPLYING_UPDATE;
+  state.manager_state = state_;
   response.state = state;
   // TODO: defer this handling to the work queue so we can respond here.
-  PW_TRY(VerifyUpdate());
   return ApplyUpdate();
 }
 
@@ -199,14 +244,21 @@ Status BundledUpdateService::VerifyStagedBundle(
     ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_OperationResult& response) {
+  // TODO(ewout): Fix this to be a proper precondition once we refactor the
+  // state enum.
+  if (state_ == pw_software_update_BundledUpdateState_State_APPLYING_UPDATE) {
+    PW_LOG_WARN("Cannot verify during an in-progress apply");
+    return Status::Unavailable();
+  }
+
   // TODO: upstream verification logic
   response.has_extended_status = false;
   response.has_state = true;
   pw_software_update_BundledUpdateState state;
-  state.manager_state =
+  state_ =
       pw_software_update_BundledUpdateState_State_VERIFIED_AND_READY_TO_APPLY;
+  state.manager_state = state_;
   response.state = state;
-  // TODO: defer this handling to the work queue so we can respond here.
   return VerifyUpdate();
 }
 
@@ -214,8 +266,22 @@ Status BundledUpdateService::VerifyStagedBundle(
 Status BundledUpdateService::ApplyStagedBundle(
     ServerContext&,
     const pw_protobuf_Empty&,
-    pw_software_update_OperationResult&) {
-  // TODO: defer this handling to the work queue so we can respond here.
+    pw_software_update_OperationResult& response) {
+  if (state_ !=
+      pw_software_update_BundledUpdateState_State_VERIFIED_AND_READY_TO_APPLY) {
+    return Status::FailedPrecondition();
+  }
+
+  // TODO: upstream verification logic
+  response.has_extended_status = false;
+  response.has_state = true;
+  pw_software_update_BundledUpdateState state;
+  state_ = pw_software_update_BundledUpdateState_State_APPLYING_UPDATE;
+  state.manager_state = state_;
+  response.state = state;
+
+  // TODO: Add a mechanism to restore the state if apply failed with a proper
+  // threadsafe state machine including status checking/reporting.
   return ApplyUpdate();
 }
 
