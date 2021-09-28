@@ -26,14 +26,15 @@ import argparse
 import hashlib
 from pathlib import Path
 
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import (Encoding,
-                                                          NoEncryption,
-                                                          PrivateFormat,
-                                                          PublicFormat,
-                                                          load_pem_public_key)
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+from cryptography.hazmat.primitives.serialization import (
+    Encoding, NoEncryption, PrivateFormat, PublicFormat, load_pem_private_key,
+    load_pem_public_key)
 
-from pw_software_update.tuf_pb2 import (Key, KeyMapping, KeyScheme, KeyType)
+from pw_software_update.tuf_pb2 import (Key, KeyMapping, KeyScheme, KeyType,
+                                        Signature)
 
 
 def parse_args():
@@ -95,6 +96,25 @@ def import_ecdsa_public_key(pem: bytes) -> KeyMapping:
                   keyval=ec_key.public_bytes(Encoding.X962,
                                              PublicFormat.UncompressedPoint))
     return KeyMapping(key_id=gen_key_id(tuf_key), key=tuf_key)
+
+
+def create_ecdsa_signature(data: bytes, key: bytes) -> Signature:
+    """Creates an ECDSA-SHA2-NISTP256 signature."""
+    ec_key = load_pem_private_key(key, password=None)
+    if not isinstance(ec_key, ec.EllipticCurvePrivateKey):
+        raise TypeError(f'Not an elliptic curve private key: {type(ec_key)}.'
+                        'Try generate a key with gen_ecdsa_keypair()?')
+
+    tuf_key = Key(key_type=KeyType.ECDSA_SHA2_NISTP256,
+                  scheme=KeyScheme.ECDSA_SHA2_NISTP256_SCHEME,
+                  keyval=ec_key.public_key().public_bytes(
+                      Encoding.X962, PublicFormat.UncompressedPoint))
+
+    der_signature = ec_key.sign(data, ec.ECDSA(hashes.SHA256()))
+    int_r, int_s = decode_dss_signature(der_signature)
+    sig_bytes = int_r.to_bytes(32, 'big') + int_s.to_bytes(32, 'big')
+
+    return Signature(key_id=gen_key_id(tuf_key), sig=sig_bytes)
 
 
 def main(out: Path) -> None:
