@@ -35,14 +35,21 @@ Status SnapshotStack(const StackContext& stack,
   encoder.WriteStackStartPointer(stack.stack_high_addr);
   encoder.WriteStackEndPointer(stack.stack_low_addr);
   encoder.WriteStackPointer(stack.stack_pointer);
-  if (stack.stack_pointer_est_peak.has_value()) {
-    encoder.WriteStackPointerEstPeak(stack.stack_pointer_est_peak.value());
-  }
   PW_LOG_DEBUG("Active stack: 0x%08x-0x%08x (%ld bytes)",
                stack.stack_high_addr,
                stack.stack_pointer,
                static_cast<long>(stack.stack_high_addr) -
                    static_cast<long>(stack.stack_pointer));
+  if (stack.stack_pointer_est_peak.has_value()) {
+    const uintptr_t stack_pointer_est_peak =
+        stack.stack_pointer_est_peak.value();
+    encoder.WriteStackPointerEstPeak(stack_pointer_est_peak);
+    PW_LOG_DEBUG("Est peak stack: 0x%08x-0x%08x (%ld bytes)",
+                 stack.stack_high_addr,
+                 stack_pointer_est_peak,
+                 static_cast<long>(stack.stack_high_addr) -
+                     static_cast<long>(stack_pointer_est_peak));
+  }
   PW_LOG_DEBUG("Stack Limits: 0x%08x-0x%08x (%ld bytes)",
                stack.stack_low_addr,
                stack.stack_high_addr,

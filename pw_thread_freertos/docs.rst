@@ -258,3 +258,15 @@ message overlays a snapshot, so it is safe to static cast a
 
 .. Note:: ``SnapshotThreads()`` is only safe to use this while the scheduler and
    interrupts are disabled as it relies on ``ForEachThread()``.
+
+Thread Stack Capture
+--------------------
+Snapshot attempts to capture as much of the thread stack state as possible,
+however it can be limited by on the FreeRTOS configuration.
+
+The ``stack_start_ptr`` can only be provided if the ``portSTACK_GROWTH`` is < 0,
+i.e. the stack grows down, when ``configRECORD_STACK_HIGH_ADDRESS`` is enabled.
+
+The ``stack_pointer_est_peak`` can only be provided when
+``config_USE_TRACE_FACILITY`` and/or ``INCLUDE_uxTaskGetStackHighWaterMark`` are
+enabled and ``stack_start_ptr``'s requirements above are met.

@@ -34,6 +34,15 @@
 namespace pw::thread::freertos {
 namespace {
 
+// The externed function is an internal FreeRTOS kernel function from
+// FreeRTOS/Source/tasks.c needed in order to calculate a thread's stack usage
+// from interrupts which the native APIs do not permit.
+#if ((configUSE_TRACE_FACILITY == 1) || \
+     (INCLUDE_uxTaskGetStackHighWaterMark == 1))
+extern "C" uint16_t prvTaskCheckFreeStackSpace(const uint8_t* pucStackByte);
+#endif  // ((configUSE_TRACE_FACILITY == 1) ||
+        // (INCLUDE_uxTaskGetStackHighWaterMark == 1))
+
 void CaptureThreadState(eTaskState thread_state,
                         Thread::StreamEncoder& encoder) {
   switch (thread_state) {
@@ -127,12 +136,32 @@ Status SnapshotThread(TaskHandle_t thread,
   const uintptr_t stack_low_addr = reinterpret_cast<uintptr_t>(tcb.pxStack);
 
 #if ((portSTACK_GROWTH > 0) || (configRECORD_STACK_HIGH_ADDRESS == 1))
+  const uintptr_t stack_high_addr =
+      reinterpret_cast<uintptr_t>(tcb.pxEndOfStack);
   const StackContext thread_ctx = {
-      .thread_name = tcb.pcTaskName,
-      .stack_low_addr = stack_low_addr,
-      .stack_high_addr = reinterpret_cast<uintptr_t>(tcb.pxEndOfStack),
-      .stack_pointer = stack_pointer,
-      .stack_pointer_est_peak = std::nullopt,
+    .thread_name = tcb.pcTaskName,
+    .stack_low_addr = stack_low_addr,
+    .stack_high_addr = stack_high_addr,
+    .stack_pointer = stack_pointer,
+#if ((configUSE_TRACE_FACILITY == 1) || \
+     (INCLUDE_uxTaskGetStackHighWaterMark == 1))
+#if (portSTACK_GROWTH > 0)
+    .stack_pointer_est_peak =
+        stack_high_addr -
+        (sizeof(StackType_t) *
+         prvTaskCheckFreeStackSpace(
+             reinterpret_cast<const uint8_t*>(stack_high_addr))),
+#else
+    .stack_pointer_est_peak =
+        stack_low_addr +
+        (sizeof(StackType_t) *
+         prvTaskCheckFreeStackSpace(
+             reinterpret_cast<const uint8_t*>(stack_low_addr))),
+#endif  // (portSTACK_GROWTH > 0)
+#else
+    .stack_pointer_est_peak = std::nullopt,
+#endif  // ((configUSE_TRACE_FACILITY == 1) ||
+        // (INCLUDE_uxTaskGetStackHighWaterMark == 1))
   };
   return SnapshotStack(thread_ctx, encoder, thread_stack_callback);
 #else
