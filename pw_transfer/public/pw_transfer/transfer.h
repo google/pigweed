@@ -68,6 +68,9 @@ class TransferService : public generated::Transfer<TransferService> {
                        uint32_t transfer_id,
                        Status status);
 
+  // Calls transfer.Finish() and sends the final status chunk.
+  void FinishTransfer(internal::ServerContext& transfer, Status status);
+
   // Sends a out data chunk for a read transfer. Returns true if the data was
   // sent successfully.
   bool SendNextReadChunk(internal::ServerContext& context);

@@ -63,10 +63,8 @@ bool TransferService::SendNextReadChunk(internal::ServerContext& context) {
   // Begin by doing a partial encode of all the metadata fields, leaving the
   // buffer with usable space for the chunk data at the end.
   Chunk::MemoryEncoder encoder(buffer);
-  encoder.WriteTransferId(context.transfer_id())
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  encoder.WriteOffset(context.offset())
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  encoder.WriteTransferId(context.transfer_id()).IgnoreError();
+  encoder.WriteOffset(context.offset()).IgnoreError();
 
   // Reserve space for the data proto field overhead and use the remainder of
   // the buffer for the chunk data.
@@ -83,20 +81,32 @@ bool TransferService::SendNextReadChunk(internal::ServerContext& context) {
   Result<ByteSpan> data = context.reader().Read(data_buffer);
   if (data.status().IsOutOfRange()) {
     // No more data to read.
-    encoder.WriteRemainingBytes(0)
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    encoder.WriteRemainingBytes(0).IgnoreError();
     context.set_pending_bytes(0);
-  } else if (!data.ok()) {
-    read_stream_.ReleaseBuffer();
-    return false;
-  } else {
-    encoder.WriteData(data.value())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  } else if (data.ok()) {
+    encoder.WriteData(data.value()).IgnoreError();
     context.set_offset(context.offset() + data.value().size());
     context.set_pending_bytes(context.pending_bytes() - data.value().size());
+  } else {
+    read_stream_.ReleaseBuffer();
+    return false;
   }
 
   return read_stream_.Write(encoder).ok();
+}
+
+void TransferService::FinishTransfer(internal::ServerContext& transfer,
+                                     Status status) {
+  const uint32_t id = transfer.transfer_id();
+  PW_LOG_INFO("Sending status %u in final chunk of transfer %u",
+              status.code(),
+              static_cast<unsigned>(id));
+  status.Update(transfer.Finish(status));
+
+  RawServerReaderWriter& stream =
+      transfer.type() == internal::ServerContext::kRead ? read_stream_
+                                                        : write_stream_;
+  SendStatusChunk(stream, id, status);
 }
 
 void TransferService::OnReadMessage(ConstByteSpan message) {
@@ -138,19 +148,17 @@ void TransferService::OnReadMessage(ConstByteSpan message) {
     // Transfer has been terminated (successfully or not).
     Status status = parameters.status.value();
     if (!status.ok()) {
-      PW_LOG_ERROR("Transfer %u failed with status %d",
+      PW_LOG_ERROR("Receiver terminated read transfer %u with status %d",
                    static_cast<unsigned>(parameters.transfer_id),
                    static_cast<int>(status.code()));
     }
-    transfer.Finish(status);
+    transfer.Finish(status).IgnoreError();
     return;
   }
 
   if (!parameters.pending_bytes.has_value()) {
     // Malformed chunk.
-    SendStatusChunk(
-        read_stream_, parameters.transfer_id, Status::InvalidArgument());
-    transfer.Finish(Status::InvalidArgument());
+    FinishTransfer(transfer, Status::InvalidArgument());
     return;
   }
 
@@ -162,9 +170,7 @@ void TransferService::OnReadMessage(ConstByteSpan message) {
     //   transfer.set_offset(parameters.offset.value());
     //   transfer.Seek(transfer.offset());
     //
-    SendStatusChunk(
-        read_stream_, parameters.transfer_id, Status::Unimplemented());
-    transfer.Finish(Status::Unimplemented());
+    FinishTransfer(transfer, Status::Unimplemented());
     return;
   }
 
@@ -207,7 +213,7 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
 
   // Check for a client-side error terminating the transfer.
   if (chunk.status.has_value()) {
-    transfer.Finish(chunk.status.value());
+    transfer.Finish(chunk.status.value()).IgnoreError();
     return;
   }
 
@@ -222,8 +228,13 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
       chunk_data_processed = true;
     } else if (chunk.data.size() <= transfer.pending_bytes()) {
       if (Status status = transfer.writer().Write(chunk.data); !status.ok()) {
-        SendStatusChunk(write_stream_, chunk.transfer_id, status);
-        transfer.Finish(status);
+        PW_LOG_ERROR(
+            "Transfer %u write of %u B chunk failed with status %u; aborting "
+            "with DATA_LOSS",
+            static_cast<unsigned>(chunk.transfer_id),
+            static_cast<unsigned>(chunk.data.size()),
+            status.code());
+        FinishTransfer(transfer, Status::DataLoss());
         return;
       }
       transfer.set_offset(transfer.offset() + chunk.data.size());
@@ -235,8 +246,7 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
       // could potentially result in an infinite transfer loop.
       PW_LOG_ERROR(
           "Received more data than what was requested; terminating transfer.");
-      SendStatusChunk(write_stream_, chunk.transfer_id, Status::Internal());
-      transfer.Finish(Status::Internal());
+      FinishTransfer(transfer, Status::Internal());
       return;
     }
   } else {
@@ -247,8 +257,7 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
   // When the client sets remaining_bytes to 0, it indicates completion of the
   // transfer. Acknowledge the completion through a status chunk and clean up.
   if (chunk_data_processed && chunk.remaining_bytes == 0) {
-    SendStatusChunk(write_stream_, chunk.transfer_id, OkStatus());
-    transfer.Finish(OkStatus());
+    FinishTransfer(transfer, OkStatus());
     return;
   }
 
@@ -287,7 +296,7 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
                  static_cast<unsigned>(parameters.transfer_id),
                  data.status().code());
     write_stream_.ReleaseBuffer();
-    transfer.Finish(Status::Internal());
+    FinishTransfer(transfer, Status::Internal());
   }
 }
 

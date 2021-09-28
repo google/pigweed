@@ -31,6 +31,8 @@ class ServerContext : public Context {
 
   constexpr bool active() const { return handler_ != nullptr; }
 
+  constexpr Type type() const { return type_; }
+
   // Begins a new transfer with the specified type and handler. Calls into the
   // handler's Prepare method.
   //
@@ -40,8 +42,10 @@ class ServerContext : public Context {
   // Ends the transfer with the given status, calling the handler's Finalize
   // method.
   //
+  // Returns DATA_LOSS if the finalize call fails.
+  //
   // Precondition: Transfer context is active.
-  void Finish(Status status);
+  Status Finish(Status status);
 
   stream::Reader& reader() const {
     PW_DASSERT(type_ == kRead);

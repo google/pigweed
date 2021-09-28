@@ -15,6 +15,7 @@
 #include "pw_transfer/internal/server_context.h"
 
 #include "pw_assert/check.h"
+#include "pw_log/log.h"
 #include "pw_status/try.h"
 #include "pw_varint/varint.h"
 
@@ -38,16 +39,26 @@ Status ServerContext::Start(Type type, Handler& handler) {
   return OkStatus();
 }
 
-void ServerContext::Finish(Status status) {
+Status ServerContext::Finish(const Status status) {
   PW_DCHECK(active());
 
+  Handler& handler = *handler_;
+  handler_ = nullptr;
+
   if (type_ == kRead) {
-    handler_->FinalizeRead(status);
-  } else {
-    handler_->FinalizeWrite(status);
+    handler.FinalizeRead(status);
+    return OkStatus();
   }
 
-  handler_ = nullptr;
+  if (Status finalized = handler.FinalizeWrite(status); !finalized.ok()) {
+    PW_LOG_ERROR(
+        "FinalizeWrite() for transfer %u failed with status %u; aborting with "
+        "DATA_LOSS",
+        static_cast<unsigned>(handler.id()),
+        static_cast<int>(finalized.code()));
+    return Status::DataLoss();
+  }
+  return OkStatus();
 }
 
 Result<ServerContext*> ServerContextPool::GetOrStartTransfer(uint32_t id) {

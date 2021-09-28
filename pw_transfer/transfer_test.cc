@@ -351,7 +351,11 @@ class SimpleWriteTransfer final : public WriteOnlyHandler {
   Status FinalizeWrite(Status status) final {
     finalize_write_called = true;
     finalize_write_status = status;
-    return OkStatus();
+    return finalize_write_return_status_;
+  }
+
+  void set_finalize_write_return(Status status) {
+    finalize_write_return_status_ = status;
   }
 
   bool prepare_write_called;
@@ -359,6 +363,7 @@ class SimpleWriteTransfer final : public WriteOnlyHandler {
   Status finalize_write_status;
 
  private:
+  Status finalize_write_return_status_;
   stream::MemoryWriter writer_;
 };
 
@@ -400,6 +405,33 @@ TEST(Transfer, Write_SingleChunk) {
   EXPECT_TRUE(handler.finalize_write_called);
   EXPECT_EQ(handler.finalize_write_status, OkStatus());
   EXPECT_EQ(std::memcmp(buffer.data(), data.data(), data.size()), 0);
+}
+
+TEST(Transfer, Write_FinalizeFails) {
+  constexpr auto data = bytes::Initialized<32>([](size_t i) { return i; });
+  std::array<std::byte, sizeof(data)> buffer = {};
+  SimpleWriteTransfer handler(7, buffer);
+
+  // Return an error when FinalizeWrite is called.
+  handler.set_finalize_write_return(Status::FailedPrecondition());
+
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Write) ctx(64, 64);
+  ctx.service().RegisterHandler(handler);
+
+  ctx.call();
+  ctx.SendClientStream(EncodeChunk({.transfer_id = 7}));
+  ctx.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                        .offset = 0,
+                                        .data = std::span(data),
+                                        .remaining_bytes = 0}));
+
+  Chunk chunk = DecodeChunk(ctx.responses()[1]);
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), Status::DataLoss());
+
+  EXPECT_TRUE(handler.finalize_write_called);
+  EXPECT_EQ(handler.finalize_write_status, OkStatus());
 }
 
 TEST(Transfer, Write_MultiChunk) {
