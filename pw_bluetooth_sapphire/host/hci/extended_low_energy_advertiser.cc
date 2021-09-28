@@ -105,6 +105,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
 
   // TODO(fxbug.dev/81470): using legacy PDUs requires advertisements on the LE 1M PHY.
   payload->primary_adv_phy = hci_spec::LEPHY::kLE1M;
+  payload->secondary_adv_phy = hci_spec::LEPHY::kLE1M;
 
   // Payload values were initialized to zero above. By not setting the values for the following
   // fields, we are purposely ignoring them:
@@ -113,7 +114,6 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
   // peer_address: We don't support directed advertising yet
   // peer_address_type: We don't support directed advertising yet
   // secondary_adv_max_skip: We use only legacy PDUs, the controller ignores this field in that case
-  // secondary_adv_phy: We use only legacy PDUs, the controller ignores this field in that case
 
   return packet;
 }

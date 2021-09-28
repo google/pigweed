@@ -1796,6 +1796,13 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
     return;
   }
 
+  if (params.secondary_adv_phy != hci_spec::LEPHY::kLE1M) {
+    bt_log(INFO, "fake-hci", "secondary advertising PHY must be selected");
+    RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
+                               hci_spec::StatusCode::kUnsupportedFeatureOrParameter);
+    return;
+  }
+
   if (state.enabled) {
     bt_log(INFO, "fake-hci", "cannot set parameters while advertising set is enabled");
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,

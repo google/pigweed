@@ -1068,6 +1068,7 @@ uint64_t AdapterImpl::BuildLEEventMask() {
   ENABLE_EVT(kLEAdvertisingReport);
   ENABLE_EVT(kLEConnectionComplete);
   ENABLE_EVT(kLEConnectionUpdateComplete);
+  ENABLE_EVT(kLEExtendedAdvertisingSetTerminated);
   ENABLE_EVT(kLELongTermKeyRequest);
   ENABLE_EVT(kLEReadRemoteFeaturesComplete);
 
