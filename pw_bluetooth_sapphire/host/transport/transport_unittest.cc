@@ -24,8 +24,9 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
 
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
-  auto req_reset = StaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
-                                    0x00                                   // parameter_total_size
+  auto req_reset = StaticByteBuffer(LowerBits(hci_spec::kReset),
+                                    UpperBits(hci_spec::kReset),  // HCI_Reset opcode
+                                    0x00                          // parameter_total_size
   );
 
   // Expect the HCI_Reset command but dont send a reply back to make the command
@@ -39,18 +40,18 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
                                     const EventPacket& event) {
     cb_count++;
     EXPECT_TRUE(callback_id == id1 || callback_id == id2);
-    EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+    EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
 
-    const auto params = event.params<CommandStatusEventParams>();
-    EXPECT_EQ(StatusCode::kUnspecifiedError, params.status);
-    EXPECT_EQ(kReset, params.command_opcode);
+    const auto params = event.params<hci_spec::CommandStatusEventParams>();
+    EXPECT_EQ(hci_spec::StatusCode::kUnspecifiedError, params.status);
+    EXPECT_EQ(hci_spec::kReset, params.command_opcode);
   };
 
-  auto packet = CommandPacket::New(kReset);
+  auto packet = CommandPacket::New(hci_spec::kReset);
   id1 = cmd_channel()->SendCommand(std::move(packet), cb);
   ASSERT_NE(0u, id1);
 
-  packet = CommandPacket::New(kReset);
+  packet = CommandPacket::New(hci_spec::kReset);
   id2 = cmd_channel()->SendCommand(std::move(packet), cb);
   ASSERT_NE(0u, id2);
 

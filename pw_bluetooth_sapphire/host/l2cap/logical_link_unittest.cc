@@ -32,9 +32,9 @@ class LogicalLinkTest : public ::gtest::TestLoopFixture {
     }
   }
   void NewLogicalLink(bt::LinkType type = bt::LinkType::kLE) {
-    const hci::ConnectionHandle kConnHandle = 0x0001;
+    const hci_spec::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
-    auto query_service_cb = [](hci::ConnectionHandle, PSM) { return std::nullopt; };
+    auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
     link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, &executor_, kMaxPayload,
                              std::move(query_service_cb), &acl_data_channel_,
                              /*random_channel_ids=*/true);
@@ -79,9 +79,9 @@ TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
                                             0xF0, 0x0F,  // PSM
                                             'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e'  // Info Payload
   );
-  auto packet =
-      hci::ACLDataPacket::New(0x0001, hci::ACLPacketBoundaryFlag::kCompletePDU,
-                              hci::ACLBroadcastFlag::kActiveSlaveBroadcast, group_frame.size());
+  auto packet = hci::ACLDataPacket::New(0x0001, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
+                                        hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast,
+                                        group_frame.size());
   ASSERT_TRUE(packet);
   packet->mutable_view()->mutable_payload_data().Write(group_frame);
 
@@ -140,7 +140,7 @@ TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
   link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
     cb_called = true;
     EXPECT_TRUE(result.is_error());
-    EXPECT_EQ(result.error(), hci::StatusCode::kInvalidHCICommandParameters);
+    EXPECT_EQ(result.error(), hci_spec::StatusCode::kInvalidHCICommandParameters);
   });
   EXPECT_TRUE(cb_called);
 }

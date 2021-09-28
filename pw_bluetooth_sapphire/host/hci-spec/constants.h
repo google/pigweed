@@ -17,7 +17,7 @@
 
 // This file contains constants and numbers used in HCI packet payloads.
 
-namespace bt::hci {
+namespace bt::hci_spec {
 
 // HCI_Version Assigned Values See the "Assigned Numbers" document for
 // reference.
@@ -1652,6 +1652,6 @@ constexpr zx::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * k
 constexpr zx::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * kDefaultPageTimeoutCommandParameterValue;
 constexpr zx::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * kMaxPageTimeoutCommandParameterValue;
 
-}  // namespace bt::hci
+}  // namespace bt::hci_spec
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_CONSTANTS_H_
+#endif // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_CONSTANTS_H_

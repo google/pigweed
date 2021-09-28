@@ -31,13 +31,13 @@ enum class RequestState : uint8_t {
 
 // Bitmask enabling all packets types. By enabling as many as we can, we expect
 // the controller to only use the ones it supports
-constexpr PacketTypeType kEnableAllPacketTypes =
-    static_cast<PacketTypeType>(PacketTypeBits::kEnableDM1) |
-    static_cast<PacketTypeType>(PacketTypeBits::kEnableDH1) |
-    static_cast<PacketTypeType>(PacketTypeBits::kEnableDM3) |
-    static_cast<PacketTypeType>(PacketTypeBits::kEnableDH3) |
-    static_cast<PacketTypeType>(PacketTypeBits::kEnableDM5) |
-    static_cast<PacketTypeType>(PacketTypeBits::kEnableDH5);
+constexpr hci_spec::PacketTypeType kEnableAllPacketTypes =
+    static_cast<hci_spec::PacketTypeType>(hci_spec::PacketTypeBits::kEnableDM1) |
+    static_cast<hci_spec::PacketTypeType>(hci_spec::PacketTypeBits::kEnableDH1) |
+    static_cast<hci_spec::PacketTypeType>(hci_spec::PacketTypeBits::kEnableDM3) |
+    static_cast<hci_spec::PacketTypeType>(hci_spec::PacketTypeBits::kEnableDH3) |
+    static_cast<hci_spec::PacketTypeType>(hci_spec::PacketTypeBits::kEnableDM5) |
+    static_cast<hci_spec::PacketTypeType>(hci_spec::PacketTypeBits::kEnableDH5);
 
 // This class represents a pending request by the BrEdr connector to initiate an
 // outgoing connection. It tracks the state of that request and is responsible
@@ -68,7 +68,7 @@ class BrEdrConnectionRequest final {
   // the procedure if we have not received ConnectionComplete
   void CreateConnection(CommandChannel* command_channel, async_dispatcher_t* dispatcher,
                         std::optional<uint16_t> clock_offset,
-                        std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
+                        std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode,
                         zx::duration timeout, OnCompleteDelegate on_command_fail);
 
   PeerId peer_id() const { return peer_id_; }

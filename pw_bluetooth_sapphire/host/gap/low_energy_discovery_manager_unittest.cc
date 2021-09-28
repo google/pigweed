@@ -119,7 +119,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   void OnScanStateChanged(bool enabled) {
     auto scan_type = test_device()->le_scan_state().scan_type;
     bt_log(DEBUG, "gap-test", "FakeController scan state: %s %s", enabled ? "enabled" : "disabled",
-           scan_type == hci::LEScanType::kActive ? "active" : "passive");
+           scan_type == hci_spec::LEScanType::kActive ? "active" : "passive");
     scan_enabled_ = enabled;
     scan_states_.push_back(enabled);
 
@@ -310,8 +310,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
-  test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
-                                          hci::StatusCode::kCommandDisallowed);
+  test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
+                                          hci_spec::StatusCode::kCommandDisallowed);
 
   // |session| should contain nullptr.
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
@@ -446,8 +446,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
-  test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
-                                          hci::StatusCode::kCommandDisallowed);
+  test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
+                                          hci_spec::StatusCode::kCommandDisallowed);
 
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
@@ -502,8 +502,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
   // end of the period. The scan state will transition twice (-> enabled ->
   // disabled).
   set_scan_state_handler(kNumScanStates, [this] {
-    test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
-                                            hci::StatusCode::kCommandDisallowed);
+    test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
+                                            hci_spec::StatusCode::kCommandDisallowed);
   });
 
   RunLoopUntilIdle();
@@ -905,7 +905,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScan) {
   auto session = StartDiscoverySession(/*active=*/false);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
   EXPECT_FALSE(discovery_manager()->discovering());
 
   session.reset();
@@ -944,7 +944,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   auto active_session = StartDiscoverySession();
   ASSERT_TRUE(active_session);
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
-  ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  ASSERT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
 
   // The scan state should transition to enabled.
   ASSERT_EQ(1u, scan_states().size());
@@ -953,7 +953,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   // Enabling passive scans should not disable the active scan.
   auto passive_session = StartDiscoverySession(false);
   RunLoopUntilIdle();
-  ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  ASSERT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
@@ -961,7 +961,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   active_session = nullptr;
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
@@ -969,7 +969,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DisablePassiveScanDuringActiveScan) {
   auto active_session = StartDiscoverySession();
   ASSERT_TRUE(active_session);
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
-  ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  ASSERT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
 
   // The scan state should transition to enabled.
   ASSERT_EQ(1u, scan_states().size());
@@ -978,14 +978,14 @@ TEST_F(LowEnergyDiscoveryManagerTest, DisablePassiveScanDuringActiveScan) {
   // Enabling passive scans should not disable the active scan.
   auto passive_session = StartDiscoverySession(false);
   RunLoopUntilIdle();
-  ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  ASSERT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
   // Disabling the passive scan should not disable the active scan.
   passive_session.reset();
   RunLoopUntilIdle();
-  ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  ASSERT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
@@ -1000,7 +1000,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
   auto passive_session = StartDiscoverySession(false);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
-  ASSERT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  ASSERT_EQ(hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   // The scan state should transition to enabled.
   ASSERT_EQ(1u, scan_states().size());
@@ -1011,7 +1011,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
   auto active_session = StartDiscoverySession();
   EXPECT_TRUE(active_session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
@@ -1038,7 +1038,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanWhileStartingPassiveScan) {
   // -> enabled (passive) -> disabled -> enabled (active)
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
@@ -1121,7 +1121,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PassiveScanPeriodRestart) {
   // End the scan period by advancing time.
   RunLoopFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
@@ -1270,8 +1270,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
   EXPECT_TRUE(scan_enabled());
 }
 
-TEST_F(LowEnergyDiscoveryManagerTest,
-       StartActiveScanWhilePassiveScanStoppingBetweenScanPeriods) {
+TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanWhilePassiveScanStoppingBetweenScanPeriods) {
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
   auto passive_session = StartDiscoverySession(/*active=*/false);
@@ -1283,7 +1282,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   });
   RunLoopFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
@@ -1373,8 +1372,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({StringIs("state", "Idle")}));
 
   // Cause discovery to fail.
-  test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
-                                          hci::StatusCode::kCommandDisallowed);
+  test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
+                                          hci_spec::StatusCode::kCommandDisallowed);
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
   RunLoopUntilIdle();
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({UintIs("failed_count", 1u)}));

@@ -63,7 +63,7 @@ class PDU final {
 
   // The connection handle that identifies the logical link this PDU is intended
   // for.
-  hci::ConnectionHandle connection_handle() const {
+  hci_spec::ConnectionHandle connection_handle() const {
     ZX_DEBUG_ASSERT(is_valid());
     return fragments_.begin()->connection_handle();
   }

@@ -148,7 +148,7 @@ void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
 
   // The security properties of the LTK are determined by the current link
   // properties (i.e. the properties of the STK).
-  peer_ltk_ = LTK(le_sec_, hci::LinkKey(*peer_ltk_bytes_, random, ediv));
+  peer_ltk_ = LTK(le_sec_, hci_spec::LinkKey(*peer_ltk_bytes_, random, ediv));
   obtained_remote_keys_ |= KeyDistGen::kEncKey;
 
   // "EncKey" received. Complete pairing if possible.
@@ -262,7 +262,7 @@ bool Phase3::SendEncryptionKey() {
 
   // Generate completely random values for EDiv and Rand, use masked LTK.
   // The LTK inherits the security properties of the STK currently encrypting the link.
-  local_ltk_ = LTK(le_sec_, hci::LinkKey(ltk_bytes, Random<uint64_t>(), Random<uint16_t>()));
+  local_ltk_ = LTK(le_sec_, hci_spec::LinkKey(ltk_bytes, Random<uint64_t>(), Random<uint16_t>()));
 
   // Send LTK
   sm_chan().SendMessage(kEncryptionInformation, local_ltk_->key().value());

@@ -6,7 +6,7 @@
 
 namespace bt::hci::testing {
 
-FakeConnection::FakeConnection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
+FakeConnection::FakeConnection(hci_spec::ConnectionHandle handle, bt::LinkType ll_type, Role role,
                                const DeviceAddress& local_address,
                                const DeviceAddress& peer_address)
     : Connection(handle, ll_type, role, local_address, peer_address),
@@ -20,7 +20,7 @@ void FakeConnection::TriggerEncryptionChangeCallback(Status status, bool enabled
 
 fxl::WeakPtr<Connection> FakeConnection::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-void FakeConnection::Disconnect(StatusCode reason) {
+void FakeConnection::Disconnect(hci_spec::StatusCode reason) {
   // TODO(armansito): implement
   conn_state_ = State::kWaitingForDisconnectionComplete;
 }

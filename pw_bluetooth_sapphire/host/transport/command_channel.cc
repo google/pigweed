@@ -21,8 +21,8 @@ namespace bt::hci {
 
 namespace {
 
-bool IsAsync(EventCode code) {
-  return code != kCommandCompleteEventCode && code != kCommandStatusEventCode;
+bool IsAsync(hci_spec::EventCode code) {
+  return code != hci_spec::kCommandCompleteEventCode && code != hci_spec::kCommandStatusEventCode;
 }
 
 }  //  namespace
@@ -34,10 +34,10 @@ CommandChannel::QueuedCommand::QueuedCommand(std::unique_ptr<CommandPacket> comm
   ZX_DEBUG_ASSERT(packet);
 }
 
-CommandChannel::TransactionData::TransactionData(TransactionId id, OpCode opcode,
-                                                 EventCode complete_event_code,
-                                                 std::optional<EventCode> subevent_code,
-                                                 std::unordered_set<OpCode> exclusions,
+CommandChannel::TransactionData::TransactionData(TransactionId id, hci_spec::OpCode opcode,
+                                                 hci_spec::EventCode complete_event_code,
+                                                 std::optional<hci_spec::EventCode> subevent_code,
+                                                 std::unordered_set<hci_spec::OpCode> exclusions,
                                                  CommandCallback callback)
     : id_(id),
       opcode_(opcode),
@@ -56,19 +56,19 @@ CommandChannel::TransactionData::~TransactionData() {
   }
 
   bt_log(DEBUG, "hci", "sending kUnspecifiedError for unfinished transaction %zu", id_);
-  auto event = EventPacket::New(sizeof(CommandStatusEventParams));
+  auto event = EventPacket::New(sizeof(hci_spec::CommandStatusEventParams));
   // Init buffer to prevent stale data in buffer.
   event->mutable_view()->mutable_data().SetToZeros();
 
   auto* header = event->mutable_view()->mutable_header();
-  auto* params = event->mutable_view()->mutable_payload<CommandStatusEventParams>();
+  auto* params = event->mutable_view()->mutable_payload<hci_spec::CommandStatusEventParams>();
 
   // TODO(armansito): Instead of lying about receiving a Command Status event,
   // report this error in a different way. This can be highly misleading during
   // debugging.
-  header->event_code = kCommandStatusEventCode;
-  header->parameter_total_size = sizeof(CommandStatusEventParams);
-  params->status = kUnspecifiedError;
+  header->event_code = hci_spec::kCommandStatusEventCode;
+  header->parameter_total_size = sizeof(hci_spec::CommandStatusEventParams);
+  params->status = hci_spec::kUnspecifiedError;
   params->command_opcode = opcode_;
 
   Complete(std::move(event));
@@ -177,43 +177,45 @@ void CommandChannel::ShutDownInternal() {
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
     std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-    const EventCode complete_event_code) {
+    const hci_spec::EventCode complete_event_code) {
   return SendExclusiveCommand(std::move(command_packet), std::move(callback), complete_event_code);
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
     std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-    EventCode le_meta_subevent_code) {
+    hci_spec::EventCode le_meta_subevent_code) {
   return SendLeAsyncExclusiveCommand(std::move(command_packet), std::move(callback),
                                      le_meta_subevent_code);
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
     std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-    const EventCode complete_event_code, std::unordered_set<OpCode> exclusions) {
+    const hci_spec::EventCode complete_event_code,
+    std::unordered_set<hci_spec::OpCode> exclusions) {
   return SendExclusiveCommandInternal(std::move(command_packet), std::move(callback),
                                       complete_event_code, std::nullopt, std::move(exclusions));
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
     std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-    std::optional<EventCode> le_meta_subevent_code, std::unordered_set<OpCode> exclusions) {
+    std::optional<hci_spec::EventCode> le_meta_subevent_code,
+    std::unordered_set<hci_spec::OpCode> exclusions) {
   return SendExclusiveCommandInternal(std::move(command_packet), std::move(callback),
-                                      hci::kLEMetaEventCode, le_meta_subevent_code,
+                                      hci_spec::kLEMetaEventCode, le_meta_subevent_code,
                                       std::move(exclusions));
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-    const EventCode complete_event_code, std::optional<EventCode> subevent_code,
-    std::unordered_set<OpCode> exclusions) {
+    const hci_spec::EventCode complete_event_code, std::optional<hci_spec::EventCode> subevent_code,
+    std::unordered_set<hci_spec::OpCode> exclusions) {
   if (!is_initialized_) {
     bt_log(DEBUG, "hci", "can't send commands while uninitialized");
     return 0u;
   }
 
   ZX_ASSERT(command_packet);
-  ZX_ASSERT_MSG((complete_event_code == hci::kLEMetaEventCode) == subevent_code.has_value(),
+  ZX_ASSERT_MSG((complete_event_code == hci_spec::kLEMetaEventCode) == subevent_code.has_value(),
                 "only LE Meta Event subevents are supported");
 
   if (IsAsync(complete_event_code)) {
@@ -276,10 +278,11 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
   return false;
 }
 
-CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_code,
+CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCode event_code,
                                                                EventCallback event_callback) {
-  if (event_code == kCommandStatusEventCode || event_code == kCommandCompleteEventCode ||
-      event_code == kLEMetaEventCode) {
+  if (event_code == hci_spec::kCommandStatusEventCode ||
+      event_code == hci_spec::kCommandCompleteEventCode ||
+      event_code == hci_spec::kLEMetaEventCode) {
     return 0u;
   }
 
@@ -290,13 +293,14 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_c
     return 0u;
   }
 
-  auto id = NewEventHandler(event_code, false /* is_le_meta */, kNoOp, std::move(event_callback));
+  auto id = NewEventHandler(event_code, false /* is_le_meta */, hci_spec::kNoOp,
+                            std::move(event_callback));
   event_code_handlers_.emplace(event_code, id);
   return id;
 }
 
-CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(EventCode subevent_code,
-                                                                     EventCallback event_callback) {
+CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
+    hci_spec::EventCode subevent_code, EventCallback event_callback) {
   auto* handler = FindLEMetaEventHandler(subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci",
@@ -305,7 +309,8 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(EventCode s
     return 0u;
   }
 
-  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, kNoOp, std::move(event_callback));
+  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, hci_spec::kNoOp,
+                            std::move(event_callback));
   subevent_code_handlers_.emplace(subevent_code, id);
   return id;
 }
@@ -320,7 +325,7 @@ void CommandChannel::RemoveEventHandler(EventHandlerId id) {
   RemoveEventHandlerInternal(id);
 }
 
-CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(EventCode code) {
+CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(hci_spec::EventCode code) {
   auto it = event_code_handlers_.find(code);
   if (it == event_code_handlers_.end()) {
     return nullptr;
@@ -328,7 +333,8 @@ CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(EventCode cod
   return &event_handler_id_map_[it->second];
 }
 
-CommandChannel::EventHandlerData* CommandChannel::FindLEMetaEventHandler(EventCode subevent_code) {
+CommandChannel::EventHandlerData* CommandChannel::FindLEMetaEventHandler(
+    hci_spec::EventCode subevent_code) {
   auto it = subevent_code_handlers_.find(subevent_code);
   if (it == subevent_code_handlers_.end()) {
     return nullptr;
@@ -430,7 +436,7 @@ void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
           channel_timeout_cb_();
         }
       },
-      kCommandTimeout);
+      hci_spec::kCommandTimeout);
 
   MaybeAddTransactionHandler(transaction.get());
 
@@ -445,7 +451,7 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
 
   const bool is_le_meta = data->subevent_code().has_value();
   auto* const code_handlers = is_le_meta ? &subevent_code_handlers_ : &event_code_handlers_;
-  const EventCode code = data->subevent_code().value_or(data->complete_event_code());
+  const hci_spec::EventCode code = data->subevent_code().value_or(data->complete_event_code());
 
   // We already have a handler for this transaction, or another transaction
   // is already waiting and it will be queued.
@@ -463,9 +469,9 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   bt_log(TRACE, "hci", "async command %zu assigned handler %zu", data->id(), id);
 }
 
-CommandChannel::EventHandlerId CommandChannel::NewEventHandler(EventCode event_code,
+CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCode event_code,
                                                                bool is_le_meta,
-                                                               OpCode pending_opcode,
+                                                               hci_spec::OpCode pending_opcode,
                                                                EventCallback event_callback) {
   ZX_DEBUG_ASSERT(event_code);
   ZX_DEBUG_ASSERT(event_callback);
@@ -487,30 +493,31 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(EventCode event_c
 }
 
 void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
-  hci::EventCode event_code = event->event_code();
+  hci_spec::EventCode event_code = event->event_code();
 
-  ZX_DEBUG_ASSERT(event_code == kCommandStatusEventCode || event_code == kCommandCompleteEventCode);
+  ZX_DEBUG_ASSERT(event_code == hci_spec::kCommandStatusEventCode ||
+                  event_code == hci_spec::kCommandCompleteEventCode);
 
-  OpCode matching_opcode;
+  hci_spec::OpCode matching_opcode;
 
   // The HCI Command Status event with an error status might indicate that an
   // async command failed. We use this to unregister async command handlers
   // below.
   bool unregister_async_handler = false;
 
-  if (event->event_code() == kCommandCompleteEventCode) {
-    const auto& params = event->params<CommandCompleteEventParams>();
+  if (event->event_code() == hci_spec::kCommandCompleteEventCode) {
+    const auto& params = event->params<hci_spec::CommandCompleteEventParams>();
     matching_opcode = le16toh(params.command_opcode);
     allowed_command_packets_ = params.num_hci_command_packets;
-  } else {  // kCommandStatusEventCode
-    const auto& params = event->params<CommandStatusEventParams>();
+  } else {  //  hci_spec::kCommandStatusEventCode
+    const auto& params = event->params<hci_spec::CommandStatusEventParams>();
     matching_opcode = le16toh(params.command_opcode);
     allowed_command_packets_ = params.num_hci_command_packets;
-    unregister_async_handler = params.status != StatusCode::kSuccess;
+    unregister_async_handler = params.status != hci_spec::StatusCode::kSuccess;
   }
   bt_log(TRACE, "hci", "allowed packets update: %zu", allowed_command_packets_);
 
-  if (matching_opcode == kNoOp) {
+  if (matching_opcode == hci_spec::kNoOp) {
     return;
   }
 
@@ -533,7 +540,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 
   // TODO(fxbug.dev/1109): Do not allow asynchronous commands to finish with Command
   // Complete.
-  if (event_code == kCommandCompleteEventCode) {
+  if (event_code == hci_spec::kCommandCompleteEventCode) {
     bt_log(WARN, "hci", "async command received CommandComplete");
     unregister_async_handler = true;
   }
@@ -553,13 +560,13 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   };
   std::vector<PendingCallback> pending_callbacks;
 
-  EventCode event_code;
-  const std::unordered_multimap<EventCode, EventHandlerId>* event_handlers;
+  hci_spec::EventCode event_code;
+  const std::unordered_multimap<hci_spec::EventCode, EventHandlerId>* event_handlers;
 
   bool is_le_event = false;
-  if (event->event_code() == kLEMetaEventCode) {
+  if (event->event_code() == hci_spec::kLEMetaEventCode) {
     is_le_event = true;
-    event_code = event->params<LEMetaEventParams>().subevent_code;
+    event_code = event->params<hci_spec::LEMetaEventParams>().subevent_code;
     event_handlers = &subevent_code_handlers_;
   } else {
     event_code = event->event_code();
@@ -654,8 +661,8 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
     } else if (status != ZX_OK) {
       return;
     }
-    if (packet->event_code() == kCommandStatusEventCode ||
-        packet->event_code() == kCommandCompleteEventCode) {
+    if (packet->event_code() == hci_spec::kCommandStatusEventCode ||
+        packet->event_code() == hci_spec::kCommandCompleteEventCode) {
       UpdateTransaction(std::move(packet));
       TrySendQueuedCommands();
     } else {
@@ -682,15 +689,15 @@ zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel& channe
     return ZX_ERR_IO;
   }
 
-  if (read_size < sizeof(EventHeader)) {
+  if (read_size < sizeof(hci_spec::EventHeader)) {
     bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
-           sizeof(EventHeader), read_size);
+           sizeof(hci_spec::EventHeader), read_size);
     // TODO(armansito): Should this be fatal? Ignore for now.
     return ZX_ERR_INVALID_ARGS;
   }
 
   // Compare the received payload size to what is in the header.
-  const size_t rx_payload_size = read_size - sizeof(EventHeader);
+  const size_t rx_payload_size = read_size - sizeof(hci_spec::EventHeader);
   const size_t size_from_header = packet->view().header().parameter_total_size;
   if (size_from_header != rx_payload_size) {
     bt_log(ERROR, "hci",

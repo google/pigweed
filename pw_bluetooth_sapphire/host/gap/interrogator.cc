@@ -12,7 +12,7 @@
 
 namespace bt::gap {
 
-Interrogator::Interrogation::Interrogation(PeerId peer_id, hci::ConnectionHandle handle,
+Interrogator::Interrogation::Interrogation(PeerId peer_id, hci_spec::ConnectionHandle handle,
                                            ResultCallback result_cb)
     : peer_id_(peer_id),
       handle_(handle),
@@ -55,7 +55,8 @@ Interrogator::~Interrogator() {
   }
 }
 
-void Interrogator::Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback result_cb) {
+void Interrogator::Start(PeerId peer_id, hci_spec::ConnectionHandle handle,
+                         ResultCallback result_cb) {
   ZX_ASSERT(result_cb);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
@@ -92,9 +93,9 @@ void Interrogator::Cancel(PeerId peer_id) {
 }
 
 void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogation) {
-  auto packet = hci::CommandPacket::New(hci::kReadRemoteVersionInfo,
-                                        sizeof(hci::ReadRemoteVersionInfoCommandParams));
-  packet->mutable_payload<hci::ReadRemoteVersionInfoCommandParams>()->connection_handle =
+  auto packet = hci::CommandPacket::New(hci_spec::kReadRemoteVersionInfo,
+                                        sizeof(hci_spec::ReadRemoteVersionInfoCommandParams));
+  packet->mutable_payload<hci_spec::ReadRemoteVersionInfoCommandParams>()->connection_handle =
       htole16(interrogation->handle());
 
   auto cmd_cb = [self = weak_ptr_factory_.GetWeakPtr(), interrogation](
@@ -112,16 +113,16 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
       return;
     }
 
-    if (event.event_code() == hci::kCommandStatusEventCode) {
+    if (event.event_code() == hci_spec::kCommandStatusEventCode) {
       return;
     }
 
-    ZX_ASSERT(event.event_code() == hci::kReadRemoteVersionInfoCompleteEventCode);
+    ZX_ASSERT(event.event_code() == hci_spec::kReadRemoteVersionInfoCompleteEventCode);
 
     bt_log(TRACE, "gap", "read remote version info completed (peer id: %s)",
            bt_str(interrogation->peer_id()));
 
-    const auto params = event.params<hci::ReadRemoteVersionInfoCompleteEventParams>();
+    const auto params = event.params<hci_spec::ReadRemoteVersionInfoCompleteEventParams>();
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
@@ -133,7 +134,7 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
 
   bt_log(TRACE, "gap", "asking for version info (peer id: %s)", bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendCommand(std::move(packet), std::move(cmd_cb),
-                                        hci::kReadRemoteVersionInfoCompleteEventCode);
+                                        hci_spec::kReadRemoteVersionInfoCompleteEventCode);
 }
 
 }  // namespace bt::gap

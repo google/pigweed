@@ -469,7 +469,7 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   hci::LowEnergyScanner::ScanOptions options{
       .active = active,
       .filter_duplicates = true,
-      .filter_policy = hci::LEScanFilterPolicy::kNoWhiteList,
+      .filter_policy = hci_spec::LEScanFilterPolicy::kNoWhiteList,
       .period = scan_period_,
       .scan_response_timeout = kLEScanResponseTimeout,
   };

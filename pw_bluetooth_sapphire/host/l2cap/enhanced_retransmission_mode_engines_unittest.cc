@@ -19,7 +19,7 @@ class EnhancedRetransmissionModeEnginesTest : public ::gtest::TestLoopFixture {}
 constexpr size_t kMaxTransmissions = 2;
 constexpr size_t kTxWindow = 63;
 
-constexpr hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
 constexpr uint8_t kExtendedControlPBitMask = 0b0001'0000;

@@ -25,8 +25,7 @@ const bt::DeviceAddress kTestAddr2(bt::DeviceAddress::Type::kLEPublic, {0x02, 0,
 using bt::testing::FakePeer;
 using FidlAdvHandle = fidl::InterfaceHandle<fble::AdvertisingHandle>;
 
-class LowEnergyPeripheralServerTestFakeAdapter
-    : public bt::gap::testing::FakeAdapterTestFixture {
+class LowEnergyPeripheralServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
  public:
   LowEnergyPeripheralServerTestFakeAdapter() = default;
   ~LowEnergyPeripheralServerTestFakeAdapter() override = default;
@@ -155,10 +154,9 @@ TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCrash) 
 }
 
 // Same as the test above but tests that an error status leaves the server in the expected state.
-TEST_F(LowEnergyPeripheralServerTest,
-       StartAdvertisingWhilePendingDoesNotCrashWithControllerError) {
-  test_device()->SetDefaultResponseStatus(bt::hci::kLESetAdvertisingEnable,
-                                          bt::hci::StatusCode::kCommandDisallowed);
+TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCrashWithControllerError) {
+  test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetAdvertisingEnable,
+                                          bt::hci_spec::StatusCode::kCommandDisallowed);
   fble::AdvertisingParameters params1, params2, params3, params4;
   FidlAdvHandle token1, token2, token3, token4;
 
@@ -182,7 +180,7 @@ TEST_F(LowEnergyPeripheralServerTest,
   EXPECT_EQ(fble::PeripheralError::FAILED, result3->error());
 
   // The next request should succeed as normal.
-  test_device()->ClearDefaultResponseStatus(bt::hci::kLESetAdvertisingEnable);
+  test_device()->ClearDefaultResponseStatus(bt::hci_spec::kLESetAdvertisingEnable);
   server()->StartAdvertising(std::move(params4), token4.NewRequest(),
                              [&](auto result) { result4 = std::move(result); });
   RunLoopUntilIdle();
@@ -192,8 +190,8 @@ TEST_F(LowEnergyPeripheralServerTest,
 }
 
 TEST_F(LowEnergyPeripheralServerTest, AdvertiseWhilePendingDoesNotCrashWithControllerError) {
-  test_device()->SetDefaultResponseStatus(bt::hci::kLESetAdvertisingEnable,
-                                          bt::hci::StatusCode::kCommandDisallowed);
+  test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetAdvertisingEnable,
+                                          bt::hci_spec::StatusCode::kCommandDisallowed);
   fble::AdvertisingParameters params1, params2, params3, params4;
 
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_1;
@@ -222,7 +220,7 @@ TEST_F(LowEnergyPeripheralServerTest, AdvertiseWhilePendingDoesNotCrashWithContr
   EXPECT_EQ(fble::PeripheralError::FAILED, result3->error());
 
   // The next request should succeed as normal.
-  test_device()->ClearDefaultResponseStatus(bt::hci::kLESetAdvertisingEnable);
+  test_device()->ClearDefaultResponseStatus(bt::hci_spec::kLESetAdvertisingEnable);
 
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_4;
   FakeAdvertisedPeripheral adv_peripheral_server_4(adv_peripheral_handle_4.NewRequest());
@@ -284,8 +282,7 @@ TEST_F(LowEnergyPeripheralServerTest, AdvertiseNoConnectionRelatedParamsNoConnec
   EXPECT_TRUE(result);
 }
 
-TEST_F(LowEnergyPeripheralServerTest,
-       StartAdvertisingConnectableParameterTrueConnectsBondable) {
+TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingConnectableParameterTrueConnectsBondable) {
   fble::Peer peer;
   // `conn` is stored so the bondable mode of the connection resulting from `OnPeerConnected` can
   // be checked. The connection would otherwise be dropped immediately after `ConnectLowEnergy`.
@@ -468,8 +465,7 @@ TEST_P(BoolParam, StartAdvertisingBondableOrNonBondableConnectsBondableOrNonBond
             bondable ? bt::sm::BondableMode::Bondable : bt::sm::BondableMode::NonBondable);
 }
 
-TEST_F(LowEnergyPeripheralServerTest,
-       RestartStartAdvertisingDuringInboundConnKeepsNewAdvAlive) {
+TEST_F(LowEnergyPeripheralServerTest, RestartStartAdvertisingDuringInboundConnKeepsNewAdvAlive) {
   fble::Peer peer;
   // `conn` is stored so that the connection is not dropped immediately after connection.
   fidl::InterfaceHandle<fble::Connection> conn;
@@ -493,7 +489,7 @@ TEST_F(LowEnergyPeripheralServerTest,
   fit::closure complete_interrogation;
   // Hang interrogation so we can control when the inbound connection procedure completes.
   test_device()->pause_responses_for_opcode(
-      bt::hci::kReadRemoteVersionInfo,
+      bt::hci_spec::kReadRemoteVersionInfo,
       [&](fit::closure trigger) { complete_interrogation = std::move(trigger); });
 
   test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
@@ -510,7 +506,7 @@ TEST_F(LowEnergyPeripheralServerTest,
   // after connection completion.
   fit::closure complete_start_advertising;
   test_device()->pause_responses_for_opcode(
-      bt::hci::kLESetAdvertisingParameters,
+      bt::hci_spec::kLESetAdvertisingParameters,
       [&](fit::closure trigger) { complete_start_advertising = std::move(trigger); });
 
   // Restart advertising during inbound connection, simulating the race seen in fxbug.dev/72825.
@@ -557,7 +553,7 @@ TEST_F(LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeepsNewA
   fit::closure complete_interrogation;
   // Hang interrogation so we can control when the inbound connection procedure completes.
   test_device()->pause_responses_for_opcode(
-      bt::hci::kReadRemoteVersionInfo,
+      bt::hci_spec::kReadRemoteVersionInfo,
       [&](fit::closure trigger) { complete_interrogation = std::move(trigger); });
 
   test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
@@ -578,7 +574,7 @@ TEST_F(LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeepsNewA
   // of the second advertising request after connection completion.
   fit::closure complete_start_advertising;
   test_device()->pause_responses_for_opcode(
-      bt::hci::kLESetAdvertisingParameters,
+      bt::hci_spec::kLESetAdvertisingParameters,
       [&](fit::closure trigger) { complete_start_advertising = std::move(trigger); });
 
   // Restart advertising during inbound connection, simulating the race seen in fxbug.dev/72825.
@@ -612,8 +608,7 @@ TEST_F(LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeepsNewA
   EXPECT_TRUE(result.has_value());
 }
 
-TEST_F(LowEnergyPeripheralServerTestFakeAdapter,
-       StartAdvertisingWithIncludeTxPowerSetToTrue) {
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter, StartAdvertisingWithIncludeTxPowerSetToTrue) {
   fble::AdvertisingParameters params;
   fble::AdvertisingData adv_data;
   adv_data.set_include_tx_power_level(true);
@@ -726,7 +721,7 @@ TEST_F(LowEnergyPeripheralServerTest, AdvertiseAndReceiveTwoConnections) {
 TEST_F(LowEnergyPeripheralServerTest, AdvertiseCanceledBeforeAdvertisingStarts) {
   fit::closure send_adv_enable_response;
   test_device()->pause_responses_for_opcode(
-      bt::hci::kLESetAdvertisingEnable,
+      bt::hci_spec::kLESetAdvertisingEnable,
       [&](fit::closure send_rsp) { send_adv_enable_response = std::move(send_rsp); });
 
   fble::AdvertisedPeripheralHandle adv_peripheral_handle;
@@ -888,8 +883,8 @@ TEST_F(LowEnergyPeripheralServerTest, IncomingConnectionFailureContinuesAdvertis
 
   // Cause peer interrogation to fail. This will result in a connection error status to be
   // received. Advertising should be immediately resumed, allowing future connections.
-  test_device()->SetDefaultCommandStatus(bt::hci::kReadRemoteVersionInfo,
-                                         bt::hci::StatusCode::kUnsupportedRemoteFeature);
+  test_device()->SetDefaultCommandStatus(bt::hci_spec::kReadRemoteVersionInfo,
+                                         bt::hci_spec::StatusCode::kUnsupportedRemoteFeature);
 
   test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
   test_device()->ConnectLowEnergy(kTestAddr);
@@ -898,7 +893,7 @@ TEST_F(LowEnergyPeripheralServerTest, IncomingConnectionFailureContinuesAdvertis
   EXPECT_FALSE(adv_result.has_value());
 
   // Allow next interrogation to succeed.
-  test_device()->ClearDefaultCommandStatus(bt::hci::kReadRemoteVersionInfo);
+  test_device()->ClearDefaultCommandStatus(bt::hci_spec::kReadRemoteVersionInfo);
 
   test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
   test_device()->ConnectLowEnergy(kTestAddr);

@@ -85,7 +85,8 @@ class L2capTest : public TestingBase {
     return socket_factory_->MakeSocketForChannel(channel);
   }
 
-  void QueueConfigNegotiation(hci::ConnectionHandle handle, l2cap::ChannelParameters local_params,
+  void QueueConfigNegotiation(hci_spec::ConnectionHandle handle,
+                              l2cap::ChannelParameters local_params,
                               l2cap::ChannelParameters peer_params, l2cap::ChannelId local_cid,
                               l2cap::ChannelId remote_cid, l2cap::CommandId local_config_req_id,
                               l2cap::CommandId peer_config_req_id) {
@@ -101,7 +102,7 @@ class L2capTest : public TestingBase {
                                                                       remote_cid, peer_params));
   }
 
-  void QueueInboundL2capConnection(hci::ConnectionHandle handle, l2cap::PSM psm,
+  void QueueInboundL2capConnection(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
                                    l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid,
                                    l2cap::ChannelParameters local_params = kChannelParameters,
                                    l2cap::ChannelParameters peer_params = kChannelParameters) {
@@ -118,7 +119,7 @@ class L2capTest : public TestingBase {
   }
 
   template <typename CallbackT>
-  void QueueOutboundL2capConnection(hci::ConnectionHandle handle, l2cap::PSM psm,
+  void QueueOutboundL2capConnection(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
                                     l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid,
                                     CallbackT open_cb,
                                     l2cap::ChannelParameters local_params = kChannelParameters,
@@ -143,7 +144,8 @@ class L2capTest : public TestingBase {
   };
 
   QueueAclConnectionRetVal QueueAclConnection(
-      hci::ConnectionHandle handle, hci::Connection::Role role = hci::Connection::Role::kMaster) {
+      hci_spec::ConnectionHandle handle,
+      hci::Connection::Role role = hci::Connection::Role::kMaster) {
     QueueAclConnectionRetVal cmd_ids;
     cmd_ids.extended_features_id = NextCommandId();
     cmd_ids.fixed_channels_supported_id = NextCommandId();
@@ -163,7 +165,7 @@ class L2capTest : public TestingBase {
     return cmd_ids;
   }
 
-  L2cap::LEFixedChannels QueueLEConnection(hci::ConnectionHandle handle,
+  L2cap::LEFixedChannels QueueLEConnection(hci_spec::ConnectionHandle handle,
                                            hci::Connection::Role role) {
     acl_data_channel()->RegisterLink(handle, bt::LinkType::kLE);
     return l2cap()->AddLEConnection(
@@ -185,7 +187,7 @@ TEST_F(L2capTest, InboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   QueueAclConnection(kLinkHandle);
 
@@ -231,7 +233,7 @@ TEST_F(L2capTest, InboundL2capSocket) {
   // Test outbound data fragments using |kMaxDataPacketLength|.
   constexpr size_t kFirstFragmentPayloadSize = kMaxDataPacketLength - sizeof(l2cap::BasicHeader);
   const auto kFirstFragment =
-      StaticByteBuffer<sizeof(hci::ACLDataHeader) + sizeof(l2cap::BasicHeader) +
+      StaticByteBuffer<sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::BasicHeader) +
                        kFirstFragmentPayloadSize>(
           // ACL data header (handle: 1, length 64)
           0x01, 0x00, 0x40, 0x00,
@@ -247,7 +249,7 @@ TEST_F(L2capTest, InboundL2capSocket) {
 
   constexpr size_t kSecondFragmentPayloadSize = sizeof(write_data) - 1 - kFirstFragmentPayloadSize;
   const auto kSecondFragment =
-      StaticByteBuffer<sizeof(hci::ACLDataHeader) + kSecondFragmentPayloadSize>(
+      StaticByteBuffer<sizeof(hci_spec::ACLDataHeader) + kSecondFragmentPayloadSize>(
           // ACL data header (handle: 1, pbf: continuing fr., length: 20)
           0x01, 0x10, 0x14, 0x00,
 
@@ -289,7 +291,7 @@ TEST_F(L2capTest, InboundL2capSocket) {
 TEST_F(L2capTest, InboundRfcommSocketFails) {
   constexpr l2cap::PSM kPSM = l2cap::kRFCOMM;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   QueueAclConnection(kLinkHandle);
 
@@ -313,7 +315,7 @@ TEST_F(L2capTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   constexpr l2cap::PSM kPSM = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   QueueAclConnection(kLinkHandle);
 
@@ -378,7 +380,7 @@ TEST_F(L2capTest, OutboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   QueueAclConnection(kLinkHandle);
   RunLoopUntilIdle();
@@ -426,7 +428,7 @@ TEST_F(L2capTest, OutboundL2capSocket) {
 
 TEST_F(L2capTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   // Don't register any links. This should cause outbound channels to fail.
   bool chan_cb_called = false;
@@ -445,7 +447,7 @@ TEST_F(L2capTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
 // Queue dynamic channel packets, then open a new dynamic channel.
 // The signaling channel packets should be sent before the queued dynamic channel packets.
 TEST_F(L2capTest, ChannelCreationPrioritizedOverDynamicChannelData) {
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId0 = 0x0040;
@@ -536,7 +538,7 @@ TEST_F(L2capTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
   constexpr uint16_t kMtu = l2cap::kMinACLMTU;
 
   l2cap::ChannelParameters chan_params;
@@ -565,7 +567,7 @@ TEST_F(L2capTest, NegotiateChannelParametersOnInboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
@@ -598,10 +600,10 @@ TEST_F(L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   constexpr uint16_t kIntervalMax = 7;
   constexpr uint16_t kSlaveLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
-  const hci::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
-                                                     kTimeoutMult);
+  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
+                                                          kTimeoutMult);
 
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
   QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
 
   std::optional<bool> accepted;
@@ -638,7 +640,7 @@ TEST_F(L2capTest, InspectHierarchy) {
 }
 
 TEST_F(L2capTest, AddLEConnectionReturnsFixedChannels) {
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
   auto channels = QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
   ASSERT_TRUE(channels.att);
   EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
@@ -654,7 +656,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   const bool kExpectSuccess = GetParam().second;
 
   // Arbitrary command payload larger than CommandHeader.
-  const auto op_code = hci::VendorOpCode(0x01);
+  const auto op_code = hci_spec::VendorOpCode(0x01);
   const StaticByteBuffer kEncodedCommand(LowerBits(op_code), UpperBits(op_code),  // op code
                                          0x04,                                    // parameter size
                                          0x00, 0x01, 0x02, 0x03);                 // test parameter
@@ -662,7 +664,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   std::optional<bt_vendor_command_t> encode_vendor_command;
   std::optional<bt_vendor_params_t> encode_vendor_command_params;
@@ -689,8 +691,9 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   channel->Activate([](auto) {}, []() {});
 
   if (kPriority != hci::AclPriority::kNormal) {
-    auto cmd_complete = CommandCompletePacket(
-        op_code, kExpectSuccess ? hci::StatusCode::kSuccess : hci::StatusCode::kUnknownCommand);
+    auto cmd_complete =
+        CommandCompletePacket(op_code, kExpectSuccess ? hci_spec::StatusCode::kSuccess
+                                                      : hci_spec::StatusCode::kUnknownCommand);
     EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 
@@ -722,7 +725,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   encode_vendor_command_params.reset();
 
   if (kPriority != hci::AclPriority::kNormal && kExpectSuccess) {
-    auto cmd_complete = CommandCompletePacket(op_code, hci::StatusCode::kSuccess);
+    auto cmd_complete = CommandCompletePacket(op_code, hci_spec::StatusCode::kSuccess);
     EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 

@@ -44,7 +44,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
   // service-level client via Channel::UpgradeSecurity().
   //
   // Has no effect if this L2cap is uninitialized or shut down.
-  virtual void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+  virtual void AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                                 l2cap::LinkErrorCallback link_error_callback,
                                 l2cap::SecurityUpgradeCallback security_callback) = 0;
 
@@ -70,7 +70,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
     fbl::RefPtr<l2cap::Channel> smp;
   };
   virtual LEFixedChannels AddLEConnection(
-      hci::ConnectionHandle handle, hci::Connection::Role role,
+      hci_spec::ConnectionHandle handle, hci::Connection::Role role,
       l2cap::LinkErrorCallback link_error_callback,
       l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
       l2cap::SecurityUpgradeCallback security_callback) = 0;
@@ -84,11 +84,11 @@ class L2cap : public fbl::RefCounted<L2cap> {
   // more packets to send after removing the link entry.
   //
   // Has no effect if this L2cap is uninitialized or shut down.
-  virtual void RemoveConnection(hci::ConnectionHandle handle) = 0;
+  virtual void RemoveConnection(hci_spec::ConnectionHandle handle) = 0;
 
   // Assigns the security level of a logical link. Has no effect if |handle| has
   // not been previously registered or the link is closed.
-  virtual void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
+  virtual void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                             sm::SecurityProperties security) = 0;
 
   // Send an LE Connection Parameter Update Request requesting |params| on the LE signaling channel
@@ -99,7 +99,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
   //
   // |request_cb| will be called when a response (indicating acceptance or rejection) is received.
   virtual void RequestConnectionParameterUpdate(
-      hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+      hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
       l2cap::ConnectionParameterUpdateRequestCallback request_cb) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service
@@ -111,7 +111,7 @@ class L2cap : public fbl::RefCounted<L2cap> {
   // resulted in an error.
   //
   // Has no effect if this L2cap is uninitialized or shut down.
-  virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
+  virtual void OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
                                 l2cap::ChannelParameters params, l2cap::ChannelCallback cb) = 0;
 
   // Registers a handler for peer-initiated dynamic channel requests that have

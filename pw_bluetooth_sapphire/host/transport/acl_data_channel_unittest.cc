@@ -26,7 +26,7 @@
 namespace bt::hci {
 namespace {
 
-constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
@@ -78,8 +78,8 @@ TEST_F(ACLDataChannelTest, VerifyMTUs) {
 TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -91,10 +91,12 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -108,9 +110,9 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
   // Queue up 10 packets in total, distributed among the two connection handles.
   async::PostTask(dispatcher(), [this] {
     for (int i = 0; i < 10; ++i) {
-      ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
-      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+      hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+      auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
       EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                                  AclDataChannel::PacketPriority::kLow));
     }
@@ -144,8 +146,8 @@ TEST_F(ACLDataChannelTest, SendPacketLEBuffer) {
   constexpr size_t kTotalAttempts = 12;
   constexpr size_t kTotalExpected = 6;
   constexpr size_t kBufferNumPackets = 3;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(), DataBufferInfo(kMaxMTU, kBufferNumPackets));
 
@@ -153,18 +155,20 @@ TEST_F(ACLDataChannelTest, SendPacketLEBuffer) {
   acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // This should fail because the payload exceeds the MTU.
-  auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                   ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1);
+  auto packet = ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                   hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1);
   EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                               AclDataChannel::PacketPriority::kLow));
 
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -180,9 +184,9 @@ TEST_F(ACLDataChannelTest, SendPacketLEBuffer) {
   // packets transmitted.
   async::PostTask(dispatcher(), [this] {
     for (size_t i = 0; i < kTotalAttempts; ++i) {
-      ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
-      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+      hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+      auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
       if (i % 2) {
         // ACL-U packets should fail due to 0 MTU size.
         EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
@@ -223,8 +227,8 @@ TEST_F(ACLDataChannelTest, SendLEPacketBothBuffers) {
   constexpr size_t kMaxNumPackets = 50;
   constexpr size_t kLEMaxMTU = 5;
   constexpr size_t kLEMaxNumPackets = 5;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets),
                            DataBufferInfo(kLEMaxMTU, kLEMaxNumPackets));
@@ -233,18 +237,20 @@ TEST_F(ACLDataChannelTest, SendLEPacketBothBuffers) {
   acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kLE);
 
   // This should fail because the payload exceeds the LE MTU.
-  auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                   ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+  auto packet = ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                   hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
   EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                               AclDataChannel::PacketPriority::kLow));
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -258,9 +264,9 @@ TEST_F(ACLDataChannelTest, SendLEPacketBothBuffers) {
   // Queue up 10 packets in total, distributed among the two connection handles.
   async::PostTask(dispatcher(), [this] {
     for (int i = 0; i < 10; ++i) {
-      ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
-      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kLEMaxMTU);
+      hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+      auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kLEMaxMTU);
       EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                                  AclDataChannel::PacketPriority::kLow));
     }
@@ -294,8 +300,8 @@ TEST_F(ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   constexpr size_t kLEMaxNumPackets = 50;
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets),
                            DataBufferInfo(kLEMaxMTU, kLEMaxNumPackets));
@@ -304,18 +310,20 @@ TEST_F(ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // This should fail because the payload exceeds the ACL MTU.
-  auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                   ACLBroadcastFlag::kPointToPoint, kLEMaxMTU);
+  auto packet = ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                   hci_spec::ACLBroadcastFlag::kPointToPoint, kLEMaxMTU);
   EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                               AclDataChannel::PacketPriority::kLow));
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -329,9 +337,9 @@ TEST_F(ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   // Queue up 10 packets in total, distributed among the two connection handles.
   async::PostTask(dispatcher(), [this] {
     for (int i = 0; i < 10; ++i) {
-      ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
-      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+      hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+      auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
       EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                                  AclDataChannel::PacketPriority::kLow));
     }
@@ -360,7 +368,7 @@ TEST_F(ACLDataChannelTest, SendBREDRPacketBothBuffers) {
 
 TEST_F(ACLDataChannelTest, SendPacketsFailure) {
   constexpr size_t kMaxMTU = 5;
-  constexpr ConnectionHandle kHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle = 0x0001;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
 
   acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
@@ -371,8 +379,8 @@ TEST_F(ACLDataChannelTest, SendPacketsFailure) {
 
   // Packet exceeds MTU
   LinkedList<ACLDataPacket> packets;
-  packets.push_back(ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1));
+  packets.push_back(ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1));
   EXPECT_FALSE(acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
                                                AclDataChannel::PacketPriority::kLow));
 }
@@ -382,14 +390,15 @@ using ACLDataChannelDeathTest = HCI_ACLDataChannelTest;
 
 TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
   constexpr size_t kMaxMTU = 5;
-  constexpr ConnectionHandle kHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle = 0x0001;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
 
   acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
 
   LinkedList<ACLDataPacket> packets;
-  packets.push_back(ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kContinuingFragment,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU));
+  packets.push_back(ACLDataPacket::New(kHandle,
+                                       hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU));
   ASSERT_DEATH_IF_SUPPORTED(
       acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
                                       AclDataChannel::PacketPriority::kLow),
@@ -398,8 +407,8 @@ TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
 
 TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneConnection) {
   constexpr size_t kMaxMTU = 5;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
 
   acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
@@ -407,10 +416,12 @@ TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneConne
 
   // Packet exceeds MTU
   LinkedList<ACLDataPacket> packets;
-  packets.push_back(ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU));
-  packets.push_back(ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kContinuingFragment,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU));
+  packets.push_back(ACLDataPacket::New(kHandle0,
+                                       hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU));
+  packets.push_back(ACLDataPacket::New(kHandle1,
+                                       hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU));
   ASSERT_DEATH_IF_SUPPORTED(
       acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
                                       AclDataChannel::PacketPriority::kLow),
@@ -420,7 +431,7 @@ TEST_F(ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneConne
 // Tests sending multiple packets in a single call.
 TEST_F(ACLDataChannelTest, SendPackets) {
   constexpr int kExpectedPacketCount = 5;
-  constexpr ConnectionHandle kHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle = 0x0001;
 
   InitializeACLDataChannel(DataBufferInfo(1024, 100), DataBufferInfo());
 
@@ -429,8 +440,9 @@ TEST_F(ACLDataChannelTest, SendPackets) {
   bool pass = true;
   int seq_no = 0;
   auto data_cb = [&pass, &seq_no](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
     EXPECT_EQ(1u, packet.payload_size());
 
     int cur_no = packet.payload_bytes()[0];
@@ -445,8 +457,8 @@ TEST_F(ACLDataChannelTest, SendPackets) {
 
   LinkedList<ACLDataPacket> packets;
   for (int i = 1; i <= kExpectedPacketCount; ++i) {
-    auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, 1);
+    auto packet = ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, 1);
     packet->mutable_view()->mutable_payload_bytes()[0] = i;
     packets.push_back(std::move(packet));
   }
@@ -464,8 +476,8 @@ TEST_F(ACLDataChannelTest,
        UnregisterLinkDoesNotClearNumSentPacketsAndClearControllerPacketCountDoes) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 2;
-  constexpr ConnectionHandle kHandle1 = 1;
-  constexpr ConnectionHandle kHandle2 = 2;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 1;
+  constexpr hci_spec::ConnectionHandle kHandle2 = 2;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -477,16 +489,16 @@ TEST_F(ACLDataChannelTest,
 
   // Send 3 packets on two links. This is enough to fill up the data buffers.
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle2, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle2, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -509,7 +521,7 @@ TEST_F(ACLDataChannelTest,
 TEST_F(ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 2;
-  constexpr ConnectionHandle kHandle = 1;
+  constexpr hci_spec::ConnectionHandle kHandle = 1;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -518,8 +530,8 @@ TEST_F(ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
 
   // Send packet with unregistered handle.
   ASSERT_FALSE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -545,8 +557,8 @@ TEST_F(ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
 TEST_F(ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
-  constexpr ConnectionHandle kHandle1 = 1;
-  constexpr ConnectionHandle kHandle2 = 2;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 1;
+  constexpr hci_spec::ConnectionHandle kHandle2 = 2;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -556,10 +568,12 @@ TEST_F(ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
   int handle1_packet_count = 0;
   int handle2_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle1) {
       handle1_packet_count++;
@@ -572,16 +586,16 @@ TEST_F(ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
 
   // Send 3 packets on two links. This is enough to fill up the data buffers.
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle2, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle2, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -610,7 +624,7 @@ TEST_F(ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
 TEST_F(ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregisterLink) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
-  constexpr ConnectionHandle kHandle1 = 1;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 1;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -620,12 +634,12 @@ TEST_F(ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregisterLi
   test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
 
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -653,7 +667,7 @@ TEST_F(ACLDataChannelTest,
        StalePacketsBufferedBeforeFirstUnregisterAndBeforeSecondRegisterAreNotSent) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
-  constexpr ConnectionHandle kHandle = 1;
+  constexpr hci_spec::ConnectionHandle kHandle = 1;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -677,12 +691,12 @@ TEST_F(ACLDataChannelTest,
   test_device()->SetDataCallback(data_cb, dispatcher());
 
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -708,8 +722,8 @@ TEST_F(ACLDataChannelTest,
   // Re-Register same link handle
   acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kLE);
 
-  auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                   ACLBroadcastFlag::kPointToPoint, 1);
+  auto packet = ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                   hci_spec::ACLBroadcastFlag::kPointToPoint, 1);
   packet->mutable_view()->mutable_payload_data().Fill(1);
 
   ASSERT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
@@ -724,7 +738,7 @@ TEST_F(ACLDataChannelTest,
 TEST_F(ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 1;
-  constexpr ConnectionHandle kHandle = 1;
+  constexpr hci_spec::ConnectionHandle kHandle = 1;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -734,8 +748,8 @@ TEST_F(ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
   test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
 
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -745,8 +759,8 @@ TEST_F(ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
 
   // attempt to send packet on unregistered link
   ASSERT_FALSE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -764,8 +778,8 @@ TEST_F(ACLDataChannelTest, ReceiveData) {
 
   constexpr size_t kExpectedPacketCount = 2u;
   size_t num_rx_packets = 0u;
-  ConnectionHandle packet0_handle;
-  ConnectionHandle packet1_handle;
+  hci_spec::ConnectionHandle packet0_handle;
+  hci_spec::ConnectionHandle packet1_handle;
   auto data_rx_cb = [&](ACLDataPacketPtr packet) {
     num_rx_packets++;
     if (num_rx_packets == 1) {
@@ -857,8 +871,8 @@ TEST_F(ACLDataChannelTest, HciEventReceivedAfterShutDown) {
 TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueue) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
   constexpr l2cap::ChannelId kChanId0 = 0x40;
   constexpr l2cap::ChannelId kChanId1 = 0x41;
 
@@ -872,10 +886,12 @@ TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueu
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -888,9 +904,9 @@ TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueu
 
   // Queue up 10 packets in total, distributed among the two connection handles.
   for (size_t i = 0; i < 2 * kMaxNumPackets; ++i) {
-    ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
-    auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+    auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), (i % 2) ? kChanId1 : kChanId0,
                                                AclDataChannel::PacketPriority::kLow));
   }
@@ -943,8 +959,8 @@ TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueu
 TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSentFirst) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 5;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -956,10 +972,12 @@ TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSe
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -972,8 +990,8 @@ TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSe
 
   // Fill controller with |kMaxNumPackets| packets so queue can grow.
   for (size_t i = 0; i < kMaxNumPackets; ++i) {
-    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                AclDataChannel::PacketPriority::kLow));
   }
@@ -984,11 +1002,11 @@ TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSe
 
   // Queue up 10 packets in total, distributed among the two connection handles.
   for (size_t i = 0; i < 2 * kMaxNumPackets; ++i) {
-    ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+    hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
     auto priority =
         (i % 2) ? AclDataChannel::PacketPriority::kLow : AclDataChannel::PacketPriority::kHigh;
-    auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(
         acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId, priority));
   }
@@ -1024,8 +1042,8 @@ TEST_F(ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSe
 TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
   constexpr size_t kMaxMTU = 5;
   constexpr size_t kMaxNumPackets = 6;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
@@ -1037,10 +1055,12 @@ TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
 
   // Callback invoked by TestDevice when it receive a data packet from us.
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -1053,9 +1073,9 @@ TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
 
   // Fill controller with |kMaxNumPackets| packets split evenly between the two handles.
   for (size_t i = 0; i < kMaxNumPackets; ++i) {
-    ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
-    auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    hci_spec::ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+    auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                AclDataChannel::PacketPriority::kLow));
   }
@@ -1068,14 +1088,14 @@ TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
 
   // Queue up 3 packets for each handle,
   for (size_t i = 0; i < kMaxNumPackets / 2; ++i) {
-    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                AclDataChannel::PacketPriority::kLow));
   }
   for (size_t i = 0; i < kMaxNumPackets / 2; ++i) {
-    auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    auto packet = ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                AclDataChannel::PacketPriority::kLow));
   }
@@ -1124,13 +1144,13 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
-  // Arbitrary command payload larger than CommandHeader.
-  const auto op_code = hci::VendorOpCode(0x01);
+  // Arbitrary command payload larger than hci_spec::CommandHeader.
+  const auto op_code = hci_spec::VendorOpCode(0x01);
   const StaticByteBuffer kEncodedCommand(LowerBits(op_code), UpperBits(op_code),  // op code
                                          0x04,                                    // parameter size
                                          0x00, 0x01, 0x02, 0x03);                 // test parameter
 
-  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   std::optional<bt_vendor_command_t> encode_vendor_command;
   std::optional<bt_vendor_params_t> encode_vendor_command_params;
@@ -1141,7 +1161,8 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
   });
 
   auto cmd_complete = testing::CommandCompletePacket(
-      op_code, kExpectSuccess ? hci::StatusCode::kSuccess : hci::StatusCode::kUnknownCommand);
+      op_code,
+      kExpectSuccess ? hci_spec::StatusCode::kSuccess : hci_spec::StatusCode::kUnknownCommand);
   EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
 
   size_t request_cb_count = 0;
@@ -1217,12 +1238,12 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
   acl_data_channel()->RegisterLink(kLinkHandle, bt::LinkType::kACL);
 
-  std::optional<fpromise::result<void, hci::StatusCode>> cb_status;
+  std::optional<fpromise::result<void, hci_spec::StatusCode>> cb_status;
   auto result_cb = [&](auto status) { cb_status = status; };
 
   // Test command complete error
   const auto kCommandCompleteError = testing::CommandCompletePacket(
-      hci::kWriteAutomaticFlushTimeout, hci::StatusCode::kUnknownConnectionId);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnknownConnectionId);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
                         &kCommandCompleteError);
   acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
@@ -1230,7 +1251,7 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   ASSERT_TRUE(cb_status->is_error());
-  EXPECT_EQ(cb_status->error(), hci::StatusCode::kUnknownConnectionId);
+  EXPECT_EQ(cb_status->error(), hci_spec::StatusCode::kUnknownConnectionId);
   cb_status.reset();
 
   // Test flush timeout = 0 (no command should be sent)
@@ -1238,11 +1259,11 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(cb_status->error(), hci::StatusCode::kInvalidHCICommandParameters);
+  EXPECT_EQ(cb_status->error(), hci_spec::StatusCode::kInvalidHCICommandParameters);
 
   // Test infinite flush timeout (flush timeout of 0 should be sent).
-  const auto kCommandComplete =
-      testing::CommandCompletePacket(hci::kWriteAutomaticFlushTimeout, hci::StatusCode::kSuccess);
+  const auto kCommandComplete = testing::CommandCompletePacket(
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
                         &kCommandComplete);
   acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
@@ -1252,32 +1273,32 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   EXPECT_TRUE(cb_status->is_ok());
   cb_status.reset();
 
-  // Test msec to parameter conversion (kMaxAutomaticFlushTimeoutDuration(1279) *
+  // Test msec to parameter conversion (hci_spec::kMaxAutomaticFlushTimeoutDuration(1279) *
   // conversion_factor(1.6) = 2046).
   EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 2046),
                         &kCommandComplete);
-  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(kMaxAutomaticFlushTimeoutDuration, kLinkHandle,
-                                                    result_cb);
+  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(hci_spec::kMaxAutomaticFlushTimeoutDuration,
+                                                    kLinkHandle, result_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_ok());
   cb_status.reset();
 
   // Test too large flush timeout (no command should be sent).
-  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(kMaxAutomaticFlushTimeoutDuration + zx::msec(1),
-                                                    kLinkHandle, result_cb);
+  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(
+      hci_spec::kMaxAutomaticFlushTimeoutDuration + zx::msec(1), kLinkHandle, result_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(cb_status->error(), hci::StatusCode::kInvalidHCICommandParameters);
+  EXPECT_EQ(cb_status->error(), hci_spec::StatusCode::kInvalidHCICommandParameters);
 }
 
 TEST_F(ACLDataChannelTest,
        SendingLowPriorityBrEdrPacketsWhenTooManyAreQueuedDropsLeastRecentlySentPduOnSameChannel) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
                            DataBufferInfo(kMaxMtu, kMaxNumPackets));
@@ -1289,10 +1310,10 @@ TEST_F(ACLDataChannelTest,
   acl_data_channel()->AttachInspect(inspector.GetRoot(), AclDataChannel::kInspectNodeName);
 
   // Fill up both LE and BR/EDR controller buffers
-  for (ConnectionHandle handle : {kHandle0, kHandle1}) {
+  for (hci_spec::ConnectionHandle handle : {kHandle0, kHandle1}) {
     for (size_t i = 0; i < kMaxNumPackets; ++i) {
-      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+      auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
       EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                  AclDataChannel::PacketPriority::kLow));
     }
@@ -1302,9 +1323,11 @@ TEST_F(ACLDataChannelTest,
   // Callback invoked by TestDevice when it receive a data packet from us.
   size_t packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ASSERT_LE(sizeof(ACLDataHeader), bytes.size());
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    ASSERT_LE(sizeof(hci_spec::ACLDataHeader), bytes.size());
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     // LE is still waiting for controller credits
     EXPECT_EQ(kHandle1, connection_handle);
@@ -1323,9 +1346,10 @@ TEST_F(ACLDataChannelTest,
   for (size_t i = 0; i < AclDataChannel::kMaxAclPacketsPerChannel + 1; ++i) {
     // Send two fragments per PDU
     LinkedList<ACLDataPacket> packets;
-    for (auto pbf :
-         {ACLPacketBoundaryFlag::kFirstNonFlushable, ACLPacketBoundaryFlag::kContinuingFragment}) {
-      auto packet = ACLDataPacket::New(kHandle1, pbf, ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    for (auto pbf : {hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                     hci_spec::ACLPacketBoundaryFlag::kContinuingFragment}) {
+      auto packet =
+          ACLDataPacket::New(kHandle1, pbf, hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
 
       // Write a sequence number into the payload, starting at 0
       packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
@@ -1353,7 +1377,7 @@ TEST_F(ACLDataChannelTest,
        SendingLowPriorityPacketsThatDropDoNotAffectDataOnSameLinkDifferentChannel) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
   constexpr UniqueChannelId kChannelId0 = l2cap::kFirstDynamicChannelId;
   constexpr UniqueChannelId kChannelId1 = l2cap::kFirstDynamicChannelId + 1;
 
@@ -1363,8 +1387,8 @@ TEST_F(ACLDataChannelTest,
 
   // Fill up controller buffers
   for (size_t i = 0; i < kMaxNumPackets; ++i) {
-    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                AclDataChannel::PacketPriority::kLow));
   }
@@ -1373,8 +1397,9 @@ TEST_F(ACLDataChannelTest,
   // Callback invoked by TestDevice when it receive a data packet from us.
   size_t packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ASSERT_LT(sizeof(ACLDataHeader), bytes.size());
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ASSERT_LT(sizeof(hci_spec::ACLDataHeader), bytes.size());
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
 
     // The first packet should be left in the queue because it is for kChannelId0 but the second
     // should be dropped as it was the least recently sent unsent packet for channel kChannelId1.
@@ -1390,8 +1415,8 @@ TEST_F(ACLDataChannelTest,
 
   // Send one packet on kChannelId0
   {
-    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
 
     // Write a sequence number into the payload, starting at 0
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(0);
@@ -1401,8 +1426,8 @@ TEST_F(ACLDataChannelTest,
 
   // Send enough data on kChannel1 that the first PDU sent in this loop gets dropped
   for (size_t i = 0; i < AclDataChannel::kMaxAclPacketsPerChannel + 1; i++) {
-    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
 
     // Write a sequence number into the payload, starting at 0
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i + 1);
@@ -1419,8 +1444,8 @@ TEST_F(ACLDataChannelTest,
 TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDifferentLink) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets));
 
@@ -1429,8 +1454,8 @@ TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDif
 
   // Fill up controller buffers
   for (size_t i = 0; i < kMaxNumPackets; ++i) {
-    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                AclDataChannel::PacketPriority::kLow));
   }
@@ -1439,9 +1464,11 @@ TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDif
   // Callback invoked by TestDevice when it receive a data packet from us.
   size_t packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    ASSERT_LT(sizeof(ACLDataHeader), bytes.size());
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    ASSERT_LT(sizeof(hci_spec::ACLDataHeader), bytes.size());
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     // First packet on kHandle0 doesn't get dropped, but first packet on kHandle1 does get dropped
     // because there are too many queued for that channel on that link.
@@ -1458,8 +1485,8 @@ TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDif
 
   // Send one data packet on kHandle0
   {
-    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
 
     // Write a sequence number into the payload, starting at 0
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(0);
@@ -1469,8 +1496,8 @@ TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDif
 
   // Send enough data on kHandle1 that the first PDU sent in this loop gets dropped
   for (size_t i = 0; i < AclDataChannel::kMaxAclPacketsPerChannel + 1; i++) {
-    auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    auto packet = ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
 
     // Write a sequence number into the payload, starting at 0
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i + 1);
@@ -1487,8 +1514,8 @@ TEST_F(ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDif
 TEST_F(ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
                            DataBufferInfo(kMaxMtu, kMaxNumPackets));
@@ -1498,10 +1525,10 @@ TEST_F(ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts
 
   // Fill up both LE and BR/EDR controller buffers, leaving one additional packet in the queue of
   // each type
-  for (ConnectionHandle handle : {kHandle0, kHandle1}) {
+  for (hci_spec::ConnectionHandle handle : {kHandle0, kHandle1}) {
     for (size_t i = 0; i < kMaxNumPackets + 1; ++i) {
-      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+      auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
       EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                  AclDataChannel::PacketPriority::kLow));
     }
@@ -1537,8 +1564,8 @@ TEST_F(ACLDataChannelDeathTest, AttachInspectBeforeInitializeCrashes) {
 TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
   constexpr size_t kMaxMtu = 4;
   constexpr size_t kMaxNumPackets = 2;
-  constexpr ConnectionHandle kHandle0 = 0x0001;
-  constexpr ConnectionHandle kHandle1 = 0x0002;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  constexpr hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
                            DataBufferInfo(kMaxMtu, kMaxNumPackets));
@@ -1548,10 +1575,10 @@ TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
 
   // Fill up both LE and BR/EDR controller buffers, leaving one additional packet in the queue of
   // each type
-  for (ConnectionHandle handle : {kHandle0, kHandle1}) {
+  for (hci_spec::ConnectionHandle handle : {kHandle0, kHandle1}) {
     for (size_t i = 0; i < kMaxNumPackets + 1; ++i) {
-      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                       ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+      auto packet = ACLDataPacket::New(handle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
       EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
                                                  AclDataChannel::PacketPriority::kLow));
     }

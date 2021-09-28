@@ -31,7 +31,7 @@ using LinkErrorCallback = fit::closure;
 // Callback called to notify LE preferred connection parameters during the "LE
 // Connection Parameter Update" procedure.
 using LEConnectionParameterUpdateCallback =
-    fit::function<void(const hci::LEPreferredConnectionParameters&)>;
+    fit::function<void(const hci_spec::LEPreferredConnectionParameters&)>;
 
 // Callback called when response received to LE signaling channel Connection Parameters Update
 // Request. |accepted| indicates whether the parameters were accepted by the peer.
@@ -45,7 +45,7 @@ using LEFixedChannelsCallback =
 // Callback used to request a security upgrade for an active logical link.
 // Invokes its |callback| argument with the result of the operation.
 using SecurityUpgradeCallback = fit::function<void(
-    hci::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
+    hci_spec::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
 
 // Channel configuration parameters specified by higher layers.
 struct ChannelParameters {

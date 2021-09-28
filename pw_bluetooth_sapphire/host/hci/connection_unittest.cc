@@ -14,8 +14,8 @@
 namespace bt::hci {
 namespace {
 
-constexpr ConnectionHandle kTestHandle = 0x0001;
-const LEConnectionParameters kTestParams(1, 1, 1);
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
+const hci_spec::LEConnectionParameters kTestParams(1, 1, 1);
 const DeviceAddress kLEAddress1(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kLEAddress2(DeviceAddress::Type::kLEPublic, {2});
 const DeviceAddress kACLAddress1(DeviceAddress::Type::kBREDR, {3});
@@ -24,7 +24,7 @@ const DeviceAddress kACLAddress2(DeviceAddress::Type::kBREDR, {4});
 constexpr UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
 constexpr uint64_t kRand = 1;
 constexpr uint16_t kEDiv = 255;
-constexpr LinkKeyType kLinkKeyType = LinkKeyType::kAuthenticatedCombination256;
+constexpr hci_spec::LinkKeyType kLinkKeyType = hci_spec::LinkKeyType::kAuthenticatedCombination256;
 
 const DataBufferInfo kBrEdrBufferInfo(1024, 5);
 const DataBufferInfo kLeBufferInfo(1024, 1);
@@ -46,13 +46,13 @@ class ConnectionTest : public TestingBase {
   }
 
   ConnectionPtr NewLEConnection(Connection::Role role = Connection::Role::kMaster,
-                                ConnectionHandle handle = kTestHandle) {
+                                hci_spec::ConnectionHandle handle = kTestHandle) {
     return Connection::CreateLE(handle, role, kLEAddress1, kLEAddress2, kTestParams,
                                 transport()->WeakPtr());
   }
 
   ConnectionPtr NewACLConnection(Connection::Role role = Connection::Role::kMaster,
-                                 ConnectionHandle handle = kTestHandle) {
+                                 hci_spec::ConnectionHandle handle = kTestHandle) {
     return Connection::CreateACL(handle, role, kACLAddress1, kACLAddress2, transport()->WeakPtr());
   }
 };
@@ -63,7 +63,7 @@ class LinkTypeConnectionTest : public ConnectionTest,
                                public ::testing::WithParamInterface<bt::LinkType> {
  protected:
   ConnectionPtr NewConnection(Connection::Role role = Connection::Role::kMaster,
-                              ConnectionHandle handle = kTestHandle) {
+                              hci_spec::ConnectionHandle handle = kTestHandle) {
     const bt::LinkType ll_type = GetParam();
     switch (ll_type) {
       case bt::LinkType::kACL:
@@ -81,9 +81,9 @@ class LinkTypeConnectionTest : public ConnectionTest,
   void SetTestLinkKey(Connection* connection) {
     const bt::LinkType ll_type = GetParam();
     if (ll_type == bt::LinkType::kLE) {
-      connection->set_le_ltk(LinkKey(kLTK, kRand, kEDiv));
+      connection->set_le_ltk(hci_spec::LinkKey(kLTK, kRand, kEDiv));
     } else {
-      connection->set_bredr_link_key(LinkKey(kLTK, 0, 0), kLinkKeyType);
+      connection->set_bredr_link_key(hci_spec::LinkKey(kLTK, 0, 0), kLinkKeyType);
     }
   }
 };
@@ -101,9 +101,9 @@ TEST_F(ConnectionTest, Getters) {
   EXPECT_EQ(kLEAddress2, connection->peer_address());
 
   EXPECT_EQ(std::nullopt, connection->ltk());
-  connection->set_le_ltk(LinkKey());
+  connection->set_le_ltk(hci_spec::LinkKey());
   ASSERT_TRUE(connection->ltk().has_value());
-  EXPECT_EQ(LinkKey(), connection->ltk().value());
+  EXPECT_EQ(hci_spec::LinkKey(), connection->ltk().value());
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
@@ -114,9 +114,9 @@ TEST_F(ConnectionTest, AclLinkKeyAndTypeAccessors) {
   EXPECT_EQ(bt::LinkType::kACL, connection->ll_type());
   EXPECT_EQ(std::nullopt, connection->ltk());
   EXPECT_EQ(std::nullopt, connection->ltk_type());
-  connection->set_bredr_link_key(LinkKey(), kLinkKeyType);
+  connection->set_bredr_link_key(hci_spec::LinkKey(), kLinkKeyType);
   ASSERT_TRUE(connection->ltk().has_value());
-  EXPECT_EQ(LinkKey(), connection->ltk().value());
+  EXPECT_EQ(hci_spec::LinkKey(), connection->ltk().value());
   ASSERT_TRUE(connection->ltk_type().has_value());
   EXPECT_EQ(kLinkKeyType, connection->ltk_type().value());
 
@@ -128,15 +128,15 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
   auto req_bytes = CreateStaticByteBuffer(
-      0x06, 0x04, 0x03, 0x01, 0x00, StatusCode::kRemoteUserTerminatedConnection);
+      0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 
   // Respond with Command Status and Disconnection Complete.
   auto cmd_status_bytes = CreateStaticByteBuffer(
-      kCommandStatusEventCode, 0x04, StatusCode::kSuccess, 1, 0x06, 0x04);
+      hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::kSuccess, 1, 0x06, 0x04);
 
   auto disc_cmpl_bytes = CreateStaticByteBuffer(
-      kDisconnectionCompleteEventCode, 0x04,
-      StatusCode::kSuccess, 0x01, 0x00, StatusCode::kConnectionTerminatedByLocalHost);
+      hci_spec::kDisconnectionCompleteEventCode, 0x04,
+      hci_spec::StatusCode::kSuccess, 0x01, 0x00, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
 
   // clang-format on
 
@@ -151,11 +151,11 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
   size_t disconn_cb_count = 0;
   auto disconn_complete_cb = [&](const Connection* cb_conn, auto reason) {
     disconn_cb_count++;
-    EXPECT_EQ(reason, StatusCode::kConnectionTerminatedByLocalHost);
+    EXPECT_EQ(reason, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
   };
   connection->set_peer_disconnect_callback(disconn_complete_cb);
 
-  connection->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  connection->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
@@ -164,8 +164,8 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 
 TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   const bt::LinkType ll_type = GetParam();
-  const ConnectionHandle kHandle0 = 0x0001;
-  const ConnectionHandle kHandle1 = 0x0002;
+  const hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  const hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
@@ -176,8 +176,10 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -192,14 +194,14 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   for (size_t i = 0; i < kBufferInfo.max_num_packets(); i++) {
     // Connection handle should have been registered with ACL Data Channel.
     EXPECT_TRUE(acl_data_channel()->SendPacket(
-        ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                           ACLBroadcastFlag::kPointToPoint, 1),
+        ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                           hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
         l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   }
 
   EXPECT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -210,7 +212,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle0), &disconnect_status_rsp);
 
-  conn0->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  conn0->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
   RunLoopUntilIdle();
 
   // controller packet counts for |kHandle0| should not have been cleared after disconnect.
@@ -226,8 +228,8 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
 
   // Connection handle should have been unregistered with ACL Data Channel.
   EXPECT_FALSE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
@@ -237,8 +239,8 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
 // Connection::OnDisconnectionComplete is invoked and handles all cleanup.
 TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   const bt::LinkType ll_type = GetParam();
-  const ConnectionHandle kHandle0 = 0x0001;
-  const ConnectionHandle kHandle1 = 0x0002;
+  const hci_spec::ConnectionHandle kHandle0 = 0x0001;
+  const hci_spec::ConnectionHandle kHandle1 = 0x0002;
 
   const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
@@ -250,8 +252,10 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
   auto data_callback = [&](const ByteBuffer& bytes) {
-    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
-    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
+                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
+    hci_spec::ConnectionHandle connection_handle =
+        le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (connection_handle == kHandle0) {
       handle0_packet_count++;
@@ -266,14 +270,14 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   for (size_t i = 0; i < kBufferInfo.max_num_packets(); i++) {
     // Connection handle should have been registered with ACL Data Channel.
     EXPECT_TRUE(acl_data_channel()->SendPacket(
-        ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                           ACLBroadcastFlag::kPointToPoint, 1),
+        ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                           hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
         l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   }
 
   EXPECT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
@@ -299,8 +303,8 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
 
   // Connection handle should have been unregistered with ACL Data Channel.
   EXPECT_FALSE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
+      ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   // Since controller packet count was cleared, packet for |kHandle1| should
@@ -312,14 +316,14 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
 
 TEST_F(ConnectionTest, StartEncryptionFailsAsLowEnergySlave) {
   auto conn = NewLEConnection(Connection::Role::kSlave);
-  conn->set_le_ltk(LinkKey());
+  conn->set_le_ltk(hci_spec::LinkKey());
   EXPECT_FALSE(conn->StartEncryption());
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
   auto conn = NewLEConnection(Connection::Role::kMaster);
-  auto ltk = LinkKey();
+  auto ltk = hci_spec::LinkKey();
   conn->set_le_ltk(ltk);
   EXPECT_TRUE(conn->StartEncryption());
   EXPECT_CMD_PACKET_OUT(test_device(), testing::LEStartEncryptionPacket(kTestHandle, ltk.rand(),
@@ -328,7 +332,7 @@ TEST_F(ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
 
 TEST_F(ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
   auto conn = NewACLConnection();
-  conn->set_bredr_link_key(LinkKey(), kLinkKeyType);
+  conn->set_bredr_link_key(hci_spec::LinkKey(), kLinkKeyType);
   EXPECT_TRUE(conn->StartEncryption());
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::SetConnectionEncryption(kTestHandle, /*enable=*/true));
@@ -339,15 +343,15 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
   auto req_bytes = CreateStaticByteBuffer(
-      0x06, 0x04, 0x03, 0x01, 0x00, StatusCode::kRemoteUserTerminatedConnection);
+      0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 
   // Respond with Command Status and Disconnection Complete.
   auto cmd_status_bytes = CreateStaticByteBuffer(
-      kCommandStatusEventCode, 0x04, StatusCode::kSuccess, 1, 0x06, 0x04);
+      hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::kSuccess, 1, 0x06, 0x04);
 
   auto disc_cmpl_bytes = CreateStaticByteBuffer(
-      kDisconnectionCompleteEventCode, 0x04,
-      StatusCode::kCommandDisallowed, 0x01, 0x00, StatusCode::kConnectionTerminatedByLocalHost);
+      hci_spec::kDisconnectionCompleteEventCode, 0x04,
+      hci_spec::StatusCode::kCommandDisallowed, 0x01, 0x00, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
 
   // clang-format on
 
@@ -360,7 +364,7 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   auto connection = NewConnection();
 
-  connection->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  connection->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
@@ -396,11 +400,11 @@ TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
 
   bool callback = false;
   auto conn = NewLEConnection();
-  conn->set_le_ltk(LinkKey(kLTK, kRand, kEDiv));
+  conn->set_le_ltk(hci_spec::LinkKey(kLTK, kRand, kEDiv));
   conn->set_encryption_change_callback([&](Status status, bool enabled) {
     EXPECT_FALSE(status);
     EXPECT_FALSE(enabled);
-    EXPECT_EQ(StatusCode::kCommandDisallowed, status.protocol_error());
+    EXPECT_EQ(hci_spec::StatusCode::kCommandDisallowed, status.protocol_error());
     callback = true;
   });
 
@@ -431,7 +435,7 @@ TEST_F(ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
 
   bool callback = false;
   auto conn = NewLEConnection();
-  conn->set_le_ltk(LinkKey(kLTK, kRand, kEDiv));
+  conn->set_le_ltk(hci_spec::LinkKey(kLTK, kRand, kEDiv));
   conn->set_encryption_change_callback([&](Status status, bool enabled) { callback = true; });
 
   EXPECT_TRUE(conn->StartEncryption());
@@ -461,11 +465,11 @@ TEST_F(ConnectionTest, AclStartEncryptionFailsAtStatus) {
 
   bool callback = false;
   auto conn = NewACLConnection();
-  conn->set_bredr_link_key(LinkKey(kLTK, 0, 0), kLinkKeyType);
+  conn->set_bredr_link_key(hci_spec::LinkKey(kLTK, 0, 0), kLinkKeyType);
   conn->set_encryption_change_callback([&](Status status, bool enabled) {
     EXPECT_FALSE(status);
     EXPECT_FALSE(enabled);
-    EXPECT_EQ(StatusCode::kCommandDisallowed, status.protocol_error());
+    EXPECT_EQ(hci_spec::StatusCode::kCommandDisallowed, status.protocol_error());
     callback = true;
   });
 
@@ -493,7 +497,7 @@ TEST_F(ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
 
   bool callback = false;
   auto conn = NewACLConnection();
-  conn->set_bredr_link_key(LinkKey(kLTK, 0, 0), kLinkKeyType);
+  conn->set_bredr_link_key(hci_spec::LinkKey(kLTK, 0, 0), kLinkKeyType);
   conn->set_encryption_change_callback([&](Status status, bool enabled) { callback = true; });
 
   EXPECT_TRUE(conn->StartEncryption());
@@ -622,7 +626,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
 
   EXPECT_EQ(3, callback_count);
   EXPECT_FALSE(status);
-  EXPECT_EQ(StatusCode::kPinOrKeyMissing, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, status.protocol_error());
 }
 
 TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
@@ -635,8 +639,9 @@ TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
 
   // Send the encryption change failure. The host should disconnect the link as a result.
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
-  test_device()->SendCommandChannelPacket(testing::EncryptionChangeEventPacket(
-      hci::StatusCode::kConnectionTerminatedMICFailure, kTestHandle, EncryptionStatus::kOff));
+  test_device()->SendCommandChannelPacket(
+      testing::EncryptionChangeEventPacket(hci_spec::StatusCode::kConnectionTerminatedMICFailure,
+                                           kTestHandle, hci_spec::EncryptionStatus::kOff));
   RunLoopUntilIdle();
   EXPECT_FALSE(peer_disconnect_callback_received);
 
@@ -644,7 +649,7 @@ TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   // correspond to the Disconnect command sent by hci::Connection, which will cause a later
   // subsequent event).
   test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
-      kTestHandle, StatusCode::kConnectionTerminatedMICFailure));
+      kTestHandle, hci_spec::StatusCode::kConnectionTerminatedMICFailure));
   RunLoopUntilIdle();
   EXPECT_TRUE(peer_disconnect_callback_received);
 }
@@ -746,7 +751,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
 
   EXPECT_EQ(2, callback_count);
   EXPECT_FALSE(status);
-  EXPECT_EQ(StatusCode::kPinOrKeyMissing, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, status.protocol_error());
   EXPECT_FALSE(enabled);
 }
 
@@ -779,7 +784,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
   // clang-format on
 
   auto conn = NewLEConnection();
-  conn->set_le_ltk(LinkKey(kLTK, 0, 0));
+  conn->set_le_ltk(hci_spec::LinkKey(kLTK, 0, 0));
 
   test_device()->SendCommandChannelPacket(kMalformed);
   test_device()->SendCommandChannelPacket(kWrongHandle);
@@ -845,7 +850,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
   // The request should be rejected since there is no LTK.
   EXPECT_CMD_PACKET_OUT(test_device(), kResponse);
   auto conn = NewLEConnection();
-  conn->set_le_ltk(LinkKey(kLTK, 1, 1));
+  conn->set_le_ltk(hci_spec::LinkKey(kLTK, 1, 1));
 
   test_device()->SendCommandChannelPacket(kEvent);
   RunLoopUntilIdle();
@@ -877,7 +882,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestReply) {
   // The request should be rejected since there is no LTK.
   EXPECT_CMD_PACKET_OUT(test_device(), kResponse);
   auto conn = NewLEConnection();
-  conn->set_le_ltk(LinkKey(kLTK, 0x8899AABBCCDDEEFF, 0xBEEF));
+  conn->set_le_ltk(hci_spec::LinkKey(kLTK, 0x8899AABBCCDDEEFF, 0xBEEF));
 
   test_device()->SendCommandChannelPacket(kEvent);
   RunLoopUntilIdle();
@@ -885,7 +890,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestReply) {
 
 TEST_F(ConnectionTest,
        QueuedPacketsGetDroppedOnDisconnectionCompleteAndStalePacketsAreNotSentOnHandleReuse) {
-  const ConnectionHandle kHandle = 0x0001;
+  const hci_spec::ConnectionHandle kHandle = 0x0001;
 
   // Should register connection with ACL Data Channel.
   auto conn0 = NewACLConnection(Connection::Role::kMaster, kHandle);
@@ -894,20 +899,20 @@ TEST_F(ConnectionTest,
   size_t packet_count = 0;
   auto data_cb_wrapper = [&data_cb, &packet_count](const ByteBuffer& packet) {
     packet_count++;
-    ASSERT_EQ(packet.size(), sizeof(ACLDataHeader) + 1);
+    ASSERT_EQ(packet.size(), sizeof(hci_spec::ACLDataHeader) + 1);
     data_cb(packet);
   };
   test_device()->SetDataCallback(data_cb_wrapper, dispatcher());
 
   const uint8_t payload0 = 0x01;
   data_cb = [payload0](const ByteBuffer& packet) {
-    EXPECT_EQ(packet[sizeof(ACLDataHeader)], payload0);
+    EXPECT_EQ(packet[sizeof(hci_spec::ACLDataHeader)], payload0);
   };
 
   // Fill controller buffer, + 1 packet in queue.
   for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets() + 1; i++) {
-    auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, 1);
+    auto packet = ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, 1);
     packet->mutable_view()->mutable_payload_bytes()[0] = payload0;
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                                AclDataChannel::PacketPriority::kLow));
@@ -922,7 +927,7 @@ TEST_F(ConnectionTest,
   // All future packets received should be for the next connection.
   const uint8_t payload1 = 0x02;
   data_cb = [payload1](const ByteBuffer& packet) {
-    EXPECT_EQ(packet[sizeof(ACLDataHeader)], payload1);
+    EXPECT_EQ(packet[sizeof(hci_spec::ACLDataHeader)], payload1);
   };
 
   const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
@@ -940,8 +945,8 @@ TEST_F(ConnectionTest,
 
   // Fill controller buffer, + 1 packet in queue.
   for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets(); i++) {
-    auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     ACLBroadcastFlag::kPointToPoint, 1);
+    auto packet = ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, 1);
     packet->mutable_view()->mutable_payload_bytes()[0] = payload1;
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
                                                AclDataChannel::PacketPriority::kLow));
@@ -958,7 +963,7 @@ TEST_F(ConnectionTest,
 }
 
 TEST_F(ConnectionTest, PeerDisconnectCallback) {
-  const ConnectionHandle kHandle = 0x0001;
+  const hci_spec::ConnectionHandle kHandle = 0x0001;
 
   auto conn = NewACLConnection(Connection::Role::kMaster, kHandle);
 

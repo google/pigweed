@@ -173,13 +173,13 @@ class Peer final {
 
     // Most recently used LE connection parameters. Has no value if the peer
     // has never been connected.
-    const std::optional<hci::LEConnectionParameters>& connection_parameters() const {
+    const std::optional<hci_spec::LEConnectionParameters>& connection_parameters() const {
       return conn_params_;
     }
 
     // Preferred LE connection parameters as reported by the peer.
-    const std::optional<hci::LEPreferredConnectionParameters>& preferred_connection_parameters()
-        const {
+    const std::optional<hci_spec::LEPreferredConnectionParameters>&
+    preferred_connection_parameters() const {
       return preferred_conn_params_;
     }
 
@@ -187,7 +187,7 @@ class Peer final {
     const std::optional<sm::PairingData>& bond_data() const { return *bond_data_; }
 
     // Bit mask of LE features (Core Spec v5.2, Vol 6, Part B, Section 4.6).
-    std::optional<hci::LESupportedFeatures> features() const { return *features_; }
+    std::optional<hci_spec::LESupportedFeatures> features() const { return *features_; }
 
     // Setters:
 
@@ -207,8 +207,8 @@ class Peer final {
 
     // Modify the current or preferred connection parameters.
     // The device must be connectable.
-    void SetConnectionParameters(const hci::LEConnectionParameters& value);
-    void SetPreferredConnectionParameters(const hci::LEPreferredConnectionParameters& value);
+    void SetConnectionParameters(const hci_spec::LEConnectionParameters& value);
+    void SetPreferredConnectionParameters(const hci_spec::LEPreferredConnectionParameters& value);
 
     // Stores LE bonding data and makes this "bonded."
     // Marks as non-temporary if necessary.
@@ -218,7 +218,7 @@ class Peer final {
     // is disconnected. Does not notify listeners.
     void ClearBondData();
 
-    void SetFeatures(hci::LESupportedFeatures features) { features_.Set(features); }
+    void SetFeatures(hci_spec::LESupportedFeatures features) { features_.Set(features); }
 
     // Get pieces of the GATT database that must be persisted for bonded peers.
     const gatt::ServiceChangedCCCPersistedData& get_service_changed_gatt_data() const {
@@ -252,8 +252,8 @@ class Peer final {
 
     uint16_t initializing_tokens_count_ = 0;
     uint16_t connection_tokens_count_ = 0;
-    std::optional<hci::LEConnectionParameters> conn_params_;
-    std::optional<hci::LEPreferredConnectionParameters> preferred_conn_params_;
+    std::optional<hci_spec::LEConnectionParameters> conn_params_;
+    std::optional<hci_spec::LEPreferredConnectionParameters> preferred_conn_params_;
 
     // Buffer containing advertising and scan response data appended to each other.
     // NOTE: Repeated fields in advertising and scan response data are not deduplicated, so
@@ -271,7 +271,7 @@ class Peer final {
 
     AutoConnectBehavior auto_conn_behavior_ = AutoConnectBehavior::kAlways;
 
-    StringInspectable<std::optional<hci::LESupportedFeatures>> features_;
+    StringInspectable<std::optional<hci_spec::LESupportedFeatures>> features_;
 
     // TODO(armansito): Store GATT service UUIDs.
 
@@ -304,13 +304,13 @@ class Peer final {
     const std::optional<DeviceClass>& device_class() const { return device_class_; }
 
     // Returns the page scan repetition mode of the peer, if known.
-    const std::optional<hci::PageScanRepetitionMode>& page_scan_repetition_mode() const {
+    const std::optional<hci_spec::PageScanRepetitionMode>& page_scan_repetition_mode() const {
       return page_scan_rep_mode_;
     }
 
     // Returns the clock offset reported by the peer, if known and valid. The
     // clock offset will have the highest-order bit set and the rest represent
-    // bits 16-2 of CLKNslave-CLK (see hci::kClockOffsetFlagBit in
+    // bits 16-2 of CLKNslave-CLK (see hci_spec::kClockOffsetFlagBit in
     // hci/hci_constants.h).
     const std::optional<uint16_t>& clock_offset() const { return clock_offset_; }
     const BufferView extended_inquiry_response() const { return eir_buffer_.view(0, eir_len_); }
@@ -325,9 +325,9 @@ class Peer final {
     // methods expect HCI inquiry result structures as they are obtained from
     // the Bluetooth controller. Each field should be encoded in little-endian
     // byte order.
-    void SetInquiryData(const hci::InquiryResult& value);
-    void SetInquiryData(const hci::InquiryResultRSSI& value);
-    void SetInquiryData(const hci::ExtendedInquiryResultEventParams& value);
+    void SetInquiryData(const hci_spec::InquiryResult& value);
+    void SetInquiryData(const hci_spec::InquiryResultRSSI& value);
+    void SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value);
 
     // Updates the connection state and notifies listeners if necessary.
     void SetConnectionState(ConnectionState state);
@@ -352,8 +352,9 @@ class Peer final {
     // All multi-byte fields must be in little-endian byte order as they were
     // received from the controller.
     void SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
-                        hci::PageScanRepetitionMode page_scan_rep_mode,
-                        int8_t rssi = hci::kRSSIInvalid, const BufferView& eir_data = BufferView());
+                        hci_spec::PageScanRepetitionMode page_scan_rep_mode,
+                        int8_t rssi = hci_spec::kRSSIInvalid,
+                        const BufferView& eir_data = BufferView());
 
     // Updates the EIR data field and returns true if any properties changed.
     bool SetEirData(const ByteBuffer& data);
@@ -365,7 +366,7 @@ class Peer final {
 
     DeviceAddress address_;
     std::optional<DeviceClass> device_class_;
-    std::optional<hci::PageScanRepetitionMode> page_scan_rep_mode_;
+    std::optional<hci_spec::PageScanRepetitionMode> page_scan_rep_mode_;
     std::optional<uint16_t> clock_offset_;
     // TODO(jamuraa): Parse more of the Extended Inquiry Response fields
     size_t eir_len_;
@@ -406,7 +407,7 @@ class Peer final {
   bool identity_known() const { return identity_known_; }
 
   // The LMP version of this device obtained doing discovery.
-  const std::optional<hci::HCIVersion>& version() const { return *lmp_version_; }
+  const std::optional<hci_spec::HCIVersion>& version() const { return *lmp_version_; }
 
   // Returns true if this is a connectable device.
   bool connectable() const { return *connectable_; }
@@ -420,7 +421,7 @@ class Peer final {
   bool bonded() const { return (le() && le()->bonded()) || (bredr() && bredr()->bonded()); }
 
   // Returns the most recently observed RSSI for this peer. Returns
-  // hci::kRSSIInvalid if the value is unknown.
+  // hci_spec::kRSSIInvalid if the value is unknown.
   int8_t rssi() const { return rssi_; }
 
   // Gets the user-friendly name of the device, if it's known. This can be
@@ -429,7 +430,7 @@ class Peer final {
   const std::optional<std::string>& name() const { return name_; }
 
   // Returns the set of features of this device.
-  const hci::LMPFeatureSet& features() const { return *lmp_features_; }
+  const hci_spec::LMPFeatureSet& features() const { return *lmp_features_; }
 
   // A temporary device gets removed from the PeerCache after a period
   // of inactivity (see the |update_expiry_callback| argument to the
@@ -478,7 +479,7 @@ class Peer final {
   // Sets the last available LMP feature |page| number for this device.
   void set_last_page_number(uint8_t page) { lmp_features_.Mutable()->set_last_page_number(page); }
 
-  void set_version(hci::HCIVersion version, uint16_t manufacturer, uint16_t subversion) {
+  void set_version(hci_spec::HCIVersion version, uint16_t manufacturer, uint16_t subversion) {
     lmp_version_.Set(version);
     lmp_manufacturer_.Set(manufacturer);
     lmp_subversion_ = subversion;
@@ -567,10 +568,10 @@ class Peer final {
   bool identity_known_;
 
   std::optional<std::string> name_;
-  StringInspectable<std::optional<hci::HCIVersion>> lmp_version_;
+  StringInspectable<std::optional<hci_spec::HCIVersion>> lmp_version_;
   StringInspectable<std::optional<uint16_t>> lmp_manufacturer_;
   std::optional<uint16_t> lmp_subversion_;
-  StringInspectable<hci::LMPFeatureSet> lmp_features_;
+  StringInspectable<hci_spec::LMPFeatureSet> lmp_features_;
   BoolInspectable<bool> connectable_;
   BoolInspectable<bool> temporary_;
   int8_t rssi_;

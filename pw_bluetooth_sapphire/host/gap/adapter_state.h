@@ -25,7 +25,7 @@ class AdapterState final {
   AdapterState();
 
   // The HCI version supported by the controller.
-  hci::HCIVersion hci_version() const { return hci_version_; }
+  hci_spec::HCIVersion hci_version() const { return hci_version_; }
 
   // This returns Bluetooth Controller address. This address has the following
   // meaning based on the controller capabilities:
@@ -45,23 +45,23 @@ class AdapterState final {
   }
 
   // The features that are supported by this controller.
-  const hci::LMPFeatureSet& features() const { return features_; }
+  const hci_spec::LMPFeatureSet& features() const { return features_; }
 
   // Features reported by vendor driver.
   bt_vendor_features_t vendor_features() const { return vendor_features_; }
 
   // Helpers for querying LMP capabilities.
   inline bool IsBREDRSupported() const {
-    return !features().HasBit(0u, hci::LMPFeature::kBREDRNotSupported);
+    return !features().HasBit(0u, hci_spec::LMPFeature::kBREDRNotSupported);
   }
 
   inline bool IsLowEnergySupported() const {
-    return features().HasBit(0u, hci::LMPFeature::kLESupported);
+    return features().HasBit(0u, hci_spec::LMPFeature::kLESupported);
   }
 
   // Returns true if |command_bit| in the given |octet| is set in the supported
   // command list.
-  inline bool IsCommandSupported(size_t octet, hci::SupportedCommand command_bit) const {
+  inline bool IsCommandSupported(size_t octet, hci_spec::SupportedCommand command_bit) const {
     ZX_DEBUG_ASSERT(octet < sizeof(supported_commands_));
     return supported_commands_[octet] & static_cast<uint8_t>(command_bit);
   }
@@ -87,10 +87,10 @@ class AdapterState final {
   // variables.
 
   // HCI version supported by the controller.
-  hci::HCIVersion hci_version_;
+  hci_spec::HCIVersion hci_version_;
 
   // The Features that are supported by this adapter.
-  hci::LMPFeatureSet features_;
+  hci_spec::LMPFeatureSet features_;
 
   // Features reported by vendor driver.
   bt_vendor_features_t vendor_features_;

@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-constexpr static bt::hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr static bt::hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr bt::l2cap::ChannelId kTestChannelId = 0x0001;
 
 void NoOpTxCallback(bt::ByteBufferPtr){};

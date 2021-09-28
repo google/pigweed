@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/advertising_report_parser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
@@ -52,7 +53,7 @@ LegacyLowEnergyScanner::PendingScanResult::PendingScanResult(LowEnergyScanResult
 }
 
 void LegacyLowEnergyScanner::PendingScanResult::Append(const ByteBuffer& data) {
-  ZX_ASSERT(data.size() <= kMaxLEAdvertisingDataLength);
+  ZX_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
   buffer_.Write(data, data_size_);
   data_size_ += data.size();
 }
@@ -63,7 +64,7 @@ LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_
     : LowEnergyScanner(std::move(hci), dispatcher), local_addr_delegate_(local_addr_delegate) {
   ZX_DEBUG_ASSERT(local_addr_delegate_);
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
-      kLEAdvertisingReportSubeventCode,
+      hci_spec::kLEAdvertisingReportSubeventCode,
       fit::bind_member(this, &LegacyLowEnergyScanner::OnAdvertisingReportEvent));
   scan_timeout_task_.set_handler(
       fit::bind_member(this, &LegacyLowEnergyScanner::OnScanPeriodComplete));
@@ -77,8 +78,10 @@ bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options, ScanStatusCal
   ZX_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(callback);
   ZX_ASSERT(options.period == kPeriodInfinite || options.period.get() > 0);
-  ZX_ASSERT(options.interval <= kLEScanIntervalMax && options.interval >= kLEScanIntervalMin);
-  ZX_ASSERT(options.window <= kLEScanIntervalMax && options.window >= kLEScanIntervalMin);
+  ZX_ASSERT(options.interval <= hci_spec::kLEScanIntervalMax &&
+            options.interval >= hci_spec::kLEScanIntervalMin);
+  ZX_ASSERT(options.window <= hci_spec::kLEScanIntervalMax &&
+            options.window >= hci_spec::kLEScanIntervalMin);
   ZX_ASSERT(options.window < options.interval);
 
   if (state() != State::kIdle) {
@@ -121,26 +124,30 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
          options.interval, options.window);
 
   // HCI_LE_Set_Scan_Parameters
-  auto command = CommandPacket::New(kLESetScanParameters, sizeof(LESetScanParametersCommandParams));
-  auto scan_params = command->mutable_payload<LESetScanParametersCommandParams>();
-  scan_params->scan_type = options.active ? LEScanType::kActive : LEScanType::kPassive;
+  auto command = CommandPacket::New(hci_spec::kLESetScanParameters,
+                                    sizeof(hci_spec::LESetScanParametersCommandParams));
+  auto scan_params = command->mutable_payload<hci_spec::LESetScanParametersCommandParams>();
+  scan_params->scan_type =
+      options.active ? hci_spec::LEScanType::kActive : hci_spec::LEScanType::kPassive;
   scan_params->scan_interval = htole16(options.interval);
   scan_params->scan_window = htole16(options.window);
   scan_params->filter_policy = options.filter_policy;
 
   if (local_address.type() == DeviceAddress::Type::kLERandom) {
-    scan_params->own_address_type = LEOwnAddressType::kRandom;
+    scan_params->own_address_type = hci_spec::LEOwnAddressType::kRandom;
   } else {
-    scan_params->own_address_type = LEOwnAddressType::kPublic;
+    scan_params->own_address_type = hci_spec::LEOwnAddressType::kPublic;
   }
   hci_cmd_runner()->QueueCommand(std::move(command));
 
   // HCI_LE_Set_Scan_Enable
-  command = CommandPacket::New(kLESetScanEnable, sizeof(LESetScanEnableCommandParams));
-  auto enable_params = command->mutable_payload<LESetScanEnableCommandParams>();
-  enable_params->scanning_enabled = GenericEnableParam::kEnable;
-  enable_params->filter_duplicates =
-      options.filter_duplicates ? GenericEnableParam::kEnable : GenericEnableParam::kDisable;
+  command = CommandPacket::New(hci_spec::kLESetScanEnable,
+                               sizeof(hci_spec::LESetScanEnableCommandParams));
+  auto enable_params = command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
+  enable_params->scanning_enabled = hci_spec::GenericEnableParam::kEnable;
+  enable_params->filter_duplicates = options.filter_duplicates
+                                         ? hci_spec::GenericEnableParam::kEnable
+                                         : hci_spec::GenericEnableParam::kDisable;
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, period = options.period](Status status) {
@@ -220,10 +227,11 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   ZX_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
 
   // Tell the controller to stop scanning.
-  auto command = CommandPacket::New(kLESetScanEnable, sizeof(LESetScanEnableCommandParams));
-  auto enable_params = command->mutable_payload<LESetScanEnableCommandParams>();
-  enable_params->scanning_enabled = GenericEnableParam::kDisable;
-  enable_params->filter_duplicates = GenericEnableParam::kDisable;
+  auto command = CommandPacket::New(hci_spec::kLESetScanEnable,
+                                    sizeof(hci_spec::LESetScanEnableCommandParams));
+  auto enable_params = command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
+  enable_params->scanning_enabled = hci_spec::GenericEnableParam::kDisable;
+  enable_params->filter_duplicates = hci_spec::GenericEnableParam::kDisable;
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, stopped](Status status) {
@@ -254,25 +262,25 @@ CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportE
   }
 
   AdvertisingReportParser parser(event);
-  const LEAdvertisingReportData* report;
+  const hci_spec::LEAdvertisingReportData* report;
   int8_t rssi;
   while (parser.GetNextReport(&report, &rssi)) {
     bool needs_scan_rsp = false;
     bool connectable = false;
     bool directed = false;
     switch (report->event_type) {
-      case LEAdvertisingEventType::kAdvDirectInd:
+      case hci_spec::LEAdvertisingEventType::kAdvDirectInd:
         directed = true;
         break;
-      case LEAdvertisingEventType::kAdvInd:
+      case hci_spec::LEAdvertisingEventType::kAdvInd:
         connectable = true;
         __FALLTHROUGH;
-      case LEAdvertisingEventType::kAdvScanInd:
+      case hci_spec::LEAdvertisingEventType::kAdvScanInd:
         if (IsActiveScanning()) {
           needs_scan_rsp = true;
         }
         break;
-      case LEAdvertisingEventType::kScanRsp:
+      case hci_spec::LEAdvertisingEventType::kScanRsp:
         if (IsActiveScanning()) {
           HandleScanResponse(*report, rssi);
         }
@@ -281,14 +289,14 @@ CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportE
         break;
     }
 
-    if (report->length_data > kMaxLEAdvertisingDataLength) {
+    if (report->length_data > hci_spec::kMaxLEAdvertisingDataLength) {
       bt_log(WARN, "hci-le", "advertising data too long! Ignoring");
       continue;
     }
 
     DeviceAddress address;
     bool resolved;
-    if (!DeviceAddressFromAdvReport(*report, &address, &resolved)) {
+    if (!hci::DeviceAddressFromAdvReport(*report, &address, &resolved)) {
       continue;
     }
 
@@ -310,11 +318,11 @@ CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportE
   return CommandChannel::EventCallbackResult::kContinue;
 }
 
-void LegacyLowEnergyScanner::HandleScanResponse(const LEAdvertisingReportData& report,
+void LegacyLowEnergyScanner::HandleScanResponse(const hci_spec::LEAdvertisingReportData& report,
                                                 int8_t rssi) {
   DeviceAddress address;
   bool resolved;
-  if (!DeviceAddressFromAdvReport(report, &address, &resolved))
+  if (!hci::DeviceAddressFromAdvReport(report, &address, &resolved))
     return;
 
   auto iter = pending_results_.find(address);
@@ -323,7 +331,7 @@ void LegacyLowEnergyScanner::HandleScanResponse(const LEAdvertisingReportData& r
     return;
   }
 
-  if (report.length_data > kMaxLEAdvertisingDataLength) {
+  if (report.length_data > hci_spec::kMaxLEAdvertisingDataLength) {
     bt_log(WARN, "hci-le", "scan response too long! Ignoring");
     return;
   }

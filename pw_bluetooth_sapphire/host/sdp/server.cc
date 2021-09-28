@@ -159,7 +159,7 @@ void Server::AttachInspect(inspect::Node& parent, std::string name) {
 
 bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   ZX_ASSERT(channel);
-  hci::ConnectionHandle handle = channel->link_handle();
+  hci_spec::ConnectionHandle handle = channel->link_handle();
   bt_log(DEBUG, "sdp", "add connection handle %#.4x", handle);
 
   l2cap::Channel::UniqueId chan_id = channel->unique_id();

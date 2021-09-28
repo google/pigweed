@@ -18,81 +18,83 @@ namespace bt::testing {
 // This allows easily defining expected packets to be sent or received for
 // given transactions such as connection establishment or discovery
 
-DynamicByteBuffer CommandCompletePacket(hci::OpCode opcode, hci::StatusCode);
+DynamicByteBuffer CommandCompletePacket(hci_spec::OpCode opcode, hci_spec::StatusCode);
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
 
-DynamicByteBuffer RejectConnectionRequestPacket(DeviceAddress address, hci::StatusCode reason);
+DynamicByteBuffer RejectConnectionRequestPacket(DeviceAddress address, hci_spec::StatusCode reason);
 
-DynamicByteBuffer AuthenticationRequestedPacket(hci::ConnectionHandle conn);
+DynamicByteBuffer AuthenticationRequestedPacket(hci_spec::ConnectionHandle conn);
 
 DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address,
-                                          hci::LinkType link_type = hci::LinkType::kACL);
+                                          hci_spec::LinkType link_type = hci_spec::LinkType::kACL);
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
-DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn,
-                                           hci::StatusCode status = hci::StatusCode::kSuccess);
+DynamicByteBuffer ConnectionCompletePacket(
+    DeviceAddress address, hci_spec::ConnectionHandle conn,
+    hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess);
 
 DynamicByteBuffer DisconnectPacket(
-    hci::ConnectionHandle conn,
-    hci::StatusCode reason = hci::StatusCode::kRemoteUserTerminatedConnection);
+    hci_spec::ConnectionHandle conn,
+    hci_spec::StatusCode reason = hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 DynamicByteBuffer DisconnectStatusResponsePacket();
 DynamicByteBuffer DisconnectionCompletePacket(
-    hci::ConnectionHandle conn,
-    hci::StatusCode reason = hci::StatusCode::kRemoteUserTerminatedConnection);
+    hci_spec::ConnectionHandle conn,
+    hci_spec::StatusCode reason = hci_spec::StatusCode::kRemoteUserTerminatedConnection);
 
-DynamicByteBuffer EncryptionChangeEventPacket(hci::StatusCode status_code,
-                                              hci::ConnectionHandle conn,
-                                              hci::EncryptionStatus encryption_enabled);
+DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
+                                              hci_spec::ConnectionHandle conn,
+                                              hci_spec::EncryptionStatus encryption_enabled);
 
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
-    DeviceAddress peer_address, hci::SynchronousConnectionParameters params);
+    DeviceAddress peer_address, hci_spec::SynchronousConnectionParameters params);
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
-    hci::ConnectionHandle conn, hci::SynchronousConnectionParameters params);
+    hci_spec::ConnectionHandle conn, hci_spec::SynchronousConnectionParameters params);
 
-DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets);
+DynamicByteBuffer NumberOfCompletedPacketsPacket(hci_spec::ConnectionHandle conn,
+                                                 uint16_t num_packets);
 
-DynamicByteBuffer CommandStatusPacket(hci::OpCode op_code, hci::StatusCode status_code);
+DynamicByteBuffer CommandStatusPacket(hci_spec::OpCode op_code, hci_spec::StatusCode status_code);
 
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address,
                                                   const std::string& name = u8"Fuchsia💖");
 
-DynamicByteBuffer ReadRemoteVersionInfoPacket(hci::ConnectionHandle conn);
-DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteVersionInfoPacket(hci_spec::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci_spec::ConnectionHandle conn);
 
-DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
-DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandle conn,
+DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci_spec::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci_spec::ConnectionHandle conn,
                                                             bool extended_features);
 
 DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
-                                                     hci::StatusCode status_code);
+                                                     hci_spec::StatusCode status_code);
 
-DynamicByteBuffer RoleChangePacket(DeviceAddress address, hci::ConnectionRole role,
-                                   hci::StatusCode status = hci::StatusCode::kSuccess);
+DynamicByteBuffer RoleChangePacket(DeviceAddress address, hci_spec::ConnectionRole role,
+                                   hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess);
 
-DynamicByteBuffer SetConnectionEncryption(hci::ConnectionHandle conn, bool enable);
+DynamicByteBuffer SetConnectionEncryption(hci_spec::ConnectionHandle conn, bool enable);
 
-DynamicByteBuffer SynchronousConnectionCompletePacket(hci::ConnectionHandle conn,
+DynamicByteBuffer SynchronousConnectionCompletePacket(hci_spec::ConnectionHandle conn,
                                                       DeviceAddress address,
-                                                      hci::LinkType link_type,
-                                                      hci::StatusCode status);
+                                                      hci_spec::LinkType link_type,
+                                                      hci_spec::StatusCode status);
 
-DynamicByteBuffer LEReadRemoteFeaturesPacket(hci::ConnectionHandle conn);
-DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci::ConnectionHandle conn,
-                                                     hci::LESupportedFeatures le_features);
+DynamicByteBuffer LEReadRemoteFeaturesPacket(hci_spec::ConnectionHandle conn);
+DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci_spec::ConnectionHandle conn,
+                                                     hci_spec::LESupportedFeatures le_features);
 
-DynamicByteBuffer LEStartEncryptionPacket(hci::ConnectionHandle, uint64_t random_number,
+DynamicByteBuffer LEStartEncryptionPacket(hci_spec::ConnectionHandle, uint64_t random_number,
                                           uint16_t encrypted_diversifier, UInt128 ltk);
 
 // The ReadRemoteExtended*CompletePacket packets report a max page number of 3, even though there
 // are only 2 pages, in order to test this behavior seen in real devices.
-DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
-DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
-DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
-DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended1Packet(hci_spec::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci_spec::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended2Packet(hci_spec::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci_spec::ConnectionHandle conn);
 
-DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(hci::ConnectionHandle conn,
+DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(hci_spec::ConnectionHandle conn,
                                                    uint16_t flush_timeout);
 
 DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout);

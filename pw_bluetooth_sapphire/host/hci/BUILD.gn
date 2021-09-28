@@ -30,6 +30,8 @@ static_library("hci") {
     "low_energy_scanner.h",
     "sequential_command_runner.cc",
     "sequential_command_runner.h",
+    "util.cc",
+    "util.h",
   ]
 
   public_deps = [
@@ -84,6 +86,7 @@ source_set("tests") {
     "low_energy_advertiser_unittest.cc",
     "low_energy_connector_unittest.cc",
     "sequential_command_runner_unittest.cc",
+    "util_unittest.cc",
   ]
 
   deps = [

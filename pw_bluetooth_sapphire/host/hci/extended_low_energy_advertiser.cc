@@ -13,7 +13,7 @@ ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport>
     : LowEnergyAdvertiser(std::move(hci_ptr)), weak_ptr_factory_(this) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
-      kLEAdvertisingSetTerminatedSubeventCode, [self](const EventPacket& event_packet) {
+      hci_spec::kLEAdvertisingSetTerminatedSubeventCode, [self](const EventPacket& event_packet) {
         if (self) {
           return self->OnAdvertisingSetTerminatedEvent(event_packet);
         }
@@ -28,20 +28,20 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
 }
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address, GenericEnableParam enable) {
+    const DeviceAddress& address, hci_spec::GenericEnableParam enable) {
   // We only enable or disable a single address at a time. The multiply by 1 is set explicitly to
   // show that data[] within LESetExtendedAdvertisingEnableData is of size 1.
-  constexpr size_t kPayloadSize = sizeof(LESetExtendedAdvertisingEnableCommandParams) +
-                                  1 * sizeof(LESetExtendedAdvertisingEnableData);
+  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingEnableCommandParams) +
+                                  1 * sizeof(hci_spec::LESetExtendedAdvertisingEnableData);
   std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(kLESetExtendedAdvertisingEnable, kPayloadSize);
+      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingEnable, kPayloadSize);
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto payload = packet->mutable_payload<LESetExtendedAdvertisingEnableCommandParams>();
+  auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingEnableCommandParams>();
   payload->enable = enable;
   payload->number_of_sets = 1;
 
-  std::optional<AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
     return nullptr;
@@ -51,28 +51,29 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   // options to the user to advertise only a set amount of times. Duration can already be controlled
   // via the client closing the FIDL protocol after a set amount of time. We don't want to
   // support a second way to enable duration.
-  LESetExtendedAdvertisingEnableData enable_data;
+  hci_spec::LESetExtendedAdvertisingEnableData enable_data;
   enable_data.adv_handle = handle.value();
-  enable_data.max_extended_adv_events = kNoMaxExtendedAdvertisingEvents;
-  enable_data.duration = kNoAdvertisingDuration;
+  enable_data.max_extended_adv_events = hci_spec::kNoMaxExtendedAdvertisingEvents;
+  enable_data.duration = hci_spec::kNoAdvertisingDuration;
 
   auto buffer = packet->mutable_view()->mutable_payload_data().mutable_view();
-  buffer.WriteObj(enable_data, sizeof(LESetExtendedAdvertisingEnableCommandParams));
+  buffer.WriteObj(enable_data, sizeof(hci_spec::LESetExtendedAdvertisingEnableCommandParams));
 
   return packet;
 }
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
-    const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
-    AdvertisingIntervalRange interval) {
-  constexpr size_t kPayloadSize = sizeof(LESetExtendedAdvertisingParametersCommandParams);
+    const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+    hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
+  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingParametersCommandParams);
   std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(kLESetExtendedAdvertisingParameters, kPayloadSize);
+      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingParameters, kPayloadSize);
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<LESetExtendedAdvertisingParametersCommandParams>();
+  auto payload =
+      packet->mutable_payload<hci_spec::LESetExtendedAdvertisingParametersCommandParams>();
 
   // advertising handle
-  std::optional<AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
     return nullptr;
@@ -80,7 +81,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
   payload->adv_handle = handle.value();
 
   // advertising event properties
-  std::optional<AdvertisingEventBits> bits = AdvertisingTypeToEventBits(type);
+  std::optional<hci_spec::AdvertisingEventBits> bits = AdvertisingTypeToEventBits(type);
   if (!bits) {
     bt_log(WARN, "hci-le", "could not generate event bits for type: %hhu", type);
     return nullptr;
@@ -92,18 +93,18 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
   // advertising interval configurations to users, as specified in the Bluetooth Spec Volume 3, Part
   // C, Appendix A. These values are expressed as uint16_t so we simply copy them (taking care of
   // endianness) into the 3 octets as is.
-  EncodeLegacyAdvertisingInterval(interval.min(), payload->primary_adv_interval_min);
-  EncodeLegacyAdvertisingInterval(interval.max(), payload->primary_adv_interval_max);
+  hci_spec::EncodeLegacyAdvertisingInterval(interval.min(), payload->primary_adv_interval_min);
+  hci_spec::EncodeLegacyAdvertisingInterval(interval.max(), payload->primary_adv_interval_max);
 
   // other settings
-  payload->primary_adv_channel_map = kLEAdvertisingChannelAll;
+  payload->primary_adv_channel_map = hci_spec::kLEAdvertisingChannelAll;
   payload->own_address_type = own_address_type;
-  payload->adv_filter_policy = LEAdvFilterPolicy::kAllowAll;
-  payload->adv_tx_power = kLEExtendedAdvertisingTxPowerNoPreference;
-  payload->scan_request_notification_enable = GenericEnableParam::kDisable;
+  payload->adv_filter_policy = hci_spec::LEAdvFilterPolicy::kAllowAll;
+  payload->adv_tx_power = hci_spec::kLEExtendedAdvertisingTxPowerNoPreference;
+  payload->scan_request_notification_enable = hci_spec::GenericEnableParam::kDisable;
 
   // TODO(fxbug.dev/81470): using legacy PDUs requires advertisements on the LE 1M PHY.
-  payload->primary_adv_phy = LEPHY::kLE1M;
+  payload->primary_adv_phy = hci_spec::LEPHY::kLE1M;
 
   // Payload values were initialized to zero above. By not setting the values for the following
   // fields, we are purposely ignoring them:
@@ -129,14 +130,14 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingD
     block_size = tx_power_data.CalculateBlockSize(/*include_flags=*/true);
   }
 
-  size_t kPayloadSize = sizeof(LESetExtendedAdvertisingDataCommandParams) + block_size;
+  size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingDataCommandParams) + block_size;
   std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(kLESetExtendedAdvertisingData, kPayloadSize);
+      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<LESetExtendedAdvertisingDataCommandParams>();
+  auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingDataCommandParams>();
 
   // advertising handle
-  std::optional<AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
     return nullptr;
@@ -145,13 +146,13 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingD
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = LEExtendedAdvFragmentPreference::kShouldNotFragment;
+  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
+  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
 
   // advertising data
   payload->adv_data_length = block_size;
   MutableBufferView buffer = packet->mutable_view()->mutable_payload_data().mutable_view(
-      sizeof(LESetExtendedAdvertisingDataCommandParams));
+      sizeof(hci_spec::LESetExtendedAdvertisingDataCommandParams));
 
   if (staged_advertising_parameters_.include_tx_power_level) {
     tx_power_data.WriteBlock(&buffer, flags);
@@ -164,13 +165,14 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingD
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
-  std::unique_ptr<CommandPacket> packet = CommandPacket::New(
-      kLESetExtendedAdvertisingData, sizeof(LESetExtendedAdvertisingDataCommandParams));
+  std::unique_ptr<CommandPacket> packet =
+      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingData,
+                         sizeof(hci_spec::LESetExtendedAdvertisingDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<LESetExtendedAdvertisingDataCommandParams>();
+  auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingDataCommandParams>();
 
   // advertising handle
-  std::optional<AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
     return nullptr;
@@ -179,8 +181,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisin
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = LEExtendedAdvFragmentPreference::kShouldNotFragment;
+  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
+  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
   payload->adv_data_length = 0;
 
   return packet;
@@ -198,14 +200,14 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
     block_size = tx_power_scan_rsp.CalculateBlockSize();
   }
 
-  size_t kPayloadSize = sizeof(LESetExtendedScanResponseDataCommandParams) + block_size;
+  size_t kPayloadSize = sizeof(hci_spec::LESetExtendedScanResponseDataCommandParams) + block_size;
   std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(kLESetExtendedScanResponseData, kPayloadSize);
+      CommandPacket::New(hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<LESetExtendedScanResponseDataCommandParams>();
+  auto payload = packet->mutable_payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
 
   // advertising handle
-  std::optional<AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
     return nullptr;
@@ -214,13 +216,13 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = LEExtendedAdvFragmentPreference::kShouldNotFragment;
+  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
+  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
 
   // scan response data
   payload->scan_rsp_data_length = block_size;
   MutableBufferView buffer = packet->mutable_view()->mutable_payload_data().mutable_view(
-      sizeof(LESetExtendedScanResponseDataCommandParams));
+      sizeof(hci_spec::LESetExtendedScanResponseDataCommandParams));
 
   if (staged_advertising_parameters_.include_tx_power_level) {
     tx_power_scan_rsp.WriteBlock(&buffer, std::nullopt);
@@ -233,13 +235,14 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
-  std::unique_ptr<CommandPacket> packet = CommandPacket::New(
-      kLESetExtendedScanResponseData, sizeof(LESetExtendedScanResponseDataCommandParams));
+  std::unique_ptr<CommandPacket> packet =
+      CommandPacket::New(hci_spec::kLESetExtendedScanResponseData,
+                         sizeof(hci_spec::LESetExtendedScanResponseDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<LESetExtendedScanResponseDataCommandParams>();
+  auto payload = packet->mutable_payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
 
   // advertising handle
-  std::optional<AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
     return nullptr;
@@ -248,8 +251,8 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetScanRespon
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = LEExtendedAdvFragmentPreference::kShouldNotFragment;
+  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
+  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
   payload->scan_rsp_data_length = 0;
 
   return packet;
@@ -257,11 +260,11 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetScanRespon
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
-  auto packet =
-      CommandPacket::New(kLERemoveAdvertisingSet, sizeof(LERemoveAdvertisingSetCommandParams));
-  auto payload = packet->mutable_payload<LERemoveAdvertisingSetCommandParams>();
+  auto packet = CommandPacket::New(hci_spec::kLERemoveAdvertisingSet,
+                                   sizeof(hci_spec::LERemoveAdvertisingSetCommandParams));
+  auto payload = packet->mutable_payload<hci_spec::LERemoveAdvertisingSetCommandParams>();
 
-  std::optional<AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
+  std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
   if (!handle) {
     bt_log(WARN, "hci-le", "could not locate advertising handle for address: %s", bt_str(address));
     return nullptr;
@@ -272,9 +275,9 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisi
 }
 
 void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == kCommandCompleteEventCode);
-  ZX_ASSERT(event.params<CommandCompleteEventParams>().command_opcode ==
-            kLESetExtendedAdvertisingParameters);
+  ZX_ASSERT(event.event_code() == hci_spec::kCommandCompleteEventCode);
+  ZX_ASSERT(event.params<hci_spec::CommandCompleteEventParams>().command_opcode ==
+            hci_spec::kLESetExtendedAdvertisingParameters);
 
   Status status = event.ToStatus();
   if (bt_is_error(status, WARN, "hci-le", "set advertising parameters, error received: %s",
@@ -282,7 +285,7 @@ void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(const EventPack
     return;  // full error handling done in super class, can just return here
   }
 
-  auto params = event.return_params<LESetExtendedAdvertisingParametersReturnParams>();
+  auto params = event.return_params<hci_spec::LESetExtendedAdvertisingParametersReturnParams>();
   ZX_ASSERT(params);
 
   if (staged_advertising_parameters_.include_tx_power_level) {
@@ -393,10 +396,9 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) 
   advertising_handle_map_.RemoveAddress(address);
 }
 
-void ExtendedLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle,
-                                                       Connection::Role role,
-                                                       const DeviceAddress& peer_address,
-                                                       const LEConnectionParameters& conn_params) {
+void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
+    hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
+    const hci_spec::LEConnectionParameters& conn_params) {
   // Core Spec Volume 4, Part E, Section 7.8.56: Incoming connections to LE Extended Advertising
   // occur through two events: HCI_LE_Connection_Complete and HCI_LE_Advertising_Set_Terminated.
   // This method is called as a result of the HCI_LE_Connection_Complete event. At this point, we
@@ -411,9 +413,9 @@ void ExtendedLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle,
 // information necessary to create a connection object within the Host layer.
 CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
     const EventPacket& event) {
-  ZX_ASSERT(event.event_code() == kLEMetaEventCode);
-  ZX_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
-            kLEAdvertisingSetTerminatedSubeventCode);
+  ZX_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  ZX_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+            hci_spec::kLEAdvertisingSetTerminatedSubeventCode);
 
   Status status = event.ToStatus();
   if (bt_is_error(status, ERROR, "hci-le", "advertising set terminated event, error received %s",
@@ -421,10 +423,10 @@ CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSe
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto params = event.le_event_params<LEAdvertisingSetTerminatedSubeventParams>();
+  auto params = event.le_event_params<hci_spec::LEAdvertisingSetTerminatedSubeventParams>();
   ZX_ASSERT(params);
 
-  ConnectionHandle connection_handle = params->connection_handle;
+  hci_spec::ConnectionHandle connection_handle = params->connection_handle;
   auto sp_node = connection_handle_map_.extract(connection_handle);
 
   if (sp_node.empty()) {
@@ -435,7 +437,7 @@ CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSe
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  AdvertisingHandle adv_handle = params->adv_handle;
+  hci_spec::AdvertisingHandle adv_handle = params->adv_handle;
   std::optional<DeviceAddress> opt_local_address = advertising_handle_map_.GetAddress(adv_handle);
 
   // We use the identity address as the local address if we aren't advertising or otherwise don't

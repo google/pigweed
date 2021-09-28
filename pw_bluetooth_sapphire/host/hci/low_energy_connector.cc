@@ -11,8 +11,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
@@ -37,7 +37,7 @@ LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci,
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
-      kLEConnectionCompleteSubeventCode, [self](const auto& event) {
+      hci_spec::kLEConnectionCompleteSubeventCode, [self](const auto& event) {
         if (self) {
           return self->OnConnectionCompleteEvent(event);
         }
@@ -51,10 +51,10 @@ LowEnergyConnector::~LowEnergyConnector() {
     Cancel();
 }
 
-bool LowEnergyConnector::CreateConnection(bool use_whitelist, const DeviceAddress& peer_address,
-                                          uint16_t scan_interval, uint16_t scan_window,
-                                          const LEPreferredConnectionParameters& initial_parameters,
-                                          StatusCallback status_callback, zx::duration timeout) {
+bool LowEnergyConnector::CreateConnection(
+    bool use_whitelist, const DeviceAddress& peer_address, uint16_t scan_interval,
+    uint16_t scan_window, const hci_spec::LEPreferredConnectionParameters& initial_parameters,
+    StatusCallback status_callback, zx::duration timeout) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(status_callback);
   ZX_DEBUG_ASSERT(timeout.get() > 0);
@@ -81,8 +81,8 @@ bool LowEnergyConnector::CreateConnection(bool use_whitelist, const DeviceAddres
 void LowEnergyConnector::CreateConnectionInternal(
     const DeviceAddress& local_address, bool use_whitelist, const DeviceAddress& peer_address,
     uint16_t scan_interval, uint16_t scan_window,
-    const LEPreferredConnectionParameters& initial_parameters, StatusCallback status_callback,
-    zx::duration timeout) {
+    const hci_spec::LEPreferredConnectionParameters& initial_parameters,
+    StatusCallback status_callback, zx::duration timeout) {
   // Check if the connection request was canceled via Cancel().
   if (!pending_request_ || pending_request_->canceled) {
     bt_log(DEBUG, "hci-le", "connection request was canceled while obtaining local address");
@@ -95,20 +95,21 @@ void LowEnergyConnector::CreateConnectionInternal(
   pending_request_->initiating = true;
   pending_request_->local_address = local_address;
 
-  auto request = CommandPacket::New(kLECreateConnection, sizeof(LECreateConnectionCommandParams));
-  auto params = request->mutable_payload<LECreateConnectionCommandParams>();
+  auto request = CommandPacket::New(hci_spec::kLECreateConnection,
+                                    sizeof(hci_spec::LECreateConnectionCommandParams));
+  auto params = request->mutable_payload<hci_spec::LECreateConnectionCommandParams>();
   params->scan_interval = htole16(scan_interval);
   params->scan_window = htole16(scan_window);
-  params->initiator_filter_policy =
-      use_whitelist ? GenericEnableParam::kEnable : GenericEnableParam::kDisable;
+  params->initiator_filter_policy = use_whitelist ? hci_spec::GenericEnableParam::kEnable
+                                                  : hci_spec::GenericEnableParam::kDisable;
 
   // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
   params->peer_address_type =
-      peer_address.IsPublic() ? LEAddressType::kPublic : LEAddressType::kRandom;
+      peer_address.IsPublic() ? hci_spec::LEAddressType::kPublic : hci_spec::LEAddressType::kRandom;
   params->peer_address = peer_address.value();
 
-  params->own_address_type =
-      local_address.IsPublic() ? LEOwnAddressType::kPublic : LEOwnAddressType::kRandom;
+  params->own_address_type = local_address.IsPublic() ? hci_spec::LEOwnAddressType::kPublic
+                                                      : hci_spec::LEOwnAddressType::kRandom;
 
   params->conn_interval_min = htole16(initial_parameters.min_interval());
   params->conn_interval_max = htole16(initial_parameters.max_interval());
@@ -120,7 +121,7 @@ void LowEnergyConnector::CreateConnectionInternal(
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto complete_cb = [self, timeout](auto id, const EventPacket& event) {
-    ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
+    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self)
       return;
@@ -138,7 +139,8 @@ void LowEnergyConnector::CreateConnectionInternal(
     self->request_timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
   };
 
-  hci_->command_channel()->SendCommand(std::move(request), complete_cb, kCommandStatusEventCode);
+  hci_->command_channel()->SendCommand(std::move(request), complete_cb,
+                                       hci_spec::kCommandStatusEventCode);
 }
 
 void LowEnergyConnector::Cancel() { CancelInternal(false); }
@@ -169,7 +171,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
     auto complete_cb = [](auto id, const EventPacket& event) {
       hci_is_error(event, WARN, "hci-le", "failed to cancel connection request");
     };
-    auto cancel = CommandPacket::New(kLECreateConnectionCancel);
+    auto cancel = CommandPacket::New(hci_spec::kLECreateConnectionCancel);
     hci_->command_channel()->SendCommand(std::move(cancel), complete_cb);
 
     // A connection complete event will be generated by the controller after processing the cancel
@@ -183,11 +185,11 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
 
 CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEvent(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
-  ZX_DEBUG_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
-                  kLEConnectionCompleteSubeventCode);
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  ZX_DEBUG_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+                  hci_spec::kLEConnectionCompleteSubeventCode);
 
-  auto params = event.le_event_params<LEConnectionCompleteSubeventParams>();
+  auto params = event.le_event_params<hci_spec::LEConnectionCompleteSubeventParams>();
   ZX_ASSERT(params);
 
   // First check if this event is related to the currently pending request.
@@ -201,7 +203,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
       // HCI_LE_Create_Connection_Cancel command (sent by Cancel()).
       if (pending_request_->timed_out) {
         status = Status(HostError::kTimedOut);
-      } else if (params->status == StatusCode::kUnknownConnectionId) {
+      } else if (params->status == hci_spec::StatusCode::kUnknownConnectionId) {
         status = Status(HostError::kCanceled);
       }
       OnCreateConnectionComplete(status, nullptr);
@@ -212,13 +214,14 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  ConnectionHandle handle = le16toh(params->connection_handle);
-  Connection::Role role = (params->role == ConnectionRole::kMaster) ? Connection::Role::kMaster
-                                                                    : Connection::Role::kSlave;
+  hci_spec::ConnectionHandle handle = le16toh(params->connection_handle);
+  Connection::Role role = (params->role == hci_spec::ConnectionRole::kMaster)
+                              ? Connection::Role::kMaster
+                              : Connection::Role::kSlave;
   DeviceAddress peer_address(AddressTypeFromHCI(params->peer_address_type), params->peer_address);
-  LEConnectionParameters connection_params(le16toh(params->conn_interval),
-                                           le16toh(params->conn_latency),
-                                           le16toh(params->supervision_timeout));
+  hci_spec::LEConnectionParameters connection_params(le16toh(params->conn_interval),
+                                                     le16toh(params->conn_latency),
+                                                     le16toh(params->supervision_timeout));
 
   // If the connection did not match a pending request then we pass the
   // information down to the incoming connection delegate.

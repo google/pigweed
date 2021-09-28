@@ -42,7 +42,7 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
     fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
     fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
     gap::LeSecurityMode security_mode) {
-  hci::ConnectionHandle conn = link->handle();
+  hci_spec::ConnectionHandle conn = link->handle();
   auto test_sm = std::unique_ptr<TestSecurityManager>(
       new TestSecurityManager(std::move(link), std::move(smp), io_capability, std::move(delegate),
                               bondable_mode, security_mode));
@@ -51,7 +51,7 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
 }
 
 fxl::WeakPtr<TestSecurityManager> TestSecurityManagerFactory::GetTestSm(
-    hci::ConnectionHandle conn_handle) {
+    hci_spec::ConnectionHandle conn_handle) {
   auto iter = test_sms_.find(conn_handle);
   ZX_ASSERT(iter != test_sms_.end());
   return iter->second;

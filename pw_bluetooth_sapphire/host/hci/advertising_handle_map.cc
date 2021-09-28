@@ -6,7 +6,8 @@
 
 namespace bt::hci {
 
-std::optional<AdvertisingHandle> AdvertisingHandleMap::MapHandle(const DeviceAddress& address) {
+std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
+    const DeviceAddress& address) {
   if (auto it = addr_to_handle_.find(address); it != addr_to_handle_.end()) {
     return it->second;
   }
@@ -15,7 +16,7 @@ std::optional<AdvertisingHandle> AdvertisingHandleMap::MapHandle(const DeviceAdd
     return std::nullopt;
   }
 
-  std::optional<AdvertisingHandle> handle = NextHandle();
+  std::optional<hci_spec::AdvertisingHandle> handle = NextHandle();
   ZX_ASSERT(handle);
 
   addr_to_handle_[address] = handle.value();
@@ -23,7 +24,8 @@ std::optional<AdvertisingHandle> AdvertisingHandleMap::MapHandle(const DeviceAdd
   return handle;
 }
 
-std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(AdvertisingHandle handle) const {
+std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(
+    hci_spec::AdvertisingHandle handle) const {
   if (handle_to_addr_.count(handle) != 0) {
     return handle_to_addr_.at(handle);
   }
@@ -31,7 +33,7 @@ std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(AdvertisingHandle 
   return std::nullopt;
 }
 
-void AdvertisingHandleMap::RemoveHandle(AdvertisingHandle handle) {
+void AdvertisingHandleMap::RemoveHandle(hci_spec::AdvertisingHandle handle) {
   if (handle_to_addr_.count(handle) == 0) {
     return;
   }
@@ -47,7 +49,7 @@ void AdvertisingHandleMap::RemoveAddress(const DeviceAddress& address) {
     return;
   }
 
-  AdvertisingHandle handle = node.mapped();
+  hci_spec::AdvertisingHandle handle = node.mapped();
   handle_to_addr_.erase(handle);
 }
 
@@ -67,12 +69,12 @@ void AdvertisingHandleMap::Clear() {
   handle_to_addr_.clear();
 }
 
-std::optional<AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
+std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
   if (Size() >= kMaxElements) {
     return std::nullopt;
   }
 
-  AdvertisingHandle handle = last_handle_;
+  hci_spec::AdvertisingHandle handle = last_handle_;
   do {
     handle = uint8_t(handle + 1) % kMaxElements;
   } while (handle_to_addr_.count(handle) != 0);
@@ -81,8 +83,8 @@ std::optional<AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
   return handle;
 }
 
-std::optional<AdvertisingHandle> AdvertisingHandleMap::LastUsedHandleForTesting() const {
-  if (last_handle_ > kMaxAdvertisingHandle) {
+std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::LastUsedHandleForTesting() const {
+  if (last_handle_ > hci_spec::kMaxAdvertisingHandle) {
     return std::nullopt;
   }
 

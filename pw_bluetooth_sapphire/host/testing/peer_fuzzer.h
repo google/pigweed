@@ -53,9 +53,9 @@ class PeerFuzzer final {
         &PeerFuzzer::LEDataSetFeatures,
         &PeerFuzzer::LEDataSetServiceChangedGattData,
         &PeerFuzzer::LEDataSetAutoConnectBehavior,
-        &PeerFuzzer::BrEdrDataSetInquiryData<hci::InquiryResult>,
-        &PeerFuzzer::BrEdrDataSetInquiryData<hci::InquiryResultRSSI>,
-        &PeerFuzzer::BrEdrDataSetInquiryData<hci::ExtendedInquiryResultEventParams>,
+        &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::InquiryResult>,
+        &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::InquiryResultRSSI>,
+        &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::ExtendedInquiryResultEventParams>,
         &PeerFuzzer::BrEdrDataSetConnectionState,
         &PeerFuzzer::BrEdrDataSetBondData,
         &PeerFuzzer::BrEdrDataClearBondData,
@@ -98,9 +98,9 @@ class PeerFuzzer final {
     if (!peer_.connectable()) {
       return;
     }
-    const hci::LEConnectionParameters conn_params(fdp().ConsumeIntegral<uint16_t>(),
-                                                  fdp().ConsumeIntegral<uint16_t>(),
-                                                  fdp().ConsumeIntegral<uint16_t>());
+    const hci_spec::LEConnectionParameters conn_params(fdp().ConsumeIntegral<uint16_t>(),
+                                                       fdp().ConsumeIntegral<uint16_t>(),
+                                                       fdp().ConsumeIntegral<uint16_t>());
     peer_.MutLe().SetConnectionParameters(conn_params);
   }
 
@@ -108,7 +108,7 @@ class PeerFuzzer final {
     if (!peer_.connectable()) {
       return;
     }
-    const hci::LEPreferredConnectionParameters conn_params(
+    const hci_spec::LEPreferredConnectionParameters conn_params(
         fdp().ConsumeIntegral<uint16_t>(), fdp().ConsumeIntegral<uint16_t>(),
         fdp().ConsumeIntegral<uint16_t>(), fdp().ConsumeIntegral<uint16_t>());
     peer_.MutLe().SetPreferredConnectionParameters(conn_params);
@@ -141,7 +141,7 @@ class PeerFuzzer final {
   }
 
   void LEDataSetFeatures() {
-    hci::LESupportedFeatures features = {};
+    hci_spec::LESupportedFeatures features = {};
     fdp().ConsumeData(&features, sizeof(features));
     peer_.MutLe().SetFeatures(features);
   }
@@ -200,14 +200,14 @@ class PeerFuzzer final {
 
   void SetFeaturePage() {
     peer_.SetFeaturePage(
-        fdp().ConsumeIntegralInRange<size_t>(0, bt::hci::LMPFeatureSet::kMaxLastPageNumber),
+        fdp().ConsumeIntegralInRange<size_t>(0, bt::hci_spec::LMPFeatureSet::kMaxLastPageNumber),
         fdp().ConsumeIntegral<uint64_t>());
   }
 
   void set_last_page_number() { peer_.set_last_page_number(fdp().ConsumeIntegral<uint8_t>()); }
 
   void set_version() {
-    peer_.set_version(bt::hci::HCIVersion{fdp().ConsumeIntegral<uint8_t>()},
+    peer_.set_version(bt::hci_spec::HCIVersion{fdp().ConsumeIntegral<uint8_t>()},
                       fdp().ConsumeIntegral<uint16_t>(), fdp().ConsumeIntegral<uint16_t>());
   }
 

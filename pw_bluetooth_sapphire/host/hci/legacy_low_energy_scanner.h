@@ -66,7 +66,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
     size_t data_size_ = 0u;
 
     // Buffer large enough to store both advertising and scan response payloads.
-    StaticByteBuffer<kMaxLEAdvertisingDataLength * 2> buffer_;
+    StaticByteBuffer<hci_spec::kMaxLEAdvertisingDataLength * 2> buffer_;
 
     // Since not all scannable advertisements are always followed by a scan response, we report a
     // pending result if a scan response is not received within a timeout.
@@ -84,7 +84,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   CommandChannel::EventCallbackResult OnAdvertisingReportEvent(const EventPacket& event);
 
   // Called when a Scan Response is received during an active scan.
-  void HandleScanResponse(const LEAdvertisingReportData& report, int8_t rssi);
+  void HandleScanResponse(const hci_spec::LEAdvertisingReportData& report, int8_t rssi);
 
   // Notifies observers of a peer that was found.
   void NotifyPeerFound(const LowEnergyScanResult& result, const ByteBuffer& data);

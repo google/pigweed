@@ -60,10 +60,10 @@ class BrEdrConnection final {
 
   // See ScoConnectionManager for documentation.
   using ScoRequestHandle = sco::ScoConnectionManager::RequestHandle;
-  ScoRequestHandle OpenScoConnection(hci::SynchronousConnectionParameters,
+  ScoRequestHandle OpenScoConnection(hci_spec::SynchronousConnectionParameters,
                                      sco::ScoConnectionManager::OpenConnectionCallback callback);
   ScoRequestHandle AcceptScoConnection(
-      std::vector<hci::SynchronousConnectionParameters> parameters,
+      std::vector<hci_spec::SynchronousConnectionParameters> parameters,
       sco::ScoConnectionManager::AcceptConnectionCallback callback);
 
   // Attach connection inspect node as a child of |parent| named |name|.

@@ -30,9 +30,9 @@ using testing::FakePeer;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using TestingBase = bt::testing::ControllerTest<FakeController>;
 
-constexpr ConnectionHandle kConnectionHandle = 0x0001;
-constexpr AdvertisingIntervalRange kTestInterval(kLEAdvertisingIntervalMin,
-                                                 kLEAdvertisingIntervalMax);
+constexpr hci_spec::ConnectionHandle kConnectionHandle = 0x0001;
+constexpr AdvertisingIntervalRange kTestInterval(hci_spec::kLEAdvertisingIntervalMin,
+                                                 hci_spec::kLEAdvertisingIntervalMax);
 
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
@@ -42,12 +42,14 @@ const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
 // 7.8.5: "The Advertising_Interval_Min and Advertising_Interval_Max should not be the same value
 // to enable the Controller to determine the best advertising interval given other activities."
 TEST(AdvertisingIntervalRangeDeathTest, MaxMinNotSame) {
-  EXPECT_DEATH(AdvertisingIntervalRange(kLEAdvertisingIntervalMin, kLEAdvertisingIntervalMin),
+  EXPECT_DEATH(AdvertisingIntervalRange(hci_spec::kLEAdvertisingIntervalMin,
+                                        hci_spec::kLEAdvertisingIntervalMin),
                ".*");
 }
 
 TEST(AdvertisingIntervalRangeDeathTest, MinLessThanMax) {
-  EXPECT_DEATH(AdvertisingIntervalRange(kLEAdvertisingIntervalMax, kLEAdvertisingIntervalMin),
+  EXPECT_DEATH(AdvertisingIntervalRange(hci_spec::kLEAdvertisingIntervalMax,
+                                        hci_spec::kLEAdvertisingIntervalMin),
                ".*");
 }
 
@@ -63,7 +65,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
 
     // ACL data channel needs to be present for production hci::Connection objects.
     TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
-                                          hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10));
+                                          hci::DataBufferInfo(hci_spec::kMaxACLPayloadSize, 10));
 
     FakeController::Settings settings;
     settings.ApplyLegacyLEConfig();
@@ -120,14 +122,15 @@ class LowEnergyAdvertiserTest : public TestingBase {
     auto appearance = 0x1234;
     result.SetAppearance(appearance);
 
-    EXPECT_LE(result.CalculateBlockSize(include_flags), kMaxLEAdvertisingDataLength);
+    EXPECT_LE(result.CalculateBlockSize(include_flags), hci_spec::kMaxLEAdvertisingDataLength);
     return result;
   }
 
   // Makes fake advertising data that is too large.
   // |include_flags| signals whether to include flag encoding size in the data calculation.
   AdvertisingData GetTooLargeExampleData(bool include_flags,
-                                         std::size_t size = kMaxLEAdvertisingDataLength + 1) {
+                                         std::size_t size = hci_spec::kMaxLEAdvertisingDataLength +
+                                                            1) {
     AdvertisingData result;
 
     if (include_flags) {
@@ -141,13 +144,13 @@ class LowEnergyAdvertiserTest : public TestingBase {
 
     EXPECT_TRUE(result.SetLocalName(oss.str()));
 
-    // The maximum advertisement packet is: |kMaxLEAdvertisingDataLength| = 31, and |result| = 32
-    // bytes. |result| should be too large to advertise.
-    EXPECT_GT(result.CalculateBlockSize(include_flags), kMaxLEAdvertisingDataLength);
+    // The maximum advertisement packet is: |hci_spec::kMaxLEAdvertisingDataLength| = 31, and
+    // |result| = 32 bytes. |result| should be too large to advertise.
+    EXPECT_GT(result.CalculateBlockSize(include_flags), hci_spec::kMaxLEAdvertisingDataLength);
     return result;
   }
 
-  std::optional<AdvertisingHandle> CurrentAdvertisingHandle() const {
+  std::optional<hci_spec::AdvertisingHandle> CurrentAdvertisingHandle() const {
     if (std::is_same_v<T, ExtendedLowEnergyAdvertiser>) {
       auto extended = static_cast<ExtendedLowEnergyAdvertiser*>(advertiser());
       return extended->LastUsedHandleForTesting();
@@ -162,7 +165,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
     }
 
     if (std::is_same_v<T, ExtendedLowEnergyAdvertiser>) {
-      std::optional<AdvertisingHandle> handle = CurrentAdvertisingHandle();
+      std::optional<hci_spec::AdvertisingHandle> handle = CurrentAdvertisingHandle();
       if (!handle) {
         static FakeController::LEAdvertisingState empty;
         return empty;
@@ -211,8 +214,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   // Accept a connection and ensure that connection state is set up correctly
   link.reset();
   this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kSlave,
-                                           kRandomAddress, LEConnectionParameters());
-  std::optional<AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
+                                           kRandomAddress, hci_spec::LEConnectionParameters());
+  std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, handle.value());
   this->RunLoopUntilIdle();
@@ -225,7 +228,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress));
 
   // Advertising state should get cleared on a disconnection
-  link->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  link->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
   this->test_device()->SendDisconnectionCompleteEvent(link->handle());
   this->RunLoopUntilIdle();
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
@@ -241,7 +244,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   // correctly with no remnants of the previous advertise.
   link.reset();
   this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kSlave,
-                                           kPublicAddress, LEConnectionParameters());
+                                           kPublicAddress, hci_spec::LEConnectionParameters());
   handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, handle.value());
@@ -285,8 +288,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
   });
 
   this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kSlave,
-                                           kRandomAddress, LEConnectionParameters());
-  std::optional<AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
+                                           kRandomAddress, hci_spec::LEConnectionParameters());
+  std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, handle.value());
 
@@ -299,7 +302,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
 
 // An incoming connection when not advertising should get disconnected.
 TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
-  std::vector<std::pair<bool, ConnectionHandle>> connection_states;
+  std::vector<std::pair<bool, hci_spec::ConnectionHandle>> connection_states;
   this->test_device()->set_connection_state_callback(
       [&](const auto& address, auto handle, bool connected, bool canceled) {
         EXPECT_EQ(kRandomAddress, address);
@@ -309,7 +312,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
 
   auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
-  this->test_device()->ConnectLowEnergy(kRandomAddress, ConnectionRole::kSlave);
+  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::kSlave);
   this->RunLoopUntilIdle();
 
   ASSERT_EQ(1u, connection_states.size());
@@ -319,7 +322,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
   this->advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
-                                           LEConnectionParameters());
+                                           hci_spec::LEConnectionParameters());
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, 0);
   this->RunLoopUntilIdle();
   ASSERT_EQ(2u, connection_states.size());
@@ -339,7 +342,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
   this->RunLoopUntilIdle();
   ASSERT_TRUE(this->GetLastStatus());
 
-  std::vector<std::pair<bool, ConnectionHandle>> connection_states;
+  std::vector<std::pair<bool, hci_spec::ConnectionHandle>> connection_states;
   this->test_device()->set_connection_state_callback(
       [&](const auto& address, auto handle, bool connected, bool canceled) {
         EXPECT_EQ(kRandomAddress, address);
@@ -349,7 +352,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
 
   auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
-  this->test_device()->ConnectLowEnergy(kRandomAddress, ConnectionRole::kSlave);
+  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::kSlave);
   this->RunLoopUntilIdle();
 
   ASSERT_EQ(1u, connection_states.size());
@@ -359,7 +362,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
   this->advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
-                                           LEConnectionParameters());
+                                           hci_spec::LEConnectionParameters());
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, 0);
   this->RunLoopUntilIdle();
   ASSERT_EQ(2u, connection_states.size());
@@ -413,7 +416,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
   EXPECT_EQ(kTestInterval.max(), state->interval_max);
   EXPECT_EQ(expected_ad, state->advertised_view());
   EXPECT_EQ(expected_scan_data, state->scan_rsp_view());
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, state->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, state->own_address_type);
 
   // Restart advertising with a public address and verify that the configured
   // local address type is correct.
@@ -428,7 +431,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
   state = this->GetControllerAdvertisingState();
   EXPECT_TRUE(state);
   EXPECT_TRUE(state->enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, state->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, state->own_address_type);
 }
 
 // Tests that advertising interval values are capped within the allowed range.
@@ -437,8 +440,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
   AdvertisingData scan_data = this->GetExampleData();
 
   // Pass min and max values that are outside the allowed range. These should be capped.
-  constexpr AdvertisingIntervalRange interval(kLEAdvertisingIntervalMin - 1,
-                                              kLEAdvertisingIntervalMax + 1);
+  constexpr AdvertisingIntervalRange interval(hci_spec::kLEAdvertisingIntervalMin - 1,
+                                              hci_spec::kLEAdvertisingIntervalMax + 1);
   AdvertisingOptions options(interval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
@@ -448,12 +451,12 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
 
   std::optional<FakeController::LEAdvertisingState> state = this->GetControllerAdvertisingState();
   EXPECT_TRUE(state);
-  EXPECT_EQ(kLEAdvertisingIntervalMin, state->interval_min);
-  EXPECT_EQ(kLEAdvertisingIntervalMax, state->interval_max);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin, state->interval_min);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, state->interval_max);
 
   // Reconfigure with values that are within the range. These should get passed down as is.
-  const AdvertisingIntervalRange new_interval(kLEAdvertisingIntervalMin + 1,
-                                              kLEAdvertisingIntervalMax - 1);
+  const AdvertisingIntervalRange new_interval(hci_spec::kLEAdvertisingIntervalMin + 1,
+                                              hci_spec::kLEAdvertisingIntervalMax - 1);
   AdvertisingOptions new_options(new_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
                                  /*include_tx_power_level=*/false);
   this->advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, new_options, nullptr,
@@ -623,7 +626,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
   this->RunLoopUntilIdle();
   EXPECT_TRUE(this->GetLastStatus());
 
-  constexpr uint8_t blank[kMaxLEAdvertisingDataLength] = {0};
+  constexpr uint8_t blank[hci_spec::kMaxLEAdvertisingDataLength] = {0};
 
   // check that advertiser and controller both report the same advertising state
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
@@ -632,9 +635,9 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
   {
     const FakeController::LEAdvertisingState& state = this->GetControllerAdvertisingState();
     EXPECT_TRUE(state.enabled);
-    EXPECT_NE(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_NE(0, std::memcmp(blank, state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_NE(0, state.data_length);
-    EXPECT_NE(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_NE(0, std::memcmp(blank, state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_NE(0, state.scan_rsp_length);
   }
 
@@ -649,9 +652,9 @@ TYPED_TEST(LowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
   {
     const FakeController::LEAdvertisingState& state = this->GetControllerAdvertisingState();
     EXPECT_FALSE(state.enabled);
-    EXPECT_EQ(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, state.data_length);
-    EXPECT_EQ(0, std::memcmp(blank, state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, state.scan_rsp_length);
   }
 }
@@ -686,7 +689,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLong) {
 
 TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLongWithTxPower) {
   AdvertisingData invalid_ad = this->GetTooLargeExampleData(
-      /*include_flags=*/true, kMaxLEAdvertisingDataLength - kTLVTxPowerLevelSize + 1);
+      /*include_flags=*/true, hci_spec::kMaxLEAdvertisingDataLength - kTLVTxPowerLevelSize + 1);
   AdvertisingData valid_scan_rsp = this->GetExampleData(/*include_flags=*/false);
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/true);
@@ -716,7 +719,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLong) {
 TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLongWithTxPower) {
   AdvertisingData valid_ad = this->GetExampleData();
   AdvertisingData invalid_scan_rsp = this->GetTooLargeExampleData(
-      /*include_flags=*/false, kMaxLEAdvertisingDataLength - kTLVTxPowerLevelSize + 1);
+      /*include_flags=*/false, hci_spec::kMaxLEAdvertisingDataLength - kTLVTxPowerLevelSize + 1);
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/true);
   this->advertiser()->StartAdvertising(kRandomAddress, valid_ad, invalid_scan_rsp, options, nullptr,

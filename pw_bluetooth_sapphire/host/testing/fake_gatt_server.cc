@@ -29,7 +29,7 @@ FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) {
        Service{.start_handle = 2, .end_handle = 2, .type = gatt::types::kGenericAttributeService}});
 }
 
-void FakeGattServer::HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
+void FakeGattServer::HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu) {
   if (pdu.size() < sizeof(att::OpCode)) {
     bt_log(WARN, "fake-hci", "malformed ATT packet!");
     return;
@@ -58,7 +58,7 @@ void FakeGattServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   l2cap_->RegisterHandler(l2cap::kATTChannelId, cb);
 }
 
-void FakeGattServer::HandleReadByGrpType(hci::ConnectionHandle conn, const ByteBuffer& bytes) {
+void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn, const ByteBuffer& bytes) {
   // Don't support 128-bit group types.
   if (bytes.size() != sizeof(att::ReadByGroupTypeRequestParams16)) {
     SendErrorRsp(conn, att::kReadByGroupTypeRequest, 0, att::ErrorCode::kInvalidPDU);
@@ -106,7 +106,8 @@ void FakeGattServer::HandleReadByGrpType(hci::ConnectionHandle conn, const ByteB
   Send(conn, rsp);
 }
 
-void FakeGattServer::HandleFindByTypeValue(hci::ConnectionHandle conn, const ByteBuffer& bytes) {
+void FakeGattServer::HandleFindByTypeValue(hci_spec::ConnectionHandle conn,
+                                           const ByteBuffer& bytes) {
   if (bytes.size() < sizeof(att::FindByTypeValueRequestParams)) {
     bt_log(WARN, "fake-gatt", "find by type value request buffer too small");
     SendErrorRsp(conn, att::kFindByTypeValueRequest, 0, att::ErrorCode::kInvalidPDU);
@@ -155,7 +156,7 @@ void FakeGattServer::HandleFindByTypeValue(hci::ConnectionHandle conn, const Byt
   Send(conn, rsp);
 }
 
-void FakeGattServer::Send(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
+void FakeGattServer::Send(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu) {
   if (dev_->ctrl()) {
     dev_->ctrl()->SendL2CAPBFrame(conn, l2cap::kATTChannelId, pdu);
   } else {
@@ -163,7 +164,7 @@ void FakeGattServer::Send(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
   }
 }
 
-void FakeGattServer::SendErrorRsp(hci::ConnectionHandle conn, att::OpCode opcode,
+void FakeGattServer::SendErrorRsp(hci_spec::ConnectionHandle conn, att::OpCode opcode,
                                   att::Handle handle, att::ErrorCode ecode) {
   StaticByteBuffer<sizeof(att::ErrorResponseParams) + sizeof(att::OpCode)> buffer;
   att::PacketWriter writer(att::kErrorResponse, &buffer);

@@ -16,7 +16,7 @@ using Status = SignalingChannelInterface::Status;
 
 constexpr CommandCode kUnknownCommandCode = 0x00;
 constexpr CommandCode kCommandCode = 0xFF;
-constexpr hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint16_t kTestMTU = 100;
 constexpr CommandId kMaxCommandId = std::numeric_limits<CommandId>::max();
 

@@ -25,8 +25,8 @@ using FactoryT = SocketFactory<l2cap::Channel>;
 
 constexpr l2cap::ChannelId kDynamicChannelIdMin = 0x0040;
 constexpr l2cap::ChannelId kRemoteChannelId = 0x0050;
-constexpr hci::ConnectionHandle kDefaultConnectionHandle = 0x0001;
-constexpr hci::ConnectionHandle kAnotherConnectionHandle = 0x0002;
+constexpr hci_spec::ConnectionHandle kDefaultConnectionHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kAnotherConnectionHandle = 0x0002;
 
 class SocketFactoryTest : public ::testing::Test {
  public:

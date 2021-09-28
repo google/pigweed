@@ -35,15 +35,15 @@ class FakeL2cap final {
   // SendFrameCallback function to handle adding necessary protocol data unit
   // header information to the packet and actually sending the packet using
   // the associated device.
-  using SendFrameCallback =
-      fit::function<void(hci::ConnectionHandle conn, l2cap::ChannelId cid, const ByteBuffer& pdu)>;
+  using SendFrameCallback = fit::function<void(hci_spec::ConnectionHandle conn,
+                                               l2cap::ChannelId cid, const ByteBuffer& pdu)>;
 
   // After registering a channel with RegisterHandler, ChannelReceiveCallback
   // is called with a received L2CAP Service Data Unit |sdu| when FakeL2cap
   // handles a packet for the registered channel. Includes the |handle| that
   // the L2CAP packet was received on.
   using ChannelReceiveCallback =
-      fit::function<void(hci::ConnectionHandle handle, const ByteBuffer& sdu)>;
+      fit::function<void(hci_spec::ConnectionHandle handle, const ByteBuffer& sdu)>;
 
   // When FakeL2cap receives a packet with a ChannelID that does not have a
   // registered handler, it calls UnexpectedPduCallback (set via the
@@ -51,7 +51,7 @@ class FakeL2cap final {
   // takes the entire Protocol Data Unit |pdu| (including the intact L2CAP
   // header). Also includes the |handle| that the L2CAP packet was received on.
   using UnexpectedPduCallback =
-      fit::function<void(hci::ConnectionHandle handle, const ByteBuffer& pdu)>;
+      fit::function<void(hci_spec::ConnectionHandle handle, const ByteBuffer& pdu)>;
 
   // Each service that registers itself on a particular PSM provides a callback
   // that takes a pointer to the FakeDynamicChannel with its
@@ -99,7 +99,7 @@ class FakeL2cap final {
   // Return status of if the registration was successful.
   // This should only be used for registering dynamic channels - use
   // RegisterHandler for fixed channel management.
-  bool RegisterDynamicChannel(hci::ConnectionHandle conn, l2cap::PSM psm,
+  bool RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::PSM psm,
                               l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid);
 
   // Call the DynamicChannelCallback associated with the service operating
@@ -109,7 +109,7 @@ class FakeL2cap final {
   // |local_cid| is already open, as the DynamicChannelCallback associated with
   // the PSM will assume that it can operate over the channel.
   // Return status of if the registration was successful.
-  bool RegisterDynamicChannelWithPsm(hci::ConnectionHandle conn, l2cap::ChannelId local_cid);
+  bool RegisterDynamicChannelWithPsm(hci_spec::ConnectionHandle conn, l2cap::ChannelId local_cid);
 
   // Return true if there is a FakeDynamicChannelCallback registered for
   // Protocol Service Multiplexer |psm|, return false otherwise.
@@ -126,18 +126,18 @@ class FakeL2cap final {
   // there are no available Channel IDs, returns l2cap::kInvalidChannelId.
   // Requires identification of the specific ConnectionHandle |conn| associated
   // with this connection.
-  l2cap::ChannelId FindAvailableDynamicChannelId(hci::ConnectionHandle conn);
+  l2cap::ChannelId FindAvailableDynamicChannelId(hci_spec::ConnectionHandle conn);
 
   // Find the FakeDynamicChannel object with the local channel ID |local_cid|
   // and connection handle |conn| in the dynamic_channels_ map. If there is no
   // channel registered with the |local_cid|, return a nullptr.
-  fxl::WeakPtr<FakeDynamicChannel> FindDynamicChannelByLocalId(hci::ConnectionHandle conn,
+  fxl::WeakPtr<FakeDynamicChannel> FindDynamicChannelByLocalId(hci_spec::ConnectionHandle conn,
                                                                l2cap::ChannelId local_cid);
 
   // Find the FakeDynamicChannel object with the connection handle |conn| and
   // local channel ID |remote_cid| in the dynamic_channels_ map. If there is
   // no channel registered with the |remote_cid|, return a nullptr.
-  fxl::WeakPtr<FakeDynamicChannel> FindDynamicChannelByRemoteId(hci::ConnectionHandle conn,
+  fxl::WeakPtr<FakeDynamicChannel> FindDynamicChannelByRemoteId(hci_spec::ConnectionHandle conn,
                                                                 l2cap::ChannelId remote_cid);
 
   // Remove a dynamic channel associated with the connection handle |conn| and locassigned
@@ -146,13 +146,13 @@ class FakeL2cap final {
   // the channels (which should also destroy the channel itself),
   // This is the only way that dynamic channels should be deleted - if they are
   // torn down individually, FakeL2cap will incorrectly hold that local_cid.
-  void DeleteDynamicChannelByLocalId(hci::ConnectionHandle conn, l2cap::ChannelId local_cid);
+  void DeleteDynamicChannelByLocalId(hci_spec::ConnectionHandle conn, l2cap::ChannelId local_cid);
 
   // Routes the |pdu| to the appropriate calllback function by extracting the
   // ChannelID of the received packet |pdu| and calling the corresponding
   // registered handler function (and providing it with the |handle| the packet
   // was received on and the payload Service Data Unit |sdu|.
-  void HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu);
+  void HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu);
 
   // Return the SendFrameCallback associated with this FakeL2cap instance.
   SendFrameCallback& send_frame_callback() { return send_frame_callback_; }
@@ -166,7 +166,7 @@ class FakeL2cap final {
   // Map of dynamically allocated Channel IDs and corresponding channels. Use
   // an unordered map for constant-time search/insertion/deletion when
   // accessing channels associated with specific channel IDs.
-  std::unordered_map<hci::ConnectionHandle,
+  std::unordered_map<hci_spec::ConnectionHandle,
                      std::unordered_map<l2cap::ChannelId, std::unique_ptr<FakeDynamicChannel>>>
       dynamic_channels_;
 

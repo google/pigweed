@@ -19,7 +19,7 @@ class LowEnergyState final {
 
   // Returns true if |feature_bit| is set as supported in the local LE features
   // list.
-  inline bool IsFeatureSupported(hci::LESupportedFeature feature_bit) const {
+  inline bool IsFeatureSupported(hci_spec::LESupportedFeature feature_bit) const {
     return supported_features_ & static_cast<uint64_t>(feature_bit);
   }
 

@@ -689,8 +689,8 @@ TEST_F(Phase1Test, FeatureExchangePeerDoesntSupportScDoNotGenerateCtKey) {
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
       );
-  // Although the peer supports CTKG through the LinkKey field and SC, locally we do not support
-  // SC, so CTKG is not allowed (v5.2 Vol. 3 Part H 3.6.1).
+  // Although the peer supports CTKG through the hci_spec::LinkKey field and SC, locally we do not
+  // support SC, so CTKG is not allowed (v5.2 Vol. 3 Part H 3.6.1).
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x04,  // IO cap.: KeyboardDisplay
                                                 0x00,  // OOB: not present
@@ -1265,8 +1265,8 @@ TEST_F(Phase1Test, FeatureExchangeResponderDoesntSupportScDoNotGenerateCtKey) {
       KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
       KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
   );
-  // Although the peer supports CTKG through the LinkKey field and SC, locally we do not support
-  // support SC, so CTKG is not allowed (v5.2 Vol. 3 Part H 3.6.1).
+  // Although the peer supports CTKG through the hci_spec::LinkKey field and SC, locally we do not
+  // support support SC, so CTKG is not allowed (v5.2 Vol. 3 Part H 3.6.1).
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 IOCapability::kNoInputNoOutput,
                                                 0x00,  // OOB: not present

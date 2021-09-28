@@ -160,7 +160,7 @@ class PairingState final {
   // Used to report the status of each pairing procedure on this link. |status|
   // will contain HostError::kNotSupported if the pairing procedure does not
   // proceed in the order of events expected.
-  using StatusCallback = fit::function<void(hci::ConnectionHandle, hci::Status)>;
+  using StatusCallback = fit::function<void(hci_spec::ConnectionHandle, hci::Status)>;
 
   // Constructs a PairingState for the ACL connection |link| to |peer_id|.
   // |link_initiated| should be true if this device connected, and false if it
@@ -216,10 +216,10 @@ class PairingState final {
   // Capability Negative Reply.
   //
   // TODO(fxbug.dev/601): Indicate presence of out-of-band (OOB) data.
-  [[nodiscard]] std::optional<hci::IOCapability> OnIoCapabilityRequest();
+  [[nodiscard]] std::optional<hci_spec::IOCapability> OnIoCapabilityRequest();
 
   // Caller is not expected to send a response.
-  void OnIoCapabilityResponse(hci::IOCapability peer_iocap);
+  void OnIoCapabilityResponse(hci_spec::IOCapability peer_iocap);
 
   // |cb| is called with: true to send User Confirmation Request Reply, else
   // for to send User Confirmation Request Negative Reply. It may be called from
@@ -237,17 +237,17 @@ class PairingState final {
   void OnUserPasskeyNotification(uint32_t numeric_value);
 
   // Caller is not expected to send a response.
-  void OnSimplePairingComplete(hci::StatusCode status_code);
+  void OnSimplePairingComplete(hci_spec::StatusCode status_code);
 
   // Caller should send the returned link key in a Link Key Request Reply (or Link Key Request
   // Negative Reply if the returned value is null).
-  [[nodiscard]] std::optional<hci::LinkKey> OnLinkKeyRequest(DeviceAddress address);
+  [[nodiscard]] std::optional<hci_spec::LinkKey> OnLinkKeyRequest(DeviceAddress address);
 
   // Caller is not expected to send a response.
-  void OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type);
+  void OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type);
 
   // Caller is not expected to send a response.
-  void OnAuthenticationComplete(hci::StatusCode status_code);
+  void OnAuthenticationComplete(hci_spec::StatusCode status_code);
 
   // Handler for hci::Connection::set_encryption_change_callback.
   void OnEncryptionChange(hci::Status status, bool enabled);
@@ -303,7 +303,7 @@ class PairingState final {
    public:
     static std::unique_ptr<Pairing> MakeInitiator(BrEdrSecurityRequirements security_requirements,
                                                   bool link_initiated);
-    static std::unique_ptr<Pairing> MakeResponder(hci::IOCapability peer_iocap,
+    static std::unique_ptr<Pairing> MakeResponder(hci_spec::IOCapability peer_iocap,
                                                   bool link_inititated);
 
     // For a Pairing whose |initiator|, |local_iocap|, and |peer_iocap| are already set, compute and
@@ -318,16 +318,16 @@ class PairingState final {
     bool initiator;
 
     // IO Capability obtained from the pairing delegate.
-    hci::IOCapability local_iocap;
+    hci_spec::IOCapability local_iocap;
 
     // IO Capability from peer through IO Capability Response.
-    hci::IOCapability peer_iocap;
+    hci_spec::IOCapability peer_iocap;
 
     // User interaction to perform after receiving HCI user event.
     PairingAction action;
 
     // HCI event to respond to in order to complete or reject pairing.
-    hci::EventCode expected_event;
+    hci_spec::EventCode expected_event;
 
     // True if this pairing is expected to be resistant to MITM attacks.
     bool authenticated;
@@ -351,7 +351,7 @@ class PairingState final {
   static const char* ToString(State state);
 
   // Returns state for the three pairing action events, kFailed otherwise.
-  static State GetStateForPairingEvent(hci::EventCode event_code);
+  static State GetStateForPairingEvent(hci_spec::EventCode event_code);
 
   // Peer for this pairing.
   PeerId peer_id() const { return peer_id_; }
@@ -360,7 +360,7 @@ class PairingState final {
 
   bool is_pairing() const { return current_pairing_ != nullptr; }
 
-  hci::ConnectionHandle handle() const { return link_->handle(); }
+  hci_spec::ConnectionHandle handle() const { return link_->handle(); }
 
   // Returns nullptr if the delegate is not set or no longer alive.
   PairingDelegate* pairing_delegate() { return pairing_delegate_.get(); }
@@ -435,12 +435,13 @@ class PairingState final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };
 
-PairingAction GetInitiatorPairingAction(hci::IOCapability initiator_cap,
-                                        hci::IOCapability responder_cap);
-PairingAction GetResponderPairingAction(hci::IOCapability initiator_cap,
-                                        hci::IOCapability responder_cap);
-hci::EventCode GetExpectedEvent(hci::IOCapability local_cap, hci::IOCapability peer_cap);
-bool IsPairingAuthenticated(hci::IOCapability local_cap, hci::IOCapability peer_cap);
+PairingAction GetInitiatorPairingAction(hci_spec::IOCapability initiator_cap,
+                                        hci_spec::IOCapability responder_cap);
+PairingAction GetResponderPairingAction(hci_spec::IOCapability initiator_cap,
+                                        hci_spec::IOCapability responder_cap);
+hci_spec::EventCode GetExpectedEvent(hci_spec::IOCapability local_cap,
+                                     hci_spec::IOCapability peer_cap);
+bool IsPairingAuthenticated(hci_spec::IOCapability local_cap, hci_spec::IOCapability peer_cap);
 
 // Get the Authentication Requirements for a locally-initiated pairing according
 // to Core Spec v5.0, Vol 2, Part E, Sec 7.1.29.
@@ -450,7 +451,7 @@ bool IsPairingAuthenticated(hci::IOCapability local_cap, hci::IOCapability peer_
 // kNoInputNoOutput, kGeneralBonding otherwise. This requests authentication
 // when possible (based on IO Capabilities), as we don't know the peer's
 // authentication requirements yet.
-hci::AuthRequirements GetInitiatorAuthRequirements(hci::IOCapability local_cap);
+hci_spec::AuthRequirements GetInitiatorAuthRequirements(hci_spec::IOCapability local_cap);
 
 // Get the Authentication Requirements for a peer-initiated pairing. This will
 // request MITM protection whenever possible to obtain an "authenticated" link
@@ -461,8 +462,8 @@ hci::AuthRequirements GetInitiatorAuthRequirements(hci::IOCapability local_cap);
 // Bonding over BR/EDR are not supported, so this always returns
 // kMITMGeneralBonding if this pairing can result in an authenticated link key,
 // kGeneralBonding otherwise.
-hci::AuthRequirements GetResponderAuthRequirements(hci::IOCapability local_cap,
-                                                   hci::IOCapability remote_cap);
+hci_spec::AuthRequirements GetResponderAuthRequirements(hci_spec::IOCapability local_cap,
+                                                        hci_spec::IOCapability remote_cap);
 
 }  // namespace bt::gap
 

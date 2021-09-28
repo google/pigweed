@@ -41,13 +41,13 @@ class LowEnergyConnectionHandle final {
   sm::SecurityProperties security() const;
 
   PeerId peer_identifier() const { return peer_id_; }
-  hci::ConnectionHandle handle() const { return handle_; }
+  hci_spec::ConnectionHandle handle() const { return handle_; }
 
  private:
   friend class LowEnergyConnectionManager;
   friend class internal::LowEnergyConnection;
 
-  LowEnergyConnectionHandle(PeerId peer_id, hci::ConnectionHandle handle,
+  LowEnergyConnectionHandle(PeerId peer_id, hci_spec::ConnectionHandle handle,
                             fxl::WeakPtr<LowEnergyConnectionManager> manager);
 
   // Called by LowEnergyConnectionManager when the underlying connection is
@@ -56,7 +56,7 @@ class LowEnergyConnectionHandle final {
 
   bool active_;
   PeerId peer_id_;
-  hci::ConnectionHandle handle_;
+  hci_spec::ConnectionHandle handle_;
   fxl::WeakPtr<LowEnergyConnectionManager> manager_;
   fit::closure closed_cb_;
   fit::thread_checker thread_checker_;

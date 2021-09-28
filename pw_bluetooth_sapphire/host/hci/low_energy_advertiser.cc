@@ -21,7 +21,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   if (IsAdvertising(address)) {
     // Temporarily disable advertising so we can tweak the parameters
     std::unique_ptr<CommandPacket> packet =
-        BuildEnablePacket(address, GenericEnableParam::kDisable);
+        BuildEnablePacket(address, hci_spec::GenericEnableParam::kDisable);
     if (!packet) {
       bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
       status_callback(Status(HostError::kCanceled));
@@ -32,18 +32,18 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   }
 
   // Set advertising parameters
-  LEAdvertisingType type = LEAdvertisingType::kAdvNonConnInd;
+  hci_spec::LEAdvertisingType type = hci_spec::LEAdvertisingType::kAdvNonConnInd;
   if (connect_callback) {
-    type = LEAdvertisingType::kAdvInd;
+    type = hci_spec::LEAdvertisingType::kAdvInd;
   } else if (scan_rsp.CalculateBlockSize() > 0) {
-    type = LEAdvertisingType::kAdvScanInd;
+    type = hci_spec::LEAdvertisingType::kAdvScanInd;
   }
 
-  LEOwnAddressType own_addr_type;
+  hci_spec::LEOwnAddressType own_addr_type;
   if (address.type() == DeviceAddress::Type::kLEPublic) {
-    own_addr_type = LEOwnAddressType::kPublic;
+    own_addr_type = hci_spec::LEOwnAddressType::kPublic;
   } else {
-    own_addr_type = LEOwnAddressType::kRandom;
+    own_addr_type = hci_spec::LEOwnAddressType::kRandom;
   }
 
   data.Copy(&staged_parameters_.data);
@@ -103,7 +103,7 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
     return false;
   }
 
-  PacketPtr enable_packet = BuildEnablePacket(address, GenericEnableParam::kEnable);
+  PacketPtr enable_packet = BuildEnablePacket(address, hci_spec::GenericEnableParam::kEnable);
   if (!enable_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI enable packet for %s", bt_str(address));
     return false;
@@ -185,7 +185,7 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(const DeviceAddress& address) 
 
 bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& address) {
   std::unique_ptr<CommandPacket> disable_packet =
-      BuildEnablePacket(address, GenericEnableParam::kDisable);
+      BuildEnablePacket(address, hci_spec::GenericEnableParam::kDisable);
   if (!disable_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
     return false;
@@ -217,10 +217,9 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& ad
   return true;
 }
 
-void LowEnergyAdvertiser::CompleteIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                                                     const DeviceAddress& local_address,
-                                                     const DeviceAddress& peer_address,
-                                                     const LEConnectionParameters& conn_params) {
+void LowEnergyAdvertiser::CompleteIncomingConnection(
+    hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& local_address,
+    const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params) {
   // Immediately construct a Connection object. If this object goes out of scope following the error
   // checks below, it will send the a command to disconnect the link.
   std::unique_ptr<Connection> link =

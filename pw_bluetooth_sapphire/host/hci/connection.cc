@@ -20,7 +20,7 @@ namespace bt::hci {
 // Production implementation of the Connection class against a HCI transport.
 class ConnectionImpl final : public Connection {
  public:
-  ConnectionImpl(ConnectionHandle handle, bt::LinkType ll_type, Role role,
+  ConnectionImpl(hci_spec::ConnectionHandle handle, bt::LinkType ll_type, Role role,
                  const DeviceAddress& local_address, const DeviceAddress& peer_address,
                  fxl::WeakPtr<Transport> hci);
   ~ConnectionImpl() override;
@@ -33,7 +33,7 @@ class ConnectionImpl final : public Connection {
   // Sends HCI Disconnect command with |reason|. Takes over handling of HCI
   // Disconnection Complete event with a lambda so that connection instance can be safely destroyed
   // immediately.
-  void Disconnect(StatusCode reason) override;
+  void Disconnect(hci_spec::StatusCode reason) override;
 
   void set_state(State state) { conn_state_ = state; };
 
@@ -44,7 +44,7 @@ class ConnectionImpl final : public Connection {
   bool BrEdrStartEncryption();
 
   // Start the LE link layer authentication procedure using the given |ltk|.
-  bool LEStartEncryption(const LinkKey& ltk);
+  bool LEStartEncryption(const hci_spec::LinkKey& ltk);
 
   // Called when encryption is enabled or disabled as a result of the link layer
   // encryption "start" or "pause" procedure. If |status| indicates failure,
@@ -55,7 +55,7 @@ class ConnectionImpl final : public Connection {
   // Request the current encryption key size and call |key_size_validity_cb|
   // when the controller responds. |key_size_validity_cb| will be called with a
   // success only if the link is encrypted with a key of size at least
-  // |hci::kMinEncryptionKeySize|. Only valid for ACL-U connections.
+  // |hci_spec::kMinEncryptionKeySize|. Only valid for ACL-U connections.
   void ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb);
 
   // HCI event handlers.
@@ -70,8 +70,8 @@ class ConnectionImpl final : public Connection {
   // This method is static so that it can be called in an event handler
   // after this object has been destroyed.
   static CommandChannel::EventCallbackResult OnDisconnectionComplete(
-      fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::WeakPtr<Transport> hci,
-      const EventPacket& event);
+      fxl::WeakPtr<ConnectionImpl> self, hci_spec::ConnectionHandle handle,
+      fxl::WeakPtr<Transport> hci, const EventPacket& event);
 
   fit::thread_checker thread_checker_;
 
@@ -110,10 +110,10 @@ CommandChannel::EventCallback BindEventHandler(fxl::WeakPtr<ConnectionImpl> conn
 // ====== Connection member methods  =====
 
 // static
-std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role role,
+std::unique_ptr<Connection> Connection::CreateLE(hci_spec::ConnectionHandle handle, Role role,
                                                  const DeviceAddress& local_address,
                                                  const DeviceAddress& peer_address,
-                                                 const LEConnectionParameters& params,
+                                                 const hci_spec::LEConnectionParameters& params,
                                                  fxl::WeakPtr<Transport> hci) {
   ZX_DEBUG_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
@@ -124,7 +124,7 @@ std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role r
 }
 
 // static
-std::unique_ptr<Connection> Connection::CreateACL(ConnectionHandle handle, Role role,
+std::unique_ptr<Connection> Connection::CreateACL(hci_spec::ConnectionHandle handle, Role role,
                                                   const DeviceAddress& local_address,
                                                   const DeviceAddress& peer_address,
                                                   fxl::WeakPtr<Transport> hci) {
@@ -135,16 +135,17 @@ std::unique_ptr<Connection> Connection::CreateACL(ConnectionHandle handle, Role 
   return conn;
 }
 
-std::unique_ptr<Connection> Connection::CreateSCO(hci::LinkType link_type, ConnectionHandle handle,
+std::unique_ptr<Connection> Connection::CreateSCO(hci_spec::LinkType link_type,
+                                                  hci_spec::ConnectionHandle handle,
                                                   const DeviceAddress& local_address,
                                                   const DeviceAddress& peer_address,
                                                   fxl::WeakPtr<Transport> hci) {
   ZX_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
   ZX_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
-  ZX_ASSERT(link_type == hci::LinkType::kSCO || link_type == hci::LinkType::kExtendedSCO);
+  ZX_ASSERT(link_type == hci_spec::LinkType::kSCO || link_type == hci_spec::LinkType::kExtendedSCO);
 
   bt::LinkType conn_type =
-      link_type == hci::LinkType::kSCO ? bt::LinkType::kSCO : bt::LinkType::kESCO;
+      link_type == hci_spec::LinkType::kSCO ? bt::LinkType::kSCO : bt::LinkType::kESCO;
 
   // TODO(fxb/61070): remove role for SCO connections, as it has no meaning
   auto conn = std::make_unique<ConnectionImpl>(handle, conn_type, Role::kMaster, local_address,
@@ -152,7 +153,7 @@ std::unique_ptr<Connection> Connection::CreateSCO(hci::LinkType link_type, Conne
   return conn;
 }
 
-Connection::Connection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
+Connection::Connection(hci_spec::ConnectionHandle handle, bt::LinkType ll_type, Role role,
                        const DeviceAddress& local_address, const DeviceAddress& peer_address)
     : ll_type_(ll_type),
       handle_(handle),
@@ -175,7 +176,7 @@ std::string Connection::ToString() const {
 
 // ====== ConnectionImpl member methods ======
 
-ConnectionImpl::ConnectionImpl(ConnectionHandle handle, bt::LinkType ll_type, Role role,
+ConnectionImpl::ConnectionImpl(hci_spec::ConnectionHandle handle, bt::LinkType ll_type, Role role,
                                const DeviceAddress& local_address,
                                const DeviceAddress& peer_address, fxl::WeakPtr<Transport> hci)
     : Connection(handle, ll_type, role, local_address, peer_address),
@@ -187,21 +188,22 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, bt::LinkType ll_type, Ro
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   enc_change_id_ = hci_->command_channel()->AddEventHandler(
-      kEncryptionChangeEventCode, BindEventHandler<&ConnectionImpl::OnEncryptionChangeEvent>(self));
+      hci_spec::kEncryptionChangeEventCode,
+      BindEventHandler<&ConnectionImpl::OnEncryptionChangeEvent>(self));
 
   enc_key_refresh_cmpl_id_ = hci_->command_channel()->AddEventHandler(
-      kEncryptionKeyRefreshCompleteEventCode,
+      hci_spec::kEncryptionKeyRefreshCompleteEventCode,
       BindEventHandler<&ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent>(self));
 
   le_ltk_request_id_ = hci_->command_channel()->AddLEMetaEventHandler(
-      kLELongTermKeyRequestSubeventCode,
+      hci_spec::kLELongTermKeyRequestSubeventCode,
       BindEventHandler<&ConnectionImpl::OnLELongTermKeyRequestEvent>(self));
 
   auto disconn_complete_handler = [self, handle, hci = hci_](auto& event) {
     return ConnectionImpl::OnDisconnectionComplete(self, handle, hci, event);
   };
 
-  hci_->command_channel()->AddEventHandler(kDisconnectionCompleteEventCode,
+  hci_->command_channel()->AddEventHandler(hci_spec::kDisconnectionCompleteEventCode,
                                            disconn_complete_handler);
 
   // Allow packets to be sent on this link immediately.
@@ -210,7 +212,7 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, bt::LinkType ll_type, Ro
 
 ConnectionImpl::~ConnectionImpl() {
   if (conn_state_ == Connection::State::kConnected) {
-    Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+    Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
   }
 
   // Unregister HCI event handlers.
@@ -222,16 +224,16 @@ ConnectionImpl::~ConnectionImpl() {
 fxl::WeakPtr<Connection> ConnectionImpl::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
 CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
-    fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::WeakPtr<Transport> hci,
-    const EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == kDisconnectionCompleteEventCode);
+    fxl::WeakPtr<ConnectionImpl> self, hci_spec::ConnectionHandle handle,
+    fxl::WeakPtr<Transport> hci, const EventPacket& event) {
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
 
-  if (event.view().payload_size() != sizeof(DisconnectionCompleteEventParams)) {
+  if (event.view().payload_size() != sizeof(hci_spec::DisconnectionCompleteEventParams)) {
     bt_log(WARN, "hci", "malformed disconnection complete event");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  const auto& params = event.params<DisconnectionCompleteEventParams>();
+  const auto& params = event.params<hci_spec::DisconnectionCompleteEventParams>();
   const auto event_handle = le16toh(params.connection_handle);
 
   // Silently ignore this event as it isn't meant for this connection.
@@ -262,19 +264,20 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
   return CommandChannel::EventCallbackResult::kRemove;
 }
 
-void ConnectionImpl::Disconnect(StatusCode reason) {
+void ConnectionImpl::Disconnect(hci_spec::StatusCode reason) {
   ZX_ASSERT(conn_state_ == Connection::State::kConnected);
 
   conn_state_ = Connection::State::kWaitingForDisconnectionComplete;
 
   // Here we send a HCI_Disconnect command without waiting for it to complete.
   auto status_cb = [](auto id, const EventPacket& event) {
-    ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
+    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
     hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
   };
 
-  auto disconn = CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
-  auto params = disconn->mutable_payload<DisconnectCommandParams>();
+  auto disconn =
+      CommandPacket::New(hci_spec::kDisconnect, sizeof(hci_spec::DisconnectCommandParams));
+  auto params = disconn->mutable_payload<hci_spec::DisconnectCommandParams>();
   params->connection_handle = htole16(handle());
   params->reason = reason;
 
@@ -282,7 +285,7 @@ void ConnectionImpl::Disconnect(StatusCode reason) {
 
   // Send HCI Disconnect.
   hci_->command_channel()->SendCommand(std::move(disconn), std::move(status_cb),
-                                       kCommandStatusEventCode);
+                                       hci_spec::kCommandStatusEventCode);
 }
 
 bool ConnectionImpl::StartEncryption() {
@@ -318,11 +321,11 @@ bool ConnectionImpl::BrEdrStartEncryption() {
     return false;
   }
 
-  auto cmd =
-      CommandPacket::New(kSetConnectionEncryption, sizeof(SetConnectionEncryptionCommandParams));
-  auto* params = cmd->mutable_payload<SetConnectionEncryptionCommandParams>();
+  auto cmd = CommandPacket::New(hci_spec::kSetConnectionEncryption,
+                                sizeof(hci_spec::SetConnectionEncryptionCommandParams));
+  auto* params = cmd->mutable_payload<hci_spec::SetConnectionEncryptionCommandParams>();
   params->connection_handle = htole16(handle());
-  params->encryption_enable = GenericEnableParam::kEnable;
+  params->encryption_enable = hci_spec::GenericEnableParam::kEnable;
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto status_cb = [self, handle = handle()](auto id, const EventPacket& event) {
@@ -343,17 +346,18 @@ bool ConnectionImpl::BrEdrStartEncryption() {
   };
 
   return hci_->command_channel()->SendCommand(std::move(cmd), std::move(status_cb),
-                                              kCommandStatusEventCode) != 0u;
+                                              hci_spec::kCommandStatusEventCode) != 0u;
 }
 
-bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
+bool ConnectionImpl::LEStartEncryption(const hci_spec::LinkKey& ltk) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(!ltk_type().has_value());
 
   // TODO(fxbug.dev/801): Tell the data channel to stop data flow.
 
-  auto cmd = CommandPacket::New(kLEStartEncryption, sizeof(LEStartEncryptionCommandParams));
-  auto* params = cmd->mutable_payload<LEStartEncryptionCommandParams>();
+  auto cmd = CommandPacket::New(hci_spec::kLEStartEncryption,
+                                sizeof(hci_spec::LEStartEncryptionCommandParams));
+  auto* params = cmd->mutable_payload<hci_spec::LEStartEncryptionCommandParams>();
   params->connection_handle = htole16(handle());
   params->random_number = htole64(ltk.rand());
   params->encrypted_diversifier = htole16(ltk.ediv());
@@ -377,7 +381,7 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
   };
 
   return hci_->command_channel()->SendCommand(std::move(cmd), std::move(status_cb),
-                                              kCommandStatusEventCode) != 0u;
+                                              hci_spec::kCommandStatusEventCode) != 0u;
 }
 
 void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
@@ -390,7 +394,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   // not specify actions to take after encryption failures. We'll choose to
   // disconnect ACL links after encryption failure.
   if (!status) {
-    Disconnect(StatusCode::kAuthenticationFailure);
+    Disconnect(hci_spec::StatusCode::kAuthenticationFailure);
   } else {
     // TODO(fxbug.dev/801): Tell the data channel to resume data flow.
   }
@@ -407,8 +411,9 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
   ZX_ASSERT(ll_type() == bt::LinkType::kACL);
   ZX_ASSERT(conn_state_ == Connection::State::kConnected);
 
-  auto cmd = CommandPacket::New(kReadEncryptionKeySize, sizeof(ReadEncryptionKeySizeParams));
-  auto* params = cmd->mutable_payload<ReadEncryptionKeySizeParams>();
+  auto cmd = CommandPacket::New(hci_spec::kReadEncryptionKeySize,
+                                sizeof(hci_spec::ReadEncryptionKeySizeParams));
+  auto* params = cmd->mutable_payload<hci_spec::ReadEncryptionKeySizeParams>();
   params->connection_handle = htole16(handle());
 
   auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(),
@@ -420,11 +425,12 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
     Status status = event.ToStatus();
     if (!bt_is_error(status, ERROR, "hci", "Could not read ACL encryption key size on %#.4x",
                      self->handle())) {
-      const auto& return_params = *event.return_params<ReadEncryptionKeySizeReturnParams>();
+      const auto& return_params =
+          *event.return_params<hci_spec::ReadEncryptionKeySizeReturnParams>();
       const auto key_size = return_params.key_size;
       bt_log(TRACE, "hci", "%#.4x: encryption key size %hhu", self->handle(), key_size);
 
-      if (key_size < hci::kMinEncryptionKeySize) {
+      if (key_size < hci_spec::kMinEncryptionKeySize) {
         bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient", self->handle(),
                key_size);
         status = Status(HostError::kInsufficientSecurity);
@@ -438,16 +444,16 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
 
 CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == kEncryptionChangeEventCode);
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kEncryptionChangeEventCode);
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
-  if (event.view().payload_size() != sizeof(EncryptionChangeEventParams)) {
+  if (event.view().payload_size() != sizeof(hci_spec::EncryptionChangeEventParams)) {
     bt_log(WARN, "hci", "malformed encryption change event");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  const auto& params = event.params<EncryptionChangeEventParams>();
-  hci::ConnectionHandle handle = le16toh(params.connection_handle);
+  const auto& params = event.params<hci_spec::EncryptionChangeEventParams>();
+  hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
 
   // Silently ignore the event as it isn't meant for this connection.
   if (handle != this->handle()) {
@@ -460,7 +466,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
   }
 
   Status status(params.status);
-  bool enabled = params.encryption_enabled != EncryptionStatus::kOff;
+  bool enabled = params.encryption_enabled != hci_spec::EncryptionStatus::kOff;
 
   bt_log(DEBUG, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
          status.ToString().c_str());
@@ -480,15 +486,15 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
 CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(
     const EventPacket& event) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(event.event_code() == kEncryptionKeyRefreshCompleteEventCode);
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kEncryptionKeyRefreshCompleteEventCode);
 
-  if (event.view().payload_size() != sizeof(EncryptionKeyRefreshCompleteEventParams)) {
+  if (event.view().payload_size() != sizeof(hci_spec::EncryptionKeyRefreshCompleteEventParams)) {
     bt_log(WARN, "hci", "malformed encryption key refresh complete event");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  const auto& params = event.params<EncryptionKeyRefreshCompleteEventParams>();
-  hci::ConnectionHandle handle = le16toh(params.connection_handle);
+  const auto& params = event.params<hci_spec::EncryptionKeyRefreshCompleteEventParams>();
+  hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
 
   // Silently ignore this event as it isn't meant for this connection.
   if (handle != this->handle()) {
@@ -514,17 +520,17 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshComple
 CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
     const EventPacket& event) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
-  ZX_DEBUG_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
-                  kLELongTermKeyRequestSubeventCode);
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  ZX_DEBUG_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+                  hci_spec::kLELongTermKeyRequestSubeventCode);
 
-  auto* params = event.le_event_params<LELongTermKeyRequestSubeventParams>();
+  auto* params = event.le_event_params<hci_spec::LELongTermKeyRequestSubeventParams>();
   if (!params) {
     bt_log(WARN, "hci", "malformed LE LTK request event");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci::ConnectionHandle handle = le16toh(params->connection_handle);
+  hci_spec::ConnectionHandle handle = le16toh(params->connection_handle);
 
   // Silently ignore the event as it isn't meant for this connection.
   if (handle != this->handle()) {
@@ -540,18 +546,18 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
 
   bt_log(DEBUG, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv, rand);
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
-    cmd = CommandPacket::New(kLELongTermKeyRequestReply,
-                             sizeof(LELongTermKeyRequestReplyCommandParams));
-    auto* params = cmd->mutable_payload<LELongTermKeyRequestReplyCommandParams>();
+    cmd = CommandPacket::New(hci_spec::kLELongTermKeyRequestReply,
+                             sizeof(hci_spec::LELongTermKeyRequestReplyCommandParams));
+    auto* params = cmd->mutable_payload<hci_spec::LELongTermKeyRequestReplyCommandParams>();
 
     params->connection_handle = htole16(handle);
     params->long_term_key = ltk()->value();
   } else {
     bt_log(DEBUG, "hci-le", "LTK request rejected");
 
-    cmd = CommandPacket::New(kLELongTermKeyRequestNegativeReply,
-                             sizeof(LELongTermKeyRequestNegativeReplyCommandParams));
-    auto* params = cmd->mutable_payload<LELongTermKeyRequestNegativeReplyCommandParams>();
+    cmd = CommandPacket::New(hci_spec::kLELongTermKeyRequestNegativeReply,
+                             sizeof(hci_spec::LELongTermKeyRequestNegativeReplyCommandParams));
+    auto* params = cmd->mutable_payload<hci_spec::LELongTermKeyRequestNegativeReplyCommandParams>();
     params->connection_handle = htole16(handle);
   }
 

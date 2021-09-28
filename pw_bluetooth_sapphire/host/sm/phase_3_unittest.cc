@@ -52,7 +52,7 @@ struct Phase3Args {
   SecurityProperties le_props = kDefaultProperties;
 };
 
-const hci::LinkKey kSampleLinkKey(
+const hci_spec::LinkKey kSampleLinkKey(
   UInt128{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},  // value
   /* rand= */ 0x1234, /* ediv= */ 0x5678
 );
@@ -425,7 +425,7 @@ TEST_F(Phase3Test, InitiatorSendsEncKey) {
   ASSERT_TRUE(master_id.has_value());
   ASSERT_TRUE(pairing_data().local_ltk.has_value());
   EXPECT_EQ(pairing_data().local_ltk->key(),
-            hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
+            hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
 }
 
 TEST_F(Phase3Test, InitiatorReceivesThenSendsEncKey) {
@@ -454,7 +454,7 @@ TEST_F(Phase3Test, InitiatorReceivesThenSendsEncKey) {
   ASSERT_TRUE(master_id.has_value());
   ASSERT_TRUE(pairing_data().local_ltk.has_value());
   EXPECT_EQ(pairing_data().local_ltk->key(),
-            hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
+            hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
 
   ASSERT_TRUE(pairing_data().peer_ltk.has_value());
   EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
@@ -637,7 +637,7 @@ TEST_F(Phase3Test, ResponderLTKDistributionNoRemoteKeys) {
   // We should have notified the callback with the LTK
   ASSERT_TRUE(pairing_data().local_ltk.has_value());
   // The LTK we sent to the peer should match the one we notified callbacks with
-  ASSERT_EQ(hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
+  ASSERT_EQ(hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
             pairing_data().local_ltk->key());
 }
 
@@ -690,7 +690,8 @@ TEST_F(Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
   ASSERT_TRUE(master_id.has_value());
   ASSERT_EQ(0, phase_3_complete_count());
 
-  const hci::LinkKey kExpectedKey = hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv);
+  const hci_spec::LinkKey kExpectedKey =
+      hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv);
   // Reset ltk_bytes & master_id to verify that we don't send any further messages
   ltk_bytes.reset();
   master_id.reset();
@@ -730,7 +731,7 @@ TEST_F(Phase3Test, ResponderLocalLTKMaxLength) {
   ASSERT_TRUE(ltk_bytes.has_value());
   ASSERT_TRUE(master_id.has_value());
   EXPECT_EQ(1, phase_3_complete_count());
-  EXPECT_EQ(hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
+  EXPECT_EQ(hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
             pairing_data().local_ltk->key());
 
   // Ensure that most significant (16 - kNegotiatedMaxKeySize) bytes are zero.

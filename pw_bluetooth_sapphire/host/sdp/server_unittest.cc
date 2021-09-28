@@ -27,8 +27,8 @@ using namespace inspect::testing;
 
 using TestingBase = l2cap::testing::FakeChannelTest;
 
-constexpr hci::ConnectionHandle kTestHandle1 = 1;
-constexpr hci::ConnectionHandle kTestHandle2 = 2;
+constexpr hci_spec::ConnectionHandle kTestHandle1 = 1;
+constexpr hci_spec::ConnectionHandle kTestHandle2 = 2;
 
 void NopConnectCallback(fbl::RefPtr<l2cap::Channel>, const DataElement&) {}
 
@@ -1029,7 +1029,7 @@ TEST_F(ServerTest, ConnectionCallbacks) {
   RunLoopUntilIdle();
 
   std::vector<fbl::RefPtr<l2cap::Channel>> channels;
-  hci::ConnectionHandle latest_handle;
+  hci_spec::ConnectionHandle latest_handle;
 
   // Register a service
   AddA2DPSink([&channels, &latest_handle](auto chan, const auto& protocol) {

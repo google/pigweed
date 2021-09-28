@@ -39,8 +39,9 @@ class ScoConnectionManager final {
   // |peer_id| corresponds to the peer associated with this BR/EDR connection.
   // |acl_handle| corresponds to the ACL connection associated with these SCO connections.
   // |transport| must outlive this object.
-  ScoConnectionManager(PeerId peer_id, hci::ConnectionHandle acl_handle, DeviceAddress peer_address,
-                       DeviceAddress local_address, fxl::WeakPtr<hci::Transport> transport);
+  ScoConnectionManager(PeerId peer_id, hci_spec::ConnectionHandle acl_handle,
+                       DeviceAddress peer_address, DeviceAddress local_address,
+                       fxl::WeakPtr<hci::Transport> transport);
   // Closes connections and cancels connection requests.
   ~ScoConnectionManager();
 
@@ -51,7 +52,7 @@ class ScoConnectionManager final {
   // has not started).
   using OpenConnectionResult = fpromise::result<fbl::RefPtr<ScoConnection>, HostError>;
   using OpenConnectionCallback = fit::callback<void(OpenConnectionResult)>;
-  RequestHandle OpenConnection(hci::SynchronousConnectionParameters parameters,
+  RequestHandle OpenConnection(hci_spec::SynchronousConnectionParameters parameters,
                                OpenConnectionCallback callback);
 
   // Accept inbound connection requests using the parameters given in order. The parameters will be
@@ -65,7 +66,7 @@ class ScoConnectionManager final {
       fpromise::result<std::pair<fbl::RefPtr<ScoConnection>, size_t /*index of parameters used*/>,
                        HostError>;
   using AcceptConnectionCallback = fit::callback<void(AcceptConnectionResult)>;
-  RequestHandle AcceptConnection(std::vector<hci::SynchronousConnectionParameters> parameters,
+  RequestHandle AcceptConnection(std::vector<hci_spec::SynchronousConnectionParameters> parameters,
                                  AcceptConnectionCallback callback);
 
  private:
@@ -90,11 +91,11 @@ class ScoConnectionManager final {
     bool initiator;
     bool received_request;
     size_t current_param_index = 0;
-    std::vector<hci::SynchronousConnectionParameters> parameters;
+    std::vector<hci_spec::SynchronousConnectionParameters> parameters;
     ConnectionCallback callback;
   };
 
-  hci::CommandChannel::EventHandlerId AddEventHandler(const hci::EventCode& code,
+  hci::CommandChannel::EventHandlerId AddEventHandler(const hci_spec::EventCode& code,
                                                       hci::CommandChannel::EventCallback cb);
 
   // Event handlers:
@@ -109,7 +110,7 @@ class ScoConnectionManager final {
   bool FindNextParametersThatSupportEsco();
 
   ScoConnectionManager::RequestHandle QueueRequest(
-      bool initiator, std::vector<hci::SynchronousConnectionParameters>, ConnectionCallback);
+      bool initiator, std::vector<hci_spec::SynchronousConnectionParameters>, ConnectionCallback);
 
   void TryCreateNextConnection();
 
@@ -120,7 +121,7 @@ class ScoConnectionManager final {
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
                                      hci::StatusCallback cb);
 
-  void SendRejectConnectionCommand(DeviceAddressBytes addr, hci::StatusCode reason);
+  void SendRejectConnectionCommand(DeviceAddressBytes addr, hci_spec::StatusCode reason);
 
   // If either the queued or in progress request has the given id and can be cancelled, cancel it.
   // Called when a RequestHandle is dropped.
@@ -137,7 +138,7 @@ class ScoConnectionManager final {
   std::optional<ConnectionRequest> in_progress_request_;
 
   // Holds active connections.
-  std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<ScoConnection>> connections_;
+  std::unordered_map<hci_spec::ConnectionHandle, fbl::RefPtr<ScoConnection>> connections_;
 
   // Handler IDs for registered events
   std::vector<hci::CommandChannel::EventHandlerId> event_handler_ids_;
@@ -147,7 +148,7 @@ class ScoConnectionManager final {
   const DeviceAddress local_address_;
   const DeviceAddress peer_address_;
 
-  hci::ConnectionHandle acl_handle_;
+  hci_spec::ConnectionHandle acl_handle_;
 
   fxl::WeakPtr<hci::Transport> transport_;
 

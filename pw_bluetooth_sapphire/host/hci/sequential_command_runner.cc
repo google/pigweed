@@ -30,7 +30,7 @@ void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> comman
                                            CommandCompleteCallback callback, bool wait) {
   ZX_DEBUG_ASSERT(!status_callback_);
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(sizeof(CommandHeader) <= command_packet->view().size());
+  ZX_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <= command_packet->view().size());
 
   command_queue_.emplace(QueuedCommand{std::move(command_packet), std::move(callback), wait});
 }
@@ -84,12 +84,12 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Status status) {
   auto command_callback = [self, cmd_cb = std::move(next.callback), seq_no = sequence_number_](
                               auto, const EventPacket& event_packet) {
     auto status = event_packet.ToStatus();
-    if (status && event_packet.event_code() == kCommandStatusEventCode) {
+    if (status && event_packet.event_code() == hci_spec::kCommandStatusEventCode) {
       return;
     }
 
     // TODO(fxbug.dev/641): Allow async commands to be queued.
-    ZX_DEBUG_ASSERT(!status || event_packet.event_code() == kCommandCompleteEventCode);
+    ZX_DEBUG_ASSERT(!status || event_packet.event_code() == hci_spec::kCommandCompleteEventCode);
 
     if (cmd_cb) {
       cmd_cb(event_packet);

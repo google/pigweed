@@ -11,7 +11,7 @@
 
 namespace bt::l2cap::testing {
 
-FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
+FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::ConnectionHandle handle,
                          bt::LinkType link_type, ChannelInfo info)
     : Channel(id, remote_id, link_type, handle, info),
       handle_(handle),
@@ -135,9 +135,9 @@ void FakeChannel::RequestAclPriority(hci::AclPriority priority,
 
 void FakeChannel::SetBrEdrAutomaticFlushTimeout(
     zx::duration flush_timeout,
-    fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) {
+    fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) {
   if (!flush_timeout_succeeds_) {
-    callback(fpromise::error(hci::StatusCode::kUnspecifiedError));
+    callback(fpromise::error(hci_spec::StatusCode::kUnspecifiedError));
     return;
   }
   info_.flush_timeout = flush_timeout;

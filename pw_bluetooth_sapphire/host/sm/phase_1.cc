@@ -247,9 +247,10 @@ fpromise::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(
     local_keys &= ~KeyDistGen::kEncKey;
     remote_keys &= ~KeyDistGen::kEncKey;
 
-    // "When LinkKey is set to 1 by both devices in the initiator and responder [KeyDistGen] fields,
-    // the procedures for calculating the BR/EDR link key from the LTK shall be used". The chosen
-    // procedure depends on the CT2 bit of the AuthReq (v5.2 Vol. 3 Part H 3.5.1 and 3.6.1).
+    // "When hci_spec::LinkKey is set to 1 by both devices in the initiator and responder
+    // [KeyDistGen] fields, the procedures for calculating the BR/EDR link key from the LTK shall be
+    // used". The chosen procedure depends on the CT2 bit of the AuthReq (v5.2 Vol. 3 Part H 3.5.1
+    // and 3.6.1).
     if (local_keys & remote_keys & KeyDistGen::kLinkKey) {
       generate_ct_key = (preq.auth_req & AuthReq::kCT2) && (pres.auth_req & AuthReq::kCT2)
                             ? CrossTransportKeyAlgo::kUseH7

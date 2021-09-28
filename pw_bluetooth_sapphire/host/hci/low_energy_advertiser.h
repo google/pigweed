@@ -23,8 +23,8 @@ class AdvertisingIntervalRange final {
   // Constructs an advertising interval range, capping the values based on the allowed range (Vol 2,
   // Part E, 7.8.5).
   constexpr AdvertisingIntervalRange(uint16_t min, uint16_t max)
-      : min_(std::max(min, kLEAdvertisingIntervalMin)),
-        max_(std::min(max, kLEAdvertisingIntervalMax)) {
+      : min_(std::max(min, hci_spec::kLEAdvertisingIntervalMin)),
+        max_(std::min(max, hci_spec::kLEAdvertisingIntervalMax)) {
     ZX_ASSERT(min < max);
   }
 
@@ -116,9 +116,9 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Callback for an incoming LE connection. This function should be called in reaction to any
   // connection that was not initiated locally. This object will determine if it was a result of an
   // active advertisement and route the connection accordingly.
-  virtual void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
+  virtual void OnIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
                                     const DeviceAddress& peer_address,
-                                    const LEConnectionParameters& conn_params) = 0;
+                                    const hci_spec::LEConnectionParameters& conn_params) = 0;
 
   // Returns true if currently advertising at all
   bool IsAdvertising() const { return !connection_callbacks_.empty(); }
@@ -135,13 +135,13 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Build the HCI command packet to enable advertising for the flavor of low energy advertising
   // being implemented.
   virtual std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
-                                                           GenericEnableParam enable) = 0;
+                                                           hci_spec::GenericEnableParam enable) = 0;
 
   // Build the HCI command packet to set the advertising parameters for the flavor of low energy
   // advertising being implemented.
   virtual std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
-      const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
-      AdvertisingIntervalRange interval) = 0;
+      const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+      hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) = 0;
 
   // Build the HCI command packet to set the advertising data for the flavor of low energy
   // advertising being implemented.
@@ -190,10 +190,10 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Handle shared housekeeping tasks when an incoming connection is completed (e.g. clean up
   // internal state, call callbacks, etc)
-  void CompleteIncomingConnection(ConnectionHandle handle, Connection::Role role,
+  void CompleteIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
                                   const DeviceAddress& local_address,
                                   const DeviceAddress& peer_address,
-                                  const LEConnectionParameters& conn_params);
+                                  const hci_spec::LEConnectionParameters& conn_params);
 
   SequentialCommandRunner& hci_cmd_runner() const { return *hci_cmd_runner_; }
   fxl::WeakPtr<Transport> hci() const { return hci_; }

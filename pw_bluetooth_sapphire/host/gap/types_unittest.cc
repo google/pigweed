@@ -9,9 +9,10 @@
 namespace bt::gap {
 
 TEST(TypesTest, SecurityPropertiesMeetRequirements) {
-  std::array<hci::LinkKeyType, 5> kUnauthenticatedNoScKeyTypes = {
-      hci::LinkKeyType::kCombination, hci::LinkKeyType::kLocalUnit, hci::LinkKeyType::kRemoteUnit,
-      hci::LinkKeyType::kDebugCombination, hci::LinkKeyType::kUnauthenticatedCombination192};
+  std::array<hci_spec::LinkKeyType, 5> kUnauthenticatedNoScKeyTypes = {
+      hci_spec::LinkKeyType::kCombination, hci_spec::LinkKeyType::kLocalUnit,
+      hci_spec::LinkKeyType::kRemoteUnit, hci_spec::LinkKeyType::kDebugCombination,
+      hci_spec::LinkKeyType::kUnauthenticatedCombination192};
   for (size_t i = 0; i < kUnauthenticatedNoScKeyTypes.size(); i++) {
     SCOPED_TRACE(i);
     sm::SecurityProperties props(kUnauthenticatedNoScKeyTypes[i]);
@@ -25,7 +26,7 @@ TEST(TypesTest, SecurityPropertiesMeetRequirements) {
         props, BrEdrSecurityRequirements{.authentication = true, .secure_connections = true}));
   }
 
-  sm::SecurityProperties props(hci::LinkKeyType::kAuthenticatedCombination192);
+  sm::SecurityProperties props(hci_spec::LinkKeyType::kAuthenticatedCombination192);
   EXPECT_TRUE(SecurityPropertiesMeetRequirements(
       props, BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
   EXPECT_FALSE(SecurityPropertiesMeetRequirements(
@@ -35,7 +36,7 @@ TEST(TypesTest, SecurityPropertiesMeetRequirements) {
   EXPECT_FALSE(SecurityPropertiesMeetRequirements(
       props, BrEdrSecurityRequirements{.authentication = true, .secure_connections = true}));
 
-  props = sm::SecurityProperties(hci::LinkKeyType::kUnauthenticatedCombination256);
+  props = sm::SecurityProperties(hci_spec::LinkKeyType::kUnauthenticatedCombination256);
   EXPECT_TRUE(SecurityPropertiesMeetRequirements(
       props, BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
   EXPECT_TRUE(SecurityPropertiesMeetRequirements(
@@ -45,7 +46,7 @@ TEST(TypesTest, SecurityPropertiesMeetRequirements) {
   EXPECT_FALSE(SecurityPropertiesMeetRequirements(
       props, BrEdrSecurityRequirements{.authentication = true, .secure_connections = true}));
 
-  props = sm::SecurityProperties(hci::LinkKeyType::kAuthenticatedCombination256);
+  props = sm::SecurityProperties(hci_spec::LinkKeyType::kAuthenticatedCombination256);
   EXPECT_TRUE(SecurityPropertiesMeetRequirements(
       props, BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
   EXPECT_TRUE(SecurityPropertiesMeetRequirements(

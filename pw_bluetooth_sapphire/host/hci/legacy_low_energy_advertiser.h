@@ -19,7 +19,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   ~LegacyLowEnergyAdvertiser() override { StopAdvertising(); }
 
   // LowEnergyAdvertiser overrides:
-  size_t GetSizeLimit() const override { return kMaxLEAdvertisingDataLength; }
+  size_t GetSizeLimit() const override { return hci_spec::kMaxLEAdvertisingDataLength; }
   bool AllowsRandomAddressChange() const override { return !starting_ && !IsAdvertising(); }
 
   // LegacyLowEnergyAdvertiser supports only a single advertising instance,
@@ -41,17 +41,17 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // TODO(fxbug.dev/50542): Update documentation.
   void StopAdvertising(const DeviceAddress& address) override;
 
-  void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
                             const DeviceAddress& peer_address,
-                            const LEConnectionParameters& conn_params) override;
+                            const hci_spec::LEConnectionParameters& conn_params) override;
 
  private:
   std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
-                                                   GenericEnableParam enable) override;
+                                                   hci_spec::GenericEnableParam enable) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
-      const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
-      AdvertisingIntervalRange interval) override;
+      const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+      hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const DeviceAddress& address,
                                                          const AdvertisingData& data,

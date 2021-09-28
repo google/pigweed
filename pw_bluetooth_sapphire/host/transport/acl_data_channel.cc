@@ -49,14 +49,14 @@ zx_status_t AclDataChannel::ReadAclDataPacketFromChannel(const zx::channel& chan
     return ZX_ERR_IO;
   }
 
-  if (read_size < sizeof(ACLDataHeader)) {
+  if (read_size < sizeof(hci_spec::ACLDataHeader)) {
     bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
-           sizeof(ACLDataHeader), read_size);
+           sizeof(hci_spec::ACLDataHeader), read_size);
     // TODO(jamuraa): signal stream error somehow
     return ZX_ERR_INVALID_ARGS;
   }
 
-  const size_t rx_payload_size = read_size - sizeof(ACLDataHeader);
+  const size_t rx_payload_size = read_size - sizeof(hci_spec::ACLDataHeader);
   const size_t size_from_header = le16toh(packet->view().header().data_total_length);
   if (size_from_header != rx_payload_size) {
     bt_log(ERROR, "hci",
@@ -86,17 +86,17 @@ class AclDataChannelImpl final : public AclDataChannel {
                   PacketPriority priority) override;
   bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
                    PacketPriority priority) override;
-  void RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) override;
-  void UnregisterLink(hci::ConnectionHandle handle) override;
+  void RegisterLink(hci_spec::ConnectionHandle handle, bt::LinkType ll_type) override;
+  void UnregisterLink(hci_spec::ConnectionHandle handle) override;
   void DropQueuedPackets(AclPacketPredicate predicate) override;
-  void ClearControllerPacketCount(hci::ConnectionHandle handle) override;
+  void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override;
   const DataBufferInfo& GetBufferInfo() const override;
   const DataBufferInfo& GetLeBufferInfo() const override;
-  void RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
+  void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
                           fit::callback<void(fpromise::result<>)> callback) override;
   void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout, hci::ConnectionHandle handle,
-      fit::callback<void(fpromise::result<void, StatusCode>)> callback) override;
+      zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
+      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) override;
 
  private:
   // Represents a queued ACL data packet.
@@ -225,7 +225,7 @@ class AclDataChannelImpl final : public AclDataChannel {
 
   // Counts of automatically-discarded packets on each channel due to overflow. Cleared by
   // LogDroppedOverflowPackets.
-  std::map<std::pair<hci::ConnectionHandle, UniqueChannelId>, int64_t> dropped_packet_counts_;
+  std::map<std::pair<hci_spec::ConnectionHandle, UniqueChannelId>, int64_t> dropped_packet_counts_;
 
   // Lifetime and recent counts of overflow packets that have been dropped.
   UintInspectable<size_t> num_overflow_packets_;
@@ -267,10 +267,10 @@ class AclDataChannelImpl final : public AclDataChannel {
     bt::LinkType ll_type;
     size_t count;
   };
-  std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_;
+  std::unordered_map<hci_spec::ConnectionHandle, PendingPacketData> pending_links_;
 
   // Stores links registered by RegisterLink
-  std::unordered_map<hci::ConnectionHandle, bt::LinkType> registered_links_;
+  std::unordered_map<hci_spec::ConnectionHandle, bt::LinkType> registered_links_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
 };
@@ -326,12 +326,12 @@ void AclDataChannelImpl::Initialize(const DataBufferInfo& bredr_buffer_info,
     return;
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
-      kNumberOfCompletedPacketsEventCode,
+      hci_spec::kNumberOfCompletedPacketsEventCode,
       fit::bind_member(this, &AclDataChannelImpl::NumberOfCompletedPacketsCallback));
   ZX_DEBUG_ASSERT(num_completed_packets_event_handler_id_);
 
   data_buffer_overflow_event_handler_id_ = transport_->command_channel()->AddEventHandler(
-      kDataBufferOverflowEventCode,
+      hci_spec::kDataBufferOverflowEventCode,
       fit::bind_member(this, &AclDataChannelImpl::DataBufferOverflowCallback));
   ZX_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
@@ -422,9 +422,9 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
   // continuing fragment at the head. There is no check for whether |packets| have enough data to
   // form whole PDUs because queue management doesn't require that and it would break abstraction
   // even more.
-  ZX_ASSERT_MSG(
-      packets.front().packet_boundary_flag() != ACLPacketBoundaryFlag::kContinuingFragment,
-      "expected full PDU");
+  ZX_ASSERT_MSG(packets.front().packet_boundary_flag() !=
+                    hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
+                "expected full PDU");
 
   for (const auto& packet : packets) {
     // This call assumes that all packets in each call are for the same connection
@@ -458,13 +458,13 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
   return true;
 }
 
-void AclDataChannelImpl::RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) {
+void AclDataChannelImpl::RegisterLink(hci_spec::ConnectionHandle handle, bt::LinkType ll_type) {
   bt_log(DEBUG, "hci", "ACL register link (handle: %#.4x)", handle);
   ZX_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
   registered_links_[handle] = ll_type;
 }
 
-void AclDataChannelImpl::UnregisterLink(hci::ConnectionHandle handle) {
+void AclDataChannelImpl::UnregisterLink(hci_spec::ConnectionHandle handle) {
   bt_log(DEBUG, "hci", "ACL unregister link (handle: %#.4x)", handle);
 
   if (registered_links_.erase(handle) == 0) {
@@ -492,7 +492,7 @@ void AclDataChannelImpl::DropQueuedPackets(AclPacketPredicate predicate) {
   }
 }
 
-void AclDataChannelImpl::ClearControllerPacketCount(hci::ConnectionHandle handle) {
+void AclDataChannelImpl::ClearControllerPacketCount(hci_spec::ConnectionHandle handle) {
   // Ensure link has already been unregistered. Otherwise, queued packets for this handle
   // could be sent after clearing packet count, and the packet count could become corrupted.
   ZX_ASSERT(registered_links_.find(handle) == registered_links_.end());
@@ -526,7 +526,8 @@ const DataBufferInfo& AclDataChannelImpl::GetLeBufferInfo() const {
   return le_buffer_info_.IsAvailable() ? le_buffer_info_ : bredr_buffer_info_;
 }
 
-void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
+void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority,
+                                            hci_spec::ConnectionHandle handle,
                                             fit::callback<void(fpromise::result<>)> callback) {
   bt_log(TRACE, "hci", "sending ACL priority command");
 
@@ -547,14 +548,15 @@ void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority, hci::Conn
     return;
   }
   auto encoded = encode_result.take_value();
-  if (encoded.size() < sizeof(hci::CommandHeader)) {
+  if (encoded.size() < sizeof(hci_spec::CommandHeader)) {
     bt_log(TRACE, "hci", "encoded ACL priority command too small (size: %zu)", encoded.size());
     callback(fpromise::error());
     return;
   }
 
-  hci::OpCode op_code = letoh16(encoded.As<hci::CommandHeader>().opcode);
-  auto packet = bt::hci::CommandPacket::New(op_code, encoded.size() - sizeof(hci::CommandHeader));
+  hci_spec::OpCode op_code = letoh16(encoded.As<hci_spec::CommandHeader>().opcode);
+  auto packet =
+      bt::hci::CommandPacket::New(op_code, encoded.size() - sizeof(hci_spec::CommandHeader));
   auto packet_view = packet->mutable_view()->mutable_data();
   encoded.Copy(&packet_view);
 
@@ -573,15 +575,15 @@ void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority, hci::Conn
 }
 
 void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(
-    zx::duration flush_timeout, hci::ConnectionHandle handle,
-    fit::callback<void(fpromise::result<void, StatusCode>)> callback) {
+    zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
+    fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) {
   auto link_iter = registered_links_.find(handle);
   ZX_ASSERT(link_iter != registered_links_.end());
   ZX_ASSERT(link_iter->second == bt::LinkType::kACL);
 
-  if (flush_timeout < zx::msec(1) || (flush_timeout > kMaxAutomaticFlushTimeoutDuration &&
+  if (flush_timeout < zx::msec(1) || (flush_timeout > hci_spec::kMaxAutomaticFlushTimeoutDuration &&
                                       flush_timeout != zx::duration::infinite())) {
-    callback(fpromise::error(StatusCode::kInvalidHCICommandParameters));
+    callback(fpromise::error(hci_spec::StatusCode::kInvalidHCICommandParameters));
     return;
   }
 
@@ -595,14 +597,14 @@ void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(
     // the max value check above.
     converted_flush_timeout =
         static_cast<uint16_t>(static_cast<float>(flush_timeout.to_msecs()) *
-                              kFlushTimeoutMsToCommandParameterConversionFactor);
+                              hci_spec::kFlushTimeoutMsToCommandParameterConversionFactor);
     ZX_ASSERT(converted_flush_timeout != 0);
-    ZX_ASSERT(converted_flush_timeout <= kMaxAutomaticFlushTimeoutCommandParameterValue);
+    ZX_ASSERT(converted_flush_timeout <= hci_spec::kMaxAutomaticFlushTimeoutCommandParameterValue);
   }
 
-  auto packet = CommandPacket::New(hci::kWriteAutomaticFlushTimeout,
-                                   sizeof(WriteAutomaticFlushTimeoutCommandParams));
-  auto packet_view = packet->mutable_payload<WriteAutomaticFlushTimeoutCommandParams>();
+  auto packet = CommandPacket::New(hci_spec::kWriteAutomaticFlushTimeout,
+                                   sizeof(hci_spec::WriteAutomaticFlushTimeoutCommandParams));
+  auto packet_view = packet->mutable_payload<hci_spec::WriteAutomaticFlushTimeoutCommandParams>();
   packet_view->connection_handle = htole16(handle);
   packet_view->flush_timeout = htole16(converted_flush_timeout);
 
@@ -633,15 +635,15 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
   }
 
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
-  ZX_DEBUG_ASSERT(event.event_code() == kNumberOfCompletedPacketsEventCode);
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kNumberOfCompletedPacketsEventCode);
 
-  const auto& payload = event.params<NumberOfCompletedPacketsEventParams>();
+  const auto& payload = event.params<hci_spec::NumberOfCompletedPacketsEventParams>();
   size_t total_comp_packets = 0;
   size_t le_total_comp_packets = 0;
 
   size_t handles_in_packet =
-      (event.view().payload_size() - sizeof(NumberOfCompletedPacketsEventParams)) /
-      sizeof(NumberOfCompletedPacketsEventData);
+      (event.view().payload_size() - sizeof(hci_spec::NumberOfCompletedPacketsEventParams)) /
+      sizeof(hci_spec::NumberOfCompletedPacketsEventData);
 
   if (payload.number_of_handles != handles_in_packet) {
     bt_log(WARN, "hci", "packets handle count (%d) doesn't match params size (%zu)",
@@ -649,7 +651,7 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
   }
 
   for (uint8_t i = 0; i < payload.number_of_handles && i < handles_in_packet; ++i) {
-    const NumberOfCompletedPacketsEventData* data = payload.data + i;
+    const hci_spec::NumberOfCompletedPacketsEventData* data = payload.data + i;
 
     auto iter = pending_links_.find(le16toh(data->connection_handle));
     if (iter == pending_links_.end()) {
@@ -705,8 +707,8 @@ void AclDataChannelImpl::DropOverflowPacket(const QueuedDataPacket& archetypal_p
 
   // predicate that checks if a QDP is the head of a PDU (not a continuing fragment)
   auto is_head = [](const QueuedDataPacket& p) {
-    return p.packet->packet_boundary_flag() == hci::ACLPacketBoundaryFlag::kFirstFlushable ||
-           p.packet->packet_boundary_flag() == hci::ACLPacketBoundaryFlag::kFirstNonFlushable;
+    return p.packet->packet_boundary_flag() == hci_spec::ACLPacketBoundaryFlag::kFirstFlushable ||
+           p.packet->packet_boundary_flag() == hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable;
   };
   // predicate that checks if a QDP is like |archetypal_packet| and is the head of a PDU
   auto is_similar_and_head = [&a = archetypal_packet, is_head](const QueuedDataPacket& b) {
@@ -931,9 +933,9 @@ AclDataChannelImpl::SendQueueInsertLocationForPriority(PacketPriority priority) 
 
 CommandChannel::EventCallbackResult AclDataChannelImpl::DataBufferOverflowCallback(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci::kDataBufferOverflowEventCode);
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kDataBufferOverflowEventCode);
 
-  const auto& params = event.params<hci::ConnectionRequestEventParams>();
+  const auto& params = event.params<hci_spec::ConnectionRequestEventParams>();
 
   // Internal buffer state must be invalid and no further transmissions are possible.
   ZX_PANIC("controller data buffer overflow event received (link type: %hhu)", params.link_type);

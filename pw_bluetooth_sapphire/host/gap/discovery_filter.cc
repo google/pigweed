@@ -48,9 +48,9 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
     return false;
 
   // If a pathloss filter is not set then apply the RSSI filter before iterating
-  // over |advertising_data|. (An RSSI value of kRSSIInvalid means that RSSI is
+  // over |advertising_data|. (An RSSI value of hci_spec::kRSSIInvalid means that RSSI is
   // not available, which we check for here).
-  bool rssi_ok = !rssi_ || (rssi != hci::kRSSIInvalid && rssi >= *rssi_);
+  bool rssi_ok = !rssi_ || (rssi != hci_spec::kRSSIInvalid && rssi >= *rssi_);
   if (!pathloss_ && !rssi_ok)
     return false;
 
@@ -98,8 +98,8 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
 
         tx_power_found = true;
 
-        // An RSSI value of kRSSIInvalid means that RSSI is not available.
-        if (rssi == hci::kRSSIInvalid)
+        // An RSSI value of hci_spec::kRSSIInvalid means that RSSI is not available.
+        if (rssi == hci_spec::kRSSIInvalid)
           break;
 
         int8_t tx_power_lvl = static_cast<int8_t>(*data.data());

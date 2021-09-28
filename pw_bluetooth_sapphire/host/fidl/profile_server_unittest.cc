@@ -895,7 +895,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoResponderSuccess) {
                        /*initiator=*/false, std::move(sco_params_list), std::move(receiver_handle));
   RunLoopUntilIdle();
   // Receive a SCO connection request. The CVSD_D0 parameters will be used to accept the request.
-  test_device()->SendConnectionRequest(peer()->address(), bt::hci::LinkType::kSCO);
+  test_device()->SendConnectionRequest(peer()->address(), bt::hci_spec::LinkType::kSCO);
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
   ASSERT_TRUE(receiver.connection().has_value());
@@ -946,8 +946,8 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiverBefore
   fidl::InterfaceHandle<fidlbredr::ScoConnectionReceiver> receiver_handle;
   FakeScoConnectionReceiver receiver(receiver_handle.NewRequest(), dispatcher());
 
-  test_device()->SetDefaultCommandStatus(bt::hci::kEnhancedSetupSynchronousConnection,
-                                         bt::hci::kSuccess);
+  test_device()->SetDefaultCommandStatus(bt::hci_spec::kEnhancedSetupSynchronousConnection,
+                                         bt::hci_spec::kSuccess);
   client()->ConnectSco(fuchsia::bluetooth::PeerId{peer()->identifier().value()}, /*initiator=*/true,
                        std::move(sco_params_list), std::move(receiver_handle));
   receiver.Close();
@@ -955,7 +955,8 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiverBefore
   EXPECT_FALSE(receiver.error().has_value());
   EXPECT_FALSE(receiver.connection().has_value());
   test_device()->SendCommandChannelPacket(bt::testing::SynchronousConnectionCompletePacket(
-      0x00, peer()->address(), bt::hci::LinkType::kSCO, bt::hci::StatusCode::kConnectionTimeout));
+      0x00, peer()->address(), bt::hci_spec::LinkType::kSCO,
+      bt::hci_spec::StatusCode::kConnectionTimeout));
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
   EXPECT_FALSE(receiver.connection().has_value());
@@ -1017,7 +1018,7 @@ TEST_F(ProfileServerTestFakeAdapter, ConnectChannelParametersContainsFlushTimeou
 
 TEST_F(ProfileServerTestFakeAdapter, AdvertiseChannelParametersContainsFlushTimeout) {
   const zx::duration kFlushTimeout(zx::msec(100));
-  const bt::hci::ConnectionHandle kHandle(1);
+  const bt::hci_spec::ConnectionHandle kHandle(1);
 
   std::vector<fidlbredr::ServiceDefinition> services;
   services.emplace_back(MakeFIDLServiceDefinition());

@@ -22,46 +22,46 @@ class FakeL2cap final : public L2cap {
   void AttachInspect(inspect::Node& parent, std::string name) override {}
 
   // Returns true if and only if a link identified by |handle| has been added and connected.
-  [[nodiscard]] bool IsLinkConnected(hci::ConnectionHandle handle) const;
+  [[nodiscard]] bool IsLinkConnected(hci_spec::ConnectionHandle handle) const;
 
   // Triggers a LE connection parameter update callback on the given link.
-  void TriggerLEConnectionParameterUpdate(hci::ConnectionHandle handle,
-                                          const hci::LEPreferredConnectionParameters& params);
+  void TriggerLEConnectionParameterUpdate(hci_spec::ConnectionHandle handle,
+                                          const hci_spec::LEPreferredConnectionParameters& params);
 
   // Sets up the expectation that an outbound dynamic channel will be opened
   // on the given link. Each call will expect one dyanmic channel to be
   // created.  If a call to OpenL2capChannel is made without expectation, it
   // will assert.
   // Multiple expectations for the same PSM should be queued in FIFO order.
-  void ExpectOutboundL2capChannel(hci::ConnectionHandle handle, PSM psm, ChannelId id,
+  void ExpectOutboundL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelId id,
                                   ChannelId remote_id, ChannelParameters params);
 
   // Triggers the creation of an inbound dynamic channel on the given link. The
   // channels created will be provided to handlers passed to RegisterService.
   // Returns false if unable to create the channel.
-  bool TriggerInboundL2capChannel(hci::ConnectionHandle handle, PSM psm, ChannelId id,
+  bool TriggerInboundL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelId id,
                                   ChannelId remote_id, uint16_t tx_mtu = kDefaultMTU);
 
   // Triggers a link error callback on the given link.
-  void TriggerLinkError(hci::ConnectionHandle handle);
+  void TriggerLinkError(hci_spec::ConnectionHandle handle);
 
   // L2cap overrides:
-  void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                         LinkErrorCallback link_error_callback,
                         SecurityUpgradeCallback security_callback) override;
-  LEFixedChannels AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                                   LinkErrorCallback link_error_callback,
                                   LEConnectionParameterUpdateCallback conn_param_callback,
                                   SecurityUpgradeCallback security_callback) override;
-  void RemoveConnection(hci::ConnectionHandle handle) override;
-  void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
+  void RemoveConnection(hci_spec::ConnectionHandle handle) override;
+  void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                     sm::SecurityProperties security) override;
 
   // Immediately posts accept on |dispatcher|.
   void RequestConnectionParameterUpdate(
-      hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+      hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
       ConnectionParameterUpdateRequestCallback request_cb) override;
-  void OpenL2capChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
+  void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                         ChannelCallback cb) override;
   void RegisterService(PSM psm, ChannelParameters params,
                        ChannelCallback channel_callback) override;
@@ -78,7 +78,7 @@ class FakeL2cap final : public L2cap {
   // Called when RequestConnectionParameterUpdate is called. |request_cb| will be called with return
   // value. Defaults to returning true if not set.
   using ConnectionParameterUpdateRequestResponder =
-      fit::function<bool(hci::ConnectionHandle, hci::LEPreferredConnectionParameters)>;
+      fit::function<bool(hci_spec::ConnectionHandle, hci_spec::LEPreferredConnectionParameters)>;
   void set_connection_parameter_update_request_responder(
       ConnectionParameterUpdateRequestResponder responder) {
     connection_parameter_update_request_responder_ = std::move(responder);
@@ -97,7 +97,7 @@ class FakeL2cap final : public L2cap {
   struct LinkData {
     // Expectations on links can be created before they are connected.
     bool connected;
-    hci::ConnectionHandle handle;
+    hci_spec::ConnectionHandle handle;
     hci::Connection::Role role;
     bt::LinkType type;
 
@@ -114,7 +114,7 @@ class FakeL2cap final : public L2cap {
   FakeL2cap() = default;
   ~FakeL2cap() override;
 
-  LinkData* RegisterInternal(hci::ConnectionHandle handle, hci::Connection::Role role,
+  LinkData* RegisterInternal(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                              bt::LinkType link_type, LinkErrorCallback link_error_callback);
 
   fbl::RefPtr<testing::FakeChannel> OpenFakeChannel(
@@ -123,12 +123,12 @@ class FakeL2cap final : public L2cap {
   fbl::RefPtr<testing::FakeChannel> OpenFakeFixedChannel(LinkData* link, ChannelId id);
 
   // Gets the link data for |handle|, creating it if necessary.
-  LinkData& GetLinkData(hci::ConnectionHandle handle);
+  LinkData& GetLinkData(hci_spec::ConnectionHandle handle);
   // Gets the link data for |handle|. Asserts if the link is not connected
   // yet.
-  LinkData& ConnectedLinkData(hci::ConnectionHandle handle);
+  LinkData& ConnectedLinkData(hci_spec::ConnectionHandle handle);
 
-  std::unordered_map<hci::ConnectionHandle, LinkData> links_;
+  std::unordered_map<hci_spec::ConnectionHandle, LinkData> links_;
   FakeChannelCallback chan_cb_;
   bool simulate_open_channel_failure_ = false;
 

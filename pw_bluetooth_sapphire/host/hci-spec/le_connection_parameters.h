@@ -10,7 +10,7 @@
 
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt::hci {
+namespace bt::hci_spec {
 
 // All LE connection parameters in this file are given in terms of a
 // "multiplier" that to controller uses to calculate actual duration values.
@@ -74,7 +74,7 @@ class LEPreferredConnectionParameters final {
   // inside a container that default initializes its contents.
   LEPreferredConnectionParameters();
 
-  // See LEConnectionParameters for a description of these fields. See
+  // See hci_spec::LEConnectionParameters for a description of these fields. See
   // hci_constants.h for the allowed ranges for these values.
   uint16_t min_interval() const { return min_interval_; }
   uint16_t max_interval() const { return max_interval_; }
@@ -91,6 +91,6 @@ class LEPreferredConnectionParameters final {
   uint16_t supervision_timeout_;
 };
 
-}  // namespace bt::hci
+}  // namespace bt::hci_spec
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LE_CONNECTION_PARAMETERS_H_

@@ -17,6 +17,7 @@ static_library("sco") {
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/hci",
+    "//src/connectivity/bluetooth/core/bt-host/transport",
   ]
 }
 

@@ -27,7 +27,7 @@ namespace bt {
 // member variable values in structs.
 //
 // Example:
-//   StringInspectable<hci::LMPFeatureSet> lmp_features;
+//   StringInspectable<hci_spec::LMPFeatureSet> lmp_features;
 //   lmp_features.Mutable()->SetPage(page, features);
 template <typename ValueT>
 class InspectableGuard {
@@ -70,7 +70,7 @@ class Inspectable {
   // When the desired property type DOES NOT match ValueT, a conversion function |convert| is
   // necessary. This is often the case when using optionals or when converting a number/enum into a
   // string is desired. Example:
-  //   auto convert = [](std::optional<hci::HCIVersion> version) -> std::string {
+  //   auto convert = [](std::optional<hci_spec::HCIVersion> version) -> std::string {
   //     return version ? HCIVersionToString(*version) : "null";
   //   };
   //   Inspectable<std::optional<HCIVersion>> hci_version(

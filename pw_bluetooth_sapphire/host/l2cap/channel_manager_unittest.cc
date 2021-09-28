@@ -26,8 +26,8 @@ namespace {
 using TestingBase = ::gtest::TestLoopFixture;
 using namespace inspect::testing;
 
-constexpr hci::ConnectionHandle kTestHandle1 = 0x0001;
-constexpr hci::ConnectionHandle kTestHandle2 = 0x0002;
+constexpr hci_spec::ConnectionHandle kTestHandle1 = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle2 = 0x0002;
 constexpr PSM kTestPsm = 0x0001;
 constexpr ChannelId kLocalId = 0x0040;
 constexpr ChannelId kRemoteId = 0x9042;
@@ -40,8 +40,8 @@ constexpr ChannelParameters kChannelParams;
 
 void DoNothing() {}
 void NopRxCallback(ByteBufferPtr) {}
-void NopLeConnParamCallback(const hci::LEPreferredConnectionParameters&) {}
-void NopSecurityCallback(hci::ConnectionHandle, sm::SecurityLevel, sm::StatusCallback) {}
+void NopLeConnParamCallback(const hci_spec::LEPreferredConnectionParameters&) {}
+void NopSecurityCallback(hci_spec::ConnectionHandle, sm::SecurityLevel, sm::StatusCallback) {}
 
 // Holds expected outbound data packets including the source location where the expectation is set.
 struct PacketExpectation {
@@ -59,7 +59,7 @@ struct PacketExpectation {
 #define EXPECT_ACL_PACKET_OUT(packet_buffer, priority) \
   ExpectOutboundPacket(bt::LinkType::kACL, (priority), (packet_buffer), __FILE__, __LINE__)
 
-auto MakeExtendedFeaturesInformationRequest(CommandId id, hci::ConnectionHandle handle) {
+auto MakeExtendedFeaturesInformationRequest(CommandId id, hci_spec::ConnectionHandle handle) {
   return CreateStaticByteBuffer(
       // ACL data header (handle, length: 10)
       LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
@@ -240,13 +240,12 @@ class ChannelManagerTest : public TestingBase {
   ChannelManagerTest() = default;
   ~ChannelManagerTest() override = default;
 
-  void SetUp() override { SetUp(hci::kMaxACLPayloadSize, hci::kMaxACLPayloadSize); }
+  void SetUp() override { SetUp(hci_spec::kMaxACLPayloadSize, hci_spec::kMaxACLPayloadSize); }
 
   void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size) {
     TestingBase::SetUp();
 
-    acl_data_channel_.set_send_packets_cb(
-        fit::bind_member(this, &ChannelManagerTest::SendPackets));
+    acl_data_channel_.set_send_packets_cb(fit::bind_member(this, &ChannelManagerTest::SendPackets));
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
     chanmgr_ = std::make_unique<ChannelManager>(max_acl_payload_size, max_le_payload_size,
@@ -269,7 +268,7 @@ class ChannelManagerTest : public TestingBase {
   }
 
   // Helper functions for registering logical links with default arguments.
-  void RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void RegisterLE(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                   LinkErrorCallback lec = DoNothing,
                   LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
                   SecurityUpgradeCallback suc = NopSecurityCallback) {
@@ -281,7 +280,8 @@ class ChannelManagerTest : public TestingBase {
     CommandId fixed_channels_supported_id;
   };
 
-  QueueRegisterACLRetVal QueueRegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
+  QueueRegisterACLRetVal QueueRegisterACL(hci_spec::ConnectionHandle handle,
+                                          hci::Connection::Role role,
                                           LinkErrorCallback lec = DoNothing,
                                           SecurityUpgradeCallback suc = NopSecurityCallback) {
     QueueRegisterACLRetVal cmd_ids;
@@ -298,7 +298,7 @@ class ChannelManagerTest : public TestingBase {
     return cmd_ids;
   }
 
-  void RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void RegisterACL(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                    LinkErrorCallback lec = DoNothing,
                    SecurityUpgradeCallback suc = NopSecurityCallback) {
     chanmgr()->RegisterACL(handle, role, std::move(lec), std::move(suc));
@@ -314,10 +314,9 @@ class ChannelManagerTest : public TestingBase {
                                                                    kTestHandle1, channels));
   }
 
-  fbl::RefPtr<Channel> ActivateNewFixedChannel(ChannelId id,
-                                               hci::ConnectionHandle conn_handle = kTestHandle1,
-                                               Channel::ClosedCallback closed_cb = DoNothing,
-                                               Channel::RxCallback rx_cb = NopRxCallback) {
+  fbl::RefPtr<Channel> ActivateNewFixedChannel(
+      ChannelId id, hci_spec::ConnectionHandle conn_handle = kTestHandle1,
+      Channel::ClosedCallback closed_cb = DoNothing, Channel::RxCallback rx_cb = NopRxCallback) {
     auto chan = chanmgr()->OpenFixedChannel(conn_handle, id);
     if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb))) {
       return nullptr;
@@ -329,7 +328,7 @@ class ChannelManagerTest : public TestingBase {
   // |activated_cb| will be called with opened and activated Channel if
   // successful and nullptr otherwise.
   void ActivateOutboundChannel(PSM psm, ChannelParameters chan_params, ChannelCallback activated_cb,
-                               hci::ConnectionHandle conn_handle = kTestHandle1,
+                               hci_spec::ConnectionHandle conn_handle = kTestHandle1,
                                Channel::ClosedCallback closed_cb = DoNothing,
                                Channel::RxCallback rx_cb = NopRxCallback) {
     ChannelCallback open_cb = [activated_cb = std::move(activated_cb), rx_cb = std::move(rx_cb),
@@ -398,7 +397,7 @@ class ChannelManagerTest : public TestingBase {
   }
 
   void ActivateOutboundErtmChannel(ChannelCallback activated_cb,
-                                   hci::ConnectionHandle conn_handle = kTestHandle1,
+                                   hci_spec::ConnectionHandle conn_handle = kTestHandle1,
                                    uint8_t max_outbound_transmit = 3,
                                    Channel::ClosedCallback closed_cb = DoNothing,
                                    Channel::RxCallback rx_cb = NopRxCallback) {
@@ -429,7 +428,7 @@ class ChannelManagerTest : public TestingBase {
   [[nodiscard]] bool AllExpectedPacketsSent() const { return expected_packets_.empty(); }
 
   void ReceiveAclDataPacket(const ByteBuffer& packet) {
-    const size_t payload_size = packet.size() - sizeof(hci::ACLDataHeader);
+    const size_t payload_size = packet.size() - sizeof(hci_spec::ACLDataHeader);
     ZX_ASSERT(payload_size <= std::numeric_limits<uint16_t>::max());
     hci::ACLDataPacketPtr acl_packet = hci::ACLDataPacket::New(static_cast<uint16_t>(payload_size));
     auto mutable_acl_packet_data = acl_packet->mutable_view()->mutable_data();
@@ -1332,14 +1331,14 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
 
   // Packets for testing filter against
-  constexpr hci::ConnectionHandle kTestHandle2 = 0x02;
+  constexpr hci_spec::ConnectionHandle kTestHandle2 = 0x02;
   constexpr ChannelId kWrongChannelId = 0x02;
   auto dummy_packet1 =
-      hci::ACLDataPacket::New(kTestHandle1, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+      hci::ACLDataPacket::New(kTestHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
   auto dummy_packet2 =
-      hci::ACLDataPacket::New(kTestHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+      hci::ACLDataPacket::New(kTestHandle2, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
   size_t filter_cb_count = 0;
   auto filter_cb = [&](hci::AclDataChannel::AclPacketPredicate filter) {
     // filter out correct closed channel on correct connection handle
@@ -1430,14 +1429,14 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionResponse(7), kHighPriority);
 
   // Packets for testing filter against
-  constexpr hci::ConnectionHandle kTestHandle2 = 0x02;
+  constexpr hci_spec::ConnectionHandle kTestHandle2 = 0x02;
   constexpr ChannelId kWrongChannelId = 0x02;
   auto dummy_packet1 =
-      hci::ACLDataPacket::New(kTestHandle1, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+      hci::ACLDataPacket::New(kTestHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
   auto dummy_packet2 =
-      hci::ACLDataPacket::New(kTestHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+      hci::ACLDataPacket::New(kTestHandle2, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
   size_t filter_cb_count = 0;
   auto filter_cb = [&](hci::AclDataChannel::AclPacketPredicate filter) {
     // filter out correct closed channel
@@ -1777,7 +1776,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   sm::Status delivered_status;
   sm::SecurityLevel last_requested_level = sm::SecurityLevel::kNoSecurity;
   int security_request_count = 0;
-  auto security_handler = [&](hci::ConnectionHandle handle, sm::SecurityLevel level,
+  auto security_handler = [&](hci_spec::ConnectionHandle handle, sm::SecurityLevel level,
                               auto callback) {
     EXPECT_EQ(kTestHandle1, handle);
     last_requested_level = level;
@@ -2140,9 +2139,9 @@ TEST_F(ChannelManagerTest,
   constexpr uint16_t kSlaveLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
 
-  std::optional<hci::LEPreferredConnectionParameters> params;
+  std::optional<hci_spec::LEPreferredConnectionParameters> params;
   LEConnectionParameterUpdateCallback param_cb =
-      [&params](const hci::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
+      [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, /*LinkErrorCallback=*/DoNothing,
              std::move(param_cb));
@@ -2173,9 +2172,9 @@ TEST_F(ChannelManagerTest,
   constexpr uint16_t kSlaveLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
 
-  std::optional<hci::LEPreferredConnectionParameters> params;
+  std::optional<hci_spec::LEPreferredConnectionParameters> params;
   LEConnectionParameterUpdateCallback param_cb =
-      [&params](const hci::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
+      [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
   RegisterLE(kTestHandle1, hci::Connection::Role::kSlave, /*LinkErrorCallback=*/DoNothing,
              std::move(param_cb));
@@ -2214,24 +2213,24 @@ TEST_F(ChannelManagerTest,
                                                /*interval_max=*/6, kSlaveLatency, kTimeoutMult),
       // interval_min too small
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1,
-                                               hci::kLEConnectionIntervalMin - 1, kIntervalMax,
+                                               hci_spec::kLEConnectionIntervalMin - 1, kIntervalMax,
                                                kSlaveLatency, kTimeoutMult),
       // interval max too large
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
-                                               hci::kLEConnectionIntervalMax + 1, kSlaveLatency,
-                                               kTimeoutMult),
+                                               hci_spec::kLEConnectionIntervalMax + 1,
+                                               kSlaveLatency, kTimeoutMult),
       // latency too large
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
-                                               kIntervalMax, hci::kLEConnectionLatencyMax + 1,
+                                               kIntervalMax, hci_spec::kLEConnectionLatencyMax + 1,
                                                kTimeoutMult),
       // timeout multiplier too small
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
                                                kIntervalMax, kSlaveLatency,
-                                               hci::kLEConnectionSupervisionTimeoutMin - 1),
+                                               hci_spec::kLEConnectionSupervisionTimeoutMin - 1),
       // timeout multiplier too large
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
                                                kIntervalMax, kSlaveLatency,
-                                               hci::kLEConnectionSupervisionTimeoutMax + 1)};
+                                               hci_spec::kLEConnectionSupervisionTimeoutMax + 1)};
 
   for (auto& req : invalid_requests) {
     EXPECT_LE_PACKET_OUT(testing::AclConnectionParameterUpdateRsp(
@@ -2244,13 +2243,12 @@ TEST_F(ChannelManagerTest,
 
 TEST_F(ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
   auto update_cb = [](auto) { ADD_FAILURE(); };
-  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, hci::LEPreferredConnectionParameters(),
-                                              std::move(update_cb));
+  chanmgr()->RequestConnectionParameterUpdate(
+      kTestHandle1, hci_spec::LEPreferredConnectionParameters(), std::move(update_cb));
   RunLoopUntilIdle();
 }
 
-TEST_F(ChannelManagerTest,
-       RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRejectedResponses) {
+TEST_F(ChannelManagerTest, RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRejectedResponses) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kSlave);
 
   // Valid parameter values
@@ -2258,8 +2256,8 @@ TEST_F(ChannelManagerTest,
   constexpr uint16_t kIntervalMax = 7;
   constexpr uint16_t kSlaveLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
-  const hci::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
-                                                     kTimeoutMult);
+  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
+                                                          kTimeoutMult);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -2308,8 +2306,8 @@ TEST_F(ChannelManagerTest, ConnParamUpdateRequestRejected) {
   constexpr uint16_t kIntervalMax = 7;
   constexpr uint16_t kSlaveLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
-  const hci::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
-                                                     kTimeoutMult);
+  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
+                                                          kTimeoutMult);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -2828,9 +2826,10 @@ TEST_F(ChannelManagerTest,
   RunLoopUntilIdle();
 
   int flush_timeout_cb_count = 0;
-  fit::callback<void(fpromise::result<void, hci::StatusCode>)> flush_timeout_result_cb = nullptr;
+  fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> flush_timeout_result_cb =
+      nullptr;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;
         EXPECT_EQ(duration, kFlushTimeout);
         EXPECT_EQ(handle, kTestHandle1);
@@ -2878,11 +2877,11 @@ TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFai
 
   int flush_timeout_cb_count = 0;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;
         EXPECT_EQ(duration, kFlushTimeout);
         EXPECT_EQ(handle, kTestHandle1);
-        cb(fpromise::error(hci::StatusCode::kUnspecifiedError));
+        cb(fpromise::error(hci_spec::StatusCode::kUnspecifiedError));
       });
 
   ChannelParameters chan_params;
@@ -2913,7 +2912,7 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
 
   int flush_timeout_cb_count = 0;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;
         EXPECT_EQ(duration, kFlushTimeout);
         EXPECT_EQ(handle, kTestHandle1);
@@ -2970,7 +2969,7 @@ TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
 
   int flush_timeout_cb_count = 0;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;
         EXPECT_EQ(duration, zx::duration(0));
         EXPECT_EQ(handle, kTestHandle1);
@@ -3016,14 +3015,14 @@ TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
 
   int flush_timeout_cb_count = 0;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;
-        cb(fpromise::error(hci::StatusCode::kUnknownConnectionId));
+        cb(fpromise::error(hci_spec::StatusCode::kUnknownConnectionId));
       });
 
   channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [](auto result) {
     ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(result.error(), hci::StatusCode::kUnknownConnectionId);
+    EXPECT_EQ(result.error(), hci_spec::StatusCode::kUnknownConnectionId);
   });
   EXPECT_EQ(flush_timeout_cb_count, 1);
 
@@ -3046,7 +3045,7 @@ TEST_F(ChannelManagerTest, SetFlushTimeoutOnDeactivatedChannel) {
 
   int set_flush_timeout_cb_count = 0;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
-      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+      [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         set_flush_timeout_cb_count++;
       });
 
@@ -3057,7 +3056,7 @@ TEST_F(ChannelManagerTest, SetFlushTimeoutOnDeactivatedChannel) {
   channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [&](auto result) {
     flush_timeout_cb_count++;
     ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(result.error(), hci::StatusCode::kCommandDisallowed);
+    EXPECT_EQ(result.error(), hci_spec::StatusCode::kCommandDisallowed);
   });
 
   RunLoopUntilIdle();

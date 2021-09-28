@@ -120,7 +120,7 @@ TEST_F(AdapterTest, InitializeFailureNoBufferInfo) {
 
   // Enable LE support.
   FakeController::Settings settings;
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
   test_device()->set_settings(settings);
 
   InitializeAdapter(std::move(init_cb));
@@ -139,8 +139,8 @@ TEST_F(AdapterTest, InitializeNoBREDR) {
 
   // Enable LE support, disable BR/EDR
   FakeController::Settings settings;
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci::LMPFeature::kLESupported);
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci::LMPFeature::kBREDRNotSupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kBREDRNotSupported);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   test_device()->set_settings(settings);
@@ -166,7 +166,7 @@ TEST_F(AdapterTest, InitializeSuccess) {
   // Return valid buffer information and enable LE support. (This should
   // succeed).
   FakeController::Settings settings;
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   test_device()->set_settings(settings);
@@ -194,8 +194,8 @@ TEST_F(AdapterTest, InitializeFailureHCICommandError) {
   FakeController::Settings settings;
   settings.ApplyLEOnlyDefaults();
   test_device()->set_settings(settings);
-  test_device()->SetDefaultResponseStatus(hci::kLEReadLocalSupportedFeatures,
-                                          hci::StatusCode::kHardwareFailure);
+  test_device()->SetDefaultResponseStatus(hci_spec::kLEReadLocalSupportedFeatures,
+                                          hci_spec::StatusCode::kHardwareFailure);
 
   InitializeAdapter(std::move(init_cb));
   EXPECT_FALSE(success);
@@ -266,7 +266,8 @@ TEST_F(AdapterTest, SetNameError) {
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
-  test_device()->SetDefaultResponseStatus(hci::kWriteLocalName, hci::StatusCode::kHardwareFailure);
+  test_device()->SetDefaultResponseStatus(hci_spec::kWriteLocalName,
+                                          hci_spec::StatusCode::kHardwareFailure);
   ASSERT_TRUE(EnsureInitialized());
 
   hci::Status result;
@@ -277,7 +278,7 @@ TEST_F(AdapterTest, SetNameError) {
   RunLoopUntilIdle();
 
   EXPECT_FALSE(result);
-  EXPECT_EQ(hci::StatusCode::kHardwareFailure, result.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, result.protocol_error());
 }
 
 TEST_F(AdapterTest, SetNameSuccess) {
@@ -301,7 +302,7 @@ TEST_F(AdapterTest, SetNameSuccess) {
 // Tests that writing a local name that is larger than the maximum size succeeds.
 // The saved local name is the original (untruncated) local name.
 TEST_F(AdapterTest, SetNameLargerThanMax) {
-  const std::string long_name(hci::kMaxNameLength + 1, 'x');
+  const std::string long_name(hci_spec::kMaxNameLength + 1, 'x');
 
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
@@ -342,7 +343,7 @@ TEST_F(AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
 // Tests that writing a long local name results in BrEdr updating it's local name.
 // Should still succeed, and the stored local name should be the original name.
 TEST_F(AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
-  const std::string long_name(hci::kExtendedInquiryResponseMaxNameBytes + 2, 'x');
+  const std::string long_name(hci_spec::kExtendedInquiryResponseMaxNameBytes + 2, 'x');
 
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
@@ -370,8 +371,8 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
-  test_device()->SetDefaultResponseStatus(hci::kWriteExtendedInquiryResponse,
-                                          hci::StatusCode::kConnectionTerminatedByLocalHost);
+  test_device()->SetDefaultResponseStatus(hci_spec::kWriteExtendedInquiryResponse,
+                                          hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
   ASSERT_TRUE(EnsureInitialized());
 
   hci::Status result;
@@ -383,7 +384,7 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
 
   // kWriteLocalName will succeed, but kWriteExtendedInquiryResponse will fail
   EXPECT_FALSE(result);
-  EXPECT_EQ(hci::StatusCode::kConnectionTerminatedByLocalHost, result.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kConnectionTerminatedByLocalHost, result.protocol_error());
   // The |local_name_| should not be set.
   EXPECT_NE(kNewName, adapter()->state().local_name());
   EXPECT_NE(kNewName, adapter()->local_name());
@@ -533,7 +534,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
             test_device()->legacy_advertising_state().own_address_type);
 
   // Enable privacy. The random address should not get configured while
@@ -556,7 +557,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
             test_device()->legacy_advertising_state().own_address_type);
 
   // Advance time to force the random address to refresh. The update should be
@@ -572,7 +573,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
             test_device()->legacy_advertising_state().own_address_type);
   EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_NE(last_random_addr, test_device()->legacy_advertising_state().random_address);
@@ -586,7 +587,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
                                     /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
             test_device()->legacy_advertising_state().own_address_type);
 }
 
@@ -611,7 +612,7 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
 
   // Enable privacy. The random address should not get configured while a scan
   // is in progress.
@@ -631,7 +632,7 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
 
   // Advance time to force the random address to refresh. The update should be
   // deferred while still scanning.
@@ -644,7 +645,7 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   // random address.
   RunLoopFor(kTestDelay);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
   ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_NE(last_random_addr, test_device()->legacy_advertising_state().random_address);
 
@@ -653,7 +654,7 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   adapter()->le()->EnablePrivacy(false);
   RunLoopFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
 }
 
 TEST_F(AdapterTest, LocalAddressForConnections) {
@@ -683,7 +684,8 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
   ASSERT_TRUE(conn_ref);
   ASSERT_TRUE(test_device()->le_connect_params());
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
 
   // Create a new connection. The second attempt should use a random address.
   // re-enabled.
@@ -697,14 +699,16 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
 
   // Disable privacy. The next connection attempt should use a public address.
   adapter()->le()->EnablePrivacy(false);
   conn_ref = nullptr;
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
 }
 
 // Tests the deferral of random address configuration while a connection request
@@ -745,7 +749,8 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_connect_params());
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
 
   // Enable privacy. The random address should not get configured while a
   // connection request is outstanding.
@@ -767,7 +772,8 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
 
   // Advance the time to cause the random address to refresh. The update should
   // be deferred while a connection request is outstanding.
@@ -791,7 +797,8 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
 }
 
 // Tests that existing connections don't prevent an address change.
@@ -818,7 +825,8 @@ TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
 
   // Expire the private address. The address should refresh without interference
   // from the ongoing connection.
@@ -885,7 +893,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
   // Return valid buffer information and enable LE support. (This should
   // succeed).
   FakeController::Settings settings;
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   test_device()->set_settings(settings);
@@ -920,7 +928,8 @@ TEST_F(AdapterTest, InspectHierarchy) {
           NameMatches("adapter"),
           PropertyList(UnorderedElementsAre(
               StringIs("adapter_id", adapter()->identifier().ToString()),
-              StringIs("hci_version", hci::HCIVersionToString(adapter()->state().hci_version())),
+              StringIs("hci_version",
+                       hci_spec::HCIVersionToString(adapter()->state().hci_version())),
               UintIs("bredr_max_num_packets",
                      adapter()->state().bredr_data_buffer_info().max_num_packets()),
               UintIs("bredr_max_data_length",

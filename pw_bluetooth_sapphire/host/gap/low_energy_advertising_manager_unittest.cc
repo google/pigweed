@@ -92,9 +92,9 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   void StopAdvertising(const DeviceAddress& address) override { ads_->erase(address); }
 
-  void OnIncomingConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                             const DeviceAddress& peer_address,
-                            const hci::LEConnectionParameters& conn_params) override {
+                            const hci_spec::LEConnectionParameters& conn_params) override {
     // Right now, we call the first callback, because we can't call any other
     // ones.
     // TODO(jamuraa): make this send it to the correct callback once we can
@@ -111,14 +111,15 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   void ErrorOnNext(hci::Status error_status) { pending_error_ = error_status; }
 
  private:
-  std::unique_ptr<hci::CommandPacket> BuildEnablePacket(const DeviceAddress& address,
-                                                        hci::GenericEnableParam enable) override {
+  std::unique_ptr<hci::CommandPacket> BuildEnablePacket(
+      const DeviceAddress& address, hci_spec::GenericEnableParam enable) override {
     return nullptr;
   }
 
   std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingParams(
-      const DeviceAddress& address, hci::LEAdvertisingType type,
-      hci::LEOwnAddressType own_address_type, hci::AdvertisingIntervalRange interval) override {
+      const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+      hci_spec::LEOwnAddressType own_address_type,
+      hci::AdvertisingIntervalRange interval) override {
     return nullptr;
   }
 
@@ -317,7 +318,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, RegisterUnregister) {
 
 //  - When the advertiser returns an error, we return an error
 TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
-  advertiser()->ErrorOnNext(hci::Status(hci::kInvalidHCICommandParameters));
+  advertiser()->ErrorOnNext(hci::Status(hci_spec::kInvalidHCICommandParameters));
 
   EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
@@ -349,7 +350,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
 
   DeviceAddress peer_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
   advertiser()->OnIncomingConnection(1, hci::Connection::Role::kSlave, peer_address,
-                                     hci::LEConnectionParameters());
+                                     hci_spec::LEConnectionParameters());
   RunLoopUntilIdle();
   ASSERT_TRUE(link);
 

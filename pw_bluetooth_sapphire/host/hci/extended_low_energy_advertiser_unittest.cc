@@ -15,8 +15,8 @@ using TestingBase = bt::testing::ControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
 
-constexpr AdvertisingIntervalRange kTestInterval(kLEAdvertisingIntervalMin,
-                                                 kLEAdvertisingIntervalMax);
+constexpr AdvertisingIntervalRange kTestInterval(hci_spec::kLEAdvertisingIntervalMin,
+                                                 hci_spec::kLEAdvertisingIntervalMax);
 
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
@@ -32,7 +32,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
 
     // ACL data channel needs to be present for production hci::Connection objects.
     TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
-                                          hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10));
+                                          hci::DataBufferInfo(hci_spec::kMaxACLPayloadSize, 10));
 
     FakeController::Settings settings;
     settings.ApplyLEConfig();
@@ -75,7 +75,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
     uint16_t appearance = 0x1234;
     result.SetAppearance(appearance);
 
-    EXPECT_LE(result.CalculateBlockSize(include_flags), kMaxLEAdvertisingDataLength);
+    EXPECT_LE(result.CalculateBlockSize(include_flags), hci_spec::kMaxLEAdvertisingDataLength);
     return result;
   }
 
@@ -97,7 +97,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
 };
 
 TEST_F(ExtendedLowEnergyAdvertiserTest, LegacyPduLength) {
-  EXPECT_EQ(kMaxLEAdvertisingDataLength, advertiser()->GetSizeLimit());
+  EXPECT_EQ(hci_spec::kMaxLEAdvertisingDataLength, advertiser()->GetSizeLimit());
 }
 
 TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingHandlesExhausted) {
@@ -108,7 +108,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingHandlesExhausted) {
   AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/true);
 
-  for (uint8_t i = 0; i <= kAdvertisingHandleMax; i++) {
+  for (uint8_t i = 0; i <= hci_spec::kAdvertisingHandleMax; i++) {
     advertiser()->StartAdvertising(DeviceAddress(DeviceAddress::Type::kLEPublic, {i}), ad,
                                    scan_data, options, nullptr, GetSuccessCallback());
     RunLoopUntilIdle();
@@ -119,8 +119,8 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, AdvertisingHandlesExhausted) {
   EXPECT_EQ(AdvertisingHandleMap::kMaxElements, advertiser()->NumAdvertisements());
 
   advertiser()->StartAdvertising(
-      DeviceAddress(DeviceAddress::Type::kLEPublic, {kAdvertisingHandleMax + 1}), ad, scan_data,
-      options, nullptr, GetErrorCallback());
+      DeviceAddress(DeviceAddress::Type::kLEPublic, {hci_spec::kAdvertisingHandleMax + 1}), ad,
+      scan_data, options, nullptr, GetErrorCallback());
 
   RunLoopUntilIdle();
   ASSERT_TRUE(GetLastStatus());
@@ -145,7 +145,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   EXPECT_TRUE(advertiser()->IsAdvertising());
   EXPECT_TRUE(advertiser()->IsAdvertising(kPublicAddress));
 
-  std::optional<AdvertisingHandle> handle = advertiser()->LastUsedHandleForTesting();
+  std::optional<hci_spec::AdvertisingHandle> handle = advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle);
   const LEAdvertisingState& st = test_device()->extended_advertising_state(handle.value());
 
@@ -154,8 +154,8 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
 
   ASSERT_TRUE(actual_ad.is_ok());
   ASSERT_TRUE(actual_scan_rsp.is_ok());
-  EXPECT_EQ(kLEAdvertisingTxPowerMax, actual_ad.value().tx_power());
-  EXPECT_EQ(kLEAdvertisingTxPowerMax, actual_scan_rsp.value().tx_power());
+  EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_ad.value().tx_power());
+  EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_scan_rsp.value().tx_power());
 }
 
 TEST_F(ExtendedLowEnergyAdvertiserTest, SimultaneousAdvertisements) {
@@ -170,18 +170,20 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, SimultaneousAdvertisements) {
   advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, public_options, nullptr,
                                  GetSuccessCallback());
   RunLoopUntilIdle();
-  std::optional<AdvertisingHandle> handle_public_addr = advertiser()->LastUsedHandleForTesting();
+  std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
+      advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
 
   // start random address advertising
-  constexpr AdvertisingIntervalRange random_interval(kLEAdvertisingIntervalMin + 1u,
-                                                     kLEAdvertisingIntervalMax - 1u);
+  constexpr AdvertisingIntervalRange random_interval(hci_spec::kLEAdvertisingIntervalMin + 1u,
+                                                     hci_spec::kLEAdvertisingIntervalMax - 1u);
   AdvertisingOptions random_options(random_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
                                     /*include_tx_power_level=*/false);
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, random_options, nullptr,
                                  GetSuccessCallback());
   RunLoopUntilIdle();
-  std::optional<AdvertisingHandle> handle_random_addr = advertiser()->LastUsedHandleForTesting();
+  std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
+      advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
 
   // check everything is correct
@@ -197,12 +199,12 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, SimultaneousAdvertisements) {
 
   EXPECT_TRUE(public_addr_state.enabled);
   EXPECT_TRUE(random_addr_state.enabled);
-  EXPECT_EQ(LEOwnAddressType::kPublic, public_addr_state.own_address_type);
-  EXPECT_EQ(LEOwnAddressType::kRandom, random_addr_state.own_address_type);
-  EXPECT_EQ(kLEAdvertisingIntervalMin, public_addr_state.interval_min);
-  EXPECT_EQ(kLEAdvertisingIntervalMax, public_addr_state.interval_max);
-  EXPECT_EQ(kLEAdvertisingIntervalMin + 1u, random_addr_state.interval_min);
-  EXPECT_EQ(kLEAdvertisingIntervalMax - 1u, random_addr_state.interval_max);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, public_addr_state.own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, random_addr_state.own_address_type);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin, public_addr_state.interval_min);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, public_addr_state.interval_max);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin + 1u, random_addr_state.interval_min);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax - 1u, random_addr_state.interval_max);
 }
 
 TEST_F(ExtendedLowEnergyAdvertiserTest, StopAdvertisingAllAdvertisementsStopped) {
@@ -217,18 +219,20 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, StopAdvertisingAllAdvertisementsStopped)
   advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, public_options, nullptr,
                                  GetSuccessCallback());
   RunLoopUntilIdle();
-  std::optional<AdvertisingHandle> handle_public_addr = advertiser()->LastUsedHandleForTesting();
+  std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
+      advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
 
   // start random address advertising
-  constexpr AdvertisingIntervalRange random_interval(kLEAdvertisingIntervalMin + 1u,
-                                                     kLEAdvertisingIntervalMax - 1u);
+  constexpr AdvertisingIntervalRange random_interval(hci_spec::kLEAdvertisingIntervalMin + 1u,
+                                                     hci_spec::kLEAdvertisingIntervalMax - 1u);
   AdvertisingOptions random_options(random_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
                                     /*include_tx_power_level=*/false);
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, random_options, nullptr,
                                  GetSuccessCallback());
   RunLoopUntilIdle();
-  std::optional<AdvertisingHandle> handle_random_addr = advertiser()->LastUsedHandleForTesting();
+  std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
+      advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
 
   // check everything is correct
@@ -252,18 +256,18 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, StopAdvertisingAllAdvertisementsStopped)
   const LEAdvertisingState& random_addr_state =
       test_device()->extended_advertising_state(handle_random_addr.value());
 
-  constexpr uint8_t blank[kMaxLEAdvertisingDataLength] = {0};
+  constexpr uint8_t blank[hci_spec::kMaxLEAdvertisingDataLength] = {0};
 
   EXPECT_FALSE(public_addr_state.enabled);
-  EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, kMaxLEAdvertisingDataLength));
+  EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
   EXPECT_EQ(0, public_addr_state.data_length);
-  EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, kMaxLEAdvertisingDataLength));
+  EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
   EXPECT_EQ(0, public_addr_state.scan_rsp_length);
 
   EXPECT_FALSE(random_addr_state.enabled);
-  EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, kMaxLEAdvertisingDataLength));
+  EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
   EXPECT_EQ(0, random_addr_state.data_length);
-  EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, kMaxLEAdvertisingDataLength));
+  EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
   EXPECT_EQ(0, random_addr_state.scan_rsp_length);
 }
 
@@ -279,18 +283,20 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
   advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, public_options, nullptr,
                                  GetSuccessCallback());
   RunLoopUntilIdle();
-  std::optional<AdvertisingHandle> handle_public_addr = advertiser()->LastUsedHandleForTesting();
+  std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
+      advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
 
   // start random address advertising
-  constexpr AdvertisingIntervalRange random_interval(kLEAdvertisingIntervalMin + 1u,
-                                                     kLEAdvertisingIntervalMax - 1u);
+  constexpr AdvertisingIntervalRange random_interval(hci_spec::kLEAdvertisingIntervalMin + 1u,
+                                                     hci_spec::kLEAdvertisingIntervalMax - 1u);
   AdvertisingOptions random_options(random_interval, /*anonymous=*/false, kDefaultNoAdvFlags,
                                     /*include_tx_power_level=*/false);
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, random_options, nullptr,
                                  GetSuccessCallback());
   RunLoopUntilIdle();
-  std::optional<AdvertisingHandle> handle_random_addr = advertiser()->LastUsedHandleForTesting();
+  std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
+      advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
 
   // check everything is correct
@@ -309,7 +315,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
   EXPECT_TRUE(advertiser()->IsAdvertising(kPublicAddress));
   EXPECT_FALSE(advertiser()->IsAdvertising(kRandomAddress));
 
-  constexpr uint8_t blank[kMaxLEAdvertisingDataLength] = {0};
+  constexpr uint8_t blank[hci_spec::kMaxLEAdvertisingDataLength] = {0};
 
   {
     const LEAdvertisingState& public_addr_state =
@@ -318,15 +324,15 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
         test_device()->extended_advertising_state(handle_random_addr.value());
 
     EXPECT_TRUE(public_addr_state.enabled);
-    EXPECT_NE(0, std::memcmp(blank, public_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_NE(0, std::memcmp(blank, public_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_NE(0, public_addr_state.data_length);
-    EXPECT_NE(0, std::memcmp(blank, public_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_NE(0, std::memcmp(blank, public_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_NE(0, public_addr_state.scan_rsp_length);
 
     EXPECT_FALSE(random_addr_state.enabled);
-    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, random_addr_state.data_length);
-    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, random_addr_state.scan_rsp_length);
   }
 
@@ -347,15 +353,15 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, StopAdvertisingSingleAdvertisement) {
     EXPECT_FALSE(advertiser()->IsAdvertising(kRandomAddress));
 
     EXPECT_FALSE(public_addr_state.enabled);
-    EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, public_addr_state.data_length);
-    EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, public_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, public_addr_state.scan_rsp_length);
 
     EXPECT_FALSE(random_addr_state.enabled);
-    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, random_addr_state.data_length);
-    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, kMaxLEAdvertisingDataLength));
+    EXPECT_EQ(0, std::memcmp(blank, random_addr_state.data, hci_spec::kMaxLEAdvertisingDataLength));
     EXPECT_EQ(0, random_addr_state.scan_rsp_length);
   }
 }

@@ -57,7 +57,7 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 }  // namespace
 
 // static
-fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle, bt::LinkType type,
+fbl::RefPtr<LogicalLink> LogicalLink::New(hci_spec::ConnectionHandle handle, bt::LinkType type,
                                           hci::Connection::Role role, fpromise::executor* executor,
                                           size_t max_acl_payload_size,
                                           QueryServiceCallback query_service_cb,
@@ -69,7 +69,7 @@ fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle, bt::Link
   return ll;
 }
 
-LogicalLink::LogicalLink(hci::ConnectionHandle handle, bt::LinkType type,
+LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
                          hci::Connection::Role role, fpromise::executor* executor,
                          size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel)
@@ -182,7 +182,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
 
   // We do not support the Connectionless data channel, and the active broadcast flag can
   // only be used on the connectionless channel.  Drop packets that are broadcast.
-  if (packet->broadcast_flag() == hci::ACLBroadcastFlag::kActiveSlaveBroadcast) {
+  if (packet->broadcast_flag() == hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast) {
     bt_log(DEBUG, "l2cap", "Unsupported Broadcast Frame dropped");
     return;
   }
@@ -561,7 +561,7 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
 }
 
 void LogicalLink::SendConnectionParameterUpdateRequest(
-    hci::LEPreferredConnectionParameters params,
+    hci_spec::LEPreferredConnectionParameters params,
     ConnectionParameterUpdateRequestCallback request_cb) {
   ZX_ASSERT(signaling_channel_);
   ZX_ASSERT(type_ == bt::LinkType::kLE);
@@ -601,10 +601,10 @@ void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority
 
 void LogicalLink::SetBrEdrAutomaticFlushTimeout(
     zx::duration flush_timeout,
-    fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) {
+    fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) {
   if (type_ != bt::LinkType::kACL) {
     bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
-    callback(fpromise::error(hci::StatusCode::kInvalidHCICommandParameters));
+    callback(fpromise::error(hci_spec::StatusCode::kInvalidHCICommandParameters));
     return;
   }
 
@@ -749,25 +749,25 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
   // Part E, Section 7.8.18).
   bool reject = false;
 
-  hci::LEPreferredConnectionParameters params(interval_min, interval_max, slave_latency,
-                                              timeout_multiplier);
+  hci_spec::LEPreferredConnectionParameters params(interval_min, interval_max, slave_latency,
+                                                   timeout_multiplier);
 
   if (params.min_interval() > params.max_interval()) {
     bt_log(DEBUG, "l2cap", "conn. min interval larger than max");
     reject = true;
-  } else if (params.min_interval() < hci::kLEConnectionIntervalMin) {
+  } else if (params.min_interval() < hci_spec::kLEConnectionIntervalMin) {
     bt_log(DEBUG, "l2cap", "conn. min interval outside allowed range: %#.4x",
            params.min_interval());
     reject = true;
-  } else if (params.max_interval() > hci::kLEConnectionIntervalMax) {
+  } else if (params.max_interval() > hci_spec::kLEConnectionIntervalMax) {
     bt_log(DEBUG, "l2cap", "conn. max interval outside allowed range: %#.4x",
            params.max_interval());
     reject = true;
-  } else if (params.max_latency() > hci::kLEConnectionLatencyMax) {
+  } else if (params.max_latency() > hci_spec::kLEConnectionLatencyMax) {
     bt_log(DEBUG, "l2cap", "conn. slave latency too large: %#.4x", params.max_latency());
     reject = true;
-  } else if (params.supervision_timeout() < hci::kLEConnectionSupervisionTimeoutMin ||
-             params.supervision_timeout() > hci::kLEConnectionSupervisionTimeoutMax) {
+  } else if (params.supervision_timeout() < hci_spec::kLEConnectionSupervisionTimeoutMin ||
+             params.supervision_timeout() > hci_spec::kLEConnectionSupervisionTimeoutMax) {
     bt_log(DEBUG, "l2cap", "conn supv. timeout outside allowed range: %#.4x",
            params.supervision_timeout());
     reject = true;

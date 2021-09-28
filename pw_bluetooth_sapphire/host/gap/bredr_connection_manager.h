@@ -59,8 +59,8 @@ enum class DisconnectReason : uint8_t {
 // connection is immediately cleaned up and removed from the internal |connections_| map and owned
 // by itself until the HCI Disconnection Complete event is received by the underlying
 // hci::Connection object. When the peer disconnects, the |OnPeerDisconnect()| callback is
-// called by the underlying hci::Connection object and the connection is cleaned up and removed from
-// the internal |connections_| map.
+// called by the underlying hci::Connection object and the connection is cleaned up and removed
+// from the internal |connections_| map.
 class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci, PeerCache* peer_cache,
@@ -82,7 +82,7 @@ class BrEdrConnectionManager final {
 
   // Retrieves the peer id that is connected to the connection |handle|.
   // Returns kInvalidPeerId if no such peer exists.
-  PeerId GetPeerId(hci::ConnectionHandle handle) const;
+  PeerId GetPeerId(hci_spec::ConnectionHandle handle) const;
 
   // Opens a new L2CAP channel to service |psm| on |peer_id| using the preferred parameters
   // |params|. If the current connection doesn't meet |security_requirements|, attempt to upgrade
@@ -98,10 +98,10 @@ class BrEdrConnectionManager final {
   // the peer does not exist, returns nullopt.
   using ScoRequestHandle = BrEdrConnection::ScoRequestHandle;
   std::optional<ScoRequestHandle> OpenScoConnection(
-      PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+      PeerId peer_id, hci_spec::SynchronousConnectionParameters parameters,
       sco::ScoConnectionManager::OpenConnectionCallback callback);
   std::optional<ScoRequestHandle> AcceptScoConnection(
-      PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+      PeerId peer_id, std::vector<hci_spec::SynchronousConnectionParameters> parameters,
       sco::ScoConnectionManager::AcceptConnectionCallback callback);
 
   // Add a service search to be performed on new connected remote peers.
@@ -153,9 +153,9 @@ class BrEdrConnectionManager final {
   // An event signifying that a connection was completed by the controller
   struct ConnectionComplete {
     DeviceAddress addr;
-    hci::ConnectionHandle handle;
+    hci_spec::ConnectionHandle handle;
     hci::Status status;
-    hci::LinkType link_type;
+    hci_spec::LinkType link_type;
 
     // Create from an hci ConnectionComplete event
     // It is the duty of the caller to ensure it is called with a packet that contains a
@@ -169,7 +169,7 @@ class BrEdrConnectionManager final {
   // An event signifying that an incoming connection is being requested by a peer
   struct ConnectionRequestEvent {
     DeviceAddress addr;
-    hci::LinkType link_type;
+    hci_spec::LinkType link_type;
     DeviceClass class_of_device;
 
     // Create from an hci ConnectionRequest event
@@ -186,7 +186,7 @@ class BrEdrConnectionManager final {
 
   // Attempt to complete the active connection request for the peer |peer_id| with status |status|
   void CompleteRequest(PeerId peer_id, DeviceAddress address, hci::Status status,
-                       hci::ConnectionHandle handle);
+                       hci_spec::ConnectionHandle handle);
 
   // Is there a current incoming connection request in progress for the given address
   bool ExistsIncomingRequest(PeerId id);
@@ -206,17 +206,17 @@ class BrEdrConnectionManager final {
                              hci::StatusCallback cb);
 
   // Helper to register an event handler to run.
-  hci::CommandChannel::EventHandlerId AddEventHandler(const hci::EventCode& code,
+  hci::CommandChannel::EventHandlerId AddEventHandler(const hci_spec::EventCode& code,
                                                       hci::CommandChannel::EventCallback cb);
 
   // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
   // |peer_id| is connected.
-  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionById(
+  std::optional<std::pair<hci_spec::ConnectionHandle, BrEdrConnection*>> FindConnectionById(
       PeerId peer_id);
 
   // Find the handle for a connection to |bd_addr|. Returns nullopt if no BR/EDR
   // |bd_addr| is connected.
-  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionByAddress(
+  std::optional<std::pair<hci_spec::ConnectionHandle, BrEdrConnection*>> FindConnectionByAddress(
       const DeviceAddressBytes& bd_addr);
 
   // Find a peer with |addr| or create one if not found.
@@ -224,12 +224,12 @@ class BrEdrConnectionManager final {
 
   // Initialize ACL connection state from |connection_handle| obtained from the controller and begin
   // interrogation. The connection will be initialized with the role |role|.
-  void InitializeConnection(DeviceAddress addr, hci::ConnectionHandle connection_handle,
-                            hci::ConnectionRole role);
+  void InitializeConnection(DeviceAddress addr, hci_spec::ConnectionHandle connection_handle,
+                            hci_spec::ConnectionRole role);
 
   // Called once interrogation completes to make connection identified by |handle| available to
   // upper layers and begin new connection procedures.
-  void CompleteConnectionSetup(Peer* peer, hci::ConnectionHandle handle);
+  void CompleteConnectionSetup(Peer* peer, hci_spec::ConnectionHandle handle);
 
   // Callbacks for registered events
   hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(const hci::EventPacket& event);
@@ -254,7 +254,7 @@ class BrEdrConnectionManager final {
     PeerId peer_id;
     DeviceAddress addr;
     std::optional<uint16_t> clock_offset;
-    std::optional<hci::PageScanRepetitionMode> page_scan_repetition_mode;
+    std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode;
   };
 
   // Find the next valid Request that is available to begin connecting
@@ -272,16 +272,16 @@ class BrEdrConnectionManager final {
   // link closed. Unregisters the connection from the data domain and marks the
   // peer's BR/EDR cache state as disconnected. Takes ownership of |conn| and
   // destroys it.
-  void CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn);
+  void CleanUpConnection(hci_spec::ConnectionHandle handle, BrEdrConnection conn);
 
   // Helpers for sending commands on the command channel for this controller.
   // All callbacks will run on |dispatcher_|.
-  void SendAuthenticationRequested(hci::ConnectionHandle handle, hci::StatusCallback cb);
-  void SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr, hci::IOCapability io_capability,
-                                    uint8_t oob_data_present,
-                                    hci::AuthRequirements auth_requirements,
+  void SendAuthenticationRequested(hci_spec::ConnectionHandle handle, hci::StatusCallback cb);
+  void SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr,
+                                    hci_spec::IOCapability io_capability, uint8_t oob_data_present,
+                                    hci_spec::AuthRequirements auth_requirements,
                                     hci::StatusCallback cb = nullptr);
-  void SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr, hci::StatusCode reason,
+  void SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr, hci_spec::StatusCode reason,
                                             hci::StatusCallback cb = nullptr);
   void SendUserConfirmationRequestReply(DeviceAddressBytes bd_addr,
                                         hci::StatusCallback cb = nullptr);
@@ -293,12 +293,12 @@ class BrEdrConnectionManager final {
                                            hci::StatusCallback cb = nullptr);
   void SendLinkKeyRequestNegativeReply(DeviceAddressBytes bd_addr,
                                        hci::StatusCallback cb = nullptr);
-  void SendLinkKeyRequestReply(DeviceAddressBytes bd_addr, hci::LinkKey link_key,
+  void SendLinkKeyRequestReply(DeviceAddressBytes bd_addr, hci_spec::LinkKey link_key,
                                hci::StatusCallback cb = nullptr);
   void SendAcceptConnectionRequest(DeviceAddressBytes addr, hci::StatusCallback cb = nullptr);
-  void SendRejectConnectionRequest(DeviceAddress addr, hci::StatusCode reason,
+  void SendRejectConnectionRequest(DeviceAddress addr, hci_spec::StatusCode reason,
                                    hci::StatusCallback cb = nullptr);
-  void SendRejectSynchronousRequest(DeviceAddress addr, hci::StatusCode reason,
+  void SendRejectSynchronousRequest(DeviceAddress addr, hci_spec::StatusCode reason,
                                     hci::StatusCallback cb = nullptr);
 
   // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr, the event returned
@@ -309,7 +309,7 @@ class BrEdrConnectionManager final {
   // Record a disconnection in Inspect's list of disconnections.
   void RecordDisconnectInspect(const BrEdrConnection& conn);
 
-  using ConnectionMap = std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
+  using ConnectionMap = std::unordered_map<hci_spec::ConnectionHandle, BrEdrConnection>;
 
   fxl::WeakPtr<hci::Transport> hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;
@@ -346,7 +346,7 @@ class BrEdrConnectionManager final {
   // Set to 0 when non-connectable.
   uint16_t page_scan_interval_;
   uint16_t page_scan_window_;
-  hci::PageScanType page_scan_type_;
+  hci_spec::PageScanType page_scan_type_;
   bool use_interlaced_scan_;
 
   // Outstanding connection requests based on remote peer ID.

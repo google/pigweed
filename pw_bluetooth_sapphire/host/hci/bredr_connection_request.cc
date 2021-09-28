@@ -15,10 +15,12 @@
 namespace bt::hci {
 
 std::unique_ptr<CommandPacket> CreateConnectionPacket(
-    DeviceAddress address, std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
+    DeviceAddress address,
+    std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
-  auto request = CommandPacket::New(kCreateConnection, sizeof(CreateConnectionCommandParams));
-  auto params = request->mutable_payload<CreateConnectionCommandParams>();
+  auto request = CommandPacket::New(hci_spec::kCreateConnection,
+                                    sizeof(hci_spec::CreateConnectionCommandParams));
+  auto params = request->mutable_payload<hci_spec::CreateConnectionCommandParams>();
 
   params->bd_addr = address.value();
   params->packet_type = htole16(kEnableAllPacketTypes);
@@ -29,7 +31,8 @@ std::unique_ptr<CommandPacket> CreateConnectionPacket(
   if (page_scan_repetition_mode)
     params->page_scan_repetition_mode = *page_scan_repetition_mode;
   else
-    params->page_scan_repetition_mode = PageScanRepetitionMode::kR2;  // Every 2.56 seconds
+    params->page_scan_repetition_mode =
+        hci_spec::PageScanRepetitionMode::kR2;  // Every 2.56 seconds
 
   params->reserved = 0;  // Reserved, must be set to 0.
 
@@ -41,8 +44,8 @@ std::unique_ptr<CommandPacket> CreateConnectionPacket(
   else
     params->clock_offset = 0x0000;
 
-  params->allow_role_switch =
-      static_cast<uint8_t>(RoleSwitchBits::kDisallowRoleSwitch);  // Do not allow role switch
+  params->allow_role_switch = static_cast<uint8_t>(
+      hci_spec::RoleSwitchBits::kDisallowRoleSwitch);  // Do not allow role switch
 
   return request;
 }
@@ -50,7 +53,7 @@ std::unique_ptr<CommandPacket> CreateConnectionPacket(
 void BrEdrConnectionRequest::CreateConnection(
     CommandChannel* command_channel, async_dispatcher_t* dispatcher,
     std::optional<uint16_t> clock_offset,
-    std::optional<PageScanRepetitionMode> page_scan_repetition_mode, zx::duration timeout,
+    std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode, zx::duration timeout,
     OnCompleteDelegate on_command_fail) {
   ZX_DEBUG_ASSERT(timeout > zx::msec(0));
 
@@ -59,7 +62,7 @@ void BrEdrConnectionRequest::CreateConnection(
   auto complete_cb = [self, timeout, peer_id = peer_id_,
                       on_command_fail = std::move(on_command_fail)](auto,
                                                                     const EventPacket& event) {
-    ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
+    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self)
       return;
@@ -78,7 +81,8 @@ void BrEdrConnectionRequest::CreateConnection(
   auto packet = CreateConnectionPacket(peer_address_, page_scan_repetition_mode, clock_offset);
 
   bt_log(INFO, "hci-bredr", "initiating connection request (peer: %s)", bt_str(peer_id_));
-  command_channel->SendCommand(std::move(packet), std::move(complete_cb), kCommandStatusEventCode);
+  command_channel->SendCommand(std::move(packet), std::move(complete_cb),
+                               hci_spec::kCommandStatusEventCode);
 }
 
 // Status is either a Success or an Error value
@@ -90,7 +94,7 @@ Status BrEdrConnectionRequest::CompleteRequest(Status status) {
   if (!status.is_success()) {
     if (state_ == RequestState::kTimedOut) {
       status = Status(HostError::kTimedOut);
-    } else if (status.protocol_error() == StatusCode::kUnknownConnectionId) {
+    } else if (status.protocol_error() == hci_spec::StatusCode::kUnknownConnectionId) {
       // The "Unknown Connection Identifier" error code is returned if this
       // event was sent due to a successful cancellation via the
       // HCI_Create_Connection_Cancel command

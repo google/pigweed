@@ -88,7 +88,7 @@ class ChannelManager final {
   //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
-  void RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void RegisterACL(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                    LinkErrorCallback link_error_callback,
                    SecurityUpgradeCallback security_callback);
 
@@ -108,7 +108,7 @@ class ChannelManager final {
   //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
-  void RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void RegisterLE(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                   LEConnectionParameterUpdateCallback conn_param_callback,
                   LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback);
 
@@ -119,22 +119,23 @@ class ChannelManager final {
   // sends a HCI Disconnection Complete Event for the corresponding logical
   // link. This is to prevent incorrectly buffering data if the controller has
   // more packets to send after removing the link entry.
-  void Unregister(hci::ConnectionHandle handle);
+  void Unregister(hci_spec::ConnectionHandle handle);
 
   // Assigns the security level of a logical link. Has no effect if |handle| has
   // not been previously registered or the link is closed.
-  void AssignLinkSecurityProperties(hci::ConnectionHandle handle, sm::SecurityProperties security);
+  void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
+                                    sm::SecurityProperties security);
 
   // Opens the L2CAP fixed channel with |channel_id| over the logical link
   // identified by |connection_handle| and starts routing packets. Returns
   // nullptr if the channel is already open.
-  fbl::RefPtr<Channel> OpenFixedChannel(hci::ConnectionHandle connection_handle,
+  fbl::RefPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
                                         ChannelId channel_id);
 
   // Opens an out-bound connection-oriented L2CAP channel on the link specified by |handle| to the
   // requested |psm| with the preferred parameters |params|.
   // Returns a channel asynchronously via |callback|.
-  void OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
+  void OpenChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                    ChannelCallback cb);
 
   // Register/Unregister a callback for incoming service connections.
@@ -152,8 +153,8 @@ class ChannelManager final {
   // NOTE: The local Host must be an LE slave, and this request should only be sent if the slave or
   // host does not support the Connection Parameters Request Link Layer Control Procedure (Core Spec
   // v5.2, Vol 3, Part A, Sec 4.20).
-  void RequestConnectionParameterUpdate(hci::ConnectionHandle handle,
-                                        hci::LEPreferredConnectionParameters params,
+  void RequestConnectionParameterUpdate(hci_spec::ConnectionHandle handle,
+                                        hci_spec::LEPreferredConnectionParameters params,
                                         ConnectionParameterUpdateRequestCallback request_cb);
 
   // Attach ChannelManager's inspect nodes as children of |parent|.
@@ -163,7 +164,7 @@ class ChannelManager final {
   // if none exists.
   // NOTE: This is intended ONLY for unit tests. Clients should use the other public methods to
   // interact with the link.
-  fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(hci::ConnectionHandle handle);
+  fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(hci_spec::ConnectionHandle handle);
 
  private:
   // Called when an ACL data packet is received from the controller. This method
@@ -172,7 +173,7 @@ class ChannelManager final {
 
   // Called by the various Register functions. Returns a pointer to the newly
   // added link.
-  internal::LogicalLink* RegisterInternal(hci::ConnectionHandle handle, bt::LinkType ll_type,
+  internal::LogicalLink* RegisterInternal(hci_spec::ConnectionHandle handle, bt::LinkType ll_type,
                                           hci::Connection::Role role, size_t max_payload_size);
 
   // If a service (identified by |psm|) requested has been registered, return a ServiceInfo object
@@ -180,7 +181,7 @@ class ChannelManager final {
   // registrant. The callback may be called repeatedly to pass multiple channels for |psm|, but
   // should not be stored because the service may be unregistered at a later time. Calls for
   // unregistered services return null.
-  std::optional<ServiceInfo> QueryService(hci::ConnectionHandle handle, PSM psm);
+  std::optional<ServiceInfo> QueryService(hci_spec::ConnectionHandle handle, PSM psm);
 
   // Maximum sizes for data packet payloads from host to controller.
   const size_t max_acl_payload_size_;
@@ -188,14 +189,15 @@ class ChannelManager final {
 
   hci::AclDataChannel* acl_data_channel_;
 
-  using LinkMap = std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
+  using LinkMap =
+      std::unordered_map<hci_spec::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
   LinkMap ll_map_;
   inspect::Node ll_node_;
 
   // Stores packets received on a connection handle before a link for it has
   // been created.
   using PendingPacketMap =
-      std::unordered_map<hci::ConnectionHandle, LinkedList<hci::ACLDataPacket>>;
+      std::unordered_map<hci_spec::ConnectionHandle, LinkedList<hci::ACLDataPacket>>;
   PendingPacketMap pending_packets_;
 
   // Store information required to create and forward channels for locally-

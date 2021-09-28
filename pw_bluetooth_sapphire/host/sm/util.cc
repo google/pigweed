@@ -18,7 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -97,26 +97,26 @@ std::string IOCapabilityToString(IOCapability capability) {
   return "(unknown)";
 }
 
-hci::IOCapability IOCapabilityForHci(IOCapability capability) {
+hci_spec::IOCapability IOCapabilityForHci(IOCapability capability) {
   switch (capability) {
     case IOCapability::kDisplayOnly:
-      return hci::IOCapability::kDisplayOnly;
+      return hci_spec::IOCapability::kDisplayOnly;
     case IOCapability::kDisplayYesNo:
-      return hci::IOCapability::kDisplayYesNo;
+      return hci_spec::IOCapability::kDisplayYesNo;
     case IOCapability::kKeyboardOnly:
-      return hci::IOCapability::kKeyboardOnly;
+      return hci_spec::IOCapability::kKeyboardOnly;
     case IOCapability::kNoInputNoOutput:
-      return hci::IOCapability::kNoInputNoOutput;
+      return hci_spec::IOCapability::kNoInputNoOutput;
 
     // There's no dedicated HCI "Keyboard w/ Display" IO Capability. Use
     // DisplayYesNo for devices with keyboard input and numeric output. See Core
     // Spec v5.0 Vol 3, Part C, Section 5.2.2.5 (Table 5.5).
     case IOCapability::kKeyboardDisplay:
-      return hci::IOCapability::kDisplayYesNo;
+      return hci_spec::IOCapability::kDisplayYesNo;
     default:
       break;
   }
-  return hci::IOCapability::kNoInputNoOutput;
+  return hci_spec::IOCapability::kNoInputNoOutput;
 }
 
 std::string PairingMethodToString(PairingMethod method) {
@@ -252,8 +252,8 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const By
   UInt128 p1, p2;
 
   // Calculate p1 = pres || preq || rat’ || iat’
-  hci::LEAddressType iat = hci::AddressTypeToHCI(initiator_addr.type());
-  hci::LEAddressType rat = hci::AddressTypeToHCI(responder_addr.type());
+  hci_spec::LEAddressType iat = hci::AddressTypeToHCI(initiator_addr.type());
+  hci_spec::LEAddressType rat = hci::AddressTypeToHCI(responder_addr.type());
   p1[0] = static_cast<uint8_t>(iat);
   p1[1] = static_cast<uint8_t>(rat);
   std::memcpy(p1.data() + 2, preq.data(), preq.size());                // Bytes [2-8]

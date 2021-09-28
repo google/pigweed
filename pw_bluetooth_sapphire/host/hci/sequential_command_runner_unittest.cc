@@ -12,8 +12,8 @@
 namespace bt::hci {
 namespace {
 
-constexpr OpCode kTestOpCode = 0xFFFF;
-constexpr OpCode kTestOpCode2 = 0xF00F;
+constexpr hci_spec::OpCode kTestOpCode = 0xFFFF;
+constexpr hci_spec::OpCode kTestOpCode2 = 0xF00F;
 
 using bt::testing::CommandTransaction;
 
@@ -32,19 +32,19 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
 
   auto command_status_error_bytes =
-      CreateStaticByteBuffer(kCommandStatusEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             StatusCode::kHardwareFailure, 1, 0xFF, 0xFF);
+                             hci_spec::StatusCode::kHardwareFailure, 1, 0xFF, 0xFF);
 
   auto command_cmpl_error_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, StatusCode::kReserved0);
+                             1, 0xFF, 0xFF, hci_spec::StatusCode::kReserved0);
 
   auto command_cmpl_success_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, StatusCode::kSuccess);
+                             1, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
 
   // Here we perform multiple test sequences where we queue up several  commands
   // in each sequence. We expect each sequence to terminate differently after
@@ -107,7 +107,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
   cb_called = 0;
 
   // Sequence 2 (test)
@@ -125,7 +125,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(2, status_cb_called);
-  EXPECT_EQ(StatusCode::kReserved0, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kReserved0, status.protocol_error());
   cb_called = 0;
 
   // Sequence 3 (test)
@@ -144,7 +144,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(3, status_cb_called);
-  EXPECT_EQ(StatusCode::kReserved0, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kReserved0, status.protocol_error());
   cb_called = 0;
 
   // Sequence 4 (test)
@@ -186,14 +186,14 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
 
   auto command_cmpl_error_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, StatusCode::kHardwareFailure);
+                             1, 0xFF, 0xFF, hci_spec::StatusCode::kHardwareFailure);
 
   auto command_cmpl_success_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             1, 0xFF, 0xFF, StatusCode::kSuccess);
+                             1, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
 
   // Sequence 1
   //   -> Command; <- success complete
@@ -311,48 +311,48 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_EQ(1, cb_called);
   // The result callback should have been called with the failure result.
   EXPECT_EQ(3, status_cb_called);
-  EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
 }
 
 TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   // Need to signal to the queue that we can run more than one command at once.
   auto command_status_queue_increase =
-      CreateStaticByteBuffer(kCommandStatusEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             StatusCode::kSuccess, 250, 0x00, 0x00);
+                             hci_spec::StatusCode::kSuccess, 250, 0x00, 0x00);
   // HCI command with custom opcode FFFF.
   auto command_bytes = CreateStaticByteBuffer(0xFF, 0xFF, 0x00);
   auto command_status_error_bytes =
-      CreateStaticByteBuffer(kCommandStatusEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             StatusCode::kHardwareFailure, 2, 0xFF, 0xFF);
+                             hci_spec::StatusCode::kHardwareFailure, 2, 0xFF, 0xFF);
 
   auto command_cmpl_error_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             2, 0xFF, 0xFF, StatusCode::kReserved0);
+                             2, 0xFF, 0xFF, hci_spec::StatusCode::kReserved0);
 
   auto command_cmpl_success_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             2, 0xFF, 0xFF, StatusCode::kSuccess);
+                             2, 0xFF, 0xFF, hci_spec::StatusCode::kSuccess);
 
   // HCI command with custom opcode F00F.
   auto command2_bytes = CreateStaticByteBuffer(0x0F, 0xF0, 0x00);
   auto command2_status_error_bytes =
-      CreateStaticByteBuffer(kCommandStatusEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandStatusEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             StatusCode::kHardwareFailure, 2, 0x0F, 0xF0);
+                             hci_spec::StatusCode::kHardwareFailure, 2, 0x0F, 0xF0);
 
   auto command2_cmpl_error_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             2, 0x0F, 0xF0, StatusCode::kReserved0);
+                             2, 0x0F, 0xF0, hci_spec::StatusCode::kReserved0);
 
   auto command2_cmpl_success_bytes =
-      CreateStaticByteBuffer(kCommandCompleteEventCode,
+      CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                              0x04,  // parameter_total_size (4 byte payload)
-                             2, 0x0F, 0xF0, StatusCode::kSuccess);
+                             2, 0x0F, 0xF0, hci_spec::StatusCode::kSuccess);
 
   test_device()->StartCmdChannel(test_cmd_chan());
   test_device()->StartAclChannel(test_acl_chan());
@@ -433,7 +433,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
 
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
 }
 
 }  // namespace

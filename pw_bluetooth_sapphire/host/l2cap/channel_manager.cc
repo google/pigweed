@@ -53,7 +53,7 @@ hci::ACLPacketHandler ChannelManager::MakeInboundDataHandler() {
   };
 }
 
-void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
+void ChannelManager::RegisterACL(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                                  LinkErrorCallback link_error_cb,
                                  SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
@@ -64,7 +64,7 @@ void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::
   ll->set_security_upgrade_callback(std::move(security_cb));
 }
 
-void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
+void ChannelManager::RegisterLE(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                                 LEConnectionParameterUpdateCallback conn_param_cb,
                                 LinkErrorCallback link_error_cb,
                                 SecurityUpgradeCallback security_cb) {
@@ -77,7 +77,7 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
   ll->set_connection_parameter_update_callback(std::move(conn_param_cb));
 }
 
-void ChannelManager::Unregister(hci::ConnectionHandle handle) {
+void ChannelManager::Unregister(hci_spec::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   bt_log(DEBUG, "l2cap", "unregister link (handle: %#.4x)", handle);
@@ -95,7 +95,7 @@ void ChannelManager::Unregister(hci::ConnectionHandle handle) {
   ll_map_.erase(iter);
 }
 
-void ChannelManager::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
+void ChannelManager::AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                                   sm::SecurityProperties security) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
@@ -110,7 +110,7 @@ void ChannelManager::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
   iter->second->AssignSecurityProperties(security);
 }
 
-fbl::RefPtr<Channel> ChannelManager::OpenFixedChannel(hci::ConnectionHandle handle,
+fbl::RefPtr<Channel> ChannelManager::OpenFixedChannel(hci_spec::ConnectionHandle handle,
                                                       ChannelId channel_id) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
@@ -123,8 +123,8 @@ fbl::RefPtr<Channel> ChannelManager::OpenFixedChannel(hci::ConnectionHandle hand
   return iter->second->OpenFixedChannel(channel_id);
 }
 
-void ChannelManager::OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
-                                 ChannelCallback cb) {
+void ChannelManager::OpenChannel(hci_spec::ConnectionHandle handle, PSM psm,
+                                 ChannelParameters params, ChannelCallback cb) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   auto iter = ll_map_.find(handle);
@@ -164,7 +164,7 @@ void ChannelManager::UnregisterService(PSM psm) {
 }
 
 void ChannelManager::RequestConnectionParameterUpdate(
-    hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+    hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
     ConnectionParameterUpdateRequestCallback request_cb) {
   ZX_ASSERT(thread_checker_.is_thread_valid());
 
@@ -194,7 +194,7 @@ void ChannelManager::AttachInspect(inspect::Node& parent) {
 }
 
 fxl::WeakPtr<internal::LogicalLink> ChannelManager::LogicalLinkForTesting(
-    hci::ConnectionHandle handle) {
+    hci_spec::ConnectionHandle handle) {
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
     return nullptr;
@@ -234,7 +234,7 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   iter->second->HandleRxPacket(std::move(packet));
 }
 
-internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle handle,
+internal::LogicalLink* ChannelManager::RegisterInternal(hci_spec::ConnectionHandle handle,
                                                         bt::LinkType ll_type,
                                                         hci::Connection::Role role,
                                                         size_t max_payload_size) {
@@ -272,7 +272,7 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
 }
 
 std::optional<ChannelManager::ServiceInfo> ChannelManager::QueryService(
-    hci::ConnectionHandle handle, PSM psm) {
+    hci_spec::ConnectionHandle handle, PSM psm) {
   auto iter = services_.find(psm);
   if (iter == services_.end()) {
     return std::nullopt;

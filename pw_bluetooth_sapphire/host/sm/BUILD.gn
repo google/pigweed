@@ -18,7 +18,7 @@ source_set("definitions") {
 
   public_deps = [
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci-spec",  # hci::LinkKey
+    "//src/connectivity/bluetooth/core/bt-host/hci-spec",  # hci_spec::LinkKey
   ]
 }
 

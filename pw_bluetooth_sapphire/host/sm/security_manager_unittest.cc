@@ -987,7 +987,7 @@ TEST_F(InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnectionsO
   pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
   const LTK kUnauthenticatedLtk(SecurityProperties(true /*encrypted*/, false /*authenticated*/,
                                                    true /*SC*/, kMaxEncryptionKeySize),
-                                hci::LinkKey());
+                                hci_spec::LinkKey());
   pairing()->AssignLongTermKey(kUnauthenticatedLtk);
   RunLoopUntilIdle();
   // After setting SC Only mode, assigning and encrypting with an unauthenticated LTK should cause
@@ -1671,7 +1671,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(SecurityProperties(), pairing()->security());
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(hci::StatusCode::kPinOrKeyMissing),
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(hci_spec::StatusCode::kPinOrKeyMissing),
                                                false /* enabled */);
   RunLoopUntilIdle();
 
@@ -1680,7 +1680,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, auth_failure_callback_count());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 
   // No security property update should have been sent since the security
   // properties have not changed.
@@ -1788,7 +1788,7 @@ TEST_F(InitiatorPairingTest, ScPhase3CompleteWithoutKeyExchange) {
   FastForwardToPhase3(&ltk_bytes, true /*secure_connections*/, kExpectedSecurity.level(),
                       KeyDistGenField{0}, KeyDistGenField{0});
 
-  const LTK kExpectedLtk(kExpectedSecurity, hci::LinkKey(ltk_bytes, 0, 0));
+  const LTK kExpectedLtk(kExpectedSecurity, hci_spec::LinkKey(ltk_bytes, 0, 0));
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(kExpectedLtk.key(), fake_link()->ltk());
 
@@ -1833,7 +1833,7 @@ TEST_F(InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   FastForwardToScLtk(&ltk_bytes, kExpectedSecurity.level(), remote_keys, local_keys,
                      BondableMode::Bondable);
 
-  const LTK kExpectedLtk(kExpectedSecurity, hci::LinkKey(ltk_bytes, 0, 0));
+  const LTK kExpectedLtk(kExpectedSecurity, hci_spec::LinkKey(ltk_bytes, 0, 0));
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(kExpectedLtk.key(), fake_link()->ltk());
 
@@ -1883,7 +1883,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   FastForwardToScLtk(&ltk_bytes, kExpectedSecurity.level(), KeyDistGenField{0}, KeyDistGenField{0},
                      BondableMode::NonBondable);
 
-  const hci::LinkKey kExpectedLinkKey(ltk_bytes, 0, 0);
+  const hci_spec::LinkKey kExpectedLinkKey(ltk_bytes, 0, 0);
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(kExpectedLinkKey, fake_link()->ltk());
 
@@ -2164,7 +2164,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithSendingEncKey) {
   ASSERT_TRUE(local_ltk());
 
   // LTK sent OTA should match what we notified the pairing data callback with.
-  EXPECT_EQ(local_ltk()->key(), hci::LinkKey(enc_info(), rand(), ediv()));
+  EXPECT_EQ(local_ltk()->key(), hci_spec::LinkKey(enc_info(), rand(), ediv()));
 }
 
 // Pairing completes after obtaining short encryption information only.
@@ -2497,14 +2497,14 @@ TEST_F(InitiatorPairingTest, GenerateCrossTransportLinkKey) {
 TEST_F(InitiatorPairingTest, AssignLongTermKeyFailsDuringPairing) {
   UpgradeSecurity(SecurityLevel::kEncrypted);  // Initiate pairing.
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
-  EXPECT_FALSE(pairing()->AssignLongTermKey(LTK(sec_props, hci::LinkKey())));
+  EXPECT_FALSE(pairing()->AssignLongTermKey(LTK(sec_props, hci_spec::LinkKey())));
   EXPECT_EQ(0, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityLevel::kNoSecurity, pairing()->security().level());
 }
 
 TEST_F(InitiatorPairingTest, AssignLongTermKey) {
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
-  LTK ltk(sec_props, hci::LinkKey());
+  LTK ltk(sec_props, hci_spec::LinkKey());
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(ltk));
   EXPECT_EQ(1, fake_link()->start_encryption_count());
@@ -2695,8 +2695,8 @@ TEST_F(InitiatorPairingTest, SendingMessageRestartsTimer) {
 
 TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDisconnect) {
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
-  const LTK kOriginalLtk(sec_props, hci::LinkKey({1}, 2, 3));
-  const hci::LinkKey kModifiedLtk(hci::LinkKey({4}, 5, 6));
+  const LTK kOriginalLtk(sec_props, hci_spec::LinkKey({1}, 2, 3));
+  const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
   fake_link()->set_le_ltk(kModifiedLtk);
@@ -2707,7 +2707,7 @@ TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDis
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  ASSERT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 }
 
 TEST_F(ResponderPairingTest, SuccessfulPairAfterResetInProgressPairing) {
@@ -2745,7 +2745,7 @@ TEST_F(ResponderPairingTest, SecurityRequestCausesPairing) {
   EXPECT_EQ(security_status(), pairing_complete_status());
 
   // LTK should have been assigned to the link.
-  hci::LinkKey kExpectedLinkKey(ltk_bytes, 0, 0);
+  hci_spec::LinkKey kExpectedLinkKey(ltk_bytes, 0, 0);
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(kExpectedLinkKey, fake_link()->ltk());
 
@@ -2762,7 +2762,7 @@ TEST_F(ResponderPairingTest, SecurityRequestCausesPairing) {
 
 TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
   const SecurityProperties kProps(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize, true);
-  const LTK kLtk(kProps, hci::LinkKey({1, 2, 3}, 0, 0));
+  const LTK kLtk(kProps, hci_spec::LinkKey({1, 2, 3}, 0, 0));
   // This pretends that we have an already-bonded LTK.
   pairing()->AssignLongTermKey(kLtk);
   // LTK should have been assigned to the link.
@@ -2792,7 +2792,7 @@ TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
 
 TEST_F(ResponderPairingTest, SecurityRequestInitiatorEncryptsWithInsufficientSecurityLtk) {
   const SecurityProperties kProps(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, true);
-  const LTK kLtk(kProps, hci::LinkKey({1, 2, 3}, 0, 0));
+  const LTK kLtk(kProps, hci_spec::LinkKey({1, 2, 3}, 0, 0));
   // This pretends that we have an already-bonded LTK with kEncrypted security level.
   pairing()->AssignLongTermKey(kLtk);
   // LTK should have been assigned to the link.
@@ -3190,7 +3190,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3ReceiveInitiatorEncKey) {
 
   const uint64_t kRand = 5;
   const uint16_t kEDiv = 20;
-  const hci::LinkKey kLTK({1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}, kRand, kEDiv);
+  const hci_spec::LinkKey kLTK({1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}, kRand, kEDiv);
 
   ReceiveEncryptionInformation(kLTK.value());
   ReceiveMasterIdentification(kRand, kEDiv);
@@ -3268,14 +3268,14 @@ TEST_F(ResponderPairingTest, AssignLongTermKeyFailsDuringPairing) {
   ReceivePairingRequest();
   RunLoopUntilIdle();
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
-  EXPECT_FALSE(pairing()->AssignLongTermKey(LTK(sec_props, hci::LinkKey())));
+  EXPECT_FALSE(pairing()->AssignLongTermKey(LTK(sec_props, hci_spec::LinkKey())));
   EXPECT_EQ(0, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityLevel::kNoSecurity, pairing()->security().level());
 }
 
 TEST_F(ResponderPairingTest, AssignLongTermKey) {
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
-  LTK ltk(sec_props, hci::LinkKey());
+  LTK ltk(sec_props, hci_spec::LinkKey());
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(ltk));
   ASSERT_TRUE(fake_link()->ltk());
@@ -3297,8 +3297,8 @@ TEST_F(ResponderPairingTest, AssignLongTermKey) {
 
 TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
-  const LTK kOriginalLtk(sec_props, hci::LinkKey({1}, 2, 3));
-  const hci::LinkKey kModifiedLtk(hci::LinkKey({4}, 5, 6));
+  const LTK kOriginalLtk(sec_props, hci_spec::LinkKey({1}, 2, 3));
+  const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
   fake_link()->set_le_ltk(kModifiedLtk);
@@ -3306,18 +3306,18 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  ASSERT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 }
 
 TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   // The LE link LTK should always be assigned through SM, so while encryption could succeed with
   // a link LTK but no SM LTK, this is a violation of bt-host assumptions and we will disconnect.
-  fake_link()->set_le_ltk(hci::LinkKey({1}, 2, 3));
+  fake_link()->set_le_ltk(hci_spec::LinkKey({1}, 2, 3));
   fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /*enabled*/);
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  ASSERT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 }
 
 // As responder, we reject security requests, as the initiator should never send them.
@@ -3441,7 +3441,7 @@ TEST_F(ResponderPairingTest, SecureConnectionsWorks) {
                                              true /* secure connections */);
   FastForwardToPhase3(&ltk_bytes, true /*secure_connections*/, kExpectedSecurity.level());
 
-  const LTK kExpectedLtk(kExpectedSecurity, hci::LinkKey(ltk_bytes, 0, 0));
+  const LTK kExpectedLtk(kExpectedSecurity, hci_spec::LinkKey(ltk_bytes, 0, 0));
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(kExpectedLtk.key(), fake_link()->ltk());
 

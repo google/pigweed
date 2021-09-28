@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
-constexpr static bt::hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr static bt::hci_spec::ConnectionHandle kTestHandle = 0x0001;
 
 bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provider) {
   bt::l2cap::ChannelParameters params;

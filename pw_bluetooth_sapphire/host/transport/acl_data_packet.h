@@ -21,12 +21,12 @@ namespace bt::hci {
 
 // Packet template specialization for ACL data packets. This cannot be directly
 // instantiated. Represents a HCI ACL data packet.
-using ACLDataPacket = Packet<ACLDataHeader>;
+using ACLDataPacket = Packet<hci_spec::ACLDataHeader>;
 using ACLDataPacketPtr = std::unique_ptr<ACLDataPacket>;
 using ACLPacketHandler = fit::function<void(ACLDataPacketPtr data_packet)>;
 
 template <>
-class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
+class Packet<hci_spec::ACLDataHeader> : public PacketBase<hci_spec::ACLDataHeader, ACLDataPacket> {
  public:
   // Slab-allocates a new ACLDataPacket with the given payload size without
   // initializing its contents.
@@ -34,14 +34,15 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
 
   // Slab-allocates a new ACLDataPacket with the given payload size and
   // initializes the packet's header field with the given data.
-  static ACLDataPacketPtr New(ConnectionHandle connection_handle,
-                              ACLPacketBoundaryFlag packet_boundary_flag,
-                              ACLBroadcastFlag broadcast_flag, uint16_t payload_size = 0u);
+  static ACLDataPacketPtr New(hci_spec::ConnectionHandle connection_handle,
+                              hci_spec::ACLPacketBoundaryFlag packet_boundary_flag,
+                              hci_spec::ACLBroadcastFlag broadcast_flag,
+                              uint16_t payload_size = 0u);
 
   // Getters for the header fields.
-  ConnectionHandle connection_handle() const;
-  ACLPacketBoundaryFlag packet_boundary_flag() const;
-  ACLBroadcastFlag broadcast_flag() const;
+  hci_spec::ConnectionHandle connection_handle() const;
+  hci_spec::ACLPacketBoundaryFlag packet_boundary_flag() const;
+  hci_spec::ACLBroadcastFlag broadcast_flag() const;
 
   // Initializes the internal PacketView by reading the header portion of the
   // underlying buffer.
@@ -54,12 +55,13 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
 #endif
 
  protected:
-  Packet<ACLDataHeader>() = default;
+  Packet<hci_spec::ACLDataHeader>() = default;
 
  private:
   // Writes the given header fields into the underlying buffer.
-  void WriteHeader(ConnectionHandle connection_handle, ACLPacketBoundaryFlag packet_boundary_flag,
-                   ACLBroadcastFlag broadcast_flag);
+  void WriteHeader(hci_spec::ConnectionHandle connection_handle,
+                   hci_spec::ACLPacketBoundaryFlag packet_boundary_flag,
+                   hci_spec::ACLBroadcastFlag broadcast_flag);
 
 #ifndef NTRACE
   trace_flow_id_t async_id_;

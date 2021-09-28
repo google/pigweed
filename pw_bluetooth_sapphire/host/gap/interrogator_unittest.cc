@@ -20,7 +20,7 @@
 
 namespace bt::gap {
 
-constexpr hci::ConnectionHandle kConnectionHandle = 0x0BAA;
+constexpr hci_spec::ConnectionHandle kConnectionHandle = 0x0BAA;
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 
 class TestInterrogator final : public Interrogator {

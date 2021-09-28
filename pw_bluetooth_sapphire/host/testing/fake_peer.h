@@ -72,7 +72,7 @@ class FakePeer {
 
   // Generates a Inquiry Response Event payload containing a inquiry result
   // response.
-  DynamicByteBuffer CreateInquiryResponseEvent(hci::InquiryMode mode) const;
+  DynamicByteBuffer CreateInquiryResponseEvent(hci_spec::InquiryMode mode) const;
 
   const DeviceAddress& address() const { return address_; }
 
@@ -106,43 +106,43 @@ class FakePeer {
 
   void set_class_of_device(DeviceClass class_of_device) { class_of_device_ = class_of_device; }
 
-  const hci::LEConnectionParameters& le_params() const { return le_params_; }
-  void set_le_params(const hci::LEConnectionParameters& value) { le_params_ = value; }
+  const hci_spec::LEConnectionParameters& le_params() const { return le_params_; }
+  void set_le_params(const hci_spec::LEConnectionParameters& value) { le_params_ = value; }
 
   bool supports_ll_conn_update_procedure() const { return supports_ll_conn_update_procedure_; }
   void set_supports_ll_conn_update_procedure(bool supports) {
     supports_ll_conn_update_procedure_ = supports;
   }
 
-  hci::LESupportedFeatures le_features() const { return le_features_; }
-  void set_le_features(hci::LESupportedFeatures le_features) { le_features_ = le_features; }
+  hci_spec::LESupportedFeatures le_features() const { return le_features_; }
+  void set_le_features(hci_spec::LESupportedFeatures le_features) { le_features_ = le_features; }
 
   // The response status that will be returned when this device receives a LE
   // Create Connection command.
-  hci::StatusCode connect_response() const { return connect_response_; }
-  void set_connect_response(hci::StatusCode response) { connect_response_ = response; }
+  hci_spec::StatusCode connect_response() const { return connect_response_; }
+  void set_connect_response(hci_spec::StatusCode response) { connect_response_ = response; }
 
   // The status that will be returned in the Command Status event in response to
   // a LE Create Connection command. If this is set to anything other than
-  // hci::StatusCode::kSuccess, then connect_response() will have no effect.
-  hci::StatusCode connect_status() const { return connect_status_; }
-  void set_connect_status(hci::StatusCode status) { connect_status_ = status; }
+  // hci_spec::StatusCode::kSuccess, then connect_response() will have no effect.
+  hci_spec::StatusCode connect_status() const { return connect_status_; }
+  void set_connect_status(hci_spec::StatusCode status) { connect_status_ = status; }
 
   bool force_pending_connect() const { return force_pending_connect_; }
   void set_force_pending_connect(bool value) { force_pending_connect_ = value; }
 
-  void set_last_connection_request_link_type(std::optional<hci::LinkType> type) {
+  void set_last_connection_request_link_type(std::optional<hci_spec::LinkType> type) {
     last_connection_request_link_type_ = type;
   }
-  const std::optional<hci::LinkType>& last_connection_request_link_type() const {
+  const std::optional<hci_spec::LinkType>& last_connection_request_link_type() const {
     return last_connection_request_link_type_;
   }
 
-  void AddLink(hci::ConnectionHandle handle);
-  void RemoveLink(hci::ConnectionHandle handle);
-  bool HasLink(hci::ConnectionHandle handle) const;
+  void AddLink(hci_spec::ConnectionHandle handle);
+  void RemoveLink(hci_spec::ConnectionHandle handle);
+  bool HasLink(hci_spec::ConnectionHandle handle) const;
 
-  using HandleSet = std::unordered_set<hci::ConnectionHandle>;
+  using HandleSet = std::unordered_set<hci_spec::ConnectionHandle>;
   const HandleSet& logical_links() const { return logical_links_; }
 
   // Marks this device as disconnected. Clears and returns all logical link
@@ -161,18 +161,18 @@ class FakePeer {
   // Called by a FakeController when a FakePeer is registered with it.
   void set_ctrl(FakeController* ctrl) { ctrl_ = ctrl; }
 
-  void WriteScanResponseReport(hci::LEAdvertisingReportData* report) const;
+  void WriteScanResponseReport(hci_spec::LEAdvertisingReportData* report) const;
 
   // Validate received L2CAP packets and then route them to the FakeL2cap
   // instance owned by the device. The FakeL2cap instance will process the
   // packet and route it to the appropriate packet handler.
-  void OnRxL2CAP(hci::ConnectionHandle conn, const ByteBuffer& pdu);
+  void OnRxL2CAP(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu);
 
   // Sends packets over channel ID |cid| and handle |conn| using the
   // FakeController's SendL2CapBFrame function. Assumes that input buffer
   // |packet| has signaling packet header intact but does not have an L2CAP
   //  packet header.
-  void SendPacket(hci::ConnectionHandle conn, l2cap::ChannelId cid, const ByteBuffer& packet);
+  void SendPacket(hci_spec::ConnectionHandle conn, l2cap::ChannelId cid, const ByteBuffer& packet);
 
   // The FakeController that this FakePeer has been assigned to.
   FakeController* ctrl_;  // weak
@@ -186,18 +186,18 @@ class FakePeer {
   bool directed_;
   bool address_resolved_;
 
-  hci::StatusCode connect_status_;
-  hci::StatusCode connect_response_;
+  hci_spec::StatusCode connect_status_;
+  hci_spec::StatusCode connect_response_;
   bool force_pending_connect_;  // Causes connection requests to remain pending.
-  std::optional<hci::LinkType> last_connection_request_link_type_;
+  std::optional<hci_spec::LinkType> last_connection_request_link_type_;
 
-  hci::LEConnectionParameters le_params_;
+  hci_spec::LEConnectionParameters le_params_;
 
   // If false, FakeController will send LE Connection Update complete events with status
   // kRemoteFeatureNotSupported.
   bool supports_ll_conn_update_procedure_;
 
-  hci::LESupportedFeatures le_features_;
+  hci_spec::LESupportedFeatures le_features_;
 
   bool should_batch_reports_;
   DynamicByteBuffer adv_data_;

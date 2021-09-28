@@ -4,7 +4,7 @@
 
 #include "le_connection_parameters.h"
 
-namespace bt::hci {
+namespace bt::hci_spec {
 
 namespace {
 
@@ -20,12 +20,13 @@ LEConnectionParameters::LEConnectionParameters(uint16_t interval, uint16_t laten
 LEConnectionParameters::LEConnectionParameters()
     : interval_(0), latency_(0), supervision_timeout_(0) {}
 
-bool LEConnectionParameters::operator==(const LEConnectionParameters& other) const {
+bool hci_spec::LEConnectionParameters::operator==(
+    const hci_spec::LEConnectionParameters& other) const {
   return interval_ == other.interval_ && latency_ == other.latency_ &&
          supervision_timeout_ == other.supervision_timeout_;
 }
 
-std::string LEConnectionParameters::ToString() const {
+std::string hci_spec::LEConnectionParameters::ToString() const {
   return fxl::StringPrintf("interval: %.2f ms, latency: %.2f ms, timeout: %u ms",
                            static_cast<float>(interval_) * kTimesliceMs,
                            static_cast<float>(latency_) * kTimesliceMs, supervision_timeout_ * 10u);
@@ -49,4 +50,4 @@ bool LEPreferredConnectionParameters::operator==(
          max_latency_ == other.max_latency_ && supervision_timeout_ == other.supervision_timeout_;
 }
 
-}  // namespace bt::hci
+}  // namespace bt::hci_spec

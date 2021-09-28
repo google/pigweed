@@ -18,20 +18,22 @@
 namespace bt::hci {
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address, GenericEnableParam enable) {
-  constexpr size_t kPayloadSize = sizeof(LESetAdvertisingEnableCommandParams);
-  std::unique_ptr<CommandPacket> packet = CommandPacket::New(kLESetAdvertisingEnable, kPayloadSize);
-  packet->mutable_payload<LESetAdvertisingEnableCommandParams>()->advertising_enable = enable;
+    const DeviceAddress& address, hci_spec::GenericEnableParam enable) {
+  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);
+  std::unique_ptr<CommandPacket> packet =
+      CommandPacket::New(hci_spec::kLESetAdvertisingEnable, kPayloadSize);
+  packet->mutable_payload<hci_spec::LESetAdvertisingEnableCommandParams>()->advertising_enable =
+      enable;
   return packet;
 }
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
-  auto packet =
-      CommandPacket::New(kLESetAdvertisingData, sizeof(LESetAdvertisingDataCommandParams));
+  auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingData,
+                                   sizeof(hci_spec::LESetAdvertisingDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_payload<LESetAdvertisingDataCommandParams>();
+  auto params = packet->mutable_payload<hci_spec::LESetAdvertisingDataCommandParams>();
   params->adv_data_length = data.CalculateBlockSize(/*include_flags=*/true);
 
   MutableBufferView adv_view(params->adv_data, params->adv_data_length);
@@ -42,11 +44,11 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingDat
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address, const AdvertisingData& scan_rsp) {
-  auto packet =
-      CommandPacket::New(kLESetScanResponseData, sizeof(LESetScanResponseDataCommandParams));
+  auto packet = CommandPacket::New(hci_spec::kLESetScanResponseData,
+                                   sizeof(hci_spec::LESetScanResponseDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_payload<LESetScanResponseDataCommandParams>();
+  auto params = packet->mutable_payload<hci_spec::LESetScanResponseDataCommandParams>();
   params->scan_rsp_data_length = scan_rsp.CalculateBlockSize();
 
   MutableBufferView scan_data_view(params->scan_rsp_data, sizeof(params->scan_rsp_data));
@@ -56,19 +58,20 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
 }
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
-    const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
-    AdvertisingIntervalRange interval) {
-  std::unique_ptr<CommandPacket> packet = CommandPacket::New(
-      kLESetAdvertisingParameters, sizeof(LESetAdvertisingParametersCommandParams));
+    const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+    hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
+  std::unique_ptr<CommandPacket> packet =
+      CommandPacket::New(hci_spec::kLESetAdvertisingParameters,
+                         sizeof(hci_spec::LESetAdvertisingParametersCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_payload<LESetAdvertisingParametersCommandParams>();
+  auto params = packet->mutable_payload<hci_spec::LESetAdvertisingParametersCommandParams>();
   params->adv_interval_min = htole16(interval.min());
   params->adv_interval_max = htole16(interval.max());
   params->adv_type = type;
   params->own_address_type = own_address_type;
-  params->adv_channel_map = kLEAdvertisingChannelAll;
-  params->adv_filter_policy = LEAdvFilterPolicy::kAllowAll;
+  params->adv_channel_map = hci_spec::kLEAdvertisingChannelAll;
+  params->adv_filter_policy = hci_spec::LEAdvFilterPolicy::kAllowAll;
 
   // We don't support directed advertising yet, so leave peer_address and peer_address_type as 0x00
   // (|packet| parameters are initialized to zero above).
@@ -78,31 +81,32 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingPar
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
-  auto packet =
-      CommandPacket::New(kLESetAdvertisingData, sizeof(LESetAdvertisingDataCommandParams));
+  auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingData,
+                                   sizeof(hci_spec::LESetAdvertisingDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
   return packet;
 }
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
-  auto packet =
-      CommandPacket::New(kLESetScanResponseData, sizeof(LESetScanResponseDataCommandParams));
+  auto packet = CommandPacket::New(hci_spec::kLESetScanResponseData,
+                                   sizeof(hci_spec::LESetScanResponseDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
   return packet;
 }
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
-  constexpr size_t kPayloadSize = sizeof(LESetAdvertisingEnableCommandParams);
-  auto packet = CommandPacket::New(kLESetAdvertisingEnable, kPayloadSize);
-  auto params = packet->mutable_payload<LESetAdvertisingEnableCommandParams>();
-  params->advertising_enable = GenericEnableParam::kDisable;
+  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);
+  auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingEnable, kPayloadSize);
+  auto params = packet->mutable_payload<hci_spec::LESetAdvertisingEnableCommandParams>();
+  params->advertising_enable = hci_spec::GenericEnableParam::kDisable;
   return packet;
 }
 
 static std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
-  std::unique_ptr<CommandPacket> packet = CommandPacket::New(kLEReadAdvertisingChannelTxPower);
+  std::unique_ptr<CommandPacket> packet =
+      CommandPacket::New(hci_spec::kLEReadAdvertisingChannelTxPower);
   return packet;
 }
 
@@ -214,7 +218,8 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
         return;
       }
 
-      const auto& params = event.return_params<hci::LEReadAdvertisingChannelTxPowerReturnParams>();
+      const auto& params =
+          event.return_params<hci_spec::LEReadAdvertisingChannelTxPowerReturnParams>();
 
       // Update the advertising and scan response data with the TX power level.
       auto staged_params = std::move(staged_params_.value());
@@ -265,9 +270,9 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
   starting_ = false;
 }
 
-void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                                                     const DeviceAddress& peer_address,
-                                                     const LEConnectionParameters& conn_params) {
+void LegacyLowEnergyAdvertiser::OnIncomingConnection(
+    hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
+    const hci_spec::LEConnectionParameters& conn_params) {
   static DeviceAddress identity_address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
 
   // We use the identity address as the local address if we aren't advertising. If we aren't

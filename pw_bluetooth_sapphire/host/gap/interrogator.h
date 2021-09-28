@@ -50,7 +50,7 @@ class Interrogator {
   // Starts interrogation. Calls |callback| when the sequence is completed or
   // fails. Start must not be called for peers with outstanding interrogations.
   using ResultCallback = fit::callback<void(hci::Status status)>;
-  void Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback callback);
+  void Start(PeerId peer_id, hci_spec::ConnectionHandle handle, ResultCallback callback);
 
   // Abandons any interrogation of |peer_id|.  Their callbacks will be called
   // with a Status of Canceled. No-op if interrogation has already completed.
@@ -62,7 +62,7 @@ class Interrogator {
   // have been dropped, |release_cb| is called, which calls Interrogation::Complete.
   class Interrogation : public fbl::RefCounted<Interrogation> {
    public:
-    Interrogation(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback result_cb);
+    Interrogation(PeerId peer_id, hci_spec::ConnectionHandle handle, ResultCallback result_cb);
     ~Interrogation();
 
     // Completes interrogation by calling |result_cb| with |status|, possibly early in the case of
@@ -74,7 +74,7 @@ class Interrogator {
 
     PeerId peer_id() const { return peer_id_; }
 
-    hci::ConnectionHandle handle() const { return handle_; }
+    hci_spec::ConnectionHandle handle() const { return handle_; }
 
     fxl::WeakPtr<Interrogation> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
@@ -82,7 +82,7 @@ class Interrogator {
     PeerId peer_id_;
 
     // Connection handle to |peer|
-    hci::ConnectionHandle handle_;
+    hci_spec::ConnectionHandle handle_;
 
     // Callback for results.
     ResultCallback result_cb_;

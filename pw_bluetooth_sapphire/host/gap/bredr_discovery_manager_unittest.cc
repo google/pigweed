@@ -20,32 +20,32 @@ using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 // clang-format off
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
-  CreateStaticByteBuffer(hci::kCommandCompleteEventCode, 0x04, 0xF0, \
+  CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x04, 0xF0, \
                                  LowerBits((opcode)), UpperBits((opcode)),   \
-                                 hci::kSuccess)
+                                 hci_spec::kSuccess)
 
 #define COMMAND_STATUS_RSP(opcode, statuscode)                       \
-  CreateStaticByteBuffer(hci::kCommandStatusEventCode, 0x04, \
+  CreateStaticByteBuffer( hci_spec::kCommandStatusEventCode, 0x04, \
                                  (statuscode), 0xF0,                 \
                                  LowerBits((opcode)), UpperBits((opcode)))
 
 
 const auto kWriteInquiryActivity = CreateStaticByteBuffer(
-    LowerBits(hci::kWriteInquiryScanActivity), UpperBits(hci::kWriteInquiryScanActivity),
+    LowerBits(hci_spec::kWriteInquiryScanActivity), UpperBits(hci_spec::kWriteInquiryScanActivity),
     0x04, // Param total size
     LowerBits(kInquiryScanInterval), UpperBits(kInquiryScanInterval),
     LowerBits(kInquiryScanWindow), UpperBits(kInquiryScanWindow)
 );
 
-const auto kWriteInquiryActivityRsp = COMMAND_COMPLETE_RSP(hci::kWriteInquiryScanActivity);
+const auto kWriteInquiryActivityRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteInquiryScanActivity);
 
 const auto kWriteInquiryType = CreateStaticByteBuffer(
-    LowerBits(hci::kWriteInquiryScanType), UpperBits(hci::kWriteInquiryScanType),
+    LowerBits(hci_spec::kWriteInquiryScanType), UpperBits(hci_spec::kWriteInquiryScanType),
     0x01, // Param total size
     0x01 // Interlaced Inquiry Scan
 );
 
-const auto kWriteInquiryTypeRsp = COMMAND_COMPLETE_RSP(hci::kWriteInquiryScanType);
+const auto kWriteInquiryTypeRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteInquiryScanType);
 // clang-format on
 
 class BrEdrDiscoveryManagerTest : public TestingBase {
@@ -59,7 +59,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
 
-    NewDiscoveryManager(hci::InquiryMode::kStandard);
+    NewDiscoveryManager(hci_spec::InquiryMode::kStandard);
   }
 
   void TearDown() override {
@@ -68,7 +68,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
     TestingBase::TearDown();
   }
 
-  void NewDiscoveryManager(hci::InquiryMode mode) {
+  void NewDiscoveryManager(hci_spec::InquiryMode mode) {
     // We expect to set the Inquiry Scan and the Type when we start.
     EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryActivity, &kWriteInquiryActivityRsp);
     EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryType, &kWriteInquiryTypeRsp);
@@ -98,39 +98,39 @@ using BrEdrDiscoveryManagerDeathTest = BrEdrDiscoveryManagerTest;
 
 // clang-format off
 const auto kInquiry = CreateStaticByteBuffer(
-  LowerBits(hci::kInquiry), UpperBits(hci::kInquiry),
+  LowerBits(hci_spec::kInquiry), UpperBits(hci_spec::kInquiry),
   0x05, // Paramreter total size
   0x33, 0x8B, 0x9E, // GIAC
-  0x08, // kInquiryLengthDefault
+  0x08, // hci_spec::kInquiryLengthDefault
   0x00 // Unlimited responses
 );
 
 const auto kWriteLocalNameRsp =
-    COMMAND_STATUS_RSP(hci::kWriteLocalName, hci::StatusCode::kSuccess);
+    COMMAND_STATUS_RSP(hci_spec::kWriteLocalName, hci_spec::StatusCode::kSuccess);
 
 const auto kWriteLocalNameRspError =
-    COMMAND_STATUS_RSP(hci::kWriteLocalName, hci::StatusCode::kHardwareFailure);
+    COMMAND_STATUS_RSP(hci_spec::kWriteLocalName, hci_spec::StatusCode::kHardwareFailure);
 
 const auto kWriteExtendedInquiryResponseRsp =
-    COMMAND_STATUS_RSP(hci::kWriteExtendedInquiryResponse, hci::StatusCode::kSuccess);
+    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse, hci_spec::StatusCode::kSuccess);
 
 const auto kWriteExtendedInquiryResponseRspError =
-    COMMAND_STATUS_RSP(hci::kWriteExtendedInquiryResponse, hci::StatusCode::kHardwareFailure);
+    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse, hci_spec::StatusCode::kHardwareFailure);
 
-const auto kInquiryRsp = COMMAND_STATUS_RSP(hci::kInquiry, hci::kSuccess);
+const auto kInquiryRsp = COMMAND_STATUS_RSP(hci_spec::kInquiry, hci_spec::kSuccess);
 
-const auto kInquiryRspError = COMMAND_STATUS_RSP(hci::kInquiry, hci::kHardwareFailure);
+const auto kInquiryRspError = COMMAND_STATUS_RSP(hci_spec::kInquiry, hci_spec::kHardwareFailure);
 
 const auto kInquiryComplete = CreateStaticByteBuffer(
-  hci::kInquiryCompleteEventCode,
+  hci_spec::kInquiryCompleteEventCode,
   0x01, // parameter_total_size (1 bytes)
-  hci::kSuccess
+  hci_spec::kSuccess
 );
 
 const auto kInquiryCompleteError = CreateStaticByteBuffer(
-  hci::kInquiryCompleteEventCode,
+  hci_spec::kInquiryCompleteEventCode,
   0x01, // parameter_total_size (1 bytes)
-  hci::kHardwareFailure
+  hci_spec::kHardwareFailure
 );
 
 #define BD_ADDR(addr1) addr1, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -147,7 +147,7 @@ const DeviceAddress kDeviceAddress3(DeviceAddress::Type::kBREDR,
                                     {BD_ADDR(0x03)});
 
 const auto kInquiryResult = CreateStaticByteBuffer(
-  hci::kInquiryResultEventCode,
+  hci_spec::kInquiryResultEventCode,
   0x0F, // parameter_total_size (15 bytes)
   0x01, // num_responses
   BD_ADDR(0x01), // bd_addr[0]
@@ -159,13 +159,13 @@ const auto kInquiryResult = CreateStaticByteBuffer(
 );
 
 const StaticByteBuffer kInquiryResultIncompleteHeader(
-  hci::kInquiryResultEventCode,
+  hci_spec::kInquiryResultEventCode,
   0x00 // parameter_total_size (0 bytes)
   // truncated
 );
 
 const StaticByteBuffer kInquiryResultMissingResponses(
-  hci::kInquiryResultEventCode,
+  hci_spec::kInquiryResultEventCode,
   0x1D, // parameter_total_size (29 bytes)
   0x03, // num_responses (only two responses are packed)
 
@@ -187,7 +187,7 @@ const StaticByteBuffer kInquiryResultMissingResponses(
 );
 
 const StaticByteBuffer kInquiryResultIncompleteResponse(
-  hci::kInquiryResultEventCode,
+  hci_spec::kInquiryResultEventCode,
   0x15, // parameter_total_size (21 bytes)
   0x02, // num_responses
 
@@ -205,7 +205,7 @@ const StaticByteBuffer kInquiryResultIncompleteResponse(
 );
 
 const auto kRSSIInquiryResult = CreateStaticByteBuffer(
-  hci::kInquiryResultWithRSSIEventCode,
+  hci_spec::kInquiryResultWithRSSIEventCode,
   0x0F, // parameter_total_size (15 bytes)
   0x01, // num_responses
   BD_ADDR(0x02), // bd_addr[0]
@@ -217,7 +217,7 @@ const auto kRSSIInquiryResult = CreateStaticByteBuffer(
 );
 
 #define REMOTE_NAME_REQUEST(addr1) CreateStaticByteBuffer( \
-    LowerBits(hci::kRemoteNameRequest), UpperBits(hci::kRemoteNameRequest), \
+    LowerBits(hci_spec::kRemoteNameRequest), UpperBits(hci_spec::kRemoteNameRequest), \
     0x0a, /* parameter_total_size (10 bytes) */ \
     BD_ADDR(addr1),  /* BD_ADDR */ \
     0x00, 0x00, 0x00, 0x80 /* page_scan_repetition_mode, 0, clock_offset */ \
@@ -230,7 +230,7 @@ const auto kRemoteNameRequest3 = REMOTE_NAME_REQUEST(0x03);
 #undef REMOTE_NAME_REQUEST
 
 const auto kRemoteNameRequestRsp =
-    COMMAND_STATUS_RSP(hci::kRemoteNameRequest, hci::StatusCode::kSuccess);
+    COMMAND_STATUS_RSP(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::kSuccess);
 
 #undef COMMAND_STATUS_RSP
 
@@ -245,7 +245,7 @@ const auto kRemoteNameRequestComplete2 =
     testing::RemoteNameRequestCompletePacket(kDeviceAddress2, "Sapphire");
 
 const auto kExtendedInquiryResult = CreateStaticByteBuffer(
-  hci::kExtendedInquiryResultEventCode,
+  hci_spec::kExtendedInquiryResultEventCode,
   0xFF, // parameter_total_size (255 bytes)
   0x01, // num_responses
   BD_ADDR(0x03),  // bd_addr
@@ -280,27 +280,27 @@ const auto kExtendedInquiryResult = CreateStaticByteBuffer(
 #undef BD_ADDR
 
 const auto kInqCancel = CreateStaticByteBuffer(
-  LowerBits(hci::kInquiryCancel), UpperBits(hci::kInquiryCancel),  // opcode
+  LowerBits(hci_spec::kInquiryCancel), UpperBits(hci_spec::kInquiryCancel),  // opcode
   0x00                                   // parameter_total_size
 );
 
-const auto kInqCancelRsp = COMMAND_COMPLETE_RSP(hci::kInquiryCancel);
+const auto kInqCancelRsp = COMMAND_COMPLETE_RSP(hci_spec::kInquiryCancel);
 
 const auto kSetExtendedMode = CreateStaticByteBuffer(
-    LowerBits(hci::kWriteInquiryMode), UpperBits(hci::kWriteInquiryMode),
+    LowerBits(hci_spec::kWriteInquiryMode), UpperBits(hci_spec::kWriteInquiryMode),
     0x01, // parameter_total_size
     0x02 // Extended Inquiry Result or Inquiry Result with RSSI
 );
 
-const auto kSetExtendedModeRsp = COMMAND_COMPLETE_RSP(hci::kWriteInquiryMode);
+const auto kSetExtendedModeRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteInquiryMode);
 
 const auto kReadScanEnable = CreateStaticByteBuffer(
-    LowerBits(hci::kReadScanEnable), UpperBits(hci::kReadScanEnable),
+    LowerBits(hci_spec::kReadScanEnable), UpperBits(hci_spec::kReadScanEnable),
     0x00  // No parameters
 );
 
 const auto kWriteLocalName = CreateStaticByteBuffer(
-  LowerBits(hci::kWriteLocalName), UpperBits(hci::kWriteLocalName),
+  LowerBits(hci_spec::kWriteLocalName), UpperBits(hci_spec::kWriteLocalName),
   0xF8, // parameter_total_size (248 bytes)
   // Complete Local Name ()
   'A', 'B', 'C', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -326,8 +326,8 @@ const auto kWriteLocalName = CreateStaticByteBuffer(
 );
 
 const auto kWriteExtendedInquiryResponse = CreateStaticByteBuffer(
-  LowerBits(hci::kWriteExtendedInquiryResponse),
-  UpperBits(hci::kWriteExtendedInquiryResponse),
+  LowerBits(hci_spec::kWriteExtendedInquiryResponse),
+  UpperBits(hci_spec::kWriteExtendedInquiryResponse),
   0xF1, // parameter_total_size (241 bytes)
   0x00, // fec_required
   0x04, // name_length + 1
@@ -355,10 +355,10 @@ const auto kWriteExtendedInquiryResponse = CreateStaticByteBuffer(
 );
 
 #define READ_SCAN_ENABLE_RSP(scan_enable)                                    \
-  CreateStaticByteBuffer(hci::kCommandCompleteEventCode, 0x05, 0xF0, \
-                                 LowerBits(hci::kReadScanEnable),            \
-                                 UpperBits(hci::kReadScanEnable),            \
-                                 hci::kSuccess, (scan_enable))
+  CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x05, 0xF0, \
+                                 LowerBits(hci_spec::kReadScanEnable),            \
+                                 UpperBits(hci_spec::kReadScanEnable),            \
+                                 hci_spec::kSuccess, (scan_enable))
 
 const auto kReadScanEnableRspNone = READ_SCAN_ENABLE_RSP(0x00);
 const auto kReadScanEnableRspInquiry = READ_SCAN_ENABLE_RSP(0x01);
@@ -368,8 +368,8 @@ const auto kReadScanEnableRspBoth = READ_SCAN_ENABLE_RSP(0x03);
 #undef READ_SCAN_ENABLE_RSP
 
 #define WRITE_SCAN_ENABLE_CMD(scan_enable)                               \
-  CreateStaticByteBuffer(LowerBits(hci::kWriteScanEnable),       \
-                                 UpperBits(hci::kWriteScanEnable), 0x01, \
+  CreateStaticByteBuffer(LowerBits(hci_spec::kWriteScanEnable),       \
+                                 UpperBits(hci_spec::kWriteScanEnable), 0x01, \
                                  (scan_enable))
 
 const auto kWriteScanEnableNone = WRITE_SCAN_ENABLE_CMD(0x00);
@@ -379,14 +379,14 @@ const auto kWriteScanEnableBoth = WRITE_SCAN_ENABLE_CMD(0x03);
 
 #undef WRITE_SCAN_ENABLE_CMD
 
-const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci::kWriteScanEnable);
+const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteScanEnable);
 
 #undef COMMAND_COMPLETE_RSP
 // clang-format on
 
 // Test: malformed inquiry result is fatal
 TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFatal) {
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
 
@@ -419,7 +419,7 @@ TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFat
 // Test: Inquiry Results that come in when there's no discovery happening get
 // discarded.
 TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
@@ -439,7 +439,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   EXPECT_EQ(1u, peers_found);
   EXPECT_TRUE(discovery_manager()->discovering());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
@@ -465,7 +465,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
 // Test: dropping the first discovery shouldn't stop inquiry
 // Test: starting two sessions at once should only start inquiry once
 TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
@@ -631,7 +631,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
     EXPECT_FALSE(status);
     EXPECT_FALSE(cb_session);
     EXPECT_EQ(HostError::kProtocolError, status.error());
-    EXPECT_EQ(hci::kHardwareFailure, status.protocol_error());
+    EXPECT_EQ(hci_spec::kHardwareFailure, status.protocol_error());
   });
 
   EXPECT_FALSE(discovery_manager()->discovering());
@@ -681,7 +681,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
 
 // clang-format off
 const auto kWriteLocalNameMaxLen = CreateStaticByteBuffer(
-  LowerBits(hci::kWriteLocalName), UpperBits(hci::kWriteLocalName),
+  LowerBits(hci_spec::kWriteLocalName), UpperBits(hci_spec::kWriteLocalName),
   0xF8, // parameter_total_size (248 bytes)
   // Complete Local Name (exactly 248 bytes)
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
@@ -707,8 +707,8 @@ const auto kWriteLocalNameMaxLen = CreateStaticByteBuffer(
 );
 
 const auto kWriteExtInquiryResponseMaxLen = CreateStaticByteBuffer(
-  LowerBits(hci::kWriteExtendedInquiryResponse),
-  UpperBits(hci::kWriteExtendedInquiryResponse),
+  LowerBits(hci_spec::kWriteExtendedInquiryResponse),
+  UpperBits(hci_spec::kWriteExtendedInquiryResponse),
   0xF1, // parameter_total_size (241 bytes)
   0x00, // fec_required
   0xEF, // 239 bytes (1 + 238 bytes)
@@ -742,7 +742,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalNameMaxLen, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci::kPairingNotAllowed);
+  hci::Status result = hci::Status(hci_spec::kPairingNotAllowed);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_TRUE(status);
@@ -777,7 +777,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci::kSuccess), result);
+  EXPECT_EQ(hci::Status(hci_spec::kSuccess), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -787,7 +787,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci::kPairingNotAllowed);
+  hci::Status result = hci::Status(hci_spec::kPairingNotAllowed);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_TRUE(status);
@@ -818,7 +818,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci::kSuccess), result);
+  EXPECT_EQ(hci::Status(hci_spec::kSuccess), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -828,7 +828,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci::kUnsupportedRemoteFeature);
+  hci::Status result = hci::Status(hci_spec::kUnsupportedRemoteFeature);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_FALSE(status);
@@ -851,7 +851,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci::kHardwareFailure), result);
+  EXPECT_EQ(hci::Status(hci_spec::kHardwareFailure), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -862,7 +862,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci::kUnsupportedRemoteFeature);
+  hci::Status result = hci::Status(hci_spec::kUnsupportedRemoteFeature);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_FALSE(status);
@@ -896,7 +896,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci::kHardwareFailure), result);
+  EXPECT_EQ(hci::Status(hci_spec::kHardwareFailure), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -1014,7 +1014,7 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
 // inquiry mode is set.
 // Test: extended inquiry is stored in the remote peer
 TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
-  NewDiscoveryManager(hci::InquiryMode::kExtended);
+  NewDiscoveryManager(hci_spec::InquiryMode::kExtended);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,
@@ -1090,7 +1090,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
-  NewDiscoveryManager(hci::InquiryMode::kExtended);
+  NewDiscoveryManager(hci_spec::InquiryMode::kExtended);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,

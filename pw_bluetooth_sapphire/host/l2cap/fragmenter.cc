@@ -90,10 +90,10 @@ OutboundFrame::FrameCheckSequenceBuffer OutboundFrame::MakeFcs() const {
   return buffer;
 }
 
-Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle, uint16_t max_acl_payload_size)
+Fragmenter::Fragmenter(hci_spec::ConnectionHandle connection_handle, uint16_t max_acl_payload_size)
     : connection_handle_(connection_handle), max_acl_payload_size_(max_acl_payload_size) {
   ZX_ASSERT(connection_handle_);
-  ZX_ASSERT(connection_handle_ <= hci::kConnectionHandleMax);
+  ZX_ASSERT(connection_handle_ <= hci_spec::kConnectionHandleMax);
   ZX_ASSERT(max_acl_payload_size_);
   ZX_ASSERT(max_acl_payload_size_ >= sizeof(BasicHeader));
 }
@@ -140,14 +140,14 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
 
     const size_t fragment_size =
         std::min(frame_size - processed, static_cast<size_t>(max_acl_payload_size_));
-    auto pbf = (i ? hci::ACLPacketBoundaryFlag::kContinuingFragment
-                  : (flushable ? hci::ACLPacketBoundaryFlag::kFirstFlushable
-                               : hci::ACLPacketBoundaryFlag::kFirstNonFlushable));
+    auto pbf = (i ? hci_spec::ACLPacketBoundaryFlag::kContinuingFragment
+                  : (flushable ? hci_spec::ACLPacketBoundaryFlag::kFirstFlushable
+                               : hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable));
 
     // TODO(armansito): allow passing Active Slave Broadcast flag when we
     // support it.
-    auto acl_packet = hci::ACLDataPacket::New(connection_handle_, pbf,
-                                              hci::ACLBroadcastFlag::kPointToPoint, fragment_size);
+    auto acl_packet = hci::ACLDataPacket::New(
+        connection_handle_, pbf, hci_spec::ACLBroadcastFlag::kPointToPoint, fragment_size);
     ZX_DEBUG_ASSERT(acl_packet);
 
     frame.WriteToFragment(acl_packet->mutable_view()->mutable_payload_data(), processed);

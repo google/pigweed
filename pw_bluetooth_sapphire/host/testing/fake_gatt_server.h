@@ -22,7 +22,7 @@ class FakeGattServer final {
   explicit FakeGattServer(FakePeer* dev);
 
   // Handle the ATT |pdu| received over link with handle |conn|.
-  void HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu);
+  void HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu);
 
   // Register with FakleL2cap |l2cap_| associated with the device that owns
   // the server such that this FakeGattServer instance receives all packets
@@ -36,11 +36,11 @@ class FakeGattServer final {
     UUID type;
   };
 
-  void HandleReadByGrpType(hci::ConnectionHandle conn, const ByteBuffer& bytes);
-  void HandleFindByTypeValue(hci::ConnectionHandle conn, const ByteBuffer& bytes);
+  void HandleReadByGrpType(hci_spec::ConnectionHandle conn, const ByteBuffer& bytes);
+  void HandleFindByTypeValue(hci_spec::ConnectionHandle conn, const ByteBuffer& bytes);
 
-  void Send(hci::ConnectionHandle conn, const ByteBuffer& pdu);
-  void SendErrorRsp(hci::ConnectionHandle conn, att::OpCode opcode, att::Handle handle,
+  void Send(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu);
+  void SendErrorRsp(hci_spec::ConnectionHandle conn, att::OpCode opcode, att::Handle handle,
                     att::ErrorCode ecode);
 
   // Map of service start handles to services.

@@ -47,13 +47,13 @@ namespace {
 // connecting to the peer until the next successful connection. We have only observed this issue
 // with the 0x3e "kConnectionFailedToBeEstablished" error in the field, but have included these
 // other errors based on their descriptions in v5.2 Vol. 1 Part F Section 2.
-bool ShouldStopAlwaysAutoConnecting(hci::StatusCode err) {
+bool ShouldStopAlwaysAutoConnecting(hci_spec::StatusCode err) {
   switch (err) {
-    case hci::StatusCode::kConnectionTimeout:
-    case hci::StatusCode::kConnectionRejectedSecurity:
-    case hci::StatusCode::kConnectionAcceptTimeoutExceeded:
-    case hci::StatusCode::kConnectionTerminatedByLocalHost:
-    case hci::StatusCode::kConnectionFailedToBeEstablished:
+    case hci_spec::StatusCode::kConnectionTimeout:
+    case hci_spec::StatusCode::kConnectionRejectedSecurity:
+    case hci_spec::StatusCode::kConnectionAcceptTimeoutExceeded:
+    case hci_spec::StatusCode::kConnectionTerminatedByLocalHost:
+    case hci_spec::StatusCode::kConnectionFailedToBeEstablished:
       return true;
     default:
       return false;
@@ -66,9 +66,9 @@ bool ShouldStopAlwaysAutoConnecting(hci::StatusCode err) {
 // procedures are complete, we will change the connection interval to the
 // peripheral's preferred connection parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12).
-static const hci::LEPreferredConnectionParameters kInitialConnectionParameters(
+static const hci_spec::LEPreferredConnectionParameters kInitialConnectionParameters(
     kLEInitialConnIntervalMin, kLEInitialConnIntervalMax, /*max_latency=*/0,
-    hci::defaults::kLESupervisionTimeout);
+    hci_spec::defaults::kLESupervisionTimeout);
 
 const char* kInspectRequestsNodeName = "pending_requests";
 const char* kInspectRequestNodeNamePrefix = "pending_request_";
@@ -546,7 +546,7 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::Connection& link
 }
 
 void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connection,
-                                                  hci::StatusCode reason) {
+                                                  hci_spec::StatusCode reason) {
   auto handle = connection->handle();
   if (test_disconn_cb_) {
     test_disconn_cb_(handle);
@@ -572,7 +572,7 @@ void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connect
 }
 
 LowEnergyConnectionManager::ConnectionMap::iterator LowEnergyConnectionManager::FindConnection(
-    hci::ConnectionHandle handle) {
+    hci_spec::ConnectionHandle handle) {
   auto iter = connections_.begin();
   for (; iter != connections_.end(); ++iter) {
     const auto& conn = *iter->second;

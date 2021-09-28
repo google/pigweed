@@ -1045,7 +1045,8 @@ class BearerTestSecurity : public BearerTest {
     BearerTest::SetUp();
 
     fake_chan()->SetSecurityCallback(
-        [this](hci::ConnectionHandle handle, sm::SecurityLevel level, sm::StatusCallback callback) {
+        [this](hci_spec::ConnectionHandle handle, sm::SecurityLevel level,
+               sm::StatusCallback callback) {
           security_request_count_++;
           requested_security_level_ = level;
 

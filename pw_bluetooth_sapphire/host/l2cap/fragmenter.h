@@ -72,8 +72,8 @@ class Fragmenter final {
   // NOTE: |max_acl_payload_size| is required by the spec to be at least 27 (see
   // Core Spec v5.0, Vol 2, Part E, Section 5.4.2). We do not enforce this here
   // as unit tests are allowed to pass a smaller number.
-  Fragmenter(hci::ConnectionHandle connection_handle,
-             uint16_t max_acl_payload_size = hci::kMaxACLPayloadSize);
+  Fragmenter(hci_spec::ConnectionHandle connection_handle,
+             uint16_t max_acl_payload_size = hci_spec::kMaxACLPayloadSize);
 
   void set_max_acl_payload_size(size_t value) { max_acl_payload_size_ = value; }
 
@@ -93,7 +93,7 @@ class Fragmenter final {
                                FrameCheckSequenceOption fcs_option, bool flushable = false) const;
 
  private:
-  hci::ConnectionHandle connection_handle_;
+  hci_spec::ConnectionHandle connection_handle_;
   size_t max_acl_payload_size_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Fragmenter);

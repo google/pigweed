@@ -18,7 +18,7 @@ void FakeSignalingServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   return;
 }
 
-void FakeSignalingServer::HandleSdu(hci::ConnectionHandle conn, const ByteBuffer& sdu) {
+void FakeSignalingServer::HandleSdu(hci_spec::ConnectionHandle conn, const ByteBuffer& sdu) {
   ZX_ASSERT_MSG(sdu.size() >= sizeof(l2cap::CommandHeader), "SDU has only %zu bytes", sdu.size());
   ZX_ASSERT(sdu.As<l2cap::CommandHeader>().length == (sdu.size() - sizeof(l2cap::CommandHeader)));
   // Extract CommandCode and strip signaling packet header from sdu.
@@ -48,7 +48,8 @@ void FakeSignalingServer::HandleSdu(hci::ConnectionHandle conn, const ByteBuffer
   }
 }
 
-void FakeSignalingServer::ProcessInformationRequest(hci::ConnectionHandle conn, l2cap::CommandId id,
+void FakeSignalingServer::ProcessInformationRequest(hci_spec::ConnectionHandle conn,
+                                                    l2cap::CommandId id,
                                                     const ByteBuffer& info_req) {
   auto info_type = info_req.As<l2cap::InformationType>();
   if (info_type == l2cap::InformationType::kExtendedFeaturesSupported) {
@@ -60,7 +61,8 @@ void FakeSignalingServer::ProcessInformationRequest(hci::ConnectionHandle conn, 
   }
 }
 
-void FakeSignalingServer::ProcessConnectionRequest(hci::ConnectionHandle conn, l2cap::CommandId id,
+void FakeSignalingServer::ProcessConnectionRequest(hci_spec::ConnectionHandle conn,
+                                                   l2cap::CommandId id,
                                                    const ByteBuffer& connection_req) {
   const auto& conn_req = connection_req.As<l2cap::ConnectionRequestPayload>();
   const l2cap::PSM psm = letoh16(conn_req.psm);
@@ -110,7 +112,7 @@ void FakeSignalingServer::ProcessConnectionRequest(hci::ConnectionHandle conn, l
   fake_l2cap_->RegisterDynamicChannel(conn, psm, local_cid, remote_cid);
 }
 
-void FakeSignalingServer::ProcessConfigurationRequest(hci::ConnectionHandle conn,
+void FakeSignalingServer::ProcessConfigurationRequest(hci_spec::ConnectionHandle conn,
                                                       l2cap::CommandId id,
                                                       const ByteBuffer& configuration_req) {
   // Ignore the data/flags associated with the request for the purpose of the emulator
@@ -131,7 +133,7 @@ void FakeSignalingServer::ProcessConfigurationRequest(hci::ConnectionHandle conn
   return;
 }
 
-void FakeSignalingServer::ProcessConfigurationResponse(hci::ConnectionHandle conn,
+void FakeSignalingServer::ProcessConfigurationResponse(hci_spec::ConnectionHandle conn,
                                                        l2cap::CommandId id,
                                                        const ByteBuffer& configuration_res) {
   const auto& conf_res = configuration_res.As<l2cap::ConfigurationResponsePayload>();
@@ -150,7 +152,7 @@ void FakeSignalingServer::ProcessConfigurationResponse(hci::ConnectionHandle con
   }
 }
 
-void FakeSignalingServer::ProcessDisconnectionRequest(hci::ConnectionHandle conn,
+void FakeSignalingServer::ProcessDisconnectionRequest(hci_spec::ConnectionHandle conn,
                                                       l2cap::CommandId id,
                                                       const ByteBuffer& disconnection_req) {
   const auto& disconn_req = disconnection_req.As<l2cap::DisconnectionRequestPayload>();
@@ -166,7 +168,7 @@ void FakeSignalingServer::ProcessDisconnectionRequest(hci::ConnectionHandle conn
   }
 }
 
-void FakeSignalingServer::SendCFrame(hci::ConnectionHandle conn, l2cap::CommandCode code,
+void FakeSignalingServer::SendCFrame(hci_spec::ConnectionHandle conn, l2cap::CommandCode code,
                                      l2cap::CommandId id, DynamicByteBuffer& payload_buffer) {
   size_t kResponseSize = sizeof(l2cap::CommandHeader) + payload_buffer.size();
   DynamicByteBuffer response_buffer(kResponseSize);
@@ -179,7 +181,7 @@ void FakeSignalingServer::SendCFrame(hci::ConnectionHandle conn, l2cap::CommandC
   return callback(conn, l2cap::kSignalingChannelId, response_buffer);
 }
 
-void FakeSignalingServer::SendCommandReject(hci::ConnectionHandle conn, l2cap::CommandId id,
+void FakeSignalingServer::SendCommandReject(hci_spec::ConnectionHandle conn, l2cap::CommandId id,
                                             l2cap::RejectReason reason) {
   DynamicByteBuffer payload_buffer(sizeof(l2cap::CommandRejectPayload));
   MutablePacketView<l2cap::CommandRejectPayload> payload_view(&payload_buffer);
@@ -188,7 +190,7 @@ void FakeSignalingServer::SendCommandReject(hci::ConnectionHandle conn, l2cap::C
   SendCFrame(conn, l2cap::kCommandRejectCode, id, payload_buffer);
 }
 
-void FakeSignalingServer::SendInformationResponseExtendedFeatures(hci::ConnectionHandle conn,
+void FakeSignalingServer::SendInformationResponseExtendedFeatures(hci_spec::ConnectionHandle conn,
                                                                   l2cap::CommandId id) {
   l2cap::ExtendedFeatures extended_features =
       l2cap::kExtendedFeaturesBitFixedChannels | l2cap::kExtendedFeaturesBitEnhancedRetransmission;
@@ -205,7 +207,7 @@ void FakeSignalingServer::SendInformationResponseExtendedFeatures(hci::Connectio
   SendCFrame(conn, l2cap::kInformationResponse, id, payload_buffer);
 }
 
-void FakeSignalingServer::SendInformationResponseFixedChannels(hci::ConnectionHandle conn,
+void FakeSignalingServer::SendInformationResponseFixedChannels(hci_spec::ConnectionHandle conn,
                                                                l2cap::CommandId id) {
   l2cap::FixedChannelsSupported fixed_channels = l2cap::kFixedChannelsSupportedBitSignaling;
   constexpr size_t kPayloadSize =
@@ -221,8 +223,8 @@ void FakeSignalingServer::SendInformationResponseFixedChannels(hci::ConnectionHa
   SendCFrame(conn, l2cap::kInformationResponse, id, payload_buffer);
 }
 
-void FakeSignalingServer::SendConnectionResponse(hci::ConnectionHandle conn, l2cap::CommandId id,
-                                                 l2cap::ChannelId local_cid,
+void FakeSignalingServer::SendConnectionResponse(hci_spec::ConnectionHandle conn,
+                                                 l2cap::CommandId id, l2cap::ChannelId local_cid,
                                                  l2cap::ChannelId remote_cid,
                                                  l2cap::ConnectionResult result,
                                                  l2cap::ConnectionStatus status) {
@@ -237,7 +239,8 @@ void FakeSignalingServer::SendConnectionResponse(hci::ConnectionHandle conn, l2c
   SendCFrame(conn, l2cap::kConnectionResponse, id, payload_buffer);
 }
 
-void FakeSignalingServer::SendConfigurationRequest(hci::ConnectionHandle conn, l2cap::CommandId id,
+void FakeSignalingServer::SendConfigurationRequest(hci_spec::ConnectionHandle conn,
+                                                   l2cap::CommandId id,
                                                    l2cap::ChannelId remote_cid) {
   DynamicByteBuffer payload_buffer(sizeof(l2cap::ConfigurationRequestPayload));
   MutablePacketView<l2cap::ConfigurationRequestPayload> payload_view(&payload_buffer);
@@ -248,8 +251,8 @@ void FakeSignalingServer::SendConfigurationRequest(hci::ConnectionHandle conn, l
   SendCFrame(conn, l2cap::kConfigurationRequest, id, payload_buffer);
 }
 
-void FakeSignalingServer::SendConfigurationResponse(hci::ConnectionHandle conn, l2cap::CommandId id,
-                                                    l2cap::ChannelId local_cid,
+void FakeSignalingServer::SendConfigurationResponse(hci_spec::ConnectionHandle conn,
+                                                    l2cap::CommandId id, l2cap::ChannelId local_cid,
                                                     l2cap::ConfigurationResult result) {
   DynamicByteBuffer payload_buffer(sizeof(l2cap::ConfigurationResponsePayload));
   MutablePacketView<l2cap::ConfigurationResponsePayload> payload_view(&payload_buffer);
@@ -261,8 +264,8 @@ void FakeSignalingServer::SendConfigurationResponse(hci::ConnectionHandle conn, 
   SendCFrame(conn, l2cap::kConfigurationResponse, id, payload_buffer);
 }
 
-void FakeSignalingServer::SendDisconnectionResponse(hci::ConnectionHandle conn, l2cap::CommandId id,
-                                                    l2cap::ChannelId local_cid,
+void FakeSignalingServer::SendDisconnectionResponse(hci_spec::ConnectionHandle conn,
+                                                    l2cap::CommandId id, l2cap::ChannelId local_cid,
                                                     l2cap::ChannelId remote_cid) {
   DynamicByteBuffer payload_buffer(sizeof(l2cap::DisconnectionResponsePayload));
   MutablePacketView<l2cap::DisconnectionResponsePayload> payload_view(&payload_buffer);

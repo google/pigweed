@@ -12,7 +12,7 @@
 
 namespace bt::l2cap::testing {
 
-DynamicByteBuffer AclExtFeaturesInfoReq(l2cap::CommandId id, hci::ConnectionHandle handle) {
+DynamicByteBuffer AclExtFeaturesInfoReq(l2cap::CommandId id, hci_spec::ConnectionHandle handle) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle, length: 10)
       LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
@@ -28,7 +28,7 @@ DynamicByteBuffer AclExtFeaturesInfoReq(l2cap::CommandId id, hci::ConnectionHand
 }
 
 DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
-                                                   hci::ConnectionHandle handle,
+                                                   hci_spec::ConnectionHandle handle,
                                                    ChannelId chan_id) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link_handle|, length: 10 bytes)
@@ -42,7 +42,7 @@ DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
       UpperBits(static_cast<uint16_t>(RejectReason::kNotUnderstood))));
 }
 
-DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci::ConnectionHandle handle,
+DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci_spec::ConnectionHandle handle,
                                         l2cap::ExtendedFeatures features) {
   const auto features_bytes = ToBytes(features);
   return DynamicByteBuffer(StaticByteBuffer(
@@ -61,7 +61,7 @@ DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci::ConnectionHand
 }
 
 DynamicByteBuffer AclFixedChannelsSupportedInfoReq(l2cap::CommandId id,
-                                                   hci::ConnectionHandle handle) {
+                                                   hci_spec::ConnectionHandle handle) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle, length: 10)
       LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
@@ -77,7 +77,7 @@ DynamicByteBuffer AclFixedChannelsSupportedInfoReq(l2cap::CommandId id,
 }
 
 DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(l2cap::CommandId id,
-                                                   hci::ConnectionHandle handle,
+                                                   hci_spec::ConnectionHandle handle,
                                                    l2cap::FixedChannelsSupported chan_mask) {
   const auto chan_bytes = ToBytes(chan_mask);
   return DynamicByteBuffer(StaticByteBuffer(
@@ -97,7 +97,7 @@ DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(l2cap::CommandId id,
 }
 
 DynamicByteBuffer AclNotSupportedInformationResponse(l2cap::CommandId id,
-                                                     hci::ConnectionHandle handle) {
+                                                     hci_spec::ConnectionHandle handle) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link_handle|, length: 12 bytes)
       LowerBits(handle), UpperBits(handle), 0x0c, 0x00,
@@ -112,7 +112,7 @@ DynamicByteBuffer AclNotSupportedInformationResponse(l2cap::CommandId id,
       UpperBits(static_cast<uint16_t>(l2cap::InformationResult::kNotSupported))));
 }
 
-DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle,
+DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci_spec::ConnectionHandle handle,
                                l2cap::ChannelId dst_id, l2cap::ChannelParameters params) {
   const auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
   const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
@@ -148,7 +148,7 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle
   }
 }
 
-DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci_spec::ConnectionHandle link_handle,
                                l2cap::ChannelId src_id, l2cap::ChannelParameters params) {
   const auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
   const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
@@ -190,7 +190,7 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci::ConnectionHandle link_h
   }
 }
 
-DynamicByteBuffer AclConnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+DynamicByteBuffer AclConnectionReq(l2cap::CommandId id, hci_spec::ConnectionHandle link_handle,
                                    l2cap::ChannelId src_id, l2cap::PSM psm) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link_handle|, length: 12 bytes)
@@ -203,7 +203,7 @@ DynamicByteBuffer AclConnectionReq(l2cap::CommandId id, hci::ConnectionHandle li
       0x02, id, 0x04, 0x00, LowerBits(psm), UpperBits(psm), LowerBits(src_id), UpperBits(src_id)));
 }
 
-DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci_spec::ConnectionHandle link_handle,
                                    l2cap::ChannelId src_id, l2cap::ChannelId dst_id,
                                    l2cap::ConnectionResult result) {
   return DynamicByteBuffer(StaticByteBuffer(
@@ -223,7 +223,7 @@ DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci::ConnectionHandle li
       0x00, 0x00));
 }
 
-DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci_spec::ConnectionHandle link_handle,
                                       l2cap::ChannelId src_id, l2cap::ChannelId dst_id) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link handle|, length: 12 bytes)
@@ -238,7 +238,7 @@ DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle
       LowerBits(src_id), UpperBits(src_id)));
 }
 
-DynamicByteBuffer AclDisconnectionRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+DynamicByteBuffer AclDisconnectionRsp(l2cap::CommandId id, hci_spec::ConnectionHandle link_handle,
                                       l2cap::ChannelId src_id, l2cap::ChannelId dst_id) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link handle|, length: 12 bytes)
@@ -254,7 +254,7 @@ DynamicByteBuffer AclDisconnectionRsp(l2cap::CommandId id, hci::ConnectionHandle
 }
 
 DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
-                                                  hci::ConnectionHandle link_handle,
+                                                  hci_spec::ConnectionHandle link_handle,
                                                   uint16_t interval_min, uint16_t interval_max,
                                                   uint16_t slave_latency,
                                                   uint16_t timeout_multiplier) {
@@ -276,7 +276,7 @@ DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
 }
 
 DynamicByteBuffer AclConnectionParameterUpdateRsp(l2cap::CommandId id,
-                                                  hci::ConnectionHandle link_handle,
+                                                  hci_spec::ConnectionHandle link_handle,
                                                   ConnectionParameterUpdateResult result) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link handle|, length: 10 bytes)
@@ -289,7 +289,7 @@ DynamicByteBuffer AclConnectionParameterUpdateRsp(l2cap::CommandId id,
       LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result))));
 }
 
-DynamicByteBuffer AclSFrame(hci::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
+DynamicByteBuffer AclSFrame(hci_spec::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
                             l2cap::internal::SupervisoryFunction function, uint8_t receive_seq_num,
                             bool is_poll_request, bool is_poll_response) {
   StaticByteBuffer acl_packet{
@@ -307,15 +307,15 @@ DynamicByteBuffer AclSFrame(hci::ConnectionHandle link_handle, l2cap::ChannelId 
 
       // Frame Check Sequence
       0x00, 0x00};
-  const FrameCheckSequence fcs = ComputeFcs(
-      acl_packet.view(sizeof(hci::ACLDataHeader),
-                      acl_packet.size() - sizeof(hci::ACLDataHeader) - sizeof(FrameCheckSequence)));
+  const FrameCheckSequence fcs = ComputeFcs(acl_packet.view(
+      sizeof(hci_spec::ACLDataHeader),
+      acl_packet.size() - sizeof(hci_spec::ACLDataHeader) - sizeof(FrameCheckSequence)));
   acl_packet[acl_packet.size() - 2] = LowerBits(fcs.fcs);
   acl_packet[acl_packet.size() - 1] = UpperBits(fcs.fcs);
   return DynamicByteBuffer(acl_packet);
 }
 
-DynamicByteBuffer AclIFrame(hci::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
+DynamicByteBuffer AclIFrame(hci_spec::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
                             uint8_t receive_seq_num, uint8_t tx_seq, bool is_poll_response,
                             const ByteBuffer& payload) {
   const uint16_t l2cap_size =
@@ -333,7 +333,7 @@ DynamicByteBuffer AclIFrame(hci::ConnectionHandle link_handle, l2cap::ChannelId 
       (is_poll_response ? 0b1000'0000 : 0) | ((tx_seq << 1) & 0b111'1110),
       receive_seq_num & 0b11'1111);
 
-  FrameCheckSequence fcs = ComputeFcs(headers.view(sizeof(hci::ACLDataHeader), acl_size));
+  FrameCheckSequence fcs = ComputeFcs(headers.view(sizeof(hci_spec::ACLDataHeader), acl_size));
   fcs = ComputeFcs(payload.view(), fcs);
 
   DynamicByteBuffer acl_packet(headers.size() + payload.size() + sizeof(fcs));

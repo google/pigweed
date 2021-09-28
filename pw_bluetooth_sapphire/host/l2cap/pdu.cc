@@ -88,7 +88,7 @@ const BasicHeader& PDU::basic_header() const {
   const auto& fragment = *fragments_.begin();
 
   ZX_DEBUG_ASSERT(fragment.packet_boundary_flag() !=
-                  hci::ACLPacketBoundaryFlag::kContinuingFragment);
+                  hci_spec::ACLPacketBoundaryFlag::kContinuingFragment);
   return fragment.view().payload<BasicHeader>();
 }
 

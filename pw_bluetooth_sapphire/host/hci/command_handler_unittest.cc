@@ -15,7 +15,7 @@ namespace bt::hci {
 
 namespace {
 
-constexpr OpCode kOpCode(kInquiry);
+constexpr hci_spec::OpCode kOpCode(hci_spec::kInquiry);
 constexpr uint8_t kTestEventParam = 3u;
 
 template <bool DecodeSucceeds>
@@ -29,12 +29,13 @@ struct TestEvent {
     return fpromise::ok(TestEvent{.test_param = kTestEventParam});
   }
 
-  static constexpr EventCode kEventCode = kInquiryCompleteEventCode;
+  static constexpr hci_spec::EventCode kEventCode = hci_spec::kInquiryCompleteEventCode;
 };
 using DecodableEvent = TestEvent<true>;
 using UndecodableEvent = TestEvent<false>;
 
-DynamicByteBuffer MakeTestEventPacket(StatusCode status = StatusCode::kSuccess) {
+DynamicByteBuffer MakeTestEventPacket(
+    hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess) {
   return DynamicByteBuffer(StaticByteBuffer(DecodableEvent::kEventCode,
                                             0x01,  // parameters_total_size
                                             status));
@@ -52,7 +53,7 @@ struct TestCommandCompleteEvent {
     return fpromise::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
   }
 
-  static constexpr EventCode kEventCode = kCommandCompleteEventCode;
+  static constexpr hci_spec::EventCode kEventCode = hci_spec::kCommandCompleteEventCode;
 };
 using DecodableCommandCompleteEvent = TestCommandCompleteEvent<true>;
 using UndecodableCommandCompleteEvent = TestCommandCompleteEvent<false>;
@@ -70,7 +71,7 @@ struct TestCommand {
     return packet;
   }
 
-  static OpCode opcode() { return kOpCode; }
+  static hci_spec::OpCode opcode() { return kOpCode; }
 
   using EventT = CompleteEventT;
 };
@@ -101,7 +102,7 @@ class CommandHandlerTest : public TestingBase {
 };
 
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
-  const auto kEventPacket = testing::CommandCompletePacket(kOpCode, StatusCode::kSuccess);
+  const auto kEventPacket = testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<DecodableCommandCompleteEvent> event;
@@ -116,7 +117,8 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
 }
 
 TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
-  const auto kEventPacket = testing::CommandCompletePacket(kOpCode, StatusCode::kCommandDisallowed);
+  const auto kEventPacket =
+      testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kCommandDisallowed);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<Status> status;
@@ -127,11 +129,11 @@ TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(status.value(), Status(StatusCode::kCommandDisallowed));
+  EXPECT_EQ(status.value(), Status(hci_spec::StatusCode::kCommandDisallowed));
 }
 
 TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
-  const auto kEventPacket = testing::CommandCompletePacket(kOpCode, StatusCode::kSuccess);
+  const auto kEventPacket = testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<Status> status;
@@ -147,7 +149,8 @@ TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
 
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   const auto kTestEventPacket = MakeTestEventPacket();
-  const auto kStatusEventPacket = testing::CommandStatusPacket(kOpCode, StatusCode::kSuccess);
+  const auto kStatusEventPacket =
+      testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket, &kTestEventPacket);
 
   std::optional<DecodableEvent> event;
@@ -193,7 +196,8 @@ TEST_F(CommandHandlerTest, AddEventHandlerDecodeError) {
 }
 
 TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
-  const auto kStatusEventPacket = testing::CommandStatusPacket(kOpCode, StatusCode::kSuccess);
+  const auto kStatusEventPacket =
+      testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket);
 
   size_t cb_count = 0;

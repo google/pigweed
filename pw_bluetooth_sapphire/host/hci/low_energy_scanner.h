@@ -37,7 +37,7 @@ struct LowEnergyScanResult {
 
   // The received signal strength of the advertisement packet corresponding to
   // this peer.
-  int8_t rssi = kRSSIInvalid;
+  int8_t rssi = hci_spec::kRSSIInvalid;
 };
 
 // LowEnergyScanner manages Low Energy scan procedures that are used
@@ -174,7 +174,7 @@ class LowEnergyScanner : public LocalAddressClient {
 
     // Determines the type of filtering the controller should perform to limit the number of
     // advertising reports.
-    LEScanFilterPolicy filter_policy = LEScanFilterPolicy::kNoWhiteList;
+    hci_spec::LEScanFilterPolicy filter_policy = hci_spec::LEScanFilterPolicy::kNoWhiteList;
 
     // Determines the length of the software defined scan period. If the value is kPeriodInfinite,
     // then the scan will remain enabled until StopScan() gets called. For all other values, the
@@ -186,8 +186,8 @@ class LowEnergyScanner : public LocalAddressClient {
     zx::duration scan_response_timeout;
 
     // Scan parameters.
-    uint16_t interval = defaults::kLEScanInterval;
-    uint16_t window = defaults::kLEScanWindow;
+    uint16_t interval = hci_spec::defaults::kLEScanInterval;
+    uint16_t window = hci_spec::defaults::kLEScanWindow;
   };
   using ScanStatusCallback = fit::function<void(ScanStatus)>;
   virtual bool StartScan(const ScanOptions& options, ScanStatusCallback callback) = 0;

@@ -24,7 +24,7 @@ namespace bt::l2cap::testing {
 // channel.
 class FakeChannel : public Channel {
  public:
-  FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
+  FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::ConnectionHandle handle,
               bt::LinkType link_type,
               ChannelInfo info = ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU));
   ~FakeChannel() override = default;
@@ -78,11 +78,11 @@ class FakeChannel : public Channel {
                           fit::callback<void(fpromise::result<>)> cb) override;
   void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout,
-      fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) override;
+      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
 
  private:
-  hci::ConnectionHandle handle_;
+  hci_spec::ConnectionHandle handle_;
   Fragmenter fragmenter_;
 
   sm::SecurityProperties security_;

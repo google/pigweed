@@ -78,27 +78,28 @@ BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
 }
 
 BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
-                                             hci::InquiryMode mode, PeerCache* peer_cache)
+                                             hci_spec::InquiryMode mode, PeerCache* peer_cache)
     : hci_(std::move(hci)),
       dispatcher_(async_get_default_dispatcher()),
       cache_(peer_cache),
       result_handler_id_(0u),
       desired_inquiry_mode_(mode),
-      current_inquiry_mode_(hci::InquiryMode::kStandard),
+      current_inquiry_mode_(hci_spec::InquiryMode::kStandard),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(cache_);
   ZX_DEBUG_ASSERT(hci_);
   ZX_DEBUG_ASSERT(dispatcher_);
 
   result_handler_id_ = hci_->command_channel()->AddEventHandler(
-      hci::kInquiryResultEventCode, fit::bind_member(this, &BrEdrDiscoveryManager::InquiryResult));
+      hci_spec::kInquiryResultEventCode,
+      fit::bind_member(this, &BrEdrDiscoveryManager::InquiryResult));
   ZX_DEBUG_ASSERT(result_handler_id_);
   rssi_handler_id_ = hci_->command_channel()->AddEventHandler(
-      hci::kInquiryResultWithRSSIEventCode,
+      hci_spec::kInquiryResultWithRSSIEventCode,
       fbl::BindMember(this, &BrEdrDiscoveryManager::InquiryResult));
   ZX_DEBUG_ASSERT(rssi_handler_id_);
   eir_handler_id_ = hci_->command_channel()->AddEventHandler(
-      hci::kExtendedInquiryResultEventCode,
+      hci_spec::kExtendedInquiryResultEventCode,
       fbl::BindMember(this, &BrEdrDiscoveryManager::ExtendedInquiryResult));
   ZX_DEBUG_ASSERT(eir_handler_id_);
 
@@ -150,9 +151,9 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
-    auto packet =
-        hci::CommandPacket::New(hci::kWriteInquiryMode, sizeof(hci::WriteInquiryModeCommandParams));
-    packet->mutable_payload<hci::WriteInquiryModeCommandParams>()->inquiry_mode =
+    auto packet = hci::CommandPacket::New(hci_spec::kWriteInquiryMode,
+                                          sizeof(hci_spec::WriteInquiryModeCommandParams));
+    packet->mutable_payload<hci_spec::WriteInquiryModeCommandParams>()->inquiry_mode =
         desired_inquiry_mode_;
     hci_->command_channel()->SendCommand(
         std::move(packet), [self, mode = desired_inquiry_mode_](auto, const auto& event) {
@@ -166,9 +167,10 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         });
   }
 
-  auto inquiry = hci::CommandPacket::New(hci::kInquiry, sizeof(hci::InquiryCommandParams));
-  auto params = inquiry->mutable_payload<hci::InquiryCommandParams>();
-  params->lap = hci::kGIAC;
+  auto inquiry =
+      hci::CommandPacket::New(hci_spec::kInquiry, sizeof(hci_spec::InquiryCommandParams));
+  auto params = inquiry->mutable_payload<hci_spec::InquiryCommandParams>();
+  params->lap = hci_spec::kGIAC;
   params->inquiry_length = kInquiryLengthDefault;
   params->num_responses = 0;
   hci_->command_channel()->SendExclusiveCommand(
@@ -189,8 +191,8 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         // Status event.
         // TODO(fxbug.dev/1109): Make it impossible for Command Complete to happen here
         // and remove handling for it.
-        if (event.event_code() == hci::kCommandStatusEventCode ||
-            event.event_code() == hci::kCommandCompleteEventCode) {
+        if (event.event_code() == hci_spec::kCommandStatusEventCode ||
+            event.event_code() == hci_spec::kCommandCompleteEventCode) {
           // Inquiry started, make sessions for our waiting callbacks.
           while (!self->pending_discovery_.empty()) {
             auto callback = std::move(self->pending_discovery_.front());
@@ -200,7 +202,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
           return;
         }
 
-        ZX_DEBUG_ASSERT(event.event_code() == hci::kInquiryCompleteEventCode);
+        ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryCompleteEventCode);
         self->zombie_discovering_.clear();
 
         if (bt_is_error(status, TRACE, "gap", "inquiry complete error")) {
@@ -211,7 +213,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         bt_log(TRACE, "gap-bredr", "inquiry complete, restart");
         self->MaybeStartInquiry();
       },
-      hci::kInquiryCompleteEventCode, {hci::kRemoteNameRequest});
+      hci_spec::kInquiryCompleteEventCode, {hci_spec::kRemoteNameRequest});
 }
 
 // Stops the inquiry procedure.
@@ -219,7 +221,7 @@ void BrEdrDiscoveryManager::StopInquiry() {
   ZX_DEBUG_ASSERT(result_handler_id_);
   bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
-  auto inq_cancel = hci::CommandPacket::New(hci::kInquiryCancel);
+  auto inq_cancel = hci::CommandPacket::New(hci_spec::kInquiryCancel);
   hci_->command_channel()->SendCommand(std::move(inq_cancel), [](long, const auto& event) {
     // Warn if the command failed.
     hci_is_error(event, WARN, "gap-bredr", "inquiry cancel failed");
@@ -229,11 +231,12 @@ void BrEdrDiscoveryManager::StopInquiry() {
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
     const hci::EventPacket& event) {
   std::unordered_set<Peer*> peers;
-  if (event.event_code() == hci::kInquiryResultEventCode) {
-    peers = ProcessInquiryResult<hci::InquiryResultEventParams, hci::InquiryResult>(cache_, event);
-  } else if (event.event_code() == hci::kInquiryResultWithRSSIEventCode) {
-    peers = ProcessInquiryResult<hci::InquiryResultWithRSSIEventParams, hci::InquiryResultRSSI>(
+  if (event.event_code() == hci_spec::kInquiryResultEventCode) {
+    peers = ProcessInquiryResult<hci_spec::InquiryResultEventParams, hci_spec::InquiryResult>(
         cache_, event);
+  } else if (event.event_code() == hci_spec::kInquiryResultWithRSSIEventCode) {
+    peers = ProcessInquiryResult<hci_spec::InquiryResultWithRSSIEventParams,
+                                 hci_spec::InquiryResultRSSI>(cache_, event);
   } else {
     bt_log(ERROR, "gap-bredr", "unsupported inquiry result type");
     return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -252,14 +255,14 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
 
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryResult(
     const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci::kExtendedInquiryResultEventCode);
+  ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kExtendedInquiryResultEventCode);
 
   bt_log(TRACE, "gap-bredr", "ExtendedInquiryResult received");
-  if (event.view().payload_size() != sizeof(hci::ExtendedInquiryResultEventParams)) {
+  if (event.view().payload_size() != sizeof(hci_spec::ExtendedInquiryResultEventParams)) {
     bt_log(WARN, "gap-bredr", "ignoring malformed result (%zu bytes)", event.view().payload_size());
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
-  const auto& result = event.params<hci::ExtendedInquiryResultEventParams>();
+  const auto& result = event.params<hci_spec::ExtendedInquiryResultEventParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, result.bd_addr);
   Peer* peer = cache_->FindByAddress(addr);
@@ -282,18 +285,18 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
 void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name, hci::StatusCallback callback) {
   DataType name_type = DataType::kCompleteLocalName;
   size_t name_size = name.size();
-  if (name.size() >= (hci::kExtendedInquiryResponseMaxNameBytes)) {
+  if (name.size() >= (hci_spec::kExtendedInquiryResponseMaxNameBytes)) {
     name_type = DataType::kShortenedLocalName;
-    name_size = hci::kExtendedInquiryResponseMaxNameBytes;
+    name_size = hci_spec::kExtendedInquiryResponseMaxNameBytes;
   }
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto eir_packet = hci::CommandPacket::New(hci::kWriteExtendedInquiryResponse,
-                                            sizeof(hci::WriteExtendedInquiryResponseParams));
-  eir_packet->mutable_payload<hci::WriteExtendedInquiryResponseParams>()->fec_required = 0x00;
+  auto eir_packet = hci::CommandPacket::New(hci_spec::kWriteExtendedInquiryResponse,
+                                            sizeof(hci_spec::WriteExtendedInquiryResponseParams));
+  eir_packet->mutable_payload<hci_spec::WriteExtendedInquiryResponseParams>()->fec_required = 0x00;
   auto eir_response_buf =
-      MutableBufferView(eir_packet->mutable_payload<hci::WriteExtendedInquiryResponseParams>()
+      MutableBufferView(eir_packet->mutable_payload<hci_spec::WriteExtendedInquiryResponseParams>()
                             ->extended_inquiry_response,
-                        hci::kExtendedInquiryResponseBytes);
+                        hci_spec::kExtendedInquiryResponseBytes);
   eir_response_buf.Fill(0);
   eir_response_buf[0] = name_size + 1;
   eir_response_buf[1] = static_cast<uint8_t>(name_type);
@@ -310,15 +313,15 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name, hci::StatusC
 
 void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::StatusCallback callback) {
   size_t name_size = name.size();
-  if (name.size() >= hci::kMaxNameLength) {
-    name_size = hci::kMaxNameLength;
+  if (name.size() >= hci_spec::kMaxNameLength) {
+    name_size = hci_spec::kMaxNameLength;
   }
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto write_name =
-      hci::CommandPacket::New(hci::kWriteLocalName, sizeof(hci::WriteLocalNameCommandParams));
-  auto name_buf =
-      MutableBufferView(write_name->mutable_payload<hci::WriteLocalNameCommandParams>()->local_name,
-                        hci::kMaxNameLength);
+  auto write_name = hci::CommandPacket::New(hci_spec::kWriteLocalName,
+                                            sizeof(hci_spec::WriteLocalNameCommandParams));
+  auto name_buf = MutableBufferView(
+      write_name->mutable_payload<hci_spec::WriteLocalNameCommandParams>()->local_name,
+      hci_spec::kMaxNameLength);
   name_buf.Fill(0);
   name_buf.Write(reinterpret_cast<const uint8_t*>(name.data()), name_size);
   hci_->command_channel()->SendCommand(
@@ -343,10 +346,10 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     bt_log(WARN, "gap-bredr", "cannot request name, unknown peer: %s", bt_str(id));
     return;
   }
-  auto packet =
-      hci::CommandPacket::New(hci::kRemoteNameRequest, sizeof(hci::RemoteNameRequestCommandParams));
+  auto packet = hci::CommandPacket::New(hci_spec::kRemoteNameRequest,
+                                        sizeof(hci_spec::RemoteNameRequestCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto params = packet->mutable_payload<hci::RemoteNameRequestCommandParams>();
+  auto params = packet->mutable_payload<hci_spec::RemoteNameRequestCommandParams>();
   ZX_DEBUG_ASSERT(peer->bredr());
   ZX_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
   params->bd_addr = peer->address().value();
@@ -364,14 +367,15 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       return;
     }
 
-    if (event.event_code() == hci::kCommandStatusEventCode) {
+    if (event.event_code() == hci_spec::kCommandStatusEventCode) {
       return;
     }
 
-    ZX_DEBUG_ASSERT(event.event_code() == hci::kRemoteNameRequestCompleteEventCode);
+    ZX_DEBUG_ASSERT(event.event_code() == hci_spec::kRemoteNameRequestCompleteEventCode);
 
     self->requesting_names_.erase(id);
-    const auto& params = event.view().template payload<hci::RemoteNameRequestCompleteEventParams>();
+    const auto& params =
+        event.view().template payload<hci_spec::RemoteNameRequestCompleteEventParams>();
     Peer* const peer = self->cache_->FindById(id);
     if (!peer) {
       return;
@@ -381,7 +385,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   };
 
   auto cmd_id = hci_->command_channel()->SendExclusiveCommand(
-      std::move(packet), std::move(cb), hci::kRemoteNameRequestCompleteEventCode, {hci::kInquiry});
+      std::move(packet), std::move(cb), hci_spec::kRemoteNameRequestCompleteEventCode,
+      {hci_spec::kInquiry});
   if (cmd_id) {
     requesting_names_.insert(id);
   }
@@ -440,9 +445,9 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     }
 
     bool enable = !self->discoverable_.empty() || !self->pending_discoverable_.empty();
-    auto params = event.return_params<hci::ReadScanEnableReturnParams>();
+    auto params = event.return_params<hci_spec::ReadScanEnableReturnParams>();
     uint8_t scan_type = params->scan_enable;
-    bool enabled = scan_type & static_cast<uint8_t>(hci::ScanEnableBit::kInquiry);
+    bool enabled = scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
 
     if (enable == enabled) {
       bt_log(INFO, "gap-bredr", "inquiry scan already %s", (enable ? "enabled" : "disabled"));
@@ -450,13 +455,14 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     }
 
     if (enable) {
-      scan_type |= static_cast<uint8_t>(hci::ScanEnableBit::kInquiry);
+      scan_type |= static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
     } else {
-      scan_type &= ~static_cast<uint8_t>(hci::ScanEnableBit::kInquiry);
+      scan_type &= ~static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
     }
-    auto write_enable =
-        hci::CommandPacket::New(hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
-    write_enable->mutable_payload<hci::WriteScanEnableCommandParams>()->scan_enable = scan_type;
+    auto write_enable = hci::CommandPacket::New(hci_spec::kWriteScanEnable,
+                                                sizeof(hci_spec::WriteScanEnableCommandParams));
+    write_enable->mutable_payload<hci_spec::WriteScanEnableCommandParams>()->scan_enable =
+        scan_type;
     resolve_pending.cancel();
     self->hci_->command_channel()->SendCommand(
         std::move(write_enable), [self](auto, const hci::EventPacket& event) {
@@ -475,17 +481,17 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
         });
   };
 
-  auto read_enable = hci::CommandPacket::New(hci::kReadScanEnable);
+  auto read_enable = hci::CommandPacket::New(hci_spec::kReadScanEnable);
   hci_->command_channel()->SendCommand(std::move(read_enable), std::move(scan_enable_cb));
 }
 
 void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t window,
                                                      bool interlaced) {
   // TODO(jamuraa): add a callback for success or failure?
-  auto write_activity = hci::CommandPacket::New(hci::kWriteInquiryScanActivity,
-                                                sizeof(hci::WriteInquiryScanActivityCommandParams));
+  auto write_activity = hci::CommandPacket::New(
+      hci_spec::kWriteInquiryScanActivity, sizeof(hci_spec::WriteInquiryScanActivityCommandParams));
   auto* activity_params =
-      write_activity->mutable_payload<hci::WriteInquiryScanActivityCommandParams>();
+      write_activity->mutable_payload<hci_spec::WriteInquiryScanActivityCommandParams>();
   activity_params->inquiry_scan_interval = htole16(interval);
   activity_params->inquiry_scan_window = htole16(window);
 
@@ -497,11 +503,11 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t
         bt_log(TRACE, "gap-bredr", "inquiry scan activity updated");
       });
 
-  auto write_type = hci::CommandPacket::New(hci::kWriteInquiryScanType,
-                                            sizeof(hci::WriteInquiryScanTypeCommandParams));
-  auto* type_params = write_type->mutable_payload<hci::WriteInquiryScanTypeCommandParams>();
-  type_params->inquiry_scan_type =
-      (interlaced ? hci::InquiryScanType::kInterlacedScan : hci::InquiryScanType::kStandardScan);
+  auto write_type = hci::CommandPacket::New(hci_spec::kWriteInquiryScanType,
+                                            sizeof(hci_spec::WriteInquiryScanTypeCommandParams));
+  auto* type_params = write_type->mutable_payload<hci_spec::WriteInquiryScanTypeCommandParams>();
+  type_params->inquiry_scan_type = (interlaced ? hci_spec::InquiryScanType::kInterlacedScan
+                                               : hci_spec::InquiryScanType::kStandardScan);
 
   hci_->command_channel()->SendCommand(
       std::move(write_type), [](auto id, const hci::EventPacket& event) {

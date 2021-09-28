@@ -24,7 +24,7 @@
 namespace bt::l2cap {
 
 Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
-                 hci::ConnectionHandle link_handle, ChannelInfo info)
+                 hci_spec::ConnectionHandle link_handle, ChannelInfo info)
     : id_(id),
       remote_id_(remote_id),
       link_type_(link_type),
@@ -206,20 +206,20 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
 
 void ChannelImpl::SetBrEdrAutomaticFlushTimeout(
     zx::duration flush_timeout,
-    fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) {
+    fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) {
   ZX_ASSERT(link_type_ == bt::LinkType::kACL);
 
   // Channel may be inactive if this method is called before activation.
   if (!link_) {
     bt_log(DEBUG, "l2cap", "Ignoring %s on closed channel", __FUNCTION__);
-    callback(fpromise::error(hci::StatusCode::kCommandDisallowed));
+    callback(fpromise::error(hci_spec::StatusCode::kCommandDisallowed));
     return;
   }
 
   auto cb_wrapper = [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback),
                      flush_timeout](auto result) mutable {
     if (!self) {
-      cb(fpromise::error(hci::StatusCode::kUnspecifiedError));
+      cb(fpromise::error(hci_spec::StatusCode::kUnspecifiedError));
       return;
     }
 

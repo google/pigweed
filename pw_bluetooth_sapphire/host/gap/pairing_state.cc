@@ -10,8 +10,8 @@
 
 namespace bt::gap {
 
-using hci::AuthRequirements;
-using hci::IOCapability;
+using hci_spec::AuthRequirements;
+using hci_spec::IOCapability;
 using sm::util::IOCapabilityForHci;
 
 PairingState::PairingState(PeerId peer_id, hci::Connection* link, bool link_initiated,
@@ -268,7 +268,7 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
       peer_id(), numeric_value, PairingDelegate::DisplayMethod::kPeerEntry, std::move(confirm_cb));
 }
 
-void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
+void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
   // The pairing process may fail early, which the controller will deliver as an Simple Pairing
   // Complete with a non-success status. Log and proxy the error code.
   if (const hci::Status status(status_code);
@@ -295,7 +295,7 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
   state_ = State::kWaitLinkKey;
 }
 
-std::optional<hci::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress address) {
+std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress address) {
   if (state() != State::kIdle && state() != State::kInitiatorWaitLinkKeyRequest) {
     FailWithUnexpectedEvent(__func__);
     return std::nullopt;
@@ -315,7 +315,7 @@ std::optional<hci::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress address
 
     ZX_ASSERT(peer->bredr()->link_key().has_value());
     link_key = peer->bredr()->link_key();
-    ZX_ASSERT(link_key->security().enc_key_size() == hci::kBrEdrLinkKeySize);
+    ZX_ASSERT(link_key->security().enc_key_size() == hci_spec::kBrEdrLinkKeySize);
 
     const auto link_key_type = link_key->security().GetLinkKeyType();
     ZX_ASSERT(link_key_type.has_value());
@@ -328,7 +328,7 @@ std::optional<hci::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress address
   // The link key request may be received outside of Simple Pairing (e.g. when the peer initiates
   // the authentication procedure).
   if (state() == State::kIdle) {
-    return link_key.has_value() ? link_key->key() : std::optional<hci::LinkKey>();
+    return link_key.has_value() ? link_key->key() : std::optional<hci_spec::LinkKey>();
   }
 
   ZX_ASSERT(is_pairing());
@@ -345,15 +345,15 @@ std::optional<hci::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress address
   return std::nullopt;
 }
 
-void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type) {
+void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type) {
   // TODO(fxbug.dev/36360): We assume the controller is never in pairing debug mode because it's a
   // security hazard to pair and bond using Debug Combination link keys.
-  ZX_ASSERT_MSG(key_type != hci::LinkKeyType::kDebugCombination,
+  ZX_ASSERT_MSG(key_type != hci_spec::LinkKeyType::kDebugCombination,
                 "Pairing on link %#.4x (id: %s) resulted in insecure Debug Combination link key",
                 handle(), bt_str(peer_id()));
 
   // When not pairing, only connection link key changes are allowed.
-  if (state() == State::kIdle && key_type == hci::LinkKeyType::kChangedCombination) {
+  if (state() == State::kIdle && key_type == hci_spec::LinkKeyType::kChangedCombination) {
     if (!link_->ltk()) {
       bt_log(WARN, "gap-bredr",
              "Got Changed Combination key but link %#.4x (id: %s) has no current key", handle(),
@@ -364,7 +364,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
     }
 
     bt_log(DEBUG, "gap-bredr", "Changing link key on %#.4x (id: %s)", handle(), bt_str(peer_id()));
-    link_->set_bredr_link_key(hci::LinkKey(link_key, 0, 0), key_type);
+    link_->set_bredr_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
     return;
   } else if (state() != State::kWaitLinkKey) {
     FailWithUnexpectedEvent(__func__);
@@ -398,7 +398,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
     return;
   }
 
-  link_->set_bredr_link_key(hci::LinkKey(link_key, 0, 0), key_type);
+  link_->set_bredr_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
   if (initiator()) {
     state_ = State::kInitiatorWaitAuthComplete;
   } else {
@@ -406,7 +406,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
   }
 }
 
-void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
+void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
   // The pairing process may fail early, which the controller will deliver as an Authentication
   // Complete with a non-success status. Log and proxy the error code.
   if (const hci::Status status(status_code);
@@ -465,7 +465,7 @@ std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
-    hci::IOCapability peer_iocap, bool outgoing) {
+    hci_spec::IOCapability peer_iocap, bool outgoing) {
   // Private ctor is inaccessible to std::make_unique.
   std::unique_ptr<Pairing> pairing(new Pairing(outgoing));
   pairing->initiator = false;
@@ -528,13 +528,13 @@ const char* PairingState::ToString(PairingState::State state) {
   return "";
 }
 
-PairingState::State PairingState::GetStateForPairingEvent(hci::EventCode event_code) {
+PairingState::State PairingState::GetStateForPairingEvent(hci_spec::EventCode event_code) {
   switch (event_code) {
-    case hci::kUserConfirmationRequestEventCode:
+    case hci_spec::kUserConfirmationRequestEventCode:
       return State::kWaitUserConfirmationRequest;
-    case hci::kUserPasskeyRequestEventCode:
+    case hci_spec::kUserPasskeyRequestEventCode:
       return State::kWaitUserPasskeyRequest;
-    case hci::kUserPasskeyNotificationEventCode:
+    case hci_spec::kUserPasskeyNotificationEventCode:
       return State::kWaitUserPasskeyNotification;
     default:
       break;
@@ -679,17 +679,17 @@ PairingAction GetResponderPairingAction(IOCapability initiator_cap, IOCapability
   return GetInitiatorPairingAction(responder_cap, initiator_cap);
 }
 
-hci::EventCode GetExpectedEvent(IOCapability local_cap, IOCapability peer_cap) {
+hci_spec::EventCode GetExpectedEvent(IOCapability local_cap, IOCapability peer_cap) {
   if (local_cap == IOCapability::kNoInputNoOutput || peer_cap == IOCapability::kNoInputNoOutput) {
-    return hci::kUserConfirmationRequestEventCode;
+    return hci_spec::kUserConfirmationRequestEventCode;
   }
   if (local_cap == IOCapability::kKeyboardOnly) {
-    return hci::kUserPasskeyRequestEventCode;
+    return hci_spec::kUserPasskeyRequestEventCode;
   }
   if (peer_cap == IOCapability::kKeyboardOnly) {
-    return hci::kUserPasskeyNotificationEventCode;
+    return hci_spec::kUserPasskeyNotificationEventCode;
   }
-  return hci::kUserConfirmationRequestEventCode;
+  return hci_spec::kUserConfirmationRequestEventCode;
 }
 
 bool IsPairingAuthenticated(IOCapability local_cap, IOCapability peer_cap) {

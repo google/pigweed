@@ -22,7 +22,7 @@ constexpr size_t kMaxPacketCount = 1000;
 // benefit.
 constexpr uint16_t kMaxAclPacketSize = 100;
 
-constexpr hci::ConnectionHandle kHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kHandle = 0x0001;
 
 // Don't toggle connection too often or else l2cap won't get very far.
 constexpr float kToggleConnectionChance = 0.04;
@@ -33,7 +33,8 @@ class FuzzerController : public ControllerTestDoubleBase {
   ~FuzzerController() override = default;
 
  private:
-  void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override {}
+  void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override {
+  }
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
 };
 
@@ -83,7 +84,7 @@ class DataFuzzTest : public TestingBase {
     }
     // Consumes 8 bytes.
     auto packet_size = data_.ConsumeIntegralInRange<uint16_t>(
-        sizeof(hci::ACLDataHeader),
+        sizeof(hci_spec::ACLDataHeader),
         std::min(static_cast<size_t>(kMaxAclPacketSize), data_.remaining_bytes()));
 
     auto packet_data = data_.ConsumeBytes<uint8_t>(packet_size);
@@ -95,14 +96,14 @@ class DataFuzzTest : public TestingBase {
     MutableBufferView packet_view(packet_data.data(), packet_data.size());
 
     // Use correct length so packets aren't rejected for invalid length.
-    packet_view.AsMutable<hci::ACLDataHeader>().data_total_length =
-        htole16(packet_view.size() - sizeof(hci::ACLDataHeader));
+    packet_view.AsMutable<hci_spec::ACLDataHeader>().data_total_length =
+        htole16(packet_view.size() - sizeof(hci_spec::ACLDataHeader));
 
     // Use correct connection handle so packets aren't rejected/queued for invalid handle.
-    uint16_t handle_and_flags = packet_view.As<hci::ACLDataHeader>().handle_and_flags;
+    uint16_t handle_and_flags = packet_view.As<hci_spec::ACLDataHeader>().handle_and_flags;
     handle_and_flags &= 0xF000;  // Keep flags, clear handle.
     handle_and_flags |= kHandle;
-    packet_view.AsMutable<hci::ACLDataHeader>().handle_and_flags = handle_and_flags;
+    packet_view.AsMutable<hci_spec::ACLDataHeader>().handle_and_flags = handle_and_flags;
 
     auto status = test_device()->SendACLDataChannelPacket(packet_view);
     ZX_ASSERT(status == ZX_OK);

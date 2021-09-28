@@ -10,7 +10,8 @@
 namespace bt::gap {
 
 LowEnergyConnectionHandle::LowEnergyConnectionHandle(
-    PeerId peer_id, hci::ConnectionHandle handle, fxl::WeakPtr<LowEnergyConnectionManager> manager)
+    PeerId peer_id, hci_spec::ConnectionHandle handle,
+    fxl::WeakPtr<LowEnergyConnectionManager> manager)
     : active_(true), peer_id_(peer_id), handle_(handle), manager_(manager) {
   ZX_DEBUG_ASSERT(peer_id_.IsValid());
   ZX_DEBUG_ASSERT(manager_);

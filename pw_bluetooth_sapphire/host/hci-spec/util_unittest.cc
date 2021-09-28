@@ -8,37 +8,8 @@
 
 #include <gtest/gtest.h>
 
-namespace bt::hci {
+namespace bt::hci_spec {
 namespace {
-
-TEST(UtilTest, DeviceAddressFromAdvReportParsesAddress) {
-  StaticByteBuffer<sizeof(LEAdvertisingReportData)> buffer;
-  auto* report = reinterpret_cast<LEAdvertisingReportData*>(buffer.mutable_data());
-  report->address = DeviceAddressBytes({0, 1, 2, 3, 4, 5});
-  report->address_type = LEAddressType::kPublicIdentity;
-
-  DeviceAddress address;
-  bool resolved;
-
-  EXPECT_TRUE(DeviceAddressFromAdvReport(*report, &address, &resolved));
-  EXPECT_EQ(DeviceAddress::Type::kLEPublic, address.type());
-  EXPECT_TRUE(resolved);
-
-  report->address_type = LEAddressType::kPublic;
-  EXPECT_TRUE(DeviceAddressFromAdvReport(*report, &address, &resolved));
-  EXPECT_EQ(DeviceAddress::Type::kLEPublic, address.type());
-  EXPECT_FALSE(resolved);
-
-  report->address_type = LEAddressType::kRandomIdentity;
-  EXPECT_TRUE(DeviceAddressFromAdvReport(*report, &address, &resolved));
-  EXPECT_EQ(DeviceAddress::Type::kLERandom, address.type());
-  EXPECT_TRUE(resolved);
-
-  report->address_type = LEAddressType::kRandom;
-  EXPECT_TRUE(DeviceAddressFromAdvReport(*report, &address, &resolved));
-  EXPECT_EQ(DeviceAddress::Type::kLERandom, address.type());
-  EXPECT_FALSE(resolved);
-}
 
 TEST(UtilTest, EncodeLegacyAdvertisingInterval) {
   uint16_t input = 0x00ff;
@@ -77,7 +48,8 @@ TEST(UtilTest, DecodeExtendedAdvertisingInterval) {
 
 // Bit values used in this test are given in a table in Core Spec Volume 4, Part E, Section 7.8.53.
 TEST(UtilTest, AdvertisingTypeToEventBits) {
-  std::optional<AdvertisingEventBits> bits = AdvertisingTypeToEventBits(LEAdvertisingType::kAdvInd);
+  std::optional<hci_spec::AdvertisingEventBits> bits =
+      AdvertisingTypeToEventBits(LEAdvertisingType::kAdvInd);
   ASSERT_TRUE(bits);
   EXPECT_EQ(0b00010011, bits.value());
 
@@ -99,4 +71,4 @@ TEST(UtilTest, AdvertisingTypeToEventBits) {
 }
 
 }  // namespace
-}  // namespace bt::hci
+}  // namespace bt::hci_spec

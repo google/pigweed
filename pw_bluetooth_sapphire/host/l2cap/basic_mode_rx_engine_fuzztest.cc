@@ -8,7 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  constexpr bt::hci::ConnectionHandle kTestHandle = 0x0001;
+  constexpr bt::hci_spec::ConnectionHandle kTestHandle = 0x0001;
   constexpr bt::l2cap::ChannelId kTestChannelId = 0x0001;
   bt::l2cap::Fragmenter fragmenter(kTestHandle);
   bt::l2cap::internal::BasicModeRxEngine rx_engine;

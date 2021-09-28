@@ -2,12 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "bredr_connection_request.h"
+
 #include <lib/inspect/testing/cpp/inspect.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 
 namespace bt::gap {

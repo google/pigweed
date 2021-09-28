@@ -19,7 +19,7 @@ namespace bt::testing {
 namespace {
 
 l2cap::ChannelParameters kChannelParams;
-hci::ConnectionHandle kConnectionHandle = 0x01;
+hci_spec::ConnectionHandle kConnectionHandle = 0x01;
 l2cap::CommandId kCommandId = 0x02;
 l2cap::PSM kPsm = l2cap::kSDP;
 l2cap::ChannelId src_id = l2cap::kFirstDynamicChannelId;

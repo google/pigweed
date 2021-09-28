@@ -15,7 +15,7 @@
 namespace bt::l2cap::internal {
 namespace {
 
-constexpr hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
 TEST(BasicModeRxEngineTest, ProcessPduReturnsSdu) {
@@ -31,7 +31,7 @@ TEST(BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   const auto byte_buf = CreateStaticByteBuffer(0x01, 0x00, 0x04, 0x00,  // ACL data header
                                                0x00, 0x00, 0xFF, 0xFF   // Basic L2CAP header
   );
-  auto hci_packet = hci::ACLDataPacket::New(byte_buf.size() - sizeof(hci::ACLDataHeader));
+  auto hci_packet = hci::ACLDataPacket::New(byte_buf.size() - sizeof(hci_spec::ACLDataHeader));
   hci_packet->mutable_view()->mutable_data().Write(byte_buf);
   hci_packet->InitializeFromBuffer();
 

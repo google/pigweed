@@ -13,16 +13,17 @@ namespace slab_allocators {
 
 // Slab-allocator traits for command packets.
 using LargeCommandTraits =
-    PacketTraits<CommandHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
+    PacketTraits<hci_spec::CommandHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
 using SmallCommandTraits =
-    PacketTraits<CommandHeader, kSmallControlPacketSize, kNumSmallControlPackets>;
+    PacketTraits<hci_spec::CommandHeader, kSmallControlPacketSize, kNumSmallControlPackets>;
 
 // Slab-allocator traits for event packets. Since event packets are only
 // received (and not sent) and because the packet size cannot be determined
 // before the contents are read from the underlying channel, CommandChannel
 // always allocates the largest possible buffer for events. Thus, a small buffer
 // allocator is not needed.
-using EventTraits = PacketTraits<EventHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
+using EventTraits =
+    PacketTraits<hci_spec::EventHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
 
 using LargeCommandAllocator = fbl::SlabAllocator<LargeCommandTraits>;
 using SmallCommandAllocator = fbl::SlabAllocator<SmallCommandTraits>;
@@ -48,9 +49,9 @@ std::unique_ptr<CommandPacket> NewCommandPacket(size_t payload_size) {
 
 // Returns true and populates the |out_code| field with the status parameter.
 // Returns false if |event|'s payload is too small to hold a T. T must have a
-// |status| member of type hci::StatusCode for this to compile.
+// |status| member of type hci_spec::StatusCode for this to compile.
 template <typename T>
-bool StatusCodeFromEvent(const EventPacket& event, hci::StatusCode* out_code) {
+bool StatusCodeFromEvent(const EventPacket& event, hci_spec::StatusCode* out_code) {
   ZX_DEBUG_ASSERT(out_code);
 
   if (event.view().payload_size() < sizeof(T))
@@ -60,15 +61,15 @@ bool StatusCodeFromEvent(const EventPacket& event, hci::StatusCode* out_code) {
   return true;
 }
 
-// As StatusCodeFromEvent, but for LEMetaEvent subevents.
+// As hci_spec::StatusCodeFromEvent, but for LEMetaEvent subevents.
 // Returns true and populates the |out_code| field with the subevent status parameter.
 // Returns false if |event|'s payload is too small to hold a LEMetaEvent containing a T. T must have
-// a |status| member of type hci::StatusCode for this to compile.
+// a |status| member of type hci_spec::StatusCode for this to compile.
 template <typename T>
-bool StatusCodeFromSubevent(const EventPacket& event, hci::StatusCode* out_code) {
+bool StatusCodeFromSubevent(const EventPacket& event, hci_spec::StatusCode* out_code) {
   ZX_ASSERT(out_code);
 
-  if (event.view().payload_size() < sizeof(LEMetaEventParams) + sizeof(T))
+  if (event.view().payload_size() < sizeof(hci_spec::LEMetaEventParams) + sizeof(T))
     return false;
 
   *out_code = event.le_event_params<T>()->status;
@@ -77,11 +78,11 @@ bool StatusCodeFromSubevent(const EventPacket& event, hci::StatusCode* out_code)
 
 // Specialization for the CommandComplete event.
 template <>
-bool StatusCodeFromEvent<CommandCompleteEventParams>(const EventPacket& event,
-                                                     hci::StatusCode* out_code) {
+bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(const EventPacket& event,
+                                                               hci_spec::StatusCode* out_code) {
   ZX_DEBUG_ASSERT(out_code);
 
-  const auto* params = event.return_params<SimpleReturnParams>();
+  const auto* params = event.return_params<hci_spec::SimpleReturnParams>();
   if (!params)
     return false;
 
@@ -92,7 +93,7 @@ bool StatusCodeFromEvent<CommandCompleteEventParams>(const EventPacket& event,
 }  // namespace
 
 // static
-std::unique_ptr<CommandPacket> CommandPacket::New(OpCode opcode, size_t payload_size) {
+std::unique_ptr<CommandPacket> CommandPacket::New(hci_spec::OpCode opcode, size_t payload_size) {
   auto packet = NewCommandPacket(payload_size);
   if (!packet)
     return nullptr;
@@ -101,7 +102,7 @@ std::unique_ptr<CommandPacket> CommandPacket::New(OpCode opcode, size_t payload_
   return packet;
 }
 
-void CommandPacket::WriteHeader(OpCode opcode) {
+void CommandPacket::WriteHeader(hci_spec::OpCode opcode) {
   mutable_view()->mutable_header()->opcode = htole16(opcode);
   ZX_ASSERT(view().payload_size() < std::numeric_limits<uint8_t>::max());
   mutable_view()->mutable_header()->parameter_total_size =
@@ -113,14 +114,14 @@ std::unique_ptr<EventPacket> EventPacket::New(size_t payload_size) {
   return slab_allocators::EventAllocator::New(payload_size);
 }
 
-bool EventPacket::ToStatusCode(StatusCode* out_code) const {
-#define CASE_EVENT_STATUS(event_name) \
-  case k##event_name##EventCode:      \
-    return StatusCodeFromEvent<event_name##EventParams>(*this, out_code)
+bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
+#define CASE_EVENT_STATUS(event_name)      \
+  case hci_spec::k##event_name##EventCode: \
+    return StatusCodeFromEvent<hci_spec::event_name##EventParams>(*this, out_code)
 
-#define CASE_SUBEVENT_STATUS(subevent_name) \
-  case k##subevent_name##SubeventCode:      \
-    return StatusCodeFromSubevent<subevent_name##SubeventParams>(*this, out_code)
+#define CASE_SUBEVENT_STATUS(subevent_name)      \
+  case hci_spec::k##subevent_name##SubeventCode: \
+    return StatusCodeFromSubevent<hci_spec::subevent_name##SubeventParams>(*this, out_code)
 
   switch (event_code()) {
     CASE_EVENT_STATUS(AuthenticationComplete);
@@ -138,8 +139,8 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
     CASE_EVENT_STATUS(RoleChange);
     CASE_EVENT_STATUS(SimplePairingComplete);
     CASE_EVENT_STATUS(SynchronousConnectionComplete);
-    case kLEMetaEventCode: {
-      auto subevent_code = params<LEMetaEventParams>().subevent_code;
+    case hci_spec::kLEMetaEventCode: {
+      auto subevent_code = params<hci_spec::LEMetaEventParams>().subevent_code;
       switch (subevent_code) {
         CASE_SUBEVENT_STATUS(LEAdvertisingSetTerminated);
         CASE_SUBEVENT_STATUS(LEConnectionComplete);
@@ -162,7 +163,7 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
 }
 
 Status EventPacket::ToStatus() const {
-  StatusCode code;
+  hci_spec::StatusCode code;
   if (!ToStatusCode(&code)) {
     return Status(HostError::kPacketMalformed);
   }

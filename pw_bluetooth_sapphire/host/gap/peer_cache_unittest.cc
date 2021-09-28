@@ -30,7 +30,7 @@ namespace {
 using namespace inspect::testing;
 
 // All fields are initialized to zero as they are unused in these tests.
-const hci::LEConnectionParameters kTestParams;
+const hci_spec::LEConnectionParameters kTestParams;
 
 // Arbitrary ID value used by the bonding tests below. The actual value of this
 // constant does not effect the test logic.
@@ -67,11 +67,11 @@ const bt::sm::LTK kInsecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/,
                                                            false /*authenticated*/,
                                                            false /*secure_connections*/,
                                                            sm::kMaxEncryptionKeySize),
-                                    hci::LinkKey(UInt128{1}, 2, 3));
+                                    hci_spec::LinkKey(UInt128{1}, 2, 3));
 const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
                                                          true /*secure_connections*/,
                                                          sm::kMaxEncryptionKeySize),
-                                  hci::LinkKey(UInt128{4}, 5, 6));
+                                  hci_spec::LinkKey(UInt128{4}, 5, 6));
 
 const std::vector<bt::UUID> kBrEdrServices = {UUID(uint16_t{0x110a}), UUID(uint16_t{0x110b})};
 
@@ -184,7 +184,7 @@ TEST_F(PeerCacheTest, LookUp) {
   EXPECT_TRUE(peer->temporary());
   EXPECT_EQ(kAddrLePublic, peer->address());
   EXPECT_EQ(0u, peer->le()->advertising_data().size());
-  EXPECT_EQ(hci::kRSSIInvalid, peer->rssi());
+  EXPECT_EQ(hci_spec::kRSSIInvalid, peer->rssi());
 
   // A look up should return the same instance.
   EXPECT_EQ(peer, cache()->FindById(peer->identifier()));
@@ -414,7 +414,7 @@ TEST_F(PeerCacheTest, LowEnergyPeerBecomesDualModeWithInquiryData) {
   ASSERT_TRUE(peer()->le());
   ASSERT_FALSE(peer()->bredr());
 
-  hci::InquiryResult ir;
+  hci_spec::InquiryResult ir;
   ir.bd_addr = kAddrLeAlias.value();
   peer()->MutBrEdr().SetInquiryData(ir);
   EXPECT_TRUE(peer()->bredr());
@@ -872,7 +872,8 @@ TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithXTransportKeyExistingBrEd
   peer()->MutBrEdr().SetBondData(kInsecureBrEdrKey);
   EXPECT_TRUE(peer()->bredr()->bonded());
 
-  sm::LTK kDifferentInsecureBrEdrKey(kInsecureBrEdrKey.security(), hci::LinkKey(UInt128{8}, 9, 10));
+  sm::LTK kDifferentInsecureBrEdrKey(kInsecureBrEdrKey.security(),
+                                     hci_spec::LinkKey(UInt128{8}, 9, 10));
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -1047,9 +1048,9 @@ class PeerCacheTest_UpdateCallbackTest : public PeerCacheTest {
   void TearDown() override { PeerCacheTest::TearDown(); }
 
  protected:
-  hci::InquiryResult& ir() { return ir_; }
-  hci::InquiryResultRSSI& irr() { return irr_; }
-  hci::ExtendedInquiryResultEventParams& eirep() { return eirep_; }
+  hci_spec::InquiryResult& ir() { return ir_; }
+  hci_spec::InquiryResultRSSI& irr() { return irr_; }
+  hci_spec::ExtendedInquiryResultEventParams& eirep() { return eirep_; }
 
   MutableBufferView eir_data() {
     return MutableBufferView(&eirep_.extended_inquiry_response,
@@ -1060,9 +1061,9 @@ class PeerCacheTest_UpdateCallbackTest : public PeerCacheTest {
 
  private:
   bool was_called_;
-  hci::InquiryResult ir_;
-  hci::InquiryResultRSSI irr_;
-  hci::ExtendedInquiryResultEventParams eirep_;
+  hci_spec::InquiryResult ir_;
+  hci_spec::InquiryResultRSSI irr_;
+  hci_spec::ExtendedInquiryResultEventParams eirep_;
 };
 
 using PeerCacheBrEdrUpdateCallbackTest = PeerCacheTest_UpdateCallbackTest<&kAddrBrEdr>;
@@ -1225,12 +1226,12 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
 TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsUpdateCallbackProvidesUpdatedPeer) {
   eirep().clock_offset = htole16(1);
-  eirep().page_scan_repetition_mode = hci::PageScanRepetitionMode::kR1;
+  eirep().page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::kR1;
   eirep().rssi = kTestRSSI;
   eirep().class_of_device = kTestDeviceClass;
   eir_data().Write(kEirData);
   ASSERT_FALSE(peer()->name().has_value());
-  ASSERT_EQ(peer()->rssi(), hci::kRSSIInvalid);
+  ASSERT_EQ(peer()->rssi(), hci_spec::kRSSIInvalid);
   cache()->add_peer_updated_callback([](const auto& updated_peer) {
     const auto& data = updated_peer.bredr();
     ASSERT_TRUE(data);
@@ -1240,7 +1241,7 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
     ASSERT_TRUE(updated_peer.name().has_value());
 
     EXPECT_EQ(*data->clock_offset(), 0x8001);
-    EXPECT_EQ(*data->page_scan_repetition_mode(), hci::PageScanRepetitionMode::kR1);
+    EXPECT_EQ(*data->page_scan_repetition_mode(), hci_spec::PageScanRepetitionMode::kR1);
     EXPECT_EQ(DeviceClass::MajorClass(0x02), updated_peer.bredr()->device_class()->major_class());
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
     EXPECT_EQ(*updated_peer.name(), "Test");
@@ -1252,7 +1253,7 @@ TEST_F(
     PeerCacheBrEdrUpdateCallbackTest,
     SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsGeneratesExactlyOneUpdateCallbackRegardlessOfNumberOfFieldsChanged) {
   eirep().clock_offset = htole16(1);
-  eirep().page_scan_repetition_mode = hci::PageScanRepetitionMode::kR1;
+  eirep().page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::kR1;
   eirep().rssi = kTestRSSI;
   eirep().class_of_device = kTestDeviceClass;
   eir_data().Write(kEirData);
@@ -1553,7 +1554,7 @@ TEST_F(PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
 }
 
 TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultUpdatesExpiration) {
-  hci::InquiryResult ir;
+  hci_spec::InquiryResult ir;
   ASSERT_TRUE(IsDefaultPeerPresent());
   ir.bd_addr = GetDefaultPeer()->address().value();
 
@@ -1566,7 +1567,7 @@ TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultUpdatesExpir
 }
 
 TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultRSSIUpdatesExpiration) {
-  hci::InquiryResultRSSI irr;
+  hci_spec::InquiryResultRSSI irr;
   ASSERT_TRUE(IsDefaultPeerPresent());
   irr.bd_addr = GetDefaultPeer()->address().value();
 
@@ -1580,7 +1581,7 @@ TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultRSSIUpdatesE
 
 TEST_F(PeerCacheExpirationTest,
        SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsUpdatesExpiration) {
-  hci::ExtendedInquiryResultEventParams eirep;
+  hci_spec::ExtendedInquiryResultEventParams eirep;
   ASSERT_TRUE(IsDefaultPeerPresent());
   eirep.bd_addr = GetDefaultPeer()->address().value();
 

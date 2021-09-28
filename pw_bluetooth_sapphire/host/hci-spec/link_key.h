@@ -9,7 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
-namespace bt::hci {
+namespace bt::hci_spec {
 
 // Represents a key used to encrypt a link.
 class LinkKey final {
@@ -36,6 +36,6 @@ class LinkKey final {
   uint16_t ediv_;
 };
 
-}  // namespace bt::hci
+}  // namespace bt::hci_spec
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LINK_KEY_H_

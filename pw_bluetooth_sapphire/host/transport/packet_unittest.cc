@@ -20,8 +20,8 @@ using bt::StaticByteBuffer;
 namespace bt::hci::test {
 namespace {
 
-constexpr OpCode kTestOpCode = 0x07FF;
-constexpr EventCode kTestEventCode = 0xFF;
+constexpr hci_spec::OpCode kTestOpCode = 0x07FF;
+constexpr hci_spec::EventCode kTestEventCode = 0xFF;
 
 struct TestPayload {
   uint8_t foo;
@@ -77,7 +77,7 @@ TEST(PacketTest, EventPacketReturnParams) {
       // Event header
       0xFF, 0x04,  // (event_code is not CommandComplete)
 
-      // CommandCompleteEventParams
+      // hci_spec::CommandCompleteEventParams
       0x01, 0xFF, 0x07,
 
       // Return parameters
@@ -86,13 +86,13 @@ TEST(PacketTest, EventPacketReturnParams) {
       // Event header
       0x0E, 0x03,
 
-      // CommandCompleteEventParams
+      // hci_spec::CommandCompleteEventParams
       0x01, 0xFF, 0x07);
   auto valid = CreateStaticByteBuffer(
       // Event header
       0x0E, 0x04,
 
-      // CommandCompleteEventParams
+      // hci_spec::CommandCompleteEventParams
       0x01, 0xFF, 0x07,
 
       // Return parameters
@@ -142,7 +142,7 @@ TEST(PacketTest, EventPacketStatus) {
 
   Status status = packet->ToStatus();
   EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
 }
 
 TEST(PacketTest, CommandCompleteEventStatus) {
@@ -151,7 +151,7 @@ TEST(PacketTest, CommandCompleteEventStatus) {
       // Event header
       0x0E, 0x04,  // (event code is CommandComplete)
 
-      // CommandCompleteEventParams
+      // hci_spec::CommandCompleteEventParams
       0x01, 0xFF, 0x07,
 
       // Return parameters (status: hardware failure)
@@ -164,7 +164,7 @@ TEST(PacketTest, CommandCompleteEventStatus) {
 
   Status status = packet->ToStatus();
   EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
 }
 
 TEST(PacketTest, EventPacketMalformed) {
@@ -194,7 +194,7 @@ TEST(PacketTest, LEEventParams) {
 
   auto correct_size_bad_event_code = CreateStaticByteBuffer(
       // Event header
-      0xFF, 0x02,  // (event_code is not LEMetaEventCode)
+      0xFF, 0x02,  // (event_code is not hci_spec::LEMetaEventCode)
 
       // Subevent code
       0xFF,
@@ -243,8 +243,9 @@ TEST(PacketTest, ACLDataPacketFromFields) {
   constexpr size_t kLargeDataLength = 10;
   constexpr size_t kSmallDataLength = 1;
 
-  auto packet = ACLDataPacket::New(0x007F, ACLPacketBoundaryFlag::kContinuingFragment,
-                                   ACLBroadcastFlag::kActiveSlaveBroadcast, kSmallDataLength);
+  auto packet =
+      ACLDataPacket::New(0x007F, hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
+                         hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, kSmallDataLength);
   packet->mutable_view()->mutable_payload_data().Fill(0);
 
   // First 12-bits: 0x07F
@@ -252,8 +253,8 @@ TEST(PacketTest, ACLDataPacketFromFields) {
   EXPECT_TRUE(ContainersEqual(packet->view().data(),
                               std::array<uint8_t, 5>{{0x7F, 0x50, 0x01, 0x00, 0x00}}));
 
-  packet = ACLDataPacket::New(0x0FFF, ACLPacketBoundaryFlag::kCompletePDU,
-                              ACLBroadcastFlag::kActiveSlaveBroadcast, kSmallDataLength);
+  packet = ACLDataPacket::New(0x0FFF, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
+                              hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, kSmallDataLength);
   packet->mutable_view()->mutable_payload_data().Fill(0);
 
   // First 12-bits: 0xFFF
@@ -261,8 +262,8 @@ TEST(PacketTest, ACLDataPacketFromFields) {
   EXPECT_TRUE(ContainersEqual(packet->view().data(),
                               std::array<uint8_t, 5>{{0xFF, 0x7F, 0x01, 0x00, 0x00}}));
 
-  packet = ACLDataPacket::New(0x0FFF, ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              ACLBroadcastFlag::kPointToPoint, kLargeDataLength);
+  packet = ACLDataPacket::New(0x0FFF, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci_spec::ACLBroadcastFlag::kPointToPoint, kLargeDataLength);
   packet->mutable_view()->mutable_payload_data().Fill(0);
 
   // First 12-bits: 0xFFF
@@ -287,8 +288,8 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
   packet->InitializeFromBuffer();
 
   EXPECT_EQ(0x007F, packet->connection_handle());
-  EXPECT_EQ(ACLPacketBoundaryFlag::kContinuingFragment, packet->packet_boundary_flag());
-  EXPECT_EQ(ACLBroadcastFlag::kActiveSlaveBroadcast, packet->broadcast_flag());
+  EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kContinuingFragment, packet->packet_boundary_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, packet->broadcast_flag());
   EXPECT_EQ(kSmallDataLength, packet->view().payload_size());
 
   // First 12-bits: 0xFFF
@@ -298,8 +299,8 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
   packet->InitializeFromBuffer();
 
   EXPECT_EQ(0x0FFF, packet->connection_handle());
-  EXPECT_EQ(ACLPacketBoundaryFlag::kCompletePDU, packet->packet_boundary_flag());
-  EXPECT_EQ(ACLBroadcastFlag::kActiveSlaveBroadcast, packet->broadcast_flag());
+  EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kCompletePDU, packet->packet_boundary_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, packet->broadcast_flag());
   EXPECT_EQ(kSmallDataLength, packet->view().payload_size());
 
   packet = ACLDataPacket::New(kLargeDataLength);
@@ -307,8 +308,8 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
   packet->InitializeFromBuffer();
 
   EXPECT_EQ(0x0FFF, packet->connection_handle());
-  EXPECT_EQ(ACLPacketBoundaryFlag::kFirstNonFlushable, packet->packet_boundary_flag());
-  EXPECT_EQ(ACLBroadcastFlag::kPointToPoint, packet->broadcast_flag());
+  EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable, packet->packet_boundary_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kPointToPoint, packet->broadcast_flag());
   EXPECT_EQ(kLargeDataLength, packet->view().payload_size());
 }
 

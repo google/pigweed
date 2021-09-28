@@ -11,22 +11,22 @@
 namespace bt::sm {
 namespace {
 
-bool IsEncryptedKey(hci::LinkKeyType lk_type) {
-  return (lk_type == hci::LinkKeyType::kDebugCombination ||
-          lk_type == hci::LinkKeyType::kUnauthenticatedCombination192 ||
-          lk_type == hci::LinkKeyType::kUnauthenticatedCombination256 ||
-          lk_type == hci::LinkKeyType::kAuthenticatedCombination192 ||
-          lk_type == hci::LinkKeyType::kAuthenticatedCombination256);
+bool IsEncryptedKey(hci_spec::LinkKeyType lk_type) {
+  return (lk_type == hci_spec::LinkKeyType::kDebugCombination ||
+          lk_type == hci_spec::LinkKeyType::kUnauthenticatedCombination192 ||
+          lk_type == hci_spec::LinkKeyType::kUnauthenticatedCombination256 ||
+          lk_type == hci_spec::LinkKeyType::kAuthenticatedCombination192 ||
+          lk_type == hci_spec::LinkKeyType::kAuthenticatedCombination256);
 }
 
-bool IsAuthenticatedKey(hci::LinkKeyType lk_type) {
-  return (lk_type == hci::LinkKeyType::kAuthenticatedCombination192 ||
-          lk_type == hci::LinkKeyType::kAuthenticatedCombination256);
+bool IsAuthenticatedKey(hci_spec::LinkKeyType lk_type) {
+  return (lk_type == hci_spec::LinkKeyType::kAuthenticatedCombination192 ||
+          lk_type == hci_spec::LinkKeyType::kAuthenticatedCombination256);
 }
 
-bool IsSecureConnectionsKey(hci::LinkKeyType lk_type) {
-  return (lk_type == hci::LinkKeyType::kUnauthenticatedCombination256 ||
-          lk_type == hci::LinkKeyType::kAuthenticatedCombination256);
+bool IsSecureConnectionsKey(hci_spec::LinkKeyType lk_type) {
+  return (lk_type == hci_spec::LinkKeyType::kUnauthenticatedCombination256 ||
+          lk_type == hci_spec::LinkKeyType::kAuthenticatedCombination256);
 }
 
 }  // namespace
@@ -83,10 +83,10 @@ SecurityProperties::SecurityProperties(SecurityLevel level, size_t enc_key_size,
 // All BR/EDR link keys, even those from legacy pairing or based on 192-bit EC
 // points, are stored in 128 bits, according to Core Spec v5.0, Vol 2, Part H
 // Section 3.1 "Key Types."
-SecurityProperties::SecurityProperties(hci::LinkKeyType lk_type)
+SecurityProperties::SecurityProperties(hci_spec::LinkKeyType lk_type)
     : SecurityProperties(IsEncryptedKey(lk_type), IsAuthenticatedKey(lk_type),
                          IsSecureConnectionsKey(lk_type), kMaxEncryptionKeySize) {
-  ZX_DEBUG_ASSERT_MSG(lk_type != hci::LinkKeyType::kChangedCombination,
+  ZX_DEBUG_ASSERT_MSG(lk_type != hci_spec::LinkKeyType::kChangedCombination,
                       "Can't infer security information from a Changed Combination Key");
 }
 
@@ -104,21 +104,21 @@ SecurityLevel SecurityProperties::level() const {
   return level;
 }
 
-std::optional<hci::LinkKeyType> SecurityProperties::GetLinkKeyType() const {
+std::optional<hci_spec::LinkKeyType> SecurityProperties::GetLinkKeyType() const {
   if (level() == SecurityLevel::kNoSecurity) {
     return std::nullopt;
   }
   if (authenticated()) {
     if (secure_connections()) {
-      return hci::LinkKeyType::kAuthenticatedCombination256;
+      return hci_spec::LinkKeyType::kAuthenticatedCombination256;
     } else {
-      return hci::LinkKeyType::kAuthenticatedCombination192;
+      return hci_spec::LinkKeyType::kAuthenticatedCombination192;
     }
   } else {
     if (secure_connections()) {
-      return hci::LinkKeyType::kUnauthenticatedCombination256;
+      return hci_spec::LinkKeyType::kUnauthenticatedCombination256;
     } else {
-      return hci::LinkKeyType::kUnauthenticatedCombination192;
+      return hci_spec::LinkKeyType::kUnauthenticatedCombination192;
     }
   }
 }
@@ -143,7 +143,7 @@ bool SecurityProperties::IsAsSecureAs(const SecurityProperties& other) const {
   // clang-format on
 }
 
-LTK::LTK(const SecurityProperties& security, const hci::LinkKey& key)
+LTK::LTK(const SecurityProperties& security, const hci_spec::LinkKey& key)
     : security_(security), key_(key) {}
 
 Key::Key(const SecurityProperties& security, const UInt128& value)

@@ -13,7 +13,7 @@
 namespace bt::l2cap {
 namespace {
 
-constexpr hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
 TEST(FragmenterTest, OutboundFrameEmptyPayload) {

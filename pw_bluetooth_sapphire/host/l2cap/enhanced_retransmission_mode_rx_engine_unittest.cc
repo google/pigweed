@@ -12,7 +12,7 @@
 namespace bt::l2cap::internal {
 namespace {
 
-constexpr hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 constexpr uint8_t kExtendedControlPBitMask = 0b0001'0000;
 constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
@@ -26,8 +26,7 @@ using Engine = EnhancedRetransmissionModeRxEngine;
 void NoOpTxCallback(ByteBufferPtr) {}
 void NoOpFailureCallback() {}
 
-TEST(EnhancedRetransmissionModeRxEngineTest,
-     ProcessPduImmediatelyReturnsDataForUnsegmentedSdu) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyReturnsDataForUnsegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
   const ByteBufferPtr sdu = Engine(NoOpTxCallback, NoOpFailureCallback)
@@ -72,8 +71,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleIncompleteFcsFoo
   EXPECT_FALSE(sdu);
 }
 
-TEST(EnhancedRetransmissionModeRxEngineTest,
-     ProcessPduDoesNotGenerateSduForOutOfSequencePdu) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotGenerateSduForOutOfSequencePdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(  //
       1 << 1,                                   // TxSeq = 1, R=0
@@ -85,8 +83,7 @@ TEST(EnhancedRetransmissionModeRxEngineTest,
                                                FrameCheckSequenceOption::kIncludeFcs)));
 }
 
-TEST(EnhancedRetransmissionModeRxEngineTest,
-     ProcessPduAdvancesSequenceNumberOnInSequenceFrame) {
+TEST(EnhancedRetransmissionModeRxEngineTest, ProcessPduAdvancesSequenceNumberOnInSequenceFrame) {
   Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   // Send with sequence 0.

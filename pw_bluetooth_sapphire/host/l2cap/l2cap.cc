@@ -36,7 +36,7 @@ class Impl final : public L2cap {
     channel_manager_ = nullptr;
   }
 
-  void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                         LinkErrorCallback link_error_callback,
                         SecurityUpgradeCallback security_callback) override {
     channel_manager_->RegisterACL(handle, role, std::move(link_error_callback),
@@ -48,7 +48,7 @@ class Impl final : public L2cap {
     channel_manager_->AttachInspect(node_);
   }
 
-  LEFixedChannels AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                                   LinkErrorCallback link_error_callback,
                                   LEConnectionParameterUpdateCallback conn_param_callback,
                                   SecurityUpgradeCallback security_callback) override {
@@ -62,22 +62,22 @@ class Impl final : public L2cap {
     return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
   }
 
-  void RemoveConnection(hci::ConnectionHandle handle) override {
+  void RemoveConnection(hci_spec::ConnectionHandle handle) override {
     channel_manager_->Unregister(handle);
   }
 
-  void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
+  void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                     sm::SecurityProperties security) override {
     channel_manager_->AssignLinkSecurityProperties(handle, security);
   }
 
   void RequestConnectionParameterUpdate(
-      hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+      hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
       ConnectionParameterUpdateRequestCallback request_cb) override {
     channel_manager_->RequestConnectionParameterUpdate(handle, params, std::move(request_cb));
   }
 
-  void OpenL2capChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
+  void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                         ChannelCallback cb) override {
     channel_manager_->OpenChannel(handle, psm, params, std::move(cb));
   }

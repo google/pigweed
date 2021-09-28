@@ -20,7 +20,7 @@ class FakeSignalingServerTest : public gtest::TestLoopFixture {
   // Each test sets up its own FakeL2cap and FakeSignalingServer, so only
   // instantiate constants here.
   void SetUp() override { TestLoopFixture::SetUp(); }
-  hci::ConnectionHandle kConnectionHandle = 0x01;
+  hci_spec::ConnectionHandle kConnectionHandle = 0x01;
   l2cap::CommandId kCommandId = 0x02;
 
  private:
@@ -39,7 +39,7 @@ TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
 
   // Assemble and send the information request.
   auto sent_acl_packet = l2cap::testing::AclExtFeaturesInfoReq(kCommandId, kConnectionHandle);
-  const auto& send_header = sent_acl_packet.As<hci::ACLDataHeader>();
+  const auto& send_header = sent_acl_packet.As<hci_spec::ACLDataHeader>();
   auto send_header_len = sizeof(send_header);
   auto send_payload_len = le16toh(send_header.data_total_length);
   auto sent_packet = DynamicByteBuffer(send_payload_len);
@@ -49,9 +49,10 @@ TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
   // Assemble the expected packet and confirm that it matches the received packet.
   l2cap::ExtendedFeatures extended_features =
       l2cap::kExtendedFeaturesBitFixedChannels | l2cap::kExtendedFeaturesBitEnhancedRetransmission;
-  auto expected_acl_response = l2cap::testing::AclExtFeaturesInfoRsp(kCommandId, kConnectionHandle, extended_features);
+  auto expected_acl_response =
+      l2cap::testing::AclExtFeaturesInfoRsp(kCommandId, kConnectionHandle, extended_features);
   auto expected_response =
-      expected_acl_response.view(sizeof(hci::ACLDataHeader) + sizeof(l2cap::CommandHeader));
+      expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
 };
 
@@ -66,8 +67,9 @@ TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
   server->RegisterWithL2cap(&fake_l2cap);
 
   // Assemble and send the information request.
-  auto sent_acl_packet = l2cap::testing::AclFixedChannelsSupportedInfoReq(kCommandId, kConnectionHandle);
-  const auto& send_header = sent_acl_packet.As<hci::ACLDataHeader>();
+  auto sent_acl_packet =
+      l2cap::testing::AclFixedChannelsSupportedInfoReq(kCommandId, kConnectionHandle);
+  const auto& send_header = sent_acl_packet.As<hci_spec::ACLDataHeader>();
   auto send_header_len = sizeof(send_header);
   auto send_payload_len = le16toh(send_header.data_total_length);
   auto sent_packet = DynamicByteBuffer(send_payload_len);
@@ -76,10 +78,10 @@ TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
 
   // Assemble the expected packet and confirm that it matches the received packet.
   l2cap::FixedChannelsSupported fixed_channels = l2cap::kFixedChannelsSupportedBitSignaling;
-  auto expected_acl_response =
-      l2cap::testing::AclFixedChannelsSupportedInfoRsp(kCommandId, kConnectionHandle, fixed_channels);
+  auto expected_acl_response = l2cap::testing::AclFixedChannelsSupportedInfoRsp(
+      kCommandId, kConnectionHandle, fixed_channels);
   auto expected_response =
-      expected_acl_response.view(sizeof(hci::ACLDataHeader) + sizeof(l2cap::CommandHeader));
+      expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
 };
 
@@ -108,9 +110,10 @@ TEST_F(FakeSignalingServerTest, RejectInvalidInformationRequest) {
 
   // Assemble the expected packet and confirm that it matches the received packet.
   l2cap::ChannelId cid = l2cap::kSignalingChannelId;
-  auto expected_acl_response = l2cap::testing::AclCommandRejectNotUnderstoodRsp(kCommandId, kConnectionHandle, cid);
+  auto expected_acl_response =
+      l2cap::testing::AclCommandRejectNotUnderstoodRsp(kCommandId, kConnectionHandle, cid);
   auto expected_response =
-      expected_acl_response.view(sizeof(hci::ACLDataHeader) + sizeof(l2cap::CommandHeader));
+      expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
 };
 

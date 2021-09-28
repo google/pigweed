@@ -51,8 +51,8 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //  - |conn_params|: Connection related parameters.
   using IncomingConnectionDelegate = fit::function<void(
-      ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
-      const LEConnectionParameters& conn_params)>;
+      hci_spec::ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
+      const hci_spec::LEConnectionParameters& conn_params)>;
 
   // The constructor expects the following arguments:
   //   - |hci|: The HCI transport this should operate on.
@@ -89,7 +89,7 @@ class LowEnergyConnector : public LocalAddressClient {
   using StatusCallback = fit::function<void(Status status, ConnectionPtr link)>;
   bool CreateConnection(bool use_whitelist, const DeviceAddress& peer_address,
                         uint16_t scan_interval, uint16_t scan_window,
-                        const LEPreferredConnectionParameters& initial_parameters,
+                        const hci_spec::LEPreferredConnectionParameters& initial_parameters,
                         StatusCallback status_callback, zx::duration timeout);
 
   // Cancels the currently pending connection attempt.
@@ -141,7 +141,7 @@ class LowEnergyConnector : public LocalAddressClient {
   void CreateConnectionInternal(const DeviceAddress& local_address, bool use_whitelist,
                                 const DeviceAddress& peer_address, uint16_t scan_interval,
                                 uint16_t scan_window,
-                                const LEPreferredConnectionParameters& initial_parameters,
+                                const hci_spec::LEPreferredConnectionParameters& initial_parameters,
                                 StatusCallback status_callback, zx::duration timeout);
 
   // Called by Cancel() and by OnCreateConnectionTimeout().

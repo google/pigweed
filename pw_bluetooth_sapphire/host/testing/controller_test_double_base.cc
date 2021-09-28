@@ -140,10 +140,11 @@ void ControllerTestDoubleBase::CloseSnoopChannel() {
 void ControllerTestDoubleBase::HandleCommandPacket(async_dispatcher_t* dispatcher,
                                                    async::WaitBase* wait, zx_status_t wait_status,
                                                    const zx_packet_signal_t* signal) {
-  StaticByteBuffer<hci::kMaxCommandPacketPayloadSize> buffer;
+  StaticByteBuffer<hci_spec::kMaxCommandPacketPayloadSize> buffer;
   uint32_t read_size;
-  zx_status_t status = cmd_channel_.read(0u, buffer.mutable_data(), nullptr,
-                                         hci::kMaxCommandPacketPayloadSize, 0, &read_size, nullptr);
+  zx_status_t status =
+      cmd_channel_.read(0u, buffer.mutable_data(), nullptr, hci_spec::kMaxCommandPacketPayloadSize,
+                        0, &read_size, nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
     if (status == ZX_ERR_PEER_CLOSED) {
@@ -155,11 +156,11 @@ void ControllerTestDoubleBase::HandleCommandPacket(async_dispatcher_t* dispatche
     return;
   }
 
-  if (read_size < sizeof(hci::CommandHeader)) {
+  if (read_size < sizeof(hci_spec::CommandHeader)) {
     bt_log(ERROR, "fake-hci", "malformed command packet received");
   } else {
     MutableBufferView view(buffer.mutable_data(), read_size);
-    PacketView<hci::CommandHeader> packet(&view, read_size - sizeof(hci::CommandHeader));
+    PacketView<hci_spec::CommandHeader> packet(&view, read_size - sizeof(hci_spec::CommandHeader));
     SendSnoopChannelPacket(packet.data(), BT_HCI_SNOOP_TYPE_CMD, false);
     OnCommandPacketReceived(packet);
   }
@@ -174,7 +175,7 @@ void ControllerTestDoubleBase::HandleCommandPacket(async_dispatcher_t* dispatche
 void ControllerTestDoubleBase::HandleACLPacket(async_dispatcher_t* dispatcher,
                                                async::WaitBase* wait, zx_status_t wait_status,
                                                const zx_packet_signal_t* signal) {
-  StaticByteBuffer<hci::kMaxACLPayloadSize + sizeof(hci::ACLDataHeader)> buffer;
+  StaticByteBuffer<hci_spec::kMaxACLPayloadSize + sizeof(hci_spec::ACLDataHeader)> buffer;
   uint32_t read_size;
   zx_status_t status =
       acl_channel_.read(0u, buffer.mutable_data(), nullptr, buffer.size(), 0, &read_size, nullptr);

@@ -141,7 +141,7 @@ class LowEnergyConnectionManager final {
   // NOTE: This is intended ONLY for unit tests. Clients should watch for
   // disconnection events using LowEnergyConnectionHandle::set_closed_callback()
   // instead. DO NOT use outside of tests.
-  using DisconnectCallback = fit::function<void(hci::ConnectionHandle)>;
+  using DisconnectCallback = fit::function<void(hci_spec::ConnectionHandle)>;
   void SetDisconnectCallbackForTesting(DisconnectCallback callback);
 
   // Sets the timeout interval to be used on future connect requests. The
@@ -150,7 +150,7 @@ class LowEnergyConnectionManager final {
 
   // Callback for hci::Connection, called when the peer disconnects.
   // |reason| is used to control retry logic.
-  void OnPeerDisconnect(const hci::Connection* connection, hci::StatusCode reason);
+  void OnPeerDisconnect(const hci::Connection* connection, hci_spec::StatusCode reason);
 
   // Initiates the pairing process. Expected to only be called during higher-level testing.
   //   |peer_id|: the peer to pair to - if the peer is not connected, |cb| is called with an error.
@@ -241,7 +241,7 @@ class LowEnergyConnectionManager final {
   //
   // The general rules of validity around std::unordered_map::iterator apply to
   // the returned value.
-  ConnectionMap::iterator FindConnection(hci::ConnectionHandle handle);
+  ConnectionMap::iterator FindConnection(hci_spec::ConnectionHandle handle);
 
   fxl::WeakPtr<hci::Transport> hci_;
 

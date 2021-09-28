@@ -23,13 +23,13 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // TODO(fxbug.dev/81470): The maximum length of data that can be advertised. For backwards
   // compatibility and because supporting it is a much larger project, we currently only support
   // legacy PDUs. When using legacy PDUs, the maximum advertising data size is
-  // kMaxLEAdvertisingDataLength.
+  // hci_spec::kMaxLEAdvertisingDataLength.
   //
   // TODO(fxbug.dev/77476): Extended advertising supports sending larger amounts of data, but they
   // have to be fragmented across multiple commands to the controller. This is not yet supported in
   // this implementation. We should support larger than kMaxLEExtendedAdvertisingDataLength
   // advertising data with fragmentation.
-  size_t GetSizeLimit() const override { return kMaxLEAdvertisingDataLength; }
+  size_t GetSizeLimit() const override { return hci_spec::kMaxLEAdvertisingDataLength; }
 
   // Attempt to start advertising. See LowEnergyAdvertiser::StartAdvertising for full documentation.
   //
@@ -52,13 +52,13 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // true if advertising will be stopped, false otherwise.
   void StopAdvertising(const DeviceAddress& address) override;
 
-  void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, Connection::Role role,
                             const DeviceAddress& peer_address,
-                            const LEConnectionParameters& conn_params) override;
+                            const hci_spec::LEConnectionParameters& conn_params) override;
 
   // Returns the last used advertising handle that was used for an advertising set when
   // communicating with the controller.
-  std::optional<AdvertisingHandle> LastUsedHandleForTesting() const {
+  std::optional<hci_spec::AdvertisingHandle> LastUsedHandleForTesting() const {
     return advertising_handle_map_.LastUsedHandleForTesting();
   }
 
@@ -66,7 +66,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   struct StagedConnectionParameters {
     Connection::Role role;
     DeviceAddress peer_address;
-    LEConnectionParameters conn_params;
+    hci_spec::LEConnectionParameters conn_params;
   };
 
   struct StagedAdvertisingParameters {
@@ -75,11 +75,11 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   };
 
   std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
-                                                   GenericEnableParam enable) override;
+                                                   hci_spec::GenericEnableParam enable) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
-      const DeviceAddress& address, LEAdvertisingType type, LEOwnAddressType own_address_type,
-      AdvertisingIntervalRange interval) override;
+      const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+      hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const DeviceAddress& address,
                                                          const AdvertisingData& data,
@@ -103,7 +103,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   CommandChannel::EventHandlerId event_handler_id_;
 
   AdvertisingHandleMap advertising_handle_map_;
-  std::unordered_map<ConnectionHandle, StagedConnectionParameters> connection_handle_map_;
+  std::unordered_map<hci_spec::ConnectionHandle, StagedConnectionParameters> connection_handle_map_;
   std::queue<fit::closure> op_queue_;
   StagedAdvertisingParameters staged_advertising_parameters_;
 
@@ -116,4 +116,4 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
 }  // namespace bt::hci
 
-#endif
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_EXTENDED_LOW_ENERGY_ADVERTISER_H_

@@ -11,19 +11,19 @@ namespace bt::hci::testing {
 
 class FakeConnection final : public Connection {
  public:
-  FakeConnection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
+  FakeConnection(hci_spec::ConnectionHandle handle, bt::LinkType ll_type, Role role,
                  const DeviceAddress& local_address, const DeviceAddress& peer_address);
 
   // Triggers the encryption change callback.
   void TriggerEncryptionChangeCallback(Status status, bool enabled);
 
   void TriggerPeerDisconnectCallback() {
-    peer_disconnect_callback()(this, hci::StatusCode::kRemoteUserTerminatedConnection);
+    peer_disconnect_callback()(this, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
   }
 
   // Connection overrides:
   fxl::WeakPtr<Connection> WeakPtr() override;
-  void Disconnect(StatusCode reason) override;
+  void Disconnect(hci_spec::StatusCode reason) override;
   bool StartEncryption() override;
 
   // Number of times StartEncryption() was called.

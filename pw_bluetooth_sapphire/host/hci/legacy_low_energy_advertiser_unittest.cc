@@ -32,8 +32,8 @@ using TestingBase = bt::testing::ControllerTest<FakeController>;
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
 
-constexpr AdvertisingIntervalRange kTestInterval(kLEAdvertisingIntervalMin,
-                                                 kLEAdvertisingIntervalMax);
+constexpr AdvertisingIntervalRange kTestInterval(hci_spec::kLEAdvertisingIntervalMin,
+                                                 hci_spec::kLEAdvertisingIntervalMax);
 
 class LegacyLowEnergyAdvertiserTest : public TestingBase {
  public:
@@ -48,7 +48,7 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
     // ACL data channel needs to be present for production hci::Connection
     // objects.
     TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
-                                          hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10));
+                                          hci::DataBufferInfo(hci_spec::kMaxACLPayloadSize, 10));
 
     FakeController::Settings settings;
     settings.ApplyLegacyLEConfig();
@@ -97,7 +97,7 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
     auto appearance = 0x1234;
     result.SetAppearance(appearance);
 
-    EXPECT_LE(result.CalculateBlockSize(include_flags), kMaxLEAdvertisingDataLength);
+    EXPECT_LE(result.CalculateBlockSize(include_flags), hci_spec::kMaxLEAdvertisingDataLength);
 
     return result;
   }
@@ -128,9 +128,9 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
     }
     EXPECT_TRUE(result.SetLocalName(name));
 
-    // The maximum advertisement packet is: |kMaxLEAdvertisingDataLength| = 31, and |result| = 32
-    // bytes. |result| should be too large to advertise.
-    EXPECT_GT(result.CalculateBlockSize(include_flags), kMaxLEAdvertisingDataLength);
+    // The maximum advertisement packet is: |hci_spec::kMaxLEAdvertisingDataLength| = 31, and
+    // |result| = 32 bytes. |result| should be too large to advertise.
+    EXPECT_GT(result.CalculateBlockSize(include_flags), hci_spec::kMaxLEAdvertisingDataLength);
 
     return result;
   }
@@ -161,7 +161,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
       ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
             test_device()->legacy_advertising_state().own_address_type);
 
   uint16_t new_appearance = 0x6789;
@@ -171,7 +171,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   RunLoopUntilIdle();
 
   // Should still be using the random address.
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
             test_device()->legacy_advertising_state().own_address_type);
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
@@ -351,8 +351,8 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
   AdvertisingOptions options(kTestInterval, false, kDefaultNoAdvFlags, true);
 
   // Simulate failure for Read TX Power operation.
-  test_device()->SetDefaultResponseStatus(kLEReadAdvertisingChannelTxPower,
-                                          hci::StatusCode::kHardwareFailure);
+  test_device()->SetDefaultResponseStatus(hci_spec::kLEReadAdvertisingChannelTxPower,
+                                          hci_spec::StatusCode::kHardwareFailure);
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
                                  GetErrorCallback());

@@ -69,8 +69,8 @@ class CommandTransaction final : public Transaction {
       : Transaction(expected, replies, meta), prefix_(false) {}
 
   // Match by opcode only.
-  CommandTransaction(hci::OpCode expected_opcode, const std::vector<const ByteBuffer*>& replies,
-                     ExpectationMetadata meta);
+  CommandTransaction(hci_spec::OpCode expected_opcode,
+                     const std::vector<const ByteBuffer*>& replies, ExpectationMetadata meta);
 
   // Move constructor and assignment operator.
   CommandTransaction(CommandTransaction&& other) = default;
@@ -120,7 +120,7 @@ class MockController : public ControllerTestDoubleBase {
   void QueueCommandTransaction(CommandTransaction transaction);
   void QueueCommandTransaction(const ByteBuffer& expected,
                                const std::vector<const ByteBuffer*>& replies, ExpectationMetadata);
-  void QueueCommandTransaction(hci::OpCode expected_opcode,
+  void QueueCommandTransaction(hci_spec::OpCode expected_opcode,
                                const std::vector<const ByteBuffer*>& replies,
                                ExpectationMetadata meta);
 
@@ -158,7 +158,7 @@ class MockController : public ControllerTestDoubleBase {
 
  private:
   // ControllerTestDoubleBase overrides:
-  void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
+  void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
 
   std::queue<CommandTransaction> cmd_transactions_;

@@ -70,7 +70,7 @@ const DeviceAddress kAddress3(DeviceAddress::Type::kLEPublic, {4});
 const DeviceAddress kAdapterAddress(DeviceAddress::Type::kLEPublic, {9});
 
 const size_t kLEMaxNumPackets = 10;
-const hci::DataBufferInfo kLEDataBufferInfo(hci::kMaxACLPayloadSize, kLEMaxNumPackets);
+const hci::DataBufferInfo kLEDataBufferInfo(hci_spec::kMaxACLPayloadSize, kLEMaxNumPackets);
 
 constexpr std::array kConnectDelays = {zx::sec(0), zx::sec(2), zx::sec(4)};
 
@@ -152,15 +152,15 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 
   hci::ConnectionPtr MoveLastRemoteInitiated() { return std::move(last_remote_initiated_); }
 
-  fxl::WeakPtr<TestSm> TestSmByHandle(hci::ConnectionHandle handle) {
+  fxl::WeakPtr<TestSm> TestSmByHandle(hci_spec::ConnectionHandle handle) {
     return sm_factory_->GetTestSm(handle);
   }
 
  private:
   // Called by |connector_| when a new remote initiated connection is received.
-  void OnIncomingConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                             const DeviceAddress& peer_address,
-                            const hci::LEConnectionParameters& conn_params) {
+                            const hci_spec::LEConnectionParameters& conn_params) {
     DeviceAddress local_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
 
     // Create a production connection object that can interact with the fake
@@ -170,7 +170,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   }
 
   // Called by FakeController on connection events.
-  void OnConnectionStateChanged(const DeviceAddress& address, hci::ConnectionHandle handle,
+  void OnConnectionStateChanged(const DeviceAddress& address, hci_spec::ConnectionHandle handle,
                                 bool connected, bool canceled) {
     bt_log(DEBUG, "gap-test",
            "OnConnectionStateChanged: %s (handle: %#.4x) (connected: %s) (canceled: %s):\n",
@@ -241,7 +241,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectNonConnectablePeer) {
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_status(hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_status(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer));
 
   ASSERT_TRUE(peer->le());
@@ -264,7 +264,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerFailure) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_response(hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_response(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer));
 
   ConnectionResult result;
@@ -425,7 +425,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
 
-  std::optional<hci::LECreateConnectionCommandParams> connect_params;
+  std::optional<hci_spec::LECreateConnectionCommandParams> connect_params;
   test_device()->set_le_create_connection_command_callback(
       [&](auto params) { connect_params = params; });
 
@@ -542,7 +542,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
 
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_response(hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_response(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer));
 
   ConnectionResult results[kRequestCount];
@@ -696,7 +696,7 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeersOneFails) {
   auto* peer1 = peer_cache()->NewPeer(kAddress1, true);
 
   auto fake_peer0 = std::make_unique<FakePeer>(kAddress0);
-  fake_peer0->set_connect_response(hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer0->set_connect_response(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer0));
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
 
@@ -1453,11 +1453,11 @@ TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpd
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_handle);
 
-  hci::LEPreferredConnectionParameters preferred(
-      hci::kLEConnectionIntervalMin, hci::kLEConnectionIntervalMax, hci::kLEConnectionLatencyMax,
-      hci::kLEConnectionSupervisionTimeoutMax);
+  hci_spec::LEPreferredConnectionParameters preferred(
+      hci_spec::kLEConnectionIntervalMin, hci_spec::kLEConnectionIntervalMax,
+      hci_spec::kLEConnectionLatencyMax, hci_spec::kLEConnectionSupervisionTimeoutMax);
 
-  std::optional<hci::LEConnectionParameters> actual;
+  std::optional<hci_spec::LEConnectionParameters> actual;
 
   auto conn_params_updated_cb = [&](const auto& addr, const auto& params) { actual = params; };
   test_device()->set_le_connection_parameters_callback(conn_params_updated_cb);
@@ -1467,7 +1467,7 @@ TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpd
   // These connection update events for the wrong handle should be ignored.
   // Send twice: once before the parameter request is processed, and once after the request has been
   // processed.
-  hci::LEConnectionParameters wrong_handle_conn_params(0, 1, 2);
+  hci_spec::LEConnectionParameters wrong_handle_conn_params(0, 1, 2);
   test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle->handle() + 1,
                                                         wrong_handle_conn_params);
   RunLoopUntilIdle();
@@ -1558,9 +1558,9 @@ TEST_F(LowEnergyConnectionManagerTest, LinkErrorDuringInterrogation) {
 
   // Cause interrogation to stall so that we can simulate a link error.
   fit::closure send_read_remote_features_rsp;
-  test_device()->pause_responses_for_opcode(hci::kLEReadRemoteFeatures, [&](fit::closure unpause) {
-    send_read_remote_features_rsp = std::move(unpause);
-  });
+  test_device()->pause_responses_for_opcode(
+      hci_spec::kLEReadRemoteFeatures,
+      [&](fit::closure unpause) { send_read_remote_features_rsp = std::move(unpause); });
 
   std::optional<fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>> result;
   auto conn_cb =
@@ -1744,7 +1744,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_EQ(params.max_latency(), 3u);
   EXPECT_EQ(params.supervision_timeout(), 4u);
 
-  std::optional<hci::LEConnectionParameters> conn_params;
+  std::optional<hci_spec::LEConnectionParameters> conn_params;
   test_device()->set_le_connection_parameters_callback(
       [&](auto address, auto parameters) { conn_params = parameters; });
 
@@ -1989,17 +1989,18 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
   RunLoopUntilIdle();
   ASSERT_TRUE(conn);
 
-  hci::ConnectionHandle handle = conn->handle();
+  hci_spec::ConnectionHandle handle = conn->handle();
   bool ref_cleaned_up = false;
   bool disconnected = false;
   conn->set_closed_callback([&] { ref_cleaned_up = true; });
-  conn_mgr()->SetDisconnectCallbackForTesting([&](hci::ConnectionHandle cb_handle) {
+  conn_mgr()->SetDisconnectCallbackForTesting([&](hci_spec::ConnectionHandle cb_handle) {
     EXPECT_EQ(handle, cb_handle);
     disconnected = true;
   });
 
-  test_device()->SendEncryptionChangeEvent(handle, hci::StatusCode::kConnectionTerminatedMICFailure,
-                                           hci::EncryptionStatus::kOff);
+  test_device()->SendEncryptionChangeEvent(handle,
+                                           hci_spec::StatusCode::kConnectionTerminatedMICFailure,
+                                           hci_spec::EncryptionStatus::kOff);
   test_device()->SendDisconnectionCompleteEvent(handle);
   RunLoopUntilIdle();
 
@@ -2008,8 +2009,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
 }
 
 TEST_F(LowEnergyConnectionManagerTest, SuccessfulInterrogationSetsPeerVersionAndFeatures) {
-  constexpr hci::LESupportedFeatures kLEFeatures{
-      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+  constexpr hci_spec::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure)};
 
   // Set up a connection.
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
@@ -2101,18 +2102,18 @@ TEST_F(LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailure) 
 }
 
 TEST_F(LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterrogation) {
-  const hci::LEPreferredConnectionParameters kConnParams(
-      hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
-      /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
+  const hci_spec::LEPreferredConnectionParameters kConnParams(
+      hci_spec::defaults::kLEConnectionIntervalMin, hci_spec::defaults::kLEConnectionIntervalMax,
+      /*max_latency=*/0, hci_spec::defaults::kLESupervisionTimeout);
 
   // Connection Parameter Update procedure NOT supported.
-  constexpr hci::LESupportedFeatures kLEFeatures{0};
+  constexpr hci_spec::LESupportedFeatures kLEFeatures{0};
   auto peer = std::make_unique<FakePeer>(kAddress0);
   peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kSlave);
 
   RunLoopUntilIdle();
 
@@ -2160,8 +2161,8 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   auto peer1 = std::make_unique<FakePeer>(kAddress1);
 
   // Connection Parameter Update procedure supported by controller.
-  constexpr hci::LESupportedFeatures kLEFeatures{
-      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+  constexpr hci_spec::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure)};
 
   peer0->set_le_features(kLEFeatures);
   peer1->set_le_features(kLEFeatures);
@@ -2175,7 +2176,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   test_device()->AddPeer(std::move(peer1));
 
   // First create fake incoming connections with local host as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kSlave);
   RunLoopUntilIdle();
   auto link0 = MoveLastRemoteInitiated();
   ASSERT_TRUE(link0);
@@ -2187,7 +2188,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
                                             conn_handle0 = result.take_value();
                                           });
 
-  test_device()->ConnectLowEnergy(kAddress1, hci::ConnectionRole::kSlave);
+  test_device()->ConnectLowEnergy(kAddress1, hci_spec::ConnectionRole::kSlave);
   RunLoopUntilIdle();
   auto link1 = MoveLastRemoteInitiated();
   ASSERT_TRUE(link1);
@@ -2249,9 +2250,9 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   EXPECT_EQ(2u, l2cap_conn_param_update_count);
 
   // l2cap requests should not be sent on subsequent events
-  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle1->handle(),
-                                                        hci::LEConnectionParameters(),
-                                                        hci::StatusCode::kUnsupportedRemoteFeature);
+  test_device()->SendLEConnectionUpdateCompleteSubevent(
+      conn_handle1->handle(), hci_spec::LEConnectionParameters(),
+      hci_spec::StatusCode::kUnsupportedRemoteFeature);
   RunLoopUntilIdle();
   EXPECT_EQ(2u, l2cap_conn_param_update_count);
 }
@@ -2265,13 +2266,13 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto peer = std::make_unique<FakePeer>(kAddress0);
 
   // Connection Parameter Update procedure supported by controller.
-  constexpr hci::LESupportedFeatures kLEFeatures{
-      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+  constexpr hci_spec::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure)};
   peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection with local host as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kSlave);
   RunLoopUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
@@ -2295,8 +2296,8 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->set_le_connection_parameters_callback(
       [&](auto address, auto params) { hci_update_conn_param_count++; });
 
-  test_device()->SetDefaultCommandStatus(hci::kLEConnectionUpdate,
-                                         hci::StatusCode::kUnsupportedRemoteFeature);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLEConnectionUpdate,
+                                         hci_spec::StatusCode::kUnsupportedRemoteFeature);
 
   RunLoopFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle);
@@ -2304,12 +2305,12 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_EQ(0u, hci_update_conn_param_count);
   EXPECT_EQ(1u, l2cap_conn_param_update_count);
 
-  test_device()->ClearDefaultCommandStatus(hci::kLEConnectionUpdate);
+  test_device()->ClearDefaultCommandStatus(hci_spec::kLEConnectionUpdate);
 
   // l2cap request should not be called on subsequent events
-  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle->handle(),
-                                                        hci::LEConnectionParameters(),
-                                                        hci::StatusCode::kUnsupportedRemoteFeature);
+  test_device()->SendLEConnectionUpdateCompleteSubevent(
+      conn_handle->handle(), hci_spec::LEConnectionParameters(),
+      hci_spec::StatusCode::kUnsupportedRemoteFeature);
 
   RunLoopUntilIdle();
   EXPECT_EQ(1u, l2cap_conn_param_update_count);
@@ -2322,13 +2323,13 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto peer = std::make_unique<FakePeer>(kAddress0);
 
   // Connection Parameter Update procedure supported by controller.
-  constexpr hci::LESupportedFeatures kLEFeatures{
-      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+  constexpr hci_spec::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure)};
   peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection with local host as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kSlave);
   RunLoopUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
@@ -2352,8 +2353,8 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->set_le_connection_parameters_callback(
       [&](auto address, auto params) { hci_update_conn_param_count++; });
 
-  test_device()->SetDefaultCommandStatus(hci::kLEConnectionUpdate,
-                                         hci::StatusCode::kUnspecifiedError);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLEConnectionUpdate,
+                                         hci_spec::StatusCode::kUnspecifiedError);
 
   RunLoopFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle);
@@ -2361,27 +2362,27 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_EQ(0u, hci_update_conn_param_count);
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
 
-  test_device()->ClearDefaultCommandStatus(hci::kLEConnectionUpdate);
+  test_device()->ClearDefaultCommandStatus(hci_spec::kLEConnectionUpdate);
 
   // l2cap request should not be called on subsequent events
-  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle->handle(),
-                                                        hci::LEConnectionParameters(),
-                                                        hci::StatusCode::kUnsupportedRemoteFeature);
+  test_device()->SendLEConnectionUpdateCompleteSubevent(
+      conn_handle->handle(), hci_spec::LEConnectionParameters(),
+      hci_spec::StatusCode::kUnsupportedRemoteFeature);
 
   RunLoopUntilIdle();
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
 }
 
 TEST_F(LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
-  constexpr hci::LESupportedFeatures kLEFeatures{
-      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+  constexpr hci_spec::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure)};
 
   auto peer = std::make_unique<FakePeer>(kAddress0);
   peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection.
-  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kSlave);
 
   RunLoopUntilIdle();
 
@@ -2404,12 +2405,12 @@ TEST_F(LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, const hci::LEConnectionParameters& params) {
+      [&](auto address, const hci_spec::LEConnectionParameters& params) {
         // FakeController will pick an interval between min and max interval.
-        EXPECT_TRUE(params.interval() >= hci::defaults::kLEConnectionIntervalMin &&
-                    params.interval() <= hci::defaults::kLEConnectionIntervalMax);
+        EXPECT_TRUE(params.interval() >= hci_spec::defaults::kLEConnectionIntervalMin &&
+                    params.interval() <= hci_spec::defaults::kLEConnectionIntervalMax);
         EXPECT_EQ(0u, params.latency());
-        EXPECT_EQ(hci::defaults::kLESupervisionTimeout, params.supervision_timeout());
+        EXPECT_EQ(hci_spec::defaults::kLESupervisionTimeout, params.supervision_timeout());
         hci_update_conn_param_count++;
       });
 
@@ -2434,12 +2435,12 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, const hci::LEConnectionParameters& params) {
+      [&](auto address, const hci_spec::LEConnectionParameters& params) {
         // FakeController will pick an interval between min and max interval.
-        EXPECT_TRUE(params.interval() >= hci::defaults::kLEConnectionIntervalMin &&
-                    params.interval() <= hci::defaults::kLEConnectionIntervalMax);
+        EXPECT_TRUE(params.interval() >= hci_spec::defaults::kLEConnectionIntervalMin &&
+                    params.interval() <= hci_spec::defaults::kLEConnectionIntervalMax);
         EXPECT_EQ(0u, params.latency());
-        EXPECT_EQ(hci::defaults::kLESupervisionTimeout, params.supervision_timeout());
+        EXPECT_EQ(hci_spec::defaults::kLESupervisionTimeout, params.supervision_timeout());
         hci_update_conn_param_count++;
       });
 
@@ -2469,7 +2470,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated) {
   test_device()->AddPeer(std::move(fake_peer));
 
   // Prevent remote features event from being received.
-  test_device()->SetDefaultCommandStatus(hci::kLEReadRemoteFeatures, hci::StatusCode::kSuccess);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures,
+                                         hci_spec::StatusCode::kSuccess);
 
   conn_mgr()->Connect(
       peer->identifier(), [&](auto result) { ASSERT_TRUE(result.is_error()); }, kConnectionOptions);
@@ -2597,7 +2599,8 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->AddPeer(std::move(fake_peer_0));
 
   // Prevent remote features event from being received.
-  test_device()->SetDefaultCommandStatus(hci::kLEReadRemoteFeatures, hci::StatusCode::kSuccess);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures,
+                                         hci_spec::StatusCode::kSuccess);
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_0;
   conn_mgr()->Connect(
@@ -2636,11 +2639,11 @@ TEST_F(LowEnergyConnectionManagerTest,
   // Complete interrogation of peer_0
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
-  hci::LEReadRemoteFeaturesCompleteSubeventParams response;
+  hci_spec::LEReadRemoteFeaturesCompleteSubeventParams response;
   response.connection_handle = htole16(handle_0);
-  response.status = hci::kSuccess;
+  response.status = hci_spec::kSuccess;
   response.le_features = 0u;
-  test_device()->SendLEMetaEvent(hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+  test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
                                  BufferView(&response, sizeof(response)));
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_0);
@@ -2650,7 +2653,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_FALSE(fake_peer_1_ptr->logical_links().empty());
   auto handle_1 = *fake_peer_0_ptr->logical_links().begin();
   response.connection_handle = htole16(handle_1);
-  test_device()->SendLEMetaEvent(hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+  test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
                                  BufferView(&response, sizeof(response)));
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_1);
@@ -2666,7 +2669,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   test_device()->AddPeer(std::move(fake_peer_0));
 
   // Prevent remote features event from being received.
-  test_device()->SetDefaultCommandStatus(hci::kLEReadRemoteFeatures, hci::StatusCode::kSuccess);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures,
+                                         hci_spec::StatusCode::kSuccess);
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_0;
   conn_mgr()->Connect(
@@ -2682,9 +2686,10 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   EXPECT_FALSE(peer_0->le()->connected());
   EXPECT_FALSE(conn_0);
 
-  test_device()->ClearDefaultCommandStatus(hci::kLEReadRemoteFeatures);
+  test_device()->ClearDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures);
   // Stall connection complete for peer 1.
-  test_device()->SetDefaultCommandStatus(hci::kLECreateConnection, hci::StatusCode::kSuccess);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLECreateConnection,
+                                         hci_spec::StatusCode::kSuccess);
 
   auto* peer_1 = peer_cache()->NewPeer(kAddress1, true);
   ASSERT_TRUE(peer_1->le());
@@ -2701,11 +2706,11 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   // Complete interrogation of peer_0. No asserts should fail.
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
-  hci::LEReadRemoteFeaturesCompleteSubeventParams response;
+  hci_spec::LEReadRemoteFeaturesCompleteSubeventParams response;
   response.connection_handle = htole16(handle_0);
-  response.status = hci::kSuccess;
+  response.status = hci_spec::kSuccess;
   response.le_features = 0u;
-  test_device()->SendLEMetaEvent(hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+  test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
                                  BufferView(&response, sizeof(response)));
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_0);
@@ -2801,8 +2806,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerStartDiscoveryFailed) {
   };
 
   // Cause discovery to fail.
-  test_device()->SetDefaultCommandStatus(hci::kLESetScanEnable,
-                                         hci::StatusCode::kCommandDisallowed);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLESetScanEnable,
+                                         hci_spec::StatusCode::kCommandDisallowed);
 
   EXPECT_TRUE(connected_peers().empty());
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
@@ -2835,8 +2840,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerDiscoveryFailedDuringSca
   EXPECT_EQ(connect_cb_count, 0u);
 
   // Cause discovery to fail when attempting to restart scan after scan period ends.
-  test_device()->SetDefaultCommandStatus(hci::kLESetScanEnable,
-                                         hci::StatusCode::kCommandDisallowed);
+  test_device()->SetDefaultCommandStatus(hci_spec::kLESetScanEnable,
+                                         hci_spec::StatusCode::kCommandDisallowed);
   RunLoopFor(kLEGeneralDiscoveryScanMin);
   EXPECT_EQ(connect_cb_count, 1u);
   EXPECT_FALSE(peer->temporary());
@@ -2852,7 +2857,8 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
   test_device()->AddPeer(std::move(fake_peer));
 
   // Cause interrogation to stall by not responding with a Read Remote Version complete event.
-  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo, hci::StatusCode::kSuccess);
+  test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
+                                         hci_spec::StatusCode::kSuccess);
 
   int connect_count = 0;
   auto callback = [&connect_count](auto result) {
@@ -2875,10 +2881,10 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
   RunLoopUntilIdle();
 
   // Complete interrogation so that callback gets called.
-  hci::ReadRemoteVersionInfoCompleteEventParams response = {};
-  response.status = hci::kSuccess;
+  hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
+  response.status = hci_spec::kSuccess;
   response.connection_handle = htole16(handle);
-  test_device()->SendEvent(hci::kReadRemoteVersionInfoCompleteEventCode,
+  test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                            BufferView(&response, sizeof(response)));
 
   RunLoopUntilIdle();
@@ -2896,7 +2902,8 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
   test_device()->AddPeer(std::move(fake_peer));
 
   // Cause interrogation to stall by not responding with a Read Remote Version complete event.
-  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo, hci::StatusCode::kSuccess);
+  test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
+                                         hci_spec::StatusCode::kSuccess);
 
   int connect_count = 0;
   auto callback = [&connect_count](auto result) {
@@ -2919,10 +2926,10 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
   RunLoopUntilIdle();
 
   // Complete interrogation so that callback gets called.
-  hci::ReadRemoteVersionInfoCompleteEventParams response = {};
-  response.status = hci::kSuccess;
+  hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
+  response.status = hci_spec::kSuccess;
   response.connection_handle = htole16(handle);
-  test_device()->SendEvent(hci::kReadRemoteVersionInfoCompleteEventCode,
+  test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                            BufferView(&response, sizeof(response)));
 
   RunLoopUntilIdle();
@@ -2954,8 +2961,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesTwi
   EXPECT_TRUE(connected_peers().empty());
 
   // Cause interrogation to fail.
-  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo,
-                                         hci::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
+                                         hci_spec::StatusCode::kConnectionFailedToBeEstablished);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -2974,7 +2981,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesTwi
     EXPECT_EQ(connected_count, i + 1);
     EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-    test_device()->Disconnect(kAddress0, hci::StatusCode::kConnectionFailedToBeEstablished);
+    test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
     RunLoopUntilIdle();
     EXPECT_EQ(connected_count, i + 1);
     // A connect command should be sent in connect_delays[i+1]
@@ -3004,8 +3011,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
   EXPECT_TRUE(connected_peers().empty());
 
   // Cause interrogation to fail.
-  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo,
-                                         hci::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
+                                         hci_spec::StatusCode::kConnectionFailedToBeEstablished);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -3016,10 +3023,10 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
   EXPECT_FALSE(conn_handle);
 
   // Allow the next interrogation to succeed.
-  test_device()->ClearDefaultCommandStatus(hci::kReadRemoteVersionInfo);
+  test_device()->ClearDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo);
 
   // Disconnect should initiate retry #2 after a pause.
-  test_device()->Disconnect(kAddress0, hci::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   RunLoopFor(zx::sec(2));
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -3047,8 +3054,8 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_TRUE(connected_peers().empty());
 
   // Cause interrogation to fail.
-  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo,
-                                         hci::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
+                                         hci_spec::StatusCode::kConnectionFailedToBeEstablished);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -3059,10 +3066,10 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_EQ(connect_cb_count, 0);
 
   // Allow the next interrogation to succeed (even though it shouldn't happen).
-  test_device()->ClearDefaultCommandStatus(hci::kReadRemoteVersionInfo);
+  test_device()->ClearDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo);
 
   // Peer disconnection during interrogation should also cause retry (after a pause)
-  test_device()->Disconnect(kAddress0, hci::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   RunLoopUntilIdle();
   // Disconnect will cancel request.
   conn_mgr()->Disconnect(peer->identifier());
@@ -3095,7 +3102,8 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_TRUE(connected_peers().empty());
 
   // Cause interrogation to stall waiting for command complete event.
-  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo, hci::StatusCode::kSuccess);
+  test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
+                                         hci_spec::StatusCode::kSuccess);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -3106,16 +3114,17 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_EQ(connect_cb_count, 0);
 
   // Let retries succeed.
-  test_device()->ClearDefaultCommandStatus(hci::kReadRemoteVersionInfo);
+  test_device()->ClearDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo);
 
   // Peer disconnection during interrogation should also cause retry (after a pause).
-  test_device()->Disconnect(kAddress0, hci::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
   RunLoopUntilIdle();
 
   // Complete interrogation with an error that will be received after the disconnect event.
   // Event params other than status will be ignored because status is an error.
-  hci::ReadRemoteVersionInfoCompleteEventParams response{.status = hci::kUnknownConnectionId};
-  test_device()->SendEvent(hci::kReadRemoteVersionInfoCompleteEventCode,
+  hci_spec::ReadRemoteVersionInfoCompleteEventParams response{.status =
+                                                                  hci_spec::kUnknownConnectionId};
+  test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                            BufferView(&response, sizeof(response)));
   RunLoopUntilIdle();
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
@@ -3142,17 +3151,17 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
   // behavior until the next successful connection to avoid looping.
   // clang-format off
   std::array statuses_that_disable_autoconnect = {
-      hci::StatusCode::kConnectionTimeout,
-      hci::StatusCode::kConnectionRejectedSecurity,
-      hci::StatusCode::kConnectionAcceptTimeoutExceeded,
-      hci::StatusCode::kConnectionTerminatedByLocalHost,
-      hci::StatusCode::kConnectionFailedToBeEstablished
+      hci_spec::StatusCode::kConnectionTimeout,
+      hci_spec::StatusCode::kConnectionRejectedSecurity,
+      hci_spec::StatusCode::kConnectionAcceptTimeoutExceeded,
+      hci_spec::StatusCode::kConnectionTerminatedByLocalHost,
+      hci_spec::StatusCode::kConnectionFailedToBeEstablished
   };
   // clang-format on
   // Validate that looping with a uint8_t is safe, it makes the rest of the code simpler.
   static_assert(statuses_that_disable_autoconnect.size() < std::numeric_limits<uint8_t>::max());
   for (uint8_t i = 0; i < static_cast<uint8_t>(statuses_that_disable_autoconnect.size()); ++i) {
-    SCOPED_TRACE(hci::StatusCodeToString(statuses_that_disable_autoconnect[i]));
+    SCOPED_TRACE(hci_spec::StatusCodeToString(statuses_that_disable_autoconnect[i]));
     const DeviceAddress kAddressI(DeviceAddress::Type::kLEPublic, {i});
     auto* peer = peer_cache()->NewPeer(kAddressI, /*connectable=*/true);
     auto fake_peer = std::make_unique<FakePeer>(kAddressI);
@@ -3187,7 +3196,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
 
     // Causes interrogation to fail, so inbound connections will fail to establish. This complexity
     // is needed because inbound connections are already HCI-connected when passed to the LECM.
-    test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo,
+    test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
                                            statuses_that_disable_autoconnect[i]);
 
     ConnectionResult result;
@@ -3202,8 +3211,9 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     RunLoopUntilIdle();
     // We always wait until the peer disconnects to relay connection failure when dealing with
     // the 0x3e kConnectionFailedToBeEstablished error.
-    if (statuses_that_disable_autoconnect[i] == hci::StatusCode::kConnectionFailedToBeEstablished) {
-      test_device()->Disconnect(kAddressI, hci::StatusCode::kConnectionFailedToBeEstablished);
+    if (statuses_that_disable_autoconnect[i] ==
+        hci_spec::StatusCode::kConnectionFailedToBeEstablished) {
+      test_device()->Disconnect(kAddressI, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
       RunLoopUntilIdle();
     }
     // Remote-initiated connection attempts that fail should not disable the auto-connect flag.
@@ -3211,7 +3221,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
     EXPECT_TRUE(peer->le()->should_auto_connect());
     // Allow successful interrogation later in the test
-    test_device()->ClearDefaultCommandStatus(hci::kReadRemoteVersionInfo);
+    test_device()->ClearDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo);
 
     // Set this peer to reject all connections with statuses_that_disable_autoconnect[i]
     FakePeer* peer_ref = test_device()->FindPeer(peer->address());
@@ -3324,7 +3334,7 @@ TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   EXPECT_TRUE(peer->temporary());
 
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_status(hci::StatusCode::kConnectionLimitExceeded);
+  fake_peer->set_connect_status(hci_spec::StatusCode::kConnectionLimitExceeded);
   test_device()->AddPeer(std::move(fake_peer));
 
   auto callback = [](auto result) { ASSERT_TRUE(result.is_error()); };
@@ -3403,9 +3413,9 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // Cause interrogation to stall so that we can expire the central pause timeout.
   fit::closure send_read_remote_features_rsp;
-  test_device()->pause_responses_for_opcode(hci::kLEReadRemoteFeatures, [&](fit::closure unpause) {
-    send_read_remote_features_rsp = std::move(unpause);
-  });
+  test_device()->pause_responses_for_opcode(
+      hci_spec::kLEReadRemoteFeatures,
+      [&](fit::closure unpause) { send_read_remote_features_rsp = std::move(unpause); });
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
@@ -3450,9 +3460,9 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // Cause interrogation to stall so that we can expire the peripheral pause timeout.
   fit::closure send_read_remote_features_rsp;
-  test_device()->pause_responses_for_opcode(hci::kLEReadRemoteFeatures, [&](fit::closure unpause) {
-    send_read_remote_features_rsp = std::move(unpause);
-  });
+  test_device()->pause_responses_for_opcode(
+      hci_spec::kLEReadRemoteFeatures,
+      [&](fit::closure unpause) { send_read_remote_features_rsp = std::move(unpause); });
 
   size_t l2cap_conn_param_update_count = 0;
   fake_l2cap()->set_connection_parameter_update_request_responder([&](auto, auto) {
@@ -3547,16 +3557,16 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
     for (size_t i = 0; i < kLEMaxNumPackets; i++) {
       ASSERT_TRUE(acl_data_channel()->SendPacket(
           hci::ACLDataPacket::New(conn_handle0_->handle(),
-                                  hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                  hci::ACLBroadcastFlag::kPointToPoint, 1),
+                                  hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                  hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
           l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
     }
 
     // Queue packet for |peer1|.
     ASSERT_TRUE(acl_data_channel()->SendPacket(
         hci::ACLDataPacket::New(conn_handle1_->handle(),
-                                hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                hci::ACLBroadcastFlag::kPointToPoint, 1),
+                                hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
         l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
 
     RunLoopUntilIdle();
@@ -3579,8 +3589,8 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
 
     // |peer0|'s link should have been unregistered.
     ASSERT_FALSE(acl_data_channel()->SendPacket(
-        hci::ACLDataPacket::New(handle0_, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                hci::ACLBroadcastFlag::kPointToPoint, 1),
+        hci::ACLDataPacket::New(handle0_, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
         l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
 
     // Packet for |peer1| should have been sent.
@@ -3601,7 +3611,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
   size_t packet_count_;
   Peer* peer0_;
   Peer* peer1_;
-  hci::ConnectionHandle handle0_;
+  hci_spec::ConnectionHandle handle0_;
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle0_;
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle1_;
 };

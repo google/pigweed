@@ -162,7 +162,8 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 
   // Set Scan Parameters will fail.
-  test_device()->SetDefaultResponseStatus(kLESetScanParameters, StatusCode::kHardwareFailure);
+  test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanParameters,
+                                          hci_spec::StatusCode::kHardwareFailure);
   EXPECT_EQ(0, test_device()->le_scan_state().scan_interval);
 
   EXPECT_TRUE(StartScan(false));
@@ -180,8 +181,9 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
   EXPECT_FALSE(scanner()->IsScanning());
 
   // Set Scan Parameters will succeed but Set Scan Enable will fail.
-  test_device()->ClearDefaultResponseStatus(kLESetScanParameters);
-  test_device()->SetDefaultResponseStatus(kLESetScanEnable, StatusCode::kHardwareFailure);
+  test_device()->ClearDefaultResponseStatus(hci_spec::kLESetScanParameters);
+  test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
+                                          hci_spec::StatusCode::kHardwareFailure);
 
   EXPECT_TRUE(StartScan(false));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
@@ -189,9 +191,10 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
 
   // Status should be failure but the scan parameters should have applied.
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kFailed, last_scan_status());
-  EXPECT_EQ(defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
-  EXPECT_EQ(defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
-  EXPECT_EQ(LEScanFilterPolicy::kNoWhiteList, test_device()->le_scan_state().filter_policy);
+  EXPECT_EQ(hci_spec::defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
+  EXPECT_EQ(hci_spec::defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
+  EXPECT_EQ(hci_spec::LEScanFilterPolicy::kNoWhiteList,
+            test_device()->le_scan_state().filter_policy);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
   EXPECT_TRUE(scanner()->IsIdle());
   EXPECT_FALSE(scanner()->IsScanning());
@@ -208,10 +211,11 @@ TEST_F(LegacyLowEnergyScannerTest, StartScan) {
 
   // Scan should have started.
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kActive, last_scan_status());
-  EXPECT_EQ(defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
-  EXPECT_EQ(defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
-  EXPECT_EQ(LEScanFilterPolicy::kNoWhiteList, test_device()->le_scan_state().filter_policy);
-  EXPECT_EQ(LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci_spec::defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
+  EXPECT_EQ(hci_spec::defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
+  EXPECT_EQ(hci_spec::LEScanFilterPolicy::kNoWhiteList,
+            test_device()->le_scan_state().filter_policy);
+  EXPECT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().filter_duplicates);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(LowEnergyScanner::State::kActiveScanning, scanner()->state());
@@ -648,7 +652,7 @@ TEST_F(LegacyLowEnergyScannerTest, ScanUsingPublicAddress) {
   EXPECT_TRUE(StartScan(false));
   RunLoopUntilIdle();
   EXPECT_TRUE(scanner()->IsPassiveScanning());
-  EXPECT_EQ(LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
 }
 
 TEST_F(LegacyLowEnergyScannerTest, ScanUsingRandomAddress) {
@@ -656,7 +660,7 @@ TEST_F(LegacyLowEnergyScannerTest, ScanUsingRandomAddress) {
   EXPECT_TRUE(StartScan(false));
   RunLoopUntilIdle();
   EXPECT_TRUE(scanner()->IsPassiveScanning());
-  EXPECT_EQ(LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
 }
 
 TEST_F(LegacyLowEnergyScannerTest, StopScanWhileWaitingForLocalAddress) {

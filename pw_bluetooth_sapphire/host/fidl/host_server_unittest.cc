@@ -1088,7 +1088,7 @@ TEST_F(HostServerTest, OnNewBondingData) {
   const bt::UInt128 kTestKeyValue{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
                                                  true);
-  const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci::LinkKey(kTestKeyValue, 0, 0));
+  const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci_spec::LinkKey(kTestKeyValue, 0, 0));
   const fsys::PeerKey kTestKeyFidl{
       .security =
           fsys::SecurityProperties{
@@ -1163,7 +1163,7 @@ TEST_F(HostServerTest, EnableBackgroundScan) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(false);
   RunLoopUntilIdle();
@@ -1177,7 +1177,7 @@ TEST_F(HostServerTest, EnableBackgroundScanTwiceAtSameTime) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(false);
   RunLoopUntilIdle();
@@ -1190,12 +1190,12 @@ TEST_F(HostServerTest, EnableBackgroundScanTwiceSequentially) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(false);
   RunLoopUntilIdle();
@@ -1221,15 +1221,15 @@ TEST_F(HostServerTest, DisableBackgroundScan) {
 }
 
 TEST_F(HostServerTest, EnableBackgroundScanFailsToStart) {
-  test_device()->SetDefaultCommandStatus(bt::hci::kLESetScanEnable,
-                                         bt::hci::StatusCode::kControllerBusy);
+  test_device()->SetDefaultCommandStatus(bt::hci_spec::kLESetScanEnable,
+                                         bt::hci_spec::StatusCode::kControllerBusy);
   host_server()->EnableBackgroundScan(true);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 
-  test_device()->ClearDefaultCommandStatus(bt::hci::kLESetScanEnable);
+  test_device()->ClearDefaultCommandStatus(bt::hci_spec::kLESetScanEnable);
   host_server()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);

@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt::hci {
+namespace bt::hci_spec {
 
 // Remote devices and local controllers have a feature set defined by the
 // Link Manager Protocol.
@@ -77,6 +77,6 @@ class LMPFeatureSet {
   uint8_t last_page_number_;
 };
 
-}  // namespace bt::hci
+}  // namespace bt::hci_spec
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LMP_FEATURE_SET_H_

@@ -16,14 +16,14 @@ namespace {
 TEST(AdvertisingReportParserTest, EmptyReport) {
   auto bytes = CreateStaticByteBuffer(0x3E, 0x02, 0x02, 0x00);
 
-  auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
+  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
   event->InitializeFromBuffer();
 
-  AdvertisingReportParser parser(*event);
+  hci::AdvertisingReportParser parser(*event);
   EXPECT_FALSE(parser.HasMoreReports());
 
-  const LEAdvertisingReportData* data;
+  const hci_spec::LEAdvertisingReportData* data;
   int8_t rssi;
   EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
 }
@@ -40,15 +40,15 @@ TEST(AdvertisingReportParserTest, SingleReportMalformed) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
+  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
   event->InitializeFromBuffer();
 
-  AdvertisingReportParser parser(*event);
+  hci::AdvertisingReportParser parser(*event);
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_FALSE(parser.encountered_error());
 
-  const LEAdvertisingReportData* data;
+  const hci_spec::LEAdvertisingReportData* data;
   int8_t rssi;
   EXPECT_FALSE(parser.GetNextReport(&data, &rssi));
   EXPECT_TRUE(parser.encountered_error());
@@ -66,21 +66,21 @@ TEST(AdvertisingReportParserTest, SingleReportNoData) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
+  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
   event->InitializeFromBuffer();
 
   AdvertisingReportParser parser(*event);
   EXPECT_TRUE(parser.HasMoreReports());
 
-  const LEAdvertisingReportData* data;
+  const hci_spec::LEAdvertisingReportData* data;
   int8_t rssi;
   EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(LEAddressType::kPublicIdentity, data->address_type);
+  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
+  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
   EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
   EXPECT_EQ(0u, data->length_data);
-  EXPECT_EQ(kRSSIInvalid, rssi);
+  EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // No other reports
   EXPECT_FALSE(parser.HasMoreReports());
@@ -104,7 +104,7 @@ TEST(AdvertisingReportParserTest, ReportsValidInvalid) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
+  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
   event->InitializeFromBuffer();
 
@@ -112,14 +112,14 @@ TEST(AdvertisingReportParserTest, ReportsValidInvalid) {
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_FALSE(parser.encountered_error());
 
-  const LEAdvertisingReportData* data;
+  const hci_spec::LEAdvertisingReportData* data;
   int8_t rssi;
   EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(LEAddressType::kPublicIdentity, data->address_type);
+  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
+  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
   EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
   EXPECT_EQ(0u, data->length_data);
-  EXPECT_EQ(kRSSIInvalid, rssi);
+  EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // There are more reports...
   EXPECT_TRUE(parser.HasMoreReports());
@@ -151,27 +151,27 @@ TEST(AdvertisingReportParserTest, ReportsAllValid) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
+  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
   event->InitializeFromBuffer();
 
   AdvertisingReportParser parser(*event);
   EXPECT_TRUE(parser.HasMoreReports());
 
-  const LEAdvertisingReportData* data;
+  const hci_spec::LEAdvertisingReportData* data;
   int8_t rssi;
   EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(LEAddressType::kPublicIdentity, data->address_type);
+  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
+  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
   EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
   EXPECT_EQ(0u, data->length_data);
-  EXPECT_EQ(kRSSIInvalid, rssi);
+  EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // There are more reports
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(LEAdvertisingEventType::kAdvInd, data->event_type);
-  EXPECT_EQ(LEAddressType::kRandom, data->address_type);
+  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvInd, data->event_type);
+  EXPECT_EQ(hci_spec::LEAddressType::kRandom, data->address_type);
   EXPECT_EQ("0C:0B:0A:09:08:07", data->address.ToString());
   EXPECT_EQ(3, data->length_data);
   EXPECT_TRUE(
@@ -181,8 +181,8 @@ TEST(AdvertisingReportParserTest, ReportsAllValid) {
   // There are more reports
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(LEAdvertisingEventType::kAdvDirectInd, data->event_type);
-  EXPECT_EQ(LEAddressType::kPublic, data->address_type);
+  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvDirectInd, data->event_type);
+  EXPECT_EQ(hci_spec::LEAddressType::kPublic, data->address_type);
   EXPECT_EQ("12:11:10:0F:0E:0D", data->address.ToString());
   EXPECT_EQ(5, data->length_data);
   EXPECT_TRUE(ContainersEqual(std::array<uint8_t, 5>{{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}, data->data,
@@ -218,7 +218,7 @@ TEST(AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
+  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
   event->InitializeFromBuffer();
 
@@ -226,14 +226,14 @@ TEST(AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
   EXPECT_TRUE(parser.HasMoreReports());
   EXPECT_FALSE(parser.encountered_error());
 
-  const LEAdvertisingReportData* data;
+  const hci_spec::LEAdvertisingReportData* data;
   int8_t rssi;
   EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(LEAddressType::kPublicIdentity, data->address_type);
+  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
+  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
   EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
   EXPECT_EQ(0u, data->length_data);
-  EXPECT_EQ(kRSSIInvalid, rssi);
+  EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   // Since the packet is malformed (the event payload contains 3 reports while
   // the header states there is only 1) this should return false.
@@ -258,21 +258,21 @@ TEST(AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
 
   // clang-format on
 
-  auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
+  auto event = EventPacket::New(bytes.size() - sizeof(hci_spec::EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
   event->InitializeFromBuffer();
 
   AdvertisingReportParser parser(*event);
   EXPECT_TRUE(parser.HasMoreReports());
 
-  const LEAdvertisingReportData* data;
+  const hci_spec::LEAdvertisingReportData* data;
   int8_t rssi;
   EXPECT_TRUE(parser.GetNextReport(&data, &rssi));
-  EXPECT_EQ(LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
-  EXPECT_EQ(LEAddressType::kPublicIdentity, data->address_type);
+  EXPECT_EQ(hci_spec::LEAdvertisingEventType::kAdvNonConnInd, data->event_type);
+  EXPECT_EQ(hci_spec::LEAddressType::kPublicIdentity, data->address_type);
   EXPECT_EQ("06:05:04:03:02:01", data->address.ToString());
   EXPECT_EQ(0u, data->length_data);
-  EXPECT_EQ(kRSSIInvalid, rssi);
+  EXPECT_EQ(hci_spec::kRSSIInvalid, rssi);
 
   EXPECT_FALSE(parser.encountered_error());
 

@@ -32,7 +32,7 @@ void BrEdrInterrogator::SendCommands(InterrogationRefPtr interrogation) {
 
   if (!peer->features().HasPage(0)) {
     ReadRemoteFeatures(interrogation);
-  } else if (peer->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
+  } else if (peer->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures)) {
     ReadRemoteExtendedFeatures(interrogation, 1);
   }
 }
@@ -44,14 +44,14 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
     return;
   }
   ZX_ASSERT(peer->bredr());
-  hci::PageScanRepetitionMode mode = hci::PageScanRepetitionMode::kR0;
+  hci_spec::PageScanRepetitionMode mode = hci_spec::PageScanRepetitionMode::kR0;
   if (peer->bredr()->page_scan_repetition_mode()) {
     mode = *peer->bredr()->page_scan_repetition_mode();
   }
-  auto packet =
-      hci::CommandPacket::New(hci::kRemoteNameRequest, sizeof(hci::RemoteNameRequestCommandParams));
+  auto packet = hci::CommandPacket::New(hci_spec::kRemoteNameRequest,
+                                        sizeof(hci_spec::RemoteNameRequestCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto params = packet->mutable_payload<hci::RemoteNameRequestCommandParams>();
+  auto params = packet->mutable_payload<hci_spec::RemoteNameRequestCommandParams>();
   params->bd_addr = peer->address().value();
   params->page_scan_repetition_mode = mode;
   if (peer->bredr()->clock_offset()) {
@@ -69,16 +69,16 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
       return;
     }
 
-    if (event.event_code() == hci::kCommandStatusEventCode) {
+    if (event.event_code() == hci_spec::kCommandStatusEventCode) {
       return;
     }
 
-    ZX_ASSERT(event.event_code() == hci::kRemoteNameRequestCompleteEventCode);
+    ZX_ASSERT(event.event_code() == hci_spec::kRemoteNameRequestCompleteEventCode);
 
     bt_log(TRACE, "gap-bredr", "name request complete (peer id: %s)",
            bt_str(interrogation->peer_id()));
 
-    const auto& params = event.params<hci::RemoteNameRequestCompleteEventParams>();
+    const auto& params = event.params<hci_spec::RemoteNameRequestCompleteEventParams>();
 
     Peer* const peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
@@ -92,14 +92,14 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
   bt_log(TRACE, "gap-bredr", "sending name request (peer id: %s)",
          bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendExclusiveCommand(std::move(packet), std::move(cmd_cb),
-                                                 hci::kRemoteNameRequestCompleteEventCode,
-                                                 {hci::kInquiry});
+                                                 hci_spec::kRemoteNameRequestCompleteEventCode,
+                                                 {hci_spec::kInquiry});
 }
 
 void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
-  auto packet = hci::CommandPacket::New(hci::kReadRemoteSupportedFeatures,
-                                        sizeof(hci::ReadRemoteSupportedFeaturesCommandParams));
-  packet->mutable_payload<hci::ReadRemoteSupportedFeaturesCommandParams>()->connection_handle =
+  auto packet = hci::CommandPacket::New(hci_spec::kReadRemoteSupportedFeatures,
+                                        sizeof(hci_spec::ReadRemoteSupportedFeaturesCommandParams));
+  packet->mutable_payload<hci_spec::ReadRemoteSupportedFeaturesCommandParams>()->connection_handle =
       htole16(interrogation->handle());
 
   auto cmd_cb = [interrogation, self = weak_ptr_factory_.GetWeakPtr()](
@@ -113,17 +113,17 @@ void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
       return;
     }
 
-    if (event.event_code() == hci::kCommandStatusEventCode) {
+    if (event.event_code() == hci_spec::kCommandStatusEventCode) {
       return;
     }
 
-    ZX_ASSERT(event.event_code() == hci::kReadRemoteSupportedFeaturesCompleteEventCode);
+    ZX_ASSERT(event.event_code() == hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
 
     bt_log(TRACE, "gap-bredr", "remote features request complete (peer id: %s)",
            bt_str(interrogation->peer_id()));
 
     const auto& params =
-        event.view().payload<hci::ReadRemoteSupportedFeaturesCompleteEventParams>();
+        event.view().payload<hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams>();
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
@@ -132,7 +132,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
     }
     peer->SetFeaturePage(0, le64toh(params.lmp_features));
 
-    if (peer->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
+    if (peer->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures)) {
       peer->set_last_page_number(1);
       self->ReadRemoteExtendedFeatures(interrogation, 1);
     }
@@ -141,14 +141,14 @@ void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
   bt_log(TRACE, "gap-bredr", "asking for supported features (peer id: %s)",
          bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendCommand(std::move(packet), std::move(cmd_cb),
-                                        hci::kReadRemoteSupportedFeaturesCompleteEventCode);
+                                        hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
 }
 
 void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interrogation,
                                                    uint8_t page) {
-  auto packet = hci::CommandPacket::New(hci::kReadRemoteExtendedFeatures,
-                                        sizeof(hci::ReadRemoteExtendedFeaturesCommandParams));
-  auto params = packet->mutable_payload<hci::ReadRemoteExtendedFeaturesCommandParams>();
+  auto packet = hci::CommandPacket::New(hci_spec::kReadRemoteExtendedFeatures,
+                                        sizeof(hci_spec::ReadRemoteExtendedFeaturesCommandParams));
+  auto params = packet->mutable_payload<hci_spec::ReadRemoteExtendedFeaturesCommandParams>();
   params->connection_handle = htole16(interrogation->handle());
   params->page_number = page;
 
@@ -164,14 +164,14 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
       return;
     }
 
-    if (event.event_code() == hci::kCommandStatusEventCode) {
+    if (event.event_code() == hci_spec::kCommandStatusEventCode) {
       return;
     }
 
-    ZX_ASSERT(event.event_code() == hci::kReadRemoteExtendedFeaturesCompleteEventCode);
+    ZX_ASSERT(event.event_code() == hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode);
 
     const auto& params =
-        event.view().template payload<hci::ReadRemoteExtendedFeaturesCompleteEventParams>();
+        event.view().template payload<hci_spec::ReadRemoteExtendedFeaturesCompleteEventParams>();
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
@@ -203,7 +203,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
   bt_log(TRACE, "gap-bredr", "requesting extended features page %u (peer id: %s)", page,
          bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendCommand(std::move(packet), std::move(cmd_cb),
-                                        hci::kReadRemoteExtendedFeaturesCompleteEventCode);
+                                        hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode);
 }  // namespace gap
 
 }  // namespace bt::gap

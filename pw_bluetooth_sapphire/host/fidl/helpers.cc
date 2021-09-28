@@ -85,7 +85,7 @@ fsys::SecurityProperties SecurityPropsToFidl(const bt::sm::SecurityProperties& s
 
 bt::sm::LTK LtkFromFidl(const fsys::Ltk& ltk) {
   return bt::sm::LTK(SecurityPropsFromFidl(ltk.key.security),
-                     bt::hci::LinkKey(ltk.key.data.value, ltk.rand, ltk.ediv));
+                     bt::hci_spec::LinkKey(ltk.key.data.value, ltk.rand, ltk.ediv));
 }
 
 fsys::PeerKey LtkToFidlPeerKey(const bt::sm::LTK& ltk) {
@@ -593,7 +593,7 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
   if (peer.bredr() && peer.bredr()->device_class()) {
     output.set_device_class(DeviceClassToFidl(*peer.bredr()->device_class()));
   }
-  if (peer.rssi() != bt::hci::kRSSIInvalid) {
+  if (peer.rssi() != bt::hci_spec::kRSSIInvalid) {
     output.set_rssi(peer.rssi());
   }
 
@@ -668,7 +668,7 @@ std::optional<bt::sm::LTK> BredrKeyFromFidl(const fsys::BredrBondData& data) {
     return std::nullopt;
   }
   auto key = PeerKeyFromFidl(data.link_key());
-  return bt::sm::LTK(key.security(), bt::hci::LinkKey(key.value(), 0, 0));
+  return bt::sm::LTK(key.security(), bt::hci_spec::LinkKey(key.value(), 0, 0));
 }
 
 std::vector<bt::UUID> BredrServicesFromFidl(const fuchsia::bluetooth::sys::BredrBondData& data) {
@@ -755,7 +755,7 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
     return nullptr;
   }
 
-  if (peer.rssi() != bt::hci::kRSSIInvalid) {
+  if (peer.rssi() != bt::hci_spec::kRSSIInvalid) {
     fidl_device->rssi = Int8::New();
     fidl_device->rssi->value = peer.rssi();
   }
@@ -1045,7 +1045,7 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   output.set_id(fbt::PeerId{peer.identifier().value()});
   output.set_connectable(peer.connectable());
 
-  if (peer.rssi() != bt::hci::kRSSIInvalid) {
+  if (peer.rssi() != bt::hci_spec::kRSSIInvalid) {
     output.set_rssi(peer.rssi());
   }
 
@@ -1220,63 +1220,64 @@ bt::sco::ParameterSet FidlToScoParameterSet(const fbredr::HfpParameterSet param_
   }
 }
 
-bt::hci::VendorCodingFormat FidlToScoCodingFormat(const fbredr::CodingFormat format) {
-  bt::hci::VendorCodingFormat out;
+bt::hci_spec::VendorCodingFormat FidlToScoCodingFormat(const fbredr::CodingFormat format) {
+  bt::hci_spec::VendorCodingFormat out;
   // Set to 0 since vendor specific coding formats are not supported.
   out.company_id = 0;
   out.vendor_codec_id = 0;
   switch (format) {
     case fbredr::CodingFormat::ALAW:
-      out.coding_format = bt::hci::CodingFormat::kALaw;
+      out.coding_format = bt::hci_spec::CodingFormat::kALaw;
       break;
     case fbredr::CodingFormat::MULAW:
-      out.coding_format = bt::hci::CodingFormat::kMuLaw;
+      out.coding_format = bt::hci_spec::CodingFormat::kMuLaw;
       break;
     case fbredr::CodingFormat::CVSD:
-      out.coding_format = bt::hci::CodingFormat::kCvsd;
+      out.coding_format = bt::hci_spec::CodingFormat::kCvsd;
       break;
     case fbredr::CodingFormat::LINEAR_PCM:
-      out.coding_format = bt::hci::CodingFormat::kLinearPcm;
+      out.coding_format = bt::hci_spec::CodingFormat::kLinearPcm;
       break;
     case fbredr::CodingFormat::MSBC:
-      out.coding_format = bt::hci::CodingFormat::kMSbc;
+      out.coding_format = bt::hci_spec::CodingFormat::kMSbc;
       break;
     case fbredr::CodingFormat::TRANSPARENT:
-      out.coding_format = bt::hci::CodingFormat::kTransparent;
+      out.coding_format = bt::hci_spec::CodingFormat::kTransparent;
       break;
   }
   return out;
 }
 
-fpromise::result<bt::hci::PcmDataFormat> FidlToPcmDataFormat(const faudio::SampleFormat& format) {
+fpromise::result<bt::hci_spec::PcmDataFormat> FidlToPcmDataFormat(
+    const faudio::SampleFormat& format) {
   switch (format) {
     case faudio::SampleFormat::PCM_SIGNED:
-      return fpromise::ok(bt::hci::PcmDataFormat::k2sComplement);
+      return fpromise::ok(bt::hci_spec::PcmDataFormat::k2sComplement);
     case faudio::SampleFormat::PCM_UNSIGNED:
-      return fpromise::ok(bt::hci::PcmDataFormat::kUnsigned);
+      return fpromise::ok(bt::hci_spec::PcmDataFormat::kUnsigned);
     default:
       // Other sample formats are not supported by SCO.
       return fpromise::error();
   }
 }
 
-bt::hci::ScoDataPath FidlToScoDataPath(const fbredr::DataPath& path) {
+bt::hci_spec::ScoDataPath FidlToScoDataPath(const fbredr::DataPath& path) {
   switch (path) {
     case fbredr::DataPath::HOST:
-      return bt::hci::ScoDataPath::kHci;
+      return bt::hci_spec::ScoDataPath::kHci;
     case fbredr::DataPath::OFFLOAD: {
       // TODO(fxbug.dev/58458): Use path from stack configuration file instead of this hardcoded
       // value. "6" is the data path usually used in Broadcom controllers.
-      return static_cast<bt::hci::ScoDataPath>(6);
+      return static_cast<bt::hci_spec::ScoDataPath>(6);
     }
     case fbredr::DataPath::TEST:
-      return bt::hci::ScoDataPath::kAudioTestMode;
+      return bt::hci_spec::ScoDataPath::kAudioTestMode;
   }
 }
 
-fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
+fpromise::result<bt::hci_spec::SynchronousConnectionParameters> FidlToScoParameters(
     const fbredr::ScoConnectionParameters& params) {
-  bt::hci::SynchronousConnectionParameters out;
+  bt::hci_spec::SynchronousConnectionParameters out;
 
   if (!params.has_parameter_set()) {
     bt_log(WARN, "fidl", "SCO parameters missing parameter_set");
@@ -1324,7 +1325,7 @@ fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   out.output_coded_data_size_bits = out.input_coded_data_size_bits;
 
   if (params.has_io_pcm_data_format() &&
-      out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
+      out.input_coding_format.coding_format == bt::hci_spec::CodingFormat::kLinearPcm) {
     auto io_pcm_format = FidlToPcmDataFormat(params.io_pcm_data_format());
     if (io_pcm_format.is_error()) {
       bt_log(WARN, "fidl", "Unsupported IO PCM data format in SCO parameters");
@@ -1333,17 +1334,17 @@ fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
     out.input_pcm_data_format = io_pcm_format.value();
     out.output_pcm_data_format = out.input_pcm_data_format;
 
-  } else if (out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
+  } else if (out.input_coding_format.coding_format == bt::hci_spec::CodingFormat::kLinearPcm) {
     bt_log(WARN, "fidl",
            "SCO parameters missing io_pcm_data_format (required for linear PCM IO coding format)");
     return fpromise::error();
   } else {
-    out.input_pcm_data_format = bt::hci::PcmDataFormat::kNotApplicable;
+    out.input_pcm_data_format = bt::hci_spec::PcmDataFormat::kNotApplicable;
     out.output_pcm_data_format = out.input_pcm_data_format;
   }
 
   if (params.has_io_pcm_sample_payload_msb_position() &&
-      out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
+      out.input_coding_format.coding_format == bt::hci_spec::CodingFormat::kLinearPcm) {
     out.input_pcm_sample_payload_msb_position = params.io_pcm_sample_payload_msb_position();
     out.output_pcm_sample_payload_msb_position = out.input_pcm_sample_payload_msb_position;
   } else {
@@ -1372,12 +1373,13 @@ fpromise::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   return fpromise::ok(out);
 }
 
-fpromise::result<std::vector<bt::hci::SynchronousConnectionParameters>> FidlToScoParametersVector(
-    const std::vector<fbredr::ScoConnectionParameters>& params) {
-  std::vector<bt::hci::SynchronousConnectionParameters> out;
+fpromise::result<std::vector<bt::hci_spec::SynchronousConnectionParameters>>
+FidlToScoParametersVector(const std::vector<fbredr::ScoConnectionParameters>& params) {
+  std::vector<bt::hci_spec::SynchronousConnectionParameters> out;
   out.reserve(params.size());
   for (const fbredr::ScoConnectionParameters& param : params) {
-    fpromise::result<bt::hci::SynchronousConnectionParameters> result = FidlToScoParameters(param);
+    fpromise::result<bt::hci_spec::SynchronousConnectionParameters> result =
+        FidlToScoParameters(param);
     if (result.is_error()) {
       return fpromise::error();
     }

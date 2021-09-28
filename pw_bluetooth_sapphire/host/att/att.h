@@ -26,7 +26,7 @@ constexpr uint16_t kLEMinMTU = 23;
 // v5.0, Vol 3, Part G, 5.1.1
 constexpr uint16_t kBREDRMinMTU = 48;
 
-constexpr uint16_t kLEMaxMTU = hci::kMaxLEExtendedDataLength - sizeof(l2cap::BasicHeader);
+constexpr uint16_t kLEMaxMTU = hci_spec::kMaxLEExtendedDataLength - sizeof(l2cap::BasicHeader);
 
 // The maximum length of an attribute value (v5.0, Vol 3, Part F, 3.2.9).
 constexpr size_t kMaxAttributeValueLength = 512;

@@ -22,16 +22,17 @@ namespace bt::sm::util {
 namespace {
 
 TEST(UtilTest, ConvertSmIoCapabilityToHci) {
-  EXPECT_EQ(hci::IOCapability::kDisplayOnly, IOCapabilityForHci(IOCapability::kDisplayOnly));
-  EXPECT_EQ(hci::IOCapability::kDisplayYesNo, IOCapabilityForHci(IOCapability::kDisplayYesNo));
-  EXPECT_EQ(hci::IOCapability::kKeyboardOnly, IOCapabilityForHci(IOCapability::kKeyboardOnly));
-  EXPECT_EQ(hci::IOCapability::kNoInputNoOutput,
+  EXPECT_EQ(hci_spec::IOCapability::kDisplayOnly, IOCapabilityForHci(IOCapability::kDisplayOnly));
+  EXPECT_EQ(hci_spec::IOCapability::kDisplayYesNo, IOCapabilityForHci(IOCapability::kDisplayYesNo));
+  EXPECT_EQ(hci_spec::IOCapability::kKeyboardOnly, IOCapabilityForHci(IOCapability::kKeyboardOnly));
+  EXPECT_EQ(hci_spec::IOCapability::kNoInputNoOutput,
             IOCapabilityForHci(IOCapability::kNoInputNoOutput));
-  EXPECT_EQ(hci::IOCapability::kDisplayYesNo, IOCapabilityForHci(IOCapability::kKeyboardDisplay));
+  EXPECT_EQ(hci_spec::IOCapability::kDisplayYesNo,
+            IOCapabilityForHci(IOCapability::kKeyboardDisplay));
 
   // Test remaining invalid values for sm::IOCapability.
   for (int i = 0x05; i < 0xff; i++) {
-    EXPECT_EQ(hci::IOCapability::kNoInputNoOutput,
+    EXPECT_EQ(hci_spec::IOCapability::kNoInputNoOutput,
               IOCapabilityForHci(static_cast<IOCapability>(i)));
   }
 }

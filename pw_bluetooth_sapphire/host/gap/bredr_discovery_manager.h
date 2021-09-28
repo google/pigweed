@@ -104,7 +104,7 @@ class BrEdrDiscoverableSession final {
 class BrEdrDiscoveryManager final {
  public:
   // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
-  BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci, hci::InquiryMode mode,
+  BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci, hci_spec::InquiryMode mode,
                         PeerCache* peer_cache);
 
   ~BrEdrDiscoveryManager();
@@ -227,9 +227,9 @@ class BrEdrDiscoveryManager final {
   hci::CommandChannel::EventHandlerId eir_handler_id_;
 
   // The inquiry mode that we should use.
-  hci::InquiryMode desired_inquiry_mode_;
+  hci_spec::InquiryMode desired_inquiry_mode_;
   // The current inquiry mode.
-  hci::InquiryMode current_inquiry_mode_;
+  hci_spec::InquiryMode current_inquiry_mode_;
 
   fit::thread_checker thread_checker_;
 

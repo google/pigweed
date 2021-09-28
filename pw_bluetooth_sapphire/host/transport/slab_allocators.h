@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
 
 // This file defines a fbl::SlabAllocator trait template that can be used to
-// slab-allocate instances of hci::Packet. It's signature is as follows:
+// slab-allocate instances of hci_spec::Packet. It's signature is as follows:
 //
 //   template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
 //   using PacketTraits = ...;
@@ -30,7 +30,7 @@
 //   #include "slab_allocators.h"
 //   ...
 //
-//   using MyPacket = hci::Packet<MyHeader>;
+//   using MyPacket = hci_spec::Packet<MyHeader>;
 //   using MyPacketTraits =
 //       hci::slab_allocators::PacketTraits<MyHeader, 256, 128>;
 //   ...
@@ -62,26 +62,31 @@ constexpr size_t kMaxACLSlabSize = 65536;      // 64K
 constexpr size_t kMaxNumSlabs = 100;
 
 // The largest possible control packet size.
-constexpr size_t kLargeControlPayloadSize = kMaxCommandPacketPayloadSize;
-constexpr size_t kLargeControlPacketSize = sizeof(CommandHeader) + kLargeControlPayloadSize;
+constexpr size_t kLargeControlPayloadSize = hci_spec::kMaxCommandPacketPayloadSize;
+constexpr size_t kLargeControlPacketSize =
+    sizeof(hci_spec::CommandHeader) + kLargeControlPayloadSize;
 constexpr size_t kNumLargeControlPackets = kMaxControlSlabSize / kLargeControlPacketSize;
 
 // The average HCI control packet payload size. Most packets are under 16 bytes.
 constexpr size_t kSmallControlPayloadSize = 16;
-constexpr size_t kSmallControlPacketSize = sizeof(CommandHeader) + kSmallControlPayloadSize;
+constexpr size_t kSmallControlPacketSize =
+    sizeof(hci_spec::CommandHeader) + kSmallControlPayloadSize;
 constexpr size_t kNumSmallControlPackets = kMaxControlSlabSize / kSmallControlPacketSize;
 
 // Large, medium, and small buffer sizes for ACL data packets.
-constexpr size_t kLargeACLDataPayloadSize = kMaxACLPayloadSize;
-constexpr size_t kLargeACLDataPacketSize = sizeof(ACLDataHeader) + kLargeACLDataPayloadSize;
+constexpr size_t kLargeACLDataPayloadSize = hci_spec::kMaxACLPayloadSize;
+constexpr size_t kLargeACLDataPacketSize =
+    sizeof(hci_spec::ACLDataHeader) + kLargeACLDataPayloadSize;
 constexpr size_t kNumLargeACLDataPackets = kMaxACLSlabSize / kLargeACLDataPacketSize;
 
 constexpr size_t kMediumACLDataPayloadSize = 256;
-constexpr size_t kMediumACLDataPacketSize = sizeof(ACLDataHeader) + kMediumACLDataPayloadSize;
+constexpr size_t kMediumACLDataPacketSize =
+    sizeof(hci_spec::ACLDataHeader) + kMediumACLDataPayloadSize;
 constexpr size_t kNumMediumACLDataPackets = kMaxACLSlabSize / kMediumACLDataPacketSize;
 
 constexpr size_t kSmallACLDataPayloadSize = 64;
-constexpr size_t kSmallACLDataPacketSize = sizeof(ACLDataHeader) + kSmallACLDataPayloadSize;
+constexpr size_t kSmallACLDataPacketSize =
+    sizeof(hci_spec::ACLDataHeader) + kSmallACLDataPayloadSize;
 constexpr size_t kNumSmallACLDataPackets = kMaxACLSlabSize / kSmallACLDataPacketSize;
 
 namespace internal {

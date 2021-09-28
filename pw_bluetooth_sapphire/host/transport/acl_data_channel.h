@@ -158,7 +158,7 @@ class AclDataChannel {
   // Failure to register a link before sending packets will result in the packets
   // being dropped immediately. A handle must not be registered again until after UnregisterLink
   // has been called on that handle.
-  virtual void RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) = 0;
+  virtual void RegisterLink(hci_spec::ConnectionHandle handle, bt::LinkType ll_type) = 0;
 
   // Cleans up all outgoing data buffering state related to the logical link
   // with the given |handle|. This must be called upon disconnection of a link
@@ -170,7 +170,7 @@ class AclDataChannel {
   // |UnregisterLink| does not clear the controller packet count, so |ClearControllerPacketCount|
   // must be called after |UnregisterLink| and the HCI Disconnection Complete event has been
   // received.
-  virtual void UnregisterLink(hci::ConnectionHandle handle) = 0;
+  virtual void UnregisterLink(hci_spec::ConnectionHandle handle) = 0;
 
   // Removes all queued data packets for which |predicate| returns true.
   virtual void DropQueuedPackets(AclPacketPredicate predicate) = 0;
@@ -179,7 +179,7 @@ class AclDataChannel {
   // This must be called on the HCI_Disconnection_Complete event to notify ACLDataChannel that
   // packets in the controller's buffer for |handle| have been flushed. See Core Spec v5.1, Vol 2,
   // Part E, Section 4.3. This must be called after |UnregisterLink|.
-  virtual void ClearControllerPacketCount(hci::ConnectionHandle handle) = 0;
+  virtual void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) = 0;
 
   // Returns the BR/EDR buffer information that the channel was initialized
   // with.
@@ -199,19 +199,19 @@ class AclDataChannel {
 
   // Attempts to set the ACL |priority| of the connection indicated by |handle|. |callback| will be
   // called with the result of the request.
-  virtual void RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
+  virtual void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
                                   fit::callback<void(fpromise::result<>)> callback) = 0;
 
   // Sets an automatic flush timeout with duration |flush_timeout| for the connection indicated by
   // |handle|. |callback| will be called with the result of the operation.
   // |handle| must correspond to a BR/EDR connection.
-  // |flush_timeout| must be in the range [1ms - kMaxAutomaticFlushTimeoutDuration]. A flush timeout
-  // of zx::duration::infinite() indicates an infinite flush timeout (no automatic flush), the
-  // default. If an invalid value of |flush_timeout| is specified, an error will be returned to
-  // |callback|.
+  // |flush_timeout| must be in the range [1ms - hci_spec::kMaxAutomaticFlushTimeoutDuration]. A
+  // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic
+  // flush), the default. If an invalid value of |flush_timeout| is specified, an error will be
+  // returned to |callback|.
   virtual void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout, hci::ConnectionHandle handle,
-      fit::callback<void(fpromise::result<void, StatusCode>)> callback) = 0;
+      zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
+      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) = 0;
 };
 
 }  // namespace bt::hci

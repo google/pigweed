@@ -127,7 +127,7 @@ class SecurityProperties final {
   // but does not store the fact that they originate from a controller in pairing debug mode, a
   // potential hazard. Care should be taken at the controller interface to enforce particular
   // policies regarding debug keys.
-  explicit SecurityProperties(hci::LinkKeyType lk_type);
+  explicit SecurityProperties(hci_spec::LinkKeyType lk_type);
 
   SecurityLevel level() const;
   size_t enc_key_size() const { return enc_key_size_; }
@@ -142,7 +142,7 @@ class SecurityProperties final {
   // Spec v5.0 Vol 2, Part E Section 7.6.4), produced when a controller is in debug mode, so
   // SecurityProperties constructed from LinkKeyType::kDebugCombination returns
   // LinkKeyType::kUnauthenticatedCombination192 from this method.
-  std::optional<hci::LinkKeyType> GetLinkKeyType() const;
+  std::optional<hci_spec::LinkKeyType> GetLinkKeyType() const;
 
   // Returns a string representation of these properties.
   std::string ToString() const;
@@ -175,10 +175,10 @@ class SecurityProperties final {
 class LTK final {
  public:
   LTK() = default;
-  LTK(const SecurityProperties& security, const hci::LinkKey& key);
+  LTK(const SecurityProperties& security, const hci_spec::LinkKey& key);
 
   const SecurityProperties& security() const { return security_; }
-  const hci::LinkKey& key() const { return key_; }
+  const hci_spec::LinkKey& key() const { return key_; }
 
   bool operator==(const LTK& other) const {
     return security() == other.security() && key() == other.key();
@@ -188,7 +188,7 @@ class LTK final {
 
  private:
   SecurityProperties security_;
-  hci::LinkKey key_;
+  hci_spec::LinkKey key_;
 };
 
 // Represents a 128-bit key.

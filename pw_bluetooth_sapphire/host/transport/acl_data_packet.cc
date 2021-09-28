@@ -15,11 +15,11 @@ namespace slab_allocators {
 
 // Slab-allocator traits for ACL data packets.
 using LargeACLTraits =
-    PacketTraits<ACLDataHeader, kLargeACLDataPacketSize, kNumLargeACLDataPackets>;
+    PacketTraits<hci_spec::ACLDataHeader, kLargeACLDataPacketSize, kNumLargeACLDataPackets>;
 using MediumACLTraits =
-    PacketTraits<ACLDataHeader, kMediumACLDataPacketSize, kNumMediumACLDataPackets>;
+    PacketTraits<hci_spec::ACLDataHeader, kMediumACLDataPacketSize, kNumMediumACLDataPackets>;
 using SmallACLTraits =
-    PacketTraits<ACLDataHeader, kSmallACLDataPacketSize, kNumSmallACLDataPackets>;
+    PacketTraits<hci_spec::ACLDataHeader, kSmallACLDataPacketSize, kNumSmallACLDataPackets>;
 
 using LargeACLAllocator = fbl::SlabAllocator<LargeACLTraits>;
 using MediumACLAllocator = fbl::SlabAllocator<MediumACLTraits>;
@@ -32,7 +32,7 @@ namespace {
 // Type containing both a fixed packet storage buffer and a ACLDataPacket interface to the buffer.
 // Does not deallocate from a slab buffer when destroyed (unlike SlabPacket).
 using LargeACLDataPacket =
-    slab_allocators::internal::FixedSizePacket<ACLDataHeader,
+    slab_allocators::internal::FixedSizePacket<hci_spec::ACLDataHeader,
                                                slab_allocators::kLargeACLDataPacketSize>;
 
 ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
@@ -77,9 +77,10 @@ ACLDataPacketPtr ACLDataPacket::New(uint16_t payload_size) {
 }
 
 // static
-ACLDataPacketPtr ACLDataPacket::New(ConnectionHandle connection_handle,
-                                    ACLPacketBoundaryFlag packet_boundary_flag,
-                                    ACLBroadcastFlag broadcast_flag, uint16_t payload_size) {
+ACLDataPacketPtr ACLDataPacket::New(hci_spec::ConnectionHandle connection_handle,
+                                    hci_spec::ACLPacketBoundaryFlag packet_boundary_flag,
+                                    hci_spec::ACLBroadcastFlag broadcast_flag,
+                                    uint16_t payload_size) {
   auto packet = NewACLDataPacket(payload_size);
   if (!packet)
     return nullptr;
@@ -88,31 +89,31 @@ ACLDataPacketPtr ACLDataPacket::New(ConnectionHandle connection_handle,
   return packet;
 }
 
-ConnectionHandle ACLDataPacket::connection_handle() const {
+hci_spec::ConnectionHandle ACLDataPacket::connection_handle() const {
   // Return the lower 12-bits of the first two octets.
   return le16toh(ACLDataPacket::view().header().handle_and_flags) & 0x0FFF;
 }
 
-ACLPacketBoundaryFlag ACLDataPacket::packet_boundary_flag() const {
+hci_spec::ACLPacketBoundaryFlag ACLDataPacket::packet_boundary_flag() const {
   // Return bits 4-5 in the higher octet of |handle_and_flags| or
   // "0b00xx000000000000".
-  return static_cast<ACLPacketBoundaryFlag>(
+  return static_cast<hci_spec::ACLPacketBoundaryFlag>(
       (le16toh(ACLDataPacket::view().header().handle_and_flags) >> 12) & 0x0003);
 }
 
-ACLBroadcastFlag ACLDataPacket::broadcast_flag() const {
+hci_spec::ACLBroadcastFlag ACLDataPacket::broadcast_flag() const {
   // Return bits 6-7 in the higher octet of |handle_and_flags| or
   // "0bxx00000000000000".
-  return static_cast<ACLBroadcastFlag>(le16toh(view().header().handle_and_flags) >> 14);
+  return static_cast<hci_spec::ACLBroadcastFlag>(le16toh(view().header().handle_and_flags) >> 14);
 }
 
 void ACLDataPacket::InitializeFromBuffer() {
   mutable_view()->Resize(le16toh(view().header().data_total_length));
 }
 
-void ACLDataPacket::WriteHeader(ConnectionHandle connection_handle,
-                                ACLPacketBoundaryFlag packet_boundary_flag,
-                                ACLBroadcastFlag broadcast_flag) {
+void ACLDataPacket::WriteHeader(hci_spec::ConnectionHandle connection_handle,
+                                hci_spec::ACLPacketBoundaryFlag packet_boundary_flag,
+                                hci_spec::ACLBroadcastFlag broadcast_flag) {
   // Must fit inside 12-bits.
   ZX_DEBUG_ASSERT(connection_handle <= 0x0FFF);
 

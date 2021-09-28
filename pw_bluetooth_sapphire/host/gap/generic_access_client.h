@@ -23,7 +23,7 @@ class GenericAccessClient {
 
   // Discover and read the peripheral preferred connections characteristic, if present.
   using ConnectionParametersCallback =
-      fit::callback<void(fpromise::result<hci::LEPreferredConnectionParameters, att::Status>)>;
+      fit::callback<void(fpromise::result<hci_spec::LEPreferredConnectionParameters, att::Status>)>;
   void ReadPeripheralPreferredConnectionParameters(ConnectionParametersCallback callback);
 
  private:

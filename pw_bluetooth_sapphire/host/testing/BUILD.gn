@@ -21,6 +21,7 @@ source_set("testing") {
     ":fake_controller",
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/transport",
   ]
 }
 

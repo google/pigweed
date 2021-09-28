@@ -45,7 +45,7 @@ namespace {
 const bt::UInt128 kTestKeyValue{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
                                                true);
-const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci::LinkKey(kTestKeyValue, 0, 0));
+const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci_spec::LinkKey(kTestKeyValue, 0, 0));
 const bt::sm::Key kTestKey(kTestSecurity, kTestKeyValue);
 
 // Constants as FIDL types
@@ -586,8 +586,8 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   peer->MutLe().SetAdvertisingData(kRssi, kAdv, zx::time());
-  peer->MutBrEdr().SetInquiryData(bt::hci::InquiryResult{
-      bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci::PageScanRepetitionMode::kR0, 0, 0,
+  peer->MutBrEdr().SetInquiryData(bt::hci_spec::InquiryResult{
+      bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci_spec::PageScanRepetitionMode::kR0, 0, 0,
       bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
   for (auto& service : kBrEdrServices) {
     peer->MutBrEdr().AddService(service);
@@ -905,7 +905,7 @@ TEST(HelpersTest, BredrKeyFromFidlEmpty) { EXPECT_FALSE(BredrKeyFromFidl(fsys::B
 TEST(HelpersTest, BredrKeyFromFidl) {
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
                                                  true);
-  const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci::LinkKey(kTestKeyValue, 0, 0));
+  const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci_spec::LinkKey(kTestKeyValue, 0, 0));
 
   fsys::BredrBondData bredr;
   bredr.set_link_key(kTestKeyFidl);
@@ -1075,15 +1075,15 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   params.set_path(fbredr::DataPath::OFFLOAD);
   ASSERT_TRUE(FidlToScoParameters(params).is_ok());
 
-  bt::hci::SynchronousConnectionParameters out = FidlToScoParameters(params).take_value();
+  bt::hci_spec::SynchronousConnectionParameters out = FidlToScoParameters(params).take_value();
   EXPECT_EQ(out.transmit_bandwidth, 8000u);
   EXPECT_EQ(out.receive_bandwidth, 8000u);
 
-  EXPECT_EQ(out.transmit_coding_format.coding_format, bt::hci::CodingFormat::kMSbc);
+  EXPECT_EQ(out.transmit_coding_format.coding_format, bt::hci_spec::CodingFormat::kMSbc);
   EXPECT_EQ(out.transmit_coding_format.company_id, 0u);
   EXPECT_EQ(out.transmit_coding_format.vendor_codec_id, 0u);
 
-  EXPECT_EQ(out.receive_coding_format.coding_format, bt::hci::CodingFormat::kMSbc);
+  EXPECT_EQ(out.receive_coding_format.coding_format, bt::hci_spec::CodingFormat::kMSbc);
   EXPECT_EQ(out.receive_coding_format.company_id, 0u);
   EXPECT_EQ(out.receive_coding_format.vendor_codec_id, 0u);
 
@@ -1093,25 +1093,25 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(out.input_bandwidth, 32000u);
   EXPECT_EQ(out.output_bandwidth, 32000u);
 
-  EXPECT_EQ(out.input_coding_format.coding_format, bt::hci::CodingFormat::kLinearPcm);
+  EXPECT_EQ(out.input_coding_format.coding_format, bt::hci_spec::CodingFormat::kLinearPcm);
   EXPECT_EQ(out.input_coding_format.company_id, 0u);
   EXPECT_EQ(out.input_coding_format.vendor_codec_id, 0u);
 
-  EXPECT_EQ(out.output_coding_format.coding_format, bt::hci::CodingFormat::kLinearPcm);
+  EXPECT_EQ(out.output_coding_format.coding_format, bt::hci_spec::CodingFormat::kLinearPcm);
   EXPECT_EQ(out.output_coding_format.company_id, 0u);
   EXPECT_EQ(out.output_coding_format.vendor_codec_id, 0u);
 
   EXPECT_EQ(out.input_coded_data_size_bits, 16u);
   EXPECT_EQ(out.output_coded_data_size_bits, 16u);
 
-  EXPECT_EQ(out.input_pcm_data_format, bt::hci::PcmDataFormat::k2sComplement);
-  EXPECT_EQ(out.output_pcm_data_format, bt::hci::PcmDataFormat::k2sComplement);
+  EXPECT_EQ(out.input_pcm_data_format, bt::hci_spec::PcmDataFormat::k2sComplement);
+  EXPECT_EQ(out.output_pcm_data_format, bt::hci_spec::PcmDataFormat::k2sComplement);
 
   EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 3u);
   EXPECT_EQ(out.output_pcm_sample_payload_msb_position, 3u);
 
-  EXPECT_EQ(out.input_data_path, static_cast<bt::hci::ScoDataPath>(6));
-  EXPECT_EQ(out.output_data_path, static_cast<bt::hci::ScoDataPath>(6));
+  EXPECT_EQ(out.input_data_path, static_cast<bt::hci_spec::ScoDataPath>(6));
+  EXPECT_EQ(out.output_data_path, static_cast<bt::hci_spec::ScoDataPath>(6));
 
   EXPECT_EQ(out.input_transport_unit_size_bits, 0u);
   EXPECT_EQ(out.output_transport_unit_size_bits, 0u);
@@ -1132,7 +1132,7 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   params.set_io_coding_format(fbredr::CodingFormat::TRANSPARENT);
   ASSERT_TRUE(FidlToScoParameters(params).is_ok());
   out = FidlToScoParameters(params).value();
-  EXPECT_EQ(out.input_pcm_data_format, bt::hci::PcmDataFormat::kNotApplicable);
+  EXPECT_EQ(out.input_pcm_data_format, bt::hci_spec::PcmDataFormat::kNotApplicable);
   EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 0u);
 }
 

@@ -14,12 +14,12 @@
 namespace bt::hci::slab_allocators {
 namespace {
 
-constexpr OpCode kTestOpCode = 0xFFFF;
+constexpr hci_spec::OpCode kTestOpCode = 0xFFFF;
 
 TEST(SlabAllocatorsTest, CommandPacket) {
   auto packet = CommandPacket::New(kTestOpCode, 5);
   EXPECT_TRUE(packet);
-  EXPECT_EQ(5u + sizeof(CommandHeader), packet->view().size());
+  EXPECT_EQ(5u + sizeof(hci_spec::CommandHeader), packet->view().size());
 
   packet = CommandPacket::New(kTestOpCode, kSmallControlPayloadSize);
   EXPECT_TRUE(packet);
@@ -32,7 +32,7 @@ TEST(SlabAllocatorsTest, CommandPacket) {
 
 TEST(SlabAllocatorsTest, CommandPacketFallBack) {
   size_t num_packets = 0;
-  LinkedList<Packet<CommandHeader>> packets;
+  LinkedList<Packet<hci_spec::CommandHeader>> packets;
 
   // Allocate a lot of small packets. We should be able to allocate two
   // allocators' worth of packets until we fail.
@@ -48,7 +48,7 @@ TEST(SlabAllocatorsTest, CommandPacketFallBack) {
 TEST(SlabAllocatorsTest, ACLDataPacket) {
   auto packet = ACLDataPacket::New(5);
   EXPECT_TRUE(packet);
-  EXPECT_EQ(packet->view().size(), 5u + sizeof(ACLDataHeader));
+  EXPECT_EQ(packet->view().size(), 5u + sizeof(hci_spec::ACLDataHeader));
 
   packet = ACLDataPacket::New(kSmallACLDataPayloadSize);
   EXPECT_TRUE(packet);
@@ -68,7 +68,7 @@ TEST(SlabAllocatorsTest, ACLDataPacketFallBack) {
                                  kMaxNumSlabs * kNumMediumACLDataPackets +
                                  kMaxNumSlabs * kNumLargeACLDataPackets;
   const size_t kPayloadSize = 5;
-  LinkedList<Packet<ACLDataHeader>> packets;
+  LinkedList<Packet<hci_spec::ACLDataHeader>> packets;
 
   for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
     auto packet = ACLDataPacket::New(kPayloadSize);
@@ -81,7 +81,7 @@ TEST(SlabAllocatorsTest, ACLDataPacketFallBack) {
   ASSERT_TRUE(packet);
 
   // Fallback-allocated packet should still function as expected.
-  EXPECT_EQ(sizeof(ACLDataHeader) + kPayloadSize, packet->view().size());
+  EXPECT_EQ(sizeof(hci_spec::ACLDataHeader) + kPayloadSize, packet->view().size());
 
   // Write over the whole allocation (errors to be caught by sanitizer instrumentation).
   packet->mutable_view()->mutable_data().Fill('m');
@@ -91,7 +91,7 @@ TEST(SlabAllocatorsTest, LargeACLDataPacketFallback) {
   // Maximum number of packets we can expect to obtain from the large slab allocator.
   const size_t kMaxSlabPackets = kMaxNumSlabs * kNumLargeACLDataPackets;
   const size_t kPayloadSize = kLargeACLDataPayloadSize;
-  LinkedList<Packet<ACLDataHeader>> packets;
+  LinkedList<Packet<hci_spec::ACLDataHeader>> packets;
 
   for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
     auto packet = ACLDataPacket::New(kPayloadSize);
@@ -104,7 +104,7 @@ TEST(SlabAllocatorsTest, LargeACLDataPacketFallback) {
   ASSERT_TRUE(packet);
 
   // Fallback-allocated packet should still function as expected.
-  EXPECT_EQ(sizeof(ACLDataHeader) + kPayloadSize, packet->view().size());
+  EXPECT_EQ(sizeof(hci_spec::ACLDataHeader) + kPayloadSize, packet->view().size());
 
   // Write over the whole allocation (errors to be caught by sanitizer instrumentation).
   packet->mutable_view()->mutable_data().Fill('m');

@@ -27,7 +27,7 @@ namespace fgatt = fuchsia::bluetooth::gatt;
 
 const bt::DeviceAddress kTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const size_t kLEMaxNumPackets = 10;
-const bt::hci::DataBufferInfo kLEDataBufferInfo(bt::hci::kMaxACLPayloadSize, kLEMaxNumPackets);
+const bt::hci::DataBufferInfo kLEDataBufferInfo(bt::hci_spec::kMaxACLPayloadSize, kLEMaxNumPackets);
 
 fble::ScanOptions ScanOptionsWithEmptyFilter() {
   fble::ScanOptions options;
@@ -238,8 +238,8 @@ TEST_F(LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
     status = std::move(cb_status);
   };
 
-  test_device()->SetDefaultCommandStatus(bt::hci::kReadRemoteVersionInfo,
-                                         bt::hci::StatusCode::kConnectionLimitExceeded);
+  test_device()->SetDefaultCommandStatus(bt::hci_spec::kReadRemoteVersionInfo,
+                                         bt::hci_spec::StatusCode::kConnectionLimitExceeded);
 
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());
   central_proxy()->ConnectPeripheral(peer->identifier().ToString(), std::move(options),
@@ -821,7 +821,7 @@ TEST_F(LowEnergyCentralServerTest, DiscoveryStartJustAfterScanCanceledShouldBeIg
   // Pause discovery so that we can cancel scanning before resuming discovery.
   fit::closure start_discovery;
   test_device()->pause_responses_for_opcode(
-      bt::hci::kLESetScanEnable,
+      bt::hci_spec::kLESetScanEnable,
       [&](auto resume_set_scan_enable) { start_discovery = std::move(resume_set_scan_enable); });
 
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
@@ -845,8 +845,8 @@ TEST_F(LowEnergyCentralServerTest, DiscoveryStartJustAfterScanCanceledShouldBeIg
 }
 
 TEST_F(LowEnergyCentralServerTest, ScanFailsToStart) {
-  test_device()->SetDefaultResponseStatus(bt::hci::kLESetScanEnable,
-                                          bt::hci::StatusCode::kControllerBusy);
+  test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetScanEnable,
+                                          bt::hci_spec::StatusCode::kControllerBusy);
 
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
   auto result_watcher_server = result_watcher_handle.NewRequest();
@@ -874,8 +874,8 @@ TEST_F(LowEnergyCentralServerTest, ScanSessionErrorCancelsScan) {
     // Then disable restarting scanning, so that an error is sent to sessions.
     if (scan_states.size() == 2u) {
       EXPECT_FALSE(enabled);
-      test_device()->SetDefaultResponseStatus(bt::hci::kLESetScanEnable,
-                                              bt::hci::StatusCode::kCommandDisallowed);
+      test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetScanEnable,
+                                              bt::hci_spec::StatusCode::kCommandDisallowed);
     }
   });
 

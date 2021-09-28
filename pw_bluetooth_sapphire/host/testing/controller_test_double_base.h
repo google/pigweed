@@ -65,7 +65,8 @@ class ControllerTestDoubleBase {
   const zx::channel& snoop_channel() const { return snoop_channel_; }
 
   // Called when there is an incoming command packet.
-  virtual void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) = 0;
+  virtual void OnCommandPacketReceived(
+      const PacketView<hci_spec::CommandHeader>& command_packet) = 0;
 
   // Called when there is an outgoing ACL data packet.
   virtual void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) = 0;

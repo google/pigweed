@@ -7,9 +7,7 @@
 #include <endian.h>
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
-namespace bt::hci {
+namespace bt::hci_spec {
 
 std::string HCIVersionToString(HCIVersion version) {
   switch (version) {
@@ -40,7 +38,7 @@ std::string HCIVersionToString(HCIVersion version) {
 }
 
 // clang-format off
-std::string StatusCodeToString(StatusCode code) {
+std::string StatusCodeToString(hci_spec::StatusCode code) {
   switch (code) {
     case kSuccess: return "success";
     case kUnknownCommand: return "unknown command";
@@ -114,7 +112,7 @@ std::string StatusCodeToString(StatusCode code) {
 }
 // clang-format on
 
-std::string LinkTypeToString(hci::LinkType link_type) {
+std::string LinkTypeToString(hci_spec::LinkType link_type) {
   switch (link_type) {
     case LinkType::kSCO:
       return "SCO";
@@ -125,93 +123,6 @@ std::string LinkTypeToString(hci::LinkType link_type) {
     default:
       return "<Unknown LinkType>";
   };
-}
-
-bool DeviceAddressFromAdvReport(const LEAdvertisingReportData& report, DeviceAddress* out_address,
-                                bool* out_resolved) {
-  ZX_DEBUG_ASSERT(out_address);
-  ZX_DEBUG_ASSERT(out_resolved);
-
-  DeviceAddress::Type type;
-  switch (report.address_type) {
-    case LEAddressType::kPublicIdentity:
-      type = DeviceAddress::Type::kLEPublic;
-      *out_resolved = true;
-      break;
-    case LEAddressType::kPublic:
-      type = DeviceAddress::Type::kLEPublic;
-      *out_resolved = false;
-      break;
-    case LEAddressType::kRandomIdentity:
-      type = DeviceAddress::Type::kLERandom;
-      *out_resolved = true;
-      break;
-    case LEAddressType::kRandom:
-      type = DeviceAddress::Type::kLERandom;
-      *out_resolved = false;
-      break;
-    default:
-      bt_log(WARN, "hci", "invalid address type in advertising report: %#.2x",
-             static_cast<uint8_t>(report.address_type));
-      return false;
-  }
-
-  *out_address = DeviceAddress(type, report.address);
-  return true;
-}
-
-DeviceAddress::Type AddressTypeFromHCI(LEAddressType type) {
-  DeviceAddress::Type result;
-  switch (type) {
-    case LEAddressType::kPublic:
-    case LEAddressType::kPublicIdentity:
-      result = DeviceAddress::Type::kLEPublic;
-      break;
-    case LEAddressType::kRandom:
-    case LEAddressType::kRandomIdentity:
-    case LEAddressType::kRandomUnresolved:
-      result = DeviceAddress::Type::kLERandom;
-      break;
-    case LEAddressType::kAnonymous:
-      result = DeviceAddress::Type::kLEAnonymous;
-      break;
-  }
-  return result;
-}
-
-DeviceAddress::Type AddressTypeFromHCI(LEPeerAddressType type) {
-  DeviceAddress::Type result;
-  switch (type) {
-    case LEPeerAddressType::kPublic:
-      result = DeviceAddress::Type::kLEPublic;
-      break;
-    case LEPeerAddressType::kRandom:
-      result = DeviceAddress::Type::kLERandom;
-      break;
-    case LEPeerAddressType::kAnonymous:
-      result = DeviceAddress::Type::kLEAnonymous;
-      break;
-  }
-  return result;
-}
-
-LEAddressType AddressTypeToHCI(DeviceAddress::Type type) {
-  LEAddressType result = LEAddressType::kPublic;
-  switch (type) {
-    case DeviceAddress::Type::kLEPublic:
-      result = LEAddressType::kPublic;
-      break;
-    case DeviceAddress::Type::kLERandom:
-      result = LEAddressType::kRandom;
-      break;
-    case DeviceAddress::Type::kLEAnonymous:
-      result = LEAddressType::kAnonymous;
-      break;
-    default:
-      ZX_PANIC("invalid address type: %u", static_cast<unsigned int>(type));
-      break;
-  }
-  return result;
 }
 
 // TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
@@ -279,4 +190,4 @@ std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(LEAdvertisingType
   return adv_event_properties;
 }
 
-}  // namespace bt::hci
+}  // namespace bt::hci_spec

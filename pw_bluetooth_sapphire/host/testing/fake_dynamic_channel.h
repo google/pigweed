@@ -46,7 +46,7 @@ class FakeDynamicChannel {
   // Create a FakeDynamicChannel with Connection Handle |conn|, Protocol
   // Service Multiplexer (PSM) |psm| locally registered Channel ID |local_cid|,
   // and remote Channel ID |remote_cid|. Set to closed upon creation.
-  FakeDynamicChannel(hci::ConnectionHandle conn, l2cap::PSM psm, l2cap::ChannelId local_cid,
+  FakeDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::PSM psm, l2cap::ChannelId local_cid,
                      l2cap::ChannelId remote_cid);
 
   // Call the ChannelDeletedCallback instance associated with the server upon
@@ -71,7 +71,7 @@ class FakeDynamicChannel {
     channel_deleted_callback_ = std::move(channel_deleted_callback);
   }
 
-  hci::ConnectionHandle handle() const { return handle_; }
+  hci_spec::ConnectionHandle handle() const { return handle_; }
   bool opened() const { return opened_; }
   bool configuration_request_received() const { return configuration_request_received_; }
   bool configuration_response_received() const { return configuration_response_received_; }
@@ -87,7 +87,7 @@ class FakeDynamicChannel {
 
  private:
   // ConnectionHandle associated with what
-  hci::ConnectionHandle handle_;
+  hci_spec::ConnectionHandle handle_;
 
   // If the device is connected  and so is ready to communicate over the channel.
   bool opened_;

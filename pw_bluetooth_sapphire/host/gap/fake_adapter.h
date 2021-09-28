@@ -128,7 +128,7 @@ class FakeAdapter final : public Adapter {
                           BrEdrSecurityRequirements security_requirements,
                           l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override;
 
-    PeerId GetPeerId(hci::ConnectionHandle handle) const override { return PeerId(); }
+    PeerId GetPeerId(hci_spec::ConnectionHandle handle) const override { return PeerId(); }
 
     SearchId AddServiceSearch(const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
                               SearchCallback callback) override {
@@ -153,13 +153,13 @@ class FakeAdapter final : public Adapter {
     bool UnregisterService(RegistrationHandle handle) override { return false; }
 
     std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+        PeerId peer_id, hci_spec::SynchronousConnectionParameters parameters,
         sco::ScoConnectionManager::OpenConnectionCallback callback) override {
       return std::nullopt;
     }
 
     std::optional<ScoRequestHandle> AcceptScoConnection(
-        PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+        PeerId peer_id, std::vector<hci_spec::SynchronousConnectionParameters> parameters,
         sco::ScoConnectionManager::AcceptConnectionCallback callback) override {
       return std::nullopt;
     }

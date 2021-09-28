@@ -216,8 +216,8 @@ void LowEnergyPeripheralServer::Advertise(
   }
 
   // TODO(fxbug.dev/76557): As a temporary hack until multiple advertisements is supported, don't
-  // allow more than one advertisement. The current behavior of hci::LegacyLowEnergyAdvertiser is to
-  // replace the current advertisement, which is not the intended behavior of `Advertise`.
+  // allow more than one advertisement. The current behavior of hci::LegacyLowEnergyAdvertiser
+  // is to replace the current advertisement, which is not the intended behavior of `Advertise`.
   // NOTE: This is insufficient  when there are multiple Peripheral clients advertising, but that is
   // the status quo with `StartAdvertising` anyway (the last advertiser wins).
   if (!advertisements_.empty()) {

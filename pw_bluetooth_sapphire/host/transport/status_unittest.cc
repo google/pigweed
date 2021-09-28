@@ -10,16 +10,16 @@ namespace bt::hci {
 namespace {
 
 TEST(StatusTest, ProtocolSuccess) {
-  Status status(StatusCode::kSuccess);
+  Status status(hci_spec::StatusCode::kSuccess);
   EXPECT_TRUE(status);
   EXPECT_FALSE(status.is_protocol_error());
 }
 
 TEST(StatusTest, ProtocolError) {
-  Status status(StatusCode::kHardwareFailure);
+  Status status(hci_spec::StatusCode::kHardwareFailure);
   EXPECT_FALSE(status);
   EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
 }
 
 }  // namespace

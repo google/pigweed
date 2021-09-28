@@ -18,15 +18,15 @@
 
 namespace bt::gap {
 
-constexpr hci::ConnectionHandle kConnectionHandle = 0x0BAA;
+constexpr hci_spec::ConnectionHandle kConnectionHandle = 0x0BAA;
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kLERandom, {1});
 
 using bt::testing::CommandTransaction;
 
 const auto kReadRemoteVersionInfoRsp =
-    testing::CommandStatusPacket(hci::kReadRemoteVersionInfo, hci::StatusCode::kSuccess);
+    testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::kSuccess);
 const auto kLEReadRemoteFeaturesRsp =
-    testing::CommandStatusPacket(hci::kLEReadRemoteFeatures, hci::StatusCode::kSuccess);
+    testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures, hci_spec::StatusCode::kSuccess);
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
@@ -54,8 +54,8 @@ class LowEnergyInterrogatorTest : public TestingBase {
   }
 
  protected:
-  void QueueSuccessfulInterrogation(hci::ConnectionHandle conn,
-                                    hci::LESupportedFeatures features = {0}) const {
+  void QueueSuccessfulInterrogation(hci_spec::ConnectionHandle conn,
+                                    hci_spec::LESupportedFeatures features = {0}) const {
     const auto remote_version_complete_packet = testing::ReadRemoteVersionInfoCompletePacket(conn);
     const auto le_remote_features_complete_packet =
         testing::LEReadRemoteFeaturesCompletePacket(conn, features);
@@ -80,7 +80,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
 using GAP_LowEnergyInterrogatorTest = LowEnergyInterrogatorTest;
 
 TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
-  const hci::LESupportedFeatures kFeatures{0x0123456789abcdef};
+  const hci_spec::LESupportedFeatures kFeatures{0x0123456789abcdef};
   QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
@@ -102,7 +102,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
 }
 
 TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeatures) {
-  const hci::LESupportedFeatures kFeatures{0x0123456789abcdef};
+  const hci_spec::LESupportedFeatures kFeatures{0x0123456789abcdef};
 
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
@@ -156,8 +156,8 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
 TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
-  const auto le_read_remote_features_error_status_packet =
-      testing::CommandStatusPacket(hci::kLEReadRemoteFeatures, hci::StatusCode::kUnknownCommand);
+  const auto le_read_remote_features_error_status_packet = testing::CommandStatusPacket(
+      hci_spec::kLEReadRemoteFeatures, hci_spec::StatusCode::kUnknownCommand);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
                         &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
@@ -179,8 +179,8 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
 TEST_F(LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesComplete) {
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
-  const auto le_remote_features_complete_packet =
-      testing::LEReadRemoteFeaturesCompletePacket(kConnectionHandle, hci::LESupportedFeatures{0});
+  const auto le_remote_features_complete_packet = testing::LEReadRemoteFeaturesCompletePacket(
+      kConnectionHandle, hci_spec::LESupportedFeatures{0});
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
                         &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
@@ -208,8 +208,8 @@ TEST_F(LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesComplete)
 TEST_F(LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCanceledInterrogation) {
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
-  const auto le_remote_features_complete_packet =
-      testing::LEReadRemoteFeaturesCompletePacket(kConnectionHandle, hci::LESupportedFeatures{0});
+  const auto le_remote_features_complete_packet = testing::LEReadRemoteFeaturesCompletePacket(
+      kConnectionHandle, hci_spec::LESupportedFeatures{0});
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
                         &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);

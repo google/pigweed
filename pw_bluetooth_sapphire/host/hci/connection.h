@@ -71,20 +71,21 @@ class Connection {
   };
 
   // Initializes this as a LE connection.
-  static std::unique_ptr<Connection> CreateLE(ConnectionHandle handle, Role role,
+  static std::unique_ptr<Connection> CreateLE(hci_spec::ConnectionHandle handle, Role role,
                                               const DeviceAddress& local_address,
                                               const DeviceAddress& peer_address,
-                                              const LEConnectionParameters& params,
+                                              const hci_spec::LEConnectionParameters& params,
                                               fxl::WeakPtr<Transport> hci);
 
   // Initializes this as a BR/EDR ACL connection.
-  static std::unique_ptr<Connection> CreateACL(ConnectionHandle handle, Role role,
+  static std::unique_ptr<Connection> CreateACL(hci_spec::ConnectionHandle handle, Role role,
                                                const DeviceAddress& local_address,
                                                const DeviceAddress& peer_address,
                                                fxl::WeakPtr<Transport> hci);
 
   // |link_type| must be either SCO or eSCO.
-  static std::unique_ptr<Connection> CreateSCO(hci::LinkType link_type, ConnectionHandle handle,
+  static std::unique_ptr<Connection> CreateSCO(hci_spec::LinkType link_type,
+                                               hci_spec::ConnectionHandle handle,
                                                const DeviceAddress& local_address,
                                                const DeviceAddress& peer_address,
                                                fxl::WeakPtr<Transport> hci);
@@ -104,7 +105,7 @@ class Connection {
 
   // Returns the 12-bit connection handle of this connection. This handle is
   // used to identify an individual logical link maintained by the controller.
-  ConnectionHandle handle() const { return handle_; }
+  hci_spec::ConnectionHandle handle() const { return handle_; }
 
   // Returns the role of the local device in the established connection.
   Role role() const { return role_; }
@@ -114,14 +115,14 @@ class Connection {
 
   // The active LE connection parameters of this connection. Must only be called
   // on a Connection with the LE link type.
-  const LEConnectionParameters& low_energy_parameters() const {
+  const hci_spec::LEConnectionParameters& low_energy_parameters() const {
     ZX_DEBUG_ASSERT(ll_type_ == bt::LinkType::kLE);
     return le_params_;
   }
 
   // Sets the active LE parameters of this connection. Must only be called on a
   // Connection with the LE link type.
-  void set_low_energy_parameters(const LEConnectionParameters& params) {
+  void set_low_energy_parameters(const hci_spec::LEConnectionParameters& params) {
     ZX_DEBUG_ASSERT(ll_type_ == bt::LinkType::kLE);
     le_params_ = params;
   }
@@ -134,7 +135,7 @@ class Connection {
 
   // Assigns a long term key to this LE-U connection. This will be used for all future encryption
   // procedures.
-  void set_le_ltk(const LinkKey& ltk) {
+  void set_le_ltk(const hci_spec::LinkKey& ltk) {
     ZX_ASSERT(ll_type_ == bt::LinkType::kLE);
     ltk_ = ltk;
     ltk_type_ = std::nullopt;
@@ -142,18 +143,18 @@ class Connection {
 
   // Assigns a link key with its corresponding HCI type to this BR/EDR connection. This will be
   // used for bonding procedures and determines the resulting security properties of the link.
-  void set_bredr_link_key(const LinkKey& link_key, hci::LinkKeyType type) {
+  void set_bredr_link_key(const hci_spec::LinkKey& link_key, hci_spec::LinkKeyType type) {
     ZX_ASSERT(ll_type_ != bt::LinkType::kLE);
     ltk_ = link_key;
     ltk_type_ = type;
   }
 
   // The current long term key of the connection.
-  const std::optional<LinkKey>& ltk() const { return ltk_; }
+  const std::optional<hci_spec::LinkKey>& ltk() const { return ltk_; }
 
   // For BR/EDR, returns the HCI type value for the long term key, or "link key" per HCI
   // terminology. For LE, returns std::nullopt.
-  const std::optional<hci::LinkKeyType>& ltk_type() const { return ltk_type_; }
+  const std::optional<hci_spec::LinkKeyType>& ltk_type() const { return ltk_type_; }
 
   // Assigns a callback that will run when the encryption state of the
   // underlying link changes. The |enabled| parameter should be ignored if
@@ -166,7 +167,7 @@ class Connection {
   // Assigns a callback that will be run when the peer disconnects. The callback will be called in
   // the creation thread.
   using PeerDisconnectCallback =
-      fit::function<void(const Connection* connection, StatusCode reason)>;
+      fit::function<void(const Connection* connection, hci_spec::StatusCode reason)>;
   void set_peer_disconnect_callback(PeerDisconnectCallback callback) {
     peer_disconnect_callback_ = std::move(callback);
   }
@@ -183,10 +184,10 @@ class Connection {
 
   // Send HCI Disconnect and set state to closed. Must not be called on an already disconnected
   // connection.
-  virtual void Disconnect(StatusCode reason) = 0;
+  virtual void Disconnect(hci_spec::StatusCode reason) = 0;
 
  protected:
-  Connection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
+  Connection(hci_spec::ConnectionHandle handle, bt::LinkType ll_type, Role role,
              const DeviceAddress& local_address, const DeviceAddress& peer_address);
 
   const EncryptionChangeCallback& encryption_change_callback() const {
@@ -199,7 +200,7 @@ class Connection {
 
  private:
   bt::LinkType ll_type_;
-  ConnectionHandle handle_;
+  hci_spec::ConnectionHandle handle_;
   Role role_;
 
   // Addresses used while creating the link.
@@ -207,13 +208,13 @@ class Connection {
   DeviceAddress peer_address_;
 
   // Connection parameters for a LE link. Not nullptr if the link type is LE.
-  LEConnectionParameters le_params_;
+  hci_spec::LEConnectionParameters le_params_;
 
   // This connection's current link key.
-  std::optional<LinkKey> ltk_;
+  std::optional<hci_spec::LinkKey> ltk_;
 
   // BR/EDR-specific type of the assigned link key.
-  std::optional<hci::LinkKeyType> ltk_type_;
+  std::optional<hci_spec::LinkKeyType> ltk_type_;
 
   EncryptionChangeCallback encryption_change_callback_;
 

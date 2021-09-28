@@ -253,7 +253,7 @@ class Adapter {
 
     // Retrieves the peer id that is connected to the connection |handle|.
     // Returns kInvalidPeerId if no such peer exists.
-    virtual PeerId GetPeerId(hci::ConnectionHandle handle) const = 0;
+    virtual PeerId GetPeerId(hci_spec::ConnectionHandle handle) const = 0;
 
     // Add a service search to be performed on new connected remote peers.
     // This search will happen on every peer connection.
@@ -321,7 +321,7 @@ class Adapter {
     // nullopt.
     using ScoRequestHandle = BrEdrConnection::ScoRequestHandle;
     virtual std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id, hci::SynchronousConnectionParameters parameters,
+        PeerId peer_id, hci_spec::SynchronousConnectionParameters parameters,
         sco::ScoConnectionManager::OpenConnectionCallback callback) = 0;
 
     // Accept inbound connection requests using the parameters given in order. The parameters will
@@ -333,7 +333,7 @@ class Adapter {
     // Returns a handle that will cancel the request when destroyed (if connection establishment has
     // not started). If a BR/EDR connection with the peer does not exist, returns nullopt.
     virtual std::optional<ScoRequestHandle> AcceptScoConnection(
-        PeerId peer_id, std::vector<hci::SynchronousConnectionParameters> parameters,
+        PeerId peer_id, std::vector<hci_spec::SynchronousConnectionParameters> parameters,
         sco::ScoConnectionManager::AcceptConnectionCallback callback) = 0;
   };
 

@@ -54,7 +54,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
   // registered for that PSM.
   using QueryServiceCallback = fit::function<std::optional<ChannelManager::ServiceInfo>(
-      hci::ConnectionHandle handle, PSM psm)>;
+      hci_spec::ConnectionHandle handle, PSM psm)>;
 
   // Constructs a new LogicalLink and initializes the signaling fixed channel.
   // |dispatcher| will be used for all Channels created on this link.
@@ -64,7 +64,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // executed on this object's creation thread.
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
-  static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, bt::LinkType type,
+  static fbl::RefPtr<LogicalLink> New(hci_spec::ConnectionHandle handle, bt::LinkType type,
                                       hci::Connection::Role role, fpromise::executor* executor,
                                       size_t max_payload_size,
                                       QueryServiceCallback query_service_cb,
@@ -126,7 +126,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Send a Connection Parameter Update Request on the LE signaling channel. When the Connection
   // Parameter Update Response is received, |request_cb| will be called with the result, |accepted|.
   // NOTE: the local Host must be an LE slave.
-  void SendConnectionParameterUpdateRequest(hci::LEPreferredConnectionParameters params,
+  void SendConnectionParameterUpdateRequest(hci_spec::LEPreferredConnectionParameters params,
                                             ConnectionParameterUpdateRequestCallback request_cb);
 
   // Request a change of this link's ACL priority to |priority|.
@@ -141,12 +141,12 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
-  // |flush_timeout| must be in the range [1ms - hci::kMaxAutomaticFlushTimeoutDuration]. A flush
-  // timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic flush),
-  // the default.
+  // |flush_timeout| must be in the range [1ms - hci_spec::kMaxAutomaticFlushTimeoutDuration]. A
+  // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic
+  // flush), the default.
   void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout,
-      fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback);
+      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback);
 
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
@@ -167,7 +167,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   bt::LinkType type() const { return type_; }
   hci::Connection::Role role() const { return role_; }
-  hci::ConnectionHandle handle() const { return handle_; }
+  hci_spec::ConnectionHandle handle() const { return handle_; }
 
   const sm::SecurityProperties security() { return security_; }
 
@@ -181,7 +181,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   friend class ChannelImpl;
   friend fbl::RefPtr<LogicalLink>;
 
-  LogicalLink(hci::ConnectionHandle handle, bt::LinkType type, hci::Connection::Role role,
+  LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci::Connection::Role role,
               fpromise::executor* executor, size_t max_acl_payload_size,
               QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel);
 
@@ -256,7 +256,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   sm::SecurityProperties security_;
 
   // Information about the underlying controller logical link.
-  hci::ConnectionHandle handle_;
+  hci_spec::ConnectionHandle handle_;
   bt::LinkType type_;
   hci::Connection::Role role_;
 

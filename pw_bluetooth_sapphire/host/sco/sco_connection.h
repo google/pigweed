@@ -28,7 +28,7 @@ class ScoConnection final : public fbl::RefCounted<ScoConnection> {
   static fbl::RefPtr<ScoConnection> Create(std::unique_ptr<hci::Connection> connection,
                                            fit::closure deactivated_cb);
 
-  hci::ConnectionHandle handle() const { return handle_; }
+  hci_spec::ConnectionHandle handle() const { return handle_; }
 
   // Called by ScoConnectionManager to notify a connection it can no longer process data and its
   // hci::Connection should be closed.
@@ -37,7 +37,7 @@ class ScoConnection final : public fbl::RefCounted<ScoConnection> {
   // ChannelT implementation:
 
   // Returns a value that's unique for any SCO connection on this device.
-  using UniqueId = hci::ConnectionHandle;
+  using UniqueId = hci_spec::ConnectionHandle;
   UniqueId unique_id() const;
   UniqueId id() const;
 
@@ -76,7 +76,7 @@ class ScoConnection final : public fbl::RefCounted<ScoConnection> {
   // True if Activate() has been called and neither Close() or Deactivate() has been called yet.
   bool active_;
 
-  hci::ConnectionHandle handle_;
+  hci_spec::ConnectionHandle handle_;
 
   std::unique_ptr<hci::Connection> connection_;
 

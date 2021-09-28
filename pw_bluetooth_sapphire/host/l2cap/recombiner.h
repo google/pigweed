@@ -31,7 +31,7 @@ namespace bt::l2cap {
 // instance will be accessed on multiple threads.
 class Recombiner final {
  public:
-  explicit Recombiner(hci::ConnectionHandle handle);
+  explicit Recombiner(hci_spec::ConnectionHandle handle);
 
   // Consumes an ACL data fragment. This function may return a complete L2CAP PDU if |fragment|
   // completes a sequence or constitutes a complete fragment on its own. The |frames_dropped| flag
@@ -89,7 +89,7 @@ class Recombiner final {
 
   // The handle for the logical link this Recombiner operates on. This field is here purely to
   // enforce that this Recombiner is used with ACL fragments from the correct link.
-  const hci::ConnectionHandle handle_;
+  const hci_spec::ConnectionHandle handle_;
 
 #ifndef NTRACE
   // Trace flow IDs for the fragments being recombined into a single PDU.

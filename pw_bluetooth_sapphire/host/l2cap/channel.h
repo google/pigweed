@@ -80,14 +80,14 @@ class Channel : public fbl::RefCounted<Channel> {
   bt::LinkType link_type() const { return link_type_; }
 
   // The connection handle of the underlying logical link.
-  hci::ConnectionHandle link_handle() const { return link_handle_; }
+  hci_spec::ConnectionHandle link_handle() const { return link_handle_; }
 
   // Returns a value that's unique for any channel connected to this device.
   // If two channels have different unique_ids, they represent different
   // channels even if their ids match.
   using UniqueId = uint32_t;
   UniqueId unique_id() const {
-    static_assert(sizeof(UniqueId) >= sizeof(hci::ConnectionHandle) + sizeof(ChannelId),
+    static_assert(sizeof(UniqueId) >= sizeof(hci_spec::ConnectionHandle) + sizeof(ChannelId),
                   "UniqueId needs to be large enough to make unique IDs");
     return (link_handle() << (sizeof(ChannelId) * CHAR_BIT)) | id();
   }
@@ -185,12 +185,12 @@ class Channel : public fbl::RefCounted<Channel> {
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
-  // |flush_timeout| must be in the range [1ms - hci::kMaxAutomaticFlushTimeoutDuration]. A flush
-  // timeout of zx::duration::infinite() indicates an infinite flush timeout (packets will be marked
-  // flushable, but there will be no automatic flush timeout).
+  // |flush_timeout| must be in the range [1ms - hci_spec::kMaxAutomaticFlushTimeoutDuration]. A
+  // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (packets will be
+  // marked flushable, but there will be no automatic flush timeout).
   virtual void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout,
-      fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) = 0;
+      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) = 0;
 
   // Attach this channel as a child node of |parent| with the given |name|.
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
@@ -202,13 +202,13 @@ class Channel : public fbl::RefCounted<Channel> {
   friend class fbl::RefPtr<Channel>;
   // TODO(fxbug.dev/1022): define a preferred MTU somewhere
   Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
-          hci::ConnectionHandle link_handle, ChannelInfo info);
+          hci_spec::ConnectionHandle link_handle, ChannelInfo info);
   virtual ~Channel() = default;
 
   const ChannelId id_;
   const ChannelId remote_id_;
   const bt::LinkType link_type_;
-  const hci::ConnectionHandle link_handle_;
+  const hci_spec::ConnectionHandle link_handle_;
   ChannelInfo info_;
   // The ACL priority that was requested by a client and accepted by the controller.
   hci::AclPriority requested_acl_priority_;
@@ -274,7 +274,7 @@ class ChannelImpl : public Channel {
                           fit::callback<void(fpromise::result<>)> callback) override;
   void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout,
-      fit::callback<void(fpromise::result<void, hci::StatusCode>)> callback) override;
+      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
 
  private:

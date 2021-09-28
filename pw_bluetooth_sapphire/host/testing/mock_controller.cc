@@ -25,11 +25,11 @@ bool Transaction::Match(const ByteBuffer& packet) {
   return ContainersEqual(expected_.data, packet);
 }
 
-CommandTransaction::CommandTransaction(hci::OpCode expected_opcode,
+CommandTransaction::CommandTransaction(hci_spec::OpCode expected_opcode,
                                        const std::vector<const ByteBuffer*>& replies,
                                        ExpectationMetadata meta)
     : Transaction(DynamicByteBuffer(), replies, meta), prefix_(true) {
-  hci::OpCode le_opcode = htole16(expected_opcode);
+  hci_spec::OpCode le_opcode = htole16(expected_opcode);
   const BufferView expected(&le_opcode, sizeof(expected_opcode));
   set_expected({DynamicByteBuffer(expected), meta});
 }
@@ -76,7 +76,7 @@ void MockController::QueueCommandTransaction(const ByteBuffer& expected,
   QueueCommandTransaction(CommandTransaction(DynamicByteBuffer(expected), replies, meta));
 }
 
-void MockController::QueueCommandTransaction(hci::OpCode expected_opcode,
+void MockController::QueueCommandTransaction(hci_spec::OpCode expected_opcode,
                                              const std::vector<const ByteBuffer*>& replies,
                                              ExpectationMetadata meta) {
   QueueCommandTransaction(CommandTransaction(expected_opcode, replies, meta));
@@ -130,10 +130,11 @@ void MockController::ClearTransactionCallback() {
   transaction_callback_ = nullptr;
 }
 
-void MockController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
+void MockController::OnCommandPacketReceived(
+    const PacketView<hci_spec::CommandHeader>& command_packet) {
   uint16_t opcode = le16toh(command_packet.header().opcode);
-  uint8_t ogf = hci::GetOGF(opcode);
-  uint16_t ocf = hci::GetOCF(opcode);
+  uint8_t ogf = hci_spec::GetOGF(opcode);
+  uint16_t ocf = hci_spec::GetOCF(opcode);
 
   // Note: we upcast ogf to uint16_t so that it does not get interpreted as a
   // char for printing
@@ -142,9 +143,10 @@ void MockController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       << ", OCF: 0x" << ocf;
 
   auto& transaction = cmd_transactions_.front();
-  const hci::OpCode expected_opcode = le16toh(transaction.expected().data.As<hci::OpCode>());
-  uint8_t expected_ogf = hci::GetOGF(expected_opcode);
-  uint16_t expected_ocf = hci::GetOCF(expected_opcode);
+  const hci_spec::OpCode expected_opcode =
+      le16toh(transaction.expected().data.As<hci_spec::OpCode>());
+  uint8_t expected_ogf = hci_spec::GetOGF(expected_opcode);
+  uint16_t expected_ocf = hci_spec::GetOCF(expected_opcode);
 
   if (!transaction.Match(command_packet.data())) {
     auto meta = transaction.expected().meta;

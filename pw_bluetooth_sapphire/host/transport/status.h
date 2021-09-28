@@ -24,23 +24,23 @@
 //   hci::Status status(hci::Status::kHardwareFailure);
 //
 //   // 4. Status containing HCI success status code is converted to #1:
-//   hci::Status status(hci::StatusCode::kSuccess);
+//   hci::Status status(hci_spec::StatusCode::kSuccess);
 //   status.is_success() -> true
 //   status.is_protocol_error() -> false
 
 namespace bt {
 
 template <>
-struct ProtocolErrorTraits<hci::StatusCode> {
-  static std::string ToString(hci::StatusCode ecode);
+struct ProtocolErrorTraits<hci_spec::StatusCode> {
+  static std::string ToString(hci_spec::StatusCode ecode);
 };
 
 namespace hci {
 
-class Status : public bt::Status<StatusCode> {
+class Status : public bt::Status<hci_spec::StatusCode> {
  public:
   explicit Status(HostError ecode = HostError::kNoError);
-  explicit Status(hci::StatusCode proto_code);
+  explicit Status(hci_spec::StatusCode proto_code);
 };
 
 using StatusCallback = fit::function<void(const Status& status)>;

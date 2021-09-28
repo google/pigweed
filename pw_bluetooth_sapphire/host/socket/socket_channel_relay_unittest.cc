@@ -31,7 +31,7 @@ class SocketChannelRelayTest : public ::testing::Test {
 
     constexpr l2cap::ChannelId kDynamicChannelIdMin = 0x0040;
     constexpr l2cap::ChannelId kRemoteChannelId = 0x0050;
-    constexpr hci::ConnectionHandle kDefaultConnectionHandle = 0x0001;
+    constexpr hci_spec::ConnectionHandle kDefaultConnectionHandle = 0x0001;
     channel_ = fbl::AdoptRef(new l2cap::testing::FakeChannel(
         kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL));
     EXPECT_TRUE(channel_);

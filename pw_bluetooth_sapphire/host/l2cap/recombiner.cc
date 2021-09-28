@@ -13,13 +13,13 @@ namespace {
 
 const BasicHeader& GetBasicHeader(const hci::ACLDataPacket& fragment) {
   ZX_DEBUG_ASSERT(fragment.packet_boundary_flag() !=
-                  hci::ACLPacketBoundaryFlag::kContinuingFragment);
+                  hci_spec::ACLPacketBoundaryFlag::kContinuingFragment);
   return fragment.view().payload<BasicHeader>();
 }
 
 }  // namespace
 
-Recombiner::Recombiner(hci::ConnectionHandle handle) : handle_(handle) {}
+Recombiner::Recombiner(hci_spec::ConnectionHandle handle) : handle_(handle) {}
 
 Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
   ZX_DEBUG_ASSERT(fragment);
@@ -32,7 +32,7 @@ Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
 
   // If we received a new initial packet without completing the recombination, then drop the
   // entire last sequence.
-  if (fragment->packet_boundary_flag() != hci::ACLPacketBoundaryFlag::kContinuingFragment) {
+  if (fragment->packet_boundary_flag() != hci_spec::ACLPacketBoundaryFlag::kContinuingFragment) {
     bt_log(WARN, "l2cap", "expected continuing fragment! (handle: %.4x)", handle_);
     ClearRecombination();
 
@@ -75,7 +75,7 @@ Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragme
   // The first fragment needs to at least contain the Basic L2CAP header and
   // should not be a continuation fragment.
   size_t current_length = fragment->view().payload_size();
-  if (fragment->packet_boundary_flag() == hci::ACLPacketBoundaryFlag::kContinuingFragment ||
+  if (fragment->packet_boundary_flag() == hci_spec::ACLPacketBoundaryFlag::kContinuingFragment ||
       current_length < sizeof(BasicHeader)) {
     bt_log(DEBUG, "l2cap", "bad first fragment (size: %zu)", current_length);
     return {.frames_dropped = true};

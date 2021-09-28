@@ -80,10 +80,11 @@ class TestSecurityManagerFactory {
 
   // Obtain a reference to the TestSecurityManager associated with |conn_handle|'s connection for
   // use in test code.
-  fxl::WeakPtr<testing::TestSecurityManager> GetTestSm(hci::ConnectionHandle conn_handle);
+  fxl::WeakPtr<testing::TestSecurityManager> GetTestSm(hci_spec::ConnectionHandle conn_handle);
 
  private:
-  std::unordered_map<hci::ConnectionHandle, fxl::WeakPtr<testing::TestSecurityManager>> test_sms_;
+  std::unordered_map<hci_spec::ConnectionHandle, fxl::WeakPtr<testing::TestSecurityManager>>
+      test_sms_;
 };
 
 }  // namespace bt::sm::testing

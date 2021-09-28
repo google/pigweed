@@ -10,7 +10,7 @@
 namespace bt::l2cap::internal {
 namespace {
 
-constexpr hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 97;
 constexpr hci::Connection::Role kDeviceRole = hci::Connection::Role::kMaster;
 

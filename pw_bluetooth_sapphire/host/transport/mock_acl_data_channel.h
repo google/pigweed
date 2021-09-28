@@ -25,15 +25,15 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   using RequestAclPriorityCallback =
-      fit::function<void(hci::AclPriority priority, hci::ConnectionHandle handle,
+      fit::function<void(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
                          fit::callback<void(fpromise::result<>)> callback)>;
   void set_request_acl_priority_cb(RequestAclPriorityCallback cb) {
     request_acl_priority_cb_ = std::move(cb);
   }
 
   using SetBrEdrAutomaticFlushTimeoutCallback =
-      fit::function<void(zx::duration, hci::ConnectionHandle,
-                         fit::callback<void(fpromise::result<void, StatusCode>)>)>;
+      fit::function<void(zx::duration, hci_spec::ConnectionHandle,
+                         fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)>)>;
   void set_set_bredr_automatic_flush_timeout_cb(SetBrEdrAutomaticFlushTimeoutCallback callback) {
     flush_timeout_cb_ = std::move(callback);
   }
@@ -55,17 +55,17 @@ class MockAclDataChannel final : public AclDataChannel {
     }
     return true;
   }
-  void RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) override {}
-  void UnregisterLink(hci::ConnectionHandle handle) override {}
+  void RegisterLink(hci_spec::ConnectionHandle handle, bt::LinkType ll_type) override {}
+  void UnregisterLink(hci_spec::ConnectionHandle handle) override {}
   void DropQueuedPackets(AclPacketPredicate predicate) override {
     if (drop_queued_packets_cb_) {
       drop_queued_packets_cb_(std::move(predicate));
     }
   }
-  void ClearControllerPacketCount(hci::ConnectionHandle handle) override {}
+  void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override {}
   const DataBufferInfo& GetBufferInfo() const override { return bredr_buffer_info_; }
   const DataBufferInfo& GetLeBufferInfo() const override { return le_buffer_info_; }
-  void RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
+  void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
                           fit::callback<void(fpromise::result<>)> callback) override {
     if (request_acl_priority_cb_) {
       request_acl_priority_cb_(priority, handle, std::move(callback));
@@ -73,8 +73,8 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout, hci::ConnectionHandle handle,
-      fit::callback<void(fpromise::result<void, StatusCode>)> callback) override {
+      zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
+      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) override {
     if (flush_timeout_cb_) {
       flush_timeout_cb_(flush_timeout, handle, std::move(callback));
     }

@@ -18,9 +18,9 @@ namespace {
 // procedures are complete, we will change the connection interval to the
 // peripheral's preferred connection parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12).
-static const hci::LEPreferredConnectionParameters kInitialConnectionParameters(
+static const hci_spec::LEPreferredConnectionParameters kInitialConnectionParameters(
     kLEInitialConnIntervalMin, kLEInitialConnIntervalMax, /*max_latency=*/0,
-    hci::defaults::kLESupervisionTimeout);
+    hci_spec::defaults::kLESupervisionTimeout);
 
 constexpr int kMaxConnectionAttempts = 3;
 constexpr int kRetryExponentialBackoffBase = 2;
@@ -347,7 +347,7 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
   // "kConnectionFailedToBeEstablished" error, it will send a Disconnection Complete event soon
   // after. Wait for this event before initating a retry.
   if (status.is_protocol_error() &&
-      status.protocol_error() == hci::kConnectionFailedToBeEstablished) {
+      status.protocol_error() == hci_spec::kConnectionFailedToBeEstablished) {
     bt_log(INFO, "gap-le",
            "Received kConnectionFailedToBeEstablished during interrogation. Waiting for Disconnect "
            "Complete. (peer: %s)",
@@ -367,7 +367,7 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
   NotifySuccess();
 }
 
-void LowEnergyConnector::OnPeerDisconnect(hci::StatusCode status) {
+void LowEnergyConnector::OnPeerDisconnect(hci_spec::StatusCode status) {
   // The peer can't disconnect while scanning or connecting, and we unregister from
   // disconnects after kFailed & kComplete.
   ZX_ASSERT_MSG(*state_ == State::kInterrogating ||
@@ -375,7 +375,7 @@ void LowEnergyConnector::OnPeerDisconnect(hci::StatusCode status) {
                 "Received peer disconnect during invalid state (state: %s, status: %s)",
                 StateToString(*state_), bt_str(hci::Status(status)));
   if (*state_ == State::kInterrogating &&
-      status != hci::StatusCode::kConnectionFailedToBeEstablished) {
+      status != hci_spec::StatusCode::kConnectionFailedToBeEstablished) {
     NotifyFailure(hci::Status(status));
     return;
   }

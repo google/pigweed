@@ -151,7 +151,7 @@ constexpr UUID kPeripheralPreferredConnectionParametersCharacteristic(uint16_t{0
 
 // The Peripheral Preferred Connection Parameters Characteristic is optionally included in the GAP
 // service of a peripheral (Core Spec v5.2, Vol 3, Part C, Sec 9.12.3).
-// See hci::LEConnectionParameters for a description of these fields.
+// See hci_spec::LEConnectionParameters for a description of these fields.
 struct PeripheralPreferredConnectionParametersCharacteristicValue {
   uint16_t min_interval;
   uint16_t max_interval;

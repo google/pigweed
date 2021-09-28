@@ -15,7 +15,7 @@
 namespace bt::sco {
 namespace {
 
-hci::ConnectionHandle kConnectionHandle = 1u;
+hci_spec::ConnectionHandle kConnectionHandle = 1u;
 
 using TestingBase = ::gtest::TestLoopFixture;
 class ScoConnectionTest : public TestingBase {

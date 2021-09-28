@@ -26,7 +26,7 @@ constexpr uint16_t kMaxTxPduPayloadSize = 1024;
 
 }  // namespace
 
-bool FakeL2cap::IsLinkConnected(hci::ConnectionHandle handle) const {
+bool FakeL2cap::IsLinkConnected(hci_spec::ConnectionHandle handle) const {
   auto link_iter = links_.find(handle);
   if (link_iter == links_.end()) {
     return false;
@@ -35,12 +35,12 @@ bool FakeL2cap::IsLinkConnected(hci::ConnectionHandle handle) const {
 }
 
 void FakeL2cap::TriggerLEConnectionParameterUpdate(
-    hci::ConnectionHandle handle, const hci::LEPreferredConnectionParameters& params) {
+    hci_spec::ConnectionHandle handle, const hci_spec::LEPreferredConnectionParameters& params) {
   LinkData& link_data = ConnectedLinkData(handle);
   link_data.le_conn_param_cb(params);
 }
 
-void FakeL2cap::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
+void FakeL2cap::ExpectOutboundL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
                                            l2cap::ChannelId id, l2cap::ChannelId remote_id,
                                            l2cap::ChannelParameters params) {
   LinkData& link_data = GetLinkData(handle);
@@ -51,7 +51,7 @@ void FakeL2cap::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::
   link_data.expected_outbound_conns[psm].push(chan_data);
 }
 
-bool FakeL2cap::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
+bool FakeL2cap::TriggerInboundL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
                                            l2cap::ChannelId id, l2cap::ChannelId remote_id,
                                            uint16_t max_tx_sdu_size) {
   LinkData& link_data = ConnectedLinkData(handle);
@@ -80,19 +80,19 @@ bool FakeL2cap::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::
   return true;
 }
 
-void FakeL2cap::TriggerLinkError(hci::ConnectionHandle handle) {
+void FakeL2cap::TriggerLinkError(hci_spec::ConnectionHandle handle) {
   LinkData& link_data = ConnectedLinkData(handle);
   link_data.link_error_cb();
 }
 
-void FakeL2cap::AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+void FakeL2cap::AddACLConnection(hci_spec::ConnectionHandle handle, hci::Connection::Role role,
                                  l2cap::LinkErrorCallback link_error_cb,
                                  l2cap::SecurityUpgradeCallback security_cb) {
   RegisterInternal(handle, role, bt::LinkType::kACL, std::move(link_error_cb));
 }
 
 L2cap::LEFixedChannels FakeL2cap::AddLEConnection(
-    hci::ConnectionHandle handle, hci::Connection::Role role,
+    hci_spec::ConnectionHandle handle, hci::Connection::Role role,
     l2cap::LinkErrorCallback link_error_cb,
     l2cap::LEConnectionParameterUpdateCallback conn_param_cb,
     l2cap::SecurityUpgradeCallback security_cb) {
@@ -105,15 +105,15 @@ L2cap::LEFixedChannels FakeL2cap::AddLEConnection(
   return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
 }
 
-void FakeL2cap::RemoveConnection(hci::ConnectionHandle handle) { links_.erase(handle); }
+void FakeL2cap::RemoveConnection(hci_spec::ConnectionHandle handle) { links_.erase(handle); }
 
-void FakeL2cap::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
+void FakeL2cap::AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                              sm::SecurityProperties security) {
   // TODO(armansito): implement
 }
 
 void FakeL2cap::RequestConnectionParameterUpdate(
-    hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+    hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
     l2cap::ConnectionParameterUpdateRequestCallback request_cb) {
   bool response = connection_parameter_update_request_responder_
                       ? connection_parameter_update_request_responder_(handle, params)
@@ -122,7 +122,7 @@ void FakeL2cap::RequestConnectionParameterUpdate(
   async::PostTask(async_get_default_dispatcher(), std::bind(std::move(request_cb), response));
 }
 
-void FakeL2cap::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
+void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
                                  l2cap::ChannelParameters params, l2cap::ChannelCallback cb) {
   LinkData& link_data = ConnectedLinkData(handle);
   auto psm_it = link_data.expected_outbound_conns.find(psm);
@@ -172,7 +172,7 @@ FakeL2cap::~FakeL2cap() {
   }
 }
 
-FakeL2cap::LinkData* FakeL2cap::RegisterInternal(hci::ConnectionHandle handle,
+FakeL2cap::LinkData* FakeL2cap::RegisterInternal(hci_spec::ConnectionHandle handle,
                                                  hci::Connection::Role role, bt::LinkType link_type,
                                                  l2cap::LinkErrorCallback link_error_cb) {
   auto& data = GetLinkData(handle);
@@ -206,7 +206,7 @@ fbl::RefPtr<FakeChannel> FakeL2cap::OpenFakeFixedChannel(LinkData* link, l2cap::
   return OpenFakeChannel(link, id, id);
 }
 
-FakeL2cap::LinkData& FakeL2cap::GetLinkData(hci::ConnectionHandle handle) {
+FakeL2cap::LinkData& FakeL2cap::GetLinkData(hci_spec::ConnectionHandle handle) {
   auto [it, inserted] = links_.try_emplace(handle);
   auto& data = it->second;
   if (inserted) {
@@ -216,7 +216,7 @@ FakeL2cap::LinkData& FakeL2cap::GetLinkData(hci::ConnectionHandle handle) {
   return data;
 }
 
-FakeL2cap::LinkData& FakeL2cap::ConnectedLinkData(hci::ConnectionHandle handle) {
+FakeL2cap::LinkData& FakeL2cap::ConnectedLinkData(hci_spec::ConnectionHandle handle) {
   auto link_iter = links_.find(handle);
   ZX_DEBUG_ASSERT_MSG(link_iter != links_.end(), "fake link not found (handle: %#.4x)", handle);
   ZX_DEBUG_ASSERT_MSG(link_iter->second.connected, "fake link not connected yet (handle: %#.4x)",

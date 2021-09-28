@@ -47,7 +47,7 @@ class CommandHandler {
       fit::callback<void(fpromise::result<typename CommandT::EventT, Status>)> event_cb) {
     // EventT should be the command complete event code. Use SendCommandFinishOnStatus to only
     // handle the command status event.
-    static_assert(CommandT::EventT::kEventCode != kCommandStatusEventCode);
+    static_assert(CommandT::EventT::kEventCode != hci_spec::kCommandStatusEventCode);
     ZX_ASSERT(event_cb);
 
     auto encoded = command.Encode();
@@ -63,8 +63,8 @@ class CommandHandler {
       }
 
       // Ignore success status event if it is not the expected completion event.
-      if (event_packet.event_code() == hci::kCommandStatusEventCode &&
-          CommandT::EventT::kEventCode != hci::kCommandStatusEventCode) {
+      if (event_packet.event_code() == hci_spec::kCommandStatusEventCode &&
+          CommandT::EventT::kEventCode != hci_spec::kCommandStatusEventCode) {
         bt_log(TRACE, "hci", "received success command status event (opcode: %#.4x)",
                CommandT::opcode());
         return;
@@ -111,7 +111,7 @@ class CommandHandler {
     auto encoded = command.Encode();
     auto event_packet_cb = [status_cb = std::move(status_cb)](
                                auto id, const EventPacket& event_packet) mutable {
-      ZX_ASSERT(event_packet.event_code() == hci::kCommandStatusEventCode);
+      ZX_ASSERT(event_packet.event_code() == hci_spec::kCommandStatusEventCode);
 
       auto status = event_packet.ToStatus();
       if (!status.is_success()) {
@@ -122,7 +122,7 @@ class CommandHandler {
       status_cb(fpromise::ok());
     };
     return channel_->SendCommand(std::move(encoded), std::move(event_packet_cb),
-                                 hci::kCommandStatusEventCode);
+                                 hci_spec::kCommandStatusEventCode);
   }
 
   // Wrapper around CommandChannel::AddEventHandler that calls |handler| with an EventT.

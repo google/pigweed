@@ -19,9 +19,9 @@ constexpr const char* kInspectPeerAddressPropertyName = "peer_address";
 constexpr const char* kInspectRefsPropertyName = "ref_count";
 
 // Connection parameters to use when the peer's preferred connection parameters are not known.
-static const hci::LEPreferredConnectionParameters kDefaultPreferredConnectionParameters(
-    hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
-    /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
+static const hci_spec::LEPreferredConnectionParameters kDefaultPreferredConnectionParameters(
+    hci_spec::defaults::kLEConnectionIntervalMin, hci_spec::defaults::kLEConnectionIntervalMax,
+    /*max_latency=*/0, hci_spec::defaults::kLESupervisionTimeout);
 
 }  // namespace
 
@@ -185,7 +185,7 @@ void LowEnergyConnection::StartConnectionPauseTimeout() {
 void LowEnergyConnection::RegisterEventHandlers() {
   auto self = GetWeakPtr();
   conn_update_cmpl_handler_id_ = transport_->command_channel()->AddLEMetaEventHandler(
-      hci::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
+      hci_spec::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
         if (self) {
           self->OnLEConnectionUpdateComplete(event);
           return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -276,7 +276,7 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
 }
 
 void LowEnergyConnection::OnNewLEConnectionParams(
-    const hci::LEPreferredConnectionParameters& params) {
+    const hci_spec::LEPreferredConnectionParameters& params) {
   bt_log(INFO, "gap-le", "LE connection parameters received (peer: %s, handle: %#.4x)",
          bt_str(peer_id_), link_->handle());
 
@@ -288,7 +288,7 @@ void LowEnergyConnection::OnNewLEConnectionParams(
 }
 
 void LowEnergyConnection::RequestConnectionParameterUpdate(
-    const hci::LEPreferredConnectionParameters& params) {
+    const hci_spec::LEPreferredConnectionParameters& params) {
   ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kSlave,
                 "tried to send connection parameter update request as central");
 
@@ -300,7 +300,7 @@ void LowEnergyConnection::RequestConnectionParameterUpdate(
   // procedure (mask is currently in Adapter le state, consider propagating down)
   bool ll_connection_parameters_req_supported =
       peer_->le()->features()->le_features &
-      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure);
+      static_cast<uint64_t>(hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure);
 
   bt_log(TRACE, "gap-le", "ll connection parameters req procedure supported: %s",
          ll_connection_parameters_req_supported ? "true" : "false");
@@ -322,11 +322,11 @@ void LowEnergyConnection::RequestConnectionParameterUpdate(
 }
 
 void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
-    hci::LEPreferredConnectionParameters params, hci::Status status) {
+    hci_spec::LEPreferredConnectionParameters params, hci::Status status) {
   // The next LE Connection Update complete event is for this command iff the command |status|
   // is success.
   if (!status.is_success()) {
-    if (status.protocol_error() == hci::StatusCode::kUnsupportedRemoteFeature) {
+    if (status.protocol_error() == hci_spec::StatusCode::kUnsupportedRemoteFeature) {
       // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
       bt_log(
           INFO, "gap-le",
@@ -339,10 +339,10 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 
   // Note that this callback is for the Connection Update Complete event, not the Connection Update
   // status event, which is handled by the above code (see v5.2, Vol. 4, Part E 7.7.15 / 7.7.65.3).
-  le_conn_update_complete_command_callback_ = [this, params](hci::StatusCode status) {
+  le_conn_update_complete_command_callback_ = [this, params](hci_spec::StatusCode status) {
     // Retry connection parameter update with l2cap if the peer doesn't support LL
     // procedure.
-    if (status == hci::StatusCode::kUnsupportedRemoteFeature) {
+    if (status == hci_spec::StatusCode::kUnsupportedRemoteFeature) {
       bt_log(INFO, "gap-le",
              "peer does not support HCI LE Connection Update command, trying l2cap request "
              "(peer: %s)",
@@ -353,7 +353,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 }
 
 void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
-    const hci::LEPreferredConnectionParameters& params) {
+    const hci_spec::LEPreferredConnectionParameters& params) {
   ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kSlave,
                 "tried to send l2cap connection parameter update request as central");
 
@@ -378,12 +378,12 @@ void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
   l2cap_->RequestConnectionParameterUpdate(handle(), params, std::move(response_cb));
 }
 
-void LowEnergyConnection::UpdateConnectionParams(const hci::LEPreferredConnectionParameters& params,
-                                                 StatusCallback status_cb) {
+void LowEnergyConnection::UpdateConnectionParams(
+    const hci_spec::LEPreferredConnectionParameters& params, StatusCallback status_cb) {
   bt_log(DEBUG, "gap-le", "updating connection parameters (peer: %s)", bt_str(peer_id_));
-  auto command = hci::CommandPacket::New(hci::kLEConnectionUpdate,
-                                         sizeof(hci::LEConnectionUpdateCommandParams));
-  auto event_params = command->mutable_payload<hci::LEConnectionUpdateCommandParams>();
+  auto command = hci::CommandPacket::New(hci_spec::kLEConnectionUpdate,
+                                         sizeof(hci_spec::LEConnectionUpdateCommandParams));
+  auto event_params = command->mutable_payload<hci_spec::LEConnectionUpdateCommandParams>();
 
   event_params->connection_handle = htole16(handle());
   event_params->conn_interval_min = htole16(params.min_interval());
@@ -395,7 +395,7 @@ void LowEnergyConnection::UpdateConnectionParams(const hci::LEPreferredConnectio
 
   auto status_cb_wrapper = [handle = handle(), cb = std::move(status_cb)](
                                auto id, const hci::EventPacket& event) mutable {
-    ZX_ASSERT(event.event_code() == hci::kCommandStatusEventCode);
+    ZX_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
     hci_is_error(event, TRACE, "gap-le",
                  "controller rejected connection parameters (handle: %#.4x)", handle);
     if (cb) {
@@ -404,17 +404,17 @@ void LowEnergyConnection::UpdateConnectionParams(const hci::LEPreferredConnectio
   };
 
   transport_->command_channel()->SendCommand(std::move(command), std::move(status_cb_wrapper),
-                                             hci::kCommandStatusEventCode);
+                                             hci_spec::kCommandStatusEventCode);
 }
 
 void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& event) {
-  ZX_ASSERT(event.event_code() == hci::kLEMetaEventCode);
-  ZX_ASSERT(event.params<hci::LEMetaEventParams>().subevent_code ==
-            hci::kLEConnectionUpdateCompleteSubeventCode);
+  ZX_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
+  ZX_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+            hci_spec::kLEConnectionUpdateCompleteSubeventCode);
 
-  auto payload = event.le_event_params<hci::LEConnectionUpdateCompleteSubeventParams>();
+  auto payload = event.le_event_params<hci_spec::LEConnectionUpdateCompleteSubeventParams>();
   ZX_ASSERT(payload);
-  hci::ConnectionHandle handle = le16toh(payload->connection_handle);
+  hci_spec::ConnectionHandle handle = le16toh(payload->connection_handle);
 
   // Ignore events for other connections.
   if (handle != link_->handle()) {
@@ -426,7 +426,7 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
     le_conn_update_complete_command_callback_(payload->status);
   }
 
-  if (payload->status != hci::StatusCode::kSuccess) {
+  if (payload->status != hci_spec::StatusCode::kSuccess) {
     bt_log(WARN, "gap-le",
            "HCI LE Connection Update Complete event with error "
            "(peer: %s, status: %#.2x, handle: %#.4x)",
@@ -437,9 +437,9 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
 
   bt_log(INFO, "gap-le", "conn. parameters updated (peer: %s)", bt_str(peer_id_));
 
-  hci::LEConnectionParameters params(le16toh(payload->conn_interval),
-                                     le16toh(payload->conn_latency),
-                                     le16toh(payload->supervision_timeout));
+  hci_spec::LEConnectionParameters params(le16toh(payload->conn_interval),
+                                          le16toh(payload->conn_latency),
+                                          le16toh(payload->supervision_timeout));
   link_->set_low_energy_parameters(params);
 
   ZX_ASSERT(peer_);

@@ -46,7 +46,7 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
                  [](const std::optional<sm::PairingData>& p) { return p.has_value(); }),
       auto_conn_behavior_(AutoConnectBehavior::kAlways),
       features_(std::nullopt,
-                [](const std::optional<hci::LESupportedFeatures> f) {
+                [](const std::optional<hci_spec::LESupportedFeatures> f) {
                   return f ? fxl::StringPrintf("%#.16lx", f->le_features) : "";
                 }),
       service_changed_gatt_data_({.notify = false, .indicate = false}) {
@@ -150,13 +150,13 @@ Peer::ConnectionToken Peer::LowEnergyData::RegisterConnection() {
   return ConnectionToken(std::move(unregister_cb));
 }
 
-void Peer::LowEnergyData::SetConnectionParameters(const hci::LEConnectionParameters& params) {
+void Peer::LowEnergyData::SetConnectionParameters(const hci_spec::LEConnectionParameters& params) {
   ZX_DEBUG_ASSERT(peer_->connectable());
   conn_params_ = params;
 }
 
 void Peer::LowEnergyData::SetPreferredConnectionParameters(
-    const hci::LEPreferredConnectionParameters& params) {
+    const hci_spec::LEPreferredConnectionParameters& params) {
   ZX_DEBUG_ASSERT(peer_->connectable());
   preferred_conn_params_ = params;
 }
@@ -236,18 +236,18 @@ void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
   services_.AttachInspect(node_, BrEdrData::kInspectServicesName);
 }
 
-void Peer::BrEdrData::SetInquiryData(const hci::InquiryResult& value) {
+void Peer::BrEdrData::SetInquiryData(const hci_spec::InquiryResult& value) {
   ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(value.class_of_device, value.clock_offset, value.page_scan_repetition_mode);
 }
 
-void Peer::BrEdrData::SetInquiryData(const hci::InquiryResultRSSI& value) {
+void Peer::BrEdrData::SetInquiryData(const hci_spec::InquiryResultRSSI& value) {
   ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(value.class_of_device, value.clock_offset, value.page_scan_repetition_mode,
                  value.rssi);
 }
 
-void Peer::BrEdrData::SetInquiryData(const hci::ExtendedInquiryResultEventParams& value) {
+void Peer::BrEdrData::SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value) {
   ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(
       value.class_of_device, value.clock_offset, value.page_scan_repetition_mode, value.rssi,
@@ -291,8 +291,8 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
 }
 
 void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
-                                     hci::PageScanRepetitionMode page_scan_rep_mode, int8_t rssi,
-                                     const BufferView& eir_data) {
+                                     hci_spec::PageScanRepetitionMode page_scan_rep_mode,
+                                     int8_t rssi, const BufferView& eir_data) {
   peer_->UpdateExpiry();
 
   bool notify_listeners = false;
@@ -302,7 +302,7 @@ void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_of
   peer_->SetRssiInternal(rssi);
 
   page_scan_rep_mode_ = page_scan_rep_mode;
-  clock_offset_ = static_cast<uint16_t>(hci::kClockOffsetValidFlagBit | le16toh(clock_offset));
+  clock_offset_ = static_cast<uint16_t>(hci_spec::kClockOffsetValidFlagBit | le16toh(clock_offset));
 
   if (!device_class_ || *device_class_ != device_class) {
     device_class_ = device_class;
@@ -385,16 +385,16 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       address_(address, MakeToStringInspectConvertFunction()),
       identity_known_(false),
       lmp_version_(std::nullopt,
-                   [](const std::optional<hci::HCIVersion>& v) {
-                     return v ? hci::HCIVersionToString(*v) : "";
+                   [](const std::optional<hci_spec::HCIVersion>& v) {
+                     return v ? hci_spec::HCIVersionToString(*v) : "";
                    }),
       lmp_manufacturer_(
           std::nullopt,
           [](const std::optional<uint16_t>& m) { return m ? GetManufacturerName(*m) : ""; }),
-      lmp_features_(hci::LMPFeatureSet(), MakeToStringInspectConvertFunction()),
+      lmp_features_(hci_spec::LMPFeatureSet(), MakeToStringInspectConvertFunction()),
       connectable_(connectable),
       temporary_(true),
-      rssi_(hci::kRSSIInvalid),
+      rssi_(hci_spec::kRSSIInvalid),
       peer_metrics_(peer_metrics),
       last_updated_(async::Now(async_get_default_dispatcher())),
       weak_ptr_factory_(this) {
@@ -493,7 +493,7 @@ void Peer::StoreBrEdrCrossTransportKey(sm::LTK ct_key) {
 // Private methods below:
 
 bool Peer::SetRssiInternal(int8_t rssi) {
-  if (rssi != hci::kRSSIInvalid && rssi_ != rssi) {
+  if (rssi != hci_spec::kRSSIInvalid && rssi_ != rssi) {
     rssi_ = rssi;
     return true;
   }

@@ -4,11 +4,11 @@
 
 #include "link_key.h"
 
-namespace bt::hci {
+namespace bt::hci_spec {
 
 LinkKey::LinkKey() : rand_(0), ediv_(0) { value_.fill(0); }
 
 LinkKey::LinkKey(const UInt128& ltk, uint64_t rand, uint16_t ediv)
     : value_(ltk), rand_(rand), ediv_(ediv) {}
 
-}  // namespace bt::hci
+}  // namespace bt::hci_spec

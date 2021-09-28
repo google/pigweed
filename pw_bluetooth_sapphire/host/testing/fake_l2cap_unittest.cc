@@ -12,7 +12,7 @@
 
 namespace bt::testing {
 
-hci::ConnectionHandle kConnectionHandle = 0x01;
+hci_spec::ConnectionHandle kConnectionHandle = 0x01;
 
 class FakeL2capTest : public gtest::TestLoopFixture {
  public:

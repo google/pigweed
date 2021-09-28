@@ -34,9 +34,9 @@ void LowEnergyInterrogator::SendCommands(InterrogationRefPtr interrogation) {
 }
 
 void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogation) {
-  auto packet = hci::CommandPacket::New(hci::kLEReadRemoteFeatures,
-                                        sizeof(hci::LEReadRemoteFeaturesCommandParams));
-  auto params = packet->mutable_payload<hci::LEReadRemoteFeaturesCommandParams>();
+  auto packet = hci::CommandPacket::New(hci_spec::kLEReadRemoteFeatures,
+                                        sizeof(hci_spec::LEReadRemoteFeaturesCommandParams));
+  auto params = packet->mutable_payload<hci_spec::LEReadRemoteFeaturesCommandParams>();
   params->connection_handle = htole16(interrogation->handle());
 
   auto cmd_cb = [interrogation, self = weak_ptr_factory_.GetWeakPtr()](
@@ -54,16 +54,17 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
       return;
     }
 
-    if (event.event_code() == hci::kCommandStatusEventCode) {
+    if (event.event_code() == hci_spec::kCommandStatusEventCode) {
       return;
     }
 
-    ZX_ASSERT(event.event_code() == hci::kLEMetaEventCode);
+    ZX_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
 
     bt_log(DEBUG, "gap-le", "LE read remote features complete (peer: %s)",
            bt_str(interrogation->peer_id()));
 
-    const auto* params = event.le_event_params<hci::LEReadRemoteFeaturesCompleteSubeventParams>();
+    const auto* params =
+        event.le_event_params<hci_spec::LEReadRemoteFeaturesCompleteSubeventParams>();
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
@@ -71,13 +72,13 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
       return;
     }
 
-    peer->MutLe().SetFeatures(hci::LESupportedFeatures{params->le_features});
+    peer->MutLe().SetFeatures(hci_spec::LESupportedFeatures{params->le_features});
   };
 
   bt_log(TRACE, "gap-le", "sending LE read remote features command (peer id: %s)",
          bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendLeAsyncCommand(std::move(packet), std::move(cmd_cb),
-                                               hci::kLEReadRemoteFeaturesCompleteSubeventCode);
+                                               hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode);
 }
 
 }  // namespace bt::gap

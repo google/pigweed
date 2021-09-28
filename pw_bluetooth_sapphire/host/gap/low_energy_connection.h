@@ -46,7 +46,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // closed (e.g. when L2CAP reports an error).
   // |conn_mgr| is the LowEnergyConnectionManager that owns this connection.
   // |l2cap|, |gatt|, and |transport| are pointers to the interfaces of the corresponding layers.
-  using PeerDisconnectCallback = fit::callback<void(hci::StatusCode)>;
+  using PeerDisconnectCallback = fit::callback<void(hci_spec::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
   LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                       LowEnergyConnectionOptions connection_options,
@@ -114,7 +114,7 @@ class LowEnergyConnection final : public sm::Delegate {
   size_t ref_count() const { return refs_->size(); }
 
   PeerId peer_id() const { return peer_id_; }
-  hci::ConnectionHandle handle() const { return link_->handle(); }
+  hci_spec::ConnectionHandle handle() const { return link_->handle(); }
   hci::Connection* link() const { return link_.get(); }
   sm::BondableMode bondable_mode() const {
     ZX_ASSERT(sm_);
@@ -173,7 +173,7 @@ class LowEnergyConnection final : public sm::Delegate {
   //
   // |peer_id| uniquely identifies the peer. |handle| represents
   // the logical link that |params| should be applied to.
-  void OnNewLEConnectionParams(const hci::LEPreferredConnectionParameters& params);
+  void OnNewLEConnectionParams(const hci_spec::LEPreferredConnectionParameters& params);
 
   // As an LE peripheral, request that the connection parameters |params| be used on the given
   // connection |conn| with peer |peer_id|. This may send an HCI LE Connection Update command or an
@@ -181,7 +181,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // support.
   //
   // Interrogation must have completed before this may be called.
-  void RequestConnectionParameterUpdate(const hci::LEPreferredConnectionParameters& params);
+  void RequestConnectionParameterUpdate(const hci_spec::LEPreferredConnectionParameters& params);
 
   // Handler for connection parameter update command sent when an update is requested by
   // RequestConnectionParameterUpdate.
@@ -189,7 +189,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // If the HCI LE Connection Update command fails with status kUnsupportedRemoteFeature, the update
   // will be retried with an L2CAP Connection Parameter Update Request.
   void HandleRequestConnectionParameterUpdateCommandStatus(
-      hci::LEPreferredConnectionParameters params, hci::Status status);
+      hci_spec::LEPreferredConnectionParameters params, hci::Status status);
 
   // As an LE peripheral, send an L2CAP Connection Parameter Update Request requesting |params| on
   // the LE signaling channel of the given logical link |handle|.
@@ -197,7 +197,8 @@ class LowEnergyConnection final : public sm::Delegate {
   // NOTE: This should only be used if the LE peripheral and/or LE central do not support the
   // Connection Parameters Request Link Layer Control Procedure (Core Spec v5.2  Vol 3, Part A,
   // Sec 4.20). If they do, UpdateConnectionParams(...) should be used instead.
-  void L2capRequestConnectionParameterUpdate(const hci::LEPreferredConnectionParameters& params);
+  void L2capRequestConnectionParameterUpdate(
+      const hci_spec::LEPreferredConnectionParameters& params);
 
   // Requests that the controller use the given connection |params| by sending an HCI LE Connection
   // Update command. This may be issued on both the LE peripheral and the LE central.
@@ -214,7 +215,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // LE central must have indicated support for this procedure in the LE feature mask. Otherwise,
   // L2capRequestConnectionParameterUpdate(...) should be used intead.
   using StatusCallback = fit::callback<void(hci::Status)>;
-  void UpdateConnectionParams(const hci::LEPreferredConnectionParameters& params,
+  void UpdateConnectionParams(const hci_spec::LEPreferredConnectionParameters& params,
                               StatusCallback status_cb = nullptr);
 
   // This event may be generated without host interaction by the Link Layer, or as the result of a
@@ -289,7 +290,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // Called with the status of the next HCI LE Connection Update Complete event.
   // The HCI LE Connection Update command does not have its own complete event handler because the
   // HCI LE Connection Complete event can be generated for other reasons.
-  fit::callback<void(hci::StatusCode)> le_conn_update_complete_command_callback_;
+  fit::callback<void(hci_spec::StatusCode)> le_conn_update_complete_command_callback_;
 
   // Called after kLEConnectionPausePeripheral.
   std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;

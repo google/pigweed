@@ -13,15 +13,15 @@
 namespace bt::l2cap {
 namespace {
 
-constexpr hci::ConnectionHandle kTestHandle = 0x0001;
+constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0xFFFF;
 
 template <typename... T>
 hci::ACLDataPacketPtr PacketFromBytes(T... data) {
   auto bytes = CreateStaticByteBuffer(std::forward<T>(data)...);
-  ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci::ACLDataHeader));
+  ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-  auto packet = hci::ACLDataPacket::New(bytes.size() - sizeof(hci::ACLDataHeader));
+  auto packet = hci::ACLDataPacket::New(bytes.size() - sizeof(hci_spec::ACLDataHeader));
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
 
@@ -30,9 +30,9 @@ hci::ACLDataPacketPtr PacketFromBytes(T... data) {
 
 hci::ACLDataPacketPtr FirstFragment(
     std::string payload, std::optional<uint16_t> payload_size = std::nullopt,
-    hci::ACLPacketBoundaryFlag pbf = hci::ACLPacketBoundaryFlag::kFirstFlushable) {
+    hci_spec::ACLPacketBoundaryFlag pbf = hci_spec::ACLPacketBoundaryFlag::kFirstFlushable) {
   uint16_t header_payload_size = payload_size.has_value() ? *payload_size : payload.size();
-  auto packet = hci::ACLDataPacket::New(kTestHandle, pbf, hci::ACLBroadcastFlag::kPointToPoint,
+  auto packet = hci::ACLDataPacket::New(kTestHandle, pbf, hci_spec::ACLBroadcastFlag::kPointToPoint,
                                         sizeof(BasicHeader) + payload.size());
 
   // L2CAP Header
@@ -47,8 +47,8 @@ hci::ACLDataPacketPtr FirstFragment(
 
 hci::ACLDataPacketPtr ContinuingFragment(std::string payload) {
   auto packet =
-      hci::ACLDataPacket::New(kTestHandle, hci::ACLPacketBoundaryFlag::kContinuingFragment,
-                              hci::ACLBroadcastFlag::kPointToPoint, payload.size());
+      hci::ACLDataPacket::New(kTestHandle, hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
+                              hci_spec::ACLBroadcastFlag::kPointToPoint, payload.size());
   packet->mutable_view()->mutable_payload_data().Write(BufferView(payload));
   return packet;
 }
@@ -270,7 +270,7 @@ TEST(RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
   bool completed = false;
   for (size_t acc = 0; acc < kRxSize;) {
     const size_t remainder = kRxSize - acc;
-    const size_t size = std::min(hci::kMaxACLPayloadSize, remainder);
+    const size_t size = std::min(hci_spec::kMaxACLPayloadSize, remainder);
     acc += size;
 
     const auto result = recombiner.ConsumeFragment(ContinuingFragment(std::string(size, 'd')));
@@ -301,7 +301,7 @@ TEST(RecombinerTest, RecombinationSucceedsForFrameWithMaxSize) {
   bool completed = false;
   for (size_t acc = 0; acc < kFrameSize;) {
     const size_t remainder = kFrameSize - acc;
-    const size_t size = std::min(hci::kMaxACLPayloadSize, remainder);
+    const size_t size = std::min(hci_spec::kMaxACLPayloadSize, remainder);
     acc += size;
 
     auto result = recombiner.ConsumeFragment(ContinuingFragment(std::string(size, 'd')));

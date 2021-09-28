@@ -47,7 +47,7 @@ const DeviceAddress kAddrLeAlias(DeviceAddress::Type::kLEPublic,
 const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
                                                          true /*secure_connections*/,
                                                          sm::kMaxEncryptionKeySize),
-                                  hci::LinkKey(UInt128{4}, 5, 6));
+                                  hci_spec::LinkKey(UInt128{4}, 5, 6));
 
 inspect::Hierarchy ReadInspect(inspect::Inspector& inspector) {
   fpromise::single_threaded_executor executor;
@@ -180,12 +180,12 @@ class PeerTest : public ::gtest::TestLoopFixture {
 };
 
 TEST_F(PeerTest, InspectHierarchy) {
-  peer().set_version(hci::HCIVersion::k5_0, kManufacturer, kSubversion);
+  peer().set_version(hci_spec::HCIVersion::k5_0, kManufacturer, kSubversion);
 
   peer().MutLe();
   ASSERT_TRUE(peer().le().has_value());
 
-  peer().MutLe().SetFeatures(hci::LESupportedFeatures{0x0000000000000001});
+  peer().MutLe().SetFeatures(hci_spec::LESupportedFeatures{0x0000000000000001});
 
   peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
 
@@ -221,7 +221,7 @@ TEST_F(PeerTest, InspectHierarchy) {
         BoolIs(Peer::kInspectConnectableName, peer().connectable()),
         BoolIs(Peer::kInspectTemporaryName, peer().temporary()),
         StringIs(Peer::kInspectFeaturesName, peer().features().ToString()),
-        StringIs(Peer::kInspectVersionName, hci::HCIVersionToString(peer().version().value())),
+        StringIs(Peer::kInspectVersionName, hci_spec::HCIVersionToString(peer().version().value())),
         StringIs(Peer::kInspectManufacturerName, GetManufacturerName(kManufacturer))
         ))),
     ChildrenMatch(UnorderedElementsAre(bredr_data_matcher, le_data_matcher)));
@@ -299,7 +299,7 @@ TEST_F(PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
                                   'T', 'e', 's',
                                   0xFF  // 0xFF should not appear in a valid UTF-8 string
   );
-  hci::ExtendedInquiryResultEventParams eirep;
+  hci_spec::ExtendedInquiryResultEventParams eirep;
   eirep.num_responses = 1;
   eirep.bd_addr = peer().address().value();
   MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
@@ -443,7 +443,7 @@ TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
   });
 
   RunLoopFor(zx::duration(2));
-  hci::InquiryResult ir;
+  hci_spec::InquiryResult ir;
   ir.bd_addr = kAddrLeAlias.value();
   peer().MutBrEdr().SetInquiryData(ir);
   EXPECT_EQ(peer().last_updated(), zx::time(2));
