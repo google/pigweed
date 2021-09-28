@@ -25,7 +25,10 @@ pw_python_package("py") {
       version = "0.0.1"
     }
   }
-  sources = [ "pw_transfer/transfer.py" ]
+  sources = [
+    "pw_transfer/__init__.py",
+    "pw_transfer/transfer.py",
+  ]
   tests = [ "tests/transfer_test.py" ]
   python_deps = [
     "$dir_pw_rpc/py",

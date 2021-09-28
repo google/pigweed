@@ -24,7 +24,7 @@ from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
 from pw_transfer.transfer_pb2 import Chunk
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger(__package__)
 
 
 @dataclass(frozen=True)
@@ -44,11 +44,12 @@ ProgressCallback = Callable[[ProgressStats], Any]
 
 class _Timer:
     """A timer which invokes a callback after a certain timeout."""
-    def __init__(self, callback: Callable[[], Any]):
+    def __init__(self, timeout_s: float, callback: Callable[[], Any]):
+        self.timeout_s = timeout_s
         self._callback = callback
         self._task: Optional[asyncio.Task[Any]] = None
 
-    def start(self, timeout_s: float):
+    def start(self) -> None:
         """Starts a new timer.
 
         If a timer is already running, it is stopped and a new timer started.
@@ -56,18 +57,18 @@ class _Timer:
         is invoked after some time without a kick.
         """
         self.stop()
-        self._task = asyncio.create_task(self._run(timeout_s))
+        self._task = asyncio.create_task(self._run(self.timeout_s))
 
-    def stop(self):
+    def stop(self) -> None:
         """Terminates a running timer."""
         if self._task is not None:
             self._task.cancel()
             self._task = None
 
-    async def _run(self, timeout_s: float):
+    async def _run(self, timeout_s: float) -> None:
         await asyncio.sleep(timeout_s)
-        self._callback()
         self._task = None
+        self._callback()
 
 
 class _Transfer(abc.ABC):
@@ -79,50 +80,105 @@ class _Transfer(abc.ABC):
     """
     def __init__(self,
                  transfer_id: int,
-                 data: bytes,
                  send_chunk: Callable[[Chunk], None],
                  end_transfer: Callable[['_Transfer'], None],
-                 response_timer: _Timer,
+                 response_timeout_s: float,
+                 max_retries: int,
                  progress_callback: ProgressCallback = None):
         self.id = transfer_id
         self.status = Status.OK
-        self.data = data
         self.done = threading.Event()
 
         self._send_chunk = send_chunk
         self._end_transfer = end_transfer
-        self._response_timer = response_timer
+
+        self._retries = 0
+        self._max_retries = max_retries
+        self._response_timer = _Timer(response_timeout_s, self._on_timeout)
+
         self._progress_callback = progress_callback
 
-    @abc.abstractmethod
     async def begin(self) -> None:
-        """Sends the initial chunk to notify the sever of the transfer."""
+        """Sends the initial chunk of the transfer."""
+        self._send_chunk(self._initial_chunk())
+        self._response_timer.start()
+
+    @property
+    @abc.abstractmethod
+    def data(self) -> bytes:
+        """Returns the data read or written in this transfer."""
 
     @abc.abstractmethod
+    def _initial_chunk(self) -> Chunk:
+        """Returns the initial chunk to notify the sever of the transfer."""
+
     async def handle_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
 
-        Only called for non-terminating chunks (i.e. those without a status).
+        Handles terminating chunks (i.e. those with a status) and forwards
+        non-terminating chunks to handle_data_chunk.
         """
+        self._response_timer.stop()
+        self._retries = 0  # Received data from service, so reset the retries.
+
+        _LOG.debug('Received chunk\n%s', str(chunk).rstrip())
+
+        # Status chunks are only used to terminate a transfer. They do not
+        # contain any data that requires processing.
+        if chunk.HasField('status'):
+            self.finish(Status(chunk.status))
+            return
+
+        await self._handle_data_chunk(chunk)
+
+        # Start the timeout for the server to send a chunk in response.
+        self._response_timer.start()
 
     @abc.abstractmethod
-    def progress_stats(self) -> ProgressStats:
-        """Returns the current progress of the transfer."""
+    async def _handle_data_chunk(self, chunk: Chunk) -> None:
+        """Handles a chunk that contains or requests data."""
+
+    @abc.abstractmethod
+    def _retry_after_timeout(self) -> None:
+        """Retries after a timeout occurs."""
+
+    def _on_timeout(self) -> None:
+        """Handles a timeout while waiting for a chunk."""
+        if self.done.is_set():
+            return
+
+        self._retries += 1
+        if self._retries > self._max_retries:
+            self.finish(Status.DEADLINE_EXCEEDED)
+            return
+
+        _LOG.debug('Received no responses for %.3fs; retrying %d/%d',
+                   self._response_timer.timeout_s, self._retries,
+                   self._max_retries)
+        self._retry_after_timeout()
+        self._response_timer.start()
 
     def finish(self, status: Status, skip_callback: bool = False) -> None:
         """Ends the transfer with the specified status."""
         self._response_timer.stop()
         self.status = status
-        self._invoke_progress_callback()
-        self.done.set()
+
+        if status.ok():
+            total_size = len(self.data)
+            self._update_progress(total_size, total_size, total_size)
 
         if not skip_callback:
             self._end_transfer(self)
 
-    def _invoke_progress_callback(self) -> None:
+        # Set done last so that the transfer has been fully cleaned up.
+        self.done.set()
+
+    def _update_progress(self, bytes_sent: int, bytes_confirmed_received: int,
+                         total_size_bytes: Optional[int]) -> None:
         """Invokes the provided progress callback, if any, with the progress."""
 
-        stats = self.progress_stats()
+        stats = ProgressStats(total_size_bytes, bytes_confirmed_received,
+                              bytes_sent)
         _LOG.debug('Transfer %d progress: %s', self.id, stats)
 
         if self._progress_callback:
@@ -143,35 +199,33 @@ class _WriteTransfer(_Transfer):
         send_chunk: Callable[[Chunk], None],
         end_transfer: Callable[[_Transfer], None],
         response_timeout_s: float,
+        max_retries: int,
         progress_callback: ProgressCallback = None,
     ):
-        super().__init__(
-            transfer_id, data, send_chunk, end_transfer,
-            _Timer(lambda: self._send_error(Status.DEADLINE_EXCEEDED)),
-            progress_callback)
-
+        super().__init__(transfer_id, send_chunk, end_transfer,
+                         response_timeout_s, max_retries, progress_callback)
+        self._data = data
         self._offset = 0
-        self._bytes_acknowledged = 0
-        self._response_timeout_s = response_timeout_s
 
         self._max_bytes_to_send = 0
         self._max_chunk_size = 0
         self._chunk_delay_us: Optional[int] = None
+        self._last_chunk = self._initial_chunk()
 
-    async def begin(self) -> None:
-        """Sends the transfer ID, notifying the server that we want to write."""
-        self._send_chunk(Chunk(transfer_id=self.id))
-        self._response_timer.start(self._response_timeout_s)
+    @property
+    def data(self) -> bytes:
+        return self._data
 
-    async def handle_chunk(self, chunk: Chunk) -> None:
+    def _initial_chunk(self) -> Chunk:
+        return Chunk(transfer_id=self.id)
+
+    async def _handle_data_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
 
         In a write transfer, the server only sends transfer parameter updates
         to the client. When a message is received, update local parameters and
         send data accordingly.
         """
-
-        self._response_timer.stop()
 
         # Check whether the client has sent a previous data offset, which
         # indicates that some chunks were lost in transmission.
@@ -180,7 +234,7 @@ class _WriteTransfer(_Transfer):
                        self.id, chunk.offset, self._offset)
 
         self._offset = chunk.offset
-        self._bytes_acknowledged = chunk.offset
+        bytes_acknowledged = chunk.offset
 
         if self._offset > len(self.data):
             # Bad offset; terminate the transfer.
@@ -196,37 +250,30 @@ class _WriteTransfer(_Transfer):
 
         if chunk.HasField('max_chunk_size_bytes'):
             self._max_chunk_size = chunk.max_chunk_size_bytes
+
         if chunk.HasField('min_delay_microseconds'):
             self._chunk_delay_us = chunk.min_delay_microseconds
 
-        if len(self.data) == 0:
-            # Zero-length transfers immediately notify the server that there is
-            # no data to send.
-            self._send_chunk(Chunk(transfer_id=self.id, remaining_bytes=0))
+        while True:
+            if self._chunk_delay_us:
+                await asyncio.sleep(self._chunk_delay_us / 1e6)
 
-        while self._max_bytes_to_send > 0:
             write_chunk = self._next_chunk()
             self._offset += len(write_chunk.data)
             self._max_bytes_to_send -= len(write_chunk.data)
 
             self._send_chunk(write_chunk)
 
-            # Update the caller with the transfer server's current progress.
-            self._invoke_progress_callback()
+            self._update_progress(self._offset, bytes_acknowledged,
+                                  len(self.data))
 
-            if self._chunk_delay_us:
-                await asyncio.sleep(self._chunk_delay_us / 1e6)
+            if self._max_bytes_to_send == 0:
+                break
 
-        # Assume that the server will acknowledge these bytes. If it doesn't,
-        # this will be reset on the next chunk.
-        self._bytes_acknowledged = self._offset
+        self._last_chunk = write_chunk
 
-        self._response_timer.start(self._response_timeout_s)
-
-    def progress_stats(self) -> ProgressStats:
-        return ProgressStats(total_size_bytes=len(self.data),
-                             bytes_confirmed_received=self._bytes_acknowledged,
-                             bytes_sent=self._offset)
+    def _retry_after_timeout(self) -> None:
+        self._send_chunk(self._last_chunk)
 
     def _next_chunk(self) -> Chunk:
         """Returns the next Chunk message to send in the data transfer."""
@@ -254,53 +301,48 @@ class _ReadTransfer(_Transfer):
                  send_chunk: Callable[[Chunk], None],
                  end_transfer: Callable[[_Transfer], None],
                  response_timeout_s: float,
-                 max_retries: int = 3,
+                 max_retries: int,
                  max_bytes_to_receive: int = 8192,
                  max_chunk_size: int = 1024,
                  chunk_delay_us: int = None,
                  progress_callback: ProgressCallback = None):
-        super().__init__(transfer_id, bytes(), send_chunk, end_transfer,
-                         _Timer(self._on_timeout), progress_callback)
-
-        self._response_timeout_s = response_timeout_s
-        self._chunk_timeout_count = 0
-        self._max_retries = max_retries
-
+        super().__init__(transfer_id, send_chunk, end_transfer,
+                         response_timeout_s, max_retries, progress_callback)
         self._max_bytes_to_receive = max_bytes_to_receive
         self._max_chunk_size = max_chunk_size
         self._chunk_delay_us = chunk_delay_us
 
         self._remaining_transfer_size: Optional[int] = None
+        self._data = bytearray()
         self._offset = 0
         self._pending_bytes = max_bytes_to_receive
 
-    async def begin(self) -> None:
-        """Sends the initial transfer parameters for the read transfer."""
-        self._send_transfer_parameters()
+    @property
+    def data(self) -> bytes:
+        """Returns an immutable copy of the data that has been read."""
+        return bytes(self._data)
 
-    async def handle_chunk(self, chunk: Chunk) -> None:
+    def _initial_chunk(self) -> Chunk:
+        return self._transfer_parameters()
+
+    async def _handle_data_chunk(self, chunk: Chunk) -> None:
         """Processes an incoming chunk from the server.
 
         In a read transfer, the client receives data chunks from the server.
         Once all pending data is received, the transfer parameters are updated.
         """
 
-        self._response_timer.stop()
-        self._chunk_timeout_count = 0
-
         if chunk.offset != self._offset:
             # Initially, the transfer service only supports in-order transfers.
             # If data is received out of order, request that the server
             # retransmit from the previous offset.
             self._pending_bytes = 0
-            self._send_transfer_parameters()
+            self._send_chunk(self._transfer_parameters())
             return
 
-        self.data += chunk.data
+        self._data += chunk.data
         self._pending_bytes -= len(chunk.data)
         self._offset += len(chunk.data)
-
-        self._invoke_progress_callback()
 
         if chunk.HasField('remaining_bytes'):
             if chunk.remaining_bytes == 0:
@@ -310,26 +352,29 @@ class _ReadTransfer(_Transfer):
                 self.finish(Status.OK)
                 return
 
-            # The server may optionally indicate that it has a known size of
-            # data available. This is not yet used.
+            # The server may indicate if the amount of remaining data is known.
             self._remaining_transfer_size = chunk.remaining_bytes
+        elif self._remaining_transfer_size is not None:
+            # Update the remaining transfer size, if it is known.
+            self._remaining_transfer_size -= len(chunk.data)
+
+            # If the transfer size drops to zero, the estimate was inaccurate.
+            if self._remaining_transfer_size <= 0:
+                self._remaining_transfer_size = None
+
+        total_size = None if self._remaining_transfer_size is None else (
+            self._remaining_transfer_size + self._offset)
+        self._update_progress(self._offset, self._offset, total_size)
 
         if self._pending_bytes == 0:
             # All pending data was received. Send out a new parameters chunk for
             # the next block.
-            # _send_transfer_parameters starts the response timer.
-            self._send_transfer_parameters()
-        else:
-            # Wait for the next pending chunk.
-            self._response_timer.start(self._response_timeout_s)
+            self._send_chunk(self._transfer_parameters())
 
-    def progress_stats(self) -> ProgressStats:
-        # TODO(frolv): Get the transfer size from the server if it is known.
-        return ProgressStats(total_size_bytes=None,
-                             bytes_confirmed_received=self._offset,
-                             bytes_sent=self._offset)
+    def _retry_after_timeout(self) -> None:
+        self._send_chunk(self._transfer_parameters())
 
-    def _send_transfer_parameters(self):
+    def _transfer_parameters(self) -> Chunk:
         """Sends an updated transfer parameters chunk to the server."""
 
         self._pending_bytes = self._max_bytes_to_receive
@@ -342,25 +387,7 @@ class _ReadTransfer(_Transfer):
         if self._chunk_delay_us:
             chunk.min_delay_microseconds = self._chunk_delay_us
 
-        self._send_chunk(chunk)
-
-        # Start the timeout for the server to send a read chunk.
-        self._response_timer.start(self._response_timeout_s)
-
-    def _on_timeout(self) -> None:
-        """Handles a timeout while waiting for a chunk.
-
-        In a read transfer, if a chunk is not received by the timeout, the
-        receiver resends the latest transfer parameters to prompt the server
-        for more data. This is done several times, up to a specified number of
-        retries, after which the transfer is terminated.
-        """
-        self._chunk_timeout_count += 1
-
-        if self._chunk_timeout_count > self._max_retries:
-            self.finish(Status.DEADLINE_EXCEEDED)
-        else:
-            self._send_transfer_parameters()
+        return chunk
 
 
 _TransferDict = Dict[int, _Transfer]
@@ -378,10 +405,12 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     """
     def __init__(self,
                  rpc_transfer_service,
-                 default_response_timeout_s: float = 2.0):
+                 default_response_timeout_s: float = 2.0,
+                 max_retries: int = 3):
         """Initializes a Manager on top of a TransferService."""
         self._service: Any = rpc_transfer_service
         self._default_response_timeout_s = default_response_timeout_s
+        self._max_retries = max_retries
 
         # Ongoing transfers in the service by ID.
         self._read_transfers: _TransferDict = {}
@@ -429,6 +458,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                  self._send_read_chunk,
                                  self._end_read_transfer,
                                  self._default_response_timeout_s,
+                                 self._max_retries,
                                  progress_callback=progress_callback)
         self._start_read_transfer(transfer)
 
@@ -467,6 +497,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                   self._send_write_chunk,
                                   self._end_write_transfer,
                                   self._default_response_timeout_s,
+                                  self._max_retries,
                                   progress_callback=progress_callback)
         self._start_write_transfer(transfer)
 
@@ -552,12 +583,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             # TODO(frolv): What should be done here, if anything?
             return
 
-        # Status chunks are only used to terminate a transfer. They do not
-        # contain any data that requires processing.
-        if not chunk.HasField('status'):
-            await transfer.handle_chunk(chunk)
-        else:
-            transfer.finish(Status(chunk.status))
+        await transfer.handle_chunk(chunk)
 
     def _open_read_stream(self) -> None:
         self._read_stream = self._service.Read.invoke(
@@ -580,9 +606,9 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             # error.
             self._read_stream = None
 
-            for _, transfer in self._read_transfers.items():
+            for transfer in self._read_transfers.values():
                 transfer.finish(Status.INTERNAL, skip_callback=True)
-            self._read_transfers = {}
+            self._read_transfers.clear()
 
             _LOG.error('Read stream shut down: %s', status)
 
@@ -607,9 +633,9 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             # error.
             self._write_stream = None
 
-            for _, transfer in self._write_transfers.items():
+            for transfer in self._write_transfers.values():
                 transfer.finish(Status.INTERNAL, skip_callback=True)
-            self._write_transfers = {}
+            self._write_transfers.clear()
 
             _LOG.error('Write stream shut down: %s', status)
 

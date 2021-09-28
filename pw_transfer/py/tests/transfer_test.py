@@ -27,6 +27,9 @@ from pw_transfer import transfer
 
 _TRANSFER_SERVICE_ID = ids.calculate('pw.transfer.Transfer')
 
+# If the default timeout is too short, some tests become flaky on Windows.
+DEFAULT_TIMEOUT_S = 0.3
+
 
 class _Method(enum.Enum):
     READ = ids.calculate('Read')
@@ -91,8 +94,8 @@ class TransferManagerTest(unittest.TestCase):
         return data
 
     def test_read_transfer_basic(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.READ,
@@ -107,8 +110,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._sent_chunks[-1].status, 0)
 
     def test_read_transfer_multichunk(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.READ,
@@ -127,8 +130,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._sent_chunks[-1].status, 0)
 
     def test_read_transfer_progress_callback(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.READ,
@@ -147,17 +150,15 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(len(self._sent_chunks), 2)
         self.assertTrue(self._sent_chunks[-1].HasField('status'))
         self.assertEqual(self._sent_chunks[-1].status, 0)
-        self.assertEqual(len(progress), 3)
         self.assertEqual(progress, [
-            transfer.ProgressStats(None, 3, 3),
-            transfer.ProgressStats(None, 6, 6),
-            transfer.ProgressStats(None, 6, 6)
+            transfer.ProgressStats(6, 3, 3),
+            transfer.ProgressStats(6, 6, 6),
         ])
 
     def test_read_transfer_retry_bad_offset(self):
         """Server responds with an unexpected offset in a read transfer."""
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.READ,
@@ -196,8 +197,8 @@ class TransferManagerTest(unittest.TestCase):
 
     def test_read_transfer_retry_timeout(self):
         """Server doesn't respond to read transfer parameters."""
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.READ,
@@ -217,8 +218,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._sent_chunks[-1].status, 0)
 
     def test_read_transfer_timeout(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         with self.assertRaises(transfer.Error) as context:
             manager.read(27)
@@ -232,8 +233,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(len(self._sent_chunks), 4)
 
     def test_read_transfer_error(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.READ,
@@ -249,8 +250,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.status, Status.NOT_FOUND)
 
     def test_read_transfer_server_error(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_error(_Method.READ, Status.NOT_FOUND)
 
@@ -262,8 +263,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.status, Status.INTERNAL)
 
     def test_write_transfer_basic(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.WRITE,
@@ -281,8 +282,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._received_data(), b'hello')
 
     def test_write_transfer_max_chunk_size(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.WRITE,
@@ -303,8 +304,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._sent_chunks[2].data, b'rld')
 
     def test_write_transfer_multiple_parameters(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.WRITE,
@@ -328,8 +329,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._sent_chunks[2].data, b'write')
 
     def test_write_transfer_progress_callback(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.WRITE,
@@ -353,7 +354,6 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._received_data(), b'data to write')
         self.assertEqual(self._sent_chunks[1].data, b'data to ')
         self.assertEqual(self._sent_chunks[2].data, b'write')
-        self.assertEqual(len(progress), 3)
         self.assertEqual(progress, [
             transfer.ProgressStats(13, 0, 8),
             transfer.ProgressStats(13, 8, 13),
@@ -362,8 +362,8 @@ class TransferManagerTest(unittest.TestCase):
 
     def test_write_transfer_rewind(self):
         """Write transfer in which the server re-requests an earlier offset."""
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.WRITE,
@@ -400,8 +400,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._sent_chunks[4].data, b' transfer')
 
     def test_write_transfer_bad_offset(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.WRITE,
@@ -428,8 +428,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.status, Status.OUT_OF_RANGE)
 
     def test_write_transfer_error(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_responses(
             _Method.WRITE,
@@ -445,8 +445,8 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.status, Status.UNAVAILABLE)
 
     def test_write_transfer_server_error(self):
-        manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
 
         self._enqueue_server_error(_Method.WRITE, Status.NOT_FOUND)
 
@@ -457,12 +457,55 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.transfer_id, 21)
         self.assertEqual(exception.status, Status.INTERNAL)
 
-    def test_write_transfer_timeout(self):
+    def test_write_transfer_timeout_after_initial_chunk(self):
         manager = transfer.Manager(self._service,
-                                   default_response_timeout_s=0.3)
+                                   default_response_timeout_s=0.001,
+                                   max_retries=2)
 
         with self.assertRaises(transfer.Error) as context:
             manager.write(22, b'no server response!')
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(transfer_id=22),  # initial chunk
+                transfer_pb2.Chunk(transfer_id=22),  # retry 1
+                transfer_pb2.Chunk(transfer_id=22),  # retry 2
+            ])
+
+        exception = context.exception
+        self.assertEqual(exception.transfer_id, 22)
+        self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
+
+    def test_write_transfer_timeout_after_intermediate_chunk(self):
+        """Tests write transfers that timeout after the initial chunk."""
+        manager = transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            max_retries=2)
+
+        self._enqueue_server_responses(_Method.WRITE, [[
+            transfer_pb2.Chunk(
+                transfer_id=22, pending_bytes=10, max_chunk_size_bytes=5)
+        ]])
+
+        with self.assertRaises(transfer.Error) as context:
+            manager.write(22, b'0123456789')
+
+        last_data_chunk = transfer_pb2.Chunk(transfer_id=22,
+                                             data=b'56789',
+                                             offset=5,
+                                             remaining_bytes=0)
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(transfer_id=22),  # start transfer
+                transfer_pb2.Chunk(transfer_id=22, data=b'01234'),
+                last_data_chunk,  # last chunk
+                last_data_chunk,  # retry 1
+                last_data_chunk,  # retry 2
+            ])
 
         exception = context.exception
         self.assertEqual(exception.transfer_id, 22)
