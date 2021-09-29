@@ -140,6 +140,8 @@ void MultiSink::DetachDrain(Drain& drain) {
 void MultiSink::AttachListener(Listener& listener) {
   std::lock_guard lock(lock_);
   listeners_.push_back(listener);
+  // Notify the newly added entry, in case there are items in the sink.
+  listener.OnNewEntryAvailable();
 }
 
 void MultiSink::DetachListener(Listener& listener) {

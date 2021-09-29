@@ -34,7 +34,11 @@ count of the oldest drain and will set drains to match on attachment. This
 permits drains that are attached late to still consume any entries that were
 pushed into the ring buffer, so long as those entries have not yet been evicted
 by newer entries. This may be particularly useful in early-boot scenarios where
-drain consumers may need time to initialize their output paths.
+drain consumers may need time to initialize their output paths. Listeners are
+notified immediately when attached, to allow late drain users to consume
+existing entries. If draining in response to the notification, ensure that
+the drain is attached prior to registering the listener; attempting to drain
+when unattached will crash.
 
 .. code-block:: cpp
 

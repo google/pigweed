@@ -119,6 +119,7 @@ class MultiSinkTest : public ::testing::Test {
 TEST_F(MultiSinkTest, SingleDrain) {
   multisink_.AttachDrain(drains_[0]);
   multisink_.AttachListener(listeners_[0]);
+  ExpectNotificationCount(listeners_[0], 1u);
   multisink_.HandleEntry(kMessage);
 
   // Single entry push and pop.
@@ -153,6 +154,8 @@ TEST_F(MultiSinkTest, MultipleDrain) {
   multisink_.AttachDrain(drains_[1]);
   multisink_.AttachListener(listeners_[0]);
   multisink_.AttachListener(listeners_[1]);
+  ExpectNotificationCount(listeners_[0], 1u);
+  ExpectNotificationCount(listeners_[1], 1u);
 
   multisink_.HandleEntry(kMessage);
   multisink_.HandleEntry(kMessage);
@@ -186,7 +189,7 @@ TEST_F(MultiSinkTest, LateDrainRegistration) {
 
   multisink_.AttachDrain(drains_[0]);
   multisink_.AttachListener(listeners_[0]);
-  ExpectNotificationCount(listeners_[0], 0u);
+  ExpectNotificationCount(listeners_[0], 1u);
   VerifyPopEntry(drains_[0], kMessage, 0u);
   VerifyPopEntry(drains_[0], std::nullopt, 0u);
 
@@ -199,6 +202,7 @@ TEST_F(MultiSinkTest, LateDrainRegistration) {
 TEST_F(MultiSinkTest, DynamicDrainRegistration) {
   multisink_.AttachDrain(drains_[0]);
   multisink_.AttachListener(listeners_[0]);
+  ExpectNotificationCount(listeners_[0], 1u);
 
   multisink_.HandleDropped();
   multisink_.HandleEntry(kMessage);
@@ -216,7 +220,7 @@ TEST_F(MultiSinkTest, DynamicDrainRegistration) {
   // first valid message in the buffer.
   multisink_.AttachDrain(drains_[0]);
   multisink_.AttachListener(listeners_[0]);
-  ExpectNotificationCount(listeners_[0], 0u);
+  ExpectNotificationCount(listeners_[0], 1u);
   VerifyPopEntry(drains_[0], kMessage, 1u);
   VerifyPopEntry(drains_[0], kMessage, 1u);
   VerifyPopEntry(drains_[0], std::nullopt, 0u);

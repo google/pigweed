@@ -325,9 +325,12 @@ class MultiSink {
   // Precondition: The drain must be attached to this multisink.
   void DetachDrain(Drain& drain) PW_LOCKS_EXCLUDED(lock_);
 
-  // Attach a listener to the multisink. Entries pushed before the listener was
-  // attached are not seen by the listener, so listeners should be attached
-  // before entries are pushed. Listeners are invoked on all new messages.
+  // Attach a listener to the multisink. The listener will be notified
+  // immediately when attached, to allow late drain users to consume existing
+  // entries. If draining in response to the notification, ensure that the drain
+  // is attached prior to registering the listener; attempting to drain when
+  // unattached will crash. Once attached, listeners are invoked on all new
+  // messages.
   //
   // Precondition: The listener must not be attached to a multisink.
   void AttachListener(Listener& listener) PW_LOCKS_EXCLUDED(lock_);
