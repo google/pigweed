@@ -68,7 +68,7 @@ class FakeLayer final : public GATT {
                                                              RemoteServiceWatcher watcher) override;
   bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
-  void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;
+  fbl::RefPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) override;
 
  private:
   // Test callbacks

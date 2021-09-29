@@ -126,8 +126,9 @@ void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,
   callback(list_services_status_, std::move(services));
 }
 
-void FakeLayer::FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) {
+fbl::RefPtr<RemoteService> FakeLayer::FindService(PeerId peer_id, IdType service_id) {
   // TODO: implement
+  return nullptr;
 }
 
 void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {

@@ -72,7 +72,7 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
 }
 
 void GattClientServer::ConnectToService(uint64_t id,
-                                        ::fidl::InterfaceRequest<RemoteService> service) {
+                                        ::fidl::InterfaceRequest<RemoteService> request) {
   if (connected_services_.count(id)) {
     bt_log(WARN, "fidl", "%s: service already requested (service: %lu, peer: %s)", __FUNCTION__, id,
            bt_str(peer_id_));
@@ -82,49 +82,41 @@ void GattClientServer::ConnectToService(uint64_t id,
   // Initialize an entry so that we remember when this request is in progress.
   connected_services_[id] = nullptr;
 
+  fbl::RefPtr<bt::gatt::RemoteService> service = gatt()->FindService(peer_id_, id);
+
+  // Automatically called on failure.
+  auto fail_cleanup = fit::defer([this, id] { connected_services_.erase(id); });
+
+  if (!service) {
+    bt_log(WARN, "fidl", "%s: failed (service: %lu, peer: %s)", __FUNCTION__, id, bt_str(peer_id_));
+    return;
+  }
+
+  // Clean up the server if either the peer device or the FIDL client
+  // disconnects.
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto callback = [self, id, request = std::move(service),
-                   func = __FUNCTION__](auto service) mutable {
-    if (!self)
-      return;
-
-    // The operation must be in progress.
-    ZX_DEBUG_ASSERT(self->connected_services_.count(id));
-
-    // Automatically called on failure.
-    auto fail_cleanup = fit::defer([self, id] { self->connected_services_.erase(id); });
-
-    if (!service) {
-      bt_log(WARN, "fidl", "%s: failed (service: %lu, peer: %s)", func, id, bt_str(self->peer_id_));
-      return;
+  const char* func = __FUNCTION__;
+  auto error_cb = [self, id, peer_id = peer_id_, func] {
+    bt_log(DEBUG, "fidl", "%s: service disconnected (service: %lu, peer: %s)", func, id,
+           bt_str(peer_id));
+    if (self) {
+      self->connected_services_.erase(id);
     }
-
-    // Clean up the server if either the peer device or the FIDL client
-    // disconnects.
-    auto error_cb = [self, id, peer_id = self->peer_id_, func] {
-      bt_log(DEBUG, "fidl", "%s: service disconnected (service: %lu, peer: %s)", func, id,
-             bt_str(peer_id));
-      if (self) {
-        self->connected_services_.erase(id);
-      }
-    };
-
-    if (!service->AddRemovedHandler(error_cb)) {
-      bt_log(WARN, "fidl", "%s: failed to assign closed handler (service: %lu, peer: %s)", func, id,
-             bt_str(self->peer_id_));
-      return;
-    }
-
-    fail_cleanup.cancel();
-
-    auto server = std::make_unique<GattRemoteServiceServer>(std::move(service), self->gatt(),
-                                                            self->peer_id_, std::move(request));
-    server->set_error_handler([cb = std::move(error_cb)](zx_status_t status) { cb(); });
-
-    self->connected_services_[id] = std::move(server);
   };
 
-  gatt()->FindService(peer_id_, id, std::move(callback));
+  if (!service->AddRemovedHandler(error_cb)) {
+    bt_log(WARN, "fidl", "%s: failed to assign closed handler (service: %lu, peer: %s)", func, id,
+           bt_str(self->peer_id_));
+    return;
+  }
+
+  fail_cleanup.cancel();
+
+  auto server = std::make_unique<GattRemoteServiceServer>(std::move(service), gatt(), peer_id_,
+                                                          std::move(request));
+  server->set_error_handler([cb = std::move(error_cb)](zx_status_t status) { cb(); });
+
+  self->connected_services_[id] = std::move(server);
 }
 
 }  // namespace bthost

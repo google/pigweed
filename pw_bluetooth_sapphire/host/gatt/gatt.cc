@@ -186,14 +186,13 @@ class Impl final : public GATT {
     iter->second.remote_service_manager()->ListServices(uuids, std::move(callback));
   }
 
-  void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override {
+  fbl::RefPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) override {
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       // Connection not found.
-      callback(nullptr);
-      return;
+      return nullptr;
     }
-    callback(iter->second.remote_service_manager()->FindService(service_id));
+    return iter->second.remote_service_manager()->FindService(service_id);
   }
 
  private:

@@ -151,12 +151,9 @@ class GATT {
   virtual void ListServices(PeerId peer_id, std::vector<UUID> uuids,
                             ServiceListCallback callback) = 0;
 
-  // Connects the RemoteService with the given identifier found on the
-  // device with |peer_id|. |callback| will be called with a reference to the service if it exists,
-  // or nullptr otherwise.
-  //
-  // TODO(armansito): Change this to ConnectToService().
-  virtual void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) = 0;
+  // Connects the RemoteService with the given identifier found on the device with |peer_id|. A
+  // reference to the service will be returned if it exists, or nullptr will be returned otherwise.
+  virtual fbl::RefPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) = 0;
 
   fxl::WeakPtr<GATT> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
