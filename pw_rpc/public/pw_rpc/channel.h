@@ -91,7 +91,7 @@ class Channel {
   }
 
   // Manually configures a dynamically-assignable channel with a specified ID
-  // and output. This is useful when a channels parameters are not known until
+  // and output. This is useful when a channel's parameters are not known until
   // runtime. This can only be called once per channel.
   constexpr void Configure(uint32_t id, ChannelOutput& output) {
     PW_ASSERT(id_ == kUnassignedChannelId);
@@ -109,6 +109,14 @@ class Channel {
     const U kIntId = static_cast<U>(id);
     PW_ASSERT(kIntId > 0);
     return Configure(static_cast<uint32_t>(kIntId), output);
+  }
+
+  // Reconfigures a channel with a new output. Depending on the output's
+  // implementatation, there might be unintended behavior if the output is in
+  // use.
+  constexpr void set_channel_output(ChannelOutput& output) {
+    PW_ASSERT(id_ != kUnassignedChannelId);
+    output_ = &output;
   }
 
   constexpr uint32_t id() const { return id_; }
