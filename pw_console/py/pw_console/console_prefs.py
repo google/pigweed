@@ -16,7 +16,7 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 import yaml
 
@@ -37,8 +37,32 @@ _DEFAULT_CONFIG = {
         'column_colors': {},
         # Window arrangement
         'windows': {},
+        'window_column_split_method': 'vertical',
     },
 }
+
+
+class UnknownWindowTitle(Exception):
+    """Exception for window titles not present in the window manager layout."""
+
+
+def error_unknown_window(window_title: str,
+                         existing_pane_titles: List[str]) -> None:
+    """Raise an error when the window config has an unknown title.
+
+    If a window title does not already exist on startup it must have a loggers:
+    or duplicate_of: option set."""
+
+    pane_title_text = '  ' + '\n  '.join(existing_pane_titles)
+    raise UnknownWindowTitle(
+        f'\n\n"{window_title}" does not exist.\n'
+        'Existing windows include:\n'
+        f'{pane_title_text}\n'
+        'If this window should be a duplicate of one of the above,\n'
+        f'add "duplicate_of: {existing_pane_titles[0]}" to your config.\n'
+        'If this is a brand new window, include a "loggers:" section.\n'
+        'See also: '
+        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config')
 
 
 @dataclass
@@ -125,3 +149,25 @@ class ConsolePrefs:
             column_style = column_colors[column_name].get(
                 column_value, column_style)
         return column_style
+
+    @property
+    def window_column_split_method(self) -> str:
+        return self._config.get('window_column_split_method', 'vertical')
+
+    @property
+    def windows(self) -> dict:
+        return self._config.get('windows', {})
+
+    @property
+    def window_column_modes(self) -> list:
+        return list(column_type for column_type in self.windows.keys())
+
+    @property
+    def unique_window_titles(self) -> set:
+        titles = []
+        for column in self.windows.values():
+            for window_key_title, window_dict in column.items():
+                # Use 'duplicate_of: Title' if it exists, otherwise use the key.
+                titles.append(window_dict.get('duplicate_of',
+                                              window_key_title))
+        return set(titles)

@@ -14,10 +14,11 @@
 """WindowManager"""
 
 import collections
+import copy
 import functools
-import operator
 from itertools import chain
-from typing import Any
+import operator
+from typing import Any, Dict, Iterable
 
 from prompt_toolkit.layout import (
     Dimension,
@@ -26,6 +27,8 @@ from prompt_toolkit.layout import (
 )
 from prompt_toolkit.widgets import MenuItem
 
+from pw_console.console_prefs import ConsolePrefs, error_unknown_window
+from pw_console.log_pane import LogPane
 import pw_console.widgets.checkbox
 from pw_console.window_list import WindowList, DisplayMode
 
@@ -38,6 +41,9 @@ class WindowManager:
 
     This class handles adding/removing/resizing windows and rendering the
     prompt_toolkit split layout."""
+
+    # pylint: disable=too-many-public-methods
+
     def __init__(
         self,
         application: Any,
@@ -62,16 +68,25 @@ class WindowManager:
         for window_list in self.window_lists:
             window_list.update_container()
 
-        return HSplit([
-            VSplit(
-                [window_list.container for window_list in self.window_lists],
+        window_containers = [
+            window_list.container for window_list in self.window_lists
+        ]
+
+        if self.application.prefs.window_column_split_method == 'horizontal':
+            split = HSplit(
+                window_containers,
+                padding=1,
+                padding_char='─',
+                padding_style='class:pane_separator',
+            )
+        else:  # vertical
+            split = VSplit(
+                window_containers,
                 padding=1,
                 padding_char='│',
                 padding_style='class:pane_separator',
-                # height=Dimension(weight=50),
-                # width=Dimension(weight=50),
             )
-        ])
+        return HSplit([split])
 
     def update_root_container_body(self):
         # Replace the root MenuContainer body with the new split.
@@ -265,12 +280,28 @@ class WindowManager:
         if window_list.display_mode == DisplayMode.TABBED:
             return
         pane.show_pane = not pane.show_pane
-        self.application.update_menu_items()
         self.update_root_container_body()
+        self.application.update_menu_items()
 
         # Set focus to the top level menu. This has the effect of keeping the
         # menu open if it's already open.
         self.application.focus_main_menu()
+
+    def focus_first_visible_pane(self):
+        """Focus on the first visible container."""
+        for pane in self.active_panes():
+            if pane.show_pane:
+                self.application.focus_on_container(pane)
+                break
+
+    def check_for_all_hidden_panes_and_unhide(self) -> None:
+        """Scan for window_lists containing only hidden panes."""
+        for window_list in self.window_lists:
+            all_hidden = all(not pane.show_pane
+                             for pane in window_list.active_panes)
+            if all_hidden:
+                # Unhide the first pane
+                self.toggle_pane(window_list.active_panes[0])
 
     def add_pane_no_checks(self, pane: Any):
         self.window_lists[0].add_pane_no_checks(pane)
@@ -301,10 +332,134 @@ class WindowManager:
             self._find_window_list_and_pane_index(existing_pane))
         if window_list:
             window_list.remove_pane(existing_pane)
+            # Reset focus if this list is empty
+            if len(window_list.active_panes) == 0:
+                self.application.focus_main_menu()
 
     def reset_pane_sizes(self):
         for window_list in self.window_lists:
             window_list.reset_pane_sizes()
+
+    def _remove_panes_from_layout(
+            self, pane_titles: Iterable[str]) -> Dict[str, Any]:
+        # Gather pane objects and remove them from the window layout.
+        collected_panes = {}
+
+        for window_list in self.window_lists:
+            # Make a copy of active_panes to prevent mutating the while
+            # iterating.
+            for pane in copy.copy(window_list.active_panes):
+                if pane.pane_title() in pane_titles:
+                    collected_panes[pane.pane_title()] = (
+                        window_list.remove_pane_no_checks(pane))
+        return collected_panes
+
+    def _set_pane_options(self, pane, options: dict) -> None:  # pylint: disable=no-self-use
+        if options.get('hidden', False):
+            # Hide this pane
+            pane.show_pane = False
+        if options.get('height', False):
+            # Apply new height
+            new_height = options['height']
+            assert isinstance(new_height, int)
+            pane.height.weight = new_height
+
+    def _set_window_list_display_modes(self, prefs: ConsolePrefs) -> None:
+        # Set column display modes
+        for column_index, column_type in enumerate(prefs.window_column_modes):
+            mode = DisplayMode.STACK
+            if 'tabbed' in column_type:
+                mode = DisplayMode.TABBED
+            self.window_lists[column_index].set_display_mode(mode)
+
+    def _create_new_log_pane_with_loggers(self, window_title, window_options,
+                                          existing_pane_titles) -> LogPane:
+        if 'loggers' not in window_options:
+            error_unknown_window(window_title, existing_pane_titles)
+
+        new_pane = LogPane(application=self.application,
+                           pane_title=window_title)
+        # Add logger handlers
+        for logger_name, logger_options in window_options.get('loggers',
+                                                              {}).items():
+
+            log_level_name = logger_options.get('level', None)
+            new_pane.add_log_handler(logger_name, level_name=log_level_name)
+        return new_pane
+
+    # TODO(tonymd): Split this large function up.
+    def apply_config(self, prefs: ConsolePrefs) -> None:
+        """Apply window configuration from loaded ConsolePrefs."""
+        if not prefs.windows:
+            return
+
+        unique_titles = prefs.unique_window_titles
+        collected_panes = self._remove_panes_from_layout(unique_titles)
+        existing_pane_titles = [
+            p.pane_title() for p in collected_panes.values()
+            if isinstance(p, LogPane)
+        ]
+
+        # Keep track of original non-duplicated pane titles
+        already_added_panes = []
+
+        for column_index, column in enumerate(prefs.windows.items()):  # pylint: disable=too-many-nested-blocks
+            _column_type, windows = column
+            # Add a new window_list if needed
+            if column_index >= len(self.window_lists):
+                self.window_lists.append(WindowList(self))
+
+            # Set column display mode to stacked by default.
+            self.window_lists[column_index].display_mode = DisplayMode.STACK
+
+            # Add windows to the this column (window_list)
+            for window_title, window_options in windows.items():
+                new_pane = None
+                desired_window_title = window_title
+                # Check for duplicate_of: Title value
+                window_title = window_options.get('duplicate_of', window_title)
+
+                # Check if this pane is brand new, ready to be added, or should
+                # be duplicated.
+                if (window_title not in already_added_panes
+                        and window_title not in collected_panes):
+                    # New pane entirely
+                    new_pane = self._create_new_log_pane_with_loggers(
+                        window_title, window_options, existing_pane_titles)
+
+                elif window_title not in already_added_panes:
+                    # First time adding this pane
+                    already_added_panes.append(window_title)
+                    new_pane = collected_panes[window_title]
+
+                elif window_title in collected_panes:
+                    # Pane added once, duplicate it
+                    new_pane = collected_panes[window_title].create_duplicate()
+                    # Rename this duplicate pane
+                    assert isinstance(new_pane, LogPane)
+                    new_pane.set_pane_title(desired_window_title)
+
+                if new_pane:
+                    # Set window size and visibility
+                    self._set_pane_options(new_pane, window_options)
+                    # Add the new pane
+                    self.window_lists[column_index].add_pane_no_checks(
+                        new_pane)
+                    # Apply log filters
+                    if isinstance(new_pane, LogPane):
+                        new_pane.apply_filters_from_config(window_options)
+
+        # Update column display modes.
+        self._set_window_list_display_modes(prefs)
+        # Check for columns where all panes are hidden and unhide at least one.
+        self.check_for_all_hidden_panes_and_unhide()
+
+        # Update prompt_toolkit containers.
+        self.update_root_container_body()
+        self.application.update_menu_items()
+
+        # Focus on the first visible pane.
+        self.focus_first_visible_pane()
 
     def create_window_menu(self):
         """Build the [Window] menu for the current set of window lists."""

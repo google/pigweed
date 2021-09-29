@@ -92,18 +92,23 @@ class WindowList:
                 break
         return focused_pane
 
-    def get_pane_titles(self):
+    def get_pane_titles(self, omit_subtitles=False, use_menu_title=True):
         fragments = []
         separator = ('', ' ')
         fragments.append(separator)
         for pane_index, pane in enumerate(self.active_panes):
+            title = pane.menu_title() if use_menu_title else pane.pane_title()
+            subtitle = pane.pane_subtitle()
+            text = f' {title} {subtitle} '
+            if omit_subtitles:
+                text = f' {title} '
+
             fragments.append((
                 # Style
                 ('class:window-tab-active' if pane_index
                  == self.focused_pane_index else 'class:window-tab-inactive'),
                 # Text
-                ' {title} {subtitle} '.format(title=pane.menu_title(),
-                                              subtitle=pane.pane_subtitle()),
+                text,
                 # Mouse handler
                 functools.partial(
                     pw_console.widgets.mouse_handlers.on_click,
@@ -162,7 +167,10 @@ class WindowList:
             )
 
     def _create_window_tab_toolbar(self):
-        tab_bar_control = FormattedTextControl(self.get_pane_titles)
+        tab_bar_control = FormattedTextControl(
+            functools.partial(self.get_pane_titles,
+                              omit_subtitles=True,
+                              use_menu_title=False))
         tab_bar_window = Window(content=tab_bar_control,
                                 align=WindowAlign.LEFT,
                                 dont_extend_width=True)
@@ -182,7 +190,7 @@ class WindowList:
         )
         return tab_toolbar
 
-    def empty(self):
+    def empty(self) -> bool:
         return len(self.active_panes) == 0
 
     def pane_index(self, pane):

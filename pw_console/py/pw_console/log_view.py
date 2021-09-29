@@ -67,9 +67,9 @@ class LogView:
         self.log_store.register_viewer(self)
 
         # Search variables
-        self.search_text = None
-        self.search_filter = None
-        self.search_highlight = False
+        self.search_text: Optional[str] = None
+        self.search_filter: Optional[LogFilter] = None
+        self.search_highlight: bool = False
         self.search_matcher = DEFAULT_SEARCH_MATCHER
         self.search_validator = RegexValidator()
 
@@ -182,9 +182,16 @@ class LogView:
                 self._set_match_position(i)
                 return
 
-    def _set_search_regex(self, text, invert, field):
+    def _set_search_regex(self,
+                          text,
+                          invert,
+                          field,
+                          matcher: Optional[SearchMatcher] = None) -> bool:
+        search_matcher = matcher if matcher else self.search_matcher
+        _LOG.debug(search_matcher)
+
         regex_text, regex_flags = preprocess_search_regex(
-            text, matcher=self.search_matcher)
+            text, matcher=search_matcher)
 
         try:
             compiled_regex = re.compile(regex_text, regex_flags)
@@ -194,6 +201,7 @@ class LogView:
                 invert=invert,
                 field=field,
             )
+            _LOG.debug(self.search_filter)
         except re.error as error:
             _LOG.debug(error)
             return False
@@ -202,12 +210,21 @@ class LogView:
         self.search_text = regex_text
         return True
 
-    def new_search(self,
-                   text,
-                   invert=False,
-                   field: Optional[str] = None) -> bool:
+    def new_search(
+        self,
+        text,
+        invert=False,
+        field: Optional[str] = None,
+        search_matcher: Optional[str] = None,
+    ) -> bool:
         """Start a new search for the given text."""
-        if self._set_search_regex(text, invert, field):
+        valid_matchers = list(s.name for s in SearchMatcher)
+        selected_matcher: Optional[SearchMatcher] = None
+        if (search_matcher is not None
+                and search_matcher.upper() in valid_matchers):
+            selected_matcher = SearchMatcher(search_matcher.upper())
+
+        if self._set_search_regex(text, invert, field, selected_matcher):
             # Default search direction when hitting enter in the search bar.
             self.search_backwards()
             return True
@@ -238,7 +255,7 @@ class LogView:
         # Redraw the UI
         self.log_pane.application.redraw_ui()
 
-    def apply_filter(self):
+    def install_new_filter(self):
         """Set a filter using the current search_regex."""
         if not self.search_filter:
             return
@@ -247,6 +264,9 @@ class LogView:
         self.filtering_on = True
         self.filters[self.search_text] = copy.deepcopy(self.search_filter)
 
+    def apply_filter(self):
+        """Set new filter and schedule historical log filter asyncio task."""
+        self.install_new_filter()
         self._restart_filtering()
 
     def clear_search(self):

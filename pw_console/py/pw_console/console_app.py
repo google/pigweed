@@ -88,16 +88,7 @@ def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
     """A log pane handler for a given logger instance."""
     if not pane:
         return
-
-    if isinstance(logger, logging.Logger):
-        logger_instance = logger
-    elif isinstance(logger, str):
-        logger_instance = logging.getLogger(logger)
-
-    logger_instance.addHandler(pane.log_view.log_store  # type: ignore
-                               )
-    pane.append_pane_subtitle(  # type: ignore
-        logger_instance.name)
+    pane.add_log_handler(logger)
 
 
 class ConsoleApp:
@@ -533,6 +524,9 @@ class ConsoleApp:
         self.window_manager.add_pane(log_pane)
         return log_pane
 
+    def apply_window_config(self) -> None:
+        self.window_manager.apply_config(self.prefs)
+
     def add_log_handler(self,
                         window_title: str,
                         logger_instances: Iterable[logging.Logger],
@@ -633,8 +627,6 @@ class ConsoleApp:
 
     async def run(self, test_mode=False):
         """Start the prompt_toolkit UI."""
-        self.window_manager.reset_pane_sizes()
-
         if test_mode:
             background_log_task = asyncio.create_task(self.log_forever())
 

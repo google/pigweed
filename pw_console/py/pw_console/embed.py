@@ -143,6 +143,7 @@ class PwConsoleEmbed:
             extra_completers=self.extra_completers,
         )
         self._setup_log_panes()
+        self.console_app.apply_window_config()
 
         # Start a thread for running user code.
         self.console_app.start_user_code_thread()

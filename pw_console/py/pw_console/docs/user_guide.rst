@@ -569,6 +569,71 @@ Example Config
          APP: 'bg:#ff6c6b #000000 bold'
          WIFI: '#555555'
 
+     # Each window column is normally aligned side by side in vertical
+     # splits. You can change this to one group of windows on top of the other
+     # with horizontal splits using this method
+     # Default: vertical
+     window_column_split_method: vertical
+
+     # Window Layout
+     windows:
+       # First window column (vertical split)
+       # Each split should have a unique name and include either
+       # 'stacked' or 'tabbed' to select a window pane display method.
+       Split 1 stacked:
+         # Items here are window titles, each should be unique.
+         # Window 1
+         Device Logs:
+           height: 33  # Weighted value for window height
+           hidden: False  # Hide this window if True
+         # Window 2
+         Python Repl:
+           height: 67
+         # Window 3
+         Host Logs:
+           hidden: True
+
+       # Second window column
+       Split 2 tabbed:
+         # This is a duplicate of the existing 'Device Logs' window with a new title
+         NEW DEVICE:
+           duplicate_of: Device Logs
+           # Log filters are defined here
+           filters:
+             # Metadata column names here or 'all'
+             source_name:
+               # Matching method name here
+               # regex, regex-inverted, string, string-inverted
+               regex: 'USB'
+             module:
+               # An inverted match will remove matching log lines
+               regex-inverted: 'keyboard'
+         NEW HOST:
+           duplicate_of: Host Logs
+           filters:
+             all:
+               string: 'FLASH'
+
+       # Third window column
+       Split 3 tabbed:
+         # This is a brand new log Window
+         Keyboard Logs - IBM:
+           loggers:
+             # Python logger names to include in this log window
+             my_cool_keyboard_device:
+               # Level the logger should be set to.
+               level: DEBUG
+           filters:
+             all:
+               regex: 'IBM Model M'
+         Keyboard Logs - Apple:
+           loggers:
+             my_cool_keyboard_device:
+               level: DEBUG
+           filters:
+             all:
+               regex: 'Apple.*USB'
+
 
 Known Issues
 ------------

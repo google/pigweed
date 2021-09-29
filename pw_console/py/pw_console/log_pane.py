@@ -14,7 +14,9 @@
 """LogPane class."""
 
 import functools
-from typing import Any, List, Optional
+import logging
+import re
+from typing import Any, List, Optional, Union
 
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.data_structures import Point
@@ -278,7 +280,7 @@ class LogLineHSplit(HSplit):
 class LogPane:
     """LogPane class."""
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     def __init__(
         self,
         application: Any,
@@ -413,6 +415,9 @@ class LogPane:
         if not title:
             title = 'Logs'
         return title
+
+    def set_pane_title(self, title: str):
+        self._pane_title = title
 
     def menu_title(self):
         """Return the title to display in the Window menu."""
@@ -588,7 +593,25 @@ class LogPane:
         """Switch prompt_toolkit focus to this LogPane."""
         self.application.application.layout.focus(self)
 
-    def duplicate(self):
+    def apply_filters_from_config(self, window_options) -> None:
+        if 'filters' not in window_options:
+            return
+
+        for field, criteria in window_options['filters'].items():
+            for matcher_name, search_string in criteria.items():
+                inverted = matcher_name.endswith('-inverted')
+                matcher_name = re.sub(r'-inverted$', '', matcher_name)
+                if field == 'all':
+                    field = None
+                if self.log_view.new_search(
+                        search_string,
+                        invert=inverted,
+                        field=field,
+                        search_matcher=matcher_name,
+                ):
+                    self.log_view.install_new_filter()
+
+    def create_duplicate(self) -> 'LogPane':
         """Create a duplicate of this LogView."""
         new_pane = LogPane(self.application, pane_title=self.pane_title())
         # Set the log_store
@@ -605,7 +628,28 @@ class LogPane:
 
         # Mark new pane as a duplicate so it can be deleted.
         new_pane.is_a_duplicate = True
+        return new_pane
 
+    def duplicate(self) -> None:
+        new_pane = self.create_duplicate()
         # Add the new pane.
         self.application.window_manager.add_pane(new_pane)
-        return new_pane
+
+    def add_log_handler(self,
+                        logger: Union[str, logging.Logger],
+                        level_name: Optional[str] = None) -> None:
+        """Add a log handlers to this LogPane."""
+
+        if isinstance(logger, logging.Logger):
+            logger_instance = logger
+        elif isinstance(logger, str):
+            logger_instance = logging.getLogger(logger)
+
+        if level_name:
+            if not hasattr(logging, level_name):
+                raise Exception(f'Unknown log level: {level_name}')
+            logger_instance.level = getattr(logging, level_name, logging.INFO)
+        logger_instance.addHandler(self.log_view.log_store  # type: ignore
+                                   )
+        self.append_pane_subtitle(  # type: ignore
+            logger_instance.name)
