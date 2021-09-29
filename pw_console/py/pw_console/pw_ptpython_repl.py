@@ -84,7 +84,6 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         self.enable_dictionary_completion: bool = True
 
         # Change some ptpython.repl defaults.
-        self.use_code_colorscheme('pigweed-code')
         self.show_status_bar = False
         self.show_exit_confirmation = False
         self.complete_private_attributes = (

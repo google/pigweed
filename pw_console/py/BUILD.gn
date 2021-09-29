@@ -26,6 +26,7 @@ pw_python_package("py") {
     "pw_console/__init__.py",
     "pw_console/__main__.py",
     "pw_console/console_app.py",
+    "pw_console/console_prefs.py",
     "pw_console/embed.py",
     "pw_console/filter_toolbar.py",
     "pw_console/help_window.py",
@@ -57,6 +58,7 @@ pw_python_package("py") {
   ]
   tests = [
     "console_app_test.py",
+    "console_prefs_test.py",
     "help_window_test.py",
     "log_filter_test.py",
     "log_store_test.py",

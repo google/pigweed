@@ -85,6 +85,7 @@ _THEME_NAME_MAPPING = {
 
 def generate_styles(theme_name='dark'):
     """Return prompt_toolkit styles for the given theme name."""
+    # Use DarkColors() if name not found.
     theme = _THEME_NAME_MAPPING.get(theme_name, DarkColors())
 
     pw_console_styles = {

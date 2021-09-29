@@ -19,7 +19,6 @@ import functools
 import logging
 import os
 import sys
-from pathlib import Path
 from threading import Thread
 from typing import Iterable, Union
 
@@ -54,14 +53,15 @@ from ptpython.key_bindings import (  # type: ignore
     load_python_bindings, load_sidebar_bindings,
 )
 
-import pw_console.key_bindings
-import pw_console.widgets.checkbox
-import pw_console.widgets.mouse_handlers
-import pw_console.style
+from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
+import pw_console.key_bindings
 from pw_console.log_pane import LogPane
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.repl_pane import ReplPane
+import pw_console.style
+import pw_console.widgets.checkbox
+import pw_console.widgets.mouse_handlers
 from pw_console.window_manager import WindowManager
 
 _LOG = logging.getLogger(__package__)
@@ -114,6 +114,7 @@ class ConsoleApp:
         color_depth=None,
         extra_completers=None,
     ):
+        self.prefs = ConsolePrefs()
         self.color_depth = color_depth
         # Check for any PROMPT_TOOLKIT_COLOR_DEPTH environment variables
         color_depth_override = os.environ.get('PROMPT_TOOLKIT_COLOR_DEPTH', '')
@@ -153,9 +154,9 @@ class ConsoleApp:
             lstrip_blocks=True,
         )
 
-        # TODO(tonymd): Make these configurable per project.
-        self.repl_history_filename = Path.home() / '.pw_console_history'
-        self.search_history_filename = Path.home() / '.pw_console_search'
+        self.repl_history_filename = self.prefs.repl_history
+        self.search_history_filename = self.prefs.search_history
+
         # History instance for search toolbars.
         self.search_history: History = ThreadedHistory(
             FileHistory(self.search_history_filename))
@@ -166,7 +167,7 @@ class ConsoleApp:
         self.app_title = app_title if app_title else 'Pigweed Console'
 
         # Top level UI state toggles.
-        self.load_theme()
+        self.load_theme(self.prefs.ui_theme)
 
         # Pigweed upstream RST user guide
         self.user_guide_window = HelpWindow(self, title='User Guide')
@@ -212,6 +213,10 @@ class ConsoleApp:
             python_repl=self.pw_ptpython_repl,
             startup_message=repl_startup_message,
         )
+        self.pw_ptpython_repl.use_code_colorscheme(self.prefs.code_theme)
+
+        if self.prefs.swap_light_and_dark:
+            self.toggle_light_theme()
 
         # Window panes are added via the window_manager
         self.window_manager = WindowManager(self)

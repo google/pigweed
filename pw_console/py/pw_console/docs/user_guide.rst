@@ -489,6 +489,47 @@ For Windows command prompt (``cmd.exe``) use the ``set`` command:
    set PROMPT_TOOLKIT_COLOR_DEPTH=DEPTH_8_BIT
    set PROMPT_TOOLKIT_COLOR_DEPTH=DEPTH_24_BIT
 
+Configuration
+-------------
+
+Pigweed Console supports loading project and user specific settings stored in a
+YAML file. By default these files will be loaded one after the other:
+
+- ``$PW_PROJECT_ROOT/.pw_console.yaml``
+- ``$HOME/.pw_console.yaml``
+
+Each file follows the same format with settings in ``$HOME`` overriding ones in
+``$PW_PROJECT_ROOT``.
+
+Example Config
+~~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+   pw_console:
+
+     # Repl and Search History files
+     # Setting these to a file located $PW_PROJECT_ROOT is a
+     # good way to make Python repl history project specific.
+
+     # Default: $HOME/.pw_console_history
+     repl_history: $PW_PROJECT_ROOT/.pw_console_history
+
+     # Default: $HOME/.pw_console_search
+     search_history: $PW_PROJECT_ROOT/.pw_console_search
+
+     # Theme Settings
+
+     # Default: dark
+     ui_theme: high-contrast-dark
+
+     # Default: pigweed-code
+     code_theme: material
+
+     # Default: False
+     swap_light_and_dark: False
+
+
 Known Issues
 ------------
 

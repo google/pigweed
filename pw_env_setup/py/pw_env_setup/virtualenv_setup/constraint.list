@@ -88,6 +88,7 @@ types-docutils==0.17.0
 types-futures==0.1.6
 types-protobuf==3.17.4
 types-Pygments==2.9.2
+types-PyYAML==5.4.10
 types-setuptools==57.0.2
 types-six==1.16.1
 typing-extensions==3.10.0.2
