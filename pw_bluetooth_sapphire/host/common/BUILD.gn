@@ -64,9 +64,9 @@ source_set("common") {
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
     "//zircon/public/lib/zx",
-    "//zircon/public/lib/zxc",
     "//zircon/system/ulib/async-default",
     "//zircon/system/ulib/fbl",
+    "//zircon/system/ulib/zxc",
   ]
 
   # TODO(fxbug.dev/46637): The ByteBuffer interface relies inherently on
