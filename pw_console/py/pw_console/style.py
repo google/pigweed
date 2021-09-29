@@ -186,12 +186,12 @@ def generate_styles(theme_name='dark'):
         'log-level-{}'.format(logging.INFO): '{}'.format(theme.purple_accent),
         'log-level-{}'.format(logging.DEBUG): '{}'.format(theme.blue_accent),
 
-        'log-table-column-0': '{}'.format(theme.magenta_accent),
-        'log-table-column-1': '{}'.format(theme.purple_accent),
-        'log-table-column-2': '{}'.format(theme.blue_accent),
-        'log-table-column-3': '{}'.format(theme.cyan_accent),
-        'log-table-column-4': '{}'.format(theme.green_accent),
-        'log-table-column-5': '{}'.format(theme.yellow_accent),
+        'log-table-column-0': '{}'.format(theme.cyan_accent),
+        'log-table-column-1': '{}'.format(theme.green_accent),
+        'log-table-column-2': '{}'.format(theme.yellow_accent),
+        'log-table-column-3': '{}'.format(theme.magenta_accent),
+        'log-table-column-4': '{}'.format(theme.purple_accent),
+        'log-table-column-5': '{}'.format(theme.blue_accent),
         'log-table-column-6': '{}'.format(theme.orange_accent),
         'log-table-column-7': '{}'.format(theme.red_accent),
 

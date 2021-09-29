@@ -302,7 +302,7 @@ class LogPane:
         self.horizontal_scroll_amount = 0
 
         # Create the log container which stores and handles incoming logs.
-        self.log_view: LogView = LogView(self)
+        self.log_view: LogView = LogView(self, self.application)
 
         # Log pane size variables. These are updated just befor rendering the
         # pane by the LogLineHSplit class.

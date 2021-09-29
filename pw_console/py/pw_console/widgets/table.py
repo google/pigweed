@@ -14,11 +14,16 @@
 """Table view renderer for LogLines."""
 
 import collections
+import copy
+import logging
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
-import pw_console.text_formatting
+from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
+import pw_console.text_formatting
+
+_LOG = logging.getLogger(__package__)
 
 
 class TableView:
@@ -29,16 +34,18 @@ class TableView:
     FLOAT_FORMAT = '%.3f'
     INT_FORMAT = '%s'
     LAST_TABLE_COLUMN_NAMES = ['msg', 'message', 'file']
-    COLUMN_PADDING = '  '
 
-    def __init__(self):
+    def __init__(self, prefs: ConsolePrefs):
+        self.prefs = prefs
         # Max column widths of each log field
+        self.column_padding = ' ' * self.prefs.spaces_between_columns
+
         self.column_widths: collections.OrderedDict = collections.OrderedDict()
         self._header_fragment_cache = None
 
         # Assume common defaults here before recalculating in set_formatting().
-        self._column_width_time = 17
-        self._column_width_level = 3
+        self.column_widths['time'] = 17
+        self.column_widths['level'] = 3
 
         # Width of all columns except the final message
         self.column_width_prefix_total = 0
@@ -47,14 +54,12 @@ class TableView:
         columns_names = [
             name for name, _width in self._ordered_column_widths()
         ]
-        return columns_names + ['message', 'lvl', 'time']
+        return columns_names + ['message']
 
     def _width_of_justified_fields(self):
         """Calculate the width of all columns except LAST_TABLE_COLUMN_NAMES."""
-        padding_width = len(TableView.COLUMN_PADDING)
-        used_width = self._column_width_time + padding_width
-        used_width += self._column_width_level + padding_width
-        used_width += sum([
+        padding_width = len(self.column_padding)
+        used_width = sum([
             width + padding_width for key, width in self.column_widths.items()
             if key not in TableView.LAST_TABLE_COLUMN_NAMES
         ])
@@ -62,8 +67,23 @@ class TableView:
 
     def _ordered_column_widths(self):
         """Return each column and width in the preferred order."""
-        # TODO(tonymd): Apply custom ordering here, for now reverse sort.
-        return sorted(self.column_widths.items(), reverse=True)
+        # Reverse sort if no custom ordering.
+        if not self.prefs.column_order:
+            return self.column_widths.items()
+
+        # Get ordered_columns
+        columns = copy.copy(self.column_widths)
+        ordered_columns = {}
+
+        for column_name in self.prefs.column_order:
+            # If valid column name
+            if column_name in columns:
+                ordered_columns[column_name] = columns.pop(column_name)
+        # NOTE: Any remaining columns not specified by the user are not shown.
+        # Perhaps a user setting could add them at the end. To add them in:
+        #   for column_name in columns:
+        #       ordered_columns[column_name] = columns[column_name]
+        return ordered_columns.items()
 
     def update_metadata_column_widths(self, log: LogLine):
         """Calculate the max widths for each metadata field."""
@@ -83,31 +103,23 @@ class TableView:
         # Update log level character width.
         ansi_stripped_level = pw_console.text_formatting.strip_ansi(
             log.record.levelname)
-        if len(ansi_stripped_level) > self._column_width_level:
-            self._column_width_level = len(ansi_stripped_level)
+        if len(ansi_stripped_level) > self.column_widths['level']:
+            self.column_widths['level'] = len(ansi_stripped_level)
 
         self.column_width_prefix_total = self._width_of_justified_fields()
         self._update_table_header()
 
     def _update_table_header(self):
-        padding = TableView.COLUMN_PADDING
-        padding_formatted_text = ('', padding)
         default_style = 'bold'
         fragments: collections.deque = collections.deque()
-
-        fragments.append(
-            (default_style, 'Time'.ljust(self._column_width_time)))
-        fragments.append(padding_formatted_text)
-        fragments.append(
-            (default_style, 'Lvl'.ljust(self._column_width_level)))
-        fragments.append(padding_formatted_text)
 
         for name, width in self._ordered_column_widths():
             # These fields will be shown at the end
             if name in ['msg', 'message', 'file']:
                 continue
             fragments.append(
-                (default_style, name.title()[:width].ljust(width) + padding))
+                (default_style, name.title()[:width].ljust(width)))
+            fragments.append(('', self.column_padding))
 
         fragments.append((default_style, 'Message'))
 
@@ -119,37 +131,45 @@ class TableView:
 
     def formatted_row(self, log: LogLine) -> StyleAndTextTuples:
         """Render a single table row."""
-        padding = TableView.COLUMN_PADDING
-        padding_formatted_text = ('', padding)
+        padding_formatted_text = ('', self.column_padding)
         # Don't apply any background styling that would override the parent
         # window or selected-log-line style.
         default_style = ''
 
         fragments: collections.deque = collections.deque()
 
-        # Column 1: Time
-        fragments.append(('class:log-time',
-                          log.record.asctime.ljust(self._column_width_time)))
-        fragments.append(padding_formatted_text)
-
-        # Column 2: Level
-        # Remove any existing ANSI formatting and apply our colors.
-        fragments.append(
-            ('class:log-level-{}'.format(log.record.levelno),
-             pw_console.text_formatting.strip_ansi(log.record.levelname).ljust(
-                 self._column_width_level)))
-        fragments.append(padding_formatted_text)
-
         # NOTE: To preseve ANSI formatting on log level use:
         # fragments.extend(
         #     ANSI(log.record.levelname.ljust(
-        #         self._column_width_level)).__pt_formatted_text__())
+        #         self.column_widths['level'])).__pt_formatted_text__())
 
         # Collect remaining columns to display after host time and level.
-        columns = []
+        columns = {}
         for name, width in self._ordered_column_widths():
-            # These fields will be shown at the end
+            # Skip these modifying these fields
             if name in ['msg', 'message', 'file']:
+                continue
+
+            if name == 'time':
+                time_text = log.record.asctime
+                time_style = self.prefs.column_style('time',
+                                                     time_text,
+                                                     default='class:log-time')
+                columns['time'] = (time_style,
+                                   time_text.ljust(self.column_widths['time']))
+                continue
+
+            if name == 'level':
+                # Remove any existing ANSI formatting and apply our colors.
+                level_text = pw_console.text_formatting.strip_ansi(
+                    log.record.levelname)
+                level_style = self.prefs.column_style(
+                    'level',
+                    level_text,
+                    default='class:log-level-{}'.format(log.record.levelno))
+                columns['level'] = (level_style,
+                                    level_text.ljust(
+                                        self.column_widths['level']))
                 continue
 
             value = log.metadata.fields.get(name, ' ')
@@ -164,9 +184,9 @@ class TableView:
                 left_justify = False
 
             if left_justify:
-                columns.append(value.ljust(width))
+                columns[name] = value.ljust(width)
             else:
-                columns.append(value.rjust(width))
+                columns[name] = value.rjust(width)
 
         # Grab the message to appear after the justified columns.
         message = log.metadata.fields.get(
@@ -178,31 +198,40 @@ class TableView:
         # Convert to FormattedText if we have a raw string from fields.
         if isinstance(message, str):
             message_style = default_style
-            # TODO(tonymd): Make message text coloring accorind to level a user
-            # option.
             if log.record.levelno >= 30:  # Warning, Error and Critical
+                # Style the whole message to match it's level
                 message_style = 'class:log-level-{}'.format(log.record.levelno)
             message = (message_style, message)
         # Add to columns
-        columns.append(message)
+        columns['message'] = message
 
         # TODO(tonymd): Display 'file' metadata right justified after the
         # message? It could also appear in the column section.
 
+        index_modifier = 0
         # Go through columns and convert to FormattedText where needed.
-        for i, column in enumerate(columns):
+        for i, column in enumerate(columns.items()):
+            column_name, column_value = column
+            if i in [0, 1] and column_name in ['time', 'level']:
+                index_modifier -= 1
             # For raw strings that don't have their own ANSI colors, apply the
             # theme color style for this column.
-            if isinstance(column, str):
-                style = 'class:log-table-column-{}'.format(
-                    i + 3) if i <= 7 else default_style
-                fragments.append((style, column + padding))
+            if isinstance(column_value, str):
+                fallback_style = 'class:log-table-column-{}'.format(
+                    i + index_modifier) if 0 <= i <= 7 else default_style
+
+                style = self.prefs.column_style(column_name,
+                                                column_value.strip(),
+                                                default=fallback_style)
+
+                fragments.append((style, column_value))
+                fragments.append(padding_formatted_text)
             # Add this tuple to fragments.
             elif isinstance(column, tuple):
-                fragments.append(column)
-            # Add this list to the end of the fragments list.
-            elif isinstance(column, list):
-                fragments.extend(column)
+                fragments.append(column_value)
+                # Add padding if not the last column.
+                if i < len(columns) - 1:
+                    fragments.append(padding_formatted_text)
 
         # Add the final new line for this row.
         fragments.append(('', '\n'))

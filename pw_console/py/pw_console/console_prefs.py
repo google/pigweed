@@ -97,3 +97,31 @@ class ConsolePrefs:
         history = Path(self._config['search_history'])
         history = Path(os.path.expandvars(str(history.expanduser())))
         return history
+
+    @property
+    def spaces_between_columns(self) -> int:
+        spaces = self._config.get('spaces_between_columns', 2)
+        assert isinstance(spaces, int) and spaces > 0
+        return spaces
+
+    @property
+    def column_order(self) -> list:
+        return self._config.get('column_order', [])
+
+    def column_style(self,
+                     column_name: str,
+                     column_value: str,
+                     default='') -> str:
+        column_colors = self._config.get('column_colors', {})
+        column_style = default
+
+        if column_name in column_colors:
+            # If key exists but doesn't have any values.
+            if not column_colors[column_name]:
+                return default
+            # Check for user supplied default.
+            column_style = column_colors[column_name].get('default', default)
+            # Check for value specific color, otherwise use the default.
+            column_style = column_colors[column_name].get(
+                column_value, column_style)
+        return column_style

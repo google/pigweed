@@ -18,12 +18,13 @@ import collections
 import logging
 import sys
 from datetime import datetime
-from typing import List, Dict, TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING
 
 import pw_cli.color
 
-import pw_console.text_formatting
+from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
+import pw_console.text_formatting
 from pw_console.widgets.table import TableView
 
 if TYPE_CHECKING:
@@ -32,7 +33,8 @@ if TYPE_CHECKING:
 
 class LogStore(logging.Handler):
     """Class to hold many log events."""
-    def __init__(self):
+    def __init__(self, prefs: ConsolePrefs):
+        self.prefs = prefs
         # Log storage deque for fast addition and deletion from the beginning
         # and end of the iterable.
         self.logs: collections.deque = collections.deque()
@@ -51,7 +53,7 @@ class LogStore(logging.Handler):
         # Longest of the above prefix widths.
         self.longest_channel_prefix_width = 0
 
-        self.table: TableView = TableView()
+        self.table: TableView = TableView(prefs=self.prefs)
 
         # Erase existing logs.
         self.clear_logs()

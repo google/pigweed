@@ -31,8 +31,6 @@ from prompt_toolkit.formatted_text import (
     StyleAndTextTuples,
 )
 
-import pw_console.text_formatting
-from pw_console.log_store import LogStore
 from pw_console.log_filter import (
     DEFAULT_SEARCH_MATCHER,
     LogFilter,
@@ -40,8 +38,11 @@ from pw_console.log_filter import (
     SearchMatcher,
     preprocess_search_regex,
 )
+from pw_console.log_store import LogStore
+import pw_console.text_formatting
 
 if TYPE_CHECKING:
+    from pw_console.console_app import ConsoleApp
     from pw_console.log_line import LogLine
     from pw_console.log_pane import LogPane
 
@@ -53,12 +54,16 @@ class LogView:
 
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
-    def __init__(self,
-                 log_pane: 'LogPane',
-                 log_store: Optional[LogStore] = None):
+    def __init__(
+        self,
+        log_pane: 'LogPane',
+        application: 'ConsoleApp',
+        log_store: Optional[LogStore] = None,
+    ):
         # Parent LogPane reference. Updated by calling `set_log_pane()`.
         self.log_pane = log_pane
-        self.log_store = log_store if log_store else LogStore()
+        self.log_store = log_store if log_store else LogStore(
+            prefs=application.prefs)
         self.log_store.register_viewer(self)
 
         # Search variables
@@ -69,7 +74,7 @@ class LogView:
         self.search_validator = RegexValidator()
 
         # Filter
-        self.filtering_on = False
+        self.filtering_on: bool = False
         self.filters: 'collections.OrderedDict[str, LogFilter]' = (
             collections.OrderedDict())
         self.filtered_logs: collections.deque = collections.deque()
@@ -95,7 +100,7 @@ class LogView:
         self._last_log_store_index = 0
 
         # Should new log lines be tailed?
-        self.follow = True
+        self.follow: bool = True
 
         # Cache of formatted text tuples used in the last UI render.  Used after
         # rendering by `get_cursor_position()`.

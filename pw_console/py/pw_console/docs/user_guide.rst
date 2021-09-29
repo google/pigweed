@@ -529,6 +529,46 @@ Example Config
      # Default: False
      swap_light_and_dark: False
 
+     # Log Table View Settings
+
+     # Number of spaces to insert between columns
+     # Default: 2
+     spaces_between_columns: 2
+
+     # Custom Column Ordering
+     # By default columns are ordered as:
+     #   time, level, metadata1, metadata2, ..., message
+     # The log message is always the last value and not required in this list.
+     # Any metadata field not listed here will be hidden in table view.
+     column_order:
+       # Column name
+       - time
+       - level
+       - metadata1
+       - metadata2
+
+     # Unique Colors for Column Values
+     #   Color format: 'bg:#BG-HEX #FG-HEX STYLE'
+     # All parts are optional.
+     # Empty strings will leave styling unchanged.
+     # See prompt_toolkit style format docs here:
+     #   https://python-prompt-toolkit.readthedocs.io/en/latest/pages/advanced_topics/styling.html
+     column_colors:
+       # Column name
+       time:
+       level:
+       metadata1:
+         # Field values
+         # Default will be applied if no match found
+         default: '#98be65'
+         BATTERY: 'bg:#6699cc #000000 bold'
+         CORE1: 'bg:#da8548 #000000 bold'
+         CORE2: 'bg:#66cccc #000000 bold'
+       metadata2:
+         default: '#ffcc66'
+         APP: 'bg:#ff6c6b #000000 bold'
+         WIFI: '#555555'
+
 
 Known Issues
 ------------

@@ -18,10 +18,12 @@ import unittest
 from unittest.mock import MagicMock
 
 from pw_console.log_store import LogStore
+from pw_console.console_prefs import ConsolePrefs
 
 
 def _create_log_store():
-    log_store = LogStore()
+    log_store = LogStore(
+        prefs=ConsolePrefs(project_file=False, user_file=False))
     viewer = MagicMock()
     viewer.new_logs_arrived = MagicMock()
     log_store.register_viewer(viewer)
@@ -34,8 +36,6 @@ class TestLogStore(unittest.TestCase):
         self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_get_total_count(self) -> None:
-        # self.assertEqual(self.log_store.get_total_count(), 0)
-
         log_store, viewer = _create_log_store()
         test_log = logging.getLogger('log_store.test')
         # Must use the assertLogs context manager and the addHandler call.
@@ -46,17 +46,19 @@ class TestLogStore(unittest.TestCase):
 
         # Expected log message content
         self.assertEqual(
+            ['DEBUG:log_store.test:Test log {}'.format(i) for i in range(5)],
             log_context.output,
-            ['DEBUG:log_store.test:Test log {}'.format(i) for i in range(5)])
+        )
         # LogStore state checks
         viewer.new_logs_arrived.assert_called()
-        self.assertEqual(log_store.get_total_count(), 5)
-        self.assertEqual(log_store.get_last_log_line_index(), 4)
+        self.assertEqual(5, log_store.get_total_count())
+        self.assertEqual(4, log_store.get_last_log_line_index())
 
         log_store.clear_logs()
-        self.assertEqual(log_store.get_total_count(), 0)
+        self.assertEqual(0, log_store.get_total_count())
 
     def test_channel_counts_and_prefix_width(self) -> None:
+        """Test logger names and prefix width calculations."""
         log_store, _viewer = _create_log_store()
 
         # Log some messagse on 3 separate logger instances
@@ -72,25 +74,30 @@ class TestLogStore(unittest.TestCase):
                 for j in range(i):
                     test_log.debug('%s', j)
 
-        self.assertEqual(log_store.channel_counts, {
-            'log_store.test': 1,
-            'log_store.dev': 2,
-            'log_store.production': 3,
-        })
         self.assertEqual(
+            {
+                'log_store.test': 1,
+                'log_store.dev': 2,
+                'log_store.production': 3,
+            },
+            log_store.channel_counts,
+        )
+        self.assertEqual(
+            'log_store.test: 1, log_store.dev: 2, log_store.production: 3',
             log_store.get_channel_counts(),
-            'log_store.test: 1, log_store.dev: 2, log_store.production: 3')
+        )
 
         self.assertRegex(
             log_store.logs[0].ansi_stripped_log,
-            r'[0-9]{8} [0-9]{2}:[0-9]{2}:[0-9]{2} DEBUG Test log message')
+            r'[0-9]{8} [0-9]{2}:[0-9]{2}:[0-9]{2} DEBUG Test log message',
+        )
         self.assertEqual(
-            log_store.channel_formatted_prefix_widths,
             {
                 'log_store.test': 24,
                 'log_store.dev': 24,
-                'log_store.production': 24
+                'log_store.production': 24,
             },
+            log_store.channel_formatted_prefix_widths,
         )
 
     def test_render_table_header_with_metadata(self) -> None:
@@ -106,15 +113,20 @@ class TestLogStore(unittest.TestCase):
                                'galaxy': 'Milky Way'
                            }))
 
-        self.assertEqual(log_store.render_table_header(), [
-            ('bold', 'Time             '),
-            ('', '  '),
-            ('bold', 'Lvl  '),
-            ('', '  '),
-            ('bold', 'Planet   '),
-            ('bold', 'Galaxy     '),
-            ('bold', 'Message'),
-        ])
+        self.assertEqual(
+            [
+                ('bold', 'Time             '),
+                ('', '  '),
+                ('bold', 'Level'),
+                ('', '  '),
+                ('bold', 'Planet '),
+                ('', '  '),
+                ('bold', 'Galaxy   '),
+                ('', '  '),
+                ('bold', 'Message'),
+            ],
+            log_store.render_table_header(),
+        )
 
 
 if __name__ == '__main__':

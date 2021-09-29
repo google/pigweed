@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, patch
 from parameterized import parameterized  # type: ignore
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import FormattedText
+from pw_console.console_prefs import ConsolePrefs
 
 from pw_console.log_view import LogView
 
@@ -33,7 +34,9 @@ _PYTHON_3_8 = sys.version_info >= (
 
 def _create_log_view():
     log_pane = MagicMock()
-    log_view = LogView(log_pane)
+    application = MagicMock()
+    application.prefs = ConsolePrefs()
+    log_view = LogView(log_pane, application)
     return log_view, log_pane
 
 

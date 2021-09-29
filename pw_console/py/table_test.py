@@ -13,11 +13,13 @@
 # the License.
 """Tests for pw_console.text_formatting"""
 
+from datetime import datetime
 import logging
 import unittest
-from datetime import datetime
+
 from parameterized import parameterized  # type: ignore
 
+from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
 from pw_console.widgets.table import TableView
 
@@ -25,7 +27,8 @@ _TIMESTAMP_FORMAT = '%Y%m%d %H:%M:%S'
 _TIMESTAMP_SAMPLE = datetime(2021, 6, 30, 16, 10, 37, 818901)
 _TIMESTAMP_SAMPLE_STRING = _TIMESTAMP_SAMPLE.strftime(_TIMESTAMP_FORMAT)
 
-_TABLE_PADDING = ('', TableView.COLUMN_PADDING)
+_TABLE_PADDING = '  '
+_TABLE_PADDING_FRAGMENT = ('', _TABLE_PADDING)
 
 formatter = logging.Formatter(
     '\x1b[30m\x1b[47m'
@@ -69,6 +72,7 @@ class TestTableView(unittest.TestCase):
     def setUp(self):
         # Show large diffs
         self.maxDiff = None  # pylint: disable=invalid-name
+        self.prefs = ConsolePrefs(project_file=False, user_file=False)
 
     @parameterized.expand([
         (
@@ -76,38 +80,43 @@ class TestTableView(unittest.TestCase):
             [
                 make_log(
                     args=('M1', 1.2345, 'Something happened'),
-                    extra_metadata_fields=dict(module='M1', time=12)),
+                    extra_metadata_fields=dict(module='M1', anumber=12)),
 
                 make_log(
                     args=('MD2', 567.5, 'Another cool event'),
-                    extra_metadata_fields=dict(module='MD2', time=123)),
+                    extra_metadata_fields=dict(module='MD2', anumber=123)),
             ],
-            dict(module=len('MD2'), time=len('123')),
+            dict(module=len('MD2'), anumber=len('123')),
         ),
         (
             'Missing metadata fields on some rows',
             [
                 make_log(
                     args=('M1', 54321.2, 'Something happened'),
-                    extra_metadata_fields=dict(module='M1', time=54321.2)),
+                    extra_metadata_fields=dict(module='M1', anumber=54321.2)),
 
                 make_log(
                     args=('MOD2', 567.5, 'Another cool event'),
                     extra_metadata_fields=dict(module='MOD2')),
             ],
-            dict(module=len('MOD2'), time=len('54321.200')),
+            dict(module=len('MOD2'), anumber=len('54321.200')),
         ),
     ]) # yapf: disable
     def test_column_widths(self, _name, logs, expected_widths) -> None:
         """Test colum widths calculation."""
-        table = TableView()
+        table = TableView(self.prefs)
         for log in logs:
             table.update_metadata_column_widths(log)
             # update_metadata_column_widths shoulp populate self.metadata.fields
             self.assertEqual(log.metadata.fields,
                              log.record.extra_metadata_fields)
         # Check expected column widths
-        self.assertEqual(dict(table.column_widths), expected_widths)
+        results = {
+            k: v
+            for k, v in dict(table.column_widths).items()
+            if k not in ['time', 'level']
+        }
+        self.assertCountEqual(expected_widths, results)
 
     @parameterized.expand([
         (
@@ -126,23 +135,30 @@ class TestTableView(unittest.TestCase):
                         module='MODULE1', timestamp=54321.2)),
             ],
             [
-                [('bold', 'Time             '), _TABLE_PADDING,
-                 ('bold', 'Lvl'), _TABLE_PADDING,
-                 ('bold', 'Module   '),
+                [('bold', 'Time             '),
+                 _TABLE_PADDING_FRAGMENT,
+                 ('bold', 'Lev'),
+                 _TABLE_PADDING_FRAGMENT,
+                 ('bold', 'Module '),
+                 _TABLE_PADDING_FRAGMENT,
                  ('bold', 'Message')],
 
-                [('bold', 'Time             '), _TABLE_PADDING,
-                 ('bold', 'Lvl'), _TABLE_PADDING,
+                [('bold', 'Time             '),
+                 _TABLE_PADDING_FRAGMENT,
+                 ('bold', 'Lev'),
+                 _TABLE_PADDING_FRAGMENT,
+                 ('bold', 'Module '),
+                 _TABLE_PADDING_FRAGMENT,
                  # timestamp added in
-                 ('bold', 'Timestamp  '),
-                 ('bold', 'Module   '),
+                 ('bold', 'Timestamp'),
+                 _TABLE_PADDING_FRAGMENT,
                  ('bold', 'Message')],
             ],
         ),
     ]) # yapf: disable
     def test_formatted_header(self, _name, logs, expected_headers) -> None:
         """Test colum widths calculation."""
-        table = TableView()
+        table = TableView(self.prefs)
         for log, header in zip(logs, expected_headers):
             table.update_metadata_column_widths(log)
             self.assertEqual(table.formatted_header(), header)
@@ -174,31 +190,35 @@ class TestTableView(unittest.TestCase):
             [
                 [
                     ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
-                    _TABLE_PADDING,
+                    _TABLE_PADDING_FRAGMENT,
                     ('class:log-level-20', 'INF'),
-                    _TABLE_PADDING,
-                    ('class:log-table-column-3', 'MODULE2  '),
+                    _TABLE_PADDING_FRAGMENT,
+                    ('class:log-table-column-0', 'MODULE2'),
+                    _TABLE_PADDING_FRAGMENT,
                     ('', 'Another cool event'),
                     ('', '\n')
                 ],
 
                 [
                     ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
-                    _TABLE_PADDING,
+                    _TABLE_PADDING_FRAGMENT,
                     ('class:log-level-20', 'INF'),
-                    _TABLE_PADDING,
-                    ('class:log-table-column-3', 'MODULE2  '),
+                    _TABLE_PADDING_FRAGMENT,
+                    ('class:log-table-column-0', 'MODULE2'),
+                    _TABLE_PADDING_FRAGMENT,
                     ('', '[MODULE2] 567.500 Another cool event'),
                     ('', '\n')
                 ],
 
                 [
                     ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
-                    _TABLE_PADDING,
+                    _TABLE_PADDING_FRAGMENT,
                     ('class:log-level-20', 'INF'),
-                    _TABLE_PADDING,
-                    ('class:log-table-column-3', '54321.200  '),
-                    ('class:log-table-column-4', 'MODULE1  '),
+                    _TABLE_PADDING_FRAGMENT,
+                    ('class:log-table-column-0', 'MODULE1'),
+                    _TABLE_PADDING_FRAGMENT,
+                    ('class:log-table-column-1', '54321.200'),
+                    _TABLE_PADDING_FRAGMENT,
                     ('', 'Something happened'),
                     ('', '\n')
                 ],
@@ -207,11 +227,11 @@ class TestTableView(unittest.TestCase):
     ]) # yapf: disable
     def test_formatted_rows(self, _name, logs, expected_log_format) -> None:
         """Test colum widths calculation."""
-        table = TableView()
+        table = TableView(self.prefs)
         # Check each row meets expected formats incrementally.
         for log, formatted_log in zip(logs, expected_log_format):
             table.update_metadata_column_widths(log)
-            self.assertEqual(table.formatted_row(log), formatted_log)
+            self.assertEqual(formatted_log, table.formatted_row(log))
 
 
 if __name__ == '__main__':
