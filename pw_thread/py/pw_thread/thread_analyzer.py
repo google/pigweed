@@ -156,8 +156,8 @@ class StackInfo:
     def __str__(self) -> str:
         output = [
             'Stack info',
-            f'  Stack cur used:  {self._stack_used_range_str()}',
-            f'  Stack max used:  {self._stack_pointer_est_peak_str()}',
+            f'  Current usage:   {self._stack_used_range_str()}',
+            f'  Est peak usage:  {self._stack_pointer_est_peak_str()}',
             f'  Stack limits:    {self._stack_limit_range_str()}',
         ]
         return '\n'.join(output)
