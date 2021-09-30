@@ -331,19 +331,28 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
 }
 
 void AdvertisingData::Copy(AdvertisingData* out) const {
-  if (local_name_)
+  if (local_name_) {
     ZX_ASSERT(out->SetLocalName(*local_name_));
-  if (tx_power_)
+  }
+
+  if (tx_power_) {
     out->SetTxPower(*tx_power_);
-  if (appearance_)
+  }
+
+  if (appearance_) {
     out->SetAppearance(*appearance_);
+  }
+
   out->service_uuids_ = service_uuids_;
+
   for (const auto& it : manufacturer_data_) {
     ZX_ASSERT(out->SetManufacturerData(it.first, it.second.view()));
   }
+
   for (const auto& it : service_data_) {
     ZX_ASSERT(out->SetServiceData(it.first, it.second.view()));
   }
+
   for (const auto& it : uris_) {
     ZX_ASSERT_MSG(out->AddUri(it), "Copying invalid AD with too-long URI");
   }
@@ -500,8 +509,9 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   ZX_DEBUG_ASSERT(buffer);
 
   size_t min_buf_size = CalculateBlockSize(flags.has_value());
-  if (buffer->size() < min_buf_size)
+  if (buffer->size() < min_buf_size) {
     return false;
+  }
 
   size_t pos = 0;
   if (flags) {
