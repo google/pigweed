@@ -24,6 +24,9 @@ import pw_cli.plugins
 # Log level used for captured output of a subprocess run through pw.
 LOGLEVEL_STDOUT = 21
 
+# Log level indicating a irrecoverable failure.
+LOGLEVEL_FATAL = 70
+
 
 class _LogLevel(NamedTuple):
     level: int
@@ -35,16 +38,22 @@ class _LogLevel(NamedTuple):
 # Shorten all the log levels to 3 characters for column-aligned logs.
 # Color the logs using ANSI codes.
 _LOG_LEVELS = (
-    _LogLevel(logging.CRITICAL, 'bold_red', 'CRT', '☠️ '),
-    _LogLevel(logging.ERROR,    'red',      'ERR', '❌'),
-    _LogLevel(logging.WARNING,  'yellow',   'WRN', '⚠️ '),
-    _LogLevel(logging.INFO,     'magenta',  'INF', 'ℹ️ '),
-    _LogLevel(LOGLEVEL_STDOUT,  'cyan',     'OUT', '💬'),
-    _LogLevel(logging.DEBUG,    'blue',     'DBG', '👾'),
+    _LogLevel(LOGLEVEL_FATAL,   'bold_red',     'FTL', '☠️ '),
+    _LogLevel(logging.CRITICAL, 'bold_magenta', 'CRT', '‼️ '),
+    _LogLevel(logging.ERROR,    'red',          'ERR', '❌'),
+    _LogLevel(logging.WARNING,  'yellow',       'WRN', '⚠️ '),
+    _LogLevel(logging.INFO,     'magenta',      'INF', 'ℹ️ '),
+    _LogLevel(LOGLEVEL_STDOUT,  'cyan',         'OUT', '💬'),
+    _LogLevel(logging.DEBUG,    'blue',         'DBG', '👾'),
 )  # yapf: disable
 
 _LOG = logging.getLogger(__name__)
 _STDERR_HANDLER = logging.StreamHandler()
+
+
+def c_to_py_log_level(c_level: int) -> int:
+    """Converts pw_log C log-level macros to Python logging levels."""
+    return c_level * 10
 
 
 def main() -> None:
@@ -54,7 +63,8 @@ def main() -> None:
     _LOG.setLevel(logging.DEBUG)
 
     # Log one message for every log level.
-    _LOG.critical('Something terrible has happened!')
+    _LOG.log(LOGLEVEL_FATAL, 'An irrecoverable error has occurred!')
+    _LOG.critical('Something important has happened!')
     _LOG.error('There was an error on our last operation')
     _LOG.warning('Looks like something is amiss; consider investigating')
     _LOG.info('The operation went as expected')
