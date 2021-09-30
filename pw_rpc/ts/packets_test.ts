@@ -16,7 +16,7 @@
 import 'jasmine';
 
 import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
-import {Status} from 'pigweed/pw_status/ts/status';
+import {Status} from '@pigweed/pw_status';
 
 import * as packets from './packets';
 

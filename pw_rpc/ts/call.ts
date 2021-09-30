@@ -13,7 +13,7 @@
 // the License.
 
 import {Message} from 'google-protobuf';
-import {Status} from 'pigweed/pw_status/ts/status';
+import {Status} from '@pigweed/pw_status';
 import WaitQueue = require('wait-queue')
 
 import {PendingCalls, Rpc} from './rpc_classes';

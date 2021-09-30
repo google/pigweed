@@ -12,14 +12,25 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
+load("@npm//@bazel/typescript:index.bzl", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
-ts_library(
-    name = "pw_status",
-    package_name = "pigweed/pw_status/ts",
+ts_project(
+    name = "lib",
     srcs = [
+        "index.ts",
         "status.ts",
     ],
+    declaration = True,
+    source_map = True,
+    deps = ["@npm//:node_modules"],  # can't use fine-grained deps
+)
+
+js_library(
+    name = "pw_status",
+    package_name = "@pigweed/pw_status",
+    srcs = ["package.json"],
+    deps = [":lib"],
 )

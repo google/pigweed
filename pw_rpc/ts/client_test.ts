@@ -18,7 +18,7 @@ import 'jasmine';
 import {Message} from 'google-protobuf';
 import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
 import {Library, MessageCreator} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
-import {Status} from 'pigweed/pw_status/ts/status';
+import {Status} from '@pigweed/pw_status';
 import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb'
 
 import {Client} from './client';

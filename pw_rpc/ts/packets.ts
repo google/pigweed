@@ -17,7 +17,7 @@
 import {Message} from 'google-protobuf';
 import {MethodDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
 import * as packetPb from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
-import {Status} from 'pigweed/pw_status/ts/status';
+import {Status} from '@pigweed/pw_status';
 
 // Channel, Service, Method
 type idSet = [number, number, number];
