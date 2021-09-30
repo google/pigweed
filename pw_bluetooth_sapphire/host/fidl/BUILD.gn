@@ -7,6 +7,8 @@ import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 static_library("fidl") {
   sources = [
+    "gatt2_client_server.cc",
+    "gatt2_client_server.h",
     "gatt2_remote_service_server.cc",
     "gatt2_remote_service_server.h",
     "gatt_client_server.cc",
@@ -91,6 +93,7 @@ source_set("tests") {
   testonly = true
 
   sources = [
+    "gatt2_client_server_unittest.cc",
     "gatt2_remote_service_server_unittest.cc",
     "gatt_client_server_unittest.cc",
     "gatt_remote_service_server_unittest.cc",

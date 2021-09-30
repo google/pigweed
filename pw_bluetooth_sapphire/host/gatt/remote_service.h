@@ -23,6 +23,8 @@ namespace bt::gatt {
 class RemoteService;
 
 // Callback type invoked when GATT services are removed, added, or modified.
+// `added` and `modified` are not combined into `updated` for flexibility and debuggability.
+// Modified service handles are not included in `removed`.
 // NOTE: `removed` services should be handled first because they may share handles with `added`
 // services.
 using RemoteServiceWatcher = fit::function<void(std::vector<att::Handle> removed,

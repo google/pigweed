@@ -47,8 +47,8 @@ TEST_F(GattClientServerTest, ListServices) {
     results = std::move(cb_results);
   });
   RunLoopUntilIdle();
-
   ASSERT_EQ(2u, results.size());
+  std::sort(results.begin(), results.end(), [](auto& a, auto& b) { return a.id < b.id; });
   EXPECT_EQ(kHeartRate.ToString(), results[0].type);
   EXPECT_TRUE(results[0].primary);
   EXPECT_EQ(kHid.ToString(), results[1].type);

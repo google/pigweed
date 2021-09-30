@@ -27,6 +27,8 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
       bt::PeerId peer_id, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::RemoteService> request);
   ~Gatt2RemoteServiceServer() override;
 
+  void Close(zx_status_t status);
+
  private:
   using NotifierId = uint64_t;
 

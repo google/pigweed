@@ -1388,6 +1388,15 @@ FidlToScoParametersVector(const std::vector<fbredr::ScoConnectionParameters>& pa
   return fpromise::ok(std::move(out));
 }
 
+bool IsFidlGattHandleValid(fuchsia::bluetooth::gatt2::Handle handle) {
+  if (handle.value > std::numeric_limits<bt::att::Handle>::max()) {
+    bt_log(ERROR, "fidl", "Invalid 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX)",
+           handle.value);
+    return false;
+  }
+  return true;
+}
+
 }  // namespace bthost::fidl_helpers
 
 // static

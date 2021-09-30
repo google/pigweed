@@ -18,6 +18,7 @@ class FakeLayer final : public GATT {
   ~FakeLayer() override = default;
 
   // Create a new peer GATT service. Creates a peer entry if it doesn't already exist.
+  // Replaces an existing service with the same handle if it exists.
   // Notifies the remote service watcher if |notify| is true.
   //
   // Returns the fake remote service and a handle to the fake object.
@@ -26,12 +27,18 @@ class FakeLayer final : public GATT {
   std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> AddPeerService(
       PeerId peer_id, const ServiceData& info, bool notify = false);
 
+  // Removes the service with start handle of |handle| and notifies service watcher.
+  void RemovePeerService(PeerId peer_id, att::Handle handle);
+
   // Assign a callback to be notified when a service discovery has been requested.
   using DiscoverServicesCallback = fit::function<void(PeerId, std::vector<UUID>)>;
   void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
   // Assign the status that will be returned by the ListServices callback.
   void set_list_services_status(att::Status);
+
+  // Ignore future calls to ListServices().
+  void stop_list_services() { pause_list_services_ = true; }
 
   // Assign a callback to be notified when the persist service changed CCC callback is set.
   using SetPersistServiceChangedCCCCallbackCallback = fit::function<void()>;
@@ -83,6 +90,7 @@ class FakeLayer final : public GATT {
   RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_cb_;
 
   att::Status list_services_status_;
+  bool pause_list_services_ = false;
 
   // Emulated GATT peer.
   struct TestPeer {
@@ -90,7 +98,7 @@ class FakeLayer final : public GATT {
     ~TestPeer();
 
     FakeClient fake_client;
-    std::vector<fbl::RefPtr<RemoteService>> services;
+    std::unordered_map<IdType, fbl::RefPtr<RemoteService>> services;
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestPeer);
   };

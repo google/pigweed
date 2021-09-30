@@ -68,15 +68,6 @@ fbg::Characteristic CharacteristicToFidl(
   return fidl_char;
 }
 
-bool IsHandleValid(fbg::Handle handle) {
-  if (handle.value > std::numeric_limits<bt::att::Handle>::max()) {
-    bt_log(ERROR, "fidl", "Invalid 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX)",
-           handle.value);
-    return false;
-  }
-  return true;
-}
-
 // Returned result is supposed to match Read{Characteristic, Descriptor}Callback (result type is
 // converted by FIDL move constructor).
 [[nodiscard]] fit::result<::fuchsia::bluetooth::gatt2::ReadValue,
@@ -139,6 +130,8 @@ Gatt2RemoteServiceServer::~Gatt2RemoteServiceServer() {
   }
   characteristic_notifiers_.clear();
 }
+
+void Gatt2RemoteServiceServer::Close(zx_status_t status) { binding()->Close(status); }
 
 void Gatt2RemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCallback callback) {
   auto res_cb = [callback = std::move(callback)](
@@ -221,7 +214,7 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
 
 void Gatt2RemoteServiceServer::ReadCharacteristic(fbg::Handle fidl_handle, fbg::ReadOptions options,
                                                   ReadCharacteristicCallback callback) {
-  if (!IsHandleValid(fidl_handle)) {
+  if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
     callback(fit::error(fbg::Error::INVALID_HANDLE));
     return;
   }
@@ -250,7 +243,7 @@ void Gatt2RemoteServiceServer::WriteCharacteristic(fbg::Handle fidl_handle,
                                                    std::vector<uint8_t> value,
                                                    fbg::WriteOptions options,
                                                    WriteCharacteristicCallback callback) {
-  if (!IsHandleValid(fidl_handle)) {
+  if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
     callback(fit::error(fbg::Error::INVALID_HANDLE));
     return;
   }
@@ -286,7 +279,7 @@ void Gatt2RemoteServiceServer::WriteCharacteristic(fbg::Handle fidl_handle,
 void Gatt2RemoteServiceServer::ReadDescriptor(::fuchsia::bluetooth::gatt2::Handle fidl_handle,
                                               ::fuchsia::bluetooth::gatt2::ReadOptions options,
                                               ReadDescriptorCallback callback) {
-  if (!IsHandleValid(fidl_handle)) {
+  if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
     callback(fit::error(fbg::Error::INVALID_HANDLE));
     return;
   }
@@ -314,7 +307,7 @@ void Gatt2RemoteServiceServer::ReadDescriptor(::fuchsia::bluetooth::gatt2::Handl
 void Gatt2RemoteServiceServer::WriteDescriptor(fbg::Handle fidl_handle, std::vector<uint8_t> value,
                                                fbg::WriteOptions options,
                                                WriteDescriptorCallback callback) {
-  if (!IsHandleValid(fidl_handle)) {
+  if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
     callback(fit::error(fbg::Error::INVALID_HANDLE));
     return;
   }

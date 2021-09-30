@@ -174,6 +174,9 @@ fpromise::result<std::vector<bt::hci_spec::SynchronousConnectionParameters>>
 FidlToScoParametersVector(
     const std::vector<fuchsia::bluetooth::bredr::ScoConnectionParameters>& params);
 
+// Returns true if |handle| is within the valid handle range.
+bool IsFidlGattHandleValid(fuchsia::bluetooth::gatt2::Handle handle);
+
 }  // namespace bthost::fidl_helpers
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.
