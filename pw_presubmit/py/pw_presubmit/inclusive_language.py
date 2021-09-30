@@ -115,6 +115,9 @@ def inclusive_language(
             found_words.setdefault(path, [])
             found_words[path].append(PathMatch(match.group(0)))
 
+        if path.is_symlink() or path.is_dir():
+            continue
+
         try:
             with open(path, 'r') as ins:
                 enabled = True
@@ -140,7 +143,7 @@ def inclusive_language(
                     # Not using 'continue' so this line always executes.
                     prev = line
 
-        except (UnicodeDecodeError, IsADirectoryError):
+        except UnicodeDecodeError:
             # File is not text, like a gif.
             pass
 
