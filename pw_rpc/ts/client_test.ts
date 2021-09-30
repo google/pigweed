@@ -252,6 +252,17 @@ describe('RPC', () => {
               'pw.rpc.test1.TheTestService.SomeUnary')! as UnaryMethodStub;
     });
 
+    it('blocking call', async () => {
+      for (let i = 0; i < 3; i++) {
+        enqueueResponse(
+            1, unaryStub.method, Status.ABORTED, newResponse('0_o'));
+        const [status, response] = await unaryStub.call(newRequest(6));
+
+        expect(sentPayload(Request).getMagicNumber()).toEqual(6);
+        expect(status).toEqual(Status.ABORTED);
+        expect(response).toEqual(newResponse('0_o'));
+      }
+    });
 
     it('nonblocking call', () => {
       for (let i = 0; i < 3; i++) {
@@ -271,16 +282,31 @@ describe('RPC', () => {
       }
     });
 
+    it('blocking server error', async () => {
+      for (let i = 0; i < 3; i++) {
+        enqueueError(1, unaryStub.method, Status.NOT_FOUND, Status.OK);
+
+        try {
+          await unaryStub.call(newRequest())
+          fail('call expected to fail');
+        } catch (e: any) {
+          expect(e.status).toBe(Status.NOT_FOUND);
+        }
+      }
+    });
+
     it('nonblocking call cancel', () => {
-      let onNext = jasmine.createSpy();
-      const call = unaryStub.invoke(newRequest(), onNext);
+      for (let i = 0; i < 3; i++) {
+        let onNext = jasmine.createSpy();
+        const call = unaryStub.invoke(newRequest(), onNext);
 
-      expect(requests.length).toBeGreaterThan(0);
-      requests = [];
+        expect(requests.length).toBeGreaterThan(0);
+        requests = [];
 
-      expect(call.cancel()).toBeTrue();
-      expect(call.cancel()).toBeFalse();
-      expect(onNext).not.toHaveBeenCalled();
+        expect(call.cancel()).toBeTrue();
+        expect(call.cancel()).toBeFalse();
+        expect(onNext).not.toHaveBeenCalled();
+      }
     });
 
     it('nonblocking duplicate calls first is cancelled', () => {

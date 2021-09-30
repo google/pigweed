@@ -66,7 +66,9 @@ before invoke can be called with the correct parameters.
 
 Unary RPC
 ---------
-Only non blocking calls are currently supported.
+A unary RPC can be invoked with either callbacks or promises being used to
+read the response. To avoid reading duplicate responses, do not use both
+simultaneously.
 
 .. code-block:: typescript
 
@@ -75,9 +77,14 @@ Only non blocking calls are currently supported.
       as UnaryMethodStub;
   request = new unaryStub.method.requestType();
   request.setFooProperty('hello world');
+
+  // Callback
   const call = unaryStub.invoke(request, (response) => {
     console.log(response);
   });
+
+  // Promise
+  const [status, response] = await unaryStub.call(request);
 
 Server Streaming RPC
 --------------------

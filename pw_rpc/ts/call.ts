@@ -168,6 +168,18 @@ export class Call {
     }
   }
 
+  protected async unaryWait(): Promise<[Status, Message]> {
+    for await (const response of this.getResponses(1)) {
+    }
+    if (this.status === undefined) {
+      throw Error('Unexpected undefined status at end of stream');
+    }
+    if (this.responses.length !== 1) {
+      throw Error(`Unexpected number of responses: ${this.responses.length}`);
+    }
+    return [this.status!, this.responses[0]];
+  }
+
   protected async streamWait(): Promise<[Status, Message[]]> {
     for await (const response of this.getResponses()) {
     }
@@ -198,7 +210,10 @@ export class Call {
 
 /** Tracks the state of a unary RPC call. */
 export class UnaryCall extends Call {
-  // TODO(jaredweinstein): Complete unary invocation logic.
+  /** Awaits the server response */
+  complete(): Promise<[Status, Message]> {
+    return this.unaryWait();
+  }
 }
 
 /** Tracks the state of a client streaming RPC call. */

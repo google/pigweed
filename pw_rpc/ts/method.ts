@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import {Status} from '@pigweed/pw_status';
 import {Message} from 'google-protobuf';
 
 import {BidirectionalStreamingCall, Call, Callback, ClientStreamingCall, ServerStreamingCall, UnaryCall} from './call';
@@ -47,9 +48,6 @@ export abstract class MethodStub {
 }
 
 export class UnaryMethodStub extends MethodStub {
-  // TODO(jaredweinstein): Add blocking invocation.
-  // invokeBlocking(request) {...}
-
   invoke(
       request: Message,
       onNext: Callback = () => {},
@@ -57,8 +55,12 @@ export class UnaryMethodStub extends MethodStub {
       onError: Callback = () => {}): UnaryCall {
     const call =
         new UnaryCall(this.rpcs, this.rpc, onNext, onCompleted, onError);
-    call.invoke(request!);
+    call.invoke(request);
     return call;
+  }
+
+  async call(request: Message): Promise<[Status, Message]> {
+    return await this.invoke(request).complete();
   }
 }
 
@@ -72,6 +74,10 @@ export class ServerStreamingMethodStub extends MethodStub {
         this.rpcs, this.rpc, onNext, onCompleted, onError);
     call.invoke(request);
     return call;
+  }
+
+  async call(request?: Message) {
+    return this.invoke(request).getResponses();
   }
 }
 
