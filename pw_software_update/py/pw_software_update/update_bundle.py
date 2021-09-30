@@ -75,13 +75,17 @@ def targets_from_directory(
     return targets
 
 
-def gen_unsigned_update_bundle(targets: Dict[Path, str],
-                               persist: Optional[Path] = None) -> UpdateBundle:
+def gen_unsigned_update_bundle(
+    targets: Dict[Path, str],
+    persist: Optional[Path] = None,
+    targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION
+) -> UpdateBundle:
     """Given a set of targets, generates an unsigned UpdateBundle.
 
     Args:
       targets: A dict mapping payload Paths to their target names.
       persist: If not None, persist the raw TUF repository to this directory.
+      targets_metadata_version: version number for the targets metadata.
 
     The input targets will be treated as an ephemeral TUF repository for the
     purposes of building an UpdateBundle instance. This approach differs
@@ -111,7 +115,8 @@ def gen_unsigned_update_bundle(targets: Dict[Path, str],
             os.makedirs(target_persist_path.parent, exist_ok=True)
             shutil.copy(path, target_persist_path)
 
-    targets_metadata = metadata.gen_targets_metadata(target_payloads)
+    targets_metadata = metadata.gen_targets_metadata(
+        target_payloads, version=targets_metadata_version)
     unsigned_targets_metadata = SignedTargetsMetadata(
         serialized_targets_metadata=targets_metadata.SerializeToString())
     return UpdateBundle(
@@ -155,17 +160,27 @@ def parse_args() -> argparse.Namespace:
                         default=None,
                         help=('If provided, TUF repo will be persisted to disk'
                               ' at this path for debugging'))
+    parser.add_argument('--targets-metadata-version',
+                        type=int,
+                        default=metadata.DEFAULT_METADATA_VERSION,
+                        help='Version number for the targets metadata')
     return parser.parse_args()
 
 
-def main(targets: Iterable[str], out: Path, persist: Path = None) -> None:
+def main(
+        targets: Iterable[str],
+        out: Path,
+        persist: Path = None,
+        targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION
+) -> None:
     """Generates an UpdateBundle and serializes it to disk."""
     target_dict = {}
     for target_arg in targets:
         path, target_name = parse_target_arg(target_arg)
         target_dict[path] = target_name
 
-    bundle = gen_unsigned_update_bundle(target_dict, persist)
+    bundle = gen_unsigned_update_bundle(target_dict, persist,
+                                        targets_metadata_version)
     out.write_bytes(bundle.SerializeToString())
 
 

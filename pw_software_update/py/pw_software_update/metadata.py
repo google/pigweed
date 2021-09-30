@@ -23,11 +23,21 @@ HASH_FACTORIES = {
     HashFunction.SHA256: hashlib.sha256,
 }
 DEFAULT_HASHES = (HashFunction.SHA256, )
+DEFAULT_SPEC_VERSION = "0.0.0"
+DEFAULT_METADATA_VERSION = 0
+
+
+def gen_commmon_metadata(
+        spec_version: str = DEFAULT_SPEC_VERSION,
+        version: int = DEFAULT_METADATA_VERSION) -> CommonMetadata:
+    """Generates CommonMetadata."""
+    return CommonMetadata(spec_version=spec_version, version=version)
 
 
 def gen_targets_metadata(
     target_payloads: Dict[str, bytes],
-    hash_funcs: Iterable['HashFunction.V'] = DEFAULT_HASHES
+    hash_funcs: Iterable['HashFunction.V'] = DEFAULT_HASHES,
+    version: int = DEFAULT_METADATA_VERSION,
 ) -> TargetsMetadata:
     """Generates TargetsMetadata the given target payloads."""
     target_files = []
@@ -37,8 +47,9 @@ def gen_targets_metadata(
                        length=len(target_payload),
                        hashes=gen_hashes(target_payload, hash_funcs)))
 
-    return TargetsMetadata(common_metadata=gen_commmon_metadata(),
-                           target_files=target_files)
+    return TargetsMetadata(
+        common_metadata=gen_commmon_metadata(version=version),
+        target_files=target_files)
 
 
 def gen_hashes(data: bytes,
@@ -53,9 +64,3 @@ def gen_hashes(data: bytes,
         result.append(Hash(function=func, hash=digest))
 
     return result
-
-
-def gen_commmon_metadata() -> CommonMetadata:
-    """Generates CommonMetadata."""
-    # TODO(jethier): Figure out where common metadata should actually come from.
-    return CommonMetadata(spec_version="0.0.0", version=0)
