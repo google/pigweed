@@ -14,10 +14,10 @@
 
 /** Provides a pw_rpc client for TypeScript. */
 
+import {Library} from '@pigweed/pw_protobuf_compiler';
+import {Status} from '@pigweed/pw_status';
 import {Message} from 'google-protobuf';
 import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
-import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
-import {Status} from '@pigweed/pw_status';
 
 import {Channel, Service} from './descriptors';
 import {MethodStub, methodStubFactory} from './method';

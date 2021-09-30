@@ -15,7 +15,7 @@
 /* eslint-env browser, jasmine */
 import 'jasmine';
 
-import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
+import {Library} from '@pigweed/pw_protobuf_compiler';
 import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb';
 
 import * as descriptors from './descriptors';

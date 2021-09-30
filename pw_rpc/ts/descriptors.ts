@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import {Library} from '@pigweed/pw_protobuf_compiler';
 import {MethodDescriptorProto, ServiceDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
-import {Library} from 'pigweed/pw_protobuf_compiler/ts/proto_lib';
 
 import {hash} from './hash';
 
