@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_sync/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -45,11 +46,26 @@ pw_source_set("pw_blob_store") {
   ]
 }
 
+pw_source_set("flat_file_system_entry") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":pw_blob_store",
+    "$dir_pw_file:flat_file_system",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:virtual_basic_lockable",
+    dir_pw_status,
+  ]
+  public = [ "public/pw_blob_store/flat_file_system_entry.h" ]
+  sources = [ "flat_file_system_entry.cc" ]
+  deps = [ dir_pw_assert ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":blob_store_test",
     ":blob_store_deferred_write_test",
     ":blob_store_chunk_write_test",
+    ":flat_file_system_entry_test",
   ]
 }
 
@@ -87,6 +103,20 @@ pw_test("blob_store_deferred_write_test") {
     dir_pw_random,
   ]
   sources = [ "blob_store_deferred_write_test.cc" ]
+}
+
+pw_test("flat_file_system_entry_test") {
+  enable_if = pw_sync_MUTEX_BACKEND != ""
+  deps = [
+    ":flat_file_system_entry",
+    ":pw_blob_store",
+    "$dir_pw_kvs:crc16",
+    "$dir_pw_kvs:fake_flash",
+    "$dir_pw_kvs:fake_flash_test_key_value_store",
+    "$dir_pw_sync:mutex",
+    dir_pw_random,
+  ]
+  sources = [ "flat_file_system_entry_test.cc" ]
 }
 
 pw_doc_group("docs") {

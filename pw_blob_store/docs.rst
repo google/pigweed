@@ -82,6 +82,14 @@ Reading from a BlobStore
      BlobReader::Seek() to read from a desired offset.
   3) BlobReader::Close().
 
+==========================
+FileSystem RPC integration
+==========================
+``pw_blob_store`` provides an optional ``FileSystemEntry`` implementation for
+use with ``pw_file``'s ``FlatFileSystemService``. This simplifies the process of
+enumerating ``BlobStore`` objects as files via ``pw_file``'s ``FileSystem`` RPC
+service.
+
 ===========
 Size report
 ===========

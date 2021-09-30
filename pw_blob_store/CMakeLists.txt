@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_blob_store
+pw_add_module_library(pw_blob_store
   PUBLIC_DEPS
     pw_bytes
     pw_containers
@@ -29,3 +29,51 @@ pw_auto_add_simple_module(pw_blob_store
     pw_random
     pw_string
 )
+
+pw_add_module_library(pw_blob_store.flat_file_system_entry
+  PUBLIC_DEPS
+    pw_blob_store
+    pw_bytes
+    pw_containers
+    pw_file.flat_file_system
+    pw_kvs
+    pw_span
+    pw_status
+    pw_stream
+    pw_sync.mutex
+  PRIVATE_DEPS
+    pw_assert
+    pw_checksum
+    pw_log
+    pw_random
+    pw_string
+)
+
+pw_add_test(pw_blob_store.blob_store_chunk_write_test
+  SOURCES
+    blob_store_chunk_write_test.cc
+  DEPS
+    pw_blob_store
+  GROUPS
+    pw_blob_store
+)
+
+pw_add_test(pw_blob_store.blob_store_deferred_write_test
+  SOURCES
+    blob_store_deferred_write_test.cc
+  DEPS
+    pw_blob_store
+  GROUPS
+    pw_blob_store
+)
+
+pw_add_test(pw_blob_store.flat_file_system_entry_test
+  SOURCES
+    flat_file_system_entry_test.cc
+  DEPS
+    pw_blob_store
+    pw_blob_store.flat_file_system_entry
+  GROUPS
+    pw_blob_store
+)
+
