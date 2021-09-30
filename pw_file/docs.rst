@@ -40,6 +40,12 @@ file system is treated as a flat file system; it does not support any
 directory-like interactions.
 
 The ``FlatFileSystemService`` implementation requires a static, fixed list of
-``FileSystemEntry`` pointers. Each ``FileSystemEntry`` represents a potential
+``Entry`` pointers. Each ``Entry`` represents a potential
 file, and acts as an interface boundary that is backed by some kind of storage
 mechanism (e.g. ``BlobStore``, ``PersistentBuffer``).
+
+All ``Entry`` objects that should be enumerated by a
+``FlatFileSystemService`` MUST be named, and names must be globally unique to
+prevent ambiguity. Unnamed file entries will NOT be enumerated by a
+``FlatFileSystemService``, and are considered empty/deleted files. It is valid
+to have empty files that are enumerated with a name.

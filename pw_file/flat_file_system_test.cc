@@ -31,12 +31,12 @@
 namespace pw::file {
 namespace {
 
-class FakeFile : public FlatFileSystemService::FileSystemEntry {
+class FakeFile : public FlatFileSystemService::Entry {
  public:
   constexpr FakeFile(std::string_view file_name, size_t size, uint32_t file_id)
       : name_(file_name), size_(size), file_id_(file_id) {}
 
-  StatusWithSize Name(ByteSpan dest) override {
+  StatusWithSize Name(std::span<char> dest) override {
     if (name_.empty()) {
       return StatusWithSize(Status::NotFound(), 0);
     }
@@ -52,16 +52,13 @@ class FakeFile : public FlatFileSystemService::FileSystemEntry {
 
   size_t SizeBytes() override { return size_; }
 
-  FlatFileSystemService::FileSystemEntry::FilePermissions Permissions()
-      override {
-    return FlatFileSystemService::FileSystemEntry::FilePermissions::NONE;
+  FlatFileSystemService::Entry::FilePermissions Permissions() const override {
+    return FlatFileSystemService::Entry::FilePermissions::NONE;
   }
 
   Status Delete() override { return Status::Unimplemented(); }
 
-  FlatFileSystemService::FileSystemEntry::Id FileId() override {
-    return file_id_;
-  }
+  FlatFileSystemService::Entry::Id FileId() const override { return file_id_; }
 
  private:
   std::string_view name_;
@@ -69,16 +66,16 @@ class FakeFile : public FlatFileSystemService::FileSystemEntry {
   uint32_t file_id_;
 };
 
-bool FileSystemEntryHasName(FlatFileSystemService::FileSystemEntry* entry) {
-  std::array<std::byte, 4> expected_name;
+bool EntryHasName(FlatFileSystemService::Entry* entry) {
+  std::array<char, 4> expected_name;
   StatusWithSize file_name_sws = entry->Name(expected_name);
   return file_name_sws.size() != 0;
 }
 
 // Compares a serialized Path message to a flat file system entry.
 void ComparePathToEntry(ConstByteSpan serialized_path,
-                        FlatFileSystemService::FileSystemEntry* entry) {
-  std::array<std::byte, 64> expected_name;
+                        FlatFileSystemService::Entry* entry) {
+  std::array<char, 64> expected_name;
   StatusWithSize file_name_sws = entry->Name(expected_name);
 
   // A partial name read shouldn't happen.
@@ -131,7 +128,7 @@ void ComparePathToEntry(ConstByteSpan serialized_path,
 }
 
 size_t ValidateExpectedPaths(
-    std::span<FlatFileSystemService::FileSystemEntry*> flat_file_system,
+    std::span<FlatFileSystemService::Entry*> flat_file_system,
     const Vector<ByteSpan>& results) {
   size_t serialized_path_entry_count = 0;
   size_t file_system_index = 0;
@@ -148,7 +145,7 @@ size_t ValidateExpectedPaths(
       serialized_path_entry_count++;
 
       // Skip any file system entries without names.
-      while (!FileSystemEntryHasName(flat_file_system[file_system_index])) {
+      while (!EntryHasName(flat_file_system[file_system_index])) {
         file_system_index++;
         EXPECT_GT(flat_file_system.size(), file_system_index);
       }
@@ -164,10 +161,10 @@ size_t ValidateExpectedPaths(
 }
 
 TEST(FlatFileSystem, List_NoFiles) {
-  std::array<std::byte, 1> file_name_buffer;
+  std::array<char, 1> file_name_buffer;
 
   PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
-  ctx(std::span<FlatFileSystemService::FileSystemEntry*>(), file_name_buffer);
+  ctx(std::span<FlatFileSystemService::Entry*>(), file_name_buffer);
   ctx.call(ConstByteSpan());
 
   EXPECT_TRUE(ctx.done());
@@ -176,10 +173,9 @@ TEST(FlatFileSystem, List_NoFiles) {
 }
 
 TEST(FlatFileSystem, List_OneFile) {
-  std::array<std::byte, 20> file_name_buffer;
+  std::array<char, 20> file_name_buffer;
   FakeFile file{"compressed.zip.gz", 2, 1231};
-  std::array<FlatFileSystemService::FileSystemEntry*, 1> static_file_system{
-      &file};
+  std::array<FlatFileSystemService::Entry*, 1> static_file_system{&file};
 
   PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
   ctx(static_file_system, file_name_buffer);
@@ -189,10 +185,10 @@ TEST(FlatFileSystem, List_OneFile) {
 }
 
 TEST(FlatFileSystem, List_ThreeFiles) {
-  std::array<std::byte, 10> file_name_buffer;
+  std::array<char, 10> file_name_buffer;
   std::array<FakeFile, 3> files{
       {{"SNAP_001", 372, 9}, {"tokens.csv", 808, 15038202}, {"a.txt", 0, 2}}};
-  std::array<FlatFileSystemService::FileSystemEntry*, 3> static_file_system{
+  std::array<FlatFileSystemService::Entry*, 3> static_file_system{
       &files[0], &files[1], &files[2]};
 
   PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
@@ -203,10 +199,9 @@ TEST(FlatFileSystem, List_ThreeFiles) {
 }
 
 TEST(FlatFileSystem, List_UnnamedFile) {
-  std::array<std::byte, 10> file_name_buffer;
+  std::array<char, 10> file_name_buffer;
   FakeFile file{"", 0, 0};
-  std::array<FlatFileSystemService::FileSystemEntry*, 1> static_file_system{
-      &file};
+  std::array<FlatFileSystemService::Entry*, 1> static_file_system{&file};
 
   PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)
   ctx(static_file_system, file_name_buffer);
@@ -216,10 +211,10 @@ TEST(FlatFileSystem, List_UnnamedFile) {
 }
 
 TEST(FlatFileSystem, List_FileMissingName) {
-  std::array<std::byte, 10> file_name_buffer;
+  std::array<char, 10> file_name_buffer;
   std::array<FakeFile, 3> files{
       {{"SNAP_001", 372, 9}, {"", 808, 15038202}, {"a.txt", 0, 2}}};
-  std::array<FlatFileSystemService::FileSystemEntry*, 3> static_file_system{
+  std::array<FlatFileSystemService::Entry*, 3> static_file_system{
       &files[0], &files[1], &files[2]};
 
   PW_RAW_TEST_METHOD_CONTEXT(FlatFileSystemService, List)

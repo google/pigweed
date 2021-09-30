@@ -34,11 +34,10 @@
 
 namespace pw::file {
 
-using FileSystemEntry = FlatFileSystemService::FileSystemEntry;
+using Entry = FlatFileSystemService::Entry;
 
 Status FlatFileSystemService::EnumerateFile(
-    FileSystemEntry& entry,
-    pw::file::ListResponse::StreamEncoder& output_encoder) {
+    Entry& entry, pw::file::ListResponse::StreamEncoder& output_encoder) {
   StatusWithSize sws = entry.Name(file_name_buffer_);
   if (!sws.ok()) {
     return sws.status();
@@ -56,7 +55,7 @@ Status FlatFileSystemService::EnumerateFile(
 }
 
 void FlatFileSystemService::EnumerateAllFiles(RawServerWriter& writer) {
-  for (FileSystemEntry* entry : entries_) {
+  for (Entry* entry : entries_) {
     PW_DCHECK_NOTNULL(entry);
     // For now, don't try to pack entries.
     pw::file::ListResponse::MemoryEncoder encoder(writer.PayloadBuffer());
@@ -95,7 +94,7 @@ void FlatFileSystemService::List(ServerContext&,
     }
 
     // Find and enumerate the file requested.
-    Result<FileSystemEntry*> result = FindFile(file_name_view);
+    Result<Entry*> result = FindFile(file_name_view);
     if (!result.ok()) {
       writer.Finish(result.status());
       return;
@@ -135,10 +134,9 @@ StatusWithSize FlatFileSystemService::Delete(ServerContext&,
   return StatusWithSize(Status::InvalidArgument(), 0);
 }
 
-Result<FileSystemEntry*> FlatFileSystemService::FindFile(
-    std::string_view file_name) {
+Result<Entry*> FlatFileSystemService::FindFile(std::string_view file_name) {
   Status search_status;
-  for (FileSystemEntry* entry : entries_) {
+  for (Entry* entry : entries_) {
     PW_DCHECK_NOTNULL(entry);
     StatusWithSize sws = entry->Name(file_name_buffer_);
 
@@ -164,7 +162,7 @@ Result<FileSystemEntry*> FlatFileSystemService::FindFile(
 }
 
 Status FlatFileSystemService::FindAndDeleteFile(std::string_view file_name) {
-  Result<FileSystemEntry*> result = FindFile(file_name);
+  Result<Entry*> result = FindFile(file_name);
   if (!result.ok()) {
     return result.status();
   }
