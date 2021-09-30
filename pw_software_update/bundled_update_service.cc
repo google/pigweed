@@ -388,8 +388,9 @@ void BundledUpdateService::DoApply() {
         file_name_span.size_bytes());
     stream::IntervalReader file_reader =
         bundle_.GetTargetPayload(file_name_view);
-    if (const Status status =
-            backend_.ApplyTargetFile(file_name_view, file_reader);
+    const size_t bundle_offset = file_reader.start();
+    if (const Status status = backend_.ApplyTargetFile(
+            file_name_view, file_reader, bundle_offset);
         !status.ok()) {
       std::lock_guard lock(mutex_);
       SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,

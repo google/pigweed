@@ -81,7 +81,8 @@ class BundledUpdateBackend {
 
   // Update the specific target file on the device.
   virtual Status ApplyTargetFile(std::string_view target_file_name,
-                                 stream::Reader& target_payload) = 0;
+                                 stream::Reader& target_payload,
+                                 size_t update_bundle_offset) = 0;
 
   // Get reader of the device's current manifest.
   virtual Status GetCurrentManifestReader(
