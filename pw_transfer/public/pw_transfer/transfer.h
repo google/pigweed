@@ -21,6 +21,11 @@
 #include "pw_transfer/transfer.raw_rpc.pb.h"
 
 namespace pw::transfer {
+namespace internal {
+
+struct Chunk;
+
+}  // namespace internal
 
 class TransferService : public generated::Transfer<TransferService> {
  public:
@@ -75,8 +80,14 @@ class TransferService : public generated::Transfer<TransferService> {
   // sent successfully.
   bool SendNextReadChunk(internal::ServerContext& context);
 
-  void OnReadMessage(ConstByteSpan message);
-  void OnWriteMessage(ConstByteSpan message);
+  void HandleChunk(ConstByteSpan message, internal::ServerContext::Type type);
+
+  void HandleReadChunk(internal::ServerContext& transfer,
+                       const internal::Chunk& chunk);
+  void HandleWriteChunk(internal::ServerContext& transfer,
+                        const internal::Chunk& chunk);
+
+  void SendWriteTransferParameters(internal::ServerContext& transfer);
 
   // All registered transfer handlers.
   IntrusiveList<internal::Handler> handlers_;

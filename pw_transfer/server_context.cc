@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "TRN"
+
 #include "pw_transfer/internal/server_context.h"
 
 #include "pw_assert/check.h"

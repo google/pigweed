@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "TRN"
+
 #include "pw_transfer/transfer.h"
 
 #include "pw_assert/check.h"
@@ -26,16 +28,18 @@ void TransferService::Read(ServerContext&,
                            RawServerReaderWriter& reader_writer) {
   read_stream_ = std::move(reader_writer);
 
-  read_stream_.set_on_next(
-      [this](ConstByteSpan message) { OnReadMessage(message); });
+  read_stream_.set_on_next([this](ConstByteSpan message) {
+    HandleChunk(message, internal::ServerContext::kRead);
+  });
 }
 
 void TransferService::Write(ServerContext&,
                             RawServerReaderWriter& reader_writer) {
   write_stream_ = std::move(reader_writer);
 
-  write_stream_.set_on_next(
-      [this](ConstByteSpan message) { OnWriteMessage(message); });
+  write_stream_.set_on_next([this](ConstByteSpan message) {
+    HandleChunk(message, internal::ServerContext::kWrite);
+  });
 }
 
 void TransferService::SendStatusChunk(RawServerReaderWriter& stream,
@@ -47,9 +51,17 @@ void TransferService::SendStatusChunk(RawServerReaderWriter& stream,
 
   Result<ConstByteSpan> result =
       internal::EncodeChunk(chunk, stream.PayloadBuffer());
-  if (result.ok()) {
-    stream.Write(result.value())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+
+  if (!result.ok()) {
+    PW_LOG_ERROR("Failed to encode final chunk for transfer %u",
+                 static_cast<unsigned>(transfer_id));
+    return;
+  }
+
+  if (!stream.Write(result.value()).ok()) {
+    PW_LOG_ERROR("Failed to send final chunk for transfer %u",
+                 static_cast<unsigned>(transfer_id));
+    return;
   }
 }
 
@@ -98,9 +110,9 @@ bool TransferService::SendNextReadChunk(internal::ServerContext& context) {
 void TransferService::FinishTransfer(internal::ServerContext& transfer,
                                      Status status) {
   const uint32_t id = transfer.transfer_id();
-  PW_LOG_INFO("Sending status %u in final chunk of transfer %u",
-              status.code(),
-              static_cast<unsigned>(id));
+  PW_LOG_INFO("Transfer %u completed with status %u; sending final chunk",
+              static_cast<unsigned>(id),
+              status.code());
   status.Update(transfer.Finish(status));
 
   RawServerReaderWriter& stream =
@@ -109,7 +121,8 @@ void TransferService::FinishTransfer(internal::ServerContext& transfer,
   SendStatusChunk(stream, id, status);
 }
 
-void TransferService::OnReadMessage(ConstByteSpan message) {
+void TransferService::HandleChunk(ConstByteSpan message,
+                                  internal::ServerContext::Type type) {
   // All incoming chunks in a client read transfer are transfer parameter
   // updates, except for the final chunk, which is an acknowledgement of
   // completion.
@@ -122,40 +135,55 @@ void TransferService::OnReadMessage(ConstByteSpan message) {
   //   - max_chunk_size_bytes
   //   - min_delay_microseconds (not yet supported)
   //
-  internal::Chunk parameters;
+  internal::Chunk chunk;
 
-  if (Status status = internal::DecodeChunk(message, parameters);
-      !status.ok()) {
+  if (Status status = internal::DecodeChunk(message, chunk); !status.ok()) {
     // No special handling required here. The client will retransmit the chunk
     // when no response is received.
-    PW_LOG_ERROR("Failed to decode incoming read transfer chunk");
+    PW_LOG_ERROR("Failed to decode incoming transfer chunk");
     return;
   }
 
+  internal::ServerContextPool& pool = type == internal::ServerContext::kRead
+                                          ? read_transfers_
+                                          : write_transfers_;
+
   Result<internal::ServerContext*> result =
-      read_transfers_.GetOrStartTransfer(parameters.transfer_id);
+      pool.GetOrStartTransfer(chunk.transfer_id);
   if (!result.ok()) {
-    PW_LOG_ERROR("Error handling read transfer %u: %d",
-                 static_cast<unsigned>(parameters.transfer_id),
-                 static_cast<int>(result.status().code()));
-    SendStatusChunk(read_stream_, parameters.transfer_id, result.status());
+    SendStatusChunk(
+        type == internal::ServerContext::kRead ? read_stream_ : write_stream_,
+        chunk.transfer_id,
+        result.status());
+    PW_LOG_ERROR("Error handling chunk for transfer %u: %d",
+                 static_cast<unsigned>(chunk.transfer_id),
+                 result.status().code());
     return;
   }
 
   internal::ServerContext& transfer = *result.value();
 
-  if (parameters.status.has_value()) {
+  if (chunk.status.has_value()) {
     // Transfer has been terminated (successfully or not).
-    Status status = parameters.status.value();
+    Status status = chunk.status.value();
     if (!status.ok()) {
-      PW_LOG_ERROR("Receiver terminated read transfer %u with status %d",
-                   static_cast<unsigned>(parameters.transfer_id),
+      PW_LOG_ERROR("Receiver terminated transfer %u with status %d",
+                   static_cast<unsigned>(chunk.transfer_id),
                    static_cast<int>(status.code()));
     }
     transfer.Finish(status).IgnoreError();
     return;
   }
 
+  if (type == internal::ServerContext::kRead) {
+    HandleReadChunk(transfer, chunk);
+  } else {
+    HandleWriteChunk(transfer, chunk);
+  }
+}
+
+void TransferService::HandleReadChunk(internal::ServerContext& transfer,
+                                      const internal::Chunk& parameters) {
   if (!parameters.pending_bytes.has_value()) {
     // Malformed chunk.
     FinishTransfer(transfer, Status::InvalidArgument());
@@ -186,80 +214,52 @@ void TransferService::OnReadMessage(ConstByteSpan message) {
   }
 }
 
-void TransferService::OnWriteMessage(ConstByteSpan message) {
-  // Process an incoming chunk during a client write transfer. The chunk may
-  // either be the initial "start write" chunk (which only contains the transfer
-  // ID), or a data chunk.
-  internal::Chunk chunk;
-
-  if (Status status = internal::DecodeChunk(message, chunk); !status.ok()) {
-    PW_LOG_ERROR("Failed to decode incoming write transfer chunk");
+void TransferService::HandleWriteChunk(internal::ServerContext& transfer,
+                                       const internal::Chunk& chunk) {
+  if (chunk.offset != transfer.offset()) {
+    // Bad offset; reset pending_bytes to send another parameters chunk.
+    PW_LOG_DEBUG("Transfer %u expected offset %u, received %u",
+                 static_cast<unsigned>(transfer.transfer_id()),
+                 static_cast<unsigned>(transfer.offset()),
+                 static_cast<unsigned>(chunk.offset));
+    SendWriteTransferParameters(transfer);
     return;
   }
 
-  // Try to find an active write transfer for the requested ID, or start a new
-  // one if a writable TransferHandler is registered for it.
-  Result<internal::ServerContext*> maybe_context =
-      write_transfers_.GetOrStartTransfer(chunk.transfer_id);
-  if (!maybe_context.ok()) {
-    PW_LOG_ERROR("Error handling write transfer %u: %d",
-                 static_cast<unsigned>(chunk.transfer_id),
-                 static_cast<int>(maybe_context.status().code()));
-    SendStatusChunk(write_stream_, chunk.transfer_id, maybe_context.status());
+  if (chunk.data.size() > transfer.pending_bytes()) {
+    // End the transfer, as this indcates a bug with the client implementation
+    // where it doesn't respect pending_bytes. Trying to recover from here
+    // could potentially result in an infinite transfer loop.
+    PW_LOG_ERROR(
+        "Received more data than what was requested; terminating transfer.");
+    FinishTransfer(transfer, Status::Internal());
     return;
   }
 
-  internal::ServerContext& transfer = *maybe_context.value();
-
-  // Check for a client-side error terminating the transfer.
-  if (chunk.status.has_value()) {
-    transfer.Finish(chunk.status.value()).IgnoreError();
-    return;
-  }
-
-  // Copy data from the chunk into the transfer handler's Writer, if it is at
-  // the offset the transfer is currently expecting. Under some circumstances,
-  // the chunk's data may be empty (e.g. a zero-length transfer). In that case,
-  // handle the chunk as if the data exists.
-  bool chunk_data_processed = false;
-
-  if (chunk.offset == transfer.offset()) {
-    if (chunk.data.empty()) {
-      chunk_data_processed = true;
-    } else if (chunk.data.size() <= transfer.pending_bytes()) {
-      if (Status status = transfer.writer().Write(chunk.data); !status.ok()) {
-        PW_LOG_ERROR(
-            "Transfer %u write of %u B chunk failed with status %u; aborting "
-            "with DATA_LOSS",
-            static_cast<unsigned>(chunk.transfer_id),
-            static_cast<unsigned>(chunk.data.size()),
-            status.code());
-        FinishTransfer(transfer, Status::DataLoss());
-        return;
-      }
-      transfer.set_offset(transfer.offset() + chunk.data.size());
-      transfer.set_pending_bytes(transfer.pending_bytes() - chunk.data.size());
-      chunk_data_processed = true;
-    } else {
-      // End the transfer, as this indcates a bug with the client implementation
-      // where it doesn't respect pending_bytes. Trying to recover from here
-      // could potentially result in an infinite transfer loop.
+  // Write the received data to the writer.
+  if (!chunk.data.empty()) {
+    if (Status status = transfer.writer().Write(chunk.data); !status.ok()) {
       PW_LOG_ERROR(
-          "Received more data than what was requested; terminating transfer.");
-      FinishTransfer(transfer, Status::Internal());
+          "Transfer %u write of %u B chunk failed with status %u; aborting "
+          "with DATA_LOSS",
+          static_cast<unsigned>(chunk.transfer_id),
+          static_cast<unsigned>(chunk.data.size()),
+          status.code());
+      FinishTransfer(transfer, Status::DataLoss());
       return;
     }
-  } else {
-    // Bad offset; reset pending_bytes to send another parameters chunk.
-    transfer.set_pending_bytes(0);
   }
 
   // When the client sets remaining_bytes to 0, it indicates completion of the
   // transfer. Acknowledge the completion through a status chunk and clean up.
-  if (chunk_data_processed && chunk.remaining_bytes == 0) {
+  if (chunk.remaining_bytes == 0) {
     FinishTransfer(transfer, OkStatus());
     return;
   }
+
+  // Update the transfer state.
+  transfer.set_offset(transfer.offset() + chunk.data.size());
+  transfer.set_pending_bytes(transfer.pending_bytes() - chunk.data.size());
 
   if (transfer.pending_bytes() > 0) {
     // Expecting more data to be sent by the client. Wait for the next chunk.
@@ -268,16 +268,31 @@ void TransferService::OnWriteMessage(ConstByteSpan message) {
 
   // All pending data has been received. Send a new parameters chunk to start
   // the next batch.
+  SendWriteTransferParameters(transfer);
+}
+
+void TransferService::SendWriteTransferParameters(
+    internal::ServerContext& transfer) {
   transfer.set_pending_bytes(
       std::min(default_max_bytes_to_receive_,
                transfer.writer().ConservativeWriteLimit()));
 
-  internal::Chunk parameters = {};
-  parameters.transfer_id = transfer.transfer_id();
-  parameters.offset = transfer.offset();
-  parameters.pending_bytes = transfer.pending_bytes();
-  parameters.max_chunk_size_bytes = MaxWriteChunkSize(
+  const size_t max_chunk_size_bytes = MaxWriteChunkSize(
       transfer, max_chunk_size_bytes_, write_stream_.channel_id());
+  const internal::Chunk parameters = {
+      .transfer_id = transfer.transfer_id(),
+      .pending_bytes = transfer.pending_bytes(),
+      .max_chunk_size_bytes = max_chunk_size_bytes,
+      .offset = transfer.offset(),
+  };
+
+  PW_LOG_DEBUG(
+      "Transfer %u sending updated transfer parameters: "
+      "offset=%u, pending_bytes=%u, chunk_size=%u",
+      static_cast<unsigned>(transfer.transfer_id()),
+      static_cast<unsigned>(transfer.offset()),
+      static_cast<unsigned>(transfer.pending_bytes()),
+      static_cast<unsigned>(max_chunk_size_bytes));
 
   // If the parameters can't be encoded or sent, it most likely indicates a
   // transport-layer issue, so there isn't much that can be done by the transfer
