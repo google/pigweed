@@ -487,7 +487,7 @@ void LowEnergyCentralServer::OnScanResult(const bt::gap::Peer& peer) {
   }
 
   if (peer.rssi() != bt::hci_spec::kRSSIInvalid) {
-    fidl_device->rssi = Int8::New();
+    fidl_device->rssi = std::make_unique<Int8>();
     fidl_device->rssi->value = peer.rssi();
   }
 

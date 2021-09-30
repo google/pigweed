@@ -396,7 +396,7 @@ ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error) {
 
 Status NewFidlError(ErrorCode error_code, std::string description) {
   Status status;
-  status.error = Error::New();
+  status.error = std::make_unique<Error>();
   status.error->error_code = error_code;
   status.error->description = description;
   return status;
@@ -739,7 +739,7 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
     return nullptr;
   }
 
-  auto fidl_device = fble::RemoteDevice::New();
+  auto fidl_device = std::make_unique<fble::RemoteDevice>();
   fidl_device->identifier = peer.identifier().ToString();
   fidl_device->connectable = peer.connectable();
 
@@ -756,7 +756,7 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
   }
 
   if (peer.rssi() != bt::hci_spec::kRSSIInvalid) {
-    fidl_device->rssi = Int8::New();
+    fidl_device->rssi = std::make_unique<Int8>();
     fidl_device->rssi->value = peer.rssi();
   }
 
@@ -971,11 +971,11 @@ fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(const bt::Advert
     output.name = *input.local_name();
   }
   if (input.appearance()) {
-    output.appearance = fbt::UInt16::New();
+    output.appearance = std::make_unique<fbt::UInt16>();
     output.appearance->value = *input.appearance();
   }
   if (input.tx_power()) {
-    output.tx_power_level = fbt::Int8::New();
+    output.tx_power_level = std::make_unique<fbt::Int8>();
     output.tx_power_level->value = *input.tx_power();
   }
   if (!input.service_uuids().empty()) {

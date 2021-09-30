@@ -62,7 +62,7 @@ fuchsia::bluetooth::Status StatusToFidlDeprecated(const bt::Status<ProtocolError
     return fidl_status;
   }
 
-  auto error = fuchsia::bluetooth::Error::New();
+  auto error = std::make_unique<fuchsia::bluetooth::Error>();
   error->error_code = HostErrorToFidlDeprecated(status.error());
   error->description = msg.empty() ? status.ToString() : std::move(msg);
   if (status.is_protocol_error()) {

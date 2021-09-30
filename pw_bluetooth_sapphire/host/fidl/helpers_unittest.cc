@@ -409,11 +409,11 @@ TEST(HelpersTest, AdvertisingDataToFidlDeprecated) {
 
   EXPECT_EQ("fuchsia", output.name);
 
-  auto expected_power_level = fbt::Int8::New();
+  auto expected_power_level = std::make_unique<fbt::Int8>();
   expected_power_level->value = 4;
   EXPECT_EQ(expected_power_level->value, output.tx_power_level->value);
 
-  auto expected_appearance = fbt::UInt16::New();
+  auto expected_appearance = std::make_unique<fbt::UInt16>();
   expected_appearance->value = 0x1234;
   EXPECT_EQ(expected_appearance->value, output.appearance->value);
 
@@ -472,7 +472,7 @@ TEST(HelpersTest, AdvertisingDataToFidl) {
 
   EXPECT_EQ("fuchsia", output.name());
 
-  auto expected_power_level = fbt::Int8::New();
+  auto expected_power_level = std::make_unique<fbt::Int8>();
   expected_power_level->value = 4;
   EXPECT_EQ(expected_power_level->value, output.tx_power_level());
 

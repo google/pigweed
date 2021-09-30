@@ -73,7 +73,7 @@ fidlbredr::ChannelParameters ChannelInfoToFidlChannelParameters(
 }
 
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
-  auto elem = fidlbredr::DataElement::New();
+  auto elem = std::make_unique<fidlbredr::DataElement>();
   bt_log(TRACE, "fidl", "DataElementToFidl: %s", in->ToString().c_str());
   ZX_DEBUG_ASSERT(in);
   switch (in->type()) {
@@ -161,7 +161,7 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
 }
 
 fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::DataElement* in) {
-  auto desc = fidlbredr::ProtocolDescriptor::New();
+  auto desc = std::make_unique<fidlbredr::ProtocolDescriptor>();
   if (in->type() != bt::sdp::DataElement::Type::kSequence) {
     bt_log(DEBUG, "fidl", "DataElement type is not kSequence (in: %s)", bt_str(*in));
     return nullptr;
@@ -536,7 +536,7 @@ void ProfileServer::OnServiceFound(
   std::vector<fidlbredr::Attribute> fidl_attrs;
 
   for (const auto& it : attributes) {
-    auto attr = fidlbredr::Attribute::New();
+    auto attr = std::make_unique<fidlbredr::Attribute>();
     attr->id = it.first;
     attr->element = std::move(*DataElementToFidl(&it.second));
     fidl_attrs.emplace_back(std::move(*attr));
