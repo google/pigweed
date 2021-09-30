@@ -128,7 +128,10 @@ class HelpWindow(ConditionalContainer):
                 Window(
                     content=FormattedTextControl(
                         pw_console.widgets.checkbox.to_keybind_indicator(
-                            'q', 'Close', close_mouse_handler)),
+                            'q',
+                            'Close',
+                            close_mouse_handler,
+                            base_style='class:toolbar-button-active')),
                     align=WindowAlign.RIGHT,
                     dont_extend_width=True,
                 ),

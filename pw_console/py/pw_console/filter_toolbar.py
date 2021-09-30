@@ -55,6 +55,8 @@ class FilterToolbar(ConditionalContainer):
         space = ('', ' ')
         fragments = [('class:filter-bar-title', ' Filters '), separator]
 
+        button_style = pw_console.style.get_button_style(self.log_pane)
+
         for filter_text, log_filter in self.log_pane.log_view.filters.items():
             fragments.append(('class:filter-bar-delimiter', '<'))
 
@@ -70,7 +72,7 @@ class FilterToolbar(ConditionalContainer):
             fragments.append(space)
 
             fragments.append(
-                ('class:filter-bar-delete', '(X)',
+                (button_style + ' class:filter-bar-delete', ' (X) ',
                  functools.partial(self.mouse_handler_delete_filter,
                                    filter_text)))  # type: ignore
             fragments.append(('class:filter-bar-delimiter', '>'))
@@ -84,8 +86,13 @@ class FilterToolbar(ConditionalContainer):
             pw_console.widgets.mouse_handlers.on_click,
             self.log_pane.log_view.clear_filters)
 
+        button_style = pw_console.style.get_button_style(self.log_pane)
+
         return pw_console.widgets.checkbox.to_keybind_indicator(
-            'Ctrl-Alt-r', 'Clear Filters', clear_filters)
+            'Ctrl-Alt-r',
+            'Clear Filters',
+            clear_filters,
+            base_style=button_style)
 
     def __init__(self, log_pane: 'LogPane'):
         self.log_pane = log_pane

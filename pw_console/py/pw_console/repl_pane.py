@@ -89,6 +89,8 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
         run_code = functools.partial(
             pw_console.widgets.mouse_handlers.on_click, repl_pane.run_code)
 
+        button_style = pw_console.style.get_button_style(repl_pane)
+
         fragments = [
             (
                 # Style
@@ -103,17 +105,17 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-v', 'Paste', paste_text))
+                'Ctrl-v', 'Paste', paste_text, base_style=button_style))
         fragments.extend(separator)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-c', 'Clear', clear_text))
+                'Ctrl-c', 'Clear', clear_text, base_style=button_style))
         fragments.extend(separator)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Enter', 'Run', run_code))
+                'Enter', 'Run', run_code, base_style=button_style))
         fragments.extend(separator)
 
         return fragments
@@ -132,18 +134,24 @@ class ReplPaneBottomToolbarBar(ConditionalContainer):
                 pw_console.widgets.checkbox.to_keybind_indicator(
                     'F3', 'History'))
         else:
+            button_style = pw_console.style.get_button_style(repl_pane)
+
             focus = functools.partial(pw_console.mouse.focus_handler,
                                       repl_pane)
-            fragments.append(('class:toolbar-button-decoration', '[', focus))
+            fragments.append(
+                (button_style + ' class:toolbar-button-decoration', ' ',
+                 focus))
             fragments.append((
                 # Style
-                'class:keyhelp',
+                button_style + ' class:keyhelp',
                 # Text
                 'click to focus',
                 # Mouse handler
                 focus,
             ))
-            fragments.append(('class:toolbar-button-decoration', '] ', focus))
+            fragments.append(
+                (button_style + ' class:toolbar-button-decoration', ' ',
+                 focus))
         return fragments
 
     def __init__(self, repl_pane):
@@ -418,16 +426,23 @@ class ReplPane:
         toolbar_fragments.extend(separator)
 
         # Keybinds and functions
+        button_style = pw_console.style.get_button_style(self)
 
         toolbar_fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-Alt-c', 'Copy All Output', copy_output))
+                'Ctrl-Alt-c',
+                'Copy All Output',
+                copy_output,
+                base_style=button_style))
         toolbar_fragments.extend(separator)
 
         if has_focus(self.output_field)():
             toolbar_fragments.extend(
                 pw_console.widgets.checkbox.to_keybind_indicator(
-                    'Ctrl-c', 'Copy Selected Text', copy_selection))
+                    'Ctrl-c',
+                    'Copy Selected Text',
+                    copy_selection,
+                    base_style=button_style))
             toolbar_fragments.extend(separator)
 
             toolbar_fragments.extend(
@@ -436,9 +451,9 @@ class ReplPane:
         else:
             toolbar_fragments.append((
                 # Style
-                'class:keyhelp',
+                button_style + ' class:keyhelp',
                 # Text
-                '[click to focus] ',
+                ' click to focus ',
                 # Mouse handler
                 functools.partial(pw_console.mouse.focus_handler,
                                   self.output_field),

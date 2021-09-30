@@ -16,7 +16,7 @@
 """Functions to create checkboxes for menus and toolbars."""
 
 import sys
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
@@ -56,55 +56,73 @@ def to_setting(
     return (style, text)
 
 
-def to_checkbox_with_keybind_indicator(checked: bool,
-                                       key: str,
-                                       description: str,
-                                       mouse_handler=None):
+def to_checkbox_with_keybind_indicator(
+    checked: bool,
+    key: str,
+    description: str,
+    mouse_handler=None,
+    base_style: str = '',
+):
     """Create a clickable keybind indicator with checkbox for toolbars."""
     if mouse_handler:
         return to_keybind_indicator(
             key,
             description,
             mouse_handler,
-            leading_fragments=[to_checkbox(checked, mouse_handler)])
+            leading_fragments=[to_checkbox(checked, mouse_handler)],
+            base_style=base_style)
     return to_keybind_indicator(key,
                                 description,
-                                leading_fragments=[to_checkbox(checked)])
+                                leading_fragments=[to_checkbox(checked)],
+                                base_style=base_style)
 
 
 def to_keybind_indicator(
     key: str,
     description: str,
-    mouse_handler=None,
+    mouse_handler: Optional[Callable] = None,
     leading_fragments: Optional[Iterable] = None,
     middle_fragments: Optional[Iterable] = None,
+    base_style: str = '',
 ):
     """Create a clickable keybind indicator for toolbars."""
+    if base_style:
+        base_style += ' '
+
     fragments: StyleAndTextTuples = []
-    fragments.append(('class:toolbar-button-decoration', '['))
+    fragments.append((base_style + 'class:toolbar-button-decoration', ' '))
+
+    def append_fragment_with_base_style(frag_list, fragment) -> None:
+        if mouse_handler:
+            frag_list.append(
+                (base_style + fragment[0], fragment[1], mouse_handler))
+        else:
+            frag_list.append((base_style + fragment[0], fragment[1]))
 
     # Add any starting fragments first
     if leading_fragments:
         for fragment in leading_fragments:
-            fragments.append(fragment)
+            append_fragment_with_base_style(fragments, fragment)
 
     # Function name
     if mouse_handler:
-        fragments.append(('class:keyhelp', description, mouse_handler))
+        fragments.append(
+            (base_style + 'class:keyhelp', description, mouse_handler))
     else:
-        fragments.append(('class:keyhelp', description))
+        fragments.append((base_style + 'class:keyhelp', description))
 
     if middle_fragments:
         for fragment in middle_fragments:
-            fragments.append(fragment)
+            append_fragment_with_base_style(fragments, fragment)
 
     # Separator and keybind
     if mouse_handler:
-        fragments.append(('class:keyhelp', _KEY_SEPARATOR, mouse_handler))
-        fragments.append(('class:keybind', key, mouse_handler))
+        fragments.append(
+            (base_style + 'class:keyhelp', _KEY_SEPARATOR, mouse_handler))
+        fragments.append((base_style + 'class:keybind', key, mouse_handler))
     else:
-        fragments.append(('class:keyhelp', _KEY_SEPARATOR))
-        fragments.append(('class:keybind', key))
+        fragments.append((base_style + 'class:keyhelp', _KEY_SEPARATOR))
+        fragments.append((base_style + 'class:keybind', key))
 
-    fragments.append(('class:toolbar-button-decoration', ']'))
+    fragments.append((base_style + 'class:toolbar-button-decoration', ' '))
     return fragments

@@ -178,12 +178,14 @@ class ConsoleApp:
 
         self.message.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'F1', 'Help',
+                'F1',
+                'Help',
                 functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.user_guide_window.toggle_display)))
-
-        # Two space separator
-        self.message.append(('', '  '))
+                                  self.user_guide_window.toggle_display),
+                base_style='class:toolbar-button-inactive',
+            ))
+        # One space separator
+        self.message.append(('', ' '))
 
         # Auto-generated keybindings list for all active panes
         self.keybind_help_window = HelpWindow(self, title='Keyboard Shortcuts')

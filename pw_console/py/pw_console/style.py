@@ -31,6 +31,9 @@ class HighContrastDarkColors:
     dim_bg = '#000000'
     dim_fg = '#e0e6f0'
 
+    button_active_bg = '#4e4e4e'
+    button_inactive_bg = '#323232'
+
     active_bg = '#323232'
     active_fg = '#f4f4f4'
 
@@ -58,6 +61,9 @@ class DarkColors:
 
     dim_bg = '#262626'
     dim_fg = '#dfdfdf'
+
+    button_active_bg = '#626262'
+    button_inactive_bg = '#525252'
 
     active_bg = '#525252'
     active_fg = '#dfdfdf'
@@ -114,6 +120,8 @@ def generate_styles(theme_name='dark'):
             theme.green_accent,
             theme.active_bg,
         ),
+        'toolbar-button-active': 'bg:{}'.format(theme.button_active_bg),
+        'toolbar-button-inactive': 'bg:{}'.format(theme.button_inactive_bg),
 
         # prompt_toolkit scrollbar styles:
         'scrollbar.background': 'bg:{} {}'.format(theme.default_bg,
@@ -138,7 +146,7 @@ def generate_styles(theme_name='dark'):
 
         # Top bar logo + keyboard shortcuts
         'logo':    '{} bold'.format(theme.magenta_accent),
-        'keybind': '{} bold'.format(theme.blue_accent),
+        'keybind': '{} bold'.format(theme.purple_accent),
         'keyhelp': theme.dim_fg,
 
         # Help window styles
@@ -235,6 +243,13 @@ def get_toolbar_style(pt_container, dim=False) -> str:
     if has_focus(pt_container.__pt_container__())():
         return 'class:toolbar_dim_active' if dim else 'class:toolbar_active'
     return 'class:toolbar_dim_inactive' if dim else 'class:toolbar_inactive'
+
+
+def get_button_style(pt_container) -> str:
+    """Return the style class for a toolbar if pt_container is in focus."""
+    if has_focus(pt_container.__pt_container__())():
+        return 'class:toolbar-button-active'
+    return 'class:toolbar-button-inactive'
 
 
 def get_pane_style(pt_container) -> str:

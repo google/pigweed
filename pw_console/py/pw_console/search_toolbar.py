@@ -89,6 +89,10 @@ class SearchToolbar(ConditionalContainer):
         close_search = functools.partial(
             pw_console.widgets.mouse_handlers.on_click, self.close_search_bar)
 
+        # Search toolbar is darker than pane toolbars, use the darker button
+        # style here.
+        button_style = 'class:toolbar-button-inactive'
+
         separator_text = [('', '  ', focus)]
 
         # Empty text matching the width of the search bar title.
@@ -99,22 +103,28 @@ class SearchToolbar(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Enter', 'Search', start_search))
+                'Enter', 'Search', start_search, base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-Alt-f', 'Add Filter', add_filter))
+                'Ctrl-Alt-f',
+                'Add Filter',
+                add_filter,
+                base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-Alt-r', 'Clear Filters', clear_filters))
+                'Ctrl-Alt-r',
+                'Clear Filters',
+                clear_filters,
+                base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-c', 'Close', close_search))
+                'Ctrl-c', 'Close', close_search, base_style=button_style))
 
         fragments.extend(separator_text)
         return fragments
@@ -133,6 +143,10 @@ class SearchToolbar(ConditionalContainer):
 
         separator_text = [('', '  ', focus)]
 
+        # Search toolbar is darker than pane toolbars, use the darker button
+        # style here.
+        button_style = 'class:toolbar-button-inactive'
+
         fragments = [
             # Title
             ('class:search-bar-title', ' Search ', focus),
@@ -140,7 +154,7 @@ class SearchToolbar(ConditionalContainer):
         fragments.extend(separator_text)
 
         selected_column_text = [
-            ('class:search-bar-setting',
+            (button_style + ' class:search-bar-setting',
              (self._search_field.title() if self._search_field else 'All'),
              next_field),
         ]
@@ -149,17 +163,23 @@ class SearchToolbar(ConditionalContainer):
                 'Ctrl-t',
                 'Column:',
                 next_field,
-                middle_fragments=selected_column_text))
+                middle_fragments=selected_column_text,
+                base_style=button_style,
+            ))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
-                self._search_invert, 'Ctrl-v', 'Invert', toggle_invert))
+                self._search_invert,
+                'Ctrl-v',
+                'Invert',
+                toggle_invert,
+                base_style=button_style))
         fragments.extend(separator_text)
 
         # Matching Method
         current_matcher_text = [
-            ('class:search-bar-setting',
+            (button_style + ' class:search-bar-setting',
              str(self.log_pane.log_view.search_matcher.name), next_matcher)
         ]
         fragments.extend(
@@ -167,7 +187,9 @@ class SearchToolbar(ConditionalContainer):
                 'Ctrl-n',
                 'Matcher:',
                 next_matcher,
-                middle_fragments=current_matcher_text))
+                middle_fragments=current_matcher_text,
+                base_style=button_style,
+            ))
         fragments.extend(separator_text)
 
         return fragments

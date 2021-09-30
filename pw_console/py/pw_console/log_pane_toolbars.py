@@ -135,6 +135,8 @@ class BottomToolbarBar(ConditionalContainer):
             pw_console.widgets.mouse_handlers.on_click,
             self.log_pane.log_view.copy_visible_lines)
 
+        button_style = pw_console.style.get_button_style(self.log_pane)
+
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
         separator_text = [('', '  ', focus)
                           ]  # 2 spaces of separaton between keybinds.
@@ -144,32 +146,44 @@ class BottomToolbarBar(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                '/', 'Search', start_search))
+                '/', 'Search', start_search, base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-c', 'Copy Lines', copy_lines))
+                'Ctrl-c', 'Copy Lines', copy_lines, base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
-                self.log_pane.log_view.follow, 'f', 'Follow', toggle_follow))
+                self.log_pane.log_view.follow,
+                'f',
+                'Follow',
+                toggle_follow,
+                base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
-                self.log_pane.table_view, 't', 'Table', toggle_table_view))
+                self.log_pane.table_view,
+                't',
+                'Table',
+                toggle_table_view,
+                base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
-                self.log_pane.wrap_lines, 'w', 'Wrap', toggle_wrap_lines))
+                self.log_pane.wrap_lines,
+                'w',
+                'Wrap',
+                toggle_wrap_lines,
+                base_style=button_style))
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'C', 'Clear', clear_history))
+                'C', 'Clear', clear_history, base_style=button_style))
         fragments.extend(separator_text)
 
         # Remaining whitespace should focus on click.
@@ -183,11 +197,16 @@ class BottomToolbarBar(ConditionalContainer):
                                   self.log_pane.focus_self)
         fragments = []
         if not has_focus(self.log_pane.__pt_container__())():
-            fragments.append(('class:toolbar-button-decoration', '[', focus))
-            fragments.append(('class:keyhelp', 'click to focus', focus))
-            fragments.append(('class:toolbar-button-decoration', '] ', focus))
+            fragments.append((
+                'class:toolbar-button-inactive class:toolbar-button-decoration',
+                ' ', focus))
+            fragments.append(('class:toolbar-button-inactive class:keyhelp',
+                              'click to focus', focus))
+            fragments.append((
+                'class:toolbar-button-inactive class:toolbar-button-decoration',
+                ' ', focus))
         fragments.append(
-            ('', ' {} '.format(self.log_pane.pane_subtitle()), focus))
+            ('', '  {} '.format(self.log_pane.pane_subtitle()), focus))
         return fragments
 
     def __init__(self, log_pane: 'LogPane'):
