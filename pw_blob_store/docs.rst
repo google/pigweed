@@ -27,7 +27,7 @@ appending to existing data.
 
 .. code-block:: cpp
 
-  BlobStore::BlobWriter writer(my_blob_store);
+  BlobStore::BlobWriterWithBuffer writer(my_blob_store);
   writer.Open();
   writer.Write(my_data);
 
@@ -63,8 +63,8 @@ for the ``std::string_view`` to be invalidated after the function returns.
 
 .. code-block:: cpp
 
-  std::array<std::byte, 48> metadata_encode_buffer;
-  BlobStore::BlobWriter writer(my_blob_store, metadata_encode_buffer);
+  constexpr size_t kMaxFileNameLength = 48;
+  BlobStore::BlobWriterWithBuffer<kMaxFileNameLength> writer(my_blob_store);
   writer.Open();
   writer.SetFileName("stonks.jpg");
   writer.Write(my_data);

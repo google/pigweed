@@ -77,7 +77,7 @@ class BlobStoreTest : public ::testing::Test {
         kBlobTitle, partition_, &checksum, kvs::TestKvs(), kBufferSize);
     EXPECT_EQ(OkStatus(), blob.Init());
 
-    BlobStore::BlobWriter writer(blob, metadata_buffer_);
+    BlobStore::BlobWriterWithBuffer writer(blob);
     EXPECT_EQ(OkStatus(), writer.Open());
     ASSERT_EQ(OkStatus(), writer.Write(write_data));
     EXPECT_EQ(OkStatus(), writer.Close());
@@ -151,12 +151,9 @@ class BlobStoreTest : public ::testing::Test {
   static constexpr size_t kSectorSize = 2048;
   static constexpr size_t kSectorCount = 2;
   static constexpr size_t kBlobDataSize = (kSectorCount * kSectorSize);
-  static constexpr size_t kMetadataBufferSize =
-      BlobStore::BlobWriter::RequiredMetadataBufferSize(0);
 
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> flash_;
   kvs::FlashPartition partition_;
-  std::array<std::byte, kMetadataBufferSize> metadata_buffer_;
   std::array<std::byte, kBlobDataSize> source_buffer_;
 };
 
@@ -175,13 +172,13 @@ TEST_F(BlobStoreTest, Writer_ConservativeLimits) {
       "Blob_OK", partition_, nullptr, kvs::TestKvs(), kBufferSize);
   ASSERT_EQ(OkStatus(), blob.Init());
 
-  BlobStore::BlobWriter writer(blob, metadata_buffer_);
+  BlobStore::BlobWriterWithBuffer writer(blob);
   ASSERT_EQ(OkStatus(), writer.Open());
   EXPECT_EQ(writer.ConservativeReadLimit(), 0u);
   EXPECT_EQ(writer.ConservativeWriteLimit(), kSectorSize * kSectorCount);
   ASSERT_EQ(OkStatus(), writer.Close());
 
-  BlobStore::DeferredWriter deferred_writer(blob, metadata_buffer_);
+  BlobStore::DeferredWriterWithBuffer deferred_writer(blob);
   ASSERT_EQ(OkStatus(), deferred_writer.Open());
   EXPECT_EQ(deferred_writer.ConservativeReadLimit(), 0u);
   EXPECT_EQ(deferred_writer.ConservativeWriteLimit(), kBufferSize);
@@ -209,14 +206,14 @@ TEST_F(BlobStoreTest, IsOpen) {
       "Blob_open", partition_, nullptr, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(OkStatus(), blob.Init());
 
-  BlobStore::DeferredWriter deferred_writer(blob, metadata_buffer_);
+  BlobStore::DeferredWriterWithBuffer deferred_writer(blob);
   EXPECT_EQ(false, deferred_writer.IsOpen());
   EXPECT_EQ(OkStatus(), deferred_writer.Open());
   EXPECT_EQ(true, deferred_writer.IsOpen());
   EXPECT_EQ(OkStatus(), deferred_writer.Close());
   EXPECT_EQ(false, deferred_writer.IsOpen());
 
-  BlobStore::BlobWriter writer(blob, metadata_buffer_);
+  BlobStore::BlobWriterWithBuffer writer(blob);
   EXPECT_EQ(false, writer.IsOpen());
   EXPECT_EQ(OkStatus(), writer.Open());
   EXPECT_EQ(true, writer.IsOpen());
@@ -239,9 +236,6 @@ TEST_F(BlobStoreTest, FileName) {
   InitSourceBufferToRandom(0x8675309);
   WriteTestBlock();
   constexpr std::string_view kFileName("my_file_1.bin");
-  constexpr size_t kEncodeBufferSize =
-      BlobStore::BlobWriter::RequiredMetadataBufferSize(kFileName.size());
-  std::array<std::byte, kEncodeBufferSize> metadata_buffer = {};
   std::array<std::byte, 64> tmp_buffer = {};
   static_assert(kFileName.size() <= tmp_buffer.size());
   kvs::ChecksumCrc16 checksum;
@@ -253,7 +247,7 @@ TEST_F(BlobStoreTest, FileName) {
         kBlobTitle, partition_, &checksum, kvs::TestKvs(), kBufferSize);
     EXPECT_EQ(OkStatus(), blob.Init());
 
-    BlobStore::BlobWriter writer(blob, metadata_buffer);
+    BlobStore::BlobWriterWithBuffer<kFileName.size()> writer(blob);
 
     EXPECT_EQ(OkStatus(), writer.Open());
     EXPECT_EQ(OkStatus(), writer.SetFileName(kFileName));
@@ -283,9 +277,6 @@ TEST_F(BlobStoreTest, FileNameUndersizedRead) {
   InitSourceBufferToRandom(0x8675309);
   WriteTestBlock();
   constexpr std::string_view kFileName("my_file_1.bin");
-  constexpr size_t kEncodeBufferSize =
-      BlobStore::BlobWriter::RequiredMetadataBufferSize(kFileName.size());
-  std::array<std::byte, kEncodeBufferSize> metadata_buffer = {};
   std::array<std::byte, 4> tmp_buffer = {};
   static_assert(kFileName.size() > tmp_buffer.size());
 
@@ -295,7 +286,7 @@ TEST_F(BlobStoreTest, FileNameUndersizedRead) {
       kBlobTitle, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(OkStatus(), blob.Init());
 
-  BlobStore::BlobWriter writer(blob, metadata_buffer);
+  BlobStore::BlobWriterWithBuffer<kFileName.size()> writer(blob);
 
   EXPECT_EQ(OkStatus(), writer.Open());
   EXPECT_EQ(OkStatus(), writer.SetFileName(kFileName));
@@ -318,9 +309,6 @@ TEST_F(BlobStoreTest, FileNameUndersizedSet) {
   InitSourceBufferToRandom(0x8675309);
   WriteTestBlock();
   constexpr std::string_view kFileName("my_file_1.bin");
-  constexpr size_t kEncodeBufferSize =
-      BlobStore::BlobWriter::RequiredMetadataBufferSize(2);
-  std::array<std::byte, kEncodeBufferSize> metadata_buffer = {};
 
   kvs::ChecksumCrc16 checksum;
   constexpr size_t kBufferSize = 256;
@@ -328,7 +316,7 @@ TEST_F(BlobStoreTest, FileNameUndersizedSet) {
       kBlobTitle, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(OkStatus(), blob.Init());
 
-  BlobStore::BlobWriter writer(blob, metadata_buffer);
+  BlobStore::BlobWriterWithBuffer<2> writer(blob);
 
   EXPECT_EQ(OkStatus(), writer.Open());
   EXPECT_EQ(Status::ResourceExhausted(), writer.SetFileName(kFileName));
@@ -340,9 +328,6 @@ TEST_F(BlobStoreTest, FileNameInvalidation) {
   WriteTestBlock();
 
   constexpr std::string_view kFileName("sliced_cheese.png");
-  constexpr size_t kEncodeBufferSize =
-      BlobStore::BlobWriter::RequiredMetadataBufferSize(kFileName.size());
-  std::array<std::byte, kEncodeBufferSize> metadata_buffer = {};
   std::array<std::byte, 64> tmp_buffer = {};
   static_assert(kFileName.size() <= tmp_buffer.size());
 
@@ -352,7 +337,7 @@ TEST_F(BlobStoreTest, FileNameInvalidation) {
       kBlobTitle, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(OkStatus(), blob.Init());
 
-  BlobStore::BlobWriter writer(blob, metadata_buffer);
+  BlobStore::BlobWriterWithBuffer<kFileName.size()> writer(blob);
 
   EXPECT_EQ(OkStatus(), writer.Open());
   EXPECT_EQ(OkStatus(), writer.SetFileName(kFileName));
@@ -434,7 +419,7 @@ TEST_F(BlobStoreTest, Discard) {
       blob_title, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(OkStatus(), blob.Init());
 
-  BlobStore::BlobWriter writer(blob, metadata_buffer_);
+  BlobStore::BlobWriterWithBuffer writer(blob);
 
   EXPECT_EQ(OkStatus(), writer.Open());
   EXPECT_EQ(OkStatus(), writer.Write(tmp_buffer));
@@ -460,7 +445,7 @@ TEST_F(BlobStoreTest, MultipleErase) {
       "Blob_OK", partition_, nullptr, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(OkStatus(), blob.Init());
 
-  BlobStore::BlobWriter writer(blob, metadata_buffer_);
+  BlobStore::BlobWriterWithBuffer writer(blob);
   EXPECT_EQ(OkStatus(), writer.Open());
 
   EXPECT_EQ(OkStatus(), writer.Erase());

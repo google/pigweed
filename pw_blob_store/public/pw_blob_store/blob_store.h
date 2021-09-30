@@ -183,12 +183,22 @@ class BlobStore {
     }
   };
 
+  template <size_t kMaxFileNameSize = 0>
+  class BlobWriterWithBuffer final : public BlobWriter {
+   public:
+    constexpr BlobWriterWithBuffer(BlobStore& store)
+        : BlobWriter(store, buffer_), buffer_() {}
+
+   private:
+    std::array<std::byte, RequiredMetadataBufferSize(kMaxFileNameSize)> buffer_;
+  };
+
   // Implement the stream::Writer and erase interface with deferred action for a
   // BlobStore. If not already erased, the Flush will do any needed erase.
   //
   // Only one writter (of either type) is allowed to be open at a time.
   // Additionally, writters are unable to open if a reader is already open.
-  class DeferredWriter final : public BlobWriter {
+  class DeferredWriter : public BlobWriter {
    public:
     constexpr DeferredWriter(BlobStore& store, ByteSpan metadata_buffer)
         : BlobWriter(store, metadata_buffer) {}
@@ -208,7 +218,7 @@ class BlobStore {
     // be written. This is not necessarily the full number of bytes remaining in
     // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
-    size_t ConservativeLimit(LimitType limit) const override {
+    size_t ConservativeLimit(LimitType limit) const final {
       if (limit == LimitType::kWrite) {
         PW_DASSERT(open_);
         // Deferred writes need to fit in the write buffer.
@@ -218,10 +228,20 @@ class BlobStore {
     }
 
    private:
-    Status DoWrite(ConstByteSpan data) override {
+    Status DoWrite(ConstByteSpan data) final {
       PW_DASSERT(open_);
       return store_.AddToWriteBuffer(data);
     }
+  };
+
+  template <size_t kMaxFileNameSize = 0>
+  class DeferredWriterWithBuffer final : public DeferredWriter {
+   public:
+    constexpr DeferredWriterWithBuffer(BlobStore& store)
+        : DeferredWriter(store, buffer_), buffer_() {}
+
+   private:
+    std::array<std::byte, RequiredMetadataBufferSize(kMaxFileNameSize)> buffer_;
   };
 
   // Implement stream::Reader interface for BlobStore. Multiple readers may be
