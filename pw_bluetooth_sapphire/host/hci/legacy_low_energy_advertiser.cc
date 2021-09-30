@@ -257,11 +257,6 @@ void LegacyLowEnergyAdvertiser::StopAdvertising() {
 }
 
 void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
-  if (!IsAdvertising(address)) {
-    // not advertising, or not advertising on this address.
-    return;
-  }
-
   if (!hci_cmd_runner().IsReady()) {
     hci_cmd_runner().Cancel();
   }

@@ -532,6 +532,21 @@ TYPED_TEST(LowEnergyAdvertiserTest, StartWhileStopping) {
   EXPECT_TRUE(this->GetControllerAdvertisingState().enabled);
 }
 
+TYPED_TEST(LowEnergyAdvertiserTest, StopWhileStarting) {
+  AdvertisingData ad = this->GetExampleData();
+  AdvertisingData scan_data = this->GetExampleData();
+  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, nullptr,
+                                       this->GetErrorCallback());
+  this->advertiser()->StopAdvertising();
+
+  this->RunLoopUntilIdle();
+  EXPECT_TRUE(this->GetLastStatus());
+  EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
+}
+
 // - StopAdvertisement noops when the advertisement address is wrong
 // - Sets the advertisement data to null when stopped to prevent data leakage
 //   (re-enable advertising without changing data, intercept)

@@ -105,8 +105,6 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                 StatusCallback status_callback) = 0;
 
   // Stops advertisement on all currently advertising addresses. Idempotent and asynchronous.
-  // Returns true if advertising will be stopped for all currently registered advertising sets,
-  // false otherwise.
   virtual void StopAdvertising();
 
   // Stops any advertisement currently active on |address|. Idempotent and asynchronous. Returns

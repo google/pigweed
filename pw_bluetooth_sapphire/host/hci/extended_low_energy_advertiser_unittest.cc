@@ -414,5 +414,24 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, InterleavedAdvertisingCalls) {
   EXPECT_FALSE(advertiser()->IsAdvertising(kRandomAddress));
 }
 
+TEST_F(ExtendedLowEnergyAdvertiserTest, StopWhileStarting) {
+  AdvertisingData ad = GetExampleData();
+  AdvertisingData scan_data = GetExampleData();
+  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, nullptr,
+                                       GetSuccessCallback());
+  this->advertiser()->StopAdvertising(kPublicAddress);
+
+  this->RunLoopUntilIdle();
+  EXPECT_TRUE(this->GetLastStatus());
+
+  std::optional<hci_spec::AdvertisingHandle> handle = advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle);
+
+  EXPECT_FALSE(test_device()->extended_advertising_state(handle.value()).enabled);
+}
+
 }  // namespace
 }  // namespace bt::hci

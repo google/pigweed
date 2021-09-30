@@ -70,7 +70,6 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
        connect_callback = std::move(connect_callback)](Status status) mutable {
         if (bt_is_error(status, WARN, "hci-le", "failed to start advertising for %s",
                         bt_str(address))) {
-          StopAdvertising(address);
           status_callback(status);
           return;
         }
@@ -78,7 +77,6 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
         bool success = StartAdvertisingInternalStep2(address, flags, std::move(connect_callback),
                                                      std::move(status_callback));
         if (!success) {
-          StopAdvertising(address);
           status_callback(Status(HostError::kCanceled));
         }
       });
@@ -119,7 +117,6 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
        connect_callback = std::move(connect_callback)](Status status) mutable {
         if (bt_is_error(status, WARN, "hci-le", "failed to start advertising for %s",
                         bt_str(address))) {
-          StopAdvertising(address);
         } else {
           bt_log(INFO, "hci-le", "advertising enabled for %s", bt_str(address));
           connection_callbacks_.emplace(address, std::move(connect_callback));
@@ -140,10 +137,6 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
 // commands before being cancelled. Instead, we must enqueue them all at once and then run them
 // together.
 void LowEnergyAdvertiser::StopAdvertising() {
-  if (connection_callbacks_.empty()) {
-    return;
-  }
-
   if (!hci_cmd_runner_->IsReady()) {
     hci_cmd_runner_->Cancel();
   }
@@ -160,15 +153,19 @@ void LowEnergyAdvertiser::StopAdvertising() {
     }
   }
 
-  hci_cmd_runner_->RunCommands([this](Status status) {
-    bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(status));
-    OnCurrentOperationComplete();
-  });
+  if (hci_cmd_runner_->HasQueuedCommands()) {
+    hci_cmd_runner_->RunCommands([this](Status status) {
+      bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(status));
+      OnCurrentOperationComplete();
+    });
+  }
 }
 
-// TODO(fxbug.dev/50542): StopAdvertising() should cancel outstanding calls to StartAdvertising()
-// and clean up state.
 void LowEnergyAdvertiser::StopAdvertisingInternal(const DeviceAddress& address) {
+  if (!IsAdvertising(address)) {
+    return;
+  }
+
   bool success = EnqueueStopAdvertisingCommands(address);
   if (!success) {
     bt_log(WARN, "hci-le", "cannot stop advertising for %s", bt_str(address));

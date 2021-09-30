@@ -400,6 +400,21 @@ TEST_F(LegacyLowEnergyAdvertiserTest, AllowsRandomAddressChange) {
   EXPECT_TRUE(advertiser()->AllowsRandomAddressChange());
 }
 
+TEST_F(LegacyLowEnergyAdvertiserTest, StopWhileStarting) {
+  AdvertisingData ad = GetExampleData();
+  AdvertisingData scan_data = GetExampleData();
+  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
+                             /*include_tx_power_level=*/false);
+
+  this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, nullptr,
+                                       GetErrorCallback());
+  this->advertiser()->StopAdvertising(kPublicAddress);
+
+  this->RunLoopUntilIdle();
+  EXPECT_TRUE(MoveLastStatus());
+  EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
+}
+
 }  // namespace
 }  // namespace hci
 }  // namespace bt

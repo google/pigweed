@@ -379,11 +379,6 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising() {
 }
 
 void ExtendedLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
-  if (!IsAdvertising(address)) {
-    // not advertising, or not advertising on this address.
-    return;
-  }
-
   // if there is an operation currently in progress, enqueue this operation and we will get to it
   // the next time we have a chance
   if (!hci_cmd_runner().IsReady()) {
