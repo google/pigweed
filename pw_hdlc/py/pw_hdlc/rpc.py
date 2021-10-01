@@ -13,6 +13,7 @@
 # the License.
 """Utilities for using HDLC with pw_rpc."""
 
+import collections
 from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
@@ -22,8 +23,8 @@ import threading
 import time
 import socket
 import subprocess
-from typing import (Any, BinaryIO, Callable, Dict, Iterable, List, NoReturn,
-                    Optional, Sequence, Union)
+from typing import (Any, BinaryIO, Callable, Deque, Dict, Iterable, List,
+                    NoReturn, Optional, Sequence, Tuple, Union)
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc
@@ -36,6 +37,7 @@ _LOG = logging.getLogger(__name__)
 
 STDOUT_ADDRESS = 1
 DEFAULT_ADDRESS = ord('R')
+_VERBOSE = logging.DEBUG - 1
 
 
 def channel_output(writer: Callable[[bytes], Any],
@@ -55,7 +57,7 @@ def channel_output(writer: Callable[[bytes], Any],
 
     def write_hdlc(data: bytes):
         frame = encode.ui_frame(address, data)
-        _LOG.debug('Write %2d B: %s', len(frame), frame)
+        _LOG.log(_VERBOSE, 'Write %2d B: %s', len(frame), frame)
         writer(frame)
 
     return write_hdlc
@@ -108,7 +110,7 @@ def read_and_process_data(read: Callable[[], bytes],
                 continue
 
             if data:
-                _LOG.debug('Read %2d B: %s', len(data), data)
+                _LOG.log(_VERBOSE, 'Read %2d B: %s', len(data), data)
 
                 for frame in decoder.process_valid_frames(data):
                     executor.submit(handle_frame, frame)
@@ -134,7 +136,9 @@ class HdlcRpcClient:
                  paths_or_modules: PathsModulesOrProtoLibrary,
                  channels: Iterable[pw_rpc.Channel],
                  output: Callable[[bytes], Any] = write_to_file,
-                 client_impl: pw_rpc.client.ClientImpl = None):
+                 client_impl: pw_rpc.client.ClientImpl = None,
+                 *,
+                 _incoming_packet_filter_for_testing: '_PacketFilter' = None):
         """Creates an RPC client configured to communicate using HDLC.
 
         Args:
@@ -153,6 +157,9 @@ class HdlcRpcClient:
 
         self.client = pw_rpc.Client.from_modules(client_impl, channels,
                                                  self.protos.modules())
+
+        self._test_filter = _incoming_packet_filter_for_testing
+
         frame_handlers: FrameHandlers = {
             DEFAULT_ADDRESS: self._handle_rpc_packet,
             STDOUT_ADDRESS: lambda frame: output(frame.data),
@@ -177,6 +184,9 @@ class HdlcRpcClient:
         return self.client.channel(channel_id).rpcs
 
     def _handle_rpc_packet(self, frame: Frame) -> None:
+        if self._test_filter and not self._test_filter.keep_packet(frame.data):
+            return
+
         if not self.client.process_packet(frame.data):
             _LOG.error('Packet not handled by RPC client: %s', frame.data)
 
@@ -236,13 +246,75 @@ class SocketSubprocess:
         self.close()
 
 
+class _PacketFilter:
+    """Determines if a packet should be kept or dropped for testing purposes."""
+    _Action = Callable[[int], Tuple[bool, bool]]
+    _KEEP = lambda _: (True, False)
+    _DROP = lambda _: (False, False)
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.packet_count = 0
+        self._actions: Deque[_PacketFilter._Action] = collections.deque()
+
+    def keep(self, count: int) -> None:
+        """Keeps the next count packets."""
+        self._actions.extend(_PacketFilter._KEEP for _ in range(count))
+
+    def drop(self, count: int) -> None:
+        """Drops the next count packets."""
+        self._actions.extend(_PacketFilter._DROP for _ in range(count))
+
+    def drop_every(self, every: int) -> None:
+        """Drops every Nth packet forever."""
+        self._actions.append(lambda count: (count % every != 0, True))
+
+    def keep_packet(self, packet: bytes) -> bool:
+        """Returns whether the provided packet should be kept or dropped."""
+        self.packet_count += 1
+
+        if not self._actions:
+            return True
+
+        keep, repeat = self._actions[0](self.packet_count)
+
+        if not repeat:
+            self._actions.popleft()
+
+        if not keep:
+            _LOG.debug('Dropping %s packet %d for testing: %s', self.name,
+                       self.packet_count, packet)
+        return keep
+
+
+class _TestChannelOutput:
+    def __init__(self, send: Callable[[bytes], Any]) -> None:
+        self._send = send
+        self.packets = _PacketFilter('outgoing RPC')
+
+    def __call__(self, data: bytes) -> None:
+        if self.packets.keep_packet(data):
+            self._send(data)
+
+
 class HdlcRpcLocalServerAndClient:
     """Runs an RPC server in a subprocess and connects to it over a socket.
 
     This can be used to run a local RPC server in an integration test.
     """
-    def __init__(self, server_command: Sequence, port: int,
-                 protos: PathsModulesOrProtoLibrary) -> None:
+    def __init__(self,
+                 server_command: Sequence,
+                 port: int,
+                 protos: PathsModulesOrProtoLibrary,
+                 *,
+                 for_testing: bool = False) -> None:
+        """Creates a new HdlcRpcLocalServerAndClient.
+
+        If for_testing=True, the HdlcRpcLocalServerAndClient will have
+        outgoing_packets and incoming_packets _PacketFilter members that can be
+        used to program packet loss for testing purposes.
+        """
+
         self.server = SocketSubprocess(server_command, port)
 
         self._bytes_queue: 'SimpleQueue[bytes]' = SimpleQueue()
@@ -250,10 +322,22 @@ class HdlcRpcLocalServerAndClient:
         self._read_thread.start()
 
         self.output = io.BytesIO()
+
+        self.channel_output: Any = self.server.socket.sendall
+        if for_testing:
+            self.channel_output = _TestChannelOutput(self.channel_output)
+            self.outgoing_packets = self.channel_output.packets
+            self.incoming_packets = _PacketFilter('incoming RPC')
+            incoming_filter: Optional[_PacketFilter] = self.incoming_packets
+        else:
+            incoming_filter = None
+
         self.client = HdlcRpcClient(
-            self._bytes_queue.get, protos,
-            default_channels(self.server.socket.sendall),
-            self.output.write).client
+            self._bytes_queue.get,
+            protos,
+            default_channels(self.channel_output),
+            self.output.write,
+            _incoming_packet_filter_for_testing=incoming_filter).client
 
     def _read_from_socket(self):
         while True:

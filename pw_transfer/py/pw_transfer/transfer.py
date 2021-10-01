@@ -17,6 +17,7 @@ import abc
 import asyncio
 from dataclasses import dataclass
 import logging
+import math
 import threading
 from typing import Any, Callable, Dict, Optional, Union
 
@@ -29,14 +30,21 @@ _LOG = logging.getLogger(__package__)
 
 @dataclass(frozen=True)
 class ProgressStats:
-    total_size_bytes: Optional[int]
-    bytes_confirmed_received: int
     bytes_sent: int
+    bytes_confirmed_received: int
+    total_size_bytes: Optional[int]
+
+    def percent_received(self) -> float:
+        if self.total_size_bytes is None:
+            return math.nan
+
+        return self.bytes_confirmed_received / self.total_size_bytes * 100
 
     def __str__(self) -> str:
         total = str(
             self.total_size_bytes) if self.total_size_bytes else 'unknown'
-        return f'{self.bytes_confirmed_received} / {total}'
+        return (f'{self.percent_received():5.1f}% ({self.bytes_sent} B sent, '
+                f'{self.bytes_confirmed_received} B received of {total} B)')
 
 
 ProgressCallback = Callable[[ProgressStats], Any]
@@ -177,8 +185,8 @@ class _Transfer(abc.ABC):
                          total_size_bytes: Optional[int]) -> None:
         """Invokes the provided progress callback, if any, with the progress."""
 
-        stats = ProgressStats(total_size_bytes, bytes_confirmed_received,
-                              bytes_sent)
+        stats = ProgressStats(bytes_sent, bytes_confirmed_received,
+                              total_size_bytes)
         _LOG.debug('Transfer %d progress: %s', self.id, stats)
 
         if self._progress_callback:

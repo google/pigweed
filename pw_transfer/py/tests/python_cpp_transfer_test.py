@@ -25,28 +25,38 @@ from pw_transfer import transfer, transfer_pb2
 from pw_transfer_test import test_server_pb2
 
 ITERATIONS = 5
+TIMEOUT_S = 0.1
 
 
 class TransferServiceIntegrationTest(unittest.TestCase):
     """Tests transfers between the Python client and C++ service."""
     test_server_command: Tuple[str, ...] = ()
     port: int
-    directory: Path
 
     def setUp(self) -> None:
+        self._tempdir = tempfile.TemporaryDirectory(
+            prefix=f'pw_transfer_{self.id().rsplit(".", 1)[-1]}_')
+        self.directory = Path(self._tempdir.name)
+
         command = (*self.test_server_command, str(self.directory))
         self._context = rpc.HdlcRpcLocalServerAndClient(
-            command, self.port, [transfer_pb2, test_server_pb2])
+            command,
+            self.port, [transfer_pb2, test_server_pb2],
+            for_testing=True)
 
         service = self._context.client.channel(1).rpcs.pw.transfer.Transfer
-        self.manager = transfer.Manager(service)
+        self.manager = transfer.Manager(service,
+                                        default_response_timeout_s=TIMEOUT_S)
 
         self._test_server = self._context.client.channel(
             1).rpcs.pw.transfer.TestServer
 
     def tearDown(self) -> None:
-        if hasattr(self, '_context'):
-            self._context.close()
+        try:
+            self._tempdir.cleanup()
+        finally:
+            if hasattr(self, '_context'):
+                self._context.close()
 
     def transfer_file_path(self, transfer_id: int) -> Path:
         return self.directory / str(transfer_id)
@@ -111,32 +121,61 @@ class TransferServiceIntegrationTest(unittest.TestCase):
             self.assertEqual(self.get_content(31), '*' * 512)
 
     def test_write_very_large_amount_of_data(self) -> None:
-        self.set_content(31, 'junk')
-
-        for _ in range(ITERATIONS):
-            # Larger than the transfer service's configured pending_bytes.
-            self.manager.write(31, b'*' * 4096)
-            self.assertEqual(self.get_content(31), '*' * 4096)
-
-    def test_write_string(self) -> None:
         self.set_content(32, 'junk')
 
         for _ in range(ITERATIONS):
+            # Larger than the transfer service's configured pending_bytes.
+            self.manager.write(32, b'*' * 4096)
+            self.assertEqual(self.get_content(32), '*' * 4096)
+
+    def test_write_string(self) -> None:
+        self.set_content(33, 'junk')
+
+        for _ in range(ITERATIONS):
             # Write a string instead of bytes.
-            self.manager.write(32, 'hello world')
-            self.assertEqual(self.get_content(32), 'hello world')
+            self.manager.write(33, 'hello world')
+            self.assertEqual(self.get_content(33), 'hello world')
+
+    def test_write_drop_data_chunks_and_transfer_parameters(self) -> None:
+        self.set_content(34, 'junk')
+        data = 'SPAM' * (4096 // 4)
+
+        # Allow the initial packet and first chunk, then drop the second chunk.
+        self._context.outgoing_packets.keep(2)
+        self._context.outgoing_packets.drop(1)
+
+        # Allow the initial transfer parameters updates, then drop the next two.
+        self._context.incoming_packets.keep(1)
+        self._context.incoming_packets.drop(2)
+
+        with self.assertLogs('pw_transfer', 'DEBUG') as logs:
+            self.manager.write(34, data)
+
+        self.assertEqual(self.get_content(34), data)
+
+        # Verify that the client retried twice.
+        messages = [r.getMessage() for r in logs.records]
+        retry = f'Received no responses for {TIMEOUT_S:.3f}s; retrying {{}}/3'
+        self.assertIn(retry.format(1), messages)
+        self.assertIn(retry.format(2), messages)
+
+    def test_write_regularly_drop_packets(self) -> None:
+        self.set_content(35, 'junk')
+        data = 'SPAM' * (4096 // 4)
+
+        self._context.outgoing_packets.drop_every(5)  # drop one per window
+        self._context.incoming_packets.drop_every(4)
+        self.manager.write(35, data)
 
 
-def _main(test_server_command: List[str], port: int, unittest_args: List[str],
-          directory: str) -> None:
+def _main(test_server_command: List[str], port: int,
+          unittest_args: List[str]) -> None:
     TransferServiceIntegrationTest.test_server_command = tuple(
         test_server_command)
     TransferServiceIntegrationTest.port = port
-    TransferServiceIntegrationTest.directory = Path(directory)
 
     unittest.main(argv=unittest_args)
 
 
 if __name__ == '__main__':
-    with tempfile.TemporaryDirectory(prefix='transfer_test_') as tempdir:
-        _main(**vars(testing.parse_test_server_args()), directory=tempdir)
+    _main(**vars(testing.parse_test_server_args()))
