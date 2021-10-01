@@ -576,6 +576,33 @@ fields in a message.
 
 .. include:: size_report/decoder_incremental
 
+==========================
+Available protobuf modules
+==========================
+There are a handful of messages ready to be used in Pigweed projects. These are
+located in ``pw_protobuf/pw_protobuf_protos``.
+
+common.proto
+============
+Contains Empty message proto used in many RPC calls.
+
+
+status.proto
+============
+Contains the enum for pw::Status.
+
+.. Note::
+ ``pw::protobuf::StatusCode`` values should not be used outside of a .proto
+ file. Instead, the StatusCodes should be converted to the Status type in the
+ language. In C++, this would be:
+
+  .. code-block:: c++
+
+    // Reading from a proto
+    pw::Status status = static_cast<pw::Status::Code>(proto.status_field));
+    // Writing to a proto
+    proto.status_field = static_cast<pw::protobuf::StatusCode>(status.code()));
+
 ========================================
 Comparison with other protobuf libraries
 ========================================
