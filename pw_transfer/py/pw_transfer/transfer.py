@@ -205,11 +205,18 @@ class _WriteTransfer(_Transfer):
         super().__init__(transfer_id, send_chunk, end_transfer,
                          response_timeout_s, max_retries, progress_callback)
         self._data = data
-        self._offset = 0
 
+        # Guard this class with a lock since a transfer parameters update might
+        # arrive while responding to a prior update.
+        self._lock = asyncio.Lock()
+        self._offset = 0
         self._max_bytes_to_send = 0
         self._max_chunk_size = 0
         self._chunk_delay_us: Optional[int] = None
+
+        # The window ID increments for each parameters update.
+        self._window_id = 0
+
         self._last_chunk = self._initial_chunk()
 
     @property
@@ -227,6 +234,51 @@ class _WriteTransfer(_Transfer):
         send data accordingly.
         """
 
+        async with self._lock:
+            self._window_id += 1
+            window_id = self._window_id
+
+            if not self._handle_parameters_update(chunk):
+                return
+
+            bytes_acknowledged = chunk.offset
+
+        while True:
+            if self._chunk_delay_us:
+                await asyncio.sleep(self._chunk_delay_us / 1e6)
+
+            async with self._lock:
+                if window_id != self._window_id:
+                    _LOG.debug('Transfer %d: Skipping stale window')
+                    return
+
+                write_chunk = self._next_chunk()
+                self._offset += len(write_chunk.data)
+                self._max_bytes_to_send -= len(write_chunk.data)
+                sent_requested_bytes = self._max_bytes_to_send == 0
+
+            self._send_chunk(write_chunk)
+
+            self._update_progress(self._offset, bytes_acknowledged,
+                                  len(self.data))
+
+            if sent_requested_bytes:
+                break
+
+        self._last_chunk = write_chunk
+
+    def _handle_parameters_update(self, chunk: Chunk) -> bool:
+        """Updates transfer state based on a transfer parameters update."""
+
+        if chunk.offset > len(self.data):
+            # Bad offset; terminate the transfer.
+            _LOG.error(
+                'Transfer %d: server requested invalid offset %d (size %d)',
+                self.id, chunk.offset, len(self.data))
+
+            self._send_error(Status.OUT_OF_RANGE)
+            return False
+
         # Check whether the client has sent a previous data offset, which
         # indicates that some chunks were lost in transmission.
         if chunk.offset < self._offset:
@@ -234,17 +286,6 @@ class _WriteTransfer(_Transfer):
                        self.id, chunk.offset, self._offset)
 
         self._offset = chunk.offset
-        bytes_acknowledged = chunk.offset
-
-        if self._offset > len(self.data):
-            # Bad offset; terminate the transfer.
-            _LOG.error(
-                'Transfer %d: server requested invalid offset %d (size %d)',
-                self.id, self._offset, len(self.data))
-
-            self._send_error(Status.OUT_OF_RANGE)
-            return
-
         self._max_bytes_to_send = min(chunk.pending_bytes,
                                       len(self.data) - self._offset)
 
@@ -254,23 +295,7 @@ class _WriteTransfer(_Transfer):
         if chunk.HasField('min_delay_microseconds'):
             self._chunk_delay_us = chunk.min_delay_microseconds
 
-        while True:
-            if self._chunk_delay_us:
-                await asyncio.sleep(self._chunk_delay_us / 1e6)
-
-            write_chunk = self._next_chunk()
-            self._offset += len(write_chunk.data)
-            self._max_bytes_to_send -= len(write_chunk.data)
-
-            self._send_chunk(write_chunk)
-
-            self._update_progress(self._offset, bytes_acknowledged,
-                                  len(self.data))
-
-            if self._max_bytes_to_send == 0:
-                break
-
-        self._last_chunk = write_chunk
+        return True
 
     def _retry_after_timeout(self) -> None:
         self._send_chunk(self._last_chunk)
