@@ -12,8 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """Pigweed Console progress bar functions."""
-from typing import Optional
-
 from pw_console.progress_bar.progress_bar_state import TASKS_CONTEXTVAR
 from pw_console.progress_bar.progress_bar_task_counter import (
     ProgressBarTaskCounter)
@@ -24,7 +22,7 @@ __all__ = [
 ]
 
 
-def start_progress(task_name: str, total: int):
+def start_progress(task_name: str, total: int, hide_eta=False):
     progress_state = TASKS_CONTEXTVAR.get()
 
     progress_state.startup_progress_bar_impl()
@@ -36,6 +34,8 @@ def start_progress(task_name: str, total: int):
         total=total,
         prompt_toolkit_counter=progress_state.instance(range(total),
                                                        label=task_name))
+    ptc = progress_state.tasks[task_name].prompt_toolkit_counter
+    ptc.hide_eta = hide_eta  # type: ignore
 
 
 def update_progress(task_name: str,

@@ -36,10 +36,58 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.layout.dimension import AnyDimension, D
 from prompt_toolkit.styles import BaseStyle
 
-from prompt_toolkit.shortcuts.progress_bar import ProgressBarCounter
+from prompt_toolkit.shortcuts.progress_bar import (
+    ProgressBar,
+    ProgressBarCounter,
+)
 from prompt_toolkit.shortcuts.progress_bar.base import _ProgressControl
 from prompt_toolkit.shortcuts.progress_bar.formatters import (
-    Formatter, create_default_formatters)
+    Formatter,
+    IterationsPerSecond,
+    Text,
+    TimeLeft,
+    create_default_formatters,
+)
+
+
+class TextIfNotHidden(Text):
+    def format(
+        self,
+        progress_bar: ProgressBar,
+        progress: 'ProgressBarCounter[object]',
+        width: int,
+    ) -> AnyFormattedText:
+        formatted_text = super().format(progress_bar, progress, width)
+        if hasattr(progress, 'hide_eta') and progress.hide_eta:  # type: ignore
+
+            formatted_text = [('', ' ' * width)]
+        return formatted_text
+
+
+class IterationsPerSecondIfNotHidden(IterationsPerSecond):
+    def format(
+        self,
+        progress_bar: ProgressBar,
+        progress: 'ProgressBarCounter[object]',
+        width: int,
+    ) -> AnyFormattedText:
+        formatted_text = super().format(progress_bar, progress, width)
+        if hasattr(progress, 'hide_eta') and progress.hide_eta:  # type: ignore
+            formatted_text = [('class:iterations-per-second', ' ' * width)]
+        return formatted_text
+
+
+class TimeLeftIfNotHidden(TimeLeft):
+    def format(
+        self,
+        progress_bar: ProgressBar,
+        progress: 'ProgressBarCounter[object]',
+        width: int,
+    ) -> AnyFormattedText:
+        formatted_text = super().format(progress_bar, progress, width)
+        if hasattr(progress, 'hide_eta') and progress.hide_eta:  # type: ignore
+            formatted_text = [('class:time-left', ' ' * width)]
+        return formatted_text
 
 
 class ProgressBarImpl:

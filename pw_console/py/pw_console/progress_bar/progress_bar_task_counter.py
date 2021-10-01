@@ -39,14 +39,21 @@ class ProgressBarTaskCounter:
 
     def mark_canceled(self):
         self.canceled = True
+        self.prompt_toolkit_counter.stopped = True  # type: ignore
 
     def mark_completed(self):
         self.completed = True
+        self.prompt_toolkit_counter.done = True  # type: ignore
 
     def check_completion(self) -> None:
         # Check for completion
         if self.count >= self.total:
             self.mark_completed()
+
+    def stop_updating_prompt_toolkit_counter(self) -> None:
+        """If count is over total, stop updating the prompt_toolkit ETA."""
+        if self.count >= self.total:
+            self.prompt_toolkit_counter.done = True  # type: ignore
 
     def update(self, count: int = 1) -> None:
         """Increment this counter."""
@@ -54,6 +61,7 @@ class ProgressBarTaskCounter:
 
         if self.prompt_toolkit_counter:
             self.prompt_toolkit_counter.items_completed += count
+            self.stop_updating_prompt_toolkit_counter()
             _redraw_ui()
 
     def set_new_total(self, new_total: int) -> None:
@@ -62,4 +70,5 @@ class ProgressBarTaskCounter:
 
         if self.prompt_toolkit_counter:
             self.prompt_toolkit_counter.items_completed = new_total
+            self.stop_updating_prompt_toolkit_counter()
             _redraw_ui()

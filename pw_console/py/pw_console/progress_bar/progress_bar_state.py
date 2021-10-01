@@ -23,25 +23,35 @@ from prompt_toolkit.application import get_app_or_none
 from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit.shortcuts.progress_bar import formatters
 
-from pw_console.progress_bar.progress_bar_impl import ProgressBarImpl
+from pw_console.progress_bar.progress_bar_impl import (
+    IterationsPerSecondIfNotHidden,
+    ProgressBarImpl,
+    TextIfNotHidden,
+    TimeLeftIfNotHidden,
+)
 from pw_console.progress_bar.progress_bar_task_counter import (
     ProgressBarTaskCounter)
 from pw_console.style import generate_styles
 
 CUSTOM_FORMATTERS = [
     formatters.Label(suffix=': '),
-    formatters.Bar(start='|Pigw', end='|', sym_a='e', sym_b='d!', sym_c=' '),
+    formatters.Rainbow(
+        formatters.Bar(start='|Pigw',
+                       end='|',
+                       sym_a='e',
+                       sym_b='d!',
+                       sym_c=' ')),
     formatters.Text(' '),
     formatters.Progress(),
     formatters.Text(' ['),
     formatters.Percentage(),
     formatters.Text('] in '),
     formatters.TimeElapsed(),
-    formatters.Text(' ('),
-    formatters.IterationsPerSecond(),
-    formatters.Text('/s, eta: '),
-    formatters.TimeLeft(),
-    formatters.Text(')'),
+    TextIfNotHidden(' ('),
+    IterationsPerSecondIfNotHidden(),
+    TextIfNotHidden('/s, eta: '),
+    TimeLeftIfNotHidden(),
+    TextIfNotHidden(')'),
 ]
 
 
