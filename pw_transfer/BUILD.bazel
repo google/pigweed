@@ -24,6 +24,8 @@ licenses(["notice"])
 pw_cc_library(
     name = "pw_transfer",
     srcs = [
+        "client_connection.cc",
+        "public/pw_transfer/internal/client_connection.h",
         "public/pw_transfer/internal/server_context.h",
         "server_context.cc",
         "transfer.cc",

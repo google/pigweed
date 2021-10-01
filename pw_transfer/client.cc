@@ -368,7 +368,7 @@ Status Client::SendTransferParameters(ClientContext& ctx) {
   // TODO(frolv): For now, receive one chunk at a time. This should be made
   // configurable through a constructor argument (or maybe even per transfer).
   ctx.set_max_chunk_size_bytes(
-      MaxWriteChunkSize(ctx, max_chunk_size_bytes_, read_stream_.channel_id()));
+      ctx.MaxWriteChunkSize(max_chunk_size_bytes_, read_stream_.channel_id()));
   ctx.set_pending_bytes(ctx.max_chunk_size_bytes());
 
   internal::Chunk parameters = {};

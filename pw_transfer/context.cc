@@ -20,9 +20,8 @@
 
 namespace pw::transfer::internal {
 
-size_t MaxWriteChunkSize(const Context& transfer,
-                         size_t max_chunk_size_bytes,
-                         uint32_t channel_id) {
+size_t Context::MaxWriteChunkSize(size_t max_chunk_size_bytes,
+                                  uint32_t channel_id) const {
   // Start with the user-provided maximum chunk size, which should be the usable
   // payload length on the RPC ingress path after any transport overhead.
   ssize_t max_size = max_chunk_size_bytes;
@@ -51,9 +50,9 @@ size_t MaxWriteChunkSize(const Context& transfer,
   //
   //   TOTAL: 3 + encoded transfer_id + encoded offset + encoded data length
   //
-  size_t max_offset_in_window = transfer.offset() + transfer.pending_bytes();
+  size_t max_offset_in_window = offset() + pending_bytes();
   max_size -= 3;
-  max_size -= varint::EncodedSize(transfer.transfer_id());
+  max_size -= varint::EncodedSize(transfer_id());
   max_size -= varint::EncodedSize(max_offset_in_window);
   max_size -= varint::EncodedSize(max_size);
 

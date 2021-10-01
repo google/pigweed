@@ -17,7 +17,13 @@
 #include <cstddef>
 #include <limits>
 
-namespace pw::transfer::internal {
+namespace pw::transfer {
+
+// TODO(hepler): Remove this forward declaration whent the friend statement is
+// no longer needed.
+class Client;
+
+namespace internal {
 
 // Information about a single transfer.
 class Context {
@@ -35,8 +41,14 @@ class Context {
 
   constexpr uint32_t transfer_id() const { return transfer_id_; }
 
+ protected:
+  // TODO(hepler): Temporarily friend the Client code until it is refactored to
+  // no longer need it.
+  friend class transfer::Client;
+
   constexpr uint32_t offset() const { return offset_; }
   constexpr void set_offset(size_t offset) { offset_ = offset; }
+  constexpr void advance_offset(size_t size) { offset_ += size; }
 
   constexpr uint32_t pending_bytes() const { return pending_bytes_; }
   constexpr void set_pending_bytes(size_t pending_bytes) {
@@ -50,7 +62,6 @@ class Context {
     max_chunk_size_bytes_ = max_chunk_size_bytes;
   }
 
- protected:
   constexpr Context(uint32_t transfer_id)
       : transfer_id_(transfer_id),
         offset_(0),
@@ -61,6 +72,19 @@ class Context {
     transfer_id_ = transfer_id;
   }
 
+  // Calculates the maximum size of actual data that can be sent within a single
+  // client write transfer chunk, accounting for the overhead of the transfer
+  // protocol and RPC system.
+  //
+  // Note: This function relies on RPC protocol internals. This is generally a
+  // *bad* idea, but is necessary here due to limitations of the RPC system and
+  // its asymmetric ingress and egress paths.
+  //
+  // TODO(frolv): This should be investigated further and perhaps addressed
+  // within the RPC system, at the least through a helper function.
+  size_t MaxWriteChunkSize(size_t max_chunk_size_bytes,
+                           uint32_t channel_id) const;
+
  private:
   uint32_t transfer_id_;
   size_t offset_;
@@ -68,18 +92,5 @@ class Context {
   size_t max_chunk_size_bytes_;
 };
 
-// Calculates the maximum size of actual data that can be sent within a single
-// client write transfer chunk, accounting for the overhead of the transfer
-// protocol and RPC system.
-//
-// Note: This function relies on RPC protocol internals. This is generally a
-// *bad* idea, but is necessary here due to limitations of the RPC system and
-// its asymmetric ingress and egress paths.
-//
-// TODO(frolv): This should be investigated further and perhaps addressed within
-// the RPC system, at the least through a helper function.
-size_t MaxWriteChunkSize(const Context& transfer,
-                         size_t max_chunk_size_bytes,
-                         uint32_t channel_id);
-
-}  // namespace pw::transfer::internal
+}  // namespace internal
+}  // namespace pw::transfer

@@ -17,6 +17,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_transfer/handler.h"
+#include "pw_transfer/internal/client_connection.h"
 #include "pw_transfer/internal/server_context.h"
 #include "pw_transfer/transfer.raw_rpc.pb.h"
 
@@ -45,10 +46,9 @@ class TransferService : public generated::Transfer<TransferService> {
   // loss.
   constexpr TransferService(size_t max_chunk_size_bytes,
                             size_t default_max_bytes_to_receive)
-      : read_transfers_(internal::ServerContext::kRead, handlers_),
-        write_transfers_(internal::ServerContext::kWrite, handlers_),
-        max_chunk_size_bytes_(max_chunk_size_bytes),
-        default_max_bytes_to_receive_(default_max_bytes_to_receive) {}
+      : read_transfers_(internal::kRead, handlers_),
+        write_transfers_(internal::kWrite, handlers_),
+        client_(max_chunk_size_bytes, default_max_bytes_to_receive) {}
 
   TransferService(const TransferService&) = delete;
   TransferService(TransferService&&) = delete;
@@ -56,9 +56,17 @@ class TransferService : public generated::Transfer<TransferService> {
   TransferService& operator=(const TransferService&) = delete;
   TransferService& operator=(TransferService&&) = delete;
 
-  void Read(ServerContext&, RawServerReaderWriter& reader_writer);
+  void Read(ServerContext&, RawServerReaderWriter& reader_writer) {
+    client_.InitializeRead(reader_writer, [this](ConstByteSpan message) {
+      HandleChunk(message, internal::kRead);
+    });
+  }
 
-  void Write(ServerContext&, RawServerReaderWriter& reader_writer);
+  void Write(ServerContext&, RawServerReaderWriter& reader_writer) {
+    client_.InitializeWrite(reader_writer, [this](ConstByteSpan message) {
+      HandleChunk(message, internal::kWrite);
+    });
+  }
 
   void RegisterHandler(internal::Handler& handler) {
     handlers_.push_front(handler);
@@ -69,10 +77,6 @@ class TransferService : public generated::Transfer<TransferService> {
   }
 
  private:
-  void SendStatusChunk(RawServerReaderWriter& stream,
-                       uint32_t transfer_id,
-                       Status status);
-
   // Calls transfer.Finish() and sends the final status chunk.
   void FinishTransfer(internal::ServerContext& transfer, Status status);
 
@@ -80,28 +84,16 @@ class TransferService : public generated::Transfer<TransferService> {
   // sent successfully.
   bool SendNextReadChunk(internal::ServerContext& context);
 
-  void HandleChunk(ConstByteSpan message, internal::ServerContext::Type type);
-
-  void HandleReadChunk(internal::ServerContext& transfer,
-                       const internal::Chunk& chunk);
-  void HandleWriteChunk(internal::ServerContext& transfer,
-                        const internal::Chunk& chunk);
-
-  void SendWriteTransferParameters(internal::ServerContext& transfer);
+  void HandleChunk(ConstByteSpan message, internal::TransferType type);
 
   // All registered transfer handlers.
   IntrusiveList<internal::Handler> handlers_;
 
-  // Persistent streams for read and write transfers. The server never closes
-  // these streams -- they remain open until the client ends them.
-  RawServerReaderWriter read_stream_;
-  RawServerReaderWriter write_stream_;
-
   internal::ServerContextPool read_transfers_;
   internal::ServerContextPool write_transfers_;
 
-  size_t max_chunk_size_bytes_;
-  size_t default_max_bytes_to_receive_;
+  // Stores the RPC streams and parameters for communicating with the client.
+  internal::ClientConnection client_;
 };
 
 }  // namespace pw::transfer

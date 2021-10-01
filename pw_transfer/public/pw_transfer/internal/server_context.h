@@ -17,35 +17,54 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_result/result.h"
 #include "pw_transfer/handler.h"
+#include "pw_transfer/internal/client_connection.h"
 #include "pw_transfer/internal/context.h"
 
 namespace pw::transfer::internal {
+
+struct Chunk;
 
 // Transfer context for use within the transfer service (server-side). Stores a
 // pointer to a transfer handler when active to stream the transfer data.
 class ServerContext : public Context {
  public:
-  enum Type { kRead, kWrite };
-
-  constexpr ServerContext() : Context(), type_(kRead), handler_(nullptr) {}
+  constexpr ServerContext()
+      : Context(), type_(kRead), state_(kData), handler_(nullptr) {}
 
   constexpr bool active() const { return handler_ != nullptr; }
-
-  constexpr Type type() const { return type_; }
 
   // Begins a new transfer with the specified type and handler. Calls into the
   // handler's Prepare method.
   //
   // Precondition: Context is not already active.
-  Status Start(Type type, Handler& handler);
+  Status Start(TransferType type, Handler& handler);
+
+  void HandleReadChunk(ClientConnection& client, const Chunk& chunk);
+
+  void HandleWriteChunk(ClientConnection& client, const Chunk& chunk);
 
   // Ends the transfer with the given status, calling the handler's Finalize
-  // method.
+  // method. No chunks are sent.
   //
   // Returns DATA_LOSS if the finalize call fails.
   //
   // Precondition: Transfer context is active.
   Status Finish(Status status);
+
+ private:
+  // Sends a chunk and returns status indicating what to do next:
+  //
+  //    OK - continue
+  //    OUT_OF_RANGE - done for now
+  //    other errors - abort transfer with this error
+  //
+  Status SendNextReadChunk(ClientConnection& client);
+
+  void ProcessWriteDataChunk(ClientConnection& client, const Chunk& chunk);
+
+  void SendWriteTransferParameters(ClientConnection& client);
+
+  void FinishAndSendStatus(ClientConnection& client, Status status);
 
   stream::Reader& reader() const {
     PW_DASSERT(type_ == kRead);
@@ -57,7 +76,6 @@ class ServerContext : public Context {
     return handler().writer();
   }
 
- private:
   constexpr Handler& handler() {
     PW_DASSERT(active());
     return *handler_;
@@ -68,14 +86,20 @@ class ServerContext : public Context {
     return *handler_;
   }
 
-  Type type_;
+  TransferType type_;
+  enum : uint8_t {
+    // Sending or receiving data.
+    kData,
+    // Recovering after one or more chunks was dropped.
+    kRecovery,
+  } state_;
   Handler* handler_;
 };
 
 // A fixed-size pool of allocatable transfer contexts.
 class ServerContextPool {
  public:
-  constexpr ServerContextPool(ServerContext::Type type,
+  constexpr ServerContextPool(TransferType type,
                               IntrusiveList<internal::Handler>& handlers)
       : type_(type), handlers_(handlers) {}
 
@@ -94,7 +118,7 @@ class ServerContextPool {
   // is updated, this should be made configurable.
   static constexpr int kMaxConcurrentTransfers = 1;
 
-  ServerContext::Type type_;
+  TransferType type_;
   std::array<ServerContext, kMaxConcurrentTransfers> transfers_;
   IntrusiveList<internal::Handler>& handlers_;
 };

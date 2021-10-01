@@ -130,8 +130,8 @@ Errors
 At any point, either the client or server may terminate the transfer by sending
 an error chunk with the transfer ID and a non-OK status.
 
-- ``DATA_LOSS`` -- Failed to record data that was transferred. For example, a
-  flash write error occurred in Handler::FinalizeWrite().
+- ``DATA_LOSS`` -- Failed to read or write data that was transferred. For
+  example, a flash write error occurred in Handler::FinalizeWrite().
 - ``INVALID_ARGUMENT`` -- Received a malformed chunk.
 - ``INTERNAL`` -- An assumption of the ``pw_transfer`` protocol was violated.
 

@@ -42,6 +42,8 @@ pw_source_set("pw_transfer") {
     "public/pw_transfer/transfer.h",
   ]
   sources = [
+    "client_connection.cc",
+    "public/pw_transfer/internal/client_connection.h",
     "public/pw_transfer/internal/server_context.h",
     "server_context.cc",
     "transfer.cc",
