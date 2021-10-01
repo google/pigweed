@@ -85,9 +85,9 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//src/lib/fxl",
     "//src/lib/uuid",
-    "//zircon/public/lib/zx",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/inspect",
+    "//zircon/system/ulib/zx",
   ]
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
