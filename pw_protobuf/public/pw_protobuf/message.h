@@ -501,7 +501,7 @@ class RepeatedFieldParser {
   iterator end() { return iterator(*this, message_.end()); }
 
  private:
-  Message& message_;
+  Message message_;
   uint32_t field_number_ = 0;
 };
 

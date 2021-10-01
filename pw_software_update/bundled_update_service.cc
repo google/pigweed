@@ -361,6 +361,34 @@ void BundledUpdateService::DoApply() {
     return;
   }
 
+  // In order to report apply progress, quickly scan to see how many bytes will
+  // be applied.
+  size_t target_file_bytes_to_apply = 0;
+  protobuf::StringToBytesMap target_payloads =
+      bundle_.GetDecoder().AsStringToBytesMap(static_cast<uint32_t>(
+          pw::software_update::UpdateBundle::Fields::TARGET_PAYLOADS));
+  if (!target_payloads.status().ok()) {
+    std::lock_guard lock(mutex_);
+    SET_ERROR(
+        pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
+        "Failed to iterate the UpdateBundle target_payloads map entries: %d",
+        static_cast<int>(target_payloads.status().code()));
+    return;
+  }
+  for (pw::protobuf::StringToBytesMapEntry target_payload : target_payloads) {
+    protobuf::Bytes target_payload_bytes = target_payload.Value();
+    if (!target_payload_bytes.status().ok()) {
+      std::lock_guard lock(mutex_);
+      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
+                "Failed to read a UpdateBundle target_payloads map entry: %d",
+                static_cast<int>(target_payload_bytes.status().code()));
+      return;
+    }
+    target_file_bytes_to_apply +=
+        target_payload_bytes.GetBytesReader().ConservativeReadLimit();
+  }
+
+  size_t target_file_bytes_applied = 0;
   for (pw::protobuf::Message file_name : target_files) {
     // TODO: Use a config.h parameter for this.
     constexpr size_t kFileNameMaxSize = 32;
@@ -368,6 +396,7 @@ void BundledUpdateService::DoApply() {
     protobuf::String name = file_name.AsString(static_cast<uint32_t>(
         pw::software_update::TargetFile::Fields::FILE_NAME));
     if (!name.status().ok()) {
+      std::lock_guard lock(mutex_);
       SET_ERROR(
           pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
           "The serialized_target_metadata failed to iterate target files: %d",
@@ -376,6 +405,7 @@ void BundledUpdateService::DoApply() {
     }
     const Result<ByteSpan> read_result = name.GetBytesReader().Read(buf);
     if (!read_result.ok()) {
+      std::lock_guard lock(mutex_);
       SET_ERROR(
           pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
           "The serialized_target_metadata failed to read target filename: %d",
@@ -398,6 +428,20 @@ void BundledUpdateService::DoApply() {
                 static_cast<int>(status.code()));
       return;
     }
+    target_file_bytes_applied += file_reader.interval_size();
+    const uint32_t progress_hundreth_percent =
+        (static_cast<uint64_t>(target_file_bytes_applied) * 100 * 100) /
+        target_file_bytes_to_apply;
+    PW_LOG_DEBUG("Apply progress: %d/%d Bytes (%ld%%)",
+                 target_file_bytes_applied,
+                 target_file_bytes_to_apply,
+                 progress_hundreth_percent / 100);
+    {
+      std::lock_guard lock(mutex_);
+      status_.current_state_progress_hundreth_percent =
+          progress_hundreth_percent;
+      status_.has_current_state_progress_hundreth_percent = true;
+    }
   }
 
   // Finalize the apply.
@@ -414,6 +458,8 @@ void BundledUpdateService::DoApply() {
   }
   {
     std::lock_guard lock(mutex_);
+    status_.current_state_progress_hundreth_percent = 0;
+    status_.has_current_state_progress_hundreth_percent = false;
     status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED;
     status_.result = pw_software_update_BundledUpdateResult_Enum_SUCCESS;
   }
