@@ -99,7 +99,7 @@ def gn_gen(gn_source_dir: Path,
     if export_compile_commands:
         export_commands_arg = '--export-compile-commands'
         if isinstance(export_compile_commands, str):
-            export_commands_arg += export_compile_commands
+            export_commands_arg += f'={export_compile_commands}'
 
     call('gn',
          'gen',
