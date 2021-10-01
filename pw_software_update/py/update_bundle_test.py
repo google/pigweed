@@ -18,7 +18,7 @@ import tempfile
 import unittest
 
 from pw_software_update import update_bundle
-from pw_software_update.tuf_pb2 import TargetsMetadata
+from pw_software_update.tuf_pb2 import SignedRootMetadata, TargetsMetadata
 
 
 class TargetsFromDirectoryTest(unittest.TestCase):
@@ -128,18 +128,23 @@ class GenUnsignedUpdateBundleTest(unittest.TestCase):
                 baz_path: 'baz',
                 qux_path: 'qux',
             }
+            serialized_root_metadata_bytes = b'\x12\x34\x56\x78'
 
             bundle = update_bundle.gen_unsigned_update_bundle(
-                targets, targets_metadata_version=42)
+                targets,
+                targets_metadata_version=42,
+                root_metadata=SignedRootMetadata(
+                    serialized_root_metadata=serialized_root_metadata_bytes))
 
             self.assertEqual(foo_bytes, bundle.target_payloads['foo'])
             self.assertEqual(bar_bytes, bundle.target_payloads['bar'])
             self.assertEqual(baz_bytes, bundle.target_payloads['baz'])
             self.assertEqual(qux_bytes, bundle.target_payloads['qux'])
-
             targets_metadata = TargetsMetadata.FromString(
                 bundle.targets_metadata['targets'].serialized_targets_metadata)
             self.assertEqual(targets_metadata.common_metadata.version, 42)
+            self.assertEqual(serialized_root_metadata_bytes,
+                             bundle.root_metadata.serialized_root_metadata)
 
     def test_persist_to_disk(self):
         """Tests persisting the TUF repo to disk for debugging"""
