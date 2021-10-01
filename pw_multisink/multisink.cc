@@ -16,6 +16,11 @@
 #include <cstring>
 
 #include "pw_assert/check.h"
+#include "pw_bytes/span.h"
+#include "pw_function/function.h"
+#include "pw_log/log.h"
+#include "pw_result/result.h"
+#include "pw_status/status.h"
 #include "pw_status/try.h"
 #include "pw_varint/varint.h"
 
@@ -159,6 +164,35 @@ void MultiSink::NotifyListeners() {
   for (auto& listener : listeners_) {
     listener.OnNewEntryAvailable();
   }
+}
+
+Status MultiSink::UnsafeForEachEntry(pw::Function<void(ConstByteSpan)> callback,
+                                     size_t max_num_entries) {
+  MultiSink::UnsafeIterationWrapper multisink_iteration = UnsafeIteration();
+
+  // First count the number of entries.
+  size_t num_entries = 0;
+  for ([[maybe_unused]] ConstByteSpan entry : multisink_iteration) {
+    num_entries++;
+  }
+
+  // Log up to the max number of logs to avoid overflowing the crash log
+  // writer.
+  const size_t first_logged_offset =
+      max_num_entries > num_entries ? 0 : num_entries - max_num_entries;
+  pw::multisink::MultiSink::iterator it = multisink_iteration.begin();
+  for (size_t offset = 0; it != multisink_iteration.end(); ++it, ++offset) {
+    if (offset < first_logged_offset) {
+      continue;  // Skip this log.
+    }
+    callback(*it);
+  }
+  if (!it.status().ok()) {
+    PW_LOG_WARN("Multisink corruption detected, some entries may be missing");
+    return Status::DataLoss();
+  }
+
+  return OkStatus();
 }
 
 Status MultiSink::Drain::PopEntry(const PeekedEntry& entry) {

@@ -17,8 +17,10 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_function/function.h"
 #include "pw_status/status.h"
 
 namespace pw::multisink {
@@ -347,6 +349,68 @@ TEST_F(MultiSinkTest, PeekAndPop) {
   auto peek_other_drain_unchanged =
       drains_[1].PeekEntry(entry_buffer_, drop_count);
   VerifyPeekResult(peek_other_drain_unchanged, drop_count, kMessage, 0);
+}
+
+TEST(UnsafeIteration, NoLimit) {
+  constexpr std::array<std::string_view, 5> kExpectedEntries{
+      "one", "two", "three", "four", "five"};
+  std::array<std::byte, 32> buffer;
+  MultiSink multisink(buffer);
+
+  for (std::string_view entry : kExpectedEntries) {
+    multisink.HandleEntry(std::as_bytes(std::span(entry)));
+  }
+
+  size_t entry_count = 0;
+  struct {
+    size_t& entry_count;
+    std::span<const std::string_view> expected_results;
+  } ctx{entry_count, kExpectedEntries};
+  auto cb = [&ctx](ConstByteSpan data) {
+    std::string_view expected_entry = ctx.expected_results[ctx.entry_count];
+    EXPECT_EQ(data.size(), expected_entry.size());
+    const int result =
+        memcmp(data.data(), expected_entry.data(), expected_entry.size());
+    EXPECT_EQ(0, result);
+    ctx.entry_count++;
+  };
+
+  EXPECT_EQ(OkStatus(), multisink.UnsafeForEachEntry(cb));
+  EXPECT_EQ(kExpectedEntries.size(), entry_count);
+}
+
+TEST(UnsafeIteration, Subset) {
+  constexpr std::array<std::string_view, 5> kExpectedEntries{
+      "one", "two", "three", "four", "five"};
+  constexpr size_t kStartOffset = 3;
+  constexpr size_t kExpectedEntriesMaxEntries =
+      kExpectedEntries.size() - kStartOffset;
+  std::array<std::byte, 32> buffer;
+  MultiSink multisink(buffer);
+
+  for (std::string_view entry : kExpectedEntries) {
+    multisink.HandleEntry(std::as_bytes(std::span(entry)));
+  }
+
+  size_t entry_count = 0;
+  struct {
+    size_t& entry_count;
+    std::span<const std::string_view> expected_results;
+  } ctx{entry_count, kExpectedEntries};
+  auto cb = [&ctx](ConstByteSpan data) {
+    std::string_view expected_entry =
+        ctx.expected_results[ctx.entry_count + kStartOffset];
+    EXPECT_EQ(data.size(), expected_entry.size());
+    const int result =
+        memcmp(data.data(), expected_entry.data(), expected_entry.size());
+    EXPECT_EQ(0, result);
+    ctx.entry_count++;
+  };
+
+  EXPECT_EQ(
+      OkStatus(),
+      multisink.UnsafeForEachEntry(cb, kExpectedEntries.size() - kStartOffset));
+  EXPECT_EQ(kExpectedEntriesMaxEntries, entry_count);
 }
 
 }  // namespace pw::multisink

@@ -95,8 +95,8 @@ are attached or in crash contexts where dumping out all entries is desirable,
 even if those entries were previously consumed by a drain. This module provides
 an iteration class that is thread-unsafe and like standard iterators, assumes
 that the buffer is not being mutated while iterating. A
-`MultiSink::UnsafeIterationWrapper` class that supports range-based for-loop
-usage canbe acquired via `MultiSink::UnsafeIteration()`.
+``MultiSink::UnsafeIterationWrapper`` class that supports range-based for-loop
+usage can be acquired via ``MultiSink::UnsafeIteration()``.
 
 The iterator starts from the oldest available entry in the buffer, regardless of
 whether all attached drains have already consumed that entry. This allows the
@@ -142,6 +142,11 @@ iterator to be used even if no drains have been previously attached.
   for (ConstByteSpan entry : multisink.UnsafeIteration()) {
     PrintByteArray(entry);
   }
+
+As an alternative to using the ``UnsafeIterationWrapper``,
+``MultiSink::UnsafeForEachEntry()`` may be used to run a callback for each
+entry in the buffer. This helper also provides a way to limit the iteration to
+the ``N`` most recent entries.
 
 Peek & Pop
 ==========

@@ -40,12 +40,29 @@ pw_cc_library(
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
+        "//pw_function",
+        "//pw_log",
         "//pw_result",
         "//pw_ring_buffer",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_varint",
+    ],
+)
+
+pw_cc_library(
+    name = "util",
+    srcs = ["util.cc"],
+    hdrs = ["public/pw_multisink/util.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_multisink",
+        "//pw_bytes",
+        "//pw_function",
+        "//pw_log",
+        "//pw_log:log_pwpb",
+        "//pw_status",
     ],
 )
 
@@ -65,7 +82,9 @@ pw_cc_test(
     ],
     deps = [
         ":pw_multisink",
+        "//pw_function",
         "//pw_preprocessor",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )

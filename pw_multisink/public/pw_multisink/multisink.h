@@ -13,9 +13,11 @@
 // the License.
 #pragma once
 
+#include <limits>
 #include <mutex>
 
 #include "pw_bytes/span.h"
+#include "pw_function/function.h"
 #include "pw_multisink/config.h"
 #include "pw_result/result.h"
 #include "pw_ring_buffer/prefixed_entry_ring_buffer.h"
@@ -343,6 +345,17 @@ class MultiSink {
   // Removes all data from the internal buffer. The multisink's sequence ID is
   // not modified, so readers may interpret this event as droppping entries.
   void Clear() PW_LOCKS_EXCLUDED(lock_);
+
+  // Uses MultiSink's unsafe iteration to dump the contents to a user-provided
+  // callback. max_num_entries can be used to limit the dump to the N most
+  // recent entries.
+  //
+  // Returns:
+  //   OK - Successfully dumped entire multisink.
+  //   DATA_LOSS - Corruption detected, some entries may have been lost.
+  Status UnsafeForEachEntry(
+      pw::Function<void(ConstByteSpan)> callback,
+      size_t max_num_entries = std::numeric_limits<size_t>::max());
 
  protected:
   friend Drain;
