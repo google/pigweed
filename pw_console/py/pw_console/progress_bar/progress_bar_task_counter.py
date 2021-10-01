@@ -55,7 +55,6 @@ class ProgressBarTaskCounter:
         if self.prompt_toolkit_counter:
             self.prompt_toolkit_counter.items_completed += count
             _redraw_ui()
-        self.check_completion()
 
     def set_new_total(self, new_total: int) -> None:
         """Set a new total count."""
@@ -64,4 +63,3 @@ class ProgressBarTaskCounter:
         if self.prompt_toolkit_counter:
             self.prompt_toolkit_counter.items_completed = new_total
             _redraw_ui()
-        self.check_completion()
