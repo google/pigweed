@@ -121,6 +121,14 @@ pw_cc_library(
     ],
 )
 
+proto_library(
+    name = "protos",
+    srcs = [
+        "pw_trace_protos/trace.proto",
+        "pw_trace_protos/trace_rpc.proto",
+    ],
+)
+
 pw_cc_library(
     name = "pw_trace_tokenized_fake_time",
     srcs = [

@@ -75,14 +75,17 @@ config("trace_buffer_size") {
   defines = [ "PW_TRACE_BUFFER_SIZE_BYTES=${pw_trace_tokenized_BUFFER_SIZE}" ]
 }
 
-pw_proto_library("trace_rpc_service_proto") {
-  sources = [ "pw_trace_protos/trace_rpc.proto" ]
+pw_proto_library("protos") {
+  sources = [
+    "pw_trace_protos/trace.proto",
+    "pw_trace_protos/trace_rpc.proto",
+  ]
   inputs = [ "pw_trace_protos/trace_rpc.options" ]
 }
 
 pw_source_set("trace_rpc_service") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [ ":trace_rpc_service_proto.nanopb_rpc" ]
+  public_deps = [ ":protos.nanopb_rpc" ]
   deps = [
     ":core",
     ":tokenized_trace_buffer",

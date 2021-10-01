@@ -77,9 +77,13 @@ message Snapshot {
 
   pw.cpu_exception.cortex_m.ArmV7mCpuState armv7m_cpu_state = 20;
 
+  // Platform-specific binary trace data region. Binary trace data is using
+  // pw_trace_tokenized buffer format for stored data.
+  bytes trace_data = 21;
+
   // RESERVED FOR PIGWEED. Downstream projects may NOT write to these fields.
   // Encodes to two bytes of tag overhead.
-  reserved 21 to 1031;
+  reserved 22 to 1031;
 
   // RESERVED FOR USERS. Encodes to two or more bytes of tag overhead.
   reserved 1032 to max;

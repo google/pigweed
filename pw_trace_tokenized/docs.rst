@@ -239,10 +239,10 @@ on the command line.
 Trigger
 -------
 The trigger example demonstrates how a trace event can be used as a trigger to
-start and stop capturing a trace. The examples makes use of `PW_TRACE_REF` and
-`PW_TRACE_REF_DATA` to specify a start and stop event for the capture. This can
-be useful if the trace buffer is small and you wish to capture a specific
-series of events.
+start and stop capturing a trace. The examples makes use of ``PW_TRACE_REF``
+and ``PW_TRACE_REF_DATA`` to specify a start and stop event for the capture.
+This can be useful if the trace buffer is small and you wish to capture a
+specific series of events.
 
 Filter
 ------
@@ -252,3 +252,14 @@ task which don't have traceId equal to 3 are removed. Both the other task traces
 are not removed. This can be a useful feature while debugging as it limits the
 amount of events which get stored to the buffer, and only saves the events of
 interest.
+
+--------------------
+Snapshot integration
+--------------------
+Tokenized trace buffers can be captured to a ``pw.snapshot.Snapshot`` or
+``pw.trace.SnapshotTraceInfo`` proto in the ``trace_data`` field. The expected
+format is a de-ringed raw tokenized trace buffer, which can be retrieved via
+``pw::trace::DeringAndViewRawBuffer()``.
+
+``pw_trace_tokenized`` does not yet have Python tooling integration for
+interpretation of serialized snapshots with a populated ``trace_data`` field.
