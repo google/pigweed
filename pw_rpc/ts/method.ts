@@ -59,6 +59,17 @@ export class UnaryMethodStub extends MethodStub {
     return call;
   }
 
+  open(
+      request: Message,
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): UnaryCall {
+    const call =
+        new UnaryCall(this.rpcs, this.rpc, onNext, onCompleted, onError);
+    call.invoke(request, true);
+    return call;
+  }
+
   async call(request: Message): Promise<[Status, Message]> {
     return await this.invoke(request).complete();
   }
@@ -73,6 +84,17 @@ export class ServerStreamingMethodStub extends MethodStub {
     const call = new ServerStreamingCall(
         this.rpcs, this.rpc, onNext, onCompleted, onError);
     call.invoke(request);
+    return call;
+  }
+
+  open(
+      request: Message,
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): UnaryCall {
+    const call =
+        new UnaryCall(this.rpcs, this.rpc, onNext, onCompleted, onError);
+    call.invoke(request, true);
     return call;
   }
 
@@ -92,6 +114,16 @@ export class ClientStreamingMethodStub extends MethodStub {
     return call;
   }
 
+  open(
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): ClientStreamingCall {
+    const call = new ClientStreamingCall(
+        this.rpcs, this.rpc, onNext, onCompleted, onError);
+    call.invoke(undefined, true);
+    return call;
+  }
+
   async call(requests: Array<Message> = []) {
     return this.invoke().finishAndWait(requests);
   }
@@ -105,6 +137,16 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
     const call = new BidirectionalStreamingCall(
         this.rpcs, this.rpc, onNext, onCompleted, onError);
     call.invoke();
+    return call;
+  }
+
+  open(
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): BidirectionalStreamingCall {
+    const call = new BidirectionalStreamingCall(
+        this.rpcs, this.rpc, onNext, onCompleted, onError);
+    call.invoke(undefined, true);
     return call;
   }
 

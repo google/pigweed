@@ -4,8 +4,7 @@
 pw_rpc Typescript package
 -------------------------
 The ``pw_rpc`` Typescript package makes it possible to call Pigweed RPCs from
-Typescript. The package includes a ``pw_rpc`` client library to facilitate
-handling RPCs.
+Typescript. The package includes client library to facilitate handling RPCs.
 
 This package is currently a work in progress.
 
@@ -57,51 +56,86 @@ method is found by searching based on the full name:
 .. code-block:: typescript
 
   const channel = client.channel()!;
-  const stub = channel.methodStub('pw.rpc.test1.TheTestService.SomeUnary')!;
+  unaryStub = channel.methodStub('pw.rpc.test1.TheTestService.SomeUnary')!
+      as UnaryMethodStub;
 
-Calling an RPC
-==============
-``channel.methodStub()`` returns a general methodStub. It must be typecast
-before invoke can be called with the correct parameters.
+The four possible RPC stubs are ``UnaryMethodStub``,
+``ServerStreamingMethodStub``, ``ClientStreamingMethodStub``, and
+``BidirectionalStreamingMethodStub``.  Note that ``channel.methodStub()``
+returns a general stub. Since each stub type has different invoke
+parameters, the general stub should be typecast before using.
+
+Invoke an RPC with callbacks
+============================
+
+.. code-block:: typescript
+
+  invoke(request?: Message,
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): Call
+
+All RPC methods can be invoked with a set of callbacks that are triggered when
+either a response is received, the RPC is completed, or an error occurs. The
+example below demonstrates registering these callbacks on a Bidirectional RPC.
+Other RPC types can be invoked in a similar fashion. The request parameter may
+differ slightly between RPC types.
+
+.. code-block:: typescript
+
+  bidiRpc = client.channel()?.methodStub(
+      'pw.rpc.test1.TheTestService.SomeBidi')!
+      as BidirectionalStreamingMethodStub;
+
+  // Configure callback functions
+  const onNext = (response: Message) => {
+    console.log(response);
+  }
+  const onComplete = (status: Status) => {
+    console.log('completed!');
+  }
+  const onError = (error: Error) => {
+    console.log();
+  }
+
+  bidiRpc.invoke(request, onNext, onComplete, onError);
+
+Open an RPC: ignore initial errors
+=====================================
+
+Open allows you to start and register an RPC without crashing on errors. This
+is useful for starting an RPC before the server is ready. For instance, starting
+a logging RPC while the device is booting.
+
+.. code-block:: typescript
+
+  open(request?: Message,
+      onNext: Callback = () => {},
+      onCompleted: Callback = () => {},
+      onError: Callback = () => {}): Call
+
+Blocking RPCs: promise API
+==========================
 
 Unary RPC
 ---------
-A unary RPC can be invoked with either callbacks or promises being used to
-read the response. To avoid reading duplicate responses, do not use both
-simultaneously.
-
 .. code-block:: typescript
 
-  unaryStub = client.channel()?.methodStub(
+  unaryRpc = client.channel()?.methodStub(
       'pw.rpc.test1.TheTestService.SomeUnary')!
       as UnaryMethodStub;
-  request = new unaryStub.method.requestType();
-  request.setFooProperty('hello world');
-
-  // Callback
-  const call = unaryStub.invoke(request, (response) => {
-    console.log(response);
-  });
-
-  // Promise
-  const [status, response] = await unaryStub.call(request);
+  const request = new unaryRpc.requestType();
+  request.setFooProperty(4);
+  const [status, response] = await unaryRpc.call(request);
 
 Server Streaming RPC
 --------------------
-Once the server stream is invoked, responses can either be read by providing
-the ``onNext`` callback or using the promise API.
-
 .. code-block:: typescript
 
   serverStreamRpc = client.channel()?.methodStub(
-      'pw.rpc.test1.TheTestService.SomeUnary')!
+      'pw.rpc.test1.TheTestService.SomeServerStreaming')!
       as ServerStreamingMethodStub;
 
-  // Callback
-  const onNext = (response) => {console.log(response)};
-  const call = serverStreamRpc.invoke(undefined, onNext);
-
-  // Promise
   const call = serverStreamRpc.invoke();
   for await (const response of call.getResponses(2)) {
    console.log(response);

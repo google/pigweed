@@ -64,9 +64,17 @@ export class PendingCalls {
   }
 
   /** Calls request and sends the resulting packet to the channel. */
-  sendRequest(rpc: Rpc, call: Call, request?: Message): Call|undefined {
+  sendRequest(rpc: Rpc, call: Call, ignoreError: boolean, request?: Message):
+      Call|undefined {
     const previous = this.open(rpc, call);
-    rpc.channel.send(packets.encodeRequest(rpc.idSet, request));
+    const packet = packets.encodeRequest(rpc.idSet, request);
+    try {
+      rpc.channel.send(packet);
+    } catch (error) {
+      if (!ignoreError) {
+        throw error;
+      }
+    }
     return previous;
   }
 

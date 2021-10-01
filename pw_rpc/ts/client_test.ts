@@ -136,20 +136,24 @@ describe('Client', () => {
 describe('RPC', () => {
   let lib: Library;
   let client: Client;
-  let lastPacketSent: RpcPacket;
+  let lastPacketSent: RpcPacket|undefined;
   let requests: RpcPacket[] = [];
   let nextPackets: [Uint8Array, Status][] = [];
   let responseLock = false;
   let sendResponsesAfterPackets = 0;
+  let outputException: Error|undefined;
 
   beforeEach(async () => {
-    sendResponsesAfterPackets = 0
-    responseLock = false;
-    nextPackets = []
     lib = await Library.fromFileDescriptorSet(
         TEST_PROTO_PATH, 'test_protos_tspb');
     const channels = [new Channel(1, handlePacket), new Channel(2, () => {})];
     client = Client.fromProtoSet(channels, lib);
+    lastPacketSent = undefined;
+    requests = [];
+    nextPackets = [];
+    responseLock = false;
+    sendResponsesAfterPackets = 0;
+    outputException = undefined;
   });
 
   function newRequest(magicNumber: number = 123): Message {
@@ -222,6 +226,9 @@ describe('RPC', () => {
   }
 
   function handlePacket(data: Uint8Array): void {
+    if (outputException !== undefined) {
+      throw outputException;
+    }
     requests.push(packets.decode(data));
 
     if (sendResponsesAfterPackets > 1) {
@@ -229,10 +236,10 @@ describe('RPC', () => {
       return;
     }
 
-    if (responseLock == true) {
-      return;
-    }
+    processEnqueuedPackets();
+  }
 
+  function processEnqueuedPackets(): void {
     // Avoid infinite recursion when processing a packet causes another packet
     // to send.
     responseLock = true;
@@ -276,6 +283,27 @@ describe('RPC', () => {
             unaryStub.invoke(newRequest(5), onNext, onCompleted, onError);
 
         expect(sentPayload(Request).getMagicNumber()).toEqual(5);
+        expect(onNext).toHaveBeenCalledOnceWith(response);
+        expect(onError).not.toHaveBeenCalled();
+        expect(onCompleted).toHaveBeenCalledOnceWith(Status.ABORTED);
+      }
+    });
+
+    it('open', () => {
+      outputException = Error('Error should be ignored');
+
+      for (let i = 0; i < 3; i++) {
+        const response = newResponse('hello world');
+        enqueueResponse(1, unaryStub.method, Status.ABORTED, response);
+
+        const onNext = jasmine.createSpy();
+        const onCompleted = jasmine.createSpy();
+        const onError = jasmine.createSpy();
+        unaryStub.open(newRequest(5), onNext, onCompleted, onError);
+        expect(requests).toHaveSize(0);
+
+        processEnqueuedPackets();
+
         expect(onNext).toHaveBeenCalledOnceWith(response);
         expect(onError).not.toHaveBeenCalled();
         expect(onCompleted).toHaveBeenCalledOnceWith(Status.ABORTED);
@@ -364,6 +392,33 @@ describe('RPC', () => {
       }
     });
 
+
+    it('open', () => {
+      outputException = Error('Error should be ignored');
+      const response1 = newResponse('!!!');
+      const response2 = newResponse('?');
+
+      for (let i = 0; i < 3; i++) {
+        enqueueServerStream(1, serverStreaming.method, response1);
+        enqueueServerStream(1, serverStreaming.method, response2);
+        enqueueResponse(1, serverStreaming.method, Status.ABORTED);
+
+        const onNext = jasmine.createSpy();
+        const onCompleted = jasmine.createSpy();
+        const onError = jasmine.createSpy();
+        const call =
+            serverStreaming.open(newRequest(3), onNext, onCompleted, onError);
+
+        expect(requests).toHaveSize(0);
+        processEnqueuedPackets();
+
+        expect(onNext).toHaveBeenCalledWith(response1);
+        expect(onNext).toHaveBeenCalledWith(response2);
+        expect(onError).not.toHaveBeenCalled();
+        expect(onCompleted).toHaveBeenCalledOnceWith(Status.ABORTED);
+      }
+    });
+
     it('non-blocking cancel', () => {
       const testResponse = newResponse('!!!');
       enqueueServerStream(1, serverStreaming.method, testResponse);
@@ -425,6 +480,28 @@ describe('RPC', () => {
         expect(stream.error).toBeUndefined();
       }
     });
+
+    it('open', () => {
+      outputException = Error('Error should be ignored');
+      const response = newResponse('!!!');
+
+      for (let i = 0; i < 3; i++) {
+        enqueueResponse(1, clientStreaming.method, Status.OK, response);
+
+        const onNext = jasmine.createSpy();
+        const onCompleted = jasmine.createSpy();
+        const onError = jasmine.createSpy();
+        const call = clientStreaming.open(onNext, onCompleted, onError);
+        expect(requests).toHaveSize(0);
+
+        processEnqueuedPackets();
+
+        expect(onNext).toHaveBeenCalledWith(response);
+        expect(onError).not.toHaveBeenCalled();
+        expect(onCompleted).toHaveBeenCalledOnceWith(Status.OK);
+      }
+    });
+
 
     it('non-blocking call ended by client', () => {
       const testResponse = newResponse('0.o');
@@ -613,6 +690,32 @@ describe('RPC', () => {
         expect(testResponses).toEqual([rep1, rep2]);
         expect(stream.status).toEqual(Status.OK);
         expect(stream.error).toBeUndefined();
+      }
+    });
+
+
+    it('open', () => {
+      outputException = Error('Error should be ignored');
+      const response1 = newResponse('!!!');
+      const response2 = newResponse('?');
+
+      for (let i = 0; i < 3; i++) {
+        enqueueServerStream(1, bidiStreaming.method, response1);
+        enqueueServerStream(1, bidiStreaming.method, response2);
+        enqueueResponse(1, bidiStreaming.method, Status.OK);
+
+        const onNext = jasmine.createSpy();
+        const onCompleted = jasmine.createSpy();
+        const onError = jasmine.createSpy();
+        const call = bidiStreaming.open(onNext, onCompleted, onError);
+        expect(requests).toHaveSize(0);
+
+        processEnqueuedPackets();
+
+        expect(onNext).toHaveBeenCalledWith(response1);
+        expect(onNext).toHaveBeenCalledWith(response2);
+        expect(onError).not.toHaveBeenCalled();
+        expect(onCompleted).toHaveBeenCalledOnceWith(Status.OK);
       }
     });
 

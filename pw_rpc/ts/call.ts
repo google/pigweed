@@ -70,8 +70,9 @@ export class Call {
   }
 
   /* Calls the RPC. This must be called immediately after construction. */
-  invoke(request?: Message): void {
-    const previous = this.rpcs.sendRequest(this.rpc, this, request);
+  invoke(request?: Message, ignoreErrors = false): void {
+    const previous =
+        this.rpcs.sendRequest(this.rpc, this, ignoreErrors, request);
 
     if (previous !== undefined && !previous.completed) {
       previous.handleError(Status.CANCELLED)
@@ -211,8 +212,8 @@ export class Call {
 /** Tracks the state of a unary RPC call. */
 export class UnaryCall extends Call {
   /** Awaits the server response */
-  complete(): Promise<[Status, Message]> {
-    return this.unaryWait();
+  async complete(): Promise<[Status, Message]> {
+    return await this.unaryWait();
   }
 }
 
