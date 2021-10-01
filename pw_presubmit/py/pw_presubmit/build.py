@@ -85,6 +85,7 @@ def gn_gen(gn_source_dir: Path,
            *args: str,
            gn_check: bool = True,
            gn_fail_on_unused: bool = True,
+           export_compile_commands: Union[bool, str] = True,
            **gn_arguments) -> None:
     """Runs gn gen in the specified directory with optional GN args."""
     args_option = (gn_args(**gn_arguments), ) if gn_arguments else ()
@@ -94,11 +95,18 @@ def gn_gen(gn_source_dir: Path,
     if args_gn.is_file():
         args_gn.unlink()
 
+    export_commands_arg = ''
+    if export_compile_commands:
+        export_commands_arg = '--export-compile-commands'
+        if isinstance(export_compile_commands, str):
+            export_commands_arg += export_compile_commands
+
     call('gn',
          'gen',
          gn_output_dir,
          '--color=always',
          *(['--fail-on-unused-args'] if gn_fail_on_unused else []),
+         *([export_commands_arg] if export_commands_arg else []),
          *args,
          *args_option,
          cwd=gn_source_dir)
@@ -112,9 +120,27 @@ def gn_gen(gn_source_dir: Path,
              cwd=gn_source_dir)
 
 
-def ninja(directory: Path, *args, **kwargs) -> None:
+def ninja(directory: Path,
+          *args,
+          save_compdb=True,
+          save_graph=True,
+          **kwargs) -> None:
     """Runs ninja in the specified directory."""
+    if save_compdb:
+        proc = subprocess.run(
+            ['ninja', '-C', directory, '-t', 'compdb', *args],
+            capture_output=True,
+            **kwargs)
+        (directory / 'ninja.compdb').write_bytes(proc.stdout)
+
+    if save_graph:
+        proc = subprocess.run(['ninja', '-C', directory, '-t', 'graph', *args],
+                              capture_output=True,
+                              **kwargs)
+        (directory / 'ninja.graph').write_bytes(proc.stdout)
+
     call('ninja', '-C', directory, *args, **kwargs)
+    (directory / '.ninja_log').rename(directory / 'ninja.log')
 
 
 def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:

@@ -496,8 +496,9 @@ def clang_tidy(ctx: PresubmitContext):
     compile_commands_clang_tidy = ctx.output_dir.joinpath(
         'compile_commands.clang-tidy.json')
 
-    build.gn_gen(ctx.root, ctx.output_dir,
-                 '--export-compile-commands=host_clang_debug')
+    build.gn_gen(ctx.root,
+                 ctx.output_dir,
+                 export_compile_commands='host_clang_debug')
     shutil.copyfile(compile_commands, compile_commands_gn)
     edit_compile_commands(compile_commands_gn, compile_commands_clang_tidy,
                           _append_system_include_paths)
@@ -790,8 +791,9 @@ def commit_message_format(_: PresubmitContext):
 
 def static_analysis(ctx: PresubmitContext):
     """Check that files pass static analyzer checks."""
-    build.gn_gen(ctx.root, ctx.output_dir,
-                 '--export-compile-commands=host_clang_debug')
+    build.gn_gen(ctx.root,
+                 ctx.output_dir,
+                 export_compile_commands='host_clang_debug')
     build.ninja(ctx.output_dir, 'host_clang_debug')
     compile_commands = ctx.output_dir.joinpath('compile_commands.json')
     analyzer_output = ctx.output_dir.joinpath('analyze-build-output')
