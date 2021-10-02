@@ -43,14 +43,14 @@ class HighContrastDarkColors:
     line_highlight_bg = '#2f2f2f'
     dialog_bg = '#3c3c3c'
 
-    blue_accent = '#92d9ff'
-    cyan_accent = '#60e7e0'
-    green_accent = '#88ef88'
-    magenta_accent = '#ffb8ff'
-    orange_accent = '#f5ca80'
-    purple_accent = '#cfcaff'
     red_accent = '#ffc0bf'
+    orange_accent = '#f5ca80'
     yellow_accent = '#d2e580'
+    green_accent = '#88ef88'
+    cyan_accent = '#60e7e0'
+    blue_accent = '#92d9ff'
+    purple_accent = '#cfcaff'
+    magenta_accent = '#ffb8ff'
 
 
 @dataclass
@@ -74,17 +74,104 @@ class DarkColors:
     line_highlight_bg = '#1e1e1e'
     dialog_bg = '#3c3c3c'
 
-    blue_accent = '#6699cc'
-    cyan_accent = '#66cccc'
-    green_accent = '#98be65'
-    magenta_accent = '#c678dd'
-    orange_accent = '#da8548'
-    purple_accent = '#a9a1e1'
     red_accent = '#ff6c6b'
+    orange_accent = '#da8548'
     yellow_accent = '#ffcc66'
+    green_accent = '#98be65'
+    cyan_accent = '#66cccc'
+    blue_accent = '#6699cc'
+    purple_accent = '#a9a1e1'
+    magenta_accent = '#c678dd'
+
+
+@dataclass
+class NordColors:
+    # pylint: disable=too-many-instance-attributes
+    default_bg = '#2e3440'
+    default_fg = '#eceff4'
+
+    dim_bg = '#272c36'
+    dim_fg = '#e5e9f0'
+
+    button_active_bg = '#4c566a'
+    button_inactive_bg = '#434c5e'
+
+    active_bg = '#434c5e'
+    active_fg = '#eceff4'
+
+    inactive_bg = '#373e4c'
+    inactive_fg = '#d8dee9'
+
+    line_highlight_bg = '#191c25'
+    dialog_bg = '#2c333f'
+
+    red_accent = '#bf616a'
+    orange_accent = '#d08770'
+    yellow_accent = '#ebcb8b'
+    green_accent = '#a3be8c'
+    cyan_accent = '#88c0d0'
+    blue_accent = '#81a1c1'
+    purple_accent = '#a9a1e1'
+    magenta_accent = '#b48ead'
+
+
+@dataclass
+class NordLightColors:
+    # pylint: disable=too-many-instance-attributes
+    default_bg = '#e5e9f0'
+    default_fg = '#3b4252'
+    dim_bg = '#d8dee9'
+    dim_fg = '#2e3440'
+    button_active_bg = '#aebacf'
+    button_inactive_bg = '#b8c5db'
+    active_bg = '#b8c5db'
+    active_fg = '#3b4252'
+    inactive_bg = '#c2d0e7'
+    inactive_fg = '#60728c'
+    line_highlight_bg = '#f0f4fc'
+    dialog_bg = '#d8dee9'
+
+    red_accent = '#99324b'
+    orange_accent = '#ac4426'
+    yellow_accent = '#9a7500'
+    green_accent = '#4f894c'
+    cyan_accent = '#398eac'
+    blue_accent = '#3b6ea8'
+    purple_accent = '#842879'
+    magenta_accent = '#97365b'
+
+
+@dataclass
+class MoonlightColors:
+    # pylint: disable=too-many-instance-attributes
+    default_bg = '#212337'
+    default_fg = '#c8d3f5'
+    dim_bg = '#191a2a'
+    dim_fg = '#b4c2f0'
+    button_active_bg = '#444a73'
+    button_inactive_bg = '#2f334d'
+    active_bg = '#2f334d'
+    active_fg = '#c8d3f5'
+    inactive_bg = '#222436'
+    inactive_fg = '#a9b8e8'
+    line_highlight_bg = '#383e5c'
+    dialog_bg = '#1e2030'
+
+    red_accent = '#d95468'
+    orange_accent = '#d98e48'
+    yellow_accent = '#8bd49c'
+    green_accent = '#ebbf83'
+    cyan_accent = '#70e1e8'
+    blue_accent = '#5ec4ff'
+    purple_accent = '#b62d65'
+    magenta_accent = '#e27e8d'
+
 
 
 _THEME_NAME_MAPPING = {
+    'moonlight': MoonlightColors(),
+    'nord': NordColors(),
+    'nord-light': NordLightColors(),
     'dark': DarkColors(),
     'high-contrast-dark': HighContrastDarkColors(),
 } # yapf: disable

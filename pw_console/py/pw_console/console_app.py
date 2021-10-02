@@ -334,11 +334,101 @@ class ConsoleApp:
         self.root_container.menu_items = self._create_menu_items()
 
     def _create_menu_items(self):
+        themes_submenu = [
+            MenuItem('Toggle Light/Dark', handler=self.toggle_light_theme),
+            MenuItem('-'),
+            MenuItem(
+                'UI Themes',
+                children=[
+                    MenuItem('Default: Dark',
+                             handler=functools.partial(self.load_theme,
+                                                       'dark')),
+                    MenuItem('High Contrast',
+                             handler=functools.partial(self.load_theme,
+                                                       'high-contrast-dark')),
+                    MenuItem('Nord',
+                             handler=functools.partial(self.load_theme,
+                                                       'nord')),
+                    MenuItem('Nord Light',
+                             handler=functools.partial(self.load_theme,
+                                                       'nord-light')),
+                    MenuItem('Moonlight',
+                             handler=functools.partial(self.load_theme,
+                                                       'moonlight')),
+                ],
+            ),
+            MenuItem(
+                'Code Themes',
+                children=[
+                    MenuItem(
+                        'Code: pigweed-code',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'pigweed-code')),
+                    MenuItem(
+                        'Code: pigweed-code-light',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'pigweed-code-light')),
+                    MenuItem(
+                        'Code: material',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'material')),
+                    MenuItem(
+                        'Code: gruvbox-light',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'gruvbox-light')),
+                    MenuItem(
+                        'Code: gruvbox-dark',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'gruvbox-dark')),
+                    MenuItem(
+                        'Code: tomorrow-night',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'tomorrow-night')),
+                    MenuItem(
+                        'Code: tomorrow-night-bright',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'tomorrow-night-bright')),
+                    MenuItem(
+                        'Code: tomorrow-night-blue',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'tomorrow-night-blue')),
+                    MenuItem(
+                        'Code: tomorrow-night-eighties',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'tomorrow-night-eighties')),
+                    MenuItem(
+                        'Code: dracula',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'dracula')),
+                    MenuItem(
+                        'Code: zenburn',
+                        functools.partial(
+                            self.pw_ptpython_repl.use_code_colorscheme,
+                            'zenburn')),
+                ],
+            ),
+        ]
+
         file_menu = [
             # File menu
             MenuItem(
                 '[File]',
                 children=[
+                    MenuItem(
+                        'Themes',
+                        children=themes_submenu,
+                    ),
+                    MenuItem('-'),
                     MenuItem('Exit', handler=self.exit_console),
                 ],
             ),
@@ -357,57 +447,6 @@ class ConsoleApp:
                              paste_system_clipboard_to_input_buffer),
                 ],
             ),
-        ]
-
-        themes_submenu = [
-            MenuItem('Toggle Light/Dark', handler=self.toggle_light_theme),
-            MenuItem('-'),
-            MenuItem('UI: Default',
-                     handler=functools.partial(self.load_theme, 'dark')),
-            MenuItem('UI: High Contrast',
-                     handler=functools.partial(self.load_theme,
-                                               'high-contrast-dark')),
-            MenuItem('-'),
-            MenuItem(
-                'Code: pigweed-code',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'pigweed-code')),
-            MenuItem(
-                'Code: material',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'material')),
-            MenuItem(
-                'Code: gruvbox-light',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'gruvbox-light')),
-            MenuItem(
-                'Code: gruvbox-dark',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'gruvbox-dark')),
-            MenuItem(
-                'Code: tomorrow-night',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'tomorrow-night')),
-            MenuItem(
-                'Code: tomorrow-night-bright',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'tomorrow-night-bright')),
-            MenuItem(
-                'Code: tomorrow-night-blue',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'tomorrow-night-blue')),
-            MenuItem(
-                'Code: tomorrow-night-eighties',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'tomorrow-night-eighties')),
-            MenuItem(
-                'Code: dracula',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'dracula')),
-            MenuItem(
-                'Code: zenburn',
-                functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                                  'zenburn')),
         ]
 
         view_menu = [
@@ -465,11 +504,6 @@ class ConsoleApp:
                              handler=functools.partial(
                                  self.run_pane_menu_option,
                                  self.window_manager.balance_window_sizes)),
-                    MenuItem('-'),
-                    MenuItem(
-                        'Themes',
-                        children=themes_submenu,
-                    ),
                 ],
             ),
         ]
