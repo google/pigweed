@@ -336,6 +336,15 @@ describe('RPC', () => {
       }
     });
 
+    it('blocking call with timeout', async () => {
+      try {
+        await unaryStub.call(newRequest(), 10)
+        fail('Promise should not be resolve');
+      } catch (err: any) {
+        expect(err.timeoutMs).toEqual(10);
+      }
+    });
+
     it('nonblocking duplicate calls first is cancelled', () => {
       const firstCall = unaryStub.invoke(newRequest());
       expect(firstCall.completed).toBeFalse();
@@ -415,6 +424,15 @@ describe('RPC', () => {
         expect(onNext).toHaveBeenCalledWith(response2);
         expect(onError).not.toHaveBeenCalled();
         expect(onCompleted).toHaveBeenCalledOnceWith(Status.ABORTED);
+      }
+    });
+
+    it('blocking timeout', async () => {
+      try {
+        await serverStreaming.call(newRequest(), 10)
+        fail('Promise should not be resolve');
+      } catch (err: any) {
+        expect(err.timeoutMs).toEqual(10);
       }
     });
 
@@ -502,6 +520,14 @@ describe('RPC', () => {
       }
     });
 
+    it('blocking timeout', async () => {
+      try {
+        await clientStreaming.call([newRequest()], 10)
+        fail('Promise should not be resolve');
+      } catch (err: any) {
+        expect(err.timeoutMs).toEqual(10);
+      }
+    });
 
     it('non-blocking call ended by client', () => {
       const testResponse = newResponse('0.o');
@@ -717,6 +743,15 @@ describe('RPC', () => {
         expect(onNext).toHaveBeenCalledWith(response2);
         expect(onError).not.toHaveBeenCalled();
         expect(onCompleted).toHaveBeenCalledOnceWith(Status.OK);
+      }
+    });
+
+    it('blocking timeout', async () => {
+      try {
+        await bidiStreaming.call([newRequest()], 10)
+        fail('Promise should not be resolve');
+      } catch (err: any) {
+        expect(err.timeoutMs).toEqual(10);
       }
     });
 

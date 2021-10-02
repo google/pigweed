@@ -70,8 +70,8 @@ export class UnaryMethodStub extends MethodStub {
     return call;
   }
 
-  async call(request: Message): Promise<[Status, Message]> {
-    return await this.invoke(request).complete();
+  async call(request: Message, timeout?: number): Promise<[Status, Message]> {
+    return await this.invoke(request).complete(timeout);
   }
 }
 
@@ -98,8 +98,8 @@ export class ServerStreamingMethodStub extends MethodStub {
     return call;
   }
 
-  async call(request?: Message) {
-    return this.invoke(request).getResponses();
+  call(request?: Message, timeout?: number): Promise<[Status, Message[]]> {
+    return this.invoke(request).complete(timeout);
   }
 }
 
@@ -124,8 +124,8 @@ export class ClientStreamingMethodStub extends MethodStub {
     return call;
   }
 
-  async call(requests: Array<Message> = []) {
-    return this.invoke().finishAndWait(requests);
+  async call(requests: Array<Message> = [], timeout?: number) {
+    return this.invoke().finishAndWait(requests, timeout);
   }
 }
 
@@ -150,7 +150,7 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
     return call;
   }
 
-  async call(requests: Array<Message> = []) {
-    return this.invoke().finishAndWait(requests);
+  async call(requests: Array<Message> = [], timeout?: number) {
+    return this.invoke().finishAndWait(requests, timeout);
   }
 }

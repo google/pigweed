@@ -117,6 +117,10 @@ a logging RPC while the device is booting.
 Blocking RPCs: promise API
 ==========================
 
+Each MethodStub type provides an call() function that allows sending requests
+and awaiting responses through the promise API. The timeout field is optional.
+If no timeout is specified, the RPC will wait indefinitely.
+
 Unary RPC
 ---------
 .. code-block:: typescript
@@ -126,7 +130,8 @@ Unary RPC
       as UnaryMethodStub;
   const request = new unaryRpc.requestType();
   request.setFooProperty(4);
-  const [status, response] = await unaryRpc.call(request);
+  const timeout = 2000 // 2 seconds
+  const [status, response] = await unaryRpc.call(request, timeout);
 
 Server Streaming RPC
 --------------------
@@ -137,7 +142,8 @@ Server Streaming RPC
       as ServerStreamingMethodStub;
 
   const call = serverStreamRpc.invoke();
-  for await (const response of call.getResponses(2)) {
+  const timeout = 2000
+  for await (const response of call.getResponses(2, timeout)) {
    console.log(response);
   }
   const responses = call.getResponse() // All responses until stream end.
@@ -159,7 +165,8 @@ Client Streaming RPC
   clientStreamRpc.send(request);
 
   // Send three more requests, end the stream, and wait for a response.
-  request.finishAndWait([request, request, request])
+  const timeout = 2000 // 2 seconds
+  request.finishAndWait([request, request, request], timeout)
       .then(() => {
         console.log('Client stream finished successfully');
       })
@@ -182,20 +189,16 @@ Bidirectional Stream RPC
   bidiStreamingRpc.send(request);
 
   // Receive responses
-  for await (const response of call.getResponses(1)) {
+  const timeout = 2000 // 2 seconds
+  for await (const response of call.getResponses(1, timeout)) {
    console.log(response);
   }
 
   // Send three more requests, end the stream, and wait for a response.
-  request.finishAndWait([request, request, request])
+  request.finishAndWait([request, request, request], timeout)
       .then(() => {
         console.log('Bidirectional stream finished successfully');
       })
       .catch((reason) => {
         console.log(`Bidirectional stream error: ${reason}`);
       });
-
-.. attention::
-
-  RPC timeout is currently unsupported on all RPC types.
-
