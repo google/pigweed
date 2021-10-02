@@ -111,7 +111,7 @@ class ServerContextPool {
   //   NOT_FOUND - No handler exists for the specified transfer ID.
   //   RESOURCE_EXHAUSTED - Out of transfer context slots.
   //
-  Result<ServerContext*> GetOrStartTransfer(uint32_t id);
+  Result<ServerContext*> GetOrStartTransfer(const Chunk& chunk);
 
  private:
   // TODO(frolv): Initially, only one transfer at a time is supported. Once that

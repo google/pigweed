@@ -49,8 +49,7 @@ void TransferService::HandleChunk(ConstByteSpan message,
   internal::ServerContextPool& pool =
       type == internal::kRead ? read_transfers_ : write_transfers_;
 
-  Result<internal::ServerContext*> result =
-      pool.GetOrStartTransfer(chunk.transfer_id);
+  Result<internal::ServerContext*> result = pool.GetOrStartTransfer(chunk);
   if (!result.ok()) {
     client_.SendStatusChunk(type, chunk.transfer_id, result.status());
     PW_LOG_ERROR("Error handling chunk for transfer %u: %d",

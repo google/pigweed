@@ -21,6 +21,13 @@
 namespace pw::transfer::internal {
 
 struct Chunk {
+  // The initial chunk always has an offset of 0 and no data or status.
+  //
+  // Pending bytes is required in all read chunks, so that is checked elsewhere.
+  constexpr bool IsInitialChunk() const {
+    return offset == 0 && data.empty() && !status.has_value();
+  }
+
   uint32_t transfer_id;
   std::optional<uint32_t> pending_bytes;
   std::optional<uint32_t> max_chunk_size_bytes;

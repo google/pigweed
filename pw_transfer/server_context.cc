@@ -303,14 +303,15 @@ void ServerContext::FinishAndSendStatus(ClientConnection& client,
   client.SendStatusChunk(type_, id, status);
 }
 
-Result<ServerContext*> ServerContextPool::GetOrStartTransfer(uint32_t id) {
+Result<ServerContext*> ServerContextPool::GetOrStartTransfer(
+    const Chunk& chunk) {
   internal::ServerContext* new_transfer = nullptr;
 
   // Check if the ID belongs to an active transfer. If not, pick an inactive
   // slot to start a new transfer.
   for (ServerContext& transfer : transfers_) {
     if (transfer.active()) {
-      if (transfer.transfer_id() == id) {
+      if (transfer.transfer_id() == chunk.transfer_id) {
         return &transfer;
       }
     } else {
@@ -318,17 +319,23 @@ Result<ServerContext*> ServerContextPool::GetOrStartTransfer(uint32_t id) {
     }
   }
 
-  if (!new_transfer) {
+  if (new_transfer == nullptr) {
     return Status::ResourceExhausted();
   }
 
   // Try to start the new transfer by checking if a handler for it exists.
   auto handler = std::find_if(handlers_.begin(), handlers_.end(), [&](auto& h) {
-    return h.id() == id;
+    return h.id() == chunk.transfer_id;
   });
 
   if (handler == handlers_.end()) {
     return Status::NotFound();
+  }
+
+  if (!chunk.IsInitialChunk()) {
+    PW_LOG_DEBUG("Ignoring chunk for transfer %u, which is not pending",
+                 static_cast<unsigned>(chunk.transfer_id));
+    return Status::FailedPrecondition();
   }
 
   PW_TRY(new_transfer->Start(type_, *handler));
