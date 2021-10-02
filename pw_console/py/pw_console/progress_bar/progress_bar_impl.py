@@ -145,7 +145,7 @@ class ProgressBarImpl:
         self,
         data: Optional[Iterable] = None,
         label: AnyFormattedText = '',
-        remove_when_done: bool = True,
+        remove_when_done: bool = False,
         total: Optional[int] = None,
     ) -> 'ProgressBarCounter':
         """
