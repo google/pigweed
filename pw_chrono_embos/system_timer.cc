@@ -14,6 +14,7 @@
 
 #include "pw_chrono/system_timer.h"
 
+#include <algorithm>
 #include <mutex>
 
 #include "RTOS.h"
@@ -25,9 +26,8 @@ namespace pw::chrono {
 namespace {
 
 // Instead of adding targeted locks to each instance, simply use the global
-// recursive critical section lock. Note it has to be recursive because a timer
-// cannot be started with a time period of 0 and ergo the Invoke* API might
-// have to directly invoke the callback.
+// recursive critical section lock. Note it has to be recursive because a user
+// callback may use the Invoke* API which in turn needs to grab the lock.
 class RecursiveCriticalSectionLock {
  public:
   void lock() {
@@ -43,12 +43,8 @@ class RecursiveCriticalSectionLock {
 RecursiveCriticalSectionLock recursive_global_timer_lock;
 
 void HandleTimerCallback(void* void_native_system_timer) {
-  // NOTE: embOS invokes all timer callbacks from a single interrupt. Ergo we do
-  // not add a unnecessary grab of the recursive_global_timer_lock here.
   PW_DCHECK(interrupt::InInterruptContext(),
             "HandleTimerCallback must be invoked from an interrupt");
-  // TODO(ewout): can we potentially skip this as it's always in an interrupt
-  // handler and the control API is not interrupt safe?
   std::lock_guard lock(recursive_global_timer_lock);
 
   backend::NativeSystemTimer& native_type =
@@ -66,6 +62,8 @@ void HandleTimerCallback(void* void_native_system_timer) {
   OS_StartTimerEx(&native_type.tcb);
 }
 
+// embOS requires a timer to have a non-zero period.
+constexpr SystemClock::duration kMinTimerPeriod = SystemClock::duration(1);
 constexpr OS_TIME kInvalidPeriod = 0;
 
 }  // namespace
@@ -94,18 +92,11 @@ void SystemTimer::InvokeAt(SystemClock::time_point timestamp) {
   const SystemClock::duration time_until_deadline =
       timestamp - SystemClock::now();
 
-  // Timers can only be created with a non-zero period, ergo we must immediately
-  // invoke the user's callback if it cannot be deferred by at least a partial
-  // tick.
-  if (time_until_deadline <= SystemClock::duration::zero()) {
-    native_type_.user_callback(timestamp);
-    return;
-  }
-
   // Schedule the timer as far out as possible. Note that the timeout might be
   // clamped and it may be rescheduled internally.
-  const SystemClock::duration period =
-      std::min(pw::chrono::embos::kMaxTimeout, time_until_deadline);
+  const SystemClock::duration period = std::clamp(
+      kMinTimerPeriod, time_until_deadline, pw::chrono::embos::kMaxTimeout);
+
   OS_SetTimerPeriodEx(&native_type_.tcb, static_cast<OS_TIME>(period.count()));
   OS_RetriggerTimerEx(&native_type_.tcb);
 }
