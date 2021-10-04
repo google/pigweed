@@ -291,6 +291,17 @@ TEST_F(ReadTransfer, UnregisteredHandler) {
   EXPECT_EQ(chunk.status.value(), Status::NotFound());
 }
 
+TEST_F(ReadTransfer, IgnoresNonPendingTransfers) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .offset = 3}));
+  ctx_.SendClientStream(EncodeChunk(
+      {.transfer_id = 3, .offset = 0, .data = std::span(kData).first(10)}));
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .status = OkStatus()}));
+
+  // Only start transfer for initial packet.
+  EXPECT_FALSE(handler_.prepare_read_called);
+  EXPECT_FALSE(handler_.finalize_read_called);
+}
+
 class SimpleWriteTransfer final : public WriteOnlyHandler {
  public:
   SimpleWriteTransfer(uint32_t transfer_id, ByteSpan data)
@@ -600,6 +611,47 @@ TEST_F(WriteTransfer, ClientError) {
 
   EXPECT_TRUE(handler_.finalize_write_called);
   EXPECT_EQ(handler_.finalize_write_status, Status::DataLoss());
+}
+
+TEST_F(WriteTransfer, OnlySendParametersUpdateOnceAfterDrop) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+
+  constexpr std::span data(kData);
+  ctx_.SendClientStream<64>(
+      EncodeChunk({.transfer_id = 7, .offset = 0, .data = data.first(1)}));
+
+  // Drop offset 1, then send the rest of the data.
+  for (uint32_t i = 2; i < kData.size(); ++i) {
+    ctx_.SendClientStream<64>(EncodeChunk(
+        {.transfer_id = 7, .offset = i, .data = data.subspan(i, 1)}));
+  }
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.offset, 1u);
+
+  // Send the remaining data and the final status.
+  ctx_.SendClientStream<64>(EncodeChunk(
+      {.transfer_id = 7, .offset = 1, .data = data.subspan(1, 31)}));
+  ctx_.SendClientStream<64>(
+      EncodeChunk({.transfer_id = 7, .status = OkStatus()}));
+
+  EXPECT_TRUE(handler_.finalize_write_called);
+  EXPECT_EQ(handler_.finalize_write_status, OkStatus());
+}
+
+TEST_F(WriteTransfer, IgnoresNonPendingTransfers) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7, .offset = 3}));
+  ctx_.SendClientStream(EncodeChunk(
+      {.transfer_id = 7, .offset = 0, .data = std::span(kData).first(10)}));
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7, .status = OkStatus()}));
+
+  // Only start transfer for initial packet.
+  EXPECT_FALSE(handler_.prepare_write_called);
+  EXPECT_FALSE(handler_.finalize_write_called);
 }
 
 class SometimesUnavailableReadHandler final : public ReadOnlyHandler {
