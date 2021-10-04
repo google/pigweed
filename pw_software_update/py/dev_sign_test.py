@@ -15,9 +15,10 @@
 
 import unittest
 
-from pw_software_update.dev_sign import sign_root_metadata
+from pw_software_update.dev_sign import sign_root_metadata, sign_update_bundle
 from pw_software_update.root_metadata import gen_root_metadata
-from pw_software_update.tuf_pb2 import SignedRootMetadata
+from pw_software_update.tuf_pb2 import SignedRootMetadata, SignedTargetsMetadata
+from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 
 class RootMetadataSigningTest(unittest.TestCase):
@@ -72,6 +73,25 @@ class RootMetadataSigningTest(unittest.TestCase):
     def test_listed_non_root_key_raises(self):
         with self.assertRaises(ValueError):
             sign_root_metadata(self.root_metadata, self.targets_key)
+
+
+class BundleSigningTest(unittest.TestCase):
+    """Test UpdateBundle signing."""
+    def setUp(self):
+        self.targets_key = (
+            b'-----BEGIN PRIVATE KEY-----\n'
+            b'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgkMEZ0u84HzC51nhh'
+            b'f2ZykPj6WfAjBxXVWndjVdn6bh6hRANCAAT1QzqpFknSAhbAuOjy2NuusFOUpeC6'
+            b'TBWM6WeC5JKJgys3gwOoyU0OdomAu9wK6I1Qoe706PUMbWLpyQ10ThVM'
+            b'\n-----END PRIVATE KEY-----\n')
+
+        self.update_bundle = UpdateBundle(targets_metadata=dict(
+            targets=SignedTargetsMetadata(
+                serialized_targets_metadata=b'blahblah')))
+
+    def test_typical_signing(self):
+        signed = sign_update_bundle(self.update_bundle, self.targets_key)
+        self.assertEqual(len(signed.targets_metadata['targets'].signatures), 1)
 
 
 if __name__ == '__main__':
