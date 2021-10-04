@@ -56,6 +56,7 @@ import pw_cli.log
 import pw_console.python_logging
 from pw_console import PwConsoleEmbed
 from pw_console.pyserial_wrapper import SerialWithLogging
+from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
 
 from pw_log.proto import log_pb2
 from pw_rpc.console_tools.console import ClientInfo, flattened_rpc_completions
@@ -173,6 +174,8 @@ def _start_ipython_terminal(client: HdlcRpcClient,
     )
     interactive_console.hide_windows('Host Logs')
     interactive_console.add_sentence_completer(completions)
+    if serial_debug:
+        interactive_console.add_bottom_toolbar(BandwidthToolbar())
 
     # Setup Python logger propagation
     interactive_console.setup_python_logging()
