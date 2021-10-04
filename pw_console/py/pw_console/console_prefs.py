@@ -33,8 +33,10 @@ _DEFAULT_CONFIG = {
         'code_theme': 'pigweed-code',
         'swap_light_and_dark': False,
         'spaces_between_columns': 2,
+        'column_order_omit_unspecified_columns': False,
         'column_order': [],
         'column_colors': {},
+        'hide_date_from_log_time': False,
         # Window arrangement
         'windows': {},
         'window_column_split_method': 'vertical',
@@ -127,6 +129,14 @@ class ConsolePrefs:
         spaces = self._config.get('spaces_between_columns', 2)
         assert isinstance(spaces, int) and spaces > 0
         return spaces
+
+    @property
+    def omit_unspecified_columns(self) -> bool:
+        return self._config.get('column_order_omit_unspecified_columns', False)
+
+    @property
+    def hide_date_from_log_time(self) -> bool:
+        return self._config.get('hide_date_from_log_time', False)
 
     @property
     def column_order(self) -> list:

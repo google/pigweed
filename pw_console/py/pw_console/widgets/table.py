@@ -44,8 +44,13 @@ class TableView:
         self._header_fragment_cache = None
 
         # Assume common defaults here before recalculating in set_formatting().
-        self.column_widths['time'] = 17
+        self._default_time_width: int = 17
+        self.column_widths['time'] = self._default_time_width
         self.column_widths['level'] = 3
+        self._year_month_day_width: int = 9
+        if self.prefs.hide_date_from_log_time:
+            self.column_widths['time'] = (self._default_time_width -
+                                          self._year_month_day_width)
 
         # Width of all columns except the final message
         self.column_width_prefix_total = 0
@@ -81,8 +86,9 @@ class TableView:
                 ordered_columns[column_name] = columns.pop(column_name)
         # NOTE: Any remaining columns not specified by the user are not shown.
         # Perhaps a user setting could add them at the end. To add them in:
-        #   for column_name in columns:
-        #       ordered_columns[column_name] = columns[column_name]
+        if not self.prefs.omit_unspecified_columns:
+            for column_name in columns:
+                ordered_columns[column_name] = columns[column_name]
         return ordered_columns.items()
 
     def update_metadata_column_widths(self, log: LogLine):
@@ -152,6 +158,8 @@ class TableView:
 
             if name == 'time':
                 time_text = log.record.asctime
+                if self.prefs.hide_date_from_log_time:
+                    time_text = time_text[self._year_month_day_width:]
                 time_style = self.prefs.column_style('time',
                                                      time_text,
                                                      default='class:log-time')

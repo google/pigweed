@@ -535,17 +535,21 @@ Example Config
      # Default: 2
      spaces_between_columns: 2
 
+     # Hide the year month and day from the time column.
+     hide_date_from_log_time: False
+
      # Custom Column Ordering
      # By default columns are ordered as:
      #   time, level, metadata1, metadata2, ..., message
      # The log message is always the last value and not required in this list.
-     # Any metadata field not listed here will be hidden in table view.
      column_order:
        # Column name
        - time
        - level
        - metadata1
        - metadata2
+     # If Any metadata field not listed above will be hidden in table view.
+     column_order_omit_unspecified_columns: False
 
      # Unique Colors for Column Values
      #   Color format: 'bg:#BG-HEX #FG-HEX STYLE'
