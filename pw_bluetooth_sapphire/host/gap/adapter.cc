@@ -70,12 +70,6 @@ class AdapterImpl final : public Adapter {
       return adapter_->le_connection_manager_->Disconnect(peer_id);
     }
 
-    void RegisterRemoteInitiatedLink(hci::ConnectionPtr link, sm::BondableMode bondable_mode,
-                                     ConnectionResultCallback callback) override {
-      adapter_->le_connection_manager_->RegisterRemoteInitiatedLink(std::move(link), bondable_mode,
-                                                                    std::move(callback));
-    }
-
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
               sm::StatusCallback cb) override {
       adapter_->le_connection_manager_->Pair(peer_id, pairing_level, bondable_mode, std::move(cb));
@@ -91,12 +85,32 @@ class AdapterImpl final : public Adapter {
     }
 
     void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
-                          ConnectionCallback connect_callback, AdvertisingInterval interval,
-                          bool anonymous, bool include_tx_power_level,
+                          AdvertisingInterval interval, bool anonymous, bool include_tx_power_level,
+                          std::optional<ConnectableAdvertisingParameters> connectable,
                           AdvertisingStatusCallback status_callback) override {
+      LowEnergyAdvertisingManager::ConnectionCallback advertisement_connect_cb = nullptr;
+      if (connectable) {
+        ZX_ASSERT(connectable->connection_cb);
+
+        // All advertisement connections are first registered with LowEnergyConnectionManager before
+        // being reported to higher layers.
+        advertisement_connect_cb = [this, connectable = std::move(connectable)](
+                                       AdvertisementId advertisement_id,
+                                       std::unique_ptr<hci::Connection> link) mutable {
+          auto register_link_cb = [advertisement_id,
+                                   connection_callback = std::move(connectable->connection_cb)](
+                                      ConnectionResult result) {
+            connection_callback(advertisement_id, std::move(result));
+          };
+
+          adapter_->le_connection_manager_->RegisterRemoteInitiatedLink(
+              std::move(link), connectable->bondable_mode, std::move(register_link_cb));
+        };
+      }
+
       adapter_->le_advertising_manager_->StartAdvertising(
-          std::move(data), std::move(scan_rsp), std::move(connect_callback), interval, anonymous,
-          include_tx_power_level, std::move(status_callback));
+          std::move(data), std::move(scan_rsp), std::move(advertisement_connect_cb), interval,
+          anonymous, include_tx_power_level, std::move(status_callback));
       adapter_->metrics_.le.start_advertising_events.Add();
     }
 

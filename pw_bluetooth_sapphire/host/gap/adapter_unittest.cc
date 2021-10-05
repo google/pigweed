@@ -529,9 +529,9 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   };
 
   // Advertising should use the public address by default.
-  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
-                                    AdvertisingInterval::FAST1, false,
-                                    /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
+      /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
@@ -551,9 +551,9 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
 
   // Restart advertising. This should configure the LE random address and
   // advertise using it.
-  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
-                                    AdvertisingInterval::FAST1, false,
-                                    /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
+      /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
@@ -568,9 +568,9 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
 
   // Restarting advertising should refresh the controller address.
   adapter()->le()->StopAdvertising(instance.id());
-  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
-                                    AdvertisingInterval::FAST1, false,
-                                    /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
+      /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
@@ -582,9 +582,9 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   // public address.
   adapter()->le()->EnablePrivacy(false);
   adapter()->le()->StopAdvertising(instance.id());
-  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
-                                    AdvertisingInterval::FAST1, false,
-                                    /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
+      /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
@@ -846,12 +846,13 @@ TEST_F(AdapterTest, IsDiscoverableLowEnergy) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 
   AdvertisementInstance instance;
-  adapter()->le()->StartAdvertising(
-      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false,
-      /*include_tx_power_level*/ false, [&](AdvertisementInstance i, auto status) {
-        ASSERT_TRUE(status);
-        instance = std::move(i);
-      });
+  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                    AdvertisingInterval::FAST1, /*anonymous=*/false,
+                                    /*include_tx_power_level=*/false, /*connectable=*/std::nullopt,
+                                    [&](AdvertisementInstance i, auto status) {
+                                      ASSERT_TRUE(status);
+                                      instance = std::move(i);
+                                    });
   RunLoopUntilIdle();
   EXPECT_TRUE(adapter()->IsDiscoverable());
 
@@ -965,6 +966,58 @@ TEST_F(AdapterTest, VendorFeatures) {
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
   EXPECT_EQ(adapter()->state().vendor_features(), kVendorFeatures);
+}
+
+TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) {
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  AdvertisementInstance instance;
+  auto adv_cb = [&](auto i, hci::Status status) {
+    instance = std::move(i);
+    EXPECT_TRUE(status);
+  };
+
+  std::optional<Adapter::LowEnergy::ConnectionResult> conn_result;
+  std::optional<AdvertisementId> conn_cb_advertisement_id;
+  Adapter::LowEnergy::ConnectionCallback connect_cb =
+      [&](AdvertisementId adv_id, Adapter::LowEnergy::ConnectionResult result) {
+        conn_result = std::move(result);
+        conn_cb_advertisement_id = adv_id;
+      };
+
+  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                    AdvertisingInterval::FAST1, /*anonymous=*/false,
+                                    /*include_tx_power_level=*/false,
+                                    bt::gap::Adapter::LowEnergy::ConnectableAdvertisingParameters{
+                                        std::move(connect_cb), sm::BondableMode::NonBondable},
+                                    adv_cb);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(conn_result);
+
+  fit::closure complete_interrogation;
+  // Pause interrogation so we can control when the inbound connection procedure completes.
+  test_device()->pause_responses_for_opcode(
+      bt::hci_spec::kReadRemoteVersionInfo,
+      [&](fit::closure trigger) { complete_interrogation = std::move(trigger); });
+
+  test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
+  test_device()->ConnectLowEnergy(kTestAddr);
+  RunLoopUntilIdle();
+  ASSERT_FALSE(conn_result);
+  ASSERT_TRUE(complete_interrogation);
+
+  complete_interrogation();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_result);
+  ASSERT_TRUE(conn_result->is_ok());
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle = conn_result->take_value();
+  ASSERT_TRUE(conn_handle);
+  EXPECT_EQ(conn_handle->bondable_mode(), sm::BondableMode::NonBondable);
+  EXPECT_EQ(*conn_cb_advertisement_id, instance.id());
+  conn_result.reset();
 }
 
 // Tests where the constructor must run in the test, rather than Setup.

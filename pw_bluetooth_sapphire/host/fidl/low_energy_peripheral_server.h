@@ -70,8 +70,8 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
 
     // Called when a central connects to us.  When this is called, the
     // advertisement in |advertisement_id| has been stopped.
-    void OnConnected(bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link,
-                     bt::sm::BondableMode bondable_mode);
+    void OnConnected(bt::gap::AdvertisementId advertisement_id,
+                     bt::gap::Adapter::LowEnergy::ConnectionResult result);
 
    private:
     // After advertising successfully starts, the advertisement instance must be registered to tie
@@ -127,8 +127,8 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
 
   // Called when a central connects to us.  When this is called, the
   // advertisement in |advertisement_id| has been stopped.
-  void OnConnectedDeprecated(bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link,
-                             bt::sm::BondableMode bondable_mode);
+  void OnConnectedDeprecated(bt::gap::AdvertisementId advertisement_id,
+                             bt::gap::Adapter::LowEnergy::ConnectionResult result);
 
   // Sets up a Connection server and returns the client end.
   fidl::InterfaceHandle<fuchsia::bluetooth::le::Connection> CreateConnectionServer(

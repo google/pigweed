@@ -133,15 +133,6 @@ class Adapter {
     // disconnected.
     virtual bool Disconnect(PeerId peer_id) = 0;
 
-    // Initializes a new connection over the given |link| and asynchronously returns a connection
-    // reference. |link| must be the result of a remote initiated connection.
-    //
-    // |callback| will be called with a connection status and connection reference. The connection
-    // reference will be nullptr if the connection was rejected.
-    virtual void RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
-                                             sm::BondableMode bondable_mode,
-                                             ConnectionResultCallback callback) = 0;
-
     // Initiates the pairing process. Expected to only be called during higher-level testing.
     //   |peer_id|: the peer to pair to - if the peer is not connected, |cb| is called with an
     //   error.
@@ -166,10 +157,11 @@ class Adapter {
     // Asynchronously attempts to start advertising a set of |data| with
     // additional scan response data |scan_rsp|.
     //
-    // If |connect_callback| is provided, the advertisement will be connectable
-    // and it will be called with the returned advertisement_id and a pointer to
-    // the new connection, at which point the advertisement will have been
-    // stopped.
+    // If |connectable| is provided, the advertisement will be connectable.
+    // The |connectable.connection_cb| will be called with the returned advertisement ID and a
+    // connection result when a peer attempts to connect to the advertisement, at which point the
+    // advertisement will have been stopped. |connectable.bondable_mode| indicates the bondable mode
+    // to initialize connections with.
     //
     // Returns false if the parameters represent an invalid advertisement:
     //  * if |anonymous| is true but |callback| is set
@@ -185,11 +177,17 @@ class Adapter {
     //      or if the requested parameters are not supported by the hardware.
     //    * HostError::kProtocolError with a HCI error reported from
     //      the controller, otherwise.
-    using ConnectionCallback = LowEnergyAdvertisingManager::ConnectionCallback;
+    using ConnectionResult = LowEnergyConnectionManager::ConnectionResult;
+    using ConnectionCallback = fit::function<void(AdvertisementId, ConnectionResult)>;
     using AdvertisingStatusCallback = LowEnergyAdvertisingManager::AdvertisingStatusCallback;
+    struct ConnectableAdvertisingParameters {
+      ConnectionCallback connection_cb;
+      sm::BondableMode bondable_mode;
+    };
     virtual void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
-                                  ConnectionCallback connect_callback, AdvertisingInterval interval,
-                                  bool anonymous, bool include_tx_power_level,
+                                  AdvertisingInterval interval, bool anonymous,
+                                  bool include_tx_power_level,
+                                  std::optional<ConnectableAdvertisingParameters> connectable,
                                   AdvertisingStatusCallback status_callback) = 0;
 
     // Stop advertising the advertisement with the id |advertisement_id|

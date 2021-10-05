@@ -523,9 +523,9 @@ TEST_F(LowEnergyPeripheralServerTest, RestartStartAdvertisingDuringInboundConnKe
   // Allow interrogation to complete, enabling the connection process to proceed.
   complete_interrogation();
   RunLoopUntilIdle();
-  // Now peer should be connected
-  EXPECT_TRUE(peer.has_id());
-  EXPECT_TRUE(conn.is_valid());
+  // Connection should have been dropped after completing because first advertisement was canceled.
+  EXPECT_FALSE(peer.has_id());
+  EXPECT_FALSE(conn.is_valid());
 
   // Allow second StartAdvertising to complete.
   complete_start_advertising();
@@ -537,7 +537,7 @@ TEST_F(LowEnergyPeripheralServerTest, RestartStartAdvertisingDuringInboundConnKe
 }
 
 // Ensures that a connection to a canceled advertisement received after the advertisement is
-// canceled doesn't end or get sent to a new advertisement.
+// canceled doesn't end or get sent to a new AdvertisedPeripheral.
 TEST_F(LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeepsNewAdvAlive) {
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_0;
   FakeAdvertisedPeripheral adv_peripheral_server_0(adv_peripheral_handle_0.NewRequest());
@@ -596,7 +596,7 @@ TEST_F(LowEnergyPeripheralServerTest, RestartAdvertiseDuringInboundConnKeepsNewA
   EXPECT_FALSE(adv_peripheral_server_1.last_connected_peer());
   EXPECT_FALSE(adv_peripheral_server_0.last_connected_peer());
 
-  // Allow second StartAdvertising to complete.
+  // Allow second Advertise to complete.
   complete_start_advertising();
   RunLoopUntilIdle();
   EXPECT_FALSE(result.has_value());

@@ -43,17 +43,16 @@ void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
   cb(channel);
 }
 
-void FakeAdapter::FakeLowEnergy::StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
-                                                  ConnectionCallback connect_callback,
-                                                  AdvertisingInterval interval, bool anonymous,
-                                                  bool include_tx_power_level,
-                                                  AdvertisingStatusCallback status_callback) {
+void FakeAdapter::FakeLowEnergy::StartAdvertising(
+    AdvertisingData data, AdvertisingData scan_rsp, AdvertisingInterval interval, bool anonymous,
+    bool include_tx_power_level, std::optional<ConnectableAdvertisingParameters> connectable,
+    AdvertisingStatusCallback status_callback) {
   // status_callback is currently not called because its parameters can only be constructed by
   // LowEnergyAdvertisingManager.
 
   RegisteredAdvertisement adv{.data = std::move(data),
                               .scan_rsp = std::move(scan_rsp),
-                              .connect_callback = std::move(connect_callback),
+                              .connectable = std::move(connectable),
                               .interval = interval,
                               .anonymous = anonymous,
                               .include_tx_power_level = include_tx_power_level};

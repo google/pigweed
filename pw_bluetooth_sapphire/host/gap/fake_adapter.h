@@ -38,7 +38,7 @@ class FakeAdapter final : public Adapter {
     struct RegisteredAdvertisement {
       AdvertisingData data;
       AdvertisingData scan_rsp;
-      ConnectionCallback connect_callback;
+      std::optional<ConnectableAdvertisingParameters> connectable;
       AdvertisingInterval interval;
       bool anonymous;
       bool include_tx_power_level;
@@ -59,9 +59,6 @@ class FakeAdapter final : public Adapter {
 
     bool Disconnect(PeerId peer_id) override { return false; }
 
-    void RegisterRemoteInitiatedLink(hci::ConnectionPtr link, sm::BondableMode bondable_mode,
-                                     ConnectionResultCallback callback) override {}
-
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
               sm::StatusCallback cb) override {}
 
@@ -70,8 +67,8 @@ class FakeAdapter final : public Adapter {
     LeSecurityMode security_mode() const override { return adapter_->le_security_mode_; }
 
     void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
-                          ConnectionCallback connect_callback, AdvertisingInterval interval,
-                          bool anonymous, bool include_tx_power_level,
+                          AdvertisingInterval interval, bool anonymous, bool include_tx_power_level,
+                          std::optional<ConnectableAdvertisingParameters> connectable,
                           AdvertisingStatusCallback status_callback) override;
 
     void StopAdvertising(AdvertisementId advertisement_id) override {}

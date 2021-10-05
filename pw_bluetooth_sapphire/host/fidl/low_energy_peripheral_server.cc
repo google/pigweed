@@ -106,55 +106,45 @@ void LowEnergyPeripheralServer::AdvertisementInstance::Register(
 }
 
 void LowEnergyPeripheralServer::AdvertisementInstance::OnConnected(
-    bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link,
-    bt::sm::BondableMode bondable_mode) {
-  ZX_ASSERT(link);
+    bt::gap::AdvertisementId advertisement_id,
+    bt::gap::Adapter::LowEnergy::ConnectionResult result) {
   ZX_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
 
+  // HCI advertising ends when a connection is received (even for error results), so clear the
+  // stale advertisement handle.
+  instance_.reset();
+
+  if (result.is_error()) {
+    bt_log(INFO, LOG_TAG,
+           "incoming connection failed; restarting advertising (adv instance id: %zu, prev adv "
+           "id: %s)",
+           id_, bt_str(advertisement_id));
+    StartAdvertising();
+    return;
+  }
+
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn = result.take_value();
+  bt::PeerId peer_id = conn->peer_identifier();
+  bt::gap::Peer* peer = peripheral_server_->adapter()->peer_cache()->FindById(peer_id);
+  ZX_ASSERT(peer);
+
+  bt_log(INFO, LOG_TAG,
+         "peripheral received connection to advertisement (peer: %s, adv id: %s, adv "
+         "instance id: %zu)",
+         bt_str(peer->identifier()), bt_str(advertisement_id), id_);
+
+  fidl::InterfaceHandle<fble::Connection> conn_handle =
+      peripheral_server_->CreateConnectionServer(std::move(conn));
+
+  // Restart advertising after the client acknowledges the connection.
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_conn =
-      [self, link_str = link->ToString()](
-          fpromise::result<std::unique_ptr<bt::gap::LowEnergyConnectionHandle>, bt::HostError>
-              result) mutable {
-        if (!self) {
-          return;
-        }
-
-        // HCI advertising ends when a connection is received (even for error results), so clear the
-        // stale advertisement handle.
-        self->instance_.reset();
-
-        if (result.is_error()) {
-          bt_log(INFO, LOG_TAG, "incoming connection rejected (link: %s)", link_str.c_str());
-          self->StartAdvertising();
-          return;
-        }
-
-        auto conn = result.take_value();
-        auto peer_id = conn->peer_identifier();
-        auto* peer = self->peripheral_server_->adapter()->peer_cache()->FindById(peer_id);
-        ZX_ASSERT(peer);
-
-        bt_log(INFO, LOG_TAG, "central connected (peer: %s)", bt_str(peer->identifier()));
-
-        fidl::InterfaceHandle<fble::Connection> conn_handle =
-            self->peripheral_server_->CreateConnectionServer(std::move(conn));
-
-        // Restart advertising after the client acknowledges the connection.
-        auto on_connected_cb = [self] {
-          if (self) {
-            self->StartAdvertising();
-          }
-        };
-        self->advertised_peripheral_->OnConnected(
-            fidl_helpers::PeerToFidlLe(*peer), std::move(conn_handle), std::move(on_connected_cb));
-      };
-
-  // TODO(fxbug.dev/648): The conversion from hci::Connection to
-  // gap::LowEnergyConnectionHandle should be performed by a gap library object
-  // and not in this layer.
-  peripheral_server_->adapter()->le()->RegisterRemoteInitiatedLink(std::move(link), bondable_mode,
-                                                                   std::move(on_conn));
+  auto on_connected_cb = [self] {
+    if (self) {
+      self->StartAdvertising();
+    }
+  };
+  advertised_peripheral_->OnConnected(fidl_helpers::PeerToFidlLe(*peer), std::move(conn_handle),
+                                      std::move(on_connected_cb));
 }
 
 void LowEnergyPeripheralServer::AdvertisementInstance::CloseWith(
@@ -314,17 +304,14 @@ const bt::gap::LowEnergyConnectionHandle* LowEnergyPeripheralServer::FindConnect
   return nullptr;
 }
 
-void LowEnergyPeripheralServer::OnConnectedDeprecated(bt::gap::AdvertisementId advertisement_id,
-                                                      bt::hci::ConnectionPtr link,
-                                                      BondableMode bondable_mode) {
-  ZX_DEBUG_ASSERT(link);
-  ZX_DEBUG_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
+void LowEnergyPeripheralServer::OnConnectedDeprecated(
+    bt::gap::AdvertisementId advertisement_id,
+    bt::gap::Adapter::LowEnergy::ConnectionResult result) {
+  ZX_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
 
   // Abort connection procedure if advertisement was canceled by the client.
   if (!advertisement_deprecated_ || advertisement_deprecated_->id() != advertisement_id) {
-    bt_log(INFO, LOG_TAG,
-           "dropping connection from canceled advertisement (advertisement id: "
-           "%s)",
+    bt_log(INFO, LOG_TAG, "dropping connection to canceled advertisement (advertisement id: %s)",
            bt_str(advertisement_id));
     return;
   }
@@ -337,44 +324,24 @@ void LowEnergyPeripheralServer::OnConnectedDeprecated(bt::gap::AdvertisementId a
     return;
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_conn = [self, local = std::move(local), remote = std::move(remote), advertisement_id,
-                  link_str = link->ToString()](auto result) mutable {
-    if (!self) {
-      return;
-    }
-    if (result.is_error()) {
-      bt_log(INFO, LOG_TAG, "incoming connection rejected (link: %s)", link_str.c_str());
-      return;
-    }
+  if (result.is_error()) {
+    bt_log(INFO, LOG_TAG, "incoming connection to advertisement failed (advertisement id: %s)",
+           bt_str(advertisement_id));
+    return;
+  }
 
-    auto conn = result.take_value();
-    auto peer_id = conn->peer_identifier();
-    auto* peer = self->adapter()->peer_cache()->FindById(peer_id);
-    ZX_ASSERT(peer);
+  auto conn = result.take_value();
+  auto peer_id = conn->peer_identifier();
+  auto* peer = adapter()->peer_cache()->FindById(peer_id);
+  ZX_ASSERT(peer);
 
-    bt_log(INFO, LOG_TAG, "central connected (peer: %s)", bt_str(peer->identifier()));
+  bt_log(INFO, LOG_TAG, "central connected (peer: %s, advertisement id: %s)",
+         bt_str(peer->identifier()), bt_str(advertisement_id));
 
-    fidl::InterfaceHandle<fble::Connection> conn_handle =
-        self->CreateConnectionServer(std::move(conn));
+  fidl::InterfaceHandle<fble::Connection> conn_handle = CreateConnectionServer(std::move(conn));
 
-    self->binding()->events().OnPeerConnected(fidl_helpers::PeerToFidlLe(*peer),
-                                              std::move(conn_handle));
-
-    // Close the AdvertisingHandle in response to a connection iff the connection's associated
-    // advertisement ID still corresponds to the active advertisement. This may not be the
-    // case if another StartAdvertising request comes in during the GAP Connection creation
-    // process.
-    if (self->advertisement_deprecated_ &&
-        self->advertisement_deprecated_->id() == advertisement_id) {
-      self->advertisement_deprecated_.reset();
-    }
-  };
-
-  // TODO(fxbug.dev/648): The conversion from hci::Connection to
-  // gap::LowEnergyConnectionHandle should be performed by a gap library object
-  // and not in this layer.
-  adapter()->le()->RegisterRemoteInitiatedLink(std::move(link), bondable_mode, std::move(on_conn));
+  binding()->events().OnPeerConnected(fidl_helpers::PeerToFidlLe(*peer), std::move(conn_handle));
+  advertisement_deprecated_.reset();
 }
 
 fidl::InterfaceHandle<fuchsia::bluetooth::le::Connection>
@@ -428,7 +395,7 @@ void LowEnergyPeripheralServer::StartAdvertisingInternal(
   bt::gap::AdvertisingInterval interval = fidl_helpers::AdvertisingIntervalFromFidl(
       parameters.has_mode_hint() ? parameters.mode_hint() : fble::AdvertisingModeHint::SLOW);
 
-  bt::gap::LowEnergyAdvertisingManager::ConnectionCallback connect_cb;
+  std::optional<bt::gap::Adapter::LowEnergy::ConnectableAdvertisingParameters> connectable_params;
 
   // Per the API contract of `AdvertisingParameters` FIDL, if `connection_options` is present or
   // the deprecated `connectable` parameter is true, advertisements will be connectable.
@@ -438,41 +405,49 @@ void LowEnergyPeripheralServer::StartAdvertisingInternal(
   bool connectable = parameters.has_connection_options() ||
                      (parameters.has_connectable() && parameters.connectable());
   if (connectable) {
-    // Per the API contract of the `ConnectionOptions` FIDL, the bondable mode of the connection
-    // defaults to bondable mode unless the `connection_options` table exists and
-    // `bondable_mode` is explicitly set to false.
-    BondableMode bondable_mode = (!parameters.has_connection_options() ||
-                                  !parameters.connection_options().has_bondable_mode() ||
-                                  parameters.connection_options().bondable_mode())
-                                     ? BondableMode::Bondable
-                                     : BondableMode::NonBondable;
+    connectable_params.emplace();
+
     auto self = weak_ptr_factory_.GetWeakPtr();
-    connect_cb = [self, bondable_mode, advertisement_instance](bt::gap::AdvertisementId id,
-                                                               auto link) {
+    connectable_params->connection_cb = [self, advertisement_instance](
+                                            bt::gap::AdvertisementId advertisement_id,
+                                            bt::gap::Adapter::LowEnergy::ConnectionResult result) {
       if (!self) {
         return;
       }
 
       // Handle connection for deprecated StartAdvertising method.
       if (!advertisement_instance) {
-        self->OnConnectedDeprecated(id, std::move(link), bondable_mode);
+        self->OnConnectedDeprecated(advertisement_id, std::move(result));
         return;
       }
 
       auto advertisement_iter = self->advertisements_.find(*advertisement_instance);
       if (advertisement_iter == self->advertisements_.end()) {
-        bt_log(DEBUG, LOG_TAG, "closing connection for canceled advertisement");
-        link.reset();
+        if (result.is_ok()) {
+          bt_log(DEBUG, LOG_TAG,
+                 "releasing connection handle for canceled advertisement (peer: %s)",
+                 bt_str(result.value()->peer_identifier()));
+          result.value()->Release();
+        }
         return;
       }
-      advertisement_iter->second.OnConnected(id, std::move(link), bondable_mode);
+      advertisement_iter->second.OnConnected(advertisement_id, std::move(result));
     };
+
+    // Per the API contract of the `ConnectionOptions` FIDL, the bondable mode of the connection
+    // defaults to bondable mode unless the `connection_options` table exists and
+    // `bondable_mode` is explicitly set to false.
+    connectable_params->bondable_mode = (!parameters.has_connection_options() ||
+                                         !parameters.connection_options().has_bondable_mode() ||
+                                         parameters.connection_options().bondable_mode())
+                                            ? BondableMode::Bondable
+                                            : BondableMode::NonBondable;
   }
 
   ZX_ASSERT(adapter()->le());
-  adapter()->le()->StartAdvertising(std::move(adv_data), std::move(scan_rsp), std::move(connect_cb),
-                                    interval, /*anonymous=*/false, include_tx_power_level,
-                                    std::move(status_cb));
+  adapter()->le()->StartAdvertising(std::move(adv_data), std::move(scan_rsp), interval,
+                                    /*anonymous=*/false, include_tx_power_level,
+                                    std::move(connectable_params), std::move(status_cb));
 }
 
 }  // namespace bthost
