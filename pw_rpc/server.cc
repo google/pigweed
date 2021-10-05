@@ -43,6 +43,13 @@ Status Server::ProcessPacket(std::span<const byte> data,
 
   Packet& packet = *result;
 
+  // Verbose log for debugging.
+  // PW_LOG_DEBUG("RPC server received packet type %u for %u:%08x/%08x",
+  //              static_cast<unsigned>(packet.type()),
+  //              static_cast<unsigned>(packet.channel_id()),
+  //              static_cast<unsigned>(packet.service_id()),
+  //              static_cast<unsigned>(packet.method_id()));
+
   internal::Channel* channel = GetInternalChannel(packet.channel_id());
   if (channel == nullptr) {
     // If the requested channel doesn't exist, try to dynamically assign one.
@@ -121,7 +128,10 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
                                       internal::ServerCall* call) const {
   if (call == nullptr) {
     PW_LOG_DEBUG(
-        "Received client stream packet for method that is not pending");
+        "Received client stream packet for %u:%08x/%08x, which is not pending",
+        static_cast<unsigned>(packet.channel_id()),
+        static_cast<unsigned>(packet.service_id()),
+        static_cast<unsigned>(packet.method_id()));
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     return;
