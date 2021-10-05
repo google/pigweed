@@ -35,6 +35,7 @@ pw_python_package("py") {
     "pw_software_update/metadata.py",
     "pw_software_update/root_metadata.py",
     "pw_software_update/update_bundle.py",
+    "pw_software_update/verify.py",
   ]
 
   tests = [
@@ -43,6 +44,7 @@ pw_python_package("py") {
     "metadata_test.py",
     "root_metadata_test.py",
     "update_bundle_test.py",
+    "verify_test.py",
   ]
 
   pylintrc = "$dir_pigweed/.pylintrc"
