@@ -143,5 +143,51 @@ class KeyImportTest(unittest.TestCase):
             keys.import_ecdsa_public_key(self.valid_secp384r1_pem_bytes)
 
 
+class SignatureVerificationTest(unittest.TestCase):
+    """ECDSA signing and verification test."""
+    def setUp(self):
+        # Generated with:
+        # $> openssl ecparam -name prime256v1 -genkey -noout -out priv.pem
+        # $> openssl ec -in priv.pem -pubout -out pub.pem
+        # $> cat priv.pem pub.pem
+        self.private_key_pem = (
+            b'-----BEGIN EC PRIVATE KEY-----\n'
+            b'MHcCAQEEIH9u1n4qAT59f7KRRl/ZB0Y/BUfS4blba+LONlF4s3ltoAoGCCqGSM49'
+            b'AwEHoUQDQgAEgKf3kY9Hi3hxIyqm2EkfqQvJkCijjlJSmEAJ1oAp0Godi5x2af+m'
+            b'cSNuBjpRcC8iW8x1/gizqyWlfAVrZV0XdA==\n'
+            b'-----END EC PRIVATE KEY-----\n')
+        self.public_key_pem = (
+            b'-----BEGIN PUBLIC KEY-----\n'
+            b'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgKf3kY9Hi3hxIyqm2EkfqQvJkCij'
+            b'jlJSmEAJ1oAp0Godi5x2af+mcSNuBjpRcC8iW8x1/gizqyWlfAVrZV0XdA==\n'
+            b'-----END PUBLIC KEY-----\n')
+
+        self.message = b'Hello Pigweed!'
+        self.tampered_message = b'Hell0 Pigweed!'
+
+    def test_good_signature(self):
+        sig = keys.create_ecdsa_signature(self.message, self.private_key_pem)
+        self.assertTrue(
+            keys.verify_ecdsa_signature(
+                sig.sig, self.message,
+                keys.import_ecdsa_public_key(self.public_key_pem).key))
+
+    def test_tampered_message(self):
+        sig = keys.create_ecdsa_signature(self.message, self.private_key_pem)
+        self.assertFalse(
+            keys.verify_ecdsa_signature(
+                sig.sig, self.tampered_message,
+                keys.import_ecdsa_public_key(self.public_key_pem).key))
+
+    def test_tampered_signature(self):
+        sig = keys.create_ecdsa_signature(self.message, self.private_key_pem)
+        tampered_sig = bytearray(sig.sig)
+        tampered_sig[0] ^= 1
+        self.assertFalse(
+            keys.verify_ecdsa_signature(
+                tampered_sig, self.message,
+                keys.import_ecdsa_public_key(self.public_key_pem).key))
+
+
 if __name__ == '__main__':
     unittest.main()

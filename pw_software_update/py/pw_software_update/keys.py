@@ -28,7 +28,8 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+from cryptography.hazmat.primitives.asymmetric.utils import (
+    decode_dss_signature, encode_dss_signature)
 from cryptography.hazmat.primitives.serialization import (
     Encoding, NoEncryption, PrivateFormat, PublicFormat, load_pem_private_key,
     load_pem_public_key)
@@ -115,6 +116,29 @@ def create_ecdsa_signature(data: bytes, key: bytes) -> Signature:
     sig_bytes = int_r.to_bytes(32, 'big') + int_s.to_bytes(32, 'big')
 
     return Signature(key_id=gen_key_id(tuf_key), sig=sig_bytes)
+
+
+def verify_ecdsa_signature(sig: bytes, data: bytes, key: Key) -> bool:
+    """Verifies an ECDSA-SHA2-NISTP256 signature with a given public key.
+
+    Args:
+      sig: the ECDSA signature as raw bytes (r||s).
+      data: the message as plain text.
+      key: the ECDSA-NISTP256 public key.
+
+    Returns:
+      True if the signature is verified. False otherwise.
+    """
+    ec_key = ec.EllipticCurvePublicKey.from_encoded_point(
+        ec.SECP256R1(), key.keyval)
+    try:
+        dss_sig = encode_dss_signature(int.from_bytes(sig[:32], 'big'),
+                                       int.from_bytes(sig[-32:], 'big'))
+        ec_key.verify(dss_sig, data, ec.ECDSA(hashes.SHA256()))
+    except:  # pylint: disable=bare-except
+        return False
+
+    return True
 
 
 def main(out: Path) -> None:
