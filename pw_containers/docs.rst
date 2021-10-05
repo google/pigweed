@@ -90,9 +90,26 @@ underlying data.  The underlying array in ``pw::containers::FlatMap`` does not
 need to be sorted. During construction, ``pw::containers::FlatMap`` will
 perform a constexpr insertion sort.
 
+pw::containers::FilteredView
+============================
+``pw::containers::FilteredView`` provides a view of a container that only
+contains elements that match the specified filter. This class is similar to
+C++20's `std::ranges::filter_view
+<https://en.cppreference.com/w/cpp/ranges/filter_view>`_.
+
+To create a ``FilteredView``, pass a container and a filter object, which may be
+a lambda or class that implements ``operator()`` for the container's value type.
+
+.. code-block:: cpp
+
+  std::array<int, 99> kNumbers = {3, 1, 4, 1, ...};
+
+  for (int even : FilteredView(kNumbers, [](int n) { return n % 2 == 0; })) {
+    PW_LOG_INFO("This number is even: %d", even);
+  }
+
 Compatibility
 =============
-* C
 * C++17
 
 Dependencies

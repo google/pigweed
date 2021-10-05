@@ -18,7 +18,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
@@ -30,19 +30,24 @@ group("pw_containers") {
   ]
 }
 
+pw_source_set("filtered_view") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/filtered_view.h" ]
+}
+
 pw_source_set("flat_map") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/flat_map.h" ]
 }
 
 pw_source_set("vector") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_assert ]
   public = [ "public/pw_containers/vector.h" ]
 }
 
 pw_source_set("intrusive_list") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_containers/internal/intrusive_list_impl.h",
     "public/pw_containers/intrusive_list.h",
@@ -53,9 +58,18 @@ pw_source_set("intrusive_list") {
 
 pw_test_group("tests") {
   tests = [
+    ":filtered_view_test",
     ":flat_map_test",
     ":intrusive_list_test",
     ":vector_test",
+  ]
+}
+
+pw_test("filtered_view_test") {
+  sources = [ "filtered_view_test.cc" ]
+  deps = [
+    ":filtered_view",
+    ":intrusive_list",
   ]
 }
 

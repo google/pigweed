@@ -53,11 +53,26 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "filtered_view",
+    hdrs = ["public/pw_containers/filtered_view.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "flat_map",
     hdrs = [
         "public/pw_containers/flat_map.h",
     ],
     includes = ["public"],
+)
+
+pw_cc_test(
+    name = "filtered_view_test",
+    srcs = ["filtered_view_test.cc"],
+    deps = [
+        ":filtered_view",
+        ":intrusive_list",
+    ],
 )
 
 pw_cc_test(
