@@ -46,11 +46,9 @@ declare_args() {
 group("default") {
   deps = [
     ":docs",
-    ":fuzzers",
     ":host",
     ":integration_tests",
     ":stm32f429i",
-    "$dir_pw_env_setup:python.install",
     "$dir_pw_env_setup:python.lint",
     "$dir_pw_env_setup:python.tests",
   ]
