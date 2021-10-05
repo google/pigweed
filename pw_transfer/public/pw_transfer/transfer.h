@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 
 #include "pw_bytes/span.h"
@@ -37,18 +39,18 @@ class TransferService : public generated::Transfer<TransferService> {
   // overhead. Not all of this size is used to send data -- there is additional
   // overhead in the pw_rpc and pw_transfer protocols (typically ~22B/chunk).
   //
-  // default_max_bytes_to_receive is the maximum amount of data to ask for at a
+  // max_pending_bytes is the maximum amount of data to ask for at a
   // time during a write transfer, unless told a more restrictive amount by a
   // transfer handler. This size can span multiple chunks. A larger value
   // generally increases the efficiency of write transfers when sent over a
   // reliable transport. However, if the underlying transport is unreliable,
   // larger values could slow down a transfer in the event of repeated packet
   // loss.
-  constexpr TransferService(size_t max_chunk_size_bytes,
-                            size_t default_max_bytes_to_receive)
+  constexpr TransferService(uint32_t max_chunk_size_bytes,
+                            uint32_t max_pending_bytes)
       : read_transfers_(internal::kRead, handlers_),
         write_transfers_(internal::kWrite, handlers_),
-        client_(max_chunk_size_bytes, default_max_bytes_to_receive) {}
+        client_(max_pending_bytes, max_chunk_size_bytes) {}
 
   TransferService(const TransferService&) = delete;
   TransferService(TransferService&&) = delete;

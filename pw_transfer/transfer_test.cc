@@ -331,6 +331,18 @@ TEST_F(ReadTransfer, AbortAndRestartIfInitialPacketIsReceived) {
   EXPECT_EQ(handler_.finalize_read_status, OkStatus());
 }
 
+TEST_F(ReadTransfer, AbortTransferIfZeroBytesAreRequested) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .pending_bytes = 0}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  EXPECT_TRUE(handler_.finalize_read_called);
+  EXPECT_EQ(handler_.finalize_read_status, Status::Internal());
+
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(*chunk.status, Status::Internal());
+}
+
 class SimpleWriteTransfer final : public WriteOnlyHandler {
  public:
   SimpleWriteTransfer(uint32_t transfer_id, ByteSpan data)
@@ -663,10 +675,10 @@ TEST_F(WriteTransfer, OnlySendParametersUpdateOnceAfterDrop) {
   EXPECT_EQ(chunk.offset, 1u);
 
   // Send the remaining data and the final status.
-  ctx_.SendClientStream<64>(EncodeChunk(
-      {.transfer_id = 7, .offset = 1, .data = data.subspan(1, 31)}));
-  ctx_.SendClientStream<64>(
-      EncodeChunk({.transfer_id = 7, .status = OkStatus()}));
+  ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                         .offset = 1,
+                                         .data = data.subspan(1, 31),
+                                         .status = OkStatus()}));
 
   EXPECT_TRUE(handler_.finalize_write_called);
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());

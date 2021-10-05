@@ -138,6 +138,10 @@ an error chunk with the transfer ID and a non-OK status.
   transfer handler, but not sent to the client, since it is already handling a
   new transfer.
 - ``CANCELLED`` -- The client cancelled a pending transfer.
+- ``RESOURCE_EXHAUSTED`` -- The receiver's storage is full and cannot continue
+  the transfer.
+- ``UNAVAILABLE`` -- The service is busy and cannot start an additional transfer
+  at this time.
 
 Transmitter flow
 ================

@@ -71,13 +71,32 @@ Status ServerContext::Finish(const Status status) {
 
 void ServerContext::HandleReadChunk(ClientConnection& client,
                                     const Chunk& parameters) {
+  // Update local transfer fields based on the received chunk.
   if (!parameters.pending_bytes.has_value()) {
     // Malformed chunk.
     FinishAndSendStatus(client, Status::InvalidArgument());
     return;
   }
 
-  // Update local transfer fields based on the received chunk.
+  const uint32_t pending_bytes = *parameters.pending_bytes;
+  if (pending_bytes == 0u) {
+    PW_LOG_ERROR("Transfer %d client requested 0 bytes (invalid); aborting",
+                 static_cast<unsigned>(transfer_id()));
+    FinishAndSendStatus(client, Status::Internal());
+    return;
+  }
+
+  // TODO(hepler): Limit pending_bytes to max_parameters() when supported by the
+  //     protocol. Clients will need to adjust their pending_bytes when set.
+  // std::min(pending_bytes, client.max_parameters().pending_bytes())
+  set_pending_bytes(pending_bytes);
+
+  if (parameters.max_chunk_size_bytes.has_value()) {
+    set_max_chunk_size_bytes(
+        std::min(*parameters.max_chunk_size_bytes,
+                 client.max_parameters().max_chunk_size_bytes()));
+  }
+
   if (offset() != parameters.offset) {
     // TODO(frolv): pw_stream does not yet support seeking, so this temporarily
     // cancels the transfer. Once seeking is added, this should be updated.
@@ -88,14 +107,6 @@ void ServerContext::HandleReadChunk(ClientConnection& client,
     FinishAndSendStatus(client, Status::Unimplemented());
     return;
   }
-
-  if (parameters.max_chunk_size_bytes.has_value()) {
-    set_max_chunk_size_bytes(
-        std::min(static_cast<size_t>(parameters.max_chunk_size_bytes.value()),
-                 client.max_chunk_size_bytes()));
-  }
-
-  set_pending_bytes(parameters.pending_bytes.value());
 
   Status read_chunk_status;
   while ((read_chunk_status = SendNextReadChunk(client)).ok()) {
@@ -249,11 +260,22 @@ void ServerContext::ProcessWriteDataChunk(ClientConnection& client,
 }
 
 void ServerContext::SendWriteTransferParameters(ClientConnection& client) {
-  set_pending_bytes(std::min(client.default_max_bytes_to_receive(),
-                             writer().ConservativeWriteLimit()));
+  const size_t write_limit = writer().ConservativeWriteLimit();
+  if (write_limit == 0) {
+    PW_LOG_WARN(
+        "Transfer %u writer returned 0 from ConservativeWriteLimit(); cannot "
+        "continue, aborting with RESOURCE_EXHAUSTED",
+        static_cast<unsigned>(transfer_id()));
+    FinishAndSendStatus(client, Status::ResourceExhausted());
+    return;
+  }
 
-  const size_t max_chunk_size_bytes = MaxWriteChunkSize(
-      client.max_chunk_size_bytes(), client.write_stream().channel_id());
+  set_pending_bytes(std::min(client.max_parameters().pending_bytes(),
+                             static_cast<uint32_t>(write_limit)));
+
+  const uint32_t max_chunk_size_bytes =
+      MaxWriteChunkSize(client.max_parameters().max_chunk_size_bytes(),
+                        client.write_stream().channel_id());
   const internal::Chunk parameters = {
       .transfer_id = transfer_id(),
       .pending_bytes = pending_bytes(),
@@ -337,7 +359,7 @@ Result<ServerContext*> ServerContextPool::GetOrStartTransfer(
   }
 
   if (new_transfer == nullptr) {
-    return Status::ResourceExhausted();
+    return Status::Unavailable();
   }
 
   // Try to start the new transfer by checking if a handler for it exists.

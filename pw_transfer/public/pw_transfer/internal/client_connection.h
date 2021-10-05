@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_assert/assert.h"
 #include "pw_rpc/raw/server_reader_writer.h"
 
 namespace pw::transfer::internal {
@@ -24,14 +25,32 @@ struct Chunk;
 
 enum TransferType : bool { kRead, kWrite };
 
+class TransferParameters {
+ public:
+  constexpr TransferParameters(uint32_t pending_bytes,
+                               uint32_t max_chunk_size_bytes)
+      : pending_bytes_(pending_bytes),
+        max_chunk_size_bytes_(max_chunk_size_bytes) {
+    PW_ASSERT(pending_bytes > 0);
+    PW_ASSERT(max_chunk_size_bytes > 0);
+  }
+
+  uint32_t pending_bytes() const { return pending_bytes_; }
+
+  uint32_t max_chunk_size_bytes() const { return max_chunk_size_bytes_; }
+
+ private:
+  uint32_t pending_bytes_;
+  uint32_t max_chunk_size_bytes_;
+};
+
 // Stores the read/write streams and transfer parameters for communicating with
 // a pw_transfer client.
 class ClientConnection {
  public:
-  constexpr ClientConnection(size_t max_chunk_size_bytes,
-                             size_t default_max_bytes_to_receive)
-      : max_chunk_size_bytes_(max_chunk_size_bytes),
-        default_max_bytes_to_receive_(default_max_bytes_to_receive) {}
+  constexpr ClientConnection(uint32_t max_pending_bytes,
+                             uint32_t max_chunk_size_bytes)
+      : max_parameters_(max_pending_bytes, max_chunk_size_bytes) {}
 
   void InitializeRead(rpc::RawServerReaderWriter& reader_writer,
                       Function<void(ConstByteSpan)> callback) {
@@ -45,11 +64,7 @@ class ClientConnection {
     write_stream_.set_on_next(std::move(callback));
   }
 
-  size_t max_chunk_size_bytes() const { return max_chunk_size_bytes_; }
-
-  size_t default_max_bytes_to_receive() const {
-    return default_max_bytes_to_receive_;
-  }
+  const TransferParameters& max_parameters() const { return max_parameters_; }
 
   rpc::RawServerReaderWriter& read_stream() { return read_stream_; }
   rpc::RawServerReaderWriter& write_stream() { return write_stream_; }
@@ -66,8 +81,9 @@ class ClientConnection {
   rpc::RawServerReaderWriter read_stream_;
   rpc::RawServerReaderWriter write_stream_;
 
-  size_t max_chunk_size_bytes_;
-  size_t default_max_bytes_to_receive_;
+  // Cannot exceed these parameters, even if the client requests a larger
+  // pending bytes or chunk size.
+  TransferParameters max_parameters_;
 };
 
 }  // namespace pw::transfer::internal

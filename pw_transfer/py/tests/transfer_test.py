@@ -511,6 +511,22 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.transfer_id, 22)
         self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
 
+    def test_write_zero_pending_bytes_is_internal_error(self):
+        manager = transfer.Manager(
+            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)
+
+        self._enqueue_server_responses(
+            _Method.WRITE,
+            ((transfer_pb2.Chunk(transfer_id=23, pending_bytes=0), ), ),
+        )
+
+        with self.assertRaises(transfer.Error) as context:
+            manager.write(23, b'no write')
+
+        exception = context.exception
+        self.assertEqual(exception.transfer_id, 23)
+        self.assertEqual(exception.status, Status.INTERNAL)
+
 
 if __name__ == '__main__':
     unittest.main()

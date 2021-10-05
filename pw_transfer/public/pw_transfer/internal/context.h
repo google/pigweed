@@ -82,8 +82,8 @@ class Context {
   //
   // TODO(frolv): This should be investigated further and perhaps addressed
   // within the RPC system, at the least through a helper function.
-  size_t MaxWriteChunkSize(size_t max_chunk_size_bytes,
-                           uint32_t channel_id) const;
+  uint32_t MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
+                             uint32_t channel_id) const;
 
  private:
   uint32_t transfer_id_;

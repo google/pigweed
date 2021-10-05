@@ -279,6 +279,13 @@ class _WriteTransfer(_Transfer):
             self._send_error(Status.OUT_OF_RANGE)
             return False
 
+        if chunk.pending_bytes == 0:
+            _LOG.error(
+                'Transfer %d: service requested 0 bytes (invalid); aborting',
+                self.id)
+            self._send_error(Status.INTERNAL)
+            return False
+
         # Check whether the client has sent a previous data offset, which
         # indicates that some chunks were lost in transmission.
         if chunk.offset < self._offset:
