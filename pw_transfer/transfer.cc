@@ -62,7 +62,7 @@ void TransferService::HandleChunk(ConstByteSpan message,
 
   if (chunk.status.has_value()) {
     // Transfer has been terminated (successfully or not).
-    Status status = chunk.status.value();
+    const Status status = chunk.status.value();
     if (!status.ok()) {
       PW_LOG_ERROR("Receiver terminated transfer %u with status %d",
                    static_cast<unsigned>(chunk.transfer_id),

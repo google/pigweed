@@ -120,7 +120,6 @@ Server to client transfer (read)
 ================================
 .. image:: read.svg
 
-
 Client to server transfer (write)
 =================================
 .. image:: write.svg
@@ -132,8 +131,13 @@ an error chunk with the transfer ID and a non-OK status.
 
 - ``DATA_LOSS`` -- Failed to read or write data that was transferred. For
   example, a flash write error occurred in Handler::FinalizeWrite().
-- ``INVALID_ARGUMENT`` -- Received a malformed chunk.
+- ``INVALID_ARGUMENT`` -- The service or client received a malformed chunk.
 - ``INTERNAL`` -- An assumption of the ``pw_transfer`` protocol was violated.
+- ``ABORTED`` -- The service aborted a transfer. This happens when the client
+  starts a transfer that is already pending. This status is passed to the
+  transfer handler, but not sent to the client, since it is already handling a
+  new transfer.
+- ``CANCELLED`` -- The client cancelled a pending transfer.
 
 Transmitter flow
 ================

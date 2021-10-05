@@ -305,18 +305,35 @@ void ServerContext::FinishAndSendStatus(ClientConnection& client,
 
 Result<ServerContext*> ServerContextPool::GetOrStartTransfer(
     const Chunk& chunk) {
-  internal::ServerContext* new_transfer = nullptr;
+  ServerContext* new_transfer = nullptr;
 
   // Check if the ID belongs to an active transfer. If not, pick an inactive
   // slot to start a new transfer.
   for (ServerContext& transfer : transfers_) {
-    if (transfer.active()) {
-      if (transfer.transfer_id() == chunk.transfer_id) {
-        return &transfer;
-      }
-    } else {
+    // Check if this transfer slot is available for a new transfer.
+    if (!transfer.active()) {
       new_transfer = &transfer;
+      continue;  // Keep searching in case a transfer with this ID is active.
     }
+
+    if (transfer.transfer_id() != chunk.transfer_id) {
+      continue;  // Chunk not for this transfer; keep searching.
+    }
+
+    // The chunk is for this transfer. If it is an initial chunk, abort the
+    // pending transfer and restart it.
+    if (chunk.IsInitialChunk()) {
+      PW_LOG_DEBUG(
+          "Received initial chunk for transfer %u which was already in "
+          "progress; aborting and restarting",
+          static_cast<unsigned>(chunk.transfer_id));
+      transfer.Finish(Status::Aborted());
+      new_transfer = &transfer;
+      break;
+    }
+
+    // The chunk is a noninitial chunk for an ongoing transfer.
+    return &transfer;
   }
 
   if (new_transfer == nullptr) {

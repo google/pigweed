@@ -302,6 +302,35 @@ TEST_F(ReadTransfer, IgnoresNonPendingTransfers) {
   EXPECT_FALSE(handler_.finalize_read_called);
 }
 
+TEST_F(ReadTransfer, AbortAndRestartIfInitialPacketIsReceived) {
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 16, .offset = 0}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+
+  EXPECT_TRUE(handler_.prepare_read_called);
+  EXPECT_FALSE(handler_.finalize_read_called);
+  handler_.prepare_read_called = false;  // Reset so can check if called again.
+
+  ctx_.SendClientStream(  // Resend starting chunk
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 16, .offset = 0}));
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+
+  EXPECT_TRUE(handler_.prepare_read_called);
+  EXPECT_TRUE(handler_.finalize_read_called);
+  EXPECT_EQ(handler_.finalize_read_status, Status::Aborted());
+  handler_.finalize_read_called = false;  // Reset so can check later
+
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 16, .offset = 16}));
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .status = OkStatus()}));
+
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+  EXPECT_TRUE(handler_.finalize_read_called);
+  EXPECT_EQ(handler_.finalize_read_status, OkStatus());
+}
+
 class SimpleWriteTransfer final : public WriteOnlyHandler {
  public:
   SimpleWriteTransfer(uint32_t transfer_id, ByteSpan data)
@@ -652,6 +681,42 @@ TEST_F(WriteTransfer, IgnoresNonPendingTransfers) {
   // Only start transfer for initial packet.
   EXPECT_FALSE(handler_.prepare_write_called);
   EXPECT_FALSE(handler_.finalize_write_called);
+}
+
+TEST_F(WriteTransfer, AbortAndRestartIfInitialPacketIsReceived) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+
+  ctx_.SendClientStream<64>(EncodeChunk(
+      {.transfer_id = 7, .offset = 0, .data = std::span(kData).first(16)}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+
+  ASSERT_TRUE(handler_.prepare_write_called);
+  ASSERT_FALSE(handler_.finalize_write_called);
+  handler_.prepare_write_called = false;  // Reset to check it's called again.
+
+  // Simulate client disappearing then restarting the transfer.
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+
+  EXPECT_TRUE(handler_.prepare_write_called);
+  EXPECT_TRUE(handler_.finalize_write_called);
+  EXPECT_EQ(handler_.finalize_write_status, Status::Aborted());
+
+  handler_.finalize_write_called = false;  // Reset to check it's called again.
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+
+  ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                         .offset = 0,
+                                         .data = std::span(kData),
+                                         .remaining_bytes = 0}));
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+
+  EXPECT_TRUE(handler_.finalize_write_called);
+  EXPECT_EQ(handler_.finalize_write_status, OkStatus());
+  EXPECT_EQ(std::memcmp(buffer.data(), kData.data(), kData.size()), 0);
 }
 
 class SometimesUnavailableReadHandler final : public ReadOnlyHandler {
