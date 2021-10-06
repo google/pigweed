@@ -122,7 +122,9 @@ def _check_venv(python, version, venv_path, pyvenv_cfg):
             for line in ins:
                 key, value = line.strip().split(' = ', 1)
                 pyvenv_values[key] = value
-        if os.path.dirname(python) != pyvenv_values.get('home'):
+        pydir = os.path.dirname(python)
+        home = pyvenv_values.get('home')
+        if pydir != home and not pydir.startswith(venv_path):
             shutil.rmtree(venv_path)
         elif pyvenv_values.get('version') not in version:
             shutil.rmtree(venv_path)
