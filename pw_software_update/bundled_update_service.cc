@@ -522,4 +522,26 @@ Status BundledUpdateService::Reset(
   return OkStatus();
 }
 
+Status BundledUpdateService::NotifyTransferFinished(Status status) {
+  std::lock_guard lock(mutex_);
+
+  if (status_.state !=
+      pw_software_update_BundledUpdateState_Enum_TRANSFERRING) {
+    PW_LOG_ERROR(
+        "Got transfer finished notification when not in TRANSFERRING "
+        "state; ignoring. State: %d",
+        static_cast<int>(status_.state));
+    return Status::FailedPrecondition();
+  }
+
+  if (!status.ok()) {
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_TRANSFER_FAILED,
+              "Transfer failure; notified status: %d",
+              static_cast<int>(status.code()));
+    return OkStatus();
+  }
+  status_.state = pw_software_update_BundledUpdateState_Enum_TRANSFERRED;
+  return OkStatus();
+}
+
 }  // namespace pw::software_update

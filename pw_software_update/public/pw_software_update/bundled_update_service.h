@@ -71,8 +71,20 @@ class BundledUpdateService
                const pw_protobuf_Empty& request,
                pw_software_update_BundledUpdateStatus& response);
 
+  // Notify the service that the bundle transfer has completed. The service has
+  // no way to know when the bundle transfer completes, so users must invoke
+  // this method in their transfer completion handler. After this call, the
+  // service will be in state:
+  //
+  //   - TRANSFERRED -- if status.ok()
+  //   - FINISHED    -- otherwise, with an TRANSFER_ERROR result
+  //
+  // Returns:
+  // OK if the state is TRANSFERRED
+  // FAILED_PRECONDITION otherwise
+  Status NotifyTransferFinished(Status status);
+
   // TODO:
-  // NotifyTransferFinished or even move the transfer handler upstream.
   // VerifyProgress - to update % complete.
   // ApplyProgress - to update % complete.
 
