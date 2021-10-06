@@ -110,7 +110,6 @@ pw_create_python_source_tree("pypi_pigweed_python_source_tree") {
   packages = _pigweed_python_deps
   generate_setup_cfg = {
     common_config_file = "pypi_common_setup.cfg"
-    append_git_sha_to_version = true
   }
   extra_files = [
     "$dir_pigweed/LICENSE > LICENSE",

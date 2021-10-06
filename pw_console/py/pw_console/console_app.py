@@ -18,11 +18,12 @@ import builtins
 import functools
 import logging
 import os
+from pathlib import Path
 import sys
 from threading import Thread
 from typing import Iterable, Union
 
-from jinja2 import Environment, PackageLoader, make_logging_undefined
+from jinja2 import Environment, FileSystemLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output import ColorDepth
@@ -136,7 +137,7 @@ class ConsoleApp:
         # Setup the Jinja environment
         self.jinja_env = Environment(
             # Load templates automatically from pw_console/templates
-            loader=PackageLoader(__package__),
+            loader=FileSystemLoader(Path(__file__).parent / 'templates'),
             # Raise errors if variables are undefined in templates
             undefined=make_logging_undefined(
                 logger=logging.getLogger(__package__), ),
