@@ -20,123 +20,170 @@ import unittest
 from pw_software_update import update_bundle
 
 
-class GenUnsignedUpdateBundleTest(unittest.TestCase):
-    """Test the generation of unsigned update bundles."""
-    def test_bundle_generation(self):
-        """Tests basic creation of an UpdateBundle from temp dir."""
-        foo_bytes = b'\xf0\x0b\xa4'
-        bar_bytes = b'\x0b\xa4\x99'
-        baz_bytes = b'\xba\x59\x06'
-        qux_bytes = b'\x8a\xf3\x12'
-        with tempfile.TemporaryDirectory() as tempdir_name:
-            temp_root = Path(tempdir_name)
-            (temp_root / 'foo.bin').write_bytes(foo_bytes)
-            (temp_root / 'bar.bin').write_bytes(bar_bytes)
-            (temp_root / 'baz.bin').write_bytes(baz_bytes)
-            (temp_root / 'subdir').mkdir()
-            (temp_root / 'subdir' / 'qux.exe').write_bytes(qux_bytes)
-            bundle = update_bundle.gen_unsigned_update_bundle(temp_root)
-
-        self.assertEqual(foo_bytes, bundle.target_payloads['foo.bin'])
-        self.assertEqual(bar_bytes, bundle.target_payloads['bar.bin'])
-        self.assertEqual(baz_bytes, bundle.target_payloads['baz.bin'])
-        self.assertEqual(qux_bytes, bundle.target_payloads['subdir/qux.exe'])
-
+class TargetsFromDirectoryTest(unittest.TestCase):
+    """Test turning a directory into TUF targets."""
     def test_excludes(self):
-        """Checks that excludes are excluded from update bundles."""
-        foo_bytes = b'\xf0\x0b\xa4'
-        bar_bytes = b'\x0b\xa4\x99'
-        baz_bytes = b'\xba\x59\x06'
-        qux_bytes = b'\x8a\xf3\x12'
+        """Checks that excludes are excluded."""
         with tempfile.TemporaryDirectory() as tempdir_name:
             temp_root = Path(tempdir_name)
-            (temp_root / 'foo.bin').write_bytes(foo_bytes)
-            (temp_root / 'bar.bin').write_bytes(bar_bytes)
-            (temp_root / 'baz.bin').write_bytes(baz_bytes)
-            (temp_root / 'qux.exe').write_bytes(qux_bytes)
-            bundle = update_bundle.gen_unsigned_update_bundle(
+            foo_path = temp_root / 'foo.bin'
+            bar_path = temp_root / 'bar.bin'
+            baz_path = temp_root / 'baz.bin'
+            qux_path = temp_root / 'qux.exe'
+            for path in (foo_path, bar_path, baz_path, qux_path):
+                path.touch()
+
+            targets = update_bundle.targets_from_directory(
                 temp_root, exclude=(Path('foo.bin'), Path('baz.bin')))
 
-        self.assertNotIn('foo.bin', bundle.target_payloads)
-        self.assertEqual(bar_bytes, bundle.target_payloads['bar.bin'])
-        self.assertNotIn(
-            'baz.bin',
-            bundle.target_payloads,
-        )
-        self.assertEqual(qux_bytes, bundle.target_payloads['qux.exe'])
+            self.assertNotIn('foo.bin', targets)
+            self.assertEqual(bar_path, targets['bar.bin'])
+            self.assertNotIn('baz.bin', targets)
+            self.assertEqual(qux_path, targets['qux.exe'])
 
     def test_excludes_and_remapping(self):
         """Checks that remapping works, even in combination with excludes."""
-        foo_bytes = b'\x12\xab\x34'
-        bar_bytes = b'\xcd\x56\xef'
-        baz_bytes = b'\xa1\xb2\xc3'
-        qux_bytes = b'\x1f\x2e\x3d'
-        remap_paths = {
-            Path('foo.bin'): 'main',
-            Path('bar.bin'): 'backup',
-            Path('baz.bin'): 'tertiary',
-        }
         with tempfile.TemporaryDirectory() as tempdir_name:
             temp_root = Path(tempdir_name)
-            (temp_root / 'foo.bin').write_bytes(foo_bytes)
-            (temp_root / 'bar.bin').write_bytes(bar_bytes)
-            (temp_root / 'baz.bin').write_bytes(baz_bytes)
-            (temp_root / 'qux.exe').write_bytes(qux_bytes)
-            bundle = update_bundle.gen_unsigned_update_bundle(
+            foo_path = temp_root / 'foo.bin'
+            bar_path = temp_root / 'bar.bin'
+            baz_path = temp_root / 'baz.bin'
+            qux_path = temp_root / 'qux.exe'
+            remap_paths = {
+                Path('foo.bin'): 'main',
+                Path('bar.bin'): 'backup',
+                Path('baz.bin'): 'tertiary',
+            }
+            for path in (foo_path, bar_path, baz_path, qux_path):
+                path.touch()
+
+            targets = update_bundle.targets_from_directory(
                 temp_root,
                 exclude=(Path('qux.exe'), ),
                 remap_paths=remap_paths)
 
-        self.assertEqual(foo_bytes, bundle.target_payloads['main'])
-        self.assertEqual(bar_bytes, bundle.target_payloads['backup'])
-        self.assertEqual(baz_bytes, bundle.target_payloads['tertiary'])
-        self.assertNotIn('qux.exe', bundle.target_payloads)
+            self.assertEqual(foo_path, targets['main'])
+            self.assertEqual(bar_path, targets['backup'])
+            self.assertEqual(baz_path, targets['tertiary'])
+            self.assertNotIn('qux.exe', targets)
 
     def test_incomplete_remapping_logs(self):
         """Checks that incomplete remappings log warnings."""
-        foo_bytes = b'\x12\xab\x34'
-        bar_bytes = b'\xcd\x56\xef'
-        remap_paths = {Path('foo.bin'): 'main'}
         with tempfile.TemporaryDirectory() as tempdir_name:
             temp_root = Path(tempdir_name)
-            (temp_root / 'foo.bin').write_bytes(foo_bytes)
-            (temp_root / 'bar.bin').write_bytes(bar_bytes)
+            foo_path = temp_root / 'foo.bin'
+            bar_path = temp_root / 'bar.bin'
+            foo_path.touch()
+            bar_path.touch()
+            remap_paths = {Path('foo.bin'): 'main'}
+
             with self.assertLogs(level='WARNING') as log:
-                update_bundle.gen_unsigned_update_bundle(
+                update_bundle.targets_from_directory(
                     temp_root,
                     exclude=(Path('qux.exe'), ),
                     remap_paths=remap_paths)
+
                 self.assertIn('Some remaps defined, but not "bar.bin"',
                               log.output[0])
 
     def test_remap_of_missing_file(self):
         """Checks that remapping a missing file raises an error."""
-        foo_bytes = b'\x12\xab\x34'
-        remap_paths = {
-            Path('foo.bin'): 'main',
-            Path('bar.bin'): 'backup',
-        }
         with tempfile.TemporaryDirectory() as tempdir_name:
             temp_root = Path(tempdir_name)
-            (temp_root / 'foo.bin').write_bytes(foo_bytes)
+            foo_path = temp_root / 'foo.bin'
+            foo_path.touch()
+            remap_paths = {
+                Path('foo.bin'): 'main',
+                Path('bar.bin'): 'backup',
+            }
+
             with self.assertRaises(FileNotFoundError):
-                update_bundle.gen_unsigned_update_bundle(
-                    temp_root, remap_paths=remap_paths)
+                update_bundle.targets_from_directory(temp_root,
+                                                     remap_paths=remap_paths)
 
 
-class ParseRemapArgTest(unittest.TestCase):
-    """Test the parsing of remap argument strings."""
+class GenUnsignedUpdateBundleTest(unittest.TestCase):
+    """Test the generation of unsigned update bundles."""
+    def test_bundle_generation(self):
+        """Tests basic creation of an UpdateBundle."""
+        with tempfile.TemporaryDirectory() as tempdir_name:
+            temp_root = Path(tempdir_name)
+            foo_path = temp_root / 'foo.bin'
+            bar_path = temp_root / 'bar.bin'
+            baz_path = temp_root / 'baz.bin'
+            qux_path = temp_root / 'subdir' / 'qux.exe'
+            foo_bytes = b'\xf0\x0b\xa4'
+            bar_bytes = b'\x0b\xa4\x99'
+            baz_bytes = b'\xba\x59\x06'
+            qux_bytes = b'\x8a\xf3\x12'
+            foo_path.write_bytes(foo_bytes)
+            bar_path.write_bytes(bar_bytes)
+            baz_path.write_bytes(baz_bytes)
+            (temp_root / 'subdir').mkdir()
+            qux_path.write_bytes(qux_bytes)
+            targets = {
+                foo_path: 'foo',
+                bar_path: 'bar',
+                baz_path: 'baz',
+                qux_path: 'qux',
+            }
+
+            bundle = update_bundle.gen_unsigned_update_bundle(targets)
+
+            self.assertEqual(foo_bytes, bundle.target_payloads['foo'])
+            self.assertEqual(bar_bytes, bundle.target_payloads['bar'])
+            self.assertEqual(baz_bytes, bundle.target_payloads['baz'])
+            self.assertEqual(qux_bytes, bundle.target_payloads['qux'])
+
+    def test_persist_to_disk(self):
+        """Tests persisting the TUF repo to disk for debugging"""
+        with tempfile.TemporaryDirectory() as tempdir_name:
+            temp_root = Path(tempdir_name)
+            foo_path = temp_root / 'foo.bin'
+            bar_path = temp_root / 'bar.bin'
+            baz_path = temp_root / 'baz.bin'
+            qux_path = temp_root / 'subdir' / 'qux.exe'
+            foo_bytes = b'\xf0\x0b\xa4'
+            bar_bytes = b'\x0b\xa4\x99'
+            baz_bytes = b'\xba\x59\x06'
+            qux_bytes = b'\x8a\xf3\x12'
+            foo_path.write_bytes(foo_bytes)
+            bar_path.write_bytes(bar_bytes)
+            baz_path.write_bytes(baz_bytes)
+            (temp_root / 'subdir').mkdir()
+            qux_path.write_bytes(qux_bytes)
+            targets = {
+                foo_path: 'foo',
+                bar_path: 'bar',
+                baz_path: 'baz',
+                qux_path: 'subdir/qux',
+            }
+            persist_path = temp_root / 'persisted'
+
+            update_bundle.gen_unsigned_update_bundle(targets,
+                                                     persist=persist_path)
+
+            self.assertEqual(foo_bytes, (persist_path / 'foo').read_bytes())
+            self.assertEqual(bar_bytes, (persist_path / 'bar').read_bytes())
+            self.assertEqual(baz_bytes, (persist_path / 'baz').read_bytes())
+            self.assertEqual(qux_bytes,
+                             (persist_path / 'subdir' / 'qux').read_bytes())
+
+
+class ParseTargetArgTest(unittest.TestCase):
+    """Test the parsing of target argument strings."""
     def test_valid_arg(self):
         """Checks that valid remap strings are parsed correctly."""
-        original_path, new_target_file_name = update_bundle.parse_remap_arg(
+        file_path, target_name = update_bundle.parse_target_arg(
             'foo.bin > main')
-        self.assertEqual(Path('foo.bin'), original_path)
-        self.assertEqual('main', new_target_file_name)
+
+        self.assertEqual(Path('foo.bin'), file_path)
+        self.assertEqual('main', target_name)
 
     def test_invalid_arg_raises(self):
         """Checks that invalid remap string raise an error."""
         with self.assertRaises(ValueError):
-            update_bundle.parse_remap_arg('foo.bin main')
+            update_bundle.parse_target_arg('foo.bin main')
 
 
 if __name__ == '__main__':
