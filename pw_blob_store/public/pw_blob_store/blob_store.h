@@ -228,6 +228,13 @@ class BlobStore {
     }
 
    private:
+    // Similar to normal Write, but instead immediately writing out to flash,
+    // it only buffers the data. A flush or Close is reqired to get bytes
+    // writen out to flash.
+    //
+    // AddToWriteBuffer will continue to accept new data after Flush has an
+    // erase error (buffer space permitting). Write errors during Flush will
+    // result in no new data being accepted.
     Status DoWrite(ConstByteSpan data) final {
       PW_DASSERT(open_);
       return store_.AddToWriteBuffer(data);
@@ -449,7 +456,11 @@ class BlobStore {
 
   // Similar to Write, but instead immediately writing out to flash, it only
   // buffers the data. A flush or Close is reqired to get bytes writen out to
-  // flash
+  // flash.
+  //
+  // AddToWriteBuffer will continue to accept new data after Flush has an erase
+  // error (buffer space permitting). Write errors during Flush will result in
+  // no new data being accepted.
   //
   // OK - successful write/enqueue of data.
   // RESOURCE_EXHAUSTED - unable to write all of requested data at this time. No
@@ -493,7 +504,7 @@ class BlobStore {
   // true - Blob is valid and OK to write to.
   // false - Blob has previously had an error and not valid for writing new
   //     data.
-  bool ValidToWrite() { return (valid_data_ == true) || (write_address_ == 0); }
+  bool ValidToWrite() { return (valid_data_ == true) || (flash_address_ == 0); }
 
   bool WriteBufferEmpty() const { return flash_address_ == write_address_; }
 

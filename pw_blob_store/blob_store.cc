@@ -56,18 +56,9 @@ Status BlobStore::Init() {
     return OkStatus();
   }
 
-  // No saved blob, check for flash being erased.
-  bool erased = false;
-  if (partition_.IsErased(&erased).ok() && erased) {
-    flash_erased_ = true;
-
-    // Blob data is considered valid as soon as the flash is erased. Even though
-    // there are 0 bytes written, they are valid.
-    valid_data_ = true;
-    PW_LOG_DEBUG("BlobStore init - is erased");
-  } else {
-    PW_LOG_DEBUG("BlobStore init - not erased");
-  }
+  // No saved blob, assume it has not been erased yet even if it has to avoid
+  // having to scan the potentially massive partition.
+  PW_LOG_DEBUG("BlobStore init - No valid blob, assuming not erased");
   return OkStatus();
 }
 
@@ -441,20 +432,18 @@ Status BlobStore::Erase() {
     Invalidate().IgnoreError();  // TODO(pwbug/387): Handle Status properly
   }
 
-  Status status = partition_.Erase();
+  PW_TRY(partition_.Erase());
 
-  if (status.ok()) {
-    flash_erased_ = true;
+  flash_erased_ = true;
 
-    // Blob data is considered valid as soon as the flash is erased. Even though
-    // there are 0 bytes written, they are valid.
-    valid_data_ = true;
-  }
-  return status;
+  // Blob data is considered valid as soon as the flash is erased. Even though
+  // there are 0 bytes written, they are valid.
+  valid_data_ = true;
+  return OkStatus();
 }
 
 Status BlobStore::Invalidate() {
-  // Blob data is considered if the flash is erased. Even though
+  // Blob data is considered valid if the flash is erased. Even though
   // there are 0 bytes written, they are valid.
   valid_data_ = flash_erased_;
   ResetChecksum();
