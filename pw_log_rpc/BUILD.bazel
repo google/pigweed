@@ -30,7 +30,7 @@ pw_cc_library(
     deps = [
         ":rpc_log_drain",
         "//pw_log",
-        "//pw_log:protos.pwpb",
+        "//pw_log:log_pwpb",
         "//pw_log:protos.raw_rpc",
     ],
 )
@@ -45,7 +45,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_assert",
-        "//pw_log:protos.pwpb",
+        "//pw_log:log_pwpb",
         "//pw_log:protos.raw_rpc",
         "//pw_multisink",
         "//pw_protobuf",
@@ -77,8 +77,8 @@ pw_cc_test(
         ":log_service",
         "//pw_containers:vector",
         "//pw_log",
+        "//pw_log:log_pwpb",
         "//pw_log:proto_utils",
-        "//pw_log:protos.pwpb",
         "//pw_protobuf",
         "//pw_result",
         "//pw_rpc/raw:test_method_context",
