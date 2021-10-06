@@ -189,7 +189,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         try:
             while True:
                 _ = input()
-                self._current_build.kill()
+                self._current_build.terminate()
+                self._current_build.wait()
 
                 self.debouncer.press('Manual build requested...')
         # Ctrl-C on Unix generates KeyboardInterrupt
@@ -302,7 +303,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     # Implementation of DebouncedFunction.cancel()
     def cancel(self) -> bool:
         if self.restart_on_changes:
-            self._current_build.kill()
+            self._current_build.terminate()
+            self._current_build.wait()
             return True
 
         return False
