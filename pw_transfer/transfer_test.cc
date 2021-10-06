@@ -684,6 +684,44 @@ TEST_F(WriteTransfer, OnlySendParametersUpdateOnceAfterDrop) {
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
 }
 
+TEST_F(WriteTransfer, ResendParametersIfSentRepeatedChunkDuringRecovery) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+
+  constexpr std::span data(kData);
+
+  // Skip offset 0, then send the rest of the data.
+  for (uint32_t i = 1; i < kData.size(); ++i) {
+    ctx_.SendClientStream<64>(EncodeChunk(
+        {.transfer_id = 7, .offset = i, .data = data.subspan(i, 1)}));
+  }
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);  // Resent transfer parameters once.
+
+  const auto last_chunk = EncodeChunk(
+      {.transfer_id = 7, .offset = kData.size() - 1, .data = data.last(1)});
+  ctx_.SendClientStream<64>(last_chunk);
+
+  // Resent transfer parameters since the packet is repeated
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+
+  ctx_.SendClientStream<64>(last_chunk);
+  ASSERT_EQ(ctx_.total_responses(), 4u);
+
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 7u);
+  EXPECT_EQ(chunk.offset, 0u);
+  EXPECT_TRUE(chunk.pending_bytes.has_value());
+
+  // Resumes normal operation when correct offset is sent.
+  ctx_.SendClientStream<64>(EncodeChunk(
+      {.transfer_id = 7, .offset = 0, .data = kData, .status = OkStatus()}));
+
+  EXPECT_TRUE(handler_.finalize_write_called);
+  EXPECT_EQ(handler_.finalize_write_status, OkStatus());
+}
+
 TEST_F(WriteTransfer, IgnoresNonPendingTransfers) {
   ctx_.SendClientStream(EncodeChunk({.transfer_id = 7, .offset = 3}));
   ctx_.SendClientStream(EncodeChunk(

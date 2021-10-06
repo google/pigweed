@@ -29,7 +29,11 @@ struct Chunk;
 class ServerContext : public Context {
  public:
   constexpr ServerContext()
-      : Context(), type_(kRead), state_(kData), handler_(nullptr) {}
+      : Context(),
+        type_(kRead),
+        state_(kData),
+        handler_(nullptr),
+        last_client_offset_(0) {}
 
   constexpr bool active() const { return handler_ != nullptr; }
 
@@ -94,6 +98,11 @@ class ServerContext : public Context {
     kRecovery,
   } state_;
   Handler* handler_;
+
+  // Track the last offset sent so that client-side retries can be detected.
+  // TODO(hepler): Refactor to split send and receive transfers. This field is
+  //     only needed when receiving.
+  size_t last_client_offset_;
 };
 
 // A fixed-size pool of allocatable transfer contexts.

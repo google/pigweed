@@ -184,11 +184,20 @@ void ServerContext::HandleWriteChunk(ClientConnection& client,
       break;
     case kRecovery:
       if (chunk.offset != offset()) {
-        PW_LOG_DEBUG("Transfer %u waiting for offset %u, ignoring %u",
-                     static_cast<unsigned>(transfer_id()),
-                     static_cast<unsigned>(offset()),
-                     static_cast<unsigned>(chunk.offset));
-        return;
+        if (last_client_offset_ == chunk.offset) {
+          PW_LOG_DEBUG(
+              "Transfer %u received repeated offset %u; retry detected, "
+              "resending write transfer parameters",
+              static_cast<unsigned>(transfer_id()),
+              static_cast<unsigned>(chunk.offset));
+          SendWriteTransferParameters(client);
+        } else {
+          PW_LOG_DEBUG("Transfer %u waiting for offset %u, ignoring %u",
+                       static_cast<unsigned>(transfer_id()),
+                       static_cast<unsigned>(offset()),
+                       static_cast<unsigned>(chunk.offset));
+        }
+        break;
       }
 
       PW_LOG_DEBUG("Transfer %u received expected offset %u, resuming transfer",
@@ -199,6 +208,8 @@ void ServerContext::HandleWriteChunk(ClientConnection& client,
       ProcessWriteDataChunk(client, chunk);
       break;
   }
+  // Update the last offset seen from the client so retries can be detected.
+  last_client_offset_ = chunk.offset;
 }
 
 void ServerContext::ProcessWriteDataChunk(ClientConnection& client,
