@@ -73,13 +73,13 @@ def main() -> None:
 
 
 def _setup_handler(handler: logging.Handler, formatter: logging.Formatter,
-                   level: int, logger: logging.Logger) -> None:
+                   level: Union[str, int], logger: logging.Logger) -> None:
     handler.setLevel(level)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
 
-def install(level: int = logging.INFO,
+def install(level: Union[str, int] = logging.INFO,
             use_color: bool = None,
             hide_timestamp: bool = False,
             log_file: Union[str, Path] = None,
