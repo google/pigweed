@@ -11,22 +11,73 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-exports_files(
-    ["rollup.config.js"],
-    visibility = ["//:__subpackages__"],
+
+load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
+load("@npm//@bazel/concatjs:index.bzl", "karma_web_test")
+load("@npm//@bazel/esbuild:index.bzl", "esbuild")
+load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_project")
+load("@npm//http-server:index.bzl", "http_server")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_project(
+    name = "lib",
+    srcs = [
+        "index.ts",
+        "src/frontend/app.tsx",
+        "src/frontend/index.tsx",
+        "src/transport/device_transport.ts",
+        "src/transport/serial_mock.ts",
+        "src/transport/web_serial_transport.ts",
+        "types/serial.d.ts",
+    ],
+    declaration = True,
+    source_map = True,
+    deps = ["@npm//:node_modules"],  # can't use fine-grained deps
 )
 
-alias(
-    name = "devserver",
-    actual = "//pw_web_ui/src/frontend:devserver",
+js_library(
+    name = "pw_web_ui",
+    package_name = "@pigweed/pw_web_ui",
+    srcs = ["package.json"],
+    deps = [":lib"],
 )
 
-alias(
-    name = "prodserver",
-    actual = "//pw_web_ui/src/frontend:prodserver",
+ts_library(
+    name = "web_ui_test_lib",
+    srcs = [
+        "src/transport/web_serial_transport_test.ts",
+    ],
+    deps = [
+        ":lib",
+        "@npm//rxjs",
+    ],
 )
 
-alias(
+esbuild(
+    name = "web_ui_test_bundle",
+    entry_point = "src/transport/web_serial_transport_test.ts",
+    deps = [":web_ui_test_lib"],
+)
+
+esbuild(
     name = "app_bundle",
-    actual = "//pw_web_ui/src/frontend:app_bundle",
+    entry_point = "src/frontend/index.tsx",
+    deps = [":lib"],
+)
+
+karma_web_test(
+    name = "web_ui_test",
+    srcs = [
+        ":web_ui_test_bundle",
+    ],
+)
+
+http_server(
+    name = "devserver",
+    args = ["pw_web_ui/"],
+    data = [
+        "index.html",
+        ":app_bundle",
+    ],
 )
