@@ -13,6 +13,18 @@ Toolchains
 ``pw_toolchain`` provides GN toolchains that may be used to build Pigweed. The
 following toolchains are defined:
 
+ - pw_toolchain_arm_clang.cortex_m0plus_debug
+ - pw_toolchain_arm_clang.cortex_m0plus_speed_optimized
+ - pw_toolchain_arm_clang.cortex_m0plus_size_optimized
+ - pw_toolchain_arm_clang.cortex_m3_debug
+ - pw_toolchain_arm_clang.cortex_m3_speed_optimized
+ - pw_toolchain_arm_clang.cortex_m3_size_optimized
+ - pw_toolchain_arm_clang.cortex_m4_debug
+ - pw_toolchain_arm_clang.cortex_m4_speed_optimized
+ - pw_toolchain_arm_clang.cortex_m4_size_optimized
+ - pw_toolchain_arm_clang.cortex_m4f_debug
+ - pw_toolchain_arm_clang.cortex_m4f_speed_optimized
+ - pw_toolchain_arm_clang.cortex_m4f_size_optimized
  - pw_toolchain_arm_gcc.cortex_m0plus_debug
  - pw_toolchain_arm_gcc.cortex_m0plus_speed_optimized
  - pw_toolchain_arm_gcc.cortex_m0plus_size_optimized
