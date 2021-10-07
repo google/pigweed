@@ -116,6 +116,18 @@ pw_cc_library(
     ],
 )
 
+proto_library(
+    name = "tokenizer_proto",
+    srcs = [
+        "options.proto",
+    ],
+    import_prefix = "pw_tokenizer/proto",
+    strip_import_prefix = "//pw_tokenizer",
+    deps = [
+        "@com_google_protobuf//:descriptor_proto",
+    ],
+)
+
 # Executable for generating test data for the C++ and Python detokenizers. This
 # target should only be built for the host.
 pw_cc_binary(

@@ -68,6 +68,9 @@ proto_library(
     srcs = [
         "log.proto",
     ],
+    import_prefix = "pw_log/proto",
+    strip_import_prefix = "//pw_log",
+    deps = ["//pw_tokenizer:tokenizer_proto"],
 )
 
 pw_proto_library(
