@@ -36,6 +36,7 @@ def _create_log_view():
     log_pane = MagicMock()
     application = MagicMock()
     application.prefs = ConsolePrefs()
+    application.prefs.reset_config()
     log_view = LogView(log_pane, application)
     return log_view, log_pane
 

@@ -530,6 +530,10 @@ class ConsoleApp:
         self.window_manager.add_pane(log_pane)
         return log_pane
 
+    def load_clean_config(self, config_file: Path) -> None:
+        self.prefs.reset_config()
+        self.prefs.load_config(config_file)
+
     def apply_window_config(self) -> None:
         self.window_manager.apply_config(self.prefs)
 

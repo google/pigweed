@@ -38,7 +38,16 @@ import logging
 from pathlib import Path
 import sys
 from types import ModuleType
-from typing import Any, Collection, Iterable, Iterator, BinaryIO, List, Union
+from typing import (
+    Any,
+    BinaryIO,
+    Collection,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Union,
+)
 import socket
 
 import serial  # type: ignore
@@ -99,6 +108,9 @@ def _parse_args():
                         nargs="+",
                         action=LoadTokenDatabases,
                         help="Path to tokenizer database csv file(s).")
+    parser.add_argument('--config-file',
+                        type=Path,
+                        help='Path to a pw_console yaml config file.')
     parser.add_argument('--proto-globs',
                         nargs='+',
                         help='glob pattern for .proto files')
@@ -112,7 +124,8 @@ def _expand_globs(globs: Iterable[str]) -> Iterator[Path]:
 
 
 def _start_ipython_terminal(client: HdlcRpcClient,
-                            serial_debug: bool = False) -> None:
+                            serial_debug: bool = False,
+                            config_file_path: Optional[Path] = None) -> None:
     """Starts an interactive IPython terminal with preset variables."""
     local_variables = dict(
         client=client,
@@ -156,6 +169,7 @@ def _start_ipython_terminal(client: HdlcRpcClient,
         loggers=log_windows,
         repl_startup_message=welcome_message,
         help_text=__doc__,
+        config_file_path=config_file_path,
     )
     interactive_console.hide_windows('Host Logs')
     interactive_console.add_sentence_completer(completions)
@@ -197,7 +211,8 @@ def console(device: str,
             socket_addr: str,
             logfile: str,
             output: Any,
-            serial_debug: bool = False) -> int:
+            serial_debug: bool = False,
+            config_file: Optional[Path] = None) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
     if output is sys.stdout:
@@ -260,7 +275,8 @@ def console(device: str,
                       default_channels(write),
                       lambda data: detokenize_and_write_to_output(
                           data, output, detokenizer),
-                      client_impl=callback_client_impl), serial_debug)
+                      client_impl=callback_client_impl), serial_debug,
+        config_file)
     return 0
 
 

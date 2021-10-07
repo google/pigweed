@@ -16,6 +16,7 @@
 import argparse
 import inspect
 import logging
+from pathlib import Path
 import sys
 from typing import List
 
@@ -49,7 +50,9 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument('--test-mode',
                         action='store_true',
                         help='Enable fake log messages for testing purposes.')
-
+    parser.add_argument('--config-file',
+                        type=Path,
+                        help='Path to a pw_console yaml config file.')
     parser.add_argument('--console-debug-log-file',
                         help='Log file to send console debug messages to.')
 
@@ -111,6 +114,7 @@ def main() -> int:
         test_mode=args.test_mode,
         help_text=help_text,
         app_title=app_title,
+        config_file_path=args.config_file,
     )
     console.embed()
 

@@ -501,6 +501,12 @@ YAML file. By default these files will be loaded one after the other:
 Each file follows the same format with settings in ``$HOME`` overriding ones in
 ``$PW_PROJECT_ROOT``.
 
+It's also possible to specify a config file via a shell environment variable.
+
+::
+
+   export PW_CONSOLE_CONFIG_FILE=/home/.config/pw_console/config.yaml
+
 Example Config
 ~~~~~~~~~~~~~~
 

@@ -73,6 +73,7 @@ class TestTableView(unittest.TestCase):
         # Show large diffs
         self.maxDiff = None  # pylint: disable=invalid-name
         self.prefs = ConsolePrefs(project_file=False, user_file=False)
+        self.prefs.reset_config()
 
     @parameterized.expand([
         (
