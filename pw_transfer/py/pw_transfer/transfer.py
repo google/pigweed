@@ -450,7 +450,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         """Initializes a Manager on top of a TransferService."""
         self._service: Any = rpc_transfer_service
         self._default_response_timeout_s = default_response_timeout_s
-        self._max_retries = max_retries
+        self.max_retries = max_retries
 
         # Ongoing transfers in the service by ID.
         self._read_transfers: _TransferDict = {}
@@ -498,7 +498,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                  self._send_read_chunk,
                                  self._end_read_transfer,
                                  self._default_response_timeout_s,
-                                 self._max_retries,
+                                 self.max_retries,
                                  progress_callback=progress_callback)
         self._start_read_transfer(transfer)
 
@@ -537,7 +537,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                   self._send_write_chunk,
                                   self._end_write_transfer,
                                   self._default_response_timeout_s,
-                                  self._max_retries,
+                                  self.max_retries,
                                   progress_callback=progress_callback)
         self._start_write_transfer(transfer)
 

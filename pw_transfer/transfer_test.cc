@@ -722,6 +722,56 @@ TEST_F(WriteTransfer, ResendParametersIfSentRepeatedChunkDuringRecovery) {
   EXPECT_EQ(handler_.finalize_write_status, OkStatus());
 }
 
+TEST_F(WriteTransfer, ResendsStatusIfClientRetriesAfterStatusChunk) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+
+  ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                         .offset = 0,
+                                         .data = std::span(kData),
+                                         .remaining_bytes = 0}));
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), OkStatus());
+
+  ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                         .offset = 0,
+                                         .data = std::span(kData),
+                                         .remaining_bytes = 0}));
+
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), OkStatus());
+}
+
+TEST_F(WriteTransfer, RejectsNonFinalChunksAfterCompleted) {
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 7}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+
+  ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
+                                         .offset = 0,
+                                         .data = std::span(kData),
+                                         .remaining_bytes = 0}));
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), OkStatus());
+
+  ctx_.SendClientStream<64>(  // Don't set remaining_bytes=0
+      EncodeChunk({.transfer_id = 7, .offset = 0, .data = std::span(kData)}));
+
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  ASSERT_TRUE(chunk.status.has_value());
+  EXPECT_EQ(chunk.status.value(), Status::FailedPrecondition());
+}
+
 TEST_F(WriteTransfer, IgnoresNonPendingTransfers) {
   ctx_.SendClientStream(EncodeChunk({.transfer_id = 7, .offset = 3}));
   ctx_.SendClientStream(EncodeChunk(

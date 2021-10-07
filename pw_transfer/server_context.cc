@@ -51,7 +51,8 @@ Status ServerContext::Finish(const Status status) {
   PW_DCHECK(active());
 
   Handler& handler = *handler_;
-  handler_ = nullptr;
+  state_ = kCompleted;
+  status_ = status;
 
   if (type_ == kRead) {
     handler.FinalizeRead(status);
@@ -179,6 +180,21 @@ Status ServerContext::SendNextReadChunk(ClientConnection& client) {
 void ServerContext::HandleWriteChunk(ClientConnection& client,
                                      const Chunk& chunk) {
   switch (state_) {
+    case kInactive:
+      PW_DCHECK("Never should handle chunk while in kInactive state");
+      return;
+    case kCompleted: {
+      // If the chunk is a repeat of the final chunk, resend the status chunk,
+      // which apparently was lost. Otherwise, send FAILED_PRECONDITION since
+      // this is for a non-pending transfer.
+      Status response = status_;
+      if (!chunk.IsFinalSendChunk()) {
+        response = Status::FailedPrecondition();
+        state_ = kInactive;  // Sender should only should retry with final chunk
+      }
+      client.SendStatusChunk(type_, transfer_id(), response);
+      return;
+    }
     case kData:
       ProcessWriteDataChunk(client, chunk);
       break;
@@ -252,7 +268,7 @@ void ServerContext::ProcessWriteDataChunk(ClientConnection& client,
 
   // When the client sets remaining_bytes to 0, it indicates completion of the
   // transfer. Acknowledge the completion through a status chunk and clean up.
-  if (chunk.remaining_bytes == 0) {
+  if (chunk.IsFinalSendChunk()) {
     FinishAndSendStatus(client, OkStatus());
     return;
   }
@@ -295,7 +311,7 @@ void ServerContext::SendWriteTransferParameters(ClientConnection& client) {
   };
 
   PW_LOG_DEBUG(
-      "Transfer %u sending updated transfer parameters: "
+      "Transfer %u sending transfer parameters: "
       "offset=%u, pending_bytes=%u, chunk_size=%u",
       static_cast<unsigned>(transfer_id()),
       static_cast<unsigned>(offset()),
@@ -336,37 +352,27 @@ void ServerContext::FinishAndSendStatus(ClientConnection& client,
   client.SendStatusChunk(type_, id, status);
 }
 
-Result<ServerContext*> ServerContextPool::GetOrStartTransfer(
-    const Chunk& chunk) {
+Result<ServerContext*> ServerContextPool::StartTransfer(uint32_t transfer_id) {
   ServerContext* new_transfer = nullptr;
 
   // Check if the ID belongs to an active transfer. If not, pick an inactive
   // slot to start a new transfer.
   for (ServerContext& transfer : transfers_) {
-    // Check if this transfer slot is available for a new transfer.
-    if (!transfer.active()) {
+    if (transfer.active()) {
+      // Check if restarting a currently pending transfer.
+      if (transfer.transfer_id() == transfer_id) {
+        PW_LOG_DEBUG(
+            "Received initial chunk for transfer %u which was already in "
+            "progress; aborting and restarting",
+            static_cast<unsigned>(transfer_id));
+        transfer.Finish(Status::Aborted());
+        new_transfer = &transfer;
+        break;
+      }
+    } else {
+      // Remember this but keep searching for an active transfer with this ID.
       new_transfer = &transfer;
-      continue;  // Keep searching in case a transfer with this ID is active.
     }
-
-    if (transfer.transfer_id() != chunk.transfer_id) {
-      continue;  // Chunk not for this transfer; keep searching.
-    }
-
-    // The chunk is for this transfer. If it is an initial chunk, abort the
-    // pending transfer and restart it.
-    if (chunk.IsInitialChunk()) {
-      PW_LOG_DEBUG(
-          "Received initial chunk for transfer %u which was already in "
-          "progress; aborting and restarting",
-          static_cast<unsigned>(chunk.transfer_id));
-      transfer.Finish(Status::Aborted());
-      new_transfer = &transfer;
-      break;
-    }
-
-    // The chunk is a noninitial chunk for an ongoing transfer.
-    return &transfer;
   }
 
   if (new_transfer == nullptr) {
@@ -375,21 +381,31 @@ Result<ServerContext*> ServerContextPool::GetOrStartTransfer(
 
   // Try to start the new transfer by checking if a handler for it exists.
   auto handler = std::find_if(handlers_.begin(), handlers_.end(), [&](auto& h) {
-    return h.id() == chunk.transfer_id;
+    return h.id() == transfer_id;
   });
 
   if (handler == handlers_.end()) {
     return Status::NotFound();
   }
 
-  if (!chunk.IsInitialChunk()) {
+  PW_TRY(new_transfer->Start(type_, *handler));
+  return new_transfer;
+}
+
+Result<ServerContext*> ServerContextPool::GetPendingTransfer(
+    uint32_t transfer_id) {
+  auto transfer =
+      std::find_if(transfers_.begin(), transfers_.end(), [=](const auto& t) {
+        return t.initialized() && t.transfer_id() == transfer_id;
+      });
+
+  if (transfer == transfers_.end()) {
     PW_LOG_DEBUG("Ignoring chunk for transfer %u, which is not pending",
-                 static_cast<unsigned>(chunk.transfer_id));
+                 static_cast<unsigned>(transfer_id));
     return Status::FailedPrecondition();
   }
 
-  PW_TRY(new_transfer->Start(type_, *handler));
-  return new_transfer;
+  return &(*transfer);
 }
 
 }  // namespace pw::transfer::internal

@@ -31,11 +31,15 @@ class ServerContext : public Context {
   constexpr ServerContext()
       : Context(),
         type_(kRead),
-        state_(kData),
+        state_(kInactive),
         handler_(nullptr),
         last_client_offset_(0) {}
 
-  constexpr bool active() const { return handler_ != nullptr; }
+  // True if the ServerContext has been used for a transfer (it has an ID).
+  constexpr bool initialized() const { return state_ != kInactive; }
+
+  // True if the transfer is active.
+  constexpr bool active() const { return state_ >= kData; }
 
   // Begins a new transfer with the specified type and handler. Calls into the
   // handler's Prepare method.
@@ -92,12 +96,24 @@ class ServerContext : public Context {
 
   TransferType type_;
   enum : uint8_t {
-    // Sending or receiving data.
+    // This ServerContext has never been used for a transfer. It is available
+    // for use for a transfer.
+    kInactive,
+    // A transfer completed and the final status chunk was sent. The
+    // ServerContext is available for use for a new transfer. The transfer uses
+    // this state to allow the client to retry its last chunk if the final
+    // status chunk from the service was dropped.
+    kCompleted,
+    // Sending or receiving data for an active transfer.
     kData,
-    // Recovering after one or more chunks was dropped.
+    // Recovering after one or more chunks was dropped in an active transfer.
     kRecovery,
   } state_;
-  Handler* handler_;
+
+  union {
+    Handler* handler_;  // Used when state_ is kData or kRecovery
+    Status status_;     // Used when state_ is kCompleted
+  };
 
   // Track the last offset sent so that client-side retries can be detected.
   // TODO(hepler): Refactor to split send and receive transfers. This field is
@@ -120,7 +136,9 @@ class ServerContextPool {
   //   NOT_FOUND - No handler exists for the specified transfer ID.
   //   RESOURCE_EXHAUSTED - Out of transfer context slots.
   //
-  Result<ServerContext*> GetOrStartTransfer(const Chunk& chunk);
+  Result<ServerContext*> StartTransfer(uint32_t transfer_id);
+
+  Result<ServerContext*> GetPendingTransfer(uint32_t transfer_id);
 
  private:
   // TODO(frolv): Initially, only one transfer at a time is supported. Once that

@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
 from queue import SimpleQueue
+import random
 import sys
 import threading
 import time
@@ -257,6 +258,10 @@ class _PacketFilter:
         self.packet_count = 0
         self._actions: Deque[_PacketFilter._Action] = collections.deque()
 
+    def reset(self) -> None:
+        self.packet_count = 0
+        self._actions.clear()
+
     def keep(self, count: int) -> None:
         """Keeps the next count packets."""
         self._actions.extend(_PacketFilter._KEEP for _ in range(count))
@@ -268,6 +273,10 @@ class _PacketFilter:
     def drop_every(self, every: int) -> None:
         """Drops every Nth packet forever."""
         self._actions.append(lambda count: (count % every != 0, True))
+
+    def randomly_drop(self, one_in: int, gen: random.Random) -> None:
+        """Drops packets randomly forever."""
+        self._actions.append(lambda _: (gen.randrange(one_in) != 0, True))
 
     def keep_packet(self, packet: bytes) -> bool:
         """Returns whether the provided packet should be kept or dropped."""
