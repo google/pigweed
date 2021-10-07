@@ -3,10 +3,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
-# inclusive-language: disable
-# TODO(pwbug/280) Change "whitelist" to "allowlist". (Blocked on pylint.)
-extension-pkg-whitelist=mypy
-# inclusive-language: enable
+extension-pkg-allowlist=mypy
 
 # Add files or directories to the blocklist. They should be base names, not
 # paths.
