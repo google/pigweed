@@ -108,6 +108,56 @@ a lambda or class that implements ``operator()`` for the container's value type.
     PW_LOG_INFO("This number is even: %d", even);
   }
 
+pw::containers::WrappedIterator
+===============================
+``pw::containers::WrappedIterator`` is a class that makes it easy to wrap an
+existing iterator type. It reduces boilerplate by providing ``operator++``,
+``operator--``, ``operator==``, ``operator!=``, and the standard iterator
+aliases (``difference_type``, ``value_type``, etc.). It does not provide the
+dereference operator; that must be supplied by a derived class.
+
+To use it, create a class that derives from ``WrappedIterator`` and define
+``operator*()`` and ``operator->()`` as appropriate. The new iterator might
+apply a transformation to or access a member of the values provided by the
+original iterator. The following example defines an iterator that multiplies the
+values in an array by 2.
+
+.. code-block:: cpp
+
+  // Divides values in a std::array by two.
+  class DoubleIterator
+      : public pw::containers::WrappedIterator<DoubleIterator, const int*, int> {
+   public:
+    constexpr DoubleIterator(const int* it) : WrappedIterator(it) {}
+
+    int operator*() const { return value() * 2; }
+
+    // Don't define operator-> since this iterator returns by value.
+  };
+
+  constexpr std::array<int, 6> kArray{0, 1, 2, 3, 4, 5};
+
+  void SomeFunction {
+    for (DoubleIterator it(kArray.begin()); it != DoubleIterator(kArray.end()); ++it) {
+      // The iterator yields 0, 2, 4, 6, 8, 10 instead of the original values.
+    }
+  };
+
+``WrappedIterator`` may be used in concert with ``FilteredView`` to create a
+view that iterates over a matching values in a container and applies a
+transformation to the values. For example, it could be used with
+``FilteredView`` to filter a list of packets and yield only one field from the
+packet.
+
+The combination of ``FilteredView`` and ``WrappedIterator`` provides some basic
+functional programming features similar to (though much more cumbersome than)
+`generator expressions <https://www.python.org/dev/peps/pep-0289/>`_ (or `filter
+<https://docs.python.org/3/library/functions.html#filter>`_/`map
+<https://docs.python.org/3/library/functions.html#map>`_) in Python or streams
+in Java 8. ``WrappedIterator`` and ``FilteredView`` require no memory
+allocation, which is helpful when memory is too constrained to process the items
+into a new container.
+
 Compatibility
 =============
 * C++17

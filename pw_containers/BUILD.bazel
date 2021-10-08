@@ -66,6 +66,12 @@ pw_cc_library(
     includes = ["public"],
 )
 
+pw_cc_library(
+    name = "wrapped_iterator",
+    hdrs = ["public/pw_containers/wrapped_iterator.h"],
+    includes = ["public"],
+)
+
 pw_cc_test(
     name = "filtered_view_test",
     srcs = ["filtered_view_test.cc"],
@@ -95,6 +101,12 @@ pw_cc_test(
         ":pw_containers",
         "//pw_unit_test",
     ],
+)
+
+pw_cc_test(
+    name = "wrapped_iterator_test",
+    srcs = ["wrapped_iterator_test.cc"],
+    deps = [":wrapped_iterator"],
 )
 
 pw_cc_test(

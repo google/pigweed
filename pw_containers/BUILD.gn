@@ -46,6 +46,11 @@ pw_source_set("vector") {
   public = [ "public/pw_containers/vector.h" ]
 }
 
+pw_source_set("wrapped_iterator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/wrapped_iterator.h" ]
+}
+
 pw_source_set("intrusive_list") {
   public_configs = [ ":public_include_path" ]
   public = [
@@ -62,6 +67,7 @@ pw_test_group("tests") {
     ":flat_map_test",
     ":intrusive_list_test",
     ":vector_test",
+    ":wrapped_iterator_test",
   ]
 }
 
@@ -81,6 +87,11 @@ pw_test("flat_map_test") {
 pw_test("vector_test") {
   sources = [ "vector_test.cc" ]
   deps = [ ":vector" ]
+}
+
+pw_test("wrapped_iterator_test") {
+  sources = [ "wrapped_iterator_test.cc" ]
+  deps = [ ":wrapped_iterator" ]
 }
 
 pw_test("intrusive_list_test") {
