@@ -522,10 +522,17 @@ Status BundledUpdateService::Reset(
 void BundledUpdateService::NotifyTransferSucceeded() {
   std::lock_guard lock(mutex_);
 
-  PW_DCHECK_INT_EQ(
-      status_.state,
-      pw_software_update_BundledUpdateState_Enum_TRANSFERRING,
-      "Got transfer succeeded notification when not in TRANSFERRING state");
+  if (status_.state !=
+      pw_software_update_BundledUpdateState_Enum_TRANSFERRING) {
+    // This can happen if the update gets Abort()'d during the transfer and
+    // the transfer completes successfuly.
+    PW_LOG_WARN(
+        "Got transfer succeeded notification when not in TRANSFERRING state. "
+        "State: %d",
+        static_cast<int>(status_.state));
+    return;
+  }
+
   PW_DCHECK(status_.has_transfer_id);
   backend_.DisableBundleTransferHandler();
   status_.has_transfer_id = false;

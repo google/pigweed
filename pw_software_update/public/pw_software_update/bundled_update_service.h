@@ -73,10 +73,10 @@ class BundledUpdateService
 
   // Notify the service that the bundle transfer has completed. The service has
   // no way to know when the bundle transfer completes, so users must invoke
-  // this method in their transfer completion handler. After this call, the
-  // service will be in TRANSFERRED state.
+  // this method in their transfer completion handler.
   //
-  // Precondition: The service must be in TRANSFERRING state.
+  // After this call, the service will be in TRANSFERRED state if and only if
+  // it was in the TRANSFERRING state.
   void NotifyTransferSucceeded();
 
   // TODO:
