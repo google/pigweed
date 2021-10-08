@@ -74,15 +74,10 @@ class BundledUpdateService
   // Notify the service that the bundle transfer has completed. The service has
   // no way to know when the bundle transfer completes, so users must invoke
   // this method in their transfer completion handler. After this call, the
-  // service will be in state:
+  // service will be in TRANSFERRED state.
   //
-  //   - TRANSFERRED -- if status.ok()
-  //   - FINISHED    -- otherwise, with an TRANSFER_ERROR result
-  //
-  // Returns:
-  // OK if the state is TRANSFERRED
-  // FAILED_PRECONDITION otherwise
-  Status NotifyTransferFinished(Status status);
+  // Precondition: The service must be in TRANSFERRING state.
+  void NotifyTransferSucceeded();
 
   // TODO:
   // VerifyProgress - to update % complete.

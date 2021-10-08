@@ -42,13 +42,15 @@
     if (status_.state !=                                                   \
         pw_software_update_BundledUpdateState_Enum_FINISHED) {             \
       PW_CHECK_OK(backend_.BeforeUpdateAbort());                           \
-      backend_.DisableBundleTransferHandler();                             \
+      if (status_.has_transfer_id) {                                       \
+        backend_.DisableBundleTransferHandler();                           \
+      }                                                                    \
+      status_.has_transfer_id = false;                                     \
       if (bundle_open_) {                                                  \
         /* TODO: Revisit this check; may be able to recover */             \
         PW_CHECK_OK(bundle_.Close());                                      \
         bundle_open_ = false;                                              \
       }                                                                    \
-      status_.has_transfer_id = false;                                     \
       status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED; \
       status_.result = res;                                                \
       status_.has_result = true;                                           \
@@ -522,26 +524,17 @@ Status BundledUpdateService::Reset(
   return OkStatus();
 }
 
-Status BundledUpdateService::NotifyTransferFinished(Status status) {
+void BundledUpdateService::NotifyTransferSucceeded() {
   std::lock_guard lock(mutex_);
 
-  if (status_.state !=
-      pw_software_update_BundledUpdateState_Enum_TRANSFERRING) {
-    PW_LOG_ERROR(
-        "Got transfer finished notification when not in TRANSFERRING "
-        "state; ignoring. State: %d",
-        static_cast<int>(status_.state));
-    return Status::FailedPrecondition();
-  }
-
-  if (!status.ok()) {
-    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_TRANSFER_FAILED,
-              "Transfer failure; notified status: %d",
-              static_cast<int>(status.code()));
-    return OkStatus();
-  }
+  PW_DCHECK_INT_EQ(
+      status_.state,
+      pw_software_update_BundledUpdateState_Enum_TRANSFERRING,
+      "Got transfer succeeded notification when not in TRANSFERRING state");
+  PW_DCHECK(status_.has_transfer_id);
+  backend_.DisableBundleTransferHandler();
+  status_.has_transfer_id = false;
   status_.state = pw_software_update_BundledUpdateState_Enum_TRANSFERRED;
-  return OkStatus();
 }
 
 }  // namespace pw::software_update
