@@ -29,6 +29,11 @@ namespace pw::tls_client {
 // Session provides APIs for performing TLS communication.
 class Session : public stream::NonSeekableReaderWriter {
  public:
+  Session() = delete;
+
+  Session(const Session&) = delete;
+  Session& operator=(const Session&) = delete;
+
   // Resources allocated during Session::Create() will be released in the
   // destructor. For example, backend may choose to allocate Session from a pool
   // during Session::Create() and returns it in the destructor.
@@ -65,10 +70,6 @@ class Session : public stream::NonSeekableReaderWriter {
   static Result<Session*> Create(const SessionOptions& option);
 
  private:
-  Session() = delete;
-  Session(const Session&) = delete;
-  Session& operator=(const Session&) = delete;
-
   // A Session instance should only be created from Create().
   Session(const SessionOptions& option);
 

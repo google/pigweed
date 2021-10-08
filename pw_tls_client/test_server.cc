@@ -46,8 +46,8 @@ Result<X509*> ParseDerCertificate(ConstByteSpan cert) {
     return Status::Internal();
   }
 
-  X509* x509 = d2i_X509_bio(bio, NULL);
-  if (x509 == NULL) {
+  X509* x509 = d2i_X509_bio(bio, nullptr);
+  if (x509 == nullptr) {
     PW_LOG_DEBUG("Failed to parse x509");
     BIO_free(bio);
     return Status::Internal();
@@ -171,7 +171,7 @@ Status InMemoryTestServer::LoadPrivateKey(ConstByteSpan key) {
   }
 
   // Requires PEM format.
-  EVP_PKEY* pkey = d2i_PrivateKey_bio(bio, NULL);
+  EVP_PKEY* pkey = d2i_PrivateKey_bio(bio, nullptr);
   int ret = SSL_CTX_use_PrivateKey(ctx_.get(), pkey);
   if (ret != 1) {
     BIO_free(bio);

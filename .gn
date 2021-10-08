@@ -17,4 +17,13 @@ buildconfig = "//BUILDCONFIG.gn"
 default_args = {
   pw_build_PIP_CONSTRAINTS =
       [ "//pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list" ]
+
+  # Exclude third-party headers from static analysis.
+  pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS = [ "**/boringssl/src/**/*" ]
+
+  pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = [
+    "mbedtls/include",
+    "boringssl/src/include",
+    "boringssl",
+  ]
 }

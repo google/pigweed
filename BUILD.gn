@@ -48,6 +48,7 @@ group("default") {
     ":docs",
     ":host",
     ":integration_tests",
+    ":static_analysis",
     ":stm32f429i",
     "$dir_pw_env_setup:python.lint",
     "$dir_pw_env_setup:python.tests",
@@ -126,8 +127,8 @@ _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
 # Make sure to invoke gn clean out when any relevant .clang-tidy
 # file is updated.
 group("static_analysis") {
-  _toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
-  deps = [ ":pigweed_default(${_toolchain_prefix}debug.static_analysis)" ]
+  _toolchain = "$dir_pigweed/targets/host:host_clang_debug"
+  deps = [ ":pigweed_default($_toolchain.static_analysis)" ]
 }
 
 group("docs") {

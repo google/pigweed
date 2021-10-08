@@ -156,7 +156,7 @@ Status SessionImplementation::Setup() {
 
   // Set up transport.
   // The API does not fail.
-  mbedtls_ssl_set_bio(&ssl_ctx_, this, MbedTlsWrite, MbedTlsRead, NULL);
+  mbedtls_ssl_set_bio(&ssl_ctx_, this, MbedTlsWrite, MbedTlsRead, nullptr);
 
   ret = mbedtls_ssl_set_hostname(&ssl_ctx_,
                                  session_options_.server_name().data());

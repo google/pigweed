@@ -21,7 +21,6 @@ import logging
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 from typing import Sequence, IO, Tuple, Optional, Callable, List
@@ -465,60 +464,6 @@ def edit_compile_commands(in_path: Path, out_path: Path,
         json.dump(compile_commands, out_file, indent=2)
 
 
-@filter_paths(endswith=('.c', '.cc', '.cpp'), exclude=(r'^third_party/', ))
-def clang_tidy(ctx: PresubmitContext):
-    """Run clang-tidy on source c and c++ files.
-
-    Header files are indirectly analyzed when included. Source files will
-    only be analyzed if built indirectly by the host_clang_debug target.
-    """
-    c_cpp_system_include_paths = ' '.join(_clang_system_include_paths('c++'))
-    tested_files = set()
-
-    # The compile commands are modified to explicitely specify the system
-    # include paths, as clang-tidy is sometimes unable to find some standard
-    # headers.
-    # While the correct paths would be those produced by the invocation of the
-    # command (which change based on toolchain and options flags), we are using
-    # the default clang++ system paths instead to save on execution time.
-    # This should not cause any issue with host_clang_debug while clang-analyzer
-    # checks are disabled,.
-    def _append_system_include_paths(file_path: str, _directory: str,
-                                     command: str) -> str:
-        tested_files.add(ctx.output_dir.joinpath(file_path).resolve())
-        if '-nostdinc' in command:  # catches -nostdinc and -nostdinc++
-            return command
-        return command + ' ' + c_cpp_system_include_paths
-
-    _LOG.info('Generating compile commands')
-    compile_commands = ctx.output_dir.joinpath('compile_commands.json')
-    compile_commands_gn = ctx.output_dir.joinpath('compile_commands.gn.json')
-    compile_commands_clang_tidy = ctx.output_dir.joinpath(
-        'compile_commands.clang-tidy.json')
-
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 export_compile_commands='host_clang_debug')
-    shutil.copyfile(compile_commands, compile_commands_gn)
-    edit_compile_commands(compile_commands_gn, compile_commands_clang_tidy,
-                          _append_system_include_paths)
-    shutil.copyfile(compile_commands_clang_tidy, compile_commands)
-
-    # Note: this step is reauired in case the built files depend on
-    # generated dependencies.
-    _LOG.info('Building host_clang_debug')
-    build.ninja(ctx.output_dir, 'host_clang_debug')
-
-    _LOG.info('Running clang-tidy')
-    untested_files = frozenset([*ctx.paths]) - tested_files
-    if len(untested_files) > 0:
-        _LOG.warning('The following %d files will not be tested:\n  %s',
-                     len(untested_files),
-                     '\n  '.join(str(f) for f in untested_files))
-    call('run-clang-tidy', f'-p={ctx.output_dir}', '-export-fixes',
-         ctx.output_dir.joinpath('fixes.yaml'), *ctx.paths)
-
-
 # The first line must be regex because of the '20\d\d' date
 COPYRIGHT_FIRST_LINE = r'Copyright 20\d\d The Pigweed Authors'
 COPYRIGHT_COMMENTS = r'(#|//| \*|REM|::)'
@@ -789,37 +734,11 @@ def commit_message_format(_: PresubmitContext):
         raise PresubmitFailure
 
 
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.py'))
 def static_analysis(ctx: PresubmitContext):
-    """Check that files pass static analyzer checks."""
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 export_compile_commands='host_clang_debug')
-    build.ninja(ctx.output_dir, 'host_clang_debug')
-    compile_commands = ctx.output_dir.joinpath('compile_commands.json')
-    analyzer_output = ctx.output_dir.joinpath('analyze-build-output')
-
-    if analyzer_output.exists():
-        shutil.rmtree(analyzer_output)
-
-    call('analyze-build',
-         '--cdb',
-         compile_commands,
-         '--exclude',
-         'third_party',
-         '--output',
-         analyzer_output,
-         cwd=ctx.root,
-         env=build.env_with_clang_vars())
-
-    # Search for reports under output directory.
-    reports = list(analyzer_output.glob('*/report*'))
-    if len(reports) != 0:
-        archive = shutil.make_archive(str(analyzer_output), 'zip',
-                                      reports[0].parent)
-        _LOG.error('Static analyzer found errors: %s', archive)
-        _LOG.error('To view report, open: %s',
-                   Path(reports[0]).parent.joinpath('index.html'))
-        raise PresubmitFailure
+    """Runs all available static analysis tools."""
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'python.lint', 'static_analysis')
 
 
 def renode_check(ctx: PresubmitContext):
@@ -849,12 +768,10 @@ OTHER_CHECKS = (
     gn_clang_build,
     gn_gcc_build,
     renode_check,
-    static_analysis,
     stm32f429i,
 )
 
 _LINTFORMAT = (
-    clang_tidy,
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(),
@@ -867,7 +784,7 @@ _LINTFORMAT = (
 
 LINTFORMAT = (
     _LINTFORMAT,
-    python_checks.gn_python_lint,
+    static_analysis,
     pw_presubmit.python_checks.check_python_versions,
 )
 

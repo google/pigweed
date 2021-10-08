@@ -28,6 +28,9 @@ namespace internal {
 // Non-templated nanopb base class providing protobuf encoding and decoding.
 class BaseNanopbClientCall : public BaseClientCall {
  public:
+  BaseNanopbClientCall(const BaseNanopbClientCall&) = delete;
+  BaseNanopbClientCall& operator=(const BaseNanopbClientCall&) = delete;
+
   Status SendRequest(const void* request_struct);
 
  protected:
@@ -53,9 +56,6 @@ class BaseNanopbClientCall : public BaseClientCall {
 
   constexpr BaseNanopbClientCall()
       : BaseClientCall(), serde_(nullptr, nullptr) {}
-
-  BaseNanopbClientCall(const BaseNanopbClientCall&) = delete;
-  BaseNanopbClientCall& operator=(const BaseNanopbClientCall&) = delete;
 
   BaseNanopbClientCall(BaseNanopbClientCall&&) = default;
   BaseNanopbClientCall& operator=(BaseNanopbClientCall&&) = default;
