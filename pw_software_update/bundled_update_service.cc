@@ -137,11 +137,8 @@ void BundledUpdateService::DoVerify() {
     }
 
     // Ensure we're in the right state.
-    // TODO: Remove the transferring permitted state here ASAP.
-    if ((status_.state !=
-         pw_software_update_BundledUpdateState_Enum_TRANSFERRING) &&
-        (status_.state !=
-         pw_software_update_BundledUpdateState_Enum_TRANSFERRED)) {
+    if (status_.state !=
+        pw_software_update_BundledUpdateState_Enum_TRANSFERRED) {
       SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
                 "DoVerify() must be called from TRANSFERRED state. State: %d",
                 static_cast<int>(status_.state));
@@ -257,8 +254,6 @@ Status BundledUpdateService::Apply(
 
   if ((status_.state !=
        pw_software_update_BundledUpdateState_Enum_TRANSFERRED) &&
-      (status_.state !=
-       pw_software_update_BundledUpdateState_Enum_TRANSFERRING) &&
       (status_.state != pw_software_update_BundledUpdateState_Enum_VERIFIED)) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "Apply() must be called from TRANSFERRED or VERIFIED state. "
