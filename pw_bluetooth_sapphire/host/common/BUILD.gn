@@ -62,7 +62,7 @@ source_set("common") {
     "//src/devices/lib/driver",
     "//src/lib/ddk",
     "//src/lib/fxl",
-    "//zircon/public/lib/async-cpp",
+    "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/zx",

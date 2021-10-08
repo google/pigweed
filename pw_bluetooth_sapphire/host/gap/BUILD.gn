@@ -151,7 +151,7 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
-    "//zircon/public/lib/async-cpp",
+    "//zircon/system/ulib/async:async-cpp",
   ]
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings

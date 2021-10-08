@@ -78,7 +78,7 @@ source_set("fake_controller") {
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/lib/files",
     "//src/lib/fxl",
-    "//zircon/public/lib/async-cpp",
+    "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/zx",
