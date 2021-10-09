@@ -13,4 +13,4 @@
 # the License.
 """Client for the pw_transfer service, which transmits data over pw_rpc."""
 
-from pw_transfer.transfer import Error, Manager, ProgressStats
+from pw_transfer.transfer import Error, Manager, ProgressCallback, ProgressStats
