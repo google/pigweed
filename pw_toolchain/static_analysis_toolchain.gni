@@ -19,13 +19,24 @@ import("$dir_pw_toolchain/universal_tools.gni")
 declare_args() {
   # Glob-style patterns matching the paths of the source files to be excluded
   # from the analysis. clang-tidy provides no alternative option.
-  # Example:
   #
-  #   gn gen out \
-  #     --args='pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE=["third_party/.*"]'
+  # For example, the following disables clang-tidy on all source files in the
+  # third_party directory:
   #
-  # disables clang-tidy on all files in the third_party directory.
-  pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE = []
+  #   pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS = ["third_party/**/*"]
+  #
+  pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS = []
+
+  # Disable clang-tidy for specific include paths. In the clang-tidy command,
+  # include paths that end with one of these are switched from -I to -isystem,
+  # which causes clang-tidy to ignore them. Unfortunately, clang-tidy provides
+  # no other way to filter header files.
+  #
+  # For example, the following ignores header files in "mbedtls/include":
+  #
+  #   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = ["mbedtls/include"]
+  #
+  pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = []
 }
 
 # Creates a toolchain target for static analysis.
@@ -46,9 +57,13 @@ template("pw_static_analysis_toolchain") {
   _clang_tidy_py = "${python_path} ${_clang_tidy_py_path}"
   _source_root = rebase_path("//", root_build_dir)
   _source_exclude = ""
-  foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE) {
+  foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS) {
     _source_exclude = _source_exclude + " --source-exclude '${pattern}'"
   }
+
+  _skip_include_path =
+      "--skip-include-path " +
+      string_join(" ", pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS)
 
   toolchain(target_name) {
     # Uncomment this line to see which toolchains generate other toolchains.
@@ -74,6 +89,7 @@ template("pw_static_analysis_toolchain") {
                             [
                               _clang_tidy_py,
                               _source_exclude,
+                              _skip_include_path,
                               "--source-file {{source}}",
                               "--source-root '${_source_root}'",
                               "--export-fixes {{output}}.yaml",
@@ -100,6 +116,7 @@ template("pw_static_analysis_toolchain") {
                             [
                               _clang_tidy_py,
                               _source_exclude,
+                              _skip_include_path,
                               "--source-file {{source}}",
                               "--source-root '${_source_root}'",
                               "--export-fixes {{output}}.yaml",

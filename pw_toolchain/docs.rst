@@ -87,9 +87,22 @@ Additionally, ``generate_toolchain`` implements a boolean flag
 toolchain ``${target_name}.static_analysis`` using
 ``pw_generate_static_analysis_toolchain`` and the toolchain options.
 
-The build argument ``pw_toolchain_STATIC_ANALYSIS_SOURCE_EXCLUDE`` may be
-used to exclude source files from the analysis.
+Excluding files from checks
+---------------------------
+The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOB`` is used
+used to exclude source files from the analysis. The list must contain
+POSIX-style globs for individual files, rather than directories. For example,
+provide ``"the_path/**/*"`` to exclude all files in all directories under
+``the_path``.
 
+The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS`` is used
+used to exclude header files from the analysis. This argument must be a list of
+POSIX-style path suffixes for include paths. For example, passing
+``the_path/include`` excludes all header files that are accessed from include
+paths ending in ``the_path/include``.
+
+Provided toolchains
+-------------------
 ``pw_toolchain`` provides static analysis GN toolchains that may be used to
 test host targets:
 

@@ -25,9 +25,10 @@ clang-tidy:
 import argparse
 import logging
 from pathlib import Path
+import shlex
 import subprocess
 import sys
-from typing import List, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 _LOG = logging.getLogger(__name__)
 
@@ -73,6 +74,14 @@ def _parse_args() -> argparse.Namespace:
                               ' source files to be excluded from the'
                               ' analysis.'))
 
+    parser.add_argument(
+        '--skip-include-path',
+        default=[],
+        nargs='*',
+        help=('Exclude include paths ending in these paths from clang-tidy. '
+              'These paths are switched from -I to -isystem so clang-tidy '
+              'ignores them.'))
+
     # Add a silent placeholder arg for everything that was left over.
     parser.add_argument('extra_args',
                         nargs=argparse.REMAINDER,
@@ -87,8 +96,23 @@ def _parse_args() -> argparse.Namespace:
     return parsed_args
 
 
+def _filter_include_paths(args: Iterable[str],
+                          skip_include_paths: Iterable[str]) -> Iterable[str]:
+    filters = [f.rstrip('/') for f in skip_include_paths]
+
+    for arg in args:
+        if arg.startswith('-I'):
+            path = Path(arg[2:]).as_posix()
+            if any(path.endswith(f) for f in filters):
+                yield '-isystem' + arg[2:]
+                continue
+
+        yield arg
+
+
 def run_clang_tidy(clang_tidy: str, verbose: bool, source_file: Path,
-                   export_fixes: Optional[Path], extra_args: List[str]) -> int:
+                   export_fixes: Optional[Path], skip_include_path: List[str],
+                   extra_args: List[str]) -> int:
     """Executes clang_tidy via subprocess. Returns true if no failures."""
     command: List[Union[str, Path]] = [clang_tidy, source_file, '--use-color']
 
@@ -101,7 +125,7 @@ def run_clang_tidy(clang_tidy: str, verbose: bool, source_file: Path,
     # Append extra compilation flags. extra_args[0] is skipped as it contains
     # the compiler binary name.
     command.append('--')
-    command.extend(extra_args[1:])
+    command.extend(_filter_include_paths(extra_args[1:], skip_include_path))
 
     process = subprocess.run(
         command,
@@ -109,6 +133,9 @@ def run_clang_tidy(clang_tidy: str, verbose: bool, source_file: Path,
         # clang-tidy prints regular information on
         # stderr, even with the option --quiet.
         stderr=subprocess.PIPE)
+
+    if process.returncode != 0:
+        _LOG.warning('%s', ' '.join(shlex.quote(str(arg)) for arg in command))
 
     if process.stdout:
         _LOG.warning(process.stdout.decode().strip())
@@ -126,6 +153,7 @@ def main(
     source_root: Path,
     export_fixes: Optional[Path],
     source_exclude: List[str],
+    skip_include_path: List[str],
     extra_args: List[str],
 ) -> int:
     # Rebase the source file path on source_root.
@@ -144,7 +172,7 @@ def main(
     export_fixes_path = (export_fixes.resolve()
                          if export_fixes is not None else None)
     return run_clang_tidy(clang_tidy, verbose, source_file_path,
-                          export_fixes_path, extra_args)
+                          export_fixes_path, skip_include_path, extra_args)
 
 
 if __name__ == '__main__':
