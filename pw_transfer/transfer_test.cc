@@ -42,6 +42,30 @@ Chunk DecodeChunk(ConstByteSpan buffer) {
   return chunk;
 }
 
+class TestMemoryReader : public stream::SeekableReader {
+ public:
+  constexpr TestMemoryReader(std::span<const std::byte> data)
+      : memory_reader_(data) {}
+
+  Status DoSeek(ssize_t offset, Whence origin) override {
+    if (seek_status.ok()) {
+      return memory_reader_.Seek(offset, origin);
+    }
+    return seek_status;
+  }
+
+  StatusWithSize DoRead(ByteSpan dest) final {
+    auto result = memory_reader_.Read(dest);
+    return result.ok() ? StatusWithSize(result->size())
+                       : StatusWithSize(result.status(), 0);
+  }
+
+  Status seek_status;
+
+ private:
+  stream::MemoryReader memory_reader_;
+};
+
 class SimpleReadTransfer final : public ReadOnlyHandler {
  public:
   SimpleReadTransfer(uint32_t transfer_id, ConstByteSpan data)
@@ -63,12 +87,14 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
     finalize_read_status = status;
   }
 
+  void set_seek_status(Status status) { reader_.seek_status = status; }
+
   bool prepare_read_called;
   bool finalize_read_called;
   Status finalize_read_status;
 
  private:
-  stream::MemoryReader reader_;
+  TestMemoryReader reader_;
 };
 
 constexpr auto kData = bytes::Initialized<32>([](size_t i) { return i; });
@@ -153,6 +179,45 @@ TEST_F(ReadTransfer, MultiChunk) {
   ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .status = OkStatus()}));
   EXPECT_TRUE(handler_.finalize_read_called);
   EXPECT_EQ(handler_.finalize_read_status, OkStatus());
+}
+
+TEST_F(ReadTransfer, OutOfOrder_SeekingSupported) {
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 16, .offset = 0}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_TRUE(
+      std::equal(&kData[0], &kData[16], chunk.data.begin(), chunk.data.end()));
+
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 8, .offset = 2}));
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_TRUE(
+      std::equal(&kData[2], &kData[10], chunk.data.begin(), chunk.data.end()));
+
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 64, .offset = 17}));
+
+  ASSERT_EQ(ctx_.total_responses(), 4u);
+  chunk = DecodeChunk(ctx_.responses()[2]);
+  EXPECT_TRUE(std::equal(
+      &kData[17], kData.end(), chunk.data.begin(), chunk.data.end()));
+}
+
+TEST_F(ReadTransfer, OutOfOrder_SeekingNotSupported_EndsWithUnimplemented) {
+  handler_.set_seek_status(Status::Unimplemented());
+
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 16, .offset = 0}));
+  ctx_.SendClientStream(
+      EncodeChunk({.transfer_id = 3, .pending_bytes = 8, .offset = 2}));
+
+  ASSERT_EQ(ctx_.total_responses(), 2u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.status, Status::Unimplemented());
 }
 
 TEST_F(ReadTransfer, MaxChunkSize_Client) {
@@ -849,7 +914,7 @@ TEST_F(ReadTransfer, PrepareError) {
   Chunk chunk = DecodeChunk(ctx_.responses()[0]);
   EXPECT_EQ(chunk.transfer_id, 88u);
   ASSERT_TRUE(chunk.status.has_value());
-  EXPECT_EQ(chunk.status.value(), Status::Unavailable());
+  EXPECT_EQ(chunk.status.value(), Status::DataLoss());
 
   // Try starting the transfer again. It should work this time.
   ctx_.SendClientStream(

@@ -17,6 +17,7 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
+#include "pw_transfer/internal/client_connection.h"
 
 namespace pw::transfer {
 namespace internal {
@@ -71,6 +72,11 @@ class Handler : public IntrusiveList<Handler>::Item {
  private:
   friend class ServerContext;
 
+  // Prepares for either a read or write transfer.
+  Status Prepare(internal::TransferType type) {
+    return type == internal::kRead ? PrepareRead() : PrepareWrite();
+  }
+
   // Only valid after a PrepareRead() call that returns OK.
   stream::Reader& reader() const {
     PW_DASSERT(reader_ != nullptr);
@@ -107,7 +113,7 @@ class ReadOnlyHandler : public internal::Handler {
   Status PrepareRead() override { return OkStatus(); }
 
   // Writes are not supported.
-  Status PrepareWrite() final { return Status::Unimplemented(); }
+  Status PrepareWrite() final { return Status::PermissionDenied(); }
 
   using internal::Handler::set_reader;
 };
@@ -123,7 +129,7 @@ class WriteOnlyHandler : public internal::Handler {
   virtual ~WriteOnlyHandler() = default;
 
   // Reads are not supported.
-  Status PrepareRead() final { return Status::Unimplemented(); }
+  Status PrepareRead() final { return Status::PermissionDenied(); }
 
   Status PrepareWrite() override { return OkStatus(); }
 

@@ -30,10 +30,11 @@ Status ServerContext::Start(TransferType type, Handler& handler) {
 
   PW_LOG_INFO("Starting transfer %u", static_cast<unsigned>(handler.id()));
 
-  if (type == kRead) {
-    PW_TRY(handler.PrepareRead());
-  } else {
-    PW_TRY(handler.PrepareWrite());
+  if (const Status status = handler.Prepare(type); !status.ok()) {
+    PW_LOG_WARN("Transfer %u prepare failed with status %u",
+                static_cast<unsigned>(handler.id()),
+                status.code());
+    return status.IsPermissionDenied() ? status : Status::DataLoss();
   }
 
   type_ = type;
@@ -98,15 +99,32 @@ void ServerContext::HandleReadChunk(ClientConnection& client,
                  client.max_parameters().max_chunk_size_bytes()));
   }
 
+  // If the offsets don't match, attempt to seek on the reader. Not all transfer
+  // handlers support seeking; abort with UNIMPLEMENTED if this handler doesn't.
   if (offset() != parameters.offset) {
-    // TODO(frolv): pw_stream does not yet support seeking, so this temporarily
-    // cancels the transfer. Once seeking is added, this should be updated.
-    //
-    //   transfer.set_offset(parameters.offset.value());
-    //   transfer.Seek(transfer.offset());
-    //
-    FinishAndSendStatus(client, Status::Unimplemented());
-    return;
+    set_offset(parameters.offset);
+
+    if (Status seek_status = reader().Seek(offset()); !seek_status.ok()) {
+      PW_LOG_WARN("Transfer %u seek to %u failed with status %u",
+                  static_cast<unsigned>(transfer_id()),
+                  static_cast<unsigned>(offset()),
+                  seek_status.code());
+
+      // Remap status codes to return one of the following:
+      //
+      //   INTERNAL: invalid seek, never should happen
+      //   DATA_LOSS: the reader is in a bad state
+      //   UNIMPLEMENTED: seeking is not supported
+      //
+      if (seek_status.IsOutOfRange()) {
+        seek_status = Status::Internal();
+      } else if (!seek_status.IsUnimplemented()) {
+        seek_status = Status::DataLoss();
+      }
+
+      FinishAndSendStatus(client, seek_status);
+      return;
+    }
   }
 
   Status read_chunk_status;

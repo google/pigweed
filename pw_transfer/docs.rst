@@ -84,26 +84,26 @@ Python
 
 .. code-block:: python
 
-  from pw_transfer import transfer
+  import pw_transfer
 
   # Initialize a Pigweed RPC client; see pw_rpc docs for more info.
   rpc_client = CustomRpcClient()
   rpcs = rpc_client.channel(1).rpcs
 
   transfer_service = rpcs.pw.transfer.Transfer
-  transfer_manager = transfer.Manager(transfer_service)
+  transfer_manager = pw_transfer.Manager(transfer_service)
 
   try:
     # Read transfer_id 3 from the server.
     data = transfer_manager.read(3)
-  except transfer.Error as err:
+  except pw_transfer.Error as err:
     print('Failed to read:', err.status)
 
   try:
     # Send some data to the server. The transfer manager does not have to be
     # reinitialized.
     transfer_manager.write(2, b'hello, world')
-  except transfer.Error as err:
+  except pw_transfer.Error as err:
     print('Failed to write:', err.status)
 
 --------
@@ -126,25 +126,68 @@ Client to server transfer (write)
 
 Errors
 ======
-At any point, either the client or server may terminate the transfer by sending
-an error chunk with the transfer ID and a non-OK status.
+At any point, either the client or server may terminate the transfer with a
+status code. The transfer chunk with the status is the final chunk of the
+transfer.
 
-- ``DATA_LOSS`` -- Failed to read or write data that was transferred. For
-  example, a flash write error occurred in Handler::FinalizeWrite().
-- ``INVALID_ARGUMENT`` -- The service or client received a malformed chunk.
-- ``INTERNAL`` -- An assumption of the ``pw_transfer`` protocol was violated.
-- ``ABORTED`` -- The service aborted a transfer. This happens when the client
-  starts a transfer that is already pending. This status is passed to the
-  transfer handler, but not sent to the client, since it is already handling a
-  new transfer.
-- ``CANCELLED`` -- The client cancelled a pending transfer.
-- ``RESOURCE_EXHAUSTED`` -- The receiver's storage is full and cannot continue
-  the transfer.
-- ``UNAVAILABLE`` -- The service is busy and cannot start an additional transfer
-  at this time.
+The following table describes the meaning of each status code when sent by the
+sender or the receiver (see `Transfer roles`_).
 
-Transmitter flow
-================
+.. cpp:namespace-push:: pw::stream
+
++-------------------------+-------------------------+-------------------------+
+| Status                  | Sent by sender          | Sent by receiver        |
++=========================+=========================+=========================+
+| ``OK``                  | (not sent)              | All data was received   |
+|                         |                         | and handled             |
+|                         |                         | successfully.           |
++-------------------------+-------------------------+-------------------------+
+| ``ABORTED``             | The service aborted the transfer because the      |
+|                         | client restarted it. This status is passed to the |
+|                         | transfer handler, but not sent to the client      |
+|                         | because it restarted the transfer.                |
++-------------------------+---------------------------------------------------+
+| ``CANCELLED``           | The client cancelled the transfer.                |
++-------------------------+-------------------------+-------------------------+
+| ``DATA_LOSS``           | Failed to read the data | Failed to write the     |
+|                         | to send. The            | received data. The      |
+|                         | :cpp:class:`Reader`     | :cpp:class:`Writer`     |
+|                         | returned an error.      | returned an error.      |
++-------------------------+-------------------------+-------------------------+
+| ``FAILED_PRECONDITION`` | Received chunk for transfer that is not active.   |
++-------------------------+-------------------------+-------------------------+
+| ``INVALID_ARGUMENT``    | Received a malformed packet.                      |
++-------------------------+-------------------------+-------------------------+
+| ``INTERNAL``            | An assumption of the protocol was violated.       |
+|                         | Encountering ``INTERNAL`` indicates that there is |
+|                         | a bug in the service or client implementation.    |
++-------------------------+-------------------------+-------------------------+
+| ``PERMISSION_DENIED``   | The transfer does not support the requested       |
+|                         | operation (either reading or writing).            |
++-------------------------+-------------------------+-------------------------+
+| ``RESOURCE_EXHAUSTED``  | (not sent)              | Storage is full.        |
++-------------------------+-------------------------+-------------------------+
+| ``UNAVAILABLE``         | The service is busy with other transfers and      |
+|                         | cannot begin a new transfer at this time.         |
++-------------------------+-------------------------+-------------------------+
+| ``UNIMPLEMENTED``       | Out-of-order chunk was  | (not sent)              |
+|                         | requested, but seeking  |                         |
+|                         | is not supported.       |                         |
++-------------------------+-------------------------+-------------------------+
+
+.. cpp:namespace-pop::
+
+Transfer roles
+==============
+Every transfer has two participants: the sender and the receiver. The sender
+transmits data to the receiver. The receiver controls how the data is
+transferred and sends the final status when the transfer is complete.
+
+In read transfers, the client is the receiver and the service is the sender. In
+write transfers, the client is the sender and the service is the receiver.
+
+Sender flow
+-----------
 .. mermaid::
 
   graph TD
@@ -167,7 +210,7 @@ Transmitter flow
     done([Transfer complete])
 
 Receiver flow
-=============
+-------------
 .. mermaid::
 
   graph TD

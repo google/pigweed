@@ -22,12 +22,12 @@ namespace {
 TEST(Handlers, ReadOnly) {
   ReadOnlyHandler handler(123);
   EXPECT_EQ(OkStatus(), handler.PrepareRead());
-  EXPECT_EQ(Status::Unimplemented(), handler.PrepareWrite());
+  EXPECT_EQ(Status::PermissionDenied(), handler.PrepareWrite());
 }
 
 TEST(Handlers, WriteOnly) {
   WriteOnlyHandler handler(123);
-  EXPECT_EQ(Status::Unimplemented(), handler.PrepareRead());
+  EXPECT_EQ(Status::PermissionDenied(), handler.PrepareRead());
   EXPECT_EQ(OkStatus(), handler.PrepareWrite());
 }
 
