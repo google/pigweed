@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Client for the pw_transfer service, which transmits data over pw_rpc."""
+"""Provides a simple interface for transferring bulk data over pw_rpc."""
 
-from pw_transfer.transfer import Error, Manager, ProgressCallback, ProgressStats
+from pw_transfer.transfer import ProgressCallback, ProgressStats
+from pw_transfer.client import Error, Manager
