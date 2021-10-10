@@ -37,6 +37,7 @@ Usage examples:
 
 import argparse
 from dataclasses import dataclass
+import errno
 import logging
 import os
 from pathlib import Path
@@ -468,15 +469,27 @@ def _exit_due_to_interrupt() -> NoReturn:
     _exit(0)
 
 
-def _exit_due_to_inotify_limit():
+def _exit_due_to_inotify_watch_limit():
     # Show information and suggested commands in OSError: inotify limit reached.
-    _LOG.error('Inotify limit reached: run this in your terminal if you '
-               'are in Linux to temporarily increase inotify limit.  \n')
+    _LOG.error('Inotify watch limit reached: run this in your terminal if '
+               'you are in Linux to temporarily increase inotify limit.  \n')
     print(
         _COLOR.green('        sudo sysctl fs.inotify.max_user_watches='
                      '$NEW_LIMIT$\n'))
     print('  Change $NEW_LIMIT$ with an integer number, '
-          'e.g., 1000 should be enough.')
+          'e.g., 20000 should be enough.')
+    _exit(0)
+
+
+def _exit_due_to_inotify_instance_limit():
+    # Show information and suggested commands in OSError: inotify limit reached.
+    _LOG.error('Inotify instance limit reached: run this in your terminal if '
+               'you are in Linux to temporarily increase inotify limit.  \n')
+    print(
+        _COLOR.green('        sudo sysctl fs.inotify.max_user_instances='
+                     '$NEW_LIMIT$\n'))
+    print('  Change $NEW_LIMIT$ with an integer number, '
+          'e.g., 20000 should be enough.')
     _exit(0)
 
 
@@ -698,9 +711,10 @@ def watch(default_build_targets: List[str], build_directories: List[str],
         _exit_due_to_interrupt()
     except OSError as err:
         if err.args[0] == _ERRNO_INOTIFY_LIMIT_REACHED:
-            _exit_due_to_inotify_limit()
-        else:
-            raise err
+            _exit_due_to_inotify_watch_limit()
+        if err.errno == errno.EMFILE:
+            _exit_due_to_inotify_instance_limit()
+        raise err
 
     _LOG.critical('Should never get here')
     observer.join()
