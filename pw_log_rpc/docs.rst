@@ -132,6 +132,9 @@ work might replace this with enqueueing the flush work on a work queue. The user
 can also choose to have different threads flushing individual ``RpcLogDrain``\s
 with different priorities.
 
+Calling ``OpenUnrequestedLogStream()`` is a convenient way to set up a log
+stream that is started without the need to receive an RCP request for logs.
+
 Logging example
 ===============
 The following code shows a sample setup to defer the log handling to the

@@ -66,8 +66,12 @@ pw_source_set("rpc_log_drain_thread") {
   public = [ "public/pw_log_rpc/rpc_log_drain_thread.h" ]
   sources = []
   public_deps = [
+    ":log_service",
     ":rpc_log_drain",
     "$dir_pw_multisink",
+    "$dir_pw_result",
+    "$dir_pw_rpc/raw:server_api",
+    "$dir_pw_status",
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:thread",
   ]

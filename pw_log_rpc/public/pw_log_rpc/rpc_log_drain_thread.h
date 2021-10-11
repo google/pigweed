@@ -14,8 +14,15 @@
 
 #pragma once
 
+#include <span>
+
+#include "pw_log_rpc/log_service.h"
 #include "pw_log_rpc/rpc_log_drain_map.h"
 #include "pw_multisink/multisink.h"
+#include "pw_result/result.h"
+#include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_status/status.h"
+#include "pw_status/try.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread_core.h"
 
@@ -47,6 +54,19 @@ class RpcLogDrainThread final : public thread::ThreadCore,
         drain.Flush().IgnoreError();
       }
     }
+  }
+
+  // Opens a server writer to set up an unrequested log stream.
+  Status OpenUnrequestedLogStream(uint32_t channel_id,
+                                  rpc::Server& rpc_server,
+                                  LogService& log_service) {
+    rpc::RawServerWriter writer =
+        rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
+            rpc_server, channel_id, log_service);
+    const Result<RpcLogDrain*> drain =
+        drain_map_.GetDrainFromChannelId(channel_id);
+    PW_TRY(drain.status());
+    return drain.value()->Open(writer);
   }
 
  private:
