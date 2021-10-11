@@ -10,7 +10,7 @@ This documentation is incomplete :)
 
 Compatibility
 =============
-* C++11
+* C++14
 
 Iterator
 ========

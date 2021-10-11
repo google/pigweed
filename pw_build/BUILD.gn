@@ -105,10 +105,6 @@ config("extra_strict_warnings") {
   cflags_c = [ "-Wstrict-prototypes" ]
 }
 
-config("cpp11") {
-  cflags_cc = [ "-std=c++11" ]
-}
-
 config("cpp14") {
   cflags_cc = [ "-std=c++14" ]
 }

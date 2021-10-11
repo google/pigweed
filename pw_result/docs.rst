@@ -78,7 +78,7 @@ similar type.
 
 Compatibility
 =============
-Works with C++11, but some features require C++17.
+Works with C++14, but some features require C++17.
 
 Size report
 ===========

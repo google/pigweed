@@ -458,7 +458,6 @@ inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
       },                                             \
       #op)
 
-// Implement boolean expectations in a C++11-compatible way.
 #define _PW_EXPECT_BOOL(expr, value)                             \
   ::pw::unit_test::internal::Framework::Get().CurrentTestExpect( \
       [](bool lhs, bool rhs) { return lhs == rhs; },             \

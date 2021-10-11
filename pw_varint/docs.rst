@@ -14,7 +14,7 @@ use a variable-length encoding for integers.
 Compatibility
 =============
 * C
-* C++11 (with :doc:`../pw_polyfill/docs`)
+* C++14 (with :doc:`../pw_polyfill/docs`)
 
 API
 ===

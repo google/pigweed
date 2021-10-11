@@ -320,7 +320,7 @@ class span : public pw_span_internal::ExtentStorage<Extent> {
   constexpr span(const span<U, OtherExtent>& other)
       : span(other.data(), other.size()) {}
 
-  PW_CONSTEXPR_FUNCTION span& operator=(const span& other) noexcept = default;
+  constexpr span& operator=(const span& other) noexcept = default;
   ~span() noexcept = default;
 
   // [span.sub], span subviews

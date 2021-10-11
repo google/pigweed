@@ -1144,7 +1144,7 @@ The Python tooling continues to support the legacy tokenized string ELF format.
 Compatibility
 =============
   * C11
-  * C++11
+  * C++14
   * Python 3
 
 Dependencies

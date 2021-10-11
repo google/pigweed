@@ -194,7 +194,6 @@ pw_test_group("tests") {
     ":detokenize_test",
     ":global_handlers_test",
     ":hash_test",
-    ":simple_tokenize_test_cpp11",
     ":simple_tokenize_test_cpp14",
     ":simple_tokenize_test_cpp17",
     ":token_database_fuzzer",
@@ -270,8 +269,7 @@ pw_test("hash_test") {
   deps = [ ":pw_tokenizer" ]
 }
 
-# Fully test C++11 and C++14 compatibility by compiling all sources as C++11 or
-# C++14.
+# Fully test C++14 compatibility by compiling all sources as C++14.
 _simple_tokenize_test_sources = [
   "$dir_pw_containers/public/pw_containers/to_array.h",
   "$dir_pw_varint/public/pw_varint/varint.h",
@@ -300,13 +298,6 @@ _simple_tokenize_test_configs = [
   "$dir_pw_varint:default_config",
   "$dir_pw_containers:public_include_path",
 ]
-
-pw_test("simple_tokenize_test_cpp11") {
-  remove_configs = [ "$dir_pw_build:cpp17" ]
-  configs = [ "$dir_pw_build:cpp11" ] + _simple_tokenize_test_configs
-  sources = _simple_tokenize_test_sources
-  deps = [ dir_pw_preprocessor ]
-}
 
 pw_test("simple_tokenize_test_cpp14") {
   remove_configs = [ "$dir_pw_build:cpp17" ]

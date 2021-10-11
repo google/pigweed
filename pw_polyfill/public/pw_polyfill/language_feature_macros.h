@@ -23,13 +23,6 @@
 #define PW_INLINE_VARIABLE
 #endif  // __cpp_inline_variables
 
-// Mark functions as constexpr if the relaxed constexpr rules are supported.
-#if __cpp_constexpr >= 201304L
-#define PW_CONSTEXPR_FUNCTION constexpr
-#else
-#define PW_CONSTEXPR_FUNCTION
-#endif  // __cpp_constexpr >= 201304L
-
 // Mark functions as constexpr if C++20 or newer
 #if __cplusplus >= 202002L
 #define PW_CONSTEXPR_CPP20 constexpr

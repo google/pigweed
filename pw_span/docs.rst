@@ -68,4 +68,4 @@ Pointer and size arguments can be replaced with a ``std::span``:
 
 Compatibility
 =============
-Works with C++11, but some features require C++17.
+Works with C++14, but some features require C++17.

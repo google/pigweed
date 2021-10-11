@@ -149,7 +149,7 @@ Here is a selection of interesting modules:
 
  - :ref:`module-pw_polyfill` - Similar to JavaScript “polyfill” libraries, this
    module provides selected C++17 standard library components that are
-   compatible with C++11 and C++14.
+   compatible with C++14.
 
  - :ref:`module-pw_tokenizer` - Replace string literals from log statements
    with 32-bit tokens, to reduce flash use, reduce logging bandwidth, and save

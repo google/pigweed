@@ -56,19 +56,9 @@ constexpr byte operator>>(byte b, I shift) noexcept {
   return byte(static_cast<unsigned int>(b) >> shift);
 }
 
-#if __cpp_constexpr >= 201304L
-
 constexpr byte& operator|=(byte& l, byte r) noexcept { return l = l | r; }
 constexpr byte& operator&=(byte& l, byte r) noexcept { return l = l & r; }
 constexpr byte& operator^=(byte& l, byte r) noexcept { return l = l ^ r; }
-
-#else  // For C++11 compatiblity, these operators cannot be constexpr.
-
-inline byte& operator|=(byte& l, byte r) noexcept { return l = l | r; }
-inline byte& operator&=(byte& l, byte r) noexcept { return l = l & r; }
-inline byte& operator^=(byte& l, byte r) noexcept { return l = l ^ r; }
-
-#endif  // __cpp_constexpr >= 201304L
 
 template <typename I>
 inline byte& operator<<=(byte& b, I shift) noexcept {

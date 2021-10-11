@@ -88,7 +88,6 @@ pw_source_set("standard_library") {
 pw_test_group("tests") {
   tests = [
     ":default_cpp_test",
-    ":cpp11_test",
     ":cpp14_test",
   ]
   group_deps = [ "$dir_pw_span:tests" ]
@@ -97,13 +96,6 @@ pw_test_group("tests") {
 pw_test("default_cpp_test") {
   deps = [ ":pw_polyfill" ]
   sources = [ "test.cc" ]
-}
-
-pw_test("cpp11_test") {
-  remove_configs = [ "$dir_pw_build:cpp17" ]
-  configs = [ "$dir_pw_build:cpp11" ]
-  sources = [ "test.cc" ]
-  deps = [ ":pw_polyfill" ]
 }
 
 pw_test("cpp14_test") {

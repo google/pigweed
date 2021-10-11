@@ -105,7 +105,7 @@ constexpr pw_tokenizer_ArgTypes VarargsType() {
   }
 }
 
-#else  // C++11 or C++14 version
+#else  // C++14 version
 
 template <typename T,
           bool kIsDouble = std::is_floating_point<T>(),

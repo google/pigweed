@@ -3,9 +3,7 @@
 ===========
 pw_polyfill
 ===========
-The ``pw_polyfill`` module backports new C++ features to older C++ standards.
-When possible, features are adapted to work with in standards as old as C++11.
-Pigweed does not support C++ standards older than C++11.
+The ``pw_polyfill`` module backports new C++ features to C++14.
 
 ------------------------------------------------
 Backport new C++ features to older C++ standards
@@ -22,7 +20,7 @@ C headers. The wrapper headers include the original header using
 `#include_next <https://gcc.gnu.org/onlinedocs/cpp/Wrapper-Headers.html>`_, then
 add missing features. The backported features are only defined if they aren't
 provided by the standard header, so ``pw_polyfill`` is safe to use when
-compiling with any standard C++11 or newer.
+compiling with any standard C++14 or newer.
 
 Language features are backported or stubbed via the
 ``pw_polyfill/language_features.h`` header. This header is included in files
@@ -39,17 +37,17 @@ for the ``language_features.h`` header.
 
 Backported features
 ===================
-==================  ================================  ============================================  ========================================
-Header              Feature                           Level of support                              Feature test macro
-==================  ================================  ============================================  ========================================
-<bit>               std::endian                       full                                          __cpp_lib_endian
-<cstdlib>           std::byte                         full; some operators not constexpr in C++11   __cpp_lib_byte
-<iterator>          std::data, std::size              full                                          __cpp_lib_nonmember_container_access
-<type_traits>       \*_t trait aliases                partial (can expand as needed)                __cpp_lib_transformation_trait_aliases
-<type_traits>       std::is_null_pointer              full                                          __cpp_lib_is_null_pointer
-<utilty>            std::integer_sequence & helpers   full                                          __cpp_lib_integer_sequence
-(language feature)  static_assert with no message     full                                          __cpp_static_assert
-==================  ================================  ============================================  ========================================
+==================  ================================  ===============================  ========================================
+Header              Feature                           Level of support                 Feature test macro
+==================  ================================  ===============================  ========================================
+<bit>               std::endian                       full                             __cpp_lib_endian
+<cstdlib>           std::byte                         full                             __cpp_lib_byte
+<iterator>          std::data, std::size              full                             __cpp_lib_nonmember_container_access
+<type_traits>       \*_t trait aliases                partial (can expand as needed)   __cpp_lib_transformation_trait_aliases
+<type_traits>       std::is_null_pointer              full                             __cpp_lib_is_null_pointer
+<utilty>            std::integer_sequence & helpers   full                             __cpp_lib_integer_sequence
+(language feature)  static_assert with no message     full                             __cpp_static_assert
+==================  ================================  ===============================  ========================================
 
 ----------------------------------------------------
 Adapt code to compile with different versions of C++
@@ -67,7 +65,6 @@ Language feature macros
 Macro                   Feature                           Description                               Feature test macro
 ======================  ================================  ========================================  ==========================
 PW_INLINE_VARIABLE      inline variables                  inline if supported by the compiler       __cpp_inline_variables
-PW_CONSTEXPR_FUNCTION   relaxed constexpr function rules  constexpr if relaxed rules are supported  __cpp_constexpr >= 201304L
 PW_CONSTEXPR_CPP20      constexpr in C++20                constexpr if compiling for C++20          __cplusplus >= 202002L
 PW_CONSTEVAL            consteval                         consteval if supported by the compiler    __cpp_consteval
 PW_CONSTINIT            constinit                         constinit in clang and GCC 10+            __cpp_constinit
@@ -81,4 +78,4 @@ systems, add ``pw_polyfill/standard_library_public`` and
 -------------
 Compatibility
 -------------
-C++11
+C++14

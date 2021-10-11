@@ -13,7 +13,6 @@ Style Guide and Conventions
 ---------
 C++ style
 ---------
-
 The Pigweed C++ style guide is closely based on Google's external C++ Style
 Guide, which is found on the web at
 https://google.github.io/styleguide/cppguide.html. The Google C++ Style Guide
@@ -27,6 +26,20 @@ memory allocation and the entirety of the C++ Standard Library.
 Recommendations in the :doc:`embedded_cpp_guide` are considered part of the
 Pigweed style guide, but are separated out since it covers more general
 embedded development beyond just C++ style.
+
+C++ standard
+============
+Pigweed primarily uses the C++17 standard. A few modules maintain support for
+C++14, however (e.g. :ref:`module-pw_kvs` and its dependencies).
+
+All Pigweed C++ code must compile with ``-std=C++17`` in Clang and GCC. C++20
+features may be used as long as the code still compiles unmodified with C++17.
+See ``pw_polyfill/language_feature_macros.h`` for macros that provide C++20
+features when supported.
+
+Compiler extensions should not be used unless wrapped in a macro or properly
+guarded in the preprocessor. See ``pw_processor/compiler.h`` for macros that
+wrap compiler-specific features.
 
 Automatic formatting
 ====================
