@@ -65,9 +65,9 @@ source_set("testing") {
 
   public_deps = [
     ":gatt",
-    "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/lib/fxl",
+    "//src/lib/testing/loop_fixture",
     "//zircon/system/ulib/fbl",
   ]
 }
@@ -87,10 +87,10 @@ source_set("tests") {
   deps = [
     ":gatt",
     ":testing",
-    "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/att",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]

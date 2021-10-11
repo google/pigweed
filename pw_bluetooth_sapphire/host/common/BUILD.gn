@@ -111,8 +111,8 @@ source_set("tests") {
 
   deps = [
     ":common",
-    "//garnet/public/lib/gtest",
     "//sdk/lib/inspect/testing/cpp",
+    "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]
 }

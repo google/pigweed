@@ -107,9 +107,9 @@ source_set("testing") {
 
   public_deps = [
     ":gap",
-    "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/lib/fxl",
+    "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]
 }
@@ -141,7 +141,6 @@ source_set("tests") {
   deps = [
     ":gap",
     ":testing",
-    "//garnet/public/lib/gtest",
     "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
@@ -150,6 +149,7 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/sm:testing",
     "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
     "//zircon/system/ulib/async:async-cpp",
   ]

@@ -19,9 +19,9 @@ source_set("testing") {
 
   public_deps = [
     ":fake_controller",
-    "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/transport",
+    "//src/lib/testing/loop_fixture",
   ]
 }
 

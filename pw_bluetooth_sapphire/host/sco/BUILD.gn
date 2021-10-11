@@ -31,10 +31,10 @@ source_set("tests") {
 
   deps = [
     ":sco",
-    "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
     "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]
 }
