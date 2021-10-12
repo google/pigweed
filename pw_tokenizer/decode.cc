@@ -210,10 +210,10 @@ DecodedArg StringSegment::DecodeInteger(
   const size_t bytes = varint::Decode(std::as_bytes(arguments), &value);
 
   if (bytes == 0u) {
-    return DecodedArg(
-        ArgStatus::kDecodeError,
-        text_,
-        std::min(varint::kMaxVarint64SizeBytes, arguments.size()));
+    return DecodedArg(ArgStatus::kDecodeError,
+                      text_,
+                      std::min(varint::kMaxVarint64SizeBytes,
+                               static_cast<size_t>(arguments.size())));
   }
 
   // Unsigned ints need to be masked to their bit width due to sign extension.

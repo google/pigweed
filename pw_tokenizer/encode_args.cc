@@ -61,7 +61,8 @@ size_t EncodeString(const char* string, const std::span<std::byte>& output) {
   }
 
   // Subtract 1 to save room for the status byte.
-  const size_t max_bytes = std::min(output.size(), kMaxStringLength) - 1;
+  const size_t max_bytes =
+      std::min(static_cast<size_t>(output.size()), kMaxStringLength) - 1;
 
   // Scan the string to find out how many bytes to copy.
   size_t bytes_to_copy = 0;
