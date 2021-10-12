@@ -22,18 +22,10 @@ add missing features. The backported features are only defined if they aren't
 provided by the standard header, so ``pw_polyfill`` is safe to use when
 compiling with any standard C++14 or newer.
 
-Language features are backported or stubbed via the
-``pw_polyfill/language_features.h`` header. This header is included in files
-that depend on ``pw_polyfill`` with GCC's ``-include`` option so that no
-``#include`` statement is required.
-
 The wrapper headers are in ``public_overrides``. These are provided through the
 ``"$dir_pw_polyfill:overrides"`` library, which the GN build adds as a
 dependency for all targets. To apply overrides in Bazel or CMake, depend on the
-``//pw_polyfill:overrides`` or ``pw_polyfill.overrides`` targets. In other build
-systems, add ``pw_polyfill/standard_library_public`` and
-``pw_polyfill/public_overrides`` as include paths, and add a ``-include`` option
-for the ``language_features.h`` header.
+``//pw_polyfill:overrides`` or ``pw_polyfill.overrides`` targets.
 
 Backported features
 ===================

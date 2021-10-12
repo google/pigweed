@@ -35,13 +35,6 @@ pw_source_set("pw_polyfill") {
 
 config("overrides_config") {
   include_dirs = [ "public_overrides" ]
-  cflags_cc = [
-    # Use -include to include the language features header in dependent files,
-    # without requiring a #include. This allows the use of newer C++ language
-    # features in older C++ versions without an explicit include.
-    "-include",
-    rebase_path("language_features.h", root_build_dir),
-  ]
   visibility = [ ":*" ]
 }
 
@@ -60,7 +53,6 @@ pw_source_set("overrides") {
     "public_overrides/type_traits",
     "public_overrides/utility",
   ]
-  sources = [ "language_features.h" ]
 }
 
 config("standard_library_public") {

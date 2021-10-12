@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// Macros for adapting to older versions of C++. A few keywords (consteval,
-// constinit) are handled by pw_polfyill/language_features.h, which is directly
-// -included by users of pw_polyfill.
+// Macros for using C++ features in older standards.
 #pragma once
 
 #ifdef __cpp_inline_variables

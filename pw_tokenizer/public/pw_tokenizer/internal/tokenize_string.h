@@ -54,7 +54,8 @@ Entry {
         string_(containers::to_array(string)) {}
 
  private:
-  static_assert(kStringSize > 0u && kDomainSize > 0u);
+  static_assert(kStringSize > 0u && kDomainSize > 0u,
+                "The string and domain must have at least a null terminator");
 
   uint32_t magic_;
   uint32_t token_;

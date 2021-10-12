@@ -26,7 +26,6 @@ licenses(["notice"])
 cc_toolchain_import(
     name = "toolchain_polyfill_overrides",
     hdrs = [
-        "language_features.h",
         "public_overrides/assert.h",
         "public_overrides/bit",
         "public_overrides/cstddef",
@@ -46,7 +45,6 @@ cc_toolchain_import(
         "public_overrides",
         "standard_library_public",
     ],
-    injected_hdrs = ["language_features.h"],
 )
 
 pw_cc_library(
@@ -61,7 +59,6 @@ pw_cc_library(
 
 pw_cc_library(
     name = "overrides",
-    srcs = ["language_features.h"],
     hdrs = [
         "public_overrides/assert.h",
         "public_overrides/bit",
@@ -69,10 +66,6 @@ pw_cc_library(
         "public_overrides/iterator",
         "public_overrides/type_traits",
         "public_overrides/utility",
-    ],
-    copts = [
-        "-include",
-        "language_features.h",
     ],
     includes = ["public_overrides"],
     deps = [":standard_library"],

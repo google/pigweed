@@ -42,7 +42,7 @@ PW_PACKED(struct) Metadata {
   uint64_t value;  // value of the field
 };
 
-static_assert(sizeof(Metadata) == 32);
+static_assert(sizeof(Metadata) == 32, "Metadata should be exactly 32 bytes");
 
 // Store tokenization metadata in its own section. Mach-O files are not
 // supported by pw_tokenizer, but a short, Mach-O compatible section name is

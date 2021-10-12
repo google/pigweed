@@ -72,7 +72,8 @@ TEST(Cstddef, Byte_AssignmentOperators) {
 
 // Check that consteval is at least equivalent to constexpr.
 PW_CONSTEVAL int ConstevalFunction() { return 123; }
-static_assert(ConstevalFunction() == 123);
+static_assert(ConstevalFunction() == 123,
+              "Function should work in static_assert");
 
 int c_array[5423] = {};
 std::array<int, 32> array;
@@ -141,23 +142,35 @@ TEST(TypeTraits, Aliases) {
 }
 
 TEST(Utility, IntegerSequence) {
-  static_assert(std::integer_sequence<int>::size() == 0);
-  static_assert(std::integer_sequence<int, 9, 8, 7>::size() == 3);
-  static_assert(std::make_index_sequence<1>::size() == 1);
-  static_assert(std::make_index_sequence<123>::size() == 123);
+  static_assert(std::integer_sequence<int>::size() == 0,
+                "zero-length integer_sequence");
+  static_assert(std::integer_sequence<int, 9, 8, 7>::size() == 3,
+                "integer_sequence with size 3");
+  static_assert(std::make_index_sequence<1>::size() == 1,
+                "integer_sequence with size 1");
+  static_assert(std::make_index_sequence<123>::size() == 123,
+                "integer_sequence with size 1");
 }
 
 TEST(Utility, LogicalTraits) {
-  static_assert(std::conjunction<std::true_type, std::true_type>::value);
-  static_assert(!std::conjunction<std::true_type, std::false_type>::value);
-  static_assert(!std::conjunction<std::false_type, std::false_type>::value);
+  static_assert(std::conjunction<std::true_type, std::true_type>::value,
+                "conjunction should be true");
+  static_assert(!std::conjunction<std::true_type, std::false_type>::value,
+                "conjunction should be false");
+  static_assert(!std::conjunction<std::false_type, std::false_type>::value,
+                "conjunction should be false");
 
-  static_assert(std::disjunction<std::true_type, std::true_type>::value);
-  static_assert(std::disjunction<std::true_type, std::false_type>::value);
-  static_assert(!std::disjunction<std::false_type, std::false_type>::value);
+  static_assert(std::disjunction<std::true_type, std::true_type>::value,
+                "disjunction should be true");
+  static_assert(std::disjunction<std::true_type, std::false_type>::value,
+                "disjunction should be true");
+  static_assert(!std::disjunction<std::false_type, std::false_type>::value,
+                "disjunction should be false");
 
-  static_assert(!std::negation<std::true_type>::value);
-  static_assert(std::negation<std::false_type>::value);
+  static_assert(!std::negation<std::true_type>::value,
+                "negation should be false");
+  static_assert(std::negation<std::false_type>::value,
+                "negation should be true");
 }
 
 }  // namespace
