@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#define PW_LOG_MODULE_NAME "KVS"
+#define PW_LOG_MODULE_NAME "PW_FLASH"
 #define PW_LOG_LEVEL PW_KVS_LOG_LEVEL
 
 #include "pw_kvs/fake_flash_memory.h"
