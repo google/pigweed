@@ -48,6 +48,7 @@ pw_add_module_library(pw_rpc.nanopb.common
     common.cc
   PUBLIC_DEPS
     pw_bytes
+    pw_log
     pw_rpc.common
     pw_third_party.nanopb
 )
