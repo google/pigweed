@@ -22,8 +22,7 @@ std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddPe
   auto& peer = iter->second;
 
   ZX_ASSERT(info.range_start <= info.range_end);
-  auto service = fbl::AdoptRef(
-      new RemoteService(info, peer.fake_client.AsWeakPtr(), async_get_default_dispatcher()));
+  auto service = fbl::AdoptRef(new RemoteService(info, peer.fake_client.AsWeakPtr()));
 
   std::vector<att::Handle> removed;
   ServiceList added;

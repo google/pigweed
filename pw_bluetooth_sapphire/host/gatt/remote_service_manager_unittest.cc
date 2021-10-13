@@ -577,12 +577,9 @@ TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
     EXPECT_EQ(expected, chrcs);
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   // Only one ATT request should have been made.
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
-
   EXPECT_TRUE(service->IsDiscovered());
   EXPECT_TRUE(status1);
   EXPECT_TRUE(status2);
@@ -624,12 +621,9 @@ TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsError) {
     EXPECT_TRUE(chrcs.empty());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
-  // Onle one request should have been made.
+  // Only one request should have been made.
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
-
   EXPECT_FALSE(service->IsDiscovered());
   EXPECT_FALSE(status1);
   EXPECT_FALSE(status2);
@@ -662,9 +656,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
     EXPECT_EQ(expected, chrcs);
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_TRUE(service->IsDiscovered());
@@ -692,9 +684,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
     EXPECT_TRUE(chrcs.empty());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_FALSE(service->IsDiscovered());
@@ -734,11 +724,8 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
     EXPECT_EQ(expected, chrcs);
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
-
   // There should have been two descriptor discovery requests as discovery
   // should have been skipped for characteristic #2 due to its handles.
   EXPECT_EQ(2u, fake_client()->desc_discovery_count());
@@ -775,11 +762,8 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
     EXPECT_TRUE(chrcs.empty());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
-
   // There should have been two descriptor discovery requests as discovery
   // should have been skipped for characteristic #2 due to its handles.
   EXPECT_EQ(2u, fake_client()->desc_discovery_count());
@@ -816,11 +800,8 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
     EXPECT_TRUE(chrcs.empty());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
-
   // There should have been two descriptor discovery requests as discovery
   // should have been skipped for characteristic #2 due to its handles.
   EXPECT_EQ(2u, fake_client()->desc_discovery_count());
@@ -871,9 +852,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesSucces
     EXPECT_EQ(ExtendedProperty::kReliableWrite, chrc_data.extended_properties.value());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(1u, read_cb_count);
@@ -919,9 +898,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSet) {
     EXPECT_FALSE(chrc_data.extended_properties.has_value());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(0u, read_cb_count);
@@ -956,9 +933,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropertiesEr
     EXPECT_TRUE(chrcs.empty());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(0u, read_cb_count);
@@ -1034,9 +1009,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescIn
     EXPECT_TRUE(chrcs.empty());
   });
 
-  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
-
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(1u, read_cb_count);
@@ -1131,33 +1104,6 @@ TEST_F(RemoteServiceManagerTest, ReadCharSendsReadRequest) {
                                 EXPECT_TRUE(ContainersEqual(kValue, value));
                                 EXPECT_FALSE(maybe_truncated);
                               });
-
-  RunLoopUntilIdle();
-
-  EXPECT_TRUE(status);
-}
-
-TEST_F(RemoteServiceManagerTest, ReadCharSendsReadRequestWithDispatcher) {
-  auto service = SetupServiceWithChrcs(
-      ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
-      {ReadableChrc()});
-
-  const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
-
-  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
-    EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    callback(att::Status(), kValue, /*maybe_truncated=*/false);
-  });
-
-  att::Status status(HostError::kFailed);
-  service->ReadCharacteristic(
-      CharacteristicHandle(kDefaultChrcValueHandle),
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
-        status = cb_status;
-        EXPECT_TRUE(ContainersEqual(kValue, value));
-        EXPECT_FALSE(maybe_truncated);
-      },
-      dispatcher());
 
   RunLoopUntilIdle();
 
@@ -2354,38 +2300,6 @@ TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequest) {
                             status = cb_status;
                             EXPECT_TRUE(ContainersEqual(kValue, value));
                           });
-
-  RunLoopUntilIdle();
-
-  EXPECT_TRUE(status);
-}
-
-TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
-  constexpr att::Handle kValueHandle = 3;
-  constexpr att::Handle kDescrHandle = 4;
-
-  ServiceData data(ServiceKind::PRIMARY, 1, kDescrHandle, kTestServiceUuid1);
-  auto service = SetUpFakeService(data);
-
-  CharacteristicData chr(Property::kRead, std::nullopt, 2, kValueHandle, kTestUuid3);
-  DescriptorData desc(kDescrHandle, kTestUuid4);
-  SetupCharacteristics(service, {{chr}}, {{desc}});
-
-  const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
-
-  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
-    EXPECT_EQ(kDescrHandle, handle);
-    callback(att::Status(), kValue, /*maybe_truncated=*/false);
-  });
-
-  att::Status status(HostError::kFailed);
-  service->ReadDescriptor(
-      DescriptorHandle(kDescrHandle),
-      [&](att::Status cb_status, const auto& value, auto) {
-        status = cb_status;
-        EXPECT_TRUE(ContainersEqual(kValue, value));
-      },
-      dispatcher());
 
   RunLoopUntilIdle();
 
@@ -3960,6 +3874,39 @@ TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileServiceCharacteristi
   RunLoopUntilIdle();
   ASSERT_TRUE(status);
   EXPECT_EQ(*status, att::Status(att::ErrorCode::kRequestNotSupported));
+}
+
+TEST_F(RemoteServiceManagerTest, DisableNotificationInHandlerCallback) {
+  const CharacteristicHandle kChrcValueHandle(3);
+  fbl::RefPtr<RemoteService> svc = SetupNotifiableService();
+  std::optional<IdType> handler_id;
+  RemoteCharacteristic::NotifyStatusCallback status_cb = [&](att::Status status,
+                                                             IdType cb_handler_id) {
+    EXPECT_TRUE(status.is_success());
+    handler_id = cb_handler_id;
+  };
+
+  int value_cb_count = 0;
+  RemoteCharacteristic::ValueCallback value_cb = [&](auto&, auto) {
+    value_cb_count++;
+    ASSERT_TRUE(handler_id);
+    // Disabling notifications in handler should not crash.
+    svc->DisableNotifications(kChrcValueHandle, handler_id.value(), [](auto) {});
+  };
+  svc->EnableNotifications(kChrcValueHandle, std::move(value_cb), std::move(status_cb));
+
+  fake_client()->SendNotification(/*indicate=*/false, kChrcValueHandle.value,
+                                  StaticByteBuffer('y', 'e'),
+                                  /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  EXPECT_EQ(value_cb_count, 1);
+
+  // Second notification should not notify disabled handler.
+  fake_client()->SendNotification(/*indicate=*/false, kChrcValueHandle.value,
+                                  StaticByteBuffer('y', 'e'),
+                                  /*maybe_truncated=*/false);
+  RunLoopUntilIdle();
+  EXPECT_EQ(value_cb_count, 1);
 }
 
 }  // namespace

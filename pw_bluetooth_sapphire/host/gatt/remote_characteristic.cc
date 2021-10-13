@@ -283,10 +283,18 @@ bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(!shut_down_);
 
-  if (!notify_handlers_.erase(handler_id)) {
+  auto handler_iter = notify_handlers_.find(handler_id);
+  if (handler_iter == notify_handlers_.end()) {
     bt_log(TRACE, "gatt", "notify handler not found (id: %lu)", handler_id);
     return false;
   }
+
+  // Don't modify handlers map while handlers are being notified.
+  if (notifying_handlers_) {
+    handlers_pending_disable_.push_back(handler_id);
+    return true;
+  }
+  notify_handlers_.erase(handler_iter);
 
   if (!notify_handlers_.empty())
     return true;
@@ -344,10 +352,18 @@ void RemoteCharacteristic::HandleNotification(const ByteBuffer& value, bool mayb
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(!shut_down_);
 
+  notifying_handlers_ = true;
   for (auto& iter : notify_handlers_) {
     auto& handler = iter.second;
     NotifyValue(value, maybe_truncated, handler.callback.share(), handler.dispatcher);
   }
+  notifying_handlers_ = false;
+
+  // If handlers disabled themselves when notified, remove them from the map.
+  for (IdType handler_id : handlers_pending_disable_) {
+    notify_handlers_.erase(handler_id);
+  }
+  handlers_pending_disable_.clear();
 }
 
 }  // namespace bt::gatt

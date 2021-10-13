@@ -300,7 +300,7 @@ void RemoteServiceManager::AddService(const ServiceData& service_data) {
     return;
   }
 
-  auto svc = fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr(), gatt_dispatcher_));
+  auto svc = fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr()));
   if (!svc) {
     bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
     return;
@@ -579,8 +579,7 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
     // Destroy the old service and replace with a new service in order to easily cancel ongoing
     // procedures and ensure clients handle service change.
     service_iter->second->ShutDown(/*service_changed=*/true);
-    auto new_service =
-        fbl::AdoptRef(new RemoteService(new_service_data, client_->AsWeakPtr(), gatt_dispatcher_));
+    auto new_service = fbl::AdoptRef(new RemoteService(new_service_data, client_->AsWeakPtr()));
     ZX_ASSERT(new_service->handle() == service_iter->first);
     service_iter->second = new_service;
     modified_services.push_back(std::move(new_service));
@@ -589,8 +588,7 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
   ServiceList added_services;
   added_services.reserve(added_data.size());
   for (ServiceData service_data : added_data) {
-    auto service =
-        fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr(), gatt_dispatcher_));
+    auto service = fbl::AdoptRef(new RemoteService(service_data, client_->AsWeakPtr()));
     auto [_, inserted] = services_.try_emplace(service->handle(), service);
     ZX_ASSERT_MSG(inserted, "service with handle (%#.4x) already exists", service->handle());
     added_services.push_back(std::move(service));

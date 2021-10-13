@@ -33,162 +33,115 @@ bool IsInternalUuid(const UUID& uuid) {
   // clang-format on
 }
 
-void ReportStatus(Status status, StatusCallback callback, async_dispatcher_t* dispatcher) {
-  RunOrPost([status, cb = std::move(callback)] { cb(status); }, dispatcher);
+void ReportReadValueError(att::Status status, RemoteService::ReadValueCallback callback) {
+  callback(status, BufferView(), /*maybe_truncated=*/false);
 }
 
-void ReportValue(att::Status status, const ByteBuffer& value, bool maybe_truncated,
-                 RemoteService::ReadValueCallback callback, async_dispatcher_t* dispatcher) {
-  if (!dispatcher) {
-    callback(status, value, maybe_truncated);
-    return;
+CharacteristicMap CharacteristicsToCharacteristicMap(
+    const std::map<CharacteristicHandle, RemoteCharacteristic>& characteristics) {
+  CharacteristicMap characteristic_map;
+  for (const auto& [_handle, chrc] : characteristics) {
+    characteristic_map.try_emplace(_handle, chrc.info(), chrc.descriptors());
   }
-
-  // TODO(armansito): Consider making att::Bearer return the ATT PDU buffer
-  // directly which would remove the need for a copy.
-
-  auto buffer = NewSlabBuffer(value.size());
-  value.Copy(buffer.get());
-
-  async::PostTask(dispatcher,
-                  [status, maybe_truncated, callback = std::move(callback),
-                   val = std::move(buffer)] { callback(status, *val, maybe_truncated); });
-}
-
-void ReportReadValueError(att::Status status, RemoteService::ReadValueCallback callback,
-                          async_dispatcher_t* dispatcher) {
-  ReportValue(status, BufferView(), /*maybe_truncated=*/false, std::move(callback), dispatcher);
-}
-
-void ReportValues(att::Status status, std::vector<RemoteService::ReadByTypeResult> values,
-                  RemoteService::ReadByTypeCallback callback, async_dispatcher_t* dispatcher) {
-  if (!dispatcher) {
-    callback(status, std::move(values));
-    return;
-  }
-
-  // It is safe to capture |values| because they contain owning pointers to the value buffers
-  // (unlike in ReportValue());
-  async::PostTask(dispatcher,
-                  [status, callback = std::move(callback), values = std::move(values)]() mutable {
-                    callback(status, std::move(values));
-                  });
+  return characteristic_map;
 }
 
 }  // namespace
 
-// static
-constexpr size_t RemoteService::kSentinel;
-
-RemoteService::RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client,
-                             async_dispatcher_t* gatt_dispatcher)
+RemoteService::RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client)
     : service_data_(service_data),
-      gatt_dispatcher_(gatt_dispatcher),
-      client_(client),
+      client_(std::move(client)),
       remaining_descriptor_requests_(kSentinel),
       shut_down_(false) {
   ZX_DEBUG_ASSERT(client_);
-  ZX_DEBUG_ASSERT(gatt_dispatcher_);
 }
 
-RemoteService::~RemoteService() {
-  std::lock_guard<std::mutex> lock(mtx_);
-  ZX_DEBUG_ASSERT(!alive());
-}
+RemoteService::~RemoteService() { ZX_DEBUG_ASSERT(!alive()); }
 
 void RemoteService::ShutDown(bool service_changed) {
-  ZX_DEBUG_ASSERT(IsOnGattThread());
-
-  std::vector<PendingClosure> rm_handlers;
-
-  {
-    std::lock_guard<std::mutex> lock(mtx_);
-    if (!alive()) {
-      return;
-    }
-
-    for (auto& chr : characteristics_) {
-      chr.second.ShutDown(service_changed);
-    }
-
-    shut_down_ = true;
-    rm_handlers = std::move(rm_handlers_);
+  if (!alive()) {
+    return;
   }
 
+  for (auto& chr : characteristics_) {
+    chr.second.ShutDown(service_changed);
+  }
+
+  shut_down_ = true;
+
+  std::vector<fit::callback<void()>> rm_handlers = std::move(rm_handlers_);
   for (auto& handler : rm_handlers) {
-    RunOrPost(std::move(handler.callback), handler.dispatcher);
+    handler();
   }
 }
 
-bool RemoteService::AddRemovedHandler(fit::closure handler, async_dispatcher_t* dispatcher) {
-  std::lock_guard<std::mutex> lock(mtx_);
-
+bool RemoteService::AddRemovedHandler(fit::closure handler) {
   if (!alive())
     return false;
 
-  rm_handlers_.emplace_back(std::move(handler), dispatcher);
+  rm_handlers_.emplace_back(std::move(handler));
   return true;
 }
 
-void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback,
-                                            async_dispatcher_t* dispatcher) {
-  RunGattTask([this, cb = std::move(callback), dispatcher]() mutable {
-    if (shut_down_) {
-      ReportCharacteristics(Status(HostError::kFailed), std::move(cb), dispatcher);
+void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback) {
+  if (shut_down_) {
+    callback(Status(HostError::kFailed), CharacteristicMap());
+    return;
+  }
+
+  // Characteristics already discovered. Return success.
+  if (HasCharacteristics()) {
+    // We return a new copy of only the immutable data of our characteristics and their
+    // descriptors. This requires a copy, which *could* be expensive in the (unlikely) case
+    // that a service has a very large number of characteristics.
+    callback(Status(), CharacteristicsToCharacteristicMap(characteristics_));
+    return;
+  }
+
+  // Queue this request.
+  pending_discov_reqs_.emplace_back(std::move(callback));
+
+  // Nothing to do if a write request is already pending.
+  if (pending_discov_reqs_.size() > 1u)
+    return;
+
+  auto self = fbl::RefPtr(this);
+  auto chrc_cb = [self](const CharacteristicData& chr) {
+    if (!self->shut_down_) {
+      // try_emplace should not fail here; our GATT::Client explicitly ensures that handles are
+      // strictly ascending (as described in the spec) so we should never see a handle collision
+      self->characteristics_.try_emplace(CharacteristicHandle(chr.value_handle), self->client_,
+                                         chr);
+    }
+  };
+
+  auto res_cb = [self](Status status) mutable {
+    if (self->shut_down_) {
+      status = Status(HostError::kFailed);
+    }
+
+    if (bt_is_error(status, TRACE, "gatt", "characteristic discovery failed")) {
+      self->characteristics_.clear();
+    }
+
+    if (self->characteristics_.empty()) {
+      if (status) {
+        // This marks that characteristic discovery has completed
+        // successfully.
+        self->remaining_descriptor_requests_ = 0u;
+      }
+
+      // Skip descriptor discovery and end the procedure as no characteristics
+      // were found (or the operation failed).
+      self->CompleteCharacteristicDiscovery(status);
       return;
     }
 
-    // Characteristics already discovered. Return success.
-    if (HasCharacteristics()) {
-      ReportCharacteristics(Status(), std::move(cb), dispatcher);
-      return;
-    }
+    self->StartDescriptorDiscovery();
+  };
 
-    // Queue this request.
-    pending_discov_reqs_.emplace_back(std::move(cb), dispatcher);
-
-    // Nothing to do if a write request is already pending.
-    if (pending_discov_reqs_.size() > 1u)
-      return;
-
-    auto self = fbl::RefPtr(this);
-    auto chrc_cb = [self](const CharacteristicData& chr) {
-      if (!self->shut_down_) {
-        // try_emplace should not fail here; our GATT::Client explicitly ensures that handles are
-        // strictly ascending (as described in the spec) so we should never see a handle collision
-        self->characteristics_.try_emplace(CharacteristicHandle(chr.value_handle), self->client_,
-                                           chr);
-      }
-    };
-
-    auto res_cb = [self](Status status) mutable {
-      if (self->shut_down_) {
-        status = Status(HostError::kFailed);
-      }
-
-      if (bt_is_error(status, TRACE, "gatt", "characteristic discovery failed")) {
-        self->characteristics_.clear();
-      }
-
-      if (self->characteristics_.empty()) {
-        if (status) {
-          // This marks that characteristic discovery has completed
-          // successfully.
-          self->remaining_descriptor_requests_ = 0u;
-        }
-
-        // Skip descriptor discovery and end the procedure as no characteristics
-        // were found (or the operation failed).
-        self->CompleteCharacteristicDiscovery(status);
-        return;
-      }
-
-      self->StartDescriptorDiscovery();
-    };
-
-    client_->DiscoverCharacteristics(service_data_.range_start, service_data_.range_end,
-                                     std::move(chrc_cb), std::move(res_cb));
-  });
+  client_->DiscoverCharacteristics(service_data_.range_start, service_data_.range_end,
+                                   std::move(chrc_cb), std::move(res_cb));
 }
 
 bool RemoteService::IsDiscovered() const {
@@ -197,288 +150,248 @@ bool RemoteService::IsDiscovered() const {
   return HasCharacteristics();
 }
 
-void RemoteService::ReadCharacteristic(CharacteristicHandle id, ReadValueCallback callback,
-                                       async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, cb = std::move(callback), dispatcher]() mutable {
-    RemoteCharacteristic* chrc;
-    att::Status status = att::Status(GetCharacteristic(id, &chrc));
-    ZX_DEBUG_ASSERT(chrc || !status);
-    if (!status) {
-      ReportReadValueError(status, std::move(cb), dispatcher);
-      return;
-    }
+void RemoteService::ReadCharacteristic(CharacteristicHandle id, ReadValueCallback callback) {
+  RemoteCharacteristic* chrc;
+  att::Status status = att::Status(GetCharacteristic(id, &chrc));
+  ZX_DEBUG_ASSERT(chrc || !status);
+  if (!status) {
+    ReportReadValueError(status, std::move(callback));
+    return;
+  }
 
-    if (!(chrc->info().properties & Property::kRead)) {
-      bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
-      ReportReadValueError(att::Status(HostError::kNotSupported), std::move(cb), dispatcher);
-      return;
-    }
+  if (!(chrc->info().properties & Property::kRead)) {
+    bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
+    ReportReadValueError(att::Status(HostError::kNotSupported), std::move(callback));
+    return;
+  }
 
-    SendReadRequest(chrc->info().value_handle, std::move(cb), dispatcher);
-  });
+  client_->ReadRequest(chrc->info().value_handle, std::move(callback));
 }
 
 void RemoteService::ReadLongCharacteristic(CharacteristicHandle id, uint16_t offset,
-                                           size_t max_bytes, ReadValueCallback callback,
-                                           async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, offset, max_bytes, cb = std::move(callback), dispatcher]() mutable {
-    RemoteCharacteristic* chrc;
-    att::Status status = att::Status(GetCharacteristic(id, &chrc));
-    ZX_DEBUG_ASSERT(chrc || !status);
-    if (!status) {
-      ReportReadValueError(status, std::move(cb), dispatcher);
-      return;
-    }
+                                           size_t max_bytes, ReadValueCallback callback) {
+  RemoteCharacteristic* chrc;
+  att::Status status = att::Status(GetCharacteristic(id, &chrc));
+  ZX_DEBUG_ASSERT(chrc || !status);
+  if (!status) {
+    ReportReadValueError(status, std::move(callback));
+    return;
+  }
 
-    if (!(chrc->info().properties & Property::kRead)) {
-      bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
-      ReportReadValueError(att::Status(HostError::kNotSupported), std::move(cb), dispatcher);
-      return;
-    }
+  if (!(chrc->info().properties & Property::kRead)) {
+    bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
+    ReportReadValueError(att::Status(HostError::kNotSupported), std::move(callback));
+    return;
+  }
 
-    if (max_bytes == 0) {
-      bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
-      ReportReadValueError(att::Status(HostError::kInvalidParameters), std::move(cb), dispatcher);
-      return;
-    }
+  if (max_bytes == 0) {
+    bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
+    ReportReadValueError(att::Status(HostError::kInvalidParameters), std::move(callback));
+    return;
+  }
 
-    // Set up the buffer in which we'll accumulate the blobs.
-    auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
-    if (!buffer) {
-      ReportReadValueError(att::Status(HostError::kOutOfMemory), std::move(cb), dispatcher);
-      return;
-    }
+  // Set up the buffer in which we'll accumulate the blobs.
+  auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
+  if (!buffer) {
+    ReportReadValueError(att::Status(HostError::kOutOfMemory), std::move(callback));
+    return;
+  }
 
-    ReadLongHelper(chrc->info().value_handle, offset, std::move(buffer), 0u /* bytes_read */,
-                   std::move(cb), dispatcher);
-  });
+  ReadLongHelper(chrc->info().value_handle, offset, std::move(buffer), 0u /* bytes_read */,
+                 std::move(callback));
 }
 
-void RemoteService::ReadByType(const UUID& type, ReadByTypeCallback callback,
-                               async_dispatcher_t* dispatcher) {
-  RunGattTask([this, type, cb = std::move(callback), dispatcher]() mutable {
-    // Caller should not request a UUID of an internal attribute (e.g. service declaration).
-    if (IsInternalUuid(type)) {
-      bt_log(TRACE, "gatt", "ReadByType called with internal GATT type (type: %s)", bt_str(type));
-      ReportValues(att::Status(HostError::kInvalidParameters), {}, std::move(cb), dispatcher);
-      return;
-    }
+void RemoteService::ReadByType(const UUID& type, ReadByTypeCallback callback) {
+  // Caller should not request a UUID of an internal attribute (e.g. service declaration).
+  if (IsInternalUuid(type)) {
+    bt_log(TRACE, "gatt", "ReadByType called with internal GATT type (type: %s)", bt_str(type));
+    callback(att::Status(HostError::kInvalidParameters), {});
+    return;
+  }
 
-    // Read range is entire service range.
-    ReadByTypeHelper(type, service_data_.range_start, service_data_.range_end, {}, std::move(cb),
-                     dispatcher);
-  });
+  // Read range is entire service range.
+  ReadByTypeHelper(type, service_data_.range_start, service_data_.range_end, {},
+                   std::move(callback));
 }
 
 void RemoteService::WriteCharacteristic(CharacteristicHandle id, std::vector<uint8_t> value,
-                                        StatusCallback cb, async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, value = std::move(value), cb = std::move(cb), dispatcher]() mutable {
-    RemoteCharacteristic* chrc;
-    Status status = Status(GetCharacteristic(id, &chrc));
-    ZX_DEBUG_ASSERT(chrc || !status);
-    if (!status) {
-      ReportStatus(status, std::move(cb), dispatcher);
-      return;
-    }
+                                        StatusCallback cb) {
+  RemoteCharacteristic* chrc;
+  Status status = Status(GetCharacteristic(id, &chrc));
+  ZX_DEBUG_ASSERT(chrc || !status);
+  if (!status) {
+    cb(status);
+    return;
+  }
 
-    if (!(chrc->info().properties & Property::kWrite)) {
-      bt_log(DEBUG, "gatt", "characteristic does not support \"write\"");
-      ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
-      return;
-    }
+  if (!(chrc->info().properties & Property::kWrite)) {
+    bt_log(DEBUG, "gatt", "characteristic does not support \"write\"");
+    cb(Status(HostError::kNotSupported));
+    return;
+  }
 
-    SendWriteRequest(chrc->info().value_handle, BufferView(value.data(), value.size()),
-                     std::move(cb), dispatcher);
-  });
+  client_->WriteRequest(chrc->info().value_handle, BufferView(value.data(), value.size()),
+                        std::move(cb));
 }
 
 void RemoteService::WriteLongCharacteristic(CharacteristicHandle id, uint16_t offset,
                                             std::vector<uint8_t> value, ReliableMode reliable_mode,
-                                            StatusCallback cb, async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, offset, value = std::move(value), mode = std::move(reliable_mode),
-               cb = std::move(cb), dispatcher]() mutable {
-    RemoteCharacteristic* chrc;
-    Status status = Status(GetCharacteristic(id, &chrc));
-    ZX_DEBUG_ASSERT(chrc || !status);
-    if (!status) {
-      ReportStatus(status, std::move(cb), dispatcher);
-      return;
-    }
+                                            StatusCallback callback) {
+  RemoteCharacteristic* chrc;
+  Status status = Status(GetCharacteristic(id, &chrc));
+  ZX_DEBUG_ASSERT(chrc || !status);
+  if (!status) {
+    callback(status);
+    return;
+  }
 
-    if (!(chrc->info().properties & Property::kWrite)) {
-      bt_log(DEBUG, "gatt", "characteristic does not support \"write\"");
-      ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
-      return;
-    }
+  if (!(chrc->info().properties & Property::kWrite)) {
+    bt_log(DEBUG, "gatt", "characteristic does not support \"write\"");
+    callback(Status(HostError::kNotSupported));
+    return;
+  }
 
-    if ((mode == ReliableMode::kEnabled) &&
-        ((!chrc->extended_properties().has_value()) ||
-         (!(chrc->extended_properties().value() & ExtendedProperty::kReliableWrite)))) {
-      bt_log(DEBUG, "gatt",
-             "characteristic does not support \"reliable write\"; attempting request anyway");
-    }
+  if ((reliable_mode == ReliableMode::kEnabled) &&
+      ((!chrc->extended_properties().has_value()) ||
+       (!(chrc->extended_properties().value() & ExtendedProperty::kReliableWrite)))) {
+    bt_log(DEBUG, "gatt",
+           "characteristic does not support \"reliable write\"; attempting request anyway");
+  }
 
-    SendLongWriteRequest(chrc->info().value_handle, offset, BufferView(value.data(), value.size()),
-                         std::move(mode), std::move(cb), dispatcher);
-  });
+  SendLongWriteRequest(chrc->info().value_handle, offset, BufferView(value.data(), value.size()),
+                       reliable_mode, std::move(callback));
 }
 
 void RemoteService::WriteCharacteristicWithoutResponse(CharacteristicHandle id,
                                                        std::vector<uint8_t> value,
-                                                       StatusCallback cb,
-                                                       async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, cb = std::move(cb), dispatcher, value = std::move(value)]() mutable {
-    RemoteCharacteristic* chrc;
-    Status status = Status(GetCharacteristic(id, &chrc));
-    ZX_DEBUG_ASSERT(chrc || !status);
-    if (!status) {
-      ReportStatus(status, std::move(cb), dispatcher);
-      return;
-    }
+                                                       StatusCallback cb) {
+  RemoteCharacteristic* chrc;
+  Status status = Status(GetCharacteristic(id, &chrc));
+  ZX_DEBUG_ASSERT(chrc || !status);
+  if (!status) {
+    cb(status);
+    return;
+  }
 
-    if (!(chrc->info().properties & (Property::kWrite | Property::kWriteWithoutResponse))) {
-      bt_log(DEBUG, "gatt", "characteristic does not support \"write without response\"");
-      ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
-      return;
-    }
+  if (!(chrc->info().properties & (Property::kWrite | Property::kWriteWithoutResponse))) {
+    bt_log(DEBUG, "gatt", "characteristic does not support \"write without response\"");
+    cb(Status(HostError::kNotSupported));
+    return;
+  }
 
-    client_->WriteWithoutResponse(chrc->info().value_handle, BufferView(value.data(), value.size()),
-                                  [cb = std::move(cb), dispatcher](Status status) mutable {
-                                    ReportStatus(status, std::move(cb), dispatcher);
-                                  });
-  });
+  client_->WriteWithoutResponse(chrc->info().value_handle, BufferView(value.data(), value.size()),
+                                std::move(cb));
 }
 
-void RemoteService::ReadDescriptor(DescriptorHandle id, ReadValueCallback cb,
-                                   async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, cb = std::move(cb), dispatcher]() mutable {
-    const DescriptorData* desc;
-    att::Status status = att::Status(GetDescriptor(id, &desc));
-    ZX_DEBUG_ASSERT(desc || !status);
-    if (!status) {
-      ReportReadValueError(status, std::move(cb), dispatcher);
-      return;
-    }
+void RemoteService::ReadDescriptor(DescriptorHandle id, ReadValueCallback callback) {
+  const DescriptorData* desc;
+  att::Status status = att::Status(GetDescriptor(id, &desc));
+  ZX_DEBUG_ASSERT(desc || !status);
+  if (!status) {
+    ReportReadValueError(status, std::move(callback));
+    return;
+  }
 
-    SendReadRequest(desc->handle, std::move(cb), dispatcher);
-  });
+  client_->ReadRequest(desc->handle, std::move(callback));
 }
 
 void RemoteService::ReadLongDescriptor(DescriptorHandle id, uint16_t offset, size_t max_bytes,
-                                       ReadValueCallback cb, async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, offset, max_bytes, cb = std::move(cb), dispatcher]() mutable {
-    const DescriptorData* desc;
-    att::Status status = att::Status(GetDescriptor(id, &desc));
-    ZX_DEBUG_ASSERT(desc || !status);
-    if (!status) {
-      ReportReadValueError(status, std::move(cb), dispatcher);
-      return;
-    }
+                                       ReadValueCallback callback) {
+  const DescriptorData* desc;
+  att::Status status = att::Status(GetDescriptor(id, &desc));
+  ZX_DEBUG_ASSERT(desc || !status);
+  if (!status) {
+    ReportReadValueError(status, std::move(callback));
+    return;
+  }
 
-    if (max_bytes == 0) {
-      bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
-      ReportReadValueError(att::Status(HostError::kInvalidParameters), std::move(cb), dispatcher);
-      return;
-    }
+  if (max_bytes == 0) {
+    bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
+    ReportReadValueError(att::Status(HostError::kInvalidParameters), std::move(callback));
+    return;
+  }
 
-    // Set up the buffer in which we'll accumulate the blobs.
-    auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
-    if (!buffer) {
-      ReportReadValueError(att::Status(HostError::kOutOfMemory), std::move(cb), dispatcher);
-      return;
-    }
+  // Set up the buffer in which we'll accumulate the blobs.
+  auto buffer = NewSlabBuffer(std::min(max_bytes, att::kMaxAttributeValueLength));
+  if (!buffer) {
+    ReportReadValueError(att::Status(HostError::kOutOfMemory), std::move(callback));
+    return;
+  }
 
-    ReadLongHelper(desc->handle, offset, std::move(buffer), 0u /* bytes_read */, std::move(cb),
-                   dispatcher);
-  });
+  ReadLongHelper(desc->handle, offset, std::move(buffer), 0u /* bytes_read */, std::move(callback));
 }
 
 void RemoteService::WriteDescriptor(DescriptorHandle id, std::vector<uint8_t> value,
-                                    att::StatusCallback cb, async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, value = std::move(value), cb = std::move(cb), dispatcher]() mutable {
-    const DescriptorData* desc;
-    Status status = Status(GetDescriptor(id, &desc));
-    ZX_DEBUG_ASSERT(desc || !status);
-    if (!status) {
-      ReportStatus(status, std::move(cb), dispatcher);
-      return;
-    }
+                                    att::StatusCallback callback) {
+  const DescriptorData* desc;
+  Status status = Status(GetDescriptor(id, &desc));
+  ZX_DEBUG_ASSERT(desc || !status);
+  if (!status) {
+    callback(status);
+    return;
+  }
 
-    // Do not allow writing to internally reserved descriptors.
-    if (desc->type == types::kClientCharacteristicConfig) {
-      bt_log(DEBUG, "gatt", "writing to CCC descriptor not allowed");
-      ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
-      return;
-    }
+  // Do not allow writing to internally reserved descriptors.
+  if (desc->type == types::kClientCharacteristicConfig) {
+    bt_log(DEBUG, "gatt", "writing to CCC descriptor not allowed");
+    callback(Status(HostError::kNotSupported));
+    return;
+  }
 
-    SendWriteRequest(desc->handle, BufferView(value.data(), value.size()), std::move(cb),
-                     dispatcher);
-  });
+  client_->WriteRequest(desc->handle, BufferView(value.data(), value.size()), std::move(callback));
 }
 
 void RemoteService::WriteLongDescriptor(DescriptorHandle id, uint16_t offset,
-                                        std::vector<uint8_t> value, att::StatusCallback cb,
-                                        async_dispatcher_t* dispatcher) {
-  RunGattTask(
-      [this, id, offset, value = std::move(value), cb = std::move(cb), dispatcher]() mutable {
-        const DescriptorData* desc;
-        Status status = Status(GetDescriptor(id, &desc));
-        ZX_DEBUG_ASSERT(desc || !status);
-        if (!status) {
-          ReportStatus(status, std::move(cb), dispatcher);
-          return;
-        }
+                                        std::vector<uint8_t> value, att::StatusCallback callback) {
+  const DescriptorData* desc;
+  Status status = Status(GetDescriptor(id, &desc));
+  ZX_DEBUG_ASSERT(desc || !status);
+  if (!status) {
+    callback(status);
+    return;
+  }
 
-        // Do not allow writing to internally reserved descriptors.
-        if (desc->type == types::kClientCharacteristicConfig) {
-          bt_log(DEBUG, "gatt", "writing to CCC descriptor not allowed");
-          ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
-          return;
-        }
+  // Do not allow writing to internally reserved descriptors.
+  if (desc->type == types::kClientCharacteristicConfig) {
+    bt_log(DEBUG, "gatt", "writing to CCC descriptor not allowed");
+    callback(Status(HostError::kNotSupported));
+    return;
+  }
 
-        // For writing long descriptors, reliable mode is not supported.
-        auto mode = ReliableMode::kDisabled;
-        SendLongWriteRequest(desc->handle, offset, BufferView(value.data(), value.size()),
-                             std::move(mode), std::move(cb), dispatcher);
-      });
+  // For writing long descriptors, reliable mode is not supported.
+  auto mode = ReliableMode::kDisabled;
+  SendLongWriteRequest(desc->handle, offset, BufferView(value.data(), value.size()), mode,
+                       std::move(callback));
 }
 
 void RemoteService::EnableNotifications(CharacteristicHandle id, ValueCallback callback,
-                                        NotifyStatusCallback status_callback,
-                                        async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, cb = std::move(callback), status_cb = std::move(status_callback),
-               dispatcher]() mutable {
-    RemoteCharacteristic* chrc;
-    att::Status status = att::Status(GetCharacteristic(id, &chrc));
-    ZX_DEBUG_ASSERT(chrc || !status);
-    if (!status) {
-      RunOrPost([status, cb = std::move(status_cb)] { cb(status, kInvalidId); }, dispatcher);
-      return;
-    }
+                                        NotifyStatusCallback status_callback) {
+  RemoteCharacteristic* chrc;
+  att::Status status = att::Status(GetCharacteristic(id, &chrc));
+  ZX_DEBUG_ASSERT(chrc || !status);
+  if (!status) {
+    status_callback(status, kInvalidId);
+    return;
+  }
 
-    chrc->EnableNotifications(std::move(cb), std::move(status_cb), dispatcher);
-  });
+  chrc->EnableNotifications(std::move(callback), std::move(status_callback));
 }
 
 void RemoteService::DisableNotifications(CharacteristicHandle id, IdType handler_id,
-                                         StatusCallback status_callback,
-                                         async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, handler_id, cb = std::move(status_callback), dispatcher]() mutable {
-    RemoteCharacteristic* chrc;
-    att::Status status = att::Status(GetCharacteristic(id, &chrc));
-    ZX_DEBUG_ASSERT(chrc || !status);
-    if (status && !chrc->DisableNotifications(handler_id)) {
-      status = att::Status(HostError::kNotFound);
-    }
-    ReportStatus(status, std::move(cb), dispatcher);
-  });
+                                         StatusCallback status_callback) {
+  RemoteCharacteristic* chrc;
+  att::Status status = att::Status(GetCharacteristic(id, &chrc));
+  ZX_DEBUG_ASSERT(chrc || !status);
+  if (status && !chrc->DisableNotifications(handler_id)) {
+    status = att::Status(HostError::kNotFound);
+  }
+  status_callback(status);
 }
 
 void RemoteService::StartDescriptorDiscovery() {
-  ZX_DEBUG_ASSERT(IsOnGattThread());
   ZX_DEBUG_ASSERT(!pending_discov_reqs_.empty());
 
-  ZX_DEBUG_ASSERT(characteristics_.size());
+  ZX_ASSERT(!characteristics_.empty());
   remaining_descriptor_requests_ = characteristics_.size();
 
   auto self = fbl::RefPtr(this);
@@ -538,13 +451,8 @@ void RemoteService::StartDescriptorDiscovery() {
   }
 }
 
-bool RemoteService::IsOnGattThread() const {
-  return async_get_default_dispatcher() == gatt_dispatcher_;
-}
-
 HostError RemoteService::GetCharacteristic(CharacteristicHandle id,
                                            RemoteCharacteristic** out_char) {
-  ZX_DEBUG_ASSERT(IsOnGattThread());
   ZX_DEBUG_ASSERT(out_char);
 
   if (shut_down_) {
@@ -568,7 +476,6 @@ HostError RemoteService::GetCharacteristic(CharacteristicHandle id,
 }
 
 HostError RemoteService::GetDescriptor(DescriptorHandle id, const DescriptorData** out_desc) {
-  ZX_DEBUG_ASSERT(IsOnGattThread());
   ZX_DEBUG_ASSERT(out_desc);
 
   if (shut_down_) {
@@ -598,60 +505,23 @@ HostError RemoteService::GetDescriptor(DescriptorHandle id, const DescriptorData
   return HostError::kNotFound;
 }
 
-void RemoteService::RunGattTask(fit::closure task) {
-  // Capture a reference to this object to guarantee its lifetime.
-  RunOrPost([objref = fbl::RefPtr(this), task = std::move(task)] { task(); }, gatt_dispatcher_);
-}
-
-void RemoteService::ReportCharacteristics(Status status, CharacteristicCallback callback,
-                                          async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(IsOnGattThread());
-  RunOrPost(
-      [self = fbl::RefPtr(this), status, cb = std::move(callback)] {
-        // We return a new copy of only the immutable data of our characteristics and their
-        // descriptors. This requires a copy, which *could* be expensive in the (unlikely) case
-        // that a service has a very large number of characteristics, but provides much safer
-        // guarantees of correctness than returning a reference into our object. If the copy proves
-        // too expensive, then we should consider returning some kind of safe reference counting
-        // handle.
-        CharacteristicMap characteristics;
-        for (const auto& [_handle, chrc] : self->characteristics_)
-          characteristics.try_emplace(_handle, chrc.info(), chrc.descriptors());
-
-        cb(status, characteristics);
-      },
-      dispatcher);
-}
-
 void RemoteService::CompleteCharacteristicDiscovery(att::Status status) {
   ZX_DEBUG_ASSERT(!pending_discov_reqs_.empty());
   ZX_DEBUG_ASSERT(!status || remaining_descriptor_requests_ == 0u);
 
+  // We return a new copy of only the immutable data of our characteristics and their
+  // descriptors. This requires a copy, which *could* be expensive in the (unlikely) case
+  // that a service has a very large number of characteristics.
+  CharacteristicMap characteristic_map = CharacteristicsToCharacteristicMap(characteristics_);
+
   auto pending = std::move(pending_discov_reqs_);
-  for (auto& req : pending) {
-    ReportCharacteristics(status, std::move(req.callback), req.dispatcher);
+  for (auto& discovery_req_cb : pending) {
+    discovery_req_cb(status, characteristic_map);
   }
 }
 
-void RemoteService::SendReadRequest(att::Handle handle, ReadValueCallback cb,
-                                    async_dispatcher_t* dispatcher) {
-  client_->ReadRequest(handle,
-                       [cb = std::move(cb), dispatcher](att::Status status, const auto& value,
-                                                        bool maybe_truncated) mutable {
-                         ReportValue(status, value, maybe_truncated, std::move(cb), dispatcher);
-                       });
-}
-
-void RemoteService::SendWriteRequest(att::Handle handle, const ByteBuffer& value, StatusCallback cb,
-                                     async_dispatcher_t* dispatcher) {
-  client_->WriteRequest(handle, value, [cb = std::move(cb), dispatcher](Status status) mutable {
-    ReportStatus(status, std::move(cb), dispatcher);
-  });
-}
-
 void RemoteService::SendLongWriteRequest(att::Handle handle, uint16_t offset, BufferView value,
-                                         ReliableMode reliable_mode, att::StatusCallback final_cb,
-                                         async_dispatcher_t* dispatcher) {
+                                         ReliableMode reliable_mode, att::StatusCallback final_cb) {
   att::PrepareWriteQueue long_write_queue;
   auto header_ln = sizeof(att::PrepareWriteRequestParams) + sizeof(att::OpCode);
   uint16_t bytes_written = 0;
@@ -669,15 +539,12 @@ void RemoteService::SendLongWriteRequest(att::Handle handle, uint16_t offset, Bu
   }
 
   client_->ExecutePrepareWrites(std::move(long_write_queue), std::move(reliable_mode),
-                                [cb = std::move(final_cb), dispatcher](Status status) mutable {
-                                  ReportStatus(status, std::move(cb), dispatcher);
-                                });
+                                std::move(final_cb));
 }
 
 void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
                                    MutableByteBufferPtr buffer, size_t bytes_read,
-                                   ReadValueCallback callback, async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(IsOnGattThread());
+                                   ReadValueCallback callback) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(buffer);
   ZX_DEBUG_ASSERT(!shut_down_);
@@ -685,11 +552,11 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
   // Capture a reference so that this object is alive when the callback runs.
   auto self = fbl::RefPtr(this);
   auto read_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
-                  cb = std::move(callback), dispatcher](att::Status status, const ByteBuffer& blob,
-                                                        bool maybe_truncated_by_mtu) mutable {
+                  cb = std::move(callback)](att::Status status, const ByteBuffer& blob,
+                                            bool maybe_truncated_by_mtu) mutable {
     if (self->shut_down_) {
       // The service was removed. Report an error.
-      ReportReadValueError(att::Status(HostError::kCanceled), std::move(cb), dispatcher);
+      ReportReadValueError(att::Status(HostError::kCanceled), std::move(cb));
       return;
     }
 
@@ -701,12 +568,12 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
       if (status.is_protocol_error() &&
           status.protocol_error() == att::ErrorCode::kAttributeNotLong &&
           offset == self->client_->mtu() - sizeof(att::OpCode)) {
-        ReportValue(att::Status(), buffer->view(0, bytes_read),
-                    /*maybe_truncated=*/false, std::move(cb), dispatcher);
+        cb(att::Status(), buffer->view(0, bytes_read),
+           /*maybe_truncated=*/false);
         return;
       }
 
-      ReportReadValueError(status, std::move(cb), dispatcher);
+      ReportReadValueError(status, std::move(cb));
       return;
     }
 
@@ -722,14 +589,14 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
     // of bytes requested.
     ZX_ASSERT(bytes_read <= buffer->size());
     if (!maybe_truncated_by_mtu || bytes_read == buffer->size()) {
-      ReportValue(att::Status(), buffer->view(0, bytes_read),
-                  maybe_truncated_by_mtu || truncated_by_max_bytes, std::move(cb), dispatcher);
+      cb(att::Status(), buffer->view(0, bytes_read),
+         maybe_truncated_by_mtu || truncated_by_max_bytes);
       return;
     }
 
     // We have more bytes to read. Read the next blob.
     self->ReadLongHelper(value_handle, offset + blob.size(), std::move(buffer), bytes_read,
-                         std::move(cb), dispatcher);
+                         std::move(cb));
   };
 
   // "To read the complete Characteristic Value an ATT_READ_REQ PDU should be used for the first
@@ -745,14 +612,14 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
 
 void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::Handle end,
                                      std::vector<RemoteService::ReadByTypeResult> values,
-                                     ReadByTypeCallback callback, async_dispatcher_t* dispatcher) {
+                                     ReadByTypeCallback callback) {
   if (start > end) {
-    ReportValues(att::Status(), std::move(values), std::move(callback), dispatcher);
+    callback(att::Status(), std::move(values));
     return;
   }
 
   auto read_cb = [self = fbl::RefPtr(this), type, start, end, values_accum = std::move(values),
-                  cb = std::move(callback), dispatcher](Client::ReadByTypeResult result) mutable {
+                  cb = std::move(callback)](Client::ReadByTypeResult result) mutable {
     if (result.is_error()) {
       att::Status status = result.error().status;
       ZX_ASSERT(!status.is_success());
@@ -761,8 +628,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
           case att::ErrorCode::kAttributeNotFound:
             // Treat kAttributeNotFound error as success, since it's used to indicate when a
             // sequence of reads has successfully read all matching attributes.
-            status = att::Status();
-            ReportValues(status, std::move(values_accum), std::move(cb), dispatcher);
+            cb(att::Status(), std::move(values_accum));
             return;
           case att::ErrorCode::kRequestNotSupported:
           case att::ErrorCode::kInsufficientResources:
@@ -790,19 +656,18 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
             // Do not attempt to read from the next handle if the error handle is the max handle, as
             // this would cause an overflow.
             if (error_handle == std::numeric_limits<att::Handle>::max()) {
-              ReportValues(att::Status(), std::move(values_accum), std::move(cb), dispatcher);
+              cb(att::Status(), std::move(values_accum));
               return;
             }
 
             // Start next read right after attribute causing error.
             att::Handle start_next = error_handle + 1;
 
-            self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb),
-                                   dispatcher);
+            self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb));
             return;
         }
       }
-      ReportValues(status, {}, std::move(cb), dispatcher);
+      cb(status, /*values=*/{});
       return;
     }
 
@@ -823,7 +688,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
     // Do not attempt to read from the next handle if the last value handle is the max handle, as
     // this would cause an overflow.
     if (values.back().handle == std::numeric_limits<att::Handle>::max()) {
-      ReportValues(att::Status(), std::move(values_accum), std::move(cb), dispatcher);
+      cb(att::Status(), std::move(values_accum));
       return;
     }
 
@@ -831,16 +696,13 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
     // are ascending and in range, so we are guaranteed to make progress.
     att::Handle start_next = values.back().handle + 1;
 
-    self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb),
-                           dispatcher);
+    self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb));
   };
   client_->ReadByTypeRequest(type, start, end, std::move(read_cb));
 }
 
 void RemoteService::HandleNotification(att::Handle value_handle, const ByteBuffer& value,
                                        bool maybe_truncated) {
-  ZX_DEBUG_ASSERT(IsOnGattThread());
-
   if (shut_down_)
     return;
 

@@ -162,6 +162,9 @@ class RemoteCharacteristic final {
     ValueCallback callback;
   };
   std::unordered_map<IdType, NotifyHandler> notify_handlers_;
+  // Set to true while handlers in notify_handlers_ are being notified.
+  bool notifying_handlers_ = false;
+  std::vector<IdType> handlers_pending_disable_;
 
   // The next available notification handler ID.
   size_t next_notify_handler_id_;
