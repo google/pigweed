@@ -63,6 +63,12 @@
   } while (false)
 
 namespace pw::software_update {
+namespace {
+
+constexpr std::string_view kTopLevelTargetsName = "targets";
+constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
+
+}  // namespace
 
 Status BundledUpdateService::GetStatus(
     ServerContext&,
@@ -166,6 +172,19 @@ void BundledUpdateService::DoVerify() {
       return;
     }
     bundle_open_ = true;
+  }
+
+  // Have the backend verify the user_manifest if present.
+  stream::IntervalReader user_manifest =
+      bundle_.GetTargetPayload(kUserManifestTargetFileName);
+  if (user_manifest.ok()) {
+    const size_t bundle_offset = user_manifest.start();
+    if (!backend_.VerifyUserManifest(user_manifest, bundle_offset).ok()) {
+      std::lock_guard lock(mutex_);
+      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
+                "Backend::VerifyUserManifest() failed");
+      return;
+    }
   }
 
   // Notify backend we're done verifying.
@@ -323,7 +342,6 @@ void BundledUpdateService::DoApply() {
 
   // There should only be one element in the map, which is the top-level
   // targets metadata.
-  constexpr std::string_view kTopLevelTargetsName = "targets";
   protobuf::Message signed_targets_metadata =
       signed_targets_metadata_map[kTopLevelTargetsName];
   if (const Status status = signed_targets_metadata.status(); !status.ok()) {
@@ -413,6 +431,9 @@ void BundledUpdateService::DoApply() {
     const std::string_view file_name_view(
         reinterpret_cast<const char*>(file_name_span.data()),
         file_name_span.size_bytes());
+    if (file_name_view.compare(kUserManifestTargetFileName) == 0) {
+      continue;  // user_manifest is not applied by the backend.
+    }
     stream::IntervalReader file_reader =
         bundle_.GetTargetPayload(file_name_view);
     const size_t bundle_offset = file_reader.start();

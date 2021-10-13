@@ -62,9 +62,11 @@ class BundledUpdateBackend {
   virtual Status BeforeBundleVerify() { return OkStatus(); };
 
   // Perform any product-specific bundle verification tasks (e.g. hw version
-  // match check), done after TUF bundle verification process.
-  virtual Status VerifyMetadata(
-      [[maybe_unused]] const ManifestAccessor& manifest) {
+  // match check), done after TUF bundle verification process if user_manifest
+  // was provided as part of the bundle.
+  virtual Status VerifyUserManifest(
+      [[maybe_unused]] stream::Reader& user_manifest,
+      [[maybe_unused]] size_t update_bundle_offset) {
     return OkStatus();
   };
 
