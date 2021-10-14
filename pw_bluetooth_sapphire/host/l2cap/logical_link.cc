@@ -16,7 +16,6 @@
 #include "le_signaling_channel.h"
 #include "lib/fpromise/promise.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/strings/string_printf.h"

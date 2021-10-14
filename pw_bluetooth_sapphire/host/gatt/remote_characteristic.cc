@@ -8,7 +8,6 @@
 
 #include "client.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
 namespace bt::gatt {
