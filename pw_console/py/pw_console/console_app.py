@@ -21,7 +21,7 @@ import os
 from pathlib import Path
 import sys
 from threading import Thread
-from typing import Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union
 
 from jinja2 import Environment, FileSystemLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -331,6 +331,19 @@ class ConsoleApp:
         self.update_menu_items()
         self.focus_main_menu()
 
+    def set_ui_theme(self, theme_name: str) -> Callable:
+        call_function = functools.partial(
+            self.run_pane_menu_option,
+            functools.partial(self.load_theme, theme_name))
+        return call_function
+
+    def set_code_theme(self, theme_name: str) -> Callable:
+        call_function = functools.partial(
+            self.run_pane_menu_option,
+            functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
+                              theme_name))
+        return call_function
+
     def update_menu_items(self):
         self.root_container.menu_items = self._create_menu_items()
 
@@ -341,81 +354,37 @@ class ConsoleApp:
             MenuItem(
                 'UI Themes',
                 children=[
-                    MenuItem('Default: Dark',
-                             handler=functools.partial(self.load_theme,
-                                                       'dark')),
+                    MenuItem('Default: Dark', self.set_ui_theme('dark')),
                     MenuItem('High Contrast',
-                             handler=functools.partial(self.load_theme,
-                                                       'high-contrast-dark')),
-                    MenuItem('Nord',
-                             handler=functools.partial(self.load_theme,
-                                                       'nord')),
-                    MenuItem('Nord Light',
-                             handler=functools.partial(self.load_theme,
-                                                       'nord-light')),
-                    MenuItem('Moonlight',
-                             handler=functools.partial(self.load_theme,
-                                                       'moonlight')),
+                             self.set_ui_theme('high-contrast-dark')),
+                    MenuItem('Nord', self.set_ui_theme('nord')),
+                    MenuItem('Nord Light', self.set_ui_theme('nord-light')),
+                    MenuItem('Moonlight', self.set_ui_theme('moonlight')),
                 ],
             ),
             MenuItem(
                 'Code Themes',
                 children=[
-                    MenuItem(
-                        'Code: pigweed-code',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'pigweed-code')),
-                    MenuItem(
-                        'Code: pigweed-code-light',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'pigweed-code-light')),
-                    MenuItem(
-                        'Code: material',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'material')),
-                    MenuItem(
-                        'Code: gruvbox-light',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'gruvbox-light')),
-                    MenuItem(
-                        'Code: gruvbox-dark',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'gruvbox-dark')),
-                    MenuItem(
-                        'Code: tomorrow-night',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'tomorrow-night')),
-                    MenuItem(
-                        'Code: tomorrow-night-bright',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'tomorrow-night-bright')),
-                    MenuItem(
-                        'Code: tomorrow-night-blue',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'tomorrow-night-blue')),
-                    MenuItem(
-                        'Code: tomorrow-night-eighties',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'tomorrow-night-eighties')),
-                    MenuItem(
-                        'Code: dracula',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'dracula')),
-                    MenuItem(
-                        'Code: zenburn',
-                        functools.partial(
-                            self.pw_ptpython_repl.use_code_colorscheme,
-                            'zenburn')),
+                    MenuItem('Code: pigweed-code',
+                             self.set_code_theme('pigweed-code')),
+                    MenuItem('Code: pigweed-code-light',
+                             self.set_code_theme('pigweed-code-light')),
+                    MenuItem('Code: material',
+                             self.set_code_theme('material')),
+                    MenuItem('Code: gruvbox-light',
+                             self.set_code_theme('gruvbox-light')),
+                    MenuItem('Code: gruvbox-dark',
+                             self.set_code_theme('gruvbox-dark')),
+                    MenuItem('Code: tomorrow-night',
+                             self.set_code_theme('tomorrow-night')),
+                    MenuItem('Code: tomorrow-night-bright',
+                             self.set_code_theme('tomorrow-night-bright')),
+                    MenuItem('Code: tomorrow-night-blue',
+                             self.set_code_theme('tomorrow-night-blue')),
+                    MenuItem('Code: tomorrow-night-eighties',
+                             self.set_code_theme('tomorrow-night-eighties')),
+                    MenuItem('Code: dracula', self.set_code_theme('dracula')),
+                    MenuItem('Code: zenburn', self.set_code_theme('zenburn')),
                 ],
             ),
         ]
@@ -548,6 +517,8 @@ class ConsoleApp:
         # Use ptpython's style_transformation to swap dark and light colors.
         self.pw_ptpython_repl.swap_light_and_dark = (
             not self.pw_ptpython_repl.swap_light_and_dark)
+        if self.application:
+            self.focus_main_menu()
 
     def load_theme(self, theme_name=None):
         """Regenerate styles for the current theme_name."""
