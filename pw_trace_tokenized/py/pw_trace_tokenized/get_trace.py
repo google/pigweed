@@ -87,10 +87,10 @@ def get_hdlc_rpc_client(device: str, baudrate: int,
 
 
 def get_trace_data_from_device(client):
-    """ Get the trace data using RPC from a Client"""
+    """Get the trace data using RPC from a Client"""
     data = b''
-    result = \
-        client.client.channel(1).rpcs.pw.trace.TraceService.GetTraceData().get()
+    service = client.client.channel(1).rpcs.pw.trace.TraceService
+    result = service.GetTraceData().responses
     for streamed_data in result:
         data = data + bytes([len(streamed_data.data)])
         data = data + streamed_data.data
