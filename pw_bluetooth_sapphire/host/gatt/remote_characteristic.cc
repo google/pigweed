@@ -13,81 +13,29 @@
 
 namespace bt::gatt {
 
-namespace {
-
-void ReportNotifyStatus(att::Status status, IdType id,
-                        RemoteCharacteristic::NotifyStatusCallback callback,
-                        async_dispatcher_t* dispatcher) {
-  RunOrPost([status, id, cb = std::move(callback)] { cb(status, id); }, dispatcher);
-}
-
-void NotifyValue(const ByteBuffer& value, bool maybe_truncated,
-                 RemoteCharacteristic::ValueCallback callback, async_dispatcher_t* dispatcher) {
-  if (!dispatcher) {
-    callback(value, maybe_truncated);
-    return;
-  }
-
-  auto buffer = NewSlabBuffer(value.size());
-  if (buffer) {
-    value.Copy(buffer.get());
-    async::PostTask(dispatcher, [callback = std::move(callback), val = std::move(buffer),
-                                 maybe_truncated] { callback(*val, maybe_truncated); });
-  } else {
-    bt_log(DEBUG, "gatt", "out of memory!");
-  }
-}
-
-}  // namespace
-
-RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(async_dispatcher_t* d,
-                                                                 ValueCallback value_cb,
+RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(ValueCallback value_cb,
                                                                  NotifyStatusCallback status_cb)
-    : dispatcher(d), value_callback(std::move(value_cb)), status_callback(std::move(status_cb)) {
+    : value_callback(std::move(value_cb)), status_callback(std::move(status_cb)) {
   ZX_DEBUG_ASSERT(value_callback);
   ZX_DEBUG_ASSERT(status_callback);
-}
-
-RemoteCharacteristic::NotifyHandler::NotifyHandler(async_dispatcher_t* d, ValueCallback cb)
-    : dispatcher(d), callback(std::move(cb)) {
-  ZX_DEBUG_ASSERT(callback);
 }
 
 RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client,
                                            const CharacteristicData& info)
     : info_(info),
       discovery_error_(false),
-      shut_down_(false),
       ccc_handle_(att::kInvalidHandle),
       ext_prop_handle_(att::kInvalidHandle),
       next_notify_handler_id_(1u),
-      client_(client),
+      client_(std::move(client)),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(client_);
 }
 
-RemoteCharacteristic::RemoteCharacteristic(RemoteCharacteristic&& other)
-    : info_(other.info_),
-      discovery_error_(other.discovery_error_),
-      shut_down_(other.shut_down_.load()),
-      ccc_handle_(other.ccc_handle_),
-      ext_prop_handle_(other.ext_prop_handle_),
-      next_notify_handler_id_(other.next_notify_handler_id_),
-      client_(other.client_),
-      weak_ptr_factory_(this) {
-  other.weak_ptr_factory_.InvalidateWeakPtrs();
-}
-
-void RemoteCharacteristic::ShutDown(bool service_changed) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-
-  // Make sure that all weak pointers are invalidated on the GATT thread.
-  weak_ptr_factory_.InvalidateWeakPtrs();
-  shut_down_ = true;
-
+RemoteCharacteristic::~RemoteCharacteristic() {
   ResolvePendingNotifyRequests(att::Status(HostError::kFailed));
 
-  // Clear the CCC if we have enabled notifications and ShutDown() was not called as a result of a
+  // Clear the CCC if we have enabled notifications and destructor was not called as a result of a
   // Service Changed notification.
   if (!notify_handlers_.empty()) {
     notify_handlers_.clear();
@@ -95,7 +43,7 @@ void RemoteCharacteristic::ShutDown(bool service_changed) {
     // exist, may have been changed, or may have moved. If the characteristic is still valid, the
     // server may continue to send notifications, but they will be ignored until a new handler is
     // registered.
-    if (!service_changed) {
+    if (!service_changed_) {
       DisableNotificationsInternal();
     }
   }
@@ -111,10 +59,8 @@ void RemoteCharacteristic::UpdateDataWithExtendedProperties(ExtendedProperties e
 
 void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
                                                att::StatusCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(!shut_down_);
   ZX_DEBUG_ASSERT(range_end >= info().value_handle);
 
   discovery_error_ = false;
@@ -130,7 +76,6 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     if (!self)
       return;
 
-    ZX_DEBUG_ASSERT(self->thread_checker_.is_thread_valid());
     if (self->discovery_error_)
       return;
 
@@ -167,8 +112,6 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
       cb(att::Status(HostError::kFailed));
       return;
     }
-
-    ZX_DEBUG_ASSERT(self->thread_checker_.is_thread_valid());
 
     if (self->discovery_error_) {
       status = att::Status(HostError::kFailed);
@@ -216,18 +159,14 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 }
 
 void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
-                                               NotifyStatusCallback status_callback,
-                                               async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
+                                               NotifyStatusCallback status_callback) {
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(value_callback);
   ZX_DEBUG_ASSERT(status_callback);
-  ZX_DEBUG_ASSERT(!shut_down_);
 
   if (!(info().properties & (Property::kNotify | Property::kIndicate))) {
     bt_log(DEBUG, "gatt", "characteristic does not support notifications");
-    ReportNotifyStatus(att::Status(HostError::kNotSupported), kInvalidId,
-                       std::move(status_callback), dispatcher);
+    status_callback(att::Status(HostError::kNotSupported), kInvalidId);
     return;
   }
 
@@ -236,12 +175,12 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
     ZX_DEBUG_ASSERT(pending_notify_reqs_.empty());
 
     IdType id = next_notify_handler_id_++;
-    notify_handlers_[id] = NotifyHandler(dispatcher, std::move(value_callback));
-    ReportNotifyStatus(att::Status(), id, std::move(status_callback), dispatcher);
+    notify_handlers_[id] = std::move(value_callback);
+    status_callback(att::Status(), id);
     return;
   }
 
-  pending_notify_reqs_.emplace(dispatcher, std::move(value_callback), std::move(status_callback));
+  pending_notify_reqs_.emplace(std::move(value_callback), std::move(status_callback));
 
   // If there are other pending requests to enable notifications then we'll wait
   // until the descriptor write completes.
@@ -279,9 +218,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 }
 
 bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
-  ZX_DEBUG_ASSERT(!shut_down_);
 
   auto handler_iter = notify_handlers_.find(handler_id);
   if (handler_iter == notify_handlers_.end()) {
@@ -329,33 +266,30 @@ void RemoteCharacteristic::DisableNotificationsInternal() {
 }
 
 void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Status status) {
-  // Move the contents of the queue so that a handler can remove itself (this
-  // matters when no dispatcher is provided).
-  auto pending = std::move(pending_notify_reqs_);
-  while (!pending.empty()) {
-    auto req = std::move(pending.front());
-    pending.pop();
+  // Don't iterate requests as callbacks can add new requests.
+  while (!pending_notify_reqs_.empty()) {
+    auto req = std::move(pending_notify_reqs_.front());
+    pending_notify_reqs_.pop();
 
     IdType id = kInvalidId;
 
     if (status) {
       id = next_notify_handler_id_++;
-      notify_handlers_[id] = NotifyHandler(req.dispatcher, std::move(req.value_callback));
+      // Add handler to map before calling status callback in case callback removes the handler.
+      notify_handlers_[id] = std::move(req.value_callback);
     }
 
-    ReportNotifyStatus(status, id, std::move(req.status_callback), req.dispatcher);
+    req.status_callback(status, id);
   }
 }
 
 void RemoteCharacteristic::HandleNotification(const ByteBuffer& value, bool maybe_truncated) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
-  ZX_DEBUG_ASSERT(!shut_down_);
 
   notifying_handlers_ = true;
   for (auto& iter : notify_handlers_) {
     auto& handler = iter.second;
-    NotifyValue(value, maybe_truncated, handler.callback.share(), handler.dispatcher);
+    handler(value, maybe_truncated);
   }
   notifying_handlers_ = false;
 

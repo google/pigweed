@@ -5,9 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_CHARACTERISTIC_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_CHARACTERISTIC_H_
 
-#include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/fit/thread_checker.h>
 
 #include <map>
 #include <queue>
@@ -28,24 +26,13 @@ class Client;
 // permissions, etc) and is responsible for routing notifications to subscribed
 // clients.
 //
-// The public accessors of this class are thread-safe and can be called on any
-// thread as long as this object is alive and is only managed by a
-// RemoteService.
-//
-// Instances are created and owned by a RemoteService. Creation and all
-// modifications will happen on the GATT thread.
+// Instances are created and owned by a RemoteService.
 //
 // ID SCHEME:
 //
 // The ID that gets assigned to a RemoteCharacteristic is its value_handle
 // The ID that gets assigned to a Descriptor is its handle. Looking up a descriptor by id from the
 // service is logarithmic in the number of descriptors.
-//
-// THREAD-SAFETY:
-//
-// Since each RemoteService is shared (potentially across threads),
-// RemoteCharacteristic objects can get destroyed on any thread. RemoteService
-// MUST call ShutDown() on the GATT thread to ensure safe clean up.
 class RemoteCharacteristic final {
  public:
   using ValueCallback = fit::function<void(const ByteBuffer&, bool maybe_truncated)>;
@@ -55,20 +42,7 @@ class RemoteCharacteristic final {
   using DescriptorMap = std::map<DescriptorHandle, DescriptorData>;
 
   RemoteCharacteristic(fxl::WeakPtr<Client> client, const CharacteristicData& info);
-  // TODO(fxbug.dev/83509): Perform clean up in the destructor.
-  ~RemoteCharacteristic() = default;
-
-  // The move constructor allows this move-only type to be stored in a vector
-  // (or array) by value (this allows RemoteService to store
-  // RemoteCharacteristics in contiguous memory).
-  //
-  // Moving transfers all data from the source object to the destination except
-  // for the weak pointer factory. All weak pointers to the source object are
-  // invalidated.
-  //
-  // Care should be taken when used together with std::vector as it moves its
-  // contents while resizing its storage.
-  RemoteCharacteristic(RemoteCharacteristic&&);
+  ~RemoteCharacteristic();
 
   // The properties for this characteristic.
   Properties properties() const { return info_.properties; }
@@ -87,14 +61,11 @@ class RemoteCharacteristic final {
  private:
   friend class RemoteService;
 
-  // The following private methods can only be called by a RemoteService. All
-  // except the destructor will be called on the GATT thread.
+  // The following private methods can only be called by a RemoteService.
 
-  // Cleans up all state associated with this characteristic.
-  // `service_changed` indicates whether shut down is occurring due to a Service Changed
+  // `service_changed` indicates whether destruction will occur due to a Service Changed
   // notification, in which case this characteristic may no longer exist or may have been changed.
-  // TODO(fxbug.dev/83509): Perform clean up in the destructor.
-  void ShutDown(bool service_changed = false);
+  void set_service_changed(bool service_changed) { service_changed_ = service_changed; }
 
   // Updates the CharacteristicData |info_| with the Extended Properties that are read from the
   // descriptors discovered in |DiscoverDescriptors|.
@@ -108,12 +79,11 @@ class RemoteCharacteristic final {
   void DiscoverDescriptors(att::Handle range_end, att::StatusCallback callback);
 
   // (See RemoteService::EnableNotifications in remote_service.h).
-  void EnableNotifications(ValueCallback value_callback, NotifyStatusCallback status_callback,
-                           async_dispatcher_t* dispatcher = nullptr);
+  void EnableNotifications(ValueCallback value_callback, NotifyStatusCallback status_callback);
   bool DisableNotifications(IdType handler_id);
 
   // Sends a request to disable notifications and indications. Called by
-  // DisableNotifications and ShutDown.
+  // DisableNotifications and destructor.
   void DisableNotificationsInternal();
 
   // Resolves all pending notification subscription requests. Called by
@@ -123,12 +93,13 @@ class RemoteCharacteristic final {
   // Called when a notification is received for this characteristic.
   void HandleNotification(const ByteBuffer& value, bool maybe_truncated);
 
-  fit::thread_checker thread_checker_;
   CharacteristicData info_;
   DescriptorMap descriptors_;
   bool discovery_error_;
 
-  std::atomic_bool shut_down_;
+  // If true, this characteristic was in a service that has been changed. Values should not be
+  // read/written after a service is changed.
+  bool service_changed_ = false;
 
   // Handle of the Client Characteristic Configuration descriptor, or 0 if none.
   att::Handle ccc_handle_;
@@ -138,30 +109,18 @@ class RemoteCharacteristic final {
 
   // Represents a pending request to subscribe to notifications or indications.
   struct PendingNotifyRequest {
-    PendingNotifyRequest(async_dispatcher_t* dispatcher, ValueCallback value_callback,
-                         NotifyStatusCallback status_callback);
+    PendingNotifyRequest(ValueCallback value_callback, NotifyStatusCallback status_callback);
 
     PendingNotifyRequest() = default;
     PendingNotifyRequest(PendingNotifyRequest&&) = default;
 
-    async_dispatcher_t* dispatcher;
     ValueCallback value_callback;
     NotifyStatusCallback status_callback;
   };
   std::queue<PendingNotifyRequest> pending_notify_reqs_;
 
   // Active notification handlers.
-  struct NotifyHandler {
-    NotifyHandler(async_dispatcher_t* dispatcher, ValueCallback callback);
-
-    NotifyHandler() = default;
-    NotifyHandler(NotifyHandler&&) = default;
-    NotifyHandler& operator=(NotifyHandler&&) = default;
-
-    async_dispatcher_t* dispatcher;
-    ValueCallback callback;
-  };
-  std::unordered_map<IdType, NotifyHandler> notify_handlers_;
+  std::unordered_map<IdType, ValueCallback> notify_handlers_;
   // Set to true while handlers in notify_handlers_ are being notified.
   bool notifying_handlers_ = false;
   std::vector<IdType> handlers_pending_disable_;
@@ -174,7 +133,7 @@ class RemoteCharacteristic final {
 
   fxl::WeakPtrFactory<RemoteCharacteristic> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteCharacteristic);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(RemoteCharacteristic);
 };
 
 }  // namespace bt::gatt

@@ -64,8 +64,9 @@ void RemoteService::ShutDown(bool service_changed) {
   }
 
   for (auto& chr : characteristics_) {
-    chr.second.ShutDown(service_changed);
+    chr.second.set_service_changed(service_changed);
   }
+  characteristics_.clear();
 
   shut_down_ = true;
 
