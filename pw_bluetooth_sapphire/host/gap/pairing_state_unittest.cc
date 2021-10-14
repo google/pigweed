@@ -24,7 +24,6 @@ using hci_spec::kUserConfirmationRequestEventCode;
 using hci_spec::kUserPasskeyNotificationEventCode;
 using hci_spec::kUserPasskeyRequestEventCode;
 
-const PeerId kTestPeerId(0xf00f1becf00fface);
 const hci_spec::ConnectionHandle kTestHandle(0x0A0B);
 const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
                                   {0x22, 0x11, 0x00, 0xCC, 0xBB, 0xAA});
@@ -104,16 +103,18 @@ class PairingStateTest : public ::gtest::TestLoopFixture {
   fit::closure send_auth_request_callback_;
 };
 
+class PairingStateDeathTest : public PairingStateTest {};
+
 TEST_F(PairingStateTest, PairingStateStartsAsResponder) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
 TEST_F(PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   EXPECT_EQ(0u, auth_request_count());
@@ -122,7 +123,7 @@ TEST_F(PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
 
 TEST_F(PairingStateTest, PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -133,7 +134,7 @@ TEST_F(PairingStateTest, PairingStateBecomesInitiatorAfterLocalPairingInitiated)
 
 TEST_F(PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -150,7 +151,7 @@ TEST_F(PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
 TEST_F(PairingStateTest,
        PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   ASSERT_FALSE(pairing_state.initiator());
@@ -174,8 +175,8 @@ TEST_F(PairingStateTest, StatusCallbackMayDestroyPairingState) {
   };
 
   pairing_state =
-      std::make_unique<PairingState>(kTestPeerId, &connection, /*link_initiated=*/false,
-                                     peer_cache(), MakeAuthRequestCallback(), status_cb);
+      std::make_unique<PairingState>(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
+                                     MakeAuthRequestCallback(), status_cb);
 
   // Unexpected event that should cause the status callback to be called with an error.
   pairing_state->OnUserPasskeyNotification(kTestPasskey);
@@ -186,8 +187,8 @@ TEST_F(PairingStateTest, StatusCallbackMayDestroyPairingState) {
 TEST_F(PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
   auto connection = MakeFakeConnection();
   std::unique_ptr<PairingState> pairing_state =
-      std::make_unique<PairingState>(kTestPeerId, &connection, /*link_initiated=*/false,
-                                     peer_cache(), MakeAuthRequestCallback(), NoOpStatusCallback);
+      std::make_unique<PairingState>(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
+                                     MakeAuthRequestCallback(), NoOpStatusCallback);
   bool cb_called = false;
   auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle handle,
                                                 hci::Status status) {
@@ -252,7 +253,7 @@ TEST_F(PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
 TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
   TestStatusHandler link_status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), link_status_handler.MakeStatusCallback());
 
   // Unexpected event that should cause the status callback to be called with an error.
@@ -281,14 +282,14 @@ TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithEr
 TEST_F(PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  static_cast<void>(pairing_state.OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
 
@@ -302,7 +303,7 @@ TEST_F(PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback)
 TEST_F(PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   ASSERT_FALSE(connection.ltk().has_value());
 
@@ -319,7 +320,7 @@ TEST_F(PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
 TEST_F(PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   connection.set_bredr_link_key(hci_spec::LinkKey(UInt128(), 0, 0), kTestAuthenticatedLinkKeyType);
 
@@ -335,7 +336,7 @@ TEST_F(PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
 // Inject events that occur during the course of a successful pairing as an initiator, but not
 // including enabling link encryption.
 void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
-  static_cast<void>(pairing_state->OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state->OnLinkKeyRequest());
   static_cast<void>(pairing_state->OnIoCapabilityRequest());
   pairing_state->OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state->OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -347,7 +348,7 @@ void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
 TEST_F(PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -370,7 +371,7 @@ TEST_F(PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
 TEST_F(PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -393,7 +394,7 @@ TEST_F(PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
 TEST_F(PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -415,7 +416,7 @@ TEST_F(PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithErr
 
 TEST_F(PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -455,7 +456,7 @@ TEST_F(PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
 
 TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -495,7 +496,7 @@ TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
   auto connection = MakeFakeConnection();
   TestStatusHandler overall_status, request_status;
   {
-    PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+    PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                                MakeAuthRequestCallback(), overall_status.MakeStatusCallback());
     NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
     pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -530,7 +531,7 @@ TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
 TEST_F(PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDelegate) {
   auto connection = MakeFakeConnection();
   TestStatusHandler owner_status_handler;
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
 
   TestStatusHandler initiator_status_handler;
@@ -543,7 +544,7 @@ TEST_F(PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDeleg
   EXPECT_EQ(0, owner_status_handler.call_count());
   EXPECT_EQ(0, initiator_status_handler.call_count());
   // We will only start the pairing process if there is no stored bond
-  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   // We expect to be notified that there are no IOCapabilities, as there is no PairingDelegate to
   // provide them
   EXPECT_EQ(std::nullopt, pairing_state.OnIoCapabilityRequest());
@@ -558,7 +559,7 @@ TEST_F(PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDeleg
 TEST_F(PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDelegate) {
   auto connection = MakeFakeConnection();
   TestStatusHandler status_handler;
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
 
   // Advance state machine to Responder Waiting IOCap Request
@@ -578,7 +579,7 @@ TEST_F(PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDeleg
 TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -604,7 +605,7 @@ TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
 TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -629,7 +630,7 @@ TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
 TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -652,7 +653,7 @@ TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
 TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDisplayYesNoSide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -660,14 +661,14 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
   // Advance state machine.
   pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler.MakeStatusCallback());
   ASSERT_TRUE(pairing_state.initiator());
-  static_cast<void>(pairing_state.OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
+      [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
         EXPECT_EQ(kTestPasskey, value);
         EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
         ASSERT_TRUE(cb);
@@ -678,8 +679,8 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -690,7 +691,7 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
 TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDisplayYesNoSide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -701,8 +702,8 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
   EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
+      [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
         EXPECT_EQ(kTestPasskey, value);
         EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
         ASSERT_TRUE(cb);
@@ -713,8 +714,8 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -729,7 +730,7 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
 TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplayYesNoSide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -739,8 +740,8 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
   ASSERT_FALSE(pairing_state.initiator());
   EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_delegate.SetConfirmPairingCallback([](PeerId peer_id, auto cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
     cb(true);
   });
@@ -749,8 +750,8 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -761,7 +762,7 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
 TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -772,16 +773,16 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
   EXPECT_EQ(IOCapability::kDisplayOnly, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
+      [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
         EXPECT_EQ(kTestPasskey, value);
         EXPECT_EQ(PairingDelegate::DisplayMethod::kPeerEntry, method);
         EXPECT_TRUE(cb);
       });
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -792,7 +793,7 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
 TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -802,8 +803,8 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
   ASSERT_FALSE(pairing_state.initiator());
   EXPECT_EQ(IOCapability::kKeyboardOnly, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_delegate.SetRequestPasskeyCallback([](PeerId peer_id, auto cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
     cb(kTestPasskey);
   });
@@ -819,8 +820,8 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
   ASSERT_TRUE(passkey);
   EXPECT_EQ(kTestPasskey, *passkey);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -832,7 +833,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
   auto connection = MakeFakeConnection();
   TestStatusHandler owner_status_handler;
   TestStatusHandler initiator_status_handler;
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/true, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/true,
                              MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
@@ -842,7 +843,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
-  static_cast<void>(pairing_state.OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
@@ -851,8 +852,8 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -864,7 +865,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
 TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserActionResponder) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/true, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/true,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -879,8 +880,8 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -891,7 +892,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
 TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationRejectedResponder) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -901,8 +902,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   ASSERT_FALSE(pairing_state.initiator());
   EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_delegate.SetConfirmPairingCallback([](PeerId peer_id, auto cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
     cb(false);
   });
@@ -912,8 +913,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   EXPECT_FALSE(confirmed);
 
   // Eventually the controller sends a SimplePairingComplete indicating the failure.
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_FALSE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kAuthenticationFailure);
@@ -927,7 +928,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   auto connection = MakeFakeConnection();
   TestStatusHandler owner_status_handler;
   TestStatusHandler initiator_status_handler;
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
@@ -937,13 +938,13 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
-  static_cast<void>(pairing_state.OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
 
-  pairing_delegate.SetConfirmPairingCallback([](PeerId peer_id, auto cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
     cb(false);
   });
@@ -953,8 +954,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   EXPECT_FALSE(confirmed);
 
   // Eventually the controller sends a SimplePairingComplete indicating the failure.
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_FALSE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kAuthenticationFailure);
@@ -972,7 +973,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
 TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcceptedResponder) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -982,8 +983,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
   ASSERT_FALSE(pairing_state.initiator());
   EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_delegate.SetConfirmPairingCallback([](PeerId peer_id, auto cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
     cb(true);
   });
@@ -992,8 +993,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -1005,7 +1006,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
   auto connection = MakeFakeConnection();
   TestStatusHandler owner_status_handler;
   TestStatusHandler initiator_status_handler;
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
@@ -1015,13 +1016,13 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
-  static_cast<void>(pairing_state.OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
 
-  pairing_delegate.SetConfirmPairingCallback([](PeerId peer_id, auto cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
     cb(true);
   });
@@ -1030,8 +1031,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
-    EXPECT_EQ(kTestPeerId, peer_id);
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status);
   });
   pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::kSuccess);
@@ -1044,7 +1045,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
 // match, so don't use these functions to test return values. Likewise,
 // arguments have been filled with test defaults for a successful pairing flow.
 void LinkKeyRequest(PairingState* pairing_state) {
-  static_cast<void>(pairing_state->OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state->OnLinkKeyRequest());
 }
 void IoCapabilityRequest(PairingState* pairing_state) {
   static_cast<void>(pairing_state->OnIoCapabilityRequest());
@@ -1091,8 +1092,8 @@ class HandlesEvent : public PairingStateTest,
     PairingStateTest::SetUp();
     pairing_delegate_ = std::make_unique<NoOpPairingDelegate>(kTestLocalIoCap);
     pairing_state_ = std::make_unique<PairingState>(
-        kTestPeerId, &connection_, /*link_initiated=*/false, peer_cache(),
-        MakeAuthRequestCallback(), status_handler_.MakeStatusCallback());
+        peer()->GetWeakPtr(), &connection_, /*link_initiated=*/false, MakeAuthRequestCallback(),
+        status_handler_.MakeStatusCallback());
     pairing_state().SetPairingDelegate(pairing_delegate_->GetWeakPtr());
   }
 
@@ -1153,7 +1154,7 @@ TEST_P(HandlesEvent, InInitiatorWaitLinkKeyRequestState) {
 TEST_P(HandlesEvent, InInitiatorWaitIoCapRequest) {
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
 
   RETURN_IF_FATAL(InjectEvent());
   if (event() == IoCapabilityRequest) {
@@ -1171,7 +1172,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
 
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  EXPECT_NE(std::nullopt, pairing_state().OnLinkKeyRequest(kPeerAddress));
+  EXPECT_NE(std::nullopt, pairing_state().OnLinkKeyRequest());
 
   RETURN_IF_FATAL(InjectEvent());
   if (event() == AuthenticationComplete) {
@@ -1187,7 +1188,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
 TEST_P(HandlesEvent, InInitiatorWaitIoCapResponseState) {
   // Advance state machine.
   static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1240,7 +1241,7 @@ TEST_P(HandlesEvent, InWaitUserConfirmationStateAsInitiator) {
 
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
   ASSERT_TRUE(pairing_state().initiator());
@@ -1261,7 +1262,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsInitiator) {
 
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayOnly);
   ASSERT_TRUE(pairing_state().initiator());
@@ -1282,7 +1283,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyNotificationStateAsInitiator) {
 
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
   ASSERT_TRUE(pairing_state().initiator());
@@ -1393,7 +1394,7 @@ TEST_P(HandlesEvent, InWaitLinkKeyState) {
 TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteStateAfterSimplePairing) {
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1416,7 +1417,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteStateAfterSimplePairing) {
 TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1453,7 +1454,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
 TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   // Advance state machine.
   static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1500,7 +1501,7 @@ TEST_P(HandlesEvent, InFailedStateAfterPairingFailed) {
 TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
   // Advance state machine.
   static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
-  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+  static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1721,7 +1722,7 @@ TEST_F(PairingStateTest, GetResponderAuthRequirements) {
 TEST_F(PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1744,7 +1745,7 @@ TEST_F(PairingStateTest,
        InitiatorAuthRequiredCausesOnLinkKeyRequestToReturnNullIfUnauthenticatedKeyExists) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1755,14 +1756,14 @@ TEST_F(PairingStateTest,
   peer()->MutBrEdr().SetBondData(
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
 
-  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(0, status_handler.call_count());
 }
 
 TEST_F(PairingStateTest, InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestToReturnExistingKey) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1773,7 +1774,7 @@ TEST_F(PairingStateTest, InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestTo
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
   EXPECT_FALSE(connection.ltk().has_value());
 
-  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  auto reply_key = pairing_state.OnLinkKeyRequest();
   ASSERT_TRUE(reply_key.has_value());
   EXPECT_EQ(kTestLinkKey, reply_key.value());
   EXPECT_EQ(0, status_handler.call_count());
@@ -1783,14 +1784,14 @@ TEST_F(PairingStateTest, InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestTo
 TEST_F(PairingStateTest, InitiatorOnLinkKeyRequestReturnsNullIfBondDataDoesNotExist) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
-  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  auto reply_key = pairing_state.OnLinkKeyRequest();
   EXPECT_FALSE(reply_key.has_value());
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -1798,7 +1799,7 @@ TEST_F(PairingStateTest, InitiatorOnLinkKeyRequestReturnsNullIfBondDataDoesNotEx
 TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExists) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1807,7 +1808,7 @@ TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExis
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
   EXPECT_FALSE(connection.ltk().has_value());
 
-  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  auto reply_key = pairing_state.OnLinkKeyRequest();
   ASSERT_TRUE(reply_key.has_value());
   EXPECT_EQ(kTestLinkKey, reply_key.value());
   EXPECT_EQ(0, status_handler.call_count());
@@ -1817,12 +1818,12 @@ TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExis
 TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsNullWhenBondDataDoesNotExist) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  auto reply_key = pairing_state.OnLinkKeyRequest();
   EXPECT_FALSE(reply_key.has_value());
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -1830,14 +1831,14 @@ TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsNullWhenBondDataDoesNot
 TEST_F(PairingStateTest, SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPairing) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
-  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
   EXPECT_EQ(0, status_handler.call_count());
 
@@ -1847,10 +1848,10 @@ TEST_F(PairingStateTest, SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPai
   EXPECT_EQ(hci::Status(status_code), status_handler.status().value());
 }
 
-TEST_F(PairingStateTest, OnLinkKeyRequestReceivedMissingPeerFailsPairing) {
+TEST_F(PairingStateDeathTest, OnLinkKeyRequestReceivedMissingPeerAsserts) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1859,23 +1860,21 @@ TEST_F(PairingStateTest, OnLinkKeyRequestReceivedMissingPeerFailsPairing) {
 
   EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(peer()->identifier()));
 
-  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
-  EXPECT_FALSE(reply_key.has_value());
-  ASSERT_EQ(1, status_handler.call_count());
-  EXPECT_EQ(hci::Status(HostError::kFailed), status_handler.status().value());
+  ASSERT_DEATH_IF_SUPPORTED({ __UNUSED auto reply_key = pairing_state.OnLinkKeyRequest(); },
+                            ".*peer.*");
 }
 
 TEST_F(PairingStateTest, AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPairing) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
-  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(0, status_handler.call_count());
 
   const auto status_code = hci_spec::StatusCode::kAuthenticationFailure;
@@ -1888,7 +1887,7 @@ TEST_F(PairingStateTest,
        MultipleQueuedPairingRequestsWithSameSecurityRequirementsCompleteAtSameTimeWithSuccess) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1922,7 +1921,7 @@ TEST_F(
     MultipleQueuedPairingRequestsWithAuthSecurityRequirementsCompleteAtSameTimeWithInsufficientSecurityFailure) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1961,7 +1960,7 @@ TEST_F(PairingStateTest,
        AuthPairingRequestDuringInitiatorNoAuthPairingFailsQueuedAuthPairingRequest) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate_no_io(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate_no_io.GetWeakPtr());
@@ -2002,7 +2001,7 @@ TEST_F(PairingStateTest,
 TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauthenticatedLinkKey) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, /*link_initiated=*/false, peer_cache(),
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
   FakePairingDelegate fake_pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(fake_pairing_delegate.GetWeakPtr());
@@ -2023,7 +2022,7 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   EXPECT_EQ(1u, auth_request_count());
 
   // Authenticate with link key.
-  EXPECT_NE(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_NE(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_TRUE(connection.ltk().has_value());
   pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::kSuccess);
 
@@ -2046,7 +2045,7 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   // Pairing for second request should start.
   EXPECT_EQ(2u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
-  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
   pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
 

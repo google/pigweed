@@ -517,8 +517,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   auto on_peer_disconnect_cb = [this, link = link.get()] { OnPeerDisconnect(link); };
   auto [conn_iter, success] = connections_.try_emplace(
       handle, peer->GetWeakPtr(), std::move(link), std::move(send_auth_request_cb),
-      std::move(disconnect_cb), std::move(on_peer_disconnect_cb), cache_, l2cap_, hci_,
-      std::move(request));
+      std::move(disconnect_cb), std::move(on_peer_disconnect_cb), l2cap_, hci_, std::move(request));
   ZX_ASSERT(success);
 
   BrEdrConnection& connection = conn_iter->second;
@@ -881,7 +880,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyReques
   }
   auto& [handle, conn] = *conn_pair;
 
-  auto link_key = conn->pairing_state().OnLinkKeyRequest(addr);
+  auto link_key = conn->pairing_state().OnLinkKeyRequest();
   if (!link_key.has_value()) {
     SendLinkKeyRequestNegativeReply(params.bd_addr);
     return hci::CommandChannel::EventCallbackResult::kContinue;

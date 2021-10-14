@@ -17,7 +17,7 @@ const char* const kInspectPeerIdPropertyName = "peer_id";
 BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::Connection> link,
                                  fit::closure send_auth_request_cb,
                                  fit::callback<void()> disconnect_cb,
-                                 fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,
+                                 fit::closure on_peer_disconnect_cb,
                                  fbl::RefPtr<l2cap::L2cap> l2cap,
                                  fxl::WeakPtr<hci::Transport> transport,
                                  std::optional<Request> request)
@@ -26,7 +26,7 @@ BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::C
       link_(std::move(link)),
       request_(std::move(request)),
       pairing_state_(std::make_unique<PairingState>(
-          peer_id_, link_.get(), request_ && request_->AwaitingOutgoing(), peer_cache,
+          peer_, link_.get(), request_ && request_->AwaitingOutgoing(),
           std::move(send_auth_request_cb),
           fit::bind_member(this, &BrEdrConnection::OnPairingStateStatus))),
       domain_(std::move(l2cap)),

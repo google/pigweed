@@ -175,7 +175,7 @@ class PairingState final {
   // this peer.
   //
   // |link| must be valid for the lifetime of this object.
-  PairingState(PeerId peer_id, hci::Connection* link, bool link_initiated, PeerCache* peer_cache,
+  PairingState(fxl::WeakPtr<Peer> peer, hci::Connection* link, bool link_initiated,
                fit::closure auth_cb, StatusCallback status_cb);
   PairingState(PairingState&&) = default;
   PairingState& operator=(PairingState&&) = default;
@@ -241,7 +241,7 @@ class PairingState final {
 
   // Caller should send the returned link key in a Link Key Request Reply (or Link Key Request
   // Negative Reply if the returned value is null).
-  [[nodiscard]] std::optional<hci_spec::LinkKey> OnLinkKeyRequest(DeviceAddress address);
+  [[nodiscard]] std::optional<hci_spec::LinkKey> OnLinkKeyRequest();
 
   // Caller is not expected to send a response.
   void OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type);
@@ -393,15 +393,13 @@ class PairingState final {
   void WritePairingData();
 
   PeerId peer_id_;
+  fxl::WeakPtr<Peer> peer_;
 
   // The BR/EDR link whose pairing is being driven by this object.
   hci::Connection* link_;
 
   // True when the BR/EDR |link_| was locally requested.
   bool outgoing_connection_;
-
-  // Used to restore link keys.
-  PeerCache* peer_cache_;
 
   fxl::WeakPtr<PairingDelegate> pairing_delegate_;
 

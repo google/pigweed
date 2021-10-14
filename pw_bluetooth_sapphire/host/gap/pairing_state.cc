@@ -14,12 +14,12 @@ using hci_spec::AuthRequirements;
 using hci_spec::IOCapability;
 using sm::util::IOCapabilityForHci;
 
-PairingState::PairingState(PeerId peer_id, hci::Connection* link, bool link_initiated,
-                           PeerCache* peer_cache, fit::closure auth_cb, StatusCallback status_cb)
-    : peer_id_(peer_id),
+PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::Connection* link, bool link_initiated,
+                           fit::closure auth_cb, StatusCallback status_cb)
+    : peer_id_(peer->identifier()),
+      peer_(std::move(peer)),
       link_(link),
       outgoing_connection_(link_initiated),
-      peer_cache_(peer_cache),
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {
@@ -295,26 +295,21 @@ void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
   state_ = State::kWaitLinkKey;
 }
 
-std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress address) {
+std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
   if (state() != State::kIdle && state() != State::kInitiatorWaitLinkKeyRequest) {
     FailWithUnexpectedEvent(__func__);
     return std::nullopt;
   }
 
-  auto* peer = peer_cache_->FindByAddress(address);
-  if (!peer) {
-    bt_log(ERROR, "gap-bredr", "no peer with address %s found", bt_str(address));
-    SignalStatus(hci::Status(HostError::kFailed));
-    return std::nullopt;
-  }
+  ZX_ASSERT(peer_);
 
   std::optional<sm::LTK> link_key;
 
-  if (peer->bredr() && peer->bredr()->bonded()) {
-    bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s", bt_str(peer->identifier()));
+  if (peer_->bredr() && peer_->bredr()->bonded()) {
+    bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s", bt_str(peer_->identifier()));
 
-    ZX_ASSERT(peer->bredr()->link_key().has_value());
-    link_key = peer->bredr()->link_key();
+    ZX_ASSERT(peer_->bredr()->link_key().has_value());
+    link_key = peer_->bredr()->link_key();
     ZX_ASSERT(link_key->security().enc_key_size() == hci_spec::kBrEdrLinkKeySize);
 
     const auto link_key_type = link_key->security().GetLinkKeyType();
@@ -322,7 +317,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress ad
 
     link_->set_bredr_link_key(link_key->key(), link_key_type.value());
   } else {
-    bt_log(INFO, "gap-bredr", "peer %s not bonded", bt_str(address));
+    bt_log(INFO, "gap-bredr", "peer %s not bonded", bt_str(peer_->identifier()));
   }
 
   // The link key request may be received outside of Simple Pairing (e.g. when the peer initiates
@@ -366,7 +361,9 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     bt_log(DEBUG, "gap-bredr", "Changing link key on %#.4x (id: %s)", handle(), bt_str(peer_id()));
     link_->set_bredr_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
     return;
-  } else if (state() != State::kWaitLinkKey) {
+  }
+
+  if (state() != State::kWaitLinkKey) {
     FailWithUnexpectedEvent(__func__);
     return;
   }

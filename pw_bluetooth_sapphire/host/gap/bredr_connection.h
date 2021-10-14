@@ -36,9 +36,8 @@ class BrEdrConnection final {
   using Request = BrEdrConnectionRequest;
   BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::Connection> link,
                   fit::closure send_auth_request_cb, fit::callback<void()> disconnect_cb,
-                  fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,
-                  fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<hci::Transport> transport,
-                  std::optional<Request> request);
+                  fit::closure on_peer_disconnect_cb, fbl::RefPtr<l2cap::L2cap> l2cap,
+                  fxl::WeakPtr<hci::Transport> transport, std::optional<Request> request);
 
   ~BrEdrConnection();
 
