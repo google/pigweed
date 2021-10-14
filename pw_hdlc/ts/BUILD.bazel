@@ -58,3 +58,10 @@ jasmine_node_test(
         ":hdlc_test_lib",
     ],
 )
+
+# needed for embedding into downstream projects
+filegroup(name = "pw_hdlc__contents")
+
+filegroup(name = "pw_hdlc__files")
+
+filegroup(name = "pw_hdlc__nested_node_modules")

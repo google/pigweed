@@ -81,3 +81,10 @@ http_server(
         ":app_bundle",
     ],
 )
+
+# needed for embedding into downstream projects
+filegroup(name = "pw_web_ui__contents")
+
+filegroup(name = "pw_web_ui__files")
+
+filegroup(name = "pw_web_ui__nested_node_modules")
