@@ -14,19 +14,26 @@ const char* const kInspectPeerIdPropertyName = "peer_id";
 
 }  // namespace
 
-BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id)
+BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
+                                               Peer::InitializingConnectionToken token)
     : peer_id_(peer_id),
       address_(addr),
       callbacks_(/*convert=*/[](auto& c) { return c.size(); }),
-      has_incoming_(false) {}
+      has_incoming_(false),
+      peer_init_conn_token_(std::move(token)) {}
 
 BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
+                                               Peer::InitializingConnectionToken token,
                                                OnComplete&& callback)
-    : BrEdrConnectionRequest(addr, peer_id) {
+    : BrEdrConnectionRequest(addr, peer_id, std::move(token)) {
   callbacks_.Mutable()->push_back(std::move(callback));
 }
 
 void BrEdrConnectionRequest::NotifyCallbacks(hci::Status status, const RefFactory& generate_ref) {
+  // Clear token before notifying callbacks so that connection state change is reflected in
+  // callbacks.
+  peer_init_conn_token_.reset();
+
   // If this request has been moved from, |callbacks_| may be empty.
   for (const auto& callback : *callbacks_) {
     callback(status, generate_ref());

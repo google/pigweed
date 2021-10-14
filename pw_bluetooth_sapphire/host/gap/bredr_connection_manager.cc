@@ -499,7 +499,6 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 
   // We should never have more than one link to a given peer
   ZX_DEBUG_ASSERT(!FindConnectionById(peer_id));
-  peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
 
   // The controller has completed the HCI connection procedure, so the connection request can no
   // longer be failed by a lower layer error. Now tie error reporting of the request to the lifetime
@@ -515,11 +514,11 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
     });
   };
   auto disconnect_cb = [this, peer_id] { Disconnect(peer_id, DisconnectReason::kPairingFailed); };
-  auto on_peer_disconnect_cb =
-      std::bind(&BrEdrConnectionManager::OnPeerDisconnect, this, link.get());
+  auto on_peer_disconnect_cb = [this, link = link.get()] { OnPeerDisconnect(link); };
   auto [conn_iter, success] = connections_.try_emplace(
-      handle, peer_id, std::move(link), std::move(send_auth_request_cb), std::move(disconnect_cb),
-      std::move(on_peer_disconnect_cb), cache_, l2cap_, hci_, std::move(request));
+      handle, peer->GetWeakPtr(), std::move(link), std::move(send_auth_request_cb),
+      std::move(disconnect_cb), std::move(on_peer_disconnect_cb), cache_, l2cap_, hci_,
+      std::move(request));
   ZX_ASSERT(success);
 
   BrEdrConnection& connection = conn_iter->second;
@@ -595,8 +594,6 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
   // Remove from the denylist if we successfully connect.
   deny_incoming_.remove(peer->address());
 
-  peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
-
   if (discoverer_.search_count()) {
     l2cap_->OpenL2capChannel(handle, l2cap::kSDP, l2cap::ChannelParameters(),
                              [self, peer_id = peer->identifier()](auto channel) {
@@ -613,7 +610,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
                              });
   }
 
-  conn_state.Start();
+  conn_state.OnInterrogationComplete();
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticationComplete(
@@ -675,7 +672,8 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
 
     // Register that we're in the middle of an incoming request for this peer - create a new
     // request if one doesn't already exist
-    auto [request, _ignore] = connection_requests_.try_emplace(peer_id, event.addr, peer_id);
+    auto [request, _ignore] = connection_requests_.try_emplace(
+        peer_id, event.addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
     request->second.BeginIncoming();
     request->second.AttachInspect(
         inspect_properties_.requests_node_,
@@ -780,14 +778,6 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
     }
     request.NotifyCallbacks(status, [] { return nullptr; });
     connection_requests_.erase(req_iter);
-
-    // The peer may no longer be in the cache by the time this function is called
-    // TODO(fxbug.dev/70878): What if this request failed but a previous one succeeded? This is a
-    // potential race condition in tracking peer state
-    Peer* peer = cache_->FindByAddress(address);
-    if (peer) {
-      peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
-    }
   } else {
     // Callbacks will be notified when interrogation completes
     InitializeConnection(address, handle, role);
@@ -815,14 +805,8 @@ void BrEdrConnectionManager::OnPeerDisconnect(const hci::Connection* connection)
 
 void BrEdrConnectionManager::CleanUpConnection(hci_spec::ConnectionHandle handle,
                                                BrEdrConnection conn) {
-  auto* peer = cache_->FindByAddress(conn.link().peer_address());
-  ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle: %#.4x", handle);
-  peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
-
   l2cap_->RemoveConnection(handle);
-
   RecordDisconnectInspect(conn);
-
   // |conn| is destroyed when it goes out of scope.
 }
 
@@ -1135,10 +1119,10 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
     pending_iter->second.AddCallback(std::move(on_connection_result));
     return true;
   }
-  // If we are not already connected or pending, add a pending request.
-  peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
-  auto [request_iter, _] = connection_requests_.try_emplace(peer_id, peer->address(), peer_id,
-                                                            std::move(on_connection_result));
+  // If we are not already connected or pending, initiate a new connection
+  auto [request_iter, _] = connection_requests_.try_emplace(
+      peer_id, peer->address(), peer_id, peer->MutBrEdr().RegisterInitializingConnection(),
+      std::move(on_connection_result));
   request_iter->second.AttachInspect(
       inspect_properties_.requests_node_,
       inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));

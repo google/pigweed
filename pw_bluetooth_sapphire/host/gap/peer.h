@@ -287,14 +287,24 @@ class Peer final {
     static constexpr const char* kInspectLinkKeyName = "bonded";
     static constexpr const char* kInspectServicesName = "services";
 
-    BrEdrData(Peer* owner);
+    explicit BrEdrData(Peer* owner);
 
     // Attach peer inspect node as a child node of |parent|.
     void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName);
 
     // Current connection state.
-    ConnectionState connection_state() const { return *conn_state_; }
-    bool connected() const { return connection_state() == ConnectionState::kConnected; }
+    ConnectionState connection_state() const {
+      if (connected()) {
+        return ConnectionState::kConnected;
+      }
+      if (initializing()) {
+        return ConnectionState::kInitializing;
+      }
+      return ConnectionState::kNotConnected;
+    }
+    bool connected() const { return !initializing() && connection_tokens_count_ > 0; }
+    bool initializing() const { return initializing_tokens_count_ > 0; }
+
     bool bonded() const { return link_key_->has_value(); }
 
     // Returns the peer's BD_ADDR.
@@ -329,8 +339,15 @@ class Peer final {
     void SetInquiryData(const hci_spec::InquiryResultRSSI& value);
     void SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value);
 
-    // Updates the connection state and notifies listeners if necessary.
-    void SetConnectionState(ConnectionState state);
+    // Register a connection that is in the request/initializing state. A token is returned that
+    // should be owned until the initialization is complete or canceled. The connection state may be
+    // updated and listeners may be notified. Multiple initializating connections may be registered.
+    [[nodiscard]] InitializingConnectionToken RegisterInitializingConnection();
+
+    // Register a connection that is in the connected state. A token is returned that should be
+    // owned until the connection is disconnected. The connection state may be updated and listeners
+    // may be notified. Only one connection may be registered at a time (enforced by assertion).
+    [[nodiscard]] ConnectionToken RegisterConnection();
 
     // Stores a link key resulting from Secure Simple Pairing and makes this
     // peer "bonded." Marks the peer as non-temporary if necessary. All
@@ -349,6 +366,13 @@ class Peer final {
     // devices by multiple addresses.
 
    private:
+    struct InspectProperties {
+      inspect::StringProperty connection_state;
+    };
+
+    // Called when the connection state changes.
+    void OnConnectionStateMaybeChanged(ConnectionState previous);
+
     // All multi-byte fields must be in little-endian byte order as they were
     // received from the controller.
     void SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
@@ -361,8 +385,10 @@ class Peer final {
 
     Peer* peer_;  // weak
     inspect::Node node_;
+    InspectProperties inspect_properties_;
 
-    StringInspectable<ConnectionState> conn_state_;
+    uint16_t initializing_tokens_count_ = 0;
+    uint16_t connection_tokens_count_ = 0;
 
     DeviceAddress address_;
     std::optional<DeviceClass> device_class_;

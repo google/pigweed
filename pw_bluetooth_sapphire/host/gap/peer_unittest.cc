@@ -144,6 +144,27 @@ class PeerTest : public ::gtest::TestLoopFixture {
     return *val;
   }
 
+  std::string InspectBrEdrConnectionState() {
+    std::optional<std::string> val = InspectPropertyValueAtPath<inspect::StringPropertyValue>(
+        peer_inspector_, {"peer", "bredr_data"}, Peer::BrEdrData::kInspectConnectionStateName);
+    ZX_ASSERT(val);
+    return *val;
+  }
+
+  uint64_t MetricsBrEdrConnections() {
+    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "bredr"}, "connection_events");
+    ZX_ASSERT(val);
+    return *val;
+  }
+
+  uint64_t MetricsBrEdrDisconnections() {
+    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "bredr"}, "disconnection_events");
+    ZX_ASSERT(val);
+    return *val;
+  }
+
   void set_notify_listeners_cb(Peer::NotifyListenersCallback cb) {
     notify_listeners_cb_ = std::move(cb);
   }
@@ -178,6 +199,8 @@ class PeerTest : public ::gtest::TestLoopFixture {
   PeerMetrics metrics_;
   inspect::Inspector peer_inspector_;
 };
+
+class PeerDeathTest : public PeerTest {};
 
 TEST_F(PeerTest, InspectHierarchy) {
   peer().set_version(hci_spec::HCIVersion::k5_0, kManufacturer, kSubversion);
@@ -387,7 +410,7 @@ TEST_F(PeerTest, SettingLowEnergyBondDataUpdatesLastUpdated) {
   EXPECT_GE(notify_count, 1);
 }
 
-TEST_F(PeerTest, SettingBrEdrConnectionStateUpdatesLastUpdated) {
+TEST_F(PeerTest, RegisteringBrEdrInitializingConnectionUpdatesLastUpdated) {
   EXPECT_EQ(peer().last_updated(), zx::time(0));
 
   int notify_count = 0;
@@ -397,39 +420,9 @@ TEST_F(PeerTest, SettingBrEdrConnectionStateUpdatesLastUpdated) {
   });
 
   RunLoopFor(zx::duration(2));
-  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kInitializing);
+  Peer::InitializingConnectionToken token = peer().MutBrEdr().RegisterInitializingConnection();
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
-}
-
-TEST_F(PeerTest, SettingBrEdrConnectionStateUpdatesTemporary) {
-  int notify_count = 0;
-  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
-
-  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kInitializing);
-  ASSERT_FALSE(peer().temporary());
-  // Notifications: one for non-temporary.
-  EXPECT_EQ(notify_count, 1);
-
-  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kNotConnected);
-  ASSERT_TRUE(peer().temporary());
-  EXPECT_EQ(notify_count, 1);
-
-  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kInitializing);
-  ASSERT_FALSE(peer().temporary());
-  // +1 notification (non-temporary)
-  EXPECT_EQ(notify_count, 2);
-
-  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
-  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
-  ASSERT_FALSE(peer().temporary());
-  // +2 notification (connected, bonded)
-  EXPECT_EQ(notify_count, 4);
-
-  peer().MutBrEdr().SetConnectionState(Peer::ConnectionState::kNotConnected);
-  ASSERT_FALSE(peer().temporary());
-  // +1 notification (connection state)
-  EXPECT_EQ(notify_count, 5);
 }
 
 TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
@@ -743,6 +736,259 @@ TEST_F(PeerTest, SetInvalidAdvertisingData) {
   EXPECT_EQ(1, InspectAdvertisingDataParseFailureCount());
   EXPECT_EQ(AdvertisingData::ParseErrorToString(AdvertisingData::ParseError::kUuidsMalformed),
             InspectLastAdvertisingDataParseFailure());
+}
+
+TEST_F(PeerDeathTest, RegisterTwoBrEdrConnectionsAsserts) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+  std::optional<Peer::ConnectionToken> token_0 = peer().MutBrEdr().RegisterConnection();
+  ASSERT_DEATH_IF_SUPPORTED(
+      { std::optional<Peer::ConnectionToken> token_1 = peer().MutBrEdr().RegisterConnection(); },
+      ".*already registered.*");
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterInitializingBrEdrConnectionLeavesPeerTemporary) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+  EXPECT_TRUE(peer().identity_known());
+  std::optional<Peer::InitializingConnectionToken> token =
+      peer().MutBrEdr().RegisterInitializingConnection();
+  EXPECT_FALSE(peer().temporary());
+  token.reset();
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithoutBonding) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::ConnectionToken> conn_token = peer().MutBrEdr().RegisterConnection();
+  // A notification and expiry update are sent when the peer becomes non-temporary, and a second
+  // notification and update expiry are sent because the initializing connection is registered.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  conn_token.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 3);
+  // BR/EDR peers should become non-temporary after disconnecting if not bonded.
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithBonding) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::ConnectionToken> conn_token = peer().MutBrEdr().RegisterConnection();
+  // A notification and expiry update are sent when the peer becomes non-temporary, and a second
+  // notification and update expiry are sent because the initializing connection is registered.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 3);
+
+  conn_token.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 4);
+  // Bonded BR/EDR peers should remain non-temporary after disconnecting.
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionDuringInitializingConnection) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::InitializingConnectionToken> init_token =
+      peer().MutBrEdr().RegisterInitializingConnection();
+  // Expiry is updated for state change + becoming non-temporary.
+  EXPECT_EQ(update_expiry_count, 2);
+  // 1 notification for becoming non-temporary.
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  // The connection state should not change when registering a connection because the peer is still
+  // initializing.
+  std::optional<Peer::ConnectionToken> conn_token = peer().MutBrEdr().RegisterConnection();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  conn_token.reset();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  init_token.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerTest, RegisterBrEdrConnectionDuringInitializingConnectionAndThenCompleteInitialization) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::InitializingConnectionToken> init_token =
+      peer().MutBrEdr().RegisterInitializingConnection();
+  // Expiry is updated for state change + becoming non-temporary.
+  EXPECT_EQ(update_expiry_count, 2);
+  // 1 notification for becoming non-temporary.
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  // The connection state should not change when registering a connection because the peer is still
+  // initializing.
+  std::optional<Peer::ConnectionToken> conn_token = peer().MutBrEdr().RegisterConnection();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  // When initialization completes, the connection state should become kConnected.
+  init_token.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  conn_token.reset();
+  EXPECT_EQ(update_expiry_count, 4);
+  EXPECT_EQ(notify_count, 3);
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
+}
+
+TEST_F(PeerDeathTest, RegisterInitializingBrEdrConnectionDuringConnectionAsserts) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::ConnectionToken> conn_token = peer().MutBrEdr().RegisterConnection();
+  // A notification and expiry update are sent when the peer becomes non-temporary, and a second
+  // notification and update expiry are sent because the initializing connection is registered.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 2);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kConnected);
+  EXPECT_EQ(InspectBrEdrConnectionState(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
+
+  // Registering an initializing connection when the peer is already connected should assert.
+  ASSERT_DEATH_IF_SUPPORTED(
+      {
+        Peer::InitializingConnectionToken init_token =
+            peer().MutBrEdr().RegisterInitializingConnection();
+      },
+      ".*connected.*");
+}
+
+TEST_F(PeerTest, RegisterAndUnregisterTwoBrEdrInitializingConnections) {
+  SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
+
+  int update_expiry_count = 0;
+  set_update_expiry_cb([&](const Peer&) { update_expiry_count++; });
+  int notify_count = 0;
+  set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) { notify_count++; });
+
+  std::optional<Peer::InitializingConnectionToken> token_0 =
+      peer().MutBrEdr().RegisterInitializingConnection();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  std::optional<std::string> inspect_conn_state = InspectBrEdrConnectionState();
+  ASSERT_TRUE(inspect_conn_state);
+  EXPECT_EQ(inspect_conn_state.value(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  std::optional<Peer::InitializingConnectionToken> token_1 =
+      peer().MutBrEdr().RegisterInitializingConnection();
+  // The second initializing connection should not update expiry or notify.
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  inspect_conn_state = InspectBrEdrConnectionState();
+  ASSERT_TRUE(inspect_conn_state);
+  EXPECT_EQ(inspect_conn_state.value(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  token_0.reset();
+  EXPECT_EQ(update_expiry_count, 2);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_FALSE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kInitializing);
+  inspect_conn_state = InspectBrEdrConnectionState();
+  ASSERT_TRUE(inspect_conn_state);
+  EXPECT_EQ(inspect_conn_state.value(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kInitializing));
+
+  token_1.reset();
+  EXPECT_EQ(update_expiry_count, 3);
+  EXPECT_EQ(notify_count, 1);
+  EXPECT_TRUE(peer().temporary());
+  EXPECT_EQ(peer().bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+  inspect_conn_state = InspectBrEdrConnectionState();
+  ASSERT_TRUE(inspect_conn_state);
+  EXPECT_EQ(inspect_conn_state.value(),
+            Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
 }
 
 }  // namespace

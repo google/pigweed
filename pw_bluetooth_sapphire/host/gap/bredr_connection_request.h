@@ -12,6 +12,7 @@
 #include "fbl/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 
@@ -37,9 +38,11 @@ class BrEdrConnectionRequest final {
   using RefFactory = fit::function<BrEdrConnection*()>;
 
   // Construct without a callback. Can be used for incoming only requests
-  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id);
+  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
+                         Peer::InitializingConnectionToken token);
 
-  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id, OnComplete&& callback);
+  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
+                         Peer::InitializingConnectionToken token, OnComplete&& callback);
 
   BrEdrConnectionRequest(BrEdrConnectionRequest&&) = default;
   BrEdrConnectionRequest& operator=(BrEdrConnectionRequest&&) = default;
@@ -69,6 +72,11 @@ class BrEdrConnectionRequest final {
   // new role will be returned.
   const std::optional<hci_spec::ConnectionRole>& role_change() const { return role_change_; }
 
+  Peer::InitializingConnectionToken take_peer_init_token() {
+    ZX_ASSERT(peer_init_conn_token_);
+    return std::exchange(peer_init_conn_token_, std::nullopt).value();
+  }
+
  private:
   PeerId peer_id_;
   DeviceAddress address_;
@@ -78,6 +86,8 @@ class BrEdrConnectionRequest final {
 
   inspect::StringProperty peer_id_property_;
   inspect::Node inspect_node_;
+
+  std::optional<Peer::InitializingConnectionToken> peer_init_conn_token_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionRequest);
 };

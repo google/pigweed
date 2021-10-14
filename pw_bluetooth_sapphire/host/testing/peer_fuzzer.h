@@ -56,7 +56,8 @@ class PeerFuzzer final {
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::InquiryResult>,
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::InquiryResultRSSI>,
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::ExtendedInquiryResultEventParams>,
-        &PeerFuzzer::BrEdrDataSetConnectionState,
+        &PeerFuzzer::BrEdrDataRegisterInitializingConnection,
+        &PeerFuzzer::BrEdrDataRegisterConnection,
         &PeerFuzzer::BrEdrDataSetBondData,
         &PeerFuzzer::BrEdrDataClearBondData,
         &PeerFuzzer::BrEdrDataAddService,
@@ -80,17 +81,17 @@ class PeerFuzzer final {
 
   void LEDataRegisterInitializingConnection() {
     if (peer_.connectable() && fdp().ConsumeBool()) {
-      init_conn_tokens_.emplace_back(peer_.MutLe().RegisterInitializingConnection());
-    } else if (!init_conn_tokens_.empty()) {
-      init_conn_tokens_.pop_back();
+      le_init_conn_tokens_.emplace_back(peer_.MutLe().RegisterInitializingConnection());
+    } else if (!le_init_conn_tokens_.empty()) {
+      le_init_conn_tokens_.pop_back();
     }
   }
 
   void LEDataRegisterConnection() {
     if (peer_.connectable() && fdp().ConsumeBool()) {
-      conn_tokens_.emplace_back(peer_.MutLe().RegisterConnection());
-    } else if (!conn_tokens_.empty()) {
-      conn_tokens_.pop_back();
+      le_conn_tokens_.emplace_back(peer_.MutLe().RegisterConnection());
+    } else if (!le_conn_tokens_.empty()) {
+      le_conn_tokens_.pop_back();
     }
   }
 
@@ -166,11 +167,26 @@ class PeerFuzzer final {
     peer_.MutBrEdr().SetInquiryData(inquiry_data);
   }
 
-  void BrEdrDataSetConnectionState() {
+  void BrEdrDataRegisterInitializingConnection() {
     if (!peer_.identity_known() || !peer_.connectable()) {
       return;
     }
-    peer_.MutBrEdr().SetConnectionState(MakeConnectionState());
+    if (fdp().ConsumeBool()) {
+      bredr_init_conn_tokens_.emplace_back(peer_.MutBrEdr().RegisterInitializingConnection());
+    } else if (!bredr_init_conn_tokens_.empty()) {
+      bredr_init_conn_tokens_.pop_back();
+    }
+  }
+
+  void BrEdrDataRegisterConnection() {
+    if (!peer_.identity_known() || !peer_.connectable()) {
+      return;
+    }
+    if (fdp().ConsumeBool()) {
+      bredr_conn_tokens_.emplace_back(peer_.MutBrEdr().RegisterConnection());
+    } else if (!bredr_conn_tokens_.empty()) {
+      bredr_conn_tokens_.pop_back();
+    }
   }
 
   void BrEdrDataSetBondData() {
@@ -231,12 +247,6 @@ class PeerFuzzer final {
  private:
   FuzzedDataProvider &fdp() { return fuzzed_data_provider_; }
 
-  Peer::ConnectionState MakeConnectionState() {
-    return fdp().PickValueInArray({Peer::ConnectionState::kNotConnected,
-                                   Peer::ConnectionState::kInitializing,
-                                   Peer::ConnectionState::kConnected});
-  }
-
   sm::Key MakeKey() {
     // Actual value of the key is not fuzzed.
     return sm::Key(MakeSecurityProperties(), {});
@@ -256,8 +266,10 @@ class PeerFuzzer final {
 
   FuzzedDataProvider &fuzzed_data_provider_;
   Peer &peer_;
-  std::vector<Peer::ConnectionToken> conn_tokens_;
-  std::vector<Peer::InitializingConnectionToken> init_conn_tokens_;
+  std::vector<Peer::ConnectionToken> le_conn_tokens_;
+  std::vector<Peer::InitializingConnectionToken> le_init_conn_tokens_;
+  std::vector<Peer::ConnectionToken> bredr_conn_tokens_;
+  std::vector<Peer::InitializingConnectionToken> bredr_init_conn_tokens_;
 };
 
 }  // namespace gap::testing

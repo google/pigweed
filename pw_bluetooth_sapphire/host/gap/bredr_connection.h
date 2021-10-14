@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -33,8 +34,8 @@ class BrEdrConnection final {
   // |on_peer_disconnect_cb| is called when the peer disconnects and this connection should be
   // destroyed.
   using Request = BrEdrConnectionRequest;
-  BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
-                  fit::closure send_auth_request_cb, fit::closure disconnect_cb,
+  BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::Connection> link,
+                  fit::closure send_auth_request_cb, fit::callback<void()> disconnect_cb,
                   fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,
                   fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<hci::Transport> transport,
                   std::optional<Request> request);
@@ -48,14 +49,14 @@ class BrEdrConnection final {
   // i.e. L2CAP. Also signals any requesters with a successful status and this
   // connection. If not called and this connection is deleted (e.g. by disconnection), requesters
   // will be signaled with |HostError::kNotSupported| (to indicate interrogation error).
-  void Start();
+  void OnInterrogationComplete();
 
-  // Add a request callback that will be called when Start() is called (or immediately if Start()
-  // has already been called).
+  // Add a request callback that will be called when OnInterrogationComplete() is called (or
+  // immediately if OnInterrogationComplete() has already been called).
   void AddRequestCallback(Request::OnComplete cb);
 
-  // If |Start| has been called, opens an L2CAP channel using the preferred parameters |params| on
-  // the L2cap provided. Otherwise, calls |cb| with a nullptr.
+  // If |OnInterrogationComplete| has been called, opens an L2CAP channel using the preferred
+  // parameters |params| on the L2cap provided. Otherwise, calls |cb| with a nullptr.
   void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
   // See ScoConnectionManager for documentation.
@@ -80,9 +81,16 @@ class BrEdrConnection final {
   }
 
  private:
-  // True if Start() has been called.
-  bool ready_;
+  // |conn_token| is a token received from Peer::MutBrEdr::RegisterConnection().
+  void set_peer_connection_token(Peer::ConnectionToken conn_token);
+
+  // Called by |pairing_state_| when pairing completes with |status|.
+  void OnPairingStateStatus(hci_spec::ConnectionHandle handle, hci::Status status);
+
+  bool interrogation_complete() const { return !request_.has_value(); }
+
   PeerId peer_id_;
+  fxl::WeakPtr<Peer> peer_;
   std::unique_ptr<hci::Connection> link_;
   std::optional<Request> request_;
   std::unique_ptr<PairingState> pairing_state_;
@@ -90,12 +98,19 @@ class BrEdrConnection final {
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
   // Time this object was constructed.
   zx::time create_time_;
+  // Called when an error occurs and this connection should be disconnected.
+  fit::callback<void()> disconnect_cb_;
 
   struct InspectProperties {
     inspect::StringProperty peer_id;
   };
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
+
+  std::optional<Peer::InitializingConnectionToken> peer_init_token_;
+  // Ensures that this peer is marked "connected" once pairing completes.
+  // Unregisters the connection from PeerCache when this connection is destroyed.
+  Peer::ConnectionToken peer_conn_token_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };

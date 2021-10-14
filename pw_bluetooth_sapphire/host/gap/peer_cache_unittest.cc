@@ -433,7 +433,7 @@ TEST_F(PeerCacheTest, LowEnergyPeerBecomesDualModeWhenConnectedOverClassic) {
   ASSERT_TRUE(peer()->le());
   ASSERT_FALSE(peer()->bredr());
 
-  peer()->MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken token = peer()->MutBrEdr().RegisterConnection();
   EXPECT_TRUE(peer()->bredr());
   EXPECT_EQ(TechnologyType::kDualMode, peer()->technology());
 
@@ -1131,7 +1131,7 @@ TEST_F(PeerCacheLowEnergyUpdateCallbackTest, BecomingDualModeTriggersUpdateCallB
 }
 
 TEST_F(PeerCacheBrEdrUpdateCallbackTest, ChangingBrEdrConnectionStateTriggersUpdateCallback) {
-  peer()->MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken token = peer()->MutBrEdr().RegisterConnection();
   EXPECT_TRUE(was_called());
 }
 
@@ -1424,7 +1424,7 @@ TEST_F(PeerCacheExpirationTest, LEConnectedPeerLivesMuchMoreThanSixtySeconds) {
 
 TEST_F(PeerCacheExpirationTest, BREDRConnectedPeerLivesMuchMoreThanSixtySeconds) {
   ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->MutBrEdr().SetConnectionState(Peer::ConnectionState::kConnected);
+  Peer::ConnectionToken token = GetDefaultPeer()->MutBrEdr().RegisterConnection();
   RunLoopFor(kCacheTimeout * 10);
   ASSERT_TRUE(IsDefaultPeerPresent());
   EXPECT_FALSE(GetDefaultPeer()->temporary());

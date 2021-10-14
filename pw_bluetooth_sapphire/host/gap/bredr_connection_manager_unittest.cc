@@ -3482,48 +3482,6 @@ TEST_F(BrEdrConnectionManagerTest, RejectUnsupportedConnectionRequest) {
   RunLoopUntilIdle();
 }
 
-// Tests for assertions that enforce invariants.
-class BrEdrConnectionManagerDeathTest : public BrEdrConnectionManagerTest {};
-
-// Tests that a disconnection event that occurs after a peer gets removed is handled gracefully.
-TEST_F(BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
-  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
-  EXPECT_TRUE(peer->temporary());
-
-  // Queue up the connection
-  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
-                        &kConnectionComplete);
-  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
-  QueueDisconnection(kConnectionHandle);
-
-  // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
-  BrEdrConnection* conn_ref = nullptr;
-  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
-    EXPECT_TRUE(cb_conn_ref);
-    status = cb_status;
-    conn_ref = std::move(cb_conn_ref);
-  };
-
-  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
-  ASSERT_TRUE(peer->bredr());
-  RunLoopUntilIdle();
-  ASSERT_TRUE(status);
-
-  EXPECT_DEATH_IF_SUPPORTED(
-      {
-        // Remove the peer without removing it from the cache. Normally this is not recommended as
-        // implied by the name of the function but it is possible for this invariant to be broken
-        // due to programmer error. The connection manager should assert this invariant.
-        peer->MutBrEdr().SetConnectionState(Peer::ConnectionState::kNotConnected);
-        __UNUSED auto _ = peer_cache()->RemoveDisconnectedPeer(peer->identifier());
-
-        test_device()->SendCommandChannelPacket(kDisconnectionComplete);
-        RunLoopUntilIdle();
-      },
-      ".*");
-}
-
 TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
@@ -3655,12 +3613,11 @@ TEST_F(BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
   RunLoopUntilIdle();
 
   // We should now have a peer in the cache to track our incoming request address
-  // The peer is marked as 'NotConnected' as we do not mark 'Initializing' until we receive the
-  // ConnectionComplete
+  // The peer is marked as 'Initializing` immediately.
   peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->bredr());
-  ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+  ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kInitializing);
 }
 
 TEST_F(BrEdrConnectionManagerTest, Inspect) {

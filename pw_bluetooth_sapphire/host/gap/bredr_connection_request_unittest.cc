@@ -21,7 +21,7 @@ const PeerId kPeerId;
 
 TEST(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   // A freshly created request is not yet incoming
-  auto req = BrEdrConnectionRequest(kTestAddr, kPeerId);
+  auto req = BrEdrConnectionRequest(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}));
   EXPECT_FALSE(req.HasIncoming());
 
   req.BeginIncoming();
@@ -36,20 +36,28 @@ TEST(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
 
 TEST(BrEdrConnectionRequestTests, CallbacksExecuted) {
   bool callback_called = false;
-  auto req = BrEdrConnectionRequest(kTestAddr, kPeerId,
-                                    [&callback_called](auto, auto) { callback_called = true; });
+  bool token_destroyed = false;
+  auto req = BrEdrConnectionRequest(
+      kTestAddr, kPeerId,
+      Peer::InitializingConnectionToken([&token_destroyed] { token_destroyed = true; }),
+      [&callback_called](auto, auto) { callback_called = true; });
 
   // A freshly created request with a callback is awaiting outgoing
   EXPECT_TRUE(req.AwaitingOutgoing());
   // Notifying callbacks triggers the callback
-  req.NotifyCallbacks(hci::Status(), []() { return nullptr; });
-  ASSERT_TRUE(callback_called);
+  req.NotifyCallbacks(hci::Status(), [&]() {
+    EXPECT_TRUE(token_destroyed);
+    return nullptr;
+  });
+  EXPECT_TRUE(token_destroyed);
+  EXPECT_TRUE(callback_called);
 }
 
 TEST(BrEdrConnectionRequestTests, Inspect) {
   // inspector must outlive request
   inspect::Inspector inspector;
-  BrEdrConnectionRequest req(kTestAddr, kPeerId, [](auto, auto) {});
+  BrEdrConnectionRequest req(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}),
+                             [](auto, auto) {});
   req.BeginIncoming();
   req.AttachInspect(inspector.GetRoot(), "request_name");
 

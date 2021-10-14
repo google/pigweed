@@ -215,7 +215,6 @@ void Peer::LowEnergyData::OnConnectionStateMaybeChanged(ConnectionState previous
 
 Peer::BrEdrData::BrEdrData(Peer* owner)
     : peer_(owner),
-      conn_state_(ConnectionState::kNotConnected, &ConnectionStateToString),
       eir_len_(0u),
       link_key_(std::nullopt, [](const std::optional<sm::LTK>& l) { return l.has_value(); }),
       services_({}, MakeContainerOfToStringConvertFunction()) {
@@ -231,7 +230,8 @@ Peer::BrEdrData::BrEdrData(Peer* owner)
 
 void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
   node_ = parent.CreateChild(name);
-  conn_state_.AttachInspect(node_, BrEdrData::kInspectConnectionStateName);
+  inspect_properties_.connection_state = node_.CreateString(
+      BrEdrData::kInspectConnectionStateName, ConnectionStateToString(connection_state()));
   link_key_.AttachInspect(node_, BrEdrData::kInspectLinkKeyName);
   services_.AttachInspect(node_, BrEdrData::kInspectServicesName);
 }
@@ -254,36 +254,74 @@ void Peer::BrEdrData::SetInquiryData(const hci_spec::ExtendedInquiryResultEventP
       BufferView(value.extended_inquiry_response, sizeof(value.extended_inquiry_response)));
 }
 
-void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
-  ZX_DEBUG_ASSERT(peer_->connectable() || state == ConnectionState::kNotConnected);
+Peer::InitializingConnectionToken Peer::BrEdrData::RegisterInitializingConnection() {
+  ZX_ASSERT(peer_->connectable());
+  ZX_ASSERT(!connected());
 
-  if (state == connection_state()) {
-    bt_log(DEBUG, "gap-bredr", "BR/EDR connection state already \"%s\"",
-           ConnectionStateToString(state).c_str());
+  ConnectionState prev_state = connection_state();
+  initializing_tokens_count_++;
+  OnConnectionStateMaybeChanged(prev_state);
+
+  return InitializingConnectionToken([self = peer_->GetWeakPtr(), this] {
+    if (!self) {
+      return;
+    }
+
+    ConnectionState prev_state = connection_state();
+    initializing_tokens_count_--;
+    OnConnectionStateMaybeChanged(prev_state);
+  });
+}
+
+Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
+  ZX_ASSERT(peer_->connectable());
+  ZX_ASSERT_MSG(
+      !connected(),
+      "attempt to register BR/EDR connection when a connection is already registered (peer: %s)",
+      bt_str(peer_->identifier()));
+
+  ConnectionState prev_state = connection_state();
+  connection_tokens_count_++;
+  OnConnectionStateMaybeChanged(prev_state);
+
+  return ConnectionToken([self = peer_->GetWeakPtr(), this] {
+    if (!self) {
+      return;
+    }
+
+    ConnectionState prev_state = connection_state();
+    connection_tokens_count_--;
+    OnConnectionStateMaybeChanged(prev_state);
+  });
+}
+
+void Peer::BrEdrData::OnConnectionStateMaybeChanged(ConnectionState previous) {
+  if (previous == connection_state()) {
     return;
   }
 
   bt_log(DEBUG, "gap-bredr", "peer (%s) BR/EDR connection state changed from \"%s\" to \"%s\"",
-         bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
-         ConnectionStateToString(state).c_str());
+         bt_str(peer_->identifier()), ConnectionStateToString(previous).c_str(),
+         ConnectionStateToString(connection_state()).c_str());
+  inspect_properties_.connection_state.Set(ConnectionStateToString(connection_state()));
 
-  if (state == ConnectionState::kConnected) {
+  if (connection_state() == ConnectionState::kConnected) {
     peer_->peer_metrics_->LogBrEdrConnection();
-  } else if (state == ConnectionState::kNotConnected) {
+  } else if (previous == ConnectionState::kConnected) {
     peer_->peer_metrics_->LogBrEdrDisconnection();
   }
 
-  ConnectionState from_state = connection_state();
-  conn_state_.Set(state);
   peer_->UpdateExpiry();
-  // Transition to or from Connected state is a notifyable change.
-  if ((from_state == ConnectionState::kConnected) || (state == ConnectionState::kConnected)) {
+
+  // Transition to or from kConnected state is a notifyable change.
+  if (previous == ConnectionState::kConnected ||
+      connection_state() == ConnectionState::kConnected) {
     peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
   }
 
   // Become non-temporary if we successfully connect or are initializing. BR/EDR device remain
   // non-temporary afterwards if bonded, and temporary again if disconnect without bonding.
-  if (state == ConnectionState::kNotConnected) {
+  if (connection_state() == ConnectionState::kNotConnected) {
     peer_->TryMakeTemporary();
   } else {
     peer_->TryMakeNonTemporary();
