@@ -5,6 +5,7 @@
 #include "bredr_discovery_manager.h"
 
 #include <lib/async/default.h>
+#include <lib/async/time.h>
 #include <lib/fit/defer.h>
 #include <zircon/assert.h>
 
@@ -37,7 +38,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
     DeviceAddress addr(DeviceAddress::Type::kBREDR, response.bd_addr);
     Peer* peer = cache->FindByAddress(addr);
     if (!peer) {
-      peer = cache->NewPeer(addr, true);
+      peer = cache->NewPeer(addr, /* conectable= */ true);
     }
     ZX_ASSERT(peer);
 
@@ -50,7 +51,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
 }  // namespace
 
 BrEdrDiscoverySession::BrEdrDiscoverySession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
-    : manager_(manager) {}
+    : manager_(std::move(manager)) {}
 
 BrEdrDiscoverySession::~BrEdrDiscoverySession() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
@@ -70,7 +71,7 @@ void BrEdrDiscoverySession::NotifyError() const {
 }
 
 BrEdrDiscoverableSession::BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
-    : manager_(manager) {}
+    : manager_(std::move(manager)) {}
 
 BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
@@ -336,6 +337,63 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::StatusCallbac
       });
 }
 
+void BrEdrDiscoveryManager::AttachInspect(inspect::Node& parent, std::string name) {
+  auto node = parent.CreateChild(name);
+  inspect_properties_.Initialize(std::move(node));
+  UpdateInspectProperties();
+}
+
+void BrEdrDiscoveryManager::InspectProperties::Initialize(inspect::Node new_node) {
+  discoverable_sessions = new_node.CreateUint("discoverable_sessions", 0);
+  pending_discoverable_sessions = new_node.CreateUint("pending_discoverable", 0);
+  discoverable_sessions_count = new_node.CreateUint("discoverable_sessions_count", 0);
+  last_discoverable_length_sec = new_node.CreateUint("last_discoverable_length_sec", 0);
+
+  discovery_sessions = new_node.CreateUint("discovery_sessions", 0);
+  last_inquiry_length_sec = new_node.CreateUint("last_inquiry_length_sec", 0);
+  inquiry_sessions_count = new_node.CreateUint("inquiry_sessions_count", 0);
+
+  discoverable_started_time.reset();
+  inquiry_started_time.reset();
+
+  node = std::move(new_node);
+}
+
+void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
+                                                      size_t pending_discoverable_count,
+                                                      size_t discovery_count, zx_time_t now) {
+  if (!node) {
+    return;
+  }
+
+  if (!discoverable_started_time.has_value() && discoverable_count != 0) {
+    discoverable_started_time.emplace(now);
+  } else if (discoverable_started_time.has_value() && discoverable_count == 0) {
+    discoverable_sessions_count.Add(1);
+    zx_duration_t length = now - discoverable_started_time.value();
+    last_discoverable_length_sec.Set(length / zx_duration_from_sec(1));
+    discoverable_started_time.reset();
+  }
+
+  if (!inquiry_started_time.has_value() && discovery_count != 0) {
+    inquiry_started_time.emplace(now);
+  } else if (inquiry_started_time.has_value() && discovery_count == 0) {
+    inquiry_sessions_count.Add(1);
+    zx_duration_t length = now - inquiry_started_time.value();
+    last_inquiry_length_sec.Set(length / zx_duration_from_sec(1));
+    inquiry_started_time.reset();
+  }
+
+  discoverable_sessions.Set(discoverable_count);
+  pending_discoverable_sessions.Set(pending_discoverable_count);
+  discovery_sessions.Set(discovery_count);
+}
+
+void BrEdrDiscoveryManager::UpdateInspectProperties() {
+  inspect_properties_.Update(discoverable_.size(), pending_discoverable_.size(),
+                             discovering_.size(), async_now(dispatcher_));
+}
+
 void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   if (requesting_names_.count(id)) {
     bt_log(TRACE, "gap-bredr", "already requesting name for %s", bt_str(id));
@@ -396,24 +454,23 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
 
-  bt_log(INFO, "gap-bredr", "RequestDiscoverable");
-
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto status_cb = [self, cb = callback.share()](const auto& status) {
     cb(status, (status ? self->AddDiscoverableSession() : nullptr));
   };
 
+  auto update_inspect = fit::defer([self]() { self->UpdateInspectProperties(); });
+
   if (!pending_discoverable_.empty()) {
-    bt_log(DEBUG, "gap-bredr", "discoverable mode starting, add to pending");
     pending_discoverable_.push(std::move(status_cb));
+    bt_log(INFO, "gap-bredr", "discoverable mode starting: %lu pending",
+           pending_discoverable_.size());
     return;
   }
 
   // If we're already discoverable, just add a session.
   if (!discoverable_.empty()) {
-    bt_log(DEBUG, "gap-bredr", "add to active discoverable");
-    auto session = AddDiscoverableSession();
-    callback(hci::Status(), std::move(session));
+    status_cb(hci::Status());
     return;
   }
 
@@ -423,7 +480,8 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
 
 void BrEdrDiscoveryManager::SetInquiryScan() {
   bool enable = !discoverable_.empty() || !pending_discoverable_.empty();
-  bt_log(DEBUG, "gap-bredr", "%s inquiry scan", (enable ? "enabling" : "disabling"));
+  bt_log(INFO, "gap-bredr", "%sabling inquiry scan: %lu sessions, %lu pending",
+         (enable ? "en" : "dis"), discoverable_.size(), pending_discoverable_.size());
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
@@ -478,6 +536,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
             self->pending_discoverable_.pop();
             cb(event.ToStatus());
           }
+          self->UpdateInspectProperties();
         });
   };
 
@@ -527,6 +586,8 @@ std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySessio
       new BrEdrDiscoverySession(weak_ptr_factory_.GetWeakPtr()));
   ZX_DEBUG_ASSERT(discovering_.find(session.get()) == discovering_.end());
   discovering_.insert(session.get());
+  bt_log(INFO, "gap-bredr", "new discovery session: %lu sessions active", discovering_.size());
+  UpdateInspectProperties();
   return session;
 }
 
@@ -538,6 +599,7 @@ void BrEdrDiscoveryManager::RemoveDiscoverySession(BrEdrDiscoverySession* sessio
   if (removed) {
     zombie_discovering_.insert(session);
   }
+  UpdateInspectProperties();
 }
 
 std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverableSession() {
@@ -549,6 +611,7 @@ std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverable
       new BrEdrDiscoverableSession(weak_ptr_factory_.GetWeakPtr()));
   ZX_DEBUG_ASSERT(discoverable_.find(session.get()) == discoverable_.end());
   discoverable_.insert(session.get());
+  bt_log(INFO, "gap-bredr", "new discoverable session: %lu sessions active", discoverable_.size());
   return session;
 }
 
@@ -556,9 +619,9 @@ void BrEdrDiscoveryManager::RemoveDiscoverableSession(BrEdrDiscoverableSession* 
   bt_log(DEBUG, "gap-bredr", "removing discoverable session");
   discoverable_.erase(session);
   if (discoverable_.empty()) {
-    bt_log(INFO, "gap-bredr", "removed last discoverable session, enabling inquiry scan");
     SetInquiryScan();
   }
+  UpdateInspectProperties();
 }
 
 void BrEdrDiscoveryManager::InvalidateDiscoverySessions() {
@@ -566,6 +629,7 @@ void BrEdrDiscoveryManager::InvalidateDiscoverySessions() {
     session->NotifyError();
   }
   discovering_.clear();
+  UpdateInspectProperties();
 }
 
 }  // namespace bt::gap

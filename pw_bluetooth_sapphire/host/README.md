@@ -41,6 +41,14 @@ adapter:
         failed_count
         scan_interval_ms
         scan_window_ms
+    bredr_discovery_manager:
+        discoverable_sessions
+        pending_discoverable
+        discoverable_sessions_count
+        last_discoverable_length_sec
+        discovery_sessions
+        inquiry_sessions_count
+        last_inquiry_length_sec
     metrics:
         bredr:
             open_l2cap_channel_requests

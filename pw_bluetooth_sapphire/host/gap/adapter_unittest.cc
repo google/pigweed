@@ -902,8 +902,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
 
-  auto le_connection_manager_matcher =
-      NodeMatches(NameMatches(LowEnergyConnectionManager::kInspectNodeName));
+  auto le_connection_manager_matcher = NodeMatches(NameMatches("low_energy_connection_manager"));
   auto bredr_connection_manager_matcher = NodeMatches(NameMatches("bredr_connection_manager"));
   auto peer_cache_matcher = NodeMatches(NameMatches(PeerCache::kInspectNodeName));
   auto sdp_server_matcher = NodeMatches(NameMatches(sdp::Server::kInspectNodeName));
@@ -923,6 +922,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
   auto metrics_node_matcher = AllOf(NodeMatches(NameMatches(Adapter::kMetricsInspectNodeName)),
                                     ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher)));
   auto le_discovery_manager_matcher = NodeMatches(NameMatches("low_energy_discovery_manager"));
+  auto bredr_discovery_manager_matcher = NodeMatches(NameMatches("bredr_discovery_manager"));
 
   auto adapter_matcher = AllOf(
       NodeMatches(AllOf(
@@ -946,7 +946,8 @@ TEST_F(AdapterTest, InspectHierarchy) {
                       "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
       ChildrenMatch(UnorderedElementsAre(
           peer_cache_matcher, sdp_server_matcher, le_connection_manager_matcher,
-          bredr_connection_manager_matcher, le_discovery_manager_matcher, metrics_node_matcher)));
+          bredr_connection_manager_matcher, le_discovery_manager_matcher, metrics_node_matcher,
+          bredr_discovery_manager_matcher)));
 
   auto bt_host_matcher = AllOf(NodeMatches(NameMatches("bt-host")),
                                ChildrenMatch(UnorderedElementsAre(adapter_matcher)));

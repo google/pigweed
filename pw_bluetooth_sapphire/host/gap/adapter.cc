@@ -29,8 +29,12 @@
 
 namespace bt::gap {
 
-const char* const kInspectLowEnergyDiscoveryManagerNodeName = "low_energy_discovery_manager";
-const char* const kInspectBrEdrConnectionManagerNodeName = "bredr_connection_manager";
+static constexpr const char* kInspectLowEnergyDiscoveryManagerNodeName =
+    "low_energy_discovery_manager";
+static constexpr const char* kInspectLowEnergyConnectionManagerNodeName =
+    "low_energy_connection_manager";
+static constexpr const char* kInspectBrEdrConnectionManagerNodeName = "bredr_connection_manager";
+static constexpr const char* kInspectBrEdrDiscoveryManagerNodeName = "bredr_discovery_manager";
 
 // All asynchronous callbacks are posted on the Loop on which this Adapter
 // instance is created.
@@ -953,7 +957,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_, gatt_,
       le_discovery_manager_->GetWeakPtr(), sm::SecurityManager::Create);
-  le_connection_manager_->AttachInspect(adapter_node_);
+  le_connection_manager_->AttachInspect(adapter_node_, kInspectLowEnergyConnectionManagerNodeName);
 
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
       hci_le_advertiser_.get(), le_address_manager_.get());
@@ -976,6 +980,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
     }
 
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &peer_cache_);
+    bredr_discovery_manager_->AttachInspect(adapter_node_, kInspectBrEdrDiscoveryManagerNodeName);
 
     sdp_server_ = std::make_unique<sdp::Server>(l2cap_);
     sdp_server_->AttachInspect(adapter_node_);

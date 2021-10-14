@@ -169,8 +169,7 @@ class LowEnergyConnectionManager final {
   void SetSecurityMode(LeSecurityMode mode);
 
   // Attach manager inspect node as a child node of |parent|.
-  static constexpr const char* kInspectNodeName = "low_energy_connection_manager";
-  void AttachInspect(inspect::Node& parent);
+  void AttachInspect(inspect::Node& parent, std::string name);
 
   LeSecurityMode security_mode() const { return security_mode_; }
   sm::SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }

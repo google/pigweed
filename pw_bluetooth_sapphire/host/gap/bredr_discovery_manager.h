@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/sys/inspect/cpp/component.h>
 
 #include <queue>
 #include <unordered_set>
@@ -134,6 +135,9 @@ class BrEdrDiscoveryManager final {
   // Returns the BR/EDR local name used for EIR.
   std::string local_name() const { return local_name_; }
 
+  // Attach discovery manager inspect node as a child node of |parent|.
+  void AttachInspect(inspect::Node& parent, std::string name);
+
  private:
   friend class BrEdrDiscoverySession;
   friend class BrEdrDiscoverableSession;
@@ -181,8 +185,33 @@ class BrEdrDiscoveryManager final {
   // Currently, only the name field in EIR is supported.
   void UpdateEIRResponseData(std::string name, hci::StatusCallback callback);
 
+  // Updates the Inspect properties
+  void UpdateInspectProperties();
+
   // The HCI Transport
   fxl::WeakPtr<hci::Transport> hci_;
+
+  struct InspectProperties {
+    inspect::Node node;
+
+    inspect::UintProperty discoverable_sessions;
+    inspect::UintProperty pending_discoverable_sessions;
+    inspect::UintProperty discoverable_sessions_count;
+    inspect::UintProperty last_discoverable_length_sec;
+
+    inspect::UintProperty discovery_sessions;
+    inspect::UintProperty inquiry_sessions_count;
+    inspect::UintProperty last_inquiry_length_sec;
+
+    std::optional<zx_time_t> discoverable_started_time;
+    std::optional<zx_time_t> inquiry_started_time;
+
+    void Initialize(inspect::Node node);
+    void Update(size_t discoverable_count, size_t pending_discoverable_count,
+                size_t discovery_count, zx_time_t now);
+  };
+
+  InspectProperties inspect_properties_;
 
   // The dispatcher that we use for invoking callbacks asynchronously.
   async_dispatcher_t* dispatcher_;

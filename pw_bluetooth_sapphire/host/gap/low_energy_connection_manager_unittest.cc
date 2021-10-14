@@ -3256,7 +3256,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
 
 TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   inspect::Inspector inspector;
-  conn_mgr()->AttachInspect(inspector.GetRoot());
+  conn_mgr()->AttachInspect(inspector.GetRoot(), "low_energy_connection_manager");
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
@@ -3290,11 +3290,10 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   auto conn_mgr_property_matcher =
       PropertyList(UnorderedElementsAre(IntIs("recent_connection_failures", 0)));
 
-  auto conn_mgr_during_connecting_matcher =
-      AllOf(NodeMatches(AllOf(NameMatches(LowEnergyConnectionManager::kInspectNodeName),
-                              conn_mgr_property_matcher)),
-            ChildrenMatch(UnorderedElementsAre(requests_matcher, empty_connections_matcher,
-                                               outbound_connector_matcher_attempt_0)));
+  auto conn_mgr_during_connecting_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches("low_energy_connection_manager"), conn_mgr_property_matcher)),
+      ChildrenMatch(UnorderedElementsAre(requests_matcher, empty_connections_matcher,
+                                         outbound_connector_matcher_attempt_0)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_during_connecting_matcher)));
@@ -3328,7 +3327,7 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
 
 TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   inspect::Inspector inspector;
-  conn_mgr()->AttachInspect(inspector.GetRoot());
+  conn_mgr()->AttachInspect(inspector.GetRoot(), "low_energy_connection_manager");
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());

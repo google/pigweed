@@ -265,8 +265,8 @@ void LowEnergyConnectionManager::SetSecurityMode(LeSecurityMode mode) {
   }
 }
 
-void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent) {
-  inspect_node_ = parent.CreateChild(kInspectNodeName);
+void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_node_ = parent.CreateChild(name);
   inspect_properties_.recent_connection_failures.AttachInspect(
       inspect_node_, kInspectConnectionFailuresPropertyName);
   inspect_pending_requests_node_ = inspect_node_.CreateChild(kInspectRequestsNodeName);

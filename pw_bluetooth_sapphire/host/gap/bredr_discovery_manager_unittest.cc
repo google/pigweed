@@ -4,6 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 
+#include <lib/inspect/testing/cpp/inspect.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -13,6 +15,8 @@
 
 namespace bt::gap {
 namespace {
+
+using namespace inspect::testing;
 
 using bt::testing::CommandTransaction;
 
@@ -1116,6 +1120,90 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
   RunLoopUntilIdle();
+}
+
+TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
+  inspect::Inspector inspector;
+  discovery_manager()->AttachInspect(inspector.GetRoot(), "bredr_discovery_manager");
+
+  auto discoverable_session_active_matcher = Contains(UintIs("discoverable_sessions", 1));
+
+  std::unique_ptr<BrEdrDiscoverableSession> discoverable_session;
+  auto session_cb = [&discoverable_session](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    discoverable_session = std::move(cb_session);
+  };
+
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
+  discovery_manager()->RequestDiscoverable(session_cb);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(discoverable_session);
+
+  auto properties = inspect::ReadFromVmo(inspector.DuplicateVmo())
+                        .take_value()
+                        .take_children()
+                        .front()
+                        .node_ptr()
+                        ->take_properties();
+  EXPECT_THAT(properties, discoverable_session_active_matcher);
+
+  auto discoverable_session_counted_matcher = ::testing::IsSupersetOf(
+      {UintIs("discoverable_sessions", 0), UintIs("discoverable_sessions_count", 1),
+       UintIs("last_discoverable_length_sec", 4)});
+
+  RunLoopFor(zx::sec(4));
+  discoverable_session = nullptr;
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
+  RunLoopUntilIdle();
+
+  properties = inspect::ReadFromVmo(inspector.DuplicateVmo())
+                   .take_value()
+                   .take_children()
+                   .front()
+                   .node_ptr()
+                   ->take_properties();
+  EXPECT_THAT(properties, discoverable_session_counted_matcher);
+
+  auto discovery_session_active_matcher = Contains(UintIs("discovery_sessions", 1));
+
+  std::unique_ptr<BrEdrDiscoverySession> discovery_session;
+
+  discovery_manager()->RequestDiscovery([&discovery_session](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    discovery_session = std::move(cb_session);
+  });
+
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(discovery_session);
+
+  properties = inspect::ReadFromVmo(inspector.DuplicateVmo())
+                   .take_value()
+                   .take_children()
+                   .front()
+                   .node_ptr()
+                   ->take_properties();
+  EXPECT_THAT(properties, discovery_session_active_matcher);
+
+  auto discovery_session_counted_matcher =
+      ::testing::IsSupersetOf({UintIs("discovery_sessions", 0), UintIs("inquiry_sessions_count", 1),
+                               UintIs("last_inquiry_length_sec", 7)});
+
+  RunLoopFor(zx::sec(7));
+  discovery_session = nullptr;
+  RunLoopUntilIdle();
+  test_device()->SendCommandChannelPacket(kInquiryComplete);
+  RunLoopUntilIdle();
+
+  properties = inspect::ReadFromVmo(inspector.DuplicateVmo())
+                   .take_value()
+                   .take_children()
+                   .front()
+                   .node_ptr()
+                   ->take_properties();
+  EXPECT_THAT(properties, discovery_session_counted_matcher);
 }
 
 }  // namespace
