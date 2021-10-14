@@ -14,10 +14,26 @@
 """Dataclass for a Python package."""
 
 import configparser
+from contextlib import contextmanager
 import copy
 from dataclasses import dataclass
+import json
+import os
 from pathlib import Path
-from typing import Dict, List, Optional
+import shutil
+from typing import Dict, List, Optional, Iterable
+
+import setuptools  # type: ignore
+
+
+@contextmanager
+def change_working_dir(directory: Path):
+    original_dir = Path.cwd()
+    try:
+        os.chdir(directory)
+        yield directory
+    finally:
+        os.chdir(original_dir)
 
 
 @dataclass
@@ -92,3 +108,60 @@ class PythonPackage:
                 config.read_file(config_file)
             return config
         return None
+
+    def setuptools_build_with_base(self,
+                                   build_base: Path,
+                                   include_tests: bool = False) -> Path:
+        # Create the lib install dir in case it doesn't exist.
+        lib_dir_path = build_base / 'lib'
+        lib_dir_path.mkdir(parents=True, exist_ok=True)
+
+        starting_directory = Path.cwd()
+        # cd to the location of setup.py
+        with change_working_dir(self.setup_dir):
+            # Run build with temp build-base location
+            # Note: New files will be placed inside lib_dir_path
+            setuptools.setup(script_args=[
+                'build',
+                '--force',
+                '--build-base',
+                str(build_base),
+            ])
+
+            new_pkg_dir = lib_dir_path / self.package_name
+            # If tests should be included, copy them to the tests dir
+            if include_tests and self.tests:
+                test_dir_path = new_pkg_dir / 'tests'
+                test_dir_path.mkdir(parents=True, exist_ok=True)
+
+                for test_source_path in self.tests:
+                    shutil.copy(starting_directory / test_source_path,
+                                test_dir_path)
+
+        return lib_dir_path
+
+    def setuptools_develop(self) -> None:
+        with change_working_dir(self.setup_dir):
+            setuptools.setup(script_args=['develop'])
+
+    def setuptools_install(self) -> None:
+        with change_working_dir(self.setup_dir):
+            setuptools.setup(script_args=['install'])
+
+
+def load_packages(input_list_files: Iterable[Path]) -> List[PythonPackage]:
+    """Load Python package metadata and configs."""
+
+    packages = []
+    for input_path in input_list_files:
+
+        with input_path.open() as input_file:
+            # Each line contains the path to a json file.
+            for json_file in input_file.readlines():
+                # Load the json as a dict.
+                json_file_path = Path(json_file.strip()).resolve()
+                with json_file_path.open() as json_fp:
+                    json_dict = json.load(json_fp)
+
+                packages.append(PythonPackage.from_dict(**json_dict))
+    return packages

@@ -17,18 +17,14 @@ import argparse
 import configparser
 from datetime import datetime
 import io
-import json
-import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
-from typing import Iterable, List
+from typing import Iterable
 
-import setuptools  # type: ignore
-
-from pw_build.python_package import PythonPackage
+from pw_build.python_package import PythonPackage, load_packages
 
 
 def _parse_args():
@@ -203,31 +199,10 @@ def write_config(
     setup_cfg_file.write_text(comment_block_text + setup_cfg_text.getvalue())
 
 
-def load_packages(input_list_files: Iterable[Path]) -> List[PythonPackage]:
-    """Load Python package metadata and configs."""
-
-    packages = []
-    for input_path in input_list_files:
-
-        with input_path.open() as input_file:
-            # Each line contains the path to a json file.
-            for json_file in input_file.readlines():
-                # Load the json as a dict.
-                json_file_path = Path(json_file.strip()).resolve()
-                with json_file_path.open() as json_fp:
-                    json_dict = json.load(json_fp)
-
-                packages.append(PythonPackage.from_dict(**json_dict))
-    return packages
-
-
 def build_python_tree(python_packages: Iterable[PythonPackage],
                       tree_destination_dir: Path,
                       include_tests: bool = False) -> None:
     """Install PythonPackages to a destination directory."""
-
-    # Save the current out directory
-    out_dir = Path.cwd()
 
     # Create the root destination directory.
     destination_path = tree_destination_dir.resolve()
@@ -238,33 +213,10 @@ def build_python_tree(python_packages: Iterable[PythonPackage],
     # Define a temporary location to run setup.py build in.
     with tempfile.TemporaryDirectory() as build_base_name:
         build_base = Path(build_base_name)
-        lib_dir_path = build_base / 'lib'
 
         for pkg in python_packages:
-            # Create the temp install dir
-            lib_dir_path.mkdir(parents=True, exist_ok=True)
-
-            # cd to the location of setup.py
-            setup_dir_path = out_dir / pkg.setup_dir
-            os.chdir(setup_dir_path)
-            # Run build with temp build-base location
-            # Note: New files will be placed inside lib_dir_path
-            setuptools.setup(script_args=[
-                'build',
-                '--force',
-                '--build-base',
-                str(build_base),
-            ])
-
-            new_pkg_dir = lib_dir_path / pkg.package_name
-
-            # If tests should be included, copy them to the tests dir
-            if include_tests and pkg.tests:
-                test_dir_path = new_pkg_dir / 'tests'
-                test_dir_path.mkdir(parents=True, exist_ok=True)
-
-                for test_source_path in pkg.tests:
-                    shutil.copy(out_dir / test_source_path, test_dir_path)
+            lib_dir_path = pkg.setuptools_build_with_base(
+                build_base, include_tests=include_tests)
 
             # Move installed files from the temp build-base into
             # destination_path.
@@ -276,9 +228,6 @@ def build_python_tree(python_packages: Iterable[PythonPackage],
 
             # Clean build base lib folder for next install
             shutil.rmtree(lib_dir_path, ignore_errors=True)
-
-    # cd back to out directory
-    os.chdir(out_dir)
 
 
 def copy_extra_files(extra_file_strings: Iterable[str]) -> None:
