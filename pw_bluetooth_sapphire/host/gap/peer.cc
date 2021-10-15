@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
-#include "src/lib/fxl/strings/utf_codecs.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/utf_codecs.h"
 
 namespace bt::gap {
 namespace {
@@ -540,7 +540,7 @@ bool Peer::SetRssiInternal(int8_t rssi) {
 }
 
 bool Peer::SetNameInternal(const std::string& name) {
-  if (!fxl::IsStringUTF8(name)) {
+  if (!bt_lib_cpp_string::IsStringUTF8(name)) {
     std::ostringstream oss;
     oss << std::hex << std::setfill('0');
     for (auto c : name) {

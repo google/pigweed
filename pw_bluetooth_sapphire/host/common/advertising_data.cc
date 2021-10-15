@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
-#include "src/lib/fxl/strings/utf_codecs.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/utf_codecs.h"
 
 namespace bt {
 
@@ -134,12 +134,12 @@ std::string EncodeUri(const std::string& uri) {
     const char* scheme = kUriSchemes[i];
     size_t scheme_len = strlen(scheme);
     if (std::equal(scheme, scheme + scheme_len, uri.begin())) {
-      fxl::WriteUnicodeCharacter(i + 2, &encoded_scheme);
+      bt_lib_cpp_string::WriteUnicodeCharacter(i + 2, &encoded_scheme);
       return encoded_scheme + uri.substr(scheme_len);
     }
   }
   // First codepoint (U+0001) is for uncompressed schemes.
-  fxl::WriteUnicodeCharacter(1, &encoded_scheme);
+  bt_lib_cpp_string::WriteUnicodeCharacter(1, &encoded_scheme);
   return encoded_scheme + uri;
 }
 
@@ -154,7 +154,7 @@ std::string DecodeUri(const std::string& uri) {
 
   // NOTE: as we are reading UTF-8 from `uri`, it is possible that `code_point` corresponds to > 1
   // byte of `uri` (even for valid URI encoding schemes, as U+00(>7F) encodes to 2 bytes).
-  if (!fxl::ReadUnicodeCharacter(uri.c_str(), uri.size(), &index, &code_point)) {
+  if (!bt_lib_cpp_string::ReadUnicodeCharacter(uri.c_str(), uri.size(), &index, &code_point)) {
     bt_log(INFO, "gap-le", "Attempted to decode malformed UTF-8 in AdvertisingData URI");
     return "";
   }
