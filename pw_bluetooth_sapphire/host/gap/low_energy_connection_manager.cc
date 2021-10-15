@@ -345,13 +345,13 @@ void LowEnergyConnectionManager::SetDisconnectCallbackForTesting(DisconnectCallb
   test_disconn_cb_ = std::move(callback);
 }
 
-void LowEnergyConnectionManager::ReleaseReference(LowEnergyConnectionHandle* conn_ref) {
-  ZX_DEBUG_ASSERT(conn_ref);
+void LowEnergyConnectionManager::ReleaseReference(LowEnergyConnectionHandle* handle) {
+  ZX_ASSERT(handle);
 
-  auto iter = connections_.find(conn_ref->peer_identifier());
-  ZX_DEBUG_ASSERT(iter != connections_.end());
+  auto iter = connections_.find(handle->peer_identifier());
+  ZX_ASSERT(iter != connections_.end());
 
-  iter->second->DropRef(conn_ref);
+  iter->second->DropRef(handle);
   if (iter->second->ref_count() != 0u)
     return;
 

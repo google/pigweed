@@ -11,26 +11,30 @@ namespace bt::gap {
 
 LowEnergyConnectionHandle::LowEnergyConnectionHandle(
     PeerId peer_id, hci_spec::ConnectionHandle handle,
-    fxl::WeakPtr<LowEnergyConnectionManager> manager)
-    : active_(true), peer_id_(peer_id), handle_(handle), manager_(manager) {
-  ZX_DEBUG_ASSERT(peer_id_.IsValid());
-  ZX_DEBUG_ASSERT(manager_);
-  ZX_DEBUG_ASSERT(handle_);
+    fit::callback<void(LowEnergyConnectionHandle*)> release_cb,
+    fit::function<sm::BondableMode()> bondable_cb,
+    fit::function<sm::SecurityProperties()> security_cb)
+    : active_(true),
+      peer_id_(peer_id),
+      handle_(handle),
+      release_cb_(std::move(release_cb)),
+      bondable_cb_(std::move(bondable_cb)),
+      security_cb_(std::move(security_cb)) {
+  ZX_ASSERT(peer_id_.IsValid());
+  ZX_ASSERT(handle_);
 }
 
 LowEnergyConnectionHandle::~LowEnergyConnectionHandle() {
-  ZX_ASSERT(thread_checker_.is_thread_valid());
   if (active_) {
     Release();
   }
 }
 
 void LowEnergyConnectionHandle::Release() {
-  ZX_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(active_);
+  ZX_ASSERT(active_);
   active_ = false;
-  if (manager_) {
-    manager_->ReleaseReference(this);
+  if (release_cb_) {
+    release_cb_(this);
   }
 }
 
@@ -45,17 +49,13 @@ void LowEnergyConnectionHandle::MarkClosed() {
 }
 
 sm::BondableMode LowEnergyConnectionHandle::bondable_mode() const {
-  ZX_DEBUG_ASSERT(manager_);
-  auto conn_iter = manager_->connections_.find(peer_id_);
-  ZX_DEBUG_ASSERT(conn_iter != manager_->connections_.end());
-  return conn_iter->second->bondable_mode();
+  ZX_ASSERT(active_);
+  return bondable_cb_();
 }
 
 sm::SecurityProperties LowEnergyConnectionHandle::security() const {
-  ZX_DEBUG_ASSERT(manager_);
-  auto conn_iter = manager_->connections_.find(peer_id_);
-  ZX_DEBUG_ASSERT(conn_iter != manager_->connections_.end());
-  return conn_iter->second->security();
+  ZX_ASSERT(active_);
+  return security_cb_();
 }
 
 }  // namespace bt::gap

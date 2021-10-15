@@ -175,13 +175,13 @@ class LowEnergyConnectionManager final {
   sm::SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }
 
  private:
-  friend class LowEnergyConnectionHandle;
+  friend class internal::LowEnergyConnection;
 
   // Mapping from peer identifiers to open LE connections.
   using ConnectionMap = std::unordered_map<PeerId, std::unique_ptr<internal::LowEnergyConnection>>;
 
   // Called by LowEnergyConnectionHandle::Release().
-  void ReleaseReference(LowEnergyConnectionHandle* conn_ref);
+  void ReleaseReference(LowEnergyConnectionHandle* handle);
 
   // Initiates a new connection attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();

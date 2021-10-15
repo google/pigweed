@@ -25,6 +25,7 @@ LowEnergyConnectionServer::LowEnergyConnectionServer(
 
 void LowEnergyConnectionServer::OnClosed() {
   if (closed_handler_) {
+    binding()->Close(ZX_ERR_CONNECTION_RESET);
     closed_handler_();
   }
 }

@@ -15,6 +15,7 @@
 #include "lib/fidl/cpp/interface_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -113,6 +114,31 @@ class LowEnergyCentralServerTest : public TestingBase {
   std::unique_ptr<bt::gatt::GATT> gatt_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServerTest);
+};
+
+class LowEnergyCentralServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+ public:
+  void SetUp() override {
+    bt::gap::testing::FakeAdapterTestFixture::SetUp();
+
+    // Create a LowEnergyCentralServer and bind it to a local client.
+    fidl::InterfaceHandle<fble::Central> handle;
+    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
+    server_ = std::make_unique<LowEnergyCentralServer>(adapter()->AsWeakPtr(), handle.NewRequest(),
+                                                       gatt_->AsWeakPtr());
+    proxy_.Bind(std::move(handle));
+  }
+
+  fuchsia::bluetooth::le::Central* central_proxy() const { return proxy_.get(); }
+
+ private:
+  std::unique_ptr<LowEnergyCentralServer> server_;
+  fble::CentralPtr proxy_;
+  std::unique_ptr<bt::gatt::GATT> gatt_;
+};
+
+class LowEnergyCentralServerTestFakeAdapterBoolParam : public LowEnergyCentralServerTestFakeAdapter,
+                                                       public ::testing::WithParamInterface<bool> {
 };
 
 // Tests that connecting to a peripheral with LowEnergyConnectionOptions.bondable_mode unset results
@@ -916,6 +942,204 @@ TEST_F(LowEnergyCentralServerTest,
   ASSERT_TRUE(epitaph);
   EXPECT_EQ(*epitaph, ZX_ERR_CANCELED);
 }
+
+TEST_F(LowEnergyCentralServerTest, ConnectToAlreadyConnectedPeerFails) {
+  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kTestAddr));
+
+  fble::ConnectionPtr conn_client_0;
+  std::optional<zx_status_t> epitaph_0;
+  conn_client_0.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_0 = cb_epitaph; });
+
+  const fuchsia::bluetooth::PeerId peer_id{peer->identifier().value()};
+  fble::ConnectionOptions options_0;
+  central_proxy()->Connect(peer_id, std::move(options_0), conn_client_0.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph_0.has_value());
+
+  fble::ConnectionPtr conn_client_1;
+  std::optional<zx_status_t> epitaph_1;
+  conn_client_1.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_1 = cb_epitaph; });
+
+  fble::ConnectionOptions options_1;
+  central_proxy()->Connect(peer_id, std::move(options_1), conn_client_1.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph_0.has_value());
+  ASSERT_TRUE(epitaph_1.has_value());
+  EXPECT_EQ(epitaph_1.value(), ZX_ERR_ALREADY_BOUND);
+}
+
+TEST_F(LowEnergyCentralServerTest, ConnectToPeerWithRequestPending) {
+  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+
+  auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestAddr);
+  fake_peer->force_pending_connect();
+  test_device()->AddPeer(std::move(fake_peer));
+
+  fble::ConnectionPtr conn_client_0;
+  std::optional<zx_status_t> epitaph_0;
+  conn_client_0.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_0 = cb_epitaph; });
+
+  const fuchsia::bluetooth::PeerId peer_id{peer->identifier().value()};
+  fble::ConnectionOptions options_0;
+  central_proxy()->Connect(peer_id, std::move(options_0), conn_client_0.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph_0.has_value());
+
+  fble::ConnectionPtr conn_client_1;
+  std::optional<zx_status_t> epitaph_1;
+  conn_client_1.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_1 = cb_epitaph; });
+
+  fble::ConnectionOptions options_1;
+  central_proxy()->Connect(peer_id, std::move(options_1), conn_client_1.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph_0.has_value());
+  ASSERT_TRUE(epitaph_1.has_value());
+  EXPECT_EQ(epitaph_1.value(), ZX_ERR_ALREADY_BOUND);
+}
+
+TEST_F(LowEnergyCentralServerTest, ConnectToPeerAlreadyConnectedInLowEnergyConnectionManager) {
+  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kTestAddr));
+
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> le_conn;
+  adapter()->le()->Connect(
+      peer->identifier(),
+      [&le_conn](auto result) {
+        ASSERT_TRUE(result.is_ok());
+        le_conn = result.take_value();
+      },
+      bt::gap::LowEnergyConnectionOptions());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(le_conn);
+
+  fble::ConnectionPtr conn_client1;
+  std::optional<zx_status_t> epitaph1;
+  conn_client1.set_error_handler([&](zx_status_t cb_epitaph) { epitaph1 = cb_epitaph; });
+
+  const fuchsia::bluetooth::PeerId kFidlPeerId{peer->identifier().value()};
+  fble::ConnectionOptions options1;
+  central_proxy()->Connect(kFidlPeerId, std::move(options1), conn_client1.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph1.has_value());
+}
+
+TEST_F(LowEnergyCentralServerTest, ConnectThenPeerDisconnectThenReconnect) {
+  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+  const fuchsia::bluetooth::PeerId kFidlPeerId{peer->identifier().value()};
+
+  std::unique_ptr<bt::testing::FakePeer> fake_peer =
+      std::make_unique<bt::testing::FakePeer>(kTestAddr);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  fble::ConnectionPtr conn_client_0;
+  std::optional<zx_status_t> epitaph_0;
+  conn_client_0.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_0 = cb_epitaph; });
+
+  fble::ConnectionOptions options_0;
+  central_proxy()->Connect(kFidlPeerId, std::move(options_0), conn_client_0.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph_0.has_value());
+
+  test_device()->Disconnect(kTestAddr);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(epitaph_0.has_value());
+
+  fble::ConnectionPtr conn_client_1;
+  std::optional<zx_status_t> epitaph_1;
+  conn_client_1.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_1 = cb_epitaph; });
+
+  fble::ConnectionOptions options_1;
+  central_proxy()->Connect(kFidlPeerId, std::move(options_1), conn_client_1.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph_1.has_value());
+}
+
+TEST_F(LowEnergyCentralServerTest, ConnectFailsDueToPeerNotConnectableThenConnectSuceeds) {
+  bt::gap::Peer* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/false);
+  ASSERT_TRUE(peer);
+  auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestAddr);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  fble::ConnectionPtr conn_client_0;
+  std::optional<zx_status_t> epitaph_0;
+  conn_client_0.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_0 = cb_epitaph; });
+
+  central_proxy()->Connect(fuchsia::bluetooth::PeerId{peer->identifier().value()},
+                           fble::ConnectionOptions{}, conn_client_0.NewRequest());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(epitaph_0.has_value());
+  EXPECT_EQ(epitaph_0.value(), ZX_ERR_NOT_CONNECTED);
+
+  // Connect to peer to verify connection state was cleaned up on previous error.
+  peer->set_connectable(true);
+
+  fble::ConnectionPtr conn_client_1;
+  std::optional<zx_status_t> epitaph_1;
+  conn_client_1.set_error_handler([&](zx_status_t cb_epitaph) { epitaph_1 = cb_epitaph; });
+
+  central_proxy()->Connect(fuchsia::bluetooth::PeerId{peer->identifier().value()},
+                           fble::ConnectionOptions{}, conn_client_1.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph_1.has_value());
+}
+
+TEST_F(LowEnergyCentralServerTestFakeAdapter,
+       ConnectWithConnectionOptionsNonBondableAndServiceFilter) {
+  const bt::PeerId kPeerId(1);
+  const bt::UUID kServiceUuid(static_cast<uint16_t>(2));
+
+  fble::ConnectionPtr conn_client;
+  std::optional<zx_status_t> epitaph;
+  conn_client.set_error_handler([&](zx_status_t cb_epitaph) { epitaph = cb_epitaph; });
+
+  fble::ConnectionOptions options;
+  options.set_bondable_mode(false);
+  options.set_service_filter(fuchsia::bluetooth::Uuid{kServiceUuid.value()});
+  central_proxy()->Connect(fuchsia::bluetooth::PeerId{kPeerId.value()}, std::move(options),
+                           conn_client.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph.has_value());
+
+  auto& connections = adapter()->fake_le()->connections();
+  auto conn_iter = connections.find(kPeerId);
+  ASSERT_NE(conn_iter, connections.end());
+  EXPECT_EQ(conn_iter->second.options.bondable_mode, bt::sm::BondableMode::NonBondable);
+  ASSERT_TRUE(conn_iter->second.options.service_uuid.has_value());
+  EXPECT_EQ(conn_iter->second.options.service_uuid, kServiceUuid);
+  EXPECT_EQ(conn_iter->second.options.auto_connect, false);
+}
+
+TEST_P(LowEnergyCentralServerTestFakeAdapterBoolParam, ConnectConnectionOptionsBondable) {
+  const bt::PeerId kPeerId(1);
+
+  fble::ConnectionPtr conn_client;
+  std::optional<zx_status_t> epitaph;
+  conn_client.set_error_handler([&](zx_status_t cb_epitaph) { epitaph = cb_epitaph; });
+
+  fble::ConnectionOptions options;
+  // Bondable mode option defaults to true, so behavior shouldn't change whether or not
+  // it is explicitly set to true.
+  if (GetParam()) {
+    options.set_bondable_mode(true);
+  }
+  central_proxy()->Connect(fuchsia::bluetooth::PeerId{kPeerId.value()}, std::move(options),
+                           conn_client.NewRequest());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(epitaph.has_value());
+
+  auto& connections = adapter()->fake_le()->connections();
+  auto conn_iter = connections.find(kPeerId);
+  ASSERT_NE(conn_iter, connections.end());
+  EXPECT_EQ(conn_iter->second.options.bondable_mode, bt::sm::BondableMode::Bondable);
+}
+
+INSTANTIATE_TEST_SUITE_P(LowEnergyCentralServerTestFakeAdapterBoolParamTests,
+                         LowEnergyCentralServerTestFakeAdapterBoolParam, ::testing::Bool());
 
 }  // namespace
 }  // namespace bthost

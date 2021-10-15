@@ -124,6 +124,7 @@ class Adapter {
     //
     //     The status of the procedure is reported in |callback| in the case of an
     //     error.
+    using ConnectionResult = gap::LowEnergyConnectionManager::ConnectionResult;
     using ConnectionResultCallback = gap::LowEnergyConnectionManager::ConnectionResultCallback;
     virtual void Connect(PeerId peer_id, ConnectionResultCallback callback,
                          LowEnergyConnectionOptions connection_options) = 0;
@@ -177,7 +178,6 @@ class Adapter {
     //      or if the requested parameters are not supported by the hardware.
     //    * HostError::kProtocolError with a HCI error reported from
     //      the controller, otherwise.
-    using ConnectionResult = LowEnergyConnectionManager::ConnectionResult;
     using ConnectionCallback = fit::function<void(AdvertisementId, ConnectionResult)>;
     using AdvertisingStatusCallback = LowEnergyAdvertisingManager::AdvertisingStatusCallback;
     struct ConnectableAdvertisingParameters {

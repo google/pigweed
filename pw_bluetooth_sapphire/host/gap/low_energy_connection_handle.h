@@ -22,6 +22,16 @@ class LowEnergyConnectionManager;
 
 class LowEnergyConnectionHandle final {
  public:
+  // |release_cb| will be called when this handle releases its reference to the connection.
+  // |bondable_cb| returns the current bondable mode of the connection. It will only be called while
+  // the connection is active.
+  // |security_mode| returns the current security properties of the connection. It will only be
+  // called while the connection is active.
+  LowEnergyConnectionHandle(PeerId peer_id, hci_spec::ConnectionHandle handle,
+                            fit::callback<void(LowEnergyConnectionHandle*)> release_cb,
+                            fit::function<sm::BondableMode()> bondable_cb,
+                            fit::function<sm::SecurityProperties()> security_cb);
+
   // Destroying this object releases its reference to the underlying connection.
   ~LowEnergyConnectionHandle();
 
@@ -47,9 +57,6 @@ class LowEnergyConnectionHandle final {
   friend class LowEnergyConnectionManager;
   friend class internal::LowEnergyConnection;
 
-  LowEnergyConnectionHandle(PeerId peer_id, hci_spec::ConnectionHandle handle,
-                            fxl::WeakPtr<LowEnergyConnectionManager> manager);
-
   // Called by LowEnergyConnectionManager when the underlying connection is
   // closed. Notifies |closed_cb_|.
   void MarkClosed();
@@ -57,9 +64,10 @@ class LowEnergyConnectionHandle final {
   bool active_;
   PeerId peer_id_;
   hci_spec::ConnectionHandle handle_;
-  fxl::WeakPtr<LowEnergyConnectionManager> manager_;
   fit::closure closed_cb_;
-  fit::thread_checker thread_checker_;
+  fit::callback<void(LowEnergyConnectionHandle*)> release_cb_;
+  fit::function<sm::BondableMode()> bondable_cb_;
+  fit::function<sm::SecurityProperties()> security_cb_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionHandle);
 };
