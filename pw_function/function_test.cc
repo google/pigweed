@@ -20,6 +20,27 @@
 namespace pw {
 namespace {
 
+// TODO(pwbug/47): Convert this to a compilation failure test.
+#if defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithNonFunction)
+
+[[maybe_unused]] Function<int> function_pointer;
+
+#elif defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithFunctionPointer1)
+
+[[maybe_unused]] Function<void (*)()> function_pointer;
+
+#elif defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithFunctionPointer2)
+
+[[maybe_unused]] void SomeFunction(int);
+
+[[maybe_unused]] Function<decltype(&SomeFunction)> function_pointer;
+
+#elif defined(PW_COMPILE_FAIL_TEST_CannotInstantiateWithFunctionReference)
+
+[[maybe_unused]] Function<void (&)()> function_pointer;
+
+#endif  // compile fail tests
+
 // Ensure that Function can be constant initialized.
 [[maybe_unused]] PW_CONSTINIT Function<void()> can_be_constant_initialized;
 
