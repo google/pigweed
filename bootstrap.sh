@@ -18,20 +18,8 @@ _bootstrap_abspath () {
   $(command -v python3 || command -v python2 || command -v python) -c "import os.path; print(os.path.abspath('$@'))"
 }
 
-# Users are not expected to set PW_CHECKOUT_ROOT, it's only used because it
-# seems to be impossible to reliably determine the path to a sourced file in
-# dash when sourced from a dash script instead of a dash interactive prompt.
-# To reinforce that users should not be using PW_CHECKOUT_ROOT, it is cleared
-# here after it is used, and other pw tools will complain if they see that
-# variable set.
-# TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
-if test -n "$PW_CHECKOUT_ROOT"; then
-  _PW_BOOTSTRAP_PATH="$(_bootstrap_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")"
-  # Downstream projects need to set PW_CHECKOUT_ROOT to point to Pigweed if
-  # they're using Pigweed's CI/CQ system.
-  unset PW_CHECKOUT_ROOT
 # Shell: bash.
-elif test -n "$BASH"; then
+if test -n "$BASH"; then
   _PW_BOOTSTRAP_PATH="$(_bootstrap_abspath "$BASH_SOURCE")"
 # Shell: zsh.
 elif test -n "$ZSH_NAME"; then
