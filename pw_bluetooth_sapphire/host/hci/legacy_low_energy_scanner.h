@@ -16,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
-#include "src/lib/fxl/memory/ref_counted.h"
 
 namespace bt::hci {
 

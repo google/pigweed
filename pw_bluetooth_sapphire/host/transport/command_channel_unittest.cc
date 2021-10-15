@@ -6,6 +6,9 @@
 
 #include <lib/async/cpp/task.h>
 
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -25,7 +28,7 @@ using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 // A reference counted object used to verify that HCI command completion and
 // status callbacks are properly cleaned up after the end of a transaction.
-class TestCallbackObject : public fxl::RefCountedThreadSafe<TestCallbackObject> {
+class TestCallbackObject : public fbl::RefCounted<TestCallbackObject> {
  public:
   explicit TestCallbackObject(fit::closure deletion_callback)
       : deletion_cb_(std::move(deletion_callback)) {}
@@ -74,7 +77,7 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
   // the callbacks to verify that it gets cleaned up as expected.
   bool test_obj_deleted = false;
   auto test_obj =
-      fxl::MakeRefCounted<TestCallbackObject>([&test_obj_deleted] { test_obj_deleted = true; });
+      fbl::MakeRefCounted<TestCallbackObject>([&test_obj_deleted] { test_obj_deleted = true; });
 
   auto reset = CommandPacket::New(hci_spec::kReset);
   CommandChannel::TransactionId id = cmd_channel()->SendCommand(
