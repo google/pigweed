@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::gatt {
 

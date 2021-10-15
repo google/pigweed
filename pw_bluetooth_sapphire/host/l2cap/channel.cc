@@ -18,7 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_engines.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::l2cap {
 
@@ -238,10 +238,10 @@ void ChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
     inspect_.psm =
         inspect_.node.CreateString(kInspectPsmPropertyName, PsmToString(info_.psm.value()));
   }
-  inspect_.local_id =
-      inspect_.node.CreateString(kInspectLocalIdPropertyName, fxl::StringPrintf("%#.4x", id()));
-  inspect_.remote_id = inspect_.node.CreateString(kInspectRemoteIdPropertyName,
-                                                  fxl::StringPrintf("%#.4x", remote_id()));
+  inspect_.local_id = inspect_.node.CreateString(kInspectLocalIdPropertyName,
+                                                 bt_lib_cpp_string::StringPrintf("%#.4x", id()));
+  inspect_.remote_id = inspect_.node.CreateString(
+      kInspectRemoteIdPropertyName, bt_lib_cpp_string::StringPrintf("%#.4x", remote_id()));
 }
 
 void ChannelImpl::OnClosed() {

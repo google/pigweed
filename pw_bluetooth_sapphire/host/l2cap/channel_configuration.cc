@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::l2cap::internal {
 
@@ -125,7 +125,7 @@ DynamicByteBuffer ChannelConfiguration::MtuOption::Encode() const {
 }
 
 std::string ChannelConfiguration::MtuOption::ToString() const {
-  return fxl::StringPrintf("[type: MTU, mtu: %hu]", mtu_);
+  return bt_lib_cpp_string::StringPrintf("[type: MTU, mtu: %hu]", mtu_);
 }
 
 // RetransmissionAndFlowControlOption implementation
@@ -175,7 +175,7 @@ DynamicByteBuffer ChannelConfiguration::RetransmissionAndFlowControlOption::Enco
 }
 
 std::string ChannelConfiguration::RetransmissionAndFlowControlOption::ToString() const {
-  return fxl::StringPrintf(
+  return bt_lib_cpp_string::StringPrintf(
       "[type: RtxFlowControl, mode: %hhu, tx window size: %hhu, max transmit: %hhu, rtx timeout: "
       "%hu, monitor timeout: %hu, max pdu payload size: %hu]",
       static_cast<uint8_t>(mode_), tx_window_size_, max_transmit_, rtx_timeout_, monitor_timeout_,
@@ -196,7 +196,8 @@ DynamicByteBuffer ChannelConfiguration::FlushTimeoutOption::Encode() const {
 }
 
 std::string ChannelConfiguration::FlushTimeoutOption::ToString() const {
-  return fxl::StringPrintf("[type: FlushTimeout, flush timeout: %hu]", flush_timeout_);
+  return bt_lib_cpp_string::StringPrintf("[type: FlushTimeout, flush timeout: %hu]",
+                                         flush_timeout_);
 }
 
 // UnknownOption implementation
@@ -224,7 +225,7 @@ bool ChannelConfiguration::UnknownOption::IsHint() const {
 }
 
 std::string ChannelConfiguration::UnknownOption::ToString() const {
-  return fxl::StringPrintf("[type: %#.2hhx, length: %zu]", type_, payload_.size());
+  return bt_lib_cpp_string::StringPrintf("[type: %#.2hhx, length: %zu]", type_, payload_.size());
 }
 
 // ChannelConfiguration implementation

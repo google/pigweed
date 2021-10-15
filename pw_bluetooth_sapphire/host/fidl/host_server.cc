@@ -25,9 +25,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/lib/fxl/strings/join_strings.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
-#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bthost {
 
@@ -618,9 +618,9 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
   const bool peer_removed = adapter()->peer_cache()->RemoveDisconnectedPeer(id);
 
   if (!le_disconnected || !bredr_disconnected) {
-    const auto message =
-        fxl::StringPrintf("link(s) failed to close:%s%s", le_disconnected ? "" : " LE",
-                          bredr_disconnected ? "" : " BR/EDR");
+    const auto message = bt_lib_cpp_string::StringPrintf("link(s) failed to close:%s%s",
+                                                         le_disconnected ? "" : " LE",
+                                                         bredr_disconnected ? "" : " BR/EDR");
     callback(fpromise::error(fsys::Error::FAILED));
   } else {
     ZX_ASSERT(peer_removed);

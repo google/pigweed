@@ -4,7 +4,7 @@
 
 #include "bounded_inspect_list_node.h"
 
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt {
 
@@ -17,7 +17,7 @@ BoundedInspectListNode::Item& BoundedInspectListNode::CreateItem() {
     items_.pop();
   }
 
-  std::string index = fxl::StringPrintf("%zu", next_index_);
+  std::string index = bt_lib_cpp_string::StringPrintf("%zu", next_index_);
   next_index_++;
 
   items_.push({.node = list_node_.CreateChild(index)});

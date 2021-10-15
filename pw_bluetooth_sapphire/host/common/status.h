@@ -12,7 +12,7 @@
 #include <string>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt {
 
@@ -134,7 +134,7 @@ class Status {
 
   // Returns a string representation.
   inline std::string ToString() const {
-    return fxl::StringPrintf(
+    return bt_lib_cpp_string::StringPrintf(
         "[status: %s]",
         (is_protocol_error() ? ProtoTraits::ToString(protocol_error()) : HostErrorToString(error()))
             .c_str());
@@ -156,7 +156,7 @@ class Status {
                                                          const char* fmt, ...) const {
     va_list args;
     va_start(args, fmt);
-    std::string msg = fxl::StringVPrintf(fmt, args);
+    std::string msg = bt_lib_cpp_string::StringVPrintf(fmt, args);
     va_end(args);
     return TestForErrorAndLog(severity, tag, file, line, msg);
   }

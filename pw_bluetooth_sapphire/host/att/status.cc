@@ -56,8 +56,8 @@ std::string ErrorToString(att::ErrorCode ecode) {
 
 // static
 std::string ProtocolErrorTraits<att::ErrorCode>::ToString(att::ErrorCode ecode) {
-  return fxl::StringPrintf("%s (ATT %#.2x)", ErrorToString(ecode).c_str(),
-                           static_cast<unsigned int>(ecode));
+  return bt_lib_cpp_string::StringPrintf("%s (ATT %#.2x)", ErrorToString(ecode).c_str(),
+                                         static_cast<unsigned int>(ecode));
 }
 
 }  // namespace bt

@@ -18,7 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::l2cap::internal {
 namespace {
@@ -625,8 +625,8 @@ void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {
   }
 
   auto node = parent.CreateChild(name);
-  inspect_properties_.handle =
-      node.CreateString(kInspectHandlePropertyName, fxl::StringPrintf("%#.4x", handle_));
+  inspect_properties_.handle = node.CreateString(kInspectHandlePropertyName,
+                                                 bt_lib_cpp_string::StringPrintf("%#.4x", handle_));
   inspect_properties_.link_type =
       node.CreateString(kInspectLinkTypePropertyName, LinkTypeToString(type_));
   inspect_properties_.channels_node = node.CreateChild(kInspectChannelsNodeName);

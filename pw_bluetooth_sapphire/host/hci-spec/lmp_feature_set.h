@@ -12,7 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::hci_spec {
 
@@ -55,7 +55,7 @@ class LMPFeatureSet {
     std::string str;
     for (size_t i = 0; i <= last_page_number_; i++)
       if (HasPage(i))
-        str += fxl::StringPrintf("[P%zu: 0x%016lx]", i, features_[i]);
+        str += bt_lib_cpp_string::StringPrintf("[P%zu: 0x%016lx]", i, features_[i]);
     return str;
   }
 

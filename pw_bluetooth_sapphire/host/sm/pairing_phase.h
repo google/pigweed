@@ -10,8 +10,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::sm {
 
@@ -59,9 +59,9 @@ class PairingPhase {
 
   // Return a representation of the current state of the pairing phase for display purposes.
   std::string ToString() {
-    return fxl::StringPrintf("%s Role: SMP %s%s", ToStringInternal().c_str(),
-                             role_ == Role::kInitiator ? "initiator" : "responder",
-                             has_failed_ ? " - pairing has failed" : "");
+    return bt_lib_cpp_string::StringPrintf("%s Role: SMP %s%s", ToStringInternal().c_str(),
+                                           role_ == Role::kInitiator ? "initiator" : "responder",
+                                           has_failed_ ? " - pairing has failed" : "");
   }
 
   // Cleans up pairing state and and invokes Listener::OnPairingFailed.

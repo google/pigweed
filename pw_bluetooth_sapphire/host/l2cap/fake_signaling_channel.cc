@@ -26,7 +26,7 @@ class Expecter : public SignalingChannel::Responder {
   }
 
   void RejectInvalidChannelId(ChannelId local_cid, ChannelId remote_cid) override {
-    ADD_FAILURE() << fxl::StringPrintf(
+    ADD_FAILURE() << bt_lib_cpp_string::StringPrintf(
         "Unexpected local rejection, \"Invalid Channel ID\" local: %#.4x "
         "remote: %#.4x",
         local_cid, remote_cid);
@@ -182,7 +182,7 @@ size_t FakeSignalingChannel::TriggerResponses(
     }
   }
 
-  EXPECT_EQ(responses.size(), responses_handled) << fxl::StringPrintf(
+  EXPECT_EQ(responses.size(), responses_handled) << bt_lib_cpp_string::StringPrintf(
       "Outbound command (code %d, at %zu) handled fewer responses than "
       "expected",
       transaction.request_code, transaction.responses_handled);

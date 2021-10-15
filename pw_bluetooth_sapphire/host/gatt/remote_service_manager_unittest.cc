@@ -1761,7 +1761,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
     status = cb_status;
     ASSERT_EQ(errors.size(), values.size());
     for (size_t i = 0; i < values.size(); i++) {
-      SCOPED_TRACE(fxl::StringPrintf("i: %zu", i));
+      SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("i: %zu", i));
       EXPECT_EQ(CharacteristicHandle(kStartHandle + i), values[i].handle);
       ASSERT_TRUE(values[i].result.is_error());
       EXPECT_EQ(errors[i], values[i].result.error());
@@ -1793,7 +1793,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
       {"kInvalidPDU", att::ErrorCode::kInvalidPDU}};
 
   for (const auto& [name, code] : general_protocol_errors) {
-    SCOPED_TRACE(fxl::StringPrintf("Error Code: %s", name));
+    SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("Error Code: %s", name));
     size_t read_count = 0;
     fake_client()->set_read_by_type_request_callback(
         [&, code = code](const UUID& type, att::Handle start, att::Handle end, auto callback) {

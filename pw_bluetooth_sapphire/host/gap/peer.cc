@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/lib/fxl/strings/utf_codecs.h"
 
 namespace bt::gap {
@@ -47,7 +47,7 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
       auto_conn_behavior_(AutoConnectBehavior::kAlways),
       features_(std::nullopt,
                 [](const std::optional<hci_spec::LESupportedFeatures> f) {
-                  return f ? fxl::StringPrintf("%#.16lx", f->le_features) : "";
+                  return f ? bt_lib_cpp_string::StringPrintf("%#.16lx", f->le_features) : "";
                 }),
       service_changed_gatt_data_({.notify = false, .indicate = false}) {
   ZX_DEBUG_ASSERT(peer_);
@@ -82,10 +82,10 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data
     adv_data_parse_failure_count_.Set(current_failure_count + 1);
     inspect_properties_.last_adv_data_parse_failure.Set(
         AdvertisingData::ParseErrorToString(res.error_value()));
-    std::string message =
-        fxl::StringPrintf("failed to parse advertising data: %s (peer: %s)",
-                          bt::AdvertisingData::ParseErrorToString(res.error_value()).c_str(),
-                          bt_str(peer_->identifier()));
+    std::string message = bt_lib_cpp_string::StringPrintf(
+        "failed to parse advertising data: %s (peer: %s)",
+        bt::AdvertisingData::ParseErrorToString(res.error_value()).c_str(),
+        bt_str(peer_->identifier()));
     // To prevent log spam, we only log the first, and then every Nth failure to parse
     // AdvertisingData from each peer at WARN level. Other failures are logged at DEBUG level.
     if (*adv_data_parse_failure_count_ % kAdvDataParseFailureWarnLogInterval == 1) {
@@ -504,7 +504,8 @@ Peer::BrEdrData& Peer::MutBrEdr() {
 }
 
 std::string Peer::ToString() const {
-  return fxl::StringPrintf("{peer id: %s, address: %s}", bt_str(*identifier_), bt_str(*address_));
+  return bt_lib_cpp_string::StringPrintf("{peer id: %s, address: %s}", bt_str(*identifier_),
+                                         bt_str(*address_));
 }
 
 void Peer::SetName(const std::string& name) {

@@ -97,7 +97,7 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   }
 
   std::string ToStringInternal() override {
-    return fxl::StringPrintf(
+    return bt_lib_cpp_string::StringPrintf(
         "Pairing Phase 1 (feature exchange) - pairing to %s security with \"%s\" IOCapabilities",
         LevelToString(requested_level_), util::IOCapabilityToString(io_capability_).c_str());
   }

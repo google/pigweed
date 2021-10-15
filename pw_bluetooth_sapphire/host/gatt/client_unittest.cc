@@ -3534,7 +3534,7 @@ TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
   for (const auto& [name, invalid_rsp] : kInvalidResponses) {
-    SCOPED_TRACE(fxl::StringPrintf("Invalid Response: %s", name));
+    SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("Invalid Response: %s", name));
 
     std::optional<att::Status> status;
     auto cb = [&](Client::ReadByTypeResult result) {

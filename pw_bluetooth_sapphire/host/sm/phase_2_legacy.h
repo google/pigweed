@@ -77,7 +77,7 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
   }
 
   std::string ToStringInternal() override {
-    return fxl::StringPrintf(
+    return bt_lib_cpp_string::StringPrintf(
         "Legacy Pairing Phase 2 (encryption key agreement) - pairing with %s method",
         util::PairingMethodToString(features_.method).c_str());
   }

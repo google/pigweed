@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::hci {
 
@@ -168,10 +168,10 @@ std::string Connection::ToString() const {
   if (ll_type() == bt::LinkType::kLE) {
     params = ", " + le_params_.ToString();
   }
-  return fxl::StringPrintf("(%s link - handle: %#.4x, role: %s, address: %s%s)",
-                           LinkTypeToString(ll_type_).c_str(), handle_,
-                           role_ == Role::kMaster ? "master" : "slave",
-                           peer_address_.ToString().c_str(), params.c_str());
+  return bt_lib_cpp_string::StringPrintf("(%s link - handle: %#.4x, role: %s, address: %s%s)",
+                                         LinkTypeToString(ll_type_).c_str(), handle_,
+                                         role_ == Role::kMaster ? "master" : "slave",
+                                         peer_address_.ToString().c_str(), params.c_str());
 }
 
 // ====== ConnectionImpl member methods ======

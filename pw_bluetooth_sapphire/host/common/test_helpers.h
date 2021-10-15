@@ -12,7 +12,7 @@
 
 #include "lib/zx/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 // Run |statement| and return if a fatal test error occurred. Include the file
 // name and line number in the output.
@@ -45,7 +45,7 @@ template <class InputIt>
 std::string ByteContainerToString(InputIt begin, InputIt end) {
   std::string bytes_string;
   for (InputIt iter = begin; iter != end; ++iter) {
-    bytes_string += fxl::StringPrintf("0x%.2x ", *iter);
+    bytes_string += bt_lib_cpp_string::StringPrintf("0x%.2x ", *iter);
   }
   return bytes_string;
 }

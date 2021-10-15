@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt {
 namespace {
@@ -550,7 +550,7 @@ UUID AddNDistinctUuids(AdvertisingData& input,
           }
         },
         starting_uuid);
-    SCOPED_TRACE(fxl::StringPrintf("i: %du UUID: %s", i, bt_str(next)));
+    SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("i: %du UUID: %s", i, bt_str(next)));
     if (i >= n_uuids) {
       return next;
     }

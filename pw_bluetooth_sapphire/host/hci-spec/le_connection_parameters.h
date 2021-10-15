@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::hci_spec {
 

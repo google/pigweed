@@ -447,7 +447,8 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Status status, bool enabled) {
 
   if (!status || !enabled) {
     bt_log(WARN, "sm", "encryption of link (handle: %#.4x) %s%s!", le_link_->handle(),
-           !status ? fxl::StringPrintf("failed with %s", bt_str(status)).c_str() : "disabled",
+           !status ? bt_lib_cpp_string::StringPrintf("failed with %s", bt_str(status)).c_str()
+                   : "disabled",
            SecurityUpgradeInProgress() ? "" : " during security upgrade");
     SetSecurityProperties(sm::SecurityProperties());
     if (SecurityUpgradeInProgress()) {
@@ -547,15 +548,16 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
   if (features_->will_bond) {
     delegate_->OnNewPairingData(pairing_data);
   } else {
-    bt_log(
-        INFO, "gap-le", " %s pairing complete in non-bondable mode with [%s%s%s%s%s]",
-        features_->secure_connections ? "secure connections" : "legacy",
-        pairing_data.peer_ltk ? "peer_ltk " : "", pairing_data.local_ltk ? "local_ltk " : "",
-        pairing_data.irk ? "irk " : "",
-        pairing_data.identity_address
-            ? fxl::StringPrintf("(identity: %s) ", bt_str(*pairing_data.identity_address)).c_str()
-            : "",
-        pairing_data.csrk ? "csrk " : "");
+    bt_log(INFO, "gap-le", " %s pairing complete in non-bondable mode with [%s%s%s%s%s]",
+           features_->secure_connections ? "secure connections" : "legacy",
+           pairing_data.peer_ltk ? "peer_ltk " : "", pairing_data.local_ltk ? "local_ltk " : "",
+           pairing_data.irk ? "irk " : "",
+           pairing_data.identity_address
+               ? bt_lib_cpp_string::StringPrintf("(identity: %s) ",
+                                                 bt_str(*pairing_data.identity_address))
+                     .c_str()
+               : "",
+           pairing_data.csrk ? "csrk " : "");
   }
   // So we can pair again if need be.
   ResetState();

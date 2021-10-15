@@ -10,7 +10,7 @@
 
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::l2cap {
 

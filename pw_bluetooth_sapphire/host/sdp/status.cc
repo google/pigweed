@@ -8,8 +8,9 @@ namespace bt {
 
 // static
 std::string ProtocolErrorTraits<sdp::ErrorCode>::ToString(sdp::ErrorCode ecode) {
-  return fxl::StringPrintf("%s (SDP %#.2x)", bt::sdp::ErrorCodeToString(ecode).c_str(),
-                           static_cast<unsigned int>(ecode));
+  return bt_lib_cpp_string::StringPrintf("%s (SDP %#.2x)",
+                                         bt::sdp::ErrorCodeToString(ecode).c_str(),
+                                         static_cast<unsigned int>(ecode));
 }
 
 namespace sdp {

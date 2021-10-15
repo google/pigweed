@@ -87,7 +87,7 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   }
 
   std::string ToStringInternal() override {
-    return fxl::StringPrintf(
+    return bt_lib_cpp_string::StringPrintf(
         "Secure Connections Pairing Phase 2 (encryption key agreement) - pairing with %s method",
         util::PairingMethodToString(features_.method).c_str());
   }

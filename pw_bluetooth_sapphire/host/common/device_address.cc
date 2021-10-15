@@ -6,7 +6,7 @@
 
 #include <zircon/assert.h>
 
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt {
 namespace {
@@ -40,8 +40,8 @@ DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
 }
 
 std::string DeviceAddressBytes::ToString() const {
-  return fxl::StringPrintf("%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5], bytes_[4], bytes_[3],
-                           bytes_[2], bytes_[1], bytes_[0]);
+  return bt_lib_cpp_string::StringPrintf("%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5], bytes_[4],
+                                         bytes_[3], bytes_[2], bytes_[1], bytes_[0]);
 }
 
 void DeviceAddressBytes::SetToZero() { bytes_.fill(0); }

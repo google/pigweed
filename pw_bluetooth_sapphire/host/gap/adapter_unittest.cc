@@ -942,7 +942,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
               StringIs("lmp_features", adapter()->state().features().ToString()),
               StringIs(
                   "le_features",
-                  fxl::StringPrintf(
+                  bt_lib_cpp_string::StringPrintf(
                       "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
       ChildrenMatch(UnorderedElementsAre(
           peer_cache_matcher, sdp_server_matcher, le_connection_manager_matcher,

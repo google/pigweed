@@ -13,8 +13,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::sm {
 
@@ -62,8 +62,9 @@ class SecurityRequestPhase final : public PairingPhase, public PairingChannelHan
     return weak_ptr_factory_.GetWeakPtr();
   }
   std::string ToStringInternal() override {
-    return fxl::StringPrintf("Security Request Phase  - pending security request for %s",
-                             LevelToString(pending_security_request_));
+    return bt_lib_cpp_string::StringPrintf(
+        "Security Request Phase  - pending security request for %s",
+        LevelToString(pending_security_request_));
   }
 
   BondableMode bondable_mode_;

@@ -10,8 +10,8 @@
 #include <cinttypes>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
-#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace {
@@ -118,10 +118,10 @@ bool UUID::CompareBytes(const ByteBuffer& bytes) const {
 }
 
 std::string UUID::ToString() const {
-  return fxl::StringPrintf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-                           value_[15], value_[14], value_[13], value_[12], value_[11], value_[10],
-                           value_[9], value_[8], value_[7], value_[6], value_[5], value_[4],
-                           value_[3], value_[2], value_[1], value_[0]);
+  return bt_lib_cpp_string::StringPrintf(
+      "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x", value_[15],
+      value_[14], value_[13], value_[12], value_[11], value_[10], value_[9], value_[8], value_[7],
+      value_[6], value_[5], value_[4], value_[3], value_[2], value_[1], value_[0]);
 }
 
 UUIDElemSize UUID::CompactSize(bool allow_32bit) const {

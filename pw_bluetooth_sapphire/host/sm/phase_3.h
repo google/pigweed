@@ -98,7 +98,7 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   }
 
   std::string ToStringInternal() override {
-    return fxl::StringPrintf(
+    return bt_lib_cpp_string::StringPrintf(
         "Pairing Phase 3 (security key distribution) - paired with %s security properties, sending "
         "0x%02X local key distribution value and expecting 0x%02X as peer key distribution value",
         le_sec_.ToString().c_str(), features_.local_key_distribution,

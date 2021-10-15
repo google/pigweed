@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::sdp {
 
@@ -606,28 +606,28 @@ std::string DataElement::ToString() const {
     case Type::kNull:
       return std::string("Null");
     case Type::kBoolean:
-      return fxl::StringPrintf("Boolean(%s)", int_value_ ? "true" : "false");
+      return bt_lib_cpp_string::StringPrintf("Boolean(%s)", int_value_ ? "true" : "false");
     case Type::kUnsignedInt:
-      return fxl::StringPrintf("UnsignedInt:%zu(%lu)", WriteSize() - 1, uint_value_);
+      return bt_lib_cpp_string::StringPrintf("UnsignedInt:%zu(%lu)", WriteSize() - 1, uint_value_);
     case Type::kSignedInt:
-      return fxl::StringPrintf("SignedInt:%zu(%ld)", WriteSize() - 1, int_value_);
+      return bt_lib_cpp_string::StringPrintf("SignedInt:%zu(%ld)", WriteSize() - 1, int_value_);
     case Type::kUuid:
-      return fxl::StringPrintf("UUID(%s)", uuid_.ToString().c_str());
+      return bt_lib_cpp_string::StringPrintf("UUID(%s)", uuid_.ToString().c_str());
     case Type::kString:
-      return fxl::StringPrintf("String(%s)", string_.c_str());
+      return bt_lib_cpp_string::StringPrintf("String(%s)", string_.c_str());
     case Type::kSequence: {
       std::string str;
       for (const auto& it : aggregate_) {
         str += it.ToString() + " ";
       }
-      return fxl::StringPrintf("Sequence { %s}", str.c_str());
+      return bt_lib_cpp_string::StringPrintf("Sequence { %s}", str.c_str());
     }
     case Type::kAlternative: {
       std::string str;
       for (const auto& it : aggregate_) {
         str += it.ToString() + " ";
       }
-      return fxl::StringPrintf("Alternatives { %s}", str.c_str());
+      return bt_lib_cpp_string::StringPrintf("Alternatives { %s}", str.c_str());
     }
     default:
       bt_log(TRACE, "sdp", "unhandled type (%hhu) in ToString()", type_);

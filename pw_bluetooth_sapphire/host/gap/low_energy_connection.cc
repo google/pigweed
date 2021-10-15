@@ -575,7 +575,9 @@ void LowEnergyConnection::OnNewPairingData(const sm::PairingData& pairing_data) 
          pairing_data.peer_ltk ? "peer_ltk " : "", pairing_data.local_ltk ? "local_ltk " : "",
          pairing_data.irk ? "irk " : "", pairing_data.cross_transport_key ? "ct_key " : "",
          pairing_data.identity_address
-             ? fxl::StringPrintf("(identity: %s) ", bt_str(*pairing_data.identity_address)).c_str()
+             ? bt_lib_cpp_string::StringPrintf("(identity: %s) ",
+                                               bt_str(*pairing_data.identity_address))
+                   .c_str()
              : "",
          pairing_data.csrk ? "csrk " : "", bt_str(peer_id_));
 

@@ -61,15 +61,18 @@ struct ChannelParameters {
   }
 
   std::string ToString() const {
-    auto mode_string = mode.has_value() ? fxl::StringPrintf("%#.2x", static_cast<uint8_t>(*mode))
-                                        : std::string("nullopt");
-    auto sdu_string = max_rx_sdu_size.has_value() ? fxl::StringPrintf("%hu", *max_rx_sdu_size)
-                                                  : std::string("nullopt");
-    auto flush_timeout_string = flush_timeout
-                                    ? fxl::StringPrintf("%ldms", flush_timeout->to_msecs())
-                                    : std::string("nullopt");
-    return fxl::StringPrintf("ChannelParameters{mode: %s, max_rx_sdu_size: %s, flush_timeout: %s}",
-                             mode_string.c_str(), sdu_string.c_str(), flush_timeout_string.c_str());
+    auto mode_string = mode.has_value()
+                           ? bt_lib_cpp_string::StringPrintf("%#.2x", static_cast<uint8_t>(*mode))
+                           : std::string("nullopt");
+    auto sdu_string = max_rx_sdu_size.has_value()
+                          ? bt_lib_cpp_string::StringPrintf("%hu", *max_rx_sdu_size)
+                          : std::string("nullopt");
+    auto flush_timeout_string =
+        flush_timeout ? bt_lib_cpp_string::StringPrintf("%ldms", flush_timeout->to_msecs())
+                      : std::string("nullopt");
+    return bt_lib_cpp_string::StringPrintf(
+        "ChannelParameters{mode: %s, max_rx_sdu_size: %s, flush_timeout: %s}", mode_string.c_str(),
+        sdu_string.c_str(), flush_timeout_string.c_str());
   };
 };
 

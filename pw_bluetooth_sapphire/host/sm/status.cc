@@ -47,8 +47,8 @@ std::string ErrorToString(sm::ErrorCode ecode) {
 
 // static
 std::string ProtocolErrorTraits<sm::ErrorCode>::ToString(sm::ErrorCode ecode) {
-  return fxl::StringPrintf("%s (SMP %#.2x)", ErrorToString(ecode).c_str(),
-                           static_cast<unsigned int>(ecode));
+  return bt_lib_cpp_string::StringPrintf("%s (SMP %#.2x)", ErrorToString(ecode).c_str(),
+                                         static_cast<unsigned int>(ecode));
 }
 
 }  // namespace bt

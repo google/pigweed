@@ -11,7 +11,7 @@
 #include <string_view>
 #include <vector>
 
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt {
 namespace {
@@ -58,7 +58,7 @@ bool IsLogLevelEnabled(LogSeverity severity) {
 std::string FormattedLogScopes() {
   std::string formatted;
   for (const auto& scope : g_log_scope_state.scopes) {
-    formatted += fxl::StringPrintf("[%s]", scope.c_str());
+    formatted += bt_lib_cpp_string::StringPrintf("[%s]", scope.c_str());
   }
   return formatted;
 }
@@ -77,7 +77,7 @@ std::string FormattedLogContexts() {
     }
     formatted += *it + ",";
   }
-  return fxl::StringPrintf("{%s}", formatted.c_str());
+  return bt_lib_cpp_string::StringPrintf("{%s}", formatted.c_str());
 }
 
 void LogMessage(const char* file, int line, LogSeverity severity, const char* tag, const char* fmt,
@@ -89,13 +89,13 @@ void LogMessage(const char* file, int line, LogSeverity severity, const char* ta
   va_list args;
   va_start(args, fmt);
   if (IsPrintfEnabled()) {
-    std::string msg = fxl::StringPrintf(
+    std::string msg = bt_lib_cpp_string::StringPrintf(
         "%s: [%s:%s:%d]%s%s %s\n", LogSeverityToString(severity), tag, bt::internal::BaseName(file),
         line, FormattedLogContexts().c_str(), FormattedLogScopes().c_str(), fmt);
     vprintf(msg.c_str(), args);
   } else {
-    std::string msg = fxl::StringPrintf("[%s]%s%s %s", tag, FormattedLogContexts().c_str(),
-                                        FormattedLogScopes().c_str(), fmt);
+    std::string msg = bt_lib_cpp_string::StringPrintf(
+        "[%s]%s%s %s", tag, FormattedLogContexts().c_str(), FormattedLogScopes().c_str(), fmt);
 
     zxlogvf_etc(LogSeverityToDdkLog(severity), nullptr, file, line, msg.c_str(), args);
   }
@@ -109,7 +109,7 @@ namespace internal {
 LogScopeGuard::LogScopeGuard(const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  std::string scope = fxl::StringVPrintf(fmt, args);
+  std::string scope = bt_lib_cpp_string::StringVPrintf(fmt, args);
   va_end(args);
   g_log_scope_state.scopes.push_back(std::move(scope));
 }
@@ -130,8 +130,8 @@ LogContextGuard::~LogContextGuard() {
 }
 
 LogContext SaveLogContext() {
-  return LogContext{
-      fxl::StringPrintf("%s%s", FormattedLogContexts().c_str(), FormattedLogScopes().c_str())};
+  return LogContext{bt_lib_cpp_string::StringPrintf("%s%s", FormattedLogContexts().c_str(),
+                                                    FormattedLogScopes().c_str())};
 }
 
 }  // namespace internal

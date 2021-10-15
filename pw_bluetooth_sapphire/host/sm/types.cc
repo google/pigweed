@@ -6,7 +6,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::sm {
 namespace {
@@ -127,10 +127,10 @@ std::string SecurityProperties::ToString() const {
   if (level() == SecurityLevel::kNoSecurity) {
     return "[no security]";
   }
-  return fxl::StringPrintf("[%s%s%skey size: %lu]", encrypted() ? "encrypted " : "",
-                           authenticated() ? "authenticated (MITM) " : "",
-                           secure_connections() ? "secure connections " : "legacy authentication ",
-                           enc_key_size());
+  return bt_lib_cpp_string::StringPrintf(
+      "[%s%s%skey size: %lu]", encrypted() ? "encrypted " : "",
+      authenticated() ? "authenticated (MITM) " : "",
+      secure_connections() ? "secure connections " : "legacy authentication ", enc_key_size());
 }
 
 bool SecurityProperties::IsAsSecureAs(const SecurityProperties& other) const {

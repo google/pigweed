@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bthost {
 namespace {
@@ -719,7 +720,7 @@ TEST_F(LowEnergyCentralServerTest, ScanResultWatcherMeasureTape) {
   bt::AdvertisingData adv_data;
   for (int i = 0; i < 100; i++) {
     SCOPED_TRACE(i);
-    ASSERT_TRUE(adv_data.AddUri(fxl::StringPrintf("uri:a-really-long-uri-%d", i)));
+    ASSERT_TRUE(adv_data.AddUri(bt_lib_cpp_string::StringPrintf("uri:a-really-long-uri-%d", i)));
   }
   adv_data.CalculateBlockSize();
   bt::DynamicByteBuffer adv_buffer(adv_data.CalculateBlockSize());

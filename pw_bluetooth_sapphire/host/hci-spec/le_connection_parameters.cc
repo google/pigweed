@@ -27,9 +27,10 @@ bool hci_spec::LEConnectionParameters::operator==(
 }
 
 std::string hci_spec::LEConnectionParameters::ToString() const {
-  return fxl::StringPrintf("interval: %.2f ms, latency: %.2f ms, timeout: %u ms",
-                           static_cast<float>(interval_) * kTimesliceMs,
-                           static_cast<float>(latency_) * kTimesliceMs, supervision_timeout_ * 10u);
+  return bt_lib_cpp_string::StringPrintf("interval: %.2f ms, latency: %.2f ms, timeout: %u ms",
+                                         static_cast<float>(interval_) * kTimesliceMs,
+                                         static_cast<float>(latency_) * kTimesliceMs,
+                                         supervision_timeout_ * 10u);
 }
 
 LEPreferredConnectionParameters::LEPreferredConnectionParameters(uint16_t min_interval,

@@ -1035,7 +1035,8 @@ void AdapterImpl::UpdateInspectProperties() {
   inspect_properties_.lmp_features =
       adapter_node_.CreateString("lmp_features", state_.features().ToString());
 
-  auto le_features = fxl::StringPrintf("0x%016lx", state_.low_energy_state().supported_features());
+  auto le_features =
+      bt_lib_cpp_string::StringPrintf("0x%016lx", state_.low_energy_state().supported_features());
   inspect_properties_.le_features = adapter_node_.CreateString("le_features", le_features);
 }
 

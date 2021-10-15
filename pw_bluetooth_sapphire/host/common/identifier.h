@@ -9,7 +9,7 @@
 #include <functional>
 #include <string>
 
-#include "src/lib/fxl/strings/string_printf.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt {
 
@@ -22,7 +22,9 @@ struct IdentifierTraits {
 // Specializations for integer types return a fixed-length string.
 template <>
 struct IdentifierTraits<uint64_t> {
-  static std::string ToString(uint64_t value) { return fxl::StringPrintf("%.16lx", value); }
+  static std::string ToString(uint64_t value) {
+    return bt_lib_cpp_string::StringPrintf("%.16lx", value);
+  }
 };
 
 // Opaque identifier type for host library layers.
