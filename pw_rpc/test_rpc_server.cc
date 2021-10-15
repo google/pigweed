@@ -34,7 +34,6 @@ int main(int argc, char* argv[]) {
   pw::rpc::system_server::Init();
   pw::rpc::system_server::Server().RegisterService(benchmark_service);
 
-  PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(pw::rpc::system_server::Start());
 
   return 0;

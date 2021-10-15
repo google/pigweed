@@ -56,9 +56,7 @@ Status SocketStream::Serve(uint16_t port) {
     PW_LOG_WARN("Failed to set SO_REUSEADDR: %s", std::strerror(errno));
   }
 
-  if (bind(socket_fd_,
-           reinterpret_cast<struct sockaddr*>(&addr),
-           sizeof(addr)) < 0) {
+  if (bind(socket_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
     PW_LOG_ERROR("Failed to bind socket to localhost:%hu: %s",
                  listen_port_,
                  std::strerror(errno));
@@ -87,17 +85,18 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
 
-  if (host == nullptr) {
+  if (host == nullptr || std::strcmp(host, "localhost") == 0) {
     host = kLocalhostAddress;
   }
 
   if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) {
-    return Status::Unknown();
+    PW_LOG_ERROR("Failed to configure connection address for socket");
+    return Status::InvalidArgument();
   }
 
-  int result = connect(
-      conn_fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
-  if (result < 0) {
+  if (connect(conn_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+    PW_LOG_ERROR(
+        "Failed to connect to %s:%d: %s", host, port, std::strerror(errno));
     return Status::Unknown();
   }
 

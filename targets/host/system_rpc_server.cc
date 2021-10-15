@@ -54,6 +54,7 @@ void Init() {
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
   });
 
+  PW_LOG_INFO("Starting pw_rpc server on port %d", socket_port);
   PW_CHECK_OK(socket_stream.Serve(socket_port));
 }
 
