@@ -13,7 +13,8 @@ on-device firmware.
 LlvmSymbolizer
 ==============
 The ``LlvmSymbolizer`` is a python layer that wraps ``llvm-symbolizer`` to
-produce symbols from provided addresses.
+produce symbols from provided addresses. This module will only work if
+``llvm-symbolizer`` is available on the system ``PATH``.
 
 .. code:: py
 

@@ -14,7 +14,6 @@
 """Tests for pw_symbolizer's symbolization."""
 
 import subprocess
-import sys
 import tempfile
 import unittest
 import json
@@ -24,11 +23,23 @@ import pw_symbolizer
 _MODULE_PY_DIR = Path(__file__).parent.resolve()
 _CPP_TEST_FILE_NAME = 'symbolizer_test.cc'
 
-_COMPILER = 'g++' if sys.platform.startswith('win') else 'clang++'
+_COMPILER = 'clang++'
 
 
 class TestSymbolizer(unittest.TestCase):
     """Unit tests for binary symbolization."""
+    def _test_symbolization_results(self, expected_symbols, symbolizer):
+        for expected_symbol in expected_symbols:
+            result = symbolizer.symbolize(expected_symbol['Address'])
+            self.assertEqual(result.name, expected_symbol['Expected'])
+            self.assertEqual(result.address, expected_symbol['Address'])
+
+            # Objects sometimes don't have a file/line number for some
+            # reason.
+            if not expected_symbol['IsObj']:
+                self.assertEqual(result.file, _CPP_TEST_FILE_NAME)
+                self.assertEqual(result.line, expected_symbol['Line'])
+
     def test_symbolization(self):
         """Tests that the symbolizer can symbolize addresses properly."""
         with tempfile.TemporaryDirectory() as exe_dir:
@@ -52,8 +63,6 @@ class TestSymbolizer(unittest.TestCase):
                                      cwd=_MODULE_PY_DIR)
             self.assertEqual(process.returncode, 0)
 
-            symbolizer = pw_symbolizer.LlvmSymbolizer(exe_file)
-
             process = subprocess.run([exe_file],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
@@ -64,16 +73,14 @@ class TestSymbolizer(unittest.TestCase):
                 for line in process.stdout.decode().splitlines()
             ]
 
-            for expected_symbol in expected_symbols:
-                result = symbolizer.symbolize(expected_symbol['Address'])
-                self.assertEqual(result.name, expected_symbol['Expected'])
-                self.assertEqual(result.address, expected_symbol['Address'])
+            symbolizer = pw_symbolizer.LlvmSymbolizer(exe_file)
+            self._test_symbolization_results(expected_symbols, symbolizer)
 
-                # Objects sometimes don't have a file/line number for some
-                # reason.
-                if not expected_symbol['IsObj']:
-                    self.assertEqual(result.file, _CPP_TEST_FILE_NAME)
-                    self.assertEqual(result.line, expected_symbol['Line'])
+            # Test backwards compatibility with older versions of
+            # llvm-symbolizer.
+            symbolizer = pw_symbolizer.LlvmSymbolizer(exe_file,
+                                                      force_legacy=True)
+            self._test_symbolization_results(expected_symbols, symbolizer)
 
 
 class TestSymbolFormatting(unittest.TestCase):

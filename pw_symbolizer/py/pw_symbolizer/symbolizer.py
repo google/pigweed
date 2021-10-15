@@ -13,10 +13,11 @@
 # the License.
 """Utilities for address symbolization."""
 
+import shutil
 import subprocess
 import threading
 import json
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,9 +26,9 @@ from pathlib import Path
 class Symbol:
     """Symbols produced by a symbolizer."""
     address: int
-    name: str
-    file: str
-    line: int
+    name: str = ''
+    file: str = ''
+    line: int = 0
 
     def to_string(self, max_filename_len: int = 30) -> str:
         if not self.name:
@@ -54,20 +55,32 @@ class Symbol:
 
 class LlvmSymbolizer:
     """Symbolize addresses."""
-    def __init__(self, binary: Optional[Path] = None):
+    def __init__(self, binary: Optional[Path] = None, force_legacy=False):
         # Lets destructor return cleanly if the binary is not found.
         self._symbolizer = None
+        if shutil.which('llvm-symbolizer') is None:
+            raise FileNotFoundError(
+                'llvm-symbolizer not installed. Run bootstrap, or download '
+                'LLVM (https://github.com/llvm/llvm-project/releases/) and add '
+                'the tools to your system PATH')
+
+        # Prefer JSON output as it's easier to decode.
+        if force_legacy:
+            self._json_mode = False
+        else:
+            self._json_mode = LlvmSymbolizer._is_json_compatibile()
 
         if binary is not None:
             if not binary.exists():
                 raise FileNotFoundError(binary)
 
+            output_style = 'JSON' if self._json_mode else 'LLVM'
             cmd = [
                 'llvm-symbolizer',
                 '--no-inlines',
                 '--demangle',
                 '--functions',
-                '--output-style=JSON',
+                f'--output-style={output_style}',
                 '--exe',
                 str(binary),
             ]
@@ -75,11 +88,78 @@ class LlvmSymbolizer:
                                                 stdout=subprocess.PIPE,
                                                 stdin=subprocess.PIPE)
 
-            self._lock = threading.Lock()
+            self._lock: threading.Lock = threading.Lock()
 
     def __del__(self):
         if self._symbolizer:
             self._symbolizer.terminate()
+
+    @staticmethod
+    def _is_json_compatibile() -> bool:
+        """Checks llvm-symbolizer to ensure compatibility"""
+        result = subprocess.run(('llvm-symbolizer', '--help'),
+                                stdout=subprocess.PIPE,
+                                stdin=subprocess.PIPE)
+        for line in result.stdout.decode().splitlines():
+            if '--output-style' in line and 'JSON' in line:
+                return True
+
+        return False
+
+    @staticmethod
+    def _read_json_symbol(address, stdout) -> Symbol:
+        """Reads a single symbol from llvm-symbolizer's JSON output mode."""
+        results = json.loads(stdout.readline().decode())
+        # The symbol resolution should give us at least one symbol, even
+        # if it's largely empty.
+        assert len(results["Symbol"]) > 0
+
+        # Get the first symbol.
+        symbol = results["Symbol"][0]
+
+        return Symbol(address=address,
+                      name=symbol['FunctionName'],
+                      file=symbol['FileName'],
+                      line=symbol['Line'])
+
+    @staticmethod
+    def _llvm_output_line_splitter(file_and_line: str) -> Tuple[str, int]:
+        split = file_and_line.split(':')
+        # LLVM file name output is as follows:
+        #   path/to/src.c:123:1
+        # Where the last number is the discriminator, the second to last the
+        # line number, and all leading characters the file name. For now,
+        # this class ignores discriminators.
+        line_number_str = split[-2]
+        file = ':'.join(split[:-2])
+
+        if not line_number_str:
+            raise ValueError(f'Bad symbol format: {file_and_line}')
+
+        # For unknown file names, mark as blank.
+        if file.startswith('?'):
+            return ('', 0)
+
+        return (file, int(line_number_str))
+
+    @staticmethod
+    def _read_llvm_symbol(address, stdout) -> Symbol:
+        """Reads a single symbol from llvm-symbolizer's LLVM output mode."""
+        symbol = stdout.readline().decode().strip()
+        file_and_line = stdout.readline().decode().strip()
+
+        # Might have gotten multiple symbol matches, drop all of the other ones.
+        # The results of a symbol are denoted by an empty newline.
+        while stdout.readline().decode() != '\n':
+            pass
+
+        if symbol.startswith('?'):
+            return Symbol(address)
+
+        file, line_number = LlvmSymbolizer._llvm_output_line_splitter(
+            file_and_line)
+
+        return Symbol(address, symbol, file, line_number)
 
     def symbolize(self, address: int) -> Symbol:
         """Symbolizes an address using the loaded ELF file."""
@@ -87,6 +167,9 @@ class LlvmSymbolizer:
             return Symbol(address=address, name='', file='', line=0)
 
         with self._lock:
+            if self._symbolizer.returncode is not None:
+                raise ValueError('llvm-symbolizer closed unexpectedly')
+
             stdin = self._symbolizer.stdin
             stdout = self._symbolizer.stdout
 
@@ -96,18 +179,10 @@ class LlvmSymbolizer:
             stdin.write(f'0x{address:08X}\n'.encode())
             stdin.flush()
 
-            results = json.loads(stdout.readline().decode())
-            # The symbol resolution should give us at least one symbol, even
-            # if it's largely empty.
-            assert len(results["Symbol"]) > 0
+            if self._json_mode:
+                return LlvmSymbolizer._read_json_symbol(address, stdout)
 
-            # Get the first symbol.
-            symbol = results["Symbol"][0]
-
-            return Symbol(address=address,
-                          name=symbol['FunctionName'],
-                          file=symbol['FileName'],
-                          line=symbol['Line'])
+            return LlvmSymbolizer._read_llvm_symbol(address, stdout)
 
     def dump_stack_trace(self,
                          addresses,
