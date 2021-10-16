@@ -933,7 +933,7 @@ TEST_F(InitiatorPairingTest, SecurityManagerResetDuringPairing) {
   EXPECT_EQ(2, pairing_request_count());
 
   // Make sure that the new request has the new I/O capabilities.
-  const auto& params = local_pairing_cmd().view(1).As<PairingRequestParams>();
+  const auto& params = local_pairing_cmd().view(1).To<PairingRequestParams>();
   EXPECT_EQ(IOCapability::kNoInputNoOutput, params.io_capability);
 }
 
@@ -2527,7 +2527,7 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequest) {
 
   // Should have requested pairing with MITM protection.
   EXPECT_EQ(1, pairing_request_count());
-  const auto& params = local_pairing_cmd().view(1).As<PairingRequestParams>();
+  const auto& params = local_pairing_cmd().view(1).To<PairingRequestParams>();
   EXPECT_TRUE(params.auth_req & AuthReq::kMITM);
 }
 
@@ -2566,7 +2566,7 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   // trigger a pairing request.
   ReceiveSecurityRequest(AuthReq::kMITM);
   EXPECT_EQ(2, pairing_request_count());
-  const auto& params = local_pairing_cmd().view(1).As<PairingRequestParams>();
+  const auto& params = local_pairing_cmd().view(1).To<PairingRequestParams>();
   EXPECT_TRUE(params.auth_req & AuthReq::kMITM);
 }
 

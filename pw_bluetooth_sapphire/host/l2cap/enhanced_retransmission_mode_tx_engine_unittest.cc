@@ -37,7 +37,7 @@ class EnhancedRetransmissionModeTxEngineTest : public ::gtest::TestLoopFixture {
     ASSERT_TRUE(buf);
     ASSERT_EQ(sizeof(SimpleSupervisoryFrame), buf->size());
 
-    const auto sframe = buf->As<SimpleSupervisoryFrame>();
+    const auto sframe = buf->To<SimpleSupervisoryFrame>();
     EXPECT_EQ(SupervisoryFunction::ReceiverReady, sframe.function());
     EXPECT_TRUE(sframe.is_poll_request());
   }
@@ -270,8 +270,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       ReceiverReadyPollIncludesRequestSequenceNumber) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, ReceiverReadyPollIncludesRequestSequenceNumber) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -287,7 +286,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   SCOPED_TRACE("");
   EXPECT_TRUE(RunLoopFor(zx::sec(2)));
   ASSERT_NO_FATAL_FAILURE(VerifyIsReceiverReadyPollFrame(last_pdu.get()));
-  EXPECT_EQ(1u, last_pdu->As<SimpleSupervisoryFrame>().receive_seq_num());
+  EXPECT_EQ(1u, last_pdu->To<SimpleSupervisoryFrame>().receive_seq_num());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
@@ -330,8 +329,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_FALSE(last_pdu);
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       PartialAckDoesNotCancelReceiverReadyPollTimeout) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, PartialAckDoesNotCancelReceiverReadyPollTimeout) {
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -570,7 +568,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineClosesChannelAfterMaxTransm
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
       [&](ByteBufferPtr pdu) {
         if (pdu->size() >= sizeof(EnhancedControlField) &&
-            pdu->As<EnhancedControlField>().designates_information_frame()) {
+            pdu->To<EnhancedControlField>().designates_information_frame()) {
           ++num_info_frames_sent;
         }
       },
@@ -615,7 +613,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
       [&](ByteBufferPtr pdu) {
         if (pdu->size() >= sizeof(EnhancedControlField) &&
-            pdu->As<EnhancedControlField>().designates_information_frame()) {
+            pdu->To<EnhancedControlField>().designates_information_frame()) {
           ++num_info_frames_sent;
         }
       },
@@ -654,7 +652,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
       [&](ByteBufferPtr pdu) {
         if (pdu->size() >= sizeof(EnhancedControlField) &&
-            pdu->As<EnhancedControlField>().designates_information_frame()) {
+            pdu->To<EnhancedControlField>().designates_information_frame()) {
           ++num_info_frames_sent;
           last_tx_frame = std::move(pdu);
         }
@@ -739,12 +737,11 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineRetransmitsMissingFrameOnPo
   tx_engine.UpdateAckSeq(0, true);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
-  ASSERT_TRUE(last_pdu->As<EnhancedControlField>().designates_information_frame());
-  EXPECT_EQ(0u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+  ASSERT_TRUE(last_pdu->To<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(0u, last_pdu->To<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       EngineRetransmitsAllMissingFramesOnPollResponse) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineRetransmitsAllMissingFramesOnPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
@@ -772,8 +769,8 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(kTxWindow, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
-  ASSERT_TRUE(last_pdu->As<EnhancedControlField>().designates_information_frame());
-  EXPECT_EQ(kTxWindow - 1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+  ASSERT_TRUE(last_pdu->To<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(kTxWindow - 1, last_pdu->To<SimpleInformationFrameHeader>().tx_seq());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
@@ -818,8 +815,8 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(63u, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
-  ASSERT_TRUE(last_pdu->As<EnhancedControlField>().designates_information_frame());
-  EXPECT_EQ(30u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+  ASSERT_TRUE(last_pdu->To<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(30u, last_pdu->To<SimpleInformationFrameHeader>().tx_seq());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
@@ -864,8 +861,8 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(58u, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
-  ASSERT_TRUE(last_pdu->As<EnhancedControlField>().designates_information_frame());
-  EXPECT_EQ(60u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+  ASSERT_TRUE(last_pdu->To<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(60u, last_pdu->To<SimpleInformationFrameHeader>().tx_seq());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineDoesNotRetransmitFramesBeyondTxWindow) {
@@ -896,7 +893,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, EngineDoesNotRetransmitFramesBeyo
   EXPECT_EQ(kTxWindow, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
-  EXPECT_EQ(kTxWindow - 1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+  EXPECT_EQ(kTxWindow - 1, last_pdu->To<SimpleInformationFrameHeader>().tx_seq());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
@@ -950,8 +947,8 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(48u, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
-  ASSERT_TRUE(last_pdu->As<EnhancedControlField>().designates_information_frame());
-  EXPECT_EQ(31u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+  ASSERT_TRUE(last_pdu->To<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(31u, last_pdu->To<SimpleInformationFrameHeader>().tx_seq());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
@@ -982,8 +979,8 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(kTxWindow - kPollResponseReqSeq, n_pdus);
   ASSERT_TRUE(last_pdu);
   ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
-  ASSERT_TRUE(last_pdu->As<EnhancedControlField>().designates_information_frame());
-  EXPECT_EQ(1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+  ASSERT_TRUE(last_pdu->To<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(1, last_pdu->To<SimpleInformationFrameHeader>().tx_seq());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest, AckOfFrameWithNoneOutstandingClosesChannel) {
@@ -995,8 +992,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, AckOfFrameWithNoneOutstandingClos
   EXPECT_TRUE(connection_failed);
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       AckOfMoreFramesThanAreOutstandingClosesChannel) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, AckOfMoreFramesThanAreOutstandingClosesChannel) {
   bool connection_failed = false;
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
                      NoOpTxCallback, [&] { connection_failed = true; });
@@ -1024,8 +1020,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   }
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       QueueSduDoesNotTransmitFramesWhenRemoteIsBusy) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduDoesNotTransmitFramesWhenRemoteIsBusy) {
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -1136,8 +1131,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(kTxWindow, n_pdus);
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       MaybeSendQueuedDataDoesNotTransmitBeyondTxWindow) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, MaybeSendQueuedDataDoesNotTransmitBeyondTxWindow) {
   constexpr size_t kTxWindow = 32;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
@@ -1181,8 +1175,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       QueueSduCanSendMoreFramesAfterClearingRemoteBusy) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduCanSendMoreFramesAfterClearingRemoteBusy) {
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -1204,14 +1197,13 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(1u, n_pdus);
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       QueueSduMaintainsSduOrderingAfterClearRemoteBusy) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, QueueSduMaintainsSduOrderingAfterClearRemoteBusy) {
   std::vector<uint8_t> pdu_seq_numbers;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      pdu_seq_numbers.push_back(pdu->As<SimpleInformationFrameHeader>().tx_seq());
+      pdu_seq_numbers.push_back(pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -1240,9 +1232,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   std::vector<uint8_t> pdu_seq_numbers;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      pdu_seq_numbers.push_back(pdu->As<SimpleInformationFrameHeader>().tx_seq());
+      pdu_seq_numbers.push_back(pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback,
@@ -1278,9 +1270,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   std::vector<uint8_t> pdu_seq_numbers;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      pdu_seq_numbers.push_back(pdu->As<SimpleInformationFrameHeader>().tx_seq());
+      pdu_seq_numbers.push_back(pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback,
@@ -1307,9 +1299,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   std::vector<uint8_t> pdu_seq_numbers;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      pdu_seq_numbers.push_back(pdu->As<SimpleInformationFrameHeader>().tx_seq());
+      pdu_seq_numbers.push_back(pdu->To<SimpleInformationFrameHeader>().tx_seq());
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback,
@@ -1394,9 +1386,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, TransmissionOfPduIncludesRequestS
   uint8_t outbound_req_seq = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().receive_seq_num();
+      outbound_req_seq = pdu->To<SimpleInformationFrameHeader>().receive_seq_num();
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -1415,9 +1407,9 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   uint8_t outbound_req_seq = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().receive_seq_num();
+      outbound_req_seq = pdu->To<SimpleInformationFrameHeader>().receive_seq_num();
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kTxWindow, tx_callback,
@@ -1441,10 +1433,10 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, RetransmissionOfPduIncludesCurren
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
-      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().receive_seq_num();
+      outbound_req_seq = pdu->To<SimpleInformationFrameHeader>().receive_seq_num();
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow, tx_callback,
@@ -1499,16 +1491,15 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest, PollTaskLoopsEvenWhenRemoteIsBusy
   EXPECT_FALSE(failure);
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       SetRangeRetransmitCausesUpdateAckSeqToRetransmit) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, SetRangeRetransmitCausesUpdateAckSeqToRetransmit) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
-      tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+      tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
@@ -1541,12 +1532,12 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       // We send two I-Frames to start, then retransmit both but the third frame is in response to a
       // poll request so its and only its poll response bit should be set.
       SCOPED_TRACE(n_info_frames);
-      EXPECT_EQ(n_info_frames == 2, pdu->As<EnhancedControlField>().is_poll_response());
+      EXPECT_EQ(n_info_frames == 2, pdu->To<EnhancedControlField>().is_poll_response());
       ++n_info_frames;
     }
   };
@@ -1570,7 +1561,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
     }
@@ -1612,7 +1603,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
     }
@@ -1647,7 +1638,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
     }
@@ -1685,16 +1676,15 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_info_frames);
 }
 
-TEST_F(EnhancedRetransmissionModeTxEngineTest,
-       SetSingleRetransmitCausesUpdateAckSeqToRetransmit) {
+TEST_F(EnhancedRetransmissionModeTxEngineTest, SetSingleRetransmitCausesUpdateAckSeqToRetransmit) {
   size_t n_info_frames = 0;
   std::optional<uint8_t> tx_seq;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
-      tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+      tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
@@ -1726,12 +1716,12 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   size_t n_info_frames = 0;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       // We send two I-Frames to start, then retransmit both but the third frame is in response to a
       // poll request so its and only its poll response bit should be set.
       SCOPED_TRACE(n_info_frames);
-      EXPECT_EQ(n_info_frames == 2, pdu->As<EnhancedControlField>().is_poll_response());
+      EXPECT_EQ(n_info_frames == 2, pdu->To<EnhancedControlField>().is_poll_response());
       ++n_info_frames;
     }
   };
@@ -1761,10 +1751,10 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   std::optional<uint8_t> tx_seq;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
-        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->To<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
-      tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+      tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
     }
   };
   TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
@@ -1808,10 +1798,10 @@ TEST_F(
   std::optional<uint8_t> tx_seq;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
-      if (pdu->As<EnhancedControlField>().designates_information_frame()) {
+      if (pdu->To<EnhancedControlField>().designates_information_frame()) {
         ++n_info_frames;
-        tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
-      } else if (pdu->As<EnhancedControlField>().designates_supervisory_frame()) {
+        tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
+      } else if (pdu->To<EnhancedControlField>().designates_supervisory_frame()) {
         ++n_supervisory_frames;
       }
     }
@@ -1862,10 +1852,10 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   std::optional<uint8_t> tx_seq;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
-      if (pdu->As<EnhancedControlField>().designates_information_frame()) {
+      if (pdu->To<EnhancedControlField>().designates_information_frame()) {
         ++n_info_frames;
-        tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
-      } else if (pdu->As<EnhancedControlField>().designates_supervisory_frame()) {
+        tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
+      } else if (pdu->To<EnhancedControlField>().designates_supervisory_frame()) {
         ++n_supervisory_frames;
       }
     }
@@ -1914,10 +1904,10 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   std::optional<uint8_t> tx_seq;
   auto tx_callback = [&](ByteBufferPtr pdu) {
     if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
-      if (pdu->As<EnhancedControlField>().designates_information_frame()) {
+      if (pdu->To<EnhancedControlField>().designates_information_frame()) {
         ++n_info_frames;
-        tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
-      } else if (pdu->As<EnhancedControlField>().designates_supervisory_frame()) {
+        tx_seq = pdu->To<SimpleInformationFrameHeader>().tx_seq();
+      } else if (pdu->To<EnhancedControlField>().designates_supervisory_frame()) {
         ++n_supervisory_frames;
       }
     }

@@ -37,7 +37,7 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   // Assemble and send the ConnectionRequest to connect, but not open, the channel.
   auto connection_acl_packet =
       l2cap::testing::AclConnectionReq(kCommandId, kConnectionHandle, src_id, kPsm);
-  const auto& connection_header = connection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& connection_header = connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
   auto connection_payload_len = le16toh(connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
@@ -69,7 +69,7 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   auto configuration_response_acl_packet =
       l2cap::testing::AclConfigRsp(kCommandId, kConnectionHandle, src_id, params);
   const auto& configuration_response_header =
-      configuration_response_acl_packet.As<hci_spec::ACLDataHeader>();
+      configuration_response_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_response_header_len = sizeof(configuration_response_header);
   auto configuration_response_payload_len =
       le16toh(configuration_response_header.data_total_length);
@@ -89,7 +89,7 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   auto configuration_request_acl_packet =
       l2cap::testing::AclConfigReq(kCommandId, kConnectionHandle, src_id, params);
   const auto& configuration_request_header =
-      configuration_request_acl_packet.As<hci_spec::ACLDataHeader>();
+      configuration_request_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_request_header_len = sizeof(configuration_request_header);
   auto configuration_request_payload_len = le16toh(configuration_request_header.data_total_length);
   auto configuration_request_packet = DynamicByteBuffer(configuration_request_payload_len);
@@ -122,7 +122,7 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   // In this isolated test, we can assume that the src_id and dest_id are identical.
   auto disconnection_acl_packet =
       l2cap::testing::AclDisconnectionReq(kCommandId, kConnectionHandle, src_id, src_id);
-  const auto& disconnection_header = disconnection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& disconnection_header = disconnection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto disconnection_header_len = sizeof(disconnection_header);
   auto disconnection_payload_len = le16toh(disconnection_header.data_total_length);
   auto disconnection_packet = DynamicByteBuffer(disconnection_payload_len);
@@ -159,7 +159,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
   // Assemble and send the ConnectionRequest to connect, but not open, the channel.
   auto connection_acl_packet =
       l2cap::testing::AclConnectionReq(kCommandId, kConnectionHandle, src_id, kPsm);
-  const auto& connection_header = connection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& connection_header = connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
   auto connection_payload_len = le16toh(connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
@@ -193,7 +193,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
   // Assemble and send the ConnectionRequest to connect, but not open, the channel.
   auto connection_acl_packet =
       l2cap::testing::AclConnectionReq(kCommandId, kConnectionHandle, src_id, kPsm);
-  const auto& connection_header = connection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& connection_header = connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
   auto connection_payload_len = le16toh(connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
@@ -226,7 +226,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   // Assemble and send the ConnectionRequest to connect, but not open, the channel.
   auto connection_acl_packet =
       l2cap::testing::AclConnectionReq(kCommandId, kConnectionHandle, src_id, kPsm);
-  const auto& connection_header = connection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& connection_header = connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
   auto connection_payload_len = le16toh(connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
@@ -258,7 +258,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   auto configuration_response_acl_packet =
       l2cap::testing::AclConfigRsp(kCommandId, kConnectionHandle, src_id, params);
   const auto& configuration_response_header =
-      configuration_response_acl_packet.As<hci_spec::ACLDataHeader>();
+      configuration_response_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_response_header_len = sizeof(configuration_response_header);
   auto configuration_response_payload_len =
       le16toh(configuration_response_header.data_total_length);
@@ -278,7 +278,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   auto configuration_request_acl_packet =
       l2cap::testing::AclConfigReq(kCommandId, kConnectionHandle, src_id, params);
   const auto& configuration_request_header =
-      configuration_request_acl_packet.As<hci_spec::ACLDataHeader>();
+      configuration_request_acl_packet.To<hci_spec::ACLDataHeader>();
   auto configuration_request_header_len = sizeof(configuration_request_header);
   auto configuration_request_payload_len = le16toh(configuration_request_header.data_total_length);
   auto configuration_request_packet = DynamicByteBuffer(configuration_request_payload_len);
@@ -310,7 +310,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   // Try to open up the same channel again.
   auto second_connection_acl_packet =
       l2cap::testing::AclConnectionReq(kCommandId, kConnectionHandle, src_id, kPsm);
-  const auto& second_connection_header = second_connection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& second_connection_header = second_connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto second_connection_header_len = sizeof(second_connection_header);
   auto second_connection_payload_len = le16toh(second_connection_header.data_total_length);
   auto second_connection_packet = DynamicByteBuffer(second_connection_payload_len);
@@ -343,7 +343,7 @@ TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
   // Assemble and send the ConnectionRequest to connect, but not open, the channel.
   auto connection_acl_packet =
       l2cap::testing::AclConnectionReq(kCommandId, kConnectionHandle, src_id, kPsm);
-  const auto& connection_header = connection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& connection_header = connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto connection_header_len = sizeof(connection_header);
   auto connection_payload_len = le16toh(connection_header.data_total_length);
   auto connection_packet = DynamicByteBuffer(connection_payload_len);
@@ -356,7 +356,7 @@ TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
   l2cap::ChannelId second_src_id = l2cap::kFirstDynamicChannelId + 1;
   auto second_connection_acl_packet =
       l2cap::testing::AclConnectionReq(kCommandId, kConnectionHandle, second_src_id, kPsm);
-  const auto& second_connection_header = second_connection_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& second_connection_header = second_connection_acl_packet.To<hci_spec::ACLDataHeader>();
   auto second_connection_header_len = sizeof(second_connection_header);
   auto second_connection_payload_len = le16toh(second_connection_header.data_total_length);
   auto second_connection_packet = DynamicByteBuffer(second_connection_payload_len);

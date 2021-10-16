@@ -2547,7 +2547,7 @@ void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
     return;
   }
 
-  const auto& header = acl_data_packet.As<hci_spec::ACLDataHeader>();
+  const auto& header = acl_data_packet.To<hci_spec::ACLDataHeader>();
   hci_spec::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {

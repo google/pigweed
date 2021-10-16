@@ -35,7 +35,7 @@ void FakeGattServer::HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer
     return;
   }
 
-  att::OpCode opcode = le16toh(pdu.As<att::OpCode>());
+  att::OpCode opcode = le16toh(pdu.To<att::OpCode>());
   switch (opcode) {
     case att::kExchangeMTURequest:
       // Always reply back with the default ATT_MTU.
@@ -65,7 +65,7 @@ void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn, const 
     return;
   }
 
-  const auto& params = bytes.As<att::ReadByGroupTypeRequestParams16>();
+  const auto& params = bytes.To<att::ReadByGroupTypeRequestParams16>();
   att::Handle start = le16toh(params.start_handle);
   att::Handle end = le16toh(params.end_handle);
   if (!start || end < start) {

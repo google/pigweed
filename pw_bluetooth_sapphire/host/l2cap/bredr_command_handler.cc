@@ -17,7 +17,7 @@
 namespace bt::l2cap::internal {
 
 bool BrEdrCommandHandler::ConnectionResponse::Decode(const ByteBuffer& payload_buf) {
-  auto& conn_rsp_payload = payload_buf.As<PayloadT>();
+  auto conn_rsp_payload = payload_buf.To<PayloadT>();
   remote_cid_ = letoh16(conn_rsp_payload.dst_cid);
   local_cid_ = letoh16(conn_rsp_payload.src_cid);
   result_ = static_cast<ConnectionResult>(letoh16(conn_rsp_payload.result));
@@ -216,7 +216,7 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
       return;
     }
 
-    const auto& conn_req = request_payload.As<ConnectionRequestPayload>();
+    const auto& conn_req = request_payload.To<ConnectionRequestPayload>();
     const PSM psm = letoh16(conn_req.psm);
     const ChannelId remote_cid = letoh16(conn_req.src_cid);
 
@@ -284,7 +284,7 @@ void BrEdrCommandHandler::ServeInformationRequest(InformationRequestCallback cb)
       return;
     }
 
-    const auto& info_req = request_payload.As<InformationRequestPayload>();
+    const auto& info_req = request_payload.To<InformationRequestPayload>();
     const auto type = static_cast<InformationType>(letoh16(info_req.type));
     InformationResponder responder(sig_responder, type);
     cb(type, &responder);

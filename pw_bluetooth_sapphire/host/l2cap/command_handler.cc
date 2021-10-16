@@ -12,8 +12,8 @@ bool CommandHandler::Response::ParseReject(const ByteBuffer& rej_payload_buf) {
            rej_payload_buf.size(), sizeof(CommandRejectPayload));
     return false;
   }
-  auto& rej_payload = rej_payload_buf.As<CommandRejectPayload>();
-  reject_reason_ = static_cast<RejectReason>(letoh16(rej_payload.reason));
+  reject_reason_ = static_cast<RejectReason>(
+      letoh16(rej_payload_buf.ReadMember<&CommandRejectPayload::reason>()));
 
   if (reject_reason() == RejectReason::kInvalidCID) {
     if (rej_payload_buf.size() - sizeof(CommandRejectPayload) < sizeof(InvalidCIDPayload)) {
@@ -22,8 +22,8 @@ bool CommandHandler::Response::ParseReject(const ByteBuffer& rej_payload_buf) {
              rej_payload_buf.size(), sizeof(CommandRejectPayload) + sizeof(InvalidCIDPayload));
       return false;
     }
-    auto& invalid_cid_payload =
-        rej_payload_buf.view(sizeof(CommandRejectPayload)).As<InvalidCIDPayload>();
+    const auto& invalid_cid_payload =
+        rej_payload_buf.view(sizeof(CommandRejectPayload)).To<InvalidCIDPayload>();
     remote_cid_ = letoh16(invalid_cid_payload.src_cid);
     local_cid_ = letoh16(invalid_cid_payload.dst_cid);
   }
@@ -32,7 +32,7 @@ bool CommandHandler::Response::ParseReject(const ByteBuffer& rej_payload_buf) {
 }
 
 bool CommandHandler::DisconnectionResponse::Decode(const ByteBuffer& payload_buf) {
-  auto& disconn_rsp_payload = payload_buf.As<PayloadT>();
+  const auto disconn_rsp_payload = payload_buf.To<PayloadT>();
   local_cid_ = letoh16(disconn_rsp_payload.src_cid);
   remote_cid_ = letoh16(disconn_rsp_payload.dst_cid);
   return true;
@@ -67,7 +67,7 @@ void CommandHandler::ServeDisconnectionRequest(DisconnectionRequestCallback cb) 
       return;
     }
 
-    const auto& discon_req = request_payload.As<DisconnectionRequestPayload>();
+    const auto& discon_req = request_payload.To<DisconnectionRequestPayload>();
     const ChannelId local_cid = letoh16(discon_req.dst_cid);
     const ChannelId remote_cid = letoh16(discon_req.src_cid);
     DisconnectionResponder responder(sig_responder, local_cid, remote_cid);

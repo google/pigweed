@@ -80,7 +80,7 @@ TEST(AdvertisingDataTest, CompressServiceUUIDs) {
 
   EXPECT_TRUE(ContainersEqual(expected_header, block.view(/*pos=*/0, /*size=*/2)));
   auto to_uuid = [](const ByteBuffer& b, size_t pos) {
-    return UUID(b.view(pos, /*size=*/2).As<uint16_t>());
+    return UUID(b.view(pos, /*size=*/2).To<uint16_t>());
   };
   EXPECT_TRUE(uuids.find(to_uuid(block, 2)) != uuids.end());
   EXPECT_TRUE(uuids.find(to_uuid(block, 4)) != uuids.end());

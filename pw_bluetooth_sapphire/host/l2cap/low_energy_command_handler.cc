@@ -7,8 +7,8 @@
 namespace bt::l2cap::internal {
 bool LowEnergyCommandHandler::ConnectionParameterUpdateResponse::Decode(
     const ByteBuffer& payload_buf) {
-  auto& payload = payload_buf.As<PayloadT>();
-  result_ = ConnectionParameterUpdateResult{letoh16(payload.result)};
+  const auto result = letoh16(payload_buf.ReadMember<&PayloadT::result>());
+  result_ = ConnectionParameterUpdateResult{result};
   return true;
 }
 
@@ -54,7 +54,7 @@ void LowEnergyCommandHandler::ServeConnectionParameterUpdateRequest(
       return;
     }
 
-    const auto& req = request_payload.As<ConnectionParameterUpdateRequestPayload>();
+    const auto& req = request_payload.To<ConnectionParameterUpdateRequestPayload>();
     const auto interval_min = letoh16(req.interval_min);
     const auto interval_max = letoh16(req.interval_max);
     const auto slave_latency = letoh16(req.slave_latency);

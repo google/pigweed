@@ -314,7 +314,7 @@ bool IrkCanResolveRpa(const UInt128& irk, const DeviceAddress& rpa) {
   BufferView rpa_bytes = rpa.value().bytes();
 
   // Lower 24-bits (in host order).
-  uint32_t rpa_hash = le32toh(rpa_bytes.As<uint32_t>()) & k24BitMax;
+  uint32_t rpa_hash = le32toh(rpa_bytes.To<uint32_t>()) & k24BitMax;
 
   // Upper 24-bits (we avoid a cast to uint32_t to prevent an invalid access
   // since the buffer would be too short).

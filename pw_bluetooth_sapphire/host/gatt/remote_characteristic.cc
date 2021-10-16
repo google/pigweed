@@ -140,7 +140,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
           return;
         }
 
-        auto ext_props = le16toh(data.As<uint16_t>());
+        auto ext_props = le16toh(data.To<uint16_t>());
         self->UpdateDataWithExtendedProperties(ext_props);
 
         cb(status);

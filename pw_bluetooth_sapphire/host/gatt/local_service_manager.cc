@@ -254,7 +254,7 @@ class LocalServiceManager::ServiceData final {
       return;
     }
 
-    uint16_t ccc_value = le16toh(value.As<uint16_t>());
+    uint16_t ccc_value = le16toh(value.To<uint16_t>());
     if (ccc_value > (kCCCNotificationBit | kCCCIndicationBit)) {
       result_cb(att::ErrorCode::kInvalidPDU);
       return;

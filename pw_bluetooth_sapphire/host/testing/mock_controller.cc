@@ -144,7 +144,7 @@ void MockController::OnCommandPacketReceived(
 
   auto& transaction = cmd_transactions_.front();
   const hci_spec::OpCode expected_opcode =
-      le16toh(transaction.expected().data.As<hci_spec::OpCode>());
+      le16toh(transaction.expected().data.To<hci_spec::OpCode>());
   uint8_t expected_ogf = hci_spec::GetOGF(expected_opcode);
   uint16_t expected_ocf = hci_spec::GetOCF(expected_opcode);
 

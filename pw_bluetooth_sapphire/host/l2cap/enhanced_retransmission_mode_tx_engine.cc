@@ -222,7 +222,7 @@ void Engine::MaybeSendQueuedData() {
   while (it != pending_pdus_.end() && NumUnackedFrames() < n_frames_in_tx_window_) {
     ZX_DEBUG_ASSERT(it->tx_count == 0);
     SendPdu(&*it);
-    last_tx_seq_ = it->buf.As<SimpleInformationFrameHeader>().tx_seq();
+    last_tx_seq_ = it->buf.To<SimpleInformationFrameHeader>().tx_seq();
     ++it;
   }
 }
@@ -361,7 +361,7 @@ fpromise::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_wit
   for (; cur_frame != last_frame; cur_frame++) {
     ZX_DEBUG_ASSERT(cur_frame != pending_pdus_.end());
 
-    const auto control_field = cur_frame->buf.As<SimpleInformationFrameHeader>();
+    const auto control_field = cur_frame->buf.To<SimpleInformationFrameHeader>();
     if (only_with_seq.has_value() && control_field.tx_seq() != *only_with_seq) {
       continue;
     }

@@ -116,8 +116,7 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
 // MtuOption implementation
 
 ChannelConfiguration::MtuOption::MtuOption(const ByteBuffer& data_buf) {
-  auto& data = data_buf.As<MtuOptionPayload>();
-  mtu_ = letoh16(data.mtu);
+  mtu_ = letoh16(data_buf.ReadMember<&MtuOptionPayload::mtu>());
 }
 
 DynamicByteBuffer ChannelConfiguration::MtuOption::Encode() const {
@@ -154,7 +153,7 @@ ChannelConfiguration::RetransmissionAndFlowControlOption::RetransmissionAndFlowC
 
 ChannelConfiguration::RetransmissionAndFlowControlOption::RetransmissionAndFlowControlOption(
     const ByteBuffer& data_buf) {
-  auto& option_payload = data_buf.As<RetransmissionAndFlowControlOptionPayload>();
+  const auto option_payload = data_buf.To<RetransmissionAndFlowControlOptionPayload>();
   mode_ = option_payload.mode;
   tx_window_size_ = option_payload.tx_window_size;
   max_transmit_ = option_payload.max_transmit;
@@ -185,8 +184,7 @@ std::string ChannelConfiguration::RetransmissionAndFlowControlOption::ToString()
 // FlushTimeoutOption implementation
 
 ChannelConfiguration::FlushTimeoutOption::FlushTimeoutOption(const ByteBuffer& data_buf) {
-  auto& option_payload = data_buf.As<FlushTimeoutOptionPayload>();
-  flush_timeout_ = letoh16(option_payload.flush_timeout);
+  flush_timeout_ = letoh16(data_buf.ReadMember<&FlushTimeoutOptionPayload::flush_timeout>());
 }
 
 DynamicByteBuffer ChannelConfiguration::FlushTimeoutOption::Encode() const {

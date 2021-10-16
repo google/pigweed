@@ -100,7 +100,8 @@ class DataFuzzTest : public TestingBase {
         htole16(packet_view.size() - sizeof(hci_spec::ACLDataHeader));
 
     // Use correct connection handle so packets aren't rejected/queued for invalid handle.
-    uint16_t handle_and_flags = packet_view.As<hci_spec::ACLDataHeader>().handle_and_flags;
+    uint16_t handle_and_flags =
+        packet_view.ReadMember<&hci_spec::ACLDataHeader::handle_and_flags>();
     handle_and_flags &= 0xF000;  // Keep flags, clear handle.
     handle_and_flags |= kHandle;
     packet_view.AsMutable<hci_spec::ACLDataHeader>().handle_and_flags = handle_and_flags;

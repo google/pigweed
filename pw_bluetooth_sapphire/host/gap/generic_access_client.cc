@@ -70,8 +70,8 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
         return;
       }
 
-      auto& char_value =
-          buffer.template As<PeripheralPreferredConnectionParametersCharacteristicValue>();
+      auto char_value =
+          buffer.template To<PeripheralPreferredConnectionParametersCharacteristicValue>();
       hci_spec::LEPreferredConnectionParameters params(
           letoh16(char_value.min_interval), letoh16(char_value.max_interval),
           letoh16(char_value.max_latency), letoh16(char_value.supervision_timeout));

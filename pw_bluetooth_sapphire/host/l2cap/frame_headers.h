@@ -103,6 +103,8 @@ using ExtendedControlField = uint32_t;
 // * the frame is _not_ a "Start of L2CAP SDU" frame.
 // Omits the Basic L2CAP header. See Vol 3, Part A, Sec 3.3.
 struct SimpleInformationFrameHeader : public EnhancedControlField {
+  SimpleInformationFrameHeader() = default;
+
   explicit SimpleInformationFrameHeader(uint8_t tx_seq) {
     ZX_DEBUG_ASSERT(tx_seq <= kMaxSeqNum);
     raw_value = htole16(le16toh(raw_value) | (tx_seq << 1));
@@ -122,6 +124,8 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
 // * the frame _is_ a "Start of L2CAP SDU" frame.
 // Omits the Basic L2CAP header. See Vol 3, Part A, Sec 3.3.
 struct SimpleStartOfSduFrameHeader : public SimpleInformationFrameHeader {
+  SimpleStartOfSduFrameHeader() = default;
+
   explicit SimpleStartOfSduFrameHeader(uint8_t tx_seq)
       : SimpleInformationFrameHeader(tx_seq), sdu_len(0) {
     set_segmentation_status(SegmentationStatus::FirstSegment);
@@ -144,6 +148,8 @@ enum class SupervisoryFunction {
 //   disabled
 // Omits the Basic L2CAP header. See Vol 3, Part A, Sec 3.3.
 struct SimpleSupervisoryFrame : public EnhancedControlField {
+  SimpleSupervisoryFrame() = default;
+
   explicit SimpleSupervisoryFrame(SupervisoryFunction sfunc) {
     ZX_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
     set_supervisory_frame();

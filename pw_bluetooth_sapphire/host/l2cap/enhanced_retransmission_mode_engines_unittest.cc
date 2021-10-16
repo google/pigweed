@@ -50,14 +50,14 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     // Ready (which is always allowed), so our subsequent I-Frame is actually the third outbound.
     if (tx_count == 0) {
       ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->To<SimpleInformationFrameHeader>();
       EXPECT_EQ(0, header.tx_seq());
       EXPECT_EQ(0, header.receive_seq_num());
     } else if (tx_count == 2) {
       ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->To<SimpleInformationFrameHeader>();
       EXPECT_EQ(1, header.tx_seq());
 
       // Acknowledges the I-Frame from the peer.
@@ -97,14 +97,14 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTimerExpi
     // Ready (which is always allowed), so our subsequent I-Frame is actually the third outbound.
     if (tx_count == 0) {
       ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->To<SimpleInformationFrameHeader>();
       EXPECT_EQ(0, header.tx_seq());
       EXPECT_EQ(0, header.receive_seq_num());
     } else if (tx_count == 1) {
       ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
-      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
     }
     tx_count++;
   };
@@ -139,14 +139,14 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmitExhau
     // Ready (which is always allowed), so our subsequent I-Frame is actually the third outbound.
     if (tx_count == 0) {
       ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->To<SimpleInformationFrameHeader>();
       EXPECT_EQ(0, header.tx_seq());
       EXPECT_EQ(0, header.receive_seq_num());
     } else if (tx_count == 1) {
       ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
-      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
     }
     tx_count++;
   };
@@ -186,8 +186,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingRejectSFra
   auto tx_callback = [&tx_count, &iframe_0_tx_count, &iframe_1_tx_count](ByteBufferPtr pdu) {
     tx_count++;
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->To<SimpleInformationFrameHeader>();
     if (header.tx_seq() == 0) {
       iframe_0_tx_count++;
     } else if (header.tx_seq() == 1) {
@@ -232,8 +232,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   auto tx_callback = [&tx_count, &iframe_tx_counts](ByteBufferPtr pdu) {
     tx_count++;
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->To<SimpleInformationFrameHeader>();
     ASSERT_GT(iframe_tx_counts.size(), header.tx_seq());
     iframe_tx_counts[header.tx_seq()]++;
   };
@@ -274,8 +274,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSelectiveR
   auto tx_callback = [&tx_count, &iframe_tx_counts](ByteBufferPtr pdu) {
     tx_count++;
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->To<SimpleInformationFrameHeader>();
     ASSERT_GT(iframe_tx_counts.size(), header.tx_seq());
     iframe_tx_counts[header.tx_seq()]++;
   };
@@ -375,14 +375,14 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     // Ready (which is always allowed), so our subsequent I-Frame is actually the third outbound.
     if (tx_count == 0) {
       ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->To<SimpleInformationFrameHeader>();
       EXPECT_EQ(0, header.tx_seq());
       EXPECT_EQ(0, header.receive_seq_num());
     } else if (tx_count == 1) {
       ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
-      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
     }
     tx_count++;
   };
@@ -425,14 +425,14 @@ TEST_F(
     // After outbound I-Frames, expect an outbound poll request S-Frame.
     if (tx_count == 3) {
       ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
-      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
       return;
     }
 
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->To<SimpleInformationFrameHeader>();
     if (header.tx_seq() == 0) {
       iframe_0_tx_count++;
     } else if (header.tx_seq() == 1) {
@@ -494,14 +494,14 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     // After outbound I-Frames, expect an outbound poll request S-Frame.
     if (tx_count == 3) {
       ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
-      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
       return;
     }
 
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->To<SimpleInformationFrameHeader>();
     if (header.tx_seq() == 0) {
       iframe_0_tx_count++;
     } else if (header.tx_seq() == 1) {
@@ -565,22 +565,22 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     if (tx_count == 3) {
       // After outbound I-Frames (not retransmitted), expect an outbound poll request S-Frame.
       ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
-      EXPECT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_supervisory_frame());
+      EXPECT_TRUE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
       return;
     } else if (tx_count == 6) {
       // After retransmitted I-Frames, expect an outbound ReceiverReady that acknowledges the peer's
       // I-Frame.
       ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
-      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
-      EXPECT_FALSE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
-      EXPECT_EQ(1, pdu->As<SimpleSupervisoryFrame>().receive_seq_num());
+      ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_supervisory_frame());
+      EXPECT_FALSE(pdu->To<SimpleSupervisoryFrame>().is_poll_request());
+      EXPECT_EQ(1, pdu->To<SimpleSupervisoryFrame>().receive_seq_num());
       return;
     }
 
     ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
-    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
-    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_TRUE(pdu->To<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->To<SimpleInformationFrameHeader>();
     EXPECT_EQ(0, header.receive_seq_num());
     if (header.tx_seq() == 0) {
       iframe_0_tx_count++;

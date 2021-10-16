@@ -607,7 +607,7 @@ void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority,
     return;
   }
 
-  hci_spec::OpCode op_code = letoh16(encoded.As<hci_spec::CommandHeader>().opcode);
+  hci_spec::OpCode op_code = letoh16(encoded.ReadMember<&hci_spec::CommandHeader::opcode>());
   auto packet =
       bt::hci::CommandPacket::New(op_code, encoded.size() - sizeof(hci_spec::CommandHeader));
   auto packet_view = packet->mutable_view()->mutable_data();

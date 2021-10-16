@@ -901,7 +901,7 @@ class LocalClientCharacteristicConfigurationTest : public ::testing::Test {
       EXPECT_EQ(2u, value.size());
 
       if (value.size() == 2u) {
-        *out_value = le16toh(value.template As<uint16_t>());
+        *out_value = le16toh(value.template To<uint16_t>());
       }
     };
 

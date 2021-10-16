@@ -309,7 +309,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
           return fitx::error(ParseError::kAppearanceMalformed);
         }
 
-        out_ad.SetAppearance(le16toh(field.As<uint16_t>()));
+        out_ad.SetAppearance(le16toh(field.To<uint16_t>()));
         break;
       }
       case DataType::kURI: {

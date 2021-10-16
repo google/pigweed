@@ -89,29 +89,14 @@ class ByteBuffer {
     return data()[pos];
   }
 
-  // Converts the underlying buffer to the given type with bounds checking. The buffer is allowed
-  // to be larger than T. The user is responsible for checking that the first sizeof(T) bytes
-  // represent a valid instance of T.
-  //
-  // It is not possible to implement this function without either:
-  // (A) controlling the memory alignment of |data()|
-  // (B) violating memory alignment rules in C++ and triggering UB(SAN)
-  //
-  // The same is true of |AsMutable|.
-  template <typename T>
-  const T& As() const __attribute__((no_sanitize("alignment"))) {
-    // std::is_trivial_v would be a stronger guarantee that the buffer contains a valid T object,
-    // but would disallow casting to types that have useful constructors, which might instead cause
-    // uninitialized field(s) bugs for data encoding/decoding structs.
-    static_assert(std::is_trivially_copyable_v<T>, "Can not reinterpret bytes");
-    ZX_ASSERT(size() >= sizeof(T));
-    return *reinterpret_cast<const T*>(data());
-  }
-
   // Creates an object of type T with the first sizeof(T) bytes of the buffer as its representation
   // (per definition at ISO/IEC 14882:2017(E) § 6.9 [basic.types] ¶ 4.4). The user is responsible
   // for checking that the first sizeof(T) bytes represent a valid instance of T. If T is an array
   // type, the return value will be a std::array with the same element type and extents.
+  //
+  // This or ReadMember should always be used in place of reinterpret_cast on raw pointers because
+  // of dangerous UB related to object lifetimes and alignment issues (see fxbug.dev/46637).
+  // Moreover, this will perform bounds checking on the data being read.
   template <typename T>
   [[nodiscard]] auto To() const {
     static_assert(std::is_trivially_copyable_v<T>, "unsafe to copy representation");

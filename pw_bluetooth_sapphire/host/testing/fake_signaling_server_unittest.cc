@@ -39,7 +39,7 @@ TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
 
   // Assemble and send the information request.
   auto sent_acl_packet = l2cap::testing::AclExtFeaturesInfoReq(kCommandId, kConnectionHandle);
-  const auto& send_header = sent_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& send_header = sent_acl_packet.To<hci_spec::ACLDataHeader>();
   auto send_header_len = sizeof(send_header);
   auto send_payload_len = le16toh(send_header.data_total_length);
   auto sent_packet = DynamicByteBuffer(send_payload_len);
@@ -69,7 +69,7 @@ TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
   // Assemble and send the information request.
   auto sent_acl_packet =
       l2cap::testing::AclFixedChannelsSupportedInfoReq(kCommandId, kConnectionHandle);
-  const auto& send_header = sent_acl_packet.As<hci_spec::ACLDataHeader>();
+  const auto& send_header = sent_acl_packet.To<hci_spec::ACLDataHeader>();
   auto send_header_len = sizeof(send_header);
   auto send_payload_len = le16toh(send_header.data_total_length);
   auto sent_packet = DynamicByteBuffer(send_payload_len);

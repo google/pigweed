@@ -17,7 +17,7 @@ std::optional<T> TryCopyFromPdu(const PDU& pdu) {
 
   StaticByteBuffer<sizeof(T)> buf;
   pdu.Copy(&buf, 0, sizeof(T));
-  return buf.template As<T>();
+  return buf.template To<T>();
 }
 
 std::variant<std::monostate, const SimpleInformationFrameHeader, const SimpleStartOfSduFrameHeader,

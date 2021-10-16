@@ -42,7 +42,7 @@ bool ProcessDescriptorDiscoveryResponse(att::Handle range_start, att::Handle ran
 
   att::Handle last_handle = range_end;
   while (entries.size()) {
-    const EntryType& entry = entries.As<EntryType>();
+    const EntryType& entry = entries.To<EntryType>();
 
     att::Handle desc_handle = le16toh(entry.handle);
 
@@ -255,10 +255,10 @@ class Impl final : public Client {
 
           std::optional<att::Handle> last_handle;
           while (attr_data_list.size()) {
-            const auto& entry = attr_data_list.As<att::AttributeGroupDataEntry>();
-
-            att::Handle start = le16toh(entry.start_handle);
-            att::Handle end = le16toh(entry.group_end_handle);
+            att::Handle start =
+                le16toh(attr_data_list.ReadMember<&att::AttributeGroupDataEntry::start_handle>());
+            att::Handle end = le16toh(
+                attr_data_list.ReadMember<&att::AttributeGroupDataEntry::group_end_handle>());
 
             if (end < start) {
               bt_log(DEBUG, "gatt", "received malformed service range values");
@@ -281,7 +281,8 @@ class Impl final : public Client {
             }
 
             // This must succeed as we have performed the appropriate checks above.
-            BufferView uuid_bytes(entry.value, entry_length - (2 * sizeof(att::Handle)));
+            auto uuid_bytes = attr_data_list.view(offsetof(att::AttributeGroupDataEntry, value),
+                                                  entry_length - (2 * sizeof(att::Handle)));
             UUID uuid(uuid_bytes);
 
             ServiceData service(kind, start, end, uuid);
@@ -393,7 +394,7 @@ class Impl final : public Client {
 
           std::optional<att::Handle> last_handle;
           while (handle_list.size()) {
-            const auto& entry = handle_list.As<att::HandlesInformationList>();
+            const auto& entry = handle_list.To<att::HandlesInformationList>();
 
             att::Handle start = le16toh(entry.handle);
             att::Handle end = le16toh(entry.group_end_handle);
@@ -506,14 +507,14 @@ class Impl final : public Client {
         if (char_attr.value.size() ==
             sizeof(CharacteristicDeclarationAttributeValue<att::UUIDType::k16Bit>)) {
           auto attr_value =
-              char_attr.value.As<CharacteristicDeclarationAttributeValue<att::UUIDType::k16Bit>>();
+              char_attr.value.To<CharacteristicDeclarationAttributeValue<att::UUIDType::k16Bit>>();
           properties = attr_value.properties;
           value_handle = le16toh(attr_value.value_handle);
           value_uuid = UUID(attr_value.value_uuid);
         } else if (char_attr.value.size() ==
                    sizeof(CharacteristicDeclarationAttributeValue<att::UUIDType::k128Bit>)) {
           auto attr_value =
-              char_attr.value.As<CharacteristicDeclarationAttributeValue<att::UUIDType::k128Bit>>();
+              char_attr.value.To<CharacteristicDeclarationAttributeValue<att::UUIDType::k128Bit>>();
           properties = attr_value.properties;
           value_handle = le16toh(attr_value.value_handle);
           value_uuid = UUID(attr_value.value_uuid);
@@ -724,7 +725,7 @@ class Impl final : public Client {
                                 rsp.payload_size() - sizeof(params.length));
       while (attr_list_view.size() >= params.length) {
         const BufferView pair_view = attr_list_view.view(0, pair_size);
-        const att::Handle handle = letoh16(pair_view.As<att::Handle>());
+        const att::Handle handle = letoh16(pair_view.To<att::Handle>());
 
         if (handle < start_handle || handle > end_handle) {
           bt_log(TRACE, "gatt",
@@ -902,7 +903,7 @@ class Impl final : public Client {
             // The response blob is malformed.
             status = att::Status(HostError::kNotReliable);
           } else {
-            auto blob_offset = le16toh(blob.As<att::PrepareWriteResponseParams>().offset);
+            auto blob_offset = le16toh(blob.ReadMember<&att::PrepareWriteResponseParams::offset>());
             auto blob_value = blob.view(sizeof(att::PrepareWriteResponseParams));
             if ((blob_offset != requested_blob.offset()) ||
                 !(blob_value == requested_blob.value())) {

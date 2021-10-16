@@ -155,7 +155,7 @@ void FakeL2cap::HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu
   }
 
   // Extract channel ID and strip the L2CAP header from the pdu.
-  const auto& header = pdu.As<l2cap::BasicHeader>();
+  const auto& header = pdu.To<l2cap::BasicHeader>();
   l2cap::ChannelId cid = le16toh(header.channel_id);
   auto header_len = sizeof(header);
   auto payload_len = le16toh(header.length);

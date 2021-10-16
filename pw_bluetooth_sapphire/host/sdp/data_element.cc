@@ -344,7 +344,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (cursor.size() < sizeof(uint8_t)) {
         return 0;
       }
-      data_bytes = cursor.As<uint8_t>();
+      data_bytes = cursor.To<uint8_t>();
       bytes_read += sizeof(uint8_t);
       break;
     }
@@ -352,7 +352,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (cursor.size() < sizeof(uint16_t)) {
         return 0;
       }
-      data_bytes = betoh16(cursor.As<uint16_t>());
+      data_bytes = betoh16(cursor.To<uint16_t>());
       bytes_read += sizeof(uint16_t);
       break;
     }
@@ -360,7 +360,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (cursor.size() < sizeof(uint32_t)) {
         return 0;
       }
-      data_bytes = betoh32(cursor.As<uint32_t>());
+      data_bytes = betoh32(cursor.To<uint32_t>());
       bytes_read += sizeof(uint32_t);
       break;
     }
@@ -381,18 +381,18 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (size_desc != Size::kOneByte) {
         return 0;
       }
-      elem->Set(cursor.As<uint8_t>() != 0);
+      elem->Set(cursor.To<uint8_t>() != 0);
       return bytes_read + data_bytes;
     }
     case Type::kUnsignedInt: {
       if (size_desc == Size::kOneByte) {
-        elem->Set(cursor.As<uint8_t>());
+        elem->Set(cursor.To<uint8_t>());
       } else if (size_desc == Size::kTwoBytes) {
-        elem->Set(betoh16(cursor.As<uint16_t>()));
+        elem->Set(betoh16(cursor.To<uint16_t>()));
       } else if (size_desc == Size::kFourBytes) {
-        elem->Set(betoh32(cursor.As<uint32_t>()));
+        elem->Set(betoh32(cursor.To<uint32_t>()));
       } else if (size_desc == Size::kEightBytes) {
-        elem->Set(betoh64(cursor.As<uint64_t>()));
+        elem->Set(betoh64(cursor.To<uint64_t>()));
       } else {
         // TODO(jamuraa): support 128-bit uints
         // Invalid size.
@@ -402,13 +402,13 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
     }
     case Type::kSignedInt: {
       if (size_desc == Size::kOneByte) {
-        elem->Set(cursor.As<int8_t>());
+        elem->Set(cursor.To<int8_t>());
       } else if (size_desc == Size::kTwoBytes) {
-        elem->Set(betoh16(cursor.As<int16_t>()));
+        elem->Set(betoh16(cursor.To<int16_t>()));
       } else if (size_desc == Size::kFourBytes) {
-        elem->Set(betoh32(cursor.As<int32_t>()));
+        elem->Set(betoh32(cursor.To<int32_t>()));
       } else if (size_desc == Size::kEightBytes) {
-        elem->Set(betoh64(cursor.As<int64_t>()));
+        elem->Set(betoh64(cursor.To<int64_t>()));
       } else {
         // TODO(jamuraa): support 128-bit uints
         // Invalid size.
@@ -418,9 +418,9 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
     }
     case Type::kUuid: {
       if (size_desc == Size::kTwoBytes) {
-        elem->Set(UUID(betoh16(cursor.As<uint16_t>())));
+        elem->Set(UUID(betoh16(cursor.To<uint16_t>())));
       } else if (size_desc == Size::kFourBytes) {
-        elem->Set(UUID(betoh32(cursor.As<uint32_t>())));
+        elem->Set(UUID(betoh32(cursor.To<uint32_t>())));
       } else if (size_desc == Size::kSixteenBytes) {
         StaticByteBuffer<16> uuid_bytes;
         // UUID expects these to be in little-endian order.

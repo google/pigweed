@@ -284,27 +284,6 @@ TEST(ByteBufferTest, ByteBufferEqualitySuccess) {
   EXPECT_TRUE(kData0 == kData1);
 }
 
-TEST(ByteBufferTest, ByteBufferAsFundamental) {
-  EXPECT_EQ(191u, CreateStaticByteBuffer(191, 25).As<uint8_t>());
-}
-
-TEST(ByteBufferTest, ByteBufferAsStruct) {
-  const auto data = CreateStaticByteBuffer(10, 12);
-  struct point {
-    uint8_t x;
-    uint8_t y;
-  };
-  EXPECT_EQ(10, data.As<point>().x);
-  EXPECT_EQ(12, data.As<point>().y);
-}
-
-TEST(ByteBufferTest, ByteBufferAsArray) {
-  const auto buf = CreateStaticByteBuffer(191, 25);
-  const auto array = buf.As<uint8_t[2]>();
-  EXPECT_EQ(191, array[0]);
-  EXPECT_EQ(25, array[1]);
-}
-
 TEST(ByteBufferDeathTest, ByteBufferWithInsufficientBytesAssertsOnTo) {
   StaticByteBuffer buffer(0, 0, 0);
   ASSERT_GT(sizeof(float), buffer.size());
@@ -503,10 +482,10 @@ TEST(ByteBufferTest, ByteBufferReadMemberOfUnalignedArrayType) {
   // This branch (that the second field of |point| is unaligned) does get taken in manual testing
   // but there's no way to guarantee it, so make it run-time conditional.
   if (reinterpret_cast<uintptr_t>(&point.f) % alignof(float) != 0) {
-    // ByteBuffer::As is essentially a pointer into the buffer contents, which will give us
-    // references that are not aligned to type requirements.
-    const float& through_as = view.As<Point>().f[0];
-    ASSERT_NE(0U, reinterpret_cast<uintptr_t>(&through_as) % alignof(float));
+    // Casting (which is UB here) a pointer into the buffer contents yields a pointer that is not
+    // aligned to type requirements
+    const float* unaligned_pointer = reinterpret_cast<const Point*>(view.data())->f;
+    ASSERT_NE(0U, reinterpret_cast<uintptr_t>(unaligned_pointer) % alignof(float));
   }
 
   // The same cref binds to a temporary new object that ByteBuffer::ReadMember creates, so the
