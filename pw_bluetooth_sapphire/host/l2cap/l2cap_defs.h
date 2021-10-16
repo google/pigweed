@@ -320,14 +320,10 @@ struct CommandHeader {
 constexpr CommandCode kCommandRejectCode = 0x01;
 constexpr size_t kCommandRejectMaxDataLength = 4;
 struct CommandRejectPayload {
-  CommandRejectPayload() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(CommandRejectPayload);
-
   // See RejectReason for possible values.
   uint16_t reason;
 
-  // Up to 4 octets of optional data (see Vol 3, Part A, Section 4.1)
-  uint8_t data[];
+  // Followed by up to 4 octets of optional data (see Vol 3, Part A, Section 4.1)
 } __PACKED;
 
 // Payload of Command Reject (see Vol 3, Part A, Section 4.1).
@@ -361,14 +357,10 @@ constexpr size_t kConfigurationOptionMaxDataLength = 22;
 
 // Element of configuration payload data (see Vol 3, Part A, Section 5)
 struct ConfigurationOption {
-  ConfigurationOption() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ConfigurationOption);
-
   OptionType type;
   uint8_t length;
 
-  // Up to 22 octets of data
-  uint8_t data[];
+  // Followed by configuration option-specific data
 } __PACKED;
 
 // Payload of Configuration Option (see Vol 3, Part A, Section 5.1)
@@ -393,28 +385,20 @@ struct RetransmissionAndFlowControlOptionPayload {
 } __PACKED;
 
 struct ConfigurationRequestPayload {
-  ConfigurationRequestPayload() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ConfigurationRequestPayload);
-
   ChannelId dst_cid;
   uint16_t flags;
 
   // Followed by zero or more configuration options of varying length
-  uint8_t data[];
 } __PACKED;
 
 // ACL-U
 constexpr CommandCode kConfigurationResponse = 0x05;
 struct ConfigurationResponsePayload {
-  ConfigurationResponsePayload() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ConfigurationResponsePayload);
-
   ChannelId src_cid;
   uint16_t flags;
   ConfigurationResult result;
 
   // Followed by zero or more configuration options of varying length
-  uint8_t data[];
 } __PACKED;
 
 // ACL-U & LE-U
@@ -447,14 +431,10 @@ struct InformationRequestPayload {
 constexpr CommandCode kInformationResponse = 0x0B;
 constexpr size_t kInformationResponseMaxDataLength = 8;
 struct InformationResponsePayload {
-  InformationResponsePayload() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(InformationResponsePayload);
-
   InformationType type;
   InformationResult result;
 
   // Up to 8 octets of optional data (see Vol 3, Part A, Section 4.11)
-  uint8_t data[];
 } __PACKED;
 
 // LE-U

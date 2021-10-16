@@ -79,17 +79,17 @@ class PacketView {
   }
 
   size_t size() const { return size_; }
-  size_t payload_size() const { return size() - sizeof(HeaderType); }
+  size_t payload_size() const {
+    ZX_ASSERT(size() >= sizeof(HeaderType));
+    return size() - sizeof(HeaderType);
+  }
 
   const uint8_t* payload_bytes() const {
     ZX_ASSERT(is_valid());
     return payload_size() ? buffer_->data() + sizeof(HeaderType) : nullptr;
   }
 
-  const HeaderType& header() const {
-    ZX_ASSERT(is_valid());
-    return *reinterpret_cast<const HeaderType*>(buffer_->data());
-  }
+  HeaderType header() const { return buffer_->To<HeaderType>(); }
 
   template <typename PayloadType>
   const PayloadType& payload() const {
