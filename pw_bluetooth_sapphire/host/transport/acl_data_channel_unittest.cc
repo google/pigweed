@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 #include <lib/async/cpp/task.h>
+#include <lib/fpromise/single_threaded_executor.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
@@ -137,6 +138,16 @@ TEST_F(ACLDataChannelTest, SendPacketBREDRBuffer) {
 
   EXPECT_EQ(5, handle0_packet_count);
   EXPECT_EQ(5, handle1_packet_count);
+}
+
+inspect::Hierarchy ReadInspect(inspect::Inspector& inspector) {
+  fpromise::single_threaded_executor executor;
+  fpromise::result<inspect::Hierarchy> hierarchy;
+  executor.schedule_task(inspect::ReadFromInspector(inspector).then(
+      [&](fpromise::result<inspect::Hierarchy>& res) { hierarchy = std::move(res); }));
+  executor.run();
+  ZX_ASSERT(hierarchy.is_ok());
+  return hierarchy.take_value();
 }
 
 // Test that SendPacket works using the LE buffer when no BR/EDR buffer is
@@ -1598,15 +1609,86 @@ TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
             PropertyList(UnorderedElementsAre(UintIs("num_sent_packets", kMaxNumPackets),
                                               BoolIs("independent_from_bredr", true)))));
 
+  auto send_latency_matcher =
+      NodeMatches(AllOf(NameMatches("send_latency"),
+                        PropertyList(UnorderedElementsAre(IntIs("50th_percentile_us", 0),
+                                                          IntIs("95th_percentile_us", 0),
+                                                          IntIs("99th_percentile_us", 0)))));
+
+  auto send_size_matcher =
+      NodeMatches(AllOf(NameMatches("send_size"),
+                        PropertyList(UnorderedElementsAre(UintIs("10th_percentile_bytes", 0),
+                                                          UintIs("50th_percentile_bytes", 0),
+                                                          UintIs("90th_percentile_bytes", 0)))));
+
+  auto metrics_matcher =
+      AllOf(NodeMatches(NameMatches("metrics")),
+            ChildrenMatch(UnorderedElementsAre(send_latency_matcher, send_size_matcher)));
+
   auto adc_matcher = AllOf(
       NodeMatches(AllOf(NameMatches(kNodeName),
                         PropertyList(UnorderedElementsAre(
                             UintIs("num_queued_packets", 2), UintIs("num_overflow_packets", 0),
                             UintIs("num_recent_overflow_packets", 0))))),
-      ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher)));
+      ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher, metrics_matcher)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(adc_matcher)));
+}
+
+TEST_F(ACLDataChannelTest, SendingPacketsUpdatesSendMetrics) {
+  constexpr size_t kMaxMtu = 4;
+  constexpr size_t kMaxNumPackets = 2;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets));
+
+  inspect::Inspector inspector;
+  acl_data_channel()->AttachInspect(inspector.GetRoot(), AclDataChannel::kInspectNodeName);
+
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
+
+  // Fill up controller buffers
+  for (size_t i = 0; i < kMaxNumPackets; ++i) {
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    ASSERT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+  RunLoopUntilIdle();
+
+  // Send enough data that metrics are exported
+  constexpr size_t kNumTestPackets = 256;
+  constexpr zx::duration kSendLatency = zx::msec(1);
+  for (size_t i = 0; i < kNumTestPackets; ++i) {
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    ASSERT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
+    RunLoopFor(kSendLatency);
+    test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle0, 1));
+    RunLoopUntilIdle();
+  }
+
+  // Wait for the metric writing task to catch up
+  RunLoopRepeatedlyFor(zx::min(1));
+
+  inspect::Hierarchy hierarchy = ReadInspect(inspector);
+  const inspect::Hierarchy* const send_latency_node =
+      hierarchy.GetByPath({AclDataChannel::kInspectNodeName, "metrics", "send_latency"});
+  ASSERT_TRUE(send_latency_node);
+  const auto* const send_latency_median_wrapped =
+      send_latency_node->node().get_property<inspect::IntPropertyValue>("50th_percentile_us");
+  ASSERT_TRUE(send_latency_median_wrapped);
+  EXPECT_EQ(kSendLatency.to_usecs(), send_latency_median_wrapped->value());
+
+  const inspect::Hierarchy* const send_size_node =
+      hierarchy.GetByPath({AclDataChannel::kInspectNodeName, "metrics", "send_size"});
+  ASSERT_TRUE(send_size_node);
+  const auto* const send_size_median_wrapped =
+      send_size_node->node().get_property<inspect::UintPropertyValue>("50th_percentile_bytes");
+  ASSERT_TRUE(send_size_median_wrapped);
+  EXPECT_EQ(kMaxMtu, send_size_median_wrapped->value());
 }
 
 }  // namespace

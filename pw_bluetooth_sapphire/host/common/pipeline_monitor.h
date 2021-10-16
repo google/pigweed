@@ -9,6 +9,7 @@
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
 #include <lib/fit/nullable.h>
+#include <lib/stdcompat/type_traits.h>
 #include <zircon/assert.h>
 
 #include <functional>
@@ -72,8 +73,7 @@ class PipelineMonitor final {
 
    private:
     friend class PipelineMonitor;
-    Token(fxl::WeakPtr<PipelineMonitor> parent, TokenId id)
-        : parent_(std::move(parent)), id_(id) {}
+    Token(fxl::WeakPtr<PipelineMonitor> parent, TokenId id) : parent_(std::move(parent)), id_(id) {}
 
     const fxl::WeakPtr<PipelineMonitor> parent_;
     TokenId id_ = kInvalidTokenId;
@@ -155,11 +155,8 @@ class PipelineMonitor final {
 
   // Convenience function to set a single listener for all of |alerts|, called if any of the alerts
   // defined by |thresholds| are triggered.
-  //
-  // Note: std::remove_cv is used to make |listener|'s type deduced from |thresholds| and should/can
-  // be replaced with std::identity in C++20.
   template <typename... AlertTypes>
-  void SetAlerts(fit::function<void(std::variant<std::remove_cv_t<AlertTypes>...>)> listener,
+  void SetAlerts(fit::function<void(std::variant<cpp20::type_identity_t<AlertTypes>...>)> listener,
                  AlertTypes... thresholds) {
     // This is a fold expression over the comma (,) operator with SetAlert.
     (SetAlert<AlertTypes>(thresholds, listener.share()), ...);

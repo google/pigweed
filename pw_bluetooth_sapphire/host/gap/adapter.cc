@@ -831,6 +831,7 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
     callback(false);
     return;
   }
+  hci_->AttachInspect(adapter_node_);
 
   // Create the data domain, if we haven't been provided one. Doing so here lets us guarantee that
   // AclDataChannel's lifetime is a superset of Data L2cap's lifetime.

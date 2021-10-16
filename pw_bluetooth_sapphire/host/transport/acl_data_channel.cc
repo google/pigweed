@@ -19,6 +19,8 @@
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/pipeline_monitor.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
@@ -102,10 +104,14 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Represents a queued ACL data packet.
   struct QueuedDataPacket {
     QueuedDataPacket(bt::LinkType ll_type, UniqueChannelId channel_id, PacketPriority priority,
-                     ACLDataPacketPtr packet)
-        : ll_type(ll_type), channel_id(channel_id), priority(priority), packet(std::move(packet)) {}
+                     ACLDataPacketPtr packet, PipelineMonitor::Token token)
+        : ll_type(ll_type),
+          channel_id(channel_id),
+          priority(priority),
+          packet(std::move(packet)),
+          token(std::move(token)) {}
 
-    QueuedDataPacket() = default;
+    QueuedDataPacket() = delete;
     QueuedDataPacket(QueuedDataPacket&& other) = default;
     QueuedDataPacket& operator=(QueuedDataPacket&& other) = default;
 
@@ -113,6 +119,7 @@ class AclDataChannelImpl final : public AclDataChannel {
     UniqueChannelId channel_id;
     PacketPriority priority;
     ACLDataPacketPtr packet;
+    PipelineMonitor::Token token;
   };
 
   using DataPacketQueue = std::list<QueuedDataPacket>;
@@ -169,6 +176,10 @@ class AclDataChannelImpl final : public AclDataChannel {
   void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
                       const zx_packet_signal_t* signal);
 
+  // Compute and write quantiles of send latency metrics to Inspect properties. Should only be
+  // called by |write_send_metrics_task_|.
+  void WriteSendMetrics();
+
   // Handler for HCI_Buffer_Overflow_event
   CommandChannel::EventCallbackResult DataBufferOverflowCallback(const EventPacket& event);
 
@@ -179,6 +190,25 @@ class AclDataChannelImpl final : public AclDataChannel {
   inspect::Node le_subnode_;
   inspect::BoolProperty le_subnode_shared_with_bredr_property_;
   inspect::Node bredr_subnode_;
+  inspect::Node metrics_subnode_;
+  inspect::Node send_latency_subnode_;
+  struct {
+    const double quantile;
+    const char* const name;
+    IntInspectable<zx::duration> property{std::mem_fn(&zx::duration::to_usecs)};
+  } send_latency_properties_[3] = {
+      {0.5, "50th_percentile_us"}, {0.95, "95th_percentile_us"}, {0.99, "99th_percentile_us"}};
+  inspect::Node send_size_subnode_;
+  struct {
+    const double quantile;
+    const char* const name;
+    UintInspectable<size_t> property{};
+  } send_size_properties_[3] = {{0.1, "10th_percentile_bytes"},
+                                {0.5, "50th_percentile_bytes"},
+                                {0.9, "90th_percentile_bytes"}};
+
+  async::TaskClosureMethod<AclDataChannelImpl, &AclDataChannelImpl::WriteSendMetrics>
+      write_send_metrics_task_{this};
 
   // Used to assert that certain public functions are only called on the creation thread.
   fit::thread_checker thread_checker_;
@@ -223,14 +253,22 @@ class AclDataChannelImpl final : public AclDataChannel {
   UintInspectable<size_t> num_sent_packets_;
   UintInspectable<size_t> le_num_sent_packets_;
 
+  // Tracks statistics related to the lifetime of queued outbound data. Data is exported to the
+  // Inspect hierarchy using WriteSendMetrics.
+  //
+  // TODO(fxbug.dev/71342): When PipelineMonitor tokens can better represent chunked data with life
+  // stages, hoist PipelineMonitor into a more visible state holder (Adapter?) so tokens are issued
+  // when we pull data from the profile channel socket.
+  PipelineMonitor send_monitor_;
+
   // Counts of automatically-discarded packets on each channel due to overflow. Cleared by
   // LogDroppedOverflowPackets.
   std::map<std::pair<hci_spec::ConnectionHandle, UniqueChannelId>, int64_t> dropped_packet_counts_;
 
   // Lifetime and recent counts of overflow packets that have been dropped.
   UintInspectable<size_t> num_overflow_packets_;
-  WindowedInspectUintProperty num_recent_overflow_packets_ =
-      WindowedInspectUintProperty(zx::min(3), zx::min(3) / 100);
+  WindowedInspectUintProperty num_recent_overflow_packets_{/*expiry_duration=*/zx::min(3),
+                                                           /*min_resolution=*/zx::min(3) / 100};
 
   async::TaskClosureMethod<AclDataChannelImpl, &AclDataChannelImpl::LogDroppedOverflowPackets>
       log_dropped_overflow_task_{this};
@@ -245,8 +283,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   //     with LinkedList<ACLDataPacket> which has a more efficient
   //     memory layout.
   using InspectableDataPacketQueue = Inspectable<DataPacketQueue, inspect::UintProperty, size_t>;
-  InspectableDataPacketQueue send_queue_ =
-      InspectableDataPacketQueue(std::mem_fn(&DataPacketQueue::size));
+  InspectableDataPacketQueue send_queue_{std::mem_fn(&DataPacketQueue::size)};
 
   // Returns an iterator to the location new packets should be inserted into |send_queue_| based on
   // their |priority|:
@@ -287,7 +324,10 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, zx::channel hci_acl
       is_initialized_(false),
       num_completed_packets_event_handler_id_(0u),
       data_buffer_overflow_event_handler_id_(0u),
-      io_dispatcher_(nullptr) {
+      io_dispatcher_(nullptr),
+      send_monitor_(fit::nullable(io_dispatcher_),
+                    // Buffer depth for ~3 minutes of audio assuming ~50 ACL fragments/s send rate
+                    internal::RetireLog(/*min_depth=*/100, /*max_depth=*/1 << 13)) {
   // TODO(armansito): We'll need to pay attention to ZX_CHANNEL_WRITABLE as
   // well.
   ZX_DEBUG_ASSERT(transport_);
@@ -354,6 +394,16 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent, std::string name) 
   le_num_sent_packets_.AttachInspect(le_subnode_, "num_sent_packets");
   le_subnode_shared_with_bredr_property_ =
       le_subnode_.CreateBool("independent_from_bredr", le_buffer_info_.IsAvailable());
+
+  metrics_subnode_ = node_.CreateChild("metrics");
+  send_latency_subnode_ = metrics_subnode_.CreateChild("send_latency");
+  for (auto& [_, name, property] : send_latency_properties_) {
+    property.AttachInspect(send_latency_subnode_, name);
+  }
+  send_size_subnode_ = metrics_subnode_.CreateChild("send_size");
+  for (auto& [_, name, property] : send_size_properties_) {
+    property.AttachInspect(send_size_subnode_, name);
+  }
 }
 
 void AclDataChannelImpl::ShutDown() {
@@ -363,6 +413,7 @@ void AclDataChannelImpl::ShutDown() {
 
   bt_log(INFO, "hci", "shutting down");
 
+  write_send_metrics_task_.Cancel();
   log_dropped_overflow_task_.Cancel();
 
   auto handler_cleanup_task = [this] {
@@ -444,7 +495,9 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
   for (int i = 0; !packets.is_empty(); i++) {
     auto packet = packets.pop_front();
     auto ll_type = registered_links_[packet->connection_handle()];
-    auto queue_packet = QueuedDataPacket(ll_type, channel_id, priority, std::move(packet));
+    const size_t payload_size = packet->view().payload_size();
+    auto queue_packet = QueuedDataPacket(ll_type, channel_id, priority, std::move(packet),
+                                         send_monitor_.Issue(payload_size));
     if (i == 0) {
       if (queue_packet.priority == PacketPriority::kLow && ll_type == bt::LinkType::kACL) {
         DropOverflowPacket(queue_packet);
@@ -828,6 +881,14 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
 
   IncrementTotalNumPackets(bredr_packets_sent);
   IncrementLETotalNumPackets(le_packets_sent);
+
+  // Schedule a deadline to re-compute the send statistics and write them to Inspect. The scheduling
+  // is performed lazily so that no expensive computation occurs if no data is being sent
+  if (!write_send_metrics_task_.is_pending()) {
+    // This backs off the statistic computation in order to limit the rate at which it runs
+    constexpr zx::duration kMinStatisticsInterval = zx::sec(5);
+    write_send_metrics_task_.PostDelayed(io_dispatcher_, kMinStatisticsInterval);
+  }
 }
 
 size_t AclDataChannelImpl::GetNumFreeBREDRPackets() const {
@@ -916,6 +977,33 @@ void AclDataChannelImpl::OnChannelReady(async_dispatcher_t* dispatcher, async::W
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
   }
+}
+
+void AclDataChannelImpl::WriteSendMetrics() {
+  if (!node_) {
+    return;
+  }
+
+  auto compute_metrics_for_properties = [](auto properties, auto size_fn, auto compute_quantiles) {
+    std::array<double, size_fn()> quantiles;
+    for (size_t i = 0; i < quantiles.size(); i++) {
+      quantiles[i] = properties[i].quantile;
+    }
+    auto samples = compute_quantiles(quantiles);
+    if (samples.has_value()) {
+      for (size_t i = 0; i < samples->size(); i++) {
+        properties[i].property.Set(samples.value()[i]);
+      }
+    }
+  };
+  compute_metrics_for_properties(
+      send_latency_properties_, []() { return std::extent_v<decltype(send_latency_properties_)>; },
+      [this](auto quantiles) { return send_monitor_.retire_log().ComputeAgeQuantiles(quantiles); });
+  compute_metrics_for_properties(
+      send_size_properties_, []() { return std::extent_v<decltype(send_size_properties_)>; },
+      [this](auto quantiles) {
+        return send_monitor_.retire_log().ComputeByteCountQuantiles(quantiles);
+      });
 }
 
 AclDataChannelImpl::DataPacketQueue::const_iterator

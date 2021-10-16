@@ -906,6 +906,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
   auto bredr_connection_manager_matcher = NodeMatches(NameMatches("bredr_connection_manager"));
   auto peer_cache_matcher = NodeMatches(NameMatches(PeerCache::kInspectNodeName));
   auto sdp_server_matcher = NodeMatches(NameMatches(sdp::Server::kInspectNodeName));
+  auto acl_data_channel_matcher = NodeMatches(NameMatches(hci::AclDataChannel::kInspectNodeName));
   auto le_matcher = AllOf(NodeMatches(
       AllOf(NameMatches("le"),
             PropertyList(UnorderedElementsAre(
@@ -947,7 +948,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
       ChildrenMatch(UnorderedElementsAre(
           peer_cache_matcher, sdp_server_matcher, le_connection_manager_matcher,
           bredr_connection_manager_matcher, le_discovery_manager_matcher, metrics_node_matcher,
-          bredr_discovery_manager_matcher)));
+          bredr_discovery_manager_matcher, acl_data_channel_matcher)));
 
   auto bt_host_matcher = AllOf(NodeMatches(NameMatches("bt-host")),
                                ChildrenMatch(UnorderedElementsAre(adapter_matcher)));
