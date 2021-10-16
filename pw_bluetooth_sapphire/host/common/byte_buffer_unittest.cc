@@ -164,7 +164,7 @@ TEST(ByteBufferTest, MutableBufferViewTest) {
   EXPECT_EQ(kViewSize, view.size());
 }
 
-TEST(ByteBufferTest, Copy) {
+TEST(ByteBufferDeathTest, Copy) {
   auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
   BufferView empty_buffer;
 
@@ -305,6 +305,104 @@ TEST(ByteBufferTest, ByteBufferAsArray) {
   EXPECT_EQ(25, array[1]);
 }
 
+TEST(ByteBufferDeathTest, ByteBufferWithInsufficientBytesAssertsOnTo) {
+  StaticByteBuffer buffer(0, 0, 0);
+  ASSERT_GT(sizeof(float), buffer.size());
+  EXPECT_DEATH_IF_SUPPORTED([=] { [[maybe_unused]] auto _ = buffer.To<float>(); }(),
+                            "end exceeds source range");
+}
+
+template <typename T>
+void TestByteBufferRoundtrip(std::initializer_list<T> values) {
+  for (auto value : values) {
+    BufferView value_view(&value, sizeof(value));
+    auto to_value = value_view.To<T>();
+    SCOPED_TRACE(value);
+    EXPECT_EQ(0, std::memcmp(&value, &to_value, sizeof(T)));
+  }
+}
+
+TEST(ByteBufferTest, ByteBufferToRoundtripOnPrimitives) {
+  // Test values from absl::bit_cast tests
+  {
+    SCOPED_TRACE("bool");
+    TestByteBufferRoundtrip<bool>({true, false});
+  }
+  {
+    SCOPED_TRACE("array 1 of const bool");
+    TestByteBufferRoundtrip<const bool[1]>({{true}, {false}});
+  }
+  {
+    SCOPED_TRACE("int32_t");
+    TestByteBufferRoundtrip<int32_t>(
+        {0, 1, 100, 2147483647, -1, -100, -2147483647, -2147483647 - 1});
+  }
+  {
+    SCOPED_TRACE("int64_t");
+    TestByteBufferRoundtrip<int64_t>({0, 1, 1LL << 40, -1, -(1LL << 40)});
+  }
+  {
+    SCOPED_TRACE("uint64_t");
+    TestByteBufferRoundtrip<uint64_t>({0, 1, 1LLU << 40, 1LLU << 63});
+  }
+  {
+    SCOPED_TRACE("float");
+    TestByteBufferRoundtrip<float>(
+        {0.0f, 1.0f, -1.0f, 10.0f, -10.0f, 1e10f, 1e20f, 1e-10f, 1e-20f, 2.71828f, 3.14159f});
+  }
+  {
+    SCOPED_TRACE("double");
+    TestByteBufferRoundtrip<double>(
+        {0.0, 1.0, -1.0, 10.0, -10.0, 1e10, 1e100, 1e-10, 1e-100, 2.718281828459045,
+         3.141592653589793238462643383279502884197169399375105820974944});
+  }
+}
+
+TEST(ByteBufferTest, ByteBufferToStripsCvQualifiers) {
+  auto to_value = StaticByteBuffer(2).To<const volatile char>();
+  static_assert(std::is_same_v<char, decltype(to_value)>);
+}
+
+TEST(ByteBufferTest, ByteBufferWithAdditionalBytesToBasicType) {
+  EXPECT_EQ(191u, StaticByteBuffer(191, 25).To<uint8_t>());
+}
+
+TEST(ByteBufferTest, ByteBufferToStruct) {
+  const StaticByteBuffer data(10, 12);
+  struct [[gnu::packed]] point {
+    uint8_t x;
+    uint8_t y;
+  };
+  EXPECT_EQ(10, data.To<point>().x);
+  EXPECT_EQ(12, data.To<point>().y);
+}
+
+TEST(ByteBufferTest, ByteBufferToArray) {
+  const StaticByteBuffer buf(191, 25);
+  const auto array = buf.To<uint8_t[2]>();
+  EXPECT_EQ(buf.size(), array.size());
+  EXPECT_EQ(191, array[0]);
+  EXPECT_EQ(25, array[1]);
+}
+
+TEST(ByteBufferTest, ByteBufferToDoesNotReadUnaligned) {
+  const DynamicByteBuffer buf(2 * sizeof(float) - 1);
+
+  // Advance past the float alignment boundary
+  const size_t offset =
+      std::distance(buf.begin(), std::find_if(buf.begin(), buf.end(), [](auto& b) {
+                      return reinterpret_cast<uintptr_t>(&b) % alignof(float) != 0;
+                    }));
+  BufferView view = buf.view(offset, sizeof(float));
+
+  // Prove that the data in the view isn't aligned for a float
+  ASSERT_NE(0U, reinterpret_cast<uintptr_t>(view.data()) % alignof(float));
+
+  // This cref binds to a new object that ByteBuffer::To creates, so the alignment is correct
+  const float& to_object = view.To<float>();
+  EXPECT_EQ(0U, reinterpret_cast<uintptr_t>(&to_object) % alignof(float));
+}
+
 TEST(ByteBufferTest, ByteBufferReadMember) {
   struct [[gnu::packed]] Point {
     uint8_t x;
@@ -334,7 +432,7 @@ TEST(ByteBufferTest, ByteBufferReadMember) {
   EXPECT_THAT(multi, ::testing::ElementsAre(std::array{char{0x7f}}, std::array{char{0x02}}));
 }
 
-TEST(ByteBufferTest, ByteBufferReadMemberOfFixedArrayType) {
+TEST(ByteBufferDeathTest, ByteBufferReadMemberOfFixedArrayType) {
   struct [[gnu::packed]] Point {
     float f;
     int8_t coordinates[3];
@@ -365,7 +463,7 @@ TEST(ByteBufferTest, ByteBufferReadMemberOfFixedArrayType) {
   EXPECT_EQ(data[offsetof(Point, multi) + 1], inner.at(0));
 }
 
-TEST(ByteBufferTest, ByteBufferReadMemberOfStdArrayType) {
+TEST(ByteBufferDeathTest, ByteBufferReadMemberOfStdArrayType) {
   struct [[gnu::packed]] Point {
     float f;
     std::array<int8_t, 3> coordinates;
@@ -379,7 +477,7 @@ TEST(ByteBufferTest, ByteBufferReadMemberOfStdArrayType) {
   EXPECT_EQ(data[offsetof(Point, coordinates) + 1], data.ReadMember<&Point::coordinates>(1));
 }
 
-TEST(ByteBufferTest, ByteBufferReadMemberOfFlexibleArrayType) {
+TEST(ByteBufferDeathTest, ByteBufferReadMemberOfFlexibleArrayType) {
   struct [[gnu::packed]] Point {
     uint16_t dimensions;
     int8_t coordinates[];
@@ -446,7 +544,7 @@ TEST(ByteBufferTest, MutableByteBufferAsMutableArray) {
   EXPECT_EQ(13, buf[1]);
 }
 
-TEST(ByteBufferTest, MutableByteBufferWrite) {
+TEST(ByteBufferDeathTest, MutableByteBufferWrite) {
   const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
   const auto kData1 = CreateStaticByteBuffer('F', 'o', 'o');
 

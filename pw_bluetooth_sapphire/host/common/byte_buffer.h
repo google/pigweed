@@ -108,6 +108,26 @@ class ByteBuffer {
     return *reinterpret_cast<const T*>(data());
   }
 
+  // Creates an object of type T with the first sizeof(T) bytes of the buffer as its representation
+  // (per definition at ISO/IEC 14882:2017(E) § 6.9 [basic.types] ¶ 4.4). The user is responsible
+  // for checking that the first sizeof(T) bytes represent a valid instance of T. If T is an array
+  // type, the return value will be a std::array with the same element type and extents.
+  template <typename T>
+  [[nodiscard]] auto To() const {
+    static_assert(std::is_trivially_copyable_v<T>, "unsafe to copy representation");
+    static_assert(std::is_default_constructible_v<T>);
+    using OutType = std::remove_cv_t<bt_lib_cpp_type::ToStdArrayT<T>>;
+
+    // This is value-initialized in order to construct objects that have const members. The
+    // consideration for modifying the object through its representation even if the constituent
+    // types are cv-qualified is based on the potent rules for memcpy'ing "underlying bytes" at
+    // ISO/IEC 14882:2017(E) § 6.9 [basic.types] ¶ 4.2–4.3.
+    OutType out{};
+    CopyRaw(/*dst_data=*/std::addressof(out), /*dst_capacity=*/sizeof(out), /*src_offset=*/0,
+            /*copy_size=*/sizeof(out));
+    return out;
+  }
+
   // Given a pointer to a member of a class, interpret the underlying buffer as a representation of
   // the class and return a copy of the member, with bounds checking for reading the representation.
   // Array elements (including multi-dimensional) will be returned as std::array. The buffer is
