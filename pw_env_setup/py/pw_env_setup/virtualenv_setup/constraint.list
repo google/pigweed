@@ -8,7 +8,7 @@ beautifulsoup4==4.10.0
 blockdiag==2.0.1
 build==0.7.0
 certifi==2021.10.8
-cffi==1.14.6
+cffi==1.15.0
 charset-normalizer==2.0.7
 coloredlogs==15.0.1
 cryptography==35.0.0
@@ -21,7 +21,7 @@ grpcio==1.41.0
 grpcio-tools==1.41.0
 httpwatcher==0.5.2
 humanfriendly==10.0
-idna==3.2
+idna==3.3
 imagesize==1.2.0
 ipython==7.28.0
 isort==5.9.3
@@ -57,7 +57,7 @@ pyparsing==2.4.7
 pyperclip==1.8.2
 pyserial==3.5
 pytz==2021.3
-PyYAML==5.4.1
+PyYAML==6.0
 requests==2.26.0
 robotframework==3.1
 scan-build==2.0.19
@@ -86,10 +86,10 @@ tornado==4.5.3
 traitlets==5.1.0
 types-docutils==0.17.1
 types-futures==3.3.1
-types-protobuf==3.17.5
+types-protobuf==3.18.0
 types-Pygments==2.9.3
-types-PyYAML==5.4.11
-types-setuptools==57.4.1
+types-PyYAML==5.4.12
+types-setuptools==57.4.2
 types-six==1.16.2
 typing-extensions==3.10.0.2
 urllib3==1.26.7
