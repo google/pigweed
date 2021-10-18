@@ -43,13 +43,19 @@ def process_snapshot(
         ThreadSnapshotAnalyzer(captured_threads, tokenizer_db, symbolizer))
 
 
-class StackInfo:
-    """Provides stack-related information that can be inferred from a Thread."""
+class ThreadInfo:
+    """Provides CPU and stack information that can be inferred from a Thread."""
 
     _UNKNOWN_VALUE_STR = '0x' + '?' * 8
 
     def __init__(self, thread: thread_pb2.Thread):
         self._thread = thread
+
+    def _cpu_used_str(self) -> str:
+        if not self._thread.HasField('cpu_usage_hundredths'):
+            return 'unknown'
+        cpu_last_percent = (self._thread.cpu_usage_hundredths / 100)
+        return f'{cpu_last_percent:.2f}%'
 
     def _stack_size_limit_limit_str(self) -> str:
         if not self.has_stack_size_limit():
@@ -82,10 +88,10 @@ class StackInfo:
     def _stack_used_range_str(self) -> str:
         start_str = (f'0x{self._thread.stack_start_pointer:08x}'
                      if self._thread.HasField('stack_start_pointer') else
-                     StackInfo._UNKNOWN_VALUE_STR)
+                     ThreadInfo._UNKNOWN_VALUE_STR)
         end_str = (f'0x{self._thread.stack_pointer:08x}'
                    if self._thread.HasField('stack_pointer') else
-                   StackInfo._UNKNOWN_VALUE_STR)
+                   ThreadInfo._UNKNOWN_VALUE_STR)
 
         # TODO(amontanez): Would be nice to represent stack growth direction.
         return f'{start_str} - {end_str} ({self._stack_used_str()})'
@@ -93,10 +99,10 @@ class StackInfo:
     def _stack_limit_range_str(self) -> str:
         start_str = (f'0x{self._thread.stack_start_pointer:08x}'
                      if self._thread.HasField('stack_start_pointer') else
-                     StackInfo._UNKNOWN_VALUE_STR)
+                     ThreadInfo._UNKNOWN_VALUE_STR)
         end_str = (f'0x{self._thread.stack_end_pointer:08x}'
                    if self._thread.HasField('stack_end_pointer') else
-                   StackInfo._UNKNOWN_VALUE_STR)
+                   ThreadInfo._UNKNOWN_VALUE_STR)
 
         # TODO(amontanez): Would be nice to represent stack growth direction.
         return f'{start_str} - {end_str} ({self._stack_size_limit_limit_str()})'
@@ -104,7 +110,7 @@ class StackInfo:
     def _stack_pointer_str(self) -> str:
         return (f'0x{self._thread.stack_end_pointer:08x}'
                 if self._thread.HasField('stack_pointer') else
-                StackInfo._UNKNOWN_VALUE_STR)
+                ThreadInfo._UNKNOWN_VALUE_STR)
 
     def has_stack_size_limit(self) -> bool:
         """Returns true if there's enough info to calculate stack size."""
@@ -155,6 +161,7 @@ class StackInfo:
 
     def __str__(self) -> str:
         output = [
+            f'Est CPU usage: {self._cpu_used_str()}',
             'Stack info',
             f'  Current usage:   {self._stack_used_range_str()}',
             f'  Est peak usage:  {self._stack_pointer_est_peak_str()}',
@@ -228,7 +235,7 @@ class ThreadSnapshotAnalyzer:
             if self.active_thread() == thread:
                 thread_headline += ' <-- [ACTIVE]'
             output.append(thread_headline)
-            output.append(str(StackInfo(thread)))
+            output.append(str(ThreadInfo(thread)))
             if thread.raw_backtrace:
                 output.append(
                     self._symbolizer.dump_stack_trace(thread.raw_backtrace))

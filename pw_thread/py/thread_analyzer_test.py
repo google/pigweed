@@ -15,67 +15,81 @@
 """Tests for the thread analyzer."""
 
 import unittest
-from pw_thread.thread_analyzer import StackInfo, ThreadSnapshotAnalyzer
+from pw_thread.thread_analyzer import ThreadInfo, ThreadSnapshotAnalyzer
 from pw_thread_protos import thread_pb2
 
 
-class StackInfoTest(unittest.TestCase):
-    """Tests that the StackInfo class produces expected results."""
+class ThreadInfoTest(unittest.TestCase):
+    """Tests that the ThreadInfo class produces expected results."""
     def test_empty_thread(self):
-        stack_info = StackInfo(thread_pb2.Thread())
+        thread_info = ThreadInfo(thread_pb2.Thread())
         expected = '\n'.join(
-            ('Stack info',
+            ('Est CPU usage: unknown', 'Stack info',
              '  Current usage:   0x???????? - 0x???????? (size unknown)',
              '  Est peak usage:  size unknown',
              '  Stack limits:    0x???????? - 0x???????? (size unknown)'))
-        self.assertFalse(stack_info.has_stack_size_limit())
-        self.assertFalse(stack_info.has_stack_used())
-        self.assertEqual(expected, str(stack_info))
+        self.assertFalse(thread_info.has_stack_size_limit())
+        self.assertFalse(thread_info.has_stack_used())
+        self.assertEqual(expected, str(thread_info))
+
+    def test_thread_with_cpu_usage(self):
+        thread = thread_pb2.Thread()
+        thread.cpu_usage_hundredths = 1234
+        thread_info = ThreadInfo(thread)
+
+        expected = '\n'.join(
+            ('Est CPU usage: 12.34%', 'Stack info',
+             '  Current usage:   0x???????? - 0x???????? (size unknown)',
+             '  Est peak usage:  size unknown',
+             '  Stack limits:    0x???????? - 0x???????? (size unknown)'))
+        self.assertFalse(thread_info.has_stack_size_limit())
+        self.assertFalse(thread_info.has_stack_used())
+        self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_stack_pointer(self):
         thread = thread_pb2.Thread()
         thread.stack_pointer = 0x5AC6A86C
-        stack_info = StackInfo(thread)
+        thread_info = ThreadInfo(thread)
 
         expected = '\n'.join(
-            ('Stack info',
+            ('Est CPU usage: unknown', 'Stack info',
              '  Current usage:   0x???????? - 0x5ac6a86c (size unknown)',
              '  Est peak usage:  size unknown',
              '  Stack limits:    0x???????? - 0x???????? (size unknown)'))
-        self.assertFalse(stack_info.has_stack_size_limit())
-        self.assertFalse(stack_info.has_stack_used())
-        self.assertEqual(expected, str(stack_info))
+        self.assertFalse(thread_info.has_stack_size_limit())
+        self.assertFalse(thread_info.has_stack_used())
+        self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_stack_usage(self):
         thread = thread_pb2.Thread()
         thread.stack_start_pointer = 0x5AC6B86C
         thread.stack_pointer = 0x5AC6A86C
-        stack_info = StackInfo(thread)
+        thread_info = ThreadInfo(thread)
 
         expected = '\n'.join(
-            ('Stack info',
+            ('Est CPU usage: unknown', 'Stack info',
              '  Current usage:   0x5ac6b86c - 0x5ac6a86c (4096 bytes)',
              '  Est peak usage:  size unknown',
              '  Stack limits:    0x5ac6b86c - 0x???????? (size unknown)'))
-        self.assertFalse(stack_info.has_stack_size_limit())
-        self.assertTrue(stack_info.has_stack_used())
-        self.assertEqual(expected, str(stack_info))
+        self.assertFalse(thread_info.has_stack_size_limit())
+        self.assertTrue(thread_info.has_stack_used())
+        self.assertEqual(expected, str(thread_info))
 
     def test_thread_with_all_stack_info(self):
         thread = thread_pb2.Thread()
         thread.stack_start_pointer = 0x5AC6B86C
         thread.stack_end_pointer = 0x5AC6986C
         thread.stack_pointer = 0x5AC6A86C
-        stack_info = StackInfo(thread)
+        thread_info = ThreadInfo(thread)
 
         expected = '\n'.join(
-            ('Stack info',
+            ('Est CPU usage: unknown', 'Stack info',
              '  Current usage:   0x5ac6b86c - 0x5ac6a86c (4096 bytes, 50.00%)',
              '  Est peak usage:  size unknown',
              '  Stack limits:    0x5ac6b86c - 0x5ac6986c (8192 bytes)'))
-        self.assertTrue(stack_info.has_stack_size_limit())
-        self.assertTrue(stack_info.has_stack_used())
-        self.assertEqual(expected, str(stack_info))
+        self.assertTrue(thread_info.has_stack_size_limit())
+        self.assertTrue(thread_info.has_stack_used())
+        self.assertEqual(expected, str(thread_info))
 
 
 class ThreadSnapshotAnalyzerTest(unittest.TestCase):
@@ -92,6 +106,7 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
             '  1 thread running.',
             '',
             'Thread (UNKNOWN): [unnamed thread]',
+            'Est CPU usage: unknown',
             'Stack info',
             '  Current usage:   0x???????? - 0x???????? (size unknown)',
             '  Est peak usage:  size unknown',
@@ -127,12 +142,14 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
             '  2 threads running.',
             '',
             'Thread (READY): Idle',
+            'Est CPU usage: unknown',
             'Stack info',
             '  Current usage:   0x2001ac00 - 0x2001ab0c (244 bytes, 47.66%)',
             '  Est peak usage:  512 bytes, 100.00%',
             '  Stack limits:    0x2001ac00 - 0x2001aa00 (512 bytes)',
             '',
             'Thread (INTERRUPT_HANDLER): Main/Handler',
+            'Est CPU usage: unknown',
             'Stack info',
             '  Current usage:   0x2001b000 - 0x2001ae20 (480 bytes)',
             '  Est peak usage:  size unknown',
@@ -172,12 +189,14 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
             '',
             # Ensure the active thread is moved to the top of the list.
             'Thread (INTERRUPT_HANDLER): Main/Handler <-- [ACTIVE]',
+            'Est CPU usage: unknown',
             'Stack info',
             '  Current usage:   0x2001b000 - 0x2001ae20 (480 bytes)',
             '  Est peak usage:  512 bytes',
             '  Stack limits:    0x2001b000 - 0x???????? (size unknown)',
             '',
             'Thread (READY): Idle',
+            'Est CPU usage: unknown',
             'Stack info',
             '  Current usage:   0x2001ac00 - 0x2001ab0c (244 bytes, 47.66%)',
             '  Est peak usage:  256 bytes, 50.00%',

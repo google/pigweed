@@ -133,11 +133,13 @@ optionally be passed to the tool to detokenize applicable fields.
                        ~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Thread (INTERRUPT_HANDLER): Main Stack (Handler Mode) <-- [ACTIVE]
+  Est CPU usage: unknown
   Stack info
     Stack used:   0x2001b000 - 0x2001ae20 (480 bytes)
     Stack limits: 0x2001b000 - 0x???????? (size unknown)
 
   Thread (RUNNING): Idle
+  Est CPU usage: unknown
   Stack info
     Stack used:   0x2001ac00 - 0x2001ab0c (244 bytes, 47.66%)
     Stack limits: 0x2001ac00 - 0x2001aa00 (512 bytes)
