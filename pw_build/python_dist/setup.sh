@@ -20,10 +20,16 @@ SRC="${BASH_SOURCE[0]}"
 DIR="$(python3 -c "import os; print(os.path.dirname(os.path.abspath(os.path.realpath(\"$SRC\"))))")"
 VENV="${DIR}/python-venv"
 PY_TO_TEST="python3"
+CONSTRAINTS_PATH="${DIR}/constraints.txt"
 
 if [ ! -z "${1-}" ]; then
   VENV="${1-}"
   PY_TO_TEST="${VENV}/bin/python"
+fi
+
+CONSTRAINTS_ARG=""
+if [ -f ${CONSTRAINTS_PATH} ]; then
+    CONSTRAINTS_ARG="-c ${CONSTRAINTS_PATH}"
 fi
 
 PY_MAJOR_VERSION=$(${PY_TO_TEST} -c "import sys; print(sys.version_info[0])")
@@ -42,12 +48,18 @@ fi
 
 ${VENV}/bin/python -m pip install --upgrade pip
 
+# Uninstall wheels first, in case installing over an existing venv. This is a
+# faster and less destructive approach than --force-reinstall to ensure wheels
+# whose version numbers haven't incremented still get reinstalled.
+for wheel in $(ls ${DIR}/python_wheels/*.whl)
+do
+    ${VENV}/bin/python -m pip uninstall --yes $wheel
+done
+
 for wheel in $(ls ${DIR}/python_wheels/*.whl)
 do
     ${VENV}/bin/python -m pip install \
-    --upgrade --force-reinstall \
-    --find-links=${DIR}/python_wheels \
-    $wheel
+    --upgrade --find-links=${DIR}/python_wheels ${CONSTRAINTS_ARG} $wheel
 done
 
 exit 0

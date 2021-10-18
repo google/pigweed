@@ -13,11 +13,17 @@
 :: the License.
 @echo off
 
+:: Check for the existence of a pip constraints file.
+set constraints_arg=""
+if exist %~dp0constraints.txt (
+    set constraints_arg="-c %~dp0constraints.txt"
+)
+
 :: Generate python virtual environment using existing python.
-python3 -m venv %~dp0\python-venv
+python3 -m venv %~dp0python-venv
 
 :: Install pip inside the virtual environment.
-%~dp0\python-venv\Scripts\python.exe -m pip install --upgrade pip
+%~dp0python-venv\Scripts\python.exe -m pip install --upgrade pip
 
 :: Install all wheel files.
-for %%f in (%~dp0\python_wheels\*) do %~dp0\python-venv\Scripts\python.exe -m pip install --upgrade --force-reinstall --find-links=%~dp0\python_wheels %%f
+for %%f in (%~dp0python_wheels\*) do %~dp0python-venv\Scripts\python.exe -m pip install --find-links=%~dp0python_wheels %constraints_arg% %%f

@@ -170,7 +170,7 @@ Python Distributables
 ---------------------
 Pigweed also provides some templates to make it easier to bundle Python packages
 for deployment. These templates are found in ``pw_build/python_dist.gni``. See
-the .gni file for complete usage doclumentation.
+the .gni file for complete documentation on building distributables.
 
 pw_python_wheels
 ================
@@ -214,13 +214,17 @@ developer environment. The generated ``.zip`` contains Python wheels
 (``.whl`` files) for one or more ``pw_python_package`` targets, plus wheels for
 any additional ``pw_python_package`` targets in the GN build they depend on,
 directly or indirectly. Dependencies from outside the GN build, such as packages
-from PyPI, must be listed in packages' ``setup.py`` files as usual.
+from PyPI, must be listed in packages' ``setup.py`` or ``setup.cfg`` files as
+usual.
 
 The ``.zip`` also includes simple setup scripts for Linux,
 MacOS, and Windows. The setup scripts automatically create a Python virtual
 environment and install the whole collection of wheels into it using ``pip``.
 
 Optionally, additional files and directories can be included in the archive.
+One common example of an additional file to include is a README file with setup
+and usage instructions for the distributable. A simple ready-to-use README file
+is available at ``pw_build/py_dist/README.md``.
 
 Arguments
 ---------
