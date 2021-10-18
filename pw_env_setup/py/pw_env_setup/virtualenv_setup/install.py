@@ -217,8 +217,15 @@ def install(  # pylint: disable=too-many-arguments
             cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
             return _check_call(cmd)
 
-    pip_install('--log', os.path.join(venv_path, 'pip-upgrade.log'),
-                '--upgrade', 'pip', 'setuptools')
+    pip_install(
+        '--log',
+        os.path.join(venv_path, 'pip-upgrade.log'),
+        '--upgrade',
+        'pip',
+        'setuptools',
+        # Include wheel so pip installs can be done without build
+        # isolation.
+        'wheel')
 
     if requirements:
         requirement_args = tuple('--requirement={}'.format(req)

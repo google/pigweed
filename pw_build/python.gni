@@ -464,7 +464,15 @@ template("pw_python_package") {
           public_deps += invoker.public_deps
         }
 
-        args = [ "install" ]
+        args = [
+          "install",
+
+          # This speeds up pip installs. At this point in the gn build the
+          # virtualenv is already activated so build isolation isn't required.
+          # This requires that pip, setuptools, and wheel packages are
+          # installed.
+          "--no-build-isolation",
+        ]
 
         inputs = pw_build_PIP_CONSTRAINTS
         foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
