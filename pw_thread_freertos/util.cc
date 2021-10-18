@@ -85,7 +85,7 @@ Status ForEachThread(ThreadCallback& cb) {
     return Status::FailedPrecondition();
   }
 
-  for (size_t i = configMAX_PRIORITIES - 1; i > tskIDLE_PRIORITY; --i) {
+  for (size_t i = 0; i < configMAX_PRIORITIES; ++i) {
     PW_TRY(ForEachThreadInList(&pxReadyTasksLists[i], eReady, cb));
   }
   PW_TRY(ForEachThreadInList(pxDelayedTaskList, eBlocked, cb));
