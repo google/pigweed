@@ -35,15 +35,3 @@ RPC server
 The host target implements a system RPC server that runs over a local socket,
 defaulting to port 33000. To communicate with a process running the host RPC
 server, use ``pw rpc -s localhost:33000 <protos>``.
-
-Configuration
-=============
-The host target exposes a few options that may be used to change the host build
-behavior.
-
-pw_build_HOST_TOOLS
--------------------
-Pigweed includes a number of host-only tooling that may be built as part of the
-host build. These tools are included as part of the bootstrap, so it's only
-necessary to enable this setting when modifying host tooling. This is
-disabled by default.

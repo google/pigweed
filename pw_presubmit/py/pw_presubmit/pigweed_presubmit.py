@@ -251,8 +251,8 @@ def gn_docs_build(ctx: PresubmitContext):
 
 
 def gn_host_tools(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, pw_build_HOST_TOOLS=True)
-    build.ninja(ctx.output_dir, 'host')
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'host_tools')
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)

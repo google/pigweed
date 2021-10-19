@@ -14,52 +14,36 @@
 
 import("python_action.gni")
 
-declare_args() {
-  # Whether to build host-side tooling.
-  pw_build_HOST_TOOLS = false
-}
+# Defines a Pigweed host tool and installs it into the host_tools directory.
+#
+# Args:
+#   tool: The target that outputs the binary tool.
+#   name: Optional name for the installed program. Defaults to the name of
+#     the compiled binary.
+template("pw_host_tool") {
+  assert(defined(invoker.tool),
+         "pw_host_tool must specify an executable as the tool variable")
 
-if (pw_build_HOST_TOOLS) {
-  # Defines a Pigweed host tool and installs it into the host_tools directory.
-  #
-  # Args:
-  #   tool: The target that outputs the binary tool.
-  #   name: Optional name for the installed program. Defaults to the name of
-  #     the compiled binary.
-  template("pw_host_tool") {
-    assert(defined(invoker.tool),
-           "pw_host_tool must specify an executable as the tool variable")
+  _script_args = [
+    "--src",
+    "<TARGET_FILE(${invoker.tool})>",
+    "--dst",
+    rebase_path("$root_out_dir/host_tools", root_build_dir),
+    "--out-root",
+    rebase_path(root_out_dir, root_build_dir),
+  ]
 
-    _script_args = [
-      "--src",
-      "<TARGET_FILE(${invoker.tool})>",
-      "--dst",
-      rebase_path("$root_out_dir/host_tools", root_build_dir),
-      "--out-root",
-      rebase_path(root_out_dir, root_build_dir),
+  if (defined(invoker.name) && invoker.name != "") {
+    _script_args += [
+      "--name",
+      invoker.name,
     ]
-
-    if (defined(invoker.name) && invoker.name != "") {
-      _script_args += [
-        "--name",
-        invoker.name,
-      ]
-    }
-
-    pw_python_action(target_name) {
-      script = "$dir_pw_build/py/pw_build/host_tool.py"
-      args = _script_args
-      deps = [ invoker.tool ]
-      stamp = true
-    }
   }
-} else {
-  # For builds without host tools, create an empty target.
-  template("pw_host_tool") {
-    not_needed("*")
-    not_needed(invoker, "*")
 
-    group(target_name) {
-    }
+  pw_python_action(target_name) {
+    script = "$dir_pw_build/py/pw_build/host_tool.py"
+    args = _script_args
+    deps = [ invoker.tool ]
+    stamp = true
   }
-}  # pw_build_HOST_TOOLS
+}
