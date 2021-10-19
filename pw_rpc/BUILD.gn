@@ -203,6 +203,10 @@ pw_executable("client_integration_test") {
     dir_pw_log,
     dir_pw_unit_test,
   ]
+
+  if (dir_pw_third_party_nanopb != "") {
+    deps += [ "nanopb:client_integration_test" ]
+  }
 }
 
 pw_python_action("cpp_client_server_integration_test") {
@@ -228,7 +232,10 @@ pw_proto_library("protos") {
     "echo.proto",
     "internal/packet.proto",
   ]
-  inputs = [ "echo.options" ]
+  inputs = [
+    "echo.options",
+    "benchmark.options",
+  ]
   deps = [ "$dir_pw_protobuf:common_protos" ]
   python_package = "py"
   prefix = "pw_rpc"

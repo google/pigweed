@@ -108,6 +108,17 @@ pw_source_set("echo_service") {
   sources = [ "public/pw_rpc/echo_service_nanopb.h" ]
 }
 
+pw_source_set("client_integration_test") {
+  public_configs = [ ":public" ]
+  public_deps = [
+    "$dir_pw_sync:binary_semaphore",
+    "..:protos.nanopb_rpc",
+    dir_pw_assert,
+    dir_pw_unit_test,
+  ]
+  sources = [ "client_integration_test.cc" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

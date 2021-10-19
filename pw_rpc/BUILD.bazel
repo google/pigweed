@@ -167,6 +167,7 @@ filegroup(
     name = "nanopb",
     srcs = [
         "nanopb/client_call_test.cc",
+        "nanopb/client_integration_test.cc",
         "nanopb/client_reader_writer_test.cc",
         "nanopb/codegen_test.cc",
         "nanopb/common.cc",

@@ -26,39 +26,49 @@
 #include "pw_unit_test/framework.h"
 #include "pw_unit_test/logging_event_handler.h"
 
-namespace pw::rpc {
+namespace rpc_test {
 namespace {
-
-using namespace std::chrono_literals;
-using pw_rpc::raw::Benchmark;
 
 constexpr size_t kMaxTransmissionUnit = 512;
 constexpr uint32_t kChannelId = 1;
 constexpr int kIterations = 3;
 
-stream::SocketStream stream;
+pw::stream::SocketStream stream;
+pw::hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit> channel_output(
+    stream, pw::hdlc::kDefaultRpcAddress, "socket");
+pw::rpc::Channel channel =
+    pw::rpc::Channel::Create<kChannelId>(&channel_output);
 
-hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit> channel_output(
-    stream, hdlc::kDefaultRpcAddress, "socket");
+}  // namespace
 
-Channel channel = Channel::Create<kChannelId>(&channel_output);
-Client client(std::span(&channel, 1));
+pw::rpc::Client client(std::span(&channel, 1));
+
+namespace {
+
+using namespace std::chrono_literals;
+using pw::ByteSpan;
+using pw::ConstByteSpan;
+using pw::Function;
+using pw::OkStatus;
+using pw::Status;
+
+using pw::rpc::pw_rpc::raw::Benchmark;
 
 void ProcessClientPackets() {
   std::byte decode_buffer[kMaxTransmissionUnit];
-  hdlc::Decoder decoder(decode_buffer);
+  pw::hdlc::Decoder decoder(decode_buffer);
 
   while (true) {
     std::byte byte[1];
-    Result<ByteSpan> read = stream.Read(byte);
+    pw::Result<ByteSpan> read = stream.Read(byte);
 
     if (!read.ok() || read->size() == 0u) {
       continue;
     }
 
     if (auto result = decoder.Process(*byte); result.ok()) {
-      hdlc::Frame& frame = result.value();
-      if (frame.address() == hdlc::kDefaultRpcAddress) {
+      pw::hdlc::Frame& frame = result.value();
+      if (frame.address() == pw::hdlc::kDefaultRpcAddress) {
         PW_CHECK_OK(client.ProcessPacket(frame.data()),
                     "Processing a packet failed");
       }
@@ -66,7 +76,7 @@ void ProcessClientPackets() {
   }
 }
 
-constexpr Benchmark::Client service_client(client, kChannelId);
+constexpr Benchmark::Client kServiceClient(client, kChannelId);
 
 class StringReceiver {
  public:
@@ -91,14 +101,14 @@ class StringReceiver {
     sem_.release();
   }
 
-  sync::BinarySemaphore sem_;
+  pw::sync::BinarySemaphore sem_;
   char buffer_[64];
 };
 
 TEST(RawRpcIntegrationTest, Unary) {
   for (int i = 0; i < kIterations; ++i) {
     StringReceiver receiver;
-    RawUnaryReceiver call = service_client.UnaryEcho(
+    pw::rpc::RawUnaryReceiver call = kServiceClient.UnaryEcho(
         std::as_bytes(std::span("hello")), receiver.UnaryOnCompleted());
     EXPECT_STREQ(receiver.Wait(), "hello");
   }
@@ -107,13 +117,13 @@ TEST(RawRpcIntegrationTest, Unary) {
 TEST(RawRpcIntegrationTest, BidirectionalStreaming) {
   for (int i = 0; i < kIterations; ++i) {
     StringReceiver receiver;
-    RawClientReaderWriter call =
-        service_client.BidirectionalEcho(receiver.OnNext());
+    pw::rpc::RawClientReaderWriter call =
+        kServiceClient.BidirectionalEcho(receiver.OnNext());
 
-    call.Write(std::as_bytes(std::span("Yello")));
+    ASSERT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("Yello"))));
     EXPECT_STREQ(receiver.Wait(), "Yello");
 
-    call.Write(std::as_bytes(std::span("Dello")));
+    ASSERT_EQ(OkStatus(), call.Write(std::as_bytes(std::span("Dello"))));
     EXPECT_STREQ(receiver.Wait(), "Dello");
 
     call.Cancel();
@@ -121,7 +131,7 @@ TEST(RawRpcIntegrationTest, BidirectionalStreaming) {
 }
 
 }  // namespace
-}  // namespace pw::rpc
+}  // namespace rpc_test
 
 int main(int argc, char* argv[]) {
   if (argc != 2) {
@@ -132,10 +142,10 @@ int main(int argc, char* argv[]) {
   const int port = std::atoi(argv[1]);
 
   PW_LOG_INFO("Connecting to pw_rpc client at localhost:%d", port);
-  PW_CHECK_OK(pw::rpc::stream.Connect("localhost", port));
+  PW_CHECK_OK(rpc_test::stream.Connect("localhost", port));
 
   PW_LOG_INFO("Starting pw_rpc client");
-  std::thread{pw::rpc::ProcessClientPackets}.detach();
+  std::thread{rpc_test::ProcessClientPackets}.detach();
 
   pw::unit_test::LoggingEventHandler log_test_events;
   pw::unit_test::RegisterEventHandler(&log_test_events);
