@@ -83,6 +83,19 @@ message CommonMetadata {
   // time zone designator is attached to indicate a zero UTC offset.
   // E.g. "2030-08-26T16:48:27Z".
   optional google.protobuf.Timestamp expires = 3;
+
+  // Role type for the metadata.
+  // Indicates the type of the metadata. Valid values are 'root', 'targets',
+  // 'snapshot' and 'timestamp' as defined in the TUF spec, though we don't
+  // plan to support 'mirrors'.
+  //
+  // This field serves as a "magic code" that identifies a particular type of
+  // a metadata. During verification, the client is expected to check this
+  // field against the expected role type immediately after verifying the
+  // signatures of a metadata. This can be considered a "confidence booster"
+  // in the absence of canonical protobuf -- i.e. it makes the various
+  // `serialized_x_metadata` fields more tamper resistant.
+  optional string role = 4;
 }
 
 // This content is signed.
