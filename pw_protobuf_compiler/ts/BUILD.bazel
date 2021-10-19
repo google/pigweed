@@ -13,24 +13,26 @@
 # the License.
 
 load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_project")
 load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
+load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_project")
+load("ts_proto_collection.bzl", "ts_proto_collection")
 
 package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "ts_proto_collection_template",
+    srcs = ["ts_proto_collection.template.ts"],
+)
 
 ts_project(
     name = "lib",
     srcs = [
         "index.ts",
-        "proto_lib.ts",
+        "proto_collection.ts",
     ],
     declaration = True,
     source_map = True,
-    deps = [
-        "//pw_rpc:packet_proto_tspb",
-        "@npm//@types/google-protobuf",
-        "@npm//@types/node",
-    ],
+    deps = ["@npm//:node_modules"],  # can't use fine-grained deps
 )
 
 js_library(
@@ -40,16 +42,19 @@ js_library(
     deps = [":lib"],
 )
 
+ts_proto_collection(
+    name = "test_proto_collection",
+    js_proto_library = "//pw_protobuf_compiler:test_protos_tspb",
+    proto_library = "//pw_protobuf_compiler:test_protos",
+)
+
 ts_library(
-    name = "proto_lib_test_lib",
+    name = "ts_proto_collection_test_lib",
     srcs = [
-        "proto_lib_test.ts",
-    ],
-    data = [
-        "//pw_protobuf_compiler:test_protos",
+        "ts_proto_collection_test.ts",
     ],
     deps = [
-        ":lib",
+        ":test_proto_collection",
         "//pw_protobuf_compiler:test_protos_tspb",
         "//pw_rpc:packet_proto_tspb",
         "@npm//@types/google-protobuf",
@@ -58,8 +63,8 @@ ts_library(
 )
 
 jasmine_node_test(
-    name = "protobuf_compiler_test",
+    name = "ts_proto_collection_test",
     srcs = [
-        ":proto_lib_test_lib",
+        ":ts_proto_collection_test_lib",
     ],
 )

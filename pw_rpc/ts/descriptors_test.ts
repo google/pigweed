@@ -15,7 +15,7 @@
 /* eslint-env browser, jasmine */
 import 'jasmine';
 
-import {Library} from '@pigweed/pw_protobuf_compiler';
+import {ProtoCollection} from 'rpc_proto_collection/generated/ts_proto_collection';
 import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb';
 
 import * as descriptors from './descriptors';
@@ -24,11 +24,11 @@ const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
 
 describe('Descriptors', () => {
   it('parses from ServiceDescriptor binary', async () => {
-    const lib = await Library.fromFileDescriptorSet(
-        TEST_PROTO_PATH, 'test_protos_tspb');
-    const fd = lib.fileDescriptorSet.getFileList()[0];
+    const protoCollection = new ProtoCollection();
+    const fd = protoCollection.fileDescriptorSet.getFileList()[0];
     const sd = fd.getServiceList()[0];
-    const service = new descriptors.Service(sd, lib, fd.getPackage()!);
+    const service =
+        new descriptors.Service(sd, protoCollection, fd.getPackage()!);
 
     expect(service.name).toEqual('pw.rpc.test1.TheTestService')
     expect(service.methods.size).toEqual(4);

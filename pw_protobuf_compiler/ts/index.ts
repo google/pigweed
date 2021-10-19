@@ -12,4 +12,4 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export * from './proto_lib';
+export * from './proto_collection';

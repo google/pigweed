@@ -16,6 +16,7 @@ load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
 load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_project")
 load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
 load("@rules_proto_grpc//js:defs.bzl", "js_proto_library")
+load("//pw_protobuf_compiler/ts:ts_proto_collection.bzl", "ts_proto_collection")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -49,6 +50,12 @@ js_library(
     deps = [":lib"],
 )
 
+ts_proto_collection(
+    name = "rpc_proto_collection",
+    js_proto_library = "@//pw_rpc/ts:test_protos_tspb",
+    proto_library = "@//pw_rpc/ts:test_protos",
+)
+
 ts_library(
     name = "rpc_test_lib",
     srcs = [
@@ -61,8 +68,9 @@ ts_library(
         ":test_protos",
     ],
     deps = [
+        "test_protos_tspb",
         ":lib",
-        ":test_protos_tspb",
+        ":rpc_proto_collection",
         "//pw_protobuf_compiler/ts:pw_protobuf_compiler",
         "//pw_rpc:packet_proto_tspb",
         "//pw_status/ts:pw_status",

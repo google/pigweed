@@ -14,7 +14,7 @@
 
 /** Provides a pw_rpc client for TypeScript. */
 
-import {Library} from '@pigweed/pw_protobuf_compiler';
+import {ProtoCollection} from '@pigweed/pw_protobuf_compiler';
 import {Status} from '@pigweed/pw_status';
 import {Message} from 'google-protobuf';
 import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
@@ -121,10 +121,11 @@ export class Client {
    * Creates a client from a set of Channels and a library of Protos.
    *
    * @param {Channel[]} channels List of possible channels to use.
-   * @param {Library} protoSet Library containing protos defining RPC services
+   * @param {ProtoCollection} protoSet ProtoCollection containing protos
+   *     defining RPC services
    * and methods.
    */
-  static fromProtoSet(channels: Channel[], protoSet: Library): Client {
+  static fromProtoSet(channels: Channel[], protoSet: ProtoCollection): Client {
     let services: Service[] = [];
     const descriptors = protoSet.fileDescriptorSet.getFileList();
     descriptors.forEach((fileDescriptor) => {

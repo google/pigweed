@@ -15,10 +15,11 @@
 /* eslint-env browser, jasmine */
 import 'jasmine';
 
-import {Library, MessageCreator} from '@pigweed/pw_protobuf_compiler';
 import {Status} from '@pigweed/pw_status';
+import {MessageCreator} from '@pigweed/pw_protobuf_compiler';
 import {Message} from 'google-protobuf';
 import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
+import {ProtoCollection} from 'rpc_proto_collection/generated/ts_proto_collection';
 import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb'
 
 import {Client} from './client';
@@ -29,15 +30,14 @@ import * as packets from './packets';
 const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
 
 describe('Client', () => {
-  let lib: Library;
+  let protoCollection: ProtoCollection;
   let client: Client;
   let lastPacketSent: RpcPacket;
 
-  beforeEach(async () => {
-    lib = await Library.fromFileDescriptorSet(
-        TEST_PROTO_PATH, 'test_protos_tspb');
+  beforeEach(() => {
+    protoCollection = new ProtoCollection();
     const channels = [new Channel(1, savePacket), new Channel(5)];
-    client = Client.fromProtoSet(channels, lib);
+    client = Client.fromProtoSet(channels, protoCollection);
   });
 
   function savePacket(packetBytes: Uint8Array): void {
@@ -46,7 +46,7 @@ describe('Client', () => {
 
   it('channel returns undefined for empty list', () => {
     const channels = Array<Channel>();
-    const emptyChannelClient = Client.fromProtoSet(channels, lib);
+    const emptyChannelClient = Client.fromProtoSet(channels, protoCollection);
     expect(emptyChannelClient.channel()).toBeUndefined();
   });
 
@@ -134,7 +134,7 @@ describe('Client', () => {
 });
 
 describe('RPC', () => {
-  let lib: Library;
+  let protoCollection: ProtoCollection;
   let client: Client;
   let lastPacketSent: RpcPacket|undefined;
   let requests: RpcPacket[] = [];
@@ -144,10 +144,9 @@ describe('RPC', () => {
   let outputException: Error|undefined;
 
   beforeEach(async () => {
-    lib = await Library.fromFileDescriptorSet(
-        TEST_PROTO_PATH, 'test_protos_tspb');
+    protoCollection = new ProtoCollection();
     const channels = [new Channel(1, handlePacket), new Channel(2, () => {})];
-    client = Client.fromProtoSet(channels, lib);
+    client = Client.fromProtoSet(channels, protoCollection);
     lastPacketSent = undefined;
     requests = [];
     nextPackets = [];

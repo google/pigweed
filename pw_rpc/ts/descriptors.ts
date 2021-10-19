@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Library} from '@pigweed/pw_protobuf_compiler';
+import {ProtoCollection} from '@pigweed/pw_protobuf_compiler';
 import {MethodDescriptorProto, ServiceDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
 
 import {hash} from './hash';
@@ -44,13 +44,13 @@ export class Service {
 
   constructor(
       descriptor: ServiceDescriptorProto,
-      protoLibrary: Library,
+      protoCollection: ProtoCollection,
       packageName: string) {
     this.name = packageName + '.' + descriptor.getName()!;
     this.id = hash(this.name);
     descriptor.getMethodList().forEach(
         (methodDescriptor: MethodDescriptorProto) => {
-          const method = new Method(methodDescriptor, protoLibrary, this);
+          const method = new Method(methodDescriptor, protoCollection, this);
           this.methods.set(method.id, method);
           this.methodsByName.set(method.name, method);
         });
@@ -76,7 +76,7 @@ export class Method {
 
   constructor(
       descriptor: MethodDescriptorProto,
-      protoLibrary: Library,
+      protoCollection: ProtoCollection,
       service: Service) {
     this.name = descriptor.getName()!;
     this.id = hash(this.name);
@@ -89,9 +89,9 @@ export class Method {
 
     // Remove leading period if it exists.
     this.requestType =
-        protoLibrary.getMessageCreator(requestTypePath.replace(/^\./, ''))!;
+        protoCollection.getMessageCreator(requestTypePath.replace(/^\./, ''))!;
     this.responseType =
-        protoLibrary.getMessageCreator(responseTypePath.replace(/^\./, ''))!;
+        protoCollection.getMessageCreator(responseTypePath.replace(/^\./, ''))!;
   }
 
   get type(): MethodType {

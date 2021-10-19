@@ -17,32 +17,18 @@ import 'jasmine';
 
 import {Message} from 'test_protos_tspb/test_protos_tspb_pb/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
 
-import {Library} from './proto_lib';
+import {ProtoCollection} from './generated/ts_proto_collection';
 
-const DESCRIPTOR_BINARY_PATH =
-    'pw_protobuf_compiler/test_protos-descriptor-set.proto.bin';
-const TEST_LIB_NAME = 'test_protos_tspb';
-
-describe('Library', () => {
-  it('constructed from invalid paths rejects promise', async () => {
-    await expectAsync(Library.fromFileDescriptorSet('garbage', TEST_LIB_NAME))
-        .toBeRejected();
-    await expectAsync(
-        Library.fromFileDescriptorSet(DESCRIPTOR_BINARY_PATH, 'garbage'))
-        .toBeRejected();
-  });
-
-  it('getMessageType returns message', async () => {
-    const lib = await Library.fromFileDescriptorSet(
-        DESCRIPTOR_BINARY_PATH, TEST_LIB_NAME);
+describe('ProtoCollection', () => {
+  it('getMessageType returns message', () => {
+    const lib = new ProtoCollection();
 
     let fetched = lib.getMessageCreator('pw.protobuf_compiler.test.Message');
     expect(fetched).toEqual(Message);
   });
 
-  it('getMessageType for invalid identifier returns undefined', async () => {
-    const lib = await Library.fromFileDescriptorSet(
-        DESCRIPTOR_BINARY_PATH, TEST_LIB_NAME);
+  it('getMessageType for invalid identifier returns undefined', () => {
+    const lib = new ProtoCollection();
 
     let fetched = lib.getMessageCreator('pw');
     expect(fetched).toBeUndefined();
