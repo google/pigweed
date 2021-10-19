@@ -376,6 +376,14 @@ void BundledUpdateService::DoApply() {
     return;
   }
 
+  if (const Status status = backend_.BeforeApply(); !status.ok()) {
+    std::lock_guard lock(mutex_);
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
+              "BeforeApply() returned unsuccessful result: %d",
+              static_cast<int>(status.code()));
+    return;
+  }
+
   // In order to report apply progress, quickly scan to see how many bytes will
   // be applied.
   size_t target_file_bytes_to_apply = 0;
