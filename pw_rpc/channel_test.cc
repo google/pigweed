@@ -38,7 +38,7 @@ TEST(ChannelOutput, Name) {
 }
 
 constexpr Packet kTestPacket(
-    PacketType::RESPONSE, 1, 42, 100, {}, Status::NotFound());
+    PacketType::RESPONSE, 1, 42, 100, 0, {}, Status::NotFound());
 const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
                              5 /* method */ + 2 /* payload key */ +
                              2 /* status (if not OK) */;

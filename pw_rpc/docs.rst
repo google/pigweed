@@ -474,6 +474,7 @@ Client-to-server packets
 |                   |   - method_id                       |
 |                   |   - payload                         |
 |                   |     (unary & server streaming only) |
+|                   |   - call_id (optional)              |
 |                   |                                     |
 +-------------------+-------------------------------------+
 | CLIENT_STREAM     | Message in a client stream          |
@@ -484,6 +485,7 @@ Client-to-server packets
 |                   |   - service_id                      |
 |                   |   - method_id                       |
 |                   |   - payload                         |
+|                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
 | CLIENT_STREAM_END | Client stream is complete           |
@@ -493,6 +495,7 @@ Client-to-server packets
 |                   |   - channel_id                      |
 |                   |   - service_id                      |
 |                   |   - method_id                       |
+|                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
 | CLIENT_ERROR      | Received unexpected packet          |
@@ -503,6 +506,7 @@ Client-to-server packets
 |                   |   - service_id                      |
 |                   |   - method_id                       |
 |                   |   - status                          |
+|                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
 | CANCEL            | Cancel an ongoing RPC               |
@@ -512,6 +516,7 @@ Client-to-server packets
 |                   |   - channel_id                      |
 |                   |   - service_id                      |
 |                   |   - method_id                       |
+|                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
 
@@ -546,6 +551,7 @@ Server-to-client packets
 |                   |   - status                          |
 |                   |   - payload                         |
 |                   |     (unary & client streaming only) |
+|                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
 | SERVER_STREAM     | Message in a server stream          |
@@ -556,6 +562,7 @@ Server-to-client packets
 |                   |   - service_id                      |
 |                   |   - method_id                       |
 |                   |   - payload                         |
+|                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
 | SERVER_ERROR      | Received unexpected packet          |
@@ -566,8 +573,12 @@ Server-to-client packets
 |                   |   - service_id (if relevant)        |
 |                   |   - method_id (if relevant)         |
 |                   |   - status                          |
+|                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
+
+All server packets contain the same client ID that was set in the initial
+request made by the client, if any.
 
 **Server errors**
 

@@ -55,7 +55,12 @@ CallContext OpenContext(Server& server,
   rpc::Channel* channel = server.GetChannel(channel_id);
   PW_ASSERT(channel != nullptr);
 
-  return CallContext(server, static_cast<Channel&>(*channel), service, method);
+  // Unrequested RPCs always use 0 as the call ID. When an actual request is
+  // sent, the call will be replaced with its real ID.
+  constexpr uint32_t kOpenCallId = 0;
+
+  return CallContext(
+      server, static_cast<Channel&>(*channel), service, method, kOpenCallId);
 }
 
 }  // namespace pw::rpc::internal

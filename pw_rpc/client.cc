@@ -40,10 +40,12 @@ Status Client::ProcessPacket(ConstByteSpan data) {
     return Status::Unavailable();
   }
 
-  if (base == nullptr) {
-    PW_LOG_WARN("RPC client received a packet for a request it did not make");
-    // Don't send responses to errors to avoid infinite error cycles.
-    if (packet.type() != PacketType::SERVER_ERROR) {
+  if (base == nullptr || base->id() != packet.call_id()) {
+    // The call for the packet does not exist. If the packet is a server stream
+    // message, notify the server so that it can kill the stream. Otherwise,
+    // silently drop the packet (as it would terminate the RPC anyway).
+    if (packet.type() == PacketType::SERVER_STREAM) {
+      PW_LOG_WARN("RPC client received stream message for an unknown call");
       channel->Send(Packet::ClientError(packet, Status::FailedPrecondition()))
           .IgnoreError();
     }

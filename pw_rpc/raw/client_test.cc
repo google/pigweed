@@ -98,12 +98,14 @@ class TestUnaryCall : public internal::UnaryResponseClientCall {
 TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
   RawClientTestContext context;
   TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
+  call.SendInitialRequest({});
 
   ASSERT_NE(call.completed, OkStatus());
 
   context.server().SendResponse<UnaryMethod>(
       std::as_bytes(std::span("you nary?!?")), OkStatus());
 
+  ASSERT_NE(call.payload, nullptr);
   EXPECT_STREQ(call.payload, "you nary?!?");
   EXPECT_EQ(call.completed, OkStatus());
 }
@@ -111,6 +113,7 @@ TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
 TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
   RawClientTestContext context;
   auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
+  call.SendInitialRequest({});
 
   context.server().SendServerStream<BidirectionalStreamMethod>(
       std::as_bytes(std::span("<=>")));
@@ -126,6 +129,7 @@ TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
 TEST(Client, ProcessPacket_InvokesErrorCallback) {
   RawClientTestContext context;
   auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
+  call.SendInitialRequest({});
 
   context.server().SendServerError<BidirectionalStreamMethod>(
       Status::Aborted());
@@ -133,19 +137,21 @@ TEST(Client, ProcessPacket_InvokesErrorCallback) {
   EXPECT_EQ(call.error, Status::Aborted());
 }
 
-TEST(Client, ProcessPacket_SendsClientErrorOnUnregisteredCall) {
+TEST(Client, ProcessPacket_SendsClientErrorOnUnregisteredServerStream) {
   RawClientTestContext context;
-  context.server().SendResponse<UnaryMethod>({}, OkStatus());
+  context.server().SendServerStream<BidirectionalStreamMethod>({});
 
-  StatusView errors = context.output().errors<UnaryMethod>();
+  StatusView errors = context.output().errors<BidirectionalStreamMethod>();
   ASSERT_EQ(errors.size(), 1u);
   EXPECT_EQ(errors.front(), Status::FailedPrecondition());
 }
 
-TEST(Client, ProcessPacket_ServerErrorOnUnregisteredCall_SendsNothing) {
+TEST(Client, ProcessPacket_NonServerStreamOnUnregisteredCall_SendsNothing) {
   RawClientTestContext context;
   context.server().SendServerError<UnaryMethod>(Status::NotFound());
+  EXPECT_EQ(context.output().total_packets(), 0u);
 
+  context.server().SendResponse<UnaryMethod>({}, Status::Unavailable());
   EXPECT_EQ(context.output().total_packets(), 0u);
 }
 

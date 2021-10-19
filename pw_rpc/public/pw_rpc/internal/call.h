@@ -62,6 +62,8 @@ class Call : public IntrusiveList<Call>::Item {
     return active();
   }
 
+  uint32_t id() const { return id_; }
+
   uint32_t channel_id() const {
     return channel_ == nullptr ? Channel::kUnassignedChannelId : channel().id();
   }
@@ -128,6 +130,7 @@ class Call : public IntrusiveList<Call>::Item {
   constexpr Call()
       : endpoint_{},
         channel_{},
+        id_{},
         service_id_{},
         method_id_{},
         rpc_state_{},
@@ -138,6 +141,7 @@ class Call : public IntrusiveList<Call>::Item {
   // Creates an active server-side Call.
   Call(const CallContext& context, MethodType type)
       : Call(context.server(),
+             context.call_id(),
              context.channel().id(),
              context.service().id(),
              context.method().id(),
@@ -149,8 +153,7 @@ class Call : public IntrusiveList<Call>::Item {
        uint32_t channel_id,
        uint32_t service_id,
        uint32_t method_id,
-       MethodType type)
-      : Call(client, channel_id, service_id, method_id, type, kClientCall) {}
+       MethodType type);
 
   void MoveFrom(Call& other);
 
@@ -197,6 +200,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Common constructor for server & client calls.
   Call(Endpoint& endpoint,
+       uint32_t id,
        uint32_t channel_id,
        uint32_t service_id,
        uint32_t method_id,
@@ -207,7 +211,7 @@ class Call : public IntrusiveList<Call>::Item {
                     ConstByteSpan payload,
                     Status status = OkStatus()) const {
     return Packet(
-        type, channel_id(), service_id(), method_id(), payload, status);
+        type, channel_id(), service_id(), method_id(), id_, payload, status);
   }
 
   Status CloseAndSendFinalPacket(PacketType type,
@@ -216,6 +220,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   internal::Endpoint* endpoint_;
   internal::Channel* channel_;
+  uint32_t id_;
   uint32_t service_id_;
   uint32_t method_id_;
 

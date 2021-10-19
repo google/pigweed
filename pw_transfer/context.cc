@@ -41,6 +41,11 @@ uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
   max_size -= varint::EncodedSize(channel_id);
   max_size -= varint::EncodedSize(max_size);
 
+  // TODO(frolv): Temporarily add 5 bytes for the new call_id change. The RPC
+  // overhead calculation will be moved into an RPC helper to avoid having
+  // pw_transfer depend on RPC internals.
+  max_size -= 5;
+
   // Subtract the transfer service overhead for a client write chunk
   // (pw_transfer/transfer.proto).
   //

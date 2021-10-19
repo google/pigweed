@@ -82,7 +82,8 @@ Status Server::ProcessPacket(std::span<const byte> data,
     case PacketType::REQUEST: {
       // If the REQUEST is for an ongoing RPC, the existing call will be
       // cancelled when the new call object is created.
-      const internal::CallContext context(*this, *channel, *service, *method);
+      const internal::CallContext context(
+          *this, *channel, *service, *method, packet.call_id());
       method->Invoke(context, packet);
       break;
     }
@@ -90,7 +91,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
       HandleClientStreamPacket(packet, *channel, call);
       break;
     case PacketType::CLIENT_ERROR:
-      if (call != nullptr) {
+      if (call != nullptr && call->id() == packet.call_id()) {
         call->HandleError(packet.status());
       }
       break;
@@ -124,7 +125,7 @@ std::tuple<Service*, const internal::Method*> Server::FindMethod(
 void Server::HandleClientStreamPacket(const internal::Packet& packet,
                                       internal::Channel& channel,
                                       internal::ServerCall* call) const {
-  if (call == nullptr) {
+  if (call == nullptr || call->id() != packet.call_id()) {
     PW_LOG_DEBUG(
         "Received client stream packet for %u:%08x/%08x, which is not pending",
         static_cast<unsigned>(packet.channel_id()),
@@ -157,7 +158,7 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
 void Server::HandleCancelPacket(const Packet& packet,
                                 internal::Channel& channel,
                                 internal::ServerCall* call) const {
-  if (call == nullptr) {
+  if (call == nullptr || call->id() != packet.call_id()) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
     PW_LOG_DEBUG("Received CANCEL packet for method that is not pending");

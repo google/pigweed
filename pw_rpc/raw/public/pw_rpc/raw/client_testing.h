@@ -31,10 +31,12 @@ namespace pw::rpc {
 // Sends packets to an RPC client as if it were a pw_rpc server.
 class FakeServer {
  public:
-  constexpr FakeServer(Client& client,
+  constexpr FakeServer(internal::test::FakeChannelOutput& output,
+                       Client& client,
                        uint32_t channel_id,
                        ByteSpan packet_buffer)
-      : client_(client),
+      : output_(output),
+        client_(client),
         channel_id_(channel_id),
         packet_buffer_(packet_buffer) {}
 
@@ -94,6 +96,7 @@ class FakeServer {
                        ConstByteSpan payload,
                        Status status) const;
 
+  internal::test::FakeChannelOutput& output_;
   Client& client_;
   const uint32_t channel_id_;
   ByteSpan packet_buffer_;
@@ -111,7 +114,8 @@ class RawClientTestContext {
       : channel_(Channel::Create<kDefaultChannelId>(&channel_output_)),
         client_(std::span(&channel_, 1)),
         packet_buffer_{},
-        fake_server_(client_, kDefaultChannelId, packet_buffer_) {}
+        fake_server_(
+            channel_output_, client_, kDefaultChannelId, packet_buffer_) {}
 
   const Channel& channel() const { return channel_; }
   Channel& channel() { return channel_; }

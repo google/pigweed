@@ -473,7 +473,7 @@ TEST_F(WriteTransfer, SingleChunk) {
   ASSERT_TRUE(chunk.pending_bytes.has_value());
   EXPECT_EQ(chunk.pending_bytes.value(), 32u);
   ASSERT_TRUE(chunk.max_chunk_size_bytes.has_value());
-  EXPECT_EQ(chunk.max_chunk_size_bytes.value(), 42u);
+  EXPECT_EQ(chunk.max_chunk_size_bytes.value(), 37u);
 
   ctx_.SendClientStream<64>(EncodeChunk({.transfer_id = 7,
                                          .offset = 0,

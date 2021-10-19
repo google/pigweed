@@ -22,7 +22,22 @@
 
 namespace pw::rpc::internal {
 
+// Creates an active client-side call, assigning it a new ID.
+Call::Call(Endpoint& client,
+           uint32_t channel_id,
+           uint32_t service_id,
+           uint32_t method_id,
+           MethodType type)
+    : Call(client,
+           client.NewCallId(),
+           channel_id,
+           service_id,
+           method_id,
+           type,
+           kClientCall) {}
+
 Call::Call(Endpoint& endpoint_ref,
+           uint32_t call_id,
            uint32_t channel_id,
            uint32_t service_id,
            uint32_t method_id,
@@ -30,6 +45,7 @@ Call::Call(Endpoint& endpoint_ref,
            CallType call_type)
     : endpoint_(&endpoint_ref),
       channel_(endpoint().GetInternalChannel(channel_id)),
+      id_(call_id),
       service_id_(service_id),
       method_id_(method_id),
       rpc_state_(kActive),
@@ -59,6 +75,7 @@ void Call::MoveFrom(Call& other) {
 
   endpoint_ = other.endpoint_;
   channel_ = other.channel_;
+  id_ = other.id_;
   service_id_ = other.service_id_;
   method_id_ = other.method_id_;
 

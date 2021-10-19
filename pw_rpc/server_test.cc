@@ -83,7 +83,7 @@ class BasicServer : public ::testing::Test {
       std::span<const byte> payload = kDefaultPayload,
       Status status = OkStatus()) {
     auto result =
-        Packet(type, channel_id, service_id, method_id, payload, status)
+        Packet(type, channel_id, service_id, method_id, 0, payload, status)
             .Encode(request_buffer_);
     EXPECT_EQ(OkStatus(), result.status());
     return result.value_or(ConstByteSpan());
@@ -260,7 +260,8 @@ class BidiMethod : public BasicServer {
             internal::CallContext(server_,
                                   static_cast<internal::Channel&>(channels_[0]),
                                   service_,
-                                  service_.method(100))) {
+                                  service_.method(100),
+                                  0)) {
     ASSERT_TRUE(responder_.active());
   }
 
@@ -408,7 +409,8 @@ class ServerStreamingMethod : public BasicServer {
       : call_(server_,
               static_cast<internal::Channel&>(channels_[0]),
               service_,
-              service_.method(100)),
+              service_.method(100),
+              0),
         responder_(call_) {
     ASSERT_TRUE(responder_.active());
   }

@@ -24,7 +24,11 @@
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/payloads_view.h"
 
-namespace pw::rpc::internal::test {
+namespace pw::rpc {
+
+class FakeServer;
+
+namespace internal::test {
 
 // A ChannelOutput implementation that stores outgoing packets.
 class FakeChannelOutput : public ChannelOutput {
@@ -120,6 +124,8 @@ class FakeChannelOutput : public ChannelOutput {
   const Vector<Packet>& packets() const { return packets_; }
 
  private:
+  friend class rpc::FakeServer;
+
   ByteSpan AcquireBuffer() final { return encoding_buffer_; }
 
   // Processes buffer according to packet type and `return_after_packet_count_`
@@ -156,4 +162,5 @@ class FakeChannelOutputBuffer : public FakeChannelOutput {
   Vector<Packet, kMaxPackets> packets_;
 };
 
-}  // namespace pw::rpc::internal::test
+}  // namespace internal::test
+}  // namespace pw::rpc

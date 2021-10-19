@@ -34,11 +34,13 @@ class CallContext {
   constexpr CallContext(Endpoint& server,
                         Channel& channel,
                         Service& service,
-                        const internal::Method& method)
+                        const internal::Method& method,
+                        uint32_t call_id)
       : server_(server),
         channel_(channel),
         service_(service),
-        method_(method) {}
+        method_(method),
+        call_id_(call_id) {}
 
   constexpr Endpoint& server() const { return server_; }
 
@@ -48,11 +50,14 @@ class CallContext {
 
   constexpr const internal::Method& method() const { return method_; }
 
+  constexpr uint32_t call_id() const { return call_id_; }
+
  private:
   Endpoint& server_;
   Channel& channel_;
   Service& service_;
   const internal::Method& method_;
+  uint32_t call_id_;
 };
 
 }  // namespace internal

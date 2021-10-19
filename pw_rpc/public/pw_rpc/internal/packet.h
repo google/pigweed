@@ -39,6 +39,7 @@ class Packet {
                   request.channel_id(),
                   request.service_id(),
                   request.method_id(),
+                  request.call_id(),
                   {},
                   status);
   }
@@ -50,6 +51,7 @@ class Packet {
                   packet.channel_id(),
                   packet.service_id(),
                   packet.method_id(),
+                  packet.call_id(),
                   {},
                   status);
   }
@@ -61,6 +63,7 @@ class Packet {
                   packet.channel_id(),
                   packet.service_id(),
                   packet.method_id(),
+                  packet.call_id(),
                   {},
                   status);
   }
@@ -73,12 +76,14 @@ class Packet {
                    uint32_t channel_id,
                    uint32_t service_id,
                    uint32_t method_id,
+                   uint32_t call_id = kUnassignedId,
                    ConstByteSpan payload = {},
                    Status status = OkStatus())
       : type_(type),
         channel_id_(channel_id),
         service_id_(service_id),
         method_id_(method_id),
+        call_id_(call_id),
         payload_(payload),
         status_(status) {}
 
@@ -103,6 +108,7 @@ class Packet {
   constexpr uint32_t channel_id() const { return channel_id_; }
   constexpr uint32_t service_id() const { return service_id_; }
   constexpr uint32_t method_id() const { return method_id_; }
+  constexpr uint32_t call_id() const { return call_id_; }
   constexpr const ConstByteSpan& payload() const { return payload_; }
   constexpr const Status& status() const { return status_; }
 
@@ -114,6 +120,7 @@ class Packet {
     service_id_ = service_id;
   }
   constexpr void set_method_id(uint32_t method_id) { method_id_ = method_id; }
+  constexpr void set_call_id(uint32_t call_id) { call_id_ = call_id; }
   constexpr void set_payload(ConstByteSpan payload) { payload_ = payload; }
   constexpr void set_status(Status status) { status_ = status; }
 
@@ -122,6 +129,7 @@ class Packet {
   uint32_t channel_id_;
   uint32_t service_id_;
   uint32_t method_id_;
+  uint32_t call_id_;
   ConstByteSpan payload_;
   Status status_;
 };

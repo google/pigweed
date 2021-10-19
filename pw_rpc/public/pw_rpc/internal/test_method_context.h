@@ -104,7 +104,8 @@ class InvocationContext {
         context_(server_,
                  static_cast<internal::Channel&>(channel_),
                  service_,
-                 method) {
+                 method,
+                 0) {
     server_.RegisterService(service_);
   }
 
@@ -121,6 +122,7 @@ class InvocationContext {
                                         channel_.id(),
                                         service_.id(),
                                         kMethodId,
+                                        0,
                                         payload)
                                      .Encode(packet)
                                      .value(),

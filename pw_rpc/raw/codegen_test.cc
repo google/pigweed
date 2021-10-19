@@ -356,6 +356,7 @@ TEST_F(RawCodegenClientTest, InvokeUnaryRpc_Ok) {
   context_.server().SendResponse<test::pw_rpc::raw::TestService::TestUnaryRpc>(
       std::as_bytes(std::span("(ㆆ_ㆆ)")), OkStatus());
 
+  ASSERT_TRUE(payload_.has_value());
   EXPECT_STREQ(payload_.value(), "(ㆆ_ㆆ)");
   EXPECT_EQ(status_, OkStatus());
   EXPECT_FALSE(error_.has_value());
@@ -389,6 +390,7 @@ TEST_F(RawCodegenClientTest, InvokeServerStreamRpc_Ok) {
       .SendServerStream<test::pw_rpc::raw::TestService::TestServerStreamRpc>(
           std::as_bytes(std::span("(⌐□_□)")));
 
+  ASSERT_TRUE(payload_.has_value());
   EXPECT_STREQ(payload_.value(), "(⌐□_□)");
 
   context_.server()
@@ -441,6 +443,7 @@ TEST_F(RawCodegenClientTest, InvokeClientStreamRpc_Ok) {
       .SendResponse<test::pw_rpc::raw::TestService::TestClientStreamRpc>(
           std::as_bytes(std::span("(⌐□_□)")), Status::InvalidArgument());
 
+  ASSERT_TRUE(payload_.has_value());
   EXPECT_STREQ(payload_.value(), "(⌐□_□)");
   EXPECT_EQ(status_, Status::InvalidArgument());
   EXPECT_FALSE(error_.has_value());
@@ -483,6 +486,7 @@ TEST_F(RawCodegenClientTest, InvokeBidirectionalStreamRpc_Ok) {
           test::pw_rpc::raw::TestService::TestBidirectionalStreamRpc>(
           std::as_bytes(std::span("(⌐□_□)")));
 
+  ASSERT_TRUE(payload_.has_value());
   EXPECT_STREQ(payload_.value(), "(⌐□_□)");
 
   context_.server()

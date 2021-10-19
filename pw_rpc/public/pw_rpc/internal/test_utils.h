@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -97,7 +97,8 @@ class ServerContextForTest {
         context_(static_cast<Server&>(server_),
                  static_cast<Channel&>(channel_),
                  service_,
-                 method) {
+                 method,
+                 0) {
     server_.RegisterService(service_);
   }
 
@@ -107,6 +108,7 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
+                            0,
                             payload);
   }
 
@@ -116,6 +118,7 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
+                            0,
                             payload,
                             status);
   }
@@ -125,6 +128,7 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
+                            0,
                             payload);
   }
 
@@ -133,6 +137,7 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
+                            0,
                             payload);
   }
 
@@ -173,8 +178,11 @@ class ClientContextForTest {
   Status SendPacket(internal::PacketType type,
                     Status status = OkStatus(),
                     std::span<const std::byte> payload = {}) {
+    uint32_t call_id =
+        output_.packet_count() > 0 ? output_.sent_packet().call_id() : 0;
+
     internal::Packet packet(
-        type, kChannelId, kServiceId, kMethodId, payload, status);
+        type, kChannelId, kServiceId, kMethodId, call_id, payload, status);
     std::byte buffer[input_buffer_size];
     Result result = packet.Encode(buffer);
     EXPECT_EQ(result.status(), OkStatus());

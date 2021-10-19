@@ -41,7 +41,8 @@ class Endpoint {
  protected:
   constexpr Endpoint(std::span<rpc::Channel> channels)
       : channels_(static_cast<internal::Channel*>(channels.data()),
-                  channels.size()) {}
+                  channels.size()),
+        next_call_id_(0) {}
 
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.
@@ -68,6 +69,14 @@ class Endpoint {
   // Give Call access to the register/unregister functions.
   friend class Call;
 
+  // Returns an ID that can be assigned to a new call.
+  uint32_t NewCallId() {
+    // Call IDs are varint encoded. Limit the varint size to 2 bytes (14 usable
+    // bits).
+    constexpr uint32_t kMaxCallId = 1 << 14;
+    return (++next_call_id_) % kMaxCallId;
+  }
+
   // Adds a call to the internal call registry. If a matching call already
   // exists, it is cancelled locally (on_error called, no packet sent).
   void RegisterCall(Call& call);
@@ -85,6 +94,8 @@ class Endpoint {
 
   std::span<Channel> channels_;
   IntrusiveList<Call> calls_;
+
+  uint32_t next_call_id_;
 };
 
 }  // namespace pw::rpc::internal

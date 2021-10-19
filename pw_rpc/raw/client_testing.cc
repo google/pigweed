@@ -47,9 +47,20 @@ Status FakeServer::ProcessPacket(internal::PacketType type,
                                  uint32_t method_id,
                                  ConstByteSpan payload,
                                  Status status) const {
+  auto view = internal::test::PacketsView(
+      output_.packets_,
+      internal::test::PacketFilter(internal::PacketType::REQUEST,
+                                   internal::PacketType::RESPONSE,
+                                   channel_id_,
+                                   service_id,
+                                   method_id));
+
+  // Re-use the call ID of the most recent packet for this RPC.
+  uint32_t call_id = view.empty() ? 0 : view.back().call_id();
+
   auto packet_encoding_result =
       internal::Packet(
-          type, channel_id_, service_id, method_id, payload, status)
+          type, channel_id_, service_id, method_id, call_id, payload, status)
           .Encode(packet_buffer_);
   PW_CHECK_OK(packet_encoding_result.status());
   return client_.ProcessPacket(*packet_encoding_result);

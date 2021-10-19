@@ -74,4 +74,9 @@ message RpcPacket {
 
   // Status code for the RPC response or error.
   uint32 status = 6;
+
+  // Unique identifier for the call that initiated this RPC. Optionally set by
+  // the client in the initial request and sent in all subsequent client
+  // packets; echoed by the server.
+  uint32 call_id = 7;
 }

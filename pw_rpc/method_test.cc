@@ -60,7 +60,7 @@ TEST(Method, Invoke) {
   Server server(std::span(static_cast<rpc::Channel*>(&channel), 1));
   TestService service;
 
-  const CallContext context(server, channel, service, kTestMethod);
+  const CallContext context(server, channel, service, kTestMethod, 0);
   Packet empty_packet;
 
   EXPECT_EQ(kTestMethod.invocations(), 0u);

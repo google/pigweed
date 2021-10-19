@@ -32,39 +32,44 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
     switch (field) {
       case RpcPacket::Fields::TYPE: {
         uint32_t value;
-        decoder.ReadUint32(&value)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        // A decode error will propagate from Next() and terminate the loop.
+        decoder.ReadUint32(&value).IgnoreError();
         packet.set_type(static_cast<PacketType>(value));
         break;
       }
 
       case RpcPacket::Fields::CHANNEL_ID:
-        decoder.ReadUint32(&packet.channel_id_)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        // A decode error will propagate from Next() and terminate the loop.
+        decoder.ReadUint32(&packet.channel_id_).IgnoreError();
         break;
 
       case RpcPacket::Fields::SERVICE_ID:
-        decoder.ReadFixed32(&packet.service_id_)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        // A decode error will propagate from Next() and terminate the loop.
+        decoder.ReadFixed32(&packet.service_id_).IgnoreError();
         break;
 
       case RpcPacket::Fields::METHOD_ID:
-        decoder.ReadFixed32(&packet.method_id_)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        // A decode error will propagate from Next() and terminate the loop.
+        decoder.ReadFixed32(&packet.method_id_).IgnoreError();
         break;
 
       case RpcPacket::Fields::PAYLOAD:
-        decoder.ReadBytes(&packet.payload_)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        // A decode error will propagate from Next() and terminate the loop.
+        decoder.ReadBytes(&packet.payload_).IgnoreError();
         break;
 
       case RpcPacket::Fields::STATUS: {
         uint32_t value;
-        decoder.ReadUint32(&value)
-            .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+        // A decode error will propagate from Next() and terminate the loop.
+        decoder.ReadUint32(&value).IgnoreError();
         packet.set_status(static_cast<Status::Code>(value));
         break;
       }
+
+      case RpcPacket::Fields::CALL_ID:
+        // A decode error will propagate from Next() and terminate the loop.
+        decoder.ReadUint32(&packet.call_id_).IgnoreError();
+        break;
     }
   }
 
@@ -98,6 +103,10 @@ Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
   if (status_.code() != 0) {
     rpc_packet.WriteStatus(status_.code())
         .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  }
+
+  if (call_id_ != 0) {
+    rpc_packet.WriteCallId(call_id_);
   }
 
   if (rpc_packet.status().ok()) {
