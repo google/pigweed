@@ -337,6 +337,32 @@ def cipd_versions(ctx: DoctorContext):
         ctx.submit(check_cipd, package)
 
 
+@register_into(CHECKS)
+def symlinks(ctx: DoctorContext):
+    """Check that the platform supports symlinks."""
+
+    try:
+        root = pathlib.Path(os.environ['PW_ROOT']).resolve()
+    except KeyError:
+        return  # This case is handled elsewhere.
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dest = pathlib.Path(tmpdir).resolve() / 'symlink'
+        try:
+            os.symlink(root, dest)
+            failure = False
+        except OSError:
+            # TODO(pwbug/500) Find out what errno is set when symlinks aren't
+            # supported by the OS.
+            failure = True
+
+        if not os.path.islink(dest) or failure:
+            ctx.warning(
+                'Symlinks are not supported or current user does not have '
+                'permission to use them. This may cause build issues. If on '
+                'Windows, turn on Development Mode to enable symlink support.')
+
+
 def run_doctor(strict=False, checks=None):
     """Run all the Check subclasses defined in this file."""
 
