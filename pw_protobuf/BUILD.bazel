@@ -67,6 +67,18 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "bytes_utils",
+    hdrs = ["public/pw_protobuf/bytes_utils.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
 pw_cc_test(
     name = "decoder_test",
     srcs = ["decoder_test.cc"],

@@ -108,6 +108,7 @@ pw_cc_test(
         ":proto_utils",
         "//pw_preprocessor",
         "//pw_protobuf",
+        "//pw_protobuf:bytes_utils",
         "//pw_unit_test",
     ],
 )

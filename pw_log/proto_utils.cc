@@ -14,6 +14,9 @@
 
 #include "pw_log/proto_utils.h"
 
+#include <span>
+
+#include "pw_bytes/endian.h"
 #include "pw_log/levels.h"
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_log_tokenized/metadata.h"
@@ -28,20 +31,21 @@ Result<ConstByteSpan> EncodeTokenizedLog(pw::log_tokenized::Metadata metadata,
   // Encode message to the LogEntry protobuf.
   LogEntry::MemoryEncoder encoder(encode_buffer);
 
-  encoder.WriteMessage(tokenized_data)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-  encoder
-      .WriteLineLevel((metadata.level() & PW_LOG_LEVEL_BITMASK) |
-                      ((metadata.line_number() << PW_LOG_LEVEL_BITS) &
-                       ~PW_LOG_LEVEL_BITMASK))
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+  // Defer status checks until the end.
+  Status status = encoder.WriteMessage(tokenized_data);
+  status = encoder.WriteLineLevel(
+      (metadata.level() & PW_LOG_LEVEL_BITMASK) |
+      ((metadata.line_number() << PW_LOG_LEVEL_BITS) & ~PW_LOG_LEVEL_BITMASK));
   if (metadata.flags() != 0) {
-    encoder.WriteFlags(metadata.flags())
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
+    status = encoder.WriteFlags(metadata.flags());
   }
-  encoder.WriteTimestamp(ticks_since_epoch)
-      .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-
+  status = encoder.WriteTimestamp(ticks_since_epoch);
+  if (metadata.module() != 0) {
+    const uint32_t little_endian_module =
+        bytes::ConvertOrderTo(std::endian::little, metadata.module());
+    status =
+        encoder.WriteModule(std::as_bytes(std::span(&little_endian_module, 1)));
+  }
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);
 }

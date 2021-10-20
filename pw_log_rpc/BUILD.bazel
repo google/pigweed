@@ -84,6 +84,7 @@ pw_cc_test(
         "//pw_log:log_pwpb",
         "//pw_log:proto_utils",
         "//pw_protobuf",
+        "//pw_protobuf:bytes_utils",
         "//pw_result",
         "//pw_rpc/raw:test_method_context",
         "//pw_status",

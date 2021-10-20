@@ -131,6 +131,9 @@ message LogEntry {
   // messages dropped.
   optional uint32 dropped = 6;
 
+  // The PW_LOG_MODULE_NAME for this log message.
+  optional bytes module = 7 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+
   // The following fields are planned but will not be added until they are
   // needed. Protobuf field numbers over 15 use an extra byte, so these fields
   // are left out for now to avoid reserving field numbers unnecessarily.
@@ -146,11 +149,6 @@ message LogEntry {
 
   // The file path where this log was created, if not encoded in the message.
   // optional bytes file = ? [(tokenizer.format) = TOKENIZATION_OPTIONAL];
-
-  // The PW_LOG_MODULE_NAME for this log message, if it is not encoded in the
-  // message.
-  // optional bytes module_name = ?
-  //    [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 
   // Some messages are associated with trace events, which may carry additional
   // contextual data. This is a tuple of a data format string which could be

@@ -75,6 +75,17 @@ pw_source_set("pw_protobuf") {
   ]
 }
 
+pw_source_set("bytes_utils") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_protobuf/bytes_utils.h" ]
+  public_deps = [
+    ":pw_protobuf",
+    dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
+  ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   report_deps = [

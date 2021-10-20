@@ -99,6 +99,7 @@ pw_test("proto_utils_test") {
     ":pw_log.facade",
     "$dir_pw_preprocessor",
     "$dir_pw_protobuf",
+    "$dir_pw_protobuf:bytes_utils",
   ]
   sources = [ "proto_utils_test.cc" ]
 }

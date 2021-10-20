@@ -15,6 +15,8 @@
 #include "pw_log/proto_utils.h"
 
 #include "gtest/gtest.h"
+#include "pw_bytes/span.h"
+#include "pw_protobuf/bytes_utils.h"
 #include "pw_protobuf/decoder.h"
 
 namespace pw::log {
@@ -52,6 +54,15 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
   EXPECT_EQ(4U, entry_decoder.FieldNumber());
   EXPECT_TRUE(entry_decoder.ReadInt64(&timestamp).ok());
   EXPECT_EQ(expected_timestamp, timestamp);
+
+  if (expected_metadata.module() != 0) {
+    EXPECT_TRUE(entry_decoder.Next().ok());  // module name
+    EXPECT_EQ(7U, entry_decoder.FieldNumber());
+    const Result<uint32_t> module =
+        protobuf::DecodeBytesToUint32(entry_decoder);
+    ASSERT_TRUE(module.ok());
+    EXPECT_EQ(expected_metadata.module(), module.value());
+  }
 }
 
 TEST(UtilsTest, EncodeTokenizedLog) {

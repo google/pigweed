@@ -82,6 +82,7 @@ pw_test("log_service_test") {
     "$dir_pw_log:proto_utils",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_protobuf",
+    "$dir_pw_protobuf:bytes_utils",
     "$dir_pw_result",
     "$dir_pw_rpc/raw:test_method_context",
     "$dir_pw_status",

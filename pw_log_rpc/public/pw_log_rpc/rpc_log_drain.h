@@ -50,10 +50,10 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
     kCloseStreamOnWriterError,
   };
 
-  // The minimum buffer size, without the message payload, needed to retrieve a
-  // log::LogEntry from the attached MultiSink. The user must account for the
-  // max message size to avoid log entry drops. The dropped field is not
-  // accounted since a dropped message has all other fields unset.
+  // The minimum buffer size, without the message payload or module sizes,
+  // needed to retrieve a log::LogEntry from the attached MultiSink. The user
+  // must account for the max message size to avoid log entry drops. The dropped
+  // field is not accounted since a dropped message has all other fields unset.
   static constexpr size_t kMinEntrySizeWithoutPayload =
       // message
       protobuf::SizeOfFieldKey(1) +
@@ -65,7 +65,11 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
       + protobuf::SizeOfFieldKey(3) +
       protobuf::kMaxSizeBytesUint32
       // timestamp or time_since_last_entry
-      + protobuf::SizeOfFieldKey(4) + protobuf::kMaxSizeBytesInt64;
+      + protobuf::SizeOfFieldKey(4) +
+      protobuf::kMaxSizeBytesInt64
+      // Module
+      + protobuf::SizeOfFieldKey(7) +
+      1;  // Assume minimum varint length, skip the module bytes.
   // The smallest buffer size must be able to fit a typical token size: 4 bytes.
   static constexpr size_t kMinEntryBufferSize = kMinEntrySizeWithoutPayload + 4;
 
