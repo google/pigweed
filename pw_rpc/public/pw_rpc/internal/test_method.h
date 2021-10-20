@@ -17,10 +17,10 @@
 #include <cstring>
 #include <span>
 
-#include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_union.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status_with_size.h"

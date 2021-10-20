@@ -159,35 +159,4 @@ void Call::Close() {
   client_stream_state_ = kClientStreamInactive;
 }
 
-ServerCall& ServerCall::operator=(ServerCall&& other) {
-  MoveFrom(other);
-
-#if PW_RPC_CLIENT_STREAM_END_CALLBACK
-  on_client_stream_end_ = std::move(other.on_client_stream_end_);
-#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
-
-  return *this;
-}
-
-void ClientCall::SendInitialRequest(ConstByteSpan payload) {
-  if (const Status status = SendPacket(PacketType::REQUEST, payload);
-      !status.ok()) {
-    HandleError(status);
-  }
-}
-
-UnaryResponseClientCall& UnaryResponseClientCall::operator=(
-    UnaryResponseClientCall&& other) {
-  MoveFrom(other);
-  on_completed_ = std::move(other.on_completed_);
-  return *this;
-}
-
-StreamResponseClientCall& StreamResponseClientCall::operator=(
-    StreamResponseClientCall&& other) {
-  MoveFrom(other);
-  on_completed_ = std::move(other.on_completed_);
-  return *this;
-}
-
 }  // namespace pw::rpc::internal

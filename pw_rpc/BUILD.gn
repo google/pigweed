@@ -60,7 +60,9 @@ pw_source_set("server") {
     "public/pw_rpc/internal/method_lookup.h",
     "public/pw_rpc/internal/method_union.h",
     "public/pw_rpc/internal/open_call.h",
+    "public/pw_rpc/internal/server_call.h",
     "server.cc",
+    "server_call.cc",
     "service.cc",
   ]
   friend = [ "./*" ]
@@ -76,9 +78,13 @@ pw_source_set("client") {
   deps = [ dir_pw_log ]
   public = [
     "public/pw_rpc/client.h",
+    "public/pw_rpc/internal/client_call.h",
     "public/pw_rpc/internal/service_client.h",
   ]
-  sources = [ "client.cc" ]
+  sources = [
+    "client.cc",
+    "client_call.cc",
+  ]
   allow_circular_includes_from = [ ":common" ]
 }
 
@@ -99,6 +105,7 @@ pw_source_set("common") {
     ":config",
     ":protos.pwpb",
     "$dir_pw_containers:intrusive_list",
+    "$dir_pw_sync:mutex",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_function,

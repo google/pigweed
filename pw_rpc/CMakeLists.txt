@@ -27,6 +27,7 @@ pw_add_module_library(pw_rpc.server
     call.cc
     endpoint.cc
     server.cc
+    server_call.cc
     service.cc
   PUBLIC_DEPS
     pw_rpc.common
@@ -37,6 +38,7 @@ pw_add_module_library(pw_rpc.server
 pw_add_module_library(pw_rpc.client
   SOURCES
     client.cc
+    client_call.cc
   PUBLIC_DEPS
     pw_rpc.common
     pw_result

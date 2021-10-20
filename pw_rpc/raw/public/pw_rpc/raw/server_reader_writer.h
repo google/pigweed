@@ -19,10 +19,10 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/open_call.h"
+#include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/server.h"
 
 namespace pw::rpc {

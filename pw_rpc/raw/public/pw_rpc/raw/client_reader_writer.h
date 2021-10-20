@@ -19,7 +19,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/client_call.h"
 
 namespace pw::rpc {
 

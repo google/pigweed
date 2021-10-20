@@ -18,7 +18,7 @@
 #pragma once
 
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/nanopb/internal/common.h"
 
 namespace pw::rpc {

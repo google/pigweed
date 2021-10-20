@@ -17,7 +17,7 @@
 #include <optional>
 
 #include "gtest/gtest.h"
-#include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/raw/client_testing.h"
 

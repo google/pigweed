@@ -47,8 +47,7 @@ class Endpoint {
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.
   Result<Packet> ProcessPacket(std::span<const std::byte> data,
-                               Packet::Destination packet,
-                               Call*& ongoing_call);
+                               Packet::Destination packet);
 
   // Finds a call object for an ongoing call associated with this packet, if
   // any. Returns nullptr if no matching call exists.

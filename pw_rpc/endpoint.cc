@@ -27,8 +27,7 @@ Endpoint::~Endpoint() {
 }
 
 Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
-                                       Packet::Destination destination,
-                                       Call*& ongoing_call) {
+                                       Packet::Destination destination) {
   Result<Packet> result = Packet::FromBuffer(data);
 
   if (!result.ok()) {
@@ -47,9 +46,6 @@ Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
   if (packet.destination() != destination) {
     return Status::InvalidArgument();
   }
-
-  // Find an existing reader/writer for this RPC, if any.
-  ongoing_call = FindCall(packet);
 
   return result;
 }

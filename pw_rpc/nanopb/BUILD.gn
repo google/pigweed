@@ -60,6 +60,7 @@ pw_source_set("common") {
   public_deps = [ dir_pw_bytes ]
   public_configs = [ ":public" ]
   deps = [
+    "..:client",
     "..:common",
     dir_pw_log,
   ]

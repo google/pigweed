@@ -239,18 +239,13 @@ TEST_F(BasicServer, ProcessPacket_ClientErrorOnUnassignedChannel_NoResponse) {
   EXPECT_EQ(0u, output_.packet_count());
 }
 
-TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsError) {
+TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsNothing) {
   // Set up a fake ServerWriter representing an ongoing RPC.
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100),
                                   output_));
 
-  const Packet& packet = output_.sent_packet();
-  EXPECT_EQ(packet.type(), PacketType::SERVER_ERROR);
-  EXPECT_EQ(packet.channel_id(), 1u);
-  EXPECT_EQ(packet.service_id(), 42u);
-  EXPECT_EQ(packet.method_id(), 100u);
-  EXPECT_EQ(packet.status(), Status::FailedPrecondition());
+  EXPECT_EQ(output_.packet_count(), 0u);
 }
 
 class BidiMethod : public BasicServer {
@@ -330,17 +325,16 @@ TEST_F(BidiMethod, Cancel_CallsOnErrorCallback) {
   EXPECT_EQ(status, Status::Cancelled());
 }
 
-TEST_F(BidiMethod, Cancel_IncorrectChannel) {
+TEST_F(BidiMethod, Cancel_IncorrectChannel_SendsNothing) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 2, 42, 100),
                                   output_));
 
-  EXPECT_EQ(output_.sent_packet().type(), PacketType::SERVER_ERROR);
-  EXPECT_EQ(output_.sent_packet().status(), Status::FailedPrecondition());
+  EXPECT_EQ(output_.packet_count(), 0u);
   EXPECT_TRUE(responder_.active());
 }
 
-TEST_F(BidiMethod, Cancel_IncorrectService) {
+TEST_F(BidiMethod, Cancel_IncorrectService_SendsNotFound) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 43, 100),
                                   output_));
@@ -352,7 +346,7 @@ TEST_F(BidiMethod, Cancel_IncorrectService) {
   EXPECT_TRUE(responder_.active());
 }
 
-TEST_F(BidiMethod, Cancel_IncorrectMethod) {
+TEST_F(BidiMethod, Cancel_IncorrectMethod_SendsNotFound) {
   EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 101),
                                   output_));

@@ -33,15 +33,12 @@ using internal::PacketType;
 
 Status Server::ProcessPacket(std::span<const byte> data,
                              ChannelOutput& interface) {
-  internal::Call* base;
-  Result<Packet> result = Endpoint::ProcessPacket(data, Packet::kServer, base);
-  internal::ServerCall* const call = static_cast<internal::ServerCall*>(base);
-
-  if (!result.ok()) {
-    return result.status();
-  }
-
+  PW_TRY_ASSIGN(Result<Packet> result,
+                Endpoint::ProcessPacket(data, Packet::kServer));
   Packet& packet = *result;
+
+  internal::ServerCall* const call =
+      static_cast<internal::ServerCall*>(FindCall(packet));
 
   // Verbose log for debugging.
   // PW_LOG_DEBUG("RPC server received packet type %u for %u:%08x/%08x",
@@ -96,7 +93,9 @@ Status Server::ProcessPacket(std::span<const byte> data,
       }
       break;
     case PacketType::CANCEL:
-      HandleCancelPacket(packet, *channel, call);
+      if (call != nullptr && call->id() == packet.call_id()) {
+        call->HandleError(Status::Cancelled());
+      }
       break;
     case PacketType::CLIENT_STREAM_END:
       HandleClientStreamPacket(packet, *channel, call);
@@ -105,7 +104,8 @@ Status Server::ProcessPacket(std::span<const byte> data,
       PW_LOG_WARN("pw_rpc server unable to handle packet of type %u",
                   unsigned(packet.type()));
   }
-  return OkStatus();
+
+  return OkStatus();  // OK since the packet was handled
 }
 
 std::tuple<Service*, const internal::Method*> Server::FindMethod(
@@ -152,18 +152,6 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
     call->HandlePayload(packet.payload());
   } else {  // Handle PacketType::CLIENT_STREAM_END.
     call->EndClientStream();
-  }
-}
-
-void Server::HandleCancelPacket(const Packet& packet,
-                                internal::Channel& channel,
-                                internal::ServerCall* call) const {
-  if (call == nullptr || call->id() != packet.call_id()) {
-    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
-        .IgnoreError();  // TODO(pwbug/387): Handle Status properly
-    PW_LOG_DEBUG("Received CANCEL packet for method that is not pending");
-  } else {
-    call->HandleError(Status::Cancelled());
   }
 }
 

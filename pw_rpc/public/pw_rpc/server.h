@@ -19,10 +19,10 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 
@@ -56,10 +56,6 @@ class Server : public internal::Endpoint {
   void HandleClientStreamPacket(const internal::Packet& packet,
                                 internal::Channel& channel,
                                 internal::ServerCall* call) const;
-
-  void HandleCancelPacket(const internal::Packet& packet,
-                          internal::Channel& channel,
-                          internal::ServerCall* call) const;
 
   IntrusiveList<Service> services_;
 };

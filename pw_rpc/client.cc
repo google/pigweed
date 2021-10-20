@@ -15,6 +15,7 @@
 #include "pw_rpc/client.h"
 
 #include "pw_log/log.h"
+#include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_status/try.h"
 
@@ -27,12 +28,13 @@ using internal::PacketType;
 }  // namespace
 
 Status Client::ProcessPacket(ConstByteSpan data) {
-  internal::Call* base;
-  Result<Packet> result = Endpoint::ProcessPacket(data, Packet::kClient, base);
-
-  PW_TRY(result.status());
-
+  PW_TRY_ASSIGN(Result<Packet> result,
+                Endpoint::ProcessPacket(data, Packet::kClient));
   Packet& packet = *result;
+
+  // Find an existing call for this RPC, if any.
+  internal::ClientCall* call =
+      static_cast<internal::ClientCall*>(FindCall(packet));
 
   internal::Channel* channel = GetInternalChannel(packet.channel_id());
   if (channel == nullptr) {
@@ -40,7 +42,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
     return Status::Unavailable();
   }
 
-  if (base == nullptr || base->id() != packet.call_id()) {
+  if (call == nullptr || call->id() != packet.call_id()) {
     // The call for the packet does not exist. If the packet is a server stream
     // message, notify the server so that it can kill the stream. Otherwise,
     // silently drop the packet (as it would terminate the RPC anyway).
@@ -52,35 +54,33 @@ Status Client::ProcessPacket(ConstByteSpan data) {
     return OkStatus();  // OK since the packet was handled
   }
 
-  internal::ClientCall& call = *static_cast<internal::ClientCall*>(base);
-
   switch (packet.type()) {
     case PacketType::RESPONSE:
       // RPCs without a server stream include a payload with the final packet.
-      if (call.has_server_stream()) {
-        static_cast<internal::StreamResponseClientCall&>(call).HandleCompleted(
+      if (call->has_server_stream()) {
+        static_cast<internal::StreamResponseClientCall&>(*call).HandleCompleted(
             packet.status());
       } else {
-        static_cast<internal::UnaryResponseClientCall&>(call).HandleCompleted(
+        static_cast<internal::UnaryResponseClientCall&>(*call).HandleCompleted(
             packet.payload(), packet.status());
       }
       break;
     case PacketType::SERVER_ERROR:
-      call.HandleError(packet.status());
+      call->HandleError(packet.status());
       break;
     case PacketType::SERVER_STREAM:
-      if (call.has_server_stream()) {
-        call.HandlePayload(packet.payload());
+      if (call->has_server_stream()) {
+        call->HandlePayload(packet.payload());
       } else {
         PW_LOG_DEBUG("Received SERVER_STREAM for RPC without a server stream");
-        call.HandleError(Status::InvalidArgument());
+        call->HandleError(Status::InvalidArgument());
         // Report the error to the server so it can abort the RPC.
         channel->Send(Packet::ClientError(packet, Status::InvalidArgument()))
             .IgnoreError();  // Errors are logged in Channel::Send.
       }
       break;
     default:
-      PW_LOG_WARN("pw_rpc server unable to handle packet of type %u",
+      PW_LOG_WARN("pw_rpc client unable to handle packet of type %u",
                   static_cast<unsigned>(packet.type()));
   }
 

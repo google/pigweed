@@ -19,6 +19,7 @@
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_result/result.h"
+#include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/nanopb/server_reader_writer.h"
 #include "pw_status/try.h"
 
