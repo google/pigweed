@@ -52,15 +52,24 @@ class NanopbServerCall : public internal::ServerCall {
   const NanopbMethodSerde& serde() const { return *serde_; }
 
  protected:
-  NanopbServerCall(NanopbServerCall&& other) { *this = std::move(other); }
+  NanopbServerCall(NanopbServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    *this = std::move(other);
+  }
 
-  NanopbServerCall& operator=(NanopbServerCall&& other) {
-    ServerCall::operator=(std::move(other));
-    serde_ = other.serde_;
+  NanopbServerCall& operator=(NanopbServerCall&& other)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    MoveNanopbServerCallFrom(other);
     return *this;
   }
 
-  Status SendServerStream(const void* payload);
+  void MoveNanopbServerCallFrom(NanopbServerCall& other)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    MoveServerCallFrom(other);
+    serde_ = other.serde_;
+  }
+
+  Status SendServerStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock());
 
   bool DecodeRequest(ConstByteSpan payload, void* request_struct) const {
     return serde_->DecodeRequest(payload, request_struct);
@@ -82,20 +91,31 @@ class BaseNanopbServerReader : public NanopbServerCall {
  protected:
   constexpr BaseNanopbServerReader() = default;
 
-  BaseNanopbServerReader(BaseNanopbServerReader&& other) {
+  BaseNanopbServerReader(BaseNanopbServerReader&& other)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
     *this = std::move(other);
   }
 
-  BaseNanopbServerReader& operator=(BaseNanopbServerReader&& other) {
-    NanopbServerCall::operator=(std::move(other));
-    set_on_next(std::move(other.nanopb_on_next_));
+  BaseNanopbServerReader& operator=(BaseNanopbServerReader&& other)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    MoveNanopbServerCallFrom(other);
+    set_on_next_locked(std::move(other.nanopb_on_next_));
     return *this;
   }
 
-  void set_on_next(Function<void(const Request& request)> on_next) {
+  void set_on_next(Function<void(const Request& request)> on_next)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    set_on_next_locked(std::move(on_next));
+  }
+
+ private:
+  void set_on_next_locked(Function<void(const Request& request)>&& on_next)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     nanopb_on_next_ = std::move(on_next);
 
-    internal::Call::set_on_next([this](ConstByteSpan payload) {
+    internal::Call::set_on_next_locked([this](ConstByteSpan payload) {
       if (nanopb_on_next_) {
         Request request_struct{};
         if (DecodeRequest(payload, &request_struct)) {
@@ -105,7 +125,6 @@ class BaseNanopbServerReader : public NanopbServerCall {
     });
   }
 
- private:
   Function<void(const Request&)> nanopb_on_next_;
 };
 

@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_transfer/internal/client_connection.h"
-
 #define PW_LOG_MODULE_NAME "TRN"
+
+#include "pw_transfer/internal/client_connection.h"
 
 #include "pw_log/log.h"
 #include "pw_transfer_private/chunk.h"

@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <mutex>
 #include <span>
 #include <utility>
 
@@ -21,11 +22,13 @@
 #include "pw_function/function.h"
 #include "pw_rpc/internal/call_context.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
+#include "pw_sync/lock_annotations.h"
 
 namespace pw::rpc::internal {
 
@@ -72,38 +75,44 @@ class Call : public IntrusiveList<Call>::Item {
   // Closes the Call and sends a RESPONSE packet, if it is active. Returns the
   // status from sending the packet, or FAILED_PRECONDITION if the Call is not
   // active.
-  Status CloseAndSendResponse(ConstByteSpan response, Status status) {
+  Status CloseAndSendResponse(ConstByteSpan response, Status status)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
     return CloseAndSendFinalPacket(PacketType::RESPONSE, response, status);
   }
 
-  Status CloseAndSendResponse(Status status) {
+  Status CloseAndSendResponse(Status status) PW_LOCKS_EXCLUDED(rpc_lock()) {
     return CloseAndSendResponse({}, status);
   }
 
-  Status CloseAndSendServerError(Status error) {
+  Status CloseAndSendServerError(Status error) PW_LOCKS_EXCLUDED(rpc_lock()) {
     return CloseAndSendFinalPacket(PacketType::SERVER_ERROR, {}, error);
   }
 
-  Status CloseAndSendClientError(Status error) {
+  Status CloseAndSendClientError(Status error) PW_LOCKS_EXCLUDED(rpc_lock()) {
     return CloseAndSendFinalPacket(PacketType::CLIENT_ERROR, {}, error);
   }
 
-  Status CloseAndSendClientStreamEnd() {
-    return CloseAndSendFinalPacket(PacketType::CLIENT_STREAM_END, {}, {});
-  }
+  // Ends the client stream for a client call.
+  Status EndClientStream() PW_UNLOCK_FUNCTION(rpc_lock());
 
   // Sends a payload in either a server or client stream packet.
-  Status Write(ConstByteSpan payload);
+  Status Write(ConstByteSpan payload) PW_LOCKS_EXCLUDED(rpc_lock());
 
   // Whenever a payload arrives (in a server/client stream or in a response),
   // call the on_next_ callback.
-  void HandlePayload(ConstByteSpan message) const {
-    if (on_next_) {
+  // Precondition: rpc_lock() must be held.
+  void HandlePayload(ConstByteSpan message) const
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
+    const bool invoke = on_next_ != nullptr;
+    rpc_lock().unlock();
+
+    if (invoke) {
       on_next_(message);
     }
   }
 
-  void HandleError(Status status) {
+  // Precondition: rpc_lock() must be held.
+  void HandleError(Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
     Close();
     on_error(status);
   }
@@ -124,8 +133,10 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Keep this public so the Nanopb implementation can set it from a helper
   // function.
-  void set_on_next(Function<void(ConstByteSpan)> on_next) {
-    on_next_ = std::move(on_next);
+  void set_on_next(Function<void(ConstByteSpan)> on_next)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock{rpc_lock()};
+    set_on_next_locked(std::move(on_next));
   }
 
  protected:
@@ -159,10 +170,14 @@ class Call : public IntrusiveList<Call>::Item {
        MethodType type);
 
   // This call must be in a closed state when this is called.
-  void MoveFrom(Call& other);
+  void MoveFrom(Call& other) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   Endpoint& endpoint() const { return *endpoint_; }
   Channel& channel() const { return *channel_; }
+
+  void set_on_next_locked(Function<void(ConstByteSpan)>&& on_next) {
+    on_next_ = std::move(on_next);
+  }
 
   void set_on_error(Function<void(Status)> on_error) {
     on_error_ = std::move(on_error);
@@ -170,8 +185,11 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Calls the on_error callback without closing the RPC. This is used when the
   // call has already completed.
-  void on_error(Status error) {
-    if (on_error_) {
+  void on_error(Status error) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    const bool invoke = on_error_ != nullptr;
+
+    rpc_lock().unlock();
+    if (invoke) {
       on_error_(error);
     }
   }
@@ -188,14 +206,14 @@ class Call : public IntrusiveList<Call>::Item {
   // Returns FAILED_PRECONDITION if the call is not active().
   Status SendPacket(PacketType type,
                     ConstByteSpan payload,
-                    Status status = OkStatus());
+                    Status status = OkStatus()) PW_UNLOCK_FUNCTION(rpc_lock());
 
   // Unregisters the RPC from the endpoint & marks as closed. The call may be
   // active or inactive when this is called.
-  void Close();
+  void Close() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Cancels an RPC. For client calls only.
-  Status Cancel() {
+  Status Cancel() PW_LOCKS_EXCLUDED(rpc_lock()) {
     return CloseAndSendFinalPacket(
         PacketType::CLIENT_ERROR, {}, Status::Cancelled());
   }
@@ -221,7 +239,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   Status CloseAndSendFinalPacket(PacketType type,
                                  ConstByteSpan response,
-                                 Status status);
+                                 Status status) PW_LOCKS_EXCLUDED(rpc_lock());
 
   internal::Endpoint* endpoint_;
   internal::Channel* channel_;

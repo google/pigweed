@@ -43,6 +43,11 @@
 #define PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE 64
 #endif  // PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE
 
+// Enable global synchronization for RPC calls.
+#ifndef PW_RPC_USE_GLOBAL_MUTEX
+#define PW_RPC_USE_GLOBAL_MUTEX 0
+#endif  // PW_RPC_USE_GLOBAL_MUTEX
+
 namespace pw::rpc::cfg {
 
 template <typename...>

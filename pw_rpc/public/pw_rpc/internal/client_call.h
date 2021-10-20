@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
@@ -24,9 +25,23 @@ namespace pw::rpc::internal {
 // A Call object, as used by an RPC client.
 class ClientCall : public Call {
  public:
-  ~ClientCall() { CloseClientStream(); }
+  ~ClientCall() PW_LOCKS_EXCLUDED(rpc_lock()) {
+    rpc_lock().lock();
+    if (client_stream_open()) {
+      EndClientStream();
+      rpc_lock().lock();  // Reacquire after sending the packet
+    }
+    Close();
+    rpc_lock().unlock();
+  }
 
-  void SendInitialRequest(ConstByteSpan payload);
+  void SendInitialRequest(ConstByteSpan payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    rpc_lock().lock();
+    SendInitialRequestLocked(payload);
+  }
+
+  void SendInitialRequestLocked(ConstByteSpan payload)
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
  protected:
   constexpr ClientCall() = default;
@@ -38,10 +53,13 @@ class ClientCall : public Call {
              MethodType type)
       : Call(client, channel_id, service_id, method_id, type) {}
 
-  void CloseClientStream();
-
-  void MoveClientCallFrom(ClientCall& other) {
-    CloseClientStream();
+  void MoveClientCallFrom(ClientCall& other)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    if (client_stream_open()) {
+      EndClientStream();
+      rpc_lock().lock();  // Reacquire after sending the packet
+    }
+    Close();
     MoveFrom(other);
   }
 };
@@ -67,10 +85,14 @@ class UnaryResponseClientCall : public ClientCall {
     return call;
   }
 
-  void HandleCompleted(ConstByteSpan response, Status status) {
+  void HandleCompleted(ConstByteSpan response, Status status)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     Close();
+    const bool invoke_callback = on_completed_ != nullptr;
 
-    if (on_completed_) {
+    rpc_lock().unlock();
+
+    if (invoke_callback) {
       on_completed_(response, status);
     }
   }
@@ -85,15 +107,26 @@ class UnaryResponseClientCall : public ClientCall {
                           MethodType type)
       : ClientCall(client, channel_id, service_id, method_id, type) {}
 
-  void set_on_completed(Function<void(ConstByteSpan, Status)> on_completed) {
-    on_completed_ = std::move(on_completed);
-  }
-
   UnaryResponseClientCall(UnaryResponseClientCall&& other) {
     *this = std::move(other);
   }
 
-  UnaryResponseClientCall& operator=(UnaryResponseClientCall&& other);
+  UnaryResponseClientCall& operator=(UnaryResponseClientCall&& other)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    MoveUnaryResponseClientCallFrom(other);
+    return *this;
+  }
+
+  void MoveUnaryResponseClientCallFrom(UnaryResponseClientCall& other)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    MoveClientCallFrom(other);
+    on_completed_ = std::move(other.on_completed_);
+  }
+
+  void set_on_completed(Function<void(ConstByteSpan, Status)> on_completed) {
+    on_completed_ = std::move(on_completed);
+  }
 
  private:
   using internal::ClientCall::set_on_next;  // Not used in unary response calls.
@@ -124,10 +157,13 @@ class StreamResponseClientCall : public ClientCall {
     return call;
   }
 
-  void HandleCompleted(Status status) {
+  void HandleCompleted(Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
     Close();
+    const bool invoke_callback = on_completed_ != nullptr;
 
-    if (on_completed_) {
+    rpc_lock().unlock();
+
+    if (invoke_callback) {
       on_completed_(status);
     }
   }
@@ -146,7 +182,18 @@ class StreamResponseClientCall : public ClientCall {
     *this = std::move(other);
   }
 
-  StreamResponseClientCall& operator=(StreamResponseClientCall&& other);
+  StreamResponseClientCall& operator=(StreamResponseClientCall&& other)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    MoveStreamResponseClientCallFrom(other);
+    return *this;
+  }
+
+  void MoveStreamResponseClientCallFrom(StreamResponseClientCall& other)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    MoveClientCallFrom(other);
+    on_completed_ = std::move(other.on_completed_);
+  }
 
   void set_on_completed(Function<void(Status)> on_completed) {
     on_completed_ = std::move(on_completed);

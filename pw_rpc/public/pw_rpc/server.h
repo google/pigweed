@@ -45,7 +45,8 @@ class Server : public internal::Endpoint {
   //   INVALID_ARGUMENT - The packet is intended for a client, not a server.
   //
   Status ProcessPacket(std::span<const std::byte> packet,
-                       ChannelOutput& interface);
+                       ChannelOutput& interface)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock());
 
  private:
   friend class internal::Call;
@@ -55,7 +56,8 @@ class Server : public internal::Endpoint {
 
   void HandleClientStreamPacket(const internal::Packet& packet,
                                 internal::Channel& channel,
-                                internal::ServerCall* call) const;
+                                internal::ServerCall* call) const
+      PW_UNLOCK_FUNCTION(internal::rpc_lock());
 
   IntrusiveList<Service> services_;
 };

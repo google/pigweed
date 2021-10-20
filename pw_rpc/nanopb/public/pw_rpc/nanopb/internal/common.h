@@ -15,6 +15,7 @@
 
 #include "pb_common.h"
 #include "pw_bytes/span.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {
@@ -87,7 +88,8 @@ class NanopbServerCall;
 // active() must be true.
 void NanopbSendInitialRequest(ClientCall& call,
                               NanopbSerde serde,
-                              const void* payload);
+                              const void* payload)
+    PW_LOCKS_EXCLUDED(rpc_lock());
 
 // [Client/Server] Encodes and sends a client or server stream message.
 // active() must be true.

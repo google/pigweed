@@ -44,12 +44,6 @@ class FakeGeneratedService : public Service {
   };
 };
 
-struct {
-  int64_t integer;
-  uint32_t status_code;
-} last_request;
-RawServerWriter last_writer;
-
 class FakeGeneratedServiceImpl
     : public FakeGeneratedService<FakeGeneratedServiceImpl> {
  public:
@@ -78,6 +72,12 @@ class FakeGeneratedServiceImpl
     DecodeRawTestRequest(request);
     last_writer = std::move(writer);
   }
+
+  struct {
+    int64_t integer;
+    uint32_t status_code;
+  } last_request;
+  RawServerWriter last_writer;
 
  private:
   void DecodeRawTestRequest(ConstByteSpan request) {
@@ -115,8 +115,8 @@ TEST(RawMethodUnion, InvokesUnary) {
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
   method.Invoke(context.get(), context.request(test_request));
 
-  EXPECT_EQ(last_request.integer, 456);
-  EXPECT_EQ(last_request.status_code, 7u);
+  EXPECT_EQ(context.service().last_request.integer, 456);
+  EXPECT_EQ(context.service().last_request.status_code, 7u);
 
   const Packet& response = context.output().sent_packet();
   EXPECT_EQ(response.status(), Status::Unauthenticated());
@@ -144,10 +144,10 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
   method.Invoke(context.get(), context.request(test_request));
 
   EXPECT_EQ(0u, context.output().packet_count());
-  EXPECT_EQ(777, last_request.integer);
-  EXPECT_EQ(2u, last_request.status_code);
-  EXPECT_TRUE(last_writer.active());
-  EXPECT_EQ(OkStatus(), last_writer.Finish());
+  EXPECT_EQ(777, context.service().last_request.integer);
+  EXPECT_EQ(2u, context.service().last_request.status_code);
+  EXPECT_TRUE(context.service().last_writer.active());
+  EXPECT_EQ(OkStatus(), context.service().last_writer.Finish());
 }
 
 }  // namespace

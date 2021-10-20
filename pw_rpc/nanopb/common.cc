@@ -97,8 +97,10 @@ void NanopbSendInitialRequest(ClientCall& call,
   PW_DCHECK(call.active());
 
   Result<ByteSpan> result = EncodeToPayloadBuffer(call, payload, serde);
+  rpc_lock().lock();
+
   if (result.ok()) {
-    call.SendInitialRequest(*result);
+    call.SendInitialRequestLocked(*result);
   } else {
     call.HandleError(result.status());
   }

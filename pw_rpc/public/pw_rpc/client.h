@@ -43,7 +43,8 @@ class Client : public internal::Endpoint {
   //   INVALID_ARGUMENT - The packet is intended for a server, not a client.
   //   UNAVAILABLE - No RPC channel with the requested ID was found.
   //
-  Status ProcessPacket(ConstByteSpan data);
+  Status ProcessPacket(ConstByteSpan data)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock());
 };
 
 }  // namespace pw::rpc

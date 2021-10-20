@@ -53,6 +53,7 @@ _host_common = {
 
   # Configure backend for pw_rpc_system_server.
   pw_rpc_system_server_BACKEND = "$dir_pigweed/targets/host:system_rpc_server"
+  pw_rpc_USE_GLOBAL_MUTEX = true
 
   # Configure backend for trace facade.
   pw_trace_BACKEND = "$dir_pw_trace_tokenized"

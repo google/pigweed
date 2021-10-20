@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
-import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
@@ -23,17 +22,16 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
+import("config.gni")
 import("internal/integration_test_ports.gni")
-
-declare_args() {
-  # The build target that overrides the default configuration options for this
-  # module. This should point to a source set that provides defines through a
-  # public config (which may -include a file or add defines directly).
-  pw_rpc_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
-}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+config("global_mutex") {
+  defines = [ "PW_RPC_USE_GLOBAL_MUTEX=1" ]
   visibility = [ ":*" ]
 }
 
@@ -43,6 +41,10 @@ pw_source_set("config") {
   public_deps = [ pw_rpc_CONFIG ]
   visibility = [ "./*" ]
   friend = [ "./*" ]
+
+  if (pw_rpc_USE_GLOBAL_MUTEX) {
+    public_configs += [ ":global_mutex" ]
+  }
 }
 
 pw_source_set("server") {
@@ -105,12 +107,17 @@ pw_source_set("common") {
     ":config",
     ":protos.pwpb",
     "$dir_pw_containers:intrusive_list",
-    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:lock_annotations",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_function,
     dir_pw_status,
   ]
+
+  if (pw_rpc_USE_GLOBAL_MUTEX) {
+    public_deps += [ "$dir_pw_sync:mutex" ]
+  }
+
   deps = [ dir_pw_log ]
   public = [ "public/pw_rpc/channel.h" ]
   sources = [
@@ -122,6 +129,7 @@ pw_source_set("common") {
     "public/pw_rpc/internal/call_context.h",
     "public/pw_rpc/internal/channel.h",
     "public/pw_rpc/internal/endpoint.h",
+    "public/pw_rpc/internal/lock.h",
     "public/pw_rpc/internal/method_info.h",
     "public/pw_rpc/internal/packet.h",
     "public/pw_rpc/method_type.h",
@@ -300,13 +308,13 @@ pw_size_report("server_size") {
 
 pw_test_group("tests") {
   tests = [
+    ":call_test",
     ":channel_test",
     ":client_server_test",
     ":fake_channel_output_test",
     ":method_test",
     ":ids_test",
     ":packet_test",
-    ":responder_test",
     ":server_test",
     ":service_test",
   ]
@@ -322,7 +330,7 @@ pw_proto_library("test_protos") {
   visibility = [ "./*" ]
 }
 
-pw_test("responder_test") {
+pw_test("call_test") {
   deps = [
     ":server",
     ":test_utils",

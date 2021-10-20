@@ -18,6 +18,7 @@ import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_rpc/config.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -36,8 +37,8 @@ declare_args() {
   pw_TARGET_APPLICATIONS = []
 
   # Whether to run integration tests, which may involve multiple processes
-  # communicating over a socket.
-  pw_RUN_INTEGRATION_TESTS = host_os == "linux"
+  # communicating over a socket. Integration tests require RPC synchronization.
+  pw_RUN_INTEGRATION_TESTS = host_os == "linux" && pw_rpc_USE_GLOBAL_MUTEX
 }
 
 # Enumerate all of the different targets that upstream Pigweed will build by

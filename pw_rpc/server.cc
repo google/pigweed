@@ -15,6 +15,7 @@
 #include "pw_rpc/server.h"
 
 #include <algorithm>
+#include <mutex>
 
 #include "pw_log/log.h"
 #include "pw_rpc/internal/endpoint.h"
@@ -37,6 +38,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
                 Endpoint::ProcessPacket(data, Packet::kServer));
   Packet& packet = *result;
 
+  internal::rpc_lock().lock();
   internal::ServerCall* const call =
       static_cast<internal::ServerCall*>(FindCall(packet));
 
@@ -48,10 +50,12 @@ Status Server::ProcessPacket(std::span<const byte> data,
   //              static_cast<unsigned>(packet.method_id()));
 
   internal::Channel* channel = GetInternalChannel(packet.channel_id());
+
   if (channel == nullptr) {
     // If the requested channel doesn't exist, try to dynamically assign one.
     channel = AssignChannel(packet.channel_id(), interface);
     if (channel == nullptr) {
+      internal::rpc_lock().unlock();
       // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error. Never
       // send responses to error messages, though, to avoid infinite cycles.
       if (packet.type() != PacketType::CLIENT_ERROR) {
@@ -67,6 +71,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
   const auto [service, method] = FindMethod(packet);
 
   if (method == nullptr) {
+    internal::rpc_lock().unlock();
     // Don't send responses to errors to avoid infinite error cycles.
     if (packet.type() != PacketType::CLIENT_ERROR) {
       channel->Send(Packet::ServerError(packet, Status::NotFound()))
@@ -81,6 +86,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
       // cancelled when the new call object is created.
       const internal::CallContext context(
           *this, *channel, *service, *method, packet.call_id());
+      internal::rpc_lock().unlock();
       method->Invoke(context, packet);
       break;
     }
@@ -91,12 +97,15 @@ Status Server::ProcessPacket(std::span<const byte> data,
     case PacketType::DEPRECATED_CANCEL:
       if (call != nullptr && call->id() == packet.call_id()) {
         call->HandleError(packet.status());
+      } else {
+        internal::rpc_lock().unlock();
       }
       break;
     case PacketType::CLIENT_STREAM_END:
       HandleClientStreamPacket(packet, *channel, call);
       break;
     default:
+      internal::rpc_lock().unlock();
       PW_LOG_WARN("pw_rpc server unable to handle packet of type %u",
                   unsigned(packet.type()));
   }
@@ -122,6 +131,7 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
                                       internal::Channel& channel,
                                       internal::ServerCall* call) const {
   if (call == nullptr || call->id() != packet.call_id()) {
+    internal::rpc_lock().unlock();
     PW_LOG_DEBUG(
         "Received client stream packet for %u:%08x/%08x, which is not pending",
         static_cast<unsigned>(packet.channel_id()),
@@ -133,12 +143,14 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
   }
 
   if (!call->has_client_stream()) {
+    internal::rpc_lock().unlock();
     channel.Send(Packet::ServerError(packet, Status::InvalidArgument()))
         .IgnoreError();  // Errors are logged in Channel::Send.
     return;
   }
 
   if (!call->client_stream_open()) {
+    internal::rpc_lock().unlock();
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // Errors are logged in Channel::Send.
     return;
@@ -147,7 +159,7 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
   if (packet.type() == PacketType::CLIENT_STREAM) {
     call->HandlePayload(packet.payload());
   } else {  // Handle PacketType::CLIENT_STREAM_END.
-    call->EndClientStream();
+    call->HandleClientStreamEnd();
   }
 }
 

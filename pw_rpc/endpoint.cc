@@ -14,9 +14,17 @@
 
 #include "pw_rpc/internal/endpoint.h"
 
+#include <mutex>
+
 #include "pw_log/log.h"
+#include "pw_rpc/internal/lock.h"
 
 namespace pw::rpc::internal {
+
+RpcLock& rpc_lock() {
+  static RpcLock lock;
+  return lock;
+}
 
 Endpoint::~Endpoint() {
   // Since the calls remove themselves from the Endpoint in
@@ -51,11 +59,14 @@ Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
 }
 
 void Endpoint::RegisterCall(Call& call) {
+  std::lock_guard lock(rpc_lock());
+
   Call* const existing_call =
       FindCallById(call.channel_id(), call.service_id(), call.method_id());
 
   if (existing_call != nullptr) {
     existing_call->HandleError(Status::Cancelled());
+    rpc_lock().lock();  // Reacquire after releasing to call the user callback
   }
 
   RegisterUniqueCall(call);

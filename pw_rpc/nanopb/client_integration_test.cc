@@ -101,9 +101,8 @@ TEST(NanopbRpcIntegrationTest, Unary_ReuseCall) {
 }
 
 TEST(NanopbRpcIntegrationTest, Unary_DiscardCalls) {
-  // TODO(pwbug/511): Run this test for many iterations when pw_rpc is
-  //     thread safe. Currently, it is a little flaky.
-  for (int i = 0; i < 1; ++i) {
+  // TODO: This is reliable now, yay.
+  for (int i = 0; i < 10000; ++i) {
     kClient.UnaryEcho(Payload("O_o"));
   }
 }

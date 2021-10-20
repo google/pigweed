@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <mutex>
+
 #include "pw_function/function.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/config.h"
@@ -22,8 +24,9 @@ namespace pw::rpc::internal {
 // A Call object, as used by an RPC server.
 class ServerCall : public Call {
  public:
-  void EndClientStream() {
+  void HandleClientStreamEnd() PW_UNLOCK_FUNCTION(rpc_lock()) {
     MarkClientStreamCompleted();
+    rpc_lock().unlock();
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK
     if (on_client_stream_end_) {
@@ -33,6 +36,8 @@ class ServerCall : public Call {
   }
 
  protected:
+  constexpr ServerCall() = default;
+
   ServerCall(ServerCall&& other) { *this = std::move(other); }
 
   ~ServerCall() {
@@ -40,9 +45,15 @@ class ServerCall : public Call {
     CloseAndSendResponse(OkStatus()).IgnoreError();
   }
 
-  ServerCall& operator=(ServerCall&& other);
+  // Version of operator= used by the raw call classes.
+  ServerCall& operator=(ServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::lock_guard lock(rpc_lock());
+    MoveServerCallFrom(other);
+    return *this;
+  }
 
-  constexpr ServerCall() = default;
+  void MoveServerCallFrom(ServerCall& other)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   ServerCall(const CallContext& context, MethodType type)
       : Call(context, type) {}

@@ -14,6 +14,8 @@
 
 #include "pw_rpc/client.h"
 
+#include <mutex>
+
 #include "pw_log/log.h"
 #include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/internal/packet.h"
@@ -33,16 +35,20 @@ Status Client::ProcessPacket(ConstByteSpan data) {
   Packet& packet = *result;
 
   // Find an existing call for this RPC, if any.
+  internal::rpc_lock().lock();
   internal::ClientCall* call =
       static_cast<internal::ClientCall*>(FindCall(packet));
 
   internal::Channel* channel = GetInternalChannel(packet.channel_id());
+
   if (channel == nullptr) {
     PW_LOG_WARN("RPC client received a packet for an unregistered channel");
+    internal::rpc_lock().unlock();
     return Status::Unavailable();
   }
 
   if (call == nullptr || call->id() != packet.call_id()) {
+    internal::rpc_lock().unlock();
     // The call for the packet does not exist. If the packet is a server stream
     // message, notify the server so that it can kill the stream. Otherwise,
     // silently drop the packet (as it would terminate the RPC anyway).
@@ -80,6 +86,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
       }
       break;
     default:
+      internal::rpc_lock().unlock();
       PW_LOG_WARN("pw_rpc client unable to handle packet of type %u",
                   static_cast<unsigned>(packet.type()));
   }

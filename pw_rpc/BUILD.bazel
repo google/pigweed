@@ -83,6 +83,7 @@ pw_cc_library(
         "public/pw_rpc/internal/config.h",
         "public/pw_rpc/internal/endpoint.h",
         "public/pw_rpc/internal/hash.h",
+        "public/pw_rpc/internal/lock.h",
         "public/pw_rpc/internal/method.h",
         "public/pw_rpc/internal/method_info.h",
         "public/pw_rpc/internal/method_lookup.h",
@@ -116,6 +117,7 @@ pw_cc_library(
         "//pw_rpc/system_server",
         "//pw_span",
         "//pw_status",
+        "//pw_sync:lock_annotations",
     ],
 )
 
