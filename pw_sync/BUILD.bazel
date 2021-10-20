@@ -115,6 +115,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":lock_annotations",
         ":virtual_basic_lockable",
         "//pw_assert",
     ],

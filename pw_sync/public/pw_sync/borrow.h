@@ -14,11 +14,11 @@
 #pragma once
 
 #include <chrono>
-#include <mutex>
 #include <optional>
 #include <type_traits>
 
 #include "pw_assert/assert.h"
+#include "pw_sync/lock_annotations.h"
 #include "pw_sync/virtual_basic_lockable.h"
 
 namespace pw::sync {
@@ -30,19 +30,25 @@ template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
 class BorrowedPointer {
  public:
   // Release the lock on destruction.
-  ~BorrowedPointer() = default;
+  ~BorrowedPointer() {
+    if (lock_ != nullptr) {
+      lock_->unlock();
+    }
+  }
 
   // This object is moveable, but not copyable.
   //
   // Postcondition: The other BorrowedPointer is no longer valid and will assert
   //     if the GuardedType is accessed.
   BorrowedPointer(BorrowedPointer&& other)
-      : unique_lock_(std::move(other.unique_lock_)), object_(other.object_) {
+      : lock_(other.lock_), object_(other.object_) {
+    other.lock_ = nullptr;
     other.object_ = nullptr;
   }
   BorrowedPointer& operator=(BorrowedPointer&& other) {
-    unique_lock_ = std::move(other.unique_lock_);
+    lock_ = other.lock_;
     object_ = other.object_;
+    other.lock_ = nullptr;
     other.object_ = nullptr;
     return *this;
   }
@@ -72,10 +78,10 @@ class BorrowedPointer {
   template <typename G, typename L>
   friend class Borrowable;
 
-  BorrowedPointer(std::unique_lock<Lock> unique_lock, GuardedType* object)
-      : unique_lock_(std::move(unique_lock)), object_(object) {}
+  constexpr BorrowedPointer(Lock& lock, GuardedType& object)
+      : lock_(&lock), object_(&object) {}
 
-  std::unique_lock<Lock> unique_lock_;
+  Lock* lock_;
   GuardedType* object_;
 };
 
@@ -90,7 +96,7 @@ class BorrowedPointer {
 template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
 class Borrowable {
  public:
-  constexpr Borrowable(GuardedType& object, Lock& lock)
+  constexpr Borrowable(GuardedType& object, Lock& lock) noexcept
       : lock_(&lock), object_(&object) {}
 
   Borrowable(const Borrowable&) = default;
@@ -99,19 +105,18 @@ class Borrowable {
   Borrowable& operator=(Borrowable&& other) = default;
 
   // Blocks indefinitely until the object can be borrowed. Failures are fatal.
-  BorrowedPointer<GuardedType, Lock> acquire() {
-    std::unique_lock unique_lock(*lock_);
-    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
+  BorrowedPointer<GuardedType, Lock> acquire() PW_NO_LOCK_SAFETY_ANALYSIS {
+    lock_->lock();
+    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
   }
 
   // Tries to borrow the object in a non-blocking manner. Returns a
   // BorrowedPointer on success, otherwise std::nullopt (nothing).
   std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire() {
-    std::unique_lock unique_lock(*lock_, std::defer_lock);
-    if (!unique_lock.try_lock()) {
+    if (!lock_->try_lock()) {
       return std::nullopt;
     }
-    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
+    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
   }
 
   // Tries to borrow the object. Blocks until the specified timeout has elapsed
@@ -120,11 +125,10 @@ class Borrowable {
   template <class Rep, class Period>
   std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_for(
       std::chrono::duration<Rep, Period> timeout) {
-    std::unique_lock unique_lock(*lock_, std::defer_lock);
-    if (!unique_lock.try_lock_for(timeout)) {
+    if (!lock_->try_lock_for(timeout)) {
       return std::nullopt;
     }
-    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
+    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
   }
 
   // Tries to borrow the object. Blocks until the specified deadline has passed
@@ -133,11 +137,10 @@ class Borrowable {
   template <class Clock, class Duration>
   std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_until(
       std::chrono::time_point<Clock, Duration> deadline) {
-    std::unique_lock unique_lock(*lock_, std::defer_lock);
-    if (!unique_lock.try_lock_until(deadline)) {
+    if (!lock_->try_lock_until(deadline)) {
       return std::nullopt;
     }
-    return BorrowedPointer<GuardedType, Lock>(std::move(unique_lock), object_);
+    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
   }
 
  private:
