@@ -21,12 +21,47 @@ config("sanitize_address") {
 }
 
 config("sanitize_memory") {
-  cflags = [ "-fsanitize=memory" ]
+  cflags = [
+    "-fsanitize=memory",
+
+    # Do not optimizes tail recursive calls to get better call stack.
+    "-fno-optimize-sibling-calls",
+
+    # Enable check after destruction detection.
+    "-fsanitize-memory-use-after-dtor",
+  ]
   ldflags = cflags
 }
 
 config("sanitize_undefined") {
-  cflags = [ "-fsanitize=undefined" ]
+  sanitizers = [
+    # Base checks for undefined behaviour.
+    "undefined",
+
+    # Checks for undefined or suspicious integer behavior.
+    "integer",
+
+    # Checks for floating point division by zero.
+    "float-divide-by-zero",
+
+    # Checks for suspicious behavior of implicit conversions.
+    "implicit-conversion",
+
+    # Checks for null as function arg, lvalue and return type.
+    "nullability",
+  ]
+  cflags = [
+    "-fsanitize=" + string_join(",", sanitizers),
+
+    # Store the stack frame pointer in a register to get proper debug
+    # information.
+    "-fno-omit-frame-pointer",
+  ]
+  ldflags = cflags
+}
+
+config("sanitize_thread") {
+  cflags = [ "-fsanitize=thread" ]
   ldflags = cflags
 }
 

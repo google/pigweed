@@ -108,6 +108,54 @@ pw_toolchain_host_clang = {
       }
     }
   }
+
+  asan = {
+    name = "host_clang_asan"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+
+      # Use debug mode to get proper debug information.
+      default_configs += [ "$dir_pw_build:optimize_debugging" ]
+      default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_address" ]
+    }
+  }
+
+  ubsan = {
+    name = "host_clang_ubsan"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+
+      # Use debug mode to get proper debug information.
+      default_configs += [ "$dir_pw_build:optimize_debugging" ]
+      default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_undefined" ]
+    }
+  }
+
+  msan = {
+    name = "host_clang_msan"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+
+      # Use debug mode to get proper debug information.
+      default_configs += [ "$dir_pw_build:optimize_debugging" ]
+      default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_memory" ]
+    }
+  }
+
+  tsan = {
+    name = "host_clang_tsan"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+
+      # Use debug mode to get proper debug information.
+      default_configs += [ "$dir_pw_build:optimize_debugging" ]
+      default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_thread" ]
+    }
+  }
 }
 
 # Describes host clang toolchains.
@@ -116,4 +164,8 @@ pw_toolchain_host_clang_list = [
   pw_toolchain_host_clang.speed_optimized,
   pw_toolchain_host_clang.size_optimized,
   pw_toolchain_host_clang.fuzz,
+  pw_toolchain_host_clang.asan,
+  pw_toolchain_host_clang.ubsan,
+  pw_toolchain_host_clang.msan,
+  pw_toolchain_host_clang.tsan,
 ]

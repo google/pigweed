@@ -340,6 +340,24 @@ host_tools
 ~~~~~~~~~~
 This group defines host-side tooling binaries built for Pigweed.
 
+runtime_sanitizers
+~~~~~~~~~~~~~~~~~~
+This group defines host-side build targets for Clang runtime sanitizers.
+Next runtime sanitizers supported:
+
+* ``asan`` -- `AddressSanitizer`_ is a fast memory error detector.
+* ``msan`` -- `MemorySanitizer`_ is a detector of uninitialized reads.
+* ``ubsan`` -- `UndefinedBehaviorSanitizer`_ is a fast undefined behavior detector.
+* ``tsan`` -- `ThreadSanitizer`_ is a tool that detects data races.
+
+Results of building this group are ``host_clang_<sanitizer>`` build directories
+with ``pw_module_tests`` per supported sanitizer.
+
+.. _AddressSanitizer: https://clang.llvm.org/docs/AddressSanitizer.html
+.. _MemorySanitizer: https://clang.llvm.org/docs/MemorySanitizer.html
+.. _UndefinedBehaviorSanitizer: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+.. _ThreadSanitizer: https://clang.llvm.org/docs/ThreadSanitizer.html
+
 pw_modules
 ~~~~~~~~~~
 This group lists the main libraries for all of Pigweed's modules.
