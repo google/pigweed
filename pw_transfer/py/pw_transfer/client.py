@@ -42,11 +42,22 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     """
     def __init__(self,
                  rpc_transfer_service,
+                 *,
                  default_response_timeout_s: float = 2.0,
+                 initial_response_timeout_s: float = 4.0,
                  max_retries: int = 3):
-        """Initializes a Manager on top of a TransferService."""
+        """Initializes a Manager on top of a TransferService.
+
+        Args:
+          rpc_transfer_service: the pw_rpc transfer service client
+          default_response_timeout_s: max time to wait between receiving packets
+          initial_response_timeout_s: timeout for the first packet; may be
+              longer to account for transfer handler initialization
+          max_retires: number of times to retry after a timeout
+        """
         self._service: Any = rpc_transfer_service
         self._default_response_timeout_s = default_response_timeout_s
+        self._initial_response_timeout_s = initial_response_timeout_s
         self.max_retries = max_retries
 
         # Ongoing transfers in the service by ID.
@@ -95,6 +106,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                 self._send_read_chunk,
                                 self._end_read_transfer,
                                 self._default_response_timeout_s,
+                                self._initial_response_timeout_s,
                                 self.max_retries,
                                 progress_callback=progress_callback)
         self._start_read_transfer(transfer)
@@ -134,6 +146,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                  self._send_write_chunk,
                                  self._end_write_transfer,
                                  self._default_response_timeout_s,
+                                 self._initial_response_timeout_s,
                                  self.max_retries,
                                  progress_callback=progress_callback)
         self._start_write_transfer(transfer)

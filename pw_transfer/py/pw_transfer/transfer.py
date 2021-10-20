@@ -56,7 +56,7 @@ class _Timer:
         self._callback = callback
         self._task: Optional[asyncio.Task[Any]] = None
 
-    def start(self) -> None:
+    def start(self, timeout_s: float = None) -> None:
         """Starts a new timer.
 
         If a timer is already running, it is stopped and a new timer started.
@@ -64,7 +64,8 @@ class _Timer:
         is invoked after some time without a kick.
         """
         self.stop()
-        self._task = asyncio.create_task(self._run(self.timeout_s))
+        timeout_s = self.timeout_s if timeout_s is None else timeout_s
+        self._task = asyncio.create_task(self._run(timeout_s))
 
     def stop(self) -> None:
         """Terminates a running timer."""
@@ -90,6 +91,7 @@ class Transfer(abc.ABC):
                  send_chunk: Callable[[Chunk], None],
                  end_transfer: Callable[['Transfer'], None],
                  response_timeout_s: float,
+                 initial_response_timeout_s: float,
                  max_retries: int,
                  progress_callback: ProgressCallback = None):
         self.id = transfer_id
@@ -102,13 +104,14 @@ class Transfer(abc.ABC):
         self._retries = 0
         self._max_retries = max_retries
         self._response_timer = _Timer(response_timeout_s, self._on_timeout)
+        self._initial_response_timeout_s = initial_response_timeout_s
 
         self._progress_callback = progress_callback
 
     async def begin(self) -> None:
         """Sends the initial chunk of the transfer."""
         self._send_chunk(self._initial_chunk())
-        self._response_timer.start()
+        self._response_timer.start(self._initial_response_timeout_s)
 
     @property
     @abc.abstractmethod
@@ -206,11 +209,13 @@ class WriteTransfer(Transfer):
         send_chunk: Callable[[Chunk], None],
         end_transfer: Callable[[Transfer], None],
         response_timeout_s: float,
+        initial_response_timeout_s: float,
         max_retries: int,
         progress_callback: ProgressCallback = None,
     ):
         super().__init__(transfer_id, send_chunk, end_transfer,
-                         response_timeout_s, max_retries, progress_callback)
+                         response_timeout_s, initial_response_timeout_s,
+                         max_retries, progress_callback)
         self._data = data
 
         # Guard this class with a lock since a transfer parameters update might
@@ -335,18 +340,21 @@ class ReadTransfer(Transfer):
     client sets a conservative window and chunk size to avoid overloading the
     device. These are configurable in the constructor.
     """
-    def __init__(self,
-                 transfer_id: int,
-                 send_chunk: Callable[[Chunk], None],
-                 end_transfer: Callable[[Transfer], None],
-                 response_timeout_s: float,
-                 max_retries: int,
-                 max_bytes_to_receive: int = 8192,
-                 max_chunk_size: int = 1024,
-                 chunk_delay_us: int = None,
-                 progress_callback: ProgressCallback = None):
+    def __init__(  # pylint: disable=too-many-arguments
+            self,
+            transfer_id: int,
+            send_chunk: Callable[[Chunk], None],
+            end_transfer: Callable[[Transfer], None],
+            response_timeout_s: float,
+            initial_response_timeout_s: float,
+            max_retries: int,
+            max_bytes_to_receive: int = 8192,
+            max_chunk_size: int = 1024,
+            chunk_delay_us: int = None,
+            progress_callback: ProgressCallback = None):
         super().__init__(transfer_id, send_chunk, end_transfer,
-                         response_timeout_s, max_retries, progress_callback)
+                         response_timeout_s, initial_response_timeout_s,
+                         max_retries, progress_callback)
         self._max_bytes_to_receive = max_bytes_to_receive
         self._max_chunk_size = max_chunk_size
         self._chunk_delay_us = chunk_delay_us
