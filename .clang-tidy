@@ -26,13 +26,9 @@ WarningsAsErrors: >
 HeaderFilterRegex: '.*'
 ...
 
-# Disable checks:
+# Disabled checks:
 #
 # clang-analyzer-*:
-#   The clang static analyzer checks take too much time to be
-#   run as part of the presubmit checks; the static analysis is
-#   instead performed by the 'static_analysis' step in
-#   'other_checks'
 #
 # performance-*
 # bugprone-*
