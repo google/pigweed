@@ -44,11 +44,6 @@ class FakeAdapter final : public Adapter {
       bool include_tx_power_level;
     };
 
-    struct Connection {
-      PeerId peer_id;
-      LowEnergyConnectionOptions options;
-    };
-
     explicit FakeLowEnergy(FakeAdapter* adapter) : adapter_(adapter) {}
     ~FakeLowEnergy() override = default;
 
@@ -57,16 +52,12 @@ class FakeAdapter final : public Adapter {
       return advertisements_;
     }
 
-    const std::unordered_map<PeerId, Connection>& connections() const { return connections_; }
-
     // LowEnergy overrides:
 
-    // If Connect is called multiple times, only the connection options of the last call will be
-    // reported in connections().
     void Connect(PeerId peer_id, ConnectionResultCallback callback,
-                 LowEnergyConnectionOptions connection_options) override;
+                 LowEnergyConnectionOptions connection_options) override {}
 
-    bool Disconnect(PeerId peer_id) override;
+    bool Disconnect(PeerId peer_id) override { return false; }
 
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
               sm::StatusCallback cb) override {}
@@ -98,7 +89,6 @@ class FakeAdapter final : public Adapter {
     FakeAdapter* adapter_;
     AdvertisementId next_advertisement_id_ = AdvertisementId(1);
     std::unordered_map<AdvertisementId, RegisteredAdvertisement> advertisements_;
-    std::unordered_map<PeerId, Connection> connections_;
   };
 
   LowEnergy* le() const override { return fake_le_.get(); }

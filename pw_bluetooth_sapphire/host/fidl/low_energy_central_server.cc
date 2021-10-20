@@ -26,25 +26,6 @@ namespace measure_fble = measure_tape::fuchsia::bluetooth::le;
 
 namespace bthost {
 
-namespace {
-
-bt::gap::LowEnergyConnectionOptions ConnectionOptionsFromFidl(
-    const fble::ConnectionOptions& options) {
-  BondableMode bondable_mode = (!options.has_bondable_mode() || options.bondable_mode())
-                                   ? BondableMode::Bondable
-                                   : BondableMode::NonBondable;
-
-  std::optional<bt::UUID> service_uuid =
-      options.has_service_filter()
-          ? std::optional(fidl_helpers::UuidFromFidl(options.service_filter()))
-          : std::nullopt;
-
-  return bt::gap::LowEnergyConnectionOptions{.bondable_mode = bondable_mode,
-                                             .service_uuid = service_uuid};
-}
-
-}  // namespace
-
 LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                                                fidl::InterfaceRequest<Central> request,
                                                fxl::WeakPtr<bt::gatt::GATT> gatt)
@@ -64,8 +45,8 @@ LowEnergyCentralServer::~LowEnergyCentralServer() {
 
 std::optional<bt::gap::LowEnergyConnectionHandle*> LowEnergyCentralServer::FindConnectionForTesting(
     bt::PeerId identifier) {
-  auto conn_iter = connections_deprecated_.find(identifier);
-  if (conn_iter != connections_deprecated_.end()) {
+  auto conn_iter = connections_.find(identifier);
+  if (conn_iter != connections_.end()) {
     return conn_iter->second.get();
   }
   return std::nullopt;
@@ -283,59 +264,6 @@ void LowEnergyCentralServer::Scan(
                                                   std::move(result_watcher), std::move(callback));
 }
 
-void LowEnergyCentralServer::Connect(fuchsia::bluetooth::PeerId id, fble::ConnectionOptions options,
-                                     fidl::InterfaceRequest<fble::Connection> request) {
-  bt::PeerId peer_id(id.value);
-  bt_log(INFO, "fidl", "%s: (peer: %s)", __FUNCTION__, bt_str(peer_id));
-
-  auto conn_iter = connections_.find(peer_id);
-  if (conn_iter != connections_.end()) {
-    bt_log(INFO, "fidl", "%s: connection %s (peer: %s)", __FUNCTION__,
-           (conn_iter->second == nullptr ? "request pending" : "already exists"), bt_str(peer_id));
-    request.Close(ZX_ERR_ALREADY_BOUND);
-    return;
-  }
-
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  auto conn_cb = [self, peer_id, request = std::move(request)](
-                     bt::gap::Adapter::LowEnergy::ConnectionResult result) mutable {
-    if (!self)
-      return;
-
-    auto conn_iter = self->connections_.find(peer_id);
-    ZX_ASSERT(conn_iter != self->connections_.end());
-    ZX_ASSERT(conn_iter->second == nullptr);
-
-    if (result.is_error()) {
-      bt_log(INFO, "fidl", "Connect: failed to connect to peer (peer: %s)", bt_str(peer_id));
-      self->connections_.erase(peer_id);
-      request.Close(ZX_ERR_NOT_CONNECTED);
-      return;
-    }
-
-    auto conn_ref = result.take_value();
-    ZX_ASSERT(conn_ref);
-    ZX_ASSERT(peer_id == conn_ref->peer_identifier());
-
-    auto closed_cb = [self, peer_id] {
-      if (self) {
-        self->connections_.erase(peer_id);
-      }
-    };
-    auto server = std::make_unique<LowEnergyConnectionServer>(
-        self->gatt_, std::move(conn_ref), request.TakeChannel(), std::move(closed_cb));
-
-    ZX_ASSERT(!conn_iter->second);
-    conn_iter->second = std::move(server);
-  };
-
-  // An entry for the connection must be created here so that a synchronous call to conn_cb below
-  // does not cause conn_cb to treat the connection as cancelled.
-  connections_[peer_id] = nullptr;
-
-  adapter()->le()->Connect(peer_id, std::move(conn_cb), ConnectionOptionsFromFidl(options));
-}
-
 void LowEnergyCentralServer::GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
                                             GetPeripheralsCallback callback) {
   // TODO:
@@ -434,8 +362,8 @@ void LowEnergyCentralServer::ConnectPeripheral(
     return;
   }
 
-  auto iter = connections_deprecated_.find(*peer_id);
-  if (iter != connections_deprecated_.end()) {
+  auto iter = connections_.find(*peer_id);
+  if (iter != connections_.end()) {
     if (iter->second) {
       bt_log(INFO, "fidl", "%s: already connected to %s", __FUNCTION__, bt_str(*peer_id));
       callback(
@@ -454,8 +382,8 @@ void LowEnergyCentralServer::ConnectPeripheral(
     if (!self)
       return;
 
-    auto iter = self->connections_deprecated_.find(peer_id);
-    if (iter == self->connections_deprecated_.end()) {
+    auto iter = self->connections_.find(peer_id);
+    if (iter == self->connections_.end()) {
       bt_log(INFO, "fidl", "%s: connect request canceled during connection procedure (peer: %s)",
              func, bt_str(peer_id));
       auto error = fidl_helpers::NewFidlError(ErrorCode::FAILED, "Connect request canceled");
@@ -465,7 +393,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
     if (result.is_error()) {
       bt_log(INFO, "fidl", "%s: failed to connect to peer (peer: %s)", func, bt_str(peer_id));
-      self->connections_deprecated_.erase(peer_id);
+      self->connections_.erase(peer_id);
       callback(fidl_helpers::StatusToFidlDeprecated(bt::hci::Status(result.error()),
                                                     "failed to connect"));
       return;
@@ -491,7 +419,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
     self->gatt_client_servers_.emplace(peer_id, std::move(server));
 
     conn_ref->set_closed_callback([self, peer_id] {
-      if (self && self->connections_deprecated_.erase(peer_id) != 0) {
+      if (self && self->connections_.erase(peer_id) != 0) {
         bt_log(INFO, "fidl", "peripheral connection closed (peer: %s)", bt_str(peer_id));
         self->gatt_client_servers_.erase(peer_id);
         self->NotifyPeripheralDisconnected(peer_id);
@@ -502,13 +430,22 @@ void LowEnergyCentralServer::ConnectPeripheral(
     iter->second = std::move(conn_ref);
     callback(Status());
   };
+  BondableMode bondable_mode =
+      (!connection_options.has_bondable_mode() || connection_options.bondable_mode())
+          ? BondableMode::Bondable
+          : BondableMode::NonBondable;
+  std::optional<bt::UUID> service_uuid =
+      connection_options.has_service_filter()
+          ? std::optional(fidl_helpers::UuidFromFidl(connection_options.service_filter()))
+          : std::nullopt;
+  bt::gap::LowEnergyConnectionOptions mgr_connection_options{.bondable_mode = bondable_mode,
+                                                             .service_uuid = service_uuid};
 
   // An entry for the connection must be created here so that a synchronous call to conn_cb below
   // does not cause conn_cb to treat the connection as cancelled.
-  connections_deprecated_[*peer_id] = nullptr;
+  connections_[*peer_id] = nullptr;
 
-  adapter()->le()->Connect(*peer_id, std::move(conn_cb),
-                           ConnectionOptionsFromFidl(connection_options));
+  adapter()->le()->Connect(*peer_id, std::move(conn_cb), mgr_connection_options);
 }
 
 void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
@@ -520,8 +457,8 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
     return;
   }
 
-  auto iter = connections_deprecated_.find(*peer_id);
-  if (iter == connections_deprecated_.end()) {
+  auto iter = connections_.find(*peer_id);
+  if (iter == connections_.end()) {
     bt_log(INFO, "fidl", "%s: client not connected to peer (peer: %s)", __FUNCTION__,
            identifier.c_str());
     callback(Status());
@@ -530,7 +467,7 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
 
   // If a request to this peer is pending then the request will be canceled.
   bool was_pending = !iter->second;
-  connections_deprecated_.erase(iter);
+  connections_.erase(iter);
 
   if (was_pending) {
     bt_log(INFO, "fidl", "%s: canceling connection request (peer: %s)", __FUNCTION__,

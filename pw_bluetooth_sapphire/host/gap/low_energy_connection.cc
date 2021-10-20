@@ -78,22 +78,8 @@ LowEnergyConnection::~LowEnergyConnection() {
 }
 
 std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef() {
-  auto self = GetWeakPtr();
-  auto release_cb = [self](LowEnergyConnectionHandle* handle) {
-    if (self) {
-      self->conn_mgr_->ReleaseReference(handle);
-    }
-  };
-  auto bondable_cb = [self] {
-    ZX_ASSERT(self);
-    return self->bondable_mode();
-  };
-  auto security_cb = [self] {
-    ZX_ASSERT(self);
-    return self->security();
-  };
-  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref(new LowEnergyConnectionHandle(
-      peer_id_, handle(), std::move(release_cb), std::move(bondable_cb), std::move(security_cb)));
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref(
+      new LowEnergyConnectionHandle(peer_id_, handle(), conn_mgr_));
   ZX_ASSERT(conn_ref);
 
   refs_.Mutable()->insert(conn_ref.get());
