@@ -71,6 +71,31 @@ TEST(ErrorTest, ResultFromSuccessHostError) {
   EXPECT_NE(result, error);
 }
 
+TEST(ErrorTest, ResultFromNonSuccessGeneralHostError) {
+  // Create a result that can hold and only holds a HostError
+  constexpr fitx::result result = ToResult(HostError::kFailed);
+  ASSERT_TRUE(result.is_error());
+
+  // Unwrap the result then access Error::is(…)
+  constexpr Error general_error = result.error_value();
+  ASSERT_TRUE(general_error.is_host_error());
+  EXPECT_FALSE(general_error.is_protocol_error());
+  EXPECT_EQ(HostError::kFailed, general_error.host_error());
+  EXPECT_TRUE(general_error.is(HostError::kFailed));
+  EXPECT_FALSE(general_error.is(HostError::kNoError));
+  EXPECT_FALSE(general_error.is(HostError::kTimedOut));
+
+  // Compare result to error
+  EXPECT_EQ(general_error, result);
+  EXPECT_EQ(result, general_error);
+
+  // Create a specific kind of Error from the only-HostError-holding Error
+  constexpr Error<TestError> specific_error = general_error;
+  EXPECT_TRUE(specific_error.is(HostError::kFailed));
+  EXPECT_EQ(general_error, specific_error);
+  EXPECT_EQ(specific_error, general_error);
+}
+
 TEST(ErrorTest, ResultFromNonSuccessProtocolError) {
   constexpr fitx::result result = ToResult(TestError::kFail1);
   ASSERT_TRUE(result.is_error());
@@ -137,10 +162,16 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
 
   // And explicitly
   EXPECT_FALSE(result == ToResult<TestError>(HostError::kCanceled));
+  EXPECT_FALSE(result == ToResult(HostError::kCanceled));
+  EXPECT_FALSE(result == ToResult(HostError::kNoError));
 
   // Use operator!= through GTest
   EXPECT_NE(ToResult<TestError>(HostError::kCanceled), result);
   EXPECT_NE(ToResult(TestError::kFail2), result);
+
+  // Compare to a general result
+  EXPECT_NE(ToResult(HostError::kCanceled), result);
+  EXPECT_NE(ToResult(HostError::kNoError), result);
 
   // Compare results to fix::success
   EXPECT_NE(fitx::ok(), result);

@@ -23,9 +23,19 @@ namespace bt {
 template <typename ProtocolErrorCode>
 class Error;
 
-// Create a fitx::result<Error<…>> from a HostError. The template parameter is used to specify the
-// kind of protocol error that the Error could hold instead of the HostError provided.
-template <typename ProtocolErrorCode>
+// Marker used to indicate that an Error holds only HostError.
+class NoProtocolError {
+  friend class Error<NoProtocolError>;
+  constexpr NoProtocolError() = delete;
+
+  // This ensures that Error<NoProtocolError> == Error<NoProtocolError> is well-defined
+  constexpr bool operator==(const NoProtocolError&) { return false; }
+};
+
+// Create a fitx::result<Error<…>> from a HostError. The template parameter may be omitted to
+// default to an fitx::result<Error<NoProtocolError>> in the case that it's not useful to specify
+// the kind of protocol error that the result could hold instead.
+template <typename ProtocolErrorCode = NoProtocolError>
 [[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(HostError host_error) {
   // TODO(fxbug.dev/86900): Remove this enum value alongside bt::Status
   if (host_error == HostError::kNoError) {
@@ -58,6 +68,24 @@ class [[nodiscard]] Error {
   constexpr Error(Error&&) noexcept = default;
   constexpr Error& operator=(const Error&) = default;
   constexpr Error& operator=(Error&&) noexcept = default;
+
+  // Intentionally implicit conversion from Error<NoProtocolError> that holds only HostErrors.
+  // This allows any Error<…> to be compared to an Error<NoProtocolError>'s HostError payload. Also,
+  // functions that accept Error<…> will take Error<NoProtocolError> without an explicit conversion.
+  //
+  // Example:
+  //   void Foo(Error<BarErrorCode>);
+  //   Foo(ToResult(HostError::kTimedOut));  // Compiles without having to write BarErrorCode
+  //
+  // For safety, this implicit conversion does not "chain" to allow bare ProtocolErrorCodes or
+  // HostErrors to be converted into Error or fitx::result.
+  //
+  // The seemingly-extraneous template parameter serves to disable this overload when |*this| is an
+  // Error<NoProtocolError>
+  template <typename T = ProtocolErrorCode,
+            std::enable_if_t<!std::is_same_v<NoProtocolError, T>, bool> = true>
+  // NOLINTNEXTLINE(google-explicit-constructor)
+  constexpr Error(const Error<NoProtocolError>& other) : error_(other.host_error()) {}
 
   // Evaluates to true if and only if both Errors hold the same kind of error. Errors with different
   // ProtocolErrorCodes are intentionally not defined, because it's likely an antipattern and the
@@ -152,6 +180,10 @@ class [[nodiscard]] Error {
 
   std::variant<HostError, ProtocolErrorCode> error_;
 };
+
+// Deduction guide to allow Errors to be constructed from a HostError without specifying what
+// protocol error the Error can hold instead.
+Error(HostError)->Error<NoProtocolError>;
 
 // Shorthand for commutativity
 // The enable_if check ensures that this is sufficiently narrow to never call itself
