@@ -187,6 +187,14 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   EXPECT_NE(error_with_value, different_error_with_value);
 }
 
+TEST(ErrorTest, ToResultFromLegacyStatusType) {
+  EXPECT_EQ(fitx::ok(), ToResult(Status<TestError>()));
+  EXPECT_EQ(ToResult(TestError::kFail1), ToResult(Status(TestError::kFail1)));
+  EXPECT_EQ(ToResult(HostError::kCanceled), ToResult(Status<TestError>(HostError::kCanceled)));
+  EXPECT_EQ(ToResult<TestError>(HostError::kCanceled),
+            ToResult(Status<TestError>(HostError::kCanceled)));
+}
+
 TEST(ErrorTest, VisitOnHostError) {
   constexpr Error error = MakeError(HostError::kFailed);
   ASSERT_TRUE(error.is_host_error());

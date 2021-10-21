@@ -56,6 +56,18 @@ template <typename ProtocolErrorCode>
   return fitx::error(Error(proto_error));
 }
 
+// TODO(fxbug.dev/86900): Remove this alongside bt::Status
+template <typename ProtocolErrorCode>
+constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(const Status<ProtocolErrorCode>& status) {
+  if (status.is_success()) {
+    return fitx::success();
+  }
+  if (status.is_protocol_error()) {
+    return fitx::error(Error(status.protocol_error()));
+  }
+  return fitx::error(Error<ProtocolErrorCode>(status.error()));
+}
+
 template <typename ProtocolErrorCode>
 class [[nodiscard]] Error {
   static_assert(!std::is_same_v<HostError, ProtocolErrorCode>,
@@ -167,6 +179,10 @@ class [[nodiscard]] Error {
   friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
       ProtocolErrorCode);
   friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(HostError);
+
+  // TODO(fxbug.dev/86900): Remove this alongside bt::Status
+  friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
+      const Status<ProtocolErrorCode>&);
 
   constexpr explicit Error(ProtocolErrorCode proto_error) : error_(proto_error) {
     ZX_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
