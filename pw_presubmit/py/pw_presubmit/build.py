@@ -29,6 +29,7 @@ from typing import (Collection, Container, Dict, Iterable, List, Mapping, Set,
 from pw_package import package_manager
 from pw_presubmit import (
     call,
+    Check,
     filter_paths,
     log_run,
     plural,
@@ -352,3 +353,10 @@ def bazel_lint(ctx: PresubmitContext):
 
     if failure:
         raise PresubmitFailure
+
+
+@Check
+def gn_gen_check(ctx: PresubmitContext):
+    """Runs gn gen --check to enforce correct header dependencies."""
+    pw_project_root = Path(os.environ['PW_PROJECT_ROOT'])
+    gn_gen(pw_project_root, ctx.output_dir, gn_check=True)

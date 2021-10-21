@@ -228,6 +228,12 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
   #
   # Presubmit check programs
   #
+  OTHER = (
+      # Checks not ran by default but that should be available. These might
+      # include tests that are expensive to run or that don't yet pass.
+      build.gn_quick_check,
+  )
+
   QUICK = (
       # List some presubmit checks to run
       pragma_once,
@@ -248,7 +254,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       python_checks.gn_python_check.with_filter(exclude=PATH_EXCLUSIONS),
   )
 
-  PROGRAMS = pw_presubmit.Programs(quick=QUICK, full=FULL)
+  PROGRAMS = pw_presubmit.Programs(other=OTHER, quick=QUICK, full=FULL)
 
 
   def run(install: bool, **presubmit_args) -> int:

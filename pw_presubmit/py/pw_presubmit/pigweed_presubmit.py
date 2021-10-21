@@ -758,6 +758,7 @@ OTHER_CHECKS = (
     bazel_test,
     cmake_tests,
     gn_boringssl_build,
+    build.gn_gen_check,
     gn_nanopb_build,
     gn_crypto_mbedtls_build,
     gn_crypto_boringssl_build,
