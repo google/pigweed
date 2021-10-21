@@ -58,10 +58,11 @@ class PacketsTest(unittest.TestCase):
 
         self.assertEqual(
             packet,
-            RpcPacket(type=PacketType.CANCEL,
+            RpcPacket(type=PacketType.CLIENT_ERROR,
                       channel_id=9,
                       service_id=8,
-                      method_id=7))
+                      method_id=7,
+                      status=Status.CANCELLED.value))
 
     def test_encode_client_error(self):
         data = packets.encode_client_error(_TEST_REQUEST, Status.NOT_FOUND)

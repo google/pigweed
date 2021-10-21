@@ -80,7 +80,8 @@ def encode_client_error(packet: packet_pb2.RpcPacket, status: Status) -> bytes:
 
 def encode_cancel(rpc: tuple) -> bytes:
     channel, service, method = _ids(rpc)
-    return packet_pb2.RpcPacket(type=packet_pb2.PacketType.CANCEL,
+    return packet_pb2.RpcPacket(type=packet_pb2.PacketType.CLIENT_ERROR,
+                                status=Status.CANCELLED.value,
                                 channel_id=channel,
                                 service_id=service,
                                 method_id=method).SerializeToString()

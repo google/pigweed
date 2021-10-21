@@ -432,7 +432,8 @@ describe('RPC', () => {
       onNext.calls.reset();
 
       call.cancel();
-      expect(lastRequest().getType()).toEqual(PacketType.CANCEL);
+      expect(lastRequest().getType()).toEqual(PacketType.CLIENT_ERROR);
+      expect(lastRequest().getStatus()).toEqual(Status.CANCELLED);
 
       // Ensure the RPC can be called after being cancelled.
       enqueueServerStream(1, serverStreaming.method, testResponse);
@@ -534,7 +535,8 @@ describe('RPC', () => {
         stream.send(newRequest())
 
         expect(stream.cancel()).toBeTrue();
-        expect(lastRequest().getType()).toEqual(PacketType.CANCEL);
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_ERROR);
+        expect(lastRequest().getStatus()).toEqual(Status.CANCELLED);
         expect(stream.cancel()).toBeFalse();
         expect(stream.completed).toBeTrue();
         expect(stream.error).toEqual(Status.CANCELLED);

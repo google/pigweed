@@ -88,13 +88,9 @@ Status Server::ProcessPacket(std::span<const byte> data,
       HandleClientStreamPacket(packet, *channel, call);
       break;
     case PacketType::CLIENT_ERROR:
+    case PacketType::DEPRECATED_CANCEL:
       if (call != nullptr && call->id() == packet.call_id()) {
         call->HandleError(packet.status());
-      }
-      break;
-    case PacketType::CANCEL:
-      if (call != nullptr && call->id() == packet.call_id()) {
-        call->HandleError(Status::Cancelled());
       }
       break;
     case PacketType::CLIENT_STREAM_END:

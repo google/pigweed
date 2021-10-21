@@ -78,7 +78,7 @@ Status FakeChannelOutput::SendAndReleaseBuffer(
       PW_LOG_WARN("FakeChannelOutput received server error: %s",
                   result.value().status().str());
       return OkStatus();
-    case PacketType::CANCEL:
+    case PacketType::DEPRECATED_CANCEL:
     case PacketType::SERVER_STREAM:
     case PacketType::CLIENT_STREAM_END:
       return OkStatus();

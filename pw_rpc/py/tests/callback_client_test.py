@@ -513,7 +513,8 @@ class ServerStreamingTest(_CallbackClientImplTestBase):
         call.cancel()
 
         self.assertEqual(self.last_request().type,
-                         packet_pb2.PacketType.CANCEL)
+                         packet_pb2.PacketType.CLIENT_ERROR)
+        self.assertEqual(self.last_request().status, Status.CANCELLED.value)
 
         # Ensure the RPC can be called after being cancelled.
         self._enqueue_server_stream(1, self.method, resp)
@@ -692,8 +693,9 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
             stream.send(magic_number=37)
 
             self.assertTrue(stream.cancel())
-            self.assertIs(packet_pb2.PacketType.CANCEL,
+            self.assertIs(packet_pb2.PacketType.CLIENT_ERROR,
                           self.last_request().type)
+            self.assertIs(Status.CANCELLED.value, self.last_request().status)
             self.assertFalse(stream.cancel())
 
             self.assertTrue(stream.completed())

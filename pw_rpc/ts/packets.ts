@@ -91,7 +91,8 @@ export function encodeResponse(ids: idSet, response: Message): Uint8Array {
 
 export function encodeCancel(ids: idSet): Uint8Array {
   const packet = new packetPb.RpcPacket();
-  packet.setType(packetPb.PacketType.CANCEL);
+  packet.setType(packetPb.PacketType.CLIENT_ERROR);
+  packet.setStatus(Status.CANCELLED)
   packet.setChannelId(ids[0]);
   packet.setServiceId(ids[1]);
   packet.setMethodId(ids[2]);

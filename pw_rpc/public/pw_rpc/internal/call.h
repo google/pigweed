@@ -191,7 +191,8 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Cancels an RPC. For client calls only.
   Status Cancel() {
-    return CloseAndSendFinalPacket(PacketType::CANCEL, {}, OkStatus());
+    return CloseAndSendFinalPacket(
+        PacketType::CLIENT_ERROR, {}, Status::Cancelled());
   }
 
  private:

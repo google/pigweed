@@ -33,8 +33,9 @@ enum PacketType {
   // The client received a packet for an RPC it did not request.
   CLIENT_ERROR = 4;
 
-  // The client requests cancellation of an ongoing RPC.
-  CANCEL = 6;
+  // Deprecated, do not use. Send a CLIENT_ERROR with status CANCELLED instead.
+  // TODO(pwbug/512): Remove this packet type.
+  DEPRECATED_CANCEL = 6;
 
   // A client stream has completed.
   CLIENT_STREAM_END = 8;
@@ -46,6 +47,7 @@ enum PacketType {
 
   // Deprecated, do not use. Formerly was used as the last packet in a server
   // stream.
+  // TODO(pwbug/512): Remove this packet type.
   DEPRECATED_SERVER_STREAM_END = 3;
 
   // The server was unable to process a request.

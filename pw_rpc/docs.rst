@@ -498,7 +498,7 @@ Client-to-server packets
 |                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
-| CLIENT_ERROR      | Received unexpected packet          |
+| CLIENT_ERROR      | Abort an ongoing RPC                |
 |                   |                                     |
 |                   | .. code-block:: text                |
 |                   |                                     |
@@ -506,16 +506,6 @@ Client-to-server packets
 |                   |   - service_id                      |
 |                   |   - method_id                       |
 |                   |   - status                          |
-|                   |   - call_id (if set in REQUEST)     |
-|                   |                                     |
-+-------------------+-------------------------------------+
-| CANCEL            | Cancel an ongoing RPC               |
-|                   |                                     |
-|                   | .. code-block:: text                |
-|                   |                                     |
-|                   |   - channel_id                      |
-|                   |   - service_id                      |
-|                   |   - method_id                       |
 |                   |   - call_id (if set in REQUEST)     |
 |                   |                                     |
 +-------------------+-------------------------------------+
@@ -528,6 +518,7 @@ it did not request. If possible, the server should abort it.
 The status code indicates the type of error. The status code is logged, but all
 status codes result in the same action by the server: aborting the RPC.
 
+* ``CANCELLED`` -- The client requested that the RPC be cancelled.
 * ``NOT_FOUND`` -- Received a packet for a service method the client does not
   recognize.
 * ``FAILED_PRECONDITION`` -- Received a packet for a service method that the
@@ -613,9 +604,9 @@ The basic flow for all RPC invocations is as follows:
   * The server sends a ``RESPONSE`` packet. Includes a payload for unary &
     client streaming RPCs. The RPC is complete.
 
-The client may cancel an ongoing RPC at any time by sending a ``CANCEL`` packet.
-The server may finish an ongoing RPC at any time by sending the ``RESPONSE``
-packet.
+The client may cancel an ongoing RPC at any time by sending a ``CLIENT_ERROR``
+packet with status ``CANCELLED``. The server may finish an ongoing RPC at any
+time by sending the ``RESPONSE`` packet.
 
 Unary RPC
 ^^^^^^^^^
@@ -624,10 +615,10 @@ response.
 
 .. image:: unary_rpc.svg
 
-The client may attempt to cancel a unary RPC by sending a ``CANCEL`` packet. The
-server sends no response to a cancelled RPC. If the server processes the unary
-RPC synchronously (the handling thread sends the response), it may not be
-possible to cancel the RPC.
+The client may attempt to cancel a unary RPC by sending a ``CLIENT_ERROR``
+packet with status ``CANCELLED``. The server sends no response to a cancelled
+RPC. If the server processes the unary RPC synchronously (the handling thread
+sends the response), it may not be possible to cancel the RPC.
 
 .. image:: unary_rpc_cancelled.svg
 
@@ -638,8 +629,8 @@ sends any number of ``SERVER_STREAM`` packets followed by a ``RESPONSE`` packet.
 
 .. image:: server_streaming_rpc.svg
 
-The client may terminate a server streaming RPC by sending a ``CANCEL`` packet.
-The server sends no response.
+The client may terminate a server streaming RPC by sending a ``CLIENT_STREAM``
+packet with status ``CANCELLED``. The server sends no response.
 
 .. image:: server_streaming_rpc_cancelled.svg
 
@@ -654,7 +645,8 @@ a single ``RESPONSE`` to finish the RPC.
 
 The server may finish the RPC at any time by sending its ``RESPONSE`` packet,
 even if it has not yet received the ``CLIENT_STREAM_END`` packet. The client may
-terminate the RPC at any time by sending a ``CANCEL`` packet.
+terminate the RPC at any time by sending a ``CLIENT_ERROR`` packet with status
+``CANCELLED``.
 
 .. image:: client_streaming_rpc_cancelled.svg
 
@@ -670,7 +662,8 @@ the RPC.
 
 The server may finish the RPC at any time by sending the ``RESPONSE`` packet,
 even if it has not received the ``CLIENT_STREAM_END`` packet. The client may
-terminate the RPC at any time by sending a ``CANCEL`` packet.
+terminate the RPC at any time by sending a ``CLIENT_ERROR`` packet with status
+``CANCELLED``.
 
 .. image:: bidirectional_streaming_rpc_cancelled.svg
 

@@ -77,7 +77,8 @@ describe('Packets', () => {
 
   it('encodeCancel sets packet fields', () => {
     const goldenCancel = new RpcPacket();
-    goldenCancel.setType(PacketType.CANCEL);
+    goldenCancel.setType(PacketType.CLIENT_ERROR);
+    goldenCancel.setStatus(Status.CANCELLED);
     goldenCancel.setChannelId(1);
     goldenCancel.setServiceId(2);
     goldenCancel.setMethodId(3);
