@@ -705,7 +705,7 @@ void HostServer::RequestLowEnergyCentral(
 
 void HostServer::RequestLowEnergyPeripheral(
     fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request) {
-  BindServer<LowEnergyPeripheralServer>(gatt_, std::move(request));
+  BindServer<LowEnergyPeripheralServer>(std::move(request));
 }
 
 void HostServer::RequestGattServer(

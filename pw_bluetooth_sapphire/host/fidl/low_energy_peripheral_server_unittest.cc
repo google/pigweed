@@ -33,12 +33,10 @@ class LowEnergyPeripheralServerTestFakeAdapter : public bt::gap::testing::FakeAd
   void SetUp() override {
     bt::gap::testing::FakeAdapterTestFixture::SetUp();
 
-    fake_gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
-
     // Create a LowEnergyPeripheralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Peripheral> handle;
-    server_ = std::make_unique<LowEnergyPeripheralServer>(
-        adapter()->AsWeakPtr(), fake_gatt_->AsWeakPtr(), handle.NewRequest());
+    server_ =
+        std::make_unique<LowEnergyPeripheralServer>(adapter()->AsWeakPtr(), handle.NewRequest());
     peripheral_client_.Bind(std::move(handle));
   }
 
@@ -59,7 +57,6 @@ class LowEnergyPeripheralServerTestFakeAdapter : public bt::gap::testing::FakeAd
  private:
   std::unique_ptr<LowEnergyPeripheralServer> server_;
   fble::PeripheralPtr peripheral_client_;
-  std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTestFakeAdapter);
 };
 
@@ -71,12 +68,9 @@ class LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture
   void SetUp() override {
     AdapterTestFixture::SetUp();
 
-    fake_gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
-
     // Create a LowEnergyPeripheralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Peripheral> handle;
-    server_ = std::make_unique<LowEnergyPeripheralServer>(adapter(), fake_gatt_->AsWeakPtr(),
-                                                          handle.NewRequest());
+    server_ = std::make_unique<LowEnergyPeripheralServer>(adapter(), handle.NewRequest());
     peripheral_client_.Bind(std::move(handle));
   }
 
@@ -97,7 +91,6 @@ class LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture
  private:
   std::unique_ptr<LowEnergyPeripheralServer> server_;
   fble::PeripheralPtr peripheral_client_;
-  std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTest);
 };
 
