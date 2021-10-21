@@ -104,4 +104,20 @@ void FakeChannelOutput::CopyPayloadToBuffer(const ConstByteSpan& payload) {
   packets_.back().set_payload(std::span(&payloads_[start], payload.size()));
 }
 
+void FakeChannelOutput::LogPackets() const {
+  PW_LOG_INFO("%u packets have been sent through this FakeChannelOutput",
+              static_cast<unsigned>(packets_.size()));
+
+  for (unsigned i = 0; i < packets_.size(); ++i) {
+    PW_LOG_INFO("[packet %u/%u]", i + 1, unsigned(packets_.size()));
+    PW_LOG_INFO("        type: %u", unsigned(packets_[i].type()));
+    PW_LOG_INFO("  channel_id: %u", unsigned(packets_[i].channel_id()));
+    PW_LOG_INFO("  service_id: %08x", unsigned(packets_[i].service_id()));
+    PW_LOG_INFO("   method_id: %08x", unsigned(packets_[i].method_id()));
+    PW_LOG_INFO("     call_id: %u", unsigned(packets_[i].call_id()));
+    PW_LOG_INFO("      status: %s", packets_[i].status().str());
+    PW_LOG_INFO("     payload: %u B", unsigned(packets_[i].payload().size()));
+  }
+}
+
 }  // namespace pw::rpc::internal::test

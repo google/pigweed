@@ -62,7 +62,8 @@ class FakeChannelOutput : public ChannelOutput {
     return PayloadsView(packets_, type, channel_id, service_id, method_id);
   }
 
-  // Returns a view of the final statuses seen for this RPC.
+  // Returns a view of the final statuses seen for this RPC. Only relevant for
+  // checking packets sent by a server.
   template <auto kMethod>
   StatusView completions(
       uint32_t channel_id = Channel::kUnassignedChannelId) const {
@@ -82,6 +83,20 @@ class FakeChannelOutput : public ChannelOutput {
                       channel_id,
                       MethodInfo<kMethod>::kServiceId,
                       MethodInfo<kMethod>::kMethodId);
+  }
+
+  template <auto kMethod>
+  size_t client_stream_end_packets(
+      uint32_t channel_id = Channel::kUnassignedChannelId) const {
+    return internal::test::PacketsView(
+               packets_,
+               internal::test::PacketFilter(
+                   internal::PacketType::CLIENT_STREAM_END,
+                   internal::PacketType::CLIENT_STREAM_END,
+                   channel_id,
+                   MethodInfo<kMethod>::kServiceId,
+                   MethodInfo<kMethod>::kMethodId))
+        .size();
   }
 
   // The maximum number of packets this FakeChannelOutput can store. Attempting
@@ -111,6 +126,9 @@ class FakeChannelOutput : public ChannelOutput {
     send_status_ = status;
     return_after_packet_count_ = return_after_packet_count;
   }
+
+  // Logs which packets have been sent for debugging purposes.
+  void LogPackets() const;
 
  protected:
   constexpr FakeChannelOutput(Vector<Packet>& packets,

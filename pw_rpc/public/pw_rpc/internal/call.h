@@ -88,6 +88,10 @@ class Call : public IntrusiveList<Call>::Item {
     return CloseAndSendFinalPacket(PacketType::CLIENT_ERROR, {}, error);
   }
 
+  Status CloseAndSendClientStreamEnd() {
+    return CloseAndSendFinalPacket(PacketType::CLIENT_STREAM_END, {}, {});
+  }
+
   // Sends a payload in either a server or client stream packet.
   Status Write(ConstByteSpan payload);
 
@@ -154,6 +158,7 @@ class Call : public IntrusiveList<Call>::Item {
        uint32_t method_id,
        MethodType type);
 
+  // This call must be in a closed state when this is called.
   void MoveFrom(Call& other);
 
   Endpoint& endpoint() const { return *endpoint_; }
@@ -185,8 +190,8 @@ class Call : public IntrusiveList<Call>::Item {
                     ConstByteSpan payload,
                     Status status = OkStatus());
 
-  // Removes the RPC from the server & marks as closed. The responder must be
-  // active when this is called.
+  // Unregisters the RPC from the endpoint & marks as closed. The call may be
+  // active or inactive when this is called.
   void Close();
 
   // Cancels an RPC. For client calls only.
@@ -224,6 +229,14 @@ class Call : public IntrusiveList<Call>::Item {
   uint32_t service_id_;
   uint32_t method_id_;
 
+  enum : bool { kInactive, kActive } rpc_state_;
+  MethodType type_;
+  CallType call_type_;
+  enum : bool {
+    kClientStreamInactive,
+    kClientStreamActive,
+  } client_stream_state_;
+
   Channel::OutputBuffer response_;
 
   // Called when the RPC is terminated due to an error.
@@ -232,14 +245,6 @@ class Call : public IntrusiveList<Call>::Item {
   // Called when a request is received. Only used for RPCs with client streams.
   // The raw payload buffer is passed to the callback.
   Function<void(ConstByteSpan payload)> on_next_;
-
-  enum : bool { kInactive, kActive } rpc_state_;
-  MethodType type_;
-  CallType call_type_;
-  enum : bool {
-    kClientStreamInactive,
-    kClientStreamActive,
-  } client_stream_state_;
 };
 
 }  // namespace pw::rpc::internal

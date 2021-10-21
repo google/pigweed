@@ -33,7 +33,7 @@ class ServerCall : public Call {
   }
 
  protected:
-  ServerCall(ServerCall&& other) : Call() { *this = std::move(other); }
+  ServerCall(ServerCall&& other) { *this = std::move(other); }
 
   ~ServerCall() {
     // Any errors are logged in Channel::Send.

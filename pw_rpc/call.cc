@@ -64,33 +64,35 @@ Call::Call(Endpoint& endpoint_ref,
 }
 
 void Call::MoveFrom(Call& other) {
-  // If this RPC was running, complete it before moving in the other RPC.
-  CloseAndSendResponse(OkStatus()).IgnoreError();
+  PW_DCHECK(!active());
 
-  // Move the state variables, which may change when the other client closes.
-  rpc_state_ = other.rpc_state_;
-  type_ = other.type_;
-  call_type_ = other.call_type_;
-  client_stream_state_ = other.client_stream_state_;
+  if (!other.active()) {
+    return;  // Nothing else to do; this call is already closed.
+  }
 
+  // Copy all members from the other call.
   endpoint_ = other.endpoint_;
   channel_ = other.channel_;
   id_ = other.id_;
   service_id_ = other.service_id_;
   method_id_ = other.method_id_;
 
-  if (other.active()) {
-    other.Close();
+  rpc_state_ = other.rpc_state_;
+  type_ = other.type_;
+  call_type_ = other.call_type_;
+  client_stream_state_ = other.client_stream_state_;
 
-    // This call is known to be unique since the other call was just closed.
-    endpoint().RegisterUniqueCall(*this);
-  }
-
-  // Move the rest of the member variables.
   response_ = std::move(other.response_);
 
   on_error_ = std::move(other.on_error_);
   on_next_ = std::move(other.on_next_);
+
+  // Mark the other call inactive, unregister it, and register this one.
+  other.rpc_state_ = kInactive;
+  other.client_stream_state_ = kClientStreamInactive;
+
+  endpoint().UnregisterCall(other);
+  endpoint().RegisterUniqueCall(*this);
 }
 
 Status Call::CloseAndSendFinalPacket(PacketType type,
@@ -152,9 +154,10 @@ void Call::ReleasePayloadBuffer() {
 }
 
 void Call::Close() {
-  PW_DCHECK(active());
+  if (active()) {
+    endpoint().UnregisterCall(*this);
+  }
 
-  endpoint().UnregisterCall(*this);
   rpc_state_ = kInactive;
   client_stream_state_ = kClientStreamInactive;
 }

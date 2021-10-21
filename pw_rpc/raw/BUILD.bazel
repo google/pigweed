@@ -89,6 +89,16 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "client_reader_writer_test",
+    srcs = ["client_reader_writer_test.cc"],
+    deps = [
+        ":client_api",
+        ":client_testing",
+        "//pw_rpc:pw_rpc_test_pwpb",
+    ],
+)
+
+pw_cc_test(
     name = "codegen_test",
     srcs = [
         "codegen_test.cc",
@@ -145,16 +155,17 @@ pw_cc_test(
     ],
 )
 
-# TODO(hepler): Make this a pw_cc_test when raw RPC generated headers are supported.
-filegroup(
+pw_cc_test(
     name = "server_reader_writer_test",
     srcs = ["server_reader_writer_test.cc"],
-    # deps = [
-    #     "..:test_protos.raw_rpc",
-    #     ":test_method_context",
-    #     "//pw_rpc:internal_test_utils",
-    #     ":method",
-    # ],
+    deps = [
+        # TODO(hepler): RPC deps not used directly should be provided by the proto library
+        ":client_api",
+        ":server_api",
+        ":test_method_context",
+        "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_pwpb",
+    ],
 )
 
 pw_cc_test(

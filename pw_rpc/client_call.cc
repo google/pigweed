@@ -23,16 +23,26 @@ void ClientCall::SendInitialRequest(ConstByteSpan payload) {
   }
 }
 
+void ClientCall::CloseClientStream() {
+  if (has_client_stream()) {
+    CloseAndSendClientStreamEnd();
+  } else {
+    Close();  // Silently close this call if it is open.
+  }
+}
+
 UnaryResponseClientCall& UnaryResponseClientCall::operator=(
     UnaryResponseClientCall&& other) {
-  MoveFrom(other);
+  MoveClientCallFrom(other);
+
   on_completed_ = std::move(other.on_completed_);
   return *this;
 }
 
 StreamResponseClientCall& StreamResponseClientCall::operator=(
     StreamResponseClientCall&& other) {
-  MoveFrom(other);
+  MoveClientCallFrom(other);
+
   on_completed_ = std::move(other.on_completed_);
   return *this;
 }

@@ -17,6 +17,9 @@
 namespace pw::rpc::internal {
 
 ServerCall& ServerCall::operator=(ServerCall&& other) {
+  // If this call is active, finish it first.
+  CloseAndSendResponse(OkStatus()).IgnoreError();
+
   MoveFrom(other);
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK

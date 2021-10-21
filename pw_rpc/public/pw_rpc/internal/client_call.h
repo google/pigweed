@@ -24,11 +24,7 @@ namespace pw::rpc::internal {
 // A Call object, as used by an RPC client.
 class ClientCall : public Call {
  public:
-  ~ClientCall() {
-    if (active()) {
-      Close();
-    }
-  }
+  ~ClientCall() { CloseClientStream(); }
 
   void SendInitialRequest(ConstByteSpan payload);
 
@@ -41,6 +37,13 @@ class ClientCall : public Call {
              uint32_t method_id,
              MethodType type)
       : Call(client, channel_id, service_id, method_id, type) {}
+
+  void CloseClientStream();
+
+  void MoveClientCallFrom(ClientCall& other) {
+    CloseClientStream();
+    MoveFrom(other);
+  }
 };
 
 // Unary response client calls receive both a payload and the status in their

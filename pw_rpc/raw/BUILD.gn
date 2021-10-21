@@ -78,6 +78,7 @@ pw_test_group("tests") {
   tests = [
     ":codegen_test",
     ":client_test",
+    ":client_reader_writer_test",
     ":method_test",
     ":method_info_test",
     ":method_union_test",
@@ -104,6 +105,15 @@ pw_test("client_test") {
     "..:test_utils",
   ]
   sources = [ "client_test.cc" ]
+}
+
+pw_test("client_reader_writer_test") {
+  deps = [
+    ":client_api",
+    ":client_testing",
+    "..:test_protos.raw_rpc",
+  ]
+  sources = [ "client_reader_writer_test.cc" ]
 }
 
 pw_test("method_test") {

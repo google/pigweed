@@ -127,4 +127,33 @@ TEST(RawServerReaderWriter, Open_ReturnsUsableReaderWriter) {
       "321");
 }
 
+TEST(RawUnaryResponder, Move_FinishesActiveCall) {
+  ReaderWriterTestContext ctx;
+  RawUnaryResponder active_call =
+      RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  RawUnaryResponder inactive_call;
+
+  active_call = std::move(inactive_call);
+
+  const auto completions = ctx.output.completions<TestService::TestUnaryRpc>();
+  ASSERT_EQ(completions.size(), 1u);
+  EXPECT_EQ(completions.back(), OkStatus());
+}
+
+TEST(RawUnaryResponder, OutOfScope_FinishesActiveCall) {
+  ReaderWriterTestContext ctx;
+
+  {
+    RawUnaryResponder call = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+        ctx.server, ctx.channel.id(), ctx.service);
+    ASSERT_TRUE(ctx.output.completions<TestService::TestUnaryRpc>().empty());
+  }
+
+  const auto completions = ctx.output.completions<TestService::TestUnaryRpc>();
+  ASSERT_EQ(completions.size(), 1u);
+  EXPECT_EQ(completions.back(), OkStatus());
+}
+
 }  // namespace pw::rpc
