@@ -68,7 +68,7 @@ export class Frame {
    * (including bytes parsed as address or control bytes).
    */
   ok(): boolean {
-    return self.status === FrameStatus.OK;
+    return this.status === FrameStatus.OK;
   }
 }
 

@@ -42,6 +42,7 @@ js_library(
 ts_library(
     name = "hdlc_test_lib",
     srcs = [
+        "decoder_test.ts",
         "encoder_test.ts",
     ],
     deps = [
