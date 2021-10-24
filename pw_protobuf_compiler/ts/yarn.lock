@@ -3,9 +3,9 @@
 
 
 "@bazel/jasmine@^4.1.0":
-  version "4.3.0"
-  resolved "https://registry.yarnpkg.com/@bazel/jasmine/-/jasmine-4.3.0.tgz#d2dd29deb56cffae2b3bd7be706fb1b3dd532fc7"
-  integrity sha512-lROo6iAdyqmqVNe8M5or6Vkzcn5wyBSI4MJBqqLJVjejhlhU6Mg27j1xC+VJPlnQkiEyeHLV5WNndp50ROivSw==
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/@bazel/jasmine/-/jasmine-4.4.0.tgz#4f3ec3e1cc62824c9ed222e937c6ad368be22b28"
+  integrity sha512-GkpRvD6Z880g6AsLzoc/UPTPdaXsGzAUGWGefGHqWsO+tBCWmi2V8WL0yc0N6edu6QLi4EI0fxN9obH1FsU0MQ==
   dependencies:
     c8 "~7.5.0"
     jasmine-reporters "~2.4.0"
@@ -19,6 +19,11 @@
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
+
+"@types/argparse@^2.0.10":
+  version "2.0.10"
+  resolved "https://registry.yarnpkg.com/@types/argparse/-/argparse-2.0.10.tgz#664e84808accd1987548d888b9d21b3e9c996a6c"
+  integrity sha512-C4wahC3gz3vQtvPazrJ5ONwmK1zSDllQboiWvpMM/iOswCYfBREFnjFbq/iWKIVOCl8+m5Pk6eva6/ZSsDuIGA==
 
 "@types/google-protobuf@^3.15.5":
   version "3.15.5"
@@ -36,14 +41,14 @@
   integrity sha512-sz7iLqvVUg1gIedBOvlkxPlc8/uVzyS5OwGz1cKjXzkl3FpL3al0crU8YGU1WoHkxn0Wxbw5tyi6hvzJKNzFsw==
 
 "@types/jasmine@^3.9.0":
-  version "3.9.1"
-  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-3.9.1.tgz#94c65ee8bf9d24d9e1d84abaed57b6e0da8b49de"
-  integrity sha512-PVpjh8S8lqKFKurWSKdFATlfBHGPzgy0PoDdzQ+rr78jTQ0aacyh9YndzZcAUPxhk4kRujItFFGQdUJ7flHumw==
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-3.10.0.tgz#b55e7184102ef320c4e8fb3d64ebfac309f60bf7"
+  integrity sha512-sPHWB05cYGt7GXFkkn+03VL1533abxiA5bE8PKdr0nS3cEsOXCGjMk0sgqVwY6xkiwajoAiN3zc/7zDeXip3Pw==
 
 "@types/node@^16.10.2":
-  version "16.10.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.10.2.tgz#5764ca9aa94470adb4e1185fe2e9f19458992b2e"
-  integrity sha512-zCclL4/rx+W5SQTzFs9wyvvyCwoK9QtBpratqz2IYJ3O8Umrn0m3nsTv0wQBk9sRGpvUe9CwPDrQFB10f1FIjQ==
+  version "16.11.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.3.tgz#fad0b069ec205b0e81429c805d306d2c12e26be1"
+  integrity sha512-aIYL9Eemcecs1y77XzFGiSc+FdfN58k4J23UEe6+hynf4Wd9g4DzQPwIKL080vSMuubFqy2hWwOzCtJdc6vFKw==
 
 ansi-regex@^5.0.1:
   version "5.0.1"
@@ -57,10 +62,20 @@ ansi-styles@^4.0.0:
   dependencies:
     color-convert "^2.0.1"
 
+argparse@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/argparse/-/argparse-2.0.1.tgz#246f50f3ca78a3240f6c997e8a9bd1eac49e4b38"
+  integrity sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==
+
 balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
+
+base64-js@^1.5.1:
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
+  integrity sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==
 
 brace-expansion@^1.1.7:
   version "1.1.11"
@@ -187,6 +202,11 @@ glob@^7.1.3, glob@^7.1.4, glob@^7.1.6:
     once "^1.3.0"
     path-is-absolute "^1.0.0"
 
+google-protobuf@^3.19.0:
+  version "3.19.0"
+  resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.19.0.tgz#97f474323c92f19fd6737af1bb792e396991e0b8"
+  integrity sha512-qXGAiv3OOlaJXJNeKOBKxbBAwjsxzhx+12ZdKOkZTsqsRkyiQRmr/nBkAkqnuQ8cmA9X5NVXvObQTpHVnXE2DQ==
+
 has-flag@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/has-flag/-/has-flag-4.0.0.tgz#944771fd9c81c81265c4d6941860da06bb59479b"
@@ -226,9 +246,9 @@ isexe@^2.0.0:
   integrity sha1-6PvzdNxVb/iUehDcsFctYz8s+hA=
 
 istanbul-lib-coverage@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/istanbul-lib-coverage/-/istanbul-lib-coverage-3.0.1.tgz#e8900b3ed6069759229cf30f7067388d148aeb5e"
-  integrity sha512-GvCYYTxaCPqwMjobtVcVKvSHtAGe48MNhGjpK8LtVF8K0ISX7hCKl85LgtuaSneWVyQmaGcW3iXVV3GaZSLpmQ==
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/istanbul-lib-coverage/-/istanbul-lib-coverage-3.2.0.tgz#189e7909d0a39fa5a3dfad5b03f71947770191d3"
+  integrity sha512-eOeJ5BHCmHYvQK7xt9GkdHuzuCGS1Y6g9Gvnx3Ym33fz/HpLRYxiS0wHNr+m/MBC8B647Xt608vCDEvhl9c6Mw==
 
 istanbul-lib-report@^3.0.0:
   version "3.0.0"
@@ -240,17 +260,17 @@ istanbul-lib-report@^3.0.0:
     supports-color "^7.1.0"
 
 istanbul-reports@^3.0.2:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/istanbul-reports/-/istanbul-reports-3.0.2.tgz#d593210e5000683750cb09fc0644e4b6e27fd53b"
-  integrity sha512-9tZvz7AiR3PEDNGiV9vIouQ/EAcqMXFmkcA1CDFTwOB98OZVDL0PH9glHotf5Ugp6GCOTypfzGWI/OqjWNCRUw==
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/istanbul-reports/-/istanbul-reports-3.0.5.tgz#a2580107e71279ea6d661ddede929ffc6d693384"
+  integrity sha512-5+19PlhnGabNWB7kOFnuxT8H3T/iIyQzIbQMxXsURmmvKg86P2sbkrGOT77VnHw0Qr0gc2XzRaRfMZYYbSQCJQ==
   dependencies:
     html-escaper "^2.0.0"
     istanbul-lib-report "^3.0.0"
 
-jasmine-core@^3.9.0, jasmine-core@~3.9.0:
-  version "3.9.0"
-  resolved "https://registry.yarnpkg.com/jasmine-core/-/jasmine-core-3.9.0.tgz#09a3c8169fe98ec69440476d04a0e4cb4d59e452"
-  integrity sha512-Tv3kVbPCGVrjsnHBZ38NsPU3sDOtNa0XmbG2baiyJqdb5/SPpDO6GVwJYtUryl6KB4q1Ssckwg612ES9Z0dreQ==
+jasmine-core@^3.9.0, jasmine-core@~3.10.0:
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/jasmine-core/-/jasmine-core-3.10.0.tgz#1e3e4053d954eb6d0bfbb3eb859bb21a5655de45"
+  integrity sha512-XWGaJ25RUdOQnjGiLoQa9QG/R4u1e9Bk4uhLdn9F4JCBco84L4SKM52bxci4vWTSUzhmhuHNAkAHFN/6Cox9wQ==
 
 jasmine-reporters@~2.4.0:
   version "2.4.0"
@@ -261,12 +281,12 @@ jasmine-reporters@~2.4.0:
     xmldom "^0.5.0"
 
 jasmine@^3.9.0:
-  version "3.9.0"
-  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-3.9.0.tgz#286c4f9f88b69defc24acf3989af5533d5c6a0e6"
-  integrity sha512-JgtzteG7xnqZZ51fg7N2/wiQmXon09szkALcRMTgCMX4u/m17gVJFjObnvw5FXkZOWuweHPaPRVB6DI2uN0wVA==
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-3.10.0.tgz#acd3cd560a9d20d8fdad6bd2dd05867d188503f3"
+  integrity sha512-2Y42VsC+3CQCTzTwJezOvji4qLORmKIE0kwowWC+934Krn6ZXNQYljiwK5st9V3PVx96BSiDYXSB60VVah3IlQ==
   dependencies:
     glob "^7.1.6"
-    jasmine-core "~3.9.0"
+    jasmine-core "~3.10.0"
 
 locate-path@^6.0.0:
   version "6.0.0"
