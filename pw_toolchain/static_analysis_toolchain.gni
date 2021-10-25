@@ -40,8 +40,10 @@ declare_args() {
 }
 
 # Creates a toolchain target for static analysis.
-# The generated toolchain runs clang-tidy on all source files that are
-# matched by pw_static_analysis_source_filter.
+#
+# The generated toolchain runs clang-tidy on all source files that are not
+# excluded by pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS or
+# pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS.
 #
 # Args:
 #   cc: (required) String indicating the C compiler to use.
