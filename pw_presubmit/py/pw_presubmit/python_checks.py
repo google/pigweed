@@ -51,7 +51,7 @@ def gn_python_check(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'python.tests', 'python.lint')
 
 
-@filter_paths(endswith=_PYTHON_EXTENSIONS)
+@filter_paths(endswith=_PYTHON_EXTENSIONS + ('.pylintrc', ))
 def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, 'python.lint')
