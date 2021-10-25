@@ -190,8 +190,11 @@ zx_status_t LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::Register
 }
 
 LowEnergyPeripheralServer::LowEnergyPeripheralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+                                                     fxl::WeakPtr<bt::gatt::GATT> gatt,
                                                      fidl::InterfaceRequest<Peripheral> request)
-    : AdapterServerBase(adapter, this, std::move(request)), weak_ptr_factory_(this) {}
+    : AdapterServerBase(std::move(adapter), this, std::move(request)),
+      gatt_(std::move(gatt)),
+      weak_ptr_factory_(this) {}
 
 LowEnergyPeripheralServer::~LowEnergyPeripheralServer() { ZX_ASSERT(adapter()->bredr()); }
 
@@ -351,13 +354,12 @@ LowEnergyPeripheralServer::CreateConnectionServer(
   zx_status_t status = zx::channel::create(0, &local, &remote);
   ZX_ASSERT(status == ZX_OK);
 
-  auto conn_server =
-      std::make_unique<LowEnergyConnectionServer>(std::move(connection), std::move(local));
   auto conn_server_id = next_connection_server_id_++;
-  conn_server->set_closed_handler([this, conn_server_id] {
-    bt_log(INFO, LOG_TAG, "connection closed");
-    connections_.erase(conn_server_id);
-  });
+  auto conn_server = std::make_unique<LowEnergyConnectionServer>(
+      gatt_, std::move(connection), std::move(local), [this, conn_server_id] {
+        bt_log(INFO, LOG_TAG, "connection closed");
+        connections_.erase(conn_server_id);
+      });
   connections_[conn_server_id] = std::move(conn_server);
 
   return fidl::InterfaceHandle<fble::Connection>(std::move(remote));

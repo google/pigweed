@@ -100,6 +100,7 @@ source_set("tests") {
     "helpers_unittest.cc",
     "host_server_unittest.cc",
     "low_energy_central_server_unittest.cc",
+    "low_energy_connection_server_unittest.cc",
     "low_energy_peripheral_server_unittest.cc",
     "profile_server_unittest.cc",
   ]
