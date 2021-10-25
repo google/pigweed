@@ -787,6 +787,7 @@ LINTFORMAT = (
     _LINTFORMAT,
     static_analysis,
     pw_presubmit.python_checks.check_python_versions,
+    pw_presubmit.python_checks.gn_python_lint,
 )
 
 QUICK = (
