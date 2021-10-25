@@ -542,8 +542,7 @@ TEST_F(WriteTransfer, MultiChunk) {
 
 class WriteTransferMaxBytes16 : public WriteTransfer {
  protected:
-  WriteTransferMaxBytes16()
-      : WriteTransfer(/*default_max_bytes_to_receive=*/16) {}
+  WriteTransferMaxBytes16() : WriteTransfer(/*max_bytes_to_receive=*/16) {}
 };
 
 TEST_F(WriteTransferMaxBytes16, MultipleParameters) {

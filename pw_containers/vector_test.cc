@@ -145,6 +145,7 @@ TEST(Vector, Construct_Move) {
     EXPECT_EQ(vector[i].value, 421);
   }
 
+  // NOLINTNEXTLINE(bugprone-use-after-move)
   for (size_t i = 0; i < origin_vector.size(); ++i) {
     EXPECT_EQ(origin_vector[i].value, MoveOnly::kDeleted);
   }
@@ -253,6 +254,7 @@ TEST(Vector, Assign_Move) {
     EXPECT_EQ(vector[i].value, 421);
   }
 
+  // NOLINTNEXTLINE(bugprone-use-after-move)
   for (size_t i = 0; i < origin_vector.size(); ++i) {
     EXPECT_EQ(origin_vector[i].value, MoveOnly::kDeleted);
   }
@@ -333,6 +335,7 @@ TEST(Vector, Modify_PushBack_Move) {
 
     EXPECT_EQ(vector.size(), 1u);
     EXPECT_EQ(vector.front().value, 99);
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     EXPECT_EQ(value.value, 0);
   }
 

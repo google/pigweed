@@ -286,6 +286,7 @@ TEST(Base64, Empty) {
   EXPECT_STREQ("DO NOT TOUCH", buffer);
 
   EXPECT_EQ(0u, MaxDecodedSize(0));
+  // NOLINTNEXTLINE(bugprone-string-constructor)
   EXPECT_EQ(0u, Decode(std::string_view("nothing please", 0), buffer));
   EXPECT_STREQ("DO NOT TOUCH", buffer);
 }

@@ -116,7 +116,7 @@ class Function<Return(Args...)> {
     if (function_internal::IsNull(callable)) {
       holder_.InitializeNullTarget();
     } else {
-      holder_.InitializeMemoryTarget(std::move(callable), storage);
+      holder_.InitializeMemoryTarget(std::forward(callable), storage);
     }
   }
 

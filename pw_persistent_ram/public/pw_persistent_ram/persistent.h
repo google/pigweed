@@ -102,7 +102,7 @@ class Persistent {
   // Assignment operator.
   template <typename U = T>
   Persistent& operator=(U&& value) {
-    contents_ = std::move(value);
+    contents_ = std::forward<U>(value);
     crc_ = CalculateCrc();
     return *this;
   }

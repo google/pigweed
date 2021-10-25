@@ -50,6 +50,7 @@ TEST(RawClientReaderWriter, Move_InactiveToActive_EndsClientStream) {
       1u);
 
   EXPECT_FALSE(active_call.active());
+  // NOLINTNEXTLINE(bugprone-use-after-move)
   EXPECT_FALSE(inactive_call.active());
 }
 
@@ -72,6 +73,7 @@ TEST(RawUnaryReceiver, Move_InactiveToActive_SilentlyCloses) {
   EXPECT_EQ(ctx.output().total_packets(), 1u);  // No more packets
 
   EXPECT_FALSE(active_call.active());
+  // NOLINTNEXTLINE(bugprone-use-after-move)
   EXPECT_FALSE(inactive_call.active());
 }
 
@@ -92,6 +94,7 @@ TEST(RawUnaryReceiver, Move_ActiveToActive) {
 
   EXPECT_EQ(ctx.output().total_packets(), 2u);  // No more packets
 
+  // NOLINTNEXTLINE(bugprone-use-after-move)
   EXPECT_FALSE(active_call_1.active());
   EXPECT_TRUE(active_call_2.active());
 }
