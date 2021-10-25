@@ -110,7 +110,7 @@ def create_ecdsa_signature(data: bytes, key: bytes) -> Signature:
                   keyval=ec_key.public_key().public_bytes(
                       Encoding.X962, PublicFormat.UncompressedPoint))
 
-    der_signature = ec_key.sign(data, ec.ECDSA(hashes.SHA256()))
+    der_signature = ec_key.sign(data, ec.ECDSA(hashes.SHA256()))  # pylint: disable=no-value-for-parameter
     int_r, int_s = decode_dss_signature(der_signature)
     sig_bytes = int_r.to_bytes(32, 'big') + int_s.to_bytes(32, 'big')
 
