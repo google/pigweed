@@ -4,6 +4,7 @@
 
 #include "util.h"
 
+#include <endian.h>
 #include <zircon/assert.h>
 
 #include <algorithm>
