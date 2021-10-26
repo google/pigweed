@@ -14,6 +14,7 @@
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_client_server.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/low_energy_connection_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
@@ -35,8 +36,8 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
                          fxl::WeakPtr<bt::gatt::GATT> gatt);
   ~LowEnergyCentralServer() override;
 
-  // Returns the connection pointer in the connections_ map, if it exists. The pointer will be
-  // nullptr if a request is pending. Should only be used for testing.
+  // Returns the connection pointer in the connections_deprecated_ map, if it exists. The pointer
+  // will be nullptr if a request is pending. Should only be used for testing.
   std::optional<bt::gap::LowEnergyConnectionHandle*> FindConnectionForTesting(
       bt::PeerId identifier);
 
@@ -107,6 +108,9 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   void Scan(fuchsia::bluetooth::le::ScanOptions options,
             fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> result_watcher,
             ScanCallback callback) override;
+  void Connect(fuchsia::bluetooth::PeerId id, fuchsia::bluetooth::le::ConnectionOptions options,
+               fidl::InterfaceRequest<::fuchsia::bluetooth::le::Connection> request) override;
+
   void GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
                       GetPeripheralsCallback callback) override;
   void GetPeripheral(::std::string identifier, GetPeripheralCallback callback) override;
@@ -149,7 +153,9 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   //   a. nullptr, if a connect request to this device is currently pending.
   //   b. a valid reference if this Central is holding a connection reference to
   //   this device.
-  std::unordered_map<bt::PeerId, std::unique_ptr<bt::gap::LowEnergyConnectionHandle>> connections_;
+  std::unordered_map<bt::PeerId, std::unique_ptr<LowEnergyConnectionServer>> connections_;
+  std::unordered_map<bt::PeerId, std::unique_ptr<bt::gap::LowEnergyConnectionHandle>>
+      connections_deprecated_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

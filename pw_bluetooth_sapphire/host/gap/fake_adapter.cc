@@ -43,6 +43,20 @@ void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
   cb(channel);
 }
 
+void FakeAdapter::FakeLowEnergy::Connect(PeerId peer_id, ConnectionResultCallback callback,
+                                         LowEnergyConnectionOptions connection_options) {
+  connections_[peer_id] = Connection{peer_id, connection_options};
+
+  auto bondable_cb = [connection_options]() { return connection_options.bondable_mode; };
+  auto security_cb = []() { return sm::SecurityProperties(); };
+  auto handle = std::make_unique<LowEnergyConnectionHandle>(
+      peer_id, /*handle=*/1,
+      /*release_cb=*/[](auto) {}, std::move(bondable_cb), std::move(security_cb));
+  callback(fpromise::ok(std::move(handle)));
+}
+
+bool FakeAdapter::FakeLowEnergy::Disconnect(PeerId peer_id) { return connections_.erase(peer_id); }
+
 void FakeAdapter::FakeLowEnergy::StartAdvertising(
     AdvertisingData data, AdvertisingData scan_rsp, AdvertisingInterval interval, bool anonymous,
     bool include_tx_power_level, std::optional<ConnectableAdvertisingParameters> connectable,
