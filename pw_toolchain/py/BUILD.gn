@@ -29,5 +29,6 @@ pw_python_package("py") {
     "pw_toolchain/clang_tidy.py",
     "pw_toolchain/copy_with_metadata.py",
   ]
+  tests = [ "clang_tidy_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

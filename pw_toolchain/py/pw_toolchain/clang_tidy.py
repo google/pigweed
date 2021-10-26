@@ -166,7 +166,7 @@ def main(
         relative_source_file = source_file
 
     for pattern in source_exclude:
-        if re.match(str(relative_source_file), pattern):
+        if re.match(pattern, str(relative_source_file)):
             return 0
 
     source_file_path = source_file.resolve()
