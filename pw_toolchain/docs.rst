@@ -89,10 +89,10 @@ toolchain ``${target_name}.static_analysis`` using
 
 Excluding files from checks
 ---------------------------
-The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOB`` is used
-used to exclude source files from the analysis. The list must contain
-POSIX-style globs for individual files, rather than directories. For example,
-provide ``"the_path/**/*"`` to exclude all files in all directories under
+The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES`` is used
+used to exclude source files from the analysis. The list must contain regular
+expressions matching individual files, rather than directories. For example,
+provide ``"the_path/.*"`` to exclude all files in all directories under
 ``the_path``.
 
 The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS`` is used

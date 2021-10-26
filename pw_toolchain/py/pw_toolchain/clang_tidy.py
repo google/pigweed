@@ -25,6 +25,7 @@ clang-tidy:
 import argparse
 import logging
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import sys
@@ -70,7 +71,7 @@ def _parse_args() -> argparse.Namespace:
                         default=[],
                         action='append',
                         type=str,
-                        help=('Glob-style patterns matching the paths of'
+                        help=('Regular expressions matching the paths of'
                               ' source files to be excluded from the'
                               ' analysis.'))
 
@@ -165,7 +166,7 @@ def main(
         relative_source_file = source_file
 
     for pattern in source_exclude:
-        if relative_source_file.match(pattern):
+        if re.match(str(relative_source_file), pattern):
             return 0
 
     source_file_path = source_file.resolve()

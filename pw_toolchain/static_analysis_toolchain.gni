@@ -17,15 +17,15 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_toolchain/universal_tools.gni")
 
 declare_args() {
-  # Glob-style patterns matching the paths of the source files to be excluded
+  # Regular expressions matching the paths of the source files to be excluded
   # from the analysis. clang-tidy provides no alternative option.
   #
   # For example, the following disables clang-tidy on all source files in the
   # third_party directory:
   #
-  #   pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS = ["third_party/**/*"]
+  #   pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES = ["third_party/.*"]
   #
-  pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS = []
+  pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES = []
 
   # Disable clang-tidy for specific include paths. In the clang-tidy command,
   # include paths that end with one of these are switched from -I to -isystem,
@@ -42,7 +42,7 @@ declare_args() {
 # Creates a toolchain target for static analysis.
 #
 # The generated toolchain runs clang-tidy on all source files that are not
-# excluded by pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS or
+# excluded by pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES or
 # pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS.
 #
 # Args:
@@ -59,7 +59,7 @@ template("pw_static_analysis_toolchain") {
   _clang_tidy_py = "${python_path} ${_clang_tidy_py_path}"
   _source_root = rebase_path("//", root_build_dir)
   _source_exclude = ""
-  foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_GLOBS) {
+  foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES) {
     _source_exclude = _source_exclude + " --source-exclude '${pattern}'"
   }
 
