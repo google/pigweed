@@ -60,11 +60,8 @@ class AsyncQueue<T> {
  * only implements that subset.
  */
 class SerialPortMock implements SerialPort {
-  private deviceData = new AsyncQueue<{
-    data?: Uint8Array;
-    done?: boolean;
-    error?: Error;
-  }>();
+  private deviceData =
+      new AsyncQueue<{data?: Uint8Array; done?: boolean; error?: Error;}>();
 
   /**
    * Simulate the device sending data to the browser.
@@ -156,11 +153,11 @@ export class SerialMock implements Serial {
   // The rest of the methods are unimplemented
   // and only exist to ensure SerialMock implements Serial
 
-  onconnect(): ((this: this, ev: SerialConnectionEvent) => any) | null {
+  onconnect(): ((this: this, ev: SerialConnectionEvent) => any)|null {
     throw new Error('Method not implemented.');
   }
 
-  ondisconnect(): ((this: this, ev: SerialConnectionEvent) => any) | null {
+  ondisconnect(): ((this: this, ev: SerialConnectionEvent) => any)|null {
     throw new Error('Method not implemented.');
   }
 
@@ -169,32 +166,28 @@ export class SerialMock implements Serial {
   }
 
   addEventListener(
-    type: 'connect' | 'disconnect',
-    listener: (this: this, ev: SerialConnectionEvent) => any,
-    useCapture?: boolean
-  ): void;
+      type: 'connect'|'disconnect',
+      listener: (this: this, ev: SerialConnectionEvent) => any,
+      useCapture?: boolean): void;
 
   addEventListener(
-    type: string,
-    listener: EventListener | EventListenerObject | null,
-    options?: boolean | AddEventListenerOptions
-  ): void;
+      type: string,
+      listener: EventListener|EventListenerObject|null,
+      options?: boolean|AddEventListenerOptions): void;
 
   addEventListener(type: any, listener: any, options?: any) {
     throw new Error('Method not implemented.');
   }
 
   removeEventListener(
-    type: 'connect' | 'disconnect',
-    callback: (this: this, ev: SerialConnectionEvent) => any,
-    useCapture?: boolean
-  ): void;
+      type: 'connect'|'disconnect',
+      callback: (this: this, ev: SerialConnectionEvent) => any,
+      useCapture?: boolean): void;
 
   removeEventListener(
-    type: string,
-    callback: EventListener | EventListenerObject | null,
-    options?: boolean | EventListenerOptions
-  ): void;
+      type: string,
+      callback: EventListener|EventListenerObject|null,
+      options?: boolean|EventListenerOptions): void;
 
   removeEventListener(type: any, callback: any, options?: any) {
     throw new Error('Method not implemented.');
