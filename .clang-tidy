@@ -53,6 +53,7 @@ Checks: >
     performance-inefficient-algorithm,
     performance-inefficient-vector-operation,
     performance-move-constructor-init,
+    readability-container-size-empty,
     readability-misleading-indentation,
     readability-redundant-control-flow,
     readability-redundant-smartptr-get,

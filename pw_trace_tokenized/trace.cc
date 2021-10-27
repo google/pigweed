@@ -180,7 +180,7 @@ void CallbacksImpl::CallSinks(std::span<const std::byte> header,
     if (sink_callbacks_[sink_idx].add_bytes) {
       sink_callbacks_[sink_idx].add_bytes(
           user_data, header.data(), header.size());
-      if (data.size() > 0) {
+      if (!data.empty()) {
         sink_callbacks_[sink_idx].add_bytes(
             user_data, data.data(), data.size());
       }

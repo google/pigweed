@@ -58,7 +58,7 @@ Status PrefixedEntryRingBufferMulti::AttachReader(Reader& reader) {
   }
   reader.buffer_ = this;
 
-  if (readers_.size() == 0) {
+  if (readers_.empty()) {
     reader.read_idx_ = write_idx_;
     reader.entry_count_ = 0;
   } else {
@@ -245,7 +245,7 @@ const Reader& PrefixedEntryRingBufferMulti::GetSlowestReader() const {
 }
 
 Status PrefixedEntryRingBufferMulti::Dering() {
-  if (buffer_ == nullptr || readers_.size() == 0) {
+  if (buffer_ == nullptr || readers_.empty()) {
     return Status::FailedPrecondition();
   }
 
@@ -259,7 +259,7 @@ Status PrefixedEntryRingBufferMulti::Dering() {
 }
 
 Status PrefixedEntryRingBufferMulti::InternalDering(Reader& dering_reader) {
-  if (buffer_ == nullptr || readers_.size() == 0) {
+  if (buffer_ == nullptr || readers_.empty()) {
     return Status::FailedPrecondition();
   }
 
@@ -369,7 +369,7 @@ PrefixedEntryRingBufferMulti::RawFrontEntryInfo(size_t source_idx) const {
 size_t PrefixedEntryRingBufferMulti::RawAvailableBytes() const {
   // Compute slowest reader. If no readers exist, the entire buffer can be
   // written.
-  if (readers_.size() == 0) {
+  if (readers_.empty()) {
     return buffer_bytes_;
   }
 

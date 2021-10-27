@@ -47,12 +47,12 @@ class TestInitiator : public Initiator {
                         ByteSpan rx_data,
                         chrono::SystemClock::duration) override {
     // Write
-    if (tx_data.size() > 0) {
+    if (!tx_data.empty()) {
       write_buffer_.append(tx_data.data(), tx_data.size());
     }
 
     // Read
-    if (rx_data.size() > 0) {
+    if (!rx_data.empty()) {
       PW_CHECK_UINT_EQ(
           read_buffer_.size(), rx_data.size(), "Buffer to read is too big");
       for (uint32_t i = 0; i < rx_data.size(); i++) {

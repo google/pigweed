@@ -35,7 +35,7 @@ int TestClientBioRead(BIO* bio, char* out, int outl) {
   if (!res.ok()) {
     return -1;
   }
-  if (res.value().size() == 0) {
+  if (res.value().empty()) {
     BIO_set_retry_read(bio);
     return -1;
   }

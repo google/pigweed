@@ -75,7 +75,7 @@ pw::Status DumpTraceBufferToLog() {
     }
     line_builder.append(entry_base64_buffer + written, to_write - written);
   }
-  if (line_builder.size() > 0) {
+  if (!line_builder.empty()) {
     PW_LOG_INFO("[TRACE] data: %s", line_builder.c_str());
   }
   PW_LOG_INFO("[TRACE] end");

@@ -90,7 +90,7 @@ int InMemoryTestServer::BioRead(BIO* bio, char* out, int out_length) {
     server->last_bio_status_ = read.status();
     return -1;
   }
-  if (read.value().size() == 0) {
+  if (read.value().empty()) {
     BIO_set_retry_read(bio);
     return -1;
   }

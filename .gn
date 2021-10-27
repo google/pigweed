@@ -19,10 +19,15 @@ default_args = {
       [ "//pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list" ]
 
   # Exclude third-party headers from static analysis.
-  pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES = [ "third_party/.*" ]
+  pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES = [
+    "third_party/.*",
+    ".*packages/mbedtls.*",
+    ".*packages/boringssl.*",
+  ]
 
   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = [
     "mbedtls/include",
+    "mbedtls",
     "boringssl/src/include",
     "boringssl",
 

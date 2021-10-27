@@ -45,8 +45,7 @@ int SessionImplementation::MbedTlsRead(void* ctx,
   if (!res.ok()) {
     return -1;
   }
-  return res.value().size() == 0 ? MBEDTLS_ERR_SSL_WANT_READ
-                                 : res.value().size();
+  return res.value().empty() ? MBEDTLS_ERR_SSL_WANT_READ : res.value().size();
 }
 
 Status SessionImplementation::entropy_source_status_ = OkStatus();
