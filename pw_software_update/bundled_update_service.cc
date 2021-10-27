@@ -136,26 +136,23 @@ Status BundledUpdateService::Start(
 
 // TODO: Check for "ABORTING" state and bail if it's set.
 void BundledUpdateService::DoVerify() {
-  {
-    std::lock_guard guard(mutex_);
-    if (status_.state == pw_software_update_BundledUpdateState_Enum_VERIFIED) {
-      return;  // Already done!
-    }
-
-    // Ensure we're in the right state.
-    if (status_.state !=
-        pw_software_update_BundledUpdateState_Enum_TRANSFERRED) {
-      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
-                "DoVerify() must be called from TRANSFERRED state. State: %d",
-                static_cast<int>(status_.state));
-      return;
-    }
-
-    status_.state = pw_software_update_BundledUpdateState_Enum_VERIFYING;
+  std::lock_guard guard(mutex_);
+  if (status_.state == pw_software_update_BundledUpdateState_Enum_VERIFIED) {
+    return;  // Already done!
   }
+
+  // Ensure we're in the right state.
+  if (status_.state != pw_software_update_BundledUpdateState_Enum_TRANSFERRED) {
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
+              "DoVerify() must be called from TRANSFERRED state. State: %d",
+              static_cast<int>(status_.state));
+    return;
+  }
+
+  status_.state = pw_software_update_BundledUpdateState_Enum_VERIFYING;
+
   // Notify backend about pending verify.
   if (const Status status = backend_.BeforeBundleVerify(); !status.ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
               "Backend::BeforeBundleVerify() failed");
     return;
@@ -164,15 +161,12 @@ void BundledUpdateService::DoVerify() {
   // Do the actual verify.
   ManifestAccessor manifest;  // TODO(pwbug/456): Place-holder for now.
   Status status = bundle_.OpenAndVerify(manifest);
-  {
-    std::lock_guard lock(mutex_);
-    if (!status.ok()) {
-      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
-                "Bundle::OpenAndVerify() failed");
-      return;
-    }
-    bundle_open_ = true;
+  if (!status.ok()) {
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
+              "Bundle::OpenAndVerify() failed");
+    return;
   }
+  bundle_open_ = true;
 
   // Have the backend verify the user_manifest if present.
   stream::IntervalReader user_manifest =
@@ -180,7 +174,6 @@ void BundledUpdateService::DoVerify() {
   if (user_manifest.ok()) {
     const size_t bundle_offset = user_manifest.start();
     if (!backend_.VerifyUserManifest(user_manifest, bundle_offset).ok()) {
-      std::lock_guard lock(mutex_);
       SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
                 "Backend::VerifyUserManifest() failed");
       return;
@@ -189,15 +182,12 @@ void BundledUpdateService::DoVerify() {
 
   // Notify backend we're done verifying.
   status = backend_.AfterBundleVerified();
-  {
-    std::lock_guard lock(mutex_);
-    if (!status.ok()) {
-      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
-                "Backend::AfterBundleVerified() failed");
-      return;
-    }
-    status_.state = pw_software_update_BundledUpdateState_Enum_VERIFIED;
+  if (!status.ok()) {
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
+              "Backend::AfterBundleVerified() failed");
+    return;
   }
+  status_.state = pw_software_update_BundledUpdateState_Enum_VERIFIED;
 }
 
 Status BundledUpdateService::Verify(
@@ -314,26 +304,22 @@ Status BundledUpdateService::Apply(
 }
 
 void BundledUpdateService::DoApply() {
-  {
-    std::lock_guard guard(mutex_);
+  std::lock_guard guard(mutex_);
 
-    PW_LOG_DEBUG("Attempting to apply the update");
-    if (status_.state != pw_software_update_BundledUpdateState_Enum_VERIFIED) {
-      std::lock_guard lock(mutex_);
-      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-                "Apply() must be called from VERIFIED state. State: %d",
-                static_cast<int>(status_.state));
-      return;
-    }
-    status_.state = pw_software_update_BundledUpdateState_Enum_APPLYING;
+  PW_LOG_DEBUG("Attempting to apply the update");
+  if (status_.state != pw_software_update_BundledUpdateState_Enum_VERIFIED) {
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
+              "Apply() must be called from VERIFIED state. State: %d",
+              static_cast<int>(status_.state));
+    return;
   }
+  status_.state = pw_software_update_BundledUpdateState_Enum_APPLYING;
 
   protobuf::StringToMessageMap signed_targets_metadata_map =
       bundle_.GetDecoder().AsStringToMessageMap(static_cast<uint32_t>(
           pw::software_update::UpdateBundle::Fields::TARGETS_METADATA));
   if (const Status status = signed_targets_metadata_map.status();
       !status.ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "Update bundle does not contain the targets_metadata map: %d",
               static_cast<int>(status.code()));
@@ -345,7 +331,6 @@ void BundledUpdateService::DoApply() {
   protobuf::Message signed_targets_metadata =
       signed_targets_metadata_map[kTopLevelTargetsName];
   if (const Status status = signed_targets_metadata.status(); !status.ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "The targets_metadata map does not contain the targets entry: %d",
               static_cast<int>(status.code()));
@@ -356,7 +341,6 @@ void BundledUpdateService::DoApply() {
       static_cast<uint32_t>(pw::software_update::SignedTargetsMetadata::Fields::
                                 SERIALIZED_TARGETS_METADATA));
   if (const Status status = targets_metadata.status(); !status.ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "The targets targets_metadata entry does not contain the "
               "serialized_target_metadata: %d",
@@ -368,7 +352,6 @@ void BundledUpdateService::DoApply() {
       targets_metadata.AsRepeatedMessages(static_cast<uint32_t>(
           pw::software_update::TargetsMetadata::Fields::TARGET_FILES));
   if (const Status status = target_files.status(); !status.ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(
         pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
         "The serialized_target_metadata does not contain target_files: %d",
@@ -377,7 +360,6 @@ void BundledUpdateService::DoApply() {
   }
 
   if (const Status status = backend_.BeforeApply(); !status.ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "BeforeApply() returned unsuccessful result: %d",
               static_cast<int>(status.code()));
@@ -391,7 +373,6 @@ void BundledUpdateService::DoApply() {
       bundle_.GetDecoder().AsStringToBytesMap(static_cast<uint32_t>(
           pw::software_update::UpdateBundle::Fields::TARGET_PAYLOADS));
   if (!target_payloads.status().ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(
         pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
         "Failed to iterate the UpdateBundle target_payloads map entries: %d",
@@ -401,7 +382,6 @@ void BundledUpdateService::DoApply() {
   for (pw::protobuf::StringToBytesMapEntry target_payload : target_payloads) {
     protobuf::Bytes target_payload_bytes = target_payload.Value();
     if (!target_payload_bytes.status().ok()) {
-      std::lock_guard lock(mutex_);
       SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
                 "Failed to read a UpdateBundle target_payloads map entry: %d",
                 static_cast<int>(target_payload_bytes.status().code()));
@@ -419,7 +399,6 @@ void BundledUpdateService::DoApply() {
     protobuf::String name = file_name.AsString(static_cast<uint32_t>(
         pw::software_update::TargetFile::Fields::FILE_NAME));
     if (!name.status().ok()) {
-      std::lock_guard lock(mutex_);
       SET_ERROR(
           pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
           "The serialized_target_metadata failed to iterate target files: %d",
@@ -428,7 +407,6 @@ void BundledUpdateService::DoApply() {
     }
     const Result<ByteSpan> read_result = name.GetBytesReader().Read(buf);
     if (!read_result.ok()) {
-      std::lock_guard lock(mutex_);
       SET_ERROR(
           pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
           "The serialized_target_metadata failed to read target filename: %d",
@@ -448,7 +426,6 @@ void BundledUpdateService::DoApply() {
     if (const Status status = backend_.ApplyTargetFile(
             file_name_view, file_reader, bundle_offset);
         !status.ok()) {
-      std::lock_guard lock(mutex_);
       SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
                 "Failed to apply target file: %d",
                 static_cast<int>(status.code()));
@@ -458,12 +435,11 @@ void BundledUpdateService::DoApply() {
     const uint32_t progress_hundreth_percent =
         (static_cast<uint64_t>(target_file_bytes_applied) * 100 * 100) /
         target_file_bytes_to_apply;
-    PW_LOG_DEBUG("Apply progress: %d/%d Bytes (%ld%%)",
+    PW_LOG_DEBUG("Apply progress: %zu/%zu Bytes (%ld%%)",
                  target_file_bytes_applied,
                  target_file_bytes_to_apply,
-                 progress_hundreth_percent / 100);
+                 static_cast<unsigned long>(progress_hundreth_percent / 100));
     {
-      std::lock_guard lock(mutex_);
       status_.current_state_progress_hundreth_percent =
           progress_hundreth_percent;
       status_.has_current_state_progress_hundreth_percent = true;
@@ -476,19 +452,16 @@ void BundledUpdateService::DoApply() {
   // clear in regards to the flushing expectations for RPCs and logs surrounding
   // the reboot inside of this call.
   if (const Status status = backend_.FinalizeApply(); !status.ok()) {
-    std::lock_guard lock(mutex_);
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
               "Failed to apply target file: %d",
               static_cast<int>(status.code()));
     return;
   }
-  {
-    std::lock_guard lock(mutex_);
-    status_.current_state_progress_hundreth_percent = 0;
-    status_.has_current_state_progress_hundreth_percent = false;
-    status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED;
-    status_.result = pw_software_update_BundledUpdateResult_Enum_SUCCESS;
-  }
+
+  status_.current_state_progress_hundreth_percent = 0;
+  status_.has_current_state_progress_hundreth_percent = false;
+  status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED;
+  status_.result = pw_software_update_BundledUpdateResult_Enum_SUCCESS;
 }
 
 Status BundledUpdateService::Abort(

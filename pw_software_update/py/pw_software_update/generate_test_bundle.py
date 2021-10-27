@@ -124,12 +124,10 @@ def main() -> int:
 
     with open(args.output_header, 'w') as header:
         header.write(HEADER)
-        header.write('namespace {')
         header.write(
             proto_array_declaration(update_bundle_proto, 'kTestBundle'))
         header.write(
             proto_array_declaration(manifest_proto, 'kTestBundleManifest'))
-        header.write('}')
 
     subprocess.run([
         'clang-format',

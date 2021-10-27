@@ -12,14 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_software_update/update_bundle.h"
-
 #include <array>
 
 #include "gtest/gtest.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/test_key_value_store.h"
 #include "pw_software_update/bundled_update_backend.h"
+#include "pw_software_update/update_bundle_accessor.h"
+#include "pw_stream/memory_stream.h"
 #include "test_bundles.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
@@ -36,13 +36,17 @@ constexpr size_t kMetadataBufferSize =
 
 class TestBundledUpdateBackend final : public BundledUpdateBackend {
  public:
+  TestBundledUpdateBackend() {}
+
   Status FinalizeApply() override { return OkStatus(); }
 
-  Status ApplyTargetFile(std::string_view, stream::Reader&) override {
+  Status ApplyTargetFile(std::string_view, stream::Reader&, size_t) override {
     return OkStatus();
   }
 
-  Result<uint32_t> EnableBundleTransferHandler() override { return 0; }
+  Result<uint32_t> EnableBundleTransferHandler(std::string_view) override {
+    return 0;
+  }
 
   void DisableBundleTransferHandler() override {}
 };
@@ -62,7 +66,7 @@ class UpdateBundleTest : public testing::Test {
     return bundle_blob_;
   }
 
-  BundledUpdateBackend& backend() { return backend_; }
+  TestBundledUpdateBackend& backend() { return backend_; }
 
   void StageTestBundle(ConstByteSpan bundle_data) {
     ASSERT_OK(bundle_blob_.Init());
@@ -85,9 +89,9 @@ class UpdateBundleTest : public testing::Test {
 
 TEST_F(UpdateBundleTest, GetTargetPayload) {
   StageTestBundle(kTestBundle);
-  UpdateBundle update_bundle(bundle_blob(), backend());
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  Manifest current_manifest;
+  ManifestAccessor current_manifest;
   ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
 
   {
@@ -118,9 +122,9 @@ TEST_F(UpdateBundleTest, GetTargetPayload) {
 
 TEST_F(UpdateBundleTest, IsTargetPayloadIncluded) {
   StageTestBundle(kTestBundle);
-  UpdateBundle update_bundle(bundle_blob(), backend());
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  Manifest current_manifest;
+  ManifestAccessor current_manifest;
   ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
 
   Result<bool> res = update_bundle.IsTargetPayloadIncluded("file1");
@@ -138,9 +142,9 @@ TEST_F(UpdateBundleTest, IsTargetPayloadIncluded) {
 
 TEST_F(UpdateBundleTest, WriteManifest) {
   StageTestBundle(kTestBundle);
-  UpdateBundle update_bundle(bundle_blob(), backend());
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  Manifest current_manifest;
+  ManifestAccessor current_manifest;
   ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
 
   std::byte manifest_buffer[sizeof(kTestBundleManifest)];

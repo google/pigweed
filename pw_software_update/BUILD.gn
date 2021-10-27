@@ -19,6 +19,7 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_third_party/protobuf/protobuf.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -145,7 +146,8 @@ config("generated_test_bundle_include") {
 
 pw_test("update_bundle_test") {
   enable_if =
-      dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != ""
+      dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "" &&
+      pw_thread_THREAD_BACKEND != ""
   sources = [ "update_bundle_test.cc" ]
   public_deps = [
     ":bundled_update_service",
@@ -166,7 +168,8 @@ pw_test_group("tests") {
 
 pw_test("bundled_update_service_test") {
   enable_if =
-      dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != ""
+      dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "" &&
+      pw_thread_THREAD_BACKEND != ""
   sources = [ "bundled_update_service_test.cc" ]
   public_deps = [ ":bundled_update_service" ]
 }
