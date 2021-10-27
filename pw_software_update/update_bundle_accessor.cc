@@ -35,12 +35,8 @@ constexpr std::string_view kTopLevelTargetsName = "targets";
 }
 
 Status UpdateBundleAccessor::OpenAndVerify(const ManifestAccessor&) {
-  PW_TRY(bundle_.Init());
-  PW_TRY(bundle_reader_.Open());
-  decoder_ =
-      protobuf::Message(bundle_reader_, bundle_reader_.ConservativeReadLimit());
-  (void)backend_;
-  // TODO(pw_bug/456): Implement verification logic.
+  PW_TRY(DoOpen());
+  PW_TRY(DoVerify());
   return OkStatus();
 }
 
@@ -133,6 +129,32 @@ Status UpdateBundleAccessor::WriteManifest(
 Status UpdateBundleAccessor::Close() {
   // TODO(pwbug/456): To be implemented.
   return bundle_reader_.Close();
+}
+
+Status UpdateBundleAccessor::DoOpen() {
+  PW_TRY(bundle_.Init());
+  PW_TRY(bundle_reader_.Open());
+  decoder_ =
+      protobuf::Message(bundle_reader_, bundle_reader_.ConservativeReadLimit());
+  (void)backend_;
+  return OkStatus();
+}
+
+Status UpdateBundleAccessor::DoVerify() {
+  // TODO(pwbug/456): Check whether the bundle contains an incoming new root
+  // metadata. If it does, verify the root against the current on-device root
+  // and, if valid, upgrade the on-device root with it.
+
+  // TODO(pwbug/456): Verify the targets metadata against the current trusted
+  // root.
+
+  // TODO(pwbug/456): Investigate whether targets payload verification should
+  // be performed here or deferred until a specific target is requested.
+
+  // TODO(pwbug/456): Invoke the backend to do downstream verification of the
+  // bundle (e.g. compatibility and manifest completeness checks).
+
+  return OkStatus();
 }
 
 }  // namespace pw::software_update

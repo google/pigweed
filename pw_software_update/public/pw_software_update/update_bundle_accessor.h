@@ -78,7 +78,24 @@ class UpdateBundleAccessor {
                                  BundledUpdateBackend& backend)
       : bundle_(update_bundle), backend_(backend), bundle_reader_(bundle_) {}
 
-  // Opens and verifies the software update bundle, using the TUF process.
+  // Opens and verifies the software update bundle.
+  //
+  // Specifically, the opening process opens a blob reader to the given bundle
+  // and initializes the bundle proto parser. No write will be allowed to the
+  // bundle until Close() is called.
+  //
+  // The verification process does the following:
+  //
+  // 1. Check whether the bundle contains an incoming new root metadata. If it
+  // does, it verifies the root against the current on-device root. If
+  // successful, the on-device root will be updated to the new root.
+  //
+  // 2. Verify the targets metadata against the current trusted root.
+  //
+  // 3. Either verify all target payloads (size and hash) or defer that
+  // verification till when a target is accessed.
+  //
+  // 4. Invoke the backend to do downstream verification of the bundle.
   //
   // Returns:
   // OK - Bundle was successfully opened and verified.
@@ -124,6 +141,12 @@ class UpdateBundleAccessor {
   BundledUpdateBackend& backend_;
   blob_store::BlobStore::BlobReader bundle_reader_;
   protobuf::Message decoder_;
+
+  // Opens the bundle for read-only access and readies the parser.
+  Status DoOpen();
+
+  // Performs TUF and downstream custom verification.
+  Status DoVerify();
 };
 
 }  // namespace pw::software_update
