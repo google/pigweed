@@ -21,8 +21,6 @@
 namespace pw::kvs {
 namespace {
 
-using std::byte;
-
 #ifndef PW_KVS_PUT_ITERATIONS
 #define PW_KVS_PUT_ITERATIONS 2
 #endif  // PW_KVS_PUT_ITERATIONS

@@ -18,8 +18,6 @@
 
 namespace pw::rpc::internal {
 
-using std::byte;
-
 Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
   Packet packet;
   Status status;

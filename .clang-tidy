@@ -23,6 +23,7 @@ Checks: >
     google-runtime-operator,
     misc-static-assert,
     misc-unconventional-assign-operator,
+    misc-unused-using-decls,
     modernize-*,
     -modernize-avoid-c-arrays,
     -modernize-concat-nested-namespaces,
