@@ -643,3 +643,8 @@ Dependencies
   * :ref:`module-pw_span`
 
 .. cpp:namespace-pop::
+
+Zephyr
+======
+To enable ``pw_stream`` for Zephyr add ``CONFIG_PIGWEED_STREAM=y`` to the
+project's configuration.

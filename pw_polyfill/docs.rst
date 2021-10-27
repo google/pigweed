@@ -71,3 +71,9 @@ systems, add ``pw_polyfill/standard_library_public`` and
 Compatibility
 -------------
 C++14
+
+Zephyr
+======
+To enable ``pw_polyfill`` for Zephyr add ``CONFIG_PIGWEED_POLYFILL=y`` to the
+project's configuration. Similarly, to enable ``pw_polyfill.overrides``, add
+``CONFIG_PIGWEED_POLYFILL_OVERRIDES=y`` to the project's configuration.

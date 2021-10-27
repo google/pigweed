@@ -19,3 +19,7 @@ pw_auto_add_simple_module(pw_result
     pw_assert
     pw_status
 )
+
+if(Zephyr_FOUND AND CONFIG_PIGWEED_RESULT)
+  zephyr_link_libraries(pw_result)
+endif()

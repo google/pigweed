@@ -52,3 +52,8 @@ Reads a maximum of 10 bytes.
 Dependencies
 ============
 * ``pw_span``
+
+Zephyr
+======
+To enable ``pw_varint`` for Zephyr add ``CONFIG_PIGWEED_VARINT=y`` to the
+project's configuration.

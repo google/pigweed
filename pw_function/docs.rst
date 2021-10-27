@@ -246,3 +246,8 @@ Functions are movable, but not copyable. This allows them to store and manage
 callables without having to perform bookkeeping such as reference counting, and
 avoids any reliance on dynamic memory management. The result is a simpler
 implementation which is easy to conceptualize and use in an embedded context.
+
+Zephyr
+======
+To enable ``pw_function` for Zephyr add ``CONFIG_PIGWEED_FUNCTION=y`` to the
+project's configuration.

@@ -49,13 +49,16 @@ target_compile_options(pw_build.reduced_size
 )
 
 add_library(pw_build.strict_warnings INTERFACE)
+if(NOT ZEPHYR_PIGWEED_MODULE_DIR)
+  # Only include these flags if we're not building with Zephyr.
+  set(strict_warnings_cond "-Wcast-qual" "-Wundef")
+endif()
 target_compile_options(pw_build.strict_warnings
   INTERFACE
     "-Wall"
     "-Wextra"
     "-Wimplicit-fallthrough"
-    "-Wcast-qual"
-    "-Wundef"
+    ${strict_warnings_cond}
     "-Wpointer-arith"
 
     # Make all warnings errors, except for the exemptions below.
@@ -67,10 +70,14 @@ target_compile_options(pw_build.strict_warnings
 )
 
 add_library(pw_build.extra_strict_warnings INTERFACE)
+if(NOT ZEPHYR_PIGWEED_MODULE_DIR)
+  # Only include these flags if we're not building with Zephyr.
+  set(extra_strict_warnings_cond "-Wredundant-decls")
+endif()
 target_compile_options(pw_build.extra_strict_warnings
   INTERFACE
     "-Wshadow"
-    "-Wredundant-decls"
+    ${extra_strict_warnings_cond}
     $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
 )
 

@@ -256,3 +256,8 @@ General purpose, useful macros.
   nothing in C
 * ``PW_EXTERN_C_START`` / ``PW_EXTERN_C_END`` -- declares an ``extern "C" { }``
   block in C++; expands to nothing in C
+
+Zephyr
+======
+To enable ``pw_preprocessor`` for Zephyr add ``CONFIG_PIGWEED_PREPROCESSOR=y``
+to the project's configuration.

@@ -23,6 +23,14 @@ pw_add_facade(pw_sync.mutex
     pw_preprocessor
 )
 
+pw_add_facade(pw_sync.binary_semaphore
+  SOURCES
+    binary_semaphore.cc
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_preprocessor
+)
+
 pw_add_module_library(pw_sync.lock_annotations
   PUBLIC_DEPS
     pw_preprocessor

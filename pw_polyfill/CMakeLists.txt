@@ -14,6 +14,9 @@
 
 add_library(pw_polyfill INTERFACE)
 target_include_directories(pw_polyfill INTERFACE public standard_library_public)
+if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL)
+  zephyr_link_libraries(pw_polyfill)
+endif()
 
 add_library(pw_polyfill.overrides INTERFACE)
 target_link_libraries(pw_polyfill.overrides INTERFACE pw_polyfill)
@@ -22,3 +25,6 @@ target_include_directories(pw_polyfill.overrides
     public_overrides
     standard_library_public
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL_OVERRIDES)
+  zephyr_link_libraries(pw_polyfill.overrides)
+endif()

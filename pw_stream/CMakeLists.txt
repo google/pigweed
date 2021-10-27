@@ -24,6 +24,9 @@ pw_add_module_library(pw_stream
     pw_span
     pw_status
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_STREAM)
+  zephyr_link_libraries(pw_stream)
+endif()
 
 pw_add_module_library(pw_stream.socket_stream
   SOURCES

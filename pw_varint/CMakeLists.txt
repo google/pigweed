@@ -21,3 +21,6 @@ pw_auto_add_simple_module(pw_varint
     pw_status
     pw_stream
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_VARINT)
+  zephyr_link_libraries(pw_varint)
+endif()

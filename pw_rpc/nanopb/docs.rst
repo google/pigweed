@@ -262,3 +262,20 @@ service client and receive the response.
 
     // Do other stuff now that we have the room information.
   }
+
+Zephyr
+======
+To enable ``pw_rpc.nanopb.*`` for Zephyr add ``CONFIG_PIGWEED_RPC_NANOPB=y`` to
+the project's configuration. This will enable the Kconfig menu for the
+following:
+
+* ``pw_rpc.nanopb.method`` which can be enabled via
+  ``CONFIG_PIGWEED_RPC_NANOPB_METHOD=y``.
+* ``pw_rpc.nanopb.method_union`` which can be enabled via
+  ``CONFIG_PIGWEED_RPC_NANOPB_METHOD_UNION=y``.
+* ``pw_rpc.nanopb.client`` which can be enabled via
+  ``CONFIG_PIGWEED_RPC_NANOPB_CLIENT=y``.
+* ``pw_rpc.nanopb.common`` which can be enabled via
+  ``CONFIG_PIGWEED_RPC_NANOPB_COMMON=y``.
+* ``pw_rpc.nanopb.echo_service`` which can be enabled via
+  ``CONFIG_PIGWEED_RPC_NANOPB_ECHO_SERVICE=y``.

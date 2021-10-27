@@ -69,3 +69,8 @@ Pointer and size arguments can be replaced with a ``std::span``:
 Compatibility
 =============
 Works with C++14, but some features require C++17.
+
+Zephyr
+======
+To enable ``pw_span`` for Zephyr add ``CONFIG_PIGWEED_SPAN=y`` to the project's
+configuration.

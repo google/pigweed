@@ -19,3 +19,7 @@ pw_auto_add_simple_module(pw_function
     pw_assert
     pw_preprocessor
 )
+
+if(Zephyr_FOUND AND CONFIG_PIGWEED_FUNCTION)
+  zephyr_link_libraries(pw_function)
+endif()

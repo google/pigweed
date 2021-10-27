@@ -91,3 +91,8 @@ usage of Result in real code. Make sure to always run your own size reports to
 check if Result is suitable for you.
 
 .. include:: result_size
+
+Zephyr
+======
+To enable ``pw_result`` for Zephyr add ``CONFIG_PIGWEED_RESULT=y`` to the
+project's configuration.

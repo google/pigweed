@@ -66,3 +66,8 @@ In order to use these you must use a using namespace directive, for example:
   using namespace pw::bytes::unit_literals;
 
   constexpr size_t kRandomBufferSizeBytes = 1_MiB + 42_KiB;
+
+Zephyr
+======
+To enable ``pw_bytes`` for Zephyr add ``CONFIG_PIGWEED_BYTES=y`` to the
+project's configuration.

@@ -171,3 +171,8 @@ Compatibility
 Dependencies
 ============
 * ``pw_span``
+
+Zephyr
+======
+To enable ``pw_containers`` for Zephyr add ``CONFIG_PIGWEED_CONTAINERS=y`` to
+the project's configuration.

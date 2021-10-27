@@ -15,3 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_auto_add_simple_module(pw_status)
+
+if(Zephyr_FOUND AND CONFIG_PIGWEED_STATUS)
+  zephyr_link_libraries(pw_status)
+endif()

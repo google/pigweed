@@ -187,3 +187,8 @@ Future work
 * StringBuilder's fixed size cost can be dramatically reduced by limiting
   support for 64-bit integers.
 * Consider integrating with the tokenizer module.
+
+Zephyr
+======
+To enable ``pw_string`` for Zephyr add ``CONFIG_PIGWEED_STRING=y`` to the
+project's configuration.

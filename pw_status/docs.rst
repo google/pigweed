@@ -293,3 +293,8 @@ the size from the StatusWithSize on ok.
 Compatibility
 =============
 C++14
+
+Zephyr
+======
+To enable ``pw_status`` for Zephyr add ``CONFIG_PIGWEED_STATUS=y`` to the
+project's configuration.

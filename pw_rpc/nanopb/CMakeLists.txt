@@ -24,6 +24,9 @@ pw_add_module_library(pw_rpc.nanopb.method
   PRIVATE_DEPS
     pw_log
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_METHOD)
+  zephyr_link_libraries(pw_rpc.nanopb.method)
+endif()
 
 pw_add_module_library(pw_rpc.nanopb.method_union
   PUBLIC_DEPS
@@ -33,6 +36,9 @@ pw_add_module_library(pw_rpc.nanopb.method_union
   PRIVATE_DEPS
     pw_log
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_METHOD_UNION)
+  zephyr_link_libraries(pw_rpc.nanopb.method_union)
+endif()
 
 pw_add_module_library(pw_rpc.nanopb.client
   PUBLIC_DEPS
@@ -40,6 +46,9 @@ pw_add_module_library(pw_rpc.nanopb.client
     pw_rpc.nanopb.common
     pw_rpc.common
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_CLIENT)
+  zephyr_link_libraries(pw_rpc.nanopb.client)
+endif()
 
 pw_add_module_library(pw_rpc.nanopb.common
   SOURCES
@@ -50,11 +59,17 @@ pw_add_module_library(pw_rpc.nanopb.common
     pw_rpc.common
     pw_third_party.nanopb
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_COMMON)
+  zephyr_link_libraries(pw_rpc.nanopb.common)
+endif()
 
 pw_add_module_library(pw_rpc.nanopb.echo_service
   PUBLIC_DEPS
     pw_rpc.protos.nanopb_rpc
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_ECHO_SERVICE)
+  zephyr_link_libraries(pw_rpc.nanopb.echo_service)
+endif()
 
 pw_auto_add_module_tests(pw_rpc.nanopb
   PRIVATE_DEPS

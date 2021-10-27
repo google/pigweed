@@ -68,3 +68,17 @@ Usage example
 .. ``PacketParser`` implementation and a single route using an ``EgressFunction``.
 
 .. .. include:: static_router_size
+
+Zephyr
+======
+To enable ``pw_router.*`` for Zephyr add ``CONFIG_PIGWEED_ROUTER=y`` to the
+project's configuration. This will enable the Kconfig menu for the following:
+
+* ``pw_router.static_router`` which can be enabled via
+  ``CONFIG_PIGWEED_ROUTER_STATIC_ROUTER=y``.
+* ``pw_router.egress`` which can be enabled via
+  ``CONFIG_PIGWEED_ROUTER_EGRESS=y``.
+* ``pw_router.packet_parser`` which can be enabled via
+  ``CONFIG_PIGWEED_ROUTER_PACKET_PARSER=y``.
+* ``pw_router.egress_function`` which can be enabled via
+  ``CONFIG_PIGWEED_ROUTER_EGRESS_FUNCTION=y``.

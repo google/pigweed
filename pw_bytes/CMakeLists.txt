@@ -21,3 +21,6 @@ pw_auto_add_simple_module(pw_bytes
     pw_span
     pw_status
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_BYTES)
+  zephyr_link_libraries(pw_bytes)
+endif()

@@ -20,3 +20,6 @@ pw_auto_add_simple_module(pw_checksum
   PRIVATE_DEPS
     pw_bytes
 )
+if(Zephyr_FOUND AND CONFIG_PIGWEED_CHECKSUM)
+  zephyr_link_libraries(pw_checksum)
+endif()

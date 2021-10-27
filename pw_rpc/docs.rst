@@ -1038,3 +1038,16 @@ streaming RPC call object (``ClientWriter`` or ``ClientReaderWriter``) can be
 used as a ``pw::rpc::Writer&``. On the server side, a server or bidirectional
 streaming RPC call object (``ServerWriter`` or ``ServerReaderWriter``) can be
 used as a ``pw::rpc::Writer&``.
+
+Zephyr
+======
+To enable ``pw_rpc.*`` for Zephyr add ``CONFIG_PIGWEED_RPC=y`` to the project's
+configuration. This will enable the Kconfig menu for the following:
+
+* ``pw_rpc.server`` which can be enabled via ``CONFIG_PIGWEED_RPC_SERVER=y``.
+* ``pw_rpc.client`` which can be enabled via ``CONFIG_PIGWEED_RPC_CLIENT=y``.
+* ``pw_rpc.client_server`` which can be enabled via
+  ``CONFIG_PIGWEED_RPC_CLIENT_SERVER=y``.
+* ``pw_rpc.common` which can be enabled via ``CONFIG_PIGWEED_RPC_COMMON=y``.
+* ``pw_rpc.synchronized_channel_output`` which can be enabled via
+  ``CONFIG_PIGWEED_RPC_SYNCHRONIZED_CHANNEL_OUTPUT=y``.

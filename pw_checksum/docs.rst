@@ -62,3 +62,8 @@ Compatibility
 Dependencies
 ============
 * ``pw_span``
+
+Zephyr
+======
+To enable ``pw_checksum`` for Zephyr add ``CONFIG_PIGWEED_CHECKSUM=y`` to the
+project's configuration.
