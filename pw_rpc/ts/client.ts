@@ -17,13 +17,15 @@
 import {ProtoCollection} from '@pigweed/pw_protobuf_compiler';
 import {Status} from '@pigweed/pw_status';
 import {Message} from 'google-protobuf';
-import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
+import {
+  PacketType,
+  RpcPacket,
+} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb';
 
 import {Channel, Service} from './descriptors';
 import {MethodStub, methodStubFactory} from './method';
 import * as packets from './packets';
 import {PendingCalls, Rpc} from './rpc_classes';
-
 
 /**
  * Object for managing RPC service and contained methods.
@@ -36,14 +38,14 @@ class ServiceClient {
   constructor(client: Client, channel: Channel, service: Service) {
     this.service = service;
     const methods = service.methods;
-    methods.forEach((method) => {
+    methods.forEach(method => {
       const stub = methodStubFactory(client.rpcs, channel, method);
       this.methods.push(stub);
       this.methodsByName.set(method.name, stub);
     });
   }
 
-  method(methodName: string): MethodStub|undefined {
+  method(methodName: string): MethodStub | undefined {
     return this.methodsByName.get(methodName);
   }
 }
@@ -57,13 +59,13 @@ class ChannelClient {
 
   constructor(client: Client, channel: Channel, services: Service[]) {
     this.channel = channel;
-    services.forEach((service) => {
+    services.forEach(service => {
       const serviceClient = new ServiceClient(client, this.channel, service);
       this.services.set(service.name, serviceClient);
     });
   }
 
-  private service(serviceName: string): ServiceClient|undefined {
+  private service(serviceName: string): ServiceClient | undefined {
     return this.services.get(serviceName);
   }
 
@@ -74,7 +76,7 @@ class ChannelClient {
    * `method = client.channel().methodStub('the.package.AService.AMethod');`
    *
    */
-  methodStub(name: string): MethodStub|undefined {
+  methodStub(name: string): MethodStub | undefined {
     const index = name.lastIndexOf('.');
     if (index <= 0) {
       console.error(`Malformed method name: ${name}`);
@@ -107,13 +109,15 @@ export class Client {
 
   constructor(channels: Channel[], services: Service[]) {
     this.rpcs = new PendingCalls();
-    services.forEach((service) => {
+    services.forEach(service => {
       this.services.set(service.id, service);
     });
 
-    channels.forEach((channel) => {
+    channels.forEach(channel => {
       this.channelsById.set(
-          channel.id, new ChannelClient(this, channel, services));
+        channel.id,
+        new ChannelClient(this, channel, services)
+      );
     });
   }
 
@@ -128,15 +132,16 @@ export class Client {
   static fromProtoSet(channels: Channel[], protoSet: ProtoCollection): Client {
     let services: Service[] = [];
     const descriptors = protoSet.fileDescriptorSet.getFileList();
-    descriptors.forEach((fileDescriptor) => {
+    descriptors.forEach(fileDescriptor => {
       const packageName = fileDescriptor.getPackage()!;
-      fileDescriptor.getServiceList().forEach((serviceDescriptor) => {
+      fileDescriptor.getServiceList().forEach(serviceDescriptor => {
         services = services.concat(
-            new Service(serviceDescriptor, protoSet, packageName));
+          new Service(serviceDescriptor, protoSet, packageName)
+        );
       });
     });
 
-    return new Client(channels, services)
+    return new Client(channels, services);
   }
 
   /**
@@ -145,7 +150,7 @@ export class Client {
    *
    * @param {number?} id If no id is specified, returns the first channel.
    */
-  channel(id?: number): ChannelClient|undefined {
+  channel(id?: number): ChannelClient | undefined {
     if (id === undefined) {
       return this.channelsById.values().next().value;
     }
@@ -156,7 +161,10 @@ export class Client {
    * Creates a new RPC object holding channel, method, and service info.
    * Returns undefined if the service or method does not exist.
    */
-  private rpc(packet: RpcPacket, channelClient: ChannelClient): Rpc|undefined {
+  private rpc(
+    packet: RpcPacket,
+    channelClient: ChannelClient
+  ): Rpc | undefined {
     const service = this.services.get(packet.getServiceId());
     if (service == undefined) {
       return undefined;
@@ -168,20 +176,22 @@ export class Client {
     return new Rpc(channelClient.channel, service, method);
   }
 
-  private decodeStatus(rpc: Rpc, packet: RpcPacket): Status|undefined {
+  private decodeStatus(rpc: Rpc, packet: RpcPacket): Status | undefined {
     if (packet.getType() === PacketType.SERVER_STREAM) {
       return;
     }
     return packet.getStatus();
   }
 
-  private decodePayload(rpc: Rpc, packet: RpcPacket): Message|undefined {
+  private decodePayload(rpc: Rpc, packet: RpcPacket): Message | undefined {
     if (packet.getType() === PacketType.SERVER_ERROR) {
       return undefined;
     }
 
-    if (packet.getType() === PacketType.RESPONSE &&
-        rpc.method.serverStreaming) {
+    if (
+      packet.getType() === PacketType.RESPONSE &&
+      rpc.method.serverStreaming
+    ) {
       return undefined;
     }
 
@@ -190,7 +200,10 @@ export class Client {
   }
 
   private sendClientError(
-      client: ChannelClient, packet: RpcPacket, error: Status) {
+    client: ChannelClient,
+    packet: RpcPacket,
+    error: Status
+  ) {
     client.channel.send(packets.encodeClientError(packet, error));
   }
 
@@ -207,7 +220,7 @@ export class Client {
   processPacket(rawPacketData: Uint8Array): Status {
     let packet;
     try {
-      packet = packets.decode(rawPacketData)
+      packet = packets.decode(rawPacketData);
     } catch (err) {
       console.warn(`Failed to decode packet: ${err}`);
       console.debug(`Raw packet: ${rawPacketData}`);
@@ -218,23 +231,25 @@ export class Client {
       return Status.INVALID_ARGUMENT;
     }
 
-    const channelClient = this.channelsById.get(packet.getChannelId())
+    const channelClient = this.channelsById.get(packet.getChannelId());
     if (channelClient == undefined) {
-      console.warn(`Unrecognized channel ID: ${packet.getChannelId()}`)
+      console.warn(`Unrecognized channel ID: ${packet.getChannelId()}`);
       return Status.NOT_FOUND;
     }
 
-    const rpc = this.rpc(packet, channelClient)
+    const rpc = this.rpc(packet, channelClient);
     if (rpc == undefined) {
       this.sendClientError(channelClient, packet, Status.NOT_FOUND);
       console.warn('rpc service/method not found');
       return Status.OK;
     }
 
-    if (packet.getType() !== PacketType.RESPONSE &&
-        packet.getType() !== PacketType.SERVER_STREAM &&
-        packet.getType() !== PacketType.SERVER_ERROR) {
-      console.error(`${rpc}: Unexpected packet type ${packet.getType()}`)
+    if (
+      packet.getType() !== PacketType.RESPONSE &&
+      packet.getType() !== PacketType.SERVER_STREAM &&
+      packet.getType() !== PacketType.SERVER_ERROR
+    ) {
+      console.error(`${rpc}: Unexpected packet type ${packet.getType()}`);
       console.debug(`Packet: ${packet}`);
       return Status.OK;
     }
@@ -250,10 +265,10 @@ export class Client {
 
       // Make this an error packet so the error handler is called.
       packet.setType(PacketType.SERVER_ERROR);
-      status = Status.DATA_LOSS
+      status = Status.DATA_LOSS;
     }
 
-    let call = this.rpcs.getPending(rpc, status);
+    const call = this.rpcs.getPending(rpc, status);
     if (call === undefined) {
       this.sendClientError(channelClient, packet, Status.FAILED_PRECONDITION);
       console.debug(`Discarding response for ${rpc}, which is not pending`);

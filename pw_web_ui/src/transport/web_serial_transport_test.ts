@@ -52,8 +52,9 @@ describe('WebSerialTransport', () => {
   it('is disconnected when it reaches the final chunk', async () => {
     const transport = new WebSerialTransport(serialMock as Serial);
     await transport.connect();
-    const disconnectPromise =
-        transport.connected.pipe(take(2), last()).toPromise();
+    const disconnectPromise = transport.connected
+      .pipe(take(2), last())
+      .toPromise();
     serialMock.closeFromDevice();
 
     expect(await disconnectPromise).toBeFalse();
@@ -66,7 +67,7 @@ describe('WebSerialTransport', () => {
 
     const dataToDevice = serialMock.dataToDevice.pipe(take(1)).toPromise();
 
-    let writtenData: Uint8Array|undefined = undefined;
+    let writtenData: Uint8Array | undefined = undefined;
     dataToDevice.then(data => {
       writtenData = data;
     });
@@ -95,7 +96,7 @@ describe('WebSerialTransport', () => {
     await expectAsync(transport.connect()).toBeRejectedWith(connectError);
   });
 
-  it('emits connection errors in the \'errors\' observable', async () => {
+  it("emits connection errors in the 'errors' observable", async () => {
     const transport = new WebSerialTransport(serialMock as Serial);
     await transport.connect();
 

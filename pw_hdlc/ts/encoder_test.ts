@@ -42,44 +42,51 @@ describe('Encoder', () => {
 
   it('creates frame for empty data', () => {
     const data = textEncoder.encode('');
-    expect(encoder.uiFrame(0, data))
-        .toEqual(withFlags(withFCS(new Uint8Array([0x01, 0x03]))));
-    expect(encoder.uiFrame(0x1a, data))
-        .toEqual(withFlags(withFCS(new Uint8Array([0x35, 0x03]))));
-    expect(encoder.uiFrame(0x1a, data))
-        .toEqual(withFlags(withFCS(textEncoder.encode('\x35\x03'))));
+    expect(encoder.uiFrame(0, data)).toEqual(
+      withFlags(withFCS(new Uint8Array([0x01, 0x03])))
+    );
+    expect(encoder.uiFrame(0x1a, data)).toEqual(
+      withFlags(withFCS(new Uint8Array([0x35, 0x03])))
+    );
+    expect(encoder.uiFrame(0x1a, data)).toEqual(
+      withFlags(withFCS(textEncoder.encode('\x35\x03')))
+    );
   });
 
   it('creates frame for one byte', () => {
     const data = textEncoder.encode('A');
-    expect(encoder.uiFrame(0, data))
-        .toEqual(withFlags(withFCS(textEncoder.encode('\x01\x03A'))));
+    expect(encoder.uiFrame(0, data)).toEqual(
+      withFlags(withFCS(textEncoder.encode('\x01\x03A')))
+    );
   });
 
   it('creates frame for multibyte data', () => {
     const data = textEncoder.encode('123456789');
-    expect(encoder.uiFrame(0, data))
-        .toEqual(withFlags(withFCS(textEncoder.encode('\x01\x03123456789'))));
+    expect(encoder.uiFrame(0, data)).toEqual(
+      withFlags(withFCS(textEncoder.encode('\x01\x03123456789')))
+    );
   });
 
   it('creates frame for multibyte data with address', () => {
     const data = textEncoder.encode('123456789');
-    expect(encoder.uiFrame(128, data))
-        .toEqual(
-            withFlags(withFCS(textEncoder.encode('\x00\x03\x03123456789'))));
+    expect(encoder.uiFrame(128, data)).toEqual(
+      withFlags(withFCS(textEncoder.encode('\x00\x03\x03123456789')))
+    );
   });
 
   it('creates frame for data with escape sequence', () => {
     const data = textEncoder.encode('\x7d');
     const expectedContent = util.concatenate(
-        textEncoder.encode('\x7d\x5d\x03\x7d\x5d'),
-        protocol.frameCheckSequence(textEncoder.encode('\x7d\x03\x7d')));
+      textEncoder.encode('\x7d\x5d\x03\x7d\x5d'),
+      protocol.frameCheckSequence(textEncoder.encode('\x7d\x03\x7d'))
+    );
     expect(encoder.uiFrame(0x3e, data)).toEqual(withFlags(expectedContent));
 
     const data2 = textEncoder.encode('A\x7e\x7dBC');
     const expectedContent2 = util.concatenate(
-        textEncoder.encode('\x7d\x5d\x03A\x7d\x5e\x7d\x5dBC'),
-        protocol.frameCheckSequence(textEncoder.encode('\x7d\x03A\x7e\x7dBC')));
+      textEncoder.encode('\x7d\x5d\x03A\x7d\x5e\x7d\x5dBC'),
+      protocol.frameCheckSequence(textEncoder.encode('\x7d\x03A\x7e\x7dBC'))
+    );
     expect(encoder.uiFrame(0x3e, data2)).toEqual(withFlags(expectedContent2));
   });
 });

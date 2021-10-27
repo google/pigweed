@@ -13,7 +13,10 @@
 // the License.
 
 import {ProtoCollection} from '@pigweed/pw_protobuf_compiler';
-import {MethodDescriptorProto, ServiceDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
+import {
+  MethodDescriptorProto,
+  ServiceDescriptorProto,
+} from 'google-protobuf/google/protobuf/descriptor_pb';
 
 import {hash} from './hash';
 
@@ -43,17 +46,19 @@ export class Service {
   readonly methodsByName = new Map<string, Method>();
 
   constructor(
-      descriptor: ServiceDescriptorProto,
-      protoCollection: ProtoCollection,
-      packageName: string) {
+    descriptor: ServiceDescriptorProto,
+    protoCollection: ProtoCollection,
+    packageName: string
+  ) {
     this.name = packageName + '.' + descriptor.getName()!;
     this.id = hash(this.name);
-    descriptor.getMethodList().forEach(
-        (methodDescriptor: MethodDescriptorProto) => {
-          const method = new Method(methodDescriptor, protoCollection, this);
-          this.methods.set(method.id, method);
-          this.methodsByName.set(method.name, method);
-        });
+    descriptor
+      .getMethodList()
+      .forEach((methodDescriptor: MethodDescriptorProto) => {
+        const method = new Method(methodDescriptor, protoCollection, this);
+        this.methods.set(method.id, method);
+        this.methodsByName.set(method.name, method);
+      });
   }
 }
 
@@ -61,7 +66,7 @@ export enum MethodType {
   UNARY,
   SERVER_STREAMING,
   CLIENT_STREAMING,
-  BIDIRECTIONAL_STREAMING
+  BIDIRECTIONAL_STREAMING,
 }
 
 /** Describes an RPC method. */
@@ -75,9 +80,10 @@ export class Method {
   readonly responseType: any;
 
   constructor(
-      descriptor: MethodDescriptorProto,
-      protoCollection: ProtoCollection,
-      service: Service) {
+    descriptor: MethodDescriptorProto,
+    protoCollection: ProtoCollection,
+    service: Service
+  ) {
     this.name = descriptor.getName()!;
     this.id = hash(this.name);
     this.service = service;
@@ -88,10 +94,12 @@ export class Method {
     const responseTypePath = descriptor.getOutputType()!;
 
     // Remove leading period if it exists.
-    this.requestType =
-        protoCollection.getMessageCreator(requestTypePath.replace(/^\./, ''))!;
-    this.responseType =
-        protoCollection.getMessageCreator(responseTypePath.replace(/^\./, ''))!;
+    this.requestType = protoCollection.getMessageCreator(
+      requestTypePath.replace(/^\./, '')
+    )!;
+    this.responseType = protoCollection.getMessageCreator(
+      responseTypePath.replace(/^\./, '')
+    )!;
   }
 
   get type(): MethodType {

@@ -15,7 +15,7 @@
 /* eslint-env browser, jasmine */
 import 'jasmine';
 
-import {SomeMessage} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb'
+import {SomeMessage} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test2_pb';
 
 import {Call} from './call';
 import {Channel, Method, Service} from './descriptors';
@@ -36,12 +36,12 @@ describe('Call', () => {
   beforeEach(() => {
     const noop = () => {};
     const pendingCalls = new PendingCalls();
-    const channel = jasmine.createSpy()
-    const rpc = new FakeRpc()
+    const channel = jasmine.createSpy();
+    const rpc = new FakeRpc();
     call = new Call(pendingCalls, rpc, noop, noop, noop);
   });
 
-  function newMessage(magicNumber: number = 1): SomeMessage {
+  function newMessage(magicNumber = 1): SomeMessage {
     const message = new SomeMessage();
     message.setMagicNumber(magicNumber);
     return message;
@@ -69,7 +69,7 @@ describe('Call', () => {
 
   it('getResponse early returns on stream end.', async () => {
     const message = newMessage();
-    let responses = call.getResponses(2);
+    const responses = call.getResponses(2);
 
     // Queue one response and an early completion.
     call.handleResponse(message);
@@ -81,7 +81,7 @@ describe('Call', () => {
 
   it('getResponse promise is rejected on stream error.', async () => {
     const message = newMessage();
-    let responses = call.getResponses(3);
+    const responses = call.getResponses(3);
 
     call.handleResponse(message);
     expect((await responses.next()).value).toEqual(message);
@@ -91,13 +91,13 @@ describe('Call', () => {
 
     // Promise is rejected as soon as an error is received, even if there is a
     // response in the queue.
-    await expectAsync(responses.next()).toBeRejected()
+    await expectAsync(responses.next()).toBeRejected();
   });
 
   it('getResponse waits if queue is empty', async () => {
     const message1 = newMessage(1);
     const message2 = newMessage(2);
-    let responses = call.getResponses(2);
+    const responses = call.getResponses(2);
 
     // Queue two responses after a small delay
     setTimeout(() => {
@@ -116,7 +116,7 @@ describe('Call', () => {
   it('getResponse without count fetches all results', async () => {
     const message1 = newMessage(1);
     const message2 = newMessage(2);
-    let responses = call.getResponses();
+    const responses = call.getResponses();
 
     call.handleResponse(message1);
     expect((await responses.next()).value).toEqual(message1);

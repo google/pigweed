@@ -17,7 +17,7 @@ import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
 
 import DeviceTransport from './device_transport';
 
-const DEFAULT_SERIAL_OPTIONS: SerialOptions&{baudRate: number} = {
+const DEFAULT_SERIAL_OPTIONS: SerialOptions & {baudRate: number} = {
   // Some versions of chrome use `baudrate` (linux)
   baudrate: 921600,
   // Some versions use `baudRate` (chromebook)
@@ -41,8 +41,9 @@ export class DeviceLostError extends Error {
 }
 
 export class DeviceLockedError extends Error {
-  message = 'The device\'s port is locked. Try unplugging it' +
-      ' and plugging it back in.';
+  message =
+    "The device's port is locked. Try unplugging it" +
+    ' and plugging it back in.';
 }
 
 /**
@@ -54,13 +55,14 @@ export class WebSerialTransport implements DeviceTransport {
   errors = new Subject<Error>();
   connected = new BehaviorSubject<boolean>(false);
   private portConnections: Map<SerialPort, PortConnection> = new Map();
-  private activePortConnectionConnection: PortConnection|undefined;
+  private activePortConnectionConnection: PortConnection | undefined;
   private rxSubscriptions: Subscription[] = [];
 
   constructor(
-      private serial: Serial = navigator.serial,
-      private filters: SerialPortFilter[] = [],
-      private serialOptions = DEFAULT_SERIAL_OPTIONS) {}
+    private serial: Serial = navigator.serial,
+    private filters: SerialPortFilter[] = [],
+    private serialOptions = DEFAULT_SERIAL_OPTIONS
+  ) {}
 
   /**
    * Send a UInt8Array chunk of data to the connected device.
@@ -101,34 +103,36 @@ export class WebSerialTransport implements DeviceTransport {
     this.disconnect();
 
     this.activePortConnectionConnection =
-        this.portConnections.get(port) ?? (await this.conectNewPort(port));
+      this.portConnections.get(port) ?? (await this.conectNewPort(port));
 
     this.connected.next(true);
 
     this.rxSubscriptions.push(
-        this.activePortConnectionConnection.chunks.subscribe(
-            chunk => {
-              this.chunks.next(chunk);
-            },
-            err => {
-              throw new Error(
-                  `Chunks observable had an unexpeted error ${err}`);
-            },
-            () => {
-              this.connected.next(false);
-              this.portConnections.delete(port);
-              // Don't complete the chunks observable because then it would not
-              // be able to forward any future chunks.
-            }));
+      this.activePortConnectionConnection.chunks.subscribe(
+        chunk => {
+          this.chunks.next(chunk);
+        },
+        err => {
+          throw new Error(`Chunks observable had an unexpeted error ${err}`);
+        },
+        () => {
+          this.connected.next(false);
+          this.portConnections.delete(port);
+          // Don't complete the chunks observable because then it would not
+          // be able to forward any future chunks.
+        }
+      )
+    );
 
     this.rxSubscriptions.push(
-        this.activePortConnectionConnection.errors.subscribe(error => {
-          this.errors.next(error);
-          if (error instanceof DeviceLostError) {
-            // The device has been lost
-            this.connected.next(false);
-          }
-        }));
+      this.activePortConnectionConnection.errors.subscribe(error => {
+        this.errors.next(error);
+        if (error instanceof DeviceLostError) {
+          // The device has been lost
+          this.connected.next(false);
+        }
+      })
+    );
   }
 
   private async conectNewPort(port: SerialPort): Promise<PortConnection> {
@@ -158,19 +162,21 @@ export class WebSerialTransport implements DeviceTransport {
       if (port.readable.locked) {
         throw new DeviceLockedError();
       }
-      await port.readable.pipeTo(new WritableStream({
-        write: chunk => {
-          chunks.next(chunk);
-        },
-        close: () => {
-          chunks.complete();
-          errors.complete();
-        },
-        abort: () => {
-          // Reconnect to the port.
-          connect();
-        },
-      }));
+      await port.readable.pipeTo(
+        new WritableStream({
+          write: chunk => {
+            chunks.next(chunk);
+          },
+          close: () => {
+            chunks.complete();
+            errors.complete();
+          },
+          abort: () => {
+            // Reconnect to the port.
+            connect();
+          },
+        })
+      );
     }
 
     function connect() {

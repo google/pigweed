@@ -16,7 +16,7 @@
 
 import {Message} from 'google-protobuf';
 import {MethodDescriptorProto} from 'google-protobuf/google/protobuf/descriptor_pb';
-import * as packetPb from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
+import * as packetPb from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb';
 import {Status} from '@pigweed/pw_status';
 
 // Channel, Service, Method
@@ -36,7 +36,9 @@ export function forServer(packet: packetPb.RpcPacket): boolean {
 }
 
 export function encodeClientError(
-    packet: packetPb.RpcPacket, status: Status): Uint8Array {
+  packet: packetPb.RpcPacket,
+  status: Status
+): Uint8Array {
   const errorPacket = new packetPb.RpcPacket();
   errorPacket.setType(packetPb.PacketType.CLIENT_ERROR);
   errorPacket.setChannelId(packet.getChannelId());
@@ -66,9 +68,10 @@ export function encodeClientStreamEnd(ids: idSet): Uint8Array {
 }
 
 export function encodeRequest(ids: idSet, request?: Message): Uint8Array {
-  const payload: Uint8Array = (typeof request !== 'undefined') ?
-      request.serializeBinary() :
-      new Uint8Array();
+  const payload: Uint8Array =
+    typeof request !== 'undefined'
+      ? request.serializeBinary()
+      : new Uint8Array();
 
   const packet = new packetPb.RpcPacket();
   packet.setType(packetPb.PacketType.REQUEST);
@@ -92,7 +95,7 @@ export function encodeResponse(ids: idSet, response: Message): Uint8Array {
 export function encodeCancel(ids: idSet): Uint8Array {
   const packet = new packetPb.RpcPacket();
   packet.setType(packetPb.PacketType.CLIENT_ERROR);
-  packet.setStatus(Status.CANCELLED)
+  packet.setStatus(Status.CANCELLED);
   packet.setChannelId(ids[0]);
   packet.setServiceId(ids[1]);
   packet.setMethodId(ids[2]);

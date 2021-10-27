@@ -23,7 +23,7 @@ export const FLAG = 0x7e;
 export const ESCAPE = 0x7d;
 
 /** Characters allowed after a 0x7d escape character. */
-export const VALID_ESCAPED_BYTES = [0x5D, 0x5E];
+export const VALID_ESCAPED_BYTES = [0x5d, 0x5e];
 
 /** Frame control for unnumbered information */
 export const UI_FRAME_CONTROL = frameControl(0x00);
@@ -52,7 +52,7 @@ export function frameCheckSequence(data: Uint8Array): Uint8Array {
   const crc = crc32(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
   const arr = new ArrayBuffer(4);
   const view = new DataView(arr);
-  view.setUint32(0, crc, true);  // litteEndian = true
+  view.setUint32(0, crc, true); // litteEndian = true
   return new Uint8Array(arr);
 }
 
@@ -72,7 +72,7 @@ export function encodeAddress(address: number): Uint8Array {
     }
   }
 
-  let result = Uint8Array.from(byteList);
+  const result = Uint8Array.from(byteList);
   result[result.length - 1] |= 0x1;
   return result;
 }
@@ -84,7 +84,7 @@ export function decodeAddress(frame: Uint8Array): [number, number] {
 
   while (length < frame.length) {
     const byte = frame[length];
-    const shift = (byte >> 1) * (2 ** (length * 7));
+    const shift = (byte >> 1) * 2 ** (length * 7);
     result = bitwiseOr(result, shift);
     length += 1;
 

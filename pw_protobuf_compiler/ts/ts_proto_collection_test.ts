@@ -23,7 +23,7 @@ describe('ProtoCollection', () => {
   it('getMessageType returns message', () => {
     const lib = new ProtoCollection();
 
-    let fetched = lib.getMessageCreator('pw.protobuf_compiler.test.Message');
+    const fetched = lib.getMessageCreator('pw.protobuf_compiler.test.Message');
     expect(fetched).toEqual(Message);
   });
 

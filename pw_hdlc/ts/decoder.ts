@@ -14,11 +14,10 @@
 
 /** Decoder class for decoding bytes using HDLC protocol */
 
-
 import * as protocol from './protocol';
 import * as util from './util';
 
-const _MIN_FRAME_SIZE = 6;  // 1 B address + 1 B control + 4 B CRC-32
+const _MIN_FRAME_SIZE = 6; // 1 B address + 1 B control + 4 B CRC-32
 
 /** Indicates if an error occurred */
 export enum FrameStatus {
@@ -36,14 +35,15 @@ export class Frame {
   rawDecoded: Uint8Array;
   status: FrameStatus;
 
-  address: number = -1;
+  address = -1;
   control: Uint8Array = new Uint8Array();
   data: Uint8Array = new Uint8Array();
 
   constructor(
-      rawEncoded: Uint8Array,
-      rawDecoded: Uint8Array,
-      status: FrameStatus = FrameStatus.OK) {
+    rawEncoded: Uint8Array,
+    rawDecoded: Uint8Array,
+    status: FrameStatus = FrameStatus.OK
+  ) {
     this.rawEncoded = rawEncoded;
     this.rawDecoded = rawDecoded;
     this.status = status;
@@ -94,8 +94,8 @@ export class Decoder {
    *
    *  @yield Frames, which may be valid (frame.ok)) okr corrupt (!frame.ok())
    */
-  * process(data: Uint8Array): IterableIterator<Frame> {
-    for (let byte of data) {
+  *process(data: Uint8Array): IterableIterator<Frame> {
+    for (const byte of data) {
       const frame = this.processByte(byte);
       if (frame != null) {
         yield frame;
@@ -108,16 +108,17 @@ export class Decoder {
    *
    *  @yield Valid HDLC frames
    */
-  * processValidFrames(data: Uint8Array): IterableIterator<Frame> {
+  *processValidFrames(data: Uint8Array): IterableIterator<Frame> {
     const frames = this.process(data);
     for (const frame of frames) {
       if (frame.ok()) {
         yield frame;
       } else {
         console.warn(
-            'Failed to decode frame: %s; discarded %d bytes',
-            frame.status,
-            (frame.rawEncoded.length));
+          'Failed to decode frame: %s; discarded %d bytes',
+          frame.status,
+          frame.rawEncoded.length
+        );
         console.debug('Discarded data: %s', frame.rawEncoded);
       }
     }
@@ -128,9 +129,9 @@ export class Decoder {
       return FrameStatus.FRAMING_ERROR;
     }
     const frameCrc = new DataView(data.slice(-4).buffer).getInt8(0);
-    const crc =
-        new DataView(protocol.frameCheckSequence(data.slice(0, -4)).buffer)
-            .getInt8(0);
+    const crc = new DataView(
+      protocol.frameCheckSequence(data.slice(0, -4)).buffer
+    ).getInt8(0);
     if (crc !== frameCrc) {
       return FrameStatus.FCS_MISMATCH;
     }
@@ -139,13 +140,16 @@ export class Decoder {
 
   private finishFrame(status: FrameStatus): Frame {
     const frame = new Frame(
-        new Uint8Array(this.rawData), new Uint8Array(this.decodedData), status);
+      new Uint8Array(this.rawData),
+      new Uint8Array(this.decodedData),
+      status
+    );
     this.rawData = new Uint8Array();
     this.decodedData = new Uint8Array();
     return frame;
   }
 
-  private processByte(byte: number): Frame|undefined {
+  private processByte(byte: number): Frame | undefined {
     let frame;
 
     // Record every byte except the flag character.
@@ -171,8 +175,10 @@ export class Decoder {
         } else if (byte == protocol.ESCAPE) {
           this.state = DecoderState.FRAME_ESCAPE;
         } else {
-          this.decodedData =
-              util.concatenate(this.decodedData, Uint8Array.of(byte));
+          this.decodedData = util.concatenate(
+            this.decodedData,
+            Uint8Array.of(byte)
+          );
         }
         break;
 
@@ -183,7 +189,9 @@ export class Decoder {
         } else if (protocol.VALID_ESCAPED_BYTES.includes(byte)) {
           this.state = DecoderState.FRAME;
           this.decodedData = util.concatenate(
-              this.decodedData, Uint8Array.of(protocol.escape(byte)));
+            this.decodedData,
+            Uint8Array.of(protocol.escape(byte))
+          );
         } else {
           this.state = DecoderState.INTERFRAME;
         }

@@ -14,7 +14,7 @@
 
 /** This module defines the string to ID hash used in pw_rpc. */
 
-const HASH_CONSTANT = 65599
+const HASH_CONSTANT = 65599;
 
 /**
  * Hash by 65599
@@ -23,8 +23,8 @@ const HASH_CONSTANT = 65599
  * due to its simplicity.
  */
 export function hash(input: string): number {
-  let hashValue = input.length
-  let coefficient = HASH_CONSTANT
+  let hashValue = input.length;
+  let coefficient = HASH_CONSTANT;
   for (let i = 0; i < input.length; i++) {
     const ord = input.charCodeAt(i);
     hashValue = (hashValue + coefficient * ord) % 2 ** 32;

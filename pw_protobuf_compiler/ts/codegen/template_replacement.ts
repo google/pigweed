@@ -19,14 +19,26 @@ import {FileDescriptorSet} from 'google-protobuf/google/protobuf/descriptor_pb';
 // import {Message} from 'google-protobuf';
 
 const parser = new ArgumentParser({});
-parser.add_argument(
-    '--output', {action: 'store', required: true, type: String});
-parser.add_argument(
-    '--descriptor_data', {action: 'store', required: true, type: String});
-parser.add_argument(
-    '--template', {action: 'store', required: true, type: String});
-parser.add_argument(
-    '--proto_root_dir', {action: 'store', required: true, type: String});
+parser.add_argument('--output', {
+  action: 'store',
+  required: true,
+  type: String,
+});
+parser.add_argument('--descriptor_data', {
+  action: 'store',
+  required: true,
+  type: String,
+});
+parser.add_argument('--template', {
+  action: 'store',
+  required: true,
+  type: String,
+});
+parser.add_argument('--proto_root_dir', {
+  action: 'store',
+  required: true,
+  type: String,
+});
 
 const args = parser.parse_args();
 let template = fs.readFileSync(args.template).toString();
@@ -38,8 +50,9 @@ function buildModulePath(rootDir: string, fileName: string): string {
 
 const descriptorSetBinary = fs.readFileSync(args.descriptor_data);
 const base64DescriptorSet = descriptorSetBinary.toString('base64');
-const fileDescriptorSet =
-    FileDescriptorSet.deserializeBinary(new Buffer(descriptorSetBinary));
+const fileDescriptorSet = FileDescriptorSet.deserializeBinary(
+  new Buffer(descriptorSetBinary)
+);
 
 const imports = [];
 const moduleDictionary = [];
@@ -48,15 +61,19 @@ for (let i = 0; i < fileList.length; i++) {
   const file = fileList[i];
   const modulePath = buildModulePath(args.proto_root_dir, file.getName()!);
   const moduleName = 'proto_' + i;
-  imports.push(`import * as ${moduleName} from '${modulePath}';`)
+  imports.push(`import * as ${moduleName} from '${modulePath}';`);
   const key = file.getName()!;
-  moduleDictionary.push(`['${key}', ${moduleName}],`)
+  moduleDictionary.push(`['${key}', ${moduleName}],`);
 }
 
-template =
-    template.replace('{TEMPLATE_descriptor_binary}', base64DescriptorSet);
+template = template.replace(
+  '{TEMPLATE_descriptor_binary}',
+  base64DescriptorSet
+);
 template = template.replace('// TEMPLATE_proto_imports', imports.join('\n'));
-template =
-    template.replace('// TEMPLATE_module_map', moduleDictionary.join('\n'));
+template = template.replace(
+  '// TEMPLATE_module_map',
+  moduleDictionary.join('\n')
+);
 
 fs.writeFileSync(args.output, template);

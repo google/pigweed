@@ -47,25 +47,31 @@ export class Rpc {
   }
 
   toString(): string {
-    return `${this.service.name}.${this.method.name} on channel ` +
-        `${this.channel.id}`;
+    return (
+      `${this.service.name}.${this.method.name} on channel ` +
+      `${this.channel.id}`
+    );
   }
 }
 
 /** Tracks pending RPCs and encodes outgoing RPC packets. */
 export class PendingCalls {
-  pending: Map<string, Call> = new Map;
+  pending: Map<string, Call> = new Map();
 
   /** Starts the provided RPC and returns the encoded packet to send. */
   request(rpc: Rpc, request: Message, call: Call): Uint8Array {
-    this.open(rpc, call)
+    this.open(rpc, call);
     console.log(`Starting ${rpc}`);
     return packets.encodeRequest(rpc.idSet, request);
   }
 
   /** Calls request and sends the resulting packet to the channel. */
-  sendRequest(rpc: Rpc, call: Call, ignoreError: boolean, request?: Message):
-      Call|undefined {
+  sendRequest(
+    rpc: Rpc,
+    call: Call,
+    ignoreError: boolean,
+    request?: Message
+  ): Call | undefined {
     const previous = this.open(rpc, call);
     const packet = packets.encodeRequest(rpc.idSet, request);
     try {
@@ -85,10 +91,10 @@ export class PendingCalls {
    * invoked by this client. For example, a server may stream logs with a
    * server streaming RPC prior to any clients invoking it.
    */
-  open(rpc: Rpc, call: Call): Call|undefined {
+  open(rpc: Rpc, call: Call): Call | undefined {
     console.debug(`Starting ${rpc}`);
     const previous = this.pending.get(rpc.idString);
-    this.pending.set(rpc.idString, call)
+    this.pending.set(rpc.idString, call);
     return previous;
   }
 
@@ -107,7 +113,7 @@ export class PendingCalls {
   }
 
   /** Cancels the RPC. Returns the CANCEL packet to send. */
-  cancel(rpc: Rpc): Uint8Array|undefined {
+  cancel(rpc: Rpc): Uint8Array | undefined {
     console.debug(`Cancelling ${rpc}`);
     this.pending.delete(rpc.idString);
     if (rpc.method.clientStreaming && rpc.method.serverStreaming) {
@@ -118,7 +124,7 @@ export class PendingCalls {
 
   /** Calls cancel and sends the cancel packet, if any, to the channel. */
   sendCancel(rpc: Rpc): boolean {
-    let packet: Uint8Array|undefined;
+    let packet: Uint8Array | undefined;
     try {
       packet = this.cancel(rpc);
     } catch (err) {
@@ -132,7 +138,7 @@ export class PendingCalls {
   }
 
   /** Gets the pending RPC's call. If status is set, clears the RPC. */
-  getPending(rpc: Rpc, status?: Status): Call|undefined {
+  getPending(rpc: Rpc, status?: Status): Call | undefined {
     if (status === undefined) {
       return this.pending.get(rpc.idString);
     }

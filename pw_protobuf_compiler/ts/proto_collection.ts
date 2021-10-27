@@ -27,7 +27,10 @@ export class ModuleMap extends Map<string, any> {}
 export class ProtoCollection {
   private messages: MessageMap;
 
-  constructor(readonly fileDescriptorSet: FileDescriptorSet, modules: ModuleMap) {
+  constructor(
+    readonly fileDescriptorSet: FileDescriptorSet,
+    modules: ModuleMap
+  ) {
     this.messages = this.mapMessages(fileDescriptorSet, modules);
   }
 
@@ -55,7 +58,7 @@ export class ProtoCollection {
    *  @param identifier String identifier of the form
    *  "{packageName}.{messageName}" i.e: "pw.rpc.test.NewMessage".
    */
-  getMessageCreator(identifier: string): MessageCreator|undefined {
+  getMessageCreator(identifier: string): MessageCreator | undefined {
     return this.messages.get(identifier);
   }
 }

@@ -16,7 +16,10 @@
 import 'jasmine';
 
 import {ProtoCollection} from 'rpc_proto_collection/generated/ts_proto_collection';
-import {Request, Response} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb';
+import {
+  Request,
+  Response,
+} from 'test_protos_tspb/test_protos_tspb_pb/pw_rpc/ts/test_pb';
 
 import * as descriptors from './descriptors';
 
@@ -27,10 +30,13 @@ describe('Descriptors', () => {
     const protoCollection = new ProtoCollection();
     const fd = protoCollection.fileDescriptorSet.getFileList()[0];
     const sd = fd.getServiceList()[0];
-    const service =
-        new descriptors.Service(sd, protoCollection, fd.getPackage()!);
+    const service = new descriptors.Service(
+      sd,
+      protoCollection,
+      fd.getPackage()!
+    );
 
-    expect(service.name).toEqual('pw.rpc.test1.TheTestService')
+    expect(service.name).toEqual('pw.rpc.test1.TheTestService');
     expect(service.methods.size).toEqual(4);
 
     const unaryMethod = service.methodsByName.get('SomeUnary')!;
@@ -49,4 +55,4 @@ describe('Descriptors', () => {
     expect(someBidiStreaming.requestType).toEqual(Request);
     expect(someBidiStreaming.responseType).toEqual(Response);
   });
-})
+});

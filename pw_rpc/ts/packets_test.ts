@@ -15,7 +15,10 @@
 /* eslint-env browser, jasmine */
 import 'jasmine';
 
-import {PacketType, RpcPacket} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb'
+import {
+  PacketType,
+  RpcPacket,
+} from 'packet_proto_tspb/packet_proto_tspb_pb/pw_rpc/internal/packet_pb';
 import {Status} from '@pigweed/pw_status';
 
 import * as packets from './packets';
@@ -93,8 +96,9 @@ describe('Packets', () => {
     request.setType(PacketType.REQUEST);
     addTestData(request);
 
-    expect(request.toObject())
-        .toEqual(packets.decode(request.serializeBinary()).toObject());
+    expect(request.toObject()).toEqual(
+      packets.decode(request.serializeBinary()).toObject()
+    );
   });
 
   it('forServer correctly handles RESPONSE and REQUEST types', () => {
