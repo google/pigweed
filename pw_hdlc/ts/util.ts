@@ -23,7 +23,7 @@ export function replace(
   target: number,
   substitute: number[]
 ): Uint8Array {
-  const result = [];
+  const result: number[] = [];
   data.forEach(value => {
     if (value === target) {
       result.push(...substitute);
