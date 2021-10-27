@@ -12,5 +12,5 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export * from './src/transport/device_transport';
+export {default as DeviceTransport} from './src/transport/device_transport';
 export * from './src/transport/web_serial_transport';
