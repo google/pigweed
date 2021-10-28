@@ -33,6 +33,12 @@ PW_PACKED(struct) ElfNoteInfo {
 
 }  // namespace
 
+// Reading more than a uint8_t from gnu_build_id_begin triggers compiler
+// warnings that must be silenced.
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Warray-bounds");
+PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wstringop-overflow");
+
 std::span<const std::byte> BuildId() {
   // Read the sizes at the beginning of the note section.
   ElfNoteInfo build_id_note_sizes;
@@ -45,5 +51,7 @@ std::span<const std::byte> BuildId() {
                                      build_id_note_sizes.name_size,
                                  build_id_note_sizes.descriptor_size));
 }
+
+PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace pw::build_info
