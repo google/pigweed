@@ -187,7 +187,7 @@ function(_pw_pwpb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   # Create the library with the generated source files.
   add_library("${NAME}.pwpb" INTERFACE)
   target_include_directories("${NAME}.pwpb" INTERFACE "${OUT_DIR}/pwpb")
-  target_link_libraries("${NAME}.pwpb" INTERFACE pw_protobuf ${DEPS})
+  target_link_libraries("${NAME}.pwpb" INTERFACE pw_build pw_protobuf ${DEPS})
   add_dependencies("${NAME}.pwpb" "${NAME}._generate.pwpb")
 endfunction(_pw_pwpb_library)
 
@@ -211,6 +211,7 @@ function(_pw_raw_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   target_include_directories("${NAME}.raw_rpc" INTERFACE "${OUT_DIR}/raw_rpc")
   target_link_libraries("${NAME}.raw_rpc"
     INTERFACE
+      pw_build
       pw_rpc.raw
       pw_rpc.server
       ${DEPS}
@@ -244,6 +245,7 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
       add_library("${NAME}.nanopb" INTERFACE)
       target_link_libraries("${NAME}.nanopb"
         INTERFACE
+          pw_build
           pw_third_party.nanopb
           ${DEPS}
       )
@@ -262,7 +264,7 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
       # Create the library with the generated source files.
       add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${generated_outputs})
       target_include_directories("${NAME}.nanopb" PUBLIC "${OUT_DIR}/nanopb")
-      target_link_libraries("${NAME}.nanopb" PUBLIC pw_third_party.nanopb ${DEPS})
+      target_link_libraries("${NAME}.nanopb" PUBLIC pw_build pw_third_party.nanopb ${DEPS})
     endif()
 
     add_dependencies("${NAME}.nanopb" "${NAME}._generate.nanopb")
@@ -299,6 +301,7 @@ function(_pw_nanopb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   target_link_libraries("${NAME}.nanopb_rpc"
     INTERFACE
       "${NAME}.nanopb"
+      pw_build
       pw_rpc.nanopb.client
       pw_rpc.nanopb.method_union
       pw_rpc.server
