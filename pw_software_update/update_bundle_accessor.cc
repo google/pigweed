@@ -141,9 +141,14 @@ Status UpdateBundleAccessor::DoOpen() {
 }
 
 Status UpdateBundleAccessor::DoVerify() {
-  // TODO(pwbug/456): Check whether the bundle contains an incoming new root
-  // metadata. If it does, verify the root against the current on-device root
-  // and, if valid, upgrade the on-device root with it.
+  if (disable_verification_) {
+    PW_LOG_WARN("Update bundle verification is disabled.");
+    return OkStatus();
+  }
+
+  // Verify and upgrade the on-device trust to the incoming root metadata if
+  // one is included.
+  PW_TRY(DoUpgradeRoot());
 
   // TODO(pwbug/456): Verify the targets metadata against the current trusted
   // root.
@@ -153,6 +158,34 @@ Status UpdateBundleAccessor::DoVerify() {
 
   // TODO(pwbug/456): Invoke the backend to do downstream verification of the
   // bundle (e.g. compatibility and manifest completeness checks).
+
+  return OkStatus();
+}
+
+Status UpdateBundleAccessor::DoUpgradeRoot() {
+  // TODO(pwbug/456): Check whether the bundle contains a root metadata that
+  // is different from the on-device trusted root.
+
+  // TODO(pwbug/456) Verify the signatures against the trusted root metadata.
+
+  // TODO(pwbug/456): Verifiy the content of the new root metadata, including:
+  //    1) Check role magic field.
+  //    2) Check signature requirement. Specifically, check that no key is
+  //       reused across different roles and keys are unique in the same
+  //       requirement.
+  //    3) Check key mapping. Specifically, check that all keys are unique,
+  //       ECDSA keys, and the key ids are exactly the SHA256 of `key type +
+  //       key scheme + key value`.
+
+  // TODO(pwbug/456). Verify the signatures against the new root metadata.
+
+  // TODO(pwbug/456): Check rollback.
+
+  // TODO(pwbug/456): Persist new root.
+
+  // TODO(pwbug/456): Implement key change detection to determine whether
+  // rotation has occured or not. Delete the persisted targets metadata version
+  // if any of the targets keys has been rotated.
 
   return OkStatus();
 }

@@ -72,11 +72,16 @@ namespace pw::software_update {
 class UpdateBundleAccessor {
  public:
   // UpdateBundleAccessor
-  // update_bundle - The software update bundle data on storage.
-  // backend - project-specific BundledUpdateBackend
-  constexpr UpdateBundleAccessor(blob_store::BlobStore& update_bundle,
-                                 BundledUpdateBackend& backend)
-      : bundle_(update_bundle), backend_(backend), bundle_reader_(bundle_) {}
+  // bundle - The software update bundle data on storage.
+  // backend - Project-specific BundledUpdateBackend.
+  // disable_verification - Disable verification.
+  constexpr UpdateBundleAccessor(blob_store::BlobStore& bundle,
+                                 BundledUpdateBackend& backend,
+                                 bool disable_verification = false)
+      : bundle_(bundle),
+        backend_(backend),
+        bundle_reader_(bundle_),
+        disable_verification_(disable_verification) {}
 
   // Opens and verifies the software update bundle.
   //
@@ -84,7 +89,8 @@ class UpdateBundleAccessor {
   // and initializes the bundle proto parser. No write will be allowed to the
   // bundle until Close() is called.
   //
-  // The verification process does the following:
+  // If bundle verification is enabled (see the `option` argument in
+  // the constructor), the verification process does the following:
   //
   // 1. Check whether the bundle contains an incoming new root metadata. If it
   // does, it verifies the root against the current on-device root. If
@@ -99,7 +105,6 @@ class UpdateBundleAccessor {
   //
   // Returns:
   // OK - Bundle was successfully opened and verified.
-  // TODO(pwbug/456): Add error codes.
   Status OpenAndVerify(const ManifestAccessor& current_manifest);
 
   // Closes the bundle by invalidating the verification and closing
@@ -141,12 +146,33 @@ class UpdateBundleAccessor {
   BundledUpdateBackend& backend_;
   blob_store::BlobStore::BlobReader bundle_reader_;
   protobuf::Message decoder_;
+  bool disable_verification_;
 
   // Opens the bundle for read-only access and readies the parser.
   Status DoOpen();
 
   // Performs TUF and downstream custom verification.
   Status DoVerify();
+
+  // The method checks whether the update bundle contains a root metadata
+  // different from the on-device one. If it does, it performs the following
+  // verification and upgrade flow:
+  //
+  // 1. Verify the signatures according to the on-device trusted
+  // disable_verificationroot metadata
+  //    obtained from the backend.
+  // 2. Verify content of the new root metadata, including:
+  //    1) Check role magic field.
+  //    2) Check signature requirement. Specifically, check that no key is
+  //       reused across different roles and keys are unique in the same
+  //       requirement.
+  //    3) Check key mapping. Specifically, check that all keys are unique,
+  //       ECDSA keys, and the key ids are exactly the SHA256 of `key type +
+  //       key scheme + key value`.
+  // 3. Verify the signatures against the new root metadata.
+  // 4. Check rollback.
+  // 5. Update on-device root metadata.
+  Status DoUpgradeRoot();
 };
 
 }  // namespace pw::software_update
