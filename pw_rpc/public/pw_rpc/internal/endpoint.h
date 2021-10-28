@@ -53,7 +53,7 @@ class Endpoint {
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.
   Result<Packet> ProcessPacket(std::span<const std::byte> data,
-                               Packet::Destination packet)
+                               Packet::Destination destination)
       PW_LOCKS_EXCLUDED(rpc_lock());
 
   // Finds a call object for an ongoing call associated with this packet, if

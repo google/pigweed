@@ -93,7 +93,7 @@ class Decoder {
   //     DATA_LOSS - A frame completed, but it was invalid. The frame was
   //         incomplete or the frame check sequence verification failed.
   //
-  Result<Frame> Process(std::byte b);
+  Result<Frame> Process(std::byte new_byte);
 
   // Processes a span of data and calls the provided callback with each frame or
   // error.

@@ -174,7 +174,7 @@ class EntryCache {
 
   // Adds a new descriptor to the descriptor list. The entry MUST be unique and
   // the EntryCache must NOT be full!
-  EntryMetadata AddNew(const KeyDescriptor& entry, Address address) const;
+  EntryMetadata AddNew(const KeyDescriptor& descriptor, Address address) const;
 
   // Adds a new descriptor, overwrites an existing one, or adds an additional
   // redundant address to one. The sector size is included for checking that

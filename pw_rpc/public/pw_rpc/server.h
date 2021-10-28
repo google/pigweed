@@ -44,7 +44,7 @@ class Server : public internal::Endpoint {
   //   DATA_LOSS - Failed to decode the packet.
   //   INVALID_ARGUMENT - The packet is intended for a client, not a server.
   //
-  Status ProcessPacket(std::span<const std::byte> packet,
+  Status ProcessPacket(std::span<const std::byte> packet_data,
                        ChannelOutput& interface)
       PW_LOCKS_EXCLUDED(internal::rpc_lock());
 

@@ -72,15 +72,15 @@ Status ServerContext::Finish(const Status status) {
 }
 
 void ServerContext::HandleReadChunk(ClientConnection& client,
-                                    const Chunk& parameters) {
+                                    const Chunk& chunk) {
   // Update local transfer fields based on the received chunk.
-  if (!parameters.pending_bytes.has_value()) {
+  if (!chunk.pending_bytes.has_value()) {
     // Malformed chunk.
     FinishAndSendStatus(client, Status::InvalidArgument());
     return;
   }
 
-  const uint32_t pending_bytes = *parameters.pending_bytes;
+  const uint32_t pending_bytes = *chunk.pending_bytes;
   if (pending_bytes == 0u) {
     PW_LOG_ERROR("Transfer %d client requested 0 bytes (invalid); aborting",
                  static_cast<unsigned>(transfer_id()));
@@ -93,16 +93,16 @@ void ServerContext::HandleReadChunk(ClientConnection& client,
   // std::min(pending_bytes, client.max_parameters().pending_bytes())
   set_pending_bytes(pending_bytes);
 
-  if (parameters.max_chunk_size_bytes.has_value()) {
+  if (chunk.max_chunk_size_bytes.has_value()) {
     set_max_chunk_size_bytes(
-        std::min(*parameters.max_chunk_size_bytes,
+        std::min(*chunk.max_chunk_size_bytes,
                  client.max_parameters().max_chunk_size_bytes()));
   }
 
   // If the offsets don't match, attempt to seek on the reader. Not all transfer
   // handlers support seeking; abort with UNIMPLEMENTED if this handler doesn't.
-  if (offset() != parameters.offset) {
-    set_offset(parameters.offset);
+  if (offset() != chunk.offset) {
+    set_offset(chunk.offset);
 
     if (Status seek_status = reader().Seek(offset()); !seek_status.ok()) {
       PW_LOG_WARN("Transfer %u seek to %u failed with status %u",

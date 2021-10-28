@@ -32,10 +32,10 @@ using internal::PacketType;
 
 }  // namespace
 
-Status Server::ProcessPacket(std::span<const byte> data,
+Status Server::ProcessPacket(std::span<const byte> packet_data,
                              ChannelOutput& interface) {
   PW_TRY_ASSIGN(Result<Packet> result,
-                Endpoint::ProcessPacket(data, Packet::kServer));
+                Endpoint::ProcessPacket(packet_data, Packet::kServer));
   Packet& packet = *result;
 
   internal::rpc_lock().lock();

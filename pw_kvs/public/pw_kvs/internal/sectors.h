@@ -182,7 +182,7 @@ class Sectors {
   // Finds a sector that is ready to be garbage collected. Returns nullptr if no
   // sectors can / need to be garbage collected.
   SectorDescriptor* FindSectorToGarbageCollect(
-      std::span<const Address> addresses_to_avoid) const;
+      std::span<const Address> reserved_addresses) const;
 
   // The number of sectors in use.
   size_t size() const { return descriptors_.size(); }

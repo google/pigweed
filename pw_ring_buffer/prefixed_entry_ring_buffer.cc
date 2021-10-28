@@ -85,7 +85,7 @@ Status PrefixedEntryRingBufferMulti::DetachReader(Reader& reader) {
 Status PrefixedEntryRingBufferMulti::InternalPushBack(
     std::span<const byte> data,
     uint32_t user_preamble_data,
-    bool drop_elements_if_needed) {
+    bool pop_front_if_needed) {
   if (buffer_ == nullptr) {
     return Status::FailedPrecondition();
   }
@@ -106,7 +106,7 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
     return Status::OutOfRange();
   }
 
-  if (drop_elements_if_needed) {
+  if (pop_front_if_needed) {
     // PushBack() case: evict items as needed.
     // Drop old entries until we have space for the new entry.
     while (RawAvailableBytes() < total_write_bytes) {

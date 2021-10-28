@@ -79,7 +79,7 @@ class Channel : public rpc::Channel {
     return Send(buffer, packet);
   }
 
-  Status Send(OutputBuffer& output, const internal::Packet& packet);
+  Status Send(OutputBuffer& buffer, const internal::Packet& packet);
 
   void Release(OutputBuffer& buffer) {
     output().DiscardBuffer(buffer.buffer_);

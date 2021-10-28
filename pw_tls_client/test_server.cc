@@ -82,10 +82,10 @@ InMemoryTestServer::InMemoryTestServer(ByteSpan input_buffer,
                                        ByteSpan output_buffer)
     : input_buffer_(input_buffer), output_buffer_(output_buffer) {}
 
-int InMemoryTestServer::BioRead(BIO* bio, char* out, int out_length) {
+int InMemoryTestServer::BioRead(BIO* bio, char* out, int output_length) {
   auto server = static_cast<InMemoryTestServer*>(bio->ptr);
-  auto read = server->input_buffer_.Read(
-      std::as_writable_bytes(std::span{out, static_cast<size_t>(out_length)}));
+  auto read = server->input_buffer_.Read(std::as_writable_bytes(
+      std::span{out, static_cast<size_t>(output_length)}));
   if (!read.ok()) {
     server->last_bio_status_ = read.status();
     return -1;

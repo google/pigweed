@@ -102,8 +102,8 @@ class InMemoryTestServer : public stream::NonSeekableReaderWriter {
   Status LoadCAChain(std::span<const ConstByteSpan> chains);
 
   // Methods for providing BIO interfaces.
-  static int BioRead(BIO* bio, char* out, int outl);
-  static int BioWrite(BIO* bio, const char* in, int inl);
+  static int BioRead(BIO* bio, char* out, int output_length);
+  static int BioWrite(BIO* bio, const char* in, int input_length);
 
   StatusWithSize DoRead(ByteSpan dest) override;
   Status DoWrite(ConstByteSpan data) override;

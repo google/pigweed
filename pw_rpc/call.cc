@@ -101,7 +101,7 @@ Status Call::EndClientStream() {
 }
 
 Status Call::CloseAndSendFinalPacket(PacketType type,
-                                     ConstByteSpan payload,
+                                     ConstByteSpan response,
                                      Status status) {
   rpc_lock().lock();
   if (!active()) {
@@ -109,7 +109,7 @@ Status Call::CloseAndSendFinalPacket(PacketType type,
     return Status::FailedPrecondition();
   }
   Close();
-  return SendPacket(type, payload, status);
+  return SendPacket(type, response, status);
 }
 
 ByteSpan Call::AcquirePayloadBuffer() {

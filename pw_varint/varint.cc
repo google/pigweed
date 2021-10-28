@@ -30,7 +30,7 @@ inline bool LeastSignificant(pw_varint_Format format) {
 
 }  // namespace
 
-extern "C" size_t pw_varint_EncodeCustom(uint64_t input,
+extern "C" size_t pw_varint_EncodeCustom(uint64_t integer,
                                          void* output,
                                          size_t output_size,
                                          pw_varint_Format format) {
@@ -54,10 +54,10 @@ extern "C" size_t pw_varint_EncodeCustom(uint64_t input,
       return 0;
     }
 
-    bool last_byte = (input >> 7) == 0u;
+    bool last_byte = (integer >> 7) == 0u;
 
     // Grab 7 bits and set the eighth according to the continuation bit.
-    std::byte value = (static_cast<std::byte>(input) & std::byte(0x7f))
+    std::byte value = (static_cast<std::byte>(integer) & std::byte(0x7f))
                       << value_shift;
 
     if (last_byte) {
@@ -67,8 +67,8 @@ extern "C" size_t pw_varint_EncodeCustom(uint64_t input,
     }
 
     buffer[written++] = value;
-    input >>= 7;
-  } while (input != 0u);
+    integer >>= 7;
+  } while (integer != 0u);
 
   return written;
 }
