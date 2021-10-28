@@ -21,8 +21,6 @@
 
 namespace pw::rpc {
 
-using std::byte;
-
 namespace internal {
 
 void NanopbMethod::CallSynchronousUnary(const CallContext& context,

@@ -26,8 +26,6 @@
 namespace hdlc_example {
 namespace {
 
-using std::byte;
-
 pw::rpc::EchoService echo_service;
 
 void RegisterServices() {
