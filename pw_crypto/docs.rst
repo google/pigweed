@@ -24,6 +24,11 @@ SHA256
     // Handle errors.
   }
 
+  // The content can also come from a pw::stream::Reader.
+  if (!pw::crypto::sha256::Hash(reader, digest).ok()) {
+    // Handle errors.
+  }
+
 2. Hashing a long, potentially non-contiguous message.
 
 .. code-block:: cpp

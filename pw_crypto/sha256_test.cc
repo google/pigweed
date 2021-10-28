@@ -17,6 +17,7 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
+#include "pw_stream/memory_stream.h"
 
 namespace pw::crypto::sha256 {
 namespace {
@@ -45,10 +46,30 @@ TEST(Hash, ComputesCorrectDigest) {
             std::memcmp(digest, SHA256_HASH_OF_HELLO_PIGWEED, sizeof(digest)));
 }
 
+TEST(Hash, ComputesCorrectDigestFromReader) {
+  std::byte digest[kDigestSizeBytes];
+  ConstByteSpan message = AS_BYTES("Hello, Pigweed!");
+
+  stream::MemoryReader reader(message);
+  ASSERT_OK(Hash(reader, digest));
+  ASSERT_EQ(0,
+            std::memcmp(digest, SHA256_HASH_OF_HELLO_PIGWEED, sizeof(digest)));
+}
+
 TEST(Hash, ComputesCorrectDigestOnEmptyMessage) {
   std::byte digest[kDigestSizeBytes];
 
   ASSERT_OK(Hash({}, digest));
+  ASSERT_EQ(0,
+            std::memcmp(digest, SHA256_HASH_OF_EMPTY_STRING, sizeof(digest)));
+}
+
+TEST(Hash, ComputesCorrectDigestOnEmptyMessageFromReader) {
+  std::byte digest[kDigestSizeBytes];
+
+  ConstByteSpan empty;
+  stream::MemoryReader reader(empty);
+  ASSERT_OK(Hash(reader, digest));
   ASSERT_EQ(0,
             std::memcmp(digest, SHA256_HASH_OF_EMPTY_STRING, sizeof(digest)));
 }
@@ -58,9 +79,24 @@ TEST(Hash, DigestBufferTooSmall) {
   ASSERT_FAIL(Hash({}, digest));
 }
 
+TEST(Hash, DigestBufferTooSmallForReaderBasedAPI) {
+  std::array<std::byte, 31> digest = {};
+  ConstByteSpan empty;
+  stream::MemoryReader reader(empty);
+  ASSERT_FAIL(Hash(reader, digest));
+}
+
 TEST(Hash, AcceptsLargerDigestBuffer) {
   std::array<std::byte, 33> digest = {};
   ASSERT_OK(Hash({}, digest));
+}
+
+TEST(Hash, AcceptsLargerDigestBufferForReaderBasedAPI) {
+  std::array<std::byte, 33> digest = {};
+
+  ConstByteSpan empty;
+  stream::MemoryReader reader(empty);
+  ASSERT_OK(Hash(reader, digest));
 }
 
 TEST(Sha256, AllowsSkippedUpdate) {

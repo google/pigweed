@@ -23,6 +23,8 @@
 #include "pw_crypto/sha256_backend.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
+#include "pw_stream/stream.h"
 
 namespace pw::crypto::sha256 {
 
@@ -130,6 +132,25 @@ class Sha256 {
 // in `out_digest`. `out_digest` must be at least `kDigestSizeBytes` long.
 inline Status Hash(ConstByteSpan message, ByteSpan out_digest) {
   return Sha256().Update(message).Final(out_digest);
+}
+
+inline Status Hash(stream::Reader& reader, ByteSpan out_digest) {
+  if (out_digest.size() < kDigestSizeBytes) {
+    return Status::InvalidArgument();
+  }
+
+  Sha256 sha256;
+  while (true) {
+    Result<ByteSpan> res = reader.Read(out_digest);
+    if (res.status().IsOutOfRange()) {
+      break;
+    }
+
+    PW_TRY(res.status());
+    sha256.Update(res.value());
+  }
+
+  return sha256.Final(out_digest);
 }
 
 }  // namespace pw::crypto::sha256
