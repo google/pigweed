@@ -32,7 +32,7 @@ if (dir_pw_third_party_freertos != "") {
   }
 
   config("public_includes") {
-    include_dirs = [ "$dir_pw_third_party_freertos/Source/include" ]
+    include_dirs = [ "$dir_pw_third_party_freertos/include" ]
     visibility = [ ":*" ]
   }
 
@@ -47,32 +47,32 @@ if (dir_pw_third_party_freertos != "") {
       pw_third_party_freertos_PORT,
     ]
     public = [
-      "$dir_pw_third_party_freertos/Source/include/FreeRTOS.h",
-      "$dir_pw_third_party_freertos/Source/include/StackMacros.h",
-      "$dir_pw_third_party_freertos/Source/include/croutine.h",
-      "$dir_pw_third_party_freertos/Source/include/deprecated_definitions.h",
-      "$dir_pw_third_party_freertos/Source/include/event_groups.h",
-      "$dir_pw_third_party_freertos/Source/include/list.h",
-      "$dir_pw_third_party_freertos/Source/include/message_buffer.h",
-      "$dir_pw_third_party_freertos/Source/include/mpu_prototypes.h",
-      "$dir_pw_third_party_freertos/Source/include/mpu_wrappers.h",
-      "$dir_pw_third_party_freertos/Source/include/portable.h",
-      "$dir_pw_third_party_freertos/Source/include/projdefs.h",
-      "$dir_pw_third_party_freertos/Source/include/queue.h",
-      "$dir_pw_third_party_freertos/Source/include/semphr.h",
-      "$dir_pw_third_party_freertos/Source/include/stack_macros.h",
-      "$dir_pw_third_party_freertos/Source/include/stream_buffer.h",
-      "$dir_pw_third_party_freertos/Source/include/task.h",
-      "$dir_pw_third_party_freertos/Source/include/timers.h",
+      "$dir_pw_third_party_freertos/include/FreeRTOS.h",
+      "$dir_pw_third_party_freertos/include/StackMacros.h",
+      "$dir_pw_third_party_freertos/include/croutine.h",
+      "$dir_pw_third_party_freertos/include/deprecated_definitions.h",
+      "$dir_pw_third_party_freertos/include/event_groups.h",
+      "$dir_pw_third_party_freertos/include/list.h",
+      "$dir_pw_third_party_freertos/include/message_buffer.h",
+      "$dir_pw_third_party_freertos/include/mpu_prototypes.h",
+      "$dir_pw_third_party_freertos/include/mpu_wrappers.h",
+      "$dir_pw_third_party_freertos/include/portable.h",
+      "$dir_pw_third_party_freertos/include/projdefs.h",
+      "$dir_pw_third_party_freertos/include/queue.h",
+      "$dir_pw_third_party_freertos/include/semphr.h",
+      "$dir_pw_third_party_freertos/include/stack_macros.h",
+      "$dir_pw_third_party_freertos/include/stream_buffer.h",
+      "$dir_pw_third_party_freertos/include/task.h",
+      "$dir_pw_third_party_freertos/include/timers.h",
     ]
     configs = [ ":disable_warnings" ]
     sources = [
-      "$dir_pw_third_party_freertos/Source/croutine.c",
-      "$dir_pw_third_party_freertos/Source/event_groups.c",
-      "$dir_pw_third_party_freertos/Source/list.c",
-      "$dir_pw_third_party_freertos/Source/queue.c",
-      "$dir_pw_third_party_freertos/Source/stream_buffer.c",
-      "$dir_pw_third_party_freertos/Source/timers.c",
+      "$dir_pw_third_party_freertos/croutine.c",
+      "$dir_pw_third_party_freertos/event_groups.c",
+      "$dir_pw_third_party_freertos/list.c",
+      "$dir_pw_third_party_freertos/queue.c",
+      "$dir_pw_third_party_freertos/stream_buffer.c",
+      "$dir_pw_third_party_freertos/timers.c",
     ]
     deps = [ ":freertos_tasks" ]
   }
@@ -94,7 +94,7 @@ if (dir_pw_third_party_freertos != "") {
     if (pw_third_party_freertos_DISABLE_TASKS_STATICS) {
       configs += [ ":disable_statics" ]
     }
-    sources = [ "$dir_pw_third_party_freertos/Source/tasks.c" ]
+    sources = [ "$dir_pw_third_party_freertos/tasks.c" ]
     deps = [
       pw_third_party_freertos_CONFIG,
       pw_third_party_freertos_PORT,
