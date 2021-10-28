@@ -19,7 +19,7 @@
 
 namespace pw::this_thread {
 
-inline void yield() {
+inline void yield() noexcept {
   // Ensure this is being called by a thread.
   PW_DASSERT(get_id() != thread::Id());
   OS_Yield();

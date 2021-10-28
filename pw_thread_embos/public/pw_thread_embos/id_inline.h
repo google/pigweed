@@ -20,7 +20,7 @@
 
 namespace pw::this_thread {
 
-inline thread::Id get_id() {
+inline thread::Id get_id() noexcept {
   // Ensure this is not being called by an interrupt.
   PW_DASSERT(!interrupt::InInterruptContext());
 
