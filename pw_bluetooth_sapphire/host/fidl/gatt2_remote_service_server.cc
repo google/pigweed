@@ -18,16 +18,16 @@ namespace {
 
 bt::att::StatusCallback MakeStatusCallback(
     bt::PeerId peer_id, const char* request_name, fbg::Handle fidl_handle,
-    fit::function<void(fit::result<void, fbg::Error>)> callback) {
+    fit::function<void(fpromise::result<void, fbg::Error>)> callback) {
   return
       [peer_id, fidl_handle, callback = std::move(callback), request_name](bt::att::Status status) {
         if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", request_name,
                         bt_str(peer_id), fidl_handle.value)) {
-          callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
+          callback(fpromise::error(fidl_helpers::AttStatusToGattFidlError(status)));
           return;
         }
 
-        callback(fit::ok());
+        callback(fpromise::ok());
       };
 }
 
@@ -70,20 +70,20 @@ fbg::Characteristic CharacteristicToFidl(
 
 // Returned result is supposed to match Read{Characteristic, Descriptor}Callback (result type is
 // converted by FIDL move constructor).
-[[nodiscard]] fit::result<::fuchsia::bluetooth::gatt2::ReadValue,
-                          ::fuchsia::bluetooth::gatt2::Error>
+[[nodiscard]] fpromise::result<::fuchsia::bluetooth::gatt2::ReadValue,
+                               ::fuchsia::bluetooth::gatt2::Error>
 ReadResultToFidl(bt::PeerId peer_id, fbg::Handle handle, bt::att::Status status,
                  const bt::ByteBuffer& value, bool maybe_truncated, const char* request) {
   if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", request,
                   bt_str(peer_id), handle.value)) {
-    return fit::error(fidl_helpers::AttStatusToGattFidlError(status));
+    return fpromise::error(fidl_helpers::AttStatusToGattFidlError(status));
   }
 
   fbg::ReadValue fidl_value;
   fidl_value.set_handle(handle);
   fidl_value.set_value(value.ToVector());
   fidl_value.set_maybe_truncated(maybe_truncated);
-  return fit::ok(std::move(fidl_value));
+  return fpromise::ok(std::move(fidl_value));
 }
 
 void FillInReadOptionsDefaults(fbg::ReadOptions& options) {
@@ -215,7 +215,7 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
 void Gatt2RemoteServiceServer::ReadCharacteristic(fbg::Handle fidl_handle, fbg::ReadOptions options,
                                                   ReadCharacteristicCallback callback) {
   if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
-    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    callback(fpromise::error(fbg::Error::INVALID_HANDLE));
     return;
   }
   bt::gatt::CharacteristicHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
@@ -244,7 +244,7 @@ void Gatt2RemoteServiceServer::WriteCharacteristic(fbg::Handle fidl_handle,
                                                    fbg::WriteOptions options,
                                                    WriteCharacteristicCallback callback) {
   if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
-    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    callback(fpromise::error(fbg::Error::INVALID_HANDLE));
     return;
   }
   bt::gatt::CharacteristicHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
@@ -280,7 +280,7 @@ void Gatt2RemoteServiceServer::ReadDescriptor(::fuchsia::bluetooth::gatt2::Handl
                                               ::fuchsia::bluetooth::gatt2::ReadOptions options,
                                               ReadDescriptorCallback callback) {
   if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
-    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    callback(fpromise::error(fbg::Error::INVALID_HANDLE));
     return;
   }
   bt::gatt::DescriptorHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
@@ -308,7 +308,7 @@ void Gatt2RemoteServiceServer::WriteDescriptor(fbg::Handle fidl_handle, std::vec
                                                fbg::WriteOptions options,
                                                WriteDescriptorCallback callback) {
   if (!fidl_helpers::IsFidlGattHandleValid(fidl_handle)) {
-    callback(fit::error(fbg::Error::INVALID_HANDLE));
+    callback(fpromise::error(fbg::Error::INVALID_HANDLE));
     return;
   }
   bt::gatt::DescriptorHandle handle(static_cast<bt::att::Handle>(fidl_handle.value));
@@ -398,7 +398,7 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
     }
 
     if (!status.is_success()) {
-      callback(fit::error(fidl_helpers::AttStatusToGattFidlError(status)));
+      callback(fpromise::error(fidl_helpers::AttStatusToGattFidlError(status)));
       return;
     }
 
@@ -415,7 +415,7 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
           self->OnCharacteristicNotifierError(notifier_id, char_handle, handler_id);
         });
 
-    callback(fit::ok());
+    callback(fpromise::ok());
   };
 
   service_->EnableNotifications(char_handle, std::move(value_cb), std::move(status_cb));

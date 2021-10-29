@@ -340,7 +340,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadShortCharacteristic) {
   fake_client()->set_read_blob_request_callback([](auto, auto, auto) { FAIL(); });
 
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadCharacteristic(fidl_char.handle(), std::move(options),
                                       [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -388,7 +388,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadLongCharacteristicWithOffset
         cb(bt::att::Status(), kValue.view(offset), /*maybe_truncated=*/false);
       });
 
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadCharacteristic(fidl_char.handle(), std::move(read_options),
                                       [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -405,7 +405,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadCharacteristicHandleTooLarge) {
   handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
 
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadCharacteristic(handle, std::move(options),
                                       [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -418,7 +418,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadCharacteristicHandleTooLarge) {
 TEST_F(Gatt2RemoteServiceServerTest, ReadCharacteristicFailure) {
   constexpr bt::att::Handle kHandle = 3;
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadCharacteristic(fbg::Handle{kHandle}, std::move(options),
                                       [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -462,7 +462,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadShortDescriptor) {
   fake_client()->set_read_blob_request_callback([](auto, auto, auto) { FAIL(); });
 
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadDescriptor(fidl_desc.handle(), std::move(options),
                                   [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -517,7 +517,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadLongDescriptorWithOffsetAndM
         cb(bt::att::Status(), kDescriptorValue.view(offset), /*maybe_truncated=*/false);
       });
 
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadDescriptor(fidl_desc.handle(), std::move(read_options),
                                   [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -535,7 +535,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadDescriptorHandleTooLarge) {
   handle.value = static_cast<uint64_t>(std::numeric_limits<bt::att::Handle>::max()) + 1;
 
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadDescriptor(handle, std::move(options),
                                   [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -548,7 +548,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadDescriptorHandleTooLarge) {
 TEST_F(Gatt2RemoteServiceServerTest, ReadDescriptorFailure) {
   constexpr bt::att::Handle kHandle = 3;
   fbg::ReadOptions options = fbg::ReadOptions::WithShortRead(fbg::ShortReadOptions());
-  std::optional<fit::result<fbg::ReadValue, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
   service_proxy()->ReadDescriptor(fbg::Handle{kHandle}, std::move(options),
                                   [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -561,7 +561,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicHandleTooLarge) {
   fbg::Handle handle;
   handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(handle, /*value=*/{}, fbg::WriteOptions(),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -577,7 +577,7 @@ TEST_F(Gatt2RemoteServiceServerTest,
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::WITHOUT_RESPONSE);
   options.set_offset(1);
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(handle, /*value=*/{}, std::move(options),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -616,7 +616,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponse) {
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::WITHOUT_RESPONSE);
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(fidl_char.handle(), kValue.ToVector(), std::move(options),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -657,7 +657,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponseValueTooL
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::WITHOUT_RESPONSE);
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(fidl_char.handle(), kValue.ToVector(), std::move(options),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -695,7 +695,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristic) {
   ASSERT_TRUE(fidl_char.has_handle());
 
   fbg::WriteOptions options;
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(fidl_char.handle(), kValue.ToVector(), std::move(options),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -738,7 +738,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithNonZeroOffset) 
 
   fbg::WriteOptions options;
   options.set_offset(kOffset);
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(fidl_char.handle(), kValue.ToVector(), std::move(options),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -780,7 +780,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithReliableMode) {
 
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::RELIABLE);
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(fidl_char.handle(), kValue.ToVector(), std::move(options),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -831,7 +831,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteLongCharacteristicDefaultOptions) {
   const fbg::Characteristic& fidl_char = fidl_characteristics->front();
   ASSERT_TRUE(fidl_char.has_handle());
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteCharacteristic(fidl_char.handle(), kValue.ToVector(), fbg::WriteOptions(),
                                        [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -844,7 +844,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteDescriptorHandleTooLarge) {
   fbg::Handle handle;
   handle.value = std::numeric_limits<bt::att::Handle>::max() + 1ULL;
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteDescriptor(handle, /*value=*/{}, fbg::WriteOptions(),
                                    [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -858,7 +858,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteDescriptorWithoutResponseNotSupported)
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::WITHOUT_RESPONSE);
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteDescriptor(fbg::Handle{kHandle}, /*value=*/{}, std::move(options),
                                    [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -872,7 +872,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteDescriptorReliableNotSupported) {
   fbg::WriteOptions options;
   options.set_write_mode(fbg::WriteMode::RELIABLE);
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteDescriptor(fbg::Handle{kHandle}, /*value=*/{}, std::move(options),
                                    [&](auto result) { fidl_result = std::move(result); });
   RunLoopUntilIdle();
@@ -914,7 +914,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortDescriptor) {
   ASSERT_EQ(fidl_char.descriptors().size(), 1u);
 
   fbg::WriteOptions options;
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteDescriptor(fidl_char.descriptors().front().handle(), kValue.ToVector(),
                                    std::move(options),
                                    [&](auto result) { fidl_result = std::move(result); });
@@ -964,7 +964,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortDescriptorWithNonZeroOffset) {
 
   fbg::WriteOptions options;
   options.set_offset(kOffset);
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteDescriptor(fidl_char.descriptors().front().handle(), kValue.ToVector(),
                                    std::move(options),
                                    [&](auto result) { fidl_result = std::move(result); });
@@ -1022,7 +1022,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteLongDescriptorDefaultOptions) {
   ASSERT_TRUE(fidl_char.has_descriptors());
   ASSERT_EQ(fidl_char.descriptors().size(), 1u);
 
-  std::optional<fit::result<void, fbg::Error>> fidl_result;
+  std::optional<fpromise::result<void, fbg::Error>> fidl_result;
   service_proxy()->WriteDescriptor(fidl_char.descriptors().front().handle(), kValue.ToVector(),
                                    fbg::WriteOptions(),
                                    [&](auto result) { fidl_result = std::move(result); });
@@ -1063,8 +1063,7 @@ class FakeCharacteristicNotifier : public fbg::testing::CharacteristicNotifier_T
   std::optional<zx_status_t> error_;
 };
 
-class Gatt2RemoteServiceServerCharacteristicNotifierTest
-    : public Gatt2RemoteServiceServerTest {
+class Gatt2RemoteServiceServerCharacteristicNotifierTest : public Gatt2RemoteServiceServerTest {
  public:
   void SetUp() override {
     Gatt2RemoteServiceServerTest::SetUp();
