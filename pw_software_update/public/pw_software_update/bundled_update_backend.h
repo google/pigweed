@@ -124,22 +124,23 @@ class BundledUpdateBackend {
 
   // Get reader of the device's root metadata.
   //
-  // This method ALWAYS needs to be able to return a valid root metadata.
-  // Failure to have a safe update can result in inability to do future
-  // updates due to not having required metadata.
-  virtual Status GetRootMetadataReader([[maybe_unused]] stream::Reader* out) {
+  // This method MUST return a valid root metadata once verified OTA is enabled.
+  // An invalid or corrupted root metadata will result in permanent OTA
+  // failures.
+  virtual Result<stream::SeekableReader*> GetRootMetadataReader() {
     return Status::Unimplemented();
   };
 
-  // Use a reader that provides a new root metadata for the device to save.
+  // Write a given root metadata to persistent storage in a failsafe manner.
   //
-  // This method needs to do updates in a reliable and failsafe way with no
-  // window of vulnerability. It needs to ALWAYS be able to return a valid root
-  // metadata. Failure to have a safe update can result in inability to do
-  // future updates due to not having required metadata.
-  virtual Status UpdateRootMetadata(
+  // The updating must be atomic/fail-safe. An invalid or corrupted root
+  // metadata will result in permanent OTA failures.
+  //
+  // TODO(pwbug/456): Investigate whether we should get a writer i.e.
+  // GetRootMetadataWriter() instead of passing a reader.
+  virtual Status SafelyPersistRootMetadata(
       [[maybe_unused]] stream::Reader& root_metadata) {
-    return OkStatus();
+    return Status::Unimplemented();
   };
 };
 

@@ -23,6 +23,7 @@
 #include "test_bundles.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
+#define ASSERT_NOT_OK(status) ASSERT_NE(OkStatus(), status)
 
 namespace pw::software_update {
 namespace {
@@ -36,7 +37,7 @@ constexpr size_t kMetadataBufferSize =
 
 class TestBundledUpdateBackend final : public BundledUpdateBackend {
  public:
-  TestBundledUpdateBackend() {}
+  TestBundledUpdateBackend() : trusted_root_reader_({}) {}
 
   Status ApplyReboot() override { return Status::Unimplemented(); }
   Status PostRebootFinalize() override { return OkStatus(); }
@@ -50,6 +51,26 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
   }
 
   void DisableBundleTransferHandler() override {}
+
+  void SetTrustedRoot(ConstByteSpan trusted_root) {
+    trusted_root_reader_ = stream::MemoryReader(trusted_root);
+  }
+
+  virtual Result<stream::SeekableReader*> GetRootMetadataReader() override {
+    return &trusted_root_reader_;
+  };
+
+  virtual Status SafelyPersistRootMetadata(
+      [[maybe_unused]] stream::Reader& root_metadata) override {
+    new_root_persisted_ = true;
+    return OkStatus();
+  };
+
+  bool IsNewRootPersisted() const { return new_root_persisted_; }
+
+ private:
+  stream::MemoryReader trusted_root_reader_;
+  bool new_root_persisted_ = false;
 };
 
 class UpdateBundleTest : public testing::Test {
@@ -89,7 +110,8 @@ class UpdateBundleTest : public testing::Test {
 }  // namespace
 
 TEST_F(UpdateBundleTest, GetTargetPayload) {
-  StageTestBundle(kTestBundle);
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
   ManifestAccessor current_manifest;
@@ -122,7 +144,8 @@ TEST_F(UpdateBundleTest, GetTargetPayload) {
 }
 
 TEST_F(UpdateBundleTest, IsTargetPayloadIncluded) {
-  StageTestBundle(kTestBundle);
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
   ManifestAccessor current_manifest;
@@ -139,6 +162,39 @@ TEST_F(UpdateBundleTest, IsTargetPayloadIncluded) {
   res = update_bundle.IsTargetPayloadIncluded("non-exist");
   ASSERT_OK(res.status());
   ASSERT_FALSE(res.value());
+}
+
+TEST_F(UpdateBundleTest, SignatureVerificationSucceeds) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestProdBundle);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_FALSE(backend().IsNewRootPersisted());
+  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_TRUE(backend().IsNewRootPersisted());
+}
+
+TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadDevSignature) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestBadDevSignatureBundle);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_FALSE(backend().IsNewRootPersisted());
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_FALSE(backend().IsNewRootPersisted());
+}
+
+TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadProdSignature) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestBadProdSignature);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_FALSE(backend().IsNewRootPersisted());
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_FALSE(backend().IsNewRootPersisted());
 }
 
 }  // namespace pw::software_update

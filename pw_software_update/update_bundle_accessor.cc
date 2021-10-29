@@ -12,27 +12,200 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_software_update/config.h"
-
-#define PW_LOG_LEVEL PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL
+#include "pw_software_update/update_bundle_accessor.h"
 
 #include <cstddef>
+#include <cstring>
 #include <string_view>
 
+#include "pw_crypto/ecdsa.h"
+#include "pw_crypto/sha256.h"
 #include "pw_log/log.h"
 #include "pw_protobuf/message.h"
 #include "pw_result/result.h"
+#include "pw_software_update/config.h"
 #include "pw_software_update/update_bundle.pwpb.h"
-#include "pw_software_update/update_bundle_accessor.h"
 #include "pw_stream/interval_reader.h"
 #include "pw_stream/memory_stream.h"
+
+#define PW_LOG_LEVEL PW_SOFTWARE_UPDATE_CONFIG_LOG_LEVEL
 
 namespace pw::software_update {
 namespace {
 
 constexpr std::string_view kTopLevelTargetsName = "targets";
 
+Result<bool> VerifyEcdsaSignature(protobuf::Bytes public_key,
+                                  ConstByteSpan digest,
+                                  protobuf::Bytes signature) {
+  // TODO(pwbug/456): Move this logic into an variant of the API in
+  // pw_crypto:ecdsa that takes readers as inputs.
+  std::byte public_key_bytes[65];
+  std::byte signature_bytes[64];
+  stream::IntervalReader key_reader = public_key.GetBytesReader();
+  stream::IntervalReader sig_reader = signature.GetBytesReader();
+  PW_TRY(key_reader.Read(public_key_bytes));
+  PW_TRY(sig_reader.Read(signature_bytes));
+  Status status = crypto::ecdsa::VerifyP256Signature(
+      public_key_bytes, digest, signature_bytes);
+  if (!status.ok()) {
+    return false;
+  }
+
+  return true;
 }
+
+// Convert an integer from [0, 16) to a hex char
+char IntToHex(uint8_t val) {
+  PW_ASSERT(val < 16);
+  return val >= 10 ? (val - 10) + 'a' : val + '0';
+}
+
+void LogKeyId(ConstByteSpan key_id) {
+  char key_id_str[pw::crypto::sha256::kDigestSizeBytes * 2 + 1] = {0};
+  for (size_t i = 0; i < pw::crypto::sha256::kDigestSizeBytes; i++) {
+    uint8_t value = std::to_integer<uint8_t>(key_id[i]);
+    key_id_str[i * 2] = IntToHex((value >> 4) & 0xf);
+    key_id_str[i * 2 + 1] = IntToHex(value & 0xf);
+  }
+
+  PW_LOG_DEBUG("key_id: %s", key_id_str);
+}
+
+// Verifies signatures of a TUF metadata.
+Result<bool> VerifyTufMetadataSignatures(
+    protobuf::Bytes message,
+    protobuf::RepeatedMessages signatures,
+    protobuf::Message signature_requirement,
+    protobuf::StringToMessageMap key_mapping) {
+  // Gets the threshold -- at least `threshold` number of signatures must
+  // pass verification in order to trust this metadata.
+  protobuf::Uint32 threshold = signature_requirement.AsUint32(
+      static_cast<uint32_t>(SignatureRequirement::Fields::THRESHOLD));
+  PW_TRY(threshold.status());
+
+  // Gets the ids of keys that are allowed for verifying the signatures.
+  protobuf::RepeatedBytes allowed_key_ids =
+      signature_requirement.AsRepeatedBytes(
+          static_cast<uint32_t>(SignatureRequirement::Fields::KEY_IDS));
+  PW_TRY(allowed_key_ids.status());
+
+  // Verifies the signatures. Check that at least `threshold` number of
+  // signatures can be verified using the allowed keys.
+  size_t verified_count = 0;
+  for (protobuf::Message signature : signatures) {
+    protobuf::Bytes key_id =
+        signature.AsBytes(static_cast<uint32_t>(Signature::Fields::KEY_ID));
+    PW_TRY(key_id.status());
+
+    // Reads the key id into a buffer, so that we can check whether it is
+    // listed as allowed and look up the key value later.
+    std::byte key_id_buf[pw::crypto::sha256::kDigestSizeBytes];
+    stream::IntervalReader key_id_reader = key_id.GetBytesReader();
+    Result<ByteSpan> key_id_read_res = key_id_reader.Read(key_id_buf);
+    PW_TRY(key_id_read_res.status());
+    if (key_id_read_res.value().size() != sizeof(key_id_buf)) {
+      return Status::Internal();
+    }
+
+    // Verify that the `key_id` is listed in `allowed_key_ids`.
+    // Note that the function assumes that the key id is properly derived
+    // from the key (via sha256).
+    bool key_id_is_allowed = false;
+    for (protobuf::Bytes trusted : allowed_key_ids) {
+      Result<bool> key_id_equal = trusted.Equal(key_id_buf);
+      PW_TRY(key_id_equal.status());
+      if (key_id_equal.value()) {
+        key_id_is_allowed = true;
+        break;
+      }
+    }
+
+    if (!key_id_is_allowed) {
+      PW_LOG_DEBUG("Skipping a key id not listed in allowed key ids.");
+      LogKeyId(key_id_buf);
+      continue;
+    }
+
+    // Retrieves the signature bytes.
+    protobuf::Bytes sig =
+        signature.AsBytes(static_cast<uint32_t>(Signature::Fields::SIG));
+    PW_TRY(sig.status());
+
+    // Extracts the key type, scheme and value information.
+    std::string_view key_id_str(reinterpret_cast<const char*>(key_id_buf),
+                                sizeof(key_id_buf));
+    protobuf::Message key_info = key_mapping[key_id_str];
+    PW_TRY(key_info.status());
+
+    protobuf::Bytes key_val =
+        key_info.AsBytes(static_cast<uint32_t>(Key::Fields::KEYVAL));
+    PW_TRY(key_val.status());
+
+    // The function assume that all keys are ECDSA keys. This is guaranteed
+    // by the fact that all trusted roots have undergone content check.
+
+    // computes the sha256 hash
+    std::byte sha256_digest[32];
+    stream::IntervalReader bytes_reader = message.GetBytesReader();
+    PW_TRY(crypto::sha256::Hash(bytes_reader, sha256_digest));
+    Result<bool> res = VerifyEcdsaSignature(key_val, sha256_digest, sig);
+    PW_TRY(res.status());
+    if (res.value()) {
+      verified_count++;
+      if (verified_count == threshold.value()) {
+        return true;
+      }
+    }
+  }
+
+  PW_LOG_DEBUG(
+      "Not enough number of signatures verified. Requires at least %u, "
+      "verified %u",
+      threshold.value(),
+      verified_count);
+  return false;
+}
+
+// Verifies the signatures of a signed new root metadata against a given
+// trusted root. The helper function extracts the corresponding key maping
+// signature requirement, signatures from the trusted root and passes them
+// to VerifyTufMetadataSignatures().
+//
+// Precondition: The trusted root metadata has undergone content validity check.
+Result<bool> VerifyRootMetadataSignatures(protobuf::Message trusted_root,
+                                          protobuf::Message new_root) {
+  // Retrieves the trusted root metadata content message.
+  protobuf::Message trusted = trusted_root.AsMessage(static_cast<uint32_t>(
+      SignedRootMetadata::Fields::SERIALIZED_ROOT_METADATA));
+  PW_TRY(trusted.status());
+
+  // Retrieves the serialized new root metadata bytes.
+  protobuf::Bytes serialized = new_root.AsBytes(static_cast<uint32_t>(
+      SignedRootMetadata::Fields::SERIALIZED_ROOT_METADATA));
+  PW_TRY(serialized.status());
+
+  // Gets the key mapping from the trusted root metadata.
+  protobuf::StringToMessageMap key_mapping = trusted.AsStringToMessageMap(
+      static_cast<uint32_t>(RootMetadata::Fields::KEYS));
+  PW_TRY(key_mapping.status());
+
+  // Gets the signatures of the new root.
+  protobuf::RepeatedMessages signatures = new_root.AsRepeatedMessages(
+      static_cast<uint32_t>(SignedRootMetadata::Fields::SIGNATURES));
+  PW_TRY(signatures.status());
+
+  // Gets the signature requirement from the trusted root metadata.
+  protobuf::Message signature_requirement = trusted.AsMessage(
+      static_cast<uint32_t>(RootMetadata::Fields::ROOT_SIGNATURE_REQUIREMENT));
+  PW_TRY(signature_requirement.status());
+
+  // Verifies the signatures.
+  return VerifyTufMetadataSignatures(
+      serialized, signatures, signature_requirement, key_mapping);
+}
+
+}  // namespace
 
 Status UpdateBundleAccessor::OpenAndVerify(const ManifestAccessor&) {
   PW_TRY(DoOpen());
@@ -136,10 +309,34 @@ Status UpdateBundleAccessor::DoVerify() {
 }
 
 Status UpdateBundleAccessor::DoUpgradeRoot() {
+  protobuf::Message new_root = decoder_.AsMessage(
+      static_cast<uint32_t>(UpdateBundle::Fields::ROOT_METADATA));
+  if (new_root.status().IsNotFound()) {
+    return OkStatus();
+  }
+
+  PW_TRY(new_root.status());
+
+  // Get the trusted root and prepare for verification.
+  Result<stream::SeekableReader*> trusted_root_reader =
+      backend_.GetRootMetadataReader();
+  PW_TRY(trusted_root_reader.status());
+  PW_CHECK_NOTNULL(trusted_root_reader.value());
+  protobuf::Message trusted_root(
+      *trusted_root_reader.value(),
+      trusted_root_reader.value()->ConservativeReadLimit());
+
   // TODO(pwbug/456): Check whether the bundle contains a root metadata that
   // is different from the on-device trusted root.
 
-  // TODO(pwbug/456) Verify the signatures against the trusted root metadata.
+  // Verify the signatures against the trusted root metadata.
+  Result<bool> verify_res =
+      VerifyRootMetadataSignatures(trusted_root, new_root);
+  PW_TRY(verify_res.status());
+  if (!verify_res.value()) {
+    PW_LOG_INFO("Fail to verify signatures against the current root");
+    return Status::Unauthenticated();
+  }
 
   // TODO(pwbug/456): Verifiy the content of the new root metadata, including:
   //    1) Check role magic field.
@@ -150,11 +347,19 @@ Status UpdateBundleAccessor::DoUpgradeRoot() {
   //       ECDSA keys, and the key ids are exactly the SHA256 of `key type +
   //       key scheme + key value`.
 
-  // TODO(pwbug/456). Verify the signatures against the new root metadata.
+  // Verify the signatures against the new root metadata.
+  verify_res = VerifyRootMetadataSignatures(new_root, new_root);
+  PW_TRY(verify_res.status());
+  if (!verify_res.value()) {
+    PW_LOG_INFO("Fail to verify signatures against the new root");
+    return Status::Unauthenticated();
+  }
 
   // TODO(pwbug/456): Check rollback.
 
-  // TODO(pwbug/456): Persist new root.
+  // Persist the new root.
+  stream::IntervalReader new_root_reader = new_root.ToBytes().GetBytesReader();
+  PW_TRY(backend_.SafelyPersistRootMetadata(new_root_reader));
 
   // TODO(pwbug/456): Implement key change detection to determine whether
   // rotation has occured or not. Delete the persisted targets metadata version
