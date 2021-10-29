@@ -108,6 +108,33 @@ Python
   except pw_transfer.Error as err:
     print('Failed to write:', err.status)
 
+Typescript
+==========
+
+Provides a simple interface for transferring bulk data over pw_rpc.
+
+**Example**
+
+.. code-block:: typescript
+
+    import {Manager} from '@pigweed/pw_transfer'
+
+    const client = new CustomRpcClient();
+    service = client.channel()!.service('pw.transfer.Transfer')!;
+
+    const manager = new Manager(service, DEFAULT_TIMEOUT_S);
+
+    manager.read(3).then((data: Uint8Array) => {
+      console.log(data);
+    }).catch(error => {
+      console.log(`Failed to read: ${error.status}`);
+    });
+
+    manager.write(2, textEncoder.encode('hello world'))
+      .catch(error => {
+        console.log(`Failed to read: ${error.status}`);
+      });
+
 --------
 Protocol
 --------

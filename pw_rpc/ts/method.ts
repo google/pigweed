@@ -55,6 +55,10 @@ export abstract class MethodStub {
     this.channel = channel;
     this.rpc = new Rpc(channel, method.service, method);
   }
+
+  get id(): number {
+    return this.method.id;
+  }
 }
 
 export class UnaryMethodStub extends MethodStub {

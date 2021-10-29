@@ -1,0 +1,14 @@
+{
+  "name": "@pigweed/pw_transfer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@bazel/jasmine": "^4.1.0",
+    "@pigweed/pw_rpc": "link:../../pw_status/pw_rpc",
+    "@pigweed/pw_status": "link:../../pw_status/ts",
+    "@types/jasmine": "^3.9.0",
+    "jasmine": "^3.9.0",
+    "jasmine-core": "^3.9.0"
+  }
+}

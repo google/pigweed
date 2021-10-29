@@ -30,7 +30,7 @@ import {PendingCalls, Rpc} from './rpc_classes';
 /**
  * Object for managing RPC service and contained methods.
  */
-class ServiceClient {
+export class ServiceClient {
   private service: Service;
   private methods: MethodStub[] = [];
   private methodsByName = new Map<string, MethodStub>();
@@ -48,12 +48,16 @@ class ServiceClient {
   method(methodName: string): MethodStub | undefined {
     return this.methodsByName.get(methodName);
   }
+
+  get id(): number {
+    return this.service.id;
+  }
 }
 
 /**
  * Object for managing RPC channel and contained services.
  */
-class ChannelClient {
+export class ChannelClient {
   readonly channel: Channel;
   private services = new Map<string, ServiceClient>();
 
@@ -65,7 +69,13 @@ class ChannelClient {
     });
   }
 
-  private service(serviceName: string): ServiceClient | undefined {
+  /**
+   * Find a service client via its full name.
+   *
+   * For example:
+   * `service = client.channel().service('the.package.FooService');`
+   */
+  service(serviceName: string): ServiceClient | undefined {
     return this.services.get(serviceName);
   }
 
@@ -74,7 +84,6 @@ class ChannelClient {
    *
    * For example:
    * `method = client.channel().methodStub('the.package.AService.AMethod');`
-   *
    */
   methodStub(name: string): MethodStub | undefined {
     const index = name.lastIndexOf('.');
