@@ -47,12 +47,11 @@ def _user_args(method: ProtoServiceMethod) -> Iterable[str]:
         yield '::pw::ConstByteSpan request'
 
     if method.server_streaming():
-        yield '::pw::Function<void(ConstByteSpan)> on_next = nullptr'
+        yield '::pw::Function<void(::pw::ConstByteSpan)> on_next = nullptr'
         yield '::pw::Function<void(::pw::Status)> on_completed = nullptr'
     else:
-        yield (
-            '::pw::Function<void(ConstByteSpan, ::pw::Status)> on_completed '
-            '= nullptr')
+        yield ('::pw::Function<void(::pw::ConstByteSpan, ::pw::Status)> '
+               'on_completed = nullptr')
 
     yield '::pw::Function<void(::pw::Status)> on_error = nullptr'
 
