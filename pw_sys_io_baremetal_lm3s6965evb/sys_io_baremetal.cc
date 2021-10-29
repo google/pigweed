@@ -69,7 +69,7 @@ void SetBaudRate(uint32_t clock, uint32_t target_baud) {
 
 }  // namespace
 
-extern "C" void pw_sys_io_Init() {
+extern "C" void pw_sys_io_lm3s6965evb_Init() {
   rcgc1 |= kRcgcUart0EnableMask;
   for (volatile int i = 0; i < 3; ++i) {
     // We must wait after enabling uart.

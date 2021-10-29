@@ -58,7 +58,7 @@ void pw_boot_PreStaticConstructorInit() {
 #endif  // PW_MALLOC_ACTIVE
 }
 
-void pw_boot_PreMainInit() { pw_sys_io_Init(); }
+void pw_boot_PreMainInit() { pw_sys_io_stm32f429_Init(); }
 
 PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.

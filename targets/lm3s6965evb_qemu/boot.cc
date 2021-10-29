@@ -34,7 +34,7 @@ void pw_boot_PreStaticMemoryInit() {
 
 void pw_boot_PreStaticConstructorInit() {}
 
-void pw_boot_PreMainInit() { pw_sys_io_Init(); }
+void pw_boot_PreMainInit() { pw_sys_io_lm3s6965evb_Init(); }
 
 PW_NO_RETURN void pw_boot_PostMain() {
   // QEMU requires a special command to tell the VM to shut down.

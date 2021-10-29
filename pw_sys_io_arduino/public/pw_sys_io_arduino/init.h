@@ -18,6 +18,6 @@
 PW_EXTERN_C_START
 
 // The actual implement of PreMainInit() in sys_io_BACKEND.
-void pw_sys_io_Init();
+void pw_sys_io_arduino_Init();
 
 PW_EXTERN_C_END

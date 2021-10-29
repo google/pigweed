@@ -130,7 +130,7 @@ volatile UsartBlock& usart1 =
 
 }  // namespace
 
-extern "C" void pw_sys_io_Init() {
+extern "C" void pw_sys_io_stm32f429_Init() {
   // Enable 'A' GIPO clocks.
   platform_rcc.ahb1_config |= kGpioAEnable;
 

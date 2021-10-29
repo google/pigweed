@@ -20,7 +20,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io/sys_io.h"
 
-extern "C" void pw_sys_io_Init() { Serial.begin(115200); }
+extern "C" void pw_sys_io_arduino_Init() { Serial.begin(115200); }
 
 namespace pw::sys_io {
 

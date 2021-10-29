@@ -19,4 +19,4 @@
 // Arduino target specific init. For Pigweed, this calls pw_sys_io's init. User
 // projects may chose to provide something different if they need more pre-main
 // init functionality.
-extern "C" void pw_arduino_Init() { pw_sys_io_Init(); }
+extern "C" void pw_arduino_Init() { pw_sys_io_arduino_Init(); }
