@@ -27,6 +27,7 @@ pw_python_package("py") {
 
   sources = [
     "pw_symbolizer/__init__.py",
+    "pw_symbolizer/llvm_symbolizer.py",
     "pw_symbolizer/symbolizer.py",
   ]
 

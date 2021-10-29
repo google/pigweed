@@ -10,21 +10,16 @@ pw_symbolizer
 pw_symbolizer provides python-based tooling for symbolizing addresses emitted by
 on-device firmware.
 
-LlvmSymbolizer
-==============
-The ``LlvmSymbolizer`` is a python layer that wraps ``llvm-symbolizer`` to
-produce symbols from provided addresses. This module will only work if
-``llvm-symbolizer`` is available on the system ``PATH``.
+Symbolizer
+==========
+The ``Symbolizer`` abstract base class is an interface for translating addresses
+to human-readable source locations. Different architectures and operating
+systems can require vastly different implementations, so this interface is
+provided to allow Pigweed tooling to symbolize addresses without requiring
+Pigweed to provide explicit support for all possible implementations.
 
-.. code:: py
-
-  import pw_symbolizer
-
-  symbolizer = pw_symbolizer.LlvmSymbolizer(Path('device_fw.elf'))
-  sym = symbolizer.symbolize(0x2000ac21)
-  print(f'You have a bug here: {sym}')
-
-It can also be used to create nicely formatted symbolized stack traces.
+``Symbolizer`` Also provides a helper function for producing nicely formatted
+stack trace style dumps.
 
 .. code:: py
 
@@ -58,3 +53,17 @@ Which produces output like this:
         in threads.cc:0
     10: at device::system::logging_thread_context (0x08004BE0)
         in threads.cc:0
+
+LlvmSymbolizer
+==============
+The ``LlvmSymbolizer`` is a python layer that wraps ``llvm-symbolizer`` to
+produce symbols from provided addresses. This module will only work if
+``llvm-symbolizer`` is available on the system ``PATH``.
+
+.. code:: py
+
+  import pw_symbolizer
+
+  symbolizer = pw_symbolizer.LlvmSymbolizer(Path('device_fw.elf'))
+  sym = symbolizer.symbolize(0x2000ac21)
+  print(f'You have a bug here: {sym}')
