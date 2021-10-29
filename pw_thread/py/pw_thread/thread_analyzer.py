@@ -15,7 +15,7 @@
 
 from typing import Optional, List, Mapping
 import pw_tokenizer
-from pw_symbolizer import LlvmSymbolizer
+from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_tokenizer import proto as proto_detokenizer
 from pw_thread_protos import thread_pb2
 
@@ -30,14 +30,14 @@ THREAD_STATE_TO_STRING: Mapping[int, str] = {
 }
 
 
-def process_snapshot(
-    serialized_snapshot: bytes,
-    tokenizer_db: Optional[pw_tokenizer.Detokenizer],
-    symbolizer: LlvmSymbolizer = LlvmSymbolizer()
-) -> str:
+def process_snapshot(serialized_snapshot: bytes,
+                     tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
+                     symbolizer: Optional[Symbolizer] = None) -> str:
     """Processes snapshot threads, producing a multi-line string."""
     captured_threads = thread_pb2.SnapshotThreadInfo()
     captured_threads.ParseFromString(serialized_snapshot)
+    if symbolizer is None:
+        symbolizer = LlvmSymbolizer()
 
     return str(
         ThreadSnapshotAnalyzer(captured_threads, tokenizer_db, symbolizer))
@@ -175,11 +175,14 @@ class ThreadSnapshotAnalyzer:
     def __init__(self,
                  threads: thread_pb2.SnapshotThreadInfo,
                  tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
-                 symbolizer: LlvmSymbolizer = LlvmSymbolizer()):
+                 symbolizer: Optional[Symbolizer] = None):
         self._threads = threads.threads
         self._tokenizer_db = (tokenizer_db if tokenizer_db is not None else
                               pw_tokenizer.Detokenizer(None))
-        self._symbolizer = symbolizer
+        if symbolizer is not None:
+            self._symbolizer = symbolizer
+        else:
+            self._symbolizer = LlvmSymbolizer()
 
         for thread in self._threads:
             proto_detokenizer.detokenize_fields(self._tokenizer_db, thread)

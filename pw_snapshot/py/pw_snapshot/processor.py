@@ -21,7 +21,7 @@ import pw_tokenizer
 import pw_cpu_exception_cortex_m
 from pw_snapshot_metadata import metadata
 from pw_snapshot_protos import snapshot_pb2
-from pw_symbolizer import LlvmSymbolizer
+from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_thread import thread_analyzer
 
 _BRANDING = """
@@ -34,19 +34,25 @@ _BRANDING = """
 
 """
 
-# ELF files are useful for symbolizing addresses in snapshots. As a single
-# snapshot may contain embedded snapshots from multiple devices, there's a need
-# to match ELF files to the correct snapshot to correctly symbolize addresses.
-#
-# An ElfMatcher is a function that takes a snapshot and investigates its
-# metadata (often build ID, device name, or the version string) to determine
-# whether a suitable ELF file can be provided for symbolization.
+# Deprecated, use SymbolizerMatcher. Will be removed shortly.
 ElfMatcher = Callable[[snapshot_pb2.Snapshot], Optional[Path]]
 
+# Symbolizers are useful for turning addresses into source code locations and
+# function names. As a single snapshot may contain embedded snapshots from
+# multiple devices, there's a need to match ELF files to the correct snapshot to
+# correctly symbolize addresses.
+#
+# A SymbolizerMatcher is a function that takes a snapshot and investigates its
+# metadata (often build ID, device name, or the version string) to determine
+# whether a Symbolizer may be loaded with a suitable ELF file for symbolization.
+SymbolizerMatcher = Callable[[snapshot_pb2.Snapshot], Symbolizer]
 
-def process_snapshot(serialized_snapshot: bytes,
-                     detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
-                     elf_matcher: Optional[ElfMatcher] = None) -> str:
+
+def process_snapshot(
+        serialized_snapshot: bytes,
+        detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
+        elf_matcher: Optional[ElfMatcher] = None,
+        symbolizer_matcher: Optional[SymbolizerMatcher] = None) -> str:
     """Processes a single snapshot."""
 
     output = [_BRANDING]
@@ -59,7 +65,10 @@ def process_snapshot(serialized_snapshot: bytes,
     # Open a symbolizer.
     snapshot = snapshot_pb2.Snapshot()
     snapshot.ParseFromString(serialized_snapshot)
-    if elf_matcher is not None:
+
+    if symbolizer_matcher is not None:
+        symbolizer = symbolizer_matcher(snapshot)
+    elif elf_matcher is not None:
         symbolizer = LlvmSymbolizer(elf_matcher(snapshot))
     else:
         symbolizer = LlvmSymbolizer()
@@ -90,13 +99,14 @@ def process_snapshots(
         serialized_snapshot: bytes,
         detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
         elf_matcher: Optional[ElfMatcher] = None,
-        user_processing_callback: Optional[Callable[[bytes],
-                                                    str]] = None) -> str:
+        user_processing_callback: Optional[Callable[[bytes], str]] = None,
+        symbolizer_matcher: Optional[SymbolizerMatcher] = None) -> str:
     """Processes a snapshot that may have multiple embedded snapshots."""
     output = []
     # Process the top-level snapshot.
     output.append(
-        process_snapshot(serialized_snapshot, detokenizer, elf_matcher))
+        process_snapshot(serialized_snapshot, detokenizer, elf_matcher,
+                         symbolizer_matcher))
 
     # If the user provided a custom processing callback, call it on each
     # snapshot.
@@ -111,7 +121,9 @@ def process_snapshots(
         output.append(
             str(
                 process_snapshots(nested_snapshot.SerializeToString(),
-                                  detokenizer, elf_matcher)))
+                                  detokenizer, elf_matcher,
+                                  user_processing_callback,
+                                  symbolizer_matcher)))
 
     return '\n'.join(output)
 

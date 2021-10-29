@@ -149,9 +149,9 @@ Symbolizing Addresses
 ---------------------
 The snapshot processor tool has built-in support for symbolization of some data
 embedded into snapshots. Taking advantage of this requires the use of a
-project-provided ``ElfMatcher`` callback. This is used by the snapshot processor
-to understand which ELF file should be used to symbolize which snapshot in cases
-where a snapshot has related snapshots embedded inside of it.
+project-provided ``SymbolizerMatcher`` callback. This is used by the snapshot
+processor to understand which ELF file should be used to symbolize which
+snapshot in cases where a snapshot has related snapshots embedded inside of it.
 
 Here's an example implementation that uses the device name:
 
@@ -159,14 +159,15 @@ Here's an example implementation that uses the device name:
 
   # Given a firmware bundle directory, determine the ELF file associated with
   # the provided snapshot.
-  def _snapshot_elf_matcher(fw_bundle_dir: Path,
-                            snapshot: snapshot_pb2.Snapshot) -> Optional[Path]:
+  def _snapshot_symbolizer_matcher(fw_bundle_dir: Path,
+                                   snapshot: snapshot_pb2.Snapshot
+      ) -> Symbolizer:
       metadata = MetadataProcessor(snapshot.metadata, DETOKENIZER)
       if metadata.device_name().startswith('GSHOE_MAIN_CORE'):
-          return fw_bundle_dir / 'main.elf'
+          return LlvmSymbolizer(fw_bundle_dir / 'main.elf')
       if metadata.device_name().startswith('GSHOE_SENSOR_CORE'):
-          return fw_bundle_dir / 'sensors.elf'
-      return None
+          return LlvmSymbolizer(fw_bundle_dir / 'sensors.elf')
+      return LlvmSymbolizer()
 
 
   # A project specific wrapper to decode snapshots that provides a detokenizer
@@ -175,8 +176,9 @@ Here's an example implementation that uses the device name:
 
       # This is the actual ElfMatcher, which wraps the helper in a lambda that
       # captures the passed firmware artifacts directory.
-      matcher: processor.ElfMatcher = lambda snapshot: _snapshot_elf_matcher(
-          fw_bundle_dir, snapshot)
+      matcher: processor.SymbolizerMatcher = (
+          lambda snapshot: _snapshot_symbolizer_matcher(
+              fw_bundle_dir, snapshot))
       return processor.process_snapshots(snapshot, DETOKENIZER, matcher)
 
 -------------
