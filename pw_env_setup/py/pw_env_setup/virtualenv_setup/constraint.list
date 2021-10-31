@@ -17,13 +17,13 @@ docutils==0.17.1
 funcparserlib==0.3.5
 furo==2021.10.9
 future==0.18.2
-grpcio==1.41.0
-grpcio-tools==1.41.0
+grpcio==1.41.1
+grpcio-tools==1.41.1
 httpwatcher==0.5.2
 humanfriendly==10.0
 idna==3.3
 imagesize==1.2.0
-ipython==7.28.0
+ipython==7.29.0
 isort==5.9.3
 jedi==0.18.0
 Jinja2==3.0.2
@@ -35,7 +35,7 @@ mypy==0.910
 mypy-extensions==0.4.3
 mypy-protobuf==2.9
 nwdiag==2.0.0
-packaging==21.0
+packaging==21.2
 parameterized==0.8.1
 parso==0.8.2
 pep517==0.12.0
@@ -43,7 +43,7 @@ pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==8.2.0
 prompt-toolkit==3.0.20
-protobuf==3.19.0
+protobuf==3.19.1
 psutil==5.8.0
 ptpython==3.0.20
 ptyprocess==0.7.0
@@ -53,7 +53,7 @@ Pygments==2.10.0
 pygments-style-dracula==1.2.5.1
 pygments-style-tomorrow==1.0.0.1
 pylint==2.9.3
-pyparsing==3.0.0
+pyparsing==2.4.7
 pyperclip==1.8.2
 pyserial==3.5
 pytz==2021.3
@@ -66,7 +66,7 @@ six==1.16.0
 snowballstemmer==2.1.0
 soupsieve==2.2.1
 Sphinx==4.2.0
-sphinx-design==0.0.12
+sphinx-design==0.0.13
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-actdiag==2.0.0
 sphinxcontrib-applehelp==1.0.2
@@ -80,9 +80,9 @@ sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-seqdiag==2.0.0
 sphinxcontrib-serializinghtml==1.1.5
 toml==0.10.2
-tomli==1.2.1
+tomli==1.2.2
 tornado==4.5.3
-traitlets==5.1.0
+traitlets==5.1.1
 types-docutils==0.17.1
 types-futures==3.3.1
 types-protobuf==3.18.0
