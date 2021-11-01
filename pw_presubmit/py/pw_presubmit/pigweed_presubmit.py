@@ -746,6 +746,11 @@ def renode_check(ctx: PresubmitContext):
     _LOG.info('%s %s', ctx.root, ctx.output_dir)
 
 
+def runtime_sanitizers(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'runtime_sanitizers')
+
+
 #
 # Presubmit check programs
 #
@@ -769,6 +774,7 @@ OTHER_CHECKS = (
     gn_clang_build,
     gn_gcc_build,
     renode_check,
+    runtime_sanitizers,
     stm32f429i,
 )
 
