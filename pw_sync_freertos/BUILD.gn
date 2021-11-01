@@ -14,9 +14,17 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_sync_freertos_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -26,6 +34,15 @@ config("public_include_path") {
 config("backend_config") {
   include_dirs = [ "public_overrides" ]
   visibility = [ ":*" ]
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_sync_freertos/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_third_party/freertos",
+    pw_sync_freertos_CONFIG,
+  ]
 }
 
 # This target provides the backend for pw::sync::BinarySemaphore.
@@ -102,6 +119,72 @@ pw_source_set("mutex") {
     "$dir_pw_sync:mutex.facade",
     "$dir_pw_third_party/freertos",
   ]
+}
+
+config("public_overrides_thread_notification_include_path") {
+  include_dirs = [ "public_overrides/thread_notification" ]
+  visibility = [ ":thread_notification" ]
+}
+
+# This target provides the backend for pw::sync::ThreadNotification based on
+# task notifications.
+pw_source_set("thread_notification") {
+  public_configs = [
+    ":public_include_path",
+    ":public_overrides_thread_notification_include_path",
+  ]
+  public = [
+    "public/pw_sync_freertos/thread_notification_inline.h",
+    "public/pw_sync_freertos/thread_notification_native.h",
+    "public_overrides/thread_notification/pw_sync_backend/thread_notification_inline.h",
+    "public_overrides/thread_notification/pw_sync_backend/thread_notification_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_interrupt:context",
+    "$dir_pw_sync:thread_notification.facade",
+    "$dir_pw_third_party/freertos",
+  ]
+  sources = [ "thread_notification.cc" ]
+  deps = [
+    ":config",
+    dir_pw_assert,
+  ]
+}
+
+config("public_overrides_timed_thread_notification_include_path") {
+  include_dirs = [ "public_overrides/timed_thread_notification" ]
+  visibility = [ ":timed_thread_notification" ]
+}
+
+# This target provides the backend for pw::sync::TimedThreadNotification based
+# on task notifications.
+pw_source_set("timed_thread_notification") {
+  public_configs = [
+    ":public_include_path",
+    ":public_overrides_timed_thread_notification_include_path",
+  ]
+  public = [
+    "public/pw_sync_freertos/timed_thread_notification_inline.h",
+    "public_overrides/timed_thread_notification/pw_sync_backend/timed_thread_notification_inline.h",
+  ]
+  public_deps = [
+    ":thread_notification",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_sync:timed_thread_notification.facade",
+  ]
+  sources = [ "timed_thread_notification.cc" ]
+  deps = [
+    ":config",
+    "$dir_pw_assert",
+    "$dir_pw_chrono_freertos:system_clock",
+    "$dir_pw_interrupt:context",
+    "$dir_pw_third_party/freertos",
+  ]
+  assert(pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
+             pw_chrono_SYSTEM_CLOCK_BACKEND ==
+                 "$dir_pw_chrono_freertos:system_clock",
+         "The FreeRTOS pw::sync::Mutex backend only works with the FreeRTOS " +
+             "pw::chrono::SystemClock backend.")
 }
 
 # This target provides the backend for pw::sync::TimedMutex.
