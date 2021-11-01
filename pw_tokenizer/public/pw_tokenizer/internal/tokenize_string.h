@@ -32,6 +32,7 @@
 #ifdef __cplusplus
 
 #include "pw_containers/to_array.h"
+#include "pw_preprocessor/compiler.h"
 
 namespace pw {
 namespace tokenizer {
