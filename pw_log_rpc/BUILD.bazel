@@ -51,7 +51,6 @@ pw_cc_library(
         "//pw_protobuf",
         "//pw_result",
         "//pw_status",
-        "//pw_string",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
     ],
@@ -88,7 +87,6 @@ pw_cc_test(
         "//pw_result",
         "//pw_rpc/raw:test_method_context",
         "//pw_status",
-        "//pw_string",
         "//pw_unit_test",
     ],
 )

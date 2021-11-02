@@ -126,19 +126,14 @@ message LogEntry {
     int64 time_since_last_entry = 5;
   }
 
+  // When the log buffers are full but more logs come in, the logs are counted
+  // and a special log message is omitted with only counts for the number of
+  // messages dropped.
+  optional uint32 dropped = 6;
+
   // The following fields are planned but will not be added until they are
   // needed. Protobuf field numbers over 15 use an extra byte, so these fields
   // are left out for now to avoid reserving field numbers unnecessarily.
-
-  // When the log buffers are full but more logs come in, the logs are counted
-  // and a special log message is omitted with only counts for the number of
-  // messages dropped. The timestamp indicates the time that the "missed logs"
-  // message was inserted into the queue.
-  //
-  // As an alternative to these fields, implementations may simply send a
-  // message stating the drop count.
-  // optional uint32 dropped = ?;
-  // optional uint32 dropped_warning_or_above = ?;
 
   // Represents the device from which the log originated. The meaning of this
   // field is implementation defined

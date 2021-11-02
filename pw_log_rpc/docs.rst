@@ -118,7 +118,8 @@ The user must provide a buffer large enough for the largest entry in the
 ``MultiSink`` while also accounting for the interface's Maximum Transmission
 Unit (MTU). If the ``RpcLogDrain`` finds a drop message count as it reads the
 ``MultiSink`` it will insert a message in the stream with the drop message
-count.
+count in the log proto dropped optional field. The receiving end can display the
+count with the logs if desired.
 
 RpcLogDrainMap
 ==============

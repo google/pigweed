@@ -17,28 +17,16 @@
 #include <mutex>
 
 #include "pw_assert/check.h"
-#include "pw_log/log.h"
-#include "pw_string/string_builder.h"
 
 namespace pw::log_rpc {
 namespace {
-// When encoding LogEntry in LogEntries, there are kLogEntryEncodeFrameSize
-// bytes added to the encoded LogEntry.
-constexpr size_t kLogEntryEncodeFrameSize =
-    protobuf::SizeOfFieldKey(1)  // LogEntry
-    + protobuf::kMaxSizeOfLength;
 
 // Creates an encoded drop message on the provided buffer.
 Result<ConstByteSpan> CreateEncodedDropMessage(
     uint32_t drop_count, ByteSpan encoded_drop_message_buffer) {
-  StringBuffer<RpcLogDrain::kMaxDropMessageSize> message;
-  message.Format(RpcLogDrain::kDropMessageFormatString,
-                 static_cast<unsigned int>(drop_count));
-
   // Encode message in protobuf.
   log::LogEntry::MemoryEncoder encoder(encoded_drop_message_buffer);
-  encoder.WriteMessage(std::as_bytes(std::span(std::string_view(message))));
-  encoder.WriteLineLevel(PW_LOG_LEVEL_WARN & PW_LOG_LEVEL_BITMASK);
+  encoder.WriteDropped(drop_count);
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);
 }
