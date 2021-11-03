@@ -104,7 +104,7 @@ EcdhKey::~EcdhKey() {
   }
 }
 
-LocalEcdhKey::LocalEcdhKey() : EcdhKey(){};
+LocalEcdhKey::LocalEcdhKey() : EcdhKey() {}
 
 LocalEcdhKey::LocalEcdhKey(LocalEcdhKey&& other) noexcept : EcdhKey(std::move(other)) {}
 

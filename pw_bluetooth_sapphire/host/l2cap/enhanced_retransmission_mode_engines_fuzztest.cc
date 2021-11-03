@@ -16,7 +16,7 @@
 constexpr static bt::hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr bt::l2cap::ChannelId kTestChannelId = 0x0001;
 
-void NoOpTxCallback(bt::ByteBufferPtr){};
+void NoOpTxCallback(bt::ByteBufferPtr) {}
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   FuzzedDataProvider provider(data, size);

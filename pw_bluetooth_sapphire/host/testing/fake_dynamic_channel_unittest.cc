@@ -143,7 +143,7 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
       LowerBits(src_id), UpperBits(src_id));
   EXPECT_TRUE(ContainersEqual(disconnection_response, *received_packet));
   EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
-};
+}
 
 TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
   // Create a custom FakeL2cap with no registered services.
@@ -175,7 +175,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
   EXPECT_FALSE(fake_l2cap_without_service.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
-};
+}
 
 TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
   // Configure FakeSignalingServer to copy any received signaling packets.
@@ -208,7 +208,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
   EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
-};
+}
 
 TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   std::unique_ptr<ByteBuffer> received_packet;
@@ -325,7 +325,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   auto second_expected_response = second_expected_acl_response.view(
       sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(second_expected_response, *received_packet));
-};
+}
 
 TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
   auto unexpected_cb = [](auto handle, auto& pdu) {};
@@ -372,7 +372,7 @@ TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
   EXPECT_FALSE(fewer_ids_fake_l2cap_.FindDynamicChannelByLocalId(kConnectionHandle, second_src_id));
-};
+}
 
 }  // namespace
 }  // namespace bt::testing

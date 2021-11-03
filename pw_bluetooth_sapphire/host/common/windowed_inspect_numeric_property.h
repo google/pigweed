@@ -123,12 +123,12 @@ class WindowedInspectNumericProperty {
   };
 
 // WindowedInspectIntProperty
-CREATE_WINDOWED_TYPE(Int, int64_t);
+CREATE_WINDOWED_TYPE(Int, int64_t)
 // WindowedInspectUintProperty
-CREATE_WINDOWED_TYPE(Uint, uint64_t);
+CREATE_WINDOWED_TYPE(Uint, uint64_t)
 
 #undef CREATE_WINDOWED_TYPE
 
-};  // namespace bt
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_WINDOWED_INSPECT_NUMERIC_PROPERTY_H_

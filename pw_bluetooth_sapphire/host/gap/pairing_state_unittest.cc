@@ -41,9 +41,9 @@ const auto kTestChangedLinkKeyType = hci_spec::LinkKeyType::kChangedCombination;
 const BrEdrSecurityRequirements kNoSecurityRequirements{.authentication = false,
                                                         .secure_connections = false};
 
-void NoOpStatusCallback(hci_spec::ConnectionHandle, hci::Status){};
-void NoOpUserConfirmationCallback(bool){};
-void NoOpUserPasskeyCallback(std::optional<uint32_t>){};
+void NoOpStatusCallback(hci_spec::ConnectionHandle, hci::Status) {}
+void NoOpUserConfirmationCallback(bool) {}
+void NoOpUserPasskeyCallback(std::optional<uint32_t>) {}
 
 class NoOpPairingDelegate final : public PairingDelegate {
  public:
@@ -1085,7 +1085,7 @@ void AuthenticationComplete(PairingState* pairing_state) {
 class HandlesEvent : public PairingStateTest,
                      public ::testing::WithParamInterface<void (*)(PairingState*)> {
  public:
-  HandlesEvent() : connection_(MakeFakeConnection()){};
+  HandlesEvent() : connection_(MakeFakeConnection()) {}
   virtual ~HandlesEvent() = default;
 
   void SetUp() override {

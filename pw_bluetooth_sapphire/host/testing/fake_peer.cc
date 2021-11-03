@@ -50,7 +50,7 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
   signaling_server_.RegisterWithL2cap(&l2cap_);
   gatt_server_.RegisterWithL2cap(&l2cap_);
   sdp_server_.RegisterWithL2cap(&l2cap_);
-};
+}
 
 void FakePeer::SetAdvertisingData(const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);

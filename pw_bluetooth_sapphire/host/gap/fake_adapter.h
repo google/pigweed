@@ -19,7 +19,7 @@ class FakeAdapter final : public Adapter {
 
   // Adapter overrides:
 
-  AdapterId identifier() const override { return AdapterId(0); };
+  AdapterId identifier() const override { return AdapterId(0); }
 
   bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback) override;
 

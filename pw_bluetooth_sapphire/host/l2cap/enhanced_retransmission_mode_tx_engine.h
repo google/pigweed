@@ -105,7 +105,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
  private:
   struct PendingPdu {
-    PendingPdu(DynamicByteBuffer buf_in) : buf(std::move(buf_in)), tx_count(0){};
+    PendingPdu(DynamicByteBuffer buf_in) : buf(std::move(buf_in)), tx_count(0) {}
     DynamicByteBuffer buf;
     uint8_t tx_count;
   };

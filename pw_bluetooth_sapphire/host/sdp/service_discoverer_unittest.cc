@@ -71,8 +71,8 @@ class ServiceDiscovererTest : public TestingBase {
     return std::make_unique<FakeClient>([this]() { clients_destroyed_++; });
   }
 
-  size_t clients_created() const { return clients_created_; };
-  size_t clients_destroyed() const { return clients_destroyed_; };
+  size_t clients_created() const { return clients_created_; }
+  size_t clients_destroyed() const { return clients_destroyed_; }
 
  private:
   size_t clients_created_, clients_destroyed_;

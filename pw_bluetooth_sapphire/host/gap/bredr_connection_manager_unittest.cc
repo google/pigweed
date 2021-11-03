@@ -94,7 +94,7 @@ const auto kWriteScanEnableBoth = WRITE_SCAN_ENABLE_CMD(0x03);
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
   CreateStaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x04, 0xF0,         \
                                  LowerBits((opcode)), UpperBits((opcode)),   \
-                                 hci_spec::kSuccess);
+                                 hci_spec::kSuccess)
 
 const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteScanEnable);
 

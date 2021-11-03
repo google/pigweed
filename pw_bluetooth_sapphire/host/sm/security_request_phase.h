@@ -55,7 +55,7 @@ class SecurityRequestPhase final : public PairingPhase, public PairingChannelHan
 
   // PairingChannelHandler overrides:
   void OnRxBFrame(ByteBufferPtr sdu) override;
-  void OnChannelClosed() override { PairingPhase::HandleChannelClosed(); };
+  void OnChannelClosed() override { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase overrides
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() override {

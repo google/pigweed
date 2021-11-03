@@ -77,7 +77,7 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   void SignalComplete();
 
   // l2cap::Channel callbacks:
-  void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); };
+  void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
   void OnRxBFrame(ByteBufferPtr sdu) final;
 
   // True if all keys that are expected from the remote have been received.

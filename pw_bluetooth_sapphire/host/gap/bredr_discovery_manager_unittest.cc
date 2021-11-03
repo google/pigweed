@@ -227,9 +227,9 @@ const auto kRSSIInquiryResult = CreateStaticByteBuffer(
     0x00, 0x00, 0x00, 0x80 /* page_scan_repetition_mode, 0, clock_offset */ \
 );
 
-const auto kRemoteNameRequest1 = REMOTE_NAME_REQUEST(0x01);
-const auto kRemoteNameRequest2 = REMOTE_NAME_REQUEST(0x02);
-const auto kRemoteNameRequest3 = REMOTE_NAME_REQUEST(0x03);
+const auto kRemoteNameRequest1 = REMOTE_NAME_REQUEST(0x01)
+const auto kRemoteNameRequest2 = REMOTE_NAME_REQUEST(0x02)
+const auto kRemoteNameRequest3 = REMOTE_NAME_REQUEST(0x03)
 
 #undef REMOTE_NAME_REQUEST
 

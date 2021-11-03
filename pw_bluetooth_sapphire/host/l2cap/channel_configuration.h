@@ -77,7 +77,7 @@ class ChannelConfiguration final {
     // decoded fields.
     explicit MtuOption(const ByteBuffer& data_buf);
 
-    uint16_t mtu() const { return mtu_; };
+    uint16_t mtu() const { return mtu_; }
 
     // ConfigurationOptionInterface overrides
 
@@ -177,7 +177,7 @@ class ChannelConfiguration final {
     // with the encoded flush timeout field.
     explicit FlushTimeoutOption(const ByteBuffer& data_buf);
 
-    uint16_t flush_timeout() const { return flush_timeout_; };
+    uint16_t flush_timeout() const { return flush_timeout_; }
 
     // ConfigurationOptionInterface overrides
 
@@ -258,7 +258,7 @@ class ChannelConfiguration final {
   const std::optional<RetransmissionAndFlowControlOption>& retransmission_flow_control_option()
       const {
     return retransmission_flow_control_option_;
-  };
+  }
 
   const std::optional<FlushTimeoutOption>& flush_timeout_option() const {
     return flush_timeout_option_;

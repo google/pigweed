@@ -129,7 +129,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
 
   ServiceSearchRequest req4(kInvalidMaxSizeZero);
   EXPECT_FALSE(req4.valid());
-};
+}
 
 TEST(PDUTest, ServiceSearchRequestGetPDU) {
   ServiceSearchRequest req;
@@ -161,7 +161,7 @@ TEST(PDUTest, ServiceSearchRequestGetPDU) {
 
   auto pdu = req.GetPDU(0x1234);
   EXPECT_TRUE(MatchesOneOf(kExpected, kExpected2, *pdu));
-};
+}
 
 TEST(PDUTest, ServiceSearchResponseParse) {
   const auto kValidResponse = CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
@@ -221,7 +221,7 @@ TEST(PDUTest, ServiceSearchResponseParse) {
   ServiceSearchResponse resp5;
   status = resp5.Parse(kTooLongWithContinuation);
   EXPECT_FALSE(status);
-};
+}
 
 TEST(PDUTest, ServiceSearchResponsePDU) {
   std::vector<ServiceHandle> results{1, 2};
@@ -290,7 +290,7 @@ TEST(PDUTest, ServiceSearchResponsePDU) {
 
   pdu = resp.GetPDU(0x00FF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedLarge, *pdu));
-};
+}
 
 TEST(PDUTest, ServiceSearchResponsePDU_MaxSize) {
   std::vector<ServiceHandle> results{1, 2};
@@ -371,7 +371,7 @@ TEST(PDUTest, ServiceSearchResponsePDU_MaxSize) {
 
   pdu = resp.GetPDU(0x00FF, 0x0110, kMinMaxSize, CreateStaticByteBuffer(0x00, 0x09));
   EXPECT_TRUE(ContainersEqual(kExpectedRest, *pdu));
-};
+}
 
 TEST(PDUTest, ServiceAttributeRequestValidity) {
   ServiceAttributeRequest req;

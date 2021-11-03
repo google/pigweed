@@ -21,7 +21,7 @@ fbg::ServiceInfo RemoteServiceToFidlServiceInfo(const fbl::RefPtr<bt::gatt::Remo
   return out;
 }
 
-};  // namespace
+}  // namespace
 
 Gatt2ClientServer::Gatt2ClientServer(bt::gatt::PeerId peer_id,
                                      fxl::WeakPtr<bt::gatt::GATT> weak_gatt,
@@ -268,4 +268,4 @@ void Gatt2ClientServer::ConnectToService(fbg::Handle handle,
   services_[service_handle] = std::move(remote_service_server);
 }
 
-};  // namespace bthost
+}  // namespace bthost

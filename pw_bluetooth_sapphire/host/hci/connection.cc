@@ -35,7 +35,7 @@ class ConnectionImpl final : public Connection {
   // immediately.
   void Disconnect(hci_spec::StatusCode reason) override;
 
-  void set_state(State state) { conn_state_ = state; };
+  void set_state(State state) { conn_state_ = state; }
 
  private:
   // Start the BR/EDR link layer encryption. |ltk_| and |ltk_type_| must have already been set and

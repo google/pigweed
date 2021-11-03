@@ -19,7 +19,7 @@ struct ServiceChangedCCCPersistedData final {
 
   bool operator==(const ServiceChangedCCCPersistedData& that) const {
     return indicate == that.indicate && notify == that.notify;
-  };
+  }
 };
 
 using PersistServiceChangedCCCCallback =

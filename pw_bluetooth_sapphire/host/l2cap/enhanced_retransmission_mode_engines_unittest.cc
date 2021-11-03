@@ -27,8 +27,8 @@ constexpr uint8_t kExtendedControlRejFunctionMask = 0b0000'0100;
 constexpr uint8_t kExtendedControlReceiverNotReadyFunctionMask = 0b0000'1000;
 constexpr uint8_t kExtendedControlSrejFunctionMask = 0b0000'1100;
 
-void NoOpTxCallback(ByteBufferPtr){};
-void NoOpFailureCallback(){};
+void NoOpTxCallback(ByteBufferPtr) {}
+void NoOpFailureCallback() {}
 
 TEST_F(EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
   auto [rx_engine, tx_engine] =

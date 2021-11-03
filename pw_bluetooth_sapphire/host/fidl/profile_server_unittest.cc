@@ -27,7 +27,7 @@ namespace {
 
 using FakeChannel = bt::l2cap::testing::FakeChannel;
 
-void NopAdvertiseCallback(fidlbredr::Profile_Advertise_Result){};
+void NopAdvertiseCallback(fidlbredr::Profile_Advertise_Result) {}
 
 const bt::DeviceAddress kTestDevAddr(bt::DeviceAddress::Type::kBREDR, {1});
 constexpr bt::l2cap::PSM kPSM = bt::l2cap::kAVDTP;

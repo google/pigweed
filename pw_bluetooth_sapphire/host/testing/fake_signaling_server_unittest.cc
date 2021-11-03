@@ -54,7 +54,7 @@ TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
   auto expected_response =
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
-};
+}
 
 TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
   // Copy the received packet to a local variable.
@@ -83,7 +83,7 @@ TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
   auto expected_response =
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
-};
+}
 
 TEST_F(FakeSignalingServerTest, RejectInvalidInformationRequest) {
   std::unique_ptr<ByteBuffer> received_packet;
@@ -115,6 +115,6 @@ TEST_F(FakeSignalingServerTest, RejectInvalidInformationRequest) {
   auto expected_response =
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
-};
+}
 
 }  // namespace bt::testing

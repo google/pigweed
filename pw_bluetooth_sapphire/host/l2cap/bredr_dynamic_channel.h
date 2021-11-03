@@ -27,7 +27,7 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
                               ServiceRequestCallback service_request_cb, bool random_channel_ids);
   ~BrEdrDynamicChannelRegistry() override = default;
 
-  std::optional<ExtendedFeatures> extended_features() { return extended_features_; };
+  std::optional<ExtendedFeatures> extended_features() { return extended_features_; }
 
  private:
   // DynamicChannelRegistry override

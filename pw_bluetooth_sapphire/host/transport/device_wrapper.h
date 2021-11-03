@@ -42,7 +42,7 @@ class DeviceWrapper {
   virtual fpromise::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
                                                                   bt_vendor_params_t& params) {
     return fpromise::error();
-  };
+  }
 };
 
 // A DeviceWrapper that obtains channels by invoking bt-hci fidl requests on a
@@ -58,7 +58,7 @@ class FidlDeviceWrapper : public DeviceWrapper {
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
 
-  bt_vendor_features_t GetVendorFeatures() override { return 0; };
+  bt_vendor_features_t GetVendorFeatures() override { return 0; }
 
  private:
   zx::channel device_;

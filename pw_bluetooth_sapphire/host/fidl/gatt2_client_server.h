@@ -77,6 +77,6 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Gatt2ClientServer);
 };
-};  // namespace bthost
+}  // namespace bthost
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT2_CLIENT_SERVER_H_

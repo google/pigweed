@@ -95,7 +95,7 @@ bt_vendor_features_t DdkDeviceWrapper::GetVendorFeatures() {
     return 0;
   }
   return bt_vendor_get_features(&vendor_proto_.value());
-};
+}
 
 fpromise::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(
     bt_vendor_command_t command, bt_vendor_params_t& params) {
@@ -113,7 +113,7 @@ fpromise::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(
   }
 
   return fpromise::ok(DynamicByteBuffer(actual, std::move(buffer)));
-};
+}
 
 // ================= DummyDeviceWrapper =================
 

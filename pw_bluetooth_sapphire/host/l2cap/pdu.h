@@ -88,7 +88,7 @@ class PDU final {
   FragmentList ReleaseFragments();
 
 #ifndef NTRACE
-  void set_trace_id(trace_flow_id_t id) { trace_id_ = id; };
+  void set_trace_id(trace_flow_id_t id) { trace_id_ = id; }
   trace_flow_id_t trace_id() { return trace_id_; }
 #endif
 

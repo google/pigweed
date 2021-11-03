@@ -73,7 +73,7 @@ struct ChannelParameters {
     return bt_lib_cpp_string::StringPrintf(
         "ChannelParameters{mode: %s, max_rx_sdu_size: %s, flush_timeout: %s}", mode_string.c_str(),
         sdu_string.c_str(), flush_timeout_string.c_str());
-  };
+  }
 };
 
 // Convenience struct for passsing around information about an opened channel.

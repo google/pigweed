@@ -243,7 +243,7 @@ class PipelineMonitor final {
 
     // Process alerts.
     SignalAlertValue<MaxAgeRetiredAlert>(age);
-  };
+  }
 
   async_dispatcher_t* const dispatcher_ = nullptr;
 

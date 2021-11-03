@@ -299,7 +299,7 @@ TEST(ServiceRecordTest, AddInfo) {
   EXPECT_EQ("💖", *desc);
 
   EXPECT_FALSE(record.HasAttribute(*base_attrid + kProviderNameOffset));
-};
+}
 
 // Test: IsRegisterable
 // - ServiceRecord must contain the BrowseGroupList to be registerable.

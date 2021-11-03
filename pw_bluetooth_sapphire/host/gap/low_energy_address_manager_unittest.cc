@@ -56,7 +56,7 @@ class LowEnergyAddressManagerTest : public TestingBase {
   // Called by |addr_mgr_|.
   bool IsRandomAddressChangeAllowed() const { return random_address_change_allowed_; }
 
-  LowEnergyAddressManager* addr_mgr() const { return addr_mgr_.get(); };
+  LowEnergyAddressManager* addr_mgr() const { return addr_mgr_.get(); }
 
   void set_random_address_change_allowed(bool value) { random_address_change_allowed_ = value; }
 

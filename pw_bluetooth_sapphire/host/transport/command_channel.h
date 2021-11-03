@@ -264,7 +264,7 @@ class CommandChannel final {
     hci_spec::OpCode opcode() const { return opcode_; }
     TransactionId id() const { return id_; }
     // The set of opcodes in progress that will hold this transaction in queue.
-    const std::unordered_set<hci_spec::OpCode>& exclusions() const { return exclusions_; };
+    const std::unordered_set<hci_spec::OpCode>& exclusions() const { return exclusions_; }
 
     EventHandlerId handler_id() const { return handler_id_; }
     void set_handler_id(EventHandlerId id) { handler_id_ = id; }

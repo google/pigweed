@@ -50,7 +50,7 @@ class DataFuzzTest : public TestingBase {
     domain_ = l2cap::L2cap::Create(transport()->acl_data_channel(), /*random_channel_ids=*/true);
 
     StartTestDevice();
-  };
+  }
 
   ~DataFuzzTest() override {
     domain_ = nullptr;
