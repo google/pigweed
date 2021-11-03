@@ -65,13 +65,18 @@ class Watchdog:
         self._watchdog.daemon = True
         self._watchdog.start()
 
-    def reset(self) -> None:
-        """Resets the timeout; calls the on_reset callback if expired."""
+    def reset(self) -> bool:
+        """Resets the timeout; calls the on_reset callback if expired.
+
+        Returns True if was expired.
+        """
         if self.expired:
             self.expired = False
             self._on_reset()
+            return True
 
         self.start()
+        return False
 
     def _timeout_expired(self) -> None:
         if self.expired:
