@@ -65,7 +65,7 @@ class BundledUpdateBackend {
   // match check), done after TUF bundle verification process if user_manifest
   // was provided as part of the bundle.
   virtual Status VerifyUserManifest(
-      [[maybe_unused]] stream::Reader& user_manifest,
+      [[maybe_unused]] stream::SeekableReader& user_manifest,
       [[maybe_unused]] size_t update_bundle_offset) {
     return OkStatus();
   };
