@@ -19,6 +19,7 @@ import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_rpc/config.gni")
+import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -102,6 +103,12 @@ _build_pigweed_default_at_all_optimization_levels("host_clang") {
 
 _build_pigweed_default_at_all_optimization_levels("host_gcc") {
   toolchain_prefix = "$dir_pigweed/targets/host:host_gcc_"
+}
+
+if (pw_third_party_mcuxpresso_SDK != "") {
+  _build_pigweed_default_at_all_optimization_levels("mimxrt595") {
+    toolchain_prefix = "$dir_pigweed/targets/mimxrt595_evk:mimxrt595_evk_"
+  }
 }
 
 _build_pigweed_default_at_all_optimization_levels("stm32f429i") {
