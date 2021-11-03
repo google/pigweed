@@ -49,10 +49,11 @@ from pw_console import PwConsoleEmbed
 from pw_console.pyserial_wrapper import SerialWithLogging
 
 from pw_log.proto import log_pb2
-from pw_tokenizer import tokens
+from pw_rpc.console_tools.console import ClientInfo, flattened_rpc_completions
+from pw_rpc import callback_client
 from pw_tokenizer.database import LoadTokenDatabases
 from pw_tokenizer.detokenize import Detokenizer, detokenize_base64
-from pw_rpc.console_tools.console import ClientInfo, flattened_rpc_completions
+from pw_tokenizer import tokens
 
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 
@@ -249,11 +250,17 @@ def console(device: str,
             _LOG.exception('Failed to initialize socket at %s', socket_addr)
             return 1
 
+    callback_client_impl = callback_client.Impl(
+        default_unary_timeout_s=5.0,
+        default_stream_timeout_s=None,
+    )
     _start_ipython_terminal(
-        HdlcRpcClient(
-            read, protos, default_channels(write),
-            lambda data: detokenize_and_write_to_output(
-                data, output, detokenizer)), serial_debug)
+        HdlcRpcClient(read,
+                      protos,
+                      default_channels(write),
+                      lambda data: detokenize_and_write_to_output(
+                          data, output, detokenizer),
+                      client_impl=callback_client_impl), serial_debug)
     return 0
 
 

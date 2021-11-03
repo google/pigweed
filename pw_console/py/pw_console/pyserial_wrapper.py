@@ -68,7 +68,7 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
                        prefix,
                        data,
                        extra=dict(extra_metadata_fields={
-                           'mode': 'Write',
+                           'mode': 'Read',
                            'bytes': len(data),
                            'msg': str(data),
                        }))
@@ -84,7 +84,7 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
                        prefix,
                        data,
                        extra=dict(extra_metadata_fields={
-                           'mode': 'Read',
+                           'mode': 'Write',
                            'bytes': len(data),
                            'msg': str(data)
                        }))
