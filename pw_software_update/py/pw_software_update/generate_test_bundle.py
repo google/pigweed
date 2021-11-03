@@ -93,13 +93,6 @@ class Bundle:
 
         return bundle
 
-    def generate_manifest(self) -> update_bundle_pb2.Manifest:
-        """Generates the manifest"""
-        manifest = update_bundle_pb2.Manifest()
-        manifest.targets_metadata['targets'].CopyFrom(
-            self.generate_targets_metadata())
-        return manifest
-
 
 def parse_args():
     """Setup argparse."""
@@ -120,14 +113,11 @@ def main() -> int:
     test_bundle.add_payload('file2', 'file 2 content'.encode())  # type: ignore
 
     update_bundle_proto = test_bundle.generate_bundle()
-    manifest_proto = test_bundle.generate_manifest()
 
     with open(args.output_header, 'w') as header:
         header.write(HEADER)
         header.write(
             proto_array_declaration(update_bundle_proto, 'kTestBundle'))
-        header.write(
-            proto_array_declaration(manifest_proto, 'kTestBundleManifest'))
 
     subprocess.run([
         'clang-format',

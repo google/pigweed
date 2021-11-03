@@ -66,6 +66,12 @@ message UpdateBundle {
 
 // Update bundle metadata
 // Designed to inform the update server what the device currently has in-place.
+// Also used to persist the TUF metadata for use in the verification process.
+// Stored manifest is only written/erased by the update service. In all other
+// contexts the stored manifest is considered read-only.
 message Manifest {
-  map<string, TargetsMetadata> targets_metadata = 2;
+  map<string, TargetsMetadata> targets_metadata = 1;
+
+  // Insert user manifest target file content here
+  optional bytes user_manifest = 2;
 }

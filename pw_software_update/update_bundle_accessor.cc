@@ -93,37 +93,8 @@ Result<bool> UpdateBundleAccessor::IsTargetPayloadIncluded(
 }
 
 Status UpdateBundleAccessor::WriteManifest(
-    stream::Writer& staged_manifest_writer) {
-  protobuf::StringToMessageMap signed_targets_metadata_map =
-      decoder_.AsStringToMessageMap(static_cast<uint32_t>(
-          pw::software_update::UpdateBundle::Fields::TARGETS_METADATA));
-  PW_TRY(signed_targets_metadata_map.status());
-
-  // There should only be one element in the map, which is the top-level
-  // targets metadata.
-  protobuf::Message signed_targets_metadata =
-      signed_targets_metadata_map[kTopLevelTargetsName];
-  PW_TRY(signed_targets_metadata.status());
-
-  protobuf::Bytes metadata = signed_targets_metadata.AsBytes(
-      static_cast<uint32_t>(pw::software_update::SignedTargetsMetadata::Fields::
-                                SERIALIZED_TARGETS_METADATA));
-  PW_TRY(metadata.status());
-
-  stream::MemoryReader name_reader(
-      std::as_bytes(std::span(kTopLevelTargetsName)));
-  stream::IntervalReader metadata_reader = metadata.GetBytesReader();
-
-  std::byte stream_pipe_buffer[WRITE_MANIFEST_STREAM_PIPE_BUFFER_SIZE];
-  return protobuf::WriteProtoStringToBytesMapEntry(
-      static_cast<uint32_t>(
-          pw::software_update::Manifest::Fields::TARGETS_METADATA),
-      name_reader,
-      kTopLevelTargetsName.size(),
-      metadata_reader,
-      metadata_reader.interval_size(),
-      stream_pipe_buffer,
-      staged_manifest_writer);
+    [[maybe_unused]] stream::Writer& staged_manifest_writer) {
+  return Status::Unimplemented();
 }
 
 Status UpdateBundleAccessor::Close() {

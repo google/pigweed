@@ -140,20 +140,4 @@ TEST_F(UpdateBundleTest, IsTargetPayloadIncluded) {
   ASSERT_FALSE(res.value());
 }
 
-TEST_F(UpdateBundleTest, WriteManifest) {
-  StageTestBundle(kTestBundle);
-  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
-
-  std::byte manifest_buffer[sizeof(kTestBundleManifest)];
-  stream::MemoryWriter manifest_writer(manifest_buffer);
-  ASSERT_OK(update_bundle.WriteManifest(manifest_writer));
-
-  ASSERT_EQ(
-      memcmp(manifest_buffer, kTestBundleManifest, sizeof(kTestBundleManifest)),
-      0);
-}
-
 }  // namespace pw::software_update
