@@ -158,13 +158,38 @@ group("fuzzers") {
   }
 }
 
+group("asan") {
+  if (host_os != "win") {
+    deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_asan)" ]
+  }
+}
+
+group("msan") {
+  if (host_os != "win") {
+    deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
+  }
+}
+
+group("tsan") {
+  if (host_os != "win") {
+    deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_tsan)" ]
+  }
+}
+
+group("ubsan") {
+  if (host_os != "win") {
+    deps =
+        [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan)" ]
+  }
+}
+
 group("runtime_sanitizers") {
   if (host_os != "win") {
     deps = [
-      ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_asan)",
-      ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)",
-      ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_tsan)",
-      ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan)",
+      ":asan",
+      ":msan",
+      ":tsan",
+      ":ubsan",
     ]
   }
 }

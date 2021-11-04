@@ -13,7 +13,13 @@
 # the License.
 """C++-related checks."""
 
-from pw_presubmit import PresubmitContext, PresubmitFailure, filter_paths
+from pw_presubmit import (
+    build,
+    Check,
+    PresubmitContext,
+    PresubmitFailure,
+    filter_paths,
+)
 
 
 @filter_paths(endswith=('.h', '.hpp', '.hxx', '.hh', '.H'),
@@ -28,3 +34,37 @@ def pragma_once(ctx: PresubmitContext) -> None:
                     break
             else:
                 raise PresubmitFailure('#pragma once is missing!', path=path)
+
+
+@Check
+def asan(ctx: PresubmitContext) -> None:
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'asan')
+
+
+@Check
+def msan(ctx: PresubmitContext) -> None:
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'msan')
+
+
+@Check
+def tsan(ctx: PresubmitContext) -> None:
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'tsan')
+
+
+@Check
+def ubsan(ctx: PresubmitContext) -> None:
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'ubsan')
+
+
+@Check
+def runtime_sanitizers(ctx: PresubmitContext) -> None:
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'runtime_sanitizers')
+
+
+def all_sanitizers():
+    return [asan, msan, tsan, ubsan, runtime_sanitizers]
