@@ -69,25 +69,49 @@ TEST(TimedThreadNotification, TryAcquireFor) {
   SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
 
-  // Ensure it blocks and fails when not notified.
+  // Ensure it blocks and fails when not notified for the full timeout.
   before = SystemClock::now();
   EXPECT_FALSE(notification.try_acquire_for(kRoundedArbitraryDuration));
   time_elapsed = SystemClock::now() - before;
   EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
+
+  // Ensure it doesn't block when a zero length duration is used.
+  before = SystemClock::now();
+  EXPECT_FALSE(notification.try_acquire_for(SystemClock::duration::zero()));
+  time_elapsed = SystemClock::now() - before;
+  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+
+  // Ensure it doesn't block when a negative duration is used.
+  before = SystemClock::now();
+  EXPECT_FALSE(notification.try_acquire_for(-kRoundedArbitraryDuration));
+  time_elapsed = SystemClock::now() - before;
+  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
 }
 
 TEST(TimedThreadNotification, tryAcquireUntil) {
   TimedThreadNotification notification;
   notification.release();
 
-  const SystemClock::time_point deadline =
+  SystemClock::time_point deadline =
       SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_TRUE(notification.try_acquire_until(deadline));
   EXPECT_LT(SystemClock::now(), deadline);
 
   // Ensure it blocks and fails when not notified.
+  deadline = SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_FALSE(notification.try_acquire_until(deadline));
   EXPECT_GE(SystemClock::now(), deadline);
+
+  // Ensure it doesn't block when now is used.
+  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  EXPECT_FALSE(notification.try_acquire_until(SystemClock::now()));
+  EXPECT_LT(SystemClock::now(), deadline);
+
+  // Ensure it doesn't block when a timestamp in the past is used.
+  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  EXPECT_FALSE(notification.try_acquire_until(SystemClock::now() -
+                                              kRoundedArbitraryDuration));
+  EXPECT_LT(SystemClock::now(), deadline);
 }
 
 }  // namespace

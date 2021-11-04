@@ -50,13 +50,17 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
   PW_DCHECK(native_handle().blocked_thread == nullptr);
 
   taskENTER_CRITICAL();
-  if (native_handle().notified) {
-    native_handle().notified = false;
-    taskEXIT_CRITICAL();
-    return true;
+  {
+    const bool notified = native_handle().notified;
+    // Don't block for negative or zero length durations.
+    if (notified || (timeout <= SystemClock::duration::zero())) {
+      native_handle().notified = false;
+      taskEXIT_CRITICAL();
+      return notified;
+    }
+    // Not notified yet, set the task handle for a one-time notification.
+    native_handle().blocked_thread = xTaskGetCurrentTaskHandle();
   }
-  // Not notified yet, set the task handle for a one-time notification.
-  native_handle().blocked_thread = xTaskGetCurrentTaskHandle();
   taskEXIT_CRITICAL();
 
   const bool notified = [&]() {
@@ -74,7 +78,7 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
       timeout -= kMaxTimeoutMinusOne;
     }
 
-    return WaitForNotification(static_cast<TickType_t>(timeout.count())) ==
+    return WaitForNotification(static_cast<TickType_t>(timeout.count() + 1)) ==
            pdTRUE;
   }();
 
