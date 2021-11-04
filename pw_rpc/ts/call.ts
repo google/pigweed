@@ -32,7 +32,7 @@ class RpcError extends Error {
       message = ': an error occurred while decoding the RPC payload';
     }
 
-    super(`${rpc.method} failed with error ${Status[status]}${message}`);
+    super(`${rpc.method.name} failed with error ${Status[status]}${message}`);
     this.status = status;
   }
 }
@@ -42,7 +42,7 @@ class RpcTimeout extends Error {
   readonly timeoutMs: number;
 
   constructor(rpc: Rpc, timeoutMs: number) {
-    super(`${rpc.method} timed out after ${timeoutMs} ms`);
+    super(`${rpc.method.name} timed out after ${timeoutMs} ms`);
     this.rpc = rpc;
     this.timeoutMs = timeoutMs;
   }
