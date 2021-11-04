@@ -122,7 +122,7 @@ const auto kWritePageScanTypeRsp =
 #define COMMAND_STATUS_RSP(opcode, statuscode)                       \
   CreateStaticByteBuffer( hci_spec::kCommandStatusEventCode, 0x04,         \
                                  (statuscode), 0xF0,                 \
-                                 LowerBits((opcode)), UpperBits((opcode)));
+                                 LowerBits((opcode)), UpperBits((opcode)))
 
 // clang-format on
 
