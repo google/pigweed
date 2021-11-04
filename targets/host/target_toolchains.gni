@@ -199,6 +199,18 @@ pw_target_toolchain_host = {
     }
   }
 
+  clang_ubsan_heuristic = {
+    name = "host_clang_ubsan_heuristic"
+    _toolchain_base = pw_toolchain_host_clang.ubsan_heuristic
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _clang_default_configs
+    }
+  }
+
   clang_msan = {
     name = "host_clang_msan"
     _toolchain_base = pw_toolchain_host_clang.msan
@@ -270,6 +282,7 @@ pw_target_toolchain_host_list = [
   pw_target_toolchain_host.clang_fuzz,
   pw_target_toolchain_host.clang_asan,
   pw_target_toolchain_host.clang_ubsan,
+  pw_target_toolchain_host.clang_ubsan_heuristic,
   pw_target_toolchain_host.clang_msan,
   pw_target_toolchain_host.clang_tsan,
   pw_target_toolchain_host.gcc_debug,

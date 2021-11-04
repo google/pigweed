@@ -34,6 +34,19 @@ config("sanitize_memory") {
 }
 
 config("sanitize_undefined") {
+  cflags = [
+    "-fsanitize=undefined",
+
+    # Store the stack frame pointer in a register to get proper debug
+    # information.
+    "-fno-omit-frame-pointer",
+  ]
+  ldflags = cflags
+}
+
+# UBsan configuration that enables additional checks. These checks are
+# heuristic and may not correspond to undefined behavior.
+config("sanitize_undefined_heuristic") {
   sanitizers = [
     # Base checks for undefined behaviour.
     "undefined",

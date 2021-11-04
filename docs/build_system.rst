@@ -348,6 +348,16 @@ Next runtime sanitizers supported:
 * ``asan`` -- `AddressSanitizer`_ is a fast memory error detector.
 * ``msan`` -- `MemorySanitizer`_ is a detector of uninitialized reads.
 * ``ubsan`` -- `UndefinedBehaviorSanitizer`_ is a fast undefined behavior detector.
+* ``ubsan_heuristic`` -- `UndefinedBehaviorSanitizer`_ with the following
+  additional checks enabled:
+
+   * ``integer``: Checks for undefined or suspicious integer behavior.
+   * ``float-divide-by-zero``: Checks for floating point division by zero.
+   * ``implicit-conversion"``: Checks for suspicious behavior of implicit conversions.
+   * ``nullability``: Checks for null as function arg, lvalue and return type.
+
+  These additional checks are heuristic and may not correspond to undefined
+  behavior.
 * ``tsan`` -- `ThreadSanitizer`_ is a tool that detects data races.
 
 Results of building this group are ``host_clang_<sanitizer>`` build directories

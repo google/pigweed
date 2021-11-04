@@ -190,6 +190,12 @@ group("ubsan") {
   }
 }
 
+group("ubsan_heuristic") {
+  if (host_os != "win") {
+    deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan_heuristic)" ]
+  }
+}
+
 group("runtime_sanitizers") {
   if (host_os != "win") {
     deps = [
@@ -197,6 +203,8 @@ group("runtime_sanitizers") {
       ":msan",
       ":tsan",
       ":ubsan",
+
+      # No ubsan_heuristic, which may have false positives.
     ]
   }
 }
