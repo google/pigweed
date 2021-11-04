@@ -44,9 +44,9 @@ Status ServerContext::Start(TransferType type,
   handler_ = &handler;
 
   if (type == kRead) {
-    StartTransmit(handler.id(), writer_, handler.reader());
+    InitializeForTransmit(handler.id(), writer_, handler.reader());
   } else {
-    StartReceive(handler.id(), writer_, handler.writer());
+    InitializeForReceive(handler.id(), writer_, handler.writer());
   }
 
   return OkStatus();

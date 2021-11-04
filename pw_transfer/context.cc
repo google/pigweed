@@ -24,6 +24,29 @@
 
 namespace pw::transfer::internal {
 
+Status Context::InitiateTransfer(const TransferParameters& max_parameters) {
+  PW_DCHECK(active());
+
+  if (type_ == kReceive) {
+    // A receiver begins a new transfer with a parameters chunk telling the
+    // transmitter what to send.
+    return SendTransferParameters(max_parameters);
+  }
+
+  // A transmitter begins a transfer by just sending its ID.
+  internal::Chunk chunk = {};
+  chunk.transfer_id = transfer_id_;
+
+  Result<ConstByteSpan> result =
+      EncodeChunk(chunk, rpc_writer_->PayloadBuffer());
+  if (!result.ok()) {
+    rpc_writer_->ReleaseBuffer();
+    return result.status();
+  }
+
+  return rpc_writer_->Write(*result);
+}
+
 void Context::UpdateParameters(const TransferParameters& max_parameters,
                                const Chunk& chunk) {
   offset_ = chunk.offset;
@@ -367,10 +390,10 @@ Status Context::SendTransferParameters(
   return OkStatus();
 }
 
-void Context::Start(Type type,
-                    uint32_t transfer_id,
-                    RawWriter& rpc_writer,
-                    stream::Stream& stream) {
+void Context::Initialize(Type type,
+                         uint32_t transfer_id,
+                         RawWriter& rpc_writer,
+                         stream::Stream& stream) {
   PW_DCHECK(!active());
 
   transfer_id_ = transfer_id;

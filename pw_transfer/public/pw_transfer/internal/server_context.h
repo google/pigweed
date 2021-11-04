@@ -16,6 +16,7 @@
 #include "pw_assert/assert.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_result/result.h"
+#include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_transfer/handler.h"
 #include "pw_transfer/internal/client_connection.h"
 #include "pw_transfer/internal/context.h"

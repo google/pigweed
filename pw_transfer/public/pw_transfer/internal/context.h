@@ -23,13 +23,7 @@
 #include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/internal/chunk_data_buffer.h"
 
-namespace pw::transfer {
-
-// TODO(hepler): Remove this forward declaration whent the friend statement is
-// no longer needed.
-class Client;
-
-namespace internal {
+namespace pw::transfer::internal {
 
 class TransferParameters {
  public:
@@ -82,6 +76,11 @@ class Context {
   // True if the transfer is active.
   constexpr bool active() const { return state_ >= kData; }
 
+  // Starts a new transfer from an initialized context by sending the initial
+  // transfer chunk. This is generally called from within a transfer client, as
+  // it is unusual for a server to initiate a transfer.
+  Status InitiateTransfer(const TransferParameters& max_parameters);
+
   // Extracts data from the provided chunk into the transfer context. This is
   // intended to be the immediate part of the transfer, run directly from within
   // the RPC message handler.
@@ -125,60 +124,6 @@ class Context {
         last_received_offset_(0),
         on_completion_(on_completion) {}
 
-  // TODO(hepler): Temporarily friend the Client code until it is refactored to
-  // no longer need it.
-  friend class transfer::Client;
-
-  // Begins a new transmit transfer from this context.
-  // Precontion: context is not active.
-  void StartTransmit(uint32_t transfer_id,
-                     RawWriter& rpc_writer,
-                     stream::Reader& reader) {
-    Start(kTransmit, transfer_id, rpc_writer, reader);
-  }
-
-  // Begins a new receive transfer from this context.
-  // Precontion: context is not active.
-  void StartReceive(uint32_t transfer_id,
-                    RawWriter& rpc_writer,
-                    stream::Writer& writer) {
-    Start(kReceive, transfer_id, rpc_writer, writer);
-  }
-
-  constexpr uint32_t offset() const { return offset_; }
-  constexpr void set_offset(size_t offset) { offset_ = offset; }
-  constexpr void advance_offset(size_t size) { offset_ += size; }
-
-  constexpr uint32_t pending_bytes() const { return pending_bytes_; }
-  constexpr void set_pending_bytes(size_t pending_bytes) {
-    pending_bytes_ = pending_bytes;
-  }
-
-  constexpr uint32_t max_chunk_size_bytes() const {
-    return max_chunk_size_bytes_;
-  }
-  constexpr void set_max_chunk_size_bytes(size_t max_chunk_size_bytes) {
-    max_chunk_size_bytes_ = max_chunk_size_bytes;
-  }
-
-  constexpr void set_transfer_id(uint32_t transfer_id) {
-    transfer_id_ = transfer_id;
-  }
-
-  // Calculates the maximum size of actual data that can be sent within a single
-  // client write transfer chunk, accounting for the overhead of the transfer
-  // protocol and RPC system.
-  //
-  // Note: This function relies on RPC protocol internals. This is generally a
-  // *bad* idea, but is necessary here due to limitations of the RPC system and
-  // its asymmetric ingress and egress paths.
-  //
-  // TODO(frolv): This should be investigated further and perhaps addressed
-  // within the RPC system, at the least through a helper function.
-  uint32_t MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
-                             uint32_t channel_id) const;
-
- protected:
   enum State : uint8_t {
     // This ServerContext has never been used for a transfer. It is available
     // for use for a transfer.
@@ -197,11 +142,57 @@ class Context {
   constexpr State state() const { return state_; }
   constexpr void set_state(State state) { state_ = state; }
 
+  // Begins a new transmit transfer from this context.
+  // Precontion: context is not active.
+  void InitializeForTransmit(uint32_t transfer_id,
+                             RawWriter& rpc_writer,
+                             stream::Reader& reader) {
+    Initialize(kTransmit, transfer_id, rpc_writer, reader);
+  }
+
+  // Begins a new receive transfer from this context.
+  // Precontion: context is not active.
+  void InitializeForReceive(uint32_t transfer_id,
+                            RawWriter& rpc_writer,
+                            stream::Writer& writer) {
+    Initialize(kReceive, transfer_id, rpc_writer, writer);
+  }
+
+  constexpr Type type() const { return type_; }
+
+  constexpr uint32_t offset() const { return offset_; }
+  constexpr void set_offset(size_t offset) { offset_ = offset; }
+
+  constexpr uint32_t pending_bytes() const { return pending_bytes_; }
+  constexpr void set_pending_bytes(size_t pending_bytes) {
+    pending_bytes_ = pending_bytes;
+  }
+
+  constexpr uint32_t max_chunk_size_bytes() const {
+    return max_chunk_size_bytes_;
+  }
+  constexpr void set_max_chunk_size_bytes(size_t max_chunk_size_bytes) {
+    max_chunk_size_bytes_ = max_chunk_size_bytes;
+  }
+
+  // Calculates the maximum size of actual data that can be sent within a single
+  // client write transfer chunk, accounting for the overhead of the transfer
+  // protocol and RPC system.
+  //
+  // Note: This function relies on RPC protocol internals. This is generally a
+  // *bad* idea, but is necessary here due to limitations of the RPC system and
+  // its asymmetric ingress and egress paths.
+  //
+  // TODO(frolv): This should be investigated further and perhaps addressed
+  // within the RPC system, at the least through a helper function.
+  uint32_t MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
+                             uint32_t channel_id) const;
+
  private:
-  void Start(Type type,
-             uint32_t transfer_id,
-             RawWriter& rpc_writer,
-             stream::Stream& stream);
+  void Initialize(Type type,
+                  uint32_t transfer_id,
+                  RawWriter& rpc_writer,
+                  stream::Stream& stream);
 
   stream::Reader& reader() const {
     PW_DASSERT(active() && type_ == kTransmit);
@@ -270,5 +261,4 @@ class Context {
   CompletionFunction on_completion_;
 };
 
-}  // namespace internal
-}  // namespace pw::transfer
+}  // namespace pw::transfer::internal

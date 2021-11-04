@@ -17,30 +17,16 @@
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_rpc/raw/test_method_context.h"
-#include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/transfer.pwpb.h"
+#include "pw_transfer_private/chunk_testing.h"
 
-namespace pw::transfer {
+namespace pw::transfer::test {
 namespace {
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
 
 using internal::Chunk;
-
-Vector<std::byte, 64> EncodeChunk(const Chunk& chunk) {
-  Vector<std::byte, 64> buffer(64);
-  auto result = internal::EncodeChunk(chunk, buffer);
-  EXPECT_EQ(result.status(), OkStatus());
-  buffer.resize(result.value().size());
-  return buffer;
-}
-
-Chunk DecodeChunk(ConstByteSpan buffer) {
-  Chunk chunk = {};
-  EXPECT_EQ(internal::DecodeChunk(buffer, chunk), OkStatus());
-  return chunk;
-}
 
 class TestMemoryReader : public stream::SeekableReader {
  public:
@@ -980,4 +966,4 @@ TEST_F(ReadTransfer, PrepareError) {
 PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace
-}  // namespace pw::transfer
+}  // namespace pw::transfer::test

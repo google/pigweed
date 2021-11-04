@@ -100,6 +100,17 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "test_helpers",
+    srcs = [
+        "pw_transfer_private/chunk_testing.h",
+    ],
+    deps = [
+        ":context",
+        "//pw_containers",
+    ],
+)
+
 pw_cc_test(
     name = "handler_test",
     srcs = ["handler_test.cc"],
@@ -114,6 +125,7 @@ pw_cc_test(
     srcs = ["transfer_test.cc"],
     deps = [
         ":pw_transfer",
+        ":test_helpers",
         "//pw_rpc/raw:test_method_context",
         "//pw_unit_test",
     ],
@@ -124,6 +136,8 @@ pw_cc_test(
     srcs = ["client_test.cc"],
     deps = [
         ":client",
+        ":test_helpers",
+        "//pw_rpc/raw:client_testing",
         "//pw_unit_test",
     ],
 )

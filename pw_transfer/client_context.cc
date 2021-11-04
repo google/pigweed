@@ -21,29 +21,31 @@ namespace pw::transfer::internal {
 void ClientContext::StartRead(Client& client,
                               uint32_t transfer_id,
                               stream::Writer& writer,
+                              rpc::RawClientReaderWriter& stream,
                               Function<void(Status)>&& on_completion) {
   PW_DCHECK(!active());
-  PW_DCHECK(on_completion_ != nullptr);
+  PW_DCHECK(on_completion != nullptr);
 
-  set_transfer_id(transfer_id);
   client_ = &client;
-  stream_ = &writer;
   on_completion_ = std::move(on_completion);
-  is_last_chunk_ = false;
+  writer_.set_writer(stream);
+
+  InitializeForReceive(transfer_id, writer_, writer);
 }
 
 void ClientContext::StartWrite(Client& client,
                                uint32_t transfer_id,
                                stream::Reader& reader,
+                               rpc::RawClientReaderWriter& stream,
                                Function<void(Status)>&& on_completion) {
   PW_DCHECK(!active());
-  PW_DCHECK(on_completion_ != nullptr);
+  PW_DCHECK(on_completion != nullptr);
 
-  set_transfer_id(transfer_id);
   client_ = &client;
-  stream_ = &reader;
   on_completion_ = std::move(on_completion);
-  is_last_chunk_ = false;
+  writer_.set_writer(stream);
+
+  InitializeForTransmit(transfer_id, writer_, reader);
 }
 
 }  // namespace pw::transfer::internal

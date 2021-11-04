@@ -17,6 +17,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_function/function.h"
+#include "pw_rpc/raw/client_reader_writer.h"
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/context.h"
 
@@ -26,63 +27,69 @@ class Client;
 
 namespace internal {
 
+// TODO(pwbug/547): Remove this temporary class once RPC supports generic
+// writers.
+class RawClientWriter final : public RawWriter {
+ public:
+  constexpr RawClientWriter() : writer_(nullptr) {}
+  constexpr RawClientWriter(rpc::RawClientReaderWriter& writer)
+      : writer_(&writer) {}
+
+  uint32_t channel_id() const final { return writer_->channel_id(); }
+  ByteSpan PayloadBuffer() final { return writer_->PayloadBuffer(); }
+  void ReleaseBuffer() final { writer_->ReleaseBuffer(); }
+  Status Write(ConstByteSpan data) final { return writer_->Write(data); }
+
+  void set_writer(rpc::RawClientReaderWriter& writer) { writer_ = &writer; }
+
+ private:
+  rpc::RawClientReaderWriter* writer_;
+};
+
 class ClientContext : public Context {
  public:
   constexpr ClientContext()
-      : internal::Context(nullptr),
+      : internal::Context(OnCompletion),
         client_(nullptr),
-        on_completion_(nullptr),
-        is_last_chunk_(false) {}
+        on_completion_(nullptr) {}
 
-  constexpr bool active() const { return client_ != nullptr; }
-
-  constexpr bool is_read_transfer() const {
-    // A read transfer reads data from the server and writes it to the client.
-    return std::holds_alternative<stream::Writer*>(stream_);
-  }
-  constexpr bool is_write_transfer() const { return !is_read_transfer(); }
-
-  constexpr bool is_last_chunk() const { return is_last_chunk_; }
-  constexpr void set_is_last_chunk(bool is_last_chunk) {
-    is_last_chunk_ = is_last_chunk;
-  }
+  constexpr bool is_read_transfer() const { return type() == kReceive; }
+  constexpr bool is_write_transfer() const { return type() == kTransmit; }
 
   constexpr Client& client() {
     PW_DASSERT(active());
     return *client_;
   }
 
-  constexpr stream::Reader& reader() const {
-    PW_DASSERT(active() && is_write_transfer());
-    return *std::get<stream::Reader*>(stream_);
-  }
-
-  constexpr stream::Writer& writer() const {
-    PW_DASSERT(active() && is_read_transfer());
-    return *std::get<stream::Writer*>(stream_);
-  }
-
   void StartRead(Client& client,
                  uint32_t transfer_id,
                  stream::Writer& writer,
+                 rpc::RawClientReaderWriter& stream,
                  Function<void(Status)>&& on_completion);
 
   void StartWrite(Client& client,
                   uint32_t transfer_id,
                   stream::Reader& reader,
+                  rpc::RawClientReaderWriter& stream,
                   Function<void(Status)>&& on_completion);
 
   void Finish(Status status) {
     PW_DASSERT(active());
-    on_completion_(status);
+    if (on_completion_ != nullptr) {
+      on_completion_(status);
+    }
     client_ = nullptr;
   }
 
  private:
+  static Status OnCompletion(Context& ctx, Status status) {
+    static_cast<ClientContext&>(ctx).Finish(status);
+    return OkStatus();
+  }
+
   Client* client_;
-  std::variant<std::monostate, stream::Reader*, stream::Writer*> stream_;
   Function<void(Status)> on_completion_;
-  bool is_last_chunk_;
+  RawClientWriter writer_;
 };
 
 }  // namespace internal

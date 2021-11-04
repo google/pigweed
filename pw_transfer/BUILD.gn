@@ -26,6 +26,7 @@ config("public_include_path") {
 pw_source_set("pw_transfer") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":context",
     ":proto.raw_rpc",
     "$dir_pw_containers:intrusive_list",
     dir_pw_assert,
@@ -34,7 +35,6 @@ pw_source_set("pw_transfer") {
     dir_pw_stream,
   ]
   deps = [
-    ":context",
     ":proto.pwpb",
     dir_pw_log,
   ]
@@ -99,6 +99,16 @@ pw_source_set("context") {
   friend = [ ":*" ]
 }
 
+pw_source_set("test_helpers") {
+  public_deps = [
+    ":context",
+    dir_pw_containers,
+  ]
+  sources = [ "pw_transfer_private/chunk_testing.h" ]
+  friend = [ ":*" ]
+  visibility = [ ":*" ]
+}
+
 pw_proto_library("proto") {
   sources = [ "transfer.proto" ]
   python_package = "py"
@@ -121,16 +131,20 @@ pw_test("handler_test") {
 pw_test("transfer_test") {
   sources = [ "transfer_test.cc" ]
   deps = [
-    ":context",
     ":proto.pwpb",
     ":pw_transfer",
+    ":test_helpers",
     "$dir_pw_rpc/raw:test_method_context",
   ]
 }
 
 pw_test("client_test") {
   sources = [ "client_test.cc" ]
-  deps = [ ":client" ]
+  deps = [
+    ":client",
+    ":test_helpers",
+    "$dir_pw_rpc/raw:client_testing",
+  ]
 }
 
 pw_doc_group("docs") {
