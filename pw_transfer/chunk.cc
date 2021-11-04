@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_transfer_private/chunk.h"
+#include "pw_transfer/internal/chunk.h"
 
 #include "pw_protobuf/decoder.h"
 #include "pw_status/try.h"

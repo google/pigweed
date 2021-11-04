@@ -113,7 +113,7 @@ class TestServerService : public generated::TestServer<TestServerService> {
 constexpr size_t kChunkSizeBytes = 256;
 constexpr size_t kMaxReceiveSizeBytes = 1024;
 
-TransferService transfer_service(kChunkSizeBytes, kMaxReceiveSizeBytes);
+TransferServiceBuffer<kChunkSizeBytes> transfer_service(kMaxReceiveSizeBytes);
 TestServerService test_server_service(transfer_service);
 
 void RunServer(int socket_port, const char* directory) {

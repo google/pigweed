@@ -46,11 +46,12 @@ class TransferService : public generated::Transfer<TransferService> {
   // reliable transport. However, if the underlying transport is unreliable,
   // larger values could slow down a transfer in the event of repeated packet
   // loss.
-  constexpr TransferService(uint32_t max_chunk_size_bytes,
+  constexpr TransferService(ByteSpan transfer_data_buffer,
                             uint32_t max_pending_bytes)
       : read_transfers_(internal::kRead, handlers_),
         write_transfers_(internal::kWrite, handlers_),
-        client_(max_pending_bytes, max_chunk_size_bytes) {}
+        client_(max_pending_bytes, transfer_data_buffer.size()),
+        chunk_data_buffer_(transfer_data_buffer) {}
 
   TransferService(const TransferService&) = delete;
   TransferService(TransferService&&) = delete;
@@ -96,6 +97,19 @@ class TransferService : public generated::Transfer<TransferService> {
 
   // Stores the RPC streams and parameters for communicating with the client.
   internal::ClientConnection client_;
+
+  internal::ChunkDataBuffer chunk_data_buffer_;
+};
+
+// A transfer service with its own buffer for transfer data.
+template <size_t kSizeBytes>
+class TransferServiceBuffer : public TransferService {
+ public:
+  constexpr TransferServiceBuffer(uint32_t max_pending_bytes)
+      : TransferService(transfer_data_buffer_, max_pending_bytes) {}
+
+ private:
+  std::array<std::byte, kSizeBytes> transfer_data_buffer_;
 };
 
 }  // namespace pw::transfer

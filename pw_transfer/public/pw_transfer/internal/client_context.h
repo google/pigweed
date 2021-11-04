@@ -29,7 +29,7 @@ namespace internal {
 class ClientContext : public Context {
  public:
   constexpr ClientContext()
-      : internal::Context(),
+      : internal::Context(nullptr),
         client_(nullptr),
         on_completion_(nullptr),
         is_last_chunk_(false) {}

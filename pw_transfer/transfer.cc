@@ -19,7 +19,7 @@
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_status/try.h"
-#include "pw_transfer_private/chunk.h"
+#include "pw_transfer/internal/chunk.h"
 
 namespace pw::transfer {
 
@@ -48,9 +48,11 @@ void TransferService::HandleChunk(ConstByteSpan message,
 
   internal::ServerContextPool& pool =
       type == internal::kRead ? read_transfers_ : write_transfers_;
+  rpc::RawServerReaderWriter& stream =
+      type == internal::kRead ? client_.read_stream() : client_.write_stream();
 
   Result<internal::ServerContext*> result =
-      chunk.IsInitialChunk() ? pool.StartTransfer(chunk.transfer_id)
+      chunk.IsInitialChunk() ? pool.StartTransfer(chunk.transfer_id, stream)
                              : pool.GetPendingTransfer(chunk.transfer_id);
   if (!result.ok()) {
     client_.SendStatusChunk(type, chunk.transfer_id, result.status());
@@ -74,10 +76,11 @@ void TransferService::HandleChunk(ConstByteSpan message,
     return;
   }
 
-  if (type == internal::kRead) {
-    transfer.HandleReadChunk(client_, chunk);
-  } else {
-    transfer.HandleWriteChunk(client_, chunk);
+  if (transfer.ReadChunkData(
+          chunk_data_buffer_, client_.max_parameters(), chunk)) {
+    // Call this synchronously for now. Later, this will be deferred within a
+    // work queue.
+    transfer.ProcessChunk(chunk_data_buffer_, client_.max_parameters());
   }
 }
 

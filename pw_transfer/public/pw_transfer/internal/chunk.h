@@ -28,9 +28,9 @@ struct Chunk {
     return offset == 0 && data.empty() && !status.has_value();
   }
 
-  // The final chunk from the sender sets remaining_bytes to 0 in both Read and
-  // Write transfers.
-  constexpr bool IsFinalSendChunk() const { return remaining_bytes == 0u; }
+  // The final chunk from the transmitter sets remaining_bytes to 0 in both Read
+  // and Write transfers.
+  constexpr bool IsFinalTransmitChunk() const { return remaining_bytes == 0u; }
 
   uint32_t transfer_id;
   std::optional<uint32_t> pending_bytes;

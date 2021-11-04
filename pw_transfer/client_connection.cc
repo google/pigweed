@@ -17,7 +17,7 @@
 #include "pw_transfer/internal/client_connection.h"
 
 #include "pw_log/log.h"
-#include "pw_transfer_private/chunk.h"
+#include "pw_transfer/internal/chunk.h"
 
 namespace pw::transfer::internal {
 

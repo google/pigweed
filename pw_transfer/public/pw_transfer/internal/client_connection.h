@@ -18,31 +18,13 @@
 
 #include "pw_assert/assert.h"
 #include "pw_rpc/raw/server_reader_writer.h"
+#include "pw_transfer/internal/context.h"
 
 namespace pw::transfer::internal {
 
 struct Chunk;
 
 enum TransferType : bool { kRead, kWrite };
-
-class TransferParameters {
- public:
-  constexpr TransferParameters(uint32_t pending_bytes,
-                               uint32_t max_chunk_size_bytes)
-      : pending_bytes_(pending_bytes),
-        max_chunk_size_bytes_(max_chunk_size_bytes) {
-    PW_ASSERT(pending_bytes > 0);
-    PW_ASSERT(max_chunk_size_bytes > 0);
-  }
-
-  uint32_t pending_bytes() const { return pending_bytes_; }
-
-  uint32_t max_chunk_size_bytes() const { return max_chunk_size_bytes_; }
-
- private:
-  uint32_t pending_bytes_;
-  uint32_t max_chunk_size_bytes_;
-};
 
 // Stores the read/write streams and transfer parameters for communicating with
 // a pw_transfer client.

@@ -57,8 +57,9 @@ transfer service using their transfer IDs.
   // transfer handler's stream::Writer.
   constexpr size_t kDefaultMaxBytesToReceive = 1024;
 
-  // Instantiate a static transfer service.
-  pw::transfer::TransferService transfer_service(
+  // Instantiate a static transfer service. The service requires a buffer that
+  // is at least kMaxChunkSizeBytes in size to store data.
+  pw::transfer::TransferServiceBuffer<kMaxChunkSizeBytes> transfer_service(
       kMaxChunkSizeBytes, kDefaultMaxBytesToReceive);
 
   // Instantiate a handler for the the data to be transferred.

@@ -20,8 +20,8 @@
 
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/transfer.pwpb.h"
-#include "pw_transfer_private/chunk.h"
 
 namespace pw::transfer {
 

@@ -27,13 +27,14 @@ pw_source_set("pw_transfer") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":proto.raw_rpc",
+    "$dir_pw_containers:intrusive_list",
     dir_pw_assert,
     dir_pw_result,
     dir_pw_status,
     dir_pw_stream,
   ]
   deps = [
-    ":common",
+    ":context",
     ":proto.pwpb",
     dir_pw_log,
   ]
@@ -62,7 +63,7 @@ pw_source_set("client") {
     dir_pw_work_queue,
   ]
   deps = [
-    ":common",
+    ":context",
     ":proto.pwpb",
     dir_pw_log,
   ]
@@ -74,13 +75,13 @@ pw_source_set("client") {
   ]
 }
 
-pw_source_set("common") {
+pw_source_set("context") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_containers:intrusive_list",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
+    dir_pw_stream,
   ]
   deps = [
     ":proto.pwpb",
@@ -89,9 +90,11 @@ pw_source_set("common") {
   ]
   sources = [
     "chunk.cc",
+    "chunk_data_buffer.cc",
     "context.cc",
+    "public/pw_transfer/internal/chunk.h",
+    "public/pw_transfer/internal/chunk_data_buffer.h",
     "public/pw_transfer/internal/context.h",
-    "pw_transfer_private/chunk.h",
   ]
   friend = [ ":*" ]
 }
@@ -118,7 +121,7 @@ pw_test("handler_test") {
 pw_test("transfer_test") {
   sources = [ "transfer_test.cc" ]
   deps = [
-    ":common",
+    ":context",
     ":proto.pwpb",
     ":pw_transfer",
     "$dir_pw_rpc/raw:test_method_context",
