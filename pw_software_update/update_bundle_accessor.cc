@@ -73,7 +73,7 @@ void LogKeyId(ConstByteSpan key_id) {
 }
 
 // Verifies signatures of a TUF metadata.
-Result<bool> VerifyTufMetadataSignatures(
+Result<bool> VerifyMetadataSignatures(
     protobuf::Bytes message,
     protobuf::RepeatedMessages signatures,
     protobuf::Message signature_requirement,
@@ -170,7 +170,7 @@ Result<bool> VerifyTufMetadataSignatures(
 // Verifies the signatures of a signed new root metadata against a given
 // trusted root. The helper function extracts the corresponding key maping
 // signature requirement, signatures from the trusted root and passes them
-// to VerifyTufMetadataSignatures().
+// to VerifyMetadataSignatures().
 //
 // Precondition: The trusted root metadata has undergone content validity check.
 Result<bool> VerifyRootMetadataSignatures(protobuf::Message trusted_root,
@@ -201,7 +201,7 @@ Result<bool> VerifyRootMetadataSignatures(protobuf::Message trusted_root,
   PW_TRY(signature_requirement.status());
 
   // Verifies the signatures.
-  return VerifyTufMetadataSignatures(
+  return VerifyMetadataSignatures(
       serialized, signatures, signature_requirement, key_mapping);
 }
 
@@ -294,10 +294,11 @@ Status UpdateBundleAccessor::DoVerify() {
 
   // Verify and upgrade the on-device trust to the incoming root metadata if
   // one is included.
-  PW_TRY(DoUpgradeRoot());
+  PW_TRY(UpgradeRoot());
 
   // TODO(pwbug/456): Verify the targets metadata against the current trusted
   // root.
+  PW_TRY(VerifyTargetsMetadata());
 
   // TODO(pwbug/456): Investigate whether targets payload verification should
   // be performed here or deferred until a specific target is requested.
@@ -308,7 +309,17 @@ Status UpdateBundleAccessor::DoVerify() {
   return OkStatus();
 }
 
-Status UpdateBundleAccessor::DoUpgradeRoot() {
+protobuf::Message UpdateBundleAccessor::GetOnDeviceTrustedRoot() {
+  Result<stream::SeekableReader*> res = backend_.GetRootMetadataReader();
+  PW_TRY(res.status());
+  PW_CHECK_NOTNULL(res.value());
+  // Seek to the beginning so that ConservativeReadLimit() returns the correct
+  // value.
+  PW_TRY(res.value()->Seek(0, stream::Stream::Whence::kBeginning));
+  return protobuf::Message(*res.value(), res.value()->ConservativeReadLimit());
+}
+
+Status UpdateBundleAccessor::UpgradeRoot() {
   protobuf::Message new_root = decoder_.AsMessage(
       static_cast<uint32_t>(UpdateBundle::Fields::ROOT_METADATA));
   if (new_root.status().IsNotFound()) {
@@ -318,13 +329,8 @@ Status UpdateBundleAccessor::DoUpgradeRoot() {
   PW_TRY(new_root.status());
 
   // Get the trusted root and prepare for verification.
-  Result<stream::SeekableReader*> trusted_root_reader =
-      backend_.GetRootMetadataReader();
-  PW_TRY(trusted_root_reader.status());
-  PW_CHECK_NOTNULL(trusted_root_reader.value());
-  protobuf::Message trusted_root(
-      *trusted_root_reader.value(),
-      trusted_root_reader.value()->ConservativeReadLimit());
+  protobuf::Message trusted_root = GetOnDeviceTrustedRoot();
+  PW_TRY(trusted_root.status());
 
   // TODO(pwbug/456): Check whether the bundle contains a root metadata that
   // is different from the on-device trusted root.
@@ -364,6 +370,81 @@ Status UpdateBundleAccessor::DoUpgradeRoot() {
   // TODO(pwbug/456): Implement key change detection to determine whether
   // rotation has occured or not. Delete the persisted targets metadata version
   // if any of the targets keys has been rotated.
+
+  return OkStatus();
+}
+
+Status UpdateBundleAccessor::VerifyTargetsMetadata() {
+  // Retrieve the signed targets metadata map.
+  //
+  // message UpdateBundle {
+  //   ...
+  //   map<string, SignedTargetsMetadata> target_metadata = <id>;
+  //   ...
+  // }
+  protobuf::StringToMessageMap signed_targets_metadata_map =
+      decoder_.AsStringToMessageMap(
+          static_cast<uint32_t>(UpdateBundle::Fields::TARGETS_METADATA));
+  PW_TRY(signed_targets_metadata_map.status());
+
+  // The top-level targets metadata is identified by key name "targets" in the
+  // map.
+  protobuf::Message signed_top_level_targets_metadata =
+      signed_targets_metadata_map[kTopLevelTargetsName];
+  PW_TRY(signed_top_level_targets_metadata.status());
+
+  // Retrieve the serialized metadata.
+  //
+  // message SignedTargetsMetadata {
+  //   ...
+  //   bytes serialized_target_metadata = <id>;
+  //   ...
+  // }
+  protobuf::Message top_level_targets_metadata =
+      signed_top_level_targets_metadata.AsMessage(static_cast<uint32_t>(
+          SignedTargetsMetadata::Fields::SERIALIZED_TARGETS_METADATA));
+
+  // Get the sigantures from the signed targets metadata.
+  protobuf::RepeatedMessages signatures =
+      signed_top_level_targets_metadata.AsRepeatedMessages(
+          static_cast<uint32_t>(SignedTargetsMetadata::Fields::SIGNATURES));
+  PW_TRY(signatures.status());
+
+  // Get the trusted root and prepare for verification.
+  protobuf::Message signed_trusted_root = GetOnDeviceTrustedRoot();
+  PW_TRY(signed_trusted_root.status());
+
+  // Retrieve the trusted root metadata message.
+  protobuf::Message trusted_root =
+      signed_trusted_root.AsMessage(static_cast<uint32_t>(
+          SignedRootMetadata::Fields::SERIALIZED_ROOT_METADATA));
+  PW_TRY(trusted_root.status());
+
+  // Get the key_mapping from the trusted root metadata.
+  protobuf::StringToMessageMap key_mapping = trusted_root.AsStringToMessageMap(
+      static_cast<uint32_t>(RootMetadata::Fields::KEYS));
+  PW_TRY(key_mapping.status());
+
+  // Get the targest metadtata siganture requirement from the trusted root.
+  protobuf::Message signature_requirement =
+      trusted_root.AsMessage(static_cast<uint32_t>(
+          RootMetadata::Fields::TARGETS_SIGNATURE_REQUIREMENT));
+  PW_TRY(signature_requirement.status());
+
+  // Verify the sigantures
+  Result<bool> sig_res =
+      VerifyMetadataSignatures(top_level_targets_metadata.ToBytes(),
+                               signatures,
+                               signature_requirement,
+                               key_mapping);
+
+  PW_TRY(sig_res.status());
+  if (!sig_res.value()) {
+    PW_LOG_DEBUG("Fail to verify targets metadata signatures");
+    return Status::Unauthenticated();
+  }
+
+  // TODO(pwbug/456): Check rollback.
 
   return OkStatus();
 }

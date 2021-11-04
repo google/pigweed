@@ -156,23 +156,28 @@ class Bundle:
         targets = metadata.gen_targets_metadata(self._payloads)
         return targets
 
-    def generate_signed_targets_metadta(self) -> SignedTargetsMetadata:
-        """Generate a signed metadata of a given role"""
-        targets_metadata = self.generate_targets_metadata()
-        return SignedTargetsMetadata(
-            serialized_targets_metadata=targets_metadata.SerializeToString())
-
     def generate_bundle(
             self,
             signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
         """Generate an update bundle"""
         bundle = UpdateBundle()
 
+        targets_metadata = self.generate_targets_metadata()
+
         if signed_root_metadata:
             bundle.root_metadata.CopyFrom(signed_root_metadata)
 
         bundle.targets_metadata['targets'].CopyFrom(
-            self.generate_signed_targets_metadta())
+            SignedTargetsMetadata(serialized_targets_metadata=targets_metadata.
+                                  SerializeToString()))
+
+        bundle = dev_sign.sign_update_bundle(
+            bundle,
+            self._targets_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()))
+
         for name, payload in self._payloads.items():
             bundle.target_payloads[name] = payload
 
@@ -226,6 +231,12 @@ def main() -> int:
     signed_bad_prod_signature_bundle = test_bundle.generate_bundle(
         signed_bad_prod_signature)
 
+    # Generates a bundle with a bad target signature.
+    bad_targets_siganture = test_bundle.generate_bundle()
+    # Compromises the signature.
+    bad_targets_siganture.targets_metadata['targets'].signatures[
+        0].sig = b'1' * 64
+
     with open(args.output_header, 'w') as header:
         header.write(HEADER)
         header.write(
@@ -240,6 +251,9 @@ def main() -> int:
         header.write(
             proto_array_declaration(signed_bad_prod_signature_bundle,
                                     'kTestBadProdSignature'))
+        header.write(
+            proto_array_declaration(bad_targets_siganture,
+                                    'kTestBadTargetsSignature'))
 
     subprocess.run([
         'clang-format',

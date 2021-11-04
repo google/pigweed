@@ -172,7 +172,24 @@ class UpdateBundleAccessor {
   // 3. Verify the signatures against the new root metadata.
   // 4. Check rollback.
   // 5. Update on-device root metadata.
-  Status DoUpgradeRoot();
+  Status UpgradeRoot();
+
+  // The method verifies the top-level targets metadata against the trusted
+  // root. The verification includes the following:
+  //
+  // 1. Verify the signatures of the targets metadata.
+  // 2. Check the content of the targets metadata.
+  // 3. Check rollback against the version from on-device manifest, if one
+  //    exists (the manifest may be reset in the case of key rotation).
+  //
+  // TODO(pwbug/456): Should manifest persisting be handled here? The current
+  // API design of this class exposes a WriteManifest() method, which implies
+  // that manifest persisting is handled by some higher level logic.
+  Status VerifyTargetsMetadata();
+
+  // A helper to get the on-device trusted root metadata. It returns an
+  // instance of SignedRootMetadata proto message.
+  protobuf::Message GetOnDeviceTrustedRoot();
 };
 
 }  // namespace pw::software_update

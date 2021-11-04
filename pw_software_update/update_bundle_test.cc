@@ -197,4 +197,13 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadProdSignature) {
   ASSERT_FALSE(backend().IsNewRootPersisted());
 }
 
+TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadTargetsSignature) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestBadTargetsSignature);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+}
+
 }  // namespace pw::software_update
