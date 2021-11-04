@@ -1,14 +1,15 @@
 .. _module-pw_log_rpc:
 
-----------
+==========
 pw_log_rpc
-----------
-An RPC-based logging backend for Pigweed.
+==========
+An RPC-based logging solution for Pigweed with log filtering and log drops
+reporting -- coming soon!
 
 .. warning::
   This module is under construction and might change in the future.
 
-How to use
+How to Use
 ==========
 1. Set up RPC
 -------------
@@ -27,13 +28,15 @@ Then, make the log backend handler,
 ``pw_tokenizer_HandleEncodedMessageWithPayload``, encode log entries in the
 ``log::LogEntry`` format, and add them to the ``MultiSink``.
 
-4. Create log drains
---------------------
+4. Create log drains and filters
+--------------------------------
 Create an ``RpcLogDrainMap`` with one ``RpcLogDrain`` for each RPC channel used
-to stream logs. Provide this map to the ``LogService`` and register the latter
+to stream logs. Optionally, create a ``FilterMap`` with ``Filter`` objects with
+different IDs. Provide these map to the ``LogService`` and register the latter
 with the application's RPC service. The ``RpcLogDrainMap`` provides a convenient
 way to access and maintain each ``RpcLogDrain``. Attach each ``RpcLogDrain`` to
-the ``MultiSink``.
+the ``MultiSink``. Optionally, set the ``RpcLogDrain`` callback to decide if a
+log should be kept or dropped. This callback can be ``Filter::ShouldDropLog``.
 
 5. Flush the log drains in the background
 -----------------------------------------
@@ -80,16 +83,19 @@ also be internal log readers, i.e. ``MultiSink::Drain``\s, attached to the
     pw_rpc-->computer[Computer];
     pw_rpc-->other_listener[Other log<br>listener];
 
+Components Overview
+===================
 RPC log service
-===============
+---------------
 The ``LogService`` class is an RPC service that provides a way to request a log
-stream sent via RPC. Thus, it helps avoid using a different protocol for logs
-and RPCs over the same interface(s). It requires a map of ``RpcLogDrains`` to
-assign stream writers and delegate the log stream flushing to the user's
-preferred method.
+stream sent via RPC and configure log filters. Thus, it helps avoid using a
+different protocol for logs and RPCs over the same interface(s).
+It requires a ``RpcLogDrainMap`` to assign stream writers and delegate the
+log stream flushing to the user's preferred method, as well as a ``FilterMap``
+to retrieve and modify filters.
 
 RpcLogDrain
-===========
+-----------
 An ``RpcLogDrain`` reads from the ``MultiSink`` instance that buffers logs, then
 packs, and sends the retrieved log entries to the log listener. One
 ``RpcLogDrain`` is needed for each log listener. An ``RpcLogDrain`` needs a
@@ -124,12 +130,12 @@ count in the log proto dropped optional field. The receiving end can display the
 count with the logs if desired.
 
 RpcLogDrainMap
-==============
+--------------
 Provides a convenient way to access all or a single ``RpcLogDrain`` by its RPC
 channel ID.
 
 RpcLogDrainThread
-=================
+-----------------
 The module includes a sample thread that flushes each drain sequentially. Future
 work might replace this with enqueueing the flush work on a work queue. The user
 can also choose to have different threads flushing individual ``RpcLogDrain``\s
@@ -137,6 +143,32 @@ with different priorities.
 
 Calling ``OpenUnrequestedLogStream()`` is a convenient way to set up a log
 stream that is started without the need to receive an RCP request for logs.
+
+Filter::Rule
+------------
+Contains a set of values that are compared against a log when set. All
+conditions must be met for the rule to be met.
+
+- ``action``: drops or keeps the log if the other conditions match.
+  The rule is ignored when inactive.
+
+- ``any_flags_set``: the condition is met if this value is 0 or the log has any
+  of these flags set.
+
+- ``level_greater_than_or_equal``: the condition is met when the log level is
+  greater than or equal to this value.
+
+- ``module_equals``: the condition is met if this byte array is empty, or the
+  log module equals the contents of this byte array.
+
+Filter
+------
+``Filter`` encapsulates a collection of zero or more ``Filter::Rule``\s and has
+an ID used to modify or retrieve its contents.
+
+FilterMap
+---------
+Provides a convenient way to retrieve register filters by ID.
 
 Logging example
 ===============

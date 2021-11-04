@@ -71,7 +71,10 @@ proto_library(
     ],
     import_prefix = "pw_log/proto",
     strip_import_prefix = "//pw_log",
-    deps = ["//pw_tokenizer:tokenizer_proto"],
+    deps = [
+        "//pw_protobuf:common_protos",
+        "//pw_tokenizer:tokenizer_proto",
+    ],
 )
 
 pw_proto_library(

@@ -15,7 +15,9 @@
 #pragma once
 
 #include "pw_log/proto/log.raw_rpc.pb.h"
+#include "pw_log_rpc/log_filter_map.h"
 #include "pw_log_rpc/rpc_log_drain_map.h"
+#include "pw_status/status.h"
 
 namespace pw::log_rpc {
 
@@ -24,7 +26,8 @@ namespace pw::log_rpc {
 // and delegated outside the service.
 class LogService final : public log::generated::Logs<LogService> {
  public:
-  LogService(RpcLogDrainMap& drains) : drains_(drains) {}
+  LogService(RpcLogDrainMap& drains, FilterMap* filters = nullptr)
+      : drains_(drains), filters_(filters) {}
 
   // Starts listening to logs on the given RPC channel and writer. The call is
   // ignored if the channel was not pre-registered in the drain map. If there is
@@ -33,8 +36,24 @@ class LogService final : public log::generated::Logs<LogService> {
   // stream using the previous writer continues.
   void Listen(ServerContext&, ConstByteSpan, rpc::RawServerWriter& writer);
 
+  // TODO(pwbug/570): make log filter be its own service.
+  //  Modifies a log filter and its rules. The filter must be registered in the
+  //  provided filter map.
+  StatusWithSize SetFilter(ServerContext&, ConstByteSpan request, ByteSpan);
+
+  // Retrieves a log filter and its rules. The filter must be registered in the
+  // provided filter map.
+  StatusWithSize GetFilter(ServerContext&,
+                           ConstByteSpan request,
+                           ByteSpan response);
+
+  StatusWithSize ListFilterIds(ServerContext&,
+                               ConstByteSpan,
+                               ByteSpan response);
+
  private:
   RpcLogDrainMap& drains_;
+  FilterMap* filters_;
 };
 
 }  // namespace pw::log_rpc

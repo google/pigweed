@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package pw.log;
 
+import "pw_protobuf_protos/common.proto";
 import "pw_tokenizer/proto/options.proto";
 
 option java_outer_classname = "Log";
@@ -167,7 +168,62 @@ message LogEntries {
   repeated LogEntry entries = 1;
 }
 
+message FilterRule {
+  // Log level values match pw_log/levels.h. Enum names avoid collissions with
+  // possible macros.
+  enum Level {
+    ANY_LEVEL = 0;
+    DEBUG_LEVEL = 1;
+    INFO_LEVEL = 2;
+    WARN_LEVEL = 3;
+    ERROR_LEVEL = 4;
+    CRITICAL_LEVEL = 5;
+    FATAL_LEVEL = 7;
+  };
+  // Condition 1: log.level >= level_greater_than_or_equal.
+  Level level_greater_than_or_equal = 1;
+
+  // Condition 2: (module_equals.size() == 0) || (log.module == module_equals);
+  bytes module_equals = 2 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+
+  // Condition 3: (any_flags_set == 0) || (log.flags & any_flags_set) != 0))
+  uint32 any_flags_set = 3;
+
+  // Action to take if all conditions are met and rule is not inactive.
+  enum Action {
+    INACTIVE = 0;  // Ignore the rule entirely.
+    KEEP = 1;      // Keep the log entry if all conditions are met.
+    DROP = 2;      // Drop the log entry if all conditions are met
+  };
+  Action action = 4;
+}
+
+// A filter is a series of rules. First matching rule wins.
+message Filter {
+  repeated FilterRule rule = 1;
+}
+
+message SetFilterRequest {
+  // A filter can be identified by a human readable string, token, or number.
+  bytes filter_id = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+
+  Filter filter = 2;
+}
+
+message GetFilterRequest {
+  bytes filter_id = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+}
+
+message FilterIdListRequest {}
+
+message FilterIdListResponse {
+  repeated bytes filter_id = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
+}
+
 // RPC service for accessing logs.
 service Logs {
   rpc Listen(LogRequest) returns (stream LogEntries);
+  rpc SetFilter(SetFilterRequest) returns (pw.protobuf.Empty);
+  rpc GetFilter(GetFilterRequest) returns (Filter);
+  rpc ListFilterIds(FilterIdListRequest) returns (FilterIdListResponse);
 }

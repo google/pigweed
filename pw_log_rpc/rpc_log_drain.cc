@@ -56,6 +56,10 @@ Status RpcLogDrain::Flush() {
     log::LogEntries::MemoryEncoder encoder(server_writer_.PayloadBuffer());
     uint32_t packed_entry_count = 0;
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
+    // Avoid sending empty packets.
+    if (encoder.size() == 0) {
+      continue;
+    }
     if (const Status status = server_writer_.Write(encoder); !status.ok()) {
       if (error_handling_ == LogDrainErrorHandling::kCloseStreamOnWriterError) {
         // Only update this drop count when writer errors are not ignored.
@@ -105,6 +109,14 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
     }
     // At this point all expected error modes have been handled.
     PW_CHECK_OK(possible_entry.status());
+
+    // TODO(pwbug/559): avoid sending multiple drop counts between filtered out
+    // log entries.
+    if (filter_ != nullptr &&
+        filter_->ShouldDropLog(possible_entry.value().entry())) {
+      PW_CHECK_OK(PopEntry(possible_entry.value()));
+      return LogDrainState::kMoreEntriesRemaining;
+    }
 
     // Check if the entry fits in encoder buffer.
     const size_t encoded_entry_size =

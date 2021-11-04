@@ -28,10 +28,34 @@ pw_cc_library(
     hdrs = ["public/pw_log_rpc/log_service.h"],
     includes = ["public"],
     deps = [
+        ":log_filter",
         ":rpc_log_drain",
         "//pw_log",
         "//pw_log:log_pwpb",
         "//pw_log:protos.raw_rpc",
+        "//pw_protobuf",
+        "//pw_protobuf:bytes_utils",
+    ],
+)
+
+pw_cc_library(
+    name = "log_filter",
+    srcs = ["log_filter.cc"],
+    hdrs = [
+        "public/pw_log_rpc/log_filter.h",
+        "public/pw_log_rpc/log_filter_map.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "public/pw_log_rpc/internal/config.h",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_containers:vector",
+        "//pw_log",
+        "//pw_log:log_pwpb",
+        "//pw_log:protos.pwpb",
+        "//pw_protobuf",
+        "//pw_status",
     ],
 )
 
@@ -44,6 +68,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":log_filter",
         "//pw_assert",
         "//pw_log:log_pwpb",
         "//pw_log:protos.raw_rpc",
@@ -74,15 +99,15 @@ pw_cc_library(
 
 pw_cc_test(
     name = "log_service_test",
-    srcs = [
-        "log_service_test.cc",
-    ],
+    srcs = ["log_service_test.cc"],
     deps = [
+        ":log_filter",
         ":log_service",
         "//pw_containers:vector",
         "//pw_log",
         "//pw_log:log_pwpb",
         "//pw_log:proto_utils",
+        "//pw_log_tokenized:metadata",
         "//pw_protobuf",
         "//pw_protobuf:bytes_utils",
         "//pw_result",
@@ -93,10 +118,22 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "rpc_log_drain_test",
-    srcs = [
-        "rpc_log_drain_test.cc",
+    name = "log_filter_test",
+    srcs = ["log_filter_test.cc"],
+    deps = [
+        ":log_filter",
+        "//pw_log:log_pwpb",
+        "//pw_log:proto_utils",
+        "//pw_log_tokenized:metadata",
+        "//pw_result",
+        "//pw_status",
+        "//pw_unit_test",
     ],
+)
+
+pw_cc_test(
+    name = "rpc_log_drain_test",
+    srcs = ["rpc_log_drain_test.cc"],
     deps = [
         ":log_service",
         ":rpc_log_drain",

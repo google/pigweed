@@ -25,6 +25,7 @@
 #include "pw_log/log.h"
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_log/proto_utils.h"
+#include "pw_log_rpc/log_filter.h"
 #include "pw_log_tokenized/metadata.h"
 #include "pw_protobuf/bytes_utils.h"
 #include "pw_protobuf/decoder.h"
@@ -69,7 +70,10 @@ constexpr int64_t kSampleTimestamp = 1000;
 // add to the multisink, and which drain to use.
 class LogServiceTest : public ::testing::Test {
  public:
-  LogServiceTest() : multisink_(multisink_buffer_), drain_map_(drains_) {
+  LogServiceTest()
+      : multisink_(multisink_buffer_),
+        drain_map_(drains_),
+        filter_map_(filters_) {
     for (auto& drain : drain_map_.drains()) {
       multisink_.AttachDrain(drain);
     }
@@ -102,6 +106,22 @@ class LogServiceTest : public ::testing::Test {
   multisink::MultiSink multisink_;
   RpcLogDrainMap drain_map_;
   std::array<std::byte, kMaxLogEntrySize> entry_encode_buffer_;
+  FilterMap filter_map_;
+  static constexpr size_t kMaxFilterRules = 4;
+  std::array<Filter::Rule, kMaxFilterRules> rules1_;
+  std::array<Filter::Rule, kMaxFilterRules> rules2_;
+  std::array<Filter::Rule, kMaxFilterRules> rules3_;
+  static constexpr std::array<std::byte, cfg::kMaxFilterIdBytes> filter_id1_{
+      std::byte(65), std::byte(66), std::byte(67), std::byte(0)};
+  static constexpr std::array<std::byte, cfg::kMaxFilterIdBytes> filter_id2_{
+      std::byte(68), std::byte(69), std::byte(70), std::byte(0)};
+  static constexpr std::array<std::byte, cfg::kMaxFilterIdBytes> filter_id3_{
+      std::byte(71), std::byte(72), std::byte(73), std::byte(0)};
+  std::array<Filter, kMaxDrains> filters_ = {
+      Filter(filter_id1_, rules1_),
+      Filter(filter_id2_, rules2_),
+      Filter(filter_id3_, rules3_),
+  };
 
   // Drain Buffers
   std::array<std::byte, kMaxLogEntrySize> drain_buffer1_;
@@ -115,16 +135,18 @@ class LogServiceTest : public ::testing::Test {
       RpcLogDrain(kIgnoreWriterErrorsDrainId,
                   drain_buffer1_,
                   shared_mutex_,
-                  RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
-      RpcLogDrain(
-          kCloseWriterOnErrorDrainId,
-          drain_buffer2_,
-          shared_mutex_,
-          RpcLogDrain::LogDrainErrorHandling::kCloseStreamOnWriterError),
+                  RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors,
+                  &filters_[0]),
+      RpcLogDrain(kCloseWriterOnErrorDrainId,
+                  drain_buffer2_,
+                  shared_mutex_,
+                  RpcLogDrain::LogDrainErrorHandling::kCloseStreamOnWriterError,
+                  &filters_[1]),
       RpcLogDrain(kSmallBufferDrainId,
                   small_buffer_,
                   shared_mutex_,
-                  RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
+                  RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors,
+                  &filters_[2]),
   };
 };
 struct TestLogEntry {
@@ -231,7 +253,7 @@ TEST_F(LogServiceTest, AssignWriter) {
   // Create context directed to drain with ID 1.
   RpcLogDrain& active_drain = drains_[0];
   const uint32_t drain_channel_id = active_drain.channel_id();
-  LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_, &filter_map_);
   context.set_channel_id(drain_channel_id);
 
   // Call RPC, which sets the drain's writer.
@@ -247,7 +269,7 @@ TEST_F(LogServiceTest, AssignWriter) {
 
   // Calling an ongoing log stream must not change the active drain's
   // writer, and the second writer must not get any responses.
-  LOG_SERVICE_METHOD_CONTEXT second_call_context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT second_call_context(drain_map_, &filter_map_);
   second_call_context.set_channel_id(drain_channel_id);
   second_call_context.call(rpc_request_buffer);
   EXPECT_EQ(active_drain.Flush(), OkStatus());
@@ -256,19 +278,19 @@ TEST_F(LogServiceTest, AssignWriter) {
 
   // Setting a new writer on a closed stream is allowed.
   ASSERT_EQ(active_drain.Close(), OkStatus());
-  LOG_SERVICE_METHOD_CONTEXT third_call_context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT third_call_context(drain_map_, &filter_map_);
   third_call_context.set_channel_id(drain_channel_id);
   third_call_context.call(rpc_request_buffer);
   EXPECT_EQ(active_drain.Flush(), OkStatus());
   ASSERT_FALSE(third_call_context.done());
-  EXPECT_EQ(third_call_context.responses().size(), 1u);
+  EXPECT_EQ(third_call_context.responses().size(), 0u);
   EXPECT_EQ(active_drain.Close(), OkStatus());
 }
 
 TEST_F(LogServiceTest, StartAndEndStream) {
   RpcLogDrain& active_drain = drains_[2];
   const uint32_t drain_channel_id = active_drain.channel_id();
-  LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_, &filter_map_);
   context.set_channel_id(drain_channel_id);
 
   // Add log entries.
@@ -306,7 +328,7 @@ TEST_F(LogServiceTest, StartAndEndStream) {
 TEST_F(LogServiceTest, HandleDropped) {
   RpcLogDrain& active_drain = drains_[0];
   const uint32_t drain_channel_id = active_drain.channel_id();
-  LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_, &filter_map_);
   context.set_channel_id(drain_channel_id);
 
   // Add log entries.
@@ -344,7 +366,7 @@ TEST_F(LogServiceTest, HandleDropped) {
 }
 
 TEST_F(LogServiceTest, HandleSmallBuffer) {
-  LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_, &filter_map_);
   context.set_channel_id(kSmallBufferDrainId);
   auto small_buffer_drain =
       drain_map_.GetDrainFromChannelId(kSmallBufferDrainId);
@@ -378,7 +400,7 @@ TEST_F(LogServiceTest, HandleSmallBuffer) {
 TEST_F(LogServiceTest, FlushDrainWithoutMultisink) {
   auto& detached_drain = drains_[0];
   multisink_.DetachDrain(detached_drain);
-  LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_, &filter_map_);
   context.set_channel_id(detached_drain.channel_id());
 
   // Add log entries.
@@ -423,7 +445,7 @@ TEST_F(LogServiceTest, LargeLogEntry) {
   // Start log stream.
   RpcLogDrain& active_drain = drains_[0];
   const uint32_t drain_channel_id = active_drain.channel_id();
-  LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_, &filter_map_);
   context.set_channel_id(drain_channel_id);
   context.call(rpc_request_buffer);
   ASSERT_EQ(active_drain.Flush(), OkStatus());
@@ -445,7 +467,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   auto drain = drain_map_.GetDrainFromChannelId(drain_channel_id);
   ASSERT_TRUE(drain.ok());
 
-  LogService log_service(drain_map_);
+  LogService log_service(drain_map_, &filter_map_);
   const size_t output_buffer_size = 128;
   const size_t max_packets = 10;
   rpc::RawFakeChannelOutput<10, output_buffer_size, 512> output;
@@ -533,7 +555,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   auto drain = drain_map_.GetDrainFromChannelId(drain_channel_id);
   ASSERT_TRUE(drain.ok());
 
-  LogService log_service(drain_map_);
+  LogService log_service(drain_map_, &filter_map_);
   const size_t output_buffer_size = 128;
   const size_t max_packets = 20;
   rpc::RawFakeChannelOutput<max_packets, output_buffer_size, 512> output;
@@ -605,6 +627,415 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   output.clear();
   EXPECT_EQ(drain.value()->Close(), OkStatus());
   EXPECT_TRUE(output.done());
+}
+
+TEST_F(LogServiceTest, GetFilterIds) {
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, ListFilterIds, 1, 128)
+  context(drain_map_, &filter_map_);
+  context.call({});
+  ASSERT_TRUE(context.done());
+  ASSERT_EQ(context.responses().size(), 1u);
+  protobuf::Decoder decoder(context.responses()[0]);
+
+  for (const auto& filter : filter_map_.filters()) {
+    ASSERT_EQ(decoder.Next(), OkStatus());
+    ASSERT_EQ(decoder.FieldNumber(), 1u);  // filter_id
+    ConstByteSpan filter_id;
+    ASSERT_EQ(decoder.ReadBytes(&filter_id), OkStatus());
+    ASSERT_EQ(filter_id.size(), filter.id().size());
+    EXPECT_EQ(
+        std::memcmp(filter_id.data(), filter.id().data(), filter_id.size()), 0);
+  }
+  EXPECT_FALSE(decoder.Next().ok());
+
+  // No IDs reported when none registered in the filter map.
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, ListFilterIds, 1, 128)
+  no_filter_context(drain_map_, nullptr);
+  no_filter_context.call({});
+  ASSERT_TRUE(no_filter_context.done());
+  ASSERT_EQ(no_filter_context.responses().size(), 1u);
+  protobuf::Decoder no_filter_decoder(no_filter_context.responses()[0]);
+  uint32_t filter_count = 0;
+  while (no_filter_decoder.Next().ok()) {
+    EXPECT_EQ(no_filter_decoder.FieldNumber(), 1u);  // filter_id
+    ++filter_count;
+  }
+  EXPECT_EQ(filter_count, 0u);
+}
+
+Status EncodeFilterRule(const Filter::Rule& rule,
+                        log::FilterRule::StreamEncoder& encoder) {
+  PW_TRY(
+      encoder.WriteLevelGreaterThanOrEqual(rule.level_greater_than_or_equal));
+  PW_TRY(encoder.WriteModuleEquals(rule.module_equals));
+  PW_TRY(encoder.WriteAnyFlagsSet(rule.any_flags_set));
+  return encoder.WriteAction(static_cast<log::FilterRule::Action>(rule.action));
+}
+
+Status EncodeFilter(const Filter& filter, log::Filter::StreamEncoder& encoder) {
+  for (auto& rule : filter.rules()) {
+    log::FilterRule::StreamEncoder rule_encoder = encoder.GetRuleEncoder();
+    PW_TRY(EncodeFilterRule(rule, rule_encoder));
+  }
+  return OkStatus();
+}
+
+Result<ConstByteSpan> EncodeFilterRequest(const Filter& filter,
+                                          ByteSpan buffer) {
+  stream::MemoryWriter writer(buffer);
+  std::byte encode_buffer[256];
+  protobuf::StreamEncoder encoder(writer, encode_buffer);
+  PW_TRY(encoder.WriteBytes(
+      static_cast<uint32_t>(log::SetFilterRequest::Fields::FILTER_ID),
+      filter.id()));
+  {
+    log::Filter::StreamEncoder filter_encoder = encoder.GetNestedEncoder(
+        static_cast<uint32_t>(log::SetFilterRequest::Fields::FILTER));
+    PW_TRY(EncodeFilter(filter, filter_encoder));
+  }  // Let the StreamEncoder destructor finalize the data.
+  return ConstByteSpan(writer.data(), writer.bytes_written());
+}
+
+void VerifyRule(const Filter::Rule& rule, const Filter::Rule& expected_rule) {
+  EXPECT_EQ(rule.level_greater_than_or_equal,
+            expected_rule.level_greater_than_or_equal);
+  EXPECT_EQ(rule.module_equals, expected_rule.module_equals);
+  EXPECT_EQ(rule.any_flags_set, expected_rule.any_flags_set);
+  EXPECT_EQ(rule.action, expected_rule.action);
+}
+
+TEST_F(LogServiceTest, SetFilterRules) {
+  const std::array<Filter::Rule, 4> new_rules{{
+      {
+          .action = Filter::Rule::Action::kKeep,
+          .level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL,
+          .any_flags_set = 0x0f,
+          .module_equals{std::byte(123)},
+      },
+      {
+          .action = Filter::Rule::Action::kInactive,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0xef,
+          .module_equals{},
+      },
+      {
+          .action = Filter::Rule::Action::kKeep,
+          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .any_flags_set = 0x1234,
+          .module_equals{std::byte(99)},
+      },
+      {
+          .action = Filter::Rule::Action::kDrop,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0,
+          .module_equals{std::byte(4)},
+      },
+  }};
+  const Filter new_filter(filters_[0].id(),
+                          const_cast<std::array<Filter::Rule, 4>&>(new_rules));
+
+  std::byte request_buffer[512];
+  const auto request = EncodeFilterRequest(new_filter, request_buffer);
+  ASSERT_EQ(request.status(), OkStatus());
+
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, SetFilter, 1, 128)
+  context(drain_map_, &filter_map_);
+  context.call(request.value());
+
+  size_t i = 0;
+  for (const auto& rule : filters_[0].rules()) {
+    VerifyRule(rule, new_rules[i++]);
+  }
+}
+
+TEST_F(LogServiceTest, SetFilterRulesWhenUsedByDrain) {
+  const std::array<Filter::Rule, 4> new_filter_rules{{
+      {
+          .action = Filter::Rule::Action::kKeep,
+          .level_greater_than_or_equal = log::FilterRule::Level::CRITICAL_LEVEL,
+          .any_flags_set = 0xfd,
+          .module_equals{std::byte(543)},
+      },
+      {
+          .action = Filter::Rule::Action::kInactive,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0xca,
+          .module_equals{},
+      },
+      {
+          .action = Filter::Rule::Action::kKeep,
+          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .any_flags_set = 0xabcd,
+          .module_equals{std::byte(9000)},
+      },
+      {
+          .action = Filter::Rule::Action::kDrop,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0,
+          .module_equals{std::byte(123)},
+      },
+  }};
+  Filter& filter = filters_[0];
+  const Filter new_filter(
+      filter.id(), const_cast<std::array<Filter::Rule, 4>&>(new_filter_rules));
+
+  // Add callback to drain.
+  RpcLogDrain& drain = drains_[0];
+
+  std::byte request_buffer[256];
+  const auto request = EncodeFilterRequest(new_filter, request_buffer);
+  ASSERT_EQ(request.status(), OkStatus());
+
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, SetFilter, 1, 128)
+  context(drain_map_, &filter_map_);
+  context.set_channel_id(drain.channel_id());
+  context.call(request.value());
+
+  size_t i = 0;
+  for (const auto& rule : filter.rules()) {
+    VerifyRule(rule, new_filter_rules[i++]);
+  }
+
+  // A request for logs without a filter should not modify the filter.
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, SetFilter, 1, 128)
+  context_no_filter(drain_map_, &filter_map_);
+  context_no_filter.set_channel_id(drain.channel_id());
+  context_no_filter.call({});
+  i = 0;
+  for (const auto& rule : filter.rules()) {
+    VerifyRule(rule, new_filter_rules[i++]);
+  }
+
+  // A new request for logs with a new filter updates filter.
+  const std::array<Filter::Rule, 4> second_filter_rules{{
+      {
+          .action = Filter::Rule::Action::kKeep,
+          .level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL,
+          .any_flags_set = 0xab,
+          .module_equals{},
+      },
+      {
+          .action = Filter::Rule::Action::kDrop,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0x11,
+          .module_equals{std::byte(34)},
+      },
+      {
+          .action = Filter::Rule::Action::kKeep,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0xef,
+          .module_equals{std::byte(23)},
+      },
+      {
+          .action = Filter::Rule::Action::kDrop,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0x0f,
+          .module_equals{},
+      },
+  }};
+  const Filter second_filter(
+      filter.id(),
+      const_cast<std::array<Filter::Rule, 4>&>(second_filter_rules));
+
+  std::memset(request_buffer, 0, sizeof(request_buffer));
+  const auto second_filter_request =
+      EncodeFilterRequest(second_filter, request_buffer);
+  ASSERT_EQ(second_filter_request.status(), OkStatus());
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, SetFilter, 1, 128)
+  context_new_filter(drain_map_, &filter_map_);
+  context_new_filter.set_channel_id(drain.channel_id());
+  context_new_filter.call(second_filter_request.value());
+
+  i = 0;
+  for (const auto& rule : filter.rules()) {
+    VerifyRule(rule, second_filter_rules[i++]);
+  }
+}
+
+TEST_F(LogServiceTest, FilterLogs) {
+  // Add a variety of logs.
+  const uint32_t module = 0xcafe;
+  const uint32_t flags = 0x02;
+  const uint32_t line_number = 100;
+  const auto debug_metadata = log_tokenized::Metadata::
+      Set<PW_LOG_LEVEL_DEBUG, module, flags, line_number>();
+  ASSERT_TRUE(AddLogEntry(kMessage, debug_metadata, kSampleTimestamp).ok());
+  const auto info_metadata = log_tokenized::Metadata::
+      Set<PW_LOG_LEVEL_INFO, module, flags, line_number>();
+  ASSERT_TRUE(AddLogEntry(kMessage, info_metadata, kSampleTimestamp).ok());
+  const auto warn_metadata = log_tokenized::Metadata::
+      Set<PW_LOG_LEVEL_WARN, module, flags, line_number>();
+  ASSERT_TRUE(AddLogEntry(kMessage, warn_metadata, kSampleTimestamp).ok());
+  const auto error_metadata = log_tokenized::Metadata::
+      Set<PW_LOG_LEVEL_ERROR, module, flags, line_number>();
+  ASSERT_TRUE(AddLogEntry(kMessage, error_metadata, kSampleTimestamp).ok());
+  const auto different_flags_metadata = log_tokenized::Metadata::
+      Set<PW_LOG_LEVEL_ERROR, module, 0x01, line_number>();
+  ASSERT_TRUE(
+      AddLogEntry(kMessage, different_flags_metadata, kSampleTimestamp).ok());
+  const auto different_module_metadata = log_tokenized::Metadata::
+      Set<PW_LOG_LEVEL_ERROR, 0xabcd, flags, line_number>();
+  ASSERT_TRUE(
+      AddLogEntry(kMessage, different_module_metadata, kSampleTimestamp).ok());
+
+  // Add messages to the stack in the reverse order they are sent.
+  Vector<TestLogEntry, 6> message_stack;
+  message_stack.push_back(
+      {.metadata = error_metadata,
+       .timestamp = kSampleTimestamp,
+       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage)))});
+  message_stack.push_back(
+      {.metadata = warn_metadata,
+       .timestamp = kSampleTimestamp,
+       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage)))});
+  message_stack.push_back(
+      {.metadata = info_metadata,
+       .timestamp = kSampleTimestamp,
+       .tokenized_data = std::as_bytes(std::span(std::string_view(kMessage)))});
+
+  // Create request with filter.
+  const auto module_little_endian =
+      bytes::CopyInOrder<uint32_t>(std::endian::little, module);
+  const std::array<Filter::Rule, 2> rules{{
+      {.action = Filter::Rule::Action::kKeep,
+       .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+       .any_flags_set = flags,
+       .module_equals{module_little_endian.begin(),
+                      module_little_endian.end()}},
+      {
+          .action = Filter::Rule::Action::kDrop,
+          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .any_flags_set = 0,
+          .module_equals{},
+      },
+  }};
+
+  RpcLogDrain& drain = drains_[1];
+  Filter& filter = filters_[1];
+  const Filter new_filter(filter.id(),
+                          const_cast<std::array<Filter::Rule, 2>&>(rules));
+
+  // Set filter.
+  std::byte request_buffer[256];
+  const auto request = EncodeFilterRequest(new_filter, request_buffer);
+  ASSERT_EQ(request.status(), OkStatus());
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, SetFilter, 1, 128)
+  set_filter_context(drain_map_, &filter_map_);
+  set_filter_context.set_channel_id(drain.channel_id());
+  set_filter_context.call(request.value());
+
+  // Request logs.
+  LOG_SERVICE_METHOD_CONTEXT context(drain_map_, &filter_map_);
+  context.set_channel_id(drain.channel_id());
+  context.call(request.value());
+  ASSERT_EQ(drain.Flush(), OkStatus());
+
+  size_t entries_found = 0;
+  for (auto& response : context.responses()) {
+    protobuf::Decoder entry_decoder(response);
+    entries_found += VerifyLogEntries(entry_decoder, message_stack);
+  }
+  EXPECT_EQ(entries_found, 3u);
+}
+
+void VerifyFilterRule(protobuf::Decoder& decoder,
+                      const Filter::Rule& expected_rule) {
+  ASSERT_TRUE(decoder.Next().ok());
+  ASSERT_EQ(decoder.FieldNumber(), 1u);  // level_greater_than_or_equal
+  log::FilterRule::Level level_greater_than_or_equal;
+  ASSERT_EQ(decoder.ReadUint32(
+                reinterpret_cast<uint32_t*>(&level_greater_than_or_equal)),
+            OkStatus());
+  EXPECT_EQ(level_greater_than_or_equal,
+            expected_rule.level_greater_than_or_equal);
+
+  ASSERT_TRUE(decoder.Next().ok());
+  ASSERT_EQ(decoder.FieldNumber(), 2u);  // module_equals
+  ConstByteSpan module_equals;
+  ASSERT_EQ(decoder.ReadBytes(&module_equals), OkStatus());
+  ASSERT_EQ(module_equals.size(), expected_rule.module_equals.size());
+  EXPECT_EQ(std::memcmp(module_equals.data(),
+                        expected_rule.module_equals.data(),
+                        module_equals.size()),
+            0);
+
+  ASSERT_TRUE(decoder.Next().ok());
+  ASSERT_EQ(decoder.FieldNumber(), 3u);  // any_flags_set
+  uint32_t any_flags_set;
+  ASSERT_EQ(decoder.ReadUint32(&any_flags_set), OkStatus());
+  EXPECT_EQ(any_flags_set, expected_rule.any_flags_set);
+
+  ASSERT_TRUE(decoder.Next().ok());
+  ASSERT_EQ(decoder.FieldNumber(), 4u);  // action
+  Filter::Rule::Action action;
+  ASSERT_EQ(decoder.ReadUint32(reinterpret_cast<uint32_t*>(&action)),
+            OkStatus());
+  EXPECT_EQ(action, expected_rule.action);
+}
+
+void VerifyFilterRules(protobuf::Decoder& decoder,
+                       std::span<const Filter::Rule> expected_rules) {
+  size_t rules_found = 0;
+  while (decoder.Next().ok()) {
+    ConstByteSpan rule;
+    EXPECT_TRUE(decoder.ReadBytes(&rule).ok());
+    protobuf::Decoder rule_decoder(rule);
+    if (rules_found >= expected_rules.size()) {
+      break;
+    }
+    VerifyFilterRule(rule_decoder, expected_rules[rules_found]);
+    ++rules_found;
+  }
+  EXPECT_EQ(rules_found, expected_rules.size());
+}
+
+TEST_F(LogServiceTest, GetFilterRules) {
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, GetFilter, 1, 128)
+  context(drain_map_, &filter_map_);
+
+  std::byte request_buffer[64];
+  log::GetFilterRequest::MemoryEncoder encoder(request_buffer);
+  encoder.WriteFilterId(filter_id1_);
+  const auto request = ConstByteSpan(encoder);
+  context.call(request);
+  ASSERT_TRUE(context.done());
+  ASSERT_EQ(context.responses().size(), 1u);
+
+  // Verify against empty rules.
+  protobuf::Decoder decoder(context.responses()[0]);
+  VerifyFilterRules(decoder, rules1_);
+
+  // Partially populate rules.
+  rules1_[0].action = Filter::Rule::Action::kKeep;
+  rules1_[0].level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL;
+  rules1_[0].any_flags_set = 0xab;
+  const std::array<std::byte, 2> module1{std::byte(123), std::byte(0xab)};
+  rules1_[0].module_equals.assign(module1.begin(), module1.end());
+  rules1_[1].action = Filter::Rule::Action::kDrop;
+  rules1_[1].level_greater_than_or_equal = log::FilterRule::Level::ERROR_LEVEL;
+  rules1_[1].any_flags_set = 0;
+
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, GetFilter, 1, 128)
+  context2(drain_map_, &filter_map_);
+  context2.call(request);
+  ASSERT_EQ(context2.responses().size(), 1u);
+  protobuf::Decoder decoder2(context2.responses()[0]);
+  VerifyFilterRules(decoder2, rules1_);
+
+  // Modify the rest of the filter rules.
+  rules1_[2].action = Filter::Rule::Action::kKeep;
+  rules1_[2].level_greater_than_or_equal = log::FilterRule::Level::FATAL_LEVEL;
+  rules1_[2].any_flags_set = 0xcd;
+  const std::array<std::byte, 2> module2{std::byte(1), std::byte(2)};
+  rules1_[2].module_equals.assign(module2.begin(), module2.end());
+  rules1_[3].action = Filter::Rule::Action::kInactive;
+
+  PW_RAW_TEST_METHOD_CONTEXT(LogService, GetFilter, 1, 128)
+  context3(drain_map_, &filter_map_);
+  context3.call(request);
+  ASSERT_EQ(context3.responses().size(), 1u);
+  protobuf::Decoder decoder3(context3.responses()[0]);
+  VerifyFilterRules(decoder3, rules1_);
 }
 
 }  // namespace

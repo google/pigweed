@@ -123,7 +123,10 @@ pw_test("proto_utils_test") {
 pw_proto_library("protos") {
   sources = [ "log.proto" ]
   prefix = "pw_log/proto"
-  deps = [ "$dir_pw_tokenizer:proto" ]
+  deps = [
+    "$dir_pw_protobuf:common_protos",
+    "$dir_pw_tokenizer:proto",
+  ]
 }
 
 pw_doc_group("docs") {

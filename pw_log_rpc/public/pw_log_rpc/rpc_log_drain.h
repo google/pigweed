@@ -20,6 +20,7 @@
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_log/proto/log.pwpb.h"
+#include "pw_log_rpc/log_filter.h"
 #include "pw_multisink/multisink.h"
 #include "pw_protobuf/serialized_size.h"
 #include "pw_result/result.h"
@@ -37,11 +38,12 @@ namespace pw::log_rpc {
 // Flush(), which, on every call, packs as many log::LogEntry items as possible
 // into a log::LogEntries message, writes the message to the provided writer,
 // then repeats the process until there are no more entries in the MultiSink or
-// the writer failed to write the outgoing package, in which case the RPC on
-// the writer is closed. When error_handling is `kIgnoreWriterErrors` the drain
-// will continue to retrieve log entries out of the MultiSink and attempt to
-// send them out ignoring the writer errors without sending a drop count.
-// Note: this behavior might change or be removed in the future.
+// the writer failed to write the outgoing package and error_handling is set to
+// `kCloseStreamOnWriterError`. When error_handling is `kIgnoreWriterErrors` the
+// drain will continue to retrieve log entries out of the MultiSink and attempt
+// to send them out ignoring the writer errors without sending a drop count.
+// Note: the error handling and drop count reporting might change in the future.
+// Log filtering is done using the rules of the Filter provided if any.
 class RpcLogDrain : public multisink::MultiSink::Drain {
  public:
   // Dictates how to handle server writer errors.
@@ -80,42 +82,23 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
       protobuf::SizeOfFieldKey(1)  // LogEntry
       + protobuf::kMaxSizeOfLength;
 
-  // Creates a log stream with the provided open writer. Useful for streaming
-  // logs without a request.
-  // The provided buffer must be large enough to hold the largest transmittable
-  // log::LogEntry or a drop count message at the very least. The user can
-  // choose to provide a unique mutex for the drain, or share it to save RAM as
-  // long as they are aware of contengency issues.
-  RpcLogDrain(uint32_t channel_id,
-              ByteSpan log_entry_buffer,
-              rpc::RawServerWriter writer,
-              sync::Mutex& mutex,
-              LogDrainErrorHandling error_handling)
-      : channel_id_(channel_id),
-        error_handling_(error_handling),
-        server_writer_(std::move(writer)),
-        log_entry_buffer_(log_entry_buffer),
-        committed_entry_drop_count_(0),
-        mutex_(mutex) {
-    PW_ASSERT(log_entry_buffer.size_bytes() >= kMinEntryBufferSize);
-    PW_ASSERT(writer.active());
-  }
-
   // Creates a closed log stream with a writer that can be set at a later time.
   // The provided buffer must be large enough to hold the largest transmittable
   // log::LogEntry or a drop count message at the very least. The user can
   // choose to provide a unique mutex for the drain, or share it to save RAM as
   // long as they are aware of contengency issues.
-  RpcLogDrain(uint32_t channel_id,
+  RpcLogDrain(const uint32_t channel_id,
               ByteSpan log_entry_buffer,
               sync::Mutex& mutex,
-              LogDrainErrorHandling error_handling)
+              LogDrainErrorHandling error_handling,
+              Filter* filter = nullptr)
       : channel_id_(channel_id),
         error_handling_(error_handling),
         server_writer_(),
         log_entry_buffer_(log_entry_buffer),
         committed_entry_drop_count_(0),
-        mutex_(mutex) {
+        mutex_(mutex),
+        filter_(filter) {
     PW_ASSERT(log_entry_buffer.size_bytes() >= kMinEntryBufferSize);
   }
 
@@ -173,6 +156,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   const ByteSpan log_entry_buffer_ PW_GUARDED_BY(mutex_);
   uint32_t committed_entry_drop_count_ PW_GUARDED_BY(mutex_);
   sync::Mutex& mutex_;
+  Filter* filter_;
 };
 
 }  // namespace pw::log_rpc
