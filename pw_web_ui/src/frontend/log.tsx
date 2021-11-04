@@ -13,49 +13,24 @@
 // the License.
 
 /* eslint-env browser */
+
 import {makeStyles, Paper} from '@material-ui/core';
 import * as React from 'react';
-import {FrameStatus, Frame} from '@pigweed/pw_hdlc';
 
 type Props = {
-  frames: Frame[];
+  lines: string[];
 };
 
 const useStyles = makeStyles(() => ({
-  root: {
-    'background-color': 'black',
-    height: '500px',
-    'overflow-y': 'auto',
-    width: '100%',
-    color: 'white',
-  },
+  root: {},
 }));
 
-export function SerialDebug(props: Props) {
+export function Log(props: Props) {
   const classes = useStyles();
-  const decoder = new TextDecoder();
 
-  // TODO(b/199515206): Display HDLC packets in user friendly manner.
-  //
-  // See the python console serial debug window for reference.
-  function row(frame: Frame, index: number) {
-    let rowText = '';
-    if (frame.status === FrameStatus.OK) {
-      rowText = decoder.decode(frame.data);
-    } else {
-      rowText = `[${frame.rawDecoded}]`;
-    }
-
-    return (
-      <div key={index}>
-        {frame.status}: {rowText}
-      </div>
-    );
+  function row(text: string, index: number) {
+    return <div key={index}>{text}</div>;
   }
 
-  return (
-    <Paper className={classes.root}>
-      {props.frames.map((frame: Frame, index: number) => row(frame, index))}
-    </Paper>
-  );
+  return <div className={classes.root}>{props.lines.map(row)}</div>;
 }

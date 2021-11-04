@@ -52,7 +52,7 @@ template_replacement = rule(
             allow_files = [".proto.bin"],
         ),
         "proto_root_dir": attr.string(mandatory = True),
-        "output_file": attr.string(default = "generated/ts_proto_collection.ts"),
+        "output_file": attr.string(mandatory = True),
         "template_file": attr.label(
             allow_files = [".ts"],
             default = Label("@//pw_protobuf_compiler/ts:ts_proto_collection_template"),

@@ -17,8 +17,35 @@ load("@npm//@bazel/concatjs:index.bzl", "karma_web_test")
 load("@npm//@bazel/esbuild:index.bzl", "esbuild")
 load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_project")
 load("@npm//http-server:index.bzl", "http_server")
+load("//pw_protobuf_compiler/ts:ts_proto_collection.bzl", "ts_proto_collection")
+load("@rules_proto_grpc//js:defs.bzl", "js_proto_library")
 
 package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "echo_service",
+    srcs = [
+        "@//pw_rpc:echo",
+    ],
+)
+
+proto_library(
+    name = "rpc_protos",
+    srcs = [
+        ":echo_service",
+    ],
+)
+
+js_proto_library(
+    name = "rpc_protos_tspb",
+    protos = [":rpc_protos"],
+)
+
+ts_proto_collection(
+    name = "web_proto_collection",
+    js_proto_library = "@//pw_web_ui:rpc_protos_tspb",
+    proto_library = "@//pw_web_ui:rpc_protos",
+)
 
 ts_project(
     name = "lib",
@@ -27,6 +54,7 @@ ts_project(
         "src/frontend/app.tsx",
         "src/frontend/index.tsx",
         "src/frontend/log.tsx",
+        "src/frontend/serial_log.tsx",
         "src/transport/device_transport.ts",
         "src/transport/serial_mock.ts",
         "src/transport/web_serial_transport.ts",
@@ -35,7 +63,10 @@ ts_project(
     declaration = True,
     source_map = True,
     deps = [
+        ":web_proto_collection",
         "//pw_hdlc/ts:pw_hdlc",
+        "//pw_rpc/ts:pw_rpc",
+        "//pw_status/ts:pw_status",
         "@npm//:node_modules",
     ],  # can't use fine-grained deps
 )
@@ -66,7 +97,14 @@ esbuild(
 
 esbuild(
     name = "app_bundle",
+    args = {
+        "resolveExtensions": [
+            ".mjs",
+            ".js",
+        ],
+    },
     entry_point = "src/frontend/index.tsx",
+    target = "es2021",
     deps = [":lib"],
 )
 

@@ -329,3 +329,10 @@ proto_plugin(
     use_built_in_shell_environment = True,
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "echo",
+    srcs = [
+        "echo.proto",
+    ],
+)

@@ -17,7 +17,7 @@ import 'jasmine';
 
 import {Message} from 'test_protos_tspb/test_protos_tspb_pb/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
 
-import {ProtoCollection} from './generated/ts_proto_collection';
+import {ProtoCollection} from 'test_proto_collection/generated/ts_proto_collection';
 
 describe('ProtoCollection', () => {
   it('getMessageType returns message', () => {

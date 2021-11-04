@@ -13,6 +13,7 @@
     "@bazel/typescript": "4.1.0",
     "@grpc/grpc-js": "^1.3.7",
     "@material-ui/core": "^4.12.1",
+    "@material-ui/lab": "^4.0.0-alpha.60",
     "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
     "@types/argparse": "^2.0.10",

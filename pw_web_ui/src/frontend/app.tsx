@@ -13,29 +13,61 @@
 // the License.
 
 /* eslint-env browser */
-import {Button, makeStyles, Typography} from '@material-ui/core';
+import {Button, TextField, makeStyles, Typography} from '@material-ui/core';
+import {ToggleButtonGroup, ToggleButton} from '@material-ui/lab';
 import {WebSerialTransport} from '../transport/web_serial_transport';
-import {Decoder, Frame} from '@pigweed/pw_hdlc';
-import {SerialDebug} from './log';
+import {Decoder, Frame, Encoder} from '@pigweed/pw_hdlc';
+import {SerialLog} from './serial_log';
+import {Log} from './log';
 import * as React from 'react';
 import {useState, useRef} from 'react';
+import {Channel, Client, UnaryMethodStub} from '@pigweed/pw_rpc';
+import {Status} from '@pigweed/pw_status';
+import {ProtoCollection} from 'web_proto_collection/generated/ts_proto_collection';
+
+const RPC_ADDRESS = 82;
 
 const useStyles = makeStyles(() => ({
   root: {
     display: 'flex',
     'flex-direction': 'column',
+    'align-items': 'flex-start',
     overflow: 'hidden',
     width: '1000px',
+  },
+  connect: {
+    'margin-top': '16px',
+    'margin-bottom': '20px',
+  },
+  rpc: {
+    margin: '10px',
   },
 }));
 
 export function App() {
   const [connected, setConnected] = useState<boolean>(false);
   const [frames, setFrames] = useState<Frame[]>([]);
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const [echoText, setEchoText] = useState<string>('Hello World');
+  const [logViewer, setLogViewer] = useState<string>('log');
+
+  const classes = useStyles();
 
   const transportRef = useRef(new WebSerialTransport());
   const decoderRef = useRef(new Decoder());
-  const classes = useStyles();
+  const encoderRef = useRef(new Encoder());
+  const protoCollectionRef = useRef(new ProtoCollection());
+  const channelsRef = useRef([
+    new Channel(1, (bytes: Uint8Array) => {
+      sendPacket(transportRef.current!, bytes);
+    }),
+  ]);
+  const clientRef = useRef<Client>(
+    Client.fromProtoSet(channelsRef.current!, protoCollectionRef.current!)
+  );
+  const echoService = clientRef
+    .current!.channel()!
+    .methodStub('pw.rpc.EchoService.Echo') as UnaryMethodStub;
 
   function onConnected() {
     setConnected(true);
@@ -43,14 +75,37 @@ export function App() {
       const decoded = decoderRef.current!.process(item);
       for (const frame of decoded) {
         setFrames(old => [...old, frame]);
+        if (frame.address === RPC_ADDRESS) {
+          const status = clientRef.current!.processPacket(frame.data);
+        }
       }
     });
   }
 
+  function sendPacket(
+    transport: WebSerialTransport,
+    packetBytes: Uint8Array
+  ): void {
+    const hdlcBytes = encoderRef.current.uiFrame(RPC_ADDRESS, packetBytes);
+    transport.sendChunk(hdlcBytes);
+  }
+
+  function echo(text: string) {
+    const request = new echoService.method.responseType();
+    request.setMsg(text);
+    echoService
+      .call(request)
+      .then(([status, response]) => {
+        console.log(response.toObject());
+      })
+      .catch(() => {});
+  }
+
   return (
     <div className={classes.root}>
-      <Typography variant="h1">Pigweb Demo</Typography>
+      <Typography variant="h3">Pigweb Demo</Typography>
       <Button
+        className={classes.connect}
         disabled={connected}
         variant="contained"
         color="primary"
@@ -66,7 +121,43 @@ export function App() {
       >
         {connected ? 'Connected' : 'Connect'}
       </Button>
-      <SerialDebug frames={frames} />
+      <ToggleButtonGroup
+        value={logViewer}
+        onChange={(event, selected) => {
+          setLogViewer(selected);
+        }}
+        exclusive
+      >
+        <ToggleButton value="log">Log Viewer</ToggleButton>
+        <ToggleButton value="serial">Serial Debug</ToggleButton>
+      </ToggleButtonGroup>
+      {logViewer === 'log' ? (
+        <SerialLog frames={[]} />
+      ) : (
+        <SerialLog frames={frames} />
+      )}
+      <Log lines={logLines} />
+      <span className={classes.rpc}>
+        <TextField
+          id="echo-text"
+          label="Echo Text"
+          disabled={!connected}
+          value={echoText}
+          onChange={event => {
+            setEchoText(event.target.value);
+          }}
+        ></TextField>
+        <Button
+          disabled={!connected}
+          variant="contained"
+          color="primary"
+          onClick={() => {
+            echo(echoText);
+          }}
+        >
+          Send Echo RPC
+        </Button>
+      </span>
     </div>
   );
 }

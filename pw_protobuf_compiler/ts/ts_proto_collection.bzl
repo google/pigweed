@@ -26,6 +26,7 @@ def _lib(name, proto_library, js_proto_library):
         name = template_name,
         descriptor_data = proto_library,
         proto_root_dir = proto_root_dir,
+        output_file = "generated/ts_proto_collection.ts",
     )
 
     ts_library(
@@ -43,10 +44,16 @@ def _lib(name, proto_library, js_proto_library):
         ],
     )
 
+    native.filegroup(
+        name = name + "_esm",
+        srcs = [name + "_lib"],
+        output_group = "es6_sources",
+    )
+
 def ts_proto_collection(name, proto_library, js_proto_library):
     _lib(name, proto_library, js_proto_library)
     js_library(
         name = name,
         package_name = "@pigweed/" + name + "/pw_protobuf_compiler",
-        deps = [name + "_lib"],
+        deps = [name + "_lib", name + "_esm"],
     )
