@@ -37,8 +37,8 @@ pw_cc_library(
         "//pw_build/constraints/rtos:threadx",
     ],
     deps = [
-        # TODO: This should depend on ThreadX but our third parties currently
-        # do not have Bazel support.
+        # TODO(pwbug/317): This should depend on ThreadX but our third parties
+        # currently do not have Bazel support.
         "//pw_chrono:system_clock",
     ],
 )
@@ -75,7 +75,8 @@ pw_cc_library(
         "//pw_build/constraints/rtos:threadx",
     ],
     deps = [
-        # TODO: This should depend on ThreadX but our third parties currently
+        # TODO(pwbug/317): This should depend on ThreadX but our third parties
+        # currently do not have Bazel support.
         # do not have Bazel support.
         "//pw_chrono:system_clock",
     ],
@@ -113,7 +114,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:threadx",
     ],
     deps = [
-        # TODO: This should depend on ThreadX but our third parties currently
+        # TODO(pwbug/317): This should depend on ThreadX but our third parties currently
         # do not have Bazel support.
         "//pw_sync:mutex_facade",
     ],
@@ -131,6 +132,85 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "thread_notification_headers",
+    hdrs = [
+        "public/pw_sync_threadx/config.h",
+        "public/pw_sync_threadx/thread_notification_inline.h",
+        "public/pw_sync_threadx/thread_notification_native.h",
+        "public_overrides/thread_notification/pw_sync_backend/thread_notification_inline.h",
+        "public_overrides/thread_notification/pw_sync_backend/thread_notification_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides/thread_notification",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:threadx",
+    ],
+    deps = [
+        # TODO(pwbug/317): This should depend on ThreadX but our third parties
+        # currently do not have Bazel support.
+        "//pw_assert",
+        "//pw_interrupt:context",
+        "//pw_sync:interrupt_spin_lock",
+    ],
+)
+
+pw_cc_library(
+    name = "thread_notification",
+    srcs = [
+        "thread_notification.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:threadx",
+    ],
+    deps = [
+        ":thread_notification_headers",
+        "//pw_assert",
+        "//pw_interrupt:context",
+        "//pw_sync:thread_notification_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_thread_notification_headers",
+    hdrs = [
+        "public/pw_sync_threadx/timed_thread_notification_inline.h",
+        "public_overrides/timed_thread_notification/pw_sync_backend/timed_thread_notification_inline.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides/timed_thread_notification",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:threadx",
+    ],
+    deps = [
+        # TODO(pwbug/317): This should depend on ThreadX but our third parties
+        # currently do not have Bazel support.
+        "//pw_chrono:system_clock",
+        "//pw_sync:timed_thread_notification_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_thread_notification",
+    srcs = [
+        "timed_thread_notification.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:threadx",
+    ],
+    deps = [
+        ":timed_thread_notification_headers",
+        "//pw_assert",
+        "//pw_chrono_threadx:system_clock_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:timed_thread_notification_facade",
+    ],
+)
+
+pw_cc_library(
     name = "timed_mutex_headers",
     hdrs = [
         "public/pw_sync_threadx/timed_mutex_inline.h",
@@ -144,7 +224,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:threadx",
     ],
     deps = [
-        # TODO: This should depend on ThreadX but our third parties currently
+        # TODO(pwbug/317): This should depend on ThreadX but our third parties currently
         # do not have Bazel support.
         "//pw_chrono:system_clock",
         "//pw_sync:timed_mutex_facade",
@@ -179,7 +259,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    # TODO: This should depend on ThreadX but our third parties currently
+    # TODO(pwbug/317): This should depend on ThreadX but our third parties currently
     # do not have Bazel support.
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
