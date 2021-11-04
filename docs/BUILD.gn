@@ -69,6 +69,7 @@ group("module_docs") {
     "$dir_pw_assert:docs",
     "$dir_pw_assert_basic:docs",
     "$dir_pw_assert_log:docs",
+    "$dir_pw_assert_tokenized:docs",
     "$dir_pw_assert_zephyr:docs",
     "$dir_pw_base64:docs",
     "$dir_pw_bloat:docs",
