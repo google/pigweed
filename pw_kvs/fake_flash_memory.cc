@@ -102,13 +102,6 @@ StatusWithSize FakeFlashMemory::Write(Address address,
     return StatusWithSize::InvalidArgument();
   }
 
-  if (data.size() > sector_size_bytes() - (address % sector_size_bytes())) {
-    PW_LOG_ERROR("Write crosses sector boundary; address %x, size %u B",
-                 unsigned(address),
-                 unsigned(data.size()));
-    return StatusWithSize::InvalidArgument();
-  }
-
   if (address + data.size() > sector_count() * sector_size_bytes()) {
     PW_LOG_ERROR(
         "Write beyond end of memory; address %x, size %u B, max address %x",

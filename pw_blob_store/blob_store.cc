@@ -230,8 +230,6 @@ Status BlobStore::Write(ConstByteSpan data) {
     if (!CommitToFlash(write_buffer_.first(flash_write_size_bytes_)).ok()) {
       return Status::DataLoss();
     }
-
-    PW_DCHECK(WriteBufferEmpty());
   }
 
   // At this point, if data.size_bytes() > 0, the write buffer should be empty.
@@ -239,23 +237,30 @@ Status BlobStore::Write(ConstByteSpan data) {
 
   // Step 2) Write as many block-sized chunks as the data has remaining after
   //         step 1.
-  while (data.size_bytes() >= flash_write_size_bytes_) {
-    PW_DCHECK(WriteBufferEmpty());
+  PW_DCHECK(WriteBufferEmpty());
 
-    write_address_ += flash_write_size_bytes_;
-    if (!CommitToFlash(data.first(flash_write_size_bytes_)).ok()) {
+  const size_t final_partial_write_size_bytes =
+      data.size_bytes() % flash_write_size_bytes_;
+
+  if (data.size_bytes() >= flash_write_size_bytes_) {
+    const size_t write_size_bytes =
+        data.size_bytes() - final_partial_write_size_bytes;
+    write_address_ += write_size_bytes;
+    if (!CommitToFlash(data.first(write_size_bytes)).ok()) {
       return Status::DataLoss();
     }
-
-    data = data.subspan(flash_write_size_bytes_);
+    data = data.subspan(write_size_bytes);
   }
 
   // step 3) Put any remaining bytes to the buffer. Put the bytes starting at
   //         the begining of the buffer, since it must be empty if there are
   //         still bytes due to step 1 either cleaned out the buffer or didn't
   //         have any more data to write.
-  if (data.size_bytes() > 0) {
-    PW_DCHECK(WriteBufferEmpty());
+  if (final_partial_write_size_bytes > 0) {
+    PW_DCHECK_INT_LT(data.size_bytes(), flash_write_size_bytes_);
+
+    // Don't need to DCHECK that buffer is empty, nothing writes to it since the
+    // previous time it was DCHECK'ed
     std::memcpy(write_buffer_.data(), data.data(), data.size_bytes());
     write_address_ += data.size_bytes();
   }
@@ -347,6 +352,7 @@ Status BlobStore::CommitToFlash(ConstByteSpan source, size_t data_bytes) {
   if (data_bytes == 0) {
     data_bytes = source.size_bytes();
   }
+
   flash_erased_ = false;
   StatusWithSize result = partition_.Write(flash_address_, source);
   flash_address_ += data_bytes;
