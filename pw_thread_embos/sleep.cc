@@ -49,7 +49,7 @@ void sleep_for(chrono::SystemClock::duration for_at_least) {
   }
   // On a tick based kernel we cannot tell how far along we are on the current
   // tick, ergo we add one whole tick to the final duration.
-  OS_Delay(static_cast<OS_TIME>(for_at_least.count()));
+  OS_Delay(static_cast<OS_TIME>(for_at_least.count()) + 1);
 }
 
 }  // namespace pw::this_thread
