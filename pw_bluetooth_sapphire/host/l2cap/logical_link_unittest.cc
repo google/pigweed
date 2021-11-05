@@ -80,7 +80,7 @@ TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
                                             'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e'  // Info Payload
   );
   auto packet = hci::ACLDataPacket::New(0x0001, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
-                                        hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast,
+                                        hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,
                                         group_frame.size());
   ASSERT_TRUE(packet);
   packet->mutable_view()->mutable_payload_data().Write(group_frame);

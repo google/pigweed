@@ -2136,7 +2136,7 @@ TEST_F(ChannelManagerTest,
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
-  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kPeripheralLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
 
   std::optional<hci_spec::LEPreferredConnectionParameters> params;
@@ -2153,30 +2153,30 @@ TEST_F(ChannelManagerTest,
                        kHighPriority);
 
   ReceiveAclDataPacket(testing::AclConnectionParameterUpdateReq(
-      kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kSlaveLatency, kTimeoutMult));
+      kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kPeripheralLatency, kTimeoutMult));
   RunLoopUntilIdle();
 
   ASSERT_TRUE(params.has_value());
   EXPECT_EQ(kIntervalMin, params->min_interval());
   EXPECT_EQ(kIntervalMax, params->max_interval());
-  EXPECT_EQ(kSlaveLatency, params->max_latency());
+  EXPECT_EQ(kPeripheralLatency, params->max_latency());
   EXPECT_EQ(kTimeoutMult, params->supervision_timeout());
 }
 
-// If an LE Slave host receives a Connection Parameter Update Request, it should reject it.
+// If an LE Peripheral host receives a Connection Parameter Update Request, it should reject it.
 TEST_F(ChannelManagerTest,
-       ReceiveValidConnectionParameterUpdateRequestAsSlaveAndRespondWithReject) {
+       ReceiveValidConnectionParameterUpdateRequestAsPeripheralAndRespondWithReject) {
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
-  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kPeripheralLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
 
   std::optional<hci_spec::LEPreferredConnectionParameters> params;
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  RegisterLE(kTestHandle1, hci::Connection::Role::kSlave, /*LinkErrorCallback=*/DoNothing,
+  RegisterLE(kTestHandle1, hci::Connection::Role::kPeripheral, /*LinkErrorCallback=*/DoNothing,
              std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
@@ -2186,7 +2186,7 @@ TEST_F(ChannelManagerTest,
       kHighPriority);
 
   ReceiveAclDataPacket(testing::AclConnectionParameterUpdateReq(
-      kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kSlaveLatency, kTimeoutMult));
+      kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kPeripheralLatency, kTimeoutMult));
   RunLoopUntilIdle();
 
   ASSERT_FALSE(params.has_value());
@@ -2197,7 +2197,7 @@ TEST_F(ChannelManagerTest,
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
-  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kPeripheralLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
 
   // Callback should not be called for request with invalid parameters.
@@ -2210,26 +2210,27 @@ TEST_F(ChannelManagerTest,
   std::array invalid_requests = {
       // interval min > interval max
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, /*interval_min=*/7,
-                                               /*interval_max=*/6, kSlaveLatency, kTimeoutMult),
+                                               /*interval_max=*/6, kPeripheralLatency,
+                                               kTimeoutMult),
       // interval_min too small
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1,
                                                hci_spec::kLEConnectionIntervalMin - 1, kIntervalMax,
-                                               kSlaveLatency, kTimeoutMult),
+                                               kPeripheralLatency, kTimeoutMult),
       // interval max too large
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
                                                hci_spec::kLEConnectionIntervalMax + 1,
-                                               kSlaveLatency, kTimeoutMult),
+                                               kPeripheralLatency, kTimeoutMult),
       // latency too large
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
                                                kIntervalMax, hci_spec::kLEConnectionLatencyMax + 1,
                                                kTimeoutMult),
       // timeout multiplier too small
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
-                                               kIntervalMax, kSlaveLatency,
+                                               kIntervalMax, kPeripheralLatency,
                                                hci_spec::kLEConnectionSupervisionTimeoutMin - 1),
       // timeout multiplier too large
       testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
-                                               kIntervalMax, kSlaveLatency,
+                                               kIntervalMax, kPeripheralLatency,
                                                hci_spec::kLEConnectionSupervisionTimeoutMax + 1)};
 
   for (auto& req : invalid_requests) {
@@ -2248,16 +2249,17 @@ TEST_F(ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
   RunLoopUntilIdle();
 }
 
-TEST_F(ChannelManagerTest, RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRejectedResponses) {
-  RegisterLE(kTestHandle1, hci::Connection::Role::kSlave);
+TEST_F(ChannelManagerTest,
+       RequestConnParamUpdateAsPeripheralAndReceiveAcceptedAndRejectedResponses) {
+  RegisterLE(kTestHandle1, hci::Connection::Role::kPeripheral);
 
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
-  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kPeripheralLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
-  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
-                                                          kTimeoutMult);
+  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax,
+                                                          kPeripheralLatency, kTimeoutMult);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -2267,7 +2269,7 @@ TEST_F(ChannelManagerTest, RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRej
   CommandId param_update_req_id = NextCommandId();
   EXPECT_LE_PACKET_OUT(
       testing::AclConnectionParameterUpdateReq(param_update_req_id, kTestHandle1, kIntervalMin,
-                                               kIntervalMax, kSlaveLatency, kTimeoutMult),
+                                               kIntervalMax, kPeripheralLatency, kTimeoutMult),
       kHighPriority);
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
   RunLoopUntilIdle();
@@ -2285,7 +2287,7 @@ TEST_F(ChannelManagerTest, RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRej
   param_update_req_id = NextCommandId();
   EXPECT_LE_PACKET_OUT(
       testing::AclConnectionParameterUpdateReq(param_update_req_id, kTestHandle1, kIntervalMin,
-                                               kIntervalMax, kSlaveLatency, kTimeoutMult),
+                                               kIntervalMax, kPeripheralLatency, kTimeoutMult),
       kHighPriority);
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, std::move(request_cb));
   RunLoopUntilIdle();
@@ -2299,15 +2301,15 @@ TEST_F(ChannelManagerTest, RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRej
 }
 
 TEST_F(ChannelManagerTest, ConnParamUpdateRequestRejected) {
-  RegisterLE(kTestHandle1, hci::Connection::Role::kSlave);
+  RegisterLE(kTestHandle1, hci::Connection::Role::kPeripheral);
 
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
-  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kPeripheralLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
-  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
-                                                          kTimeoutMult);
+  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax,
+                                                          kPeripheralLatency, kTimeoutMult);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -2315,7 +2317,7 @@ TEST_F(ChannelManagerTest, ConnParamUpdateRequestRejected) {
   const CommandId kParamUpdateReqId = NextCommandId();
   EXPECT_LE_PACKET_OUT(
       testing::AclConnectionParameterUpdateReq(kParamUpdateReqId, kTestHandle1, kIntervalMin,
-                                               kIntervalMax, kSlaveLatency, kTimeoutMult),
+                                               kIntervalMax, kPeripheralLatency, kTimeoutMult),
       kHighPriority);
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
   RunLoopUntilIdle();

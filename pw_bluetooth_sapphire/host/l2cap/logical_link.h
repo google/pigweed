@@ -125,7 +125,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Send a Connection Parameter Update Request on the LE signaling channel. When the Connection
   // Parameter Update Response is received, |request_cb| will be called with the result, |accepted|.
-  // NOTE: the local Host must be an LE slave.
+  // NOTE: the local Host must be an LE peripheral.
   void SendConnectionParameterUpdateRequest(hci_spec::LEPreferredConnectionParameters params,
                                             ConnectionParameterUpdateRequestCallback request_cb);
 
@@ -244,7 +244,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Handler called when a Connection Parameter Update Request is received on the LE signaling
   // channel.
   void OnRxConnectionParameterUpdateRequest(
-      uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+      uint16_t interval_min, uint16_t interval_max, uint16_t peripheral_latency,
       uint16_t timeout_multiplier,
       LowEnergyCommandHandler::ConnectionParameterUpdateResponder* responder);
 

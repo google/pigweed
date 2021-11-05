@@ -398,7 +398,7 @@ void FakeController::L2CAPConnectionParameterUpdate(
     l2cap::ConnectionParameterUpdateRequestPayload payload;
     payload.interval_min = htole16(params.min_interval());
     payload.interval_max = htole16(params.max_interval());
-    payload.slave_latency = htole16(params.max_latency());
+    payload.peripheral_latency = htole16(params.max_latency());
     payload.timeout_multiplier = htole16(params.supervision_timeout());
 
     // TODO(armansito): Instead of picking the first handle we should pick

@@ -51,7 +51,8 @@ class LowEnergyCommandHandler final : public CommandHandler {
   using ConnectionParameterUpdateResponseCallback =
       fit::function<void(const ConnectionParameterUpdateResponse& rsp)>;
   bool SendConnectionParameterUpdateRequest(uint16_t interval_min, uint16_t interval_max,
-                                            uint16_t slave_latency, uint16_t timeout_multiplier,
+                                            uint16_t peripheral_latency,
+                                            uint16_t timeout_multiplier,
                                             ConnectionParameterUpdateResponseCallback cb);
 
   // Inbound request delegate registration methods. The callbacks are wrapped
@@ -62,7 +63,7 @@ class LowEnergyCommandHandler final : public CommandHandler {
   // delegate.
 
   using ConnectionParameterUpdateRequestCallback = fit::function<void(
-      uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+      uint16_t interval_min, uint16_t interval_max, uint16_t peripheral_latency,
       uint16_t timeout_multiplier, ConnectionParameterUpdateResponder* responder)>;
   void ServeConnectionParameterUpdateRequest(ConnectionParameterUpdateRequestCallback cb);
 };

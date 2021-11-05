@@ -46,8 +46,8 @@ class ServerTest : public TestingBase {
       channel_ = std::move(fake_chan);
       set_fake_chan(channel_->AsWeakPtr());
     });
-    l2cap_->AddACLConnection(kTestHandle1, hci::Connection::Role::kSlave, nullptr, nullptr);
-    l2cap_->AddACLConnection(kTestHandle2, hci::Connection::Role::kSlave, nullptr, nullptr);
+    l2cap_->AddACLConnection(kTestHandle1, hci::Connection::Role::kPeripheral, nullptr, nullptr);
+    l2cap_->AddACLConnection(kTestHandle2, hci::Connection::Role::kPeripheral, nullptr, nullptr);
     server_ = std::make_unique<Server>(l2cap_);
   }
 

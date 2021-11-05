@@ -217,7 +217,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
   hci_spec::ConnectionHandle handle = le16toh(params->connection_handle);
   Connection::Role role = (params->role == hci_spec::ConnectionRole::kMaster)
                               ? Connection::Role::kMaster
-                              : Connection::Role::kSlave;
+                              : Connection::Role::kPeripheral;
   DeviceAddress peer_address(AddressTypeFromHCI(params->peer_address_type), params->peer_address);
   hci_spec::LEConnectionParameters connection_params(le16toh(params->conn_interval),
                                                      le16toh(params->conn_latency),

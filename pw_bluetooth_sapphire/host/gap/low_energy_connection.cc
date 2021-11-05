@@ -259,9 +259,9 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
   ZX_DEBUG_ASSERT_MSG(peer, "connected peer must be present in cache!");
 
   if (peer->le() && peer->le()->bond_data()) {
-    // Legacy pairing allows both devices to generate and exchange LTKs. "The master device must
-    // have the [...] (LTK, EDIV, and Rand) distributed by the slave device in LE legacy [...] to
-    // setup an encrypted session" (V5.0 Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
+    // Legacy pairing allows both devices to generate and exchange LTKs. "The Central must have the
+    // security information (LTK, EDIV, and Rand) distributed by the Peripheral in LE legacy [...]
+    // to setup an encrypted session" (v5.3, Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
     // and local_ltk will be equal, so this check is unnecessary but correct.
     ltk = (link()->role() == hci::Connection::Role::kMaster) ? peer->le()->bond_data()->peer_ltk
                                                              : peer->le()->bond_data()->local_ltk;
@@ -303,7 +303,7 @@ void LowEnergyConnection::OnNewLEConnectionParams(
 
 void LowEnergyConnection::RequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kSlave,
+  ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kPeripheral,
                 "tried to send connection parameter update request as central");
 
   ZX_ASSERT(peer_);
@@ -368,7 +368,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 
 void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kSlave,
+  ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kPeripheral,
                 "tried to send l2cap connection parameter update request as central");
 
   bt_log(DEBUG, "gap-le", "sending l2cap connection parameter update request (peer: %s)",

@@ -144,8 +144,7 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
                   : (flushable ? hci_spec::ACLPacketBoundaryFlag::kFirstFlushable
                                : hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable));
 
-    // TODO(armansito): allow passing Active Slave Broadcast flag when we
-    // support it.
+    // TODO(armansito): allow passing Active Peripheral Broadcast flag when we support it.
     auto acl_packet = hci::ACLDataPacket::New(
         connection_handle_, pbf, hci_spec::ACLBroadcastFlag::kPointToPoint, fragment_size);
     ZX_DEBUG_ASSERT(acl_packet);

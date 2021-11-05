@@ -213,7 +213,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
 
   // Accept a connection and ensure that connection state is set up correctly
   link.reset();
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kSlave,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kPeripheral,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -243,7 +243,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   // Accept a connection from kPublicAddress. The internal advertising state should get assigned
   // correctly with no remnants of the previous advertise.
   link.reset();
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kSlave,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kPeripheral,
                                            kPublicAddress, hci_spec::LEConnectionParameters());
   handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -287,7 +287,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
     }
   });
 
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kSlave,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle, Connection::Role::kPeripheral,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -312,7 +312,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
 
   auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
-  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::kSlave);
+  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::kPeripheral);
   this->RunLoopUntilIdle();
 
   ASSERT_EQ(1u, connection_states.size());
@@ -321,7 +321,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
-  this->advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
+  this->advertiser()->OnIncomingConnection(handle, Connection::Role::kPeripheral, kRandomAddress,
                                            hci_spec::LEConnectionParameters());
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, 0);
   this->RunLoopUntilIdle();
@@ -352,7 +352,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
 
   auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
-  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::kSlave);
+  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::kPeripheral);
   this->RunLoopUntilIdle();
 
   ASSERT_EQ(1u, connection_states.size());
@@ -361,7 +361,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
-  this->advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
+  this->advertiser()->OnIncomingConnection(handle, Connection::Role::kPeripheral, kRandomAddress,
                                            hci_spec::LEConnectionParameters());
   this->test_device()->SendLEAdvertisingSetTerminatedEvent(kConnectionHandle, 0);
   this->RunLoopUntilIdle();

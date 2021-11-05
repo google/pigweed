@@ -28,14 +28,14 @@ LowEnergyCommandHandler::LowEnergyCommandHandler(SignalingChannelInterface* sig,
     : CommandHandler(sig, std::move(request_fail_callback)) {}
 
 bool LowEnergyCommandHandler::SendConnectionParameterUpdateRequest(
-    uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+    uint16_t interval_min, uint16_t interval_max, uint16_t peripheral_latency,
     uint16_t timeout_multiplier, ConnectionParameterUpdateResponseCallback cb) {
   auto on_param_update_rsp = BuildResponseHandler<ConnectionParameterUpdateResponse>(std::move(cb));
 
   ConnectionParameterUpdateRequestPayload payload;
   payload.interval_min = htole16(interval_min);
   payload.interval_max = htole16(interval_max);
-  payload.slave_latency = htole16(slave_latency);
+  payload.peripheral_latency = htole16(peripheral_latency);
   payload.timeout_multiplier = htole16(timeout_multiplier);
 
   return sig()->SendRequest(kConnectionParameterUpdateRequest,
@@ -57,10 +57,10 @@ void LowEnergyCommandHandler::ServeConnectionParameterUpdateRequest(
     const auto& req = request_payload.To<ConnectionParameterUpdateRequestPayload>();
     const auto interval_min = letoh16(req.interval_min);
     const auto interval_max = letoh16(req.interval_max);
-    const auto slave_latency = letoh16(req.slave_latency);
+    const auto peripheral_latency = letoh16(req.peripheral_latency);
     const auto timeout_multiplier = letoh16(req.timeout_multiplier);
     ConnectionParameterUpdateResponder responder(sig_responder);
-    cb(interval_min, interval_max, slave_latency, timeout_multiplier, &responder);
+    cb(interval_min, interval_max, peripheral_latency, timeout_multiplier, &responder);
   };
 
   sig()->ServeRequest(kConnectionParameterUpdateRequest, std::move(on_param_update_req));

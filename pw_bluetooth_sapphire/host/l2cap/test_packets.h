@@ -44,7 +44,7 @@ DynamicByteBuffer AclDisconnectionRsp(l2cap::CommandId id, hci_spec::ConnectionH
 DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
                                                   hci_spec::ConnectionHandle link_handle,
                                                   uint16_t interval_min, uint16_t interval_max,
-                                                  uint16_t slave_latency,
+                                                  uint16_t peripheral_latency,
                                                   uint16_t timeout_multiplier);
 DynamicByteBuffer AclConnectionParameterUpdateRsp(l2cap::CommandId id,
                                                   hci_spec::ConnectionHandle link_handle,

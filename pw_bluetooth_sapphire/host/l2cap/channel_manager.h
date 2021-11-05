@@ -150,9 +150,9 @@ class ChannelManager final {
   // Send a Connection Parameter Update Request on the LE signaling channel. When the Connection
   // Parameter Update Response is received, |request_cb| will be called with the result, |accepted|.
   //
-  // NOTE: The local Host must be an LE slave, and this request should only be sent if the slave or
-  // host does not support the Connection Parameters Request Link Layer Control Procedure (Core Spec
-  // v5.2, Vol 3, Part A, Sec 4.20).
+  // NOTE: The local Host must be an LE peripheral, and this request should only be sent if the
+  // peripheral or host does not support the Connection Parameters Request Link Layer Control
+  // Procedure (Core Spec v5.2, Vol 3, Part A, Sec 4.20).
   void RequestConnectionParameterUpdate(hci_spec::ConnectionHandle handle,
                                         hci_spec::LEPreferredConnectionParameters params,
                                         ConnectionParameterUpdateRequestCallback request_cb);

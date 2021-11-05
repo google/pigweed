@@ -275,7 +275,7 @@ enum class Role {
   // The LMP Master device is always kInitiator (V5.0 Vol. 3 Part H Appendix C.1).
   kInitiator,
 
-  // The LMP Slave device is always kResponder (V5.0 Vol. 3 Part H Appendix C.1).
+  // The LMP Peripheral device is always kResponder (V5.0 Vol. 3 Part H Appendix C.1).
   kResponder
 };
 

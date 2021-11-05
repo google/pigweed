@@ -320,7 +320,7 @@ class Peer final {
 
     // Returns the clock offset reported by the peer, if known and valid. The
     // clock offset will have the highest-order bit set and the rest represent
-    // bits 16-2 of CLKNslave-CLK (see hci_spec::kClockOffsetFlagBit in
+    // bits 16-2 of CLKNPeripheral-CLK (see hci_spec::kClockOffsetFlagBit in
     // hci/hci_constants.h).
     const std::optional<uint16_t>& clock_offset() const { return clock_offset_; }
     const BufferView extended_inquiry_response() const { return eir_buffer_.view(0, eir_len_); }

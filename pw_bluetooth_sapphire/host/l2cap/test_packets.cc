@@ -256,7 +256,7 @@ DynamicByteBuffer AclDisconnectionRsp(l2cap::CommandId id, hci_spec::ConnectionH
 DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
                                                   hci_spec::ConnectionHandle link_handle,
                                                   uint16_t interval_min, uint16_t interval_max,
-                                                  uint16_t slave_latency,
+                                                  uint16_t peripheral_latency,
                                                   uint16_t timeout_multiplier) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link handle|, length: 16 bytes)
@@ -269,8 +269,8 @@ DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
       LowerBits(interval_min), UpperBits(interval_min),
       // interval max
       LowerBits(interval_max), UpperBits(interval_max),
-      // slave latency
-      LowerBits(slave_latency), UpperBits(slave_latency),
+      // peripheral latency
+      LowerBits(peripheral_latency), UpperBits(peripheral_latency),
       // timeout multiplier
       LowerBits(timeout_multiplier), UpperBits(timeout_multiplier)));
 }

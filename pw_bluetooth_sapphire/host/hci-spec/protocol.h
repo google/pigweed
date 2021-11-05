@@ -169,7 +169,7 @@ struct CreateConnectionCommandParams {
   // Allow Role Switch.
   // Allowed values:
   //  0x00 - No role switch allowed, this device will be the master
-  //  0x01 - Role switch allowed, this device may become slave during at
+  //  0x01 - Role switch allowed, this device may become peripheral during
   //  connection setup
   uint8_t allow_role_switch;
 } __PACKED;
@@ -224,7 +224,7 @@ struct AcceptConnectionRequestCommandParams {
 
   // Role. Allowable values:
   //  - kMaster - Host will become the master (Link Master will role switch)
-  //  - kSlave - Host will remain the slave.
+  //  - kPeripheral - Host will remain the peripheral.
   ConnectionRole role;
 } __PACKED;
 
@@ -333,7 +333,7 @@ struct RemoteNameRequestCommandParams {
   uint8_t reserved;
 
   // Clock offset.  The lower 15 bits of this represent bits 14-2
-  // of CLKNslave-CLK, and the highest bit is set when the other
+  // of CLKNPeripheral-CLK, and the highest bit is set when the other
   // bits are valid.
   uint16_t clock_offset;
 } __PACKED;
@@ -1167,7 +1167,7 @@ struct InquiryResult {
   DeviceClass class_of_device;
 
   // Clock Offset
-  // the 15 lower bits represent bits 16-2 of CLKNslave-CLK
+  // the 15 lower bits represent bits 16-2 of CLKNPeripheral-CLK
   // the most significant bit is reserved
   uint16_t clock_offset;
 } __PACKED;
@@ -1464,7 +1464,7 @@ struct InquiryResultRSSI {
   DeviceClass class_of_device;
 
   // Clock Offset
-  // the 15 lower bits represent bits 16-2 of CLKNslave-CLK
+  // the 15 lower bits represent bits 16-2 of CLKNPeripheral-CLK
   // the most significant bit is reserved
   uint16_t clock_offset;
 
@@ -1566,7 +1566,7 @@ struct ExtendedInquiryResultEventParams {
   DeviceClass class_of_device;
 
   // Clock offset
-  // the 15 lower bits represent bits 16-2 of CLKNslave-CLK
+  // the 15 lower bits represent bits 16-2 of CLKNPeripheral-CLK
   // the most significant bit is reserved
   uint16_t clock_offset;
 
@@ -1712,8 +1712,8 @@ struct LEConnectionCompleteSubeventParams {
   // Time Range: 100 ms to 32 s
   uint16_t supervision_timeout;
 
-  // The Master_Clock_Accuracy parameter is only valid for a slave. On a master,
-  // this parameter shall be set to 0x00.
+  // The Master_Clock_Accuracy parameter is only valid for a peripheral. On a master, this parameter
+  // shall be set to 0x00.
   LEClockAccuracy master_clock_accuracy;
 } __PACKED;
 
@@ -1922,8 +1922,8 @@ struct LEEnhancedConnectionCompleteSubeventParams {
   // Time Range: 100 ms to 32 s
   uint16_t supervision_timeout;
 
-  // The Master_Clock_Accuracy parameter is only valid for a slave. On a master,
-  // this parameter shall be set to 0x00.
+  // The Master_Clock_Accuracy parameter is only valid for a peripheral. On a master, this parameter
+  // shall be set to 0x00.
   LEClockAccuracy master_clock_accuracy;
 } __PACKED;
 

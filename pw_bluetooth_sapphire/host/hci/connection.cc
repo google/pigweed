@@ -170,7 +170,7 @@ std::string Connection::ToString() const {
   }
   return bt_lib_cpp_string::StringPrintf("(%s link - handle: %#.4x, role: %s, address: %s%s)",
                                          LinkTypeToString(ll_type_).c_str(), handle_,
-                                         role_ == Role::kMaster ? "master" : "slave",
+                                         role_ == Role::kMaster ? "master" : "peripheral",
                                          peer_address_.ToString().c_str(), params.c_str());
 }
 

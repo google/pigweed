@@ -349,7 +349,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
   advertised_id = last_ad_id();
 
   DeviceAddress peer_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
-  advertiser()->OnIncomingConnection(1, hci::Connection::Role::kSlave, peer_address,
+  advertiser()->OnIncomingConnection(1, hci::Connection::Role::kPeripheral, peer_address,
                                      hci_spec::LEConnectionParameters());
   RunLoopUntilIdle();
   ASSERT_TRUE(link);

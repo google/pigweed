@@ -3712,7 +3712,7 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
 
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(conn_ref);
-  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kSlave);
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kPeripheral);
 
   test_device()->SendCommandChannelPacket(
       testing::RoleChangePacket(kTestDevAddr, hci_spec::ConnectionRole::kMaster));
@@ -3738,13 +3738,13 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeWithFailureStatusAfterInboundConnec
   auto callback = [&conn_ref](auto /*status*/, auto cb_conn_ref) { conn_ref = cb_conn_ref; };
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(conn_ref);
-  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kSlave);
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kPeripheral);
 
   test_device()->SendCommandChannelPacket(testing::RoleChangePacket(
       kTestDevAddr, hci_spec::ConnectionRole::kMaster, hci_spec::StatusCode::kUnspecifiedError));
   RunLoopUntilIdle();
   // The role should not change.
-  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kSlave);
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kPeripheral);
 
   QueueDisconnection(kConnectionHandle);
 }

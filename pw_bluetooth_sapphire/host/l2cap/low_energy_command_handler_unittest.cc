@@ -61,15 +61,15 @@ class LowEnergyCommandHandlerTest : public TestBase {
 TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
   constexpr uint16_t kIntervalMin = 0;
   constexpr uint16_t kIntervalMax = 1;
-  constexpr uint16_t kSlaveLatency = 2;
+  constexpr uint16_t kPeripheralLatency = 2;
   constexpr uint16_t kTimeoutMult = 3;
   auto param_update_req = StaticByteBuffer(
       // Interval Min
       LowerBits(kIntervalMin), UpperBits(kIntervalMin),
       // Interval Max
       LowerBits(kIntervalMax), UpperBits(kIntervalMax),
-      // Slave Latency
-      LowerBits(kSlaveLatency), UpperBits(kSlaveLatency),
+      // Peripheral Latency
+      LowerBits(kPeripheralLatency), UpperBits(kPeripheralLatency),
       // Timeout Multiplier
       LowerBits(kTimeoutMult), UpperBits(kTimeoutMult));
 
@@ -89,7 +89,7 @@ TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
                       {SignalingChannel::Status::kSuccess, param_update_rsp.view()});
 
   EXPECT_TRUE(cmd_handler()->SendConnectionParameterUpdateRequest(
-      kIntervalMin, kIntervalMax, kSlaveLatency, kTimeoutMult, std::move(rsp_cb)));
+      kIntervalMin, kIntervalMax, kPeripheralLatency, kTimeoutMult, std::move(rsp_cb)));
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
 }
@@ -97,15 +97,15 @@ TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
 TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqRspOk) {
   constexpr uint16_t kIntervalMin = 0;
   constexpr uint16_t kIntervalMax = 1;
-  constexpr uint16_t kSlaveLatency = 2;
+  constexpr uint16_t kPeripheralLatency = 2;
   constexpr uint16_t kTimeoutMult = 3;
   auto param_update_req = StaticByteBuffer(
       // Interval Min
       LowerBits(kIntervalMin), UpperBits(kIntervalMin),
       // Interval Max
       LowerBits(kIntervalMax), UpperBits(kIntervalMax),
-      // Slave Latency
-      LowerBits(kSlaveLatency), UpperBits(kSlaveLatency),
+      // Peripheral Latency
+      LowerBits(kPeripheralLatency), UpperBits(kPeripheralLatency),
       // Timeout Multiplier
       LowerBits(kTimeoutMult), UpperBits(kTimeoutMult));
 
@@ -114,12 +114,12 @@ TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqRspOk) {
       UpperBits(static_cast<uint16_t>(ConnectionParameterUpdateResult::kRejected)));
 
   LowEnergyCommandHandler::ConnectionParameterUpdateRequestCallback cb =
-      [&](uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+      [&](uint16_t interval_min, uint16_t interval_max, uint16_t peripheral_latency,
           uint16_t timeout_multiplier,
           LowEnergyCommandHandler::ConnectionParameterUpdateResponder* responder) {
         EXPECT_EQ(kIntervalMin, interval_min);
         EXPECT_EQ(kIntervalMax, interval_max);
-        EXPECT_EQ(kSlaveLatency, slave_latency);
+        EXPECT_EQ(kPeripheralLatency, peripheral_latency);
         EXPECT_EQ(kTimeoutMult, timeout_multiplier);
         responder->Send(ConnectionParameterUpdateResult::kRejected);
       };
@@ -133,13 +133,13 @@ TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqRspOk) {
 TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqNotEnoughBytes) {
   constexpr uint16_t kIntervalMin = 0;
 
-  // Request is missing interval max, slave latency, and timeout multiplier fields.
+  // Request is missing interval max, peripheral latency, and timeout multiplier fields.
   auto param_update_req = StaticByteBuffer(
       // Interval Min
       LowerBits(kIntervalMin), UpperBits(kIntervalMin));
 
   bool cb_called = false;
-  auto cb = [&](uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+  auto cb = [&](uint16_t interval_min, uint16_t interval_max, uint16_t peripheral_latency,
                 uint16_t timeout_multiplier, auto responder) { cb_called = true; };
 
   cmd_handler()->ServeConnectionParameterUpdateRequest(std::move(cb));

@@ -40,7 +40,8 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
 
 using LESignalingChannelTest = LESignalingChannelTestBase<>;
 
-using LESignalingChannelSlaveTest = LESignalingChannelTestBase<hci::Connection::Role::kSlave>;
+using LESignalingChannelPeripheralTest =
+    LESignalingChannelTestBase<hci::Connection::Role::kPeripheral>;
 
 TEST_F(LESignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;

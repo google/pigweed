@@ -63,7 +63,7 @@ class LEConnectionParameters final {
 // parameters that act as a hint to the controller. This is used for:
 //
 //   * initiating a new connection as a master
-//   * to represent a slave's preferred connection parameters
+//   * to represent a peripheral's preferred connection parameters
 class LEPreferredConnectionParameters final {
  public:
   LEPreferredConnectionParameters(uint16_t min_interval, uint16_t max_interval,

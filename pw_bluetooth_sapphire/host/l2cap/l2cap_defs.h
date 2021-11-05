@@ -442,7 +442,7 @@ constexpr CommandCode kConnectionParameterUpdateRequest = 0x12;
 struct ConnectionParameterUpdateRequestPayload {
   uint16_t interval_min;
   uint16_t interval_max;
-  uint16_t slave_latency;
+  uint16_t peripheral_latency;
   uint16_t timeout_multiplier;
 } __PACKED;
 

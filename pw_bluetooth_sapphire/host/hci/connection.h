@@ -54,7 +54,7 @@ class Connection {
   // Role of the local device in the established connection.
   enum class Role {
     kMaster,
-    kSlave,
+    kPeripheral,
   };
 
   enum class State {

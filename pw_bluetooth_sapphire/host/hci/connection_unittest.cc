@@ -314,8 +314,8 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
 }
 
-TEST_F(ConnectionTest, StartEncryptionFailsAsLowEnergySlave) {
-  auto conn = NewLEConnection(Connection::Role::kSlave);
+TEST_F(ConnectionTest, StartEncryptionFailsAsLowEnergyPeripheral) {
+  auto conn = NewLEConnection(Connection::Role::kPeripheral);
   conn->set_le_ltk(hci_spec::LinkKey());
   EXPECT_FALSE(conn->StartEncryption());
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));

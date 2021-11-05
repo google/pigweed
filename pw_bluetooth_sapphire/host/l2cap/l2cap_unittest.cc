@@ -598,13 +598,13 @@ TEST_F(L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
-  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kPeripheralLatency = 1;
   constexpr uint16_t kTimeoutMult = 10;
-  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
-                                                          kTimeoutMult);
+  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax,
+                                                          kPeripheralLatency, kTimeoutMult);
 
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
+  QueueLEConnection(kLinkHandle, hci::Connection::Role::kPeripheral);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -614,7 +614,7 @@ TEST_F(L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   l2cap::CommandId param_update_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionParameterUpdateReq(
                                            param_update_req_id, kLinkHandle, kIntervalMin,
-                                           kIntervalMax, kSlaveLatency, kTimeoutMult));
+                                           kIntervalMax, kPeripheralLatency, kTimeoutMult));
   l2cap()->RequestConnectionParameterUpdate(kLinkHandle, kParams, request_cb);
   RunLoopUntilIdle();
   EXPECT_FALSE(accepted.has_value());
@@ -641,7 +641,7 @@ TEST_F(L2capTest, InspectHierarchy) {
 
 TEST_F(L2capTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  auto channels = QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
+  auto channels = QueueLEConnection(kLinkHandle, hci::Connection::Role::kPeripheral);
   ASSERT_TRUE(channels.att);
   EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
   ASSERT_TRUE(channels.smp);

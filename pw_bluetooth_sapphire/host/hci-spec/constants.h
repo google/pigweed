@@ -164,14 +164,14 @@ enum class LMPFeature : uint64_t {
   kEV3Packets             = (1ull << 31),
 
   // Octet 4
-  kEV4Packets         = (1ull << 32),
-  kEV5Packets         = (1ull << 33),
+  kEV4Packets              = (1ull << 32),
+  kEV5Packets              = (1ull << 33),
   // Reserved
-  kAFHCapableSlave    = (1ull << 35),
-  kAFHClassSlave      = (1ull << 36),
-  kBREDRNotSupported  = (1ull << 37),
-  kLESupported        = (1ull << 38),
-  k3SlotEDRACLPackets = (1ull << 39),
+  kAFHCapablePeripheral    = (1ull << 35),
+  kAFHClassPeripheral      = (1ull << 36),
+  kBREDRNotSupported       = (1ull << 37),
+  kLESupported             = (1ull << 38),
+  k3SlotEDRACLPackets      = (1ull << 39),
 
   // Octet 5
   // TODO(armansito): Add definitions
@@ -520,14 +520,14 @@ enum class SupportedCommand : uint8_t {
   kTruncatedPageCancel               = (1 << 7),
 
   // Octet 31
-  kSetConnectionlessSlaveBroadcast        = (1 << 0),
-  kSetConnectionlessSlaveBroadcastReceive = (1 << 1),
-  kStartSynchronizationTrain              = (1 << 2),
-  kReceiveSynchronizationTrain            = (1 << 3),
-  kSetReservedLTADDR                      = (1 << 4),
-  kDeleteReservedLTADDR                   = (1 << 5),
-  kSetConnectionlessSlaveBroadcastData    = (1 << 6),
-  kReadSynchronizationTrainParameters     = (1 << 7),
+  kSetConnectionlessPeripheralBroadcast        = (1 << 0),
+  kSetConnectionlessPeripheralBroadcastReceive = (1 << 1),
+  kStartSynchronizationTrain                   = (1 << 2),
+  kReceiveSynchronizationTrain                 = (1 << 3),
+  kSetReservedLTADDR                           = (1 << 4),
+  kDeleteReservedLTADDR                        = (1 << 5),
+  kSetConnectionlessPeripheralBroadcastData    = (1 << 6),
+  kReadSynchronizationTrainParameters          = (1 << 7),
 
   // Octet 32
   kWriteSynchronizationTrainParameters = (1 << 0),
@@ -682,7 +682,7 @@ enum class LESupportedFeature : uint64_t {
   kLEEncryption                         = (1 << 0),
   kConnectionParametersRequestProcedure = (1 << 1),
   kExtendedRejectIndication             = (1 << 2),
-  kSlaveInitiatedFeaturesExchange       = (1 << 3),
+  kPeripheralInitiatedFeaturesExchange       = (1 << 3),
   kLEPing                               = (1 << 4),
   kLEDataPacketLengthExtension          = (1 << 5),
   kLLPrivacy                            = (1 << 6),
@@ -714,7 +714,7 @@ enum class LESupportedFeature : uint64_t {
 
   // Added in 5.2
   kConnectedIsochronousStreamMaster         = (1 << 28),
-  kConnectedIsochronousStreamSlave          = (1 << 29),
+  kConnectedIsochronousStreamPeripheral          = (1 << 29),
   kIsochronousBoradcaster                   = (1 << 30),
   kSynchronizedReceiver                     = (1ul << 31),
   kIsochronousChannels                      = (1ul << 32),
@@ -727,41 +727,41 @@ enum class LESupportedFeature : uint64_t {
 
 // Bitmask values for the 8-octet HCI_Set_Event_Mask command parameter.
 enum class EventMask : uint64_t {
-  kInquiryCompleteEvent = (1 << 0),
-  kInquiryResultEvent = (1 << 1),
-  kConnectionCompleteEvent = (1 << 2),
-  kConnectionRequestEvent = (1 << 3),
-  kDisconnectionCompleteEvent = (1 << 4),
-  kAuthenticationCompleteEvent = (1 << 5),
-  kRemoteNameRequestCompleteEvent = (1 << 6),
-  kEncryptionChangeEvent = (1 << 7),
-  kChangeConnectionLinkKeyCompleteEvent = (1 << 8),
-  kMasterLinkKeyCompleteEvent = (1 << 9),
-  kReadRemoteSupportedFeaturesCompleteEvent = (1 << 10),
-  kReadRemoteVersionInformationCompleteEvent = (1 << 11),
-  kQoSSetupCompleteEvent = (1 << 12),
+  kInquiryCompleteEvent                         = (1 << 0),
+  kInquiryResultEvent                           = (1 << 1),
+  kConnectionCompleteEvent                      = (1 << 2),
+  kConnectionRequestEvent                       = (1 << 3),
+  kDisconnectionCompleteEvent                   = (1 << 4),
+  kAuthenticationCompleteEvent                  = (1 << 5),
+  kRemoteNameRequestCompleteEvent               = (1 << 6),
+  kEncryptionChangeEvent                        = (1 << 7),
+  kChangeConnectionLinkKeyCompleteEvent         = (1 << 8),
+  kMasterLinkKeyCompleteEvent                   = (1 << 9),
+  kReadRemoteSupportedFeaturesCompleteEvent     = (1 << 10),
+  kReadRemoteVersionInformationCompleteEvent    = (1 << 11),
+  kQoSSetupCompleteEvent                        = (1 << 12),
   // Reserved For Future Use: (1 << 13)
   // Reserved For Future Use: (1 << 14)
-  kHardwareErrorEvent = (1 << 15),
-  kFlushOccurredEvent = (1 << 16),
-  kRoleChangeEvent = (1 << 17),
+  kHardwareErrorEvent                           = (1 << 15),
+  kFlushOccurredEvent                           = (1 << 16),
+  kRoleChangeEvent                              = (1 << 17),
   // Reserved For Future Use: (1 << 18)
-  kModeChangeEvent = (1 << 19),
-  kReturnLinkKeysEvent = (1 << 20),
-  kPINCodeRequestEvent = (1 << 21),
-  kLinkKeyRequestEvent = (1 << 22),
-  kLinkKeyNotificationEvent = (1 << 23),
-  kLoopbackCommandEvent = (1 << 24),
-  kDataBufferOverflowEvent = (1 << 25),
-  kMaxSlotsChangeEvent = (1 << 26),
-  kReadClockOffsetCompleteEvent = (1 << 27),
-  kConnectionPacketTypeChangedEvent = (1 << 28),
-  kQoSViolationEvent = (1 << 29),
-  kPageScanModeChangeEvent = (1 << 30),  // deprecated
-  kPageScanRepetitionModeChangeEvent = (1ull << 31),
-  kFlowSpecificationCompleteEvent = (1ull << 32),
-  kInquiryResultWithRSSIEvent = (1ull << 33),
-  kReadRemoteExtendedFeaturesCompleteEvent = (1ull << 34),
+  kModeChangeEvent                              = (1 << 19),
+  kReturnLinkKeysEvent                          = (1 << 20),
+  kPINCodeRequestEvent                          = (1 << 21),
+  kLinkKeyRequestEvent                          = (1 << 22),
+  kLinkKeyNotificationEvent                     = (1 << 23),
+  kLoopbackCommandEvent                         = (1 << 24),
+  kDataBufferOverflowEvent                      = (1 << 25),
+  kMaxSlotsChangeEvent                          = (1 << 26),
+  kReadClockOffsetCompleteEvent                 = (1 << 27),
+  kConnectionPacketTypeChangedEvent             = (1 << 28),
+  kQoSViolationEvent                            = (1 << 29),
+  kPageScanModeChangeEvent                      = (1 << 30),  // deprecated
+  kPageScanRepetitionModeChangeEvent            = (1ull << 31),
+  kFlowSpecificationCompleteEvent               = (1ull << 32),
+  kInquiryResultWithRSSIEvent                   = (1ull << 33),
+  kReadRemoteExtendedFeaturesCompleteEvent      = (1ull << 34),
   // Reserved For Future Use: (1ull << 35)
   // Reserved For Future Use: (1ull << 36)
   // Reserved For Future Use: (1ull << 37)
@@ -770,56 +770,56 @@ enum class EventMask : uint64_t {
   // Reserved For Future Use: (1ull << 40)
   // Reserved For Future Use: (1ull << 41)
   // Reserved For Future Use: (1ull << 42)
-  kSynchronousConnectionCompleteEvent = (1ull << 43),
-  kSynchronousConnectionChangedEvent = (1ull << 44),
-  kSniffSubratingEvent = (1ull << 45),
-  kExtendedInquiryResultEvent = (1ull << 46),
-  kEncryptionKeyRefreshCompleteEvent = (1ull << 47),
-  kIOCapabilityRequestEvent = (1ull << 48),
-  kIOCapabilityResponseEvent = (1ull << 49),
-  kUserConfirmationRequestEvent = (1ull << 50),
-  kUserPasskeyRequestEvent = (1ull << 51),
-  kRemoteOOBDataRequestEvent = (1ull << 52),
-  kSimplePairingCompleteEvent = (1ull << 53),
+  kSynchronousConnectionCompleteEvent           = (1ull << 43),
+  kSynchronousConnectionChangedEvent            = (1ull << 44),
+  kSniffSubratingEvent                          = (1ull << 45),
+  kExtendedInquiryResultEvent                   = (1ull << 46),
+  kEncryptionKeyRefreshCompleteEvent            = (1ull << 47),
+  kIOCapabilityRequestEvent                     = (1ull << 48),
+  kIOCapabilityResponseEvent                    = (1ull << 49),
+  kUserConfirmationRequestEvent                 = (1ull << 50),
+  kUserPasskeyRequestEvent                      = (1ull << 51),
+  kRemoteOOBDataRequestEvent                    = (1ull << 52),
+  kSimplePairingCompleteEvent                   = (1ull << 53),
   // Reserved For Future Use: (1ull << 54)
-  kLinkSupervisionTimeoutChangedEvent = (1ull << 55),
-  kEnhancedFlushCompleteEvent = (1ull << 56),
+  kLinkSupervisionTimeoutChangedEvent           = (1ull << 55),
+  kEnhancedFlushCompleteEvent                   = (1ull << 56),
   // Reserved For Future Use: (1ull << 57)
-  kUserPasskeyNotificationEvent = (1ull << 58),
-  kKeypressNotificationEvent = (1ull << 59),
+  kUserPasskeyNotificationEvent                 = (1ull << 58),
+  kKeypressNotificationEvent                    = (1ull << 59),
   kRemoteHostSupportedFeaturesNotificationEvent = (1ull << 60),
-  kLEMetaEvent = (1ull << 61),
+  kLEMetaEvent                                  = (1ull << 61),
   // Reserved For Future Use: (1ull << 62)
   // Reserved For Future Use: (1ull << 63)
 };
 
 // Bitmask values for the 8-octet HCI_Set_Event_Mask_Page_2 command parameter.
 enum class EventMaskPage2 : uint64_t {
-  kPhysicalLinkCompleteEvent = (1 << 0),
-  kChannelSelectedEvent = (1 << 1),
-  kDisconnectionPhysicalLinkCompleteEvent = (1 << 2),
-  kPhysicalLinkLossEarlyWarningEvent = (1 << 3),
-  kPhysicalLinkRecoveryEvent = (1 << 4),
-  kLogicalLinkCompleteEvent = (1 << 5),
-  kDisconnectionLogicalLinkCompleteEvent = (1 << 6),
-  kFlowSpecModifyCompleteEvent = (1 << 7),
-  kNumberOfCompletedDataBlocksEvent = (1 << 8),
-  kAMPStartTestEvent = (1 << 9),
-  kAMPTestEndEvent = (1 << 10),
-  kAMPReceiverReportEvent = (1 << 11),
-  kShortRangeModeChangeCompleteEvent = (1 << 12),
-  kAMPStatusChangeEvent = (1 << 13),
-  kTriggeredClockCaptureEvent = (1 << 14),
-  kSynchronizationTrainCompleteEvent = (1 << 15),
-  kSynchronizationTrainReceivedEvent = (1 << 16),
-  kConnectionlessSlaveBroadcastReceiveEvent = (1 << 17),
-  kConnectionlessSlaveBroadcastTimeoutEvent = (1 << 18),
-  kTruncatedPageCompleteEvent = (1 << 19),
-  kSlavePageResponseTimeoutEvent = (1 << 20),
-  kConnectionlessSlaveBroadcastChannelMapChangeEvent = (1 << 21),
-  kInquiryResponseNotificationEvent = (1 << 22),
-  kAuthenticatedPayloadTimeoutExpiredEvent = (1 << 23),
-  kSAMStatusChangeEvent = (1 << 24),
+  kPhysicalLinkCompleteEvent                              = (1 << 0),
+  kChannelSelectedEvent                                   = (1 << 1),
+  kDisconnectionPhysicalLinkCompleteEvent                 = (1 << 2),
+  kPhysicalLinkLossEarlyWarningEvent                      = (1 << 3),
+  kPhysicalLinkRecoveryEvent                              = (1 << 4),
+  kLogicalLinkCompleteEvent                               = (1 << 5),
+  kDisconnectionLogicalLinkCompleteEvent                  = (1 << 6),
+  kFlowSpecModifyCompleteEvent                            = (1 << 7),
+  kNumberOfCompletedDataBlocksEvent                       = (1 << 8),
+  kAMPStartTestEvent                                      = (1 << 9),
+  kAMPTestEndEvent                                        = (1 << 10),
+  kAMPReceiverReportEvent                                 = (1 << 11),
+  kShortRangeModeChangeCompleteEvent                      = (1 << 12),
+  kAMPStatusChangeEvent                                   = (1 << 13),
+  kTriggeredClockCaptureEvent                             = (1 << 14),
+  kSynchronizationTrainCompleteEvent                      = (1 << 15),
+  kSynchronizationTrainReceivedEvent                      = (1 << 16),
+  kConnectionlessPeripheralBroadcastReceiveEvent          = (1 << 17),
+  kConnectionlessPeripheralBroadcastTimeoutEvent          = (1 << 18),
+  kTruncatedPageCompleteEvent                             = (1 << 19),
+  kPeripheralPageResponseTimeoutEvent                     = (1 << 20),
+  kConnectionlessPeripheralBroadcastChannelMapChangeEvent = (1 << 21),
+  kInquiryResponseNotificationEvent                       = (1 << 22),
+  kAuthenticatedPayloadTimeoutExpiredEvent                = (1 << 23),
+  kSAMStatusChangeEvent                                   = (1 << 24),
 };
 
 // Bitmask values for the 8-octet HCI_LE_Set_Event_Mask command parameter.
@@ -1349,14 +1349,14 @@ enum class ACLPacketBoundaryFlag : uint8_t {
 // The Broadcast Flag is contained in bits 6 and 7 in the second octet of a HCI
 // ACL Data packet.
 enum class ACLBroadcastFlag : uint8_t {
-  kPointToPoint         = 0x00,
-  kActiveSlaveBroadcast = 0x01,
+  kPointToPoint              = 0x00,
+  kActivePeripheralBroadcast = 0x01,
 };
 
 // A connection role. Used for LE and BR/EDR connection roles.
 enum class ConnectionRole : uint8_t {
-  kMaster = 0x00,
-  kSlave = 0x01,
+  kMaster     = 0x00,
+  kPeripheral = 0x01,
 };
 
 // Possible values that can be reported for the Master_Clock_Accuracy and
@@ -1366,10 +1366,10 @@ enum class LEClockAccuracy : uint8_t {
   k250Ppm = 0x01,
   k150Ppm = 0x02,
   k100Ppm = 0x03,
-  k75Ppm = 0x04,
-  k50Ppm = 0x05,
-  k30Ppm = 0x06,
-  k20Ppm = 0x07,
+  k75Ppm  = 0x04,
+  k50Ppm  = 0x05,
+  k30Ppm  = 0x06,
+  k20Ppm  = 0x07,
 };
 
 // Possible values that can be reported in a LE Channel Selection Algorithm event.

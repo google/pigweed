@@ -491,7 +491,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                                                   hci_spec::ConnectionRole role) {
   hci::Connection::Role conn_role = role == hci_spec::ConnectionRole::kMaster
                                         ? hci::Connection::Role::kMaster
-                                        : hci::Connection::Role::kSlave;
+                                        : hci::Connection::Role::kPeripheral;
   auto link = hci::Connection::CreateACL(connection_handle, conn_role, local_address_, addr, hci_);
   Peer* const peer = FindOrInitPeer(addr);
   auto peer_id = peer->identifier();
@@ -747,8 +747,9 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
 
   const char* direction = completed_request_was_outgoing ? "outgoing" : "incoming";
   const char* result = status ? "complete" : "error";
-  hci_spec::ConnectionRole role = completed_request_was_outgoing ? hci_spec::ConnectionRole::kMaster
-                                                                 : hci_spec::ConnectionRole::kSlave;
+  hci_spec::ConnectionRole role = completed_request_was_outgoing
+                                      ? hci_spec::ConnectionRole::kMaster
+                                      : hci_spec::ConnectionRole::kPeripheral;
   if (request.role_change()) {
     role = request.role_change().value();
   }
@@ -1074,7 +1075,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
 
   hci::Connection::Role new_role = params.new_role == hci_spec::ConnectionRole::kMaster
                                        ? hci::Connection::Role::kMaster
-                                       : hci::Connection::Role::kSlave;
+                                       : hci::Connection::Role::kPeripheral;
   const char* new_role_str = new_role == hci::Connection::Role::kMaster ? "leader" : "follower";
 
   if (hci_is_error(event, WARN, "gap-bredr", "role change failed and remains %s (peer: %s)",

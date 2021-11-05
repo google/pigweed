@@ -245,7 +245,7 @@ TEST(PacketTest, ACLDataPacketFromFields) {
 
   auto packet =
       ACLDataPacket::New(0x007F, hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
-                         hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, kSmallDataLength);
+                         hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast, kSmallDataLength);
   packet->mutable_view()->mutable_payload_data().Fill(0);
 
   // First 12-bits: 0x07F
@@ -253,8 +253,9 @@ TEST(PacketTest, ACLDataPacketFromFields) {
   EXPECT_TRUE(ContainersEqual(packet->view().data(),
                               std::array<uint8_t, 5>{{0x7F, 0x50, 0x01, 0x00, 0x00}}));
 
-  packet = ACLDataPacket::New(0x0FFF, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
-                              hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, kSmallDataLength);
+  packet =
+      ACLDataPacket::New(0x0FFF, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
+                         hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast, kSmallDataLength);
   packet->mutable_view()->mutable_payload_data().Fill(0);
 
   // First 12-bits: 0xFFF
@@ -289,7 +290,7 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
 
   EXPECT_EQ(0x007F, packet->connection_handle());
   EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kContinuingFragment, packet->packet_boundary_flag());
-  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, packet->broadcast_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast, packet->broadcast_flag());
   EXPECT_EQ(kSmallDataLength, packet->view().payload_size());
 
   // First 12-bits: 0xFFF
@@ -300,7 +301,7 @@ TEST(PacketTest, ACLDataPacketFromBuffer) {
 
   EXPECT_EQ(0x0FFF, packet->connection_handle());
   EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kCompletePDU, packet->packet_boundary_flag());
-  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast, packet->broadcast_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast, packet->broadcast_flag());
   EXPECT_EQ(kSmallDataLength, packet->view().payload_size());
 
   packet = ACLDataPacket::New(kLargeDataLength);

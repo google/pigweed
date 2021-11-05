@@ -181,7 +181,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
 
   // We do not support the Connectionless data channel, and the active broadcast flag can
   // only be used on the connectionless channel.  Drop packets that are broadcast.
-  if (packet->broadcast_flag() == hci_spec::ACLBroadcastFlag::kActiveSlaveBroadcast) {
+  if (packet->broadcast_flag() == hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast) {
     bt_log(DEBUG, "l2cap", "Unsupported Broadcast Frame dropped");
     return;
   }
@@ -564,7 +564,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
     ConnectionParameterUpdateRequestCallback request_cb) {
   ZX_ASSERT(signaling_channel_);
   ZX_ASSERT(type_ == bt::LinkType::kLE);
-  ZX_ASSERT(role_ == hci::Connection::Role::kSlave);
+  ZX_ASSERT(role_ == hci::Connection::Role::kPeripheral);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.SendConnectionParameterUpdateRequest(
@@ -731,13 +731,13 @@ void LogicalLink::ServeConnectionParameterUpdateRequest() {
 }
 
 void LogicalLink::OnRxConnectionParameterUpdateRequest(
-    uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+    uint16_t interval_min, uint16_t interval_max, uint16_t peripheral_latency,
     uint16_t timeout_multiplier,
     LowEnergyCommandHandler::ConnectionParameterUpdateResponder* responder) {
-  // Only a LE slave can send this command. "If an LE slave Host receives a
-  // Connection Parameter Update Request packet it shall respond with a Command
-  // Reject Packet [...]" (v5.0, Vol 3, Part A, Section 4.20).
-  if (role_ == hci::Connection::Role::kSlave) {
+  // Only a LE peripheral can send this command. "If a Peripheral’s Host receives an
+  // L2CAP_CONNECTION_PARAMETER_UPDATE_REQ packet it shall respond with an L2CAP_COMMAND_REJECT_RSP
+  // packet with reason 0x0000 (Command not understood)." (v5.0, Vol 3, Part A, Section 4.20)
+  if (role_ == hci::Connection::Role::kPeripheral) {
     bt_log(DEBUG, "l2cap", "rejecting conn. param. update request from master");
     responder->RejectNotUnderstood();
     return;
@@ -748,7 +748,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
   // Part E, Section 7.8.18).
   bool reject = false;
 
-  hci_spec::LEPreferredConnectionParameters params(interval_min, interval_max, slave_latency,
+  hci_spec::LEPreferredConnectionParameters params(interval_min, interval_max, peripheral_latency,
                                                    timeout_multiplier);
 
   if (params.min_interval() > params.max_interval()) {
@@ -763,7 +763,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
            params.max_interval());
     reject = true;
   } else if (params.max_latency() > hci_spec::kLEConnectionLatencyMax) {
-    bt_log(DEBUG, "l2cap", "conn. slave latency too large: %#.4x", params.max_latency());
+    bt_log(DEBUG, "l2cap", "conn. peripheral latency too large: %#.4x", params.max_latency());
     reject = true;
   } else if (params.supervision_timeout() < hci_spec::kLEConnectionSupervisionTimeoutMin ||
              params.supervision_timeout() > hci_spec::kLEConnectionSupervisionTimeoutMax) {

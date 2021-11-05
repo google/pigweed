@@ -53,8 +53,8 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
                                 dispatcher());
 
     // Setup a fake logical link.
-    auto link_role =
-        role == Role::kInitiator ? hci::Connection::Role::kMaster : hci::Connection::Role::kSlave;
+    auto link_role = role == Role::kInitiator ? hci::Connection::Role::kMaster
+                                              : hci::Connection::Role::kPeripheral;
     fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, bt::LinkType::kLE, link_role,
                                                                 kLocalAddr, kPeerAddr);
 

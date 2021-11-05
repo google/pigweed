@@ -156,7 +156,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // Called when the preferred connection parameters have been received for a LE
   // peripheral. This can happen in the form of:
   //
-  //   1. <<Slave Connection Interval Range>> advertising data field
+  //   1. <<Peripheral Connection Interval Range>> advertising data field
   //   2. "Peripheral Preferred Connection Parameters" GATT characteristic
   //      (under "GAP" service)
   //   3. HCI LE Remote Connection Parameter Request Event
