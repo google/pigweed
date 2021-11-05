@@ -36,7 +36,8 @@ inline CountingSemaphore::~CountingSemaphore() {
 }
 
 inline void CountingSemaphore::acquire() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::CountingSemaphore IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
 #if INCLUDE_vTaskSuspend == 1  // This means portMAX_DELAY is indefinite.
   const BaseType_t result = xSemaphoreTake(
       reinterpret_cast<SemaphoreHandle_t>(&native_type_), portMAX_DELAY);

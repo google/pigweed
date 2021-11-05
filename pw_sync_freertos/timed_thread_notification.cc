@@ -46,7 +46,10 @@ BaseType_t WaitForNotification(TickType_t xTicksToWait) {
 }  // namespace
 
 bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
+  // Enforce the pw::sync::TImedThreadNotification IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
+
+  // Enforce that only a single thread can block at a time.
   PW_DCHECK(native_handle().blocked_thread == nullptr);
 
   taskENTER_CRITICAL();
@@ -64,8 +67,12 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
   taskEXIT_CRITICAL();
 
   const bool notified = [&]() {
-    // On a tick based kernel we cannot tell how far along we are on the current
-    // tick, ergo we add one whole tick to the final duration.
+    // In case the timeout is too long for us to express through the native
+    // FreeRTOS API, we repeatedly wait with shorter durations. Note that on a
+    // tick based kernel we cannot tell how far along we are on the current
+    // tick, ergo we add one whole tick to the final duration. However, this
+    // also means that the loop must ensure that timeout + 1 is less than the
+    // max timeout.
     constexpr SystemClock::duration kMaxTimeoutMinusOne =
         pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
     // In case the timeout is too long for us to express through the native
@@ -78,6 +85,8 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
       timeout -= kMaxTimeoutMinusOne;
     }
 
+    // On a tick based kernel we cannot tell how far along we are on the current
+    // tick, ergo we add one whole tick to the final duration.
     return WaitForNotification(static_cast<TickType_t>(timeout.count() + 1)) ==
            pdTRUE;
   }();

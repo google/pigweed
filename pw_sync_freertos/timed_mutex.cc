@@ -28,6 +28,7 @@ using pw::chrono::SystemClock;
 namespace pw::sync {
 
 bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
+  // Enforce the pw::sync::TimedMutex IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
 
   // Use non-blocking try_acquire for negative and zero length durations.
@@ -35,8 +36,11 @@ bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
     return try_lock();
   }
 
-  // On a tick based kernel we cannot tell how far along we are on the current
-  // tick, ergo we add one whole tick to the final duration.
+  // In case the timeout is too long for us to express through the native
+  // FreeRTOS API, we repeatedly wait with shorter durations. Note that on a
+  // tick based kernel we cannot tell how far along we are on the current tick,
+  // ergo we add one whole tick to the final duration. However, this also means
+  // that the loop must ensure that timeout + 1 is less than the max timeout.
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (timeout > kMaxTimeoutMinusOne) {
@@ -47,6 +51,8 @@ bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
     }
     timeout -= kMaxTimeoutMinusOne;
   }
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
   return xSemaphoreTake(reinterpret_cast<SemaphoreHandle_t>(&native_handle()),
                         static_cast<TickType_t>(timeout.count() + 1)) == pdTRUE;
 }

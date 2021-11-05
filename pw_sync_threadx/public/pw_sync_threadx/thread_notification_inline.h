@@ -31,6 +31,7 @@ inline ThreadNotification::ThreadNotification()
 inline ThreadNotification::~ThreadNotification() = default;
 
 inline bool ThreadNotification::try_acquire() {
+  // Enforce the pw::sync::ThreadNotification IRQ contract.
   PW_DASSERT(!interrupt::InInterruptContext());
   {
     std::lock_guard lock(backend::thread_notification_isl);

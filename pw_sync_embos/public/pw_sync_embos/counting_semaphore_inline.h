@@ -31,7 +31,8 @@ inline CountingSemaphore::~CountingSemaphore() {
 }
 
 inline void CountingSemaphore::acquire() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::CountingSemaphore IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
   OS_WaitCSema(&native_type_);
 }
 

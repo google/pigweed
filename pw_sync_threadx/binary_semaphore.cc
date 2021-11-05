@@ -35,8 +35,11 @@ bool BinarySemaphore::try_acquire_for(SystemClock::duration timeout) {
     return try_acquire();
   }
 
-  // On a tick based kernel we cannot tell how far along we are on the current
-  // tick, ergo we add one whole tick to the final duration.
+  // In case the timeout is too long for us to express through the native
+  // ThreadX API, we repeatedly wait with shorter durations. Note that on a tick
+  // based kernel we cannot tell how far along we are on the current tick, ergo
+  // we add one whole tick to the final duration. However, this also means that
+  // the loop must ensure that timeout + 1 is less than the max timeout.
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::threadx::kMaxTimeout - SystemClock::duration(1);
   while (timeout > kMaxTimeoutMinusOne) {
@@ -49,6 +52,8 @@ bool BinarySemaphore::try_acquire_for(SystemClock::duration timeout) {
     }
     timeout -= kMaxTimeoutMinusOne;
   }
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
   const UINT result =
       tx_semaphore_get(&native_type_, static_cast<ULONG>(timeout.count() + 1));
   if (result == TX_NO_INSTANCE) {

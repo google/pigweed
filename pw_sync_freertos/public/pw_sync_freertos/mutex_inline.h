@@ -41,7 +41,8 @@ inline Mutex::~Mutex() {
 }
 
 inline void Mutex::lock() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::Mutex IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
 #if INCLUDE_vTaskSuspend == 1  // This means portMAX_DELAY is indefinite.
   const BaseType_t result = xSemaphoreTake(
       reinterpret_cast<SemaphoreHandle_t>(&native_type_), portMAX_DELAY);
@@ -56,13 +57,15 @@ inline void Mutex::lock() {
 }
 
 inline bool Mutex::try_lock() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::Mutex IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
   return xSemaphoreTake(reinterpret_cast<SemaphoreHandle_t>(&native_type_),
                         0) == pdTRUE;
 }
 
 inline void Mutex::unlock() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::Mutex IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
   // Unlocking only fails if it was not locked first.
   PW_ASSERT(xSemaphoreGive(
                 reinterpret_cast<SemaphoreHandle_t>(&native_type_)) == pdTRUE);

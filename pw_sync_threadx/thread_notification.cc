@@ -29,7 +29,10 @@ InterruptSpinLock thread_notification_isl;
 }  // namespace backend
 
 void ThreadNotification::acquire() {
+  // Enforce the pw::sync::ThreadNotification IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
+
+  // Enforce that only a single thread can block at a time.
   PW_DCHECK(native_type_.blocked_thread == nullptr);
 
   {

@@ -42,7 +42,10 @@ BaseType_t WaitForNotification(TickType_t xTicksToWait) {
 }  // namespace
 
 void ThreadNotification::acquire() {
+  // Enforce the pw::sync::ThreadNotification IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
+
+  // Enforce that only a single thread can block at a time.
   PW_DCHECK(native_type_.blocked_thread == nullptr);
 
   taskENTER_CRITICAL();

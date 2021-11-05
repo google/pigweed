@@ -25,18 +25,21 @@ inline Mutex::Mutex() : native_type_() { OS_CreateRSema(&native_type_); }
 inline Mutex::~Mutex() { OS_DeleteRSema(&native_type_); }
 
 inline void Mutex::lock() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::Mutex IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
   const int lock_count = OS_Use(&native_type_);
   PW_ASSERT(lock_count == 1);  // Recursive locking is not permitted.
 }
 
 inline bool Mutex::try_lock() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::Mutex IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
   return OS_Request(&native_type_) != 0;
 }
 
 inline void Mutex::unlock() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::Mutex IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
   OS_Unuse(&native_type_);
 }
 

@@ -31,7 +31,8 @@ inline BinarySemaphore::~BinarySemaphore() { OS_DeleteCSema(&native_type_); }
 inline void BinarySemaphore::release() { OS_SignalCSemaMax(&native_type_, 1); }
 
 inline void BinarySemaphore::acquire() {
-  PW_ASSERT(!interrupt::InInterruptContext());
+  // Enforce the pw::sync::BinarySemaphore IRQ contract.
+  PW_DASSERT(!interrupt::InInterruptContext());
   OS_WaitCSema(&native_type_);
 }
 

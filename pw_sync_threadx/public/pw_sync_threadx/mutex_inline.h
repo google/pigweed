@@ -37,13 +37,13 @@ inline Mutex::~Mutex() {
 
 inline void Mutex::lock() {
   // Enforce the pw::sync::Mutex IRQ contract.
-  PW_ASSERT(!interrupt::InInterruptContext());
+  PW_DASSERT(!interrupt::InInterruptContext());
   PW_ASSERT(tx_mutex_get(&native_type_, TX_WAIT_FOREVER) == TX_SUCCESS);
 }
 
 inline bool Mutex::try_lock() {
   // Enforce the pw::sync::Mutex IRQ contract.
-  PW_ASSERT(!interrupt::InInterruptContext());
+  PW_DASSERT(!interrupt::InInterruptContext());
   const UINT result = tx_mutex_get(&native_type_, TX_NO_WAIT);
   if (result == TX_NOT_AVAILABLE) {
     return false;
@@ -54,7 +54,7 @@ inline bool Mutex::try_lock() {
 
 inline void Mutex::unlock() {
   // Enforce the pw::sync::Mutex IRQ contract.
-  PW_ASSERT(!interrupt::InInterruptContext());
+  PW_DASSERT(!interrupt::InInterruptContext());
   PW_ASSERT(tx_mutex_put(&native_type_) == TX_SUCCESS);
 }
 
