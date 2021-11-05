@@ -15,12 +15,18 @@
 
 #include "RTOS.h"
 #include "pw_assert/assert.h"
+#include "pw_interrupt/context.h"
 #include "pw_thread/id.h"
 
 namespace pw::this_thread {
 
 inline thread::Id get_id() {
+  // Ensure this is not being called by an interrupt.
+  PW_DASSERT(!interrupt::InInterruptContext());
+
+  // Ensure the kernel is running.
   PW_DASSERT(OS_IsRunning() != 0);
+
   return thread::Id(OS_GetTaskID());
 }
 

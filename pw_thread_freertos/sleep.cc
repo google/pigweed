@@ -28,6 +28,7 @@ using pw::chrono::SystemClock;
 namespace pw::this_thread {
 
 void sleep_for(SystemClock::duration for_at_least) {
+  // Ensure this is being called by a thread.
   PW_DCHECK(get_id() != thread::Id());
 
   // Yield for negative and zero length durations.
@@ -36,14 +37,19 @@ void sleep_for(SystemClock::duration for_at_least) {
     return;
   }
 
-  // On a tick based kernel we cannot tell how far along we are on the current
-  // tick, ergo we add one whole tick to the final duration.
+  // In case the timeout is too long for us to express through the native
+  // FreeRTOS API, we repeatedly wait with shorter durations. Note that on a
+  // tick based kernel we cannot tell how far along we are on the current tick,
+  // ergo we add one whole tick to the final duration. However, this also means
+  // that the loop must ensure that timeout + 1 is less than the max timeout.
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
     vTaskDelay(static_cast<TickType_t>(kMaxTimeoutMinusOne.count()));
     for_at_least -= kMaxTimeoutMinusOne;
   }
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
   vTaskDelay(static_cast<TickType_t>(for_at_least.count() + 1));
 }
 
