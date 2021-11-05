@@ -201,7 +201,7 @@ storage objects used by your Snapshot capture codepath.
 
   // Persistent RAM objects are highly available. They don't rely on
   // their constructor being run, and require no initialization.
-  PW_KEEP_IN_SECTION(".noinit")
+  PW_PLACE_IN_SECTION(".noinit")
   pw::persistent_ram::PersistentBuffer<2048> persistent_snapshot;
 
   void CaptureSnapshot(CrashInfo& crash_info) {

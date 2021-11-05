@@ -38,7 +38,7 @@ bootloaders and the application boot code do not clobber it.
 
       using pw::persistent_ram::Persistent;
 
-      PW_KEEP_IN_SECTION(".noinit") Persistent<bool> persistent_bool;
+      PW_PLACE_IN_SECTION(".noinit") Persistent<bool> persistent_bool;
 
 2. If persistent memory ranges are provided, we recommend using a struct to wrap
    the different persisted objects. This then could be checked to fit in the
@@ -150,7 +150,7 @@ the Persistent container.
       uint16_t boot_count_;
     };
 
-    PW_KEEP_IN_SECTION(".noinit") Persistent<uint16_t> persistent_boot_count;
+    PW_PLACE_IN_SECTION(".noinit") Persistent<uint16_t> persistent_boot_count;
     BootCount boot_count(persistent_boot_count);
 
     int main() {
@@ -182,7 +182,7 @@ object's checksum is updated to reflect the changes.
       char reason[kMaxReasonLength];
     }
 
-    PW_KEEP_IN_SECTION(".noinit") Persistent<LastBootInfo> persistent_crash_info;
+    PW_PLACE_IN_SECTION(".noinit") Persistent<LastBootInfo> persistent_crash_info;
 
     void HandleCrash(const char* fmt, va_list args) {
       // Once this scope ends, we know the persistent object has been updated

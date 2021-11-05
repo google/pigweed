@@ -60,6 +60,13 @@
 #define PW_PRINTF_FORMAT(format_index, parameter_index) \
   __attribute__((format(_PW_PRINTF_FORMAT_TYPE, format_index, parameter_index)))
 
+// Places a variable in the specified linker section.
+#ifdef __APPLE__
+#define PW_PLACE_IN_SECTION(name) __attribute__((section("__DATA," name)))
+#else
+#define PW_PLACE_IN_SECTION(name) __attribute__((section(name)))
+#endif  // __APPLE__
+
 // Places a variable in the specified linker section and directs the compiler
 // to keep the variable, even if it is not used. Depending on the linker
 // options, the linker may still remove this section if it is not declared in
