@@ -27,6 +27,11 @@ import("$dir_pw_build/python_action.gni")
 #       provided, this file will be included as a target payload, but handled
 #       specially. See the following file for details:
 #         pw_software_update/public/pw_software_update/bundled_update_backend.h
+#   targets_metadata_version: Optional manually-specified int version number for
+#       the targets metadata.
+#   signed_root_metadata: Optional path to a .pb file containing a serialized
+#       SignedRootMetadata (generated and signed via the tools in the
+#       pw_software_update Python module).
 #
 # Each target in targets should be a string formatted as follows:
 #   "/path/to/file > target_name"
@@ -81,6 +86,20 @@ template("pw_update_bundle") {
       args += [
         "--persist",
         rebase_path(_persist_path),
+      ]
+    }
+
+    if (defined(invoker.targets_metadata_version)) {
+      args += [
+        "--targets-metadata-version",
+        invoker.targets_metadata_version,
+      ]
+    }
+
+    if (defined(invoker.signed_root_metadata)) {
+      args += [
+        "--signed-root-metadata",
+        rebase_path(invoker.signed_root_metadata),
       ]
     }
   }
