@@ -23,8 +23,10 @@ ByteBuilder& ByteBuilder::append(size_t count, std::byte b) {
 }
 
 ByteBuilder& ByteBuilder::append(const void* bytes, size_t count) {
-  std::byte* const append_destination = &buffer_[size_];
-  std::memcpy(append_destination, bytes, ResizeForAppend(count));
+  if (count > 0) {
+    std::byte* const append_destination = &buffer_[size_];
+    std::memcpy(append_destination, bytes, ResizeForAppend(count));
+  }
   return *this;
 }
 
