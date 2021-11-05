@@ -184,6 +184,45 @@ TEST_F(BlobStoreTest, Writer_ConservativeLimits) {
   EXPECT_EQ(deferred_writer.ConservativeWriteLimit(), kBufferSize);
 }
 
+// Write to the blob using a flash_write_size_bytes smaller than the
+// buffer size. Use Write operations smaller than flash_write_size_bytes
+// to ensure it checks the internal buffering path.
+TEST_F(BlobStoreTest, OversizedWriteBuffer) {
+  size_t write_size_bytes = 8;
+  ASSERT_LE(write_size_bytes, source_buffer_.size());
+  constexpr size_t kBufferSize = 256;
+  kvs::ChecksumCrc16 checksum;
+
+  InitSourceBufferToRandom(0x123d123);
+
+  ConstByteSpan write_data = std::span(source_buffer_);
+  ConstByteSpan original_source = std::span(source_buffer_);
+
+  EXPECT_EQ(OkStatus(), partition_.Erase());
+
+  BlobStoreBuffer<kBufferSize> blob(
+      kBlobTitle, partition_, &checksum, kvs::TestKvs(), 64);
+  EXPECT_EQ(OkStatus(), blob.Init());
+
+  BlobStore::BlobWriterWithBuffer writer(blob);
+  EXPECT_EQ(OkStatus(), writer.Open());
+  while (write_data.size_bytes() > 0) {
+    ASSERT_EQ(OkStatus(), writer.Write(write_data.first(write_size_bytes)));
+    write_data = write_data.subspan(write_size_bytes);
+  }
+  EXPECT_EQ(OkStatus(), writer.Close());
+
+  // Use reader to check for valid data.
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+  Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(original_source.size_bytes(), result.value().size_bytes());
+  VerifyFlash(result.value());
+  VerifyFlash(flash_.buffer());
+  EXPECT_EQ(OkStatus(), reader.Close());
+}
+
 TEST_F(BlobStoreTest, Reader_ConservativeLimits) {
   InitSourceBufferToRandom(0x11309);
   WriteTestBlock();

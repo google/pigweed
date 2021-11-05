@@ -227,7 +227,7 @@ Status BlobStore::Write(ConstByteSpan data) {
     }
 
     // The write buffer is full, flush to flash.
-    if (!CommitToFlash(write_buffer_).ok()) {
+    if (!CommitToFlash(write_buffer_.first(flash_write_size_bytes_)).ok()) {
       return Status::DataLoss();
     }
 
