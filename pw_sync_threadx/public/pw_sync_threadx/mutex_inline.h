@@ -23,6 +23,14 @@ namespace backend {
 
 inline constexpr char kMutexName[] = "pw::Mutex";
 
+// Precondition: The mutex must be held when calling this!
+inline bool NotRecursivelyHeld(TX_MUTEX& mutex) {
+  // Don't use tx_mutex_info_get which goes into a critical section to read
+  // this count. Given that this is only called while the mutex is held, nothing
+  // can mutate this count and ergo we access the control block directly.
+  return mutex.tx_mutex_ownership_count == 1;
+}
+
 }  // namespace backend
 
 inline Mutex::Mutex() : native_type_() {
@@ -39,6 +47,9 @@ inline void Mutex::lock() {
   // Enforce the pw::sync::Mutex IRQ contract.
   PW_DASSERT(!interrupt::InInterruptContext());
   PW_ASSERT(tx_mutex_get(&native_type_, TX_WAIT_FOREVER) == TX_SUCCESS);
+
+  // Recursive locking is not supported.
+  PW_DASSERT(backend::NotRecursivelyHeld(native_type_));
 }
 
 inline bool Mutex::try_lock() {
@@ -49,6 +60,8 @@ inline bool Mutex::try_lock() {
     return false;
   }
   PW_ASSERT(result == TX_SUCCESS);
+  // Recursive locking is not supported.
+  PW_DASSERT(backend::NotRecursivelyHeld(native_type_));
   return true;
 }
 

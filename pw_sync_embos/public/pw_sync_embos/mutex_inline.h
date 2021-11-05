@@ -28,13 +28,19 @@ inline void Mutex::lock() {
   // Enforce the pw::sync::Mutex IRQ contract.
   PW_DASSERT(!interrupt::InInterruptContext());
   const int lock_count = OS_Use(&native_type_);
-  PW_ASSERT(lock_count == 1);  // Recursive locking is not permitted.
+  PW_DASSERT(lock_count == 1);  // Recursive locking is not permitted.
 }
 
 inline bool Mutex::try_lock() {
   // Enforce the pw::sync::Mutex IRQ contract.
   PW_DASSERT(!interrupt::InInterruptContext());
-  return OS_Request(&native_type_) != 0;
+  if (OS_Request(&native_type_) == 0) {
+    return false;
+  }
+
+  // Recursive locking is not permitted.
+  PW_DASSERT(OS_GetSemaValue(&native_type_) == 1);
+  return true;
 }
 
 inline void Mutex::unlock() {

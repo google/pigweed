@@ -46,7 +46,7 @@ bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
     const int lock_count = OS_UseTimed(
         &native_handle(), static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()));
     if (lock_count != 0) {
-      PW_CHECK_UINT_EQ(1, lock_count, "Recursive locking is not permitted");
+      PW_DCHECK_UINT_EQ(1, lock_count, "Recursive locking is not permitted");
       return true;
     }
     timeout -= kMaxTimeoutMinusOne;
@@ -55,7 +55,7 @@ bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
   // tick, ergo we add one whole tick to the final duration.
   const int lock_count =
       OS_UseTimed(&native_handle(), static_cast<OS_TIME>(timeout.count() + 1));
-  PW_CHECK_UINT_LE(1, lock_count, "Recursive locking is not permitted");
+  PW_DCHECK_UINT_LE(1, lock_count, "Recursive locking is not permitted");
   return lock_count == 1;
 }
 

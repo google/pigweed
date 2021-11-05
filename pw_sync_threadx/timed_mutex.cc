@@ -44,7 +44,7 @@ bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
       pw::chrono::threadx::kMaxTimeout - SystemClock::duration(1);
   while (timeout > kMaxTimeoutMinusOne) {
     const UINT result = tx_mutex_get(
-        &native_type_, static_cast<ULONG>(kMaxTimeoutMinusOne.count()));
+        &native_handle(), static_cast<ULONG>(kMaxTimeoutMinusOne.count()));
     if (result != TX_NOT_AVAILABLE) {
       PW_CHECK_UINT_EQ(TX_SUCCESS, result);
       return true;
@@ -54,11 +54,14 @@ bool TimedMutex::try_lock_for(SystemClock::duration timeout) {
   // On a tick based kernel we cannot tell how far along we are on the current
   // tick, ergo we add one whole tick to the final duration.
   const UINT result =
-      tx_mutex_get(&native_type_, static_cast<ULONG>(timeout.count() + 1));
+      tx_mutex_get(&native_handle(), static_cast<ULONG>(timeout.count() + 1));
   if (result == TX_NOT_AVAILABLE) {
     return false;
   }
   PW_CHECK_UINT_EQ(TX_SUCCESS, result);
+
+  PW_DCHECK(backend::NotRecursivelyHeld(native_handle()),
+            "Recursive locking is not supported");
   return true;
 }
 
