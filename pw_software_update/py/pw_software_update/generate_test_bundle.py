@@ -19,7 +19,7 @@ import sys
 from typing import Dict
 
 from pw_software_update import dev_sign, keys, metadata, root_metadata
-from pw_software_update.update_bundle_pb2 import UpdateBundle
+from pw_software_update.update_bundle_pb2 import Manifest, UpdateBundle
 from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata,
                                         TargetsMetadata, SignedTargetsMetadata)
 
@@ -183,6 +183,13 @@ class Bundle:
 
         return bundle
 
+    def generate_manifest(self) -> Manifest:
+        """Generates the manifest"""
+        manifest = Manifest()
+        manifest.targets_metadata['targets'].CopyFrom(
+            self.generate_targets_metadata())
+        return manifest
+
 
 def parse_args():
     """Setup argparse."""
@@ -204,6 +211,7 @@ def main() -> int:
 
     dev_signed_root = test_bundle.generate_dev_signed_root_metadata()
     dev_signed_bundle = test_bundle.generate_bundle(dev_signed_root)
+    manifest_proto = test_bundle.generate_manifest()
     prod_signed_root = \
         test_bundle.generate_rotation_prod_signed_root_metadata()
     prod_signed_bundle = test_bundle.generate_bundle(prod_signed_root)
@@ -241,6 +249,8 @@ def main() -> int:
         header.write(HEADER)
         header.write(
             proto_array_declaration(dev_signed_bundle, 'kTestDevBundle'))
+        header.write(
+            proto_array_declaration(manifest_proto, 'kTestBundleManifest'))
         header.write(proto_array_declaration(dev_signed_root,
                                              'kDevSignedRoot'))
         header.write(

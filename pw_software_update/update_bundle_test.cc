@@ -164,6 +164,56 @@ TEST_F(UpdateBundleTest, IsTargetPayloadIncluded) {
   ASSERT_FALSE(res.value());
 }
 
+TEST_F(UpdateBundleTest, PersistManifest) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestDevBundle);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+
+  std::byte manifest_buffer[sizeof(kTestBundleManifest)];
+  stream::MemoryWriter manifest_writer(manifest_buffer);
+  ASSERT_OK(update_bundle.PersistManifest(manifest_writer));
+
+  ASSERT_EQ(
+      memcmp(manifest_buffer, kTestBundleManifest, sizeof(kTestBundleManifest)),
+      0);
+}
+
+TEST_F(UpdateBundleTest, PersistManifestFailIfNotVerified) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestBadDevSignatureBundle);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+
+  std::byte manifest_buffer[sizeof(kTestBundleManifest)];
+  stream::MemoryWriter manifest_writer(manifest_buffer);
+  ASSERT_NOT_OK(update_bundle.PersistManifest(manifest_writer));
+}
+
+TEST_F(UpdateBundleTest, BundleVerificationDisabled) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestBadDevSignatureBundle);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend(), true);
+
+  // Since bundle verification is disabled. The bad bundle should not report
+  // error.
+  ManifestAccessor current_manifest;
+  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+
+  // Manifest persisting should be allowed as well.
+  std::byte manifest_buffer[sizeof(kTestBundleManifest)];
+  stream::MemoryWriter manifest_writer(manifest_buffer);
+  ASSERT_OK(update_bundle.PersistManifest(manifest_writer));
+
+  ASSERT_EQ(
+      memcmp(manifest_buffer, kTestBundleManifest, sizeof(kTestBundleManifest)),
+      0);
+}
+
 TEST_F(UpdateBundleTest, SignatureVerificationSucceeds) {
   backend().SetTrustedRoot(kDevSignedRoot);
   StageTestBundle(kTestProdBundle);

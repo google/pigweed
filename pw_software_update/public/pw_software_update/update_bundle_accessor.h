@@ -58,7 +58,7 @@ namespace pw::software_update {
 // ...
 //
 // // Get bundle's manifest and write it to the given writer.
-// status = bundle.WriteManifest(staged_manifest_writer);
+// status = bundle.PersistManifest(staged_manifest_writer);
 // if (!status.ok()) {
 //   // handle error
 //   ...
@@ -120,7 +120,7 @@ class UpdateBundleAccessor {
   // Returns:
   // FAILED_PRECONDITION - Bundle is not open and verified.
   // TODO(pwbug/456): Add other error codes if necessary.
-  Status WriteManifest(stream::Writer& staged_manifest_writer);
+  Status PersistManifest(stream::Writer& staged_manifest_writer);
 
   // Is the target payload present in the bundle (not personalized out).
   //
@@ -147,6 +147,7 @@ class UpdateBundleAccessor {
   blob_store::BlobStore::BlobReader bundle_reader_;
   protobuf::Message decoder_;
   bool disable_verification_;
+  bool bundle_verified_ = false;
 
   // Opens the bundle for read-only access and readies the parser.
   Status DoOpen();
@@ -183,7 +184,7 @@ class UpdateBundleAccessor {
   //    exists (the manifest may be reset in the case of key rotation).
   //
   // TODO(pwbug/456): Should manifest persisting be handled here? The current
-  // API design of this class exposes a WriteManifest() method, which implies
+  // API design of this class exposes a PersistManifest() method, which implies
   // that manifest persisting is handled by some higher level logic.
   Status VerifyTargetsMetadata();
 
