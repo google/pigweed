@@ -284,7 +284,7 @@ void LowEnergyConnector::RequestCreateConnection() {
 
   // TODO(fxbug.dev/70199): Use slow interval & window for auto connections during background scan.
   ZX_ASSERT(hci_connector_->CreateConnection(
-      /*use_whitelist=*/false, peer_address_, kLEScanFastInterval, kLEScanFastWindow,
+      /*use_accept_list=*/false, peer_address_, kLEScanFastInterval, kLEScanFastWindow,
       kInitialConnectionParameters, std::move(status_cb), hci_request_timeout_));
 }
 

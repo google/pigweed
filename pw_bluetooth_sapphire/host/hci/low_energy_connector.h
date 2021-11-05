@@ -72,22 +72,21 @@ class LowEnergyConnector : public LocalAddressClient {
   // Deleting an instance cancels any pending connection request.
   ~LowEnergyConnector() override;
 
-  // Creates a LE link layer connection to the remote device identified by
-  // |peer_address| with initial connection parameters |initial_parameters|.
-  // Returns false, if a create connection request is currently pending.
+  // Creates a LE link layer connection to the remote device identified by |peer_address| with
+  // initial connection parameters |initial_parameters|. Returns false, if a create connection
+  // request is currently pending.
   //
-  // If |use_whitelist| is true, then the controller white list is used to
-  // determine which advertiser to connect to. Otherwise, the controller will
-  // connect to |peer_address|.
+  // If |use_accept_list| is true, then the controller filter accept list is used to determine which
+  // advertiser to connect to. Otherwise, the controller will connect to |peer_address|.
   //
-  // |status_callback| is called asynchronously to notify the status of the
-  // operation. A valid |link| will be provided on success.
+  // |status_callback| is called asynchronously to notify the status of the operation. A valid
+  // |link| will be provided on success.
   //
-  // |timeout_ms| specifies a time period after which the request will time out.
-  // When a request to create connection times out, |status_callback| will be
-  // called with a null |link| and a |status| with error Host::Error::kTimedOut.
+  // |timeout_ms| specifies a time period after which the request will time out. When a request to
+  // create connection times out, |status_callback| will be called with a null |link| and a |status|
+  // with error Host::Error::kTimedOut.
   using StatusCallback = fit::function<void(Status status, ConnectionPtr link)>;
-  bool CreateConnection(bool use_whitelist, const DeviceAddress& peer_address,
+  bool CreateConnection(bool use_accept_list, const DeviceAddress& peer_address,
                         uint16_t scan_interval, uint16_t scan_window,
                         const hci_spec::LEPreferredConnectionParameters& initial_parameters,
                         StatusCallback status_callback, zx::duration timeout);
@@ -138,7 +137,7 @@ class LowEnergyConnector : public LocalAddressClient {
 
   // Called by CreateConnection() after the local device address has been
   // obtained.
-  void CreateConnectionInternal(const DeviceAddress& local_address, bool use_whitelist,
+  void CreateConnectionInternal(const DeviceAddress& local_address, bool use_accept_list,
                                 const DeviceAddress& peer_address, uint16_t scan_interval,
                                 uint16_t scan_window,
                                 const hci_spec::LEPreferredConnectionParameters& initial_parameters,

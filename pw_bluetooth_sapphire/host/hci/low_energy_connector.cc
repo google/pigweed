@@ -52,7 +52,7 @@ LowEnergyConnector::~LowEnergyConnector() {
 }
 
 bool LowEnergyConnector::CreateConnection(
-    bool use_whitelist, const DeviceAddress& peer_address, uint16_t scan_interval,
+    bool use_accept_list, const DeviceAddress& peer_address, uint16_t scan_interval,
     uint16_t scan_window, const hci_spec::LEPreferredConnectionParameters& initial_parameters,
     StatusCallback status_callback, zx::duration timeout) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
@@ -66,12 +66,12 @@ bool LowEnergyConnector::CreateConnection(
   pending_request_ = PendingRequest(peer_address, std::move(status_callback));
 
   local_addr_delegate_->EnsureLocalAddress(
-      [this, use_whitelist, peer_address, scan_interval, scan_window, initial_parameters,
+      [this, use_accept_list, peer_address, scan_interval, scan_window, initial_parameters,
        callback = std::move(status_callback), timeout](const auto& address) mutable {
         // Use the identity address if privacy override was enabled.
         CreateConnectionInternal(
             use_local_identity_address_ ? local_addr_delegate_->identity_address() : address,
-            use_whitelist, peer_address, scan_interval, scan_window, initial_parameters,
+            use_accept_list, peer_address, scan_interval, scan_window, initial_parameters,
             std::move(callback), timeout);
       });
 
@@ -79,7 +79,7 @@ bool LowEnergyConnector::CreateConnection(
 }
 
 void LowEnergyConnector::CreateConnectionInternal(
-    const DeviceAddress& local_address, bool use_whitelist, const DeviceAddress& peer_address,
+    const DeviceAddress& local_address, bool use_accept_list, const DeviceAddress& peer_address,
     uint16_t scan_interval, uint16_t scan_window,
     const hci_spec::LEPreferredConnectionParameters& initial_parameters,
     StatusCallback status_callback, zx::duration timeout) {
@@ -100,8 +100,8 @@ void LowEnergyConnector::CreateConnectionInternal(
   auto params = request->mutable_payload<hci_spec::LECreateConnectionCommandParams>();
   params->scan_interval = htole16(scan_interval);
   params->scan_window = htole16(scan_window);
-  params->initiator_filter_policy = use_whitelist ? hci_spec::GenericEnableParam::kEnable
-                                                  : hci_spec::GenericEnableParam::kDisable;
+  params->initiator_filter_policy = use_accept_list ? hci_spec::GenericEnableParam::kEnable
+                                                    : hci_spec::GenericEnableParam::kDisable;
 
   // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
   params->peer_address_type =
@@ -269,8 +269,8 @@ void LowEnergyConnector::OnCreateConnectionTimeout() {
   ZX_DEBUG_ASSERT(pending_request_);
   bt_log(INFO, "hci-le", "create connection timed out: canceling request");
 
-  // TODO(armansito): This should cancel the connection attempt only if the
-  // connection attempt isn't using the white list.
+  // TODO(armansito): This should cancel the connection attempt only if the connection attempt isn't
+  // using the filter accept list.
   CancelInternal(true);
 }
 

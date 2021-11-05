@@ -87,7 +87,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     uint16_t scan_window = 0;
     bool filter_duplicates = false;
     hci_spec::LEOwnAddressType own_address_type = hci_spec::LEOwnAddressType::kPublic;
-    hci_spec::LEScanFilterPolicy filter_policy = hci_spec::LEScanFilterPolicy::kNoWhiteList;
+    hci_spec::LEScanFilterPolicy filter_policy = hci_spec::LEScanFilterPolicy::kNoFilterAcceptList;
   };
 
   // Current device basic advertising state

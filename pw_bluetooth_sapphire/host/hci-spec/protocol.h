@@ -2501,44 +2501,44 @@ struct LECreateConnectionCommandParams {
 constexpr OpCode kLECreateConnectionCancel = LEControllerCommandOpCode(0x000E);
 
 // ===========================================
-// LE Read White List Size Command (v4.0) (LE)
-constexpr OpCode kLEReadWhiteListSize = LEControllerCommandOpCode(0x000F);
+// LE Read Filter Accept List Size Command (v4.0) (LE)
+constexpr OpCode kLEReadFilterAcceptListSize = LEControllerCommandOpCode(0x000F);
 
-struct LEReadWhiteListSizeReturnParams {
+struct LEReadFilterAcceptListSizeReturnParams {
   // See enum hci_spec::StatusCode in hci_constants.h.
   hci_spec::StatusCode status;
-  uint8_t white_list_size;
+  uint8_t filter_accept_list_size;
 } __PACKED;
 
 // =======================================
-// LE Clear White List Command (v4.0) (LE)
-constexpr OpCode kLEClearWhiteList = LEControllerCommandOpCode(0x0010);
+// LE Clear Filter Accept List Command (v4.0) (LE)
+constexpr OpCode kLEClearFilterAcceptList = LEControllerCommandOpCode(0x0010);
 
 // ===============================================
-// LE Add Device To White List Command (v4.0) (LE)
-constexpr OpCode kLEAddDeviceToWhiteList = LEControllerCommandOpCode(0x0011);
+// LE Add Device To Filter Accept List Command (v4.0) (LE)
+constexpr OpCode kLEAddDeviceToFilterAcceptList = LEControllerCommandOpCode(0x0011);
 
-struct LEAddDeviceToWhiteListCommandParams {
+struct LEAddDeviceToFilterAcceptListCommandParams {
   // The address type of the peer. The |address| parameter will be ignored if
   // |address_type| is set to LEPeerAddressType::kAnonymous.
   LEPeerAddressType address_type;
 
   // Public Device Address or Random Device Address of the device to be added to
-  // the White List.
+  // the Filter Accept List
   DeviceAddressBytes address;
 } __PACKED;
 
 // ====================================================
-// LE Remove Device From White List Command (v4.0) (LE)
-constexpr OpCode kLERemoveDeviceFromWhiteList = LEControllerCommandOpCode(0x0012);
+// LE Remove Device From Filter Accept List Command (v4.0) (LE)
+constexpr OpCode kLERemoveDeviceFromFilterAcceptList = LEControllerCommandOpCode(0x0012);
 
-struct LERemoveDeviceFromWhiteListCommandParams {
+struct LERemoveDeviceFromFilterAcceptListCommandParams {
   // The address type of the peer. The |address| parameter will be ignored if
   // |address_type| is set to LEPeerAddressType::kAnonymous.
   LEPeerAddressType address_type;
 
   // Public Device Address or Random Device Address of the device to be removed
-  // from the White List.
+  // from the Filter Accept List
   DeviceAddressBytes address;
 } __PACKED;
 
@@ -3443,16 +3443,16 @@ struct LESetExtendedScanParametersCommandParams {
   // active scanning).
   hci_spec::LEOwnAddressType own_address_type;
 
-  // The LE white-list and privacy filter policy that should be used while
-  // scanning for directed and undirected advertisements.
+  // The LE filter accept list and privacy filter policy that should be used while scanning for
+  // directed and undirected advertisements.
   LEScanFilterPolicy filter_policy;
 
-  // See kLEPHYBit* constants in hci_constants.h for possible values.
-  // kLEPHYBit2M is excluded for this command.
+  // See kLEPHYBit* constants in hci_constants.h for possible values. kLEPHYBit2M is excluded for
+  // this command.
   uint8_t scan_phys;
 
-  // The number of array elements is determined by the number of bits set in the
-  // scan_phys parameter.
+  // The number of array elements is determined by the number of bits set in the scan_phys
+  // parameter.
   LESetExtendedScanParametersData data[];
 } __PACKED;
 

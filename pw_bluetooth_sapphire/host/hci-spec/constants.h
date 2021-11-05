@@ -470,24 +470,24 @@ enum class SupportedCommand : uint8_t {
   kLESetAdvertisingData            = (1 << 7),
 
   // Octet 26
-  kLESetScanResponseData    = (1 << 0),
-  kLESetAdvertisingEnable   = (1 << 1),
-  kLESetScanParameters      = (1 << 2),
-  kLESetScanEnable          = (1 << 3),
-  kLECreateConnection       = (1 << 4),
-  kLECreateConnectionCancel = (1 << 5),
-  kLEReadWhiteListSize      = (1 << 6),
-  kLEClearWhiteList         = (1 << 7),
+  kLESetScanResponseData      = (1 << 0),
+  kLESetAdvertisingEnable     = (1 << 1),
+  kLESetScanParameters        = (1 << 2),
+  kLESetScanEnable            = (1 << 3),
+  kLECreateConnection         = (1 << 4),
+  kLECreateConnectionCancel   = (1 << 5),
+  kLEReadFilterAcceptListSize = (1 << 6),
+  kLEClearFilterAcceptList    = (1 << 7),
 
   // Octet 27
-  kLEAddDeviceToWhiteList         = (1 << 0),
-  kLERemoveDeviceFromWhiteList    = (1 << 1),
-  kLEConnectionUpdate             = (1 << 2),
-  kLESetHostChannelClassification = (1 << 3),
-  kLEReadChannelMap               = (1 << 4),
-  kLEReadRemoteFeatures           = (1 << 5),
-  kLEEncrypt                      = (1 << 6),
-  kLERand                         = (1 << 7),
+  kLEAddDeviceToFilterAcceptList      = (1 << 0),
+  kLERemoveDeviceFromFilterAcceptList = (1 << 1),
+  kLEConnectionUpdate                 = (1 << 2),
+  kLESetHostChannelClassification     = (1 << 3),
+  kLEReadChannelMap                   = (1 << 4),
+  kLEReadRemoteFeatures               = (1 << 5),
+  kLEEncrypt                          = (1 << 6),
+  kLERand                             = (1 << 7),
 
   // Octet 28
   kLEStartEncryption                 = (1 << 0),
@@ -1078,7 +1078,7 @@ enum class LEPeerAddressType : uint8_t {
   kRandom = 0x01,
 
   // This is a special value that should only be used with the
-  // HCI_LE_Add_Device_To_White_List and HCI_LE_Remove_Device_From_White_List
+  // HCI_LE_Add_Device_To_Filter_Accept_List and HCI_LE_Remove_Device_From_Filter_Accept_List
   // commands for peer devices sending anonymous advertisements.
   kAnonymous = 0xFF,
 };
@@ -1095,20 +1095,20 @@ constexpr uint8_t kLEAdvertisingChannelAll = 0x07;
 // HCI_LE_Set_Advertising_Parameters command.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5)
 enum class LEAdvFilterPolicy : uint8_t {
-  // Process scan and connection requests from all devices (i.e., the White List
-  // is not in use) (default).
+  // Process scan and connection requests from all devices (i.e., the Filter Accept List is not in
+  // use) (default).
   kAllowAll = 0x00,
 
   // Process connection requests from all devices and only scan requests from
-  // devices that are in the White List.
-  kConnAllScanWhiteList = 0x01,
+  // devices that are in the filter accept policy list.
+  kConnAllScanFilterAcceptList = 0x01,
 
-  // Process scan requests from all devices and only connection requests from
-  // devices that are in the White List.
-  kScanAllConnWhiteList = 0x02,
+  // Process scan requests from all devices and only connection requests from devices that are in
+  // the Filter Accept List.
+  kScanAllConnFilterAcceptList = 0x02,
 
-  // Process scan and connection requests only from devices in the White List.
-  kWhiteListOnly = 0x03,
+  // Process scan and connection requests only from devices in the Filter Accept List.
+  kFilterAcceptListOnly = 0x03,
 
   // The rest is reserved for future use.
 };
@@ -1144,30 +1144,29 @@ enum class LEScanType : uint8_t {
 enum class LEScanFilterPolicy : uint8_t {
   // Accept all advertising packets except directed advertising packets not
   // addressed to this device (default).
-  kNoWhiteList = 0x00,
+  kNoFilterAcceptList = 0x00,
 
-  // Accept only advertising packets from devices where the advertiser’s address
-  // is in the White List. Directed advertising packets which are not addressed
-  // to this device shall be ignored.
-  kUseWhiteList = 0x01,
+  // Accept only advertising packets from devices where the advertiser’s address is in the Filter
+  // Accept List. Directed advertising packets which are not addressed to this device shall be
+  // ignored.
+  kUseFilterAcceptList = 0x01,
 
-  // Accept all advertising packets except directed advertising packets where
-  // the initiator's identity address does not address this device.
-  // Note: Directed advertising packets where the initiator's address is a
-  // resolvable private address that cannot be resolved are also accepted.
-  kNoWhiteListWithPrivacy = 0x02,
+  // Accept all advertising packets except directed advertising packets where the initiator's
+  // identity address does not address this device. Note: Directed advertising packets where the
+  // initiator's address is a resolvable private address that cannot be resolved are also accepted.
+  kNoFilterAcceptListWithPrivacy = 0x02,
 
   // Accept all advertising packets except:
   //
-  //   - advertising packets where the advertiser's identity address is not in
-  //     the White List; and
+  //   - advertising packets where the advertiser's identity address is not in the Filter Accept
+  //   List; and
   //
-  //   - directed advertising packets where the initiator's identity address
-  //     does not address this device
+  //   - directed advertising packets where the initiator's identity address does not address this
+  //   device
   //
-  // Note: Directed advertising packets where the initiator's address is a
-  // resolvable private address that cannot be resolved are also accepted.
-  kUseWhiteListWithPrivacy = 0x03,
+  // Note: Directed advertising packets where the initiator's address is a resolvable private
+  // address that cannot be resolved are also accepted.
+  kUseFilterAcceptListWithPrivacy = 0x03,
 };
 
 // Possible values that can be used for the |filter_duplicates| parameter in a

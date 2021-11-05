@@ -469,7 +469,7 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   hci::LowEnergyScanner::ScanOptions options{
       .active = active,
       .filter_duplicates = true,
-      .filter_policy = hci_spec::LEScanFilterPolicy::kNoWhiteList,
+      .filter_policy = hci_spec::LEScanFilterPolicy::kNoFilterAcceptList,
       .period = scan_period_,
       .scan_response_timeout = kLEScanResponseTimeout,
   };
@@ -481,7 +481,7 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   } else {
     options.interval = kLEPassiveScanInterval;
     options.window = kLEPassiveScanWindow;
-    // TODO(armansito): Use the controller whitelist to filter advertisements.
+    // TODO(armansito): Use the controller filter accept policy to filter advertisements.
   }
 
   // Since we use duplicate filtering, we stop and start the scan periodically
