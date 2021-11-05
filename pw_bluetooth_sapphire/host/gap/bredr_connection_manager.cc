@@ -489,8 +489,8 @@ Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
 void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                                                   hci_spec::ConnectionHandle connection_handle,
                                                   hci_spec::ConnectionRole role) {
-  hci::Connection::Role conn_role = role == hci_spec::ConnectionRole::kMaster
-                                        ? hci::Connection::Role::kMaster
+  hci::Connection::Role conn_role = role == hci_spec::ConnectionRole::kCentral
+                                        ? hci::Connection::Role::kCentral
                                         : hci::Connection::Role::kPeripheral;
   auto link = hci::Connection::CreateACL(connection_handle, conn_role, local_address_, addr, hci_);
   Peer* const peer = FindOrInitPeer(addr);
@@ -748,14 +748,14 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
   const char* direction = completed_request_was_outgoing ? "outgoing" : "incoming";
   const char* result = status ? "complete" : "error";
   hci_spec::ConnectionRole role = completed_request_was_outgoing
-                                      ? hci_spec::ConnectionRole::kMaster
+                                      ? hci_spec::ConnectionRole::kCentral
                                       : hci_spec::ConnectionRole::kPeripheral;
   if (request.role_change()) {
     role = request.role_change().value();
   }
 
   bt_log(INFO, "gap-bredr", "%s connection %s (status: %s, role: %s)", direction, result,
-         bt_str(status), role == hci_spec::ConnectionRole::kMaster ? "leader" : "follower");
+         bt_str(status), role == hci_spec::ConnectionRole::kCentral ? "leader" : "follower");
 
   if (completed_request_was_outgoing) {
     // Determine the modified status in case of cancellation or timeout
@@ -1073,10 +1073,10 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci::Connection::Role new_role = params.new_role == hci_spec::ConnectionRole::kMaster
-                                       ? hci::Connection::Role::kMaster
+  hci::Connection::Role new_role = params.new_role == hci_spec::ConnectionRole::kCentral
+                                       ? hci::Connection::Role::kCentral
                                        : hci::Connection::Role::kPeripheral;
-  const char* new_role_str = new_role == hci::Connection::Role::kMaster ? "leader" : "follower";
+  const char* new_role_str = new_role == hci::Connection::Role::kCentral ? "leader" : "follower";
 
   if (hci_is_error(event, WARN, "gap-bredr", "role change failed and remains %s (peer: %s)",
                    new_role_str, bt_str(peer_id))) {
@@ -1337,7 +1337,7 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr
   accept_params->bd_addr = addr;
   // This role switch preference can fail. A HCI_Role_Change event will be generated if the role
   // switch is successful (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
-  accept_params->role = hci_spec::ConnectionRole::kMaster;
+  accept_params->role = hci_spec::ConnectionRole::kCentral;
 
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {

@@ -148,7 +148,7 @@ std::unique_ptr<Connection> Connection::CreateSCO(hci_spec::LinkType link_type,
       link_type == hci_spec::LinkType::kSCO ? bt::LinkType::kSCO : bt::LinkType::kESCO;
 
   // TODO(fxb/61070): remove role for SCO connections, as it has no meaning
-  auto conn = std::make_unique<ConnectionImpl>(handle, conn_type, Role::kMaster, local_address,
+  auto conn = std::make_unique<ConnectionImpl>(handle, conn_type, Role::kCentral, local_address,
                                                peer_address, std::move(hci));
   return conn;
 }
@@ -170,7 +170,7 @@ std::string Connection::ToString() const {
   }
   return bt_lib_cpp_string::StringPrintf("(%s link - handle: %#.4x, role: %s, address: %s%s)",
                                          LinkTypeToString(ll_type_).c_str(), handle_,
-                                         role_ == Role::kMaster ? "master" : "peripheral",
+                                         role_ == Role::kCentral ? "central" : "peripheral",
                                          peer_address_.ToString().c_str(), params.c_str());
 }
 
@@ -299,8 +299,8 @@ bool ConnectionImpl::StartEncryption() {
     return BrEdrStartEncryption();
   }
 
-  if (role() != Role::kMaster) {
-    bt_log(DEBUG, "hci", "only the master can start encryption");
+  if (role() != Role::kCentral) {
+    bt_log(DEBUG, "hci", "only the central can start encryption");
     return false;
   }
 

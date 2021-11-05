@@ -45,13 +45,13 @@ class ConnectionTest : public TestingBase {
     StartTestDevice();
   }
 
-  ConnectionPtr NewLEConnection(Connection::Role role = Connection::Role::kMaster,
+  ConnectionPtr NewLEConnection(Connection::Role role = Connection::Role::kCentral,
                                 hci_spec::ConnectionHandle handle = kTestHandle) {
     return Connection::CreateLE(handle, role, kLEAddress1, kLEAddress2, kTestParams,
                                 transport()->WeakPtr());
   }
 
-  ConnectionPtr NewACLConnection(Connection::Role role = Connection::Role::kMaster,
+  ConnectionPtr NewACLConnection(Connection::Role role = Connection::Role::kCentral,
                                  hci_spec::ConnectionHandle handle = kTestHandle) {
     return Connection::CreateACL(handle, role, kACLAddress1, kACLAddress2, transport()->WeakPtr());
   }
@@ -62,7 +62,7 @@ class ConnectionTest : public TestingBase {
 class LinkTypeConnectionTest : public ConnectionTest,
                                public ::testing::WithParamInterface<bt::LinkType> {
  protected:
-  ConnectionPtr NewConnection(Connection::Role role = Connection::Role::kMaster,
+  ConnectionPtr NewConnection(Connection::Role role = Connection::Role::kCentral,
                               hci_spec::ConnectionHandle handle = kTestHandle) {
     const bt::LinkType ll_type = GetParam();
     switch (ll_type) {
@@ -95,7 +95,7 @@ TEST_F(ConnectionTest, Getters) {
 
   EXPECT_EQ(bt::LinkType::kLE, connection->ll_type());
   EXPECT_EQ(kTestHandle, connection->handle());
-  EXPECT_EQ(Connection::Role::kMaster, connection->role());
+  EXPECT_EQ(Connection::Role::kCentral, connection->role());
   EXPECT_EQ(kTestParams, connection->low_energy_parameters());
   EXPECT_EQ(kLEAddress1, connection->local_address());
   EXPECT_EQ(kLEAddress2, connection->peer_address());
@@ -170,8 +170,8 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
   // Should register connection with ACL Data Channel.
-  auto conn0 = NewConnection(Connection::Role::kMaster, kHandle0);
-  auto conn1 = NewConnection(Connection::Role::kMaster, kHandle1);
+  auto conn0 = NewConnection(Connection::Role::kCentral, kHandle0);
+  auto conn1 = NewConnection(Connection::Role::kCentral, kHandle1);
 
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
@@ -245,9 +245,9 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
   // Should register connection with ACL Data Channel.
-  auto conn0 = NewConnection(Connection::Role::kMaster, kHandle0);
+  auto conn0 = NewConnection(Connection::Role::kCentral, kHandle0);
 
-  auto conn1 = NewConnection(Connection::Role::kMaster, kHandle1);
+  auto conn1 = NewConnection(Connection::Role::kCentral, kHandle1);
 
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
@@ -321,8 +321,8 @@ TEST_F(ConnectionTest, StartEncryptionFailsAsLowEnergyPeripheral) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
-TEST_F(ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
-  auto conn = NewLEConnection(Connection::Role::kMaster);
+TEST_F(ConnectionTest, StartEncryptionSucceedsAsLowEnergyCentral) {
+  auto conn = NewLEConnection(Connection::Role::kCentral);
   auto ltk = hci_spec::LinkKey();
   conn->set_le_ltk(ltk);
   EXPECT_TRUE(conn->StartEncryption());
@@ -893,7 +893,7 @@ TEST_F(ConnectionTest,
   const hci_spec::ConnectionHandle kHandle = 0x0001;
 
   // Should register connection with ACL Data Channel.
-  auto conn0 = NewACLConnection(Connection::Role::kMaster, kHandle);
+  auto conn0 = NewACLConnection(Connection::Role::kCentral, kHandle);
 
   testing::MockController::DataCallback data_cb = [](const ByteBuffer& packet) {};
   size_t packet_count = 0;
@@ -941,7 +941,7 @@ TEST_F(ConnectionTest,
   RunLoopUntilIdle();
 
   // Register connection with same handle.
-  auto conn1 = NewACLConnection(Connection::Role::kMaster, kHandle);
+  auto conn1 = NewACLConnection(Connection::Role::kCentral, kHandle);
 
   // Fill controller buffer, + 1 packet in queue.
   for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets(); i++) {
@@ -965,7 +965,7 @@ TEST_F(ConnectionTest,
 TEST_F(ConnectionTest, PeerDisconnectCallback) {
   const hci_spec::ConnectionHandle kHandle = 0x0001;
 
-  auto conn = NewACLConnection(Connection::Role::kMaster, kHandle);
+  auto conn = NewACLConnection(Connection::Role::kCentral, kHandle);
 
   size_t cb_count = 0;
   auto disconn_complete_cb = [&](const Connection* cb_conn, auto /*reason*/) {

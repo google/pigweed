@@ -110,10 +110,10 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   // Wait to receive EDiv and Rand
 }
 
-void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
+void Phase3::OnCentralIdentification(const CentralIdentificationParams& params) {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
-    bt_log(DEBUG, "sm", "\"Master Identification\" over BR/EDR not supported!");
+    bt_log(DEBUG, "sm", "\"Central Identification\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -267,9 +267,9 @@ bool Phase3::SendEncryptionKey() {
   // Send LTK
   sm_chan().SendMessage(kEncryptionInformation, local_ltk_->key().value());
   // Send EDiv & Rand
-  sm_chan().SendMessage(kMasterIdentification,
-                        MasterIdentificationParams{.ediv = htole16(local_ltk_->key().ediv()),
-                                                   .rand = htole64(local_ltk_->key().rand())});
+  sm_chan().SendMessage(kCentralIdentification,
+                        CentralIdentificationParams{.ediv = htole16(local_ltk_->key().ediv()),
+                                                    .rand = htole64(local_ltk_->key().rand())});
 
   return true;
 }
@@ -335,8 +335,8 @@ void Phase3::OnRxBFrame(ByteBufferPtr sdu) {
     case kEncryptionInformation:
       OnEncryptionInformation(reader.payload<EncryptionInformationParams>());
       break;
-    case kMasterIdentification:
-      OnMasterIdentification(reader.payload<MasterIdentificationParams>());
+    case kCentralIdentification:
+      OnCentralIdentification(reader.payload<CentralIdentificationParams>());
       break;
     case kIdentityInformation:
       OnIdentityInformation(reader.payload<IRK>());

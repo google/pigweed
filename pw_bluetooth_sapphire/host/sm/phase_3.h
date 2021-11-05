@@ -52,7 +52,7 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   void OnEncryptionInformation(const EncryptionInformationParams& ltk);
 
   // Called when EDiv and Rand values are received from the peer.
-  void OnMasterIdentification(const MasterIdentificationParams& params);
+  void OnCentralIdentification(const CentralIdentificationParams& params);
 
   // Called when the "Identity Resolving Key" is received from the peer.
   void OnIdentityInformation(const IRK& irk);

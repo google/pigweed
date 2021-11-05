@@ -738,7 +738,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
   // L2CAP_CONNECTION_PARAMETER_UPDATE_REQ packet it shall respond with an L2CAP_COMMAND_REJECT_RSP
   // packet with reason 0x0000 (Command not understood)." (v5.0, Vol 3, Part A, Section 4.20)
   if (role_ == hci::Connection::Role::kPeripheral) {
-    bt_log(DEBUG, "l2cap", "rejecting conn. param. update request from master");
+    bt_log(DEBUG, "l2cap", "rejecting conn. param. update request from central");
     responder->RejectNotUnderstood();
     return;
   }

@@ -232,7 +232,7 @@ enum class SupportedCommand : uint8_t {
   // Octet 2
   kSetConnectionEncryption      = (1 << 0),
   kChangeConnectionLinkKey      = (1 << 1),
-  kMasterLinkKey                = (1 << 2),
+  kLinkKeySelection             = (1 << 2),
   kRemoteNameRequest            = (1 << 3),
   kRemoteNameRequestCancel      = (1 << 4),
   kReadRemoteSupportedFeatures  = (1 << 5),
@@ -713,14 +713,14 @@ enum class LESupportedFeature : uint64_t {
   kRemotePublicKeyValidation                = (1 << 27),
 
   // Added in 5.2
-  kConnectedIsochronousStreamMaster         = (1 << 28),
-  kConnectedIsochronousStreamPeripheral          = (1 << 29),
-  kIsochronousBoradcaster                   = (1 << 30),
-  kSynchronizedReceiver                     = (1ul << 31),
-  kIsochronousChannels                      = (1ul << 32),
-  kLEPowerControlRequest                    = (1ul << 33),
-  kLEPowerChangeIndication                  = (1ul << 34),
-  kLEPathLossMonitoring                     = (1ul << 35),
+  kConnectedIsochronousStreamCentral    = (1 << 28),
+  kConnectedIsochronousStreamPeripheral = (1 << 29),
+  kIsochronousBoradcaster               = (1 << 30),
+  kSynchronizedReceiver                 = (1ul << 31),
+  kIsochronousChannels                  = (1ul << 32),
+  kLEPowerControlRequest                = (1ul << 33),
+  kLEPowerChangeIndication              = (1ul << 34),
+  kLEPathLossMonitoring                 = (1ul << 35),
 
   // The rest is reserved for future use.
 };
@@ -736,7 +736,7 @@ enum class EventMask : uint64_t {
   kRemoteNameRequestCompleteEvent               = (1 << 6),
   kEncryptionChangeEvent                        = (1 << 7),
   kChangeConnectionLinkKeyCompleteEvent         = (1 << 8),
-  kMasterLinkKeyCompleteEvent                   = (1 << 9),
+  kLinkKeyTypeChangedEvent                      = (1 << 9),
   kReadRemoteSupportedFeaturesCompleteEvent     = (1 << 10),
   kReadRemoteVersionInformationCompleteEvent    = (1 << 11),
   kQoSSetupCompleteEvent                        = (1 << 12),
@@ -1355,11 +1355,11 @@ enum class ACLBroadcastFlag : uint8_t {
 
 // A connection role. Used for LE and BR/EDR connection roles.
 enum class ConnectionRole : uint8_t {
-  kMaster     = 0x00,
+  kCentral     = 0x00,
   kPeripheral = 0x01,
 };
 
-// Possible values that can be reported for the Master_Clock_Accuracy and
+// Possible values that can be reported for the Central_Clock_Accuracy and
 // Advertiser_Clock_Accuracy parameters.
 enum class LEClockAccuracy : uint8_t {
   k500Ppm = 0x00,

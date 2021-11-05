@@ -28,7 +28,7 @@ class ScoConnectionTest : public TestingBase {
     TestingBase::SetUp();
 
     auto fake_conn = std::make_unique<hci::testing::FakeConnection>(
-        kConnectionHandle, bt::LinkType::kSCO, hci::Connection::Role::kMaster, DeviceAddress(),
+        kConnectionHandle, bt::LinkType::kSCO, hci::Connection::Role::kCentral, DeviceAddress(),
         DeviceAddress());
     hci_conn_ = fake_conn->WeakPtr();
     fake_conn_ = fake_conn.get();

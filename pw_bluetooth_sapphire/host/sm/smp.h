@@ -246,9 +246,9 @@ constexpr Code kEncryptionInformation = 0x06;
 using EncryptionInformationParams = UInt128;
 
 // ====================================================================
-// Master Identification (LE Legacy Pairing only; Vol 3, Part H, 3.6.3)
-constexpr Code kMasterIdentification = 0x07;
-struct MasterIdentificationParams {
+// Central Identification (LE Legacy Pairing only; Vol 3, Part H, 3.6.3)
+constexpr Code kCentralIdentification = 0x07;
+struct CentralIdentificationParams {
   uint16_t ediv;
   uint64_t rand;
 } __PACKED;

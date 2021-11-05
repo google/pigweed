@@ -99,17 +99,17 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
     fake_chan()->Receive(Make128BitCmd(cmd_code, value));
   }
 
-  auto MakeMasterIdentification(uint64_t random, uint16_t ediv) {
-    StaticByteBuffer<PacketSize<MasterIdentificationParams>()> buffer;
-    PacketWriter writer(kMasterIdentification, &buffer);
-    auto* params = writer.mutable_payload<MasterIdentificationParams>();
+  auto MakeCentralIdentification(uint64_t random, uint16_t ediv) {
+    StaticByteBuffer<PacketSize<CentralIdentificationParams>()> buffer;
+    PacketWriter writer(kCentralIdentification, &buffer);
+    auto* params = writer.mutable_payload<CentralIdentificationParams>();
     params->ediv = htole16(ediv);
     params->rand = htole64(random);
     return buffer;
   }
 
-  void ReceiveMasterIdentification(uint64_t random, uint16_t ediv) {
-    fake_chan()->Receive(MakeMasterIdentification(random, ediv));
+  void ReceiveCentralIdentification(uint64_t random, uint16_t ediv) {
+    fake_chan()->Receive(MakeCentralIdentification(random, ediv));
   }
 
   auto MakeIdentityAddress(const DeviceAddress& address) {
@@ -135,13 +135,13 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
 
   static void ExpectEncryptionInfo(ByteBufferPtr sdu,
                                    std::optional<EncryptionInformationParams>* out_ltk_bytes,
-                                   std::optional<MasterIdentificationParams>* out_master_id) {
+                                   std::optional<CentralIdentificationParams>* out_central_id) {
     fpromise::result<ValidPacketReader, ErrorCode> reader = ValidPacketReader::ParseSdu(sdu);
     ASSERT_TRUE(reader.is_ok());
     if (reader.value().code() == kEncryptionInformation) {
       *out_ltk_bytes = reader.value().payload<EncryptionInformationParams>();
-    } else if (reader.value().code() == kMasterIdentification) {
-      *out_master_id = reader.value().payload<MasterIdentificationParams>();
+    } else if (reader.value().code() == kCentralIdentification) {
+      *out_central_id = reader.value().payload<CentralIdentificationParams>();
     } else {
       ADD_FAILURE() << "Only expected LTK packets";
     }
@@ -233,7 +233,7 @@ TEST_F(Phase3Test, EncryptionInformationReceivedTwice) {
 }
 
 // The peer sends EDIV and Rand before LTK.
-TEST_F(Phase3Test, MasterIdentificationReceivedInWrongOrder) {
+TEST_F(Phase3Test, CentralIdentificationReceivedInWrongOrder) {
   Phase3Args args;
   args.features.initiator = true;
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
@@ -242,12 +242,12 @@ TEST_F(Phase3Test, MasterIdentificationReceivedInWrongOrder) {
 
   // When we receive the second Encryption Info packet, we should respond with pairing failed, as a
   // device should only ever send one Encryption Info packet in Phase 3.
-  StaticByteBuffer<PacketSize<MasterIdentificationParams>()> master_id_packet;
-  PacketWriter p(kMasterIdentification, &master_id_packet);
-  *p.mutable_payload<MasterIdentificationParams>() = Random<MasterIdentificationParams>();
+  StaticByteBuffer<PacketSize<CentralIdentificationParams>()> central_id_packet;
+  PacketWriter p(kCentralIdentification, &central_id_packet);
+  *p.mutable_payload<CentralIdentificationParams>() = Random<CentralIdentificationParams>();
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(ReceiveAndExpect(master_id_packet, kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(central_id_packet, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
   ASSERT_TRUE(listener()->last_error().is_protocol_error());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
@@ -295,10 +295,10 @@ TEST_F(Phase3Test, ReceiveExampleRandAborts) {
   ASSERT_EQ(0, phase_3_complete_count());
   // We disallow pairing with spec sample values as using known values for encryption parameters
   // is inherently unsafe.
-  const auto kMasterIdentificationCmd = MakeMasterIdentification(kRandSample, kEDiv);
+  const auto kCentralIdentificationCmd = MakeCentralIdentification(kRandSample, kEDiv);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(ReceiveAndExpect(kMasterIdentificationCmd, kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kCentralIdentificationCmd, kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   ASSERT_TRUE(listener()->last_error().is_protocol_error());
@@ -323,25 +323,25 @@ TEST_F(Phase3Test, ReceiveTooLongLTK) {
   EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
 }
 
-TEST_F(Phase3Test, MasterIdentificationReceivedTwice) {
+TEST_F(Phase3Test, CentralIdentificationReceivedTwice) {
   Phase3Args args;
   args.features.initiator = true;
   // The local device must expect both an Encryption and ID key from the peer, or it would start
-  // sending messages after the first Master ID, which is not the behavior checked in this test.
+  // sending messages after the first Central ID, which is not the behavior checked in this test.
   args.features.remote_key_distribution = KeyDistGen::kEncKey | KeyDistGen::kIdKey;
   NewPhase3(args);
   constexpr uint16_t kEdiv = 1;
   constexpr uint64_t kRand = 2;
 
   phase_3()->Start();
-  // Send duplicate master identification. If Phase 3 receives multiple Master Identification
+  // Send duplicate central identification. If Phase 3 receives multiple Central Identification
   // commands before completing, it should abort the pairing.
   Receive128BitCmd(kEncryptionInformation, UInt128());
-  const auto kMasterIdentificationCmd = MakeMasterIdentification(kRand, kEdiv);
-  fake_chan()->Receive(kMasterIdentificationCmd);
+  const auto kCentralIdentificationCmd = MakeCentralIdentification(kRand, kEdiv);
+  fake_chan()->Receive(kCentralIdentificationCmd);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(ReceiveAndExpect(kMasterIdentificationCmd, kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kCentralIdentificationCmd, kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
@@ -361,7 +361,7 @@ TEST_F(Phase3Test, InitiatorReceivesEncKey) {
 
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
-  ReceiveMasterIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
+  ReceiveCentralIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
   RunLoopUntilIdle();
 
   // We were not supposed to distribute any keys in Phase 3
@@ -412,9 +412,9 @@ TEST_F(Phase3Test, InitiatorSendsEncKey) {
   args.le_props = kDefaultProperties;
   NewPhase3(args);
   std::optional<EncryptionInformationParams> ltk_bytes = std::nullopt;
-  std::optional<MasterIdentificationParams> master_id = std::nullopt;
+  std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
-      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &master_id); },
+      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
       dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
@@ -422,10 +422,10 @@ TEST_F(Phase3Test, InitiatorSendsEncKey) {
   // Local LTK should be sent to the peer & pairing should be complete
   EXPECT_EQ(1, phase_3_complete_count());
   ASSERT_TRUE(ltk_bytes.has_value());
-  ASSERT_TRUE(master_id.has_value());
+  ASSERT_TRUE(central_id.has_value());
   ASSERT_TRUE(pairing_data().local_ltk.has_value());
   EXPECT_EQ(pairing_data().local_ltk->key(),
-            hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
+            hci_spec::LinkKey(*ltk_bytes, central_id->rand, central_id->ediv));
 }
 
 TEST_F(Phase3Test, InitiatorReceivesThenSendsEncKey) {
@@ -437,13 +437,13 @@ TEST_F(Phase3Test, InitiatorReceivesThenSendsEncKey) {
   args.le_props = kExpectedLtk.security();
   NewPhase3(args);
   std::optional<EncryptionInformationParams> ltk_bytes = std::nullopt;
-  std::optional<MasterIdentificationParams> master_id = std::nullopt;
+  std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
-      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &master_id); },
+      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
       dispatcher());
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
-  ReceiveMasterIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
+  ReceiveCentralIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
   RunLoopUntilIdle();
 
   // Local LTK should be sent to the peer & pairing should be complete
@@ -451,10 +451,10 @@ TEST_F(Phase3Test, InitiatorReceivesThenSendsEncKey) {
   EXPECT_EQ(1, phase_3_complete_count());
 
   ASSERT_TRUE(ltk_bytes.has_value());
-  ASSERT_TRUE(master_id.has_value());
+  ASSERT_TRUE(central_id.has_value());
   ASSERT_TRUE(pairing_data().local_ltk.has_value());
   EXPECT_EQ(pairing_data().local_ltk->key(),
-            hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
+            hci_spec::LinkKey(*ltk_bytes, central_id->rand, central_id->ediv));
 
   ASSERT_TRUE(pairing_data().peer_ltk.has_value());
   EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
@@ -598,7 +598,7 @@ TEST_F(Phase3Test, InitiatorCompleteWithEncAndIdKey) {
 
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
-  ReceiveMasterIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
+  ReceiveCentralIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
   Receive128BitCmd(kIdentityInformation, kIrk.value());
   ReceiveIdentityAddress(kSampleDeviceAddress);
   RunLoopUntilIdle();
@@ -624,20 +624,20 @@ TEST_F(Phase3Test, ResponderLTKDistributionNoRemoteKeys) {
   args.le_props = kDefaultProperties;
   NewPhase3(args);
   std::optional<EncryptionInformationParams> ltk_bytes = std::nullopt;
-  std::optional<MasterIdentificationParams> master_id = std::nullopt;
+  std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
-      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &master_id); },
+      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
       dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
-  // We should have sent both the Encryption Info and Master ID to the peer
+  // We should have sent both the Encryption Info and Central ID to the peer
   ASSERT_TRUE(ltk_bytes.has_value());
-  ASSERT_TRUE(master_id.has_value());
+  ASSERT_TRUE(central_id.has_value());
 
   // We should have notified the callback with the LTK
   ASSERT_TRUE(pairing_data().local_ltk.has_value());
   // The LTK we sent to the peer should match the one we notified callbacks with
-  ASSERT_EQ(hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
+  ASSERT_EQ(hci_spec::LinkKey(*ltk_bytes, central_id->rand, central_id->ediv),
             pairing_data().local_ltk->key());
 }
 
@@ -656,7 +656,7 @@ TEST_F(Phase3Test, ResponderAcceptsInitiatorEncKey) {
 
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
-  ReceiveMasterIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
+  ReceiveCentralIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
   RunLoopUntilIdle();
 
   // We were not supposed to distribute any keys in Phase 3
@@ -679,28 +679,28 @@ TEST_F(Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
   args.le_props = kDefaultProperties;
   NewPhase3(args);
   std::optional<EncryptionInformationParams> ltk_bytes = std::nullopt;
-  std::optional<MasterIdentificationParams> master_id = std::nullopt;
+  std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
-      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &master_id); },
+      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
       dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
-  // We should have sent the Encryption Info and Master ID & be waiting for the peer's IRK
+  // We should have sent the Encryption Info and Central ID & be waiting for the peer's IRK
   ASSERT_TRUE(ltk_bytes.has_value());
-  ASSERT_TRUE(master_id.has_value());
+  ASSERT_TRUE(central_id.has_value());
   ASSERT_EQ(0, phase_3_complete_count());
 
   const hci_spec::LinkKey kExpectedKey =
-      hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv);
-  // Reset ltk_bytes & master_id to verify that we don't send any further messages
+      hci_spec::LinkKey(*ltk_bytes, central_id->rand, central_id->ediv);
+  // Reset ltk_bytes & central_id to verify that we don't send any further messages
   ltk_bytes.reset();
-  master_id.reset();
+  central_id.reset();
   Receive128BitCmd(kIdentityInformation, kIrk.value());
   ReceiveIdentityAddress(kSampleDeviceAddress);
   RunLoopUntilIdle();
 
   ASSERT_FALSE(ltk_bytes.has_value());
-  ASSERT_FALSE(master_id.has_value());
+  ASSERT_FALSE(central_id.has_value());
   // We should have notified the callback with the LTK & IRK
   ASSERT_TRUE(pairing_data().local_ltk.has_value());
   ASSERT_TRUE(pairing_data().irk.has_value());
@@ -720,18 +720,18 @@ TEST_F(Phase3Test, ResponderLocalLTKMaxLength) {
   args.features.remote_key_distribution = 0u;
   NewPhase3(args);
   std::optional<EncryptionInformationParams> ltk_bytes = std::nullopt;
-  std::optional<MasterIdentificationParams> master_id = std::nullopt;
+  std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
-      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &master_id); },
+      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
       dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
 
   // Local LTK, EDiv, and Rand should be sent to the peer & listener should be notified.
   ASSERT_TRUE(ltk_bytes.has_value());
-  ASSERT_TRUE(master_id.has_value());
+  ASSERT_TRUE(central_id.has_value());
   EXPECT_EQ(1, phase_3_complete_count());
-  EXPECT_EQ(hci_spec::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
+  EXPECT_EQ(hci_spec::LinkKey(*ltk_bytes, central_id->rand, central_id->ediv),
             pairing_data().local_ltk->key());
 
   // Ensure that most significant (16 - kNegotiatedMaxKeySize) bytes are zero.

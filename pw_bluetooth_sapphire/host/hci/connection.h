@@ -53,7 +53,7 @@ class Connection {
  public:
   // Role of the local device in the established connection.
   enum class Role {
-    kMaster,
+    kCentral,
     kPeripheral,
   };
 

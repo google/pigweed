@@ -59,7 +59,7 @@ class SecurityManager {
                                                  gap::LeSecurityMode security_mode);
   virtual ~SecurityManager() = default;
   // Assigns the requested |ltk| to this connection, adopting the security properties of |ltk|. If
-  // the local device is the master of the underlying link, then the link layer authentication
+  // the local device is the central of the underlying link, then the link layer authentication
   // procedure will be initiated.
   //
   // Returns false if a pairing procedure is in progress when this method is called. If the link

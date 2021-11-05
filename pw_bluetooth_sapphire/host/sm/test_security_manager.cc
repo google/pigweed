@@ -18,7 +18,7 @@ TestSecurityManager::TestSecurityManager(
     fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
     fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode, gap::LeSecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
-      role_(link->role() == hci::Connection::Role::kMaster ? Role::kInitiator : Role::kResponder),
+      role_(link->role() == hci::Connection::Role::kCentral ? Role::kInitiator : Role::kResponder),
       weak_ptr_factory_(this) {}
 
 bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {

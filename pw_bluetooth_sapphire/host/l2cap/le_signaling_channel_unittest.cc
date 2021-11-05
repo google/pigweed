@@ -13,7 +13,7 @@ namespace {
 constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 1;
 
-template <hci::Connection::Role Role = hci::Connection::Role::kMaster>
+template <hci::Connection::Role Role = hci::Connection::Role::kCentral>
 class LESignalingChannelTestBase : public testing::FakeChannelTest {
  public:
   LESignalingChannelTestBase() = default;

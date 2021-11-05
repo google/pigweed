@@ -61,7 +61,7 @@ DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
       LowerBits(hci_spec::kAcceptConnectionRequest), UpperBits(hci_spec::kAcceptConnectionRequest),
       0x07,                                                  // parameter_total_size (7 bytes)
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
-      0x00                                                   // role (become master)
+      0x00                                                   // role (become central)
       ));
 }
 

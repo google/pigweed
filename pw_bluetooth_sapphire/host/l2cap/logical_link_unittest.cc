@@ -35,7 +35,7 @@ class LogicalLinkTest : public ::gtest::TestLoopFixture {
     const hci_spec::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
-    link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, &executor_, kMaxPayload,
+    link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kCentral, &executor_, kMaxPayload,
                              std::move(query_service_cb), &acl_data_channel_,
                              /*random_channel_ids=*/true);
   }

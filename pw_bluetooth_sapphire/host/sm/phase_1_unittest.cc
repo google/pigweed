@@ -776,7 +776,7 @@ TEST_F(Phase1Test, FeatureExchangePeerOnlyIndicatesOneLinkKeyDoNotGenerateCtKey)
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
 
-TEST_F(Phase1Test, FeatureExchangeResponderErrorMaster) {
+TEST_F(Phase1Test, FeatureExchangeResponderErrorCentral) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,                 // code: Pairing Request
                              0x03,                 // IO cap.: NoInputNoOutput

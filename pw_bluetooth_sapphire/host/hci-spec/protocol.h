@@ -168,7 +168,7 @@ struct CreateConnectionCommandParams {
 
   // Allow Role Switch.
   // Allowed values:
-  //  0x00 - No role switch allowed, this device will be the master
+  //  0x00 - No role switch allowed, this device will be the central
   //  0x01 - Role switch allowed, this device may become peripheral during
   //  connection setup
   uint8_t allow_role_switch;
@@ -223,7 +223,7 @@ struct AcceptConnectionRequestCommandParams {
   DeviceAddressBytes bd_addr;
 
   // Role. Allowable values:
-  //  - kMaster - Host will become the master (Link Master will role switch)
+  //  - kCentral - Host will become the central (Link Central will role switch)
   //  - kPeripheral - Host will remain the peripheral.
   ConnectionRole role;
 } __PACKED;
@@ -1712,9 +1712,9 @@ struct LEConnectionCompleteSubeventParams {
   // Time Range: 100 ms to 32 s
   uint16_t supervision_timeout;
 
-  // The Master_Clock_Accuracy parameter is only valid for a peripheral. On a master, this parameter
-  // shall be set to 0x00.
-  LEClockAccuracy master_clock_accuracy;
+  // The Central_Clock_Accuracy parameter is only valid for a peripheral. On a central, this
+  // parameter shall be set to 0x00.
+  LEClockAccuracy central_clock_accuracy;
 } __PACKED;
 
 // LE Advertising Report Event (v4.0) (LE)
@@ -1922,9 +1922,9 @@ struct LEEnhancedConnectionCompleteSubeventParams {
   // Time Range: 100 ms to 32 s
   uint16_t supervision_timeout;
 
-  // The Master_Clock_Accuracy parameter is only valid for a peripheral. On a master, this parameter
-  // shall be set to 0x00.
-  LEClockAccuracy master_clock_accuracy;
+  // The Central_Clock_Accuracy parameter is only valid for a peripheral. On a central, this
+  // parameter shall be set to 0x00.
+  LEClockAccuracy central_clock_accuracy;
 } __PACKED;
 
 // LE Directed Advertising Report Event (v4.2) (LE)

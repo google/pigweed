@@ -53,7 +53,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
                                 dispatcher());
 
     // Setup a fake logical link.
-    auto link_role = role == Role::kInitiator ? hci::Connection::Role::kMaster
+    auto link_role = role == Role::kInitiator ? hci::Connection::Role::kCentral
                                               : hci::Connection::Role::kPeripheral;
     fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, bt::LinkType::kLE, link_role,
                                                                 kLocalAddr, kPeerAddr);
@@ -173,9 +173,9 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
         enc_info_count_++;
         enc_info_ = reader.payload<EncryptionInformationParams>();
         break;
-      case kMasterIdentification: {
-        const auto& params = reader.payload<MasterIdentificationParams>();
-        master_ident_count_++;
+      case kCentralIdentification: {
+        const auto& params = reader.payload<CentralIdentificationParams>();
+        central_ident_count_++;
         ediv_ = le16toh(params.ediv);
         rand_ = le64toh(params.rand);
         break;
@@ -244,10 +244,10 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     Receive128BitCmd(kEncryptionInformation, ltk);
   }
 
-  void ReceiveMasterIdentification(uint64_t random, uint16_t ediv) {
-    StaticByteBuffer<sizeof(Header) + sizeof(MasterIdentificationParams)> buffer;
-    PacketWriter writer(kMasterIdentification, &buffer);
-    auto* params = writer.mutable_payload<MasterIdentificationParams>();
+  void ReceiveCentralIdentification(uint64_t random, uint16_t ediv) {
+    StaticByteBuffer<sizeof(Header) + sizeof(CentralIdentificationParams)> buffer;
+    PacketWriter writer(kCentralIdentification, &buffer);
+    auto* params = writer.mutable_payload<CentralIdentificationParams>();
     params->ediv = htole16(ediv);
     params->rand = htole64(random);
     fake_chan()->Receive(buffer);
@@ -380,7 +380,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   int enc_info_count() const { return enc_info_count_; }
   int id_info_count() const { return id_info_count_; }
   int id_addr_info_count() const { return id_addr_info_count_; }
-  int master_ident_count() const { return master_ident_count_; }
+  int central_ident_count() const { return central_ident_count_; }
 
   AuthReqField security_request_payload() const { return security_auth_req_; }
   const std::optional<EcdhKey>& public_ecdh_key() const { return public_ecdh_key_; }
@@ -455,7 +455,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   int enc_info_count_ = 0;
   int id_info_count_ = 0;
   int id_addr_info_count_ = 0;
-  int master_ident_count_ = 0;
+  int central_ident_count_ = 0;
 
   // Values that have we have sent to the peer.
   AuthReqField security_auth_req_;
@@ -1943,7 +1943,7 @@ TEST_F(InitiatorPairingTest, Phase3EncryptionInformationReceivedTwice) {
 }
 
 // The responder sends EDIV and Rand before LTK.
-TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceivedInWrongOrder) {
+TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedInWrongOrder) {
   UInt128 stk;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
@@ -1953,9 +1953,9 @@ TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceivedInWrongOrder) {
   EXPECT_EQ(0, security_callback_count());
   EXPECT_EQ(0, pairing_data_callback_count());
 
-  // Send master identification before encryption information. This should cause
+  // Send central identification before encryption information. This should cause
   // pairing to fail.
-  ReceiveMasterIdentification(1, 2);
+  ReceiveCentralIdentification(1, 2);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1967,7 +1967,7 @@ TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceivedInWrongOrder) {
 }
 
 // The responder sends the sample LTK from the specification doc
-TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceiveSampleLTK) {
+TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveSampleLTK) {
   UInt128 stk;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
@@ -1993,7 +1993,7 @@ TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceiveSampleLTK) {
 }
 
 // The responder sends the sample Rand from the specification doc
-TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceiveExampleRand) {
+TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveExampleRand) {
   UInt128 stk;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
@@ -2008,7 +2008,7 @@ TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceiveExampleRand) {
 
   // Send a bad Rand, this should cause pairing to fail.
   ReceiveEncryptionInformation(UInt128());
-  ReceiveMasterIdentification(kRandSample, kEDiv);
+  ReceiveCentralIdentification(kRandSample, kEDiv);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -2020,7 +2020,7 @@ TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceiveExampleRand) {
 }
 
 // The responder sends an LTK that is longer than the max key size
-TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceiveLongLTK) {
+TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceiveLongLTK) {
   UInt128 stk;
   auto max_key_size = 8;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
@@ -2045,7 +2045,7 @@ TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceiveLongLTK) {
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
 
-TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceivedTwice) {
+TEST_F(InitiatorPairingTest, Phase3CentralIdentificationReceivedTwice) {
   UInt128 stk;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
@@ -2060,11 +2060,11 @@ TEST_F(InitiatorPairingTest, Phase3MasterIdentificationReceivedTwice) {
   constexpr uint16_t kDupEdiv = 3;
   constexpr uint64_t kDupRand = 4;
 
-  // Send duplicate master identification. Pairing should complete with the
+  // Send duplicate central identification. Pairing should complete with the
   // first set of information. The second set should get ignored.
   ReceiveEncryptionInformation(UInt128());
-  ReceiveMasterIdentification(kRand, kEdiv);
-  ReceiveMasterIdentification(kDupRand, kDupEdiv);
+  ReceiveCentralIdentification(kRand, kEdiv);
+  ReceiveCentralIdentification(kDupRand, kDupEdiv);
   RunLoopUntilIdle();
 
   EXPECT_EQ(0, pairing_failed_count());
@@ -2089,7 +2089,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithReceivingEncKey) {
   uint16_t kEDiv = 20;
 
   ReceiveEncryptionInformation(kLTK);
-  ReceiveMasterIdentification(kRand, kEDiv);
+  ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
 
   // Pairing should have succeeded.
@@ -2180,7 +2180,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithShortEncKey) {
   uint16_t kEDiv = 20;
 
   ReceiveEncryptionInformation(kLTK);
-  ReceiveMasterIdentification(kRand, kEDiv);
+  ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
 
   // Pairing should have succeeded.
@@ -2427,7 +2427,7 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithAllKeys) {
 
   // Receive EncKey
   ReceiveEncryptionInformation(kLTK);
-  ReceiveMasterIdentification(kRand, kEDiv);
+  ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
 
   // Pairing still pending. SMP does not assign the LTK to the link until pairing completes.
@@ -2543,7 +2543,7 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   uint64_t kRand = 5;
   uint16_t kEDiv = 20;
   ReceiveEncryptionInformation(kLTK);
-  ReceiveMasterIdentification(kRand, kEDiv);
+  ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
   fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
@@ -3054,7 +3054,7 @@ TEST_F(ResponderPairingTest, LegacyPhase2ConfirmValuesExchanged) {
 
 TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(0, enc_info_count());
-  EXPECT_EQ(0, master_ident_count());
+  EXPECT_EQ(0, central_ident_count());
 
   UInt128 stk;
   KeyDistGenField remote_keys{0}, local_keys{KeyDistGen::kEncKey};
@@ -3063,7 +3063,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
 
   // Local LTK, EDiv, and Rand should be sent to the peer.
   EXPECT_EQ(1, enc_info_count());
-  EXPECT_EQ(1, master_ident_count());
+  EXPECT_EQ(1, central_ident_count());
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(enc_info(), fake_link()->ltk()->value());
   EXPECT_EQ(ediv(), fake_link()->ltk()->ediv());
@@ -3095,7 +3095,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
 
 TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys) {
   EXPECT_EQ(0, enc_info_count());
-  EXPECT_EQ(0, master_ident_count());
+  EXPECT_EQ(0, central_ident_count());
 
   UInt128 stk;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
@@ -3105,7 +3105,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys) {
   // Local LTK, EDiv, and Rand should be sent to the peer - we don't assign the new LTK to the link
   // until pairing is complete.
   EXPECT_EQ(1, enc_info_count());
-  EXPECT_EQ(1, master_ident_count());
+  EXPECT_EQ(1, central_ident_count());
 
   // No local identity information should have been sent.
   EXPECT_EQ(0, id_info_count());
@@ -3143,7 +3143,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys) {
 // Locally generated ltk length should match max key length specified
 TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
   EXPECT_EQ(0, enc_info_count());
-  EXPECT_EQ(0, master_ident_count());
+  EXPECT_EQ(0, central_ident_count());
 
   UInt128 stk;
   uint16_t max_key_size = 7;
@@ -3155,7 +3155,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
 
   // Local LTK, EDiv, and Rand should be sent to the peer.
   EXPECT_EQ(1, enc_info_count());
-  EXPECT_EQ(1, master_ident_count());
+  EXPECT_EQ(1, central_ident_count());
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(enc_info(), fake_link()->ltk()->value());
   EXPECT_EQ(ediv(), fake_link()->ltk()->ediv());
@@ -3193,7 +3193,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3ReceiveInitiatorEncKey) {
   const hci_spec::LinkKey kLTK({1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}, kRand, kEDiv);
 
   ReceiveEncryptionInformation(kLTK.value());
-  ReceiveMasterIdentification(kRand, kEDiv);
+  ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
 
   // Pairing should have succeeded.
@@ -3227,7 +3227,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
   set_local_id_info(local_id_info);
 
   EXPECT_EQ(0, enc_info_count());
-  EXPECT_EQ(0, master_ident_count());
+  EXPECT_EQ(0, central_ident_count());
 
   UInt128 stk;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
@@ -3236,7 +3236,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
 
   // No local LTK, EDiv, and Rand should be sent to the peer.
   EXPECT_EQ(0, enc_info_count());
-  EXPECT_EQ(0, master_ident_count());
+  EXPECT_EQ(0, central_ident_count());
 
   // Local identity information should have been sent.
   EXPECT_EQ(1, id_info_count());

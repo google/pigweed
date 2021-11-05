@@ -145,7 +145,7 @@ class L2capTest : public TestingBase {
 
   QueueAclConnectionRetVal QueueAclConnection(
       hci_spec::ConnectionHandle handle,
-      hci::Connection::Role role = hci::Connection::Role::kMaster) {
+      hci::Connection::Role role = hci::Connection::Role::kCentral) {
     QueueAclConnectionRetVal cmd_ids;
     cmd_ids.extended_features_id = NextCommandId();
     cmd_ids.fixed_channels_supported_id = NextCommandId();

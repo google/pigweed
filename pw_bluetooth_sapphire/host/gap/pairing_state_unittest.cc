@@ -67,7 +67,7 @@ class NoOpPairingDelegate final : public PairingDelegate {
 };
 
 FakeConnection MakeFakeConnection() {
-  return FakeConnection(kTestHandle, bt::LinkType::kACL, hci::Connection::Role::kMaster,
+  return FakeConnection(kTestHandle, bt::LinkType::kACL, hci::Connection::Role::kCentral,
                         kLocalAddress, kPeerAddress);
 }
 

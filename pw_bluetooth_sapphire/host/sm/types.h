@@ -26,7 +26,7 @@ const std::unordered_map<Code, size_t> kCodeToPayloadSize{
     {kPairingRandom, sizeof(PairingRandomValue)},
     {kPairingFailed, sizeof(PairingFailedParams)},
     {kEncryptionInformation, sizeof(EncryptionInformationParams)},
-    {kMasterIdentification, sizeof(MasterIdentificationParams)},
+    {kCentralIdentification, sizeof(CentralIdentificationParams)},
     {kIdentityInformation, sizeof(IRK)},
     {kIdentityAddressInformation, sizeof(IdentityAddressInformationParams)},
     {kPairingPublicKey, sizeof(PairingPublicKeyParams)},
@@ -272,7 +272,7 @@ struct LocalPairingParams {
 
 // These roles correspond to the device which starts pairing.
 enum class Role {
-  // The LMP Master device is always kInitiator (V5.0 Vol. 3 Part H Appendix C.1).
+  // The LMP Central device is always kInitiator (V5.0 Vol. 3 Part H Appendix C.1).
   kInitiator,
 
   // The LMP Peripheral device is always kResponder (V5.0 Vol. 3 Part H Appendix C.1).

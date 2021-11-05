@@ -62,7 +62,7 @@ class LEConnectionParameters final {
 // Preferred connection parameters for LE connection. Used to represent
 // parameters that act as a hint to the controller. This is used for:
 //
-//   * initiating a new connection as a master
+//   * initiating a new connection as a central
 //   * to represent a peripheral's preferred connection parameters
 class LEPreferredConnectionParameters final {
  public:

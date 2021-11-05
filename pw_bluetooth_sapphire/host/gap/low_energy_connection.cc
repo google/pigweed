@@ -189,7 +189,7 @@ void LowEnergyConnection::AttachInspect(inspect::Node& parent, std::string name)
 }
 
 void LowEnergyConnection::StartConnectionPauseTimeout() {
-  if (link_->role() == hci::Connection::Role::kMaster) {
+  if (link_->role() == hci::Connection::Role::kCentral) {
     StartConnectionPauseCentralTimeout();
   } else {
     StartConnectionPausePeripheralTimeout();
@@ -263,8 +263,8 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
     // security information (LTK, EDIV, and Rand) distributed by the Peripheral in LE legacy [...]
     // to setup an encrypted session" (v5.3, Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
     // and local_ltk will be equal, so this check is unnecessary but correct.
-    ltk = (link()->role() == hci::Connection::Role::kMaster) ? peer->le()->bond_data()->peer_ltk
-                                                             : peer->le()->bond_data()->local_ltk;
+    ltk = (link()->role() == hci::Connection::Role::kCentral) ? peer->le()->bond_data()->peer_ltk
+                                                              : peer->le()->bond_data()->local_ltk;
   }
 
   // Obtain the local I/O capabilities from the delegate. Default to
@@ -279,7 +279,7 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
                                      connection_options.bondable_mode, security_mode);
 
   // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
-  // will start encryption if the local device is the link-layer master.
+  // will start encryption if the local device is the link-layer central.
   if (ltk) {
     bt_log(INFO, "gap-le", "assigning existing LTK (peer: %s, handle: %#.4x)", bt_str(peer_id_),
            handle());
@@ -468,7 +468,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
 
   connection_parameters_update_requested_ = true;
 
-  if (link_->role() == hci::Connection::Role::kMaster) {
+  if (link_->role() == hci::Connection::Role::kCentral) {
     // If the GAP service preferred connection parameters characteristic has not been read by now,
     // just use the default parameters.
     // TODO(fxbug.dev/66031): Wait for preferred connection parameters to be read.
