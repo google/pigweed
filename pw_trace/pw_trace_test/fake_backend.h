@@ -95,7 +95,8 @@ class Event {
            has_data_ == rhs.has_data_ &&                          //
            data_format_string_ == rhs.data_format_string_ &&      //
            data_size_ == rhs.data_size_ &&                        //
-           (memcmp(data_, rhs.data_, data_size_) == 0);
+           (data_size_ == 0 ||                                    //
+            (memcmp(data_, rhs.data_, data_size_) == 0));
   }
 
   bool IsEqualIgnoreLabel(const Event& rhs) const {
@@ -105,7 +106,8 @@ class Event {
            has_data_ == rhs.has_data_ &&                          //
            data_format_string_ == rhs.data_format_string_ &&      //
            data_size_ == rhs.data_size_ &&                        //
-           (memcmp(data_, rhs.data_, data_size_) == 0);
+           (data_size_ == 0 ||                                    //
+            (memcmp(data_, rhs.data_, data_size_) == 0));
   }
 
  private:
