@@ -63,14 +63,15 @@ pw_source_set("flat_file_system_entry") {
 
 pw_test_group("tests") {
   tests = [
-    ":blob_store_test",
+    ":blob_store_test_1_alignment",
+    ":blob_store_test_16_alignment",
     ":blob_store_deferred_write_test",
     ":blob_store_chunk_write_test",
     ":flat_file_system_entry_test",
   ]
 }
 
-pw_test("blob_store_test") {
+pw_test("blob_store_test_1_alignment") {
   deps = [
     ":pw_blob_store",
     "$dir_pw_kvs:crc16",
@@ -81,6 +82,20 @@ pw_test("blob_store_test") {
     dir_pw_random,
   ]
   sources = [ "blob_store_test.cc" ]
+}
+
+pw_test("blob_store_test_16_alignment") {
+  deps = [
+    ":pw_blob_store",
+    "$dir_pw_kvs:crc16",
+    "$dir_pw_kvs:fake_flash",
+    "$dir_pw_kvs:fake_flash_test_key_value_store",
+    "$dir_pw_sync:borrow",
+    dir_pw_log,
+    dir_pw_random,
+  ]
+  sources = [ "blob_store_test.cc" ]
+  defines = [ "PW_FLASH_TEST_ALIGNMENT=16U" ]
 }
 
 pw_test("blob_store_chunk_write_test") {

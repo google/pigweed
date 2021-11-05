@@ -27,6 +27,10 @@
 #include "pw_log/log.h"
 #include "pw_random/xor_shift.h"
 
+#ifndef PW_FLASH_TEST_ALIGNMENT
+#define PW_FLASH_TEST_ALIGNMENT 1
+#endif
+
 namespace pw::blob_store {
 namespace {
 
@@ -147,7 +151,7 @@ class BlobStoreTest : public ::testing::Test {
     }
   }
 
-  static constexpr size_t kFlashAlignment = 16;
+  static constexpr size_t kFlashAlignment = PW_FLASH_TEST_ALIGNMENT;
   static constexpr size_t kSectorSize = 2048;
   static constexpr size_t kSectorCount = 2;
   static constexpr size_t kBlobDataSize = (kSectorCount * kSectorSize);
@@ -269,6 +273,117 @@ TEST_F(BlobStoreTest, IsOpen) {
   EXPECT_EQ(true, reader.IsOpen());
   EXPECT_EQ(OkStatus(), reader.Close());
   EXPECT_EQ(false, reader.IsOpen());
+}
+
+// Write to the blob using no write buffer size. Write operations must be
+// multiples of flash_write_size_bytes.
+TEST_F(BlobStoreTest, NoWriteBuffer_1Alignment) {
+  if (kFlashAlignment > 1) {
+    // Test not valid for flash alignments greater than 1.
+    return;
+  }
+
+  const size_t kWriteSizeBytes = 1;
+  kvs::ChecksumCrc16 checksum;
+
+  InitSourceBufferToRandom(0xaabd123);
+
+  ConstByteSpan write_data = std::span(source_buffer_);
+  ConstByteSpan original_source = std::span(source_buffer_);
+
+  EXPECT_EQ(OkStatus(), partition_.Erase());
+
+  BlobStore blob(kBlobTitle,
+                 partition_,
+                 &checksum,
+                 kvs::TestKvs(),
+                 std::span<std::byte>(),
+                 kWriteSizeBytes);
+  EXPECT_EQ(OkStatus(), blob.Init());
+
+  BlobStore::BlobWriterWithBuffer writer(blob);
+  EXPECT_EQ(OkStatus(), writer.Open());
+
+  size_t test_write_size[] = {1, 1, 2, 4, 32, 128};
+
+  for (size_t size : test_write_size) {
+    ASSERT_EQ(OkStatus(), writer.Write(write_data.first(size)));
+    write_data = write_data.subspan(size);
+  }
+
+  while (write_data.size_bytes() > 0) {
+    const size_t finish_write_size = 8;
+    ASSERT_EQ(OkStatus(), writer.Write(write_data.first(finish_write_size)));
+    write_data = write_data.subspan(finish_write_size);
+  }
+  EXPECT_EQ(write_data.size_bytes(), 0U);
+  EXPECT_EQ(OkStatus(), writer.Close());
+
+  // Use reader to check for valid data.
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+  Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(original_source.size_bytes(), result.value().size_bytes());
+  VerifyFlash(result.value());
+  VerifyFlash(flash_.buffer());
+  EXPECT_EQ(OkStatus(), reader.Close());
+}
+
+// Write to the blob using no write buffer size. Write operations must be
+// multiples of flash_write_size_bytes.
+TEST_F(BlobStoreTest, NoWriteBuffer_16Alignment) {
+  if (kFlashAlignment > 16) {
+    // Test not valid for flash alignments greater than 16.
+    return;
+  }
+
+  const size_t kWriteSizeBytes = 16;
+  kvs::ChecksumCrc16 checksum;
+
+  InitSourceBufferToRandom(0x6745d123);
+
+  ConstByteSpan write_data = std::span(source_buffer_);
+  ConstByteSpan original_source = std::span(source_buffer_);
+
+  EXPECT_EQ(OkStatus(), partition_.Erase());
+
+  BlobStore blob(kBlobTitle,
+                 partition_,
+                 &checksum,
+                 kvs::TestKvs(),
+                 std::span<std::byte>(),
+                 kWriteSizeBytes);
+  EXPECT_EQ(OkStatus(), blob.Init());
+
+  BlobStore::BlobWriterWithBuffer writer(blob);
+  EXPECT_EQ(OkStatus(), writer.Open());
+  ASSERT_EQ(Status::InvalidArgument(), writer.Write(write_data.first(1)));
+  ASSERT_EQ(Status::InvalidArgument(),
+            writer.Write(write_data.first(kWriteSizeBytes / 2)));
+
+  ASSERT_EQ(OkStatus(), writer.Write(write_data.first(4 * kWriteSizeBytes)));
+  write_data = write_data.subspan(4 * kWriteSizeBytes);
+
+  ASSERT_EQ(Status::InvalidArgument(), writer.Write(write_data.first(1)));
+  ASSERT_EQ(Status::InvalidArgument(),
+            writer.Write(write_data.first(kWriteSizeBytes / 2)));
+
+  while (write_data.size_bytes() > 0) {
+    ASSERT_EQ(OkStatus(), writer.Write(write_data.first(kWriteSizeBytes)));
+    write_data = write_data.subspan(kWriteSizeBytes);
+  }
+  EXPECT_EQ(OkStatus(), writer.Close());
+
+  // Use reader to check for valid data.
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+  Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(original_source.size_bytes(), result.value().size_bytes());
+  VerifyFlash(result.value());
+  VerifyFlash(flash_.buffer());
+  EXPECT_EQ(OkStatus(), reader.Close());
 }
 
 TEST_F(BlobStoreTest, FileName) {

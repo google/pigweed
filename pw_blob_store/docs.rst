@@ -16,6 +16,22 @@ Most operations on a ``BlobStore`` are done using ``BlobReader`` and
 a ``BlobStore`` may have multiple open ``BlobReader`` objects, no other
 readers/writers may be active if a ``BlobWriter`` is opened on a blob store.
 
+Write buffer
+============
+
+BlobStore uses a write buffer to allow writes smaller than and/or unaligned to
+the flash write aligment. BlobStore also supports using the write buffer for
+deferred writes that can be enqueued and written to flash at a later time or by
+a different thread/context.
+
+BlobStore can be used with a zero-size write buffer to reduce memory
+requirements. When using zero-size write buffer, the user is required to write
+maintain write sizes that are a multiple of the flash write size the blob is
+configured for.
+
+If a non-zero sized write buffer is used, the write buffer size must be a
+multiple of the flash write size.
+
 ----------------------
 Writing to a BlobStore
 ----------------------

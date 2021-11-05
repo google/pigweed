@@ -41,11 +41,16 @@ Status BlobStore::Init() {
 
   PW_LOG_INFO("Init BlobStore");
 
-  const size_t write_buffer_size_alignment =
+  const size_t flash_write_size_alignment =
       flash_write_size_bytes_ % partition_.alignment_bytes();
-  PW_CHECK_UINT_EQ((write_buffer_size_alignment), 0);
-  PW_CHECK_UINT_GE(write_buffer_.size_bytes(), flash_write_size_bytes_);
+  PW_CHECK_UINT_EQ(flash_write_size_alignment, 0);
   PW_CHECK_UINT_GE(flash_write_size_bytes_, partition_.alignment_bytes());
+  const size_t partition_size_alignment =
+      partition_.size_bytes() % flash_write_size_bytes_;
+  PW_CHECK_UINT_EQ(partition_size_alignment, 0);
+  if (!write_buffer_.empty()) {
+    PW_CHECK_UINT_GE(write_buffer_.size_bytes(), flash_write_size_bytes_);
+  }
 
   ResetChecksum();
   initialized_ = true;
@@ -187,6 +192,10 @@ Status BlobStore::Write(ConstByteSpan data) {
   if (WriteBytesRemaining() < data.size_bytes()) {
     return Status::ResourceExhausted();
   }
+  if ((write_buffer_.empty()) &&
+      ((data.size_bytes() % flash_write_size_bytes_) != 0)) {
+    return Status::InvalidArgument();
+  }
 
   if (!EraseIfNeeded().ok()) {
     return Status::DataLoss();
@@ -201,6 +210,7 @@ Status BlobStore::Write(ConstByteSpan data) {
   // Step 1) If there is any data in the write buffer, finish filling write
   //         buffer and if full write it to flash.
   if (!WriteBufferEmpty()) {
+    PW_DCHECK(!write_buffer_.empty());
     size_t bytes_in_buffer = WriteBufferBytesUsed();
 
     // Non-deferred writes only use the first flash_write_size_bytes_ of the
@@ -258,6 +268,7 @@ Status BlobStore::Write(ConstByteSpan data) {
   //         have any more data to write.
   if (final_partial_write_size_bytes > 0) {
     PW_DCHECK_INT_LT(data.size_bytes(), flash_write_size_bytes_);
+    PW_DCHECK(!write_buffer_.empty());
 
     // Don't need to DCHECK that buffer is empty, nothing writes to it since the
     // previous time it was DCHECK'ed
@@ -298,18 +309,21 @@ Status BlobStore::Flush() {
   // Don't need to check available space, AddToWriteBuffer() will not enqueue
   // more than can be written to flash.
 
+  // If there is no buffer there should never be any bytes enqueued.
+  PW_DCHECK(!write_buffer_.empty());
+
   if (!EraseIfNeeded().ok()) {
     return Status::DataLoss();
   }
 
   ByteSpan data = std::span(write_buffer_.data(), WriteBufferBytesUsed());
-  while (data.size_bytes() >= flash_write_size_bytes_) {
-    if (!CommitToFlash(data.first(flash_write_size_bytes_)).ok()) {
-      return Status::DataLoss();
-    }
-
-    data = data.subspan(flash_write_size_bytes_);
+  size_t write_size_bytes =
+      (data.size_bytes() / flash_write_size_bytes_) * flash_write_size_bytes_;
+  if (!CommitToFlash(data.first(write_size_bytes)).ok()) {
+    return Status::DataLoss();
   }
+  data = data.subspan(write_size_bytes);
+  PW_DCHECK_INT_LT(data.size_bytes(), flash_write_size_bytes_);
 
   // Only a multiple of flash_write_size_bytes_ are written in the flush. Any
   // remainder is held until later for either a flush with
@@ -332,6 +346,9 @@ Status BlobStore::FlushFinalPartialChunk() {
   PW_DCHECK_UINT_GT(bytes_in_buffer, 0);
   PW_DCHECK_UINT_LE(bytes_in_buffer, flash_write_size_bytes_);
   PW_DCHECK_UINT_LE(flash_write_size_bytes_, WriteBytesRemaining());
+
+  // If there is no buffer there should never be any bytes enqueued.
+  PW_DCHECK(!write_buffer_.empty());
 
   PW_LOG_DEBUG(
       "  Remainder %u bytes in write buffer to zero-pad to flash write "
