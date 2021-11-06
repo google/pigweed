@@ -89,7 +89,12 @@ void Metric::Dump(int level) {
   Base64EncodedToken encoded_name(name());
   const char* indent = Indent(level);
   if (is_float()) {
-    PW_LOG_INFO("%s \"%s\": %f,", indent, encoded_name.value(), as_float());
+    // Variadic macros promote float to double. Explicitly cast here to
+    // acknowledge this and allow projects to use -Wdouble-promotion.
+    PW_LOG_INFO("%s \"%s\": %f,",
+                indent,
+                encoded_name.value(),
+                static_cast<double>(as_float()));
   } else {
     PW_LOG_INFO("%s \"%s\": %u,",
                 indent,
