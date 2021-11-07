@@ -24,7 +24,7 @@ humanfriendly==10.0
 idna==3.3
 imagesize==1.2.0
 ipython==7.29.0
-isort==5.9.3
+isort==5.10.0
 jedi==0.18.0
 Jinja2==3.0.2
 lazy-object-proxy==1.6.0
@@ -47,7 +47,7 @@ protobuf==3.19.1
 psutil==5.8.0
 ptpython==3.0.20
 ptyprocess==0.7.0
-pycparser==2.20
+pycparser==2.21
 pyelftools==0.27
 Pygments==2.10.0
 pygments-style-dracula==1.2.5.1
@@ -64,7 +64,7 @@ scan-build==2.0.19
 seqdiag==2.0.0
 six==1.16.0
 snowballstemmer==2.1.0
-soupsieve==2.2.1
+soupsieve==2.3
 Sphinx==4.2.0
 sphinx-design==0.0.13
 sphinx-rtd-theme==1.0.0
