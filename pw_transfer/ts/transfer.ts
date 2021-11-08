@@ -20,6 +20,35 @@ import {
 import {Status} from '@pigweed/pw_status';
 import {Chunk} from 'transfer_proto_tspb/transfer_proto_tspb_pb/pw_transfer/transfer_pb';
 
+export class ProgressStats {
+  constructor(
+    readonly bytesSent: number,
+    readonly bytesConfirmedReceived: number,
+    readonly totalSizeBytes?: number
+  ) {}
+
+  get percentReceived(): number {
+    if (this.totalSizeBytes === undefined) {
+      return NaN;
+    }
+    return (this.bytesConfirmedReceived / this.totalSizeBytes) * 100;
+  }
+
+  toString(): string {
+    const total =
+      this.totalSizeBytes === undefined
+        ? 'undefined'
+        : this.totalSizeBytes.toString();
+    const percent = this.percentReceived.toFixed(2);
+    return (
+      `${percent}% (${this.bytesSent} B sent, ` +
+      `${this.bytesConfirmedReceived} B received of ${total} B)`
+    );
+  }
+}
+
+export type ProgressCallback = (stats: ProgressStats) => void;
+
 /** A Timer which invokes a callback after a certain timeout. */
 class Timer {
   private task?: ReturnType<typeof setTimeout>;
@@ -59,20 +88,19 @@ class Timer {
  */
 export abstract class Transfer {
   status: Status = Status.OK;
-
+  done: Promise<Status>;
   protected data = new Uint8Array();
 
   private retries = 0;
   private responseTimer?: Timer;
-
-  done: Promise<Status>;
   private resolve?: (value: Status | PromiseLike<Status>) => void;
 
   constructor(
     public id: number,
     protected sendChunk: (chunk: Chunk) => void,
     responseTimeoutS: number,
-    private maxRetries: number
+    private maxRetries: number,
+    private progressCallback?: ProgressCallback
   ) {
     this.responseTimer = new Timer(responseTimeoutS, this.onTimeout);
     this.done = new Promise<Status>(resolve => {
@@ -128,9 +156,28 @@ export abstract class Transfer {
 
     if (status === Status.OK) {
       const totalSize = this.data.length;
+      this.updateProgress(totalSize, totalSize, totalSize);
     }
 
     this.resolve!(this.status);
+  }
+
+  /** Invokes the provided progress callback, if any, with the progress */
+  updateProgress(
+    bytesSent: number,
+    bytesConfirmedReceived: number,
+    totalSizeBytes?: number
+  ): void {
+    const stats = new ProgressStats(
+      bytesSent,
+      bytesConfirmedReceived,
+      totalSizeBytes
+    );
+    console.debug(`Transfer ${this.id} progress: ${stats}`);
+
+    if (this.progressCallback !== undefined) {
+      this.progressCallback(stats);
+    }
   }
 
   /**
@@ -181,11 +228,12 @@ export class ReadTransfer extends Transfer {
     sendChunk: (chunk: Chunk) => void,
     responseTimeoutS: number,
     maxRetries: number,
+    progressCallback?: ProgressCallback,
     maxBytesToReceive = 8192,
     maxChunkSize = 1024,
     chunkDelayMicroS?: number
   ) {
-    super(id, sendChunk, responseTimeoutS, maxRetries);
+    super(id, sendChunk, responseTimeoutS, maxRetries, progressCallback);
     this.maxBytesToReceive = maxBytesToReceive;
     this.maxChunkSize = maxChunkSize;
     this.chunkDelayMicroS = chunkDelayMicroS;
@@ -258,6 +306,12 @@ export class ReadTransfer extends Transfer {
       }
     }
 
+    const totalSize =
+      this.remainingTransferSize === undefined
+        ? undefined
+        : this.remainingTransferSize + this.offset;
+    this.updateProgress(this.offset, this.offset, totalSize);
+
     if (this.pendingBytes === 0) {
       // All pending data was received. Send out a new parameters chunk
       // for the next block.
@@ -288,9 +342,10 @@ export class WriteTransfer extends Transfer {
     sendChunk: (chunk: Chunk) => void,
     responseTimeoutS: number,
     initialResponseTimeoutS: number,
-    maxRetries: number
+    maxRetries: number,
+    progressCallback?: ProgressCallback
   ) {
-    super(id, sendChunk, responseTimeoutS, maxRetries);
+    super(id, sendChunk, responseTimeoutS, maxRetries, progressCallback);
     this.data = data;
     this.lastChunk = this.initialChunk;
   }
@@ -325,7 +380,9 @@ export class WriteTransfer extends Transfer {
       this.maxBytesToSend -= writeChunk.getData().length;
       const sentRequestedBytes = this.maxBytesToSend === 0;
 
+      this.updateProgress(this.offset, bytesAknowledged, this.data.length);
       this.sendChunk(writeChunk);
+
       if (sentRequestedBytes) {
         break;
       }

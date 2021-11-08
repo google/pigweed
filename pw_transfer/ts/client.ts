@@ -22,7 +22,12 @@ import {
 import {Status} from '@pigweed/pw_status';
 import {Chunk} from 'transfer_proto_tspb/transfer_proto_tspb_pb/pw_transfer/transfer_pb';
 
-import {ReadTransfer, Transfer, WriteTransfer} from './transfer';
+import {
+  ReadTransfer,
+  ProgressCallback,
+  Transfer,
+  WriteTransfer,
+} from './transfer';
 
 type TransferDict = {
   [key: number]: Transfer;
@@ -76,7 +81,10 @@ export class Manager {
    *
    * @throws Throws an error when the transfer fails to complete.
    */
-  async read(transferId: number): Promise<Uint8Array> {
+  async read(
+    transferId: number,
+    progressCallback?: ProgressCallback
+  ): Promise<Uint8Array> {
     if (transferId in this.readTransfers) {
       throw new Error(`Read transfer ${transferId} already exists`);
     }
@@ -84,7 +92,8 @@ export class Manager {
       transferId,
       this.sendReadChunkCallback,
       this.defaultResponseTimeoutS,
-      this.maxRetries
+      this.maxRetries,
+      progressCallback
     );
 
     this.startReadTransfer(transfer);
@@ -115,14 +124,19 @@ export class Manager {
    * @param{number} transferId: ID of the write transfer
    * @param{Uint8Array} data: Data to send to the server.
    */
-  async write(transferId: number, data: Uint8Array): Promise<void> {
+  async write(
+    transferId: number,
+    data: Uint8Array,
+    progressCallback?: ProgressCallback
+  ): Promise<void> {
     const transfer = new WriteTransfer(
       transferId,
       data,
       this.sendWriteChunkCallback,
       this.defaultResponseTimeoutS,
       this.initialResponseTimeoutS,
-      this.maxRetries
+      this.maxRetries,
+      progressCallback
     );
     this.startWriteTransfer(transfer);
 

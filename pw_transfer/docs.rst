@@ -124,8 +124,10 @@ Provides a simple interface for transferring bulk data over pw_rpc.
 
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 
-    manager.read(3).then((data: Uint8Array) => {
-      console.log(data);
+    manager.read(3, (stats: ProgressStats) => {
+      console.log(`Progress Update: ${stats}`);
+    }).then((data: Uint8Array) => {
+      console.log(`Completed read: ${data}`);
     }).catch(error => {
       console.log(`Failed to read: ${error.status}`);
     });

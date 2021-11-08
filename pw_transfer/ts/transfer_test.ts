@@ -31,6 +31,7 @@ import {ProtoCollection} from 'transfer_proto_collection/generated/ts_proto_coll
 import {Chunk} from 'transfer_proto_tspb/transfer_proto_tspb_pb/pw_transfer/transfer_pb';
 
 import {Manager} from './client';
+import {ProgressStats} from './transfer';
 
 const DEFAULT_TIMEOUT_S = 0.3;
 
@@ -151,7 +152,28 @@ describe('Encoder', () => {
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
   });
 
-  // it('read transfer progress callback', async () => {});
+  it('read transfer progress callback', async () => {
+    const manager = new Manager(service, DEFAULT_TIMEOUT_S);
+
+    const chunk1 = buildChunk(3, 0, 'abc', 3);
+    const chunk2 = buildChunk(3, 3, 'def', 0);
+    enqueueServerResponses(service.method('Read')!, [[chunk1, chunk2]]);
+
+    const progress: Array<ProgressStats> = [];
+
+    const data = await manager.read(3, (stats: ProgressStats) => {
+      progress.push(stats);
+    });
+    expect(textDecoder.decode(data)).toEqual('abcdef');
+    expect(sentChunks).toHaveSize(2);
+    expect(sentChunks[sentChunks.length - 1].hasStatus()).toBeTrue();
+    expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
+
+    expect(progress).toEqual([
+      new ProgressStats(3, 3, 6),
+      new ProgressStats(6, 6, 6),
+    ]);
+  });
 
   it('read transfer retry bad offset', async () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
@@ -317,7 +339,51 @@ describe('Encoder', () => {
     expect(sentChunks[2].getData()).toEqual(textEncoder.encode('write'));
   });
 
-  // it('write transfer progress callback', () => {});
+  it('write transfer progress callback', async () => {
+    const manager = new Manager(service, DEFAULT_TIMEOUT_S);
+
+    const chunk = new Chunk();
+    chunk.setTransferId(4);
+    chunk.setOffset(0);
+    chunk.setPendingBytes(8);
+    chunk.setMaxChunkSizeBytes(8);
+
+    const chunk2 = new Chunk();
+    chunk2.setTransferId(4);
+    chunk2.setOffset(8);
+    chunk2.setPendingBytes(8);
+    chunk2.setMaxChunkSizeBytes(8);
+
+    const completeChunk = new Chunk();
+    completeChunk.setTransferId(4);
+    completeChunk.setStatus(Status.OK);
+
+    enqueueServerResponses(service.method('Write')!, [
+      [chunk],
+      [chunk2],
+      [completeChunk],
+    ]);
+
+    const progress: Array<ProgressStats> = [];
+    await manager.write(
+      4,
+      textEncoder.encode('data to write'),
+      (stats: ProgressStats) => {
+        progress.push(stats);
+      }
+    );
+    expect(sentChunks).toHaveSize(3);
+    expect(receivedData()).toEqual(textEncoder.encode('data to write'));
+    expect(sentChunks[1].getData()).toEqual(textEncoder.encode('data to '));
+    expect(sentChunks[2].getData()).toEqual(textEncoder.encode('write'));
+
+    console.log(progress);
+    expect(progress).toEqual([
+      new ProgressStats(8, 0, 13),
+      new ProgressStats(13, 8, 13),
+      new ProgressStats(13, 13, 13),
+    ]);
+  });
 
   it('write transfer rewind', async () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
