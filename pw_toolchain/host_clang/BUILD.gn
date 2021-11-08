@@ -40,6 +40,10 @@ config("sanitize_undefined") {
     # Store the stack frame pointer in a register to get proper debug
     # information.
     "-fno-omit-frame-pointer",
+
+    # Exit the program on check failure. (The default is to continue execution,
+    # which prevents test frameworks from realizing the test has failed.)
+    "-fno-sanitize-recover=undefined",
   ]
   ldflags = cflags
 }
