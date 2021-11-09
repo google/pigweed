@@ -20,7 +20,7 @@
 
 namespace pw::chrono {
 
-inline SystemTimer::SystemTimer(ExpiryCallback callback) : native_type_() {
+inline SystemTimer::SystemTimer(ExpiryCallback&& callback) : native_type_() {
   native_type_.callback_context =
       std::make_shared<backend::NativeSystemTimer::CallbackContext>(
           std::move(callback));

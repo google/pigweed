@@ -93,19 +93,19 @@ class Client {
   // completion callback is invoked with the final status.
   Status Read(uint32_t transfer_id,
               stream::Writer& output,
-              CompletionFunc on_completion);
+              CompletionFunc&& on_completion);
 
   // Begins a new write transfer for the given transfer ID.
   Status Write(uint32_t transfer_id,
                stream::SeekableReader& input,
-               CompletionFunc on_completion);
+               CompletionFunc&& on_completion);
 
  private:
   using ClientContext = internal::ClientContext;
 
   Result<ClientContext*> NewTransfer(uint32_t transfer_id,
                                      stream::Stream& stream,
-                                     Function<void(Status)> on_completion,
+                                     Function<void(Status)>&& on_completion,
                                      bool write);
   ClientContext* GetActiveTransfer(uint32_t transfer_id);
 

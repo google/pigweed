@@ -35,13 +35,13 @@ class ClientConnection {
       : max_parameters_(max_pending_bytes, max_chunk_size_bytes) {}
 
   void InitializeRead(rpc::RawServerReaderWriter& reader_writer,
-                      Function<void(ConstByteSpan)> callback) {
+                      Function<void(ConstByteSpan)>&& callback) {
     read_stream_ = std::move(reader_writer);
     read_stream_.set_on_next(std::move(callback));
   }
 
   void InitializeWrite(rpc::RawServerReaderWriter& reader_writer,
-                       Function<void(ConstByteSpan)> callback) {
+                       Function<void(ConstByteSpan)>&& callback) {
     write_stream_ = std::move(reader_writer);
     write_stream_.set_on_next(std::move(callback));
   }

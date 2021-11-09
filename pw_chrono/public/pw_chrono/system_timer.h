@@ -52,7 +52,7 @@ class SystemTimer {
   using ExpiryCallback =
       Function<void(SystemClock::time_point expired_deadline)>;
 
-  SystemTimer(ExpiryCallback callback);
+  SystemTimer(ExpiryCallback&& callback);
   ~SystemTimer();  // Cancels the timer.
   SystemTimer(const SystemTimer&) = delete;
   SystemTimer(SystemTimer&&) = delete;

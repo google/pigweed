@@ -34,8 +34,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
                         uint32_t service_id,
                         uint32_t method_id,
                         const NanopbMethodSerde& serde,
-                        Function<void(const Response&, Status)> on_completed,
-                        Function<void(Status)> on_error,
+                        Function<void(const Response&, Status)>&& on_completed,
+                        Function<void(Status)>&& on_error,
                         const Request&... request) {
     CallType call(client, channel_id, service_id, method_id, serde);
 
@@ -78,7 +78,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
   void set_on_completed(
-      Function<void(const Response& response, Status)> on_completed) {
+      Function<void(const Response& response, Status)>&& on_completed) {
     nanopb_on_completed_ = std::move(on_completed);
 
     UnaryResponseClientCall::set_on_completed(
@@ -118,9 +118,9 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
                         uint32_t service_id,
                         uint32_t method_id,
                         const NanopbMethodSerde& serde,
-                        Function<void(const Response&)> on_next,
-                        Function<void(Status)> on_completed,
-                        Function<void(Status)> on_error,
+                        Function<void(const Response&)>&& on_next,
+                        Function<void(Status)>&& on_completed,
+                        Function<void(Status)>&& on_error,
                         const Request&... request) {
     CallType call(client, channel_id, service_id, method_id, serde);
 

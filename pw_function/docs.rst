@@ -141,18 +141,54 @@ place of a function pointer or equivalent callable.
 
   // After. Note that it is possible to have parameter names within the function
   // signature template for clarity.
-  void DoTheThing(int arg, pw::Function<void(int result)> callback);
+  void DoTheThing(int arg, const pw::Function<void(int result)>& callback);
 
-An API can accept a function either by value or by reference. If taken by value,
-the implementation is responsible for managing the function by moving it into an
-appropriate location.
+APIs should accept ``pw::Function`` objects either by const reference (``const
+pw::Function<void()>&``) or rvalue reference (``const pw::Function<void()>&&``).
+If the ``pw::Function`` simply needs to be called, it should be passed by const
+reference. If the ``pw::Function`` needs to be stored, it should be passed as an
+rvalue reference and moved into a ``pw::Function`` variable as appropriate.
 
-.. admonition:: Value or reference?
+.. code-block:: c++
 
-  It is preferable for APIs to take functions by value rather than by reference.
-  This provides callers of the API with a more convenient interface, as well as
-  making their lives easier by not requiring management of resources or
-  lifetimes.
+  // This function calls a pw::Function but doesn't store it, so it takes a
+  // const reference.
+  void CallTheCallback(const pw::Function<void(int)>& callback) {
+    callback(123);
+  }
+
+  // This function move-assign a pw::Function to another variable, so it takes
+  // an rvalue reference.
+  void StoreTheCallback(pw::Function<void(int)>&& callback) {
+    stored_callback_ = std::move(callback);
+  }
+
+.. admonition:: Rules of thumb for passing a ``pw::Function`` to a function
+
+   * **Pass by value**: Never.
+
+     This results in unnecessary ``pw::Function`` instances and move operations.
+   * **Pass by const reference** (``const pw::Function&``): When the
+     ``pw::Function`` is only invoked.
+
+     When a ``pw::Function`` is called or inspected, but not moved, take a const
+     reference to avoid copies and support temporaries.
+   * **Pass by rvalue reference** (``pw::Function&&``): When the
+     ``pw::Function`` is moved.
+
+     When the function takes ownership of the ``pw::Function`` object, always
+     use an rvalue reference (``pw::Function<void()>&&``) instead of a mutable
+     lvalue reference (``pw::Function<void()>&``). An rvalue reference forces
+     the caller to ``std::move`` when passing a preexisting ``pw::Function``
+     variable, which makes the transfer of ownership explicit. It is possible to
+     move-assign from an lvalue reference, but this fails to make it obvious to
+     the caller that the object is no longer valid.
+   * **Pass by non-const reference** (``pw::Function<void()>&``): Rarely, when
+     modifying a variable.
+
+     Non-const references are only necessary when modifying an existing
+     ``pw::Function`` variable. Use an rvalue reference instead if the
+     ``pw::Function`` is moved into another variable.
 
 Caller-side
 -----------

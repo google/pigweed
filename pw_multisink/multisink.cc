@@ -166,8 +166,8 @@ void MultiSink::NotifyListeners() {
   }
 }
 
-Status MultiSink::UnsafeForEachEntry(pw::Function<void(ConstByteSpan)> callback,
-                                     size_t max_num_entries) {
+Status MultiSink::UnsafeForEachEntry(
+    const Function<void(ConstByteSpan)>& callback, size_t max_num_entries) {
   MultiSink::UnsafeIterationWrapper multisink_iteration = UnsafeIteration();
 
   // First count the number of entries.

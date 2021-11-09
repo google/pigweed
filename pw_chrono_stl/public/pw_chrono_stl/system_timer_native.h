@@ -27,7 +27,8 @@ struct NativeSystemTimer {
   // even after the NativeSystemTimer has been destructed. Note this is shared
   // with all detached threads.
   struct CallbackContext {
-    CallbackContext(Function<void(SystemClock::time_point expired_deadline)> cb)
+    CallbackContext(
+        Function<void(SystemClock::time_point expired_deadline)>&& cb)
         : callback(std::move(cb)) {}
 
     const Function<void(SystemClock::time_point expired_deadline)> callback;

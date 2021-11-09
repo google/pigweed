@@ -24,7 +24,8 @@ namespace internal {
 
 // Iterates through all threads that haven't been deleted, calling the provided
 // callback.
-Status ForEachThread(const TX_THREAD& starting_thread, ThreadCallback& cb) {
+Status ForEachThread(const TX_THREAD& starting_thread,
+                     const ThreadCallback& cb) {
   const TX_THREAD* thread = &starting_thread;
   do {
     if (!cb(*thread)) {
@@ -39,7 +40,7 @@ Status ForEachThread(const TX_THREAD& starting_thread, ThreadCallback& cb) {
 
 }  // namespace internal
 
-Status ForEachThread(ThreadCallback& cb) {
+Status ForEachThread(const ThreadCallback& cb) {
   return internal::ForEachThread(*_tx_thread_created_ptr, cb);
 }
 

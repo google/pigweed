@@ -73,8 +73,8 @@ class UnaryResponseClientCall : public ClientCall {
                         uint32_t channel_id,
                         uint32_t service_id,
                         uint32_t method_id,
-                        Function<void(ConstByteSpan, Status)> on_completed,
-                        Function<void(Status)> on_error,
+                        Function<void(ConstByteSpan, Status)>&& on_completed,
+                        Function<void(Status)>&& on_error,
                         ConstByteSpan request) {
     CallType call(client, channel_id, service_id, method_id);
 
@@ -124,7 +124,7 @@ class UnaryResponseClientCall : public ClientCall {
     on_completed_ = std::move(other.on_completed_);
   }
 
-  void set_on_completed(Function<void(ConstByteSpan, Status)> on_completed) {
+  void set_on_completed(Function<void(ConstByteSpan, Status)>&& on_completed) {
     on_completed_ = std::move(on_completed);
   }
 
@@ -143,9 +143,9 @@ class StreamResponseClientCall : public ClientCall {
                         uint32_t channel_id,
                         uint32_t service_id,
                         uint32_t method_id,
-                        Function<void(ConstByteSpan)> on_next,
-                        Function<void(Status)> on_completed,
-                        Function<void(Status)> on_error,
+                        Function<void(ConstByteSpan)>&& on_next,
+                        Function<void(Status)>&& on_completed,
+                        Function<void(Status)>&& on_error,
                         ConstByteSpan request) {
     CallType call(client, channel_id, service_id, method_id);
 
@@ -195,7 +195,7 @@ class StreamResponseClientCall : public ClientCall {
     on_completed_ = std::move(other.on_completed_);
   }
 
-  void set_on_completed(Function<void(Status)> on_completed) {
+  void set_on_completed(Function<void(Status)>&& on_completed) {
     on_completed_ = std::move(on_completed);
   }
 

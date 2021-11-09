@@ -65,12 +65,12 @@ class ClientContext : public Context {
   void StartRead(Client& client,
                  uint32_t transfer_id,
                  stream::Writer& writer,
-                 Function<void(Status)> on_completion);
+                 Function<void(Status)>&& on_completion);
 
   void StartWrite(Client& client,
                   uint32_t transfer_id,
                   stream::Reader& reader,
-                  Function<void(Status)> on_completion);
+                  Function<void(Status)>&& on_completion);
 
   void Finish(Status status) {
     PW_DASSERT(active());

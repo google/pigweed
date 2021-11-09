@@ -104,7 +104,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
     return *this;
   }
 
-  void set_on_next(Function<void(const Request& request)> on_next)
+  void set_on_next(Function<void(const Request& request)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     std::lock_guard lock(rpc_lock());
     set_on_next_locked(std::move(on_next));

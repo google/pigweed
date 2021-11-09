@@ -133,7 +133,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Keep this public so the Nanopb implementation can set it from a helper
   // function.
-  void set_on_next(Function<void(ConstByteSpan)> on_next)
+  void set_on_next(Function<void(ConstByteSpan)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     std::lock_guard lock{rpc_lock()};
     set_on_next_locked(std::move(on_next));
@@ -179,7 +179,7 @@ class Call : public IntrusiveList<Call>::Item {
     on_next_ = std::move(on_next);
   }
 
-  void set_on_error(Function<void(Status)> on_error) {
+  void set_on_error(Function<void(Status)>&& on_error) {
     on_error_ = std::move(on_error);
   }
 

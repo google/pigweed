@@ -354,7 +354,7 @@ class MultiSink {
   //   OK - Successfully dumped entire multisink.
   //   DATA_LOSS - Corruption detected, some entries may have been lost.
   Status UnsafeForEachEntry(
-      pw::Function<void(ConstByteSpan)> callback,
+      const Function<void(ConstByteSpan)>& callback,
       size_t max_num_entries = std::numeric_limits<size_t>::max());
 
  protected:

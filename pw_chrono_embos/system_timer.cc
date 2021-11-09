@@ -68,7 +68,7 @@ constexpr OS_TIME kInvalidPeriod = 0;
 
 }  // namespace
 
-SystemTimer::SystemTimer(ExpiryCallback callback)
+SystemTimer::SystemTimer(ExpiryCallback&& callback)
     : native_type_{.tcb{},
                    .expiry_deadline = SystemClock::time_point(),
                    .user_callback = std::move(callback)} {

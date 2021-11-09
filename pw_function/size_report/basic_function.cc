@@ -18,7 +18,7 @@ namespace {
 
 int volatile* unoptimizable;
 
-void DoTheThing(int value, pw::Function<void(int)> callback) {
+void DoTheThing(int value, const pw::Function<void(int)>& callback) {
   callback(value ^ *unoptimizable);
 }
 

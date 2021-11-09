@@ -26,11 +26,11 @@ namespace {
 // Defer calls a given function upon exiting a scope.
 class Defer {
  public:
-  Defer(pw::Function<void(void)> callback) : callback_(std::move(callback)) {}
+  Defer(Function<void()>&& callback) : callback_(std::move(callback)) {}
   ~Defer() { callback_(); }
 
  private:
-  pw::Function<void(void)> callback_;
+  Function<void()> callback_;
 };
 
 }  // namespace

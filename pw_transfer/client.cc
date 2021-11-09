@@ -27,7 +27,7 @@ namespace pw::transfer {
 
 Status Client::Read(uint32_t transfer_id,
                     stream::Writer& output,
-                    Function<void(Status)> on_completion) {
+                    Function<void(Status)>&& on_completion) {
   if (on_completion == nullptr) {
     return Status::InvalidArgument();
   }
@@ -54,7 +54,7 @@ Status Client::Read(uint32_t transfer_id,
 
 Status Client::Write(uint32_t transfer_id,
                      stream::SeekableReader& input,
-                     Function<void(Status)> on_completion) {
+                     Function<void(Status)>&& on_completion) {
   if (on_completion == nullptr) {
     return Status::InvalidArgument();
   }
@@ -78,7 +78,7 @@ Status Client::Write(uint32_t transfer_id,
 Result<Client::ClientContext*> Client::NewTransfer(
     uint32_t transfer_id,
     stream::Stream& stream,
-    Function<void(Status)> on_completion,
+    Function<void(Status)>&& on_completion,
     bool write) {
   std::lock_guard lock(transfer_context_mutex_);
   ClientContext* context = nullptr;

@@ -47,6 +47,6 @@ using ThreadCallback = pw::Function<bool(TaskHandle_t, eTaskState)>;
 //
 // Warning: This is only safe to use when the scheduler and interrupts are
 // disabled.
-Status ForEachThread(ThreadCallback& cb);
+Status ForEachThread(const ThreadCallback& cb);
 
 }  // namespace pw::thread::freertos

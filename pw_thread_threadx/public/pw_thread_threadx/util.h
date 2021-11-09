@@ -33,13 +33,14 @@ using ThreadCallback = pw::Function<bool(const TX_THREAD&)>;
 //   OkStatus - Successfully iterated over all threads.
 //
 // Warning: This is only safe to use when the scheduler is disabled.
-Status ForEachThread(ThreadCallback& cb);
+Status ForEachThread(const ThreadCallback& cb);
 
 namespace internal {
 
 // This function is exposed for testing. Prefer
 // pw::thread::threadx::ForEachThread.
-Status ForEachThread(const TX_THREAD& starting_thread, ThreadCallback& cb);
+Status ForEachThread(const TX_THREAD& starting_thread,
+                     const ThreadCallback& cb);
 
 }  // namespace internal
 }  // namespace pw::thread::threadx

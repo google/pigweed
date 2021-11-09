@@ -24,7 +24,7 @@ namespace pw::router {
 class EgressFunction final : public Egress {
  public:
   EgressFunction(
-      Function<Status(ConstByteSpan, const PacketMetadata&)> function)
+      Function<Status(ConstByteSpan, const PacketMetadata&)>&& function)
       : func_(std::move(function)) {}
 
   Status SendPacket(ConstByteSpan packet,

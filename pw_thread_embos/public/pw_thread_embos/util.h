@@ -37,13 +37,13 @@ using ThreadCallback = pw::Function<bool(const OS_TASK&)>;
 //   OkStatus - Successfully iterated over all threads.
 //
 // Warning: This is only safe to use when the scheduler is disabled.
-Status ForEachThread(ThreadCallback& cb);
+Status ForEachThread(const ThreadCallback& cb);
 
 namespace internal {
 
 // This function is exposed for testing. Prefer
 // pw::thread::embos::ForEachThread.
-Status ForEachThread(const OS_TASK& starting_thread, ThreadCallback& cb);
+Status ForEachThread(const OS_TASK& starting_thread, const ThreadCallback& cb);
 
 }  // namespace internal
 }  // namespace pw::thread::embos

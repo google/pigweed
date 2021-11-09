@@ -23,7 +23,7 @@ namespace internal {
 
 // Iterates through all threads that haven't been deleted, calling the provided
 // callback.
-Status ForEachThread(const OS_TASK& starting_thread, ThreadCallback& cb) {
+Status ForEachThread(const OS_TASK& starting_thread, const ThreadCallback& cb) {
   if (!OS_IsRunning()) {
     return Status::FailedPrecondition();
   }
@@ -42,7 +42,7 @@ Status ForEachThread(const OS_TASK& starting_thread, ThreadCallback& cb) {
 
 }  // namespace internal
 
-Status ForEachThread(ThreadCallback& cb) {
+Status ForEachThread(const ThreadCallback& cb) {
   return internal::ForEachThread(*OS_Global.pTask, cb);
 }
 

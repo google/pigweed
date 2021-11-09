@@ -68,13 +68,13 @@ def _user_args(method: ProtoServiceMethod) -> Iterable[str]:
     response = method.response_type().nanopb_name()
 
     if method.server_streaming():
-        yield f'::pw::Function<void(const {response}&)> on_next = nullptr'
-        yield '::pw::Function<void(::pw::Status)> on_completed = nullptr'
+        yield f'::pw::Function<void(const {response}&)>&& on_next = nullptr'
+        yield '::pw::Function<void(::pw::Status)>&& on_completed = nullptr'
     else:
-        yield (f'::pw::Function<void(const {response}&, ::pw::Status)> '
+        yield (f'::pw::Function<void(const {response}&, ::pw::Status)>&& '
                'on_completed = nullptr')
 
-    yield '::pw::Function<void(::pw::Status)> on_error = nullptr'
+    yield '::pw::Function<void(::pw::Status)>&& on_error = nullptr'
 
 
 class NanopbCodeGenerator(CodeGenerator):
@@ -231,7 +231,7 @@ class _CallbackFunction(NamedTuple):
     default_value: Optional[str] = None
 
     def __str__(self):
-        param = f'::pw::Function<{self.function_type}> {self.name}'
+        param = f'::pw::Function<{self.function_type}>&& {self.name}'
         if self.default_value:
             param += f' = {self.default_value}'
         return param

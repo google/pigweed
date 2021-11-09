@@ -62,7 +62,7 @@ class ServerCall : public Call {
   // disabled with a helpful static_assert message.
   template <typename UnusedType = void>
   void set_on_client_stream_end(
-      [[maybe_unused]] Function<void()> on_client_stream_end) {
+      [[maybe_unused]] Function<void()>&& on_client_stream_end) {
     static_assert(
         cfg::kClientStreamEndCallbackEnabled<UnusedType>,
         "The client stream end callback is disabled, so "

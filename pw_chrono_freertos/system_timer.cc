@@ -103,7 +103,7 @@ constexpr UBaseType_t kOneShotMode = pdFALSE;  // Do not use auto reload.
     "Backend requires your FreeRTOS configuration to have configSUPPORT_STATIC_ALLOCATION == 1"
 #endif
 
-SystemTimer::SystemTimer(ExpiryCallback callback)
+SystemTimer::SystemTimer(ExpiryCallback&& callback)
     : native_type_{.tcb{},
                    .state = State::kCancelled,
                    .expiry_deadline = SystemClock::time_point(),

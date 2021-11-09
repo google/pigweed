@@ -48,7 +48,7 @@ class WorkQueue : public thread::ThreadCore {
   // FailedPrecondition - the work queue is shutting down, entries are no
   //     longer permitted.
   // ResourceExhausted - internal work queue is full, entry was not enqueued.
-  Status PushWork(WorkItem work_item) PW_LOCKS_EXCLUDED(lock_) {
+  Status PushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_) {
     return InternalPushWork(std::move(work_item));
   }
 
@@ -62,7 +62,7 @@ class WorkQueue : public thread::ThreadCore {
   // Precondition: The queue must not overflow, i.e. be full.
   // Precondition: The queue must not have been requested to stop, i.e. it must
   //     not be in the process of shutting down.
-  void CheckPushWork(WorkItem work_item) PW_LOCKS_EXCLUDED(lock_);
+  void CheckPushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_);
 
   // Locks the queue to prevent further work enqueing, finishes outstanding
   // work, then shuts down the worker thread.
@@ -74,7 +74,7 @@ class WorkQueue : public thread::ThreadCore {
 
  private:
   void Run() override PW_LOCKS_EXCLUDED(lock_);
-  Status InternalPushWork(WorkItem work_item) PW_LOCKS_EXCLUDED(lock_);
+  Status InternalPushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_);
 
   sync::InterruptSpinLock lock_;
   bool stop_requested_ PW_GUARDED_BY(lock_);

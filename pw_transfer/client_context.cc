@@ -21,7 +21,7 @@ namespace pw::transfer::internal {
 void ClientContext::StartRead(Client& client,
                               uint32_t transfer_id,
                               stream::Writer& writer,
-                              Function<void(Status)> on_completion) {
+                              Function<void(Status)>&& on_completion) {
   PW_DCHECK(!active());
   PW_DCHECK(on_completion_ != nullptr);
 
@@ -35,7 +35,7 @@ void ClientContext::StartRead(Client& client,
 void ClientContext::StartWrite(Client& client,
                                uint32_t transfer_id,
                                stream::Reader& reader,
-                               Function<void(Status)> on_completion) {
+                               Function<void(Status)>&& on_completion) {
   PW_DCHECK(!active());
   PW_DCHECK(on_completion_ != nullptr);
 

@@ -56,12 +56,12 @@ void WorkQueue::Run() {
   }
 }
 
-void WorkQueue::CheckPushWork(WorkItem work_item) {
+void WorkQueue::CheckPushWork(WorkItem&& work_item) {
   PW_CHECK_OK(InternalPushWork(std::move(work_item)),
               "Failed to push work item into the work queue");
 }
 
-Status WorkQueue::InternalPushWork(WorkItem work_item) {
+Status WorkQueue::InternalPushWork(WorkItem&& work_item) {
   std::lock_guard lock(lock_);
 
   if (stop_requested_) {

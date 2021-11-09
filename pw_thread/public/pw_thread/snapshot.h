@@ -48,6 +48,6 @@ struct StackContext {
 //     stack_pointer
 Status SnapshotStack(const StackContext& stack,
                      Thread::StreamEncoder& encoder,
-                     ProcessThreadStackCallback& thread_stack_callback);
+                     const ProcessThreadStackCallback& thread_stack_callback);
 
 }  // namespace pw::thread
