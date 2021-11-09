@@ -22,6 +22,19 @@ enum class TestError : uint8_t {
 // This template specialization must be in ::bt for name lookup reasons
 template <>
 struct ProtocolErrorTraits<TestError> {
+  static std::string ToString(TestError code) {
+    switch (code) {
+      case TestError::kSuccess:
+        return "success (TestError 0)";
+      case TestError::kFail1:
+        return "fail 1 (TestError 1)";
+      case TestError::kFail2:
+        return "fail 2 (TestError 2)";
+      default:
+        return "unknown (TestError)";
+    }
+  }
+
   static constexpr bool is_success(TestError proto_code) {
     return proto_code == TestError::kSuccess;
   }
@@ -217,6 +230,25 @@ TEST(ErrorTest, VisitOnProtoError) {
               [&proto_visited](TestError) { proto_visited = true; });
   EXPECT_FALSE(host_visited);
   EXPECT_TRUE(proto_visited);
+}
+
+TEST(ErrorTest, HostErrorToString) {
+  constexpr Error error = MakeError(HostError::kFailed);
+  EXPECT_EQ(HostErrorToString(error.host_error()), error.ToString());
+}
+
+TEST(ErrorTest, ProtocolErrorToString) {
+  constexpr Error error = MakeError(TestError::kFail2);
+  EXPECT_EQ(ProtocolErrorTraits<TestError>::ToString(TestError::kFail2), error.ToString());
+}
+
+TEST(ErrorTest, ToStringOnResult) {
+  constexpr fitx::result proto_error_result = ToResult(TestError::kFail2);
+  EXPECT_EQ("[result: fail 2 (TestError 2)]", ToString(proto_error_result));
+  constexpr fitx::result<Error<TestError>> success_result = fitx::ok();
+  EXPECT_EQ("[result: success]", ToString(success_result));
+  constexpr fitx::result<Error<TestError>, int> success_result_with_value = fitx::ok(1);
+  EXPECT_EQ("[result: success with value]", ToString(success_result_with_value));
 }
 
 }  // namespace

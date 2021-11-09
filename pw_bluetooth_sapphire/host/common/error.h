@@ -115,6 +115,13 @@ class [[nodiscard]] Error {
   // Error != Error expressions
   constexpr bool operator!=(const Error& rhs) const { return !(*this == rhs); }
 
+  [[nodiscard]] std::string ToString() const {
+    return Visit([](HostError held) { return HostErrorToString(held); },
+                 [](ProtocolErrorCode held) {
+                   return ProtocolErrorTraits<ProtocolErrorCode>::ToString(held);
+                 });
+  }
+
   [[nodiscard]] constexpr bool is_host_error() const {
     return std::holds_alternative<HostError>(error_);
   }
@@ -282,6 +289,22 @@ template <typename ProtocolErrorCode, typename OtherProtoErrCode>
 constexpr bool operator!=(const fitx::result<Error<ProtocolErrorCode>>& lhs,
                           const fitx::result<Error<OtherProtoErrCode>>& rhs) {
   return !(lhs == rhs);
+}
+
+// Produces a human-readable representation of a fitx::result<Error<…>>
+template <typename ProtocolErrorCode, typename... Ts>
+std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result) {
+  std::string out = "[result: ";
+  if (result.is_ok()) {
+    out.append("success");
+    if constexpr (sizeof...(Ts) > 0) {
+      out.append(" with value");
+    }
+  } else {
+    out.append(result.error_value().ToString());
+  }
+  out.append("]");
+  return out;
 }
 
 }  // namespace bt
