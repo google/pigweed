@@ -23,6 +23,7 @@ Checks: >
     google-build-explicit-make-pair,
     google-build-namespaces,
     google-default-arguments,
+    google-global-names-in-headers,
     google-readability-function-size,
     google-readability-namespace-comments,
     google-runtime-operator,
