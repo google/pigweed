@@ -16,14 +16,15 @@
 import unittest
 
 from pw_software_update.dev_sign import sign_root_metadata, sign_update_bundle
-from pw_software_update.root_metadata import gen_root_metadata
+from pw_software_update.root_metadata import (gen_root_metadata, RootKeys,
+                                              TargetsKeys)
 from pw_software_update.tuf_pb2 import SignedRootMetadata, SignedTargetsMetadata
 from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 
 class RootMetadataSigningTest(unittest.TestCase):
     """Test Root Metadata signing."""
-    def setUp(self):
+    def setUp(self) -> None:
         self.root_key = (
             b'-----BEGIN PRIVATE KEY-----\n'
             b'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgyk3DEQdl346MS5N/'
@@ -50,10 +51,11 @@ class RootMetadataSigningTest(unittest.TestCase):
             b'ukwVjOlnguSSiYMrN4MDqMlNDnaJgLvcCuiNUKHu9Oj1DG1i6ckNdE4VTA=='
             b'\n-----END PUBLIC KEY-----\n')
 
+        root_metadata = gen_root_metadata(
+            RootKeys([self.root_key_public]),
+            TargetsKeys([self.targets_key_public]))
         self.root_metadata = SignedRootMetadata(
-            serialized_root_metadata=gen_root_metadata(
-                self.root_key_public,
-                self.targets_key_public).SerializeToString())
+            serialized_root_metadata=root_metadata.SerializeToString())
 
         self.foreign_root_key = (
             b'-----BEGIN PRIVATE KEY-----\n'

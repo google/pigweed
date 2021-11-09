@@ -15,35 +15,43 @@
 
 import argparse
 from pathlib import Path
+from typing import Iterable, List, NewType
 
 from pw_software_update import keys, metadata
 from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata,
                                         SignatureRequirement)
 
+RootKeys = NewType('RootKeys', List[bytes])
+TargetsKeys = NewType('TargetsKeys', List[bytes])
 
-def gen_root_metadata(root_key_pem: bytes,
-                      targets_key_pem: bytes,
+
+def gen_root_metadata(root_key_pems: RootKeys,
+                      targets_key_pems: TargetsKeys,
                       version: int = 1) -> RootMetadata:
     """Generates a RootMetadata.
 
     Args:
-      root_key_pem: PEM bytes of the root public key.
-      targets_key_pem: PEM bytes of the targets public key.
+      root_key_pems: list of root public keys in PEM format.
+      targets_key_pems: list of targets keys in PEM format.
       version: Version number for rollback checks.
     """
     commmon = metadata.gen_commmon_metadata()
     commmon.version = version
 
-    key1 = keys.import_ecdsa_public_key(root_key_pem)
-    key2 = keys.import_ecdsa_public_key(targets_key_pem)
+    root_keys = [keys.import_ecdsa_public_key(pem) for pem in root_key_pems]
+    targets_keys = [
+        keys.import_ecdsa_public_key(pem) for pem in targets_key_pems
+    ]
 
     return RootMetadata(common_metadata=commmon,
                         consistent_snapshot=False,
-                        keys=[key1, key2],
+                        keys=root_keys + targets_keys,
                         root_signature_requirement=SignatureRequirement(
-                            key_ids=[key1.key_id], threshold=1),
+                            key_ids=[k.key_id for k in root_keys],
+                            threshold=1),
                         targets_signature_requirement=SignatureRequirement(
-                            key_ids=[key2.key_id], threshold=1))
+                            key_ids=[k.key_id for k in targets_keys],
+                            threshold=1))
 
 
 def parse_args():
@@ -64,20 +72,24 @@ def parse_args():
     parser.add_argument('--root-key',
                         type=Path,
                         required=True,
+                        nargs='+',
                         help='Public key filename for the "Root" role')
 
     parser.add_argument('--targets-key',
                         type=Path,
                         required=True,
+                        nargs='+',
                         help='Public key filename for the "Targets" role')
     return parser.parse_args()
 
 
-def main(out: Path, root_key: Path, targets_key: Path, version: int) -> None:
+def main(out: Path, root_key: Iterable[Path], targets_key: Iterable[Path],
+         version: int) -> None:
     """Generates and writes to disk an unsigned SignedRootMetadata."""
 
-    root_metadata = gen_root_metadata(root_key.read_bytes(),
-                                      targets_key.read_bytes(), version)
+    root_metadata = gen_root_metadata(
+        RootKeys([k.read_bytes() for k in root_key]),
+        TargetsKeys([k.read_bytes() for k in targets_key]), version)
     signed = SignedRootMetadata(
         serialized_root_metadata=root_metadata.SerializeToString())
     out.write_bytes(signed.SerializeToString())
