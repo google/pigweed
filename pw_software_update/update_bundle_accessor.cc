@@ -205,6 +205,28 @@ Result<bool> VerifyRootMetadataSignatures(protobuf::Message trusted_root,
       serialized, signatures, signature_requirement, key_mapping);
 }
 
+Result<uint32_t> GetMetadataVersion(protobuf::Message& metadata,
+                                    uint32_t common_metatdata_field_number) {
+  // message [Root|Targets]Metadata {
+  //   ...
+  //   CommonMetadata common_metadata = <field_number>;
+  //   ...
+  // }
+  //
+  // message CommonMetadata {
+  //   ...
+  //   uint32 version = <field_number>;
+  //   ...
+  // }
+  protobuf::Message common_metadata =
+      metadata.AsMessage(common_metatdata_field_number);
+  PW_TRY(common_metadata.status());
+  protobuf::Uint32 res = common_metadata.AsUint32(
+      static_cast<uint32_t>(software_update::CommonMetadata::Fields::VERSION));
+  PW_TRY(res.status());
+  return res.value();
+}
+
 }  // namespace
 
 Status UpdateBundleAccessor::OpenAndVerify(const ManifestAccessor&) {
@@ -484,7 +506,62 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
     return Status::Unauthenticated();
   }
 
-  // TODO(pwbug/456): Check rollback.
+  // TODO(pwbug/456): Check targets metadtata content.
+
+  // Get on-device manifest.
+  Result<stream::SeekableReader*> manifest_reader =
+      backend_.GetCurrentManifestReader();
+  PW_TRY(manifest_reader.status());
+
+  protobuf::Message manifest(*manifest_reader.value(),
+                             manifest_reader.value()->ConservativeReadLimit());
+
+  // Retrieves the targest metdata map from the manifest
+  //
+  // message Manifest {
+  //   ...
+  //   map<string, TargetsMetadata> targets_metadata = <id>;
+  //   ...
+  // }
+  protobuf::StringToMessageMap manifest_targets_metadata_map =
+      manifest.AsStringToMessageMap(
+          static_cast<uint32_t>(Manifest::Fields::TARGETS_METADATA));
+  PW_TRY(manifest_targets_metadata_map.status());
+
+  // Retrieves the top-level targets metadata from the map and get the version
+  uint32_t current_ver;
+  protobuf::Message manifest_top_level_targets_metadata =
+      manifest_targets_metadata_map[kTopLevelTargetsName];
+  if (manifest_top_level_targets_metadata.status().IsNotFound()) {
+    // If the top-level targets metadata is missing, then either the device has
+    // never received any prior update, or manifest has been reset in the case
+    // of key rotation. In this case, current version is assumed to be 0.
+    PW_LOG_DEBUG(
+        "Cannot find top-level targets metadata from the current manifest. "
+        "Current rollback index is treated as 0");
+    current_ver = 0;
+  } else {
+    PW_TRY(manifest_top_level_targets_metadata.status());
+    Result<uint32_t> version = GetMetadataVersion(
+        manifest_top_level_targets_metadata,
+        static_cast<uint32_t>(
+            software_update::TargetsMetadata::Fields::COMMON_METADATA));
+    PW_TRY(version.status());
+    current_ver = version.value();
+  }
+
+  // Retrieves the version from the new metadata
+  Result<uint32_t> new_version = GetMetadataVersion(
+      top_level_targets_metadata,
+      static_cast<uint32_t>(
+          software_update::TargetsMetadata::Fields::COMMON_METADATA));
+  PW_TRY(new_version.status());
+  if (current_ver > new_version.value()) {
+    PW_LOG_DEBUG("Targets attempt to rollback from %u to %u.",
+                 current_ver,
+                 new_version.value());
+    return Status::Unauthenticated();
+  }
 
   return OkStatus();
 }

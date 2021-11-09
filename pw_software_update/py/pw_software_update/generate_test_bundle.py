@@ -64,6 +64,9 @@ sxQDt9Qoe/TlEKoqa1bhO1HFbi6hRANCAASVwdXbGWM7+f/r+Z2W6Dbd7CQA0Cbb
 pkBv5PnA+DZnCkFhLW2kTn89zQv8W1x4m9maoINp9QPXQ4/nXlrVHqDg
 -----END PRIVATE KEY-----"""
 
+TEST_ROOT_VERSION = 2
+TEST_TARGETS_VERSION = 2
+
 
 def byte_array_declaration(data: bytes, name: str) -> str:
     """Generates a byte C array declaration for a byte array"""
@@ -95,7 +98,6 @@ class Bundle:
         self._targets_key = serialization.load_pem_private_key(
             TEST_TARGETS_KEY.encode(), None)
         self._payloads: Dict[str, bytes] = {}
-        self._version: int = 1
 
     def add_payload(self, name: str, payload: bytes) -> None:
         """Adds a payload to the bundle"""
@@ -107,7 +109,7 @@ class Bundle:
             root_metadata.RootKeys([private_key_pem_bytes(self._root_dev_key)
                                     ]),
             root_metadata.TargetsKeys(
-                [private_key_pem_bytes(self._targets_key)]), self._version)
+                [private_key_pem_bytes(self._targets_key)]), TEST_ROOT_VERSION)
 
     def generate_prod_root_metadata(self) -> RootMetadata:
         """Generates a root metadata with the prod key"""
@@ -115,7 +117,7 @@ class Bundle:
             root_metadata.RootKeys(
                 [private_key_pem_bytes(self._root_prod_key)]),
             root_metadata.TargetsKeys(
-                [private_key_pem_bytes(self._targets_key)]), self._version)
+                [private_key_pem_bytes(self._targets_key)]), TEST_ROOT_VERSION)
 
     def generate_dev_signed_root_metadata(self) -> SignedRootMetadata:
         """Generates a root metadata signed only by the dev key"""
@@ -153,16 +155,20 @@ class Bundle:
 
     def generate_targets_metadata(self) -> TargetsMetadata:
         """Generates the targets metadata"""
-        targets = metadata.gen_targets_metadata(self._payloads)
+        targets = metadata.gen_targets_metadata(self._payloads,
+                                                metadata.DEFAULT_HASHES,
+                                                TEST_TARGETS_VERSION)
         return targets
 
     def generate_bundle(
             self,
+            targets_metadata: TargetsMetadata = None,
             signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
         """Generate an update bundle"""
         bundle = UpdateBundle()
 
-        targets_metadata = self.generate_targets_metadata()
+        if not targets_metadata:
+            targets_metadata = self.generate_targets_metadata()
 
         if signed_root_metadata:
             bundle.root_metadata.CopyFrom(signed_root_metadata)
@@ -210,11 +216,11 @@ def main() -> int:
     test_bundle.add_payload('file2', 'file 2 content'.encode())  # type: ignore
 
     dev_signed_root = test_bundle.generate_dev_signed_root_metadata()
-    dev_signed_bundle = test_bundle.generate_bundle(dev_signed_root)
+    dev_signed_bundle = test_bundle.generate_bundle(None, dev_signed_root)
     manifest_proto = test_bundle.generate_manifest()
     prod_signed_root = \
         test_bundle.generate_rotation_prod_signed_root_metadata()
-    prod_signed_bundle = test_bundle.generate_bundle(prod_signed_root)
+    prod_signed_bundle = test_bundle.generate_bundle(None, prod_signed_root)
 
     # Generates a prod root metadata that fails signature verification against
     # the dev root (i.e. it has a bad dev signature).
@@ -225,7 +231,7 @@ def main() -> int:
     # Compromises the first signature, which is dev signed.
     signed_bad_dev_signature.signatures[0].sig = b'1' * 64
     signed_bad_dev_signature_bundle = test_bundle.generate_bundle(
-        signed_bad_dev_signature)
+        None, signed_bad_dev_signature)
 
     # Generates a prod root metadtata that fails to verify itself (bad prod
     # signature).
@@ -237,13 +243,18 @@ def main() -> int:
     # Compromises the second signature, which is prod signed.
     signed_bad_prod_signature.signatures[1].sig = b'1' * 64
     signed_bad_prod_signature_bundle = test_bundle.generate_bundle(
-        signed_bad_prod_signature)
+        None, signed_bad_prod_signature)
 
     # Generates a bundle with a bad target signature.
     bad_targets_siganture = test_bundle.generate_bundle()
     # Compromises the signature.
     bad_targets_siganture.targets_metadata['targets'].signatures[
         0].sig = b'1' * 64
+
+    # Generates a bundle with rollback attempt
+    targets_rollback = test_bundle.generate_targets_metadata()
+    targets_rollback.common_metadata.version = TEST_TARGETS_VERSION - 1
+    targets_rollback_bundle = test_bundle.generate_bundle(targets_rollback)
 
     with open(args.output_header, 'w') as header:
         header.write(HEADER)
@@ -264,6 +275,9 @@ def main() -> int:
         header.write(
             proto_array_declaration(bad_targets_siganture,
                                     'kTestBadTargetsSignature'))
+        header.write(
+            proto_array_declaration(targets_rollback_bundle,
+                                    'kTestTargetsRollback'))
 
     subprocess.run([
         'clang-format',

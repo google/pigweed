@@ -37,7 +37,8 @@ constexpr size_t kMetadataBufferSize =
 
 class TestBundledUpdateBackend final : public BundledUpdateBackend {
  public:
-  TestBundledUpdateBackend() : trusted_root_reader_({}) {}
+  TestBundledUpdateBackend()
+      : trusted_root_reader_({}), current_manifest_reader_({}) {}
 
   Status ApplyReboot() override { return Status::Unimplemented(); }
   Status PostRebootFinalize() override { return OkStatus(); }
@@ -56,9 +57,17 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
     trusted_root_reader_ = stream::MemoryReader(trusted_root);
   }
 
+  void SetCurrentManifest(ConstByteSpan current_manifest) {
+    current_manifest_reader_ = stream::MemoryReader(current_manifest);
+  }
+
   virtual Result<stream::SeekableReader*> GetRootMetadataReader() override {
     return &trusted_root_reader_;
   };
+
+  virtual Result<stream::SeekableReader*> GetCurrentManifestReader() {
+    return &current_manifest_reader_;
+  }
 
   virtual Status SafelyPersistRootMetadata(
       [[maybe_unused]] stream::Reader& root_metadata) override {
@@ -70,6 +79,7 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
 
  private:
   stream::MemoryReader trusted_root_reader_;
+  stream::MemoryReader current_manifest_reader_;
   bool new_root_persisted_ = false;
 };
 
@@ -214,8 +224,9 @@ TEST_F(UpdateBundleTest, BundleVerificationDisabled) {
       0);
 }
 
-TEST_F(UpdateBundleTest, SignatureVerificationSucceeds) {
+TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithAllVerification) {
   backend().SetTrustedRoot(kDevSignedRoot);
+  backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestProdBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
@@ -227,6 +238,7 @@ TEST_F(UpdateBundleTest, SignatureVerificationSucceeds) {
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadDevSignature) {
   backend().SetTrustedRoot(kDevSignedRoot);
+  backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestBadDevSignatureBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
@@ -238,6 +250,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadDevSignature) {
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadProdSignature) {
   backend().SetTrustedRoot(kDevSignedRoot);
+  backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestBadProdSignature);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
@@ -249,11 +262,31 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadProdSignature) {
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadTargetsSignature) {
   backend().SetTrustedRoot(kDevSignedRoot);
+  backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestBadTargetsSignature);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
   ManifestAccessor current_manifest;
   ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+}
+
+TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadTargetsRollBack) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  backend().SetCurrentManifest(kTestBundleManifest);
+  StageTestBundle(kTestTargetsRollback);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+}
+
+TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithMissingManifest) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestProdBundle);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
 }
 
 }  // namespace pw::software_update

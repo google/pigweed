@@ -88,10 +88,9 @@ class BundledUpdateBackend {
                                  size_t update_bundle_offset) = 0;
 
   // Get reader of the device's current manifest.
-  virtual Status GetCurrentManifestReader(
-      [[maybe_unused]] stream::Reader* out) {
+  virtual Result<stream::SeekableReader*> GetCurrentManifestReader() {
     return Status::Unimplemented();
-  };
+  }
 
   // Use a reader that provides a new manifest for the device to save.
   virtual Status UpdateCurrentManifest(
