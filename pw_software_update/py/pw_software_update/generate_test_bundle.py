@@ -245,6 +245,14 @@ def main() -> int:
     signed_bad_prod_signature_bundle = test_bundle.generate_bundle(
         None, signed_bad_prod_signature)
 
+    # Generates a prod root metadata with rollback attempt.
+    root_rollback = test_bundle.generate_prod_root_metadata()
+    root_rollback.common_metadata.version = TEST_ROOT_VERSION - 1
+    signed_root_rollback = test_bundle.\
+        generate_rotation_prod_signed_root_metadata(root_rollback)
+    root_rollback_bundle = test_bundle.generate_bundle(None,
+                                                       signed_root_rollback)
+
     # Generates a bundle with a bad target signature.
     bad_targets_siganture = test_bundle.generate_bundle()
     # Compromises the signature.
@@ -278,6 +286,8 @@ def main() -> int:
         header.write(
             proto_array_declaration(targets_rollback_bundle,
                                     'kTestTargetsRollback'))
+        header.write(
+            proto_array_declaration(root_rollback_bundle, 'kTestRootRollback'))
 
     subprocess.run([
         'clang-format',

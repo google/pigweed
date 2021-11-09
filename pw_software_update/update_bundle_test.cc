@@ -289,4 +289,13 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithMissingManifest) {
   ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
 }
 
+TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnRootRollback) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  StageTestBundle(kTestRootRollback);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+
+  ManifestAccessor current_manifest;
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+}
+
 }  // namespace pw::software_update

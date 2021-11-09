@@ -424,6 +424,31 @@ Status UpdateBundleAccessor::UpgradeRoot() {
   }
 
   // TODO(pwbug/456): Check rollback.
+  // Retrieves the trusted root metadata content message.
+  protobuf::Message trusted_root_content =
+      trusted_root.AsMessage(static_cast<uint32_t>(
+          SignedRootMetadata::Fields::SERIALIZED_ROOT_METADATA));
+  PW_TRY(trusted_root_content.status());
+  Result<uint32_t> trusted_root_version = GetMetadataVersion(
+      trusted_root_content,
+      static_cast<uint32_t>(RootMetadata::Fields::COMMON_METADATA));
+  PW_TRY(trusted_root_version.status());
+
+  // Retrieves the serialized new root metadata message.
+  protobuf::Message new_root_content = new_root.AsMessage(static_cast<uint32_t>(
+      SignedRootMetadata::Fields::SERIALIZED_ROOT_METADATA));
+  PW_TRY(new_root_content.status());
+  Result<uint32_t> new_root_version = GetMetadataVersion(
+      new_root_content,
+      static_cast<uint32_t>(RootMetadata::Fields::COMMON_METADATA));
+  PW_TRY(new_root_version.status());
+
+  if (trusted_root_version.value() > new_root_version.value()) {
+    PW_LOG_DEBUG("Root attempts to rollback from %u to %u.",
+                 trusted_root_version.value(),
+                 new_root_version.value());
+    return Status::Unauthenticated();
+  }
 
   // Persist the new root.
   stream::IntervalReader new_root_reader = new_root.ToBytes().GetBytesReader();
