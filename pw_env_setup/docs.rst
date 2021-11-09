@@ -49,6 +49,8 @@ runs bootstrap.
 
 .. _send us a note: pigweed@googlegroups.com
 
+On POSIX systems, the environment can be deactivated by running ``deactivate``.
+
 ==================================
 Using pw_env_setup in your project
 ==================================
