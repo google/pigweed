@@ -18,3 +18,23 @@ pw_add_facade(pw_trace
   PUBLIC_DEPS
     pw_preprocessor
 )
+
+pw_add_module_library(pw_trace.null
+  IMPLEMENTS_FACADES
+    pw_trace
+  HEADERS
+    public/pw_trace/internal/null.h
+    public_overrides/pw_trace_backend/trace_backend.h
+  PUBLIC_DEPS
+    pw_preprocessor
+)
+
+pw_add_test(pw_trace.pw_trace_null_test
+  SOURCES
+    trace_null_test.cc
+    trace_null_test_c.c
+  DEPS
+    pw_trace.null
+  GROUPS
+    pw_trace
+)

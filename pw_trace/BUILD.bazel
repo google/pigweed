@@ -45,6 +45,29 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "null_headers",
+    hdrs = [
+        "public/pw_trace/internal/null.h",
+        "public_overrides/pw_trace_backend/trace_backend.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "null",
+    deps = [
+        "//pw_trace:facade",
+        "//pw_trace:null_headers",
+    ],
+)
+
+pw_cc_library(
     name = "backend",
     deps = [],
 )
@@ -78,6 +101,21 @@ pw_cc_test(
     deps = [
         ":backend",
         ":facade",
+        ":pw_trace",
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_library(
+    name = "trace_null_test",
+    srcs = [
+        "trace_null_test.cc",
+        "trace_null_test_c.c",
+    ],
+    deps = [
+        ":facade",
+        ":null",
         ":pw_trace",
         "//pw_preprocessor",
         "//pw_unit_test",

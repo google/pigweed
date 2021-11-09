@@ -23,6 +23,11 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
+config("null_config") {
+  include_dirs = [ "public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 pw_facade("pw_trace") {
   backend = pw_trace_BACKEND
   public_configs = [ ":default_config" ]
@@ -30,11 +35,25 @@ pw_facade("pw_trace") {
     "public/pw_trace/internal/trace_internal.h",
     "public/pw_trace/trace.h",
   ]
-  deps = [ dir_pw_preprocessor ]
+  public_deps = [ dir_pw_preprocessor ]
+}
+
+pw_source_set("null") {
+  public_configs = [
+    ":default_config",
+    ":null_config",
+  ]
+  public = [ "public_overrides/pw_trace_backend/trace_backend.h" ]
+  sources = [ "public/pw_trace/internal/null.h" ]
+  friend = [ ":*" ]
+  public_deps = [ dir_pw_preprocessor ]
 }
 
 pw_test_group("tests") {
-  tests = [ ":trace_facade_test" ]
+  tests = [
+    ":trace_facade_test",
+    ":trace_null_test",
+  ]
   if (pw_trace_BACKEND != "") {
     tests += [ ":trace_backend_compile_test" ]
   }
@@ -67,6 +86,14 @@ pw_test("trace_backend_compile_test") {
     "trace_backend_compile_test.cc",
     "trace_backend_compile_test_c.c",
   ]
+}
+
+pw_test("trace_null_test") {
+  sources = [
+    "trace_null_test.cc",
+    "trace_null_test_c.c",
+  ]
+  deps = [ ":null" ]
 }
 
 pw_doc_group("docs") {

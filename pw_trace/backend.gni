@@ -12,7 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
 declare_args() {
-  # Backend for the pw_trace module.
-  pw_trace_BACKEND = ""
+  # Default backend for the pw_trace module is pw_trace:null.
+  pw_trace_BACKEND = "$dir_pw_trace:null"
 }

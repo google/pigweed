@@ -38,11 +38,23 @@ the system. Instead, traces capture sequences of events with precise timestamps,
 and are therefore useful at understanding the flow of events in the system over
 time.
 
+The default backend for pw_trace is pw_trace_null, which disables tracing.
+
 Compatibility
 -------------
 Most of the facade is compatible with C and C++, the only exception to this is
 the Scope and Function tracing macros which are convenience wrappers only
 available in C++.
+
+pw_trace:null
+-------------
+``pw_trace_null`` is a ``pw_trace backend`` that ignores all ``pw_trace``
+statements. The backend implements ``pw_trace`` with empty inline functions.
+Using empty functions ensure that the arguments are evaluated and their types
+are correct. Since the functions are inline in the header, the compiler will
+optimize out the function call.
+
+This backend can be used to completely disable ``pw_trace``.
 
 Dependencies
 -------------
