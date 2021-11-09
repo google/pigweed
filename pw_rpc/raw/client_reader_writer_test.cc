@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/raw/client_testing.h"
+#include "pw_rpc/writer.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
 
 namespace pw::rpc {
@@ -152,6 +153,49 @@ TEST(RawClientWriter, WithClientStream_OutOfScope_SendsClientStreamEnd) {
   EXPECT_EQ(ctx.output()
                 .client_stream_end_packets<TestService::TestClientStreamRpc>(),
             1u);
+}
+
+constexpr const char kWriterData[] = "20X6";
+
+void WriteAsWriter(Writer& writer) {
+  ASSERT_TRUE(writer.active());
+  ASSERT_EQ(writer.channel_id(), RawClientTestContext<>::kDefaultChannelId);
+
+  EXPECT_EQ(OkStatus(), writer.Write(std::as_bytes(std::span(kWriterData))));
+}
+
+TEST(RawClientWriter, UsableAsWriter) {
+  RawClientTestContext ctx;
+  RawClientWriter call = TestService::TestClientStreamRpc(
+      ctx.client(), ctx.channel().id(), FailIfOnCompletedCalled, FailIfCalled);
+
+  WriteAsWriter(call);
+
+  EXPECT_STREQ(reinterpret_cast<const char*>(
+                   ctx.output()
+                       .payloads<TestService::TestClientStreamRpc>()
+                       .back()
+                       .data()),
+               kWriterData);
+}
+
+TEST(RawClientReaderWriter, UsableAsWriter) {
+  RawClientTestContext ctx;
+  RawClientReaderWriter call =
+      TestService::TestBidirectionalStreamRpc(ctx.client(),
+                                              ctx.channel().id(),
+                                              FailIfOnNextCalled,
+                                              FailIfCalled,
+                                              FailIfCalled);
+
+  WriteAsWriter(call);
+
+  EXPECT_STREQ(reinterpret_cast<const char*>(
+                   ctx.output()
+                       .payloads<TestService::TestBidirectionalStreamRpc>()
+                       .back()
+                       .data()),
+               kWriterData);
 }
 
 }  // namespace

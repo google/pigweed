@@ -20,6 +20,7 @@
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/client_call.h"
+#include "pw_rpc/writer.h"
 
 namespace pw::rpc {
 
@@ -43,7 +44,7 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
   using internal::StreamResponseClientCall::set_on_next;
 
   // Returns a buffer in which a request payload can be built.
-  ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
+  using internal::Call::PayloadBuffer;
 
   // Releases a buffer acquired from PayloadBuffer() without sending any data.
   void ReleaseBuffer() { ReleasePayloadBuffer(); }
@@ -55,6 +56,10 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
 
   // Cancels this RPC.
   using internal::Call::Cancel;
+
+  // Allow use as a generic RPC Writer.
+  using internal::Call::operator Writer&;
+  using internal::Call::operator const Writer&;
 
  protected:
   friend class internal::StreamResponseClientCall;
@@ -113,11 +118,15 @@ class RawClientWriter : private internal::UnaryResponseClientCall {
   using internal::UnaryResponseClientCall::set_on_completed;
   using internal::UnaryResponseClientCall::set_on_error;
 
-  using internal::UnaryResponseClientCall::Cancel;
-  using internal::UnaryResponseClientCall::Write;
+  using internal::Call::Cancel;
+  using internal::Call::PayloadBuffer;
+  using internal::Call::Write;
 
-  ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
   void ReleaseBuffer() { ReleasePayloadBuffer(); }
+
+  // Allow use as a generic RPC Writer.
+  using internal::Call::operator Writer&;
+  using internal::Call::operator const Writer&;
 
  private:
   friend class internal::UnaryResponseClientCall;

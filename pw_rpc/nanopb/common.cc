@@ -46,7 +46,7 @@ using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 Result<ByteSpan> EncodeToPayloadBuffer(Call& call,
                                        const void* payload,
                                        NanopbSerde serde) {
-  std::span<std::byte> payload_buffer = call.AcquirePayloadBuffer();
+  std::span<std::byte> payload_buffer = call.PayloadBuffer();
 
   StatusWithSize result = serde.Encode(payload, payload_buffer);
   if (!result.ok()) {

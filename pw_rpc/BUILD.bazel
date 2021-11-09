@@ -93,6 +93,7 @@ pw_cc_library(
         "public/pw_rpc/internal/packet.h",
         "public/pw_rpc/internal/server_call.h",
         "public/pw_rpc/method_type.h",
+        "public/pw_rpc/writer.h",
         "server.cc",
         "server_call.cc",
         "service.cc",

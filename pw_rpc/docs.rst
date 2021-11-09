@@ -326,7 +326,6 @@ output.
     dynamic_channel.Configure(GetChannelId(), some_output);
   }
 
-
 Services
 ========
 A service is a logical grouping of RPCs defined within a .proto file. ``pw_rpc``
@@ -979,3 +978,13 @@ more details.
   one thread.
 
   This is enabled by default.
+
+Sharing server and client code
+==============================
+Streaming RPCs support writing multiple requests or responses. To facilitate
+sharing code between servers and clients, ``pw_rpc`` provides the
+``pw::rpc::Writer`` interface. On the client side, a client or bidirectional
+streaming RPC call object (``ClientWriter`` or ``ClientReaderWriter``) can be
+used as a ``pw::rpc::Writer&``. On the server side, a server or bidirectional
+streaming RPC call object (``ServerWriter`` or ``ServerReaderWriter``) can be
+used as a ``pw::rpc::Writer&``.

@@ -110,6 +110,8 @@ template <size_t kMaxPackets = 10,
           size_t kPayloadsBufferSizeBytes = 256>
 class RawClientTestContext {
  public:
+  static constexpr uint32_t kDefaultChannelId = 1;
+
   constexpr RawClientTestContext()
       : channel_(Channel::Create<kDefaultChannelId>(&channel_output_)),
         client_(std::span(&channel_, 1)),
@@ -129,8 +131,6 @@ class RawClientTestContext {
   const auto& output() const { return channel_output_; }
 
  private:
-  static constexpr uint32_t kDefaultChannelId = 1;
-
   RawFakeChannelOutput<kMaxPackets,
                        kPacketEncodeBufferSizeBytes,
                        kPayloadsBufferSizeBytes>

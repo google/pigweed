@@ -57,11 +57,11 @@ class FakeServerReaderWriter : private internal::ServerCall {
     return CloseAndSendResponse(status);
   }
 
+  using Call::PayloadBuffer;
   using Call::Write;
 
   // Expose a few additional methods for test use.
   ServerCall& as_server_call() { return *this; }
-  ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
   const Channel::OutputBuffer& output_buffer() { return buffer(); }
 };
 

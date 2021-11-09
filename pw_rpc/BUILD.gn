@@ -139,7 +139,10 @@ pw_source_set("common") {
     ":log_config",
     dir_pw_log,
   ]
-  public = [ "public/pw_rpc/channel.h" ]
+  public = [
+    "public/pw_rpc/channel.h",
+    "public/pw_rpc/writer.h",
+  ]
   sources = [
     "call.cc",
     "channel.cc",

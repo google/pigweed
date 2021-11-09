@@ -24,6 +24,7 @@
 #include "pw_rpc/internal/open_call.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/server.h"
+#include "pw_rpc/writer.h"
 
 namespace pw::rpc {
 namespace internal {
@@ -81,7 +82,7 @@ class RawServerReaderWriter : private internal::ServerCall {
   using internal::Call::Write;
 
   // Returns a buffer in which a response payload can be built.
-  ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
+  using internal::Call::PayloadBuffer;
 
   // Releases a buffer acquired from PayloadBuffer() without sending any data.
   void ReleaseBuffer() { ReleasePayloadBuffer(); }
@@ -89,6 +90,10 @@ class RawServerReaderWriter : private internal::ServerCall {
   Status Finish(Status status = OkStatus()) {
     return CloseAndSendResponse(status);
   }
+
+  // Allow use as a generic RPC Writer.
+  using internal::Call::operator Writer&;
+  using internal::Call::operator const Writer&;
 
  protected:
   RawServerReaderWriter(const internal::CallContext& context,
@@ -187,6 +192,10 @@ class RawServerWriter : private RawServerReaderWriter {
   using RawServerReaderWriter::PayloadBuffer;
   using RawServerReaderWriter::ReleaseBuffer;
   using RawServerReaderWriter::Write;
+
+  // Allow use as a generic RPC Writer.
+  using internal::Call::operator Writer&;
+  using internal::Call::operator const Writer&;
 
  private:
   template <typename, typename, uint32_t>

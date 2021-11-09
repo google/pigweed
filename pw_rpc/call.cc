@@ -112,7 +112,7 @@ Status Call::CloseAndSendFinalPacket(PacketType type,
   return SendPacket(type, response, status);
 }
 
-ByteSpan Call::AcquirePayloadBuffer() {
+ByteSpan Call::PayloadBuffer() {
   // Only allow having one active buffer at a time.
   if (response_.empty()) {
     response_ = channel().AcquireBuffer();
@@ -139,7 +139,7 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   const Packet packet = MakePacket(type, payload, status);
 
   if (!buffer().Contains(payload)) {
-    ByteSpan buffer = AcquirePayloadBuffer();
+    ByteSpan buffer = PayloadBuffer();
 
     if (payload.size() > buffer.size()) {
       ReleasePayloadBuffer();

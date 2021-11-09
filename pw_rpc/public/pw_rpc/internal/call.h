@@ -30,7 +30,11 @@
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
+
+class Writer;
+
+namespace internal {
 
 class Endpoint;
 class Packet;
@@ -124,9 +128,9 @@ class Call : public IntrusiveList<Call>::Item {
     return client_stream_state_ == kClientStreamActive;
   }
 
-  // Acquires a buffer into which to write a payload. The Call MUST be active
-  // when this is called!
-  ByteSpan AcquirePayloadBuffer();
+  // Acquires a buffer into which to write a payload or returns a previously
+  // acquired buffer. The Call MUST be active when this is called!
+  ByteSpan PayloadBuffer();
 
   // Releases the buffer without sending a packet.
   void ReleasePayloadBuffer();
@@ -218,6 +222,11 @@ class Call : public IntrusiveList<Call>::Item {
         PacketType::CLIENT_ERROR, {}, Status::Cancelled());
   }
 
+  // Define conversions to the generic server/client RPC writer class. These
+  // functions are defined in pw_rpc/writer.h after the Writer class is defined.
+  constexpr operator Writer&();
+  constexpr operator const Writer&() const;
+
  private:
   enum CallType : bool { kServerCall, kClientCall };
 
@@ -265,4 +274,5 @@ class Call : public IntrusiveList<Call>::Item {
   Function<void(ConstByteSpan payload)> on_next_;
 };
 
-}  // namespace pw::rpc::internal
+}  // namespace internal
+}  // namespace pw::rpc
