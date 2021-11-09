@@ -13,7 +13,7 @@
 // the License.
 
 /* eslint-env browser */
-import {makeStyles, Paper} from '@material-ui/core';
+import {makeStyles, Paper, Box} from '@material-ui/core';
 import * as React from 'react';
 import {FrameStatus, Frame} from '@pigweed/pw_hdlc';
 
@@ -23,6 +23,7 @@ type Props = {
 
 const useStyles = makeStyles(() => ({
   root: {
+    padding: '8px',
     'background-color': 'black',
     height: '500px',
     'overflow-y': 'auto',
@@ -55,7 +56,9 @@ export function SerialLog(props: Props) {
 
   return (
     <Paper className={classes.root}>
-      {props.frames.map((frame: Frame, index: number) => row(frame, index))}
+      <Box sx={{fontFamily: 'Monospace'}}>
+        {props.frames.map((frame: Frame, index: number) => row(frame, index))}
+      </Box>
     </Paper>
   );
 }

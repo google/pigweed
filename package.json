@@ -61,5 +61,9 @@
   "scripts": {
     "check": "gts check",
     "fix": "gts fix"
+  },
+  "dependencies": {
+    "ansi_up": "^5.1.0",
+    "html-react-parser": "^1.4.0"
   }
 }

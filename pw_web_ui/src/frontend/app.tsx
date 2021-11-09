@@ -78,6 +78,12 @@ export function App() {
         if (frame.address === RPC_ADDRESS) {
           const status = clientRef.current!.processPacket(frame.data);
         }
+        if (frame.address === 1) {
+          const decodedLine = new TextDecoder().decode(frame.data);
+          const date = new Date();
+          const logLine = `[${date.toLocaleTimeString()}] ${decodedLine}`;
+          setLogLines(old => [...old, logLine]);
+        }
       }
     });
   }
@@ -132,11 +138,10 @@ export function App() {
         <ToggleButton value="serial">Serial Debug</ToggleButton>
       </ToggleButtonGroup>
       {logViewer === 'log' ? (
-        <SerialLog frames={[]} />
+        <Log lines={logLines} />
       ) : (
         <SerialLog frames={frames} />
       )}
-      <Log lines={logLines} />
       <span className={classes.rpc}>
         <TextField
           id="echo-text"
