@@ -237,6 +237,11 @@ TEST(ErrorTest, HostErrorToString) {
   EXPECT_EQ(HostErrorToString(error.host_error()), error.ToString());
 }
 
+TEST(ErrorTest, GeneralHostErrorToString) {
+  constexpr Error error = ToResult(HostError::kFailed).error_value();
+  EXPECT_EQ(HostErrorToString(error.host_error()), error.ToString());
+}
+
 TEST(ErrorTest, ProtocolErrorToString) {
   constexpr Error error = MakeError(TestError::kFail2);
   EXPECT_EQ(ProtocolErrorTraits<TestError>::ToString(TestError::kFail2), error.ToString());
@@ -249,6 +254,16 @@ TEST(ErrorTest, ToStringOnResult) {
   EXPECT_EQ("[result: success]", ToString(success_result));
   constexpr fitx::result<Error<TestError>, int> success_result_with_value = fitx::ok(1);
   EXPECT_EQ("[result: success with value]", ToString(success_result_with_value));
+}
+
+TEST(ErrorTest, BtIsErrorMacroCompiles) {
+  const fitx::result general_error = ToResult(HostError::kFailed);
+  EXPECT_TRUE(bt_is_error(general_error, ERROR, "ErrorTest", "error message"));
+  const fitx::result<Error<TestError>, int> success_with_value = fitx::ok(1);
+  EXPECT_FALSE(bt_is_error(success_with_value, ERROR, "ErrorTest", "error message"));
+  const fitx::result<Error<TestError>, int> error_with_value =
+      fitx::error(MakeError(TestError::kFail1));
+  EXPECT_TRUE(bt_is_error(error_with_value, ERROR, "ErrorTest", "error message"));
 }
 
 }  // namespace

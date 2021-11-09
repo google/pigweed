@@ -291,6 +291,15 @@ constexpr bool operator!=(const fitx::result<Error<ProtocolErrorCode>>& lhs,
   return !(lhs == rhs);
 }
 
+template <>
+struct ProtocolErrorTraits<NoProtocolError> {
+  // This won't be called but still needs to be stubbed out to link correctly.
+  static std::string ToString(NoProtocolError) {
+    ZX_ASSERT(false);
+    return std::string();
+  }
+};
+
 // Produces a human-readable representation of a fitx::result<Error<…>>
 template <typename ProtocolErrorCode, typename... Ts>
 std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result) {
@@ -307,6 +316,26 @@ std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result
   return out;
 }
 
+namespace internal {
+
+// Overload for compatibility with the bt_is_error(status, …) macro where |status| is a
+// fitx::result<Error<…>, …>
+template <typename ProtocolErrorCode, typename... Ts>
+[[gnu::format(printf, 6, 7)]] bool TestForErrorAndLog(
+    const fitx::result<Error<ProtocolErrorCode>, Ts...>& result, LogSeverity severity,
+    const char* tag, const char* file, int line, const char* fmt, ...) {
+  if (!(result.is_error() && IsLogLevelEnabled(severity))) {
+    return result.is_error();
+  }
+  va_list args;
+  va_start(args, fmt);
+  std::string msg = bt_lib_cpp_string::StringVPrintf(fmt, args);
+  LogMessage(file, line, severity, tag, "%s: %s", msg.c_str(), ToString(result).c_str());
+  va_end(args);
+  return true;
+}
+
+}  // namespace internal
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_

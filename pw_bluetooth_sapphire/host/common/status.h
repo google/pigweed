@@ -147,25 +147,17 @@ class Status {
             .c_str());
   }
 
-  // Helper that returns true if this status represents an error and prints a
-  // message containing a string representation of the status.
+  // Helper that returns true if this status represents an error and prints a message containing a
+  // string representation of the status.
   bool TestForErrorAndLog(LogSeverity severity, const char* tag, const char* file, int line,
-                          const std::string& msg) const {
+                          const char* fmt, va_list v_args) const {
     bool is_error = !is_success();
-    if (is_error && IsLogLevelEnabled(severity)) {
-      LogMessage(file, line, severity, tag, "%s: %s", msg.c_str(), ToString().c_str());
+    if (!(is_error && IsLogLevelEnabled(severity))) {
+      return is_error;
     }
-    return is_error;
-  }
-
-  [[gnu::format(printf, 6, 7)]] bool TestForErrorAndLogF(LogSeverity severity, const char* tag,
-                                                         const char* file, int line,
-                                                         const char* fmt, ...) const {
-    va_list args;
-    va_start(args, fmt);
-    std::string msg = bt_lib_cpp_string::StringVPrintf(fmt, args);
-    va_end(args);
-    return TestForErrorAndLog(severity, tag, file, line, msg);
+    std::string msg = bt_lib_cpp_string::StringVPrintf(fmt, v_args);
+    LogMessage(file, line, severity, tag, "%s: %s", msg.c_str(), ToString().c_str());
+    return true;
   }
 
  private:
@@ -173,6 +165,21 @@ class Status {
   ProtocolErrorCode protocol_error_;
 };
 
+namespace internal {
+
+template <typename ProtocolErrorCode>
+[[gnu::format(printf, 6, 7)]] bool TestForErrorAndLog(const Status<ProtocolErrorCode>& status,
+                                                      LogSeverity severity, const char* tag,
+                                                      const char* file, int line, const char* fmt,
+                                                      ...) {
+  va_list args;
+  va_start(args, fmt);
+  const bool is_error = status.TestForErrorAndLog(severity, tag, file, line, fmt, args);
+  va_end(args);
+  return is_error;
+}
+
+}  // namespace internal
 }  // namespace bt
 
 // Macro to check and log any non-Success status of an event.
@@ -184,9 +191,8 @@ class Status {
 //
 // It will log with the string prepended to the stringified status if status is
 // a failure. Evaluates to true if the status indicates failure.
-
-#define bt_is_error(status, flag, tag, fmt...)                                              \
-  (status.TestForErrorAndLogF(bt::LogSeverity::flag, tag, bt::internal::BaseName(__FILE__), \
-                              __LINE__, fmt))
+#define bt_is_error(status, flag, tag, fmt...)                            \
+  (::bt::internal::TestForErrorAndLog(status, bt::LogSeverity::flag, tag, \
+                                      bt::internal::BaseName(__FILE__), __LINE__, fmt))
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_STATUS_H_
