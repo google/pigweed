@@ -23,6 +23,15 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
+    name = "config",
+    hdrs = ["public/pw_transfer/internal/config.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
     name = "pw_transfer",
     srcs = [
         "client_connection.cc",
@@ -74,7 +83,6 @@ pw_cc_library(
         "//pw_stream",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-        "//pw_work_queue",
     ],
 )
 
@@ -92,12 +100,16 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config",
         "//pw_bytes",
         "//pw_protobuf",
         "//pw_result",
         "//pw_status",
         "//pw_stream",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
         "//pw_varint",
+        "//pw_work_queue",
     ],
 )
 
@@ -139,6 +151,8 @@ pw_cc_test(
         ":client",
         ":test_helpers",
         "//pw_rpc/raw:client_testing",
+        "//pw_thread:sleep",
+        "//pw_thread:thread",
         "//pw_unit_test",
     ],
 )
@@ -150,6 +164,7 @@ cc_binary(
         ":pw_transfer",
         "//pw_log",
         "//pw_rpc/system_server",
+        "//pw_thread:thread",
     ],
 )
 

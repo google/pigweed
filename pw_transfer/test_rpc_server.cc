@@ -28,6 +28,8 @@
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_rpc_system_server/socket.h"
 #include "pw_stream/std_file_stream.h"
+#include "pw_thread/detached_thread.h"
+#include "pw_thread_stl/options.h"
 #include "pw_transfer/transfer.h"
 #include "pw_transfer_test/test_server.raw_rpc.pb.h"
 
@@ -113,7 +115,10 @@ class TestServerService : public generated::TestServer<TestServerService> {
 constexpr size_t kChunkSizeBytes = 256;
 constexpr size_t kMaxReceiveSizeBytes = 1024;
 
-TransferServiceBuffer<kChunkSizeBytes> transfer_service(kMaxReceiveSizeBytes);
+work_queue::WorkQueueWithBuffer<10> work_queue_;
+
+TransferServiceBuffer<kChunkSizeBytes> transfer_service(work_queue_,
+                                                        kMaxReceiveSizeBytes);
 TestServerService test_server_service(transfer_service);
 
 void RunServer(int socket_port, const char* directory) {
@@ -125,6 +130,8 @@ void RunServer(int socket_port, const char* directory) {
   rpc::system_server::Init();
   rpc::system_server::Server().RegisterService(test_server_service);
   rpc::system_server::Server().RegisterService(transfer_service);
+
+  thread::DetachedThread(thread::stl::Options(), work_queue_);
 
   PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(rpc::system_server::Start());

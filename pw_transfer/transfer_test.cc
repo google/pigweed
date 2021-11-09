@@ -89,7 +89,9 @@ class ReadTransfer : public ::testing::Test {
  protected:
   ReadTransfer(size_t max_chunk_size_bytes = 64)
       : handler_(3, kData),
-        ctx_(std::span(data_buffer_).first(max_chunk_size_bytes), 64) {
+        ctx_(work_queue_,
+             std::span(data_buffer_).first(max_chunk_size_bytes),
+             64) {
     ctx_.service().RegisterHandler(handler_);
 
     ASSERT_FALSE(handler_.prepare_read_called);
@@ -101,6 +103,9 @@ class ReadTransfer : public ::testing::Test {
   SimpleReadTransfer handler_;
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx_;
   std::array<std::byte, 64> data_buffer_;
+
+  // Not currently used in the tests, so left uninitialized.
+  work_queue::WorkQueueWithBuffer<1> work_queue_;
 };
 
 TEST_F(ReadTransfer, SingleChunk) {
@@ -478,7 +483,7 @@ class WriteTransfer : public ::testing::Test {
   WriteTransfer(size_t max_bytes_to_receive = 64)
       : buffer{},
         handler_(7, buffer),
-        ctx_(data_buffer_, max_bytes_to_receive) {
+        ctx_(work_queue_, data_buffer_, max_bytes_to_receive) {
     ctx_.service().RegisterHandler(handler_);
 
     ASSERT_FALSE(handler_.prepare_write_called);
@@ -492,6 +497,9 @@ class WriteTransfer : public ::testing::Test {
 
   PW_RAW_TEST_METHOD_CONTEXT(TransferService, Write) ctx_;
   std::array<std::byte, 64> data_buffer_;
+
+  // Not currently used in the tests, so left uninitialized.
+  work_queue::WorkQueueWithBuffer<1> work_queue_;
 };
 
 TEST_F(WriteTransfer, SingleChunk) {

@@ -18,10 +18,15 @@
 #include <limits>
 
 #include "pw_assert/assert.h"
+#include "pw_chrono/system_timer.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
+#include "pw_sync/interrupt_spin_lock.h"
+#include "pw_sync/lock_annotations.h"
 #include "pw_transfer/internal/chunk.h"
 #include "pw_transfer/internal/chunk_data_buffer.h"
+#include "pw_transfer/internal/config.h"
+#include "pw_work_queue/work_queue.h"
 
 namespace pw::transfer::internal {
 
@@ -36,7 +41,6 @@ class TransferParameters {
   }
 
   uint32_t pending_bytes() const { return pending_bytes_; }
-
   uint32_t max_chunk_size_bytes() const { return max_chunk_size_bytes_; }
 
  private:
@@ -71,10 +75,20 @@ class Context {
   constexpr uint32_t transfer_id() const { return transfer_id_; }
 
   // True if the context has been used for a transfer (it has an ID).
-  constexpr bool initialized() const { return state_ != kInactive; }
+  bool initialized() {
+    state_lock_.lock();
+    bool initialized = transfer_state_ != TransferState::kInactive;
+    state_lock_.unlock();
+    return initialized;
+  }
 
   // True if the transfer is active.
-  constexpr bool active() const { return state_ >= kData; }
+  bool active() {
+    state_lock_.lock();
+    bool active = transfer_state_ >= TransferState::kData;
+    state_lock_.unlock();
+    return active;
+  }
 
   // Starts a new transfer from an initialized context by sending the initial
   // transfer chunk. This is generally called from within a transfer client, as
@@ -89,42 +103,45 @@ class Context {
   // ProcessChunk should be called to complete the operation).
   bool ReadChunkData(ChunkDataBuffer& buffer,
                      const TransferParameters& max_parameters,
-                     const Chunk& chunk) {
-    if (type_ == kTransmit) {
-      return ReadTransmitChunk(max_parameters, chunk);
-    }
-    return ReadReceiveChunk(buffer, max_parameters, chunk);
-  }
+                     const Chunk& chunk);
 
   // Handles the chunk from the previous invocation of ReadChunkData(). This
   // operation is intended to be deferred, running from a different context than
   // the RPC callback in which the chunk was received.
   void ProcessChunk(ChunkDataBuffer& buffer,
                     const TransferParameters& max_parameters) {
-    if (type_ == kTransmit) {
+    if (type() == kTransmit) {
       ProcessTransmitChunk();
-      return;
+    } else {
+      ProcessReceiveChunk(buffer, max_parameters);
     }
-    ProcessReceiveChunk(buffer, max_parameters);
+
+    if (active()) {
+      timer_.InvokeAfter(chunk_timeout_);
+    }
   }
 
  protected:
   using CompletionFunction = Status (*)(Context&, Status);
 
-  constexpr Context(CompletionFunction on_completion)
+  Context(CompletionFunction on_completion)
       : transfer_id_(0),
-        state_(kInactive),
-        type_(kTransmit),
+        flags_(0),
+        transfer_state_(TransferState::kInactive),
+        retries_(0),
+        max_retries_(0),
         stream_(nullptr),
         rpc_writer_(nullptr),
         offset_(0),
         pending_bytes_(0),
         max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()),
-        status_(Status::Unknown()),
-        last_received_offset_(0),
+        last_chunk_offset_(0),
+        timer_([this](chrono::SystemClock::time_point) { this->OnTimeout(); }),
+        chunk_timeout_(chrono::SystemClock::duration::zero()),
+        work_queue_(nullptr),
         on_completion_(on_completion) {}
 
-  enum State : uint8_t {
+  enum class TransferState : uint8_t {
     // This ServerContext has never been used for a transfer. It is available
     // for use for a transfer.
     kInactive,
@@ -137,42 +154,52 @@ class Context {
     kData,
     // Recovering after one or more chunks was dropped in an active transfer.
     kRecovery,
+    // Hit a timeout and waiting for the timeout handler to run.
+    kTimedOut,
   };
 
-  constexpr State state() const { return state_; }
-  constexpr void set_state(State state) { state_ = state; }
+  constexpr Type type() const { return static_cast<Type>(flags_ & kFlagsType); }
+
+  void set_transfer_state(TransferState state) {
+    state_lock_.lock();
+    transfer_state_ = state;
+    state_lock_.unlock();
+  }
 
   // Begins a new transmit transfer from this context.
-  // Precontion: context is not active.
-  void InitializeForTransmit(uint32_t transfer_id,
-                             RawWriter& rpc_writer,
-                             stream::Reader& reader) {
-    Initialize(kTransmit, transfer_id, rpc_writer, reader);
+  // Precondition: context is not active.
+  void InitializeForTransmit(
+      uint32_t transfer_id,
+      work_queue::WorkQueue& work_queue,
+      RawWriter& rpc_writer,
+      stream::Reader& reader,
+      chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
+      uint8_t max_retries = cfg::kDefaultMaxRetries) {
+    Initialize(kTransmit,
+               transfer_id,
+               work_queue,
+               rpc_writer,
+               reader,
+               chunk_timeout,
+               max_retries);
   }
 
   // Begins a new receive transfer from this context.
-  // Precontion: context is not active.
-  void InitializeForReceive(uint32_t transfer_id,
-                            RawWriter& rpc_writer,
-                            stream::Writer& writer) {
-    Initialize(kReceive, transfer_id, rpc_writer, writer);
-  }
-
-  constexpr Type type() const { return type_; }
-
-  constexpr uint32_t offset() const { return offset_; }
-  constexpr void set_offset(size_t offset) { offset_ = offset; }
-
-  constexpr uint32_t pending_bytes() const { return pending_bytes_; }
-  constexpr void set_pending_bytes(size_t pending_bytes) {
-    pending_bytes_ = pending_bytes;
-  }
-
-  constexpr uint32_t max_chunk_size_bytes() const {
-    return max_chunk_size_bytes_;
-  }
-  constexpr void set_max_chunk_size_bytes(size_t max_chunk_size_bytes) {
-    max_chunk_size_bytes_ = max_chunk_size_bytes;
+  // Precondition: context is not active.
+  void InitializeForReceive(
+      uint32_t transfer_id,
+      work_queue::WorkQueue& work_queue,
+      RawWriter& rpc_writer,
+      stream::Writer& writer,
+      chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
+      uint8_t max_retries = cfg::kDefaultMaxRetries) {
+    Initialize(kReceive,
+               transfer_id,
+               work_queue,
+               rpc_writer,
+               writer,
+               chunk_timeout,
+               max_retries);
   }
 
   // Calculates the maximum size of actual data that can be sent within a single
@@ -191,18 +218,24 @@ class Context {
  private:
   void Initialize(Type type,
                   uint32_t transfer_id,
+                  work_queue::WorkQueue& work_queue,
                   RawWriter& rpc_writer,
-                  stream::Stream& stream);
+                  stream::Stream& stream,
+                  chrono::SystemClock::duration chunk_timeout,
+                  uint8_t max_retries);
 
-  stream::Reader& reader() const {
-    PW_DASSERT(active() && type_ == kTransmit);
+  stream::Reader& reader() {
+    PW_DASSERT(active() && type() == kTransmit);
     return static_cast<stream::Reader&>(*stream_);
   }
 
-  stream::Writer& writer() const {
-    PW_DASSERT(active() && type_ == kReceive);
+  stream::Writer& writer() {
+    PW_DASSERT(active() && type() == kReceive);
     return static_cast<stream::Writer&>(*stream_);
   }
+
+  // Sends the first chunk in a transmit transfer.
+  Status SendInitialTransmitChunk();
 
   // Updates the context's current parameters based on the fields in a chunk.
   void UpdateParameters(const TransferParameters& max_parameters,
@@ -238,15 +271,39 @@ class Context {
 
   // In a receive transfer, sends a parameters chunk telling the transmitter how
   // much data they can send.
-  Status SendTransferParameters(const TransferParameters& max_parameters);
+  Status SendTransferParameters();
+
+  // Updates the current receive transfer parameters from the provided object,
+  // then sends them.
+  Status UpdateAndSendTransferParameters(
+      const TransferParameters& max_parameters);
 
   void SendStatusChunk(Status status);
-
   void FinishAndSendStatus(Status status);
 
+  void CancelTimer() {
+    timer_.Cancel();
+    retries_ = 0;
+  }
+
+  // Timeout function invoked from the timer context. This may occur in an
+  // interrupt, so no real work can be done. Instead, sets state to timed out
+  // and adds a job to run the timeout handler.
+  void OnTimeout();
+
+  // The acutal timeout handler, invoked from within the work queue.
+  void HandleTimeout();
+
+  static constexpr uint8_t kFlagsType = 1 << 0;
+  static constexpr uint8_t kFlagsDataSent = 1 << 1;
+
   uint32_t transfer_id_;
-  State state_;
-  Type type_;
+  uint8_t flags_;
+  TransferState transfer_state_ PW_GUARDED_BY(state_lock_);
+  uint8_t retries_;
+  uint8_t max_retries_;
+
+  sync::InterruptSpinLock state_lock_;
 
   stream::Stream* stream_;
   RawWriter* rpc_writer_;
@@ -255,8 +312,15 @@ class Context {
   size_t pending_bytes_;
   size_t max_chunk_size_bytes_;
 
-  Status status_;
-  size_t last_received_offset_;
+  union {
+    Status status_;             // Used when state is kCompleted.
+    size_t last_chunk_offset_;  // Used in states kData and kRecovery.
+  };
+
+  // Timer used to handle timeouts waiting for chunks.
+  chrono::SystemTimer timer_;
+  chrono::SystemClock::duration chunk_timeout_;
+  work_queue::WorkQueue* work_queue_;
 
   CompletionFunction on_completion_;
 };

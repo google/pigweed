@@ -27,7 +27,10 @@ namespace pw::transfer::internal {
 
 Status ServerContext::Start(TransferType type,
                             Handler& handler,
-                            rpc::RawServerReaderWriter& stream) {
+                            work_queue::WorkQueue& work_queue,
+                            rpc::RawServerReaderWriter& stream,
+                            chrono::SystemClock::duration timeout,
+                            uint8_t max_retries) {
   PW_DCHECK(!active());
 
   PW_LOG_INFO("Starting transfer %u", static_cast<unsigned>(handler.id()));
@@ -44,9 +47,19 @@ Status ServerContext::Start(TransferType type,
   handler_ = &handler;
 
   if (type == kRead) {
-    InitializeForTransmit(handler.id(), writer_, handler.reader());
+    InitializeForTransmit(handler.id(),
+                          work_queue,
+                          writer_,
+                          handler.reader(),
+                          timeout,
+                          max_retries);
   } else {
-    InitializeForReceive(handler.id(), writer_, handler.writer());
+    InitializeForReceive(handler.id(),
+                         work_queue,
+                         writer_,
+                         handler.writer(),
+                         timeout,
+                         max_retries);
   }
 
   return OkStatus();
@@ -56,7 +69,7 @@ Status ServerContext::Finish(const Status status) {
   PW_DCHECK(active());
 
   Handler& handler = *handler_;
-  set_state(kCompleted);
+  set_transfer_state(TransferState::kCompleted);
 
   if (type_ == kRead) {
     handler.FinalizeRead(status);
@@ -75,7 +88,11 @@ Status ServerContext::Finish(const Status status) {
 }
 
 Result<ServerContext*> ServerContextPool::StartTransfer(
-    uint32_t transfer_id, rpc::RawServerReaderWriter& stream) {
+    uint32_t transfer_id,
+    work_queue::WorkQueue& work_queue,
+    rpc::RawServerReaderWriter& stream,
+    chrono::SystemClock::duration timeout,
+    uint8_t max_retries) {
   ServerContext* new_transfer = nullptr;
 
   // Check if the ID belongs to an active transfer. If not, pick an inactive
@@ -111,14 +128,15 @@ Result<ServerContext*> ServerContextPool::StartTransfer(
     return Status::NotFound();
   }
 
-  PW_TRY(new_transfer->Start(type_, *handler, stream));
+  PW_TRY(new_transfer->Start(
+      type_, *handler, work_queue, stream, timeout, max_retries));
   return new_transfer;
 }
 
 Result<ServerContext*> ServerContextPool::GetPendingTransfer(
     uint32_t transfer_id) {
   auto transfer =
-      std::find_if(transfers_.begin(), transfers_.end(), [=](const auto& t) {
+      std::find_if(transfers_.begin(), transfers_.end(), [=](auto& t) {
         return t.initialized() && t.transfer_id() == transfer_id;
       });
 

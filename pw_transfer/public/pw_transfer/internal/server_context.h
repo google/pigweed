@@ -48,8 +48,7 @@ struct Chunk;
 // pointer to a transfer handler when active to stream the transfer data.
 class ServerContext : public Context {
  public:
-  constexpr ServerContext()
-      : Context(OnCompletion), type_(kRead), handler_(nullptr) {}
+  ServerContext() : Context(OnCompletion), type_(kRead), handler_(nullptr) {}
 
   // Begins a new transfer with the specified type and handler. Calls into the
   // handler's Prepare method.
@@ -57,7 +56,10 @@ class ServerContext : public Context {
   // Precondition: Context is not already active.
   Status Start(TransferType type,
                Handler& handler,
-               rpc::RawServerReaderWriter& stream);
+               work_queue::WorkQueue& work_queue,
+               rpc::RawServerReaderWriter& stream,
+               chrono::SystemClock::duration timeout,
+               uint8_t max_retries);
 
   // Ends the transfer with the given status, calling the handler's Finalize
   // method. No chunks are sent.
@@ -80,8 +82,8 @@ class ServerContext : public Context {
 // A fixed-size pool of allocatable transfer contexts.
 class ServerContextPool {
  public:
-  constexpr ServerContextPool(TransferType type,
-                              IntrusiveList<internal::Handler>& handlers)
+  ServerContextPool(TransferType type,
+                    IntrusiveList<internal::Handler>& handlers)
       : type_(type), handlers_(handlers) {}
 
   // Looks up an active context by ID. If none exists, tries to allocate and
@@ -93,7 +95,10 @@ class ServerContextPool {
   //   RESOURCE_EXHAUSTED - Out of transfer context slots.
   //
   Result<ServerContext*> StartTransfer(uint32_t transfer_id,
-                                       rpc::RawServerReaderWriter& stream);
+                                       work_queue::WorkQueue& work_queue,
+                                       rpc::RawServerReaderWriter& stream,
+                                       chrono::SystemClock::duration timeout,
+                                       uint8_t max_retries);
 
   Result<ServerContext*> GetPendingTransfer(uint32_t transfer_id);
 

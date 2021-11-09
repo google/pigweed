@@ -16,6 +16,8 @@
 
 #include "pw_transfer/internal/context.h"
 
+#include <mutex>
+
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_status/try.h"
@@ -27,12 +29,30 @@ namespace pw::transfer::internal {
 Status Context::InitiateTransfer(const TransferParameters& max_parameters) {
   PW_DCHECK(active());
 
-  if (type_ == kReceive) {
+  if (type() == kReceive) {
     // A receiver begins a new transfer with a parameters chunk telling the
     // transmitter what to send.
-    return SendTransferParameters(max_parameters);
+    PW_TRY(UpdateAndSendTransferParameters(max_parameters));
+  } else {
+    PW_TRY(SendInitialTransmitChunk());
   }
 
+  timer_.InvokeAfter(chunk_timeout_);
+  return OkStatus();
+}
+
+bool Context::ReadChunkData(ChunkDataBuffer& buffer,
+                            const TransferParameters& max_parameters,
+                            const Chunk& chunk) {
+  CancelTimer();
+
+  if (type() == kTransmit) {
+    return ReadTransmitChunk(max_parameters, chunk);
+  }
+  return ReadReceiveChunk(buffer, max_parameters, chunk);
+}
+
+Status Context::SendInitialTransmitChunk() {
   // A transmitter begins a transfer by just sending its ID.
   internal::Chunk chunk = {};
   chunk.transfer_id = transfer_id_;
@@ -63,22 +83,30 @@ void Context::UpdateParameters(const TransferParameters& max_parameters,
 
 bool Context::ReadTransmitChunk(const TransferParameters& max_parameters,
                                 const Chunk& chunk) {
-  switch (state_) {
-    case kInactive:
-      PW_CRASH("Never should handle chunk while in kInactive state");
+  {
+    std::lock_guard lock(state_lock_);
 
-    case kRecovery:
-      PW_CRASH("Transmit transfer should not enter recovery state.");
+    switch (transfer_state_) {
+      case TransferState::kInactive:
+        PW_CRASH("Never should handle chunk while in kInactive state");
 
-    case kCompleted:
-      // Transfer is not pending; notify the sender.
-      SendStatusChunk(Status::FailedPrecondition());
-      state_ = kInactive;
-      return false;
+      case TransferState::kRecovery:
+        PW_CRASH("Transmit transfer should not enter recovery state.");
 
-    case kData:
-      // Continue with reading the chunk.
-      break;
+      case TransferState::kCompleted:
+        // Transfer is not pending; notify the sender.
+        SendStatusChunk(Status::FailedPrecondition());
+        transfer_state_ = TransferState::kInactive;
+        return false;
+
+      case TransferState::kData:
+        // Continue with reading the chunk.
+        break;
+
+      case TransferState::kTimedOut:
+        // Drop the chunk to let the timeout handler run.
+        return false;
+    }
   }
 
   if (!chunk.pending_bytes.has_value()) {
@@ -140,11 +168,18 @@ void Context::ProcessTransmitChunk() {
 bool Context::ReadReceiveChunk(ChunkDataBuffer& buffer,
                                const TransferParameters& max_parameters,
                                const Chunk& chunk) {
-  switch (state_) {
-    case kInactive:
+  state_lock_.lock();
+
+  switch (transfer_state_) {
+    case TransferState::kInactive:
       PW_CRASH("Never should handle chunk while in kInactive state");
 
-    case kCompleted: {
+    case TransferState::kTimedOut:
+      // Drop the chunk to let the timeout handler run.
+      state_lock_.unlock();
+      return false;
+
+    case TransferState::kCompleted: {
       // If the chunk is a repeat of the final chunk, resend the status chunk,
       // which apparently was lost. Otherwise, send FAILED_PRECONDITION since
       // this is for a non-pending transfer.
@@ -152,27 +187,31 @@ bool Context::ReadReceiveChunk(ChunkDataBuffer& buffer,
       if (!chunk.IsFinalTransmitChunk()) {
         response = Status::FailedPrecondition();
         // Sender should only should retry with final chunk
-        state_ = kInactive;
+        transfer_state_ = TransferState::kInactive;
       }
+      state_lock_.unlock();
       SendStatusChunk(response);
       return false;
     }
 
-    case kData:
+    case TransferState::kData:
+      state_lock_.unlock();
       if (!HandleDataChunk(buffer, max_parameters, chunk)) {
         return false;
       }
       break;
 
-    case kRecovery:
+    case TransferState::kRecovery:
       if (chunk.offset != offset_) {
-        if (last_received_offset_ == chunk.offset) {
+        state_lock_.unlock();
+
+        if (last_chunk_offset_ == chunk.offset) {
           PW_LOG_DEBUG(
               "Transfer %u received repeated offset %u; retry detected, "
               "resending transfer parameters",
               static_cast<unsigned>(transfer_id_),
               static_cast<unsigned>(chunk.offset));
-          if (!SendTransferParameters(max_parameters).ok()) {
+          if (!UpdateAndSendTransferParameters(max_parameters).ok()) {
             return false;
           }
         } else {
@@ -182,14 +221,16 @@ bool Context::ReadReceiveChunk(ChunkDataBuffer& buffer,
                        static_cast<unsigned>(chunk.offset));
         }
 
-        last_received_offset_ = chunk.offset;
+        last_chunk_offset_ = chunk.offset;
         return false;
       }
 
       PW_LOG_DEBUG("Transfer %u received expected offset %u, resuming transfer",
                    static_cast<unsigned>(transfer_id_),
                    static_cast<unsigned>(offset_));
-      state_ = kData;
+
+      transfer_state_ = TransferState::kData;
+      state_lock_.unlock();
 
       if (!HandleDataChunk(buffer, max_parameters, chunk)) {
         return false;
@@ -198,7 +239,7 @@ bool Context::ReadReceiveChunk(ChunkDataBuffer& buffer,
   }
 
   // Update the last offset seen so that retries can be detected.
-  last_received_offset_ = chunk.offset;
+  last_chunk_offset_ = chunk.offset;
   return true;
 }
 
@@ -234,7 +275,7 @@ void Context::ProcessReceiveChunk(ChunkDataBuffer& buffer,
   if (pending_bytes_ == 0u) {
     // All pending data has been received. Send a new parameters chunk to start
     // the next batch.
-    SendTransferParameters(max_parameters);
+    UpdateAndSendTransferParameters(max_parameters);
   }
 }
 
@@ -269,6 +310,7 @@ Status Context::SendNextDataChunk() {
     pending_bytes_ = 0;
   } else if (data.ok()) {
     encoder.WriteData(data.value()).IgnoreError();
+    last_chunk_offset_ = offset_;
     offset_ += data.value().size();
     pending_bytes_ -= data.value().size();
   } else {
@@ -293,6 +335,7 @@ Status Context::SendNextDataChunk() {
     return Status::DataLoss();
   }
 
+  flags_ |= kFlagsDataSent;
   return data.status();
 }
 
@@ -316,8 +359,8 @@ bool Context::HandleDataChunk(ChunkDataBuffer& buffer,
         static_cast<unsigned>(transfer_id_),
         static_cast<unsigned>(offset_),
         static_cast<unsigned>(chunk.offset));
-    SendTransferParameters(max_parameters);
-    state_ = kRecovery;
+    UpdateAndSendTransferParameters(max_parameters);
+    set_transfer_state(TransferState::kRecovery);
 
     // Return false as there is no immediate deferred work to complete. The
     // transfer must wait for the next data chunk to be sent by the transmitter.
@@ -330,38 +373,21 @@ bool Context::HandleDataChunk(ChunkDataBuffer& buffer,
   return true;
 }
 
-Status Context::SendTransferParameters(
-    const TransferParameters& max_parameters) {
-  const size_t write_limit = writer().ConservativeWriteLimit();
-  if (write_limit == 0) {
-    PW_LOG_WARN(
-        "Transfer %u writer returned 0 from ConservativeWriteLimit(); cannot "
-        "continue, aborting with RESOURCE_EXHAUSTED",
-        static_cast<unsigned>(transfer_id_));
-    FinishAndSendStatus(Status::ResourceExhausted());
-    return Status::ResourceExhausted();
-  }
-
-  set_pending_bytes(std::min(max_parameters.pending_bytes(),
-                             static_cast<uint32_t>(write_limit)));
-
-  const uint32_t max_chunk_size_bytes = MaxWriteChunkSize(
-      max_parameters.max_chunk_size_bytes(), rpc_writer_->channel_id());
-
+Status Context::SendTransferParameters() {
   const internal::Chunk parameters = {
       .transfer_id = transfer_id_,
       .pending_bytes = pending_bytes_,
-      .max_chunk_size_bytes = max_chunk_size_bytes,
+      .max_chunk_size_bytes = max_chunk_size_bytes_,
       .offset = static_cast<uint32_t>(offset_),
   };
 
   PW_LOG_DEBUG(
       "Transfer %u sending transfer parameters: "
       "offset=%u, pending_bytes=%u, chunk_size=%u",
-      static_cast<unsigned>(transfer_id()),
-      static_cast<unsigned>(offset()),
-      static_cast<unsigned>(pending_bytes()),
-      static_cast<unsigned>(max_chunk_size_bytes));
+      static_cast<unsigned>(transfer_id_),
+      static_cast<unsigned>(offset_),
+      static_cast<unsigned>(pending_bytes_),
+      static_cast<unsigned>(max_chunk_size_bytes_));
 
   // If the parameters can't be encoded or sent, it most likely indicates a
   // transport-layer issue, so there isn't much that can be done by the transfer
@@ -390,15 +416,42 @@ Status Context::SendTransferParameters(
   return OkStatus();
 }
 
+Status Context::UpdateAndSendTransferParameters(
+    const TransferParameters& max_parameters) {
+  const size_t write_limit = writer().ConservativeWriteLimit();
+  if (write_limit == 0) {
+    PW_LOG_WARN(
+        "Transfer %u writer returned 0 from ConservativeWriteLimit(); cannot "
+        "continue, aborting with RESOURCE_EXHAUSTED",
+        static_cast<unsigned>(transfer_id_));
+    FinishAndSendStatus(Status::ResourceExhausted());
+    return Status::ResourceExhausted();
+  }
+
+  pending_bytes_ = std::min(max_parameters.pending_bytes(),
+                            static_cast<uint32_t>(write_limit));
+
+  max_chunk_size_bytes_ = MaxWriteChunkSize(
+      max_parameters.max_chunk_size_bytes(), rpc_writer_->channel_id());
+
+  return SendTransferParameters();
+}
+
 void Context::Initialize(Type type,
                          uint32_t transfer_id,
+                         work_queue::WorkQueue& work_queue,
                          RawWriter& rpc_writer,
-                         stream::Stream& stream) {
+                         stream::Stream& stream,
+                         chrono::SystemClock::duration chunk_timeout,
+                         uint8_t max_retries) {
   PW_DCHECK(!active());
+  PW_CHECK(state_lock_.try_lock());
 
   transfer_id_ = transfer_id;
-  state_ = kData;
-  type_ = type;
+  flags_ = static_cast<uint8_t>(type);
+  transfer_state_ = TransferState::kData;
+  retries_ = 0;
+  max_retries_ = max_retries;
 
   rpc_writer_ = &rpc_writer;
   stream_ = &stream;
@@ -407,8 +460,11 @@ void Context::Initialize(Type type,
   pending_bytes_ = 0;
   max_chunk_size_bytes_ = std::numeric_limits<uint32_t>::max();
 
-  status_ = Status::Unknown();
-  last_received_offset_ = 0;
+  last_chunk_offset_ = 0;
+  chunk_timeout_ = chunk_timeout;
+  work_queue_ = &work_queue;
+
+  state_lock_.unlock();
 }
 
 void Context::SendStatusChunk(Status status) {
@@ -434,6 +490,8 @@ void Context::SendStatusChunk(Status status) {
 }
 
 void Context::FinishAndSendStatus(Status status) {
+  CancelTimer();
+
   PW_LOG_INFO("Transfer %u completed with status %u; sending final chunk",
               static_cast<unsigned>(transfer_id_),
               status.code());
@@ -445,7 +503,86 @@ void Context::FinishAndSendStatus(Status status) {
   }
 
   SendStatusChunk(status);
-  state_ = kCompleted;
+  set_transfer_state(TransferState::kCompleted);
+}
+
+void Context::OnTimeout() {
+  std::lock_guard lock(state_lock_);
+  transfer_state_ = TransferState::kTimedOut;
+
+  const Status status = work_queue_->PushWork([this]() {
+    HandleTimeout();
+    if (active()) {
+      timer_.InvokeAfter(chunk_timeout_);
+    }
+  });
+
+  if (!status.ok()) {
+    PW_LOG_ERROR("Transfer %u failed to push timeout handler to work queue",
+                 static_cast<unsigned>(transfer_id_));
+
+    // If the work queue is full, there is no way to keep the transfer alive or
+    // notify the other end of the failure. Simply end the transfer; if any more
+    // chunks are received, an error will be sent then.
+    status_ = Status::DeadlineExceeded();
+    transfer_state_ = TransferState::kCompleted;
+  }
+}
+
+void Context::HandleTimeout() {
+  state_lock_.lock();
+  PW_DCHECK(transfer_state_ == TransferState::kTimedOut);
+
+  if (retries_ == max_retries_) {
+    PW_LOG_ERROR("Transfer %u failed to receive a chunk after %u retries.",
+                 static_cast<unsigned>(transfer_id_),
+                 static_cast<unsigned>(retries_));
+    PW_LOG_ERROR("Canceling transfer.");
+    state_lock_.unlock();
+    FinishAndSendStatus(Status::DeadlineExceeded());
+    return;
+  }
+
+  ++retries_;
+  transfer_state_ = TransferState::kData;
+  state_lock_.unlock();
+
+  if (type() == kReceive) {
+    // Resend the most recent transfer parameters. SendTransferParameters()
+    // internally handles failures, so its status can be ignored.
+    PW_LOG_DEBUG(
+        "Receive transfer %u timed out waiting for chunk; resending parameters",
+        static_cast<unsigned>(transfer_id_));
+    SendTransferParameters().IgnoreError();
+    return;
+  }
+
+  // In a transmit, if a data chunk has not yet been sent, the initial transfer
+  // parameters did not arrive from the receiver. Resend the initial chunk.
+  if ((flags_ & kFlagsDataSent) != kFlagsDataSent) {
+    PW_LOG_DEBUG(
+        "Transmit transfer %u timed out waiting for initial parameters",
+        static_cast<unsigned>(transfer_id_));
+    SendInitialTransmitChunk();
+    return;
+  }
+
+  // Otherwise, resend the most recent chunk. If the reader doesn't support
+  // seeking, this isn't possible, so just terminate the transfer immediately.
+  if (!reader().Seek(last_chunk_offset_).ok()) {
+    PW_LOG_ERROR("Transmit transfer %d timed out waiting for new parameters.",
+                 static_cast<unsigned>(transfer_id_));
+    PW_LOG_ERROR("Retrying requires a seekable reader. Alas, ours is not.");
+    FinishAndSendStatus(Status::DeadlineExceeded());
+    return;
+  }
+
+  // Rewind the transfer position and resend the chunk.
+  size_t last_size_sent = offset_ - last_chunk_offset_;
+  offset_ = last_chunk_offset_;
+  pending_bytes_ += last_size_sent;
+
+  ProcessTransmitChunk();
 }
 
 uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
@@ -483,9 +620,9 @@ uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
   //
   //   TOTAL: 3 + encoded transfer_id + encoded offset + encoded data length
   //
-  size_t max_offset_in_window = offset() + pending_bytes();
+  size_t max_offset_in_window = offset_ + pending_bytes_;
   max_size -= 3;
-  max_size -= varint::EncodedSize(transfer_id());
+  max_size -= varint::EncodedSize(transfer_id_);
   max_size -= varint::EncodedSize(max_offset_in_window);
   max_size -= varint::EncodedSize(max_size);
 

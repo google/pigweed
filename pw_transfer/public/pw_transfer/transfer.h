@@ -20,8 +20,10 @@
 #include "pw_bytes/span.h"
 #include "pw_transfer/handler.h"
 #include "pw_transfer/internal/client_connection.h"
+#include "pw_transfer/internal/config.h"
 #include "pw_transfer/internal/server_context.h"
 #include "pw_transfer/transfer.raw_rpc.pb.h"
+#include "pw_work_queue/work_queue.h"
 
 namespace pw::transfer {
 namespace internal {
@@ -34,10 +36,15 @@ class TransferService : public generated::Transfer<TransferService> {
  public:
   // Initializes a TransferService that can be registered with an RPC server.
   //
-  // max_chunk_size_bytes is the largest amount of data that can be sent within
-  // a single transfer chunk (read or write), excluding any transport layer
-  // overhead. Not all of this size is used to send data -- there is additional
-  // overhead in the pw_rpc and pw_transfer protocols (typically ~22B/chunk).
+  // The transfer service requires a work queue to perform deferred tasks, such
+  // as handling transfer timeouts and retries. This work queue does not need to
+  // be unique to the transfer service; it may be shared with other parts of the
+  // system.
+  //
+  // The provided buffer is used to stage data from transfer chunks before it is
+  // written out to the writer. The size of this buffer is the largest amount of
+  // data that can be sent in a single transfer chunk, excluding any transport
+  // layer overhead.
   //
   // max_pending_bytes is the maximum amount of data to ask for at a
   // time during a write transfer, unless told a more restrictive amount by a
@@ -46,12 +53,19 @@ class TransferService : public generated::Transfer<TransferService> {
   // reliable transport. However, if the underlying transport is unreliable,
   // larger values could slow down a transfer in the event of repeated packet
   // loss.
-  constexpr TransferService(ByteSpan transfer_data_buffer,
-                            uint32_t max_pending_bytes)
+  TransferService(
+      work_queue::WorkQueue& work_queue,
+      ByteSpan transfer_data_buffer,
+      uint32_t max_pending_bytes,
+      chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
+      uint8_t max_retries = cfg::kDefaultMaxRetries)
       : read_transfers_(internal::kRead, handlers_),
         write_transfers_(internal::kWrite, handlers_),
+        work_queue_(work_queue),
         client_(max_pending_bytes, transfer_data_buffer.size()),
-        chunk_data_buffer_(transfer_data_buffer) {}
+        chunk_data_buffer_(transfer_data_buffer),
+        chunk_timeout_(chunk_timeout),
+        max_retries_(max_retries) {}
 
   TransferService(const TransferService&) = delete;
   TransferService(TransferService&&) = delete;
@@ -95,18 +109,24 @@ class TransferService : public generated::Transfer<TransferService> {
   internal::ServerContextPool read_transfers_;
   internal::ServerContextPool write_transfers_;
 
+  work_queue::WorkQueue& work_queue_;
+
   // Stores the RPC streams and parameters for communicating with the client.
   internal::ClientConnection client_;
 
   internal::ChunkDataBuffer chunk_data_buffer_;
+
+  chrono::SystemClock::duration chunk_timeout_;
+  uint8_t max_retries_;
 };
 
 // A transfer service with its own buffer for transfer data.
 template <size_t kSizeBytes>
 class TransferServiceBuffer : public TransferService {
  public:
-  constexpr TransferServiceBuffer(uint32_t max_pending_bytes)
-      : TransferService(transfer_data_buffer_, max_pending_bytes) {}
+  constexpr TransferServiceBuffer(work_queue::WorkQueue& work_queue,
+                                  uint32_t max_pending_bytes)
+      : TransferService(work_queue, transfer_data_buffer_, max_pending_bytes) {}
 
  private:
   std::array<std::byte, kSizeBytes> transfer_data_buffer_;

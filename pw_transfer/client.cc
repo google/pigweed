@@ -29,7 +29,8 @@ namespace pw::transfer {
 
 Status Client::Read(uint32_t transfer_id,
                     stream::Writer& output,
-                    CompletionFunc&& on_completion) {
+                    CompletionFunc&& on_completion,
+                    chrono::SystemClock::duration timeout) {
   if (on_completion == nullptr) {
     return Status::InvalidArgument();
   }
@@ -39,12 +40,14 @@ Status Client::Read(uint32_t transfer_id,
         client_.Read([this](ConstByteSpan chunk) { OnChunk(chunk, kRead); });
   }
 
-  return StartNewTransfer(transfer_id, output, std::move(on_completion), kRead);
+  return StartNewTransfer(
+      transfer_id, kRead, output, std::move(on_completion), timeout);
 }
 
 Status Client::Write(uint32_t transfer_id,
                      stream::Reader& input,
-                     CompletionFunc&& on_completion) {
+                     CompletionFunc&& on_completion,
+                     chrono::SystemClock::duration timeout) {
   if (on_completion == nullptr) {
     return Status::InvalidArgument();
   }
@@ -54,13 +57,15 @@ Status Client::Write(uint32_t transfer_id,
         client_.Write([this](ConstByteSpan chunk) { OnChunk(chunk, kWrite); });
   }
 
-  return StartNewTransfer(transfer_id, input, std::move(on_completion), kWrite);
+  return StartNewTransfer(
+      transfer_id, kWrite, input, std::move(on_completion), timeout);
 }
 
 Status Client::StartNewTransfer(uint32_t transfer_id,
+                                Type type,
                                 stream::Stream& stream,
                                 CompletionFunc&& on_completion,
-                                Type type) {
+                                chrono::SystemClock::duration timeout) {
   std::lock_guard lock(transfer_context_mutex_);
   ClientContext* context = nullptr;
 
@@ -85,17 +90,21 @@ Status Client::StartNewTransfer(uint32_t transfer_id,
                  static_cast<unsigned>(transfer_id));
     context->StartWrite(*this,
                         transfer_id,
+                        work_queue_,
                         static_cast<stream::Reader&>(stream),
                         write_stream_,
-                        std::move(on_completion));
+                        std::move(on_completion),
+                        timeout);
   } else {
     PW_LOG_DEBUG("Starting new read transfer %u",
                  static_cast<unsigned>(transfer_id));
     context->StartRead(*this,
                        transfer_id,
+                       work_queue_,
                        static_cast<stream::Writer&>(stream),
                        read_stream_,
-                       std::move(on_completion));
+                       std::move(on_completion),
+                       timeout);
   }
 
   return context->InitiateTransfer(max_parameters_);

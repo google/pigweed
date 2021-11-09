@@ -57,11 +57,11 @@ transfer service using their transfer IDs.
   // transfer handler's stream::Writer.
   constexpr size_t kDefaultMaxBytesToReceive = 1024;
 
-  // Instantiate a static transfer service. The service requires a buffer to
-  // store data from a chunk. The helper class TransferServiceBuffer comes with
-  // a builtin buffer.
+  // Instantiate a static transfer service.
+  // The service requires a work queue, and a buffer to store data from a chunk.
+  // The helper class TransferServiceBuffer comes with a builtin buffer.
   pw::transfer::TransferServiceBuffer<kMaxChunkSizeBytes> transfer_service(
-      kDefaultMaxBytesToReceive);
+      GetSystemWorkQueue(), kDefaultMaxBytesToReceive);
 
   // Instantiate a handler for the data to be transferred.
   constexpr uint32_t kBufferTransferId = 1;
@@ -76,6 +76,10 @@ transfer service using their transfer IDs.
     transfer_service.RegisterHandler(buffer_handler);
     GetSystemRpcServer().RegisterService(transfer_service);
   }
+
+Module Configuration Options
+----------------------------
+todo
 
 Python
 ======

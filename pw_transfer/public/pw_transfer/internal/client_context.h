@@ -48,7 +48,7 @@ class RawClientWriter final : public RawWriter {
 
 class ClientContext : public Context {
  public:
-  constexpr ClientContext()
+  ClientContext()
       : internal::Context(OnCompletion),
         client_(nullptr),
         on_completion_(nullptr) {}
@@ -56,22 +56,26 @@ class ClientContext : public Context {
   constexpr bool is_read_transfer() const { return type() == kReceive; }
   constexpr bool is_write_transfer() const { return type() == kTransmit; }
 
-  constexpr Client& client() {
+  Client& client() {
     PW_DASSERT(active());
     return *client_;
   }
 
   void StartRead(Client& client,
                  uint32_t transfer_id,
+                 work_queue::WorkQueue& work_queue,
                  stream::Writer& writer,
                  rpc::RawClientReaderWriter& stream,
-                 Function<void(Status)>&& on_completion);
+                 Function<void(Status)>&& on_completion,
+                 chrono::SystemClock::duration chunk_timeout);
 
   void StartWrite(Client& client,
                   uint32_t transfer_id,
+                  work_queue::WorkQueue& work_queue,
                   stream::Reader& reader,
                   rpc::RawClientReaderWriter& stream,
-                  Function<void(Status)>&& on_completion);
+                  Function<void(Status)>&& on_completion,
+                  chrono::SystemClock::duration chunk_timeout);
 
   void Finish(Status status) {
     PW_DASSERT(active());

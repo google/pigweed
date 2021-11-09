@@ -69,17 +69,21 @@ class Client {
   // the server is written to the provided writer. Returns OK if the transfer is
   // successfully started. When the transfer finishes (successfully or not), the
   // completion callback is invoked with the overall status.
-  Status Read(uint32_t transfer_id,
-              stream::Writer& output,
-              CompletionFunc&& on_completion);
+  Status Read(
+      uint32_t transfer_id,
+      stream::Writer& output,
+      CompletionFunc&& on_completion,
+      chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);
 
   // Begins a new write transfer for the given transfer ID. Data from the
-  // provided writer is sent to the server. When the transfer finishes
+  // provided reader is sent to the server. When the transfer finishes
   // (successfully or not), the completion callback is invoked with the overall
   // status.
-  Status Write(uint32_t transfer_id,
-               stream::Reader& input,
-               CompletionFunc&& on_completion);
+  Status Write(
+      uint32_t transfer_id,
+      stream::Reader& input,
+      CompletionFunc&& on_completion,
+      chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout);
 
  private:
   using Transfer = pw_rpc::raw::Transfer;
@@ -88,9 +92,11 @@ class Client {
   enum Type : bool { kRead, kWrite };
 
   Status StartNewTransfer(uint32_t transfer_id,
+                          Type type,
                           stream::Stream& stream,
                           CompletionFunc&& on_completion,
-                          Type type);
+                          chrono::SystemClock::duration timeout);
+
   ClientContext* GetActiveTransfer(uint32_t transfer_id);
 
   // Function called when a chunk is received, from the context of the RPC

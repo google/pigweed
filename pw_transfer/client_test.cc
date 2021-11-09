@@ -20,6 +20,9 @@
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_rpc/raw/client_testing.h"
+#include "pw_thread/sleep.h"
+#include "pw_thread/thread.h"
+#include "pw_thread_stl/options.h"
 #include "pw_transfer_private/chunk_testing.h"
 
 namespace pw::transfer::test {
@@ -27,6 +30,11 @@ namespace {
 
 using internal::Chunk;
 using pw_rpc::raw::Transfer;
+
+thread::Options& WorkQueueThreadOptions() {
+  static thread::stl::Options options;
+  return options;
+}
 
 class ReadTransfer : public ::testing::Test {
  protected:
@@ -36,15 +44,20 @@ class ReadTransfer : public ::testing::Test {
                 work_queue_,
                 data_buffer_,
                 max_bytes_to_receive),
-        work_queue_({}) {}
+        work_queue_thread_(WorkQueueThreadOptions(), work_queue_) {}
+
+  ~ReadTransfer() {
+    work_queue_.RequestStop();
+    work_queue_thread_.join();
+  }
 
   rpc::RawClientTestContext<> context_;
 
   Client client_;
   std::array<std::byte, 64> data_buffer_;
 
-  // The transfer client does not currently use the work queue.
-  work_queue::WorkQueue work_queue_;
+  work_queue::WorkQueueWithBuffer<4> work_queue_;
+  thread::Thread work_queue_thread_;
 };
 
 constexpr auto kData32 = bytes::Initialized<32>([](size_t i) { return i; });
@@ -466,6 +479,173 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   EXPECT_EQ(transfer_status, OkStatus());
 }
 
+constexpr chrono::SystemClock::duration kTestTimeout =
+    std::chrono::milliseconds(50);
+constexpr chrono::SystemClock::duration kWaitForTimeout =
+    kTestTimeout + std::chrono::milliseconds(10);
+constexpr uint8_t kTestRetries = 3;
+
+TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  client_.Read(
+      12,
+      writer,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // First transfer parameters chunk is sent.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Read>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 12u);
+  EXPECT_EQ(c0.offset, 0u);
+  EXPECT_EQ(c0.pending_bytes.value(), 64u);
+
+  // Wait for the timeout to expire without doing anything. The client should
+  // resend its parameters chunk.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 2u);
+
+  Chunk c = DecodeChunk(payloads.back());
+  EXPECT_EQ(c.transfer_id, 12u);
+  EXPECT_EQ(c.offset, 0u);
+  EXPECT_EQ(c.pending_bytes.value(), 64u);
+
+  // Transfer has not yet completed.
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  // Finish the transfer following the timeout.
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk({.transfer_id = 12u,
+                   .offset = 0,
+                   .data = kData32,
+                   .remaining_bytes = 0}));
+  ASSERT_EQ(payloads.size(), 3u);
+
+  Chunk c4 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c4.transfer_id, 12u);
+  ASSERT_TRUE(c4.status.has_value());
+  EXPECT_EQ(c4.status.value(), OkStatus());
+
+  EXPECT_EQ(transfer_status, OkStatus());
+}
+
+TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  client_.Read(
+      13,
+      writer,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // First transfer parameters chunk is sent.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Read>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 13u);
+  EXPECT_EQ(c0.offset, 0u);
+  EXPECT_EQ(c0.pending_bytes.value(), 64u);
+
+  constexpr ConstByteSpan data(kData32);
+
+  // Send some data, but not everything.
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk({.transfer_id = 13u, .offset = 0, .data = data.first(16)}));
+  ASSERT_EQ(payloads.size(), 1u);
+
+  // Wait for the timeout to expire without sending more data. The client should
+  // send an updated parameters chunk, accounting for the data already received.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 2u);
+
+  Chunk c = DecodeChunk(payloads.back());
+  EXPECT_EQ(c.transfer_id, 13u);
+  EXPECT_EQ(c.offset, 16u);
+  EXPECT_EQ(c.pending_bytes.value(), 48u);
+
+  // Transfer has not yet completed.
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  // Send the rest of the data, finishing the transfer.
+  context_.server().SendServerStream<Transfer::Read>(
+      EncodeChunk({.transfer_id = 13u,
+                   .offset = 16,
+                   .data = data.subspan(16),
+                   .remaining_bytes = 0}));
+  ASSERT_EQ(payloads.size(), 3u);
+
+  Chunk c4 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c4.transfer_id, 13u);
+  ASSERT_TRUE(c4.status.has_value());
+  EXPECT_EQ(c4.status.value(), OkStatus());
+
+  EXPECT_EQ(transfer_status, OkStatus());
+}
+
+TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  client_.Read(
+      14,
+      writer,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // First transfer parameters chunk is sent.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Read>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 14u);
+  EXPECT_EQ(c0.offset, 0u);
+  EXPECT_EQ(c0.pending_bytes.value(), 64u);
+
+  for (unsigned retry = 1; retry <= kTestRetries; ++retry) {
+    // Wait for the timeout to expire without doing anything. The client should
+    // resend its parameters chunk.
+    this_thread::sleep_for(kWaitForTimeout);
+    ASSERT_EQ(payloads.size(), retry + 1);
+
+    Chunk c = DecodeChunk(payloads.back());
+    EXPECT_EQ(c.transfer_id, 14u);
+    EXPECT_EQ(c.offset, 0u);
+    EXPECT_EQ(c.pending_bytes.value(), 64u);
+
+    // Transfer has not yet completed.
+    EXPECT_EQ(transfer_status, Status::Unknown());
+  }
+
+  // Sleep one more time after the final retry. The client should cancel the
+  // transfer at this point and send a DEADLINE_EXCEEDED chunk.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 5u);
+
+  Chunk c4 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c4.transfer_id, 14u);
+  ASSERT_TRUE(c4.status.has_value());
+  EXPECT_EQ(c4.status.value(), Status::DeadlineExceeded());
+
+  EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
+
+  // After finishing the transfer, nothing else should be sent. Verify this by
+  // waiting for a bit.
+  this_thread::sleep_for(kTestTimeout * 4);
+  ASSERT_EQ(payloads.size(), 5u);
+}
+
 class WriteTransfer : public ::testing::Test {
  protected:
   WriteTransfer()
@@ -473,15 +653,20 @@ class WriteTransfer : public ::testing::Test {
                 context_.channel().id(),
                 work_queue_,
                 data_buffer_),
-        work_queue_({}) {}
+        work_queue_thread_(WorkQueueThreadOptions(), work_queue_) {}
+
+  ~WriteTransfer() {
+    work_queue_.RequestStop();
+    work_queue_thread_.join();
+  }
 
   rpc::RawClientTestContext<> context_;
 
   Client client_;
   std::array<std::byte, 64> data_buffer_;
 
-  // The transfer client does not currently use the work queue.
-  work_queue::WorkQueue work_queue_;
+  work_queue::WorkQueueWithBuffer<4> work_queue_;
+  thread::Thread work_queue_thread_;
 };
 
 TEST_F(WriteTransfer, SingleChunk) {
@@ -631,15 +816,29 @@ TEST_F(WriteTransfer, OutOfOrder_SeekSupported) {
   EXPECT_EQ(transfer_status, OkStatus());
 }
 
-class FakeNonSeekableReader : public stream::NonSeekableReader {
+class FakeNonSeekableReader final : public stream::NonSeekableReader {
+ public:
+  FakeNonSeekableReader(ConstByteSpan data) : data_(data), position_(0) {}
+
  private:
-  StatusWithSize DoRead(ByteSpan) final {
-    return StatusWithSize::Unimplemented();
+  StatusWithSize DoRead(ByteSpan out) final {
+    if (position_ == data_.size()) {
+      return StatusWithSize::OutOfRange();
+    }
+
+    size_t to_copy = std::min(out.size(), data_.size() - position_);
+    std::memcpy(out.data(), data_.data() + position_, to_copy);
+    position_ += to_copy;
+
+    return StatusWithSize(to_copy);
   }
+
+  ConstByteSpan data_;
+  size_t position_;
 };
 
 TEST_F(WriteTransfer, OutOfOrder_SeekNotSupported) {
-  FakeNonSeekableReader reader;
+  FakeNonSeekableReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
   client_.Write(6, reader, [&transfer_status](Status status) {
@@ -761,6 +960,272 @@ TEST_F(WriteTransfer, AbortIfZeroBytesAreRequested) {
   EXPECT_EQ(c1.status.value(), Status::Internal());
 
   EXPECT_EQ(transfer_status, Status::Internal());
+}
+
+TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
+  stream::MemoryReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  client_.Write(
+      10,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // The client begins by just sending the transfer ID.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 10u);
+
+  // Wait for the timeout to expire without doing anything. The client should
+  // resend the initial transmit chunk.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 2u);
+
+  Chunk c = DecodeChunk(payloads.back());
+  EXPECT_EQ(c.transfer_id, 10u);
+
+  // Transfer has not yet completed.
+  EXPECT_EQ(transfer_status, Status::Unknown());
+}
+
+TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
+  stream::MemoryReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  client_.Write(
+      11,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // The client begins by just sending the transfer ID.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 11u);
+
+  // Send the first parameters chunk.
+  context_.server().SendServerStream<Transfer::Write>(
+      EncodeChunk({.transfer_id = 11,
+                   .pending_bytes = 16,
+                   .max_chunk_size_bytes = 8,
+                   .offset = 0}));
+
+  ASSERT_EQ(payloads.size(), 3u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c1 = DecodeChunk(payloads[1]);
+  EXPECT_EQ(c1.transfer_id, 11u);
+  EXPECT_EQ(c1.offset, 0u);
+  EXPECT_EQ(c1.data.size(), 8u);
+  EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
+
+  Chunk c2 = DecodeChunk(payloads[2]);
+  EXPECT_EQ(c2.transfer_id, 11u);
+  EXPECT_EQ(c2.offset, 8u);
+  EXPECT_EQ(c2.data.size(), 8u);
+  EXPECT_EQ(
+      std::memcmp(c2.data.data(), kData32.data() + c2.offset, c1.data.size()),
+      0);
+
+  // Wait for the timeout to expire without doing anything. The client should
+  // resend the most recently sent chunk.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 4u);
+
+  Chunk c3 = DecodeChunk(payloads[3]);
+  EXPECT_EQ(c3.transfer_id, c2.transfer_id);
+  EXPECT_EQ(c3.offset, c2.offset);
+  EXPECT_EQ(c3.data.size(), c2.data.size());
+  EXPECT_EQ(std::memcmp(c3.data.data(), c2.data.data(), c3.data.size()), 0);
+
+  // Transfer has not yet completed.
+  EXPECT_EQ(transfer_status, Status::Unknown());
+}
+
+TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
+  stream::MemoryReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  client_.Write(
+      12,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // The client begins by just sending the transfer ID.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 12u);
+
+  // Send the first parameters chunk, requesting all the data. The client should
+  // respond with one data chunk and a remaining_bytes = 0 chunk.
+  context_.server().SendServerStream<Transfer::Write>(
+      EncodeChunk({.transfer_id = 12,
+                   .pending_bytes = 64,
+                   .max_chunk_size_bytes = 64,
+                   .offset = 0}));
+
+  ASSERT_EQ(payloads.size(), 3u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c1 = DecodeChunk(payloads[1]);
+  EXPECT_EQ(c1.transfer_id, 12u);
+  EXPECT_EQ(c1.offset, 0u);
+  EXPECT_EQ(c1.data.size(), 32u);
+  EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
+
+  Chunk c2 = DecodeChunk(payloads[2]);
+  EXPECT_EQ(c2.transfer_id, 12u);
+  ASSERT_TRUE(c2.remaining_bytes.has_value());
+  EXPECT_EQ(c2.remaining_bytes.value(), 0u);
+
+  // Wait for the timeout to expire without doing anything. The client should
+  // resend the data chunk.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 4u);
+
+  Chunk c3 = DecodeChunk(payloads[3]);
+  EXPECT_EQ(c3.transfer_id, c1.transfer_id);
+  EXPECT_EQ(c3.offset, c1.offset);
+  EXPECT_EQ(c3.data.size(), c1.data.size());
+  EXPECT_EQ(std::memcmp(c3.data.data(), c1.data.data(), c3.data.size()), 0);
+
+  // The remaining_bytes = 0 chunk should be resent on the next parameters.
+  context_.server().SendServerStream<Transfer::Write>(
+      EncodeChunk({.transfer_id = 12,
+                   .pending_bytes = 64,
+                   .max_chunk_size_bytes = 64,
+                   .offset = 32}));
+  ASSERT_EQ(payloads.size(), 5u);
+
+  Chunk c4 = DecodeChunk(payloads[4]);
+  EXPECT_EQ(c4.transfer_id, 12u);
+  ASSERT_TRUE(c4.remaining_bytes.has_value());
+  EXPECT_EQ(c4.remaining_bytes.value(), 0u);
+
+  context_.server().SendServerStream<Transfer::Write>(
+      EncodeChunk({.transfer_id = 12, .status = OkStatus()}));
+
+  EXPECT_EQ(transfer_status, OkStatus());
+}
+
+TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
+  stream::MemoryReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  client_.Write(
+      13,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // The client begins by just sending the transfer ID.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 13u);
+
+  for (unsigned retry = 1; retry <= kTestRetries; ++retry) {
+    // Wait for the timeout to expire without doing anything. The client should
+    // resend the initial transmit chunk.
+    this_thread::sleep_for(kWaitForTimeout);
+    ASSERT_EQ(payloads.size(), retry + 1);
+
+    Chunk c = DecodeChunk(payloads.back());
+    EXPECT_EQ(c.transfer_id, 13u);
+
+    // Transfer has not yet completed.
+    EXPECT_EQ(transfer_status, Status::Unknown());
+  }
+
+  // Sleep one more time after the final retry. The client should cancel the
+  // transfer at this point and send a DEADLINE_EXCEEDED chunk.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 5u);
+
+  Chunk c4 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c4.transfer_id, 13u);
+  ASSERT_TRUE(c4.status.has_value());
+  EXPECT_EQ(c4.status.value(), Status::DeadlineExceeded());
+
+  EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
+
+  // After finishing the transfer, nothing else should be sent. Verify this by
+  // waiting for a bit.
+  this_thread::sleep_for(kTestTimeout * 4);
+  ASSERT_EQ(payloads.size(), 5u);
+}
+
+TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
+  FakeNonSeekableReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  client_.Write(
+      14,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+
+  // The client begins by just sending the transfer ID.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c0 = DecodeChunk(payloads.back());
+  EXPECT_EQ(c0.transfer_id, 14u);
+
+  // Send the first parameters chunk.
+  context_.server().SendServerStream<Transfer::Write>(
+      EncodeChunk({.transfer_id = 14,
+                   .pending_bytes = 16,
+                   .max_chunk_size_bytes = 8,
+                   .offset = 0}));
+
+  ASSERT_EQ(payloads.size(), 3u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk c1 = DecodeChunk(payloads[1]);
+  EXPECT_EQ(c1.transfer_id, 14u);
+  EXPECT_EQ(c1.offset, 0u);
+  EXPECT_EQ(c1.data.size(), 8u);
+  EXPECT_EQ(std::memcmp(c1.data.data(), kData32.data(), c1.data.size()), 0);
+
+  Chunk c2 = DecodeChunk(payloads[2]);
+  EXPECT_EQ(c2.transfer_id, 14u);
+  EXPECT_EQ(c2.offset, 8u);
+  EXPECT_EQ(c2.data.size(), 8u);
+  EXPECT_EQ(
+      std::memcmp(c2.data.data(), kData32.data() + c2.offset, c1.data.size()),
+      0);
+
+  // Wait for the timeout to expire without doing anything. The client should
+  // fail to seek back and end the transfer.
+  this_thread::sleep_for(kWaitForTimeout);
+  ASSERT_EQ(payloads.size(), 4u);
+
+  Chunk c3 = DecodeChunk(payloads[3]);
+  EXPECT_EQ(c3.transfer_id, 14u);
+  ASSERT_TRUE(c3.status.has_value());
+  EXPECT_EQ(c3.status.value(), Status::DeadlineExceeded());
+
+  EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 }
 
 }  // namespace

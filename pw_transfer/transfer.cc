@@ -52,7 +52,11 @@ void TransferService::HandleChunk(ConstByteSpan message,
       type == internal::kRead ? client_.read_stream() : client_.write_stream();
 
   Result<internal::ServerContext*> result =
-      chunk.IsInitialChunk() ? pool.StartTransfer(chunk.transfer_id, stream)
+      chunk.IsInitialChunk() ? pool.StartTransfer(chunk.transfer_id,
+                                                  work_queue_,
+                                                  stream,
+                                                  chunk_timeout_,
+                                                  max_retries_)
                              : pool.GetPendingTransfer(chunk.transfer_id);
   if (!result.ok()) {
     client_.SendStatusChunk(type, chunk.transfer_id, result.status());
