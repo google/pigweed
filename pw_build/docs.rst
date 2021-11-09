@@ -68,6 +68,23 @@ need to stamp out some ``pw_source_set``s. Since a pw_executable template can't
 import ``$dir_pw_build/target_types.gni`` due to circular imports, it should
 import ``$dir_pw_build/cc_library.gni`` instead.
 
+Additionally ``pw_executable``, ``pw_source_set``, ``pw_static_library``, and
+``pw_shared_library`` track source files via the ``pw_source_files`` field the
+target's
+`GN metadata <https://gn.googlesource.com/gn/+/main/docs/reference.md#metadata_collection>`_.
+This list can be writen to a file at build time using ``generated_file``.  The
+primary use case for this is to generate a token database containing all the
+source files.  This allows PW_ASSERT to emit filename tokens even though it
+can't add them to the elf file because of the resons described at
+:ref:`module-pw_assert-assert-api`.
+
+.. note::
+  ``pw_source_files``, if not rebased will default to outputing module relative
+  paths from a ``generated_file`` target.  This is likely not useful.  Adding
+  a ``rebase`` argument to ``generated_file`` such as
+  ``rebase = root_build_dir`` will result in usable paths.  For an example,
+  see `//pw_tokenizer/database.gni`'s `pw_tokenizer_filename_database` template.
+
 .. tip::
 
   Prefer to use ``pw_executable`` over plain ``executable`` targets to allow

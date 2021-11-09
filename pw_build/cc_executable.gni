@@ -51,6 +51,21 @@ _supported_toolchain_defaults = [
 # Wrapper for Pigweed executable build targets which uses a globally-defined,
 # configurable target type.
 template("pw_executable") {
+  _pw_source_files = []
+
+  # Boilerplate for tracking target sources.  For more information see
+  # https://pigweed.dev/pw_build/#target-types
+  if (defined(invoker.sources)) {
+    foreach(path, invoker.sources) {
+      _pw_source_files += [ path ]
+    }
+  }
+  if (defined(invoker.public)) {
+    foreach(path, invoker.public) {
+      _pw_source_files += [ path ]
+    }
+  }
+
   _executable_output_dir = "${target_out_dir}/bin"
   if (defined(invoker.output_dir)) {
     _executable_output_dir = invoker.output_dir
@@ -60,6 +75,15 @@ template("pw_executable") {
     import("$dir_pw_build/defaults.gni")
 
     forward_variables_from(invoker, "*", _supported_toolchain_defaults)
+
+    # Ensure that we don't overwrite metadata forwared from the invoker above.
+    if (defined(metadata)) {
+      metadata.pw_source_files = _pw_source_files
+    } else {
+      metadata = {
+        pw_source_files = _pw_source_files
+      }
+    }
 
     if (!defined(configs)) {
       configs = []

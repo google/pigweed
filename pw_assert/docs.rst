@@ -387,6 +387,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
     code; for example ``status == RESOURCE_EXHAUSTED`` instead of ``status ==
     5``.
 
+.. _module-pw_assert-assert-api:
+
 ----------
 Assert API
 ----------
