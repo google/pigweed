@@ -225,10 +225,10 @@ def gn_software_update_build(ctx: PresubmitContext):
                  dir_pw_third_party_protobuf='"{}"'.format(ctx.package_root /
                                                            'protobuf'),
                  dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
-                                                         'nanopb'))
+                                                         'nanopb'),
+                 pw_software_update_LANDING_BUNDLE_VERIFICATION=False)
     build.ninja(
         ctx.output_dir,
-        *_at_all_optimization_levels('stm32f429i'),
         *_at_all_optimization_levels('host_clang'),
     )
 

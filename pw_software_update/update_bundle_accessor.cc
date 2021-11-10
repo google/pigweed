@@ -36,7 +36,9 @@ constexpr std::string_view kTopLevelTargetsName = "targets";
 
 Status UpdateBundleAccessor::OpenAndVerify(const ManifestAccessor&) {
   PW_TRY(DoOpen());
+#if !defined(PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION)
   PW_TRY(DoVerify());
+#endif
   return OkStatus();
 }
 

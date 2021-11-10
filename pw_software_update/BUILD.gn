@@ -27,6 +27,14 @@ declare_args() {
   # module. This should point to a source set that provides defines through a
   # public config (which may -include a file or add defines directly).
   pw_software_update_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+
+  # Certain pigweed downstream projects and builders are experiencing ram space
+  # shortage issues and not able to integrate bundle verification. This is a
+  # temporary switch to allow compiling out the bundle verification code for
+  # those projects. Once all downstream projects sorted out ram allocation, this
+  # should be removed and verification should always be enabled.
+  # When set to true, verification code is compiled out.
+  pw_software_update_LANDING_BUNDLE_VERIFICATION = true
 }
 
 config("public_include_path") {
@@ -100,6 +108,11 @@ pw_source_set("update_bundle") {
     dir_pw_log,
   ]
   sources = [ "update_bundle_accessor.cc" ]
+
+  defines = []
+  if (pw_software_update_LANDING_BUNDLE_VERIFICATION) {
+    defines += [ "PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION" ]
+  }
 }
 
 if (dir_pw_third_party_nanopb != "" && dir_pw_third_party_protobuf != "") {
@@ -161,10 +174,11 @@ pw_test("update_bundle_test") {
 }
 
 pw_test_group("tests") {
-  tests = [
-    ":update_bundle_test",
-    ":bundled_update_service_test",
-  ]
+  tests = [ ":bundled_update_service_test" ]
+
+  if (!pw_software_update_LANDING_BUNDLE_VERIFICATION) {
+    tests += [ ":update_bundle_test" ]
+  }
 }
 
 pw_test("bundled_update_service_test") {
