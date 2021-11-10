@@ -98,6 +98,9 @@ template("pw_exec") {
 
   if (!defined(invoker.capture_output) || invoker.capture_output) {
     _script_args += [ "--capture-output" ]
+    _capture_output = true
+  } else {
+    _capture_output = false
   }
 
   _script_args += [
@@ -111,6 +114,7 @@ template("pw_exec") {
   pw_python_action(target_name) {
     script = "$dir_pw_build/py/pw_build/exec.py"
     args = _script_args
+    capture_output = _capture_output
 
     forward_variables_from(invoker,
                            [
