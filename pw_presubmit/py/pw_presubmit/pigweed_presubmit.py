@@ -95,12 +95,12 @@ def gn_host_build(ctx: PresubmitContext):
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_quick_build_check(ctx: PresubmitContext):
     """Checks the state of the GN build by running gn gen and gn check."""
-    build.gn_gen(ctx.root, ctx.output_dir, pw_rpc_USE_GLOBAL_MUTEX=True)
+    build.gn_gen(ctx.root, ctx.output_dir)
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_full_build_check(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, pw_rpc_USE_GLOBAL_MUTEX=True)
+    build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'),
                 *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
                 'python.tests', 'python.lint', 'docs', 'fuzzers',

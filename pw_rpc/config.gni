@@ -21,8 +21,4 @@ declare_args() {
   # module. This should point to a source set that provides defines through a
   # public config (which may -include a file or add defines directly).
   pw_rpc_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
-
-  # Enable global synchronization for RPC calls. Requires pw_sync_MUTEX_BACKEND
-  # to be configured.
-  pw_rpc_USE_GLOBAL_MUTEX = false
 }

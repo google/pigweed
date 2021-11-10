@@ -20,6 +20,7 @@ import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
+import("$dir_pw_sync/backend.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
 import("config.gni")
@@ -30,9 +31,15 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-config("global_mutex") {
+config("global_mutex_config") {
   defines = [ "PW_RPC_USE_GLOBAL_MUTEX=1" ]
   visibility = [ ":*" ]
+}
+
+# Set pw_rpc_CONFIG to this to enable the global mutex. If additional options
+# are needed, a config target that sets those can depend on this.
+group("use_global_mutex") {
+  public_configs = [ ":global_mutex_config" ]
 }
 
 pw_source_set("config") {
@@ -41,10 +48,6 @@ pw_source_set("config") {
   public_deps = [ pw_rpc_CONFIG ]
   visibility = [ "./*" ]
   friend = [ "./*" ]
-
-  if (pw_rpc_USE_GLOBAL_MUTEX) {
-    public_configs += [ ":global_mutex" ]
-  }
 }
 
 pw_source_set("server") {
@@ -114,7 +117,7 @@ pw_source_set("common") {
     dir_pw_status,
   ]
 
-  if (pw_rpc_USE_GLOBAL_MUTEX) {
+  if (pw_sync_MUTEX_BACKEND != "") {
     public_deps += [ "$dir_pw_sync:mutex" ]
   }
 

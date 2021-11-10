@@ -39,7 +39,7 @@ declare_args() {
 
   # Whether to run integration tests, which may involve multiple processes
   # communicating over a socket. Integration tests require RPC synchronization.
-  pw_RUN_INTEGRATION_TESTS = host_os == "linux" && pw_rpc_USE_GLOBAL_MUTEX
+  pw_RUN_INTEGRATION_TESTS = host_os == "linux"
 }
 
 # Enumerate all of the different targets that upstream Pigweed will build by
