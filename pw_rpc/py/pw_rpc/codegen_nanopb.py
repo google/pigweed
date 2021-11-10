@@ -31,8 +31,8 @@ NANOPB_H_EXTENSION = '.pb.h'
 def _serde(method: ProtoServiceMethod) -> str:
     """Returns the NanopbMethodSerde for this method."""
     return (f'{RPC_NAMESPACE}::internal::kNanopbMethodSerde<'
-            f'{method.request_type().nanopb_name()}_fields, '
-            f'{method.response_type().nanopb_name()}_fields>')
+            f'{method.request_type().nanopb_fields()}, '
+            f'{method.response_type().nanopb_fields()}>')
 
 
 def _proto_filename_to_nanopb_header(proto_file: str) -> str:
@@ -50,9 +50,9 @@ def _client_call(method: ProtoServiceMethod) -> str:
     template_args = []
 
     if method.client_streaming():
-        template_args.append(method.request_type().nanopb_name())
+        template_args.append(method.request_type().nanopb_struct())
 
-    template_args.append(method.response_type().nanopb_name())
+    template_args.append(method.response_type().nanopb_struct())
 
     return f'{client_call_type(method, "Nanopb")}<{", ".join(template_args)}>'
 
@@ -63,9 +63,9 @@ def _function(method: ProtoServiceMethod) -> str:
 
 def _user_args(method: ProtoServiceMethod) -> Iterable[str]:
     if not method.client_streaming():
-        yield f'const {method.request_type().nanopb_name()}& request'
+        yield f'const {method.request_type().nanopb_struct()}& request'
 
-    response = method.response_type().nanopb_name()
+    response = method.response_type().nanopb_struct()
 
     if method.server_streaming():
         yield f'::pw::Function<void(const {response}&)>&& on_next = nullptr'
@@ -112,8 +112,8 @@ class NanopbCodeGenerator(CodeGenerator):
         self.line(f'{RPC_NAMESPACE}::internal::'
                   f'GetNanopbOrRawMethodFor<&Implementation::{method.name()}, '
                   f'{method.type().cc_enum()}, '
-                  f'{method.request_type().nanopb_name()}, '
-                  f'{method.response_type().nanopb_name()}>(')
+                  f'{method.request_type().nanopb_struct()}, '
+                  f'{method.response_type().nanopb_struct()}>(')
         with self.indent(4):
             self.line(f'{get_id(method)},  // Hash of "{method.name()}"')
             self.line(f'{_serde(method)}),')
@@ -129,7 +129,7 @@ class NanopbCodeGenerator(CodeGenerator):
             base = 'Stream' if method.server_streaming() else 'Unary'
             self.line(f'return {RPC_NAMESPACE}::internal::'
                       f'Nanopb{base}ResponseClientCall<'
-                      f'{method.response_type().nanopb_name()}>::'
+                      f'{method.response_type().nanopb_struct()}>::'
                       f'Start<{client_call}>(')
 
             service_client = RPC_NAMESPACE + '::internal::ServiceClient'
@@ -213,8 +213,9 @@ class NanopbCodeGenerator(CodeGenerator):
 
     def method_info_specialization(self, method: ProtoServiceMethod) -> None:
         self.line()
-        self.line(f'using Request = {method.request_type().nanopb_name()};')
-        self.line(f'using Response = {method.response_type().nanopb_name()};')
+        self.line(f'using Request = {method.request_type().nanopb_struct()};')
+        self.line(
+            f'using Response = {method.response_type().nanopb_struct()};')
         self.line()
         self.line(f'static constexpr const {RPC_NAMESPACE}::internal::'
                   'NanopbMethodSerde& serde() {')
@@ -241,8 +242,8 @@ class StubGenerator(codegen.StubGenerator):
     """Generates Nanopb RPC stubs."""
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
         return (f'::pw::Status {prefix}{method.name()}(ServerContext&, '
-                f'const {method.request_type().nanopb_name()}& request, '
-                f'{method.response_type().nanopb_name()}& response)')
+                f'const {method.request_type().nanopb_struct()}& request, '
+                f'{method.response_type().nanopb_struct()}& response)')
 
     def unary_stub(self, method: ProtoServiceMethod,
                    output: OutputFile) -> None:
@@ -256,20 +257,20 @@ class StubGenerator(codegen.StubGenerator):
                                    prefix: str) -> str:
         return (
             f'void {prefix}{method.name()}(ServerContext&, '
-            f'const {method.request_type().nanopb_name()}& request, '
-            f'ServerWriter<{method.response_type().nanopb_name()}>& writer)')
+            f'const {method.request_type().nanopb_struct()}& request, '
+            f'ServerWriter<{method.response_type().nanopb_struct()}>& writer)')
 
     def client_streaming_signature(self, method: ProtoServiceMethod,
                                    prefix: str) -> str:
         return (f'void {prefix}{method.name()}(ServerContext&, '
-                f'ServerReader<{method.request_type().nanopb_name()}, '
-                f'{method.response_type().nanopb_name()}>& reader)')
+                f'ServerReader<{method.request_type().nanopb_struct()}, '
+                f'{method.response_type().nanopb_struct()}>& reader)')
 
     def bidirectional_streaming_signature(self, method: ProtoServiceMethod,
                                           prefix: str) -> str:
         return (f'void {prefix}{method.name()}(ServerContext&, '
-                f'ServerReaderWriter<{method.request_type().nanopb_name()}, '
-                f'{method.response_type().nanopb_name()}>& reader_writer)')
+                f'ServerReaderWriter<{method.request_type().nanopb_struct()}, '
+                f'{method.response_type().nanopb_struct()}>& reader_writer)')
 
 
 def process_proto_file(proto_file) -> Iterable[OutputFile]:

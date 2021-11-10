@@ -75,8 +75,15 @@ class ProtoNode(abc.ABC):
         path = '.'.join(self._attr_hierarchy(lambda node: node.name(), None))
         return path.lstrip('.')
 
-    def nanopb_name(self) -> str:
-        """Full nanopb-style name of the node."""
+    def nanopb_fields(self) -> str:
+        """Name of the Nanopb variable that represents the proto fields."""
+        return self._nanopb_name() + '_fields'
+
+    def nanopb_struct(self) -> str:
+        """Name of the Nanopb struct for this proto."""
+        return '::' + self._nanopb_name()
+
+    def _nanopb_name(self) -> str:
         name = '_'.join(self._attr_hierarchy(lambda node: node.name(), None))
         return name.lstrip('_')
 
