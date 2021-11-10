@@ -49,34 +49,6 @@ pw_source_set("mutex") {
   ]
 }
 
-config("public_overrides_thread_notification_include_path") {
-  include_dirs = [ "public_overrides/thread_notification" ]
-  visibility = [ ":thread_notification" ]
-}
-
-# This target provides the backend for pw::sync::ThreadNotification based on
-# tx_thread_sleep and tx_thread_wait_abort.
-pw_source_set("thread_notification") {
-  public_configs = [
-    ":public_include_path",
-    ":public_overrides_thread_notification_include_path",
-  ]
-  public = [
-    "public/pw_sync_threadx/thread_notification_inline.h",
-    "public/pw_sync_threadx/thread_notification_native.h",
-    "public_overrides/thread_notification/pw_sync_backend/thread_notification_inline.h",
-    "public_overrides/thread_notification/pw_sync_backend/thread_notification_native.h",
-  ]
-  public_deps = [
-    "$dir_pw_assert",
-    "$dir_pw_interrupt:context",
-    "$dir_pw_sync:interrupt_spin_lock",
-    "$dir_pw_sync:thread_notification.facade",
-    "$dir_pw_third_party/threadx",
-  ]
-  sources = [ "thread_notification.cc" ]
-}
-
 if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
   # This target provides the backend for pw::sync::BinarySemaphore.
   pw_source_set("binary_semaphore") {
@@ -137,41 +109,6 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
                    "$dir_pw_chrono_threadx:system_clock",
            "The ThreadX pw::sync::CountingSemaphore backend only works with " +
                "the ThreadX pw::chrono::SystemClock backend.")
-  }
-
-  config("public_overrides_timed_thread_notification_include_path") {
-    include_dirs = [ "public_overrides/timed_thread_notification" ]
-    visibility = [ ":timed_thread_notification" ]
-  }
-
-  # This target provides the backend for pw::sync::TimedThreadNotification based
-  # tx_thread_sleep and tx_thread_wait_abort.
-  pw_source_set("timed_thread_notification") {
-    public_configs = [
-      ":public_include_path",
-      ":public_overrides_timed_thread_notification_include_path",
-    ]
-    public = [
-      "public/pw_sync_threadx/timed_thread_notification_inline.h",
-      "public_overrides/timed_thread_notification/pw_sync_backend/timed_thread_notification_inline.h",
-    ]
-    public_deps = [
-      ":thread_notification",
-      "$dir_pw_chrono:system_clock",
-      "$dir_pw_sync:timed_thread_notification.facade",
-    ]
-    sources = [ "timed_thread_notification.cc" ]
-    deps = [
-      "$dir_pw_assert",
-      "$dir_pw_interrupt:context",
-      "$dir_pw_third_party/threadx",
-      pw_chrono_SYSTEM_CLOCK_BACKEND,
-    ]
-    assert(pw_sync_OVERRIDE_SYSTEM_CLOCK_BACKEND_CHECK ||
-               pw_chrono_SYSTEM_CLOCK_BACKEND ==
-                   "$dir_pw_chrono_threadx:system_clock",
-           "The ThreadX pw::sync::TimedMutex backend only works with the " +
-               "ThreadX pw::chrono::SystemClock backend.")
   }
 
   # This target provides the backend for pw::sync::TimedMutex.

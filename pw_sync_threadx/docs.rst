@@ -40,29 +40,20 @@ Signaling Primitives
 
 ThreadNotification & TimedThreadNotification
 ============================================
-An optimized ThreadX backend for the ThreadNotification and
-TimedThreadNotification is provided using ``tx_thread_sleep`` and
-``tx_thread_wait_abort``. It is backed by a ``TX_THREAD*`` and a ``bool`` which
-permits these objects to track the notification value per instance. In addition,
-this backend relies on a global singleton InterruptSpinLock to provide thread
-safety in a way which is SMP compatible.
+The native ThreadX API does cover direct thread signaling and ergo we recommend
+using the binary semaphore backends for ThreadNotifications:
+- ``pw_sync:binary_semaphore_thread_notification_backend``
+- ``pw_sync:binary_semaphore_timed_thread_notification_backend``
 
-Design Notes
-------------
-Because ThreadX can support SMP systems, we need a lock which permits spinning
-to safely mutate the notification value and whether the thread is blocked.
-This could be allocated per ThreadNotification instance, however this cost
-quickly adds up with a large number of instances. In addition, the critical
-sections are reasonably short.
-
-For those reasons, we opted to go with a single global interrupt spin lock. This
-is the minimal memory footprint solution, perfect for uniprocessor systems. In
-addition, given that we do not expect any serious contention for most of our
-SMP users, we believe this is a good trade-off.
-
-On very large SMP systems which heavily rely on ThreadNotifications, one could
-consider moving the InterruptSpinLock to the ThreadNotification instance if
-contention on this global lock becomes a problem.
+Background Information
+----------------------
+Although one may be tempted to use ``tx_thread_sleep`` and
+``tx_thread_wait_abort`` to implement direct thread notifications with ThreadX,
+this unfortunately cannot work. Between the blocking thread setting its
+``TX_THREAD*`` handle and actually executing ``tx_thread_sleep`` there will
+always exist a race condition. Another thread and/or interrupt may attempt
+to invoke ``tx_thread_wait_abort`` before the blocking thread has executed
+``tx_thread_sleep`` meaning the wait abort would fail.
 
 BinarySemaphore & CountingSemaphore
 ===================================
