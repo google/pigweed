@@ -561,7 +561,7 @@ Each Pigweed source module will require a build file named BUILD.gn which
 encapsulates the build targets and specifies their sources and dependencies.
 The format of this file is similar in structure to the
 `Bazel/Blaze format <https://docs.bazel.build/versions/3.2.0/build-ref.html>`_
-(Googlers may also review `go/build-style <go/build-style>`_), but with
+(Googlers may also review `go/build-style <http://go/build-style>`_), but with
 nomenclature specific to Pigweed. For each target specified within the build
 file there are a list of dependency fields. Those fields, in their expected
 order, are:
