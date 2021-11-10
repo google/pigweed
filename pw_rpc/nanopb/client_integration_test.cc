@@ -15,13 +15,8 @@
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_rpc/benchmark.rpc.pb.h"
+#include "pw_rpc/integration_testing.h"
 #include "pw_sync/binary_semaphore.h"
-
-namespace rpc_test {
-
-extern pw::rpc::Client client;
-
-}  // namespace rpc_test
 
 namespace nanopb_rpc_test {
 namespace {
@@ -36,7 +31,6 @@ using pw::Status;
 using pw::rpc::pw_rpc::nanopb::Benchmark;
 
 constexpr int kIterations = 10;
-constexpr uint32_t kChannelId = 1;
 
 class PayloadReceiver {
  public:
@@ -72,7 +66,8 @@ pw_rpc_Payload Payload(const char (&string)[kSize]) {
   return payload;
 }
 
-constexpr Benchmark::Client kClient(rpc_test::client, kChannelId);
+const Benchmark::Client kClient(pw::rpc::integration_test::client(),
+                                pw::rpc::integration_test::kChannelId);
 
 TEST(NanopbRpcIntegrationTest, Unary) {
   char value[] = {"hello, world!"};
@@ -101,8 +96,8 @@ TEST(NanopbRpcIntegrationTest, Unary_ReuseCall) {
 }
 
 TEST(NanopbRpcIntegrationTest, Unary_DiscardCalls) {
-  // TODO: This is reliable now, yay.
-  for (int i = 0; i < 10000; ++i) {
+  constexpr int iterations = PW_RPC_USE_GLOBAL_MUTEX ? 10000 : 1;
+  for (int i = 0; i < iterations; ++i) {
     kClient.UnaryEcho(Payload("O_o"));
   }
 }

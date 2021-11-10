@@ -49,12 +49,15 @@ group("default") {
   deps = [
     ":docs",
     ":host",
-    ":integration_tests",
     ":static_analysis",
     ":stm32f429i",
     "$dir_pw_env_setup:python.lint",
     "$dir_pw_env_setup:python.tests",
   ]
+
+  if (pw_RUN_INTEGRATION_TESTS) {
+    deps += [ ":integration_tests" ]
+  }
 }
 
 # This template generates a group that builds pigweed_default with a particular
@@ -146,15 +149,13 @@ group("docs") {
 # Tests larger than unit tests, typically run in a specific configuration. Only
 # added if pw_RUN_INTEGRATION_TESTS is true.
 group("integration_tests") {
-  if (pw_RUN_INTEGRATION_TESTS) {
-    _default_tc = _default_toolchain_prefix + pw_default_optimization_level
-    deps = [
-      "$dir_pw_rpc:cpp_client_server_integration_test($_default_tc)",
-      "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_tc)",
-      "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_tc)",
-      "$dir_pw_unit_test/py:rpc_service_test.action($_default_tc)",
-    ]
-  }
+  _default_tc = _default_toolchain_prefix + pw_default_optimization_level
+  deps = [
+    "$dir_pw_rpc:cpp_client_server_integration_test($_default_tc)",
+    "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_tc)",
+    "$dir_pw_transfer/py:python_cpp_transfer_test.action($_default_tc)",
+    "$dir_pw_unit_test/py:rpc_service_test.action($_default_tc)",
+  ]
 }
 
 # OSS-Fuzz uses this target to build fuzzers alone.

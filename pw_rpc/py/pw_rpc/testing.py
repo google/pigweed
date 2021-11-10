@@ -16,8 +16,11 @@
 import argparse
 import subprocess
 import sys
+import tempfile
 import time
-from typing import Sequence
+from typing import Optional, Sequence
+
+TEMP_DIR_MARKER = '(pw_rpc:CREATE_TEMP_DIR)'
 
 
 def parse_test_server_args(
@@ -55,41 +58,49 @@ def parse_test_server_args(
 def _parse_subprocess_integration_test_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Executes a test between two subprocesses')
-    parser.add_argument('server_command',
-                        nargs='+',
-                        help='Command that starts the server')
-    parser.add_argument('separator', nargs=1, metavar='--')
+    parser.add_argument('--client', required=True, help='Client binary to run')
+    parser.add_argument('--server', required=True, help='Server binary to run')
     parser.add_argument(
-        'client_command',
-        nargs='+',
-        help='Command that starts the client and runs the test')
+        'common_args',
+        metavar='-- ...',
+        nargs=argparse.REMAINDER,
+        help=('Arguments to pass to both the server and client; '
+              f'pass {TEMP_DIR_MARKER} to generate a temporary directory'))
 
-    if '-h' in sys.argv or '--help' in sys.argv:
-        parser.print_help()
-        sys.exit(0)
+    args = parser.parse_args()
 
-    try:
-        index = sys.argv.index('--')
-    except ValueError:
-        parser.error('The server and client commands must be separated by --.')
+    if not args.common_args or args.common_args[0] != '--':
+        parser.error('The common arguments must start with "--"')
 
-    args = argparse.Namespace()
-    args.server_command = sys.argv[1:index]
-    args.client_command = sys.argv[index + 1:]
+    args.common_args.pop(0)
+
     return args
 
 
-def execute_integration_test(server_command: Sequence[str],
-                             client_command: Sequence[str],
-                             setup_time_s: float = 0.1) -> int:
-    server = subprocess.Popen(server_command)
-    # TODO(pwbug/508): Replace this delay with some sort of IPC.
-    time.sleep(setup_time_s)
+def execute_integration_test(server: str,
+                             client: str,
+                             common_args: Sequence[str],
+                             setup_time_s: float = 0.2) -> int:
+    temp_dir: Optional[tempfile.TemporaryDirectory] = None
 
-    result = subprocess.run(client_command).returncode
+    if TEMP_DIR_MARKER in common_args:
+        temp_dir = tempfile.TemporaryDirectory(prefix='pw_rpc_test_')
+        common_args = [
+            temp_dir.name if a == TEMP_DIR_MARKER else a for a in common_args
+        ]
 
-    server.terminate()
-    server.communicate()
+    try:
+        server_process = subprocess.Popen([server, *common_args])
+        # TODO(pwbug/508): Replace this delay with some sort of IPC.
+        time.sleep(setup_time_s)
+
+        result = subprocess.run([client, *common_args]).returncode
+
+        server_process.terminate()
+        server_process.communicate()
+    finally:
+        if temp_dir:
+            temp_dir.cleanup()
 
     return result
 

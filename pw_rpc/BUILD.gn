@@ -217,6 +217,24 @@ pw_source_set("test_utils") {
   visibility = [ "./*" ]
 }
 
+pw_source_set("integration_testing") {
+  public = [
+    "public/pw_rpc/integration_test_socket_client.h",
+    "public/pw_rpc/integration_testing.h",
+  ]
+  sources = [ "integration_testing.cc" ]
+  public_deps = [
+    ":client",
+    "$dir_pw_hdlc:pw_rpc",
+    "$dir_pw_hdlc:rpc_channel_output",
+    "$dir_pw_stream:socket_stream",
+    "$dir_pw_unit_test:logging_event_handler",
+    dir_pw_assert,
+    dir_pw_unit_test,
+  ]
+  deps = [ dir_pw_log ]
+}
+
 pw_executable("test_rpc_server") {
   sources = [ "test_rpc_server.cc" ]
   deps = [
@@ -232,13 +250,9 @@ pw_executable("client_integration_test") {
   sources = [ "client_integration_test.cc" ]
   deps = [
     ":client",
+    ":integration_testing",
     ":protos.raw_rpc",
-    "$dir_pw_hdlc:pw_rpc",
-    "$dir_pw_hdlc:rpc_channel_output",
-    "$dir_pw_stream:socket_stream",
     "$dir_pw_sync:binary_semaphore",
-    "$dir_pw_unit_test:logging_event_handler",
-    dir_pw_assert,
     dir_pw_log,
     dir_pw_unit_test,
   ]
@@ -251,10 +265,11 @@ pw_executable("client_integration_test") {
 pw_python_action("cpp_client_server_integration_test") {
   script = "py/pw_rpc/testing.py"
   args = [
+    "--server",
     "<TARGET_FILE(:test_rpc_server)>",
-    "$pw_rpc_CPP_CLIENT_INTEGRATION_TEST_PORT",
-    "--",
+    "--client",
     "<TARGET_FILE(:client_integration_test)>",
+    "--",
     "$pw_rpc_CPP_CLIENT_INTEGRATION_TEST_PORT",
   ]
   deps = [

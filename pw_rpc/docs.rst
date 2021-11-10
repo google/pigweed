@@ -852,12 +852,12 @@ an RPC client and server with the same set of channels.
     client_server.ProcessPacket(packet, output);
   }
 
-Unit testing
-============
+Testing
+=======
 ``pw_rpc`` provides utilities for unit testing RPC services and client calls.
 
-Client testing in C++
----------------------
+Client unit testing in C++
+--------------------------
 ``pw_rpc`` supports invoking RPCs, simulating server responses, and checking
 what packets are sent by an RPC client in tests. Both raw and Nanopb interfaces
 are supported. Code that uses the raw API may be tested with the Nanopb test
@@ -914,6 +914,29 @@ the expected data was sent and then simulates a response from the server.
 
     EXPECT_TRUE(thing.SetToTrueWhenRpcCompletes());
   }
+
+Integration testing with ``pw_rpc``
+-----------------------------------
+``pw_rpc`` provides utilities to simplify writing integration tests for systems
+that communicate with ``pw_rpc``. The integration test utitilies set up a socket
+to use for IPC between an RPC server and client process.
+
+The server binary uses the system RPC server facade defined
+``pw_rpc_system_server/rpc_server.h``. The client binary uses the functions
+defined in ``pw_rpc/integration_testing.h``:
+
+.. cpp:var:: constexpr uint32_t kChannelId
+
+  The RPC channel for integration test RPCs.
+
+.. cpp:function:: pw::rpc::Client& pw::rpc::integration_test::Client()
+
+ Returns the global RPC client for integration test use.
+
+.. cpp:function:: pw::Status pw::rpc::integration_test::InitializeClient(int argc, char* argv[], const char* usage_args = "PORT")
+
+  Initializes logging and the global RPC client for integration testing. Starts
+  a background thread that processes incoming.
 
 Module Configuration Options
 ============================

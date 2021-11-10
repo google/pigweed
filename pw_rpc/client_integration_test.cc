@@ -13,37 +13,18 @@
 // the License.
 
 #include <cstring>
-#include <thread>
 
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
-#include "pw_hdlc/rpc_channel.h"
-#include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
 #include "pw_rpc/benchmark.raw_rpc.pb.h"
-#include "pw_stream/socket_stream.h"
+#include "pw_rpc/integration_testing.h"
 #include "pw_sync/binary_semaphore.h"
-#include "pw_unit_test/framework.h"
-#include "pw_unit_test/logging_event_handler.h"
 
 namespace rpc_test {
 namespace {
 
-constexpr size_t kMaxTransmissionUnit = 512;
-constexpr uint32_t kChannelId = 1;
 constexpr int kIterations = 3;
-
-pw::stream::SocketStream stream;
-pw::hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit> channel_output(
-    stream, pw::hdlc::kDefaultRpcAddress, "socket");
-pw::rpc::Channel channel =
-    pw::rpc::Channel::Create<kChannelId>(&channel_output);
-
-}  // namespace
-
-pw::rpc::Client client(std::span(&channel, 1));
-
-namespace {
 
 using namespace std::chrono_literals;
 using pw::ByteSpan;
@@ -54,29 +35,8 @@ using pw::Status;
 
 using pw::rpc::pw_rpc::raw::Benchmark;
 
-void ProcessClientPackets() {
-  std::byte decode_buffer[kMaxTransmissionUnit];
-  pw::hdlc::Decoder decoder(decode_buffer);
-
-  while (true) {
-    std::byte byte[1];
-    pw::Result<ByteSpan> read = stream.Read(byte);
-
-    if (!read.ok() || read->size() == 0u) {
-      continue;
-    }
-
-    if (auto result = decoder.Process(*byte); result.ok()) {
-      pw::hdlc::Frame& frame = result.value();
-      if (frame.address() == pw::hdlc::kDefaultRpcAddress) {
-        PW_CHECK_OK(client.ProcessPacket(frame.data()),
-                    "Processing a packet failed");
-      }
-    }
-  }
-}
-
-constexpr Benchmark::Client kServiceClient(client, kChannelId);
+Benchmark::Client kServiceClient(pw::rpc::integration_test::client(),
+                                 pw::rpc::integration_test::kChannelId);
 
 class StringReceiver {
  public:
@@ -134,20 +94,8 @@ TEST(RawRpcIntegrationTest, BidirectionalStreaming) {
 }  // namespace rpc_test
 
 int main(int argc, char* argv[]) {
-  if (argc != 2) {
-    PW_LOG_ERROR("Usage: %s PORT", argv[0]);
+  if (!pw::rpc::integration_test::InitializeClient(argc, argv).ok()) {
     return 1;
   }
-
-  const int port = std::atoi(argv[1]);
-
-  PW_LOG_INFO("Connecting to pw_rpc client at localhost:%d", port);
-  PW_CHECK_OK(rpc_test::stream.Connect("localhost", port));
-
-  PW_LOG_INFO("Starting pw_rpc client");
-  std::thread{rpc_test::ProcessClientPackets}.detach();
-
-  pw::unit_test::LoggingEventHandler log_test_events;
-  pw::unit_test::RegisterEventHandler(&log_test_events);
   return RUN_ALL_TESTS();
 }
