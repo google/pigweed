@@ -13,7 +13,14 @@
 // the License.
 
 /* eslint-env browser */
-import {Button, TextField, makeStyles, Typography} from '@material-ui/core';
+import {
+  Button,
+  TextField,
+  makeStyles,
+  Typography,
+  createTheme,
+  ThemeProvider,
+} from '@material-ui/core';
 import {ToggleButtonGroup, ToggleButton} from '@material-ui/lab';
 import {WebSerialTransport} from '../transport/web_serial_transport';
 import {Decoder, Frame, Encoder} from '@pigweed/pw_hdlc';
@@ -27,11 +34,24 @@ import {ProtoCollection} from 'web_proto_collection/generated/ts_proto_collectio
 
 const RPC_ADDRESS = 82;
 
+const darkTheme = createTheme({
+  palette: {
+    type: 'dark',
+    primary: {
+      main: '#42a5f5',
+    },
+    secondary: {
+      main: 'rgb(232, 21, 165)',
+    },
+  },
+});
+
 const useStyles = makeStyles(() => ({
   root: {
     display: 'flex',
     'flex-direction': 'column',
     'align-items': 'flex-start',
+    color: 'rgba(255, 255, 255, 0.8);',
     overflow: 'hidden',
     width: '1000px',
   },
@@ -109,60 +129,62 @@ export function App() {
 
   return (
     <div className={classes.root}>
-      <Typography variant="h3">Pigweb Demo</Typography>
-      <Button
-        className={classes.connect}
-        disabled={connected}
-        variant="contained"
-        color="primary"
-        onClick={() => {
-          transportRef.current
-            .connect()
-            .then(onConnected)
-            .catch(error => {
-              setConnected(false);
-              console.log(error);
-            });
-        }}
-      >
-        {connected ? 'Connected' : 'Connect'}
-      </Button>
-      <ToggleButtonGroup
-        value={logViewer}
-        onChange={(event, selected) => {
-          setLogViewer(selected);
-        }}
-        exclusive
-      >
-        <ToggleButton value="log">Log Viewer</ToggleButton>
-        <ToggleButton value="serial">Serial Debug</ToggleButton>
-      </ToggleButtonGroup>
-      {logViewer === 'log' ? (
-        <Log lines={logLines} />
-      ) : (
-        <SerialLog frames={frames} />
-      )}
-      <span className={classes.rpc}>
-        <TextField
-          id="echo-text"
-          label="Echo Text"
-          disabled={!connected}
-          value={echoText}
-          onChange={event => {
-            setEchoText(event.target.value);
-          }}
-        ></TextField>
+      <ThemeProvider theme={darkTheme}>
+        <Typography variant="h3">Pigweb Demo</Typography>
         <Button
-          disabled={!connected}
+          className={classes.connect}
+          disabled={connected}
           variant="contained"
           color="primary"
           onClick={() => {
-            echo(echoText);
+            transportRef.current
+              .connect()
+              .then(onConnected)
+              .catch(error => {
+                setConnected(false);
+                console.log(error);
+              });
           }}
         >
-          Send Echo RPC
+          {connected ? 'Connected' : 'Connect'}
         </Button>
-      </span>
+        <ToggleButtonGroup
+          value={logViewer}
+          onChange={(event, selected) => {
+            setLogViewer(selected);
+          }}
+          exclusive
+        >
+          <ToggleButton value="log">Log Viewer</ToggleButton>
+          <ToggleButton value="serial">Serial Debug</ToggleButton>
+        </ToggleButtonGroup>
+        {logViewer === 'log' ? (
+          <Log lines={logLines} />
+        ) : (
+          <SerialLog frames={frames} />
+        )}
+        <span className={classes.rpc}>
+          <TextField
+            id="echo-text"
+            label="Echo Text"
+            disabled={!connected}
+            value={echoText}
+            onChange={event => {
+              setEchoText(event.target.value);
+            }}
+          ></TextField>
+          <Button
+            disabled={!connected}
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              echo(echoText);
+            }}
+          >
+            Send Echo RPC
+          </Button>
+        </span>
+      </ThemeProvider>
     </div>
   );
 }

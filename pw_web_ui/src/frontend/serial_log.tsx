@@ -24,7 +24,7 @@ type Props = {
 const useStyles = makeStyles(() => ({
   root: {
     padding: '8px',
-    'background-color': 'black',
+    'background-color': '#131416',
     height: '500px',
     'overflow-y': 'auto',
     width: '100%',

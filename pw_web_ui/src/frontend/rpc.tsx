@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,40 +13,39 @@
 // the License.
 
 /* eslint-env browser */
-
-import {makeStyles, Paper, Box} from '@material-ui/core';
+import {makeStyles, Box} from '@material-ui/core';
 import * as React from 'react';
-import {default as AnsiUp} from 'ansi_up';
-import * as Parser from 'html-react-parser';
+import {Status} from '@pigweed/pw_status';
+import {Message} from 'google-protobuf';
+import {Call} from '@pigweed/pw_rpc';
 
 type Props = {
-  lines: string[];
+  calls: Call[];
 };
 
 const useStyles = makeStyles(() => ({
   root: {
     padding: '8px',
-    'background-color': '#131416',
-    height: '500px',
+    'background-color': '131416',
+    height: '300px',
     'overflow-y': 'auto',
     width: '100%',
     color: 'white',
   },
 }));
 
-export function Log(props: Props) {
+export function RpcPane(props: Props) {
   const classes = useStyles();
-  const xtermRef = React.useRef(null);
-  const ansiUp = new AnsiUp();
 
-  function row(text: string, index: number) {
-    const textHtml = ansiUp.ansi_to_html(text);
+  function row(call: Call, index: number) {
     return (
       <Box key={index} sx={{fontFamily: 'Monospace'}}>
-        {Parser.default(textHtml)}
+        {call.rpc.service.name}.{call.rpc.method.name}
+        \n---
+        {call.completed ? Status[call.status!] : 'In progress...'}
       </Box>
     );
   }
 
-  return <div className={classes.root}>{props.lines.map(row)}</div>;
+  return <div className={classes.root}>{props.calls.map(row)}</div>;
 }
