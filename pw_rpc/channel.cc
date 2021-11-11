@@ -12,6 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "RPC"
+#define PW_LOG_LEVEL PW_LOG_LEVEL_INFO
+
 #include "pw_rpc/internal/channel.h"
 
 #include "pw_log/log.h"
