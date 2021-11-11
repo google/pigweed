@@ -50,17 +50,17 @@ constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
 TEST(TimedMutex, LockUnlock) {
   pw::sync::TimedMutex mutex;
   mutex.lock();
-  // TODO(pwbug/291): Ensure it fails to lock when already held.
-  // EXPECT_FALSE(mutex.try_lock());
   mutex.unlock();
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
+  // EXPECT_FALSE(mutex.try_lock());
 }
 
 TimedMutex static_mutex;
 TEST(TimedMutex, LockUnlockStatic) {
   static_mutex.lock();
-  // TODO(pwbug/291): Ensure it fails to lock when already held.
-  // EXPECT_FALSE(static_mutex.try_lock());
   static_mutex.unlock();
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
+  // EXPECT_FALSE(static_mutex.try_lock());
 }
 
 TEST(TimedMutex, TryLockUnlock) {
@@ -68,10 +68,11 @@ TEST(TimedMutex, TryLockUnlock) {
   const bool locked = mutex.try_lock();
   EXPECT_TRUE(locked);
   if (locked) {
-    // TODO(pwbug/291): Ensure it fails to lock when already held.
     // EXPECT_FALSE(mutex.try_lock());
     mutex.unlock();
   }
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone
+  // else.
 }
 
 TEST(TimedMutex, TryLockUnlockFor) {
@@ -83,15 +84,14 @@ TEST(TimedMutex, TryLockUnlockFor) {
   if (locked) {
     SystemClock::duration time_elapsed = SystemClock::now() - before;
     EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
-
-    // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
-    // before = SystemClock::now();
-    // EXPECT_FALSE(mutex.try_lock_for(kRoundedArbitraryDuration));
-    // time_elapsed = SystemClock::now() - before;
-    /// EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
-
     mutex.unlock();
   }
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
+  // someone else.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and a zero length duration is used.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and a negative duration is used.
 }
 
 TEST(TimedMutex, TryLockUnlockUntil) {
@@ -103,21 +103,20 @@ TEST(TimedMutex, TryLockUnlockUntil) {
   EXPECT_TRUE(locked);
   if (locked) {
     EXPECT_LT(SystemClock::now(), deadline);
-
-    // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
-    // EXPECT_FALSE(
-    //     mutex.try_lock_until(SystemClock::now() +
-    //     kRoundedArbitraryDuration));
-    // EXPECT_GE(SystemClock::now(), deadline);
-
     mutex.unlock();
   }
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
+  // someone else.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and now is used.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and a timestamp in the past is used.
 }
 
 TEST(VirtualTimedMutex, LockUnlock) {
   pw::sync::VirtualTimedMutex mutex;
   mutex.lock();
-  // TODO(pwbug/291): Ensure it fails to lock when already held.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(mutex.try_lock());
   mutex.unlock();
 }
@@ -125,7 +124,7 @@ TEST(VirtualTimedMutex, LockUnlock) {
 VirtualTimedMutex static_virtual_mutex;
 TEST(VirtualTimedMutex, LockUnlockStatic) {
   static_virtual_mutex.lock();
-  // TODO(pwbug/291): Ensure it fails to lock when already held.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(static_virtual_mutex.try_lock());
   static_virtual_mutex.unlock();
 }
@@ -139,7 +138,7 @@ TEST(TimedMutex, LockUnlockInC) {
 TEST(TimedMutex, TryLockUnlockInC) {
   pw::sync::TimedMutex mutex;
   ASSERT_TRUE(pw_sync_TimedMutex_CallTryLock(&mutex));
-  // TODO(pwbug/291): Ensure it fails to lock when already held.
+  // TODO(pwbug/291): Ensure it fails to lock when already held by someone else.
   // EXPECT_FALSE(pw_sync_TimedMutex_CallTryLock(&mutex));
   pw_sync_TimedMutex_CallUnlock(&mutex);
 }
@@ -153,17 +152,13 @@ TEST(TimedMutex, TryLockUnlockForInC) {
   pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
   EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
-
-  // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
-  // before = pw_chrono_SystemClock_Now();
-  // EXPECT_FALSE(
-  //     pw_sync_TimedMutex_CallTryLockFor(&mutex,
-  //     kRoundedArbitraryDurationInC));
-  // time_elapsed =
-  //    pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
-  // EXPECT_GE(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
-
   pw_sync_TimedMutex_CallUnlock(&mutex);
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
+  // someone else.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and a zero length duration is used.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and a negative duration is used.
 }
 
 TEST(TimedMutex, TryLockUnlockUntilInC) {
@@ -175,13 +170,13 @@ TEST(TimedMutex, TryLockUnlockUntilInC) {
   ASSERT_TRUE(pw_sync_TimedMutex_CallTryLockUntil(&mutex, deadline));
   EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
-
-  // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
-  // EXPECT_FALSE(pw_sync_TimedMutex_CallTryLockUntil(&mutex, deadline));
-  // EXPECT_GE(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
-  //           deadline.duration_since_epoch.ticks);
-
   pw_sync_TimedMutex_CallUnlock(&mutex);
+  // TODO(pwbug/291): Ensure it blocks and fails to lock when already held by
+  // someone else.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and now is used.
+  // TODO(pwbug/291): Ensure it does not block and fails to lock when already
+  // held by someone else and a timestamp in the past is used.
 }
 
 }  // namespace
