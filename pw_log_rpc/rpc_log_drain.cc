@@ -57,8 +57,9 @@ Status RpcLogDrain::Flush() {
     uint32_t packed_entry_count = 0;
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
     if (const Status status = server_writer_.Write(encoder); !status.ok()) {
-      committed_entry_drop_count_ += packed_entry_count;
       if (error_handling_ == LogDrainErrorHandling::kCloseStreamOnWriterError) {
+        // Only update this drop count when writer errors are not ignored.
+        committed_entry_drop_count_ += packed_entry_count;
         server_writer_.Finish().IgnoreError();
         return Status::Aborted();
       }

@@ -561,25 +561,10 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   }
   EXPECT_LE(entries_found, total_entries);
 
-  // Verify that a drop message count is found.
-  // Don't account the drop count message in the total drop count.
+  // Verify that all messages were sent and the drop count messageis ignored.
   const uint32_t total_drop_count = total_entries - entries_found + 1;
-  // Since all messages are the same, the is a constant `total_drop_count`
-  // number of entries per packet.
-  const uint32_t entry_count_before_error =
-      error_on_packet_count * total_drop_count;
-  const uint32_t entry_count_after_error =
-      entries_found - 1 - entry_count_before_error;
   Vector<TestLogEntry, max_entries> message_stack;
-  // Add messages to the stack in the reverse order they are sent.
-  for (size_t i = 0; i < entry_count_after_error; ++i) {
-    message_stack.push_back({.timestamp = kSampleTimestamp,
-                             .tokenized_data = std::as_bytes(
-                                 std::span(std::string_view(kMessage)))});
-  }
-  message_stack.push_back(
-      {.metadata = kDropMessageMetadata, .dropped = total_drop_count});
-  for (size_t i = 0; i < entry_count_before_error; ++i) {
+  for (size_t i = 0; i < total_drop_count; ++i) {
     message_stack.push_back({.timestamp = kSampleTimestamp,
                              .tokenized_data = std::as_bytes(
                                  std::span(std::string_view(kMessage)))});

@@ -99,11 +99,13 @@ RPC server, to avoid blocking it.
 
 Each ``RpcLogDrain`` is identified by a known RPC channel ID and requires a
 ``rpc::RawServerWriter`` to write the packed multiple log entries. This writer
-is assigned by the ``LogService::Listen`` RPC. Future work will allow
-``RpcLogDrain``\s to have an open RPC writer, to constantly stream logs without
-the need to request them. This is useful in cases where the connection to the
-client is dropped silently because the log stream can continue when reconnected
-without the client requesting it.
+is assigned by the ``LogService::Listen`` RPC.
+
+``RpcLogDrain``\s can also be provided an open RPC writer, to constantly stream
+logs without the need to request them. This is useful in cases where the
+connection to the client is dropped silently because the log stream can continue
+when reconnected without the client requesting logs again if the error handling
+is set to ``kIgnoreWriterErrors`` otherwise the writer will be closed.
 
 An ``RpcLogDrain`` must be attached to a ``MultiSink`` containing multiple
 ``log::LogEntry``\s. When ``Flush`` is called, the drain acquires the

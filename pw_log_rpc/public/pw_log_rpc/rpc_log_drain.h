@@ -40,8 +40,8 @@ namespace pw::log_rpc {
 // the writer failed to write the outgoing package, in which case the RPC on
 // the writer is closed. When error_handling is `kIgnoreWriterErrors` the drain
 // will continue to retrieve log entries out of the MultiSink and attempt to
-// send them out ignoring the writer errors. Note: this behavior might change or
-// be removed in the future.
+// send them out ignoring the writer errors without sending a drop count.
+// Note: this behavior might change or be removed in the future.
 class RpcLogDrain : public multisink::MultiSink::Drain {
  public:
   // Dictates how to handle server writer errors.
