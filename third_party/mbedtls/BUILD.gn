@@ -107,36 +107,7 @@ if (dir_pw_third_party_mbedtls != "") {
     "library/xtea.c",
   ]
 
-  mbedtls_configs = [
-    {
-      name = "default"
-      config_header = "configs/config_default.h"
-    },
-    # TODO(zyecheng): Add more working configs for code-size optimization.
-  ]
-
-  foreach(ele, mbedtls_configs) {
-    config_name = ele.name + "_config"
-    config(config_name) {
-      # Custom config file is specified by macro MBEDTLS_CONFIG_FILE
-      # for MbedTLS
-      defines = [ "MBEDTLS_CONFIG_FILE=\"${ele.config_header}\"" ]
-    }
-
-    srcset_name = ele.name + "_config_srcset"
-    pw_source_set(srcset_name) {
-      public = [
-        "configs/config_pigweed_common.h",
-        ele.config_header,
-      ]
-      public_configs = [
-        ":${config_name}",
-        ":mbedtls_common_config",
-      ]
-    }
-  }
-
-  config("mbedtls_common_config") {
+  config("mbedtls_config") {
     include_dirs = [
       "$dir_pw_third_party_mbedtls",
       "$dir_pw_third_party_mbedtls/include",
@@ -147,6 +118,9 @@ if (dir_pw_third_party_mbedtls != "") {
       "-Wno-error=redundant-decls",
       "-w",
     ]
+
+    config_header_file = rebase_path(pw_third_party_mbedtls_CONFIG_HEADER)
+    defines = [ "MBEDTLS_CONFIG_FILE=\"$config_header_file\"" ]
   }
 
   pw_source_set("mbedtls") {
@@ -154,10 +128,9 @@ if (dir_pw_third_party_mbedtls != "") {
     foreach(source, mbedtls_sources) {
       sources += [ "$dir_pw_third_party_mbedtls/" + source ]
     }
-    public_deps = [
-      ":${pw_third_party_mbedtls_CONFIG}_config_srcset",
-      "$dir_pw_tls_client:time",
-    ]
+
+    public_deps = [ "$dir_pw_tls_client:time" ]
+    public_configs = [ ":mbedtls_config" ]
   }
 } else {
   group("mbedtls") {
