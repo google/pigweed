@@ -26,8 +26,6 @@
 using pw::blob_store::BlobStore;
 using pw::blob_store::BlobStoreBuffer;
 
-namespace {
-
 char working_buffer[256];
 volatile bool is_set;
 
@@ -47,8 +45,6 @@ pw::sync::Borrowable<pw::kvs::KeyValueStore> borrowable_kvs(
     test_kvs, pw::sync::NoOpLock::Instance());
 
 int volatile* unoptimizable;
-
-}  // namespace
 
 int main() {
   pw::bloat::BloatThisBinary();
