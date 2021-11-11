@@ -854,3 +854,66 @@ an RPC client and server with the same set of channels.
     // appropriate one.
     client_server.ProcessPacket(packet, output);
   }
+
+Unit testing
+============
+``pw_rpc`` provides utilities for unit testing RPC services and client calls.
+
+Client testing in C++
+---------------------
+``pw_rpc`` supports invoking RPCs, simulating server responses, and checking
+what packets are sent by an RPC client in tests. Both raw and Nanopb interfaces
+are supported. Code that uses the raw API may be tested with the Nanopb test
+helpers, and vice versa.
+
+To test code that invokes RPCs, declare a ``RawClientTestContext`` or
+``NanopbClientTestContext``. These test context objects provide a
+preconfigured RPC client, channel, server fake, and buffer for encoding packets.
+These test classes are defined in ``pw_rpc/raw/client_testing.h`` and
+``pw_rpc/nanopb/client_testing.h``.
+
+Use the context's ``client()`` and ``channel()`` to invoke RPCs. Use the
+context's ``server()`` to simulate responses. To verify that the client sent the
+expected data, use the context's ``output()``, which is a ``FakeChannelOutput``.
+
+For example, the following tests a class that invokes an RPC. It checks that
+the expected data was sent and then simulates a response from the server.
+
+.. code-block:: cpp
+
+  #include "pw_rpc/raw/client_testing.h"
+
+  class ThingThatCallsRpcs {
+   public:
+    // To support injecting an RPC client for testing, classes that make RPC
+    // calls should take an RPC client and channel ID or an RPC service client
+    // (e.g. pw_rpc::raw::MyService::Client).
+    ThingThatCallsRpcs(pw::rpc::Client& client, uint32_t channel_id);
+
+    void DoSomethingThatInvokesAnRpc();
+
+    bool SetToTrueWhenRpcCompletes();
+  };
+
+  TEST(TestAThing, InvokesRpcAndHandlesResponse) {
+    RawClientTestContext context;
+    ThingThatCallsRpcs thing(context.client(), context.channel().id());
+
+    // Execute the code that invokes the MyService.TheMethod RPC.
+    things.DoSomethingThatInvokesAnRpc();
+
+    // Find and verify the payloads sent for the MyService.TheMethod RPC.
+    auto msgs = context.output().payloads<pw_rpc::raw::MyService::TheMethod>();
+    ASSERT_EQ(msgs.size(), 1u);
+
+    VerifyThatTheExpectedMessageWasSent(msgs.back());
+
+    // Send the response packet from the server and verify that the class reacts
+    // accordingly.
+    EXPECT_FALSE(thing.SetToTrueWhenRpcCompletes());
+
+    context_.server().SendResponse<pw_rpc::raw::MyService::TheMethod>(
+        final_message, OkStatus());
+
+    EXPECT_TRUE(thing.SetToTrueWhenRpcCompletes());
+  }
