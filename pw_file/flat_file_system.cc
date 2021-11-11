@@ -60,9 +60,11 @@ void FlatFileSystemService::EnumerateAllFiles(RawServerWriter& writer) {
     // For now, don't try to pack entries.
     pw::file::ListResponse::MemoryEncoder encoder(writer.PayloadBuffer());
     if (Status status = EnumerateFile(*entry, encoder); !status.ok()) {
-      PW_LOG_ERROR("Failed to enumerate file (id: %u) with status %d",
-                   static_cast<unsigned>(entry->FileId()),
-                   static_cast<int>(status.code()));
+      if (status != Status::NotFound()) {
+        PW_LOG_ERROR("Failed to enumerate file (id: %u) with status %d",
+                     static_cast<unsigned>(entry->FileId()),
+                     static_cast<int>(status.code()));
+      }
       continue;
     }
 
