@@ -1,8 +1,8 @@
 .. _docs-pw-style:
 
-===========================
-Style Guide and Conventions
-===========================
+===========
+Style Guide
+===========
 
 .. tip::
   Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
@@ -617,3 +617,135 @@ Build files: Bazel
 Similar to their BUILD.gn counterparts, build files for the Bazel build system
 must be named BUILD.bazel. Bazel can interpret files named just BUILD, but we
 use BUILD.bazel to avoid any ambiguity with other build systems or tooling.
+
+-------------
+Documentation
+-------------
+.. note::
+
+  Pigweed's documentation style guide came after much of the documentation was
+  written, so Pigweed's docs don't yet 100% conform to this style guide. When
+  updating docs, please update them to match the style guide.
+
+Pigweed documentation is written using the `reStructuredText
+<https://docutils.sourceforge.io/rst.html>`_ markup language and processed by
+`Sphinx`_. We use the `Furo theme <https://github.com/pradyunsg/furo>`_ along
+with the `sphinx-design <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
+extension.
+
+.. _Sphinx: https://www.sphinx-doc.org/
+
+.. inclusive-language: disable
+
+.. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
+
+.. inclusive-language: enable
+
+.. admonition:: Doc Writing Reference Links
+   :class: seealso
+
+   - `reStructuredText Primer`_
+
+   - `reStructuredText Directives <https://docutils.sourceforge.io/docs/ref/rst/directives.html>`_
+
+   - `Furo Reference <https://pradyunsg.me/furo/reference/>`_
+
+   - `Sphinx-design Reference <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
+
+ReST is flexible, supporting formatting the same logical document in a few ways
+(for example headings, blank lines). Pigweed has the following restrictions to
+make our documentation consistent.
+
+Headings
+========
+Use headings according to the following hierarchy, with the shown characters
+for the ReST heading syntax.
+
+.. code:: rst
+
+   ==================================
+   Document Title: Two Bars of Equals
+   ==================================
+   Document titles use equals ("====="), above and below. Capitalize the words
+   in the title, except for 'of' and 'the'.
+
+   ---------------------------
+   Major Sections Within a Doc
+   ---------------------------
+   Major sections use hypens ("----"), above and below. Capitalize the words in
+   the title, except for 'of' and 'the'.
+
+   Heading 1 - For Sections Within a Doc
+   =====================================
+   These should be title cased. Use a single equals bar ("====").
+
+   Heading 2 - for subsections
+   ---------------------------
+   Subsections use hypens ("----"). In many cases, these headings may be
+   sentence-like. In those cases, only the first letter should be capitalized.
+   For example, FAQ subsections would have a title with "Why does the X do the
+   Y?"; note the sentence capitalization (but not title capitalization).
+
+   Heading 3 - for subsubsections
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   Use the caret symbol ("^^^^") for subsubsections.
+
+   Note: Generally don't go beyond heading 3.
+
+   Heading 4 - for subsubsubsections
+   .................................
+   Don't use this heading level, but if you must, use period characters
+   ("....") for the heading.
+
+Do not put blank lines after the headings.
+
+**Yes**: No blank after heading
+
+.. code:: rst
+
+   Here is a heading
+   -----------------
+   Note that there is no blank line after the heading separator!
+
+**No**: Unnecessary blank line
+
+.. code:: rst
+
+   Here is a heading
+   -----------------
+
+   There is a totally unnecessary blank line above this one. Don't do this.
+
+Do not put multiple blank lines before a heading.
+
+**Yes**: Just one blank after section content before the next heading
+
+.. code:: rst
+
+   There is some text here in the section before the next. It's just here to
+   illustrate the spacing standard. Note that there is just one blank line
+   after this paragraph.
+
+   Just one blank!
+   ---------------
+   There is just one blank line before the heading.
+
+**No**: Extra blank lines
+
+.. code:: rst
+
+   There is some text here in the section before the next. It's just here to
+   illustrate the spacing standard. Note that there are too many blank lines
+   after this paragraph; there should be just one.
+
+
+
+   Too many blanks
+   ---------------
+   There are too many blanks before the heading for this section.
+
+Tables
+======
+Consider using ``.. list-table::`` syntax, which is more maintainable and
+easier to edit for complex tables (`details
+<https://docutils.sourceforge.io/docs/ref/rst/directives.html#list-table>`_).

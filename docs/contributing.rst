@@ -78,9 +78,136 @@ it to the ``.git\hooks`` directory in the Pigweed repository.
 
   copy %HOMEPATH%\Downloads\commit-msg %HOMEPATH%\pigweed\.git\hooks\commit-msg
 
+Commit message
+--------------
+Consider the following when writing a commit message:
+
+#. **Documentation and comments are better** - Consider whether the commit
+   message contents would be better expressed in the documentation or code
+   comments. Docs and code comments are durable and readable later; commit
+   messages are rarely read after the change lands.
+#. **Include why the change is made, not just what the change is** - It is
+   important to include a "why" component in most commits. Sometimes, why is
+   evident - for example, reducing memory usage, or optimizing. But it is often
+   not. Err on the side of over-explaining why, not under-explaining why.
+
+Pigweed commit messages should conform to the following style:
+
+**Yes:**
+
+.. code:: none
+
+   pw_some_module: Short capitalized description
+
+   Details about the change here. Include a summary of the what, and a clear
+   description of why the change is needed for future maintainers.
+
+   Consider what parts of the commit message are better suited for
+   documentation.
+
+**Yes**: Small number of modules affected; use {} syntax.
+
+.. code:: none
+
+   pw_{foo, bar, baz}: Change something in a few places
+
+   When changes cross a few modules, include them with the syntax shown above.
+
+
+**Yes**: targets are effectively modules, even though they're nested, so they get a
+``/`` character.
+
+.. code:: none
+
+   targets/xyz123: Tweak support for XYZ's PQR
+
+**Yes**: Uses imperative style for subject and text.
+
+.. code:: none
+
+   pw_something: Add foo and bar functions
+
+   This commit correctly uses imperative present-tense style.
+
+**No**: Uses non-imperative style for subject and text.
+
+.. code:: none
+
+   pw_something: Adds more things
+
+   Use present tense imperative style for subjects and commit. The above
+   subject has a plural "Adds" which is incorrect; should be "Add".
+
+**Yes**: Use bulleted lists when multiple changes are in a single CL. Prefer
+smaller CLs, but larger CLs are a practical reality.
+
+.. code:: none
+
+   pw_complicated_module: Pre-work for refactor
+
+   Prepare for a bigger refactor by reworking some arguments before the larger
+   change. This change must land in downstream projects before the refactor to
+   enable a smooth transition to the new API.
+
+   - Add arguments to MyImportantClass::MyFunction
+   - Update MyImportantClass to handle precondition Y
+   - Add stub functions to be used during the transition
+
+**No**: Run on paragraph instead of bulleted list
+
+.. code:: none
+
+   pw_foo: Many things in a giant BWOT
+
+   This CL does A, B, and C. The commit message is a Big Wall Of Text (BWOT),
+   which we try to discourage in Pigweed. Also changes X and Y, because Z and
+   Q. Furthermore, in some cases, adds a new Foo (with Bar, because we want
+   to). Also refactors qux and quz.
+
+**No**: Doesn't capitalize the subject
+
+.. code:: none
+
+   pw_foo: do a thing
+
+   Above subject is incorrect, since it is a sentence style subject.
+
+**Yes**: Doesn't capitalize the subject when subject's first word is a
+lowercase identifier.
+
+.. code:: none
+
+   pw_foo: std::unique_lock cleanup
+
+   This commit message demonstrates the subject when the subject has an
+   identifier for the first word. In that case, follow the identifier casing
+   instead of capitalizing.
+
+   However, imperative style subjects often have the identifier elsewhere in
+   the subject; for example:
+
+     pw_foo: Improve use of std::unique_lock
+
+**No**: Uses a non-standard ``[]`` to indicate moduule:
+
+.. code:: none
+
+   [pw_foo]: Do a thing
+
+**No**: Has a period at the end of the subject
+
+.. code:: none
+
+   pw_bar: Do somehthing great.
+
+**No**: Puts extra stuff after the module which isn't a module.
+
+.. code:: none
+
+   pw_bar/byte_builder: Add more stuff to builder
+
 Documentation
 -------------
-
 All Pigweed changes must either
 
 #. Include updates to documentation, or
@@ -94,27 +221,6 @@ All Pigweed changes must either
 It's acceptable to only document new changes in an otherwise underdocumented
 module, but it's not acceptable to not document new changes because the module
 doesn't have any other documentation.
-
-Documentation Style Guide
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Pigweed documentation is written using the `reStructuredText
-<https://docutils.sourceforge.io/rst.html>`_ markup language and processed by
-`Sphinx`_. We use the `Furo theme <https://github.com/pradyunsg/furo>`_ along
-with the `sphinx-design <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
-extension.
-
-.. admonition:: Doc Writing Reference Links
-   :class: seealso
-
-   - `reStructuredText Primer`_
-
-   - `reStructuredText Directives <https://docutils.sourceforge.io/docs/ref/rst/directives.html>`_
-
-   - `Furo Reference <https://pradyunsg.me/furo/reference/>`_
-
-   - `Sphinx-design Reference <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
-
 
 Code Reviews
 ------------
@@ -214,9 +320,9 @@ Pigweed does its best to keep builds passing for dependent projects. In some
 circumstances, the Pigweed maintainers may choose to merge changes that break
 dependent projects. This will only be done if
 
-  * a feature or fix is needed urgently in Pigweed or for a different project,
-    and
-  * the project broken by the change does not imminently need Pigweed updates.
+* a feature or fix is needed urgently in Pigweed or for a different project,
+  and
+* the project broken by the change does not imminently need Pigweed updates.
 
 The downstream project will continue to build against their last working
 revision of Pigweed until the incompatibilities are fixed.
