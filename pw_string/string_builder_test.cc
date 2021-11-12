@@ -203,6 +203,12 @@ TEST(StringBuilder, Append_Chars_Full) {
   EXPECT_STREQ("???????", sb.data());
 }
 
+TEST(StringBuilder, Append_Chars_ToEmpty) {
+  StringBuilder sb(std::span<char>{});
+
+  EXPECT_EQ(Status::ResourceExhausted(), sb.append(1, '?').last_status());
+}
+
 TEST(StringBuilder, Append_PartialCString) {
   StringBuffer<12> sb;
   EXPECT_TRUE(sb.append("123456", 4).ok());
