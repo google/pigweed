@@ -13,9 +13,8 @@
 // the License.
 
 // Some common configs for using mbedtls in Pigweed. These include disabling of
-// file system, socket and linux/windows specific features.
-// See include/mbedtls/config.h for a detail explanation of these
-// configurations.
+// file system, socket and linux/windows specific features. See
+// include/mbedtls/config.h for a detail explanation of these configurations.
 
 #pragma once
 

@@ -16,4 +16,5 @@
 
 #include <mbedtls/config.h>
 
+// override some flags needed by pigweed
 #include "configs/config_pigweed_common.h"
