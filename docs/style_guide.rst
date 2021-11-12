@@ -571,67 +571,69 @@ Python 3.6 or newer is required for most Pigweed code.
 ---------------
 Build files: GN
 ---------------
-
-Each Pigweed source module will require a build file named BUILD.gn which
+Each Pigweed source module requires a GN build file named BUILD.gn. This
 encapsulates the build targets and specifies their sources and dependencies.
-The format of this file is similar in structure to the
-`Bazel/Blaze format <https://docs.bazel.build/versions/3.2.0/build-ref.html>`_
-(Googlers may also review `go/build-style <http://go/build-style>`_), but with
-nomenclature specific to Pigweed. For each target specified within the build
-file there are a list of dependency fields. Those fields, in their expected
-order, are:
+GN build files use a format similar to `Bazel's BUILD files
+<https://docs.bazel.build/versions/main/build-ref.html>`_
+(see the `Bazel style guide
+<https://docs.bazel.build/versions/main/skylark/build-style.html>`_).
 
-* ``<public_config>`` -- external build configuration
-* ``<public_deps>`` -- necessary public dependencies (ie: Pigweed headers)
-* ``<public>`` -- exposed package public interface header files
-* ``<config>`` -- package build configuration
-* ``<sources>`` -- package source code
-* ``<deps>`` -- package necessary local dependencies
+C/C++ build targets include a list of fields. The primary fields are:
 
-Assets within each field must be listed in alphabetical order
+* ``<public>`` -- public header files
+* ``<sources>`` -- source files and private header files
+* ``<public_configs>`` -- public build configuration
+* ``<configs>`` -- private build configuration
+* ``<public_deps>`` -- public dependencies
+* ``<deps>`` -- private dependencies
+
+Assets within each field must be listed in alphabetical order.
 
 .. code-block:: cpp
 
-   # Here is a brief example of a GN build file.
+  # Here is a brief example of a GN build file.
 
-   import("$dir_pw_unit_test/test.gni")
+  import("$dir_pw_unit_test/test.gni")
 
-   config("default_config") {
-     include_dirs = [ "public" ]
-   }
+  config("public_include_path") {
+    include_dirs = [ "public" ]
+    visibility = [":*"]
+  }
 
-   source_set("pw_sample_module") {
-     public_configs = [ ":default_config" ]
-     public_deps = [ dir_pw_status ]
-     public = [ "public/pw_sample_module/sample_module.h" ]
-     sources = [
-       "public/pw_sample_module/internal/sample_module.h",
-       "sample_module.cc",
-       "used_by_sample_module.cc",
-     ]
-     deps = [ dir_pw_varint ]
-   }
+  pw_source_set("pw_sample_module") {
+    public = [ "public/pw_sample_module/sample_module.h" ]
+    sources = [
+      "public/pw_sample_module/internal/secret_header.h",
+      "sample_module.cc",
+      "used_by_sample_module.cc",
+    ]
+    public_configs = [ ":public_include_path" ]
+    public_deps = [ dir_pw_status ]
+    deps = [ dir_pw_varint ]
+  }
 
-   pw_test_group("tests") {
-     tests = [ ":sample_module_test" ]
-   }
+  pw_test_group("tests") {
+    tests = [ ":sample_module_test" ]
+  }
 
-   pw_test("sample_module_test") {
-     sources = [ "sample_module_test.cc" ]
-     deps = [ ":sample_module" ]
-   }
+  pw_test("sample_module_test") {
+    sources = [ "sample_module_test.cc" ]
+    deps = [ ":sample_module" ]
+  }
 
-   pw_doc_group("docs") {
-     sources = [ "docs.rst" ]
-   }
+  pw_doc_group("docs") {
+    sources = [ "docs.rst" ]
+  }
 
 ------------------
 Build files: Bazel
 ------------------
+Build files for the Bazel build system must be named ``BUILD.bazel``. Bazel can
+interpret files named just ``BUILD``, but Pigweed uses ``BUILD.bazel`` to avoid
+ambiguity with other build systems or tooling.
 
-Similar to their BUILD.gn counterparts, build files for the Bazel build system
-must be named BUILD.bazel. Bazel can interpret files named just BUILD, but we
-use BUILD.bazel to avoid any ambiguity with other build systems or tooling.
+Pigweed's Bazel files follow the `Bazel style guide
+<https://docs.bazel.build/versions/main/skylark/build-style.html>`_.
 
 -------------
 Documentation
