@@ -15,6 +15,7 @@
 
 import unittest
 
+from pw_software_update import metadata
 from pw_software_update.root_metadata import (RootKeys, TargetsKeys,
                                               gen_root_metadata)
 
@@ -51,6 +52,8 @@ class GenRootMetadataTest(unittest.TestCase):
         self.assertEqual(root_metadata.targets_signature_requirement.threshold,
                          1)
         self.assertEqual(root_metadata.common_metadata.version, 42)
+        self.assertEqual(root_metadata.common_metadata.role,
+                         metadata.RoleType.ROOT.value)
 
 
 if __name__ == '__main__':

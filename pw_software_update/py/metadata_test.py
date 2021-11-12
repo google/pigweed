@@ -28,8 +28,11 @@ class GenTargetsMetadataTest(unittest.TestCase):
             'bar': b'\x12\x34',
         }
         targets_metadata = metadata.gen_targets_metadata(
-            target_payloads, (HashFunction.SHA256, ))
+            target_payloads, (HashFunction.SHA256, ), version=42)
         self.assertEqual(2, len(targets_metadata.target_files))
+        self.assertEqual(metadata.RoleType.TARGETS.value,
+                         targets_metadata.common_metadata.role)
+        self.assertEqual(42, targets_metadata.common_metadata.version)
 
 
 class GenHashesTest(unittest.TestCase):
