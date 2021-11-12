@@ -392,6 +392,10 @@ size_t PrefixedEntryRingBufferMulti::RawAvailableBytes() const {
 }
 
 void PrefixedEntryRingBufferMulti::RawWrite(std::span<const std::byte> source) {
+  if (source.size_bytes() == 0) {
+    return;
+  }
+
   // Write until the end of the source or the backing buffer.
   size_t bytes_until_wrap = buffer_bytes_ - write_idx_;
   size_t bytes_to_copy = std::min(source.size(), bytes_until_wrap);
@@ -408,6 +412,10 @@ void PrefixedEntryRingBufferMulti::RawWrite(std::span<const std::byte> source) {
 void PrefixedEntryRingBufferMulti::RawRead(byte* destination,
                                            size_t source_idx,
                                            size_t length_bytes) const {
+  if (length_bytes == 0) {
+    return;
+  }
+
   // Read the pre-wrap bytes.
   size_t bytes_until_wrap = buffer_bytes_ - source_idx;
   size_t bytes_to_copy = std::min(length_bytes, bytes_until_wrap);
