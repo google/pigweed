@@ -24,6 +24,8 @@ import pw_cli.argument_types
 
 import pw_console
 import pw_console.python_logging
+from pw_console.plugins.calc_pane import CalcPane
+from pw_console.plugins.clock_pane import ClockPane
 
 _LOG = logging.getLogger(__package__)
 
@@ -117,6 +119,13 @@ def main() -> int:
         app_title=app_title,
         config_file_path=args.config_file,
     )
+
+    # Add example plugins used to validate behavior in the Pigweed Console
+    # manual test procedure: https://pigweed.dev/pw_console/testing.html
+    if args.test_mode:
+        console.add_window_plugin(ClockPane())
+        console.add_window_plugin(CalcPane())
+
     console.embed()
 
     if args.logfile:

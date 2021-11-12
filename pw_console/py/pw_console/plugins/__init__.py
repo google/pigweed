@@ -11,26 +11,4 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
-import("//build_overrides/pigweed.gni")
-
-import("$dir_pw_docgen/docs.gni")
-
-pw_doc_group("docs") {
-  inputs = [
-    "images/serial_debug.svg",
-    "images/calculator_plugin.png",
-    "images/clock_plugin1.png",
-    "images/clock_plugin2.png",
-    "py/pw_console/plugins/clock_pane.py",
-    "py/pw_console/plugins/calc_pane.py",
-  ]
-  sources = [
-    "docs.rst",
-    "embedding.rst",
-    "internals.rst",
-    "plugins.rst",
-    "py/pw_console/docs/user_guide.rst",
-    "testing.rst",
-  ]
-}
+"""Pigweed Console example plugins."""

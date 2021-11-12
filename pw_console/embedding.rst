@@ -7,7 +7,6 @@ Embedding Guide
 -------------
 Using embed()
 -------------
-
 ``pw console`` is invoked by calling ``PwConsoleEmbed().embed()`` in your
 own Python script.
 
@@ -20,7 +19,6 @@ own Python script.
 
 Adding Plugins
 ==============
-
 User plugin instances are created before starting-up and passed to the Pigweed
 Console embed instance. Typically, a console is started by creating a
 ``PwConsoleEmbed()`` instance, calling customization functions, then calling
@@ -54,11 +52,9 @@ calling ``add_top_toolbar``, ``add_bottom_toolbar`` or
    # Start the console
    console.embed()
 
-
 -------------------
 Adding Log Metadata
 -------------------
-
 ``pw_console`` can display log messages in a table with justified columns for
 metadata fields provided by :ref:`module-pw_log_tokenized`.
 
@@ -89,7 +85,6 @@ following code will create a log message with two custom columns titled
 ---------------------
 Debugging Serial Data
 ---------------------
-
 ``pw_console`` is often used to communicate with devices using `pySerial
 <https://pythonhosted.org/pyserial/>`_ and it may be necessary to monitor the
 raw data flowing over the wire to help with debugging. ``pw_console`` provides a
