@@ -125,8 +125,10 @@ TEST(TokenizedTrace, Overflow) {
     EXPECT_EQ(buf->PeekFront(std::span<std::byte>(value), &bytes_read),
               pw::OkStatus());
     EXPECT_EQ(buf->PopFront(), pw::OkStatus());
-    EXPECT_EQ(*reinterpret_cast<size_t*>(&value[bytes_read - sizeof(size_t)]),
-              expected_count);
+    size_t entry_count;
+    memcpy(
+        &entry_count, &value[bytes_read - sizeof(size_t)], sizeof(entry_count));
+    EXPECT_EQ(entry_count, expected_count);
     expected_count++;
   }
 

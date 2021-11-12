@@ -65,6 +65,9 @@ class TraceQueue {
     if (IsFull()) {
       return pw::Status::ResourceExhausted();
     }
+    if (data_size > PW_TRACE_BUFFER_MAX_DATA_SIZE_BYTES) {
+      return pw::Status::InvalidArgument();
+    }
     event_queue_[head_].trace_token = trace_token;
     event_queue_[head_].event_type = event_type;
     event_queue_[head_].module = module;
