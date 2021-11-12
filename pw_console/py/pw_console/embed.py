@@ -24,6 +24,8 @@ from prompt_toolkit.completion import WordCompleter
 import pw_console.python_logging
 from pw_console.console_app import ConsoleApp
 
+from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
+
 
 class PwConsoleEmbed:
     """Embed class for customizing the console before startup."""
@@ -192,6 +194,7 @@ class PwConsoleEmbed:
             app_title=self.app_title,
             extra_completers=self.extra_completers,
         )
+        PW_CONSOLE_APP_CONTEXTVAR.set(self.console_app)
         # Setup Python logging and log panes.
         if not self.setup_python_logging_called:
             self.setup_python_logging()

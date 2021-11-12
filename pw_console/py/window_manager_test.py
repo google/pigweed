@@ -89,7 +89,7 @@ class TestWindowManager(unittest.TestCase):
             console_app = _create_console_app(logger_count=3)
 
             window_manager = console_app.window_manager
-            self.assertEqual(_window_pane_counts(window_manager), [4])
+            self.assertEqual([4], _window_pane_counts(window_manager))
 
             # Move 2 windows to the right into their own splits
             _target_list_and_pane(window_manager, 0, 0)
@@ -99,30 +99,30 @@ class TestWindowManager(unittest.TestCase):
             _target_list_and_pane(window_manager, 1, 0)
             window_manager.move_pane_right()
             # 3 splits, first split has 2 windows
-            self.assertEqual(_window_pane_counts(window_manager), [2, 1, 1])
+            self.assertEqual([2, 1, 1], _window_pane_counts(window_manager))
 
             # Move the first window in the first split left
             _target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_left()
             # 4 splits, each with their own window
-            self.assertEqual(_window_pane_counts(window_manager), [1, 1, 1, 1])
+            self.assertEqual([1, 1, 1, 1], _window_pane_counts(window_manager))
 
             # Move the first window to the right
             _target_list_and_pane(window_manager, 0, 0)
             window_manager.move_pane_right()
             # 3 splits, first split has 2 windows
-            self.assertEqual(_window_pane_counts(window_manager), [2, 1, 1])
+            self.assertEqual([2, 1, 1], _window_pane_counts(window_manager))
 
             target_pane = window_manager.window_lists[2].active_panes[0]
 
             result_window_list, result_pane_index = (
                 window_manager._find_window_list_and_pane_index(target_pane))
             self.assertEqual(
-                (window_manager.window_lists[2], 0),
                 (result_window_list, result_pane_index),
+                (window_manager.window_lists[2], 0),
             )
             window_manager.remove_pane(target_pane)
-            self.assertEqual(_window_pane_counts(window_manager), [2, 1])
+            self.assertEqual([2, 1], _window_pane_counts(window_manager))
 
     def test_window_list_moving_and_resizing(self) -> None:
         """Test window split movement resizing."""
@@ -133,11 +133,11 @@ class TestWindowManager(unittest.TestCase):
 
             _target_list_and_pane(window_manager, 0, 0)
             # Should have one window list split of size 50.
-            self.assertEqual(_window_list_sizes(window_manager), [50])
+            self.assertEqual([50], _window_list_sizes(window_manager))
 
             # Move one pane to the right, creating a new window_list split.
             window_manager.move_pane_right()
-            self.assertEqual(_window_list_sizes(window_manager), [50, 50])
+            self.assertEqual([50, 50], _window_list_sizes(window_manager))
 
             # Move another pane to the right twice, creating a third
             # window_list split.
@@ -149,7 +149,7 @@ class TestWindowManager(unittest.TestCase):
             window_manager.move_pane_right()
 
             # Should have 3 splits now
-            self.assertEqual(_window_list_sizes(window_manager), [50, 50, 50])
+            self.assertEqual([50, 50, 50], _window_list_sizes(window_manager))
 
             # Total of 4 active panes
             self.assertEqual(len(list(window_manager.active_panes())), 4)
@@ -159,37 +159,37 @@ class TestWindowManager(unittest.TestCase):
             # Shrink the middle split twice
             window_manager.shrink_split()
             window_manager.shrink_split()
-            self.assertEqual(_window_list_sizes(window_manager), [50, 46, 54])
+            self.assertEqual([50, 46, 54], _window_list_sizes(window_manager))
 
             # Target the first split
             _target_list_and_pane(window_manager, 0, 0)
             # Shrink the first split once
             window_manager.shrink_split()
-            self.assertEqual(_window_list_sizes(window_manager), [48, 48, 54])
+            self.assertEqual([48, 48, 54], _window_list_sizes(window_manager))
 
             # Target the third (last) split
             _target_list_and_pane(window_manager, 2, 0)
 
             # Shrink the third split once
             window_manager.shrink_split()
-            self.assertEqual(_window_list_sizes(window_manager), [48, 50, 52])
+            self.assertEqual([48, 50, 52], _window_list_sizes(window_manager))
 
             # Enlarge the third split a few times.
             window_manager.enlarge_split()
             window_manager.enlarge_split()
             window_manager.enlarge_split()
-            self.assertEqual(_window_list_sizes(window_manager), [48, 44, 58])
+            self.assertEqual([48, 44, 58], _window_list_sizes(window_manager))
 
             # Target the middle split
             _target_list_and_pane(window_manager, 1, 0)
             # Move the middle window pane left
             window_manager.move_pane_left()
             # Middle split should be removed
-            self.assertEqual(_window_list_sizes(window_manager), [48, 58])
+            self.assertEqual([48, 58], _window_list_sizes(window_manager))
 
             # Revert sizes to default
             window_manager.reset_split_sizes()
-            self.assertEqual(_window_list_sizes(window_manager), [50, 50])
+            self.assertEqual([50, 50], _window_list_sizes(window_manager))
 
     def test_get_pane_titles(self) -> None:
         """Test window resizing."""
@@ -203,12 +203,12 @@ class TestWindowManager(unittest.TestCase):
                 for window_list in window_manager.window_lists
             ]
             self.assertEqual(
-                list_pane_titles[0],
                 [('', ' '), ('class:window-tab-inactive', ' Log2 test_log2 '),
                  ('', ' '), ('class:window-tab-inactive', ' Log1 test_log1 '),
                  ('', ' '), ('class:window-tab-inactive', ' Log0 test_log0 '),
                  ('', ' '), ('class:window-tab-inactive', ' Python Repl  '),
                  ('', ' ')],
+                list_pane_titles[0],
             )
 
     def test_window_pane_movement_resizing(self) -> None:
@@ -220,7 +220,7 @@ class TestWindowManager(unittest.TestCase):
 
             # 4 panes, 3 for the loggers and 1 for the repl.
             self.assertEqual(
-                len(window_manager.first_window_list().active_panes), 4)
+                4, len(window_manager.first_window_list().active_panes))
 
             def target_window_pane(index: int):
                 # Bypass prompt_toolkit has_focus()
@@ -240,32 +240,31 @@ class TestWindowManager(unittest.TestCase):
 
             # Shrink the first pane
             window_manager.shrink_pane()
-            self.assertEqual(_window_pane_sizes(window_manager),
-                             [48, 52, 50, 50])
+            self.assertEqual([48, 52, 50, 50],
+                             _window_pane_sizes(window_manager))
 
             # Reset pane sizes
             window_manager.reset_pane_sizes()
-            self.assertEqual(_window_pane_sizes(window_manager),
-                             [50, 50, 50, 50])
+            self.assertEqual([50, 50, 50, 50],
+                             _window_pane_sizes(window_manager))
 
             # Shrink last pane
             target_window_pane(3)
 
             window_manager.shrink_pane()
-            self.assertEqual(_window_pane_sizes(window_manager),
-                             [50, 50, 52, 48])
+            self.assertEqual([50, 50, 52, 48],
+                             _window_pane_sizes(window_manager))
 
             # Enlarge second pane
             target_window_pane(1)
 
             window_manager.enlarge_pane()
             window_manager.enlarge_pane()
-            self.assertEqual(_window_pane_sizes(window_manager),
-                             [50, 54, 48, 48])
+            self.assertEqual([50, 54, 48, 48],
+                             _window_pane_sizes(window_manager))
 
             # Check window pane ordering
             self.assertEqual(
-                _window_pane_titles(window_manager),
                 [
                     [
                         'Log2 - test_log2',
@@ -274,12 +273,12 @@ class TestWindowManager(unittest.TestCase):
                         'Python Repl - ',
                     ],
                 ],
+                _window_pane_titles(window_manager),
             )
 
             target_window_pane(0)
             window_manager.move_pane_down()
             self.assertEqual(
-                _window_pane_titles(window_manager),
                 [
                     [
                         'Log1 - test_log1',
@@ -288,13 +287,13 @@ class TestWindowManager(unittest.TestCase):
                         'Python Repl - ',
                     ],
                 ],
+                _window_pane_titles(window_manager),
             )
             target_window_pane(2)
             window_manager.move_pane_up()
             target_window_pane(1)
             window_manager.move_pane_up()
             self.assertEqual(
-                _window_pane_titles(window_manager),
                 [
                     [
                         'Log0 - test_log0',
@@ -303,11 +302,11 @@ class TestWindowManager(unittest.TestCase):
                         'Python Repl - ',
                     ],
                 ],
+                _window_pane_titles(window_manager),
             )
             target_window_pane(0)
             window_manager.move_pane_up()
             self.assertEqual(
-                _window_pane_titles(window_manager),
                 [
                     [
                         'Log0 - test_log0',
@@ -316,6 +315,7 @@ class TestWindowManager(unittest.TestCase):
                         'Python Repl - ',
                     ],
                 ],
+                _window_pane_titles(window_manager),
             )
 
 

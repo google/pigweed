@@ -16,7 +16,7 @@
 """Functions to create checkboxes for menus and toolbars."""
 
 import sys
-from typing import Callable, Iterable, Optional
+from typing import Callable, Iterable, Optional, NamedTuple
 
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
@@ -25,6 +25,14 @@ _CHECKED_BOX = '[✓]'
 
 if sys.platform in ['win32']:
     _CHECKED_BOX = '[x]'
+
+
+class ToolbarButton(NamedTuple):
+    key: str
+    description: str
+    mouse_handler: Optional[Callable] = None
+    is_checkbox: bool = False
+    checked: Optional[Callable] = None
 
 
 def to_checkbox(checked: bool, mouse_handler=None, end=' '):
