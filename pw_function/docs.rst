@@ -129,8 +129,8 @@ storage using the system allocator. This operation will always be explicit.
 API usage
 =========
 
-Implementation-side
--------------------
+``pw::Function`` function parameters
+------------------------------------
 When implementing an API which takes a callback, a ``Function`` can be used in
 place of a function pointer or equivalent callable.
 
@@ -143,7 +143,8 @@ place of a function pointer or equivalent callable.
   // signature template for clarity.
   void DoTheThing(int arg, const pw::Function<void(int result)>& callback);
 
-APIs should accept ``pw::Function`` objects either by const reference (``const
+``pw::Function`` is movable, but not copyable, so APIs must accept
+``pw::Function`` objects either by const reference (``const
 pw::Function<void()>&``) or rvalue reference (``const pw::Function<void()>&&``).
 If the ``pw::Function`` simply needs to be called, it should be passed by const
 reference. If the ``pw::Function`` needs to be stored, it should be passed as an
@@ -157,7 +158,7 @@ rvalue reference and moved into a ``pw::Function`` variable as appropriate.
     callback(123);
   }
 
-  // This function move-assign a pw::Function to another variable, so it takes
+  // This function move-assigns a pw::Function to another variable, so it takes
   // an rvalue reference.
   void StoreTheCallback(pw::Function<void(int)>&& callback) {
     stored_callback_ = std::move(callback);
@@ -183,23 +184,39 @@ rvalue reference and moved into a ``pw::Function`` variable as appropriate.
      variable, which makes the transfer of ownership explicit. It is possible to
      move-assign from an lvalue reference, but this fails to make it obvious to
      the caller that the object is no longer valid.
-   * **Pass by non-const reference** (``pw::Function<void()>&``): Rarely, when
-     modifying a variable.
+   * **Pass by non-const reference** (``pw::Function&``): Rarely, when modifying
+     a variable.
 
      Non-const references are only necessary when modifying an existing
      ``pw::Function`` variable. Use an rvalue reference instead if the
      ``pw::Function`` is moved into another variable.
 
-Caller-side
------------
-When calling an API which takes a function by reference, the standard pattern is
-to implicitly construct the function in place from a callable object. Simply
-pass the desired callable directly to the API.
+Calling functions that use ``pw::Function``
+-------------------------------------------
+A ``pw::Function`` can be implicitly constructed from any callback object. When
+calling an API that takes a ``pw::Function``, simply pass the callable object.
+There is no need to create an intermediate ``pw::Function`` object.
 
 .. code-block:: c++
 
-  // Implicitly initialize a Function from a capturing lambda.
-  DoTheThing(42, [this](int result) { result_ = result; });
+  // Implicitly creates a pw::Function from a capturing lambda and calls it.
+  CallTheCallback([this](int result) { result_ = result; });
+
+  // Implicitly creates a pw::Function from a capturing lambda and stores it.
+  StoreTheCallback([this](int result) { result_ = result; });
+
+When working with an existing ``pw::Function`` variable, the variable can be
+passed directly to functions that take a const reference. If the function takes
+ownership of the ``pw::Function``, move the ``pw::Function`` variable at the
+call site.
+
+.. code-block:: c++
+
+  // Accepts the pw::Function by const reference.
+  CallTheCallback(my_function_);
+
+  // Takes ownership of the pw::Function.
+  void StoreTheCallback(std::move(my_function));
 
 Size reports
 ============
