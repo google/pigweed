@@ -147,7 +147,7 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
       return Status::OutOfRange();
     }
 
-    std::memcpy(buffer.data(), payload.data(), payload.size());
+    std::copy_n(payload.data(), payload.size(), buffer.data());
   }
 
   rpc_lock().unlock();
