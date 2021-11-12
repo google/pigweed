@@ -50,10 +50,21 @@ pw_source_set("config") {
   friend = [ "./*" ]
 }
 
+pw_source_set("log_config") {
+  sources = [ "public/pw_rpc/internal/log_config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":config" ]
+  visibility = [ "./*" ]
+  friend = [ "./*" ]
+}
+
 pw_source_set("server") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ ":common" ]
-  deps = [ dir_pw_log ]
+  deps = [
+    ":log_config",
+    dir_pw_log,
+  ]
   public = [
     "public/pw_rpc/server.h",
     "public/pw_rpc/server_context.h",
@@ -80,7 +91,10 @@ pw_source_set("client") {
     ":common",
     dir_pw_result,
   ]
-  deps = [ dir_pw_log ]
+  deps = [
+    ":log_config",
+    dir_pw_log,
+  ]
   public = [
     "public/pw_rpc/client.h",
     "public/pw_rpc/internal/client_call.h",
@@ -121,7 +135,10 @@ pw_source_set("common") {
     public_deps += [ "$dir_pw_sync:mutex" ]
   }
 
-  deps = [ dir_pw_log ]
+  deps = [
+    ":log_config",
+    dir_pw_log,
+  ]
   public = [ "public/pw_rpc/channel.h" ]
   sources = [
     "call.cc",
@@ -172,6 +189,7 @@ pw_source_set("fake_channel_output") {
     dir_pw_assert,
     dir_pw_bytes,
   ]
+  deps = [ ":log_config" ]
   visibility = [ "./*" ]
 }
 
@@ -201,6 +219,7 @@ pw_executable("test_rpc_server") {
   sources = [ "test_rpc_server.cc" ]
   deps = [
     ":benchmark",
+    ":log_config",
     "system_server",
     "system_server:socket",
     dir_pw_log,

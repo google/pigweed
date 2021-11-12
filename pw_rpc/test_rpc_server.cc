@@ -12,6 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_rpc/internal/log_config.h"
+// PW_LOG_* macros must be first.
+
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc/benchmark.h"

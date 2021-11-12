@@ -35,7 +35,6 @@ pw_source_set("server_api") {
     "..:server",
     dir_pw_bytes,
   ]
-  deps = [ dir_pw_log ]
 }
 
 pw_source_set("client_api") {
@@ -72,6 +71,7 @@ pw_source_set("client_testing") {
     ":fake_channel_output",
     "..:client",
   ]
+  deps = [ "..:log_config" ]
 }
 
 pw_test_group("tests") {

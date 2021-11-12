@@ -16,7 +16,6 @@
 
 #include <cstring>
 
-#include "pw_log/log.h"
 #include "pw_rpc/internal/packet.h"
 
 namespace pw::rpc::internal {

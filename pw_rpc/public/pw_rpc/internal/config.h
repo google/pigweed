@@ -49,6 +49,16 @@
 #define PW_RPC_USE_GLOBAL_MUTEX 0
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
 
+// The log level to use for this module. Logs below this level are omitted.
+#ifndef PW_RPC_CONFIG_LOG_LEVEL
+#define PW_RPC_CONFIG_LOG_LEVEL PW_LOG_LEVEL_INFO
+#endif  // PW_RPC_CONFIG_LOG_LEVEL
+
+// The log module name to use for this module.
+#ifndef PW_RPC_CONFIG_LOG_MODULE_NAME
+#define PW_RPC_CONFIG_LOG_MODULE_NAME "PW_RPC"
+#endif  // PW_RPC_CONFIG_LOG_MODULE_NAME
+
 namespace pw::rpc::cfg {
 
 template <typename...>

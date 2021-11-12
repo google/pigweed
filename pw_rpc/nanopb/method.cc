@@ -12,7 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// clang-format off
+#include "pw_rpc/internal/log_config.h" // PW_LOG_* macros must be first.
+
 #include "pw_rpc/nanopb/internal/method.h"
+// clang-format on
 
 #include "pb_decode.h"
 #include "pb_encode.h"

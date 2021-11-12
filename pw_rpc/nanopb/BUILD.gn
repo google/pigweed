@@ -42,7 +42,10 @@ pw_source_set("server_api") {
     "..:server",
     dir_pw_bytes,
   ]
-  deps = [ dir_pw_log ]
+  deps = [
+    "..:log_config",
+    dir_pw_log,
+  ]
   allow_circular_includes_from = [ ":common" ]
 }
 
@@ -64,6 +67,7 @@ pw_source_set("common") {
   public_configs = [ ":public" ]
   deps = [
     "..:client",
+    "..:log_config",
     dir_pw_log,
   ]
   public = [ "public/pw_rpc/nanopb/internal/common.h" ]

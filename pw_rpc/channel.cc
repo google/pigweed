@@ -12,10 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#define PW_LOG_MODULE_NAME "RPC"
-#define PW_LOG_LEVEL PW_LOG_LEVEL_INFO
+// clang-format off
+#include "pw_rpc/internal/log_config.h"  // PW_LOG_* macros must be first.
 
 #include "pw_rpc/internal/channel.h"
+// clang-format on
 
 #include "pw_log/log.h"
 #include "pw_rpc/internal/packet.h"

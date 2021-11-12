@@ -917,3 +917,65 @@ the expected data was sent and then simulates a response from the server.
 
     EXPECT_TRUE(thing.SetToTrueWhenRpcCompletes());
   }
+
+Module Configuration Options
+============================
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_RPC_CLIENT_STREAM_END_CALLBACK
+
+  In client and bidirectional RPCs, pw_rpc clients may signal that they have
+  finished sending requests with a CLIENT_STREAM_END packet. While this can be
+  useful in some circumstances, it is often not necessary.
+
+  This option controls whether or not include a callback that is called when
+  the client stream ends. The callback is included in all ServerReader/Writer
+  objects as a pw::Function, so may have a significant cost.
+
+  This is disabled by default.
+
+.. c:macro:: PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE
+
+  The Nanopb-based pw_rpc implementation allocates memory to use for Nanopb
+  structs for the request and response protobufs. The template function that
+  allocates these structs rounds struct sizes up to this value so that
+  different structs can be allocated with the same function. Structs with sizes
+  larger than this value cause an extra function to be created, which slightly
+  increases code size.
+
+  Ideally, this value will be set to the size of the largest Nanopb struct used
+  as an RPC request or response. The buffer can be stack or globally allocated
+  (see ``PW_RPC_NANOPB_STRUCT_BUFFER_STACK_ALLOCATE``).
+
+  This defaults to 64 Bytes.
+
+.. c:macro:: PW_RPC_USE_GLOBAL_MUTEX
+
+  Enable global synchronization for RPC calls. If this is set, a backend must
+  be configured for pw_sync:mutex.
+
+  This is disabled by default.
+
+.. c:macro:: PW_RPC_CONFIG_LOG_LEVEL
+
+  The log level to use for this module. Logs below this level are omitted.
+
+  This defaults to ``PW_LOG_LEVEL_INFO``.
+
+.. c:macro:: PW_RPC_CONFIG_LOG_MODULE_NAME
+
+  The log module name to use for this module.
+
+  This defaults to ``"PW_RPC"``.
+
+.. c:macro:: PW_RPC_NANOPB_STRUCT_BUFFER_STACK_ALLOCATE
+
+  This option determines whether to allocate the Nanopb structs on the stack or
+  in a global variable. Globally allocated structs are NOT thread safe, but
+  work fine when the RPC server's ProcessPacket function is only called from
+  one thread.
+
+  This is enabled by default.
