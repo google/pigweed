@@ -521,6 +521,8 @@ class RepeatedFieldParser {
   RepeatedFieldParser(Message& message, uint32_t field_number)
       : message_(message), field_number_(field_number) {}
 
+  RepeatedFieldParser(Status status) : message_(status) {}
+
   // TODO(pwbug/363): Migrate this to Result<> once we have StatusOr like
   // support.
   bool ok() { return message_.ok(); }

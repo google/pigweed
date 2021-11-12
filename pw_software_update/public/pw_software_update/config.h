@@ -22,3 +22,6 @@
 // The size of the buffer to create on stack for streaming manifest data from
 // the bundle reader.
 #define WRITE_MANIFEST_STREAM_PIPE_BUFFER_SIZE 8
+
+// The maximum allowed length of a target name.
+#define MAX_TARGET_NAME_LENGTH 32

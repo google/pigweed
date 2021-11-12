@@ -67,6 +67,11 @@ pkBv5PnA+DZnCkFhLW2kTn89zQv8W1x4m9maoINp9QPXQ4/nXlrVHqDg
 TEST_ROOT_VERSION = 2
 TEST_TARGETS_VERSION = 2
 
+TARGET_FILES = {
+    'file1': 'file 1 content'.encode(),
+    'file2': 'file 2 content'.encode(),
+}
+
 
 def byte_array_declaration(data: bytes, name: str) -> str:
     """Generates a byte C array declaration for a byte array"""
@@ -98,6 +103,9 @@ class Bundle:
         self._targets_key = serialization.load_pem_private_key(
             TEST_TARGETS_KEY.encode(), None)
         self._payloads: Dict[str, bytes] = {}
+        # Adds some update files.
+        for key, value in TARGET_FILES.items():
+            self.add_payload(key, value)
 
     def add_payload(self, name: str, payload: bytes) -> None:
         """Adds a payload to the bundle"""
@@ -207,13 +215,12 @@ def parse_args():
 
 def main() -> int:
     """Main"""
+    # TODO(pwbug/456): Refactor the code so that each test bundle generation
+    # is done in a separate function or script.
+    # pylint: disable=too-many-locals
     args = parse_args()
 
     test_bundle = Bundle()
-
-    # Adds some update files.
-    test_bundle.add_payload('file1', 'file 1 content'.encode())  # type: ignore
-    test_bundle.add_payload('file2', 'file 2 content'.encode())  # type: ignore
 
     dev_signed_root = test_bundle.generate_dev_signed_root_metadata()
     dev_signed_bundle = test_bundle.generate_bundle(None, dev_signed_root)
@@ -264,6 +271,49 @@ def main() -> int:
     targets_rollback.common_metadata.version = TEST_TARGETS_VERSION - 1
     targets_rollback_bundle = test_bundle.generate_bundle(targets_rollback)
 
+    # Generate bundles with mismatched hash
+    mismatched_hash_targets_bundles = []
+    # Generate bundles with mismatched file length
+    mismatched_length_targets_bundles = []
+    # Generate bundles with missing hash
+    missing_hash_targets_bundles = []
+    # Generate bundles with personalized out payload
+    personalized_out_bundles = []
+    # For each of the two files in `TARGET_FILES`, we generate a number of
+    # bundles each of which modify the target in the following way
+    # respectively:
+    # 1. Compromise its sha256 hash value in the targets metadata, so as to
+    #    test hash verification logic.
+    # 2. Remove the hashes, to trigger verification failure cause by missing
+    #    hashes.
+    # 3. Compromise the file length in the targets metadata.
+    # 4. Remove the payload to emulate being personalized out, so as to test
+    #    that it does not cause verification failure.
+    for idx, payload_file in enumerate(TARGET_FILES.items()):
+        mismatched_hash_targets = test_bundle.generate_targets_metadata()
+        mismatched_hash_targets.target_files[idx].hashes[0].hash = b'0' * 32
+        mismatched_hash_targets_bundle = test_bundle.generate_bundle(
+            mismatched_hash_targets)
+        mismatched_hash_targets_bundles.append(mismatched_hash_targets_bundle)
+
+        mismatched_length_targets = test_bundle.generate_targets_metadata()
+        mismatched_length_targets.target_files[idx].length = 1
+        mismatched_length_targets_bundle = test_bundle.generate_bundle(
+            mismatched_length_targets)
+        mismatched_length_targets_bundles.append(
+            mismatched_length_targets_bundle)
+
+        missing_hash_targets = test_bundle.generate_targets_metadata()
+        missing_hash_targets.target_files[idx].hashes.pop()
+        missing_hash_targets_bundle = test_bundle.generate_bundle(
+            missing_hash_targets)
+        missing_hash_targets_bundles.append(missing_hash_targets_bundle)
+
+        file_name, _ = payload_file
+        personalized_out_bundle = test_bundle.generate_bundle()
+        personalized_out_bundle.target_payloads.pop(file_name)
+        personalized_out_bundles.append(personalized_out_bundle)
+
     with open(args.output_header, 'w') as header:
         header.write(HEADER)
         header.write(
@@ -289,12 +339,41 @@ def main() -> int:
         header.write(
             proto_array_declaration(root_rollback_bundle, 'kTestRootRollback'))
 
+        for idx, mismatched_hash_bundle in enumerate(
+                mismatched_hash_targets_bundles):
+            header.write(
+                proto_array_declaration(
+                    mismatched_hash_bundle,
+                    f'kTestBundleMismatchedTargetHashFile{idx}'))
+
+        for idx, missing_hash_bundle in enumerate(
+                missing_hash_targets_bundles):
+            header.write(
+                proto_array_declaration(
+                    missing_hash_bundle,
+                    f'kTestBundleMissingTargetHashFile{idx}'))
+
+        for idx, mismatched_length_bundle in enumerate(
+                mismatched_length_targets_bundles):
+            header.write(
+                proto_array_declaration(
+                    mismatched_length_bundle,
+                    f'kTestBundleMismatchedTargetLengthFile{idx}'))
+
+        for idx, personalized_out_bundle in enumerate(
+                personalized_out_bundles):
+            header.write(
+                proto_array_declaration(
+                    personalized_out_bundle,
+                    f'kTestBundlePersonalizedOutFile{idx}'))
     subprocess.run([
         'clang-format',
         '-i',
         args.output_header,
     ], check=True)
-
+    # TODO(pwbug/456): Refactor the code so that each test bundle generation
+    # is done in a separate function or script.
+    # pylint: enable=too-many-locals
     return 0
 
 

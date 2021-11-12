@@ -191,6 +191,12 @@ class UpdateBundleAccessor {
   // A helper to get the on-device trusted root metadata. It returns an
   // instance of SignedRootMetadata proto message.
   protobuf::Message GetOnDeviceTrustedRoot();
+
+  // The method performs verification of the target payloads. Specifically, it
+  // 1. For target payloads found in the bundle, verify its size and hash.
+  // 2. For target payloads not found in the bundle, call downstream to verify
+  // it and report back.
+  Status VerifyTargetsPayloads();
 };
 
 }  // namespace pw::software_update

@@ -227,6 +227,103 @@ Result<uint32_t> GetMetadataVersion(protobuf::Message& metadata,
   return res.value();
 }
 
+// Gets the list of targets in the top-level targets metadata
+protobuf::RepeatedMessages GetTopLevelTargets(protobuf::Message bundle) {
+  // Get signed targets metadata map.
+  //
+  // message UpdateBundle {
+  //   ...
+  //   map<string, SignedTargetsMetadata> target_metadata = <id>;
+  //   ...
+  // }
+  protobuf::StringToMessageMap signed_targets_metadata_map =
+      bundle.AsStringToMessageMap(
+          static_cast<uint32_t>(UpdateBundle::Fields::TARGETS_METADATA));
+  PW_TRY(signed_targets_metadata_map.status());
+
+  // Get the top-level signed targets metadata.
+  protobuf::Message signed_targets_metadata =
+      signed_targets_metadata_map[kTopLevelTargetsName];
+  PW_TRY(signed_targets_metadata.status());
+
+  // Get the targets metadata.
+  //
+  // message SignedTargetsMetadata {
+  //   ...
+  //   bytes serialized_target_metadata = <id>;
+  //   ...
+  // }
+  protobuf::Message targets_metadata =
+      signed_targets_metadata.AsMessage(static_cast<uint32_t>(
+          SignedTargetsMetadata::Fields::SERIALIZED_TARGETS_METADATA));
+  PW_TRY(targets_metadata.status());
+
+  // Return the target file list
+  //
+  // message TargetsMetadata {
+  //   ...
+  //   repeated TargetFile target_files = <id>;
+  //   ...
+  // }
+  return targets_metadata.AsRepeatedMessages(
+      static_cast<uint32_t>(TargetsMetadata::Fields::TARGET_FILES));
+}
+
+// Verifies a given target payload against a given hash.
+Result<bool> VerifyTargetPayloadHash(protobuf::Message hash_info,
+                                     protobuf::Bytes target_payload) {
+  // Get the hash function field
+  //
+  // message Hash {
+  //   ...
+  //   HashFunction function = <id>;
+  //   ...
+  // }
+  protobuf::Uint32 hash_function =
+      hash_info.AsUint32(static_cast<uint32_t>(Hash::Fields::FUNCTION));
+  PW_TRY(hash_function.status());
+
+  // enum HashFunction {
+  //   UNKNOWN_HASH_FUNCTION = 0;
+  //   SHA256 = 1;
+  // }
+  if (hash_function.value() != static_cast<uint32_t>(HashFunction::SHA256)) {
+    // Unknown hash function
+    PW_LOG_DEBUG("Unknown hash function, %d", hash_function.value());
+    return Status::InvalidArgument();
+  }
+
+  // Get the hash bytes field
+  //
+  // message Hash {
+  //   ...
+  //   bytes hash = <id>;
+  //   ...
+  // }
+  protobuf::Bytes hash_bytes =
+      hash_info.AsBytes(static_cast<uint32_t>(Hash::Fields::HASH));
+  PW_TRY(hash_bytes.status());
+
+  std::byte digest[crypto::sha256::kDigestSizeBytes];
+  stream::IntervalReader target_payload_reader =
+      target_payload.GetBytesReader();
+  PW_TRY(crypto::sha256::Hash(target_payload_reader, digest));
+  return hash_bytes.Equal(digest);
+}
+
+// Reads a protobuf::String into a buffer and returns a std::string_view.
+Result<std::string_view> ReadProtoString(protobuf::String str,
+                                         std::span<char> buffer) {
+  stream::IntervalReader reader = str.GetBytesReader();
+  if (reader.interval_size() > buffer.size()) {
+    return Status::ResourceExhausted();
+  }
+
+  Result<ByteSpan> res = reader.Read(std::as_writable_bytes(buffer));
+  PW_TRY(res.status());
+  return std::string_view(buffer.data(), res.value().size());
+}
+
 }  // namespace
 
 Status UpdateBundleAccessor::OpenAndVerify(const ManifestAccessor&) {
@@ -362,6 +459,7 @@ Status UpdateBundleAccessor::DoVerify() {
 
   // TODO(pwbug/456): Investigate whether targets payload verification should
   // be performed here or deferred until a specific target is requested.
+  PW_TRY(VerifyTargetsPayloads());
 
   // TODO(pwbug/456): Invoke the backend to do downstream verification of the
   // bundle (e.g. compatibility and manifest completeness checks).
@@ -587,6 +685,100 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
                  new_version.value());
     return Status::Unauthenticated();
   }
+
+  return OkStatus();
+}
+
+Status UpdateBundleAccessor::VerifyTargetsPayloads() {
+  // Gets the list of targets.
+  protobuf::RepeatedMessages target_files = GetTopLevelTargets(decoder_);
+  PW_TRY(target_files.status());
+
+  // Gets the list of payloads.
+  //
+  // message UpdateBundle {
+  //   ...
+  //   map<string, bytes> target_payloads = <id>;
+  //   ...
+  // }
+  protobuf::StringToBytesMap target_payloads = decoder_.AsStringToBytesMap(
+      static_cast<uint32_t>(UpdateBundle::Fields::TARGET_PAYLOADS));
+  PW_TRY(target_payloads.status());
+
+  // Checks hashes for all targets.
+  for (protobuf::Message target_file : target_files) {
+    // Extract `file_name`, `length` and `hashes` for each target in the
+    // metadata.
+    //
+    // message TargetFile {
+    //   ...
+    //   string file_name = <id>;
+    //   uint64 length = <id>;
+    //   ...
+    // }
+    protobuf::String target_name = target_file.AsString(
+        static_cast<uint32_t>(TargetFile::Fields::FILE_NAME));
+    PW_TRY(target_name.status());
+
+    protobuf::Uint64 target_length =
+        target_file.AsUint64(static_cast<uint32_t>(TargetFile::Fields::LENGTH));
+    PW_TRY(target_length.status());
+
+    char target_name_read_buf[MAX_TARGET_NAME_LENGTH] = {0};
+    Result<std::string_view> target_name_sv =
+        ReadProtoString(target_name, target_name_read_buf);
+    PW_TRY(target_name_sv.status());
+
+    // Finds the target in the target payloads
+    protobuf::Bytes target_payload = target_payloads[target_name_sv.value()];
+    if (target_payload.status().IsNotFound()) {
+      PW_LOG_DEBUG(
+          "target payload for %s does not exist. Assumed personalized out",
+          target_name_read_buf);
+      // Invoke backend specific check
+      ManifestAccessor manifest;  // TODO(pwbug/456): Place-holder for now.
+      PW_TRY(backend_.VerifyTargetFile(manifest, target_name_sv.value()));
+      continue;
+    }
+
+    PW_TRY(target_payload.status());
+    // Payload size must matches file length
+    if (target_payload.GetBytesReader().interval_size() !=
+        target_length.value()) {
+      PW_LOG_DEBUG("Target payload size mismatch");
+      return Status::Unauthenticated();
+    }
+
+    // Gets the list of hashes
+    //
+    // message TargetFile {
+    //   ...
+    //   repeated Hash hashes = <id>;
+    //   ...
+    // }
+    protobuf::RepeatedMessages hashes = target_file.AsRepeatedMessages(
+        static_cast<uint32_t>(TargetFile::Fields::HASHES));
+    PW_TRY(hashes.status());
+
+    // Check all hashes
+    size_t num_hashes = 0;
+    for (protobuf::Message hash : hashes) {
+      num_hashes++;
+      Result<bool> hash_verify_res =
+          VerifyTargetPayloadHash(hash, target_payload);
+      PW_TRY(hash_verify_res.status());
+      if (!hash_verify_res.value()) {
+        PW_LOG_DEBUG("sha256 hash mismatch for file %s", target_name_read_buf);
+        return Status::Unauthenticated();
+      }
+    }  // for (protobuf::Message hash : hashes)
+
+    // The packet does not contain any hash
+    if (!num_hashes) {
+      PW_LOG_DEBUG("No hash for file %s", target_name_read_buf);
+      return Status::Unauthenticated();
+    }
+  }  // for (protobuf::Message target_file : target_files)
 
   return OkStatus();
 }
