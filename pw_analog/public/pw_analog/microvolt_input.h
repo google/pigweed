@@ -70,7 +70,7 @@ class MicrovoltInput : public AnalogInput {
     const References reference = GetReferences();
     const AnalogInput::Limits limits = GetLimits();
 
-    return ((static_cast<int64_t>(sample - limits.min) *
+    return (((static_cast<int64_t>(sample) - static_cast<int64_t>(limits.min)) *
              (reference.max_voltage_uv - reference.min_voltage_uv)) /
             (limits.max - limits.min)) +
            reference.min_voltage_uv;
