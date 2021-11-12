@@ -41,6 +41,7 @@ pw_source_set("core") {
   public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_log" ]
   deps = [
+    "$dir_pw_assert:config",
     "$dir_pw_assert:facade",
     "$dir_pw_preprocessor",
   ]

@@ -19,7 +19,7 @@
 
 // Note: This file depends on the backend header already being included.
 
-#include "pw_assert/options.h"
+#include "pw_assert/config.h"
 #include "pw_preprocessor/arguments.h"
 #include "pw_preprocessor/compiler.h"
 

@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_assert/options.h"  // For PW_ASSERT_ENABLE_DEBUG
+#include "pw_assert/config.h"  // For PW_ASSERT_ENABLE_DEBUG
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 

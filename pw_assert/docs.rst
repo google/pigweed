@@ -66,7 +66,7 @@ Example
     // This assert is always enabled, even in production.
     PW_CHECK_INT_LE(ItemCount(), 100);
 
-    // This assert disabled for release builds, where NDEBUG is defined.
+    // This assert is enabled based on ``PW_ASSERT_ENABLE_DEBUG``.
     // The functions ItemCount() and GetStateStr() are never called.
     PW_DCHECK_INT_LE(ItemCount(), 100, "System state: %s", GetStateStr());
 
@@ -124,8 +124,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   Assert that a condition is true, optionally including a message with
   arguments to report if the codition is false.
 
-  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
-  entire statement is removed (and the expression not evaluated).
+  The ``DCHECK`` variants only run if ``PW_ASSERT_ENABLE_DEBUG`` is enabled;
+  otherwise, the entire statement is removed (and the expression not evaluated).
 
   Example:
 
@@ -169,8 +169,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   Assert that the given pointer is not ``NULL``, optionally including a message
   with arguments to report if the pointer is ``NULL``.
 
-  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
-  entire statement is removed (and the expression not evaluated).
+  The ``DCHECK`` variants only run if ``PW_ASSERT_ENABLE_DEBUG`` is enabled;
+  otherwise, the entire statement is removed (and the expression not evaluated).
 
   .. code-block:: cpp
 
@@ -191,8 +191,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   If present, the optional format message is reported on failure. Depending on
   the backend, values of ``a`` and ``b`` will also be reported.
 
-  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
-  entire statement is removed (and the expression not evaluated).
+  The ``DCHECK`` variants only run if ``PW_ASSERT_ENABLE_DEBUG`` is enabled;
+  otherwise, the entire statement is removed (and the expression not evaluated).
 
   Example, with no message:
 
@@ -265,7 +265,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   +-------------------------+--------------+-----------+-----------------------+
 
   The above ``CHECK_*_*()`` are also available in DCHECK variants, which will
-  only evaluate their arguments and trigger if the ``NDEBUG`` macro is defined.
+  only evaluate their arguments and trigger if the ``PW_ASSERT_ENABLE_DEBUG``
+  macro is enabled.
 
   +--------------------------+--------------+-----------+----------------------+
   | Macro                    | a, b type    | condition | a, b format          |
@@ -340,8 +341,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   .. note::
     This also asserts that ``abs_tolerance >= 0``.
 
-  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
-  entire statement is removed (and the expression not evaluated).
+  The ``DCHECK`` variants only run if ``PW_ASSERT_ENABLE_DEBUG`` is enabled;
+  otherwise, the entire statement is removed (and the expression not evaluated).
 
   Example, with no message:
 
@@ -365,8 +366,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   ``PW_STATUS_OK`` (in C). Optionally include a message with arguments to
   report.
 
-  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
-  entire statement is removed (and the expression not evaluated).
+  The ``DCHECK`` variants only run if ``PW_ASSERT_ENABLE_DEBUG`` is defined;
+  otherwise, the entire statement is removed (and the expression not evaluated).
 
   .. code-block:: cpp
 
@@ -451,7 +452,7 @@ PW_ASSERT API Reference
 
   A header- and constexpr-safe version of ``PW_DCHECK()``.
 
-  Same as ``PW_ASSERT()``, except that if ``PW_ASSERT_ENABLE_DEBUG == 1``, the
+  Same as ``PW_ASSERT()``, except that if ``PW_ASSERT_ENABLE_DEBUG == 0``, the
   assert is disabled and condition is not evaluated.
 
 .. attention::
@@ -699,6 +700,21 @@ capture the arguments with the tokenizer, we need to know the types. Using the
 preprocessor, it is impossible to dispatch based on the types of ``a`` and
 ``b``, so unfortunately having a separate macro for each of the types commonly
 asserted on is necessary.
+
+----------------------------
+Module Configuration Options
+----------------------------
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_ASSERT_ENABLE_DEBUG
+
+  Controls whether ``DCHECK`` and ``DASSERT`` are enabled.
+
+  This defaults to being disabled if ``NDEBUG`` is defined, else it is enabled
+  by default.
 
 -------------
 Compatibility

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_assert/options.h"
+#include "pw_assert/config.h"
 #include "pw_assert_basic/handler.h"
 
 extern "C" void pw_assert_HandleFailure(void) {

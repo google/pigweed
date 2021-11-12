@@ -61,6 +61,7 @@ pw_source_set("pw_assert_basic.impl") {
   ]
   deps = [
     ":pw_assert_basic",
+    "$dir_pw_assert:config",
     "$dir_pw_assert:facade",
     "$dir_pw_preprocessor",
     pw_assert_basic_HANDLER_BACKEND,
@@ -81,6 +82,7 @@ pw_source_set("basic_handler") {
   ]
   deps = [
     ":handler.facade",
+    "$dir_pw_assert:config",
     "$dir_pw_assert:facade",
     "$dir_pw_preprocessor",
     "$dir_pw_sys_io:facade",  # Only pull in the facade to avoid circular deps

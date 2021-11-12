@@ -15,10 +15,16 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_assert_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+
   # Backend for the pw_assert module.
   pw_assert_BACKEND = ""
 }
@@ -28,11 +34,18 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("config") {
+  public = [ "public/pw_assert/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_assert_CONFIG ]
+}
+
 # Depending on dir_pw_assert provides both assert and check.
 group("pw_assert") {
   public_deps = [
     ":assert",
     ":check",
+    ":config",
   ]
 }
 
@@ -56,10 +69,12 @@ pw_facade("check") {
   public = [
     "public/pw_assert/check.h",
     "public/pw_assert/internal/check_impl.h",
-    "public/pw_assert/options.h",
     "public/pw_assert/short.h",
   ]
-  public_deps = [ dir_pw_preprocessor ]
+  public_deps = [
+    ":config",
+    dir_pw_preprocessor,
+  ]
 
   require_link_deps = [ ":impl" ]
 }
@@ -74,15 +89,11 @@ pw_facade("check") {
 # time. It is linked by the pw_assert:pw_assert (or pw_assert:check) targets.
 pw_source_set("assert") {
   public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_assert/assert.h",
-
-    # Needed for PW_ASSERT_ENABLE_DEBUG. Note that depending on :pw_assert to
-    # get options.h won't work here since it will trigger the circular include
-    # problem that the :assert target is intended solve.
-    "public/pw_assert/options.h",
+  public = [ "public/pw_assert/assert.h" ]
+  public_deps = [
+    ":config",
+    dir_pw_preprocessor,
   ]
-  public_deps = [ dir_pw_preprocessor ]
 }
 
 # pw_assert is low-level and ubiquitous. Because of this, it can often cause

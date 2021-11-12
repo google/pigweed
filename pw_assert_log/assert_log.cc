@@ -14,7 +14,7 @@
 
 #include "pw_assert_log/assert_log.h"
 
-#include "pw_assert/options.h"
+#include "pw_assert/config.h"
 
 extern "C" void pw_assert_HandleFailure(void) {
 #if PW_ASSERT_ENABLE_DEBUG

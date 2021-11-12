@@ -20,7 +20,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "pw_assert/options.h"
+#include "pw_assert/config.h"
 #include "pw_assert_basic/handler.h"
 #include "pw_preprocessor/util.h"
 #include "pw_string/string_builder.h"
