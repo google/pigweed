@@ -33,7 +33,7 @@ Framework Framework::framework_;
 // populated using static initialization.
 TestInfo* Framework::tests_ = nullptr;
 
-void Framework::RegisterTest(TestInfo* new_test) {
+void Framework::RegisterTest(TestInfo* new_test) const {
   // If the test list is empty, set new_test as the first test.
   if (tests_ == nullptr) {
     tests_ = new_test;
@@ -101,10 +101,10 @@ void Framework::EndCurrentTest() {
   current_test_ = nullptr;
 }
 
-void Framework::ExpectationResult(const char* expression,
-                                  const char* evaluated_expression,
-                                  int line,
-                                  bool success) {
+void Framework::CurrentTestExpectSimple(const char* expression,
+                                        const char* evaluated_expression,
+                                        int line,
+                                        bool success) {
   if (!success) {
     current_result_ = TestResult::kFailure;
     exit_status_ = 1;
@@ -124,7 +124,7 @@ void Framework::ExpectationResult(const char* expression,
   event_handler_->TestCaseExpect(current_test_->test_case(), expectation);
 }
 
-bool Framework::ShouldRunTest(const TestInfo& test_info) {
+bool Framework::ShouldRunTest(const TestInfo& test_info) const {
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
   // Test suite filtering is only supported if using C++17.
   if (!test_suites_to_run_.empty()) {
