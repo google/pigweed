@@ -1,8 +1,8 @@
 .. _module-pw_sync_baremetal:
 
------------------
+=================
 pw_sync_baremetal
------------------
+=================
 This is a set of backends for pw_sync that works on baremetal targets. It is not
 ready for use, and is under construction.
 

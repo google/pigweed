@@ -1,8 +1,8 @@
 .. _module-pw_cpu_exception_cortex_m:
 
--------------------------
+=========================
 pw_cpu_exception_cortex_m
--------------------------
+=========================
 This backend provides an ARMv7-M implementation for the CPU exception module
 frontend. See the CPU exception frontend module description for more
 information.

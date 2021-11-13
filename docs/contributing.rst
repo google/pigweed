@@ -211,8 +211,8 @@ Documentation
 All Pigweed changes must either
 
 #. Include updates to documentation, or
-#. Include ``No-Docs-Update-Reason: <reason>`` in the commit message or a
-   Gerrit comment on the CL. For example:
+#. Include ``No-Docs-Update-Reason: <reason>`` in a Gerrit comment on the CL.
+   For example:
 
    * ``No-Docs-Update-Reason: formatting tweaks``
    * ``No-Docs-Update-Reason: internal cleanups``

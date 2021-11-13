@@ -37,7 +37,7 @@ Writing fuzzers
 To write a fuzzer, a developer needs to write a fuzz target function follwing
 the `fuzz target function`__ guidelines given by libFuzzer:
 
-.. code::
+.. code:: cpp
 
   extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     DoSomethingInterestingWithMyAPI(data, size);

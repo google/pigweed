@@ -12,8 +12,9 @@ the Protocol Buffer wire format.
   is supported, though the APIs are not final. C++ code generation exists for
   encoding, but not decoding.
 
+------
 Design
-======
+------
 Unlike other protobuf libraries, which typically provide in-memory data
 structures to represent protobuf messages, ``pw_protobuf`` operates directly on
 the wire format and leaves data storage to the user. This has a few benefits.
@@ -27,8 +28,9 @@ low-level wire format operations with a user-friendly API for processing
 specific protobuf messages. The code generation integrates with Pigweed's GN
 build system.
 
+-------------
 Configuration
-=============
+-------------
 ``pw_protobuf`` supports the following configuration options.
 
 * ``PW_PROTOBUF_CFG_MAX_VARINT_SIZE``:
@@ -53,9 +55,9 @@ Configuration
   | 5 bytes           | 4,294,967,295 or < 4GiB (max uint32_t) |
   +-------------------+----------------------------------------+
 
-========
+--------
 Encoding
-========
+--------
 
 Usage
 =====
@@ -261,9 +263,9 @@ Example ``example_client.cc``:
     PW_LOG_INFO("Failed to encode proto; %s", client.status().str());
   }
 
-========
+--------
 Decoding
-========
+--------
 ``pw_protobuf`` provides two decoder implementations, which are described below.
 
 Decoder
@@ -576,9 +578,9 @@ fields in a message.
 
 .. include:: size_report/decoder_incremental
 
-==========================
+--------------------------
 Available protobuf modules
-==========================
+--------------------------
 There are a handful of messages ready to be used in Pigweed projects. These are
 located in ``pw_protobuf/pw_protobuf_protos``.
 
@@ -603,9 +605,9 @@ Contains the enum for pw::Status.
     // Writing to a proto
     proto.status_field = static_cast<pw::protobuf::StatusCode>(status.code()));
 
-========================================
+----------------------------------------
 Comparison with other protobuf libraries
-========================================
+----------------------------------------
 
 protobuf-lite
 =============
