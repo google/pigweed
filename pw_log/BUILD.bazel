@@ -58,7 +58,7 @@ pw_cc_library(
     deps = [
         ":facade",
         "//pw_bytes",
-        "//pw_log_tokenized",
+        "//pw_log_tokenized:metadata",
         "//pw_result",
     ],
 )

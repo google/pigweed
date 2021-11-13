@@ -45,7 +45,7 @@ pw_source_set("proto_utils") {
   public_deps = [
     ":pw_log.facade",
     "$dir_pw_bytes",
-    "$dir_pw_log_tokenized",
+    "$dir_pw_log_tokenized:metadata",
     "$dir_pw_result",
   ]
   deps = [ "$dir_pw_log:protos.pwpb" ]
