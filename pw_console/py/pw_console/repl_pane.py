@@ -53,7 +53,6 @@ from pygments.lexers.python import PythonConsoleLexer  # type: ignore
 
 import pw_console.mouse
 import pw_console.style
-import pw_console.widgets.focus_on_click_overlay
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.progress_bar.progress_bar_state import TASKS_CONTEXTVAR
 
@@ -357,14 +356,7 @@ class ReplPane:
                     style=functools.partial(pw_console.style.get_pane_style,
                                             self),
                 ),
-                floats=[
-                    # Transparent float container that will focus on this
-                    # ReplPane when clicked.
-                    pw_console.widgets.focus_on_click_overlay.create_overlay(
-                        self.pw_ptpython_repl,
-                        self.output_field,
-                    ),
-                ]),
+                floats=[]),
             filter=Condition(lambda: self.show_pane))
 
     def get_progress_bar_task_container(self):

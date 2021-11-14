@@ -21,10 +21,12 @@ import sys
 from typing import Iterable, Optional, TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.completion import merge_completers
 from prompt_toolkit.filters import (
     Condition,
     has_focus,
+    to_filter,
 )
 from ptpython.completer import (  # type: ignore
     CompletePrivateAttributes, PythonCompleter,
@@ -40,6 +42,10 @@ if TYPE_CHECKING:
     from pw_console.repl_pane import ReplPane
 
 _LOG = logging.getLogger(__package__)
+
+
+class MissingPtpythonBufferControl(Exception):
+    """Exception for a missing ptpython BufferControl object."""
 
 
 class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-instance-attributes
@@ -82,6 +88,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         self.enable_mouse_support: bool = True
         self.enable_history_search: bool = True
         self.enable_dictionary_completion: bool = True
+        self._set_pt_python_input_buffer_control_focusable()
 
         # Change some ptpython.repl defaults.
         self.show_status_bar = False
@@ -105,6 +112,40 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         self.repl_pane: 'Optional[ReplPane]' = None
         self._last_result = None
         self._last_exception = None
+
+    def _set_pt_python_input_buffer_control_focusable(self) -> None:
+        """Enable focus_on_click for ptpython's input buffer."""
+        error_message = (
+            'Unable to find ptpythons BufferControl input object.\n'
+            '  For the last known position see:\n'
+            '  https://github.com/prompt-toolkit/ptpython/'
+            'blob/6072174eace5b645b0cfd5b21b4c237e2539f577/'
+            'ptpython/layout.py#L598\n'
+            '\n'
+            'The installed version of ptpython may not be compatible with'
+            ' pw console; please try re-running environment setup.')
+
+        try:
+            # Fetch the Window's BufferControl object.
+            # From ptpython/layout.py:
+            #   self.root_container = HSplit([
+            #     VSplit([
+            #       HSplit([
+            #         FloatContainer(
+            #           content=HSplit(
+            #             [create_python_input_window()] + extra_body
+            #           ), ...
+            ptpython_buffer_control = (
+                self.ptpython_layout.root_container.children[0].children[0].
+                children[0].content.children[0].content)
+            # This should be a BufferControl instance
+            if not isinstance(ptpython_buffer_control, BufferControl):
+                raise MissingPtpythonBufferControl(error_message)
+            # Enable focus options
+            ptpython_buffer_control.focusable = to_filter(True)
+            ptpython_buffer_control.focus_on_click = to_filter(True)
+        except IndexError as _error:
+            raise MissingPtpythonBufferControl(error_message)
 
     def __pt_container__(self):
         """Return the prompt_toolkit root container for class.

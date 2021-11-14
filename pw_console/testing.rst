@@ -470,11 +470,21 @@ Python Input & Output
      - ✅
 
    * - 1
-     - Click the ``Python Input`` window title
-     - Python Input pane is focused
+     - Click the ``Logs`` window title
+     - Log pane is focused
      - |checkbox|
 
    * - 2
+     - Click empty whitespace in the ``Python Results`` window
+     - Python Results pane is focused
+     - |checkbox|
+
+   * - 3
+     - Click empty whitespace in the ``Python Input`` window
+     - Python Input pane is focused
+     - |checkbox|
+
+   * - 4
      - | Enter the following text and press enter to run
        | ``[i for i in __builtins__ if not i.startswith('_')]``
      - | The results should appear pretty printed
