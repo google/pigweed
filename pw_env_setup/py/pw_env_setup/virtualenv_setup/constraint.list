@@ -42,7 +42,7 @@ pep517==0.12.0
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==8.2.0
-prompt-toolkit==3.0.20
+prompt-toolkit==3.0.22
 protobuf==3.19.1
 psutil==5.8.0
 ptpython==3.0.20
