@@ -14,26 +14,33 @@
 """WindowList"""
 
 import collections
-import functools
 from enum import Enum
-from typing import Any, Optional, TYPE_CHECKING
+import functools
+import logging
+from typing import Any, Callable, List, Optional, TYPE_CHECKING
 
 from prompt_toolkit.filters import has_focus
 from prompt_toolkit.layout import (
     Dimension,
-    HSplit,
-    VSplit,
     FormattedTextControl,
+    HSplit,
+    HorizontalAlign,
+    VSplit,
     Window,
     WindowAlign,
-    HorizontalAlign,
 )
+from prompt_toolkit.layout.mouse_handlers import MouseHandlers
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 
 import pw_console.style
 import pw_console.widgets.mouse_handlers
 
 if TYPE_CHECKING:
+    # pylint: disable=ungrouped-imports
+    from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
     from pw_console.window_manager import WindowManager
+
+_LOG = logging.getLogger(__package__)
 
 
 class DisplayMode(Enum):
@@ -45,11 +52,72 @@ class DisplayMode(Enum):
 DEFAULT_DISPLAY_MODE = DisplayMode.STACK
 
 # Weighted amount for adjusting window dimensions when enlarging and shrinking.
-_WINDOW_SIZE_ADJUST = 2
+_WINDOW_HEIGHT_ADJUST = 1
+
+
+class MouseHandlerWithOverride(MouseHandlers):
+    """
+    Two dimensional raster of callbacks for mouse events.
+    """
+    def set_mouse_handler_for_range(
+        self,
+        x_min: int,
+        x_max: int,
+        y_min: int,
+        y_max: int,
+        handler: Callable[[MouseEvent], 'NotImplementedOrNone'],
+    ) -> None:
+        return
+
+
+class WindowListHSplit(HSplit):
+    """PromptToolkit HSplit class with some additions for size and mouse resize.
+
+    This HSplit has a write_to_screen function that saves the width and height
+    of the container for the current render pass. It also handles overriding
+    mouse handlers for triggering window resize adjustments.
+    """
+    def __init__(self, parent_window_list, *args, **kwargs):
+        # Save a reference to the parent window pane.
+        self.parent_window_list = parent_window_list
+        super().__init__(*args, **kwargs)
+
+    def write_to_screen(
+        self,
+        screen,
+        mouse_handlers,
+        write_position,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: Optional[int],
+    ) -> None:
+        new_mouse_handlers = mouse_handlers
+        # Is resize mode active?
+        if self.parent_window_list.resize_mode:
+            # Ignore future mouse_handler updates.
+            new_mouse_handlers = MouseHandlerWithOverride()
+            # Set existing mouse_handlers to the parent_window_list's
+            # mouse_handler. This will handle triggering resize events.
+            mouse_handlers.set_mouse_handler_for_range(
+                write_position.xpos,
+                write_position.xpos + write_position.width,
+                write_position.ypos,
+                write_position.ypos + write_position.height,
+                self.parent_window_list.mouse_handler)
+
+        # Save the width and height for the current render pass. This will be
+        # used by the log pane to render the correct amount of log lines.
+        self.parent_window_list.update_window_list_size(
+            write_position.width, write_position.height)
+        # Continue writing content to the screen.
+        super().write_to_screen(screen, new_mouse_handlers, write_position,
+                                parent_style, erase_bg, z_index)
 
 
 class WindowList:
     """WindowList holds a stack of windows for the WindowManager."""
+
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     def __init__(
         self,
         window_manager: 'WindowManager',
@@ -57,16 +125,76 @@ class WindowList:
         self.window_manager = window_manager
         self.application = window_manager.application
 
+        self.current_window_list_width: int = 0
+        self.current_window_list_height: int = 0
+        self.last_window_list_width: int = 0
+        self.last_window_list_height: int = 0
+
         self.display_mode = DEFAULT_DISPLAY_MODE
         self.active_panes: collections.deque = collections.deque()
         self.focused_pane_index: Optional[int] = None
 
-        self.height = Dimension(weight=50)
-        self.width = Dimension(weight=50)
+        self.height = Dimension(preferred=10)
+        self.width = Dimension(preferred=10)
+
+        self.resize_mode = False
+        self.resize_target_pane_index = None
+        self.resize_target_pane = None
+        self.resize_current_row = 0
 
         # Reference to the current prompt_toolkit window split for the current
         # set of active_panes.
         self.container = None
+
+    def _calculate_actual_heights(self) -> List[int]:
+        heights = [
+            p.height.preferred if p.show_pane else 0 for p in self.active_panes
+        ]
+        available_height = self.current_window_list_height
+        remaining_rows = available_height - sum(heights)
+        window_index = 0
+        # Distribute remaining unaccounted rows to each window in turn.
+        while remaining_rows > 0:
+            # 0 heights are hiden windows, only add +1 to visible windows.
+            if heights[window_index] > 0:
+                heights[window_index] += 1
+                remaining_rows -= 1
+            window_index = (window_index + 1) % len(heights)
+
+        return heights
+
+    def _update_resize_current_row(self):
+        heights = self._calculate_actual_heights()
+        start_row = 0
+
+        # Find the starting row
+        for i in range(self.resize_target_pane_index + 1):
+            # If we are past the current pane, exit the loop.
+            if i > self.resize_target_pane_index:
+                break
+            # 0 heights are hidden windows, only count visible windows.
+            if heights[i] > 0:
+                start_row += heights[i]
+        self.resize_current_row = start_row
+
+    def start_resize(self, target_pane, pane_index):
+        # Can only resize if view mode is stacked.
+        if self.display_mode != DisplayMode.STACK:
+            return
+
+        # Check the target_pane isn't the last one in the list
+        visible_panes = [pane for pane in self.active_panes if pane.show_pane]
+        if target_pane == visible_panes[-1]:
+            return
+
+        self.resize_mode = True
+        self.resize_target_pane_index = pane_index
+        self._update_resize_current_row()
+
+    def stop_resize(self):
+        self.resize_mode = False
+        self.resize_target_pane_index = None
+        self.resize_current_row = 0
 
     def get_tab_mode_active_pane(self):
         if self.focused_pane_index is None:
@@ -147,17 +275,72 @@ class WindowList:
 
         self.application.redraw_ui()
 
+    def _set_window_heights(self, new_heights: List[int]):
+        for pane in self.active_panes:
+            if not pane.show_pane:
+                continue
+            pane.height = Dimension(preferred=new_heights[0])
+            new_heights = new_heights[1:]
+
+    def rebalance_window_heights(self):
+        available_height = self.current_window_list_height
+
+        old_values = [
+            p.height.preferred for p in self.active_panes if p.show_pane
+        ]
+        old_total = sum(old_values)
+        percentages = [value / old_total for value in old_values]
+        new_heights = [
+            int(available_height * percentage) for percentage in percentages
+        ]
+
+        self._set_window_heights(new_heights)
+
+    def update_window_list_size(self, width, height):
+        """Save width and height of the repl pane for the current UI render
+        pass."""
+        if width:
+            self.last_window_list_width = self.current_window_list_width
+            self.current_window_list_width = width
+        if height:
+            self.last_window_list_height = self.current_window_list_height
+            self.current_window_list_height = height
+
+        if (self.current_window_list_width != self.last_window_list_width
+                or self.current_window_list_height !=
+                self.last_window_list_height):
+            self.rebalance_window_heights()
+
+    def mouse_handler(self, mouse_event: MouseEvent):
+        mouse_position = mouse_event.position
+
+        if (mouse_event.event_type == MouseEventType.MOUSE_MOVE
+                and mouse_event.button == MouseButton.LEFT):
+            self.mouse_resize(mouse_position.x, mouse_position.y)
+        elif mouse_event.event_type == MouseEventType.MOUSE_UP:
+            self.stop_resize()
+            # Mouse event handled, return None.
+            return None
+        else:
+            self.stop_resize()
+
+        # Mouse event not handled, return NotImplemented.
+        return NotImplemented
+
     def update_container(self):
         """Re-create the window list split depending on the display mode."""
+
         if self.display_mode == DisplayMode.STACK:
-            self.container = HSplit(
+            content_split = WindowListHSplit(
+                self,
                 list(pane for pane in self.active_panes if pane.show_pane),
                 height=lambda: self.height,
                 width=lambda: self.width,
             )
 
         elif self.display_mode == DisplayMode.TABBED:
-            self.container = HSplit(
+            content_split = WindowListHSplit(
+                self,
                 [
                     self._create_window_tab_toolbar(),
                     self.get_tab_mode_active_pane(),
@@ -165,6 +348,8 @@ class WindowList:
                 height=lambda: self.height,
                 width=lambda: self.width,
             )
+
+        self.container = content_split
 
     def _create_window_tab_toolbar(self):
         tab_bar_control = FormattedTextControl(
@@ -255,21 +440,31 @@ class WindowList:
         """Enlarge the currently focused window pane."""
         pane = self.get_current_active_pane()
         if pane:
-            self.adjust_pane_size(pane, _WINDOW_SIZE_ADJUST)
+            self.adjust_pane_size(pane, _WINDOW_HEIGHT_ADJUST)
 
     def shrink_pane(self):
         """Shrink the currently focused window pane."""
         pane = self.get_current_active_pane()
         if pane:
-            self.adjust_pane_size(pane, -_WINDOW_SIZE_ADJUST)
+            self.adjust_pane_size(pane, -_WINDOW_HEIGHT_ADJUST)
 
-    def adjust_pane_size(self, pane, diff: int = _WINDOW_SIZE_ADJUST):
+    def mouse_resize(self, _xpos, ypos):
+        target_pane = self.active_panes[self.resize_target_pane_index]
+
+        diff = ypos - self.resize_current_row
+        if diff == 0:
+            return
+        self.adjust_pane_size(target_pane, diff)
+        self._update_resize_current_row()
+        self.application.redraw_ui()
+
+    def adjust_pane_size(self, pane, diff: int = _WINDOW_HEIGHT_ADJUST):
         """Increase or decrease a given pane's height."""
         # Placeholder next_pane value to allow setting width and height without
         # any consequences if there is no next visible pane.
         next_pane = HSplit([],
-                           height=Dimension(weight=50),
-                           width=Dimension(weight=50))  # type: ignore
+                           height=Dimension(preferred=10),
+                           width=Dimension(preferred=10))  # type: ignore
         # Try to get the next visible pane to subtract a weight value from.
         next_visible_pane = self._get_next_visible_pane_after(pane)
         if next_visible_pane:
@@ -285,27 +480,40 @@ class WindowList:
             # Ignore ValueError raised if self.active_panes[-2] doesn't exist.
             pass
 
-        old_weight = pane.height.weight
-        next_old_weight = next_pane.height.weight  # type: ignore
+        old_height = pane.height.preferred
+        if diff < 0 and old_height <= 1:
+            return
+        next_old_height = next_pane.height.preferred  # type: ignore
 
         # Add to the current pane
-        new_weight = old_weight + diff
-        if new_weight <= 0:
-            new_weight = old_weight
+        new_height = old_height + diff
+        if new_height <= 0:
+            new_height = old_height
 
         # Subtract from the next pane
-        next_new_weight = next_old_weight - diff
-        if next_new_weight <= 0:
-            next_new_weight = next_old_weight
+        next_new_height = next_old_height - diff
+        if next_new_height <= 0:
+            next_new_height = next_old_height
 
-        pane.height.weight = new_weight
-        next_pane.height.weight = next_new_weight  # type: ignore
+        # If new height is too small or no change, make no adjustments.
+        if new_height < 3 or next_new_height < 3 or old_height == new_height:
+            return
+
+        # Set new heigts of the target pane and next pane.
+        pane.height.preferred = new_height
+        next_pane.height.preferred = next_new_height  # type: ignore
 
     def reset_pane_sizes(self):
-        """Reset all active pane width and height to 50%"""
-        for pane in self.active_panes:
-            pane.height = Dimension(weight=50)
-            pane.width = Dimension(weight=50)
+        """Reset all active pane heights evenly."""
+
+        available_height = self.current_window_list_height
+        old_values = [
+            p.height.preferred for p in self.active_panes if p.show_pane
+        ]
+        new_heights = [int(available_height / len(old_values))
+                       ] * len(old_values)
+
+        self._set_window_heights(new_heights)
 
     def move_pane_up(self):
         pane = self.get_current_active_pane()

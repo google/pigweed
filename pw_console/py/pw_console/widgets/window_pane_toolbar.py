@@ -13,6 +13,7 @@
 # the License.
 """Window pane toolbar base class."""
 
+import logging
 from typing import Any, Callable, List, Optional
 import functools
 
@@ -24,7 +25,9 @@ from prompt_toolkit.layout import (
     Window,
     WindowAlign,
 )
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
+from pw_console.get_pw_console_app import get_pw_console_app
 import pw_console.style
 from pw_console.widgets import (
     ToolbarButton,
@@ -32,6 +35,27 @@ from pw_console.widgets import (
     to_keybind_indicator,
 )
 import pw_console.widgets.mouse_handlers
+
+_LOG = logging.getLogger(__package__)
+
+
+class ResizeHandle(FormattedTextControl):
+    """Button to initiate window resize drag events."""
+    def __init__(self, parent_window_pane: Any, *args, **kwargs) -> None:
+        self.parent_window_pane = parent_window_pane
+        super().__init__(*args, **kwargs)
+
+    def mouse_handler(self, mouse_event: MouseEvent):
+        """Mouse handler for this control."""
+        # Start resize mouse drag event
+        if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+            get_pw_console_app().window_manager.start_resize_pane(
+                self.parent_window_pane)
+            # Mouse event handled, return None.
+            return None
+
+        # Mouse event not handled, return NotImplemented.
+        return NotImplemented
 
 
 class WindowPaneToolbar:
@@ -108,6 +132,11 @@ class WindowPaneToolbar:
             ('', '  {} '.format(self.subtitle()), self.focus_mouse_handler))
         return fragments
 
+    def get_resize_handle(self):
+        return pw_console.style.get_pane_indicator(self.focus_check_container,
+                                                   '====',
+                                                   hide_indicator=True)
+
     def add_button(self, button: ToolbarButton):
         self.buttons.append(button)
 
@@ -119,6 +148,7 @@ class WindowPaneToolbar:
         focus_check_container: Optional[Any] = None,
         focus_action_callable: Optional[Callable] = None,
         center_section_align: WindowAlign = WindowAlign.LEFT,
+        include_resize_handle: bool = True,
     ):
 
         self.parent_window_pane = parent_window_pane
@@ -180,12 +210,25 @@ class WindowPaneToolbar:
         get_toolbar_style = functools.partial(
             pw_console.style.get_toolbar_style, self.focus_check_container)
 
+        sections = [
+            self.left_section_window,
+            self.center_section_window,
+            self.right_section_window,
+        ]
+        if self.parent_window_pane and include_resize_handle:
+            resize_handle = Window(
+                content=ResizeHandle(
+                    self.parent_window_pane,
+                    self.get_resize_handle,
+                ),
+                # Right side text should appear at the far right of the toolbar
+                align=WindowAlign.RIGHT,
+                dont_extend_width=True,
+            )
+            sections.append(resize_handle)
+
         self.toolbar_vsplit = VSplit(
-            [
-                self.left_section_window,
-                self.center_section_window,
-                self.right_section_window,
-            ],
+            sections,
             height=WindowPaneToolbar.TOOLBAR_HEIGHT,
             style=get_toolbar_style,
         )

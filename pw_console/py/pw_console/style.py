@@ -351,7 +351,10 @@ def get_pane_style(pt_container) -> str:
     return 'class:pane_inactive'
 
 
-def get_pane_indicator(pt_container, title, mouse_handler=None):
+def get_pane_indicator(pt_container,
+                       title,
+                       mouse_handler=None,
+                       hide_indicator=False):
     """Return formatted text for a pane indicator and title."""
     if mouse_handler:
         inactive_indicator = ('class:pane_indicator_inactive', ' ',
@@ -365,6 +368,13 @@ def get_pane_indicator(pt_container, title, mouse_handler=None):
         inactive_title = ('class:pane_title_inactive', title)
         active_title = ('class:pane_title_active', title)
 
+    fragments = []
     if has_focus(pt_container.__pt_container__())():
-        return [active_indicator, active_title]
-    return [inactive_indicator, inactive_title]
+        if not hide_indicator:
+            fragments.append(active_indicator)
+        fragments.append(active_title)
+    else:
+        if not hide_indicator:
+            fragments.append(inactive_indicator)
+        fragments.append(inactive_title)
+    return fragments

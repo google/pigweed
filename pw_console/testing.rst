@@ -354,6 +354,37 @@ Window Management
        | on the tab bar
      - |checkbox|
 
+Mouse Window Resizing
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Click the :guilabel:`Fake Device Logs` window
+     - Log pane is focused
+     - |checkbox|
+
+   * - 2
+     - | Left click and hold the :guilabel:`====` of that window
+       | Drag the mouse up and down
+     - This log pane is resized
+     - |checkbox|
+
+   * - 3
+     - | Left click and hold the :guilabel:`====`
+       | of the :guilabel:`PwConsole Debug` window
+       | Drag the mouse up and down
+     - | The :guilabel:`PwConsole Debug` should NOT be focused
+       | The window should be resized as expected
+     - |checkbox|
+
 Copy Paste
 ^^^^^^^^^^
 

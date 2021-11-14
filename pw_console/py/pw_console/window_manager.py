@@ -17,6 +17,7 @@ import collections
 import copy
 import functools
 from itertools import chain
+import logging
 import operator
 from typing import Any, Dict, Iterable
 
@@ -32,8 +33,10 @@ from pw_console.log_pane import LogPane
 import pw_console.widgets.checkbox
 from pw_console.window_list import WindowList, DisplayMode
 
+_LOG = logging.getLogger(__package__)
+
 # Weighted amount for adjusting window dimensions when enlarging and shrinking.
-_WINDOW_SPLIT_ADJUST = 2
+_WINDOW_SPLIT_ADJUST = 1
 
 
 class WindowManager:
@@ -229,10 +232,10 @@ class WindowManager:
         self.reset_split_sizes()
 
     def reset_split_sizes(self):
-        """Reset all active pane width and height to 50%"""
+        """Reset all active pane width and height to defaults"""
         for window_list in self.window_lists:
-            window_list.height = Dimension(weight=50)
-            window_list.width = Dimension(weight=50)
+            window_list.height = Dimension(preferred=10)
+            window_list.width = Dimension(preferred=10)
 
     def adjust_split_size(self,
                           window_list: WindowList,
@@ -254,22 +257,22 @@ class WindowManager:
         next_window_list = self.window_lists[next_window_list_index]
 
         # Get current weight values
-        old_weight = window_list.width.weight
-        next_old_weight = next_window_list.width.weight  # type: ignore
+        old_width = window_list.width.preferred
+        next_old_width = next_window_list.width.preferred  # type: ignore
 
         # Add to the current split
-        new_weight = old_weight + diff
-        if new_weight <= 0:
-            new_weight = old_weight
+        new_width = old_width + diff
+        if new_width <= 0:
+            new_width = old_width
 
         # Subtract from the next split
-        next_new_weight = next_old_weight - diff
-        if next_new_weight <= 0:
-            next_new_weight = next_old_weight
+        next_new_width = next_old_width - diff
+        if next_new_width <= 0:
+            next_new_width = next_old_width
 
         # Set new weight values
-        window_list.width.weight = new_weight
-        next_window_list.width.weight = next_new_weight  # type: ignore
+        window_list.width.preferred = new_width
+        next_window_list.width.preferred = next_new_width  # type: ignore
 
     def toggle_pane(self, pane):
         """Toggle a pane on or off."""
@@ -317,6 +320,10 @@ class WindowManager:
         return chain.from_iterable(
             map(operator.attrgetter('active_panes'), self.window_lists))
 
+    def start_resize_pane(self, pane):
+        window_list, pane_index = self._find_window_list_and_pane_index(pane)
+        window_list.start_resize(pane, pane_index)
+
     def _find_window_list_and_pane_index(self, pane: Any):
         pane_index = None
         parent_window_list = None
@@ -362,7 +369,7 @@ class WindowManager:
             # Apply new height
             new_height = options['height']
             assert isinstance(new_height, int)
-            pane.height.weight = new_height
+            pane.height.preferred = new_height
 
     def _set_window_list_display_modes(self, prefs: ConsolePrefs) -> None:
         # Set column display modes

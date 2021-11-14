@@ -240,6 +240,7 @@ class ReplPane(WindowPane):
             title='Python Results',
             focus_action_callable=self.focus_output,
             focus_check_container=self.output_field,
+            include_resize_handle=False,
         )
         results_toolbar.add_button(
             ToolbarButton('Ctrl-Alt-c', 'Copy All Output', self.copy_text))

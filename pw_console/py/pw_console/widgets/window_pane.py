@@ -84,9 +84,10 @@ class WindowPane(ABC):
         self._pane_title = pane_title
         self._pane_subtitle = None
 
-        # Default width and height to 50% of the screen
-        self.height = height if height else Dimension(weight=50)
-        self.width = width if width else Dimension(weight=50)
+        # Default width and height to 10 lines each. They will be resized by the
+        # WindowManager later.
+        self.height = height if height else Dimension(preferred=10)
+        self.width = width if width else Dimension(preferred=10)
 
         # Boolean to show or hide this window pane
         self.show_pane = True
