@@ -14,8 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/python_action.gni")
-
 # Mirrors a directory structure to the output directory.
 #
 # This is similar to a GN copy target, with some differences:
@@ -30,12 +28,9 @@ import("$dir_pw_build/python_action.gni")
 #   directory: Output directory for the files.
 #   sources: List of files to mirror to the output directory.
 #   source_root: Root path for sources; defaults to ".".
-#   path_data_keys: GN metadata data_keys from which to extract file or
-#       directory paths to add to the list of sources.
 #
 template("pw_mirror_tree") {
-  assert(defined(invoker.sources) || defined(invoker.path_data_keys),
-         "At least one of 'sources' or 'path_data_keys' must be provided")
+  assert(defined(invoker.sources), "'sources' must be provided")
   assert(defined(invoker.directory) && invoker.directory != "",
          "The output path must be specified as 'directory'")
 
@@ -44,13 +39,6 @@ template("pw_mirror_tree") {
   } else {
     _root = "."
   }
-
-  _args = [
-    "--source-root",
-    rebase_path(_root, root_build_dir),
-    "--directory",
-    rebase_path(invoker.directory, root_build_dir),
-  ]
 
   _deps = []
   if (defined(invoker.deps)) {
@@ -62,53 +50,23 @@ template("pw_mirror_tree") {
     _public_deps += invoker.public_deps
   }
 
-  if (defined(invoker.path_data_keys)) {
-    generated_file("$target_name._path_list") {
-      data_keys = invoker.path_data_keys
-      rebase = root_build_dir
-      outputs = [ "$target_gen_dir/$target_name.txt" ]
-      deps = _deps + _public_deps
+  _copy_deps = []
 
-      assert(deps != [],
-             "'path_data_keys' requires at least one dependency in 'deps'")
+  foreach(source, invoker.sources) {
+    _stripped_source = rebase_path(source, _root)
+    _subtarget_name =
+        string_replace("${target_name}_${_stripped_source}", "/", ".")
+
+    copy(_subtarget_name) {
+      sources = [ source ]
+      outputs = [ "${invoker.directory}/${_stripped_source}" ]
+      deps = _deps
+      public_deps = _public_deps
     }
-
-    _deps += [ ":$target_name._path_list" ]
-    _args += [ "--path-file" ] +
-             rebase_path(get_target_outputs(":$target_name._path_list"),
-                         root_build_dir)
+    _copy_deps += [ ":${_subtarget_name}" ]
   }
 
-  pw_python_action(target_name) {
-    script = "$dir_pw_build/py/pw_build/mirror_tree.py"
-    args = _args
-
-    outputs = []
-
-    if (defined(invoker.sources)) {
-      args += rebase_path(invoker.sources, root_build_dir)
-
-      foreach(path, rebase_path(invoker.sources, _root)) {
-        outputs += [ "${invoker.directory}/$path" ]
-      }
-    }
-
-    # If path_data_keys is used, the outputs may be unknown.
-    if (outputs == []) {
-      stamp = true
-    }
-
-    deps = _deps
-    public_deps = _public_deps
-
-    _ignore_args = [
-      "script",
-      "args",
-      "outputs",
-      "directory",
-      "deps",
-      "public_deps",
-    ]
-    forward_variables_from(invoker, "*", _ignore_args)
+  group(target_name) {
+    public_deps = _copy_deps
   }
 }

@@ -194,19 +194,6 @@ out which wheels to collect by traversing the ``pw_python_package_wheels``
 <https://gn.googlesource.com/gn/+/HEAD/docs/reference.md#var_metadata>`_ key,
 which lists the output directory for each wheel.
 
-The ``pw_mirror_tree`` template is then used to collect wheels in an output
-directory:
-
-.. code-block::
-
-  import("$dir_pw_build/mirror_tree.gni")
-
-  pw_mirror_tree("my_wheels") {
-    path_data_keys = [ "pw_python_package_wheels" ]
-    deps = [ ":python_packages.wheel" ]
-    directory = "$root_out_dir/the_wheels"
-  }
-
 pw_python_zip_with_setup
 ========================
 Generates a ``.zip`` archive suitable for deployment outside of the project's
