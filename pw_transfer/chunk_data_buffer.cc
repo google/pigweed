@@ -14,6 +14,7 @@
 
 #include "pw_transfer/internal/chunk_data_buffer.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "pw_assert/assert.h"
@@ -23,7 +24,7 @@ namespace pw::transfer::internal {
 void ChunkDataBuffer::Write(ConstByteSpan data, bool last_chunk) {
   PW_DASSERT(data.size() <= buffer_.size());
 
-  std::memcpy(buffer_.data(), data.data(), data.size());
+  std::copy(data.begin(), data.end(), buffer_.begin());
   size_ = data.size();
 
   last_chunk_ = last_chunk;
