@@ -31,6 +31,9 @@ Status MemoryWriter::DoWrite(ConstByteSpan data) {
 
   size_t bytes_to_write = data.size_bytes();
   if (bytes_to_write == 0) {
+    // Calling memmove with a null pointer is undefined behavior, even when zero
+    // bytes are moved. We must return early here to avoid performing such a
+    // call when data is an empty span.
     return OkStatus();
   }
   std::memmove(dest_.data() + position_, data.data(), bytes_to_write);
@@ -46,6 +49,12 @@ StatusWithSize MemoryReader::DoRead(ByteSpan dest) {
 
   size_t bytes_to_read =
       std::min(dest.size_bytes(), source_.size_bytes() - position_);
+  if (bytes_to_read == 0) {
+    // Calling memcpy with a null pointer is undefined behavior, even when zero
+    // bytes are copied. We must return early here to avoid performing such a
+    // call when the dest span is empty.
+    return StatusWithSize(0);
+  }
 
   std::memcpy(dest.data(), source_.data() + position_, bytes_to_read);
   position_ += bytes_to_read;
