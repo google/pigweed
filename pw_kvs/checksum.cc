@@ -24,6 +24,11 @@ Status ChecksumAlgorithm::Verify(std::span<const byte> checksum) const {
   if (checksum.size() < size_bytes()) {
     return Status::InvalidArgument();
   }
+  if (state_.empty()) {
+    // Special case: state_.data is a nullptr, so calling std::memcmp would be
+    // undefined behavior.
+    return OkStatus();
+  }
   if (std::memcmp(state_.data(), checksum.data(), size_bytes()) != 0) {
     return Status::DataLoss();
   }
