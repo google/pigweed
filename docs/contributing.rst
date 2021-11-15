@@ -206,6 +206,40 @@ lowercase identifier.
 
    pw_bar/byte_builder: Add more stuff to builder
 
+Footer
+^^^^^^
+We support a number of `git footers`_ in the commit message, such as ``Bug:
+123`` in the message below:
+
+.. code:: none
+
+   pw_something: Add foo and bar functions
+
+   Bug: 123
+
+You are encouraged to use the following footers when appropriate:
+
+* ``Bug``: Associates this commit with a bug (issue in our `bug tracker`_). The
+  bug will be automatically updated when the change is submitted. When a change
+  is relevant to more than one bug, include multiple ``Bug`` lines, like so:
+
+  .. code:: none
+
+      pw_something: Add foo and bar functions
+
+      Bug: 123
+      Bug: 456
+
+* ``Fixes``: Like ``Bug``, but automatically closes the bug when submitted.
+
+In addition, we support all of the `Chromium CQ footers`_, but those are
+relatively rarely useful.
+
+.. _bug tracker: https://bugs.chromium.org/p/pigweed/issues/list
+.. _Chromium CQ footers: https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/infra/cq.md#options
+.. _git footers: https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/git-footers.html
+
+
 Documentation
 -------------
 All Pigweed changes must either
