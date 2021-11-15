@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_assert_basic/handler.h"
+#include "pw_preprocessor/arguments.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 

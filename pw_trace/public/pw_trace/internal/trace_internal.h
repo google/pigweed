@@ -17,6 +17,7 @@
 #pragma once
 
 #include "pw_preprocessor/arguments.h"
+#include "pw_preprocessor/concat.h"
 #include "pw_trace_backend/trace_backend.h"
 
 // Default: Flag value if none set

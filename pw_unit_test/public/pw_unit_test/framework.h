@@ -24,7 +24,6 @@
 #include <span>
 
 #include "pw_polyfill/standard.h"
-#include "pw_preprocessor/concat.h"
 #include "pw_preprocessor/util.h"
 #include "pw_unit_test/config.h"
 #include "pw_unit_test/event_handler.h"
@@ -417,6 +416,23 @@ class Test {
   virtual void PigweedTestBody() = 0;
 };
 
+// Checks that a test suite name is valid.
+constexpr bool HasNoUnderscores(const char* suite) {
+  const char* disabled_prefix = "DISABLED_";
+
+  for (; *suite != '\0'; ++suite) {
+    if (*suite == *disabled_prefix) {
+      disabled_prefix += 1;
+    } else {
+      disabled_prefix = "";
+      if (*suite == '_') {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 }  // namespace internal
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
@@ -428,31 +444,34 @@ inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
 }  // namespace unit_test
 }  // namespace pw
 
-#define _PW_TEST_CLASS_NAME(test_suite_name, test_name) \
-  PW_CONCAT(test_suite_name, _, test_name, _Test)
+#define _PW_TEST(test_suite_name, test_name, parent_class)                     \
+  static_assert(sizeof(#test_suite_name) > 1,                                  \
+                "The test suite name must not be empty");                      \
+  static_assert(::pw::unit_test::internal::HasNoUnderscores(#test_suite_name), \
+                "The test suite name (" #test_suite_name                       \
+                ") cannot contain underscores");                               \
+  static_assert(sizeof(#test_name) > 1, "The test name must not be empty");    \
+                                                                               \
+  _PW_TEST_CLASS(test_suite_name,                                              \
+                 test_name,                                                    \
+                 test_suite_name##_##test_name##_Test,                         \
+                 parent_class)
 
-#define _PW_TEST(test_suite_name, test_name, parent_class)              \
-  static_assert(sizeof(#test_suite_name) > 1,                           \
-                "test_suite_name must not be empty");                   \
-  static_assert(sizeof(#test_name) > 1, "test_name must not be empty"); \
-                                                                        \
-  class _PW_TEST_CLASS_NAME(test_suite_name, test_name) final           \
-      : public parent_class {                                           \
-   private:                                                             \
-    void PigweedTestBody() override;                                    \
-                                                                        \
-    static ::pw::unit_test::internal::TestInfo test_info_;              \
-  };                                                                    \
-                                                                        \
-  ::pw::unit_test::internal::TestInfo                                   \
-      _PW_TEST_CLASS_NAME(test_suite_name, test_name)::test_info_(      \
-          #test_suite_name,                                             \
-          #test_name,                                                   \
-          __FILE__,                                                     \
-          ::pw::unit_test::internal::Framework::CreateAndRunTest<       \
-              _PW_TEST_CLASS_NAME(test_suite_name, test_name)>);        \
-                                                                        \
-  void _PW_TEST_CLASS_NAME(test_suite_name, test_name)::PigweedTestBody()
+#define _PW_TEST_CLASS(suite, name, class_name, parent_class)              \
+  class class_name final : public parent_class {                           \
+   private:                                                                \
+    void PigweedTestBody() override;                                       \
+                                                                           \
+    static ::pw::unit_test::internal::TestInfo test_info_;                 \
+  };                                                                       \
+                                                                           \
+  ::pw::unit_test::internal::TestInfo class_name::test_info_(              \
+      #suite,                                                              \
+      #name,                                                               \
+      __FILE__,                                                            \
+      ::pw::unit_test::internal::Framework::CreateAndRunTest<class_name>); \
+                                                                           \
+  void class_name::PigweedTestBody()
 
 #define _PW_TEST_ASSERT(expectation) \
   do {                               \
