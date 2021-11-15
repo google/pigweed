@@ -21,6 +21,7 @@ On presubmit or in CI we verify Pigweed using:
 * ThreadSanitizer (tsan)
 * UndefinedBehaviorSanitizer (ubsan): in development, see
   https://bugs.pigweed.dev/548.
+* OSS-Fuzz
 
 The rest of this document discusses these tools and their configuration in
 greater detail, and how to use them in your own project.
@@ -115,19 +116,27 @@ described in this section. For more detail about these sanitizers, see the
 
 The exact configurations we use for these sanitizers are in
 `pw_toolchain/host_clang/BUILD.gn <https://cs.opensource.google/pigweed/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.
+You can see the current status of the sanitizer builds in the `Pigweed CI
+console`_, as ``pigweed-linux-san-*``.
 
 .. _Github documentation: https://github.com/google/sanitizers
 .. _AddressSanitizer: https://clang.llvm.org/docs/AddressSanitizer.html
 .. _MemorySanitizer: https://clang.llvm.org/docs/MemorySanitizer.html
+.. _Pigweed CI console: https://ci.chromium.org/p/pigweed/g/pigweed/console
 .. _ThreadSanitizer: https://clang.llvm.org/docs/ThreadSanitizer.html
 .. _UndefinedBehaviorSanitizer: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 
 
 Fuzzers
 =======
+`Fuzz testing`_ detects errors in software by providing it with randomly
+generated inputs.  We use `OSS-fuzz`_ to continuously uncover potential
+vulnerabilities in Pigweed.  `Dashboard with Pigweed's latest results`_. See
+the `pw_fuzzer <module-pw_fuzzer>`_ module documentation for more details.
 
-.. note::
-   This section is under construction.
+.. _Dashboard with Pigweed's latest results: https://oss-fuzz-build-logs.storage.googleapis.com/index.html#pigweed
+.. _Fuzz testing: https://en.wikipedia.org/wiki/Fuzzing
+.. _OSS-fuzz: https://github.com/google/oss-fuzz
 
 .. _Enabling analysis for your project:
 
@@ -172,7 +181,5 @@ Clang sanitizers
 
 Fuzzers
 =======
-
-.. note::
-   This section is under construction.
+See the `pw_fuzzer <module-pw_fuzzer>`_ module documentation.
 
