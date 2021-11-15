@@ -17,16 +17,16 @@
 namespace pw {
 
 ByteBuilder& ByteBuilder::append(size_t count, std::byte b) {
-  std::byte* const append_destination = &buffer_[size_];
-  std::memset(append_destination, static_cast<int>(b), ResizeForAppend(count));
+  std::byte* const append_destination = buffer_.begin() + size_;
+  std::fill_n(append_destination, ResizeForAppend(count), b);
   return *this;
 }
 
 ByteBuilder& ByteBuilder::append(const void* bytes, size_t count) {
-  if (count > 0) {
-    std::byte* const append_destination = &buffer_[size_];
-    std::memcpy(append_destination, bytes, ResizeForAppend(count));
-  }
+  std::byte* const append_destination = buffer_.begin() + size_;
+  std::copy_n(static_cast<const std::byte*>(bytes),
+              ResizeForAppend(count),
+              append_destination);
   return *this;
 }
 
