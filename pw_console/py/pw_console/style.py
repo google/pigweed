@@ -167,7 +167,6 @@ class MoonlightColors:
     magenta_accent = '#e27e8d'
 
 
-
 _THEME_NAME_MAPPING = {
     'moonlight': MoonlightColors(),
     'nord': NordColors(),
@@ -175,6 +174,12 @@ _THEME_NAME_MAPPING = {
     'dark': DarkColors(),
     'high-contrast-dark': HighContrastDarkColors(),
 } # yapf: disable
+
+
+def get_theme_colors(theme_name=''):
+    theme = _THEME_NAME_MAPPING.get(theme_name, DarkColors())
+    return theme
+
 
 def generate_styles(theme_name='dark'):
     """Return prompt_toolkit styles for the given theme name."""

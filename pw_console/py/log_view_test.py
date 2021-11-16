@@ -226,12 +226,15 @@ class TestLogView(unittest.TestCase):
 
         log_view.scroll_to_top()
         log_view.render_content()
-        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=0))
+        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=2))
+
         log_view.scroll_to_bottom()
         log_view.render_content()
-        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=3))
+        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=5))
 
         expected_line_cache = [
+            [('', '\n')],
+            [('', '\n')],
             [
                 ('class:log-time', '20210713 00:00:00'),
                 ('', '  '),
@@ -263,14 +266,12 @@ class TestLogView(unittest.TestCase):
                 ('class:selected-log-line class:log-level-10', 'DEBUG'),
                 ('class:selected-log-line ', '  '),
                 ('class:selected-log-line ', 'Test log 3'),
-                ('class:selected-log-line ', '  \n')
+                ('class:selected-log-line ', '                        \n')
             ]),
         ]  # yapf: disable
 
-        self.assertEqual(
-            list(log_view._line_fragment_cache  # pylint: disable=protected-access
-                 ),
-            expected_line_cache)
+        self.assertEqual(expected_line_cache,
+                         list(log_view._line_fragment_cache))  # pylint: disable=protected-access
 
     def test_clear_scrollback(self) -> None:
         """Test various functions with clearing log scrollback history."""

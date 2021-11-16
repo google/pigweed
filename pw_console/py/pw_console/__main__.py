@@ -18,7 +18,6 @@ import inspect
 import logging
 from pathlib import Path
 import sys
-from typing import List
 
 import pw_cli.log
 import pw_cli.argument_types
@@ -80,19 +79,21 @@ def main() -> int:
                            use_color=True,
                            hide_timestamp=False,
                            log_file=args.console_debug_log_file,
-                           logger=logging.getLogger(__package__))
-        logging.getLogger(__package__).propagate = False
+                           logger=logging.getLogger('pw_console'))
 
     global_vars = None
-    default_loggers: List = []
+    default_loggers = {}
     if args.test_mode:
-        default_loggers = [
+        fake_logger = logging.getLogger(
+            pw_console.console_app.FAKE_DEVICE_LOGGER_NAME)
+        default_loggers = {
             # Don't include pw_console package logs (_LOG) in the log pane UI.
             # Add the fake logger for test_mode.
-            logging.getLogger(pw_console.console_app.FAKE_DEVICE_LOGGER_NAME)
-        ]
+            'Fake Device Logs': [fake_logger],
+            'PwConsole Debug': [logging.getLogger('pw_console')],
+        }
         # Give access to adding log messages from the repl via: `LOG.warning()`
-        global_vars = dict(LOG=default_loggers[0])
+        global_vars = dict(LOG=fake_logger)
 
     help_text = None
     app_title = None

@@ -413,7 +413,8 @@ class WindowManager:
             self.window_lists[column_index].display_mode = DisplayMode.STACK
 
             # Add windows to the this column (window_list)
-            for window_title, window_options in windows.items():
+            for window_title, window_dict in windows.items():
+                window_options = window_dict if window_dict else {}
                 new_pane = None
                 desired_window_title = window_title
                 # Check for duplicate_of: Title value

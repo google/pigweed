@@ -14,7 +14,6 @@
 """pw_console embed class."""
 
 import asyncio
-import copy
 import logging
 from pathlib import Path
 from typing import Dict, List, Iterable, Optional, Union
@@ -74,6 +73,10 @@ class PwConsoleEmbed:
                     'some_variable', 'Variable',
                 }
             )
+
+            # Setup Python loggers to output to a file instead of STDOUT.
+            console.setup_python_logging()
+
             # Then run the console with:
             console.embed()
 
@@ -151,32 +154,17 @@ class PwConsoleEmbed:
                 if window_pane.pane_title() in self.hidden_by_default_windows:
                     window_pane.show_pane = False
 
-    def setup_python_logging(self):
-        """Disable log handlers for full screen prompt_toolkit applications."""
-        self.setup_python_logging_called = True
-        for logger in pw_console.python_logging.all_loggers():
-            # Make sure all known loggers propagate to the root logger.
-            logger.propagate = True
-            # Remove all stdout and stdout & stderr handlers to prevent
-            # corrupting the prompt_toolkit user interface.
-            for handler in copy.copy(logger.handlers):
-                # Must use type() check here since this returns True:
-                #   isinstance(logging.FileHandler, logging.StreamHandler)
-                if type(handler) == logging.StreamHandler:  # pylint: disable=unidiomatic-typecheck
-                    logger.removeHandler(handler)
+    def setup_python_logging(self, last_resort_filename: Optional[str] = None):
+        """Disable log handlers for full screen prompt_toolkit applications.
 
-        # Prevent these loggers from propagating to the root logger.
-        logging.getLogger('pw_console').propagate = False
-        # prompt_toolkit triggered debug log messages
-        logging.getLogger('prompt_toolkit').propagate = False
-        logging.getLogger('prompt_toolkit.buffer').propagate = False
-        logging.getLogger('parso.python.diff').propagate = False
-        logging.getLogger('parso.cache').propagate = False
-        # Set asyncio log level to WARNING
-        logging.getLogger('asyncio').setLevel(logging.WARNING)
-        # Always set DEBUG level for serial debug.
-        logging.getLogger('pw_console.serial_debug_logger').setLevel(
-            logging.DEBUG)
+        Args:
+            last_resort_filename: If specified use this file as a fallback for
+                unhandled python logging messages. Normally Python will output
+                any log messages with no handlers to STDERR as a fallback. If
+                none, a temp file will be created instead.
+        """
+        self.setup_python_logging_called = True
+        pw_console.python_logging.setup_python_logging(last_resort_filename)
 
     def hide_windows(self, *window_titles):
         for window_title in window_titles:

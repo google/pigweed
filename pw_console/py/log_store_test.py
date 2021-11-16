@@ -24,6 +24,8 @@ from pw_console.console_prefs import ConsolePrefs
 def _create_log_store():
     log_store = LogStore(
         prefs=ConsolePrefs(project_file=False, user_file=False))
+
+    assert not log_store.table.prefs.show_python_file
     viewer = MagicMock()
     viewer.new_logs_arrived = MagicMock()
     log_store.register_viewer(viewer)

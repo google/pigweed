@@ -333,7 +333,9 @@ class ReplPane(WindowPane):
     def _log_executed_code(self, code, prefix=''):
         """Log repl command input text along with a prefix string."""
         text = self.get_output_buffer_text([code], show_index=False)
-        _LOG.debug('[PYTHON] %s\n%s', prefix, text)
+        text = text.strip()
+        for line in text.splitlines():
+            _LOG.debug('[PYTHON %s]  %s', prefix, line.strip())
 
     async def periodically_check_stdout(self, user_code: UserCodeExecution,
                                         stdout_proxy, stderr_proxy):

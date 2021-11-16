@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Union
 
 import yaml
 
+from pw_console.style import get_theme_colors
+
 _DEFAULT_REPL_HISTORY: Path = Path.home() / '.pw_console_history'
 _DEFAULT_SEARCH_HISTORY: Path = Path.home() / '.pw_console_search'
 
@@ -36,6 +38,8 @@ _DEFAULT_CONFIG = {
         'column_order_omit_unspecified_columns': False,
         'column_order': [],
         'column_colors': {},
+        'show_python_file': False,
+        'show_python_logger': False,
         'hide_date_from_log_time': False,
         # Window arrangement
         'windows': {},
@@ -121,6 +125,13 @@ class ConsolePrefs:
     def ui_theme(self) -> str:
         return self._config.get('ui_theme', '')
 
+    def set_ui_theme(self, theme_name: str):
+        self._config['ui_theme'] = theme_name
+
+    @property
+    def theme_colors(self):
+        return get_theme_colors(self.ui_theme)
+
     @property
     def code_theme(self) -> str:
         return self._config.get('code_theme', '')
@@ -154,6 +165,19 @@ class ConsolePrefs:
     @property
     def hide_date_from_log_time(self) -> bool:
         return self._config.get('hide_date_from_log_time', False)
+
+    @property
+    def show_python_file(self) -> bool:
+        return self._config.get('show_python_file', False)
+
+    @property
+    def show_python_logger(self) -> bool:
+        return self._config.get('show_python_logger', False)
+
+    def toggle_bool_option(self, name: str):
+        existing_setting = self._config[name]
+        assert isinstance(existing_setting, bool)
+        self._config[name] = not existing_setting
 
     @property
     def column_order(self) -> list:
@@ -194,7 +218,8 @@ class ConsolePrefs:
         titles = []
         for column in self.windows.values():
             for window_key_title, window_dict in column.items():
+                window_options = window_dict if window_dict else {}
                 # Use 'duplicate_of: Title' if it exists, otherwise use the key.
-                titles.append(window_dict.get('duplicate_of',
-                                              window_key_title))
+                titles.append(
+                    window_options.get('duplicate_of', window_key_title))
         return set(titles)

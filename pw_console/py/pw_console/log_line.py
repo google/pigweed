@@ -73,6 +73,11 @@ class LogLine:
             for key, value in extra_fields.items():
                 self.metadata.fields[key] = value
 
+        lineno = self.record.lineno
+        file_name = str(self.record.filename)
+        self.metadata.fields['py_file'] = f'{file_name}:{lineno}'
+        self.metadata.fields['py_logger'] = str(self.record.name)
+
         return self.metadata
 
     def get_fragments(self) -> StyleAndTextTuples:

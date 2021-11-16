@@ -435,6 +435,7 @@ class LogView:
             return Point(0, 0)
         # For each line rendered in the last pass:
         for row, line in enumerate(self._line_fragment_cache):
+            # TODO(tonymd): This assumes every row contains exactly one '\n'
             column = 0
             # For each style string and raw text tuple in this line:
             for style_str, text, *_ in line:
@@ -661,8 +662,8 @@ class LogView:
         # will push the table header to the top.
         if total_used_lines < self._window_height:
             empty_line_count = self._window_height - total_used_lines
-            self._line_fragment_cache.appendleft([('', '\n' * empty_line_count)
-                                                  ])
+            for i in range(empty_line_count):
+                self._line_fragment_cache.appendleft([('', '\n')])
 
         self._line_fragment_cache_flattened = (
             pw_console.text_formatting.flatten_formatted_text_tuples(

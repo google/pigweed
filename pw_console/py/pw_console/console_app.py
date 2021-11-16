@@ -58,6 +58,7 @@ from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
 import pw_console.key_bindings
 from pw_console.log_pane import LogPane
+from pw_console.python_logging import all_loggers
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.repl_pane import ReplPane
 import pw_console.style
@@ -68,8 +69,10 @@ from pw_console.window_manager import WindowManager
 _LOG = logging.getLogger(__package__)
 
 # Fake logger for --test-mode
-FAKE_DEVICE_LOGGER_NAME = 'fake_device.1'
+FAKE_DEVICE_LOGGER_NAME = 'pw_console_fake_device'
 _FAKE_DEVICE_LOG = logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
+# Don't send fake_device logs to the root Python logger.
+_FAKE_DEVICE_LOG.propagate = False
 
 
 class FloatingMessageBar(ConditionalContainer):
@@ -85,11 +88,12 @@ class FloatingMessageBar(ConditionalContainer):
 
 
 def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
-                             pane: 'LogPane') -> None:
+                             pane: 'LogPane',
+                             level_name: Optional[str] = None) -> None:
     """A log pane handler for a given logger instance."""
     if not pane:
         return
-    pane.add_log_handler(logger)
+    pane.add_log_handler(logger, level_name=level_name)
 
 
 class ConsoleApp:
@@ -331,6 +335,17 @@ class ConsoleApp:
         self.update_menu_items()
         self.focus_main_menu()
 
+    def open_new_log_pane_for_logger(
+            self,
+            logger_name: str,
+            level_name='NOTSET',
+            window_title: Optional[str] = None) -> None:
+        pane_title = window_title if window_title else logger_name
+        self.run_pane_menu_option(
+            functools.partial(self.add_log_handler,
+                              pane_title, [logger_name],
+                              log_level_name=level_name))
+
     def set_ui_theme(self, theme_name: str) -> Callable:
         call_function = functools.partial(
             self.run_pane_menu_option,
@@ -345,7 +360,27 @@ class ConsoleApp:
         return call_function
 
     def update_menu_items(self):
-        self.root_container.menu_items = self._create_menu_items()
+        self.menu_items = self._create_menu_items()
+        self.root_container.menu_items = self.menu_items
+
+    def _create_logger_submenu(self):
+        submenu = [
+            MenuItem(
+                'root',
+                handler=functools.partial(self.open_new_log_pane_for_logger,
+                                          '',
+                                          window_title='root'),
+            )
+        ]
+        all_logger_names = sorted([logger.name for logger in all_loggers()])
+        for logger_name in all_logger_names:
+            submenu.append(
+                MenuItem(
+                    logger_name,
+                    handler=functools.partial(
+                        self.open_new_log_pane_for_logger, logger_name),
+                ))
+        return submenu
 
     def _create_menu_items(self):
         themes_submenu = [
@@ -394,6 +429,34 @@ class ConsoleApp:
             MenuItem(
                 '[File]',
                 children=[
+                    MenuItem('Open Logger',
+                             children=self._create_logger_submenu()),
+                    MenuItem(
+                        'Log Table View',
+                        children=[
+                            MenuItem(
+                                '{check} Show Python File'.format(
+                                    check=pw_console.widgets.checkbox.
+                                    to_checkbox_text(
+                                        self.prefs.show_python_file, end='')),
+                                handler=functools.partial(
+                                    self.run_pane_menu_option,
+                                    functools.partial(self.toggle_pref_option,
+                                                      'show_python_file')),
+                            ),
+                            MenuItem(
+                                '{check} Show Python Logger'.format(
+                                    check=pw_console.widgets.checkbox.
+                                    to_checkbox_text(
+                                        self.prefs.show_python_logger,
+                                        end='')),
+                                handler=functools.partial(
+                                    self.run_pane_menu_option,
+                                    functools.partial(self.toggle_pref_option,
+                                                      'show_python_logger')),
+                            ),
+                        ]),
+                    MenuItem('-'),
                     MenuItem(
                         'Themes',
                         children=themes_submenu,
@@ -520,9 +583,14 @@ class ConsoleApp:
         if self.application:
             self.focus_main_menu()
 
+    def toggle_pref_option(self, setting_name):
+        self.prefs.toggle_bool_option(setting_name)
+
     def load_theme(self, theme_name=None):
         """Regenerate styles for the current theme_name."""
         self._current_theme = pw_console.style.generate_styles(theme_name)
+        if theme_name:
+            self.prefs.set_ui_theme(theme_name)
 
     def _create_log_pane(self, title=None) -> 'LogPane':
         # Create one log pane.
@@ -537,10 +605,12 @@ class ConsoleApp:
     def apply_window_config(self) -> None:
         self.window_manager.apply_config(self.prefs)
 
-    def add_log_handler(self,
-                        window_title: str,
-                        logger_instances: Iterable[logging.Logger],
-                        separate_log_panes=False) -> Optional[LogPane]:
+    def add_log_handler(
+            self,
+            window_title: str,
+            logger_instances: Iterable[logging.Logger],
+            separate_log_panes: bool = False,
+            log_level_name: Optional[str] = None) -> Optional[LogPane]:
         """Add the Log pane as a handler for this logger instance."""
 
         existing_log_pane = None
@@ -554,7 +624,7 @@ class ConsoleApp:
             existing_log_pane = self._create_log_pane(title=window_title)
 
         for logger in logger_instances:
-            _add_log_handler_to_pane(logger, existing_log_pane)
+            _add_log_handler_to_pane(logger, existing_log_pane, log_level_name)
 
         self.window_manager.update_root_container_body()
         self.update_menu_items()
@@ -641,12 +711,22 @@ class ConsoleApp:
         if test_mode:
             background_log_task = asyncio.create_task(self.log_forever())
 
+        background_menu_updater_task = asyncio.create_task(
+            self.background_menu_updater())
         try:
             unused_result = await self.application.run_async(
                 set_exception_handler=True)
         finally:
             if test_mode:
                 background_log_task.cancel()
+            background_menu_updater_task.cancel()
+
+    async def background_menu_updater(self):
+        """Periodically update main menu items to capture new logger names."""
+        while True:
+            await asyncio.sleep(30)
+            _LOG.debug('Update main menu items')
+            self.update_menu_items()
 
     async def log_forever(self):
         """Test mode async log generator coroutine that runs forever."""

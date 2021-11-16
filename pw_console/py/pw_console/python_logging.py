@@ -13,10 +13,11 @@
 # the License.
 """Python logging helper fuctions."""
 
+import copy
 import logging
 import tempfile
 from datetime import datetime
-from typing import Iterator
+from typing import Iterator, Optional
 
 
 def all_loggers() -> Iterator[logging.Logger]:
@@ -44,3 +45,53 @@ def create_temp_log_file():
         log_file_name = log_file.name
 
     return log_file_name
+
+
+def set_logging_last_resort_file_handler(
+        file_name: Optional[str] = None) -> None:
+    log_file = file_name if file_name else create_temp_log_file()
+    logging.lastResort = logging.FileHandler(log_file)
+
+
+def disable_stdout_handlers(logger: logging.Logger) -> None:
+    """Remove all stdout and stdout & stderr logger handlers."""
+    for handler in copy.copy(logger.handlers):
+        # Must use type() check here since this returns True:
+        #   isinstance(logging.FileHandler, logging.StreamHandler)
+        if type(handler) == logging.StreamHandler:  # pylint: disable=unidiomatic-typecheck
+            logger.removeHandler(handler)
+
+
+def setup_python_logging(last_resort_filename: Optional[str] = None) -> None:
+    """Disable log handlers for full screen prompt_toolkit applications."""
+    disable_stdout_handlers(logging.getLogger())
+
+    if logging.lastResort is not None:
+        set_logging_last_resort_file_handler(last_resort_filename)
+
+    for logger in all_loggers():
+        # Make sure all known loggers propagate to the root logger.
+        logger.propagate = True
+        # Prevent stdout handlers from corrupting the prompt_toolkit UI.
+        disable_stdout_handlers(logger)
+
+    # Prevent these loggers from propagating to the root logger.
+    hidden_host_loggers = [
+        'pw_console',
+        'pw_console.plugins',
+
+        # prompt_toolkit triggered debug log messages
+        'prompt_toolkit',
+        'prompt_toolkit.buffer',
+        'parso.python.diff',
+        'parso.cache',
+        'pw_console.serial_debug_logger',
+    ]
+    for logger_name in hidden_host_loggers:
+        logging.getLogger(logger_name).propagate = False
+
+    # Set asyncio log level to WARNING
+    logging.getLogger('asyncio').setLevel(logging.WARNING)
+
+    # Always set DEBUG level for serial debug.
+    logging.getLogger('pw_console.serial_debug_logger').setLevel(logging.DEBUG)

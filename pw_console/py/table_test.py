@@ -108,14 +108,18 @@ class TestTableView(unittest.TestCase):
         table = TableView(self.prefs)
         for log in logs:
             table.update_metadata_column_widths(log)
+            metadata_fields = {
+                k: v
+                for k, v in log.metadata.fields.items()
+                if k not in ['py_file', 'py_logger']
+            }
             # update_metadata_column_widths shoulp populate self.metadata.fields
-            self.assertEqual(log.metadata.fields,
-                             log.record.extra_metadata_fields)
+            self.assertEqual(metadata_fields, log.record.extra_metadata_fields)
         # Check expected column widths
         results = {
             k: v
             for k, v in dict(table.column_widths).items()
-            if k not in ['time', 'level']
+            if k not in ['time', 'level', 'py_file', 'py_logger']
         }
         self.assertCountEqual(expected_widths, results)
 
@@ -160,6 +164,7 @@ class TestTableView(unittest.TestCase):
     def test_formatted_header(self, _name, logs, expected_headers) -> None:
         """Test colum widths calculation."""
         table = TableView(self.prefs)
+
         for log, header in zip(logs, expected_headers):
             table.update_metadata_column_widths(log)
             self.assertEqual(table.formatted_header(), header)
