@@ -159,6 +159,12 @@ class LogContextGuard final {
 // LogContextGuard::LogContextGuard(LogContext).
 LogContext SaveLogContext();
 
+// Instantiates on |T| to provide an implementation for bt_str(…) if T has a .ToString() method.
+template <typename T>
+std::string ToString(const T& value) {
+  return value.ToString();
+}
+
 }  // namespace internal
 }  // namespace bt
 
@@ -172,10 +178,12 @@ LogContext SaveLogContext();
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
 
-// Convenience macro for printf-style formatting of an object with a ToString()
-// method e.g.:
+// Convenience macro for printf-style formatting of an object with a ToString() function overload
+// e.g.:
 //   bt_log(INFO, "tag", "foo happened: %s", bt_str(id));
-#define bt_str(id) ((id).ToString().c_str())
+//
+// This library provides an ToString() overload that forwards to .ToString() method if it exists.
+#define bt_str(id) (::bt::internal::ToString(id).c_str())
 
 #define __BT_CONCAT_(x, y) x##y
 // This level of indirection is required for concatenating the results of macros.

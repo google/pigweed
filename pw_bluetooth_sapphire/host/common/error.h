@@ -300,6 +300,8 @@ struct ProtocolErrorTraits<NoProtocolError> {
   }
 };
 
+namespace internal {
+
 // Produces a human-readable representation of a fitx::result<Error<…>>
 template <typename ProtocolErrorCode, typename... Ts>
 std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result) {
@@ -316,8 +318,6 @@ std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result
   return out;
 }
 
-namespace internal {
-
 // Overload for compatibility with the bt_is_error(status, …) macro where |status| is a
 // fitx::result<Error<…>, …>
 template <typename ProtocolErrorCode, typename... Ts>
@@ -330,7 +330,7 @@ template <typename ProtocolErrorCode, typename... Ts>
   va_list args;
   va_start(args, fmt);
   std::string msg = bt_lib_cpp_string::StringVPrintf(fmt, args);
-  LogMessage(file, line, severity, tag, "%s: %s", msg.c_str(), ToString(result).c_str());
+  LogMessage(file, line, severity, tag, "%s: %s", msg.c_str(), bt_str(result));
   va_end(args);
   return true;
 }

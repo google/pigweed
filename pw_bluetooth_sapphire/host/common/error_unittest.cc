@@ -249,11 +249,11 @@ TEST(ErrorTest, ProtocolErrorToString) {
 
 TEST(ErrorTest, ToStringOnResult) {
   constexpr fitx::result proto_error_result = ToResult(TestError::kFail2);
-  EXPECT_EQ("[result: fail 2 (TestError 2)]", ToString(proto_error_result));
+  EXPECT_EQ("[result: fail 2 (TestError 2)]", internal::ToString(proto_error_result));
   constexpr fitx::result<Error<TestError>> success_result = fitx::ok();
-  EXPECT_EQ("[result: success]", ToString(success_result));
+  EXPECT_EQ("[result: success]", internal::ToString(success_result));
   constexpr fitx::result<Error<TestError>, int> success_result_with_value = fitx::ok(1);
-  EXPECT_EQ("[result: success with value]", ToString(success_result_with_value));
+  EXPECT_EQ("[result: success with value]", internal::ToString(success_result_with_value));
 }
 
 TEST(ErrorTest, BtIsErrorMacroCompiles) {
@@ -264,6 +264,11 @@ TEST(ErrorTest, BtIsErrorMacroCompiles) {
   const fitx::result<Error<TestError>, int> error_with_value =
       fitx::error(MakeError(TestError::kFail1));
   EXPECT_TRUE(bt_is_error(error_with_value, ERROR, "ErrorTest", "error message"));
+}
+
+TEST(ErrorTest, BtStrMacroOnResult) {
+  constexpr fitx::result proto_error_result = ToResult(TestError::kFail2);
+  EXPECT_EQ(internal::ToString(proto_error_result), bt_str(proto_error_result));
 }
 
 }  // namespace
