@@ -391,6 +391,9 @@ Implementations
   ``MemoryWriterBuffer`` extends ``MemoryWriter`` to internally provide a memory
   buffer.
 
+  The ``MemoryWriter`` can be accessed like a standard C++ container. The
+  contents grow as data is written.
+
 .. cpp:class:: MemoryReader : public SeekableReader
 
   The ``MemoryReader`` class implements the :cpp:class:`Reader` interface by

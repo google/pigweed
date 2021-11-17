@@ -51,9 +51,7 @@ TEST_F(MemoryWriterTest, BytesWrittenOnConstruction) {
   std::memset(memory_buffer_.data(), 1u, bytes_written);
   MemoryWriter memory_writer(memory_buffer_, bytes_written);
   EXPECT_EQ(memory_writer.bytes_written(), bytes_written);
-  EXPECT_EQ(memcmp(memory_writer.WrittenData().data(),
-                   memory_buffer_.data(),
-                   bytes_written),
+  EXPECT_EQ(memcmp(memory_writer.data(), memory_buffer_.data(), bytes_written),
             0);
 }
 
@@ -94,7 +92,7 @@ TEST_F(MemoryWriterTest, MultipleWrites) {
   EXPECT_EQ(memory_writer.bytes_written(), counter);
 
   counter = 0;
-  for (const std::byte& value : memory_writer.WrittenData()) {
+  for (const std::byte& value : memory_writer) {
     EXPECT_EQ(value, std::byte(counter++));
   }
 }
@@ -122,7 +120,7 @@ TEST_F(MemoryWriterTest, FullWriter) {
   EXPECT_EQ(memory_writer.Write(std::span(buffer)), Status::OutOfRange());
   EXPECT_EQ(memory_writer.bytes_written(), memory_buffer_.size());
 
-  for (const std::byte& value : memory_writer.WrittenData()) {
+  for (const std::byte& value : memory_writer) {
     EXPECT_EQ(value, std::byte(fill_byte));
   }
 }
@@ -156,9 +154,19 @@ TEST_F(MemoryWriterTest, OverlappingBuffer) {
   EXPECT_TRUE(memory_writer.Write(std::byte(0)).ok());
   EXPECT_EQ(memory_writer.bytes_written(), kTestString.size() + 1);
 
-  EXPECT_STREQ(
-      reinterpret_cast<const char*>(memory_writer.WrittenData().data()),
-      kTestString.data());
+  EXPECT_STREQ(reinterpret_cast<const char*>(memory_writer.data()),
+               kTestString.data());
+}
+
+TEST_F(MemoryWriterTest, Clear) {
+  MemoryWriter writer(memory_buffer_);
+  EXPECT_EQ(OkStatus(), writer.Write(std::byte{1}));
+  ASSERT_FALSE(writer.empty());
+  writer.clear();
+  EXPECT_TRUE(writer.empty());
+
+  EXPECT_EQ(OkStatus(), writer.Write(std::byte{99}));
+  EXPECT_EQ(writer[0], std::byte{99});
 }
 
 TEST_F(MemoryWriterTest, Seek_To0) {
