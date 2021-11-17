@@ -108,7 +108,7 @@ class IntrusiveList {
   void push_back(T& item) { list_.insert_after(list_.before_end(), item); }
 
   iterator insert_after(iterator pos, T& item) {
-    list_.insert_after(&(*pos), item);
+    list_.insert_after(pos.item_, item);
     return iterator(&item);
   }
 
@@ -117,7 +117,7 @@ class IntrusiveList {
 
   // Removes the item following pos from the list. The item is not destructed.
   iterator erase_after(iterator pos) {
-    list_.erase_after(&(*pos));
+    list_.erase_after(pos.item_);
     return ++pos;
   }
 

@@ -220,6 +220,39 @@ TEST(IntrusiveList, InsertAfter) {
   EXPECT_EQ(i, PW_ARRAY_SIZE(item_array) + 1);
 }
 
+TEST(IntrusiveList, InsertAfterBeforeBegin) {
+  // Create a test item to insert at the beginning of the list.
+  constexpr int kMagicValue = 42;
+  TestItem inserted_item(kMagicValue);
+
+  // Create initial values to fill in the start/end.
+  TestItem item_array[20];
+
+  IntrusiveList<TestItem> list;
+  // Fill the list with TestItem objects that have a value of zero.
+  for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
+    item_array[i].SetNumber(0);
+    list.push_back(item_array[i]);
+  }
+
+  auto it = list.insert_after(list.before_begin(), inserted_item);
+
+  // Ensure the returned iterator from insert_after is the newly inserted
+  // element.
+  EXPECT_EQ(it->GetNumber(), kMagicValue);
+
+  // Ensure the value is at the beginning of the list.
+  size_t i = 0;
+  for (TestItem& item : list) {
+    if (item.GetNumber() == kMagicValue) {
+      EXPECT_EQ(i, static_cast<size_t>(0));
+    } else {
+      EXPECT_EQ(item.GetNumber(), 0);
+    }
+    i++;
+  }
+}
+
 TEST(IntrusiveList, PushFront) {
   constexpr int kMagicValue = 42;
   TestItem pushed_item(kMagicValue);
