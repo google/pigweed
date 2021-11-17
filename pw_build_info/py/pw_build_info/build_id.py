@@ -15,6 +15,7 @@
 
 import argparse
 import logging
+from pathlib import Path
 import sys
 from typing import BinaryIO, Optional
 import elftools  # type: ignore
@@ -122,6 +123,19 @@ def read_build_id(elf_file: BinaryIO) -> Optional[bytes]:
     # If there's no dedicated section, try and use symbol information to find
     # the build info.
     return read_build_id_from_symbol(elf_file)
+
+
+def find_matching_elf(uuid: bytes, search_dir: Path) -> Optional[Path]:
+    """Recursively searches a directory for an ELF file with a matching UUID."""
+    elf_file_paths = search_dir.glob('**/*.elf')
+    for elf_file in elf_file_paths:
+        candidate_id = read_build_id(open(elf_file, 'rb'))
+        if candidate_id is None:
+            continue
+        if candidate_id == uuid:
+            return elf_file
+
+    return None
 
 
 def _main(elf_file: BinaryIO) -> int:
