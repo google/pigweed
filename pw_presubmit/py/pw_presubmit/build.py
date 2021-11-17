@@ -89,7 +89,7 @@ def gn_gen(gn_source_dir: Path,
            export_compile_commands: Union[bool, str] = True,
            **gn_arguments) -> None:
     """Runs gn gen in the specified directory with optional GN args."""
-    args_option = (gn_args(**gn_arguments), ) if gn_arguments else ()
+    args_option = gn_args(**gn_arguments)
 
     # Delete args.gn to ensure this is a clean build.
     args_gn = gn_output_dir / 'args.gn'
@@ -109,7 +109,7 @@ def gn_gen(gn_source_dir: Path,
          *(['--fail-on-unused-args'] if gn_fail_on_unused else []),
          *([export_commands_arg] if export_commands_arg else []),
          *args,
-         *args_option,
+         args_option,
          cwd=gn_source_dir)
 
     if gn_check:
