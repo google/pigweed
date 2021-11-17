@@ -17,7 +17,7 @@ import argparse
 from pathlib import Path
 
 from pw_software_update import keys
-from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata)
+from pw_software_update.tuf_pb2 import SignedRootMetadata
 from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 
@@ -30,17 +30,8 @@ def sign_root_metadata(root_metadata: SignedRootMetadata,
       root_key_pem: The Root signing key in PEM.
     """
 
-    metadata = RootMetadata.FromString(root_metadata.serialized_root_metadata)
-
     signature = keys.create_ecdsa_signature(
         root_metadata.serialized_root_metadata, root_key_pem)
-
-    if signature.key_id not in [k.key_id for k in metadata.keys]:
-        raise ValueError('The root key is not listed in the root metadata.')
-
-    if signature.key_id not in metadata.root_signature_requirement.key_ids:
-        raise ValueError('The root key is not pinned to the root role.')
-
     root_metadata.signatures.append(signature)
 
     return root_metadata
