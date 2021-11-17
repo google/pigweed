@@ -161,6 +161,9 @@ Client to server transfer (write)
 
 Errors
 ======
+
+Protocol errors
+---------------
 At any point, either the client or server may terminate the transfer with a
 status code. The transfer chunk with the status is the final chunk of the
 transfer.
@@ -211,6 +214,24 @@ sender or the receiver (see `Transfer roles`_).
 +-------------------------+-------------------------+-------------------------+
 
 .. cpp:namespace-pop::
+
+Client errors
+-------------
+``pw_transfer`` clients may immediately return certain errors if they cannot
+start a transfer.
+
+.. list-table::
+
+  * - **Status**
+    - **Reason**
+  * - ``ALREADY_EXISTS``
+    - A transfer with the requested ID is already pending on this client.
+  * - ``DATA_LOSS``
+    - Sending the initial transfer chunk failed.
+  * - ``RESOURCE_EXHAUSTED``
+    - The client has insufficient resources to start an additional transfer at
+      this time.
+
 
 Transfer roles
 ==============

@@ -79,6 +79,7 @@ class ClientContext : public Context {
 
   void Finish(Status status) {
     PW_DASSERT(active());
+    set_transfer_state(TransferState::kCompleted);
     if (on_completion_ != nullptr) {
       on_completion_(status);
     }

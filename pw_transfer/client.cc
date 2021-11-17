@@ -72,11 +72,11 @@ Status Client::StartNewTransfer(uint32_t transfer_id,
   // Check the transfer ID is already being used. If not, find an available
   // transfer slot.
   for (ClientContext& ctx : transfer_contexts_) {
-    if (ctx.transfer_id() == transfer_id) {
-      return Status::FailedPrecondition();
-    }
-
-    if (!ctx.active()) {
+    if (ctx.active()) {
+      if (ctx.transfer_id() == transfer_id) {
+        return Status::AlreadyExists();
+      }
+    } else {
       context = &ctx;
     }
   }

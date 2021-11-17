@@ -137,6 +137,39 @@ TEST_F(ReadTransfer, MultiChunk) {
             0);
 }
 
+TEST_F(ReadTransfer, MultipleTransfers) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  ASSERT_EQ(OkStatus(),
+            client_.Read(3, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
+
+  context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
+      {.transfer_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
+
+  ASSERT_EQ(transfer_status, OkStatus());
+  transfer_status = Status::Unknown();
+
+  ASSERT_EQ(OkStatus(),
+            client_.Read(3, writer, [&transfer_status](Status status) {
+              transfer_status = status;
+            }));
+
+  context_.server().SendServerStream<Transfer::Read>(EncodeChunk(
+      {.transfer_id = 3u, .offset = 0, .data = kData32, .remaining_bytes = 0}));
+
+  EXPECT_EQ(transfer_status, OkStatus());
+}
+
+TEST_F(ReadTransfer, BusyTransferReturnsAlreadyExists) {
+  stream::MemoryWriterBuffer<64> writer;
+  ASSERT_EQ(OkStatus(), client_.Read(3, writer, [](Status) {}));
+
+  EXPECT_EQ(Status::AlreadyExists(), client_.Read(3, writer, [](Status) {}));
+}
+
 class ReadTransferMaxBytes32 : public ReadTransfer {
  protected:
   ReadTransferMaxBytes32() : ReadTransfer(/*max_bytes_to_receive=*/32) {}
