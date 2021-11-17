@@ -47,36 +47,39 @@ class BinarySemaphore {
   BinarySemaphore& operator=(const BinarySemaphore&) = delete;
   BinarySemaphore& operator=(BinarySemaphore&&) = delete;
 
-  // Atomically increments the internal counter by 1 up to max_count.
-  // Any thread(s) waiting for the counter to be greater than 0,
-  // such as due to being blocked in acquire, will subsequently be unblocked.
-  // This is IRQ safe.
+  // Atomically increments the internal counter by 1.
+  // Any thread(s) waiting for the counter to be greater than 0, i.e.
+  // blocked in acquire, will subsequently be unblocked.
+  // This is thread and IRQ safe.
   //
-  // PRECONDITIONS:
-  //   1 <= max() - counter
+  // There exists an overflow risk if one releases more than max() times
+  // between acquires because many RTOS implementations internally
+  // increment the counter past one where it is only cleared when acquired.
+  //
+  // Precondition: 1 <= max() - counter
   void release();
 
   // Decrements the internal counter to 0 or blocks indefinitely until it can.
-  // This is thread safe.
+  // This is thread safe, but not IRQ safe.
   void acquire();
 
   // Tries to decrement by the internal counter to 0 without blocking.
   // Returns true if the internal counter was reset successfully.
-  // This is IRQ safe.
+  // This is thread and IRQ safe.
   bool try_acquire() noexcept;
 
   // Tries to decrement the internal counter to 0. Blocks until the specified
   // timeout has elapsed or the counter was decremented to 0, whichever comes
   // first.
   // Returns true if the internal counter was decremented successfully.
-  // This is thread safe.
+  // This is thread safe, but not IRQ safe.
   bool try_acquire_for(chrono::SystemClock::duration timeout);
 
   // Tries to decrement the internal counter to 0. Blocks until the specified
-  // deadline has been reached or the counter was decremented  to 0, whichever
+  // deadline has been reached or the counter was decremented to 0, whichever
   // comes first.
   // Returns true if the internal counter was decremented successfully.
-  // This is thread safe.
+  // This is thread safe, but not IRQ safe.
   bool try_acquire_until(chrono::SystemClock::time_point deadline);
 
   static constexpr ptrdiff_t max() noexcept {

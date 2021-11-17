@@ -1253,11 +1253,11 @@ Optimized Backend
   * - *Supported on*
     - *Optimized backend module*
   * - FreeRTOS
-    - Planned
+    - ``pw_sync_freertos:thread_notification``
   * - ThreadX
-    - Planned
+    - Not possible, use ``pw_sync:binary_semaphore_thread_notification``
   * - embOS
-    - Planned
+    - Not needed, use ``pw_sync:binary_semaphore_thread_notification``
   * - STL
     - Not planned, use ``pw_sync:binary_semaphore_thread_notification``
   * - Baremetal
@@ -1383,13 +1383,13 @@ Optimized Backend
   * - *Supported on*
     - *Backend module*
   * - FreeRTOS
-    - Planned
+    - ``pw_sync_freertos:timed_thread_notification``
   * - ThreadX
-    - Planned
+    - Not possible, use ``pw_sync:binary_semaphore_timed_thread_notification``
   * - embOS
-    - Planned
+    - Not needed, use ``pw_sync:binary_semaphore_timed_thread_notification``
   * - STL
-    - Not planned, use ``pw_sync:binary_semaphore_thread_notification``
+    - Not planned, use ``pw_sync:binary_semaphore_timed_thread_notification``
   * - Zephyr
     - Planned
   * - CMSIS-RTOS API v2 & RTX5
@@ -1463,31 +1463,31 @@ C++
       - *Thread*
       - *Interrupt*
       - *NMI*
-    * - ``ThreadNotification::ThreadNotification``
+    * - ``TimedThreadNotification::TimedThreadNotification``
       - ✔
       -
       -
-    * - ``ThreadNotification::~ThreadNotification``
+    * - ``TimedThreadNotification::~TimedThreadNotification``
       - ✔
       -
       -
-    * - ``void ThreadNotification::acquire``
+    * - ``void TimedThreadNotification::acquire``
       - ✔
       -
       -
-    * - ``bool ThreadNotification::try_acquire``
+    * - ``bool TimedThreadNotification::try_acquire``
       - ✔
       -
       -
-    * - ``bool ThreadNotification::try_acquire_for``
+    * - ``bool TimedThreadNotification::try_acquire_for``
       - ✔
       -
       -
-    * - ``bool ThreadNotification::try_acquire_until``
+    * - ``bool TimedThreadNotification::try_acquire_until``
       - ✔
       -
       -
-    * - ``void ThreadNotification::release``
+    * - ``void TimedThreadNotification::release``
       - ✔
       - ✔
       -
@@ -1534,8 +1534,12 @@ does not recommend semaphores for mutual exclusion.
 
 The CountingSemaphore is initialized to being empty or having no tokens.
 
-The entire API is thread safe, but only a subset is interrupt safe. None of it
-is NMI safe.
+The entire API is thread safe, but only a subset is interrupt safe.
+
+.. Note::
+  If there is only a single consuming thread, we recommend using a
+  ThreadNotification instead which can be much more efficient on some RTOSes
+  such as FreeRTOS.
 
 .. Warning::
   Releasing multiple tokens is often not natively supported, meaning you may
@@ -1559,6 +1563,132 @@ is NMI safe.
   * - CMSIS-RTOS API v2 & RTX5
     - Planned
 
+C++
+---
+.. cpp:class:: pw::sync::CountingSemaphore
+
+  .. cpp:function:: void acquire()
+
+     Decrements the internal counter by 1 or blocks indefinitely until it can.
+     This is thread safe, but not IRQ safe.
+
+  .. cpp:function:: bool try_acquire() noexcept
+
+     Tries to decrement by the internal counter by 1 without blocking.
+     Returns true if the internal counter was decremented successfully.
+     This is thread and IRQ safe.
+
+  .. cpp:function:: bool try_acquire_for(chrono::SystemClock::duration timeout)
+
+     Tries to decrement the internal counter by 1. Blocks until the specified
+     timeout has elapsed or the counter was decremented by 1, whichever comes
+     first.
+     Returns true if the internal counter was decremented successfully.
+     This is thread safe, but not IRQ safe.
+
+  .. cpp:function:: bool try_acquire_until(chrono::SystemClock::time_point deadline)
+
+     Tries to decrement the internal counter by 1. Blocks until the specified
+     deadline has been reached or the counter was decremented  by 1, whichever
+     comes first.
+     Returns true if the internal counter was decremented successfully.
+     This is thread safe, but not IRQ safe.
+
+  .. cpp:function:: void release(ptrdiff_t update = 1)
+
+     Atomically increments the internal counter by the value of update.
+     Any thread(s) waiting for the counter to be greater than 0, i.e.
+     blocked in acquire, will subsequently be unblocked.
+     This is thread and IRQ safe.
+
+     **Precondition:** update >= 0
+
+     **Precondition:** update <= max() - counter
+
+  .. cpp:function:: static constexpr ptrdiff_t max() noexcept
+
+     Returns the internal counter's maximum possible value.
+
+  .. list-table::
+
+    * - *Safe to use in context*
+      - *Thread*
+      - *Interrupt*
+      - *NMI*
+    * - ``CountingSemaphore::CountingSemaphore``
+      - ✔
+      -
+      -
+    * - ``CountingSemaphore::~CountingSemaphore``
+      - ✔
+      -
+      -
+    * - ``void CountingSemaphore::acquire``
+      - ✔
+      -
+      -
+    * - ``bool CountingSemaphore::try_acquire``
+      - ✔
+      - ✔
+      -
+    * - ``bool CountingSemaphore::try_acquire_for``
+      - ✔
+      -
+      -
+    * - ``bool CountingSemaphore::try_acquire_until``
+      - ✔
+      -
+      -
+    * - ``void CountingSemaphore::release``
+      - ✔
+      - ✔
+      -
+    * - ``void CountingSemaphore::max``
+      - ✔
+      - ✔
+      - ✔
+
+Examples in C++
+^^^^^^^^^^^^^^^
+As an example, a counting sempahore can be useful to run periodic tasks at
+frequencies near or higher than the system clock tick rate in a way which lets
+you detect whether you ever fall behind.
+
+.. code-block:: cpp
+
+  #include "pw_sync/counting_semaphore.h"
+  #include "pw_thread/thread_core.h"
+
+  class PeriodicWorker() : public pw::thread::ThreadCore {
+   // Public API invoked by a higher frequency timer interrupt.
+   void TimeToExecute() {
+     periodic_run_semaphore_.release();
+   }
+
+   private:
+    pw::sync::CountingSemaphore periodic_run_semaphore_;
+
+    // Thread function.
+    void Run() override {
+      while (true) {
+        size_t behind_by_n_cycles = 0;
+        periodic_run_semaphore_.acquire(); // Wait to run until it's time.
+        while (periodic_run_semaphore_.try_acquire()) {
+          ++behind_by_n_cycles;
+        }
+        if (behind_by_n_cycles > 0) {
+          PW_LOG_WARNING("Not keeping up, behind by %d cycles",
+                         behind_by_n_cycles);
+        }
+        DoPeriodicWork();
+      }
+    }
+
+    void DoPeriodicWork();
+  }
+
+
+
 .. _module-pw_sync-binary-semaphore:
 
 BinarySemaphore
@@ -1572,8 +1702,13 @@ default implementation of CountingSemaphore.
 
 The BinarySemaphore is initialized to being empty or having no tokens.
 
-The entire API is thread safe, but only a subset is interrupt safe. None of it
-is NMI safe.
+The entire API is thread safe, but only a subset is interrupt safe.
+
+.. Note::
+  If there is only a single consuming thread, we recommend using a
+  ThreadNotification instead which can be much more efficient on some RTOSes
+  such as FreeRTOS.
+
 
 .. list-table::
 
@@ -1591,6 +1726,123 @@ is NMI safe.
     - Planned
   * - CMSIS-RTOS API v2 & RTX5
     - Planned
+
+C++
+---
+.. cpp:class:: pw::sync::BinarySemaphore
+
+  .. cpp:function:: void acquire()
+
+     Decrements the internal counter to 0 or blocks indefinitely until it can.
+     This is thread safe, but not IRQ safe.
+
+  .. cpp:function:: bool try_acquire() noexcept
+
+     Tries to decrement by the internal counter to 0 without blocking.
+     Returns true if the internal counter was decremented successfully.
+     This is thread and IRQ safe.
+
+  .. cpp:function:: bool try_acquire_for(chrono::SystemClock::duration timeout)
+
+     Tries to decrement the internal counter to 0. Blocks until the specified
+     timeout has elapsed or the counter was decremented to 0, whichever comes
+     first.
+     Returns true if the internal counter was decremented successfully.
+     This is thread safe, but not IRQ safe.
+
+  .. cpp:function:: bool try_acquire_until(chrono::SystemClock::time_point deadline)
+
+     Tries to decrement the internal counter to 0. Blocks until the specified
+     deadline has been reached or the counter was decremented to 0, whichever
+     comes first.
+     Returns true if the internal counter was decremented successfully.
+     This is thread safe, but not IRQ safe.
+
+  .. cpp:function:: void release()
+
+     Atomically increments the internal counter by 1.
+     Any thread(s) waiting for the counter to be greater than 0, i.e.
+     blocked in acquire, will subsequently be unblocked.
+     This is thread and IRQ safe.
+
+     There exists an overflow risk if one releases more than max() times
+     between acquires because many RTOS implementations internally
+     increment the counter past one where it is only cleared when acquired.
+
+     **Precondition:** 1 <= max() - counter
+
+  .. cpp:function:: static constexpr ptrdiff_t max() noexcept
+
+     Returns the internal counter's maximum possible value.
+
+  .. list-table::
+
+    * - *Safe to use in context*
+      - *Thread*
+      - *Interrupt*
+      - *NMI*
+    * - ``BinarySemaphore::BinarySemaphore``
+      - ✔
+      -
+      -
+    * - ``BinarySemaphore::~BinarySemaphore``
+      - ✔
+      -
+      -
+    * - ``void BinarySemaphore::acquire``
+      - ✔
+      -
+      -
+    * - ``bool BinarySemaphore::try_acquire``
+      - ✔
+      - ✔
+      -
+    * - ``bool BinarySemaphore::try_acquire_for``
+      - ✔
+      -
+      -
+    * - ``bool BinarySemaphore::try_acquire_until``
+      - ✔
+      -
+      -
+    * - ``void BinarySemaphore::release``
+      - ✔
+      - ✔
+      -
+    * - ``void BinarySemaphore::max``
+      - ✔
+      - ✔
+      - ✔
+
+Examples in C++
+^^^^^^^^^^^^^^^
+.. code-block:: cpp
+
+  #include "pw_sync/binary_semaphore.h"
+  #include "pw_thread/thread_core.h"
+
+  class FooHandler() : public pw::thread::ThreadCore {
+   // Public API invoked by other threads and/or interrupts.
+   void NewFooAvailable() {
+     new_foo_semaphore_.release();
+   }
+
+   private:
+    pw::sync::BinarySemaphore new_foo_semaphore_;
+
+    // Thread function.
+    void Run() override {
+      while (true) {
+        if (new_foo_semaphore_.try_acquire_for(kNotificationTimeout)) {
+          HandleFoo();
+        }
+        DoOtherStuff();
+      }
+    }
+
+    void HandleFoo();
+    void DoOtherStuff();
+  }
 
 Conditional Variables
 =====================
