@@ -230,7 +230,7 @@ You are encouraged to use the following footers when appropriate:
       Bug: 123
       Bug: 456
 
-* ``Fixes``: Like ``Bug``, but automatically closes the bug when submitted.
+* ``Fixed``: Like ``Bug``, but automatically closes the bug when submitted.
 
 In addition, we support all of the `Chromium CQ footers`_, but those are
 relatively rarely useful.
