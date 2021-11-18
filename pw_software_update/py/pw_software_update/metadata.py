@@ -34,7 +34,7 @@ class RoleType(enum.Enum):
     TARGETS = 'targets'
 
 
-def gen_commmon_metadata(
+def gen_common_metadata(
         role: RoleType,
         spec_version: str = DEFAULT_SPEC_VERSION,
         version: int = DEFAULT_METADATA_VERSION) -> CommonMetadata:
@@ -57,7 +57,7 @@ def gen_targets_metadata(
                        length=len(target_payload),
                        hashes=gen_hashes(target_payload, hash_funcs)))
 
-    common_metadata = gen_commmon_metadata(RoleType.TARGETS, version=version)
+    common_metadata = gen_common_metadata(RoleType.TARGETS, version=version)
     return TargetsMetadata(common_metadata=common_metadata,
                            target_files=target_files)
 

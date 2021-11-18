@@ -35,15 +35,15 @@ def gen_root_metadata(root_key_pems: RootKeys,
       targets_key_pems: list of targets keys in PEM format.
       version: Version number for rollback checks.
     """
-    commmon = metadata.gen_commmon_metadata(metadata.RoleType.ROOT,
-                                            version=version)
+    common = metadata.gen_common_metadata(metadata.RoleType.ROOT,
+                                          version=version)
 
     root_keys = [keys.import_ecdsa_public_key(pem) for pem in root_key_pems]
     targets_keys = [
         keys.import_ecdsa_public_key(pem) for pem in targets_key_pems
     ]
 
-    return RootMetadata(common_metadata=commmon,
+    return RootMetadata(common_metadata=common,
                         consistent_snapshot=False,
                         keys=root_keys + targets_keys,
                         root_signature_requirement=SignatureRequirement(
