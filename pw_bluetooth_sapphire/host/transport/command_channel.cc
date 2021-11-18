@@ -12,7 +12,6 @@
 
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "transport.h"
 

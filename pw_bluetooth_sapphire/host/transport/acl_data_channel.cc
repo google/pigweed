@@ -21,7 +21,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/pipeline_monitor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -324,7 +323,7 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, zx::channel hci_acl
       is_initialized_(false),
       num_completed_packets_event_handler_id_(0u),
       data_buffer_overflow_event_handler_id_(0u),
-      io_dispatcher_(nullptr),
+      io_dispatcher_(async_get_default_dispatcher()),
       send_monitor_(fit::nullable(io_dispatcher_),
                     // Buffer depth for ~3 minutes of audio assuming ~50 ACL fragments/s send rate
                     internal::RetireLog(/*min_depth=*/100, /*max_depth=*/1 << 13)) {
@@ -348,22 +347,14 @@ void AclDataChannelImpl::Initialize(const DataBufferInfo& bredr_buffer_info,
   bredr_buffer_info_ = bredr_buffer_info;
   le_buffer_info_ = le_buffer_info;
 
-  auto setup_handler_task = [this] {
-    zx_status_t status = channel_wait_.Begin(async_get_default_dispatcher());
-    if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "failed channel setup %s", zx_status_get_string(status));
-      channel_wait_.set_object(ZX_HANDLE_INVALID);
-      return;
-    }
-    bt_log(DEBUG, "hci", "started I/O handler");
-  };
-
-  io_dispatcher_ = async_get_default_dispatcher();
-  RunTaskSync(setup_handler_task, io_dispatcher_);
-
-  // TODO(jamuraa): return whether we successfully initialized?
-  if (channel_wait_.object() == ZX_HANDLE_INVALID)
+  zx_status_t wait_status = channel_wait_.Begin(async_get_default_dispatcher());
+  if (wait_status != ZX_OK) {
+    bt_log(ERROR, "hci", "failed channel setup %s", zx_status_get_string(wait_status));
+    channel_wait_.set_object(ZX_HANDLE_INVALID);
+    // TODO(jamuraa): return whether we successfully initialized?
     return;
+  }
+  bt_log(DEBUG, "hci", "started I/O handler");
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       hci_spec::kNumberOfCompletedPacketsEventCode,
@@ -416,15 +407,11 @@ void AclDataChannelImpl::ShutDown() {
   write_send_metrics_task_.Cancel();
   log_dropped_overflow_task_.Cancel();
 
-  auto handler_cleanup_task = [this] {
-    bt_log(DEBUG, "hci", "removing I/O handler");
-    zx_status_t status = channel_wait_.Cancel();
-    if (status != ZX_OK) {
-      bt_log(WARN, "hci", "couldn't cancel wait on channel: %s", zx_status_get_string(status));
-    }
-  };
-
-  RunTaskSync(handler_cleanup_task, io_dispatcher_);
+  bt_log(DEBUG, "hci", "removing I/O handler");
+  zx_status_t cancel_status = channel_wait_.Cancel();
+  if (cancel_status != ZX_OK) {
+    bt_log(WARN, "hci", "couldn't cancel wait on channel: %s", zx_status_get_string(cancel_status));
+  }
 
   transport_->command_channel()->RemoveEventHandler(num_completed_packets_event_handler_id_);
   transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
