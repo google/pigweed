@@ -85,11 +85,11 @@ void BasicLogTestPlainC(void) {
 
   // Log levels other than the standard ones work; what each backend does is
   // implementation defined.
-  PW_LOG(0, PW_LOG_DEFAULT_FLAGS, "Custom log level: 0");
-  PW_LOG(1, PW_LOG_DEFAULT_FLAGS, "Custom log level: 1");
-  PW_LOG(2, PW_LOG_DEFAULT_FLAGS, "Custom log level: 2");
-  PW_LOG(3, PW_LOG_DEFAULT_FLAGS, "Custom log level: 3");
-  PW_LOG(100, PW_LOG_DEFAULT_FLAGS, "Custom log level: 100");
+  PW_LOG(0, PW_LOG_FLAGS, "Custom log level: 0");
+  PW_LOG(1, PW_LOG_FLAGS, "Custom log level: 1");
+  PW_LOG(2, PW_LOG_FLAGS, "Custom log level: 2");
+  PW_LOG(3, PW_LOG_FLAGS, "Custom log level: 3");
+  PW_LOG(100, PW_LOG_FLAGS, "Custom log level: 100");
 
   // Logging from a function.
   LoggingFromFunctionPlainC();

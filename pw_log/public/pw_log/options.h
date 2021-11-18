@@ -30,6 +30,12 @@
 // circular dependencies when implementing the pw_log facade.
 #pragma once
 
+#include "pw_log/config.h"
+
+// These configuration options differ from the options in pw_log/config.h in
+// that these should be set at a module/compile unit level rather than a global
+// level level.
+
 // Default: Module name
 //
 // An empty string is used for the module name if it is not set. The
@@ -44,26 +50,33 @@
 #define PW_LOG_MODULE_NAME_DEFINED 0
 #endif  // PW_LOG_MODULE_NAME
 
+// Default: Log level filtering
+//
+// All log statements have a level, and this define sets the log level to the
+// globally set default if PW_LOG_LEVEL was not already set by the module.
+// This is compile-time filtering if the level is a constant.
+#ifndef PW_LOG_LEVEL
+#define PW_LOG_LEVEL PW_LOG_LEVEL_DEFAULT
+#endif  // PW_LOG_LEVEL
+
 // Default: Flags
 //
 // For log statements like LOG_INFO that don't have an explicit argument, this
 // is used for the flags value.
-#ifndef PW_LOG_DEFAULT_FLAGS
-#define PW_LOG_DEFAULT_FLAGS 0
-#endif  // PW_LOG_DEFAULT_FLAGS
+#ifndef PW_LOG_FLAGS
+#define PW_LOG_FLAGS PW_LOG_FLAGS_DEFAULT
+#endif  // PW_LOG_FLAGS
 
-// Default: Log level filtering
-//
-// All log statements have a level, and this define is the default filtering.
-// This is compile-time filtering if the level is a constant.
-#ifndef PW_LOG_LEVEL
-#define PW_LOG_LEVEL PW_LOG_LEVEL_DEBUG
-#endif  // PW_LOG_LEVEL
+// DEPRECATED: Use PW_LOG_FLAGS.
+// TODO(pwbug/561): Remove this macro after migration.
+#ifndef PW_LOG_DEFAULT_FLAGS
+#define PW_LOG_DEFAULT_FLAGS PW_LOG_FLAGS
+#endif  // PW_LOG_DEFAULT_FLAGS
 
 // Default: Log enabled expression
 //
 // This expression determines whether or not the statement is enabled and
 // should be passed to the backend.
 #ifndef PW_LOG_ENABLE_IF
-#define PW_LOG_ENABLE_IF(level, flags) ((level) >= PW_LOG_LEVEL)
+#define PW_LOG_ENABLE_IF(level, flags) PW_LOG_ENABLE_IF_DEFAULT(level, flags)
 #endif  // PW_LOG_ENABLE_IF

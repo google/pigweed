@@ -27,6 +27,7 @@ licenses(["notice"])
 pw_cc_facade(
     name = "facade",
     hdrs = [
+        "public/pw_log/config.h",
         "public/pw_log/levels.h",
         "public/pw_log/log.h",
         "public/pw_log/options.h",

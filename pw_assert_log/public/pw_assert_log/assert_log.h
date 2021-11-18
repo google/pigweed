@@ -25,7 +25,7 @@
 #define PW_HANDLE_CRASH(message, ...)       \
   do {                                      \
     PW_LOG(PW_LOG_LEVEL_FATAL,              \
-           PW_LOG_DEFAULT_FLAGS,            \
+           PW_LOG_FLAGS,                    \
            __FILE__ ":%d: Crash: " message, \
            __LINE__,                        \
            __VA_ARGS__);                    \
@@ -38,7 +38,7 @@
 #define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...)         \
   do {                                                                   \
     PW_LOG(PW_LOG_LEVEL_FATAL,                                           \
-           PW_LOG_DEFAULT_FLAGS,                                         \
+           PW_LOG_FLAGS,                                                 \
            __FILE__ ":%d: Check failed: " condition_string ". " message, \
            __LINE__,                                                     \
            __VA_ARGS__);                                                 \
@@ -62,7 +62,7 @@
                                                 message, ...)             \
   do {                                                                    \
     PW_LOG(PW_LOG_LEVEL_FATAL,                                            \
-           PW_LOG_DEFAULT_FLAGS,                                          \
+           PW_LOG_FLAGS,                                                  \
            __FILE__ ":%d: Check failed: "                                 \
                  arg_a_str " (=" type_fmt ") "                            \
                  comparison_op_str " "                                    \
