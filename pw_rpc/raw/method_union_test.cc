@@ -21,7 +21,6 @@
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_rpc/internal/test_utils.h"
-#include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 
@@ -49,13 +48,11 @@ class FakeGeneratedServiceImpl
  public:
   FakeGeneratedServiceImpl(uint32_t id) : FakeGeneratedService(id) {}
 
-  StatusWithSize DoNothing(ServerContext&, ConstByteSpan, ByteSpan) {
+  StatusWithSize DoNothing(ConstByteSpan, ByteSpan) {
     return StatusWithSize::Unknown();
   }
 
-  StatusWithSize AddFive(ServerContext&,
-                         ConstByteSpan request,
-                         ByteSpan response) {
+  StatusWithSize AddFive(ConstByteSpan request, ByteSpan response) {
     DecodeRawTestRequest(request);
 
     TestResponse::MemoryEncoder test_response(response);
@@ -66,9 +63,7 @@ class FakeGeneratedServiceImpl
     return StatusWithSize::Unauthenticated(payload.size());
   }
 
-  void StartStream(ServerContext&,
-                   ConstByteSpan request,
-                   RawServerWriter& writer) {
+  void StartStream(ConstByteSpan request, RawServerWriter& writer) {
     DecodeRawTestRequest(request);
     last_writer = std::move(writer);
   }

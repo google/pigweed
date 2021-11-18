@@ -67,7 +67,6 @@ pw_source_set("server") {
   ]
   public = [
     "public/pw_rpc/server.h",
-    "public/pw_rpc/server_context.h",
     "public/pw_rpc/service.h",
   ]
   sources = [

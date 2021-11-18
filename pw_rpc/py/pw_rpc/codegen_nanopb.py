@@ -241,7 +241,7 @@ class _CallbackFunction(NamedTuple):
 class StubGenerator(codegen.StubGenerator):
     """Generates Nanopb RPC stubs."""
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
-        return (f'::pw::Status {prefix}{method.name()}(ServerContext&, '
+        return (f'::pw::Status {prefix}{method.name()}( '
                 f'const {method.request_type().nanopb_struct()}& request, '
                 f'{method.response_type().nanopb_struct()}& response)')
 
@@ -256,19 +256,19 @@ class StubGenerator(codegen.StubGenerator):
     def server_streaming_signature(self, method: ProtoServiceMethod,
                                    prefix: str) -> str:
         return (
-            f'void {prefix}{method.name()}(ServerContext&, '
+            f'void {prefix}{method.name()}( '
             f'const {method.request_type().nanopb_struct()}& request, '
             f'ServerWriter<{method.response_type().nanopb_struct()}>& writer)')
 
     def client_streaming_signature(self, method: ProtoServiceMethod,
                                    prefix: str) -> str:
-        return (f'void {prefix}{method.name()}(ServerContext&, '
+        return (f'void {prefix}{method.name()}( '
                 f'ServerReader<{method.request_type().nanopb_struct()}, '
                 f'{method.response_type().nanopb_struct()}>& reader)')
 
     def bidirectional_streaming_signature(self, method: ProtoServiceMethod,
                                           prefix: str) -> str:
-        return (f'void {prefix}{method.name()}(ServerContext&, '
+        return (f'void {prefix}{method.name()}( '
                 f'ServerReaderWriter<{method.request_type().nanopb_struct()}, '
                 f'{method.response_type().nanopb_struct()}>& reader_writer)')
 

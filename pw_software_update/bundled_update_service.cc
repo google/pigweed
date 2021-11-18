@@ -71,7 +71,6 @@ constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
 }  // namespace
 
 Status BundledUpdateService::GetStatus(
-    ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
@@ -80,7 +79,6 @@ Status BundledUpdateService::GetStatus(
 }
 
 Status BundledUpdateService::Start(
-    ServerContext&,
     const pw_software_update_StartRequest& request,
     pw_software_update_BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
@@ -191,7 +189,6 @@ void BundledUpdateService::DoVerify() {
 }
 
 Status BundledUpdateService::Verify(
-    ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
@@ -248,7 +245,6 @@ Status BundledUpdateService::Verify(
 }
 
 Status BundledUpdateService::Apply(
-    ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
@@ -465,7 +461,6 @@ void BundledUpdateService::DoApply() {
 }
 
 Status BundledUpdateService::Abort(
-    ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);
@@ -489,7 +484,6 @@ Status BundledUpdateService::Abort(
 }
 
 Status BundledUpdateService::Reset(
-    ServerContext&,
     const pw_protobuf_Empty&,
     pw_software_update_BundledUpdateStatus& response) {
   std::lock_guard lock(mutex_);

@@ -68,24 +68,22 @@ class FakeGeneratedServiceImpl
  public:
   FakeGeneratedServiceImpl(uint32_t id) : FakeGeneratedService(id) {}
 
-  Status AddFive(ServerContext&,
-                 const pw_rpc_test_TestRequest& request,
+  Status AddFive(const pw_rpc_test_TestRequest& request,
                  pw_rpc_test_TestResponse& response) {
     last_request = request;
     response.value = request.integer + 5;
     return Status::Unauthenticated();
   }
 
-  StatusWithSize DoNothing(ServerContext&, ConstByteSpan, ByteSpan) {
+  StatusWithSize DoNothing(ConstByteSpan, ByteSpan) {
     return StatusWithSize::Unknown();
   }
 
-  void RawStream(ServerContext&, ConstByteSpan, RawServerWriter& writer) {
+  void RawStream(ConstByteSpan, RawServerWriter& writer) {
     last_raw_writer = std::move(writer);
   }
 
-  void StartStream(ServerContext&,
-                   const pw_rpc_test_TestRequest& request,
+  void StartStream(const pw_rpc_test_TestRequest& request,
                    NanopbServerWriter<pw_rpc_test_TestResponse>& writer) {
     last_request = request;
     last_writer = std::move(writer);

@@ -24,23 +24,20 @@ namespace test {
 
 class TestService final : public generated::TestService<TestService> {
  public:
-  Status TestUnaryRpc(ServerContext&,
-                      const pw_rpc_test_TestRequest& request,
+  Status TestUnaryRpc(const pw_rpc_test_TestRequest& request,
                       pw_rpc_test_TestResponse& response) {
     response.value = request.integer + 1;
     return static_cast<Status::Code>(request.status_code);
   }
 
   void TestAnotherUnaryRpc(
-      ServerContext& ctx,
       const pw_rpc_test_TestRequest& request,
       NanopbUnaryResponder<pw_rpc_test_TestResponse>& responder) {
     pw_rpc_test_TestResponse response{};
-    responder.Finish(response, TestUnaryRpc(ctx, request, response));
+    responder.Finish(response, TestUnaryRpc(request, response));
   }
 
   static void TestServerStreamRpc(
-      ServerContext&,
       const pw_rpc_test_TestRequest& request,
       ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
     for (int i = 0; i < request.integer; ++i) {
@@ -51,14 +48,12 @@ class TestService final : public generated::TestService<TestService> {
   }
 
   void TestClientStreamRpc(
-      ServerContext&,
       ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>&
           new_reader) {
     reader = std::move(new_reader);
   }
 
   void TestBidirectionalStreamRpc(
-      ServerContext&,
       ServerReaderWriter<pw_rpc_test_TestRequest,
                          pw_rpc_test_TestStreamResponse>& new_reader_writer) {
     reader_writer = std::move(new_reader_writer);

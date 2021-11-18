@@ -18,7 +18,6 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/raw/internal/method_union.h"
-#include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 
 namespace pw::rpc::internal {
@@ -31,7 +30,7 @@ constexpr uint32_t kFakeMethodId = 10;
 TestOutput<32> output;
 rpc::Channel channels[] = {Channel::Create<kFakeChannelId>(&output)};
 
-StatusWithSize FakeMethod(ServerContext&, ConstByteSpan, ByteSpan) {
+StatusWithSize FakeMethod(ConstByteSpan, ByteSpan) {
   return StatusWithSize::Unimplemented();
 }
 

@@ -19,16 +19,13 @@ namespace pw::trace {
 
 class TraceService final : public generated::TraceService<TraceService> {
  public:
-  pw::Status Enable(ServerContext&,
-                    const pw_trace_TraceEnableMessage& request,
+  pw::Status Enable(const pw_trace_TraceEnableMessage& request,
                     pw_trace_TraceEnableMessage& response);
 
-  pw::Status IsEnabled(ServerContext&,
-                       const pw_trace_Empty& request,
+  pw::Status IsEnabled(const pw_trace_Empty& request,
                        pw_trace_TraceEnableMessage& response);
 
-  void GetTraceData(ServerContext&,
-                    const pw_trace_Empty& request,
+  void GetTraceData(const pw_trace_Empty& request,
                     ServerWriter<pw_trace_TraceDataMessage>& writer);
 };
 

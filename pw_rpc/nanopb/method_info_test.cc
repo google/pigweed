@@ -25,27 +25,22 @@ using GeneratedService = pw::rpc::test::pw_rpc::nanopb::TestService;
 
 class TestService final : public GeneratedService::Service<TestService> {
  public:
-  Status TestUnaryRpc(ServerContext&,
-                      const pw_rpc_test_TestRequest&,
+  Status TestUnaryRpc(const pw_rpc_test_TestRequest&,
                       pw_rpc_test_TestResponse&) {
     return OkStatus();
   }
 
-  void TestAnotherUnaryRpc(ServerContext&,
-                           const pw_rpc_test_TestRequest&,
+  void TestAnotherUnaryRpc(const pw_rpc_test_TestRequest&,
                            NanopbUnaryResponder<pw_rpc_test_TestResponse>&) {}
 
   static void TestServerStreamRpc(
-      ServerContext&,
       const pw_rpc_test_TestRequest&,
       ServerWriter<pw_rpc_test_TestStreamResponse>&) {}
 
   void TestClientStreamRpc(
-      ServerContext&,
       ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>&) {}
 
   void TestBidirectionalStreamRpc(
-      ServerContext&,
       ServerReaderWriter<pw_rpc_test_TestRequest,
                          pw_rpc_test_TestStreamResponse>&) {}
 };

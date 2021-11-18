@@ -25,7 +25,6 @@
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc/nanopb/server_reader_writer.h"
-#include "pw_rpc/server_context.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -36,27 +35,22 @@ class Packet;
 
 // Expected function signatures for user-implemented RPC functions.
 template <typename Request, typename Response>
-using NanopbSynchronousUnary = Status(ServerContext&,
-                                      const Request&,
-                                      Response&);
+using NanopbSynchronousUnary = Status(const Request&, Response&);
 
 template <typename Request, typename Response>
-using NanopbAsynchronousUnary = void(ServerContext&,
-                                     const Request&,
+using NanopbAsynchronousUnary = void(const Request&,
                                      NanopbUnaryResponder<Response>&);
 
 template <typename Request, typename Response>
-using NanopbServerStreaming = void(ServerContext&,
-                                   const Request&,
+using NanopbServerStreaming = void(const Request&,
                                    NanopbServerWriter<Response>&);
 
 template <typename Request, typename Response>
-using NanopbClientStreaming = void(ServerContext&,
-                                   NanopbServerReader<Request, Response>&);
+using NanopbClientStreaming = void(NanopbServerReader<Request, Response>&);
 
 template <typename Request, typename Response>
 using NanopbBidirectionalStreaming =
-    void(ServerContext&, NanopbServerReaderWriter<Request, Response>&);
+    void(NanopbServerReaderWriter<Request, Response>&);
 
 // MethodTraits specialization for a static synchronous unary method.
 template <typename Req, typename Resp>

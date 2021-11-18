@@ -134,17 +134,11 @@ class RawMethod : public Method {
 };
 
 // Expected function signatures for user-implemented RPC functions.
-using RawSynchronousUnary = StatusWithSize(ServerContext&,
-                                           ConstByteSpan,
-                                           ByteSpan);
-using RawAsynchronousUnary = void(ServerContext&,
-                                  ConstByteSpan,
-                                  RawUnaryResponder&);
-using RawServerStreaming = void(ServerContext&,
-                                ConstByteSpan,
-                                RawServerWriter&);
-using RawClientStreaming = void(ServerContext&, RawServerReader&);
-using RawBidirectionalStreaming = void(ServerContext&, RawServerReaderWriter&);
+using RawSynchronousUnary = StatusWithSize(ConstByteSpan, ByteSpan);
+using RawAsynchronousUnary = void(ConstByteSpan, RawUnaryResponder&);
+using RawServerStreaming = void(ConstByteSpan, RawServerWriter&);
+using RawClientStreaming = void(RawServerReader&);
+using RawBidirectionalStreaming = void(RawServerReaderWriter&);
 
 // MethodTraits specialization for a static synchronous raw unary method.
 template <>

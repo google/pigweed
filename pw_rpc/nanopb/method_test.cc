@@ -20,7 +20,6 @@
 #include "pw_rpc/internal/method_impl_tester.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/nanopb/internal/method_union.h"
-#include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
@@ -37,73 +36,56 @@ class TestNanopbService final : public Service {
  public:
   // Unary signatures
 
-  Status Unary(ServerContext&, const FakePb&, FakePb&) { return Status(); }
+  Status Unary(const FakePb&, FakePb&) { return Status(); }
 
-  static Status StaticUnary(ServerContext&, const FakePb&, FakePb&) {
-    return Status();
-  }
+  static Status StaticUnary(const FakePb&, FakePb&) { return Status(); }
 
-  void AsyncUnary(ServerContext&,
-                  const FakePb&,
-                  NanopbUnaryResponder<FakePb>&) {}
+  void AsyncUnary(const FakePb&, NanopbUnaryResponder<FakePb>&) {}
 
-  static void StaticAsyncUnary(ServerContext&,
-                               const FakePb&,
-                               NanopbUnaryResponder<FakePb>&) {}
+  static void StaticAsyncUnary(const FakePb&, NanopbUnaryResponder<FakePb>&) {}
 
-  Status UnaryWrongArg(ServerContext&, FakePb&, FakePb&) { return Status(); }
+  Status UnaryWrongArg(FakePb&, FakePb&) { return Status(); }
 
-  static void StaticUnaryVoidReturn(ServerContext&, const FakePb&, FakePb&) {}
+  static void StaticUnaryVoidReturn(const FakePb&, FakePb&) {}
 
   // Server streaming signatures
 
-  void ServerStreaming(ServerContext&,
-                       const FakePb&,
-                       NanopbServerWriter<FakePb>&) {}
+  void ServerStreaming(const FakePb&, NanopbServerWriter<FakePb>&) {}
 
-  static void StaticServerStreaming(ServerContext&,
-                                    const FakePb&,
+  static void StaticServerStreaming(const FakePb&,
                                     NanopbServerWriter<FakePb>&) {}
 
-  int ServerStreamingBadReturn(ServerContext&,
-                               const FakePb&,
-                               NanopbServerWriter<FakePb>&) {
+  int ServerStreamingBadReturn(const FakePb&, NanopbServerWriter<FakePb>&) {
     return 5;
   }
 
-  static void StaticServerStreamingMissingArg(const FakePb&,
-                                              NanopbServerWriter<FakePb>&) {}
+  static void StaticServerStreamingMissingArg(NanopbServerWriter<FakePb>&) {}
 
   // Client streaming signatures
 
-  void ClientStreaming(ServerContext&, NanopbServerReader<FakePb, FakePb>&) {}
+  void ClientStreaming(NanopbServerReader<FakePb, FakePb>&) {}
 
-  static void StaticClientStreaming(ServerContext&,
-                                    NanopbServerReader<FakePb, FakePb>&) {}
+  static void StaticClientStreaming(NanopbServerReader<FakePb, FakePb>&) {}
 
-  int ClientStreamingBadReturn(ServerContext&,
-                               NanopbServerReader<FakePb, FakePb>&) {
+  int ClientStreamingBadReturn(NanopbServerReader<FakePb, FakePb>&) {
     return 0;
   }
 
-  static void StaticClientStreamingMissingArg(
-      NanopbServerReader<FakePb, FakePb>&) {}
+  static void StaticClientStreamingMissingArg() {}
 
   // Bidirectional streaming signatures
 
-  void BidirectionalStreaming(ServerContext&,
-                              NanopbServerReaderWriter<FakePb, FakePb>&) {}
+  void BidirectionalStreaming(NanopbServerReaderWriter<FakePb, FakePb>&) {}
 
   static void StaticBidirectionalStreaming(
-      ServerContext&, NanopbServerReaderWriter<FakePb, FakePb>&) {}
+      NanopbServerReaderWriter<FakePb, FakePb>&) {}
 
   int BidirectionalStreamingBadReturn(
-      ServerContext&, NanopbServerReaderWriter<FakePb, FakePb>&) {
+      NanopbServerReaderWriter<FakePb, FakePb>&) {
     return 0;
   }
 
-  static void StaticBidirectionalStreamingMissingArg(
-      NanopbServerReaderWriter<FakePb, FakePb>&) {}
+  static void StaticBidirectionalStreamingMissingArg() {}
 };
 
 struct WrongPb;
@@ -162,14 +144,11 @@ class FakeService : public FakeServiceBase<FakeService> {
  public:
   FakeService(uint32_t id) : FakeServiceBase(id) {}
 
-  Status DoNothing(ServerContext&,
-                   const pw_rpc_test_Empty&,
-                   pw_rpc_test_Empty&) {
+  Status DoNothing(const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
     return Status::Unknown();
   }
 
-  void AddFive(ServerContext&,
-               const pw_rpc_test_TestRequest& request,
+  void AddFive(const pw_rpc_test_TestRequest& request,
                NanopbUnaryResponder<pw_rpc_test_TestResponse>& responder) {
     last_request = request;
     ASSERT_EQ(
@@ -178,21 +157,18 @@ class FakeService : public FakeServiceBase<FakeService> {
                          Status::Unauthenticated()));
   }
 
-  void StartStream(ServerContext&,
-                   const pw_rpc_test_TestRequest& request,
+  void StartStream(const pw_rpc_test_TestRequest& request,
                    NanopbServerWriter<pw_rpc_test_TestResponse>& writer) {
     last_request = request;
     last_writer = std::move(writer);
   }
 
-  void ClientStream(ServerContext&,
-                    NanopbServerReader<pw_rpc_test_TestRequest,
+  void ClientStream(NanopbServerReader<pw_rpc_test_TestRequest,
                                        pw_rpc_test_TestResponse>& reader) {
     last_reader = std::move(reader);
   }
 
   void BidirectionalStream(
-      ServerContext&,
       NanopbServerReaderWriter<pw_rpc_test_TestRequest,
                                pw_rpc_test_TestResponse>& reader_writer) {
     last_reader_writer = std::move(reader_writer);

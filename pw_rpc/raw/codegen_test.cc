@@ -54,9 +54,7 @@ namespace test {
 
 class TestService final : public generated::TestService<TestService> {
  public:
-  static StatusWithSize TestUnaryRpc(ServerContext&,
-                                     ConstByteSpan request,
-                                     ByteSpan response) {
+  static StatusWithSize TestUnaryRpc(ConstByteSpan request, ByteSpan response) {
     int64_t integer;
     Status status;
 
@@ -70,17 +68,14 @@ class TestService final : public generated::TestService<TestService> {
     return StatusWithSize(status, test_response.size());
   }
 
-  static void TestAnotherUnaryRpc(ServerContext& ctx,
-                                  ConstByteSpan request,
+  static void TestAnotherUnaryRpc(ConstByteSpan request,
                                   RawUnaryResponder& responder) {
     ByteSpan response = responder.PayloadBuffer();
-    StatusWithSize sws = TestUnaryRpc(ctx, request, response);
+    StatusWithSize sws = TestUnaryRpc(request, response);
     responder.Finish(response.first(sws.size()), sws.status());
   }
 
-  void TestServerStreamRpc(ServerContext&,
-                           ConstByteSpan request,
-                           RawServerWriter& writer) {
+  void TestServerStreamRpc(ConstByteSpan request, RawServerWriter& writer) {
     int64_t integer;
     Status status;
 
@@ -96,7 +91,7 @@ class TestService final : public generated::TestService<TestService> {
     EXPECT_EQ(OkStatus(), writer.Finish(status));
   }
 
-  void TestClientStreamRpc(ServerContext&, RawServerReader& reader) {
+  void TestClientStreamRpc(RawServerReader& reader) {
     last_reader_ = std::move(reader);
 
     last_reader_.set_on_next([this](ConstByteSpan payload) {
@@ -106,8 +101,7 @@ class TestService final : public generated::TestService<TestService> {
     });
   }
 
-  void TestBidirectionalStreamRpc(ServerContext&,
-                                  RawServerReaderWriter& reader_writer) {
+  void TestBidirectionalStreamRpc(RawServerReaderWriter& reader_writer) {
     last_reader_writer_ = std::move(reader_writer);
 
     last_reader_writer_.set_on_next([this](ConstByteSpan payload) {

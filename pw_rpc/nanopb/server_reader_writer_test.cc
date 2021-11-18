@@ -25,28 +25,23 @@ namespace pw::rpc {
 class TestServiceImpl final
     : public test::generated::TestService<TestServiceImpl> {
  public:
-  Status TestUnaryRpc(ServerContext&,
-                      const pw_rpc_test_TestRequest&,
+  Status TestUnaryRpc(const pw_rpc_test_TestRequest&,
                       pw_rpc_test_TestResponse&) {
     return OkStatus();
   }
 
-  void TestAnotherUnaryRpc(ServerContext&,
-                           const pw_rpc_test_TestRequest&,
+  void TestAnotherUnaryRpc(const pw_rpc_test_TestRequest&,
                            NanopbUnaryResponder<pw_rpc_test_TestResponse>&) {}
 
   void TestServerStreamRpc(
-      ServerContext&,
       const pw_rpc_test_TestRequest&,
       NanopbServerWriter<pw_rpc_test_TestStreamResponse>&) {}
 
   void TestClientStreamRpc(
-      ServerContext&,
       NanopbServerReader<pw_rpc_test_TestRequest,
                          pw_rpc_test_TestStreamResponse>&) {}
 
   void TestBidirectionalStreamRpc(
-      ServerContext&,
       NanopbServerReaderWriter<pw_rpc_test_TestRequest,
                                pw_rpc_test_TestStreamResponse>&) {}
 };

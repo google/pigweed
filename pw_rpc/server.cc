@@ -24,7 +24,6 @@
 #include "pw_log/log.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/server_context.h"
 
 namespace pw::rpc {
 namespace {

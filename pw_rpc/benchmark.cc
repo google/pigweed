@@ -31,14 +31,13 @@ StatusWithSize CopyBuffer(ConstByteSpan input, ByteSpan output) {
 
 }  // namespace
 
-StatusWithSize BenchmarkService::UnaryEcho(ServerContext&,
-                                           ConstByteSpan request,
+StatusWithSize BenchmarkService::UnaryEcho(ConstByteSpan request,
                                            ByteSpan response) {
   return CopyBuffer(request, response);
 }
 
 void BenchmarkService::BidirectionalEcho(
-    ServerContext&, RawServerReaderWriter& new_reader_writer) {
+    RawServerReaderWriter& new_reader_writer) {
   reader_writer_ = std::move(new_reader_writer);
 
   reader_writer_.set_on_next([this](ConstByteSpan request) {

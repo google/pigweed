@@ -143,7 +143,6 @@ def generate_package(file_descriptor_proto, proto_package: ProtoNode,
         '#include "pw_rpc/internal/method_lookup.h"',
         '#include "pw_rpc/internal/service_client.h"',
         '#include "pw_rpc/method_type.h"',
-        '#include "pw_rpc/server_context.h"',
         '#include "pw_rpc/service.h"',
     ]
     include_lines += gen.includes(file_descriptor_proto.name)
@@ -329,7 +328,6 @@ def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
     gen.line(' public:')
 
     with gen.indent():
-        gen.line(f'using ServerContext = {RPC_NAMESPACE}::ServerContext;')
         gen.service_aliases()
 
         gen.line()

@@ -22,28 +22,25 @@ namespace {
 
 class MixedService1 : public test::generated::TestService<MixedService1> {
  public:
-  StatusWithSize TestUnaryRpc(ServerContext&, ConstByteSpan, ByteSpan) {
+  StatusWithSize TestUnaryRpc(ConstByteSpan, ByteSpan) {
     return StatusWithSize(5);
   }
 
-  void TestAnotherUnaryRpc(ServerContext&,
-                           const pw_rpc_test_TestRequest&,
+  void TestAnotherUnaryRpc(const pw_rpc_test_TestRequest&,
                            NanopbUnaryResponder<pw_rpc_test_TestResponse>&) {
     called_async_unary_method = true;
   }
 
-  void TestServerStreamRpc(ServerContext&,
-                           const pw_rpc_test_TestRequest&,
+  void TestServerStreamRpc(const pw_rpc_test_TestRequest&,
                            ServerWriter<pw_rpc_test_TestStreamResponse>&) {
     called_server_streaming_method = true;
   }
 
-  void TestClientStreamRpc(ServerContext&, RawServerReader&) {
+  void TestClientStreamRpc(RawServerReader&) {
     called_client_streaming_method = true;
   }
 
   void TestBidirectionalStreamRpc(
-      ServerContext&,
       ServerReaderWriter<pw_rpc_test_TestRequest,
                          pw_rpc_test_TestStreamResponse>&) {
     called_bidirectional_streaming_method = true;
@@ -57,27 +54,25 @@ class MixedService1 : public test::generated::TestService<MixedService1> {
 
 class MixedService2 : public test::generated::TestService<MixedService2> {
  public:
-  Status TestUnaryRpc(ServerContext&,
-                      const pw_rpc_test_TestRequest&,
+  Status TestUnaryRpc(const pw_rpc_test_TestRequest&,
                       pw_rpc_test_TestResponse&) {
     return Status::Unauthenticated();
   }
 
-  void TestAnotherUnaryRpc(ServerContext&, ConstByteSpan, RawUnaryResponder&) {
+  void TestAnotherUnaryRpc(ConstByteSpan, RawUnaryResponder&) {
     called_async_unary_method = true;
   }
 
-  void TestServerStreamRpc(ServerContext&, ConstByteSpan, RawServerWriter&) {
+  void TestServerStreamRpc(ConstByteSpan, RawServerWriter&) {
     called_server_streaming_method = true;
   }
 
   void TestClientStreamRpc(
-      ServerContext&,
       ServerReader<pw_rpc_test_TestRequest, pw_rpc_test_TestStreamResponse>&) {
     called_client_streaming_method = true;
   }
 
-  void TestBidirectionalStreamRpc(ServerContext&, RawServerReaderWriter&) {
+  void TestBidirectionalStreamRpc(RawServerReaderWriter&) {
     called_bidirectional_streaming_method = true;
   }
 

@@ -18,7 +18,6 @@
 #include <utility>
 
 #include "pw_rpc/internal/call_context.h"
-#include "pw_rpc/server_context.h"
 
 namespace pw::rpc {
 
@@ -122,9 +121,9 @@ constexpr auto CallMethodImplFunction(Service& service, Args&&... args) {
   if constexpr (std::is_member_function_pointer_v<decltype(kMethod)>) {
     return (static_cast<typename MethodTraits<decltype(kMethod)>::Service&>(
                 service).*
-            kMethod)(GlobalServerContextStub(), std::forward<Args>(args)...);
+            kMethod)(std::forward<Args>(args)...);
   } else {
-    return kMethod(GlobalServerContextStub(), std::forward<Args>(args)...);
+    return kMethod(std::forward<Args>(args)...);
   }
 }
 

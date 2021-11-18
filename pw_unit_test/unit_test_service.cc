@@ -21,9 +21,7 @@
 
 namespace pw::unit_test {
 
-void UnitTestService::Run(ServerContext&,
-                          ConstByteSpan request,
-                          RawServerWriter& writer) {
+void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
   writer_ = std::move(writer);
   verbose_ = false;
 

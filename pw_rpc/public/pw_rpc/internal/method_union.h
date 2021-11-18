@@ -67,7 +67,7 @@ constexpr std::false_type kCheckMethodSignature{};
       " RPC, but its function signature is not correct. The function "    \
       "signature is determined by the protobuf library in use, but " type \
       " RPC implementations generally take the form:",                    \
-      return_type " MethodName(ServerContext&, " args ")")
+      return_type " MethodName(" args ")")
 
 // This function is called if an RPC method implementation's signature is not
 // correct. It triggers a static_assert with an error message tailored to the

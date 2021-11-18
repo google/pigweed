@@ -23,7 +23,6 @@
 #include "pw_rpc/internal/method_impl_tester.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/raw/internal/method_union.h"
-#include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 
@@ -38,65 +37,53 @@ class TestRawService final : public Service {
  public:
   // Unary signatures
 
-  StatusWithSize Unary(ServerContext&, ConstByteSpan, ByteSpan) {
+  StatusWithSize Unary(ConstByteSpan, ByteSpan) { return StatusWithSize(0); }
+
+  static StatusWithSize StaticUnary(ConstByteSpan, ByteSpan) {
     return StatusWithSize(0);
   }
 
-  static StatusWithSize StaticUnary(ServerContext&, ConstByteSpan, ByteSpan) {
-    return StatusWithSize(0);
-  }
+  void AsyncUnary(ConstByteSpan, RawUnaryResponder&) {}
 
-  void AsyncUnary(ServerContext&, ConstByteSpan, RawUnaryResponder&) {}
+  static void StaticAsyncUnary(ConstByteSpan, RawUnaryResponder&) {}
 
-  static void StaticAsyncUnary(ServerContext&,
-                               ConstByteSpan,
-                               RawUnaryResponder&) {}
-
-  StatusWithSize UnaryWrongArg(ServerContext&, ConstByteSpan, ConstByteSpan) {
+  StatusWithSize UnaryWrongArg(ConstByteSpan, ConstByteSpan) {
     return StatusWithSize(0);
   }
 
   // Server streaming signatures
 
-  void ServerStreaming(ServerContext&, ConstByteSpan, RawServerWriter&) {}
+  void ServerStreaming(ConstByteSpan, RawServerWriter&) {}
 
-  static void StaticServerStreaming(ServerContext&,
-                                    ConstByteSpan,
-                                    RawServerWriter&) {}
+  static void StaticServerStreaming(ConstByteSpan, RawServerWriter&) {}
 
-  static void StaticUnaryVoidReturn(ServerContext&, ConstByteSpan, ByteSpan) {}
+  static void StaticUnaryVoidReturn(ConstByteSpan, ByteSpan) {}
 
-  Status ServerStreamingBadReturn(ServerContext&,
-                                  ConstByteSpan,
-                                  RawServerWriter&) {
+  Status ServerStreamingBadReturn(ConstByteSpan, RawServerWriter&) {
     return Status();
   }
 
-  static void StaticServerStreamingMissingArg(ConstByteSpan, RawServerWriter&) {
-  }
+  static void StaticServerStreamingMissingArg(RawServerWriter&) {}
 
   // Client streaming signatures
 
-  void ClientStreaming(ServerContext&, RawServerReader&) {}
+  void ClientStreaming(RawServerReader&) {}
 
-  static void StaticClientStreaming(ServerContext&, RawServerReader&) {}
+  static void StaticClientStreaming(RawServerReader&) {}
 
-  int ClientStreamingBadReturn(ServerContext&, RawServerReader&) { return 0; }
+  int ClientStreamingBadReturn(RawServerReader&) { return 0; }
 
-  static void StaticClientStreamingMissingArg(RawServerReader&) {}
+  static void StaticClientStreamingMissingArg() {}
 
   // Bidirectional streaming signatures
 
-  void BidirectionalStreaming(ServerContext&, RawServerReaderWriter&) {}
+  void BidirectionalStreaming(RawServerReaderWriter&) {}
 
-  static void StaticBidirectionalStreaming(ServerContext&,
-                                           RawServerReaderWriter&) {}
+  static void StaticBidirectionalStreaming(RawServerReaderWriter&) {}
 
-  int BidirectionalStreamingBadReturn(ServerContext&, RawServerReaderWriter&) {
-    return 0;
-  }
+  int BidirectionalStreamingBadReturn(RawServerReaderWriter&) { return 0; }
 
-  static void StaticBidirectionalStreamingMissingArg(RawServerReaderWriter&) {}
+  static void StaticBidirectionalStreamingMissingArg() {}
 };
 
 static_assert(MethodImplTests<RawMethod, TestRawService>().Pass());
@@ -119,13 +106,11 @@ class FakeService : public FakeServiceBase<FakeService> {
  public:
   FakeService(uint32_t id) : FakeServiceBase(id) {}
 
-  StatusWithSize DoNothing(ServerContext&, ConstByteSpan, ByteSpan) {
+  StatusWithSize DoNothing(ConstByteSpan, ByteSpan) {
     return StatusWithSize::Unknown();
   }
 
-  void AddFive(ServerContext&,
-               ConstByteSpan request,
-               RawUnaryResponder& responder) {
+  void AddFive(ConstByteSpan request, RawUnaryResponder& responder) {
     DecodeRawTestRequest(request);
 
     std::array<std::byte, 32> response;
@@ -138,19 +123,16 @@ class FakeService : public FakeServiceBase<FakeService> {
                                Status::Unauthenticated()));
   }
 
-  void StartStream(ServerContext&,
-                   ConstByteSpan request,
-                   RawServerWriter& writer) {
+  void StartStream(ConstByteSpan request, RawServerWriter& writer) {
     DecodeRawTestRequest(request);
     last_writer = std::move(writer);
   }
 
-  void ClientStream(ServerContext&, RawServerReader& reader) {
+  void ClientStream(RawServerReader& reader) {
     last_reader = std::move(reader);
   }
 
-  void BidirectionalStream(ServerContext&,
-                           RawServerReaderWriter& reader_writer) {
+  void BidirectionalStream(RawServerReaderWriter& reader_writer) {
     last_reader_writer = std::move(reader_writer);
   }
 

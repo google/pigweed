@@ -136,7 +136,7 @@ class RawCodeGenerator(CodeGenerator):
 
 class StubGenerator(codegen.StubGenerator):
     def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
-        return (f'pw::StatusWithSize {prefix}{method.name()}(ServerContext&, '
+        return (f'pw::StatusWithSize {prefix}{method.name()}('
                 'pw::ConstByteSpan request, pw::ByteSpan response)')
 
     def unary_stub(self, method: ProtoServiceMethod,
@@ -150,17 +150,16 @@ class StubGenerator(codegen.StubGenerator):
     def server_streaming_signature(self, method: ProtoServiceMethod,
                                    prefix: str) -> str:
 
-        return (f'void {prefix}{method.name()}(ServerContext&, '
+        return (f'void {prefix}{method.name()}('
                 'pw::ConstByteSpan request, RawServerWriter& writer)')
 
     def client_streaming_signature(self, method: ProtoServiceMethod,
                                    prefix: str) -> str:
-        return (f'void {prefix}{method.name()}(ServerContext&, '
-                'RawServerReader& reader)')
+        return f'void {prefix}{method.name()}(RawServerReader& reader)'
 
     def bidirectional_streaming_signature(self, method: ProtoServiceMethod,
                                           prefix: str) -> str:
-        return (f'void {prefix}{method.name()}(ServerContext&, '
+        return (f'void {prefix}{method.name()}('
                 'RawServerReaderWriter& reader_writer)')
 
 

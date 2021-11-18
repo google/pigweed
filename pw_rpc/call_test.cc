@@ -22,7 +22,6 @@
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/test_method.h"
 #include "pw_rpc/internal/test_utils.h"
-#include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/fake_server_reader_writer.h"
 

@@ -59,13 +59,13 @@ class TransferService : public generated::Transfer<TransferService> {
   TransferService& operator=(const TransferService&) = delete;
   TransferService& operator=(TransferService&&) = delete;
 
-  void Read(ServerContext&, RawServerReaderWriter& reader_writer) {
+  void Read(RawServerReaderWriter& reader_writer) {
     client_.InitializeRead(reader_writer, [this](ConstByteSpan message) {
       HandleChunk(message, internal::kRead);
     });
   }
 
-  void Write(ServerContext&, RawServerReaderWriter& reader_writer) {
+  void Write(RawServerReaderWriter& reader_writer) {
     client_.InitializeWrite(reader_writer, [this](ConstByteSpan message) {
       HandleChunk(message, internal::kWrite);
     });

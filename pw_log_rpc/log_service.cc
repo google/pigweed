@@ -21,9 +21,7 @@
 
 namespace pw::log_rpc {
 
-void LogService::Listen(ServerContext&,
-                        ConstByteSpan,
-                        rpc::RawServerWriter& writer) {
+void LogService::Listen(ConstByteSpan, rpc::RawServerWriter& writer) {
   uint32_t channel_id = writer.channel_id();
   Result<RpcLogDrain*> drain = drains_.GetDrainFromChannelId(channel_id);
   if (!drain.ok()) {
@@ -36,9 +34,7 @@ void LogService::Listen(ServerContext&,
   }
 }
 
-StatusWithSize LogService::SetFilter(ServerContext&,
-                                     ConstByteSpan request,
-                                     ByteSpan) {
+StatusWithSize LogService::SetFilter(ConstByteSpan request, ByteSpan) {
   if (filters_ == nullptr) {
     return StatusWithSize::NotFound();
   }
@@ -67,9 +63,7 @@ StatusWithSize LogService::SetFilter(ServerContext&,
   return StatusWithSize();
 }
 
-StatusWithSize LogService::GetFilter(ServerContext&,
-                                     ConstByteSpan request,
-                                     ByteSpan response) {
+StatusWithSize LogService::GetFilter(ConstByteSpan request, ByteSpan response) {
   if (filters_ == nullptr) {
     return StatusWithSize::NotFound();
   }
@@ -102,9 +96,7 @@ StatusWithSize LogService::GetFilter(ServerContext&,
   return StatusWithSize(encoder.size());
 }
 
-StatusWithSize LogService::ListFilterIds(ServerContext&,
-                                         ConstByteSpan,
-                                         ByteSpan response) {
+StatusWithSize LogService::ListFilterIds(ConstByteSpan, ByteSpan response) {
   if (filters_ == nullptr) {
     return StatusWithSize::NotFound();
   }

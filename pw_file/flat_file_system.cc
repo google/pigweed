@@ -75,8 +75,7 @@ void FlatFileSystemService::EnumerateAllFiles(RawServerWriter& writer) {
   writer.Finish(OkStatus());
 }
 
-void FlatFileSystemService::List(ServerContext&,
-                                 ConstByteSpan request,
+void FlatFileSystemService::List(ConstByteSpan request,
                                  RawServerWriter& writer) {
   protobuf::Decoder decoder(request);
   // If a file name was provided, try and find and enumerate the file.
@@ -115,9 +114,7 @@ void FlatFileSystemService::List(ServerContext&,
   EnumerateAllFiles(writer);
 }
 
-StatusWithSize FlatFileSystemService::Delete(ServerContext&,
-                                             ConstByteSpan request,
-                                             ByteSpan) {
+StatusWithSize FlatFileSystemService::Delete(ConstByteSpan request, ByteSpan) {
   protobuf::Decoder decoder(request);
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() !=

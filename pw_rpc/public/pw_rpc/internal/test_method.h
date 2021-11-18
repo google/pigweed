@@ -22,7 +22,6 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/method_type.h"
-#include "pw_rpc/server_context.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {

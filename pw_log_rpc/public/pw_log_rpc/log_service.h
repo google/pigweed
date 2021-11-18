@@ -34,22 +34,18 @@ class LogService final : public log::generated::Logs<LogService> {
   // an existent stream of logs for the given channel and previous writer, the
   // writer in this call is closed without finishing the RPC call and the log
   // stream using the previous writer continues.
-  void Listen(ServerContext&, ConstByteSpan, rpc::RawServerWriter& writer);
+  void Listen(ConstByteSpan, rpc::RawServerWriter& writer);
 
   // TODO(pwbug/570): make log filter be its own service.
   //  Modifies a log filter and its rules. The filter must be registered in the
   //  provided filter map.
-  StatusWithSize SetFilter(ServerContext&, ConstByteSpan request, ByteSpan);
+  StatusWithSize SetFilter(ConstByteSpan request, ByteSpan);
 
   // Retrieves a log filter and its rules. The filter must be registered in the
   // provided filter map.
-  StatusWithSize GetFilter(ServerContext&,
-                           ConstByteSpan request,
-                           ByteSpan response);
+  StatusWithSize GetFilter(ConstByteSpan request, ByteSpan response);
 
-  StatusWithSize ListFilterIds(ServerContext&,
-                               ConstByteSpan,
-                               ByteSpan response);
+  StatusWithSize ListFilterIds(ConstByteSpan, ByteSpan response);
 
  private:
   RpcLogDrainMap& drains_;

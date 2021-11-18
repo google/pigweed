@@ -86,12 +86,12 @@ class FlatFileSystemService
       : file_name_buffer_(file_name_buffer), entries_(entry_list) {}
 
   // Method definitions for pw.file.FileSystem.
-  void List(ServerContext&, ConstByteSpan request, RawServerWriter& writer);
+  void List(ConstByteSpan request, RawServerWriter& writer);
 
   // Returns:
   //   OK - File successfully deleted.
   //   NOT_FOUND - Could not find
-  StatusWithSize Delete(ServerContext&, ConstByteSpan request, ByteSpan);
+  StatusWithSize Delete(ConstByteSpan request, ByteSpan);
 
  private:
   Result<Entry*> FindFile(std::string_view file_name);

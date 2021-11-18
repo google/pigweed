@@ -37,8 +37,7 @@ class MetricService final : public generated::MetricService<MetricService> {
                 const IntrusiveList<Group>& groups)
       : metrics_(metrics), groups_(groups) {}
 
-  void Get(ServerContext&,
-           const pw_metric_MetricRequest& request,
+  void Get(const pw_metric_MetricRequest& request,
            ServerWriter<pw_metric_MetricResponse>& response);
 
  private:

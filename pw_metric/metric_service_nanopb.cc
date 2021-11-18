@@ -128,8 +128,7 @@ class MetricWalker {
 
 }  // namespace
 
-void MetricService::Get(ServerContext&,
-                        const pw_metric_MetricRequest& /* request */,
+void MetricService::Get(const pw_metric_MetricRequest& /* request */,
                         ServerWriter<pw_metric_MetricResponse>& response) {
   // For now, ignore the request and just stream all the metrics back.
   MetricWriter writer(response);

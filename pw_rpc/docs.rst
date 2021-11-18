@@ -207,15 +207,13 @@ A Nanopb implementation of this service would be as follows:
 
   class TheService : public pw_rpc::nanopb::TheService::Service<TheService> {
    public:
-    pw::Status MethodOne(ServerContext&,
-                         const foo_bar_Request& request,
+    pw::Status MethodOne(const foo_bar_Request& request,
                          foo_bar_Response& response) {
       // implementation
       return pw::OkStatus();
     }
 
-    void MethodTwo(ServerContext&,
-                   const foo_bar_Request& request,
+    void MethodTwo(const foo_bar_Request& request,
                    ServerWriter<foo_bar_Response>& response) {
       // implementation
       response.Write(foo_bar_Response{.number = 123});
@@ -430,7 +428,7 @@ The C++ service implementation class may append "Service" to the name.
   namespace pw::file {
 
   class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
-    void List(ServerContext&, ConstByteSpan request, RawServerWriter& writer);
+    void List(ConstByteSpan request, RawServerWriter& writer);
   };
 
   }

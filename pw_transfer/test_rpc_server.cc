@@ -80,7 +80,7 @@ class TestServerService : public generated::TestServer<TestServerService> {
 
   void set_directory(const char* directory) { directory_ = directory; }
 
-  StatusWithSize ReloadTransferFiles(ServerContext&, ConstByteSpan, ByteSpan) {
+  StatusWithSize ReloadTransferFiles(ConstByteSpan, ByteSpan) {
     LoadFileHandlers();
     return StatusWithSize();
   }
