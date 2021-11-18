@@ -581,9 +581,9 @@ are wrapped with ``pw_cc_binary``, ``pw_cc_library``, and ``pw_cc_test``.
 These wrappers add parameters to calls to the compiler and linker.
 
 Currently Pigweed is making use of a set of
-[open source](https://github.com/silvergasp/bazel-embedded) toolchains. The host
-builds are only supported on Linux/Mac based systems. Additionally the host
-builds are not entirely hermetic, and will make use of system
+`open source <https://github.com/silvergasp/bazel-embedded>`_ toolchains. The
+host builds are only supported on Linux/Mac based systems. Additionally the
+host builds are not entirely hermetic, and will make use of system
 libraries and headers. This is close to the default configuration for Bazel,
 though slightly more hermetic. The host toolchain is based around clang-11 which
 has a system dependency on 'libtinfo.so.5' which is often included as part of
