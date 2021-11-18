@@ -96,6 +96,25 @@ def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
     pane.add_log_handler(logger, level_name=level_name)
 
 
+def get_default_colordepth(
+        color_depth: Optional[ColorDepth] = None) -> ColorDepth:
+    # Set prompt_toolkit color_depth to the highest possible.
+    if color_depth is None:
+        # Default to 24bit color
+        color_depth = ColorDepth.DEPTH_24_BIT
+
+        # If using Apple Terminal switch to 256 (8bit) color.
+        term_program = os.environ.get('TERM_PROGRAM', '')
+        if sys.platform == 'darwin' and 'Apple_Terminal' in term_program:
+            color_depth = ColorDepth.DEPTH_8_BIT
+
+    # Check for any PROMPT_TOOLKIT_COLOR_DEPTH environment variables
+    color_depth_override = os.environ.get('PROMPT_TOOLKIT_COLOR_DEPTH', '')
+    if color_depth_override:
+        color_depth = ColorDepth(color_depth_override)
+    return color_depth
+
+
 class ConsoleApp:
     """The main ConsoleApp class that glues everything together."""
 
@@ -111,19 +130,7 @@ class ConsoleApp:
         extra_completers=None,
     ):
         self.prefs = ConsolePrefs()
-        self.color_depth = color_depth
-        # Check for any PROMPT_TOOLKIT_COLOR_DEPTH environment variables
-        color_depth_override = os.environ.get('PROMPT_TOOLKIT_COLOR_DEPTH', '')
-
-        # Set prompt_toolkit color_depth to the highest possible.
-        if color_depth is None and not color_depth_override:
-            # Default to 24bit color
-            self.color_depth = ColorDepth.DEPTH_24_BIT
-
-            # If using Apple Terminal switch to 256 (8bit) color.
-            term_program = os.environ.get('TERM_PROGRAM', '')
-            if sys.platform == 'darwin' and 'Apple_Terminal' in term_program:
-                self.color_depth = ColorDepth.DEPTH_8_BIT
+        self.color_depth = get_default_colordepth(color_depth)
 
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
@@ -312,6 +319,7 @@ class ConsoleApp:
                 # Pull key bindings from ptpython
                 load_python_bindings(self.pw_ptpython_repl),
                 load_sidebar_bindings(self.pw_ptpython_repl),
+                self.window_manager.key_bindings,
                 self.key_bindings,
             ]),
             style=DynamicStyle(lambda: merge_styles([

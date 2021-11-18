@@ -48,53 +48,6 @@ def create_key_bindings(console_app):
     # F2 is ptpython settings
     # F3 is ptpython history
 
-    @bindings.add('escape', 'c-left')  # Alt-Ctrl-
-    def move_pane_left(event):
-        """Move window pane left."""
-        console_app.window_manager.move_pane_left()
-
-    @bindings.add('escape', 'c-right')  # Alt-Ctrl-
-    def move_pane_right(event):
-        """Move window pane right."""
-        console_app.window_manager.move_pane_right()
-
-    # NOTE: c-up and c-down seem swapped in prompt_toolkit
-    @bindings.add('escape', 'c-up')  # Alt-Ctrl-
-    def move_pane_down(event):
-        """Move window pane down."""
-        console_app.window_manager.move_pane_down()
-
-    # NOTE: c-up and c-down seem swapped in prompt_toolkit
-    @bindings.add('escape', 'c-down')  # Alt-Ctrl-
-    def move_pane_up(event):
-        """Move window pane up."""
-        console_app.window_manager.move_pane_up()
-
-    @bindings.add('escape', '=')  # Alt-= (mnemonic: Alt Plus)
-    def enlarge_pane(event):
-        """Enlarge the active window pane."""
-        console_app.window_manager.enlarge_pane()
-
-    @bindings.add('escape', '-')  # Alt-minus (mnemonic: Alt Minus)
-    def shrink_pane(event):
-        """Shrink the active window pane."""
-        console_app.window_manager.shrink_pane()
-
-    @bindings.add('escape', ',')  # Alt-, (mnemonic: Alt <)
-    def shrink_split(event):
-        """Shrink the current window split."""
-        console_app.window_manager.shrink_split()
-
-    @bindings.add('escape', '.')  # Alt-. (mnemonic: Alt >)
-    def enlarge_split(event):
-        """Enlarge the current window split."""
-        console_app.window_manager.enlarge_split()
-
-    @bindings.add('c-u')
-    def balance_window_panes(event):
-        """Balance all window sizes."""
-        console_app.window_manager.balance_window_sizes()
-
     @bindings.add('c-q')
     def exit_(event):
         """Quit the console application."""

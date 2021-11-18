@@ -21,6 +21,7 @@ import logging
 import operator
 from typing import Any, Dict, Iterable
 
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import (
     Dimension,
     HSplit,
@@ -54,6 +55,59 @@ class WindowManager:
         self.application = application
         self.window_lists: collections.deque = collections.deque()
         self.window_lists.append(WindowList(self))
+        self.key_bindings = self._create_key_bindings()
+
+    def _create_key_bindings(self) -> KeyBindings:
+        bindings = KeyBindings()
+
+        @bindings.add('escape', 'c-left')  # Alt-Ctrl-
+        def move_pane_left(_event):
+            """Move window pane left."""
+            self.move_pane_left()
+
+        @bindings.add('escape', 'c-right')  # Alt-Ctrl-
+        def move_pane_right(_event):
+            """Move window pane right."""
+            self.move_pane_right()
+
+        # NOTE: c-up and c-down seem swapped in prompt_toolkit
+        @bindings.add('escape', 'c-up')  # Alt-Ctrl-
+        def move_pane_down(_event):
+            """Move window pane down."""
+            self.move_pane_down()
+
+        # NOTE: c-up and c-down seem swapped in prompt_toolkit
+        @bindings.add('escape', 'c-down')  # Alt-Ctrl-
+        def move_pane_up(_event):
+            """Move window pane up."""
+            self.move_pane_up()
+
+        @bindings.add('escape', '=')  # Alt-= (mnemonic: Alt Plus)
+        def enlarge_pane(_event):
+            """Enlarge the active window pane."""
+            self.enlarge_pane()
+
+        @bindings.add('escape', '-')  # Alt-minus (mnemonic: Alt Minus)
+        def shrink_pane(_event):
+            """Shrink the active window pane."""
+            self.shrink_pane()
+
+        @bindings.add('escape', ',')  # Alt-, (mnemonic: Alt <)
+        def shrink_split(_event):
+            """Shrink the current window split."""
+            self.shrink_split()
+
+        @bindings.add('escape', '.')  # Alt-. (mnemonic: Alt >)
+        def enlarge_split(_event):
+            """Enlarge the current window split."""
+            self.enlarge_split()
+
+        @bindings.add('c-u')
+        def balance_window_panes(_event):
+            """Balance all window sizes."""
+            self.balance_window_sizes()
+
+        return bindings
 
     def delete_empty_window_lists(self):
         empty_lists = [
