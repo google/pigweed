@@ -29,6 +29,8 @@ namespace pw::analog {
 class MicrovoltInput : public AnalogInput {
  public:
   // Specifies the max and min microvolt range the analog input can measure.
+  // The reference voltage difference cannot be bigger than sizeof(int32_t)
+  // which should be just above 2000V.
   // * These values do not change at run time.
   // * Inversion of min/max is supported.
   struct References {
@@ -69,6 +71,14 @@ class MicrovoltInput : public AnalogInput {
 
     const References reference = GetReferences();
     const AnalogInput::Limits limits = GetLimits();
+
+    constexpr int64_t kMaxReferenceDiffUv = std::numeric_limits<int32_t>::max();
+
+    if (std::abs(static_cast<int64_t>(reference.max_voltage_uv) -
+                 static_cast<int64_t>(reference.min_voltage_uv)) >
+        kMaxReferenceDiffUv) {
+      return pw::Status::Internal();
+    }
 
     return (((static_cast<int64_t>(sample) - static_cast<int64_t>(limits.min)) *
              (reference.max_voltage_uv - reference.min_voltage_uv)) /

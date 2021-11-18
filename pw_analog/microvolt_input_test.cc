@@ -39,8 +39,8 @@ constexpr int32_t kCornerReferenceMaxVoltageUv =
 constexpr int32_t kCornerReferenceMinVoltageUv =
     std::numeric_limits<int32_t>::min();
 
-constexpr int32_t kInvertedLimitsMax = std::numeric_limits<int32_t>::max();
-constexpr int32_t kInvertedLimitsMin = std::numeric_limits<int32_t>::min();
+constexpr int32_t kInvertedLimitsMax = std::numeric_limits<int32_t>::min();
+constexpr int32_t kInvertedLimitsMin = std::numeric_limits<int32_t>::max();
 constexpr int32_t kInvertedReferenceMaxVoltageUv =
     std::numeric_limits<int32_t>::min();
 constexpr int32_t kInvertedReferenceMinVoltageUv =
@@ -239,9 +239,7 @@ TEST(MicrovoltInputTest, ReadMicrovoltsWithSampleAtMinCornerCase) {
   voltage_input.SetSampleValue(kCornerLimitsMin);
 
   Result<int32_t> result = voltage_input.TryReadMicrovoltsFor(kTimeout);
-  ASSERT_TRUE(result.status().ok());
-
-  EXPECT_EQ(result.value(), kCornerReferenceMinVoltageUv);
+  ASSERT_EQ(result.status(), pw::Status::Internal());
 }
 
 TEST(MicrovoltInputTest, ReadMicrovoltsWithSampleAtMaxCornerCase) {
@@ -252,9 +250,7 @@ TEST(MicrovoltInputTest, ReadMicrovoltsWithSampleAtMaxCornerCase) {
   voltage_input.SetSampleValue(kCornerLimitsMax);
 
   Result<int32_t> result = voltage_input.TryReadMicrovoltsFor(kTimeout);
-  ASSERT_TRUE(result.status().ok());
-
-  EXPECT_EQ(result.value(), kCornerReferenceMaxVoltageUv);
+  ASSERT_EQ(result.status(), pw::Status::Internal());
 }
 
 TEST(MicrovoltInputTest, ReadMicrovoltsWithInvertedReferenceAtMax) {
@@ -265,9 +261,7 @@ TEST(MicrovoltInputTest, ReadMicrovoltsWithInvertedReferenceAtMax) {
   voltage_input.SetSampleValue(kInvertedLimitsMax);
 
   Result<int32_t> result = voltage_input.TryReadMicrovoltsFor(kTimeout);
-  ASSERT_TRUE(result.status().ok());
-
-  EXPECT_EQ(result.value(), kInvertedReferenceMaxVoltageUv);
+  ASSERT_EQ(result.status(), pw::Status::Internal());
 }
 
 TEST(MicrovoltInputTest, ReadMicrovoltsWithInvertedReferenceAtMin) {
@@ -278,10 +272,9 @@ TEST(MicrovoltInputTest, ReadMicrovoltsWithInvertedReferenceAtMin) {
   voltage_input.SetSampleValue(kInvertedLimitsMin);
 
   Result<int32_t> result = voltage_input.TryReadMicrovoltsFor(kTimeout);
-  ASSERT_TRUE(result.status().ok());
-
-  EXPECT_EQ(result.value(), kInvertedReferenceMinVoltageUv);
+  ASSERT_EQ(result.status(), pw::Status::Internal());
 }
+
 }  // namespace
 }  // namespace analog
 }  // namespace pw
