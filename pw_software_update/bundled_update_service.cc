@@ -222,7 +222,7 @@ Status BundledUpdateService::Verify(
     return OkStatus();
   }
 
-  // The backend's FinalizeApply as part of DoApply() shall be configured
+  // The backend's ApplyReboot as part of DoApply() shall be configured
   // such that this RPC can send out the reply before the device reboots.
   const Status status = work_queue_.PushWork([this] {
     {
@@ -277,7 +277,7 @@ Status BundledUpdateService::Apply(
     return OkStatus();
   }
 
-  // The backend's FinalizeApply as part of DoApply() shall be configured
+  // The backend's ApplyReboot as part of DoApply() shall be configured
   // such that this RPC can send out the reply before the device reboots.
   const Status status = work_queue_.PushWork([this] {
     {
@@ -451,12 +451,20 @@ void BundledUpdateService::DoApply() {
   // TODO(davidrogers): Ensure the backend documentation and API contract is
   // clear in regards to the flushing expectations for RPCs and logs surrounding
   // the reboot inside of this call.
-  if (const Status status = backend_.FinalizeApply(); !status.ok()) {
+  //
+  // TODO(davidrogers): Once ApplyReboot is supported in downstream, remove the
+  // call to FinalizeApply.
+  if (!backend_.ApplyReboot().ok() || !backend_.FinalizeApply().ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-              "Failed to apply target file: %d",
-              static_cast<int>(status.code()));
+              "Failed to apply target file");
     return;
   }
+  // if (const Status status = backend_.ApplyReboot(); !status.ok()) {
+  //   SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
+  //             "Failed to apply target file: %d",
+  //             static_cast<int>(status.code()));
+  //   return;
+  // }
 
   status_.current_state_progress_hundreth_percent = 0;
   status_.has_current_state_progress_hundreth_percent = false;

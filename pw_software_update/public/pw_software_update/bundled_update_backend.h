@@ -98,15 +98,31 @@ class BundledUpdateBackend {
     return OkStatus();
   };
 
-  // Do any work needed to finalize the update including doing a required
-  // reboot of the device! This is called after all software update state and
-  // breadcrumbs have been cleaned up.
-  //
-  // After the reboot the update is fully complete.
+  // Do any work needed to finish the apply of the update and do a required
+  // reboot of the device!
   //
   // NOTE: If successful this method does not return and reboots the device, it
   // only returns on failure to finalize.
-  virtual Status FinalizeApply() = 0;
+  //
+  // NOTE: ApplyReboot shall be configured such to allow pending RPC or logs to
+  // send out the reply before the device reboots.
+  //
+  // TODO(davidrogers): This is temporary to ease rollout. Make this pure
+  // virtual once downstream is updated.
+  virtual Status ApplyReboot() { return OkStatus(); }
+
+  // Do any work needed to finalize the update including optionally doing a
+  // reboot of the device! The software update state and breadcrumbs are not
+  // cleaned up until this method returns OK.
+  //
+  // This method is called after the reboot done as part of ApplyReboot().
+  //
+  // If this method does an optional reboot, it will be called again after the
+  // reboot.
+  //
+  // NOTE: FinalizeApply shall be configured such to allow pending RPC or logs
+  // to send out the reply before the device reboots.
+  virtual Status FinalizeApply() { return OkStatus(); }
 
   // Get reader of the device's root metadata.
   //
