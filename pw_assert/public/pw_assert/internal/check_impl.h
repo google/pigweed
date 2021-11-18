@@ -254,6 +254,8 @@
 // integer and the CHECK message const char*.
 #if defined(__cplusplus) && __cplusplus >= 201703L
 
+namespace pw::assert::internal {
+
 template <typename T, typename U>
 constexpr const void* ConvertToType(U* value) {
   if constexpr (std::is_function<U>()) {
@@ -268,7 +270,10 @@ constexpr T ConvertToType(const U& value) {
   return static_cast<T>(value);
 }
 
-#define _PW_CHECK_CONVERT(type, name, arg) type name = ConvertToType<type>(arg)
+}  // namespace pw::assert::internal
+
+#define _PW_CHECK_CONVERT(type, name, arg) \
+  type name = ::pw::assert::internal::ConvertToType<type>(arg)
 #else
 #define _PW_CHECK_CONVERT(type, name, arg) type name = (type)(arg)
 #endif  // __cplusplus
