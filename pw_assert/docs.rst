@@ -719,6 +719,14 @@ more details.
   This defaults to being disabled if ``NDEBUG`` is defined, else it is enabled
   by default.
 
+.. c:macro:: PW_ASSERT_CAPTURE_VALUES
+
+  Controls whether the evaluated values of a CHECK statement are captured as
+  arguments to the final string. Disabling this will reduce code size at CHECK
+  callsites, but slightly reduces debugability.
+
+  This defaults to enabled.
+
 -------------
 Compatibility
 -------------

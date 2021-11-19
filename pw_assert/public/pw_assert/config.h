@@ -26,3 +26,10 @@
 #define PW_ASSERT_ENABLE_DEBUG 1
 #endif  // defined (NDEBUG)
 #endif  // !defined(PW_ASSERT_ENABLE_DEBUG)
+
+// PW_ASSERT_CAPTURE_VALUES controls whether the evaluated values of a CHECK are
+// captured in the final string. Disabling this will reduce codesize at CHECK
+// callsites.
+#if !defined(PW_ASSERT_CAPTURE_VALUES)
+#define PW_ASSERT_CAPTURE_VALUES 1
+#endif  // !defined(PW_ASSERT_CAPTURE_VALUES)

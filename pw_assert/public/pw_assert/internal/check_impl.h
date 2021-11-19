@@ -132,12 +132,13 @@
 
 // clang-format on
 
-// PW_CHECK - If condition evaluates to false, crash. Message optional.
+// PW_CHECK_OK - If condition does not evaluate to PW_STATUS_OK, crash. Message
+// optional.
 #define PW_CHECK_OK(expression, ...)                                     \
   do {                                                                   \
     const _PW_CHECK_OK_STATUS _pw_assert_check_ok_status = (expression); \
     if (_pw_assert_check_ok_status != PW_STATUS_OK) {                    \
-      PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(                           \
+      _PW_CHECK_BINARY_ARG_HANDLER(                                      \
           #expression,                                                   \
           pw_StatusString(_pw_assert_check_ok_status),                   \
           "==",                                                          \
@@ -199,40 +200,73 @@ constexpr T ConvertToType(const U& value) {
     _PW_CHECK_CONVERT(type_decl, evaluated_argument_a, arg_a);        \
     _PW_CHECK_CONVERT(type_decl, evaluated_argument_b, arg_b);        \
     if (!(evaluated_argument_a comparison_op evaluated_argument_b)) { \
-      PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(#arg_a,                 \
-                                              evaluated_argument_a,   \
-                                              #comparison_op,         \
-                                              #arg_b,                 \
-                                              evaluated_argument_b,   \
-                                              type_fmt,               \
-                                              "" __VA_ARGS__);        \
+      _PW_CHECK_BINARY_ARG_HANDLER(#arg_a,                            \
+                                   evaluated_argument_a,              \
+                                   #comparison_op,                    \
+                                   #arg_b,                            \
+                                   evaluated_argument_b,              \
+                                   type_fmt,                          \
+                                   "" __VA_ARGS__);                   \
     }                                                                 \
   } while (0)
+
+// All binary comparison CHECK macros are directed to this handler before
+// hitting the CHECK backend. This controls whether evaluated values are
+// captured.
+#if PW_ASSERT_CAPTURE_VALUES
+#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,              \
+                                     arg_a_val,              \
+                                     comparison_op_str,      \
+                                     arg_b_str,              \
+                                     arg_b_val,              \
+                                     type_fmt,               \
+                                     message,                \
+                                     ...)                    \
+  PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,         \
+                                          arg_a_val,         \
+                                          comparison_op_str, \
+                                          arg_b_str,         \
+                                          arg_b_val,         \
+                                          type_fmt,          \
+                                          message,           \
+                                          __VA_ARGS__)
+#else
+#define _PW_CHECK_BINARY_ARG_HANDLER(arg_a_str,         \
+                                     arg_a_val,         \
+                                     comparison_op_str, \
+                                     arg_b_str,         \
+                                     arg_b_val,         \
+                                     type_fmt,          \
+                                     message,           \
+                                     ...)               \
+  PW_HANDLE_ASSERT_FAILURE(                             \
+      arg_a_str " " comparison_op_str " " arg_b_str, message, __VA_ARGS__)
+#endif  // PW_ASSERT_CAPTURE_VALUES
 
 // Custom implementation for FLOAT_NEAR which is implemented through two
 // underlying checks which are not trivially replaced through the use of
 // FLOAT_EXACT_LE & FLOAT_EXACT_GE.
-#define _PW_CHECK_FLOAT_NEAR(argument_a, argument_b, abs_tolerance, ...)      \
-  do {                                                                        \
-    PW_CHECK_FLOAT_EXACT_GE(abs_tolerance, 0.0f);                             \
-    float evaluated_argument_a = (float)(argument_a);                         \
-    float evaluated_argument_b_min = (float)(argument_b)-abs_tolerance;       \
-    float evaluated_argument_b_max = (float)(argument_b) + abs_tolerance;     \
-    if (!(evaluated_argument_a >= evaluated_argument_b_min)) {                \
-      PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(#argument_a,                    \
-                                              evaluated_argument_a,           \
-                                              ">=",                           \
-                                              #argument_b " - abs_tolerance", \
-                                              evaluated_argument_b_min,       \
-                                              "%f",                           \
-                                              "" __VA_ARGS__);                \
-    } else if (!(evaluated_argument_a <= evaluated_argument_b_max)) {         \
-      PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(#argument_a,                    \
-                                              evaluated_argument_a,           \
-                                              "<=",                           \
-                                              #argument_b " + abs_tolerance", \
-                                              evaluated_argument_b_max,       \
-                                              "%f",                           \
-                                              "" __VA_ARGS__);                \
-    }                                                                         \
+#define _PW_CHECK_FLOAT_NEAR(argument_a, argument_b, abs_tolerance, ...)  \
+  do {                                                                    \
+    PW_CHECK_FLOAT_EXACT_GE(abs_tolerance, 0.0f);                         \
+    float evaluated_argument_a = (float)(argument_a);                     \
+    float evaluated_argument_b_min = (float)(argument_b)-abs_tolerance;   \
+    float evaluated_argument_b_max = (float)(argument_b) + abs_tolerance; \
+    if (!(evaluated_argument_a >= evaluated_argument_b_min)) {            \
+      _PW_CHECK_BINARY_ARG_HANDLER(#argument_a,                           \
+                                   evaluated_argument_a,                  \
+                                   ">=",                                  \
+                                   #argument_b " - abs_tolerance",        \
+                                   evaluated_argument_b_min,              \
+                                   "%f",                                  \
+                                   "" __VA_ARGS__);                       \
+    } else if (!(evaluated_argument_a <= evaluated_argument_b_max)) {     \
+      _PW_CHECK_BINARY_ARG_HANDLER(#argument_a,                           \
+                                   evaluated_argument_a,                  \
+                                   "<=",                                  \
+                                   #argument_b " + abs_tolerance",        \
+                                   evaluated_argument_b_max,              \
+                                   "%f",                                  \
+                                   "" __VA_ARGS__);                       \
+    }                                                                     \
   } while (0)
