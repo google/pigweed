@@ -37,6 +37,9 @@ The ``pw_assert`` API provides three classes of macros:
     PW_CHECK_INT_LE(ItemCount(), 100);
     PW_CHECK_INT_LE(ItemCount(), 100, "System state: %s", GetStateStr());
 
+  To ensure compatibility with :ref:`module-pw_assert_log` and
+  :ref:`module-pw_log_tokenized`, the message must be a string literal.
+
 Example
 =======
 
