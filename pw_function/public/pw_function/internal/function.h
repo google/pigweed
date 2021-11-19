@@ -50,26 +50,39 @@ static constexpr bool IsNull(const T& v) {
 }
 
 // FunctionTarget is an interface for storing a callable object and providing a
-// way to invoke it.
-template <typename Return, typename... Args>
-class FunctionTarget {
+// way to invoke it. The GenericFunctionTarget expresses the interface common to
+// all pw::Function instantiations. The derived FunctionTarget class adds the
+// call operator, which is templated on the function arguments and return type.
+class GenericFunctionTarget {
  public:
-  constexpr FunctionTarget() = default;
+  GenericFunctionTarget() = default;
 
-  FunctionTarget(const FunctionTarget&) = delete;
-  FunctionTarget(FunctionTarget&&) = delete;
-  FunctionTarget& operator=(const FunctionTarget&) = delete;
-  FunctionTarget& operator=(FunctionTarget&&) = delete;
+  GenericFunctionTarget(const GenericFunctionTarget&) = delete;
+  GenericFunctionTarget(GenericFunctionTarget&&) = delete;
+  GenericFunctionTarget& operator=(const GenericFunctionTarget&) = delete;
+  GenericFunctionTarget& operator=(GenericFunctionTarget&&) = delete;
 
   virtual void Destroy() {}
 
-  virtual bool IsNull() const = 0;
-
-  // Invoke the callable stored by the function target.
-  virtual Return operator()(Args... args) const = 0;
+  // Only returns true for NullFunctionTarget.
+  virtual bool IsNull() const { return false; }
 
   // Move initialize the function target to a provided location.
   virtual void MoveInitializeTo(void* ptr) = 0;
+
+ protected:
+  ~GenericFunctionTarget() = default;  // The destructor is never called.
+};
+
+// FunctionTarget is an interface for storing a callable object and providing a
+// way to invoke it.
+template <typename Return, typename... Args>
+class FunctionTarget : public GenericFunctionTarget {
+ public:
+  FunctionTarget() = default;
+
+  // Invoke the callable stored by the function target.
+  virtual Return operator()(Args... args) const = 0;
 
  protected:
   ~FunctionTarget() = default;  // The destructor is never called.
@@ -77,8 +90,7 @@ class FunctionTarget {
 
 // A function target that does not store any callable. Attempting to invoke it
 // results in a crash.
-template <typename Return, typename... Args>
-class NullFunctionTarget final : public FunctionTarget<Return, Args...> {
+class NullFunctionTarget final : public FunctionTarget<void> {
  public:
   constexpr NullFunctionTarget() = default;
 
@@ -89,7 +101,7 @@ class NullFunctionTarget final : public FunctionTarget<Return, Args...> {
 
   bool IsNull() const final { return true; }
 
-  Return operator()(Args...) const final { PW_ASSERT(false); }
+  void operator()() const final { PW_ASSERT(false); }
 
   void MoveInitializeTo(void* ptr) final { new (ptr) NullFunctionTarget(); }
 };
@@ -109,8 +121,6 @@ class InlineFunctionTarget final : public FunctionTarget<Return, Args...> {
   InlineFunctionTarget(InlineFunctionTarget&& other)
       : callable_(std::move(other.callable_)) {}
   InlineFunctionTarget& operator=(InlineFunctionTarget&&) = default;
-
-  bool IsNull() const final { return false; }
 
   Return operator()(Args... args) const final { return callable_(args...); }
 
@@ -154,8 +164,6 @@ class MemoryFunctionTarget final : public FunctionTarget<Return, Args...> {
   }
   MemoryFunctionTarget& operator=(MemoryFunctionTarget&&) = default;
 
-  bool IsNull() const final { return false; }
-
   Return operator()(Args... args) const final { return callable()(args...); }
 
   void MoveInitializeTo(void* ptr) final {
@@ -193,7 +201,6 @@ class FunctionTargetHolder {
   FunctionTargetHolder& operator=(FunctionTargetHolder&&) = delete;
 
   constexpr void InitializeNullTarget() {
-    using NullFunctionTarget = NullFunctionTarget<Return, Args...>;
     static_assert(sizeof(NullFunctionTarget) <= kSizeBytes,
                   "NullFunctionTarget must fit within FunctionTargetHolder");
     new (&null_function_) NullFunctionTarget;
@@ -242,7 +249,7 @@ class FunctionTargetHolder {
   // initialize null_function_ directly.
   union {
     FunctionStorage<kSizeBytes> bits_;
-    NullFunctionTarget<Return, Args...> null_function_;
+    NullFunctionTarget null_function_;
   };
 };
 

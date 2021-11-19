@@ -94,7 +94,10 @@ class Function<Return(Args...)> {
 
   ~Function() { holder_.DestructTarget(); }
 
-  Return operator()(Args... args) const { return holder_.target()(args...); };
+  template <typename... PassedArgs>
+  Return operator()(PassedArgs&&... args) const {
+    return holder_.target()(std::forward<PassedArgs>(args)...);
+  };
 
   explicit operator bool() const { return !holder_.target().IsNull(); }
 
