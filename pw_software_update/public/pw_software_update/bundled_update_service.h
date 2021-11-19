@@ -91,6 +91,11 @@ class BundledUpdateService
 
   void DoVerify();
   void DoApply();
+  void Finish(_pw_software_update_BundledUpdateResult_Enum result)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  bool IsFinished() const PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+    return status_.state == pw_software_update_BundledUpdateState_Enum_FINISHED;
+  }
 };
 
 }  // namespace pw::software_update

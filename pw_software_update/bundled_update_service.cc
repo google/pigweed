@@ -33,33 +33,17 @@
 
 // TODO(keir): Convert all the CHECKs in the RPC service to gracefully report
 // errors.
-//
-// TODO: It may be worth figuring out how to make this a function to prevent
-// code bloat. It's hard due to the tokenized message handling.
-#define SET_ERROR(res, message, ...)                                       \
-  do {                                                                     \
-    PW_LOG_ERROR(message, __VA_ARGS__);                                    \
-    if (status_.state !=                                                   \
-        pw_software_update_BundledUpdateState_Enum_FINISHED) {             \
-      PW_CHECK_OK(backend_.BeforeUpdateAbort());                           \
-      if (status_.has_transfer_id) {                                       \
-        backend_.DisableBundleTransferHandler();                           \
-      }                                                                    \
-      status_.has_transfer_id = false;                                     \
-      if (bundle_open_) {                                                  \
-        /* TODO: Revisit this check; may be able to recover */             \
-        PW_CHECK_OK(bundle_.Close());                                      \
-        bundle_open_ = false;                                              \
-      }                                                                    \
-      status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED; \
-      status_.result = res;                                                \
-      status_.has_result = true;                                           \
-      size_t note_size = sizeof(status_.note.bytes);                       \
-      PW_TOKENIZE_TO_BUFFER(                                               \
-          status_.note.bytes, &note_size, message, __VA_ARGS__);           \
-      status_.note.size = note_size;                                       \
-      status_.has_note = true;                                             \
-    }                                                                      \
+#define SET_ERROR(res, message, ...)                               \
+  do {                                                             \
+    PW_LOG_ERROR(message, __VA_ARGS__);                            \
+    if (!IsFinished()) {                                           \
+      Finish(res);                                                 \
+      size_t note_size = sizeof(status_.note.bytes);               \
+      PW_TOKENIZE_TO_BUFFER(                                       \
+          status_.note.bytes, &(note_size), message, __VA_ARGS__); \
+      status_.note.size = note_size;                               \
+      status_.has_note = true;                                     \
+    }                                                              \
   } while (false)
 
 namespace pw::software_update {
@@ -454,10 +438,7 @@ void BundledUpdateService::DoApply() {
   }
 
   // TODO(davidrogers): Move this to MaybeFinishApply() once available.
-  status_.current_state_progress_hundreth_percent = 0;
-  status_.has_current_state_progress_hundreth_percent = false;
-  status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED;
-  status_.result = pw_software_update_BundledUpdateResult_Enum_SUCCESS;
+  Finish(pw_software_update_BundledUpdateResult_Enum_SUCCESS);
 }
 
 Status BundledUpdateService::Abort(
@@ -533,6 +514,34 @@ void BundledUpdateService::NotifyTransferSucceeded() {
   backend_.DisableBundleTransferHandler();
   status_.has_transfer_id = false;
   status_.state = pw_software_update_BundledUpdateState_Enum_TRANSFERRED;
+}
+
+void BundledUpdateService::Finish(
+    pw_software_update_BundledUpdateResult_Enum result) {
+  if (result == pw_software_update_BundledUpdateResult_Enum_SUCCESS) {
+    status_.current_state_progress_hundreth_percent = 0;
+    status_.has_current_state_progress_hundreth_percent = false;
+  } else {
+    // In the case of error, notify backend that we're about to abort the
+    // software update.
+    PW_CHECK_OK(backend_.BeforeUpdateAbort());
+  }
+
+  // Turn down the transfer if one is in progress.
+  if (status_.has_transfer_id) {
+    backend_.DisableBundleTransferHandler();
+  }
+  status_.has_transfer_id = false;
+
+  // Close out any open bundles.
+  if (bundle_open_) {
+    // TODO: Revisit this check; may be able to recover.
+    PW_CHECK_OK(bundle_.Close());
+    bundle_open_ = false;
+  }
+  status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED;
+  status_.result = result;
+  status_.has_result = true;
 }
 
 }  // namespace pw::software_update
