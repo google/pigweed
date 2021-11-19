@@ -40,6 +40,7 @@ pw_fuzzer
 pw_hdlc
 pw_hex_dump
 pw_i2c
+pw_i2c_mcuxpresso
 pw_interrupt
 pw_interrupt_cortex_m
 pw_interrupt_zephyr
