@@ -22,32 +22,27 @@
 // Die with a message with several attributes included. This crash frontend
 // funnels everything into the logger, which must then handle the true crash
 // behaviour.
-#define PW_HANDLE_CRASH(message, ...)       \
-  do {                                      \
-    PW_LOG(PW_LOG_LEVEL_FATAL,              \
-           PW_LOG_FLAGS,                    \
-           __FILE__ ":%d: Crash: " message, \
-           __LINE__,                        \
-           __VA_ARGS__);                    \
-    PW_UNREACHABLE;                         \
+#define PW_HANDLE_CRASH(message, ...)                                         \
+  do {                                                                        \
+    PW_LOG(PW_LOG_LEVEL_FATAL, PW_LOG_FLAGS, "Crash: " message, __VA_ARGS__); \
+    PW_UNREACHABLE;                                                           \
   } while (0)
 
 // Die with a message with several attributes included. This assert frontend
 // funnels everything into the logger, which is responsible for displaying the
 // log, then crashing/rebooting the device.
-#define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...)         \
-  do {                                                                   \
-    PW_LOG(PW_LOG_LEVEL_FATAL,                                           \
-           PW_LOG_FLAGS,                                                 \
-           __FILE__ ":%d: Check failed: " condition_string ". " message, \
-           __LINE__,                                                     \
-           __VA_ARGS__);                                                 \
-    PW_UNREACHABLE;                                                      \
+#define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...) \
+  do {                                                           \
+    PW_LOG(PW_LOG_LEVEL_FATAL,                                   \
+           PW_LOG_FLAGS,                                         \
+           "Check failed: " condition_string ". " message,       \
+           __VA_ARGS__);                                         \
+    PW_UNREACHABLE;                                              \
   } while (0)
 
 // Sample assert failure message produced by the below implementation:
 //
-//   foo.cc:25: Check failed: old_x (=610) < new_x (=50). Details: foo=10, bar.
+//   Check failed: old_x (=610) < new_x (=50). Details: foo=10, bar.
 //
 // Putting the value next to the operand makes the string easier to read.
 
@@ -63,12 +58,12 @@
   do {                                                                    \
     PW_LOG(PW_LOG_LEVEL_FATAL,                                            \
            PW_LOG_FLAGS,                                                  \
-           __FILE__ ":%d: Check failed: "                                 \
+           "Check failed: "                                               \
                  arg_a_str " (=" type_fmt ") "                            \
                  comparison_op_str " "                                    \
                  arg_b_str " (=" type_fmt ")"                             \
                  ". " message,                                            \
-              __LINE__, arg_a_val, arg_b_val, __VA_ARGS__);               \
+              arg_a_val, arg_b_val, __VA_ARGS__);                         \
     PW_UNREACHABLE;                                                       \
   } while(0)
 // clang-format on
