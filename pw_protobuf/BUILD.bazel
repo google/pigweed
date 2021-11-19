@@ -145,9 +145,17 @@ pw_cc_test(
 )
 
 proto_library(
-    name = "codegen_test_proto",
+    name = "common_protos",
     srcs = [
         "pw_protobuf_protos/common.proto",
+        "pw_protobuf_protos/status.proto",
+    ],
+    strip_import_prefix = "//pw_protobuf",
+)
+
+proto_library(
+    name = "codegen_test_proto",
+    srcs = [
         "pw_protobuf_test_protos/full_test.proto",
         "pw_protobuf_test_protos/imported.proto",
         "pw_protobuf_test_protos/importer.proto",
@@ -156,6 +164,7 @@ proto_library(
         "pw_protobuf_test_protos/repeated.proto",
     ],
     strip_import_prefix = "//pw_protobuf",
+    deps = [":common_protos"],
 )
 
 pw_proto_library(
