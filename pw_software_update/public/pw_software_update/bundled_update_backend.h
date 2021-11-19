@@ -106,10 +106,7 @@ class BundledUpdateBackend {
   //
   // NOTE: ApplyReboot shall be configured such to allow pending RPC or logs to
   // send out the reply before the device reboots.
-  //
-  // TODO(davidrogers): This is temporary to ease rollout. Make this pure
-  // virtual once downstream is updated.
-  virtual Status ApplyReboot() { return OkStatus(); }
+  virtual Status ApplyReboot() = 0;
 
   // Do any work needed to finalize the update including optionally doing a
   // reboot of the device! The software update state and breadcrumbs are not
@@ -120,9 +117,9 @@ class BundledUpdateBackend {
   // If this method does an optional reboot, it will be called again after the
   // reboot.
   //
-  // NOTE: FinalizeApply shall be configured such to allow pending RPC or logs
-  // to send out the reply before the device reboots.
-  virtual Status FinalizeApply() { return OkStatus(); }
+  // NOTE: PostRebootFinalize shall be configured such to allow pending RPC or
+  // logs to send out the reply before the device reboots.
+  virtual Status PostRebootFinalize() { return OkStatus(); }
 
   // Get reader of the device's root metadata.
   //

@@ -446,26 +446,18 @@ void BundledUpdateService::DoApply() {
     }
   }
 
+  // TODO(davidrogers): Add new APPLY_REBOOTING to distinguish between pre and
+  // post reboot.
+
   // Finalize the apply.
-  //
-  // TODO(davidrogers): Ensure the backend documentation and API contract is
-  // clear in regards to the flushing expectations for RPCs and logs surrounding
-  // the reboot inside of this call.
-  //
-  // TODO(davidrogers): Once ApplyReboot is supported in downstream, remove the
-  // call to FinalizeApply.
-  if (!backend_.ApplyReboot().ok() || !backend_.FinalizeApply().ok()) {
+  if (const Status status = backend_.ApplyReboot(); !status.ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-              "Failed to apply target file");
+              "Failed to do the apply reboot: %d",
+              static_cast<int>(status.code()));
     return;
   }
-  // if (const Status status = backend_.ApplyReboot(); !status.ok()) {
-  //   SET_ERROR(pw_software_update_BundledUpdateResult_Enum_APPLY_FAILED,
-  //             "Failed to apply target file: %d",
-  //             static_cast<int>(status.code()));
-  //   return;
-  // }
 
+  // TODO(davidrogers): Move this to MaybeFinishApply() once available.
   status_.current_state_progress_hundreth_percent = 0;
   status_.has_current_state_progress_hundreth_percent = false;
   status_.state = pw_software_update_BundledUpdateState_Enum_FINISHED;

@@ -79,6 +79,9 @@ class BundledUpdateService
   // it was in the TRANSFERRING state.
   void NotifyTransferSucceeded();
 
+  // TODO(davidrogers) Add a MaybeFinishApply() method that is called after
+  // reboot to finish any need apply and verify work.
+
   // TODO:
   // VerifyProgress - to update % complete.
   // ApplyProgress - to update % complete.
