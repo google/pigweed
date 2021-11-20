@@ -97,7 +97,7 @@ inline StatusWithSize ToString(pw_Status status, std::span<char> buffer) {
 }
 
 inline StatusWithSize ToString(std::byte byte, std::span<char> buffer) {
-  return string::IntToHexString(static_cast<unsigned>(byte), buffer);
+  return string::IntToHexString(static_cast<unsigned>(byte), buffer, 2);
 }
 
 }  // namespace pw

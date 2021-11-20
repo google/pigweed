@@ -100,6 +100,18 @@ StringBuilder& StringBuilder::FormatVaList(const char* format, va_list args) {
   return *this;
 }
 
+StringBuilder& StringBuilder::WriteBytes(std::span<const std::byte> data) {
+  if (size() + data.size() * 2 > max_size()) {
+    SetErrorStatus(Status::ResourceExhausted());
+  } else {
+    for (std::byte val : data) {
+      *this << val;
+    }
+  }
+
+  return *this;
+}
+
 void StringBuilder::CopySizeAndStatus(const StringBuilder& other) {
   size_ = other.size_;
   status_ = other.status_;

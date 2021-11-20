@@ -1,8 +1,8 @@
 .. _module-pw_string:
 
----------
+=========
 pw_string
----------
+=========
 String manipulation is a very common operation, but the standard C and C++
 string libraries have drawbacks. The C++ functions are easy-to-use and powerful,
 but require too much flash and memory for many embedded projects. The C string
@@ -15,10 +15,14 @@ smaller binary size impact. Using ``pw_string`` in place of the standard C
 functions eliminates issues related to buffer overflow or missing null
 terminators.
 
+-------------
 Compatibility
-=============
+-------------
 C++17
 
+-----
+Usage
+-----
 pw::string::Format
 ==================
 The ``pw::string::Format`` and ``pw::string::FormatVaList`` functions provide
@@ -95,6 +99,31 @@ pw::StringBuilder
 buffer. It is designed to give the flexibility of ``std::string`` and
 ``std::ostringstream``, but with a small footprint.
 
+.. code-block:: cpp
+
+  #include "pw_log/log.h"
+  #include "pw_string/string_builder.h"
+
+  pw::Status LogProducedData(std::string_view func_name,
+                             std::span<const std::byte> data) {
+    pw::StringBuffer<42> sb;
+
+    // Append a std::string_view to the buffer.
+    sb << func_name;
+
+    // Append a format string to the buffer.
+    sb.Format(" produced %d bytes of data: ", static_cast<int>(data.data()));
+
+    // Append bytes as hex to the buffer.
+    sb << data;
+
+    // Log the final string.
+    PW_LOG_DEBUG("%s", sb.c_str());
+
+    // Errors encountered while mutating the string builder are tracked.
+    return sb.status();
+  }
+
 Supporting custom types with StringBuilder
 ------------------------------------------
 As with ``std::ostream``, StringBuilder supports printing custom types by
@@ -152,8 +181,9 @@ impact than a single ``snprintf`` call.
 
 .. include:: string_builder_size_report
 
+-----------
 Future work
-===========
+-----------
 * StringBuilder's fixed size cost can be dramatically reduced by limiting
   support for 64-bit integers.
 * Consider integrating with the tokenizer module.

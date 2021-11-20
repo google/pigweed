@@ -190,6 +190,8 @@ class StringBuilder {
     // gives smaller code size.
     if constexpr (std::is_convertible_v<T, std::string_view>) {
       append(value);
+    } else if constexpr (std::is_convertible_v<T, std::span<const std::byte>>) {
+      WriteBytes(value);
     } else {
       HandleStatusWithSize(ToString(value, buffer_.subspan(size_)));
     }
@@ -241,6 +243,8 @@ class StringBuilder {
   void CopySizeAndStatus(const StringBuilder& other);
 
  private:
+  StringBuilder& WriteBytes(std::span<const std::byte> data);
+
   size_t ResizeAndTerminate(size_t chars_to_append);
 
   void HandleStatusWithSize(StatusWithSize written);

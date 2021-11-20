@@ -137,7 +137,7 @@ TEST_F(HexDump, FormattedHexDump_Defaults) {
 
 TEST_F(HexDump, FormattedHexDump_DefaultHeader) {
   constexpr const char* expected =
-      " 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f";
+      "00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f";
 
   default_flags_.show_header = true;
   dumper_ = FormattedHexDumper(dest_, default_flags_);
@@ -262,7 +262,7 @@ TEST_F(HexDump, FormattedHexDump_Ascii) {
 }
 
 TEST_F(HexDump, FormattedHexDump_AsciiHeader) {
-  constexpr const char* expected0 = " 0        4        Text";
+  constexpr const char* expected0 = "00       04        Text";
   constexpr const char* expected1 = "6d792074 65737420  my test ";
   constexpr const char* expected2 = "73747269 6e670a    string.";
 
@@ -285,7 +285,7 @@ TEST_F(HexDump, FormattedHexDump_AsciiHeader) {
 }
 
 TEST_F(HexDump, FormattedHexDump_AsciiHeaderGroupEvery) {
-  constexpr const char* expected0 = " 0  1  2  3  4  5  6  7  Text";
+  constexpr const char* expected0 = "00 01 02 03 04 05 06 07  Text";
   constexpr const char* expected1 = "6d 79 20 74 65 73 74 20  my test ";
   constexpr const char* expected2 = "73 74 72 69 6e 67 0a     string.";
 

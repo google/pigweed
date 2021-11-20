@@ -110,13 +110,7 @@ Status FormattedHexDumper::PrintFormatHeader() {
     // bytes_per_line.
     if (flags.group_every != 0 &&
         i % static_cast<uint8_t>(flags.group_every) == 0) {
-      uint8_t c = static_cast<uint8_t>(i);
-      if (c >> 4 == 0) {
-        builder << ' ';
-      } else {
-        builder << std::byte(c >> 4);
-      }
-      builder << std::byte(c & 0xF);
+      builder << std::byte(i);
     } else {
       builder.append(2, ' ');
     }
@@ -178,11 +172,7 @@ Status FormattedHexDumper::DumpLine() {
   for (size_t i = 0; i < bytes_in_line; ++i) {
     // Early loop termination for when bytes_remaining <
     // bytes_per_line.
-    uint8_t c = std::to_integer<uint8_t>(source_data_[i]);
-    // TODO(amontanez): Maybe StringBuilder can be augmented to support full-
-    // width bytes? (`04` instead of `4`, for example)
-    builder << std::byte(c >> 4);
-    builder << std::byte(c & 0xF);
+    builder << source_data_[i];
     AddGroupingByte(i, flags, builder);
   }
   // Add padding spaces to ensure lines are aligned.
