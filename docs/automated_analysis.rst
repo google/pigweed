@@ -17,10 +17,9 @@ On presubmit or in CI we verify Pigweed using:
 * pylint
 * mypy
 * clang-tidy
-* AddressSanitizer (asan): in development, see https://bugs.pigweed.dev/549.
+* AddressSanitizer (asan)
 * ThreadSanitizer (tsan)
-* UndefinedBehaviorSanitizer (ubsan): in development, see
-  https://bugs.pigweed.dev/548.
+* UndefinedBehaviorSanitizer (ubsan)
 * OSS-Fuzz
 
 The rest of this document discusses these tools and their configuration in
