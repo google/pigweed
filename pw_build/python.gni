@@ -26,7 +26,8 @@ declare_args() {
 
   # Constraints file selection (arguments to pip install --constraint).
   # See pip help install.
-  pw_build_PIP_CONSTRAINTS = []
+  pw_build_PIP_CONSTRAINTS =
+      [ "$dir_pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list" ]
 }
 
 # Python packages provide the following targets as $target_name.$subtarget.
