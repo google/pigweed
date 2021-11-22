@@ -89,7 +89,7 @@ def import_ecdsa_public_key(pem: bytes) -> KeyMapping:
             'Try generate a key with gen_ecdsa_keypair()?')
 
     if not (ec_key.curve.name == 'secp256r1' and ec_key.key_size == 256):
-        raise TypeError(f'Unsupported curve: {ec_key.curve.name}.'
+        raise TypeError(f'Unsupported curve: {ec_key.curve.name}.'  # pylint: disable=no-member
                         'Try generate a key with gen_ecdsa_keypair()?')
 
     tuf_key = Key(key_type=KeyType.ECDSA_SHA2_NISTP256,
