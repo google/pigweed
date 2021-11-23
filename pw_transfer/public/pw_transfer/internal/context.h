@@ -19,6 +19,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_chrono/system_timer.h"
+#include "pw_rpc/writer.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_sync/interrupt_spin_lock.h"
@@ -46,20 +47,6 @@ class TransferParameters {
  private:
   uint32_t pending_bytes_;
   uint32_t max_chunk_size_bytes_;
-};
-
-// TODO(pwbug/547): This is a temporary virtual base to unify write operations
-// across RPC server and client contexts, with derived classes being implemented
-// by the transfer server/client. This capability should be added directly to
-// RPC by exposing a subset of the Call class.
-class RawWriter {
- public:
-  virtual ~RawWriter() = default;
-
-  virtual uint32_t channel_id() const = 0;
-  virtual ByteSpan PayloadBuffer() = 0;
-  virtual void ReleaseBuffer() = 0;
-  virtual Status Write(ConstByteSpan data) = 0;
 };
 
 // Information about a single transfer.
@@ -171,7 +158,7 @@ class Context {
   void InitializeForTransmit(
       uint32_t transfer_id,
       work_queue::WorkQueue& work_queue,
-      RawWriter& rpc_writer,
+      rpc::Writer& rpc_writer,
       stream::Reader& reader,
       chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
       uint8_t max_retries = cfg::kDefaultMaxRetries) {
@@ -189,7 +176,7 @@ class Context {
   void InitializeForReceive(
       uint32_t transfer_id,
       work_queue::WorkQueue& work_queue,
-      RawWriter& rpc_writer,
+      rpc::Writer& rpc_writer,
       stream::Writer& writer,
       chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
       uint8_t max_retries = cfg::kDefaultMaxRetries) {
@@ -219,7 +206,7 @@ class Context {
   void Initialize(Type type,
                   uint32_t transfer_id,
                   work_queue::WorkQueue& work_queue,
-                  RawWriter& rpc_writer,
+                  rpc::Writer& rpc_writer,
                   stream::Stream& stream,
                   chrono::SystemClock::duration chunk_timeout,
                   uint8_t max_retries);
@@ -306,7 +293,7 @@ class Context {
   sync::InterruptSpinLock state_lock_;
 
   stream::Stream* stream_;
-  RawWriter* rpc_writer_;
+  rpc::Writer* rpc_writer_;
 
   size_t offset_;
   size_t pending_bytes_;

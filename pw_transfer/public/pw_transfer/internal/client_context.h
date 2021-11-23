@@ -27,25 +27,6 @@ class Client;
 
 namespace internal {
 
-// TODO(pwbug/547): Remove this temporary class once RPC supports generic
-// writers.
-class RawClientWriter final : public RawWriter {
- public:
-  constexpr RawClientWriter() : writer_(nullptr) {}
-  constexpr RawClientWriter(rpc::RawClientReaderWriter& writer)
-      : writer_(&writer) {}
-
-  uint32_t channel_id() const final { return writer_->channel_id(); }
-  ByteSpan PayloadBuffer() final { return writer_->PayloadBuffer(); }
-  void ReleaseBuffer() final { writer_->ReleaseBuffer(); }
-  Status Write(ConstByteSpan data) final { return writer_->Write(data); }
-
-  void set_writer(rpc::RawClientReaderWriter& writer) { writer_ = &writer; }
-
- private:
-  rpc::RawClientReaderWriter* writer_;
-};
-
 class ClientContext : public Context {
  public:
   ClientContext()
@@ -94,7 +75,6 @@ class ClientContext : public Context {
 
   Client* client_;
   Function<void(Status)> on_completion_;
-  RawClientWriter writer_;
 };
 
 }  // namespace internal

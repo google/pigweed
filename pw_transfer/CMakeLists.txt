@@ -50,6 +50,7 @@ pw_add_module_library(pw_transfer.context
   PUBLIC_DEPS
     pw_bytes
     pw_result
+    pw_rpc.client
     pw_status
     pw_stream
     pw_sync.interrupt_spin_lock

@@ -60,7 +60,7 @@ Status Context::SendInitialTransmitChunk() {
   Result<ConstByteSpan> result =
       EncodeChunk(chunk, rpc_writer_->PayloadBuffer());
   if (!result.ok()) {
-    rpc_writer_->ReleaseBuffer();
+    rpc_writer_->ReleasePayloadBuffer();
     return result.status();
   }
 
@@ -317,14 +317,14 @@ Status Context::SendNextDataChunk() {
     PW_LOG_ERROR("Transfer %u Read() failed with status %u",
                  static_cast<unsigned>(transfer_id_),
                  data.status().code());
-    rpc_writer_->ReleaseBuffer();
+    rpc_writer_->ReleasePayloadBuffer();
     return Status::DataLoss();
   }
 
   if (!encoder.status().ok()) {
     PW_LOG_ERROR("Transfer %u failed to encode transmit chunk",
                  static_cast<unsigned>(transfer_id_));
-    rpc_writer_->ReleaseBuffer();
+    rpc_writer_->ReleasePayloadBuffer();
     return Status::Internal();
   }
 
@@ -398,7 +398,7 @@ Status Context::SendTransferParameters() {
     PW_LOG_ERROR("Failed to encode parameters for transfer %u: %d",
                  static_cast<unsigned>(parameters.transfer_id),
                  data.status().code());
-    rpc_writer_->ReleaseBuffer();
+    rpc_writer_->ReleasePayloadBuffer();
     FinishAndSendStatus(Status::Internal());
     return Status::Internal();
   }
@@ -440,7 +440,7 @@ Status Context::UpdateAndSendTransferParameters(
 void Context::Initialize(Type type,
                          uint32_t transfer_id,
                          work_queue::WorkQueue& work_queue,
-                         RawWriter& rpc_writer,
+                         rpc::Writer& rpc_writer,
                          stream::Stream& stream,
                          chrono::SystemClock::duration chunk_timeout,
                          uint8_t max_retries) {
@@ -478,7 +478,7 @@ void Context::SendStatusChunk(Status status) {
   if (!result.ok()) {
     PW_LOG_ERROR("Failed to encode final chunk for transfer %u",
                  static_cast<unsigned>(transfer_id_));
-    rpc_writer_->ReleaseBuffer();
+    rpc_writer_->ReleasePayloadBuffer();
     return;
   }
 

@@ -30,9 +30,8 @@ void ClientContext::StartRead(Client& client,
 
   client_ = &client;
   on_completion_ = std::move(on_completion);
-  writer_.set_writer(stream);
 
-  InitializeForReceive(transfer_id, work_queue, writer_, writer, timeout);
+  InitializeForReceive(transfer_id, work_queue, stream, writer, timeout);
 }
 
 void ClientContext::StartWrite(Client& client,
@@ -47,9 +46,8 @@ void ClientContext::StartWrite(Client& client,
 
   client_ = &client;
   on_completion_ = std::move(on_completion);
-  writer_.set_writer(stream);
 
-  InitializeForTransmit(transfer_id, work_queue, writer_, reader, timeout);
+  InitializeForTransmit(transfer_id, work_queue, stream, reader, timeout);
 }
 
 }  // namespace pw::transfer::internal

@@ -96,6 +96,7 @@ pw_source_set("context") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
+    "$dir_pw_rpc:client",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
     dir_pw_bytes,

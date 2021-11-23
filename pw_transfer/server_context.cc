@@ -43,20 +43,19 @@ Status ServerContext::Start(TransferType type,
   }
 
   type_ = type;
-  writer_.set_writer(stream);
   handler_ = &handler;
 
   if (type == kRead) {
     InitializeForTransmit(handler.id(),
                           work_queue,
-                          writer_,
+                          stream,
                           handler.reader(),
                           timeout,
                           max_retries);
   } else {
     InitializeForReceive(handler.id(),
                          work_queue,
-                         writer_,
+                         stream,
                          handler.writer(),
                          timeout,
                          max_retries);
