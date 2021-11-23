@@ -23,6 +23,11 @@ pw_add_facade(pw_sync.mutex
     pw_preprocessor
 )
 
+pw_add_module_library(pw_sync.lock_annotations
+  PUBLIC_DEPS
+    pw_preprocessor
+)
+
 pw_add_module_library(pw_sync.virtual_basic_lockable
   PUBLIC_DEPS
     pw_polyfill
