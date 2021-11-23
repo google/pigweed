@@ -1064,10 +1064,22 @@ TEST_F(ScoConnectionManagerTest, AcceptScoConnectionWithEscoParametersFailsAndSe
 
   auto reject_status_packet = testing::CommandStatusPacket(
       hci_spec::kRejectSynchronousConnectionRequest, hci_spec::StatusCode::kSuccess);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::RejectSynchronousConnectionRequest(
-                            kPeerAddress, hci_spec::StatusCode::kUnacceptableConnectionParameters),
-                        &reject_status_packet);
+
+  auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
+      /*conn=*/0, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
+      hci_spec::StatusCode::kConnectionRejectedLimitedResources);
+
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::RejectSynchronousConnectionRequest(
+          kPeerAddress, hci_spec::StatusCode::kConnectionRejectedLimitedResources),
+      &reject_status_packet);
+  RunLoopUntilIdle();
+  // The AcceptConnection request should not be completed until the connection complete event is
+  // received.
+  EXPECT_FALSE(conn_result.is_error());
+
+  test_device()->SendCommandChannelPacket(conn_complete_packet);
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.is_error());
   EXPECT_EQ(conn_result.error(), HostError::kParametersRejected);

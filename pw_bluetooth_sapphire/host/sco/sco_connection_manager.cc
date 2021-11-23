@@ -219,9 +219,10 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
     bt_log(DEBUG, "sco",
            "in progress request parameters don't support the requested transport (%s); rejecting",
            hci_spec::LinkTypeToString(params.link_type).c_str());
+    // The controller will send an HCI Synchronous Connection Complete event, so the request will be
+    // completed then.
     SendRejectConnectionCommand(params.bd_addr,
-                                hci_spec::StatusCode::kUnacceptableConnectionParameters);
-    CompleteRequest(fpromise::error(HostError::kParametersRejected));
+                                hci_spec::StatusCode::kConnectionRejectedLimitedResources);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -402,6 +403,14 @@ void ScoConnectionManager::SendCommandWithStatusCallback(
 
 void ScoConnectionManager::SendRejectConnectionCommand(DeviceAddressBytes addr,
                                                        hci_spec::StatusCode reason) {
+  // The reject command has a small range of allowed reasons (the controller sends "Invalid HCI
+  // Command Parameters" for other reasons).
+  ZX_ASSERT_MSG(reason == hci_spec::StatusCode::kConnectionRejectedLimitedResources ||
+                    reason == hci_spec::StatusCode::kConnectionRejectedSecurity ||
+                    reason == hci_spec::StatusCode::kConnectionRejectedBadBdAddr,
+                "Tried to send invalid reject reason: %s",
+                hci_spec::StatusCodeToString(reason).c_str());
+
   auto reject =
       hci::CommandPacket::New(hci_spec::kRejectSynchronousConnectionRequest,
                               sizeof(hci_spec::RejectSynchronousConnectionRequestCommandParams));
