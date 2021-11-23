@@ -28,28 +28,9 @@ void InterruptSpinLock::lock() {
   OS_SuspendAllTasks();
 
   // We can't deadlock here so crash instead.
-  PW_CHECK(!native_type_.locked,
-           "Recursive InterruptSpinLock::lock() detected");
+  PW_DCHECK(!native_type_.locked,
+            "Recursive InterruptSpinLock::lock() detected");
   native_type_.locked = true;
-}
-
-bool InterruptSpinLock::try_lock() {
-  // Mask interrupts.
-  OS_IncDI();
-
-  // Disable task switching to ensure kernel APIs cannot switch to other tasks
-  // which could then end up deadlocking recursively on this same lock.
-  OS_SuspendAllTasks();
-
-  if (native_type_.locked) {
-    // Already locked, bail out.
-    OS_ResumeAllSuspendedTasks();  // Restore task switching.
-    OS_DecRI();                    // Restore interrupts.
-    return false;
-  }
-
-  native_type_.locked = true;
-  return true;
 }
 
 void InterruptSpinLock::unlock() {

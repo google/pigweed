@@ -25,4 +25,11 @@ InterruptSpinLock::native_handle() {
   return native_type_;
 }
 
+inline bool InterruptSpinLock::try_lock() {
+  // This backend does not support SMP and on a uniprocesor we cannot actually
+  // fail to acquire the lock. Recursive locking is already detected by lock().
+  lock();
+  return true;
+}
+
 }  // namespace pw::sync

@@ -50,56 +50,12 @@ void InterruptSpinLock::lock() {
   // This implementation is not set up to support SMP, meaning we cannot
   // deadlock here due to the global interrupt lock, so we crash on recursion
   // on a specific spinlock instead.
-  PW_CHECK_UINT_EQ(native_type_.state,
-                   State::kUnlocked,
-                   "Recursive InterruptSpinLock::lock() detected");
+  PW_DCHECK_UINT_EQ(native_type_.state,
+                    State::kUnlocked,
+                    "Recursive InterruptSpinLock::lock() detected");
 
   native_type_.state =
       in_interrupt ? State::kLockedFromInterrupt : State::kLockedFromThread;
-}
-
-bool InterruptSpinLock::try_lock() {
-  // In order to be pw::sync::InterruptSpinLock compliant, mask the interrupts
-  // before attempting to grab the internal spin lock.
-  const UINT saved_interrupt_mask = tx_interrupt_control(TX_INT_DISABLE);
-
-  const bool in_interrupt = interrupt::InInterruptContext();
-
-  // Disable thread switching to ensure kernel APIs cannot switch to other
-  // threads which could then end up deadlocking recursively on this same lock.
-  if (!in_interrupt) {
-    TX_THREAD* current_thread = tx_thread_identify();
-    // During init, i.e. tx_application_define, there may not be a thread yet.
-    if (current_thread != nullptr) {
-      // Disable thread switching by raising the preemption threshold to the
-      // highest priority value of 0.
-      UINT preemption_success = tx_thread_preemption_change(
-          tx_thread_identify(), 0, &native_type_.saved_preemption_threshold);
-      PW_DCHECK_UINT_EQ(
-          TX_SUCCESS, preemption_success, "Failed to disable thread switching");
-    }
-  }
-
-  if (native_type_.state != State::kUnlocked) {
-    // Already locked, restore interrupts and thread switching and bail out.
-    if (!interrupt::InInterruptContext()) {
-      // Restore thread switching.
-      UINT unused = 0;
-      UINT preemption_success =
-          tx_thread_preemption_change(tx_thread_identify(),
-                                      native_type_.saved_preemption_threshold,
-                                      &unused);
-      PW_DCHECK_UINT_EQ(
-          TX_SUCCESS, preemption_success, "Failed to restore thread switching");
-    }
-    tx_interrupt_control(saved_interrupt_mask);
-    return false;
-  }
-
-  native_type_.saved_interrupt_mask = saved_interrupt_mask;
-  native_type_.state =
-      in_interrupt ? State::kLockedFromInterrupt : State::kLockedFromThread;
-  return true;
 }
 
 void InterruptSpinLock::unlock() {
