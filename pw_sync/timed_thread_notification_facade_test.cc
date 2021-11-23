@@ -60,55 +60,84 @@ TEST(TimedThreadNotification, ReleaseStatic) {
   EXPECT_FALSE(raise_notification.try_acquire());
 }
 
-TEST(TimedThreadNotification, TryAcquireFor) {
+TEST(TimedThreadNotification, TryAcquireForNotified) {
   TimedThreadNotification notification;
   notification.release();
 
+  // Ensure it doesn't block and succeeds when notified.
   SystemClock::time_point before = SystemClock::now();
   EXPECT_TRUE(notification.try_acquire_for(kRoundedArbitraryDuration));
   SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(TimedThreadNotification, TryAcquireForNotNotifiedPositiveTimeout) {
+  TimedThreadNotification notification;
 
   // Ensure it blocks and fails when not notified for the full timeout.
-  before = SystemClock::now();
+  SystemClock::time_point before = SystemClock::now();
   EXPECT_FALSE(notification.try_acquire_for(kRoundedArbitraryDuration));
-  time_elapsed = SystemClock::now() - before;
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(TimedThreadNotification, TryAcquireForNotNotifiedZeroLengthTimeout) {
+  TimedThreadNotification notification;
 
   // Ensure it doesn't block when a zero length duration is used.
-  before = SystemClock::now();
+  SystemClock::time_point before = SystemClock::now();
   EXPECT_FALSE(notification.try_acquire_for(SystemClock::duration::zero()));
-  time_elapsed = SystemClock::now() - before;
-  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
-
-  // Ensure it doesn't block when a negative duration is used.
-  before = SystemClock::now();
-  EXPECT_FALSE(notification.try_acquire_for(-kRoundedArbitraryDuration));
-  time_elapsed = SystemClock::now() - before;
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
 }
 
-TEST(TimedThreadNotification, tryAcquireUntil) {
+TEST(TimedThreadNotification, TryAcquireForNotNotifiedNegativeTimeout) {
+  TimedThreadNotification notification;
+
+  // Ensure it doesn't block when a negative duration is used.
+  SystemClock::time_point before = SystemClock::now();
+  EXPECT_FALSE(notification.try_acquire_for(-kRoundedArbitraryDuration));
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
+  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(TimedThreadNotification, TryAcquireUntilNotified) {
   TimedThreadNotification notification;
   notification.release();
 
+  // Ensure it doesn't block and succeeds when notified.
   SystemClock::time_point deadline =
       SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_TRUE(notification.try_acquire_until(deadline));
   EXPECT_LT(SystemClock::now(), deadline);
+}
+
+TEST(TimedThreadNotification, TryAcquireUntilNotNotifiedFutureDeadline) {
+  TimedThreadNotification notification;
 
   // Ensure it blocks and fails when not notified.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_FALSE(notification.try_acquire_until(deadline));
   EXPECT_GE(SystemClock::now(), deadline);
+}
+
+TEST(TimedThreadNotification, TryAcquireUntilNotNotifiedCurrentDeadline) {
+  TimedThreadNotification notification;
 
   // Ensure it doesn't block when now is used.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_FALSE(notification.try_acquire_until(SystemClock::now()));
   EXPECT_LT(SystemClock::now(), deadline);
+}
+
+TEST(TimedThreadNotification, TryAcquireUntilNotNotifiedPastDeadline) {
+  TimedThreadNotification notification;
 
   // Ensure it doesn't block when a timestamp in the past is used.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_FALSE(notification.try_acquire_until(SystemClock::now() -
                                               kRoundedArbitraryDuration));
   EXPECT_LT(SystemClock::now(), deadline);

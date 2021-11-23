@@ -97,58 +97,86 @@ TEST(CountingSemaphore, MultiRelease) {
   EXPECT_FALSE(semaphore.try_acquire());
 }
 
-TEST(CountingSemaphore, TryAcquireFor) {
+TEST(CountingSemaphore, TryAcquireForFull) {
   CountingSemaphore semaphore;
   semaphore.release();
 
+  // Ensure it doesn't block and succeeds if not empty.
   SystemClock::time_point before = SystemClock::now();
   EXPECT_TRUE(semaphore.try_acquire_for(kRoundedArbitraryDuration));
   SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(CountingSemaphore, TryAcquireForEmptyPositiveTimeout) {
+  CountingSemaphore semaphore;
 
   // Ensure it blocks and fails when empty.
-  before = SystemClock::now();
+  SystemClock::time_point before = SystemClock::now();
   EXPECT_FALSE(semaphore.try_acquire_for(kRoundedArbitraryDuration));
-  time_elapsed = SystemClock::now() - before;
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(CountingSemaphore, TryAcquireForEmptyZeroLengthTimeout) {
+  CountingSemaphore semaphore;
 
   // Ensure it doesn't block and fails when empty and a zero length duration is
   // used.
-  before = SystemClock::now();
+  SystemClock::time_point before = SystemClock::now();
   EXPECT_FALSE(semaphore.try_acquire_for(SystemClock::duration::zero()));
-  time_elapsed = SystemClock::now() - before;
-  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
-
-  // Ensure it doesn't block and fails when empty and a negative duration is
-  // used.
-  before = SystemClock::now();
-  EXPECT_FALSE(semaphore.try_acquire_for(-kRoundedArbitraryDuration));
-  time_elapsed = SystemClock::now() - before;
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
 }
 
-TEST(CountingSemaphore, TryAcquireUntil) {
+TEST(CountingSemaphore, TryAcquireForEmptyNegativeTimeout) {
+  CountingSemaphore semaphore;
+
+  // Ensure it doesn't block and fails when empty and a negative duration is
+  // used.
+  SystemClock::time_point before = SystemClock::now();
+  EXPECT_FALSE(semaphore.try_acquire_for(-kRoundedArbitraryDuration));
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
+  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(CountingSemaphore, TryAcquireUntilFull) {
   CountingSemaphore semaphore;
   semaphore.release();
 
+  // Ensure it doesn't block and succeeds if not empty.
   SystemClock::time_point deadline =
       SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_TRUE(semaphore.try_acquire_until(deadline));
   EXPECT_LT(SystemClock::now(), deadline);
+}
+
+TEST(CountingSemaphore, TryAcquireUntilEmptyFutureDeadline) {
+  CountingSemaphore semaphore;
 
   // Ensure it blocks and fails when empty.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_FALSE(semaphore.try_acquire_until(deadline));
   EXPECT_GE(SystemClock::now(), deadline);
+}
+
+TEST(CountingSemaphore, TryAcquireUntilEmptyCurrentDeadline) {
+  CountingSemaphore semaphore;
 
   // Ensure it doesn't block and fails when empty and now is used.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_FALSE(semaphore.try_acquire_until(SystemClock::now()));
   EXPECT_LT(SystemClock::now(), deadline);
+}
 
+TEST(CountingSemaphore, TryAcquireUntilEmptyPastDeadline) {
+  CountingSemaphore semaphore;
   // Ensure it doesn't block and fails when empty and a timestamp in the past is
   // used.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   EXPECT_FALSE(semaphore.try_acquire_until(SystemClock::now() -
                                            kRoundedArbitraryDuration));
   EXPECT_LT(SystemClock::now(), deadline);
@@ -180,48 +208,62 @@ TEST(CountingSemaphore, MultiReleaseInC) {
   EXPECT_FALSE(pw_sync_CountingSemaphore_CallTryAcquire(&semaphore));
 }
 
-TEST(CountingSemaphore, TryAcquireForInC) {
+TEST(CountingSemaphore, TryAcquireForFullInC) {
   CountingSemaphore semaphore;
   pw_sync_CountingSemaphore_CallRelease(&semaphore);
 
+  // Ensure it doesn't block and succeeds if not empty.
   pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   ASSERT_TRUE(pw_sync_CountingSemaphore_CallTryAcquireFor(
       &semaphore, kRoundedArbitraryDurationInC));
   pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
   EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+}
+
+TEST(CountingSemaphore, TryAcquireForEmptyPositiveTimeoutInC) {
+  CountingSemaphore semaphore;
 
   // Ensure it blocks and fails when empty.
-  before = pw_chrono_SystemClock_Now();
+  pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   EXPECT_FALSE(pw_sync_CountingSemaphore_CallTryAcquireFor(
       &semaphore, kRoundedArbitraryDurationInC));
-  time_elapsed =
+  pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
   EXPECT_GE(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+}
+
+TEST(CountingSemaphore, TryAcquireForEmptyZeroLengthTimeoutInC) {
+  CountingSemaphore semaphore;
 
   // Ensure it doesn't block and fails when empty and a zero length duration is
   // used.
-  before = pw_chrono_SystemClock_Now();
+  pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   EXPECT_FALSE(pw_sync_CountingSemaphore_CallTryAcquireFor(
       &semaphore, PW_SYSTEM_CLOCK_MS(0)));
-  time_elapsed =
-      pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
-  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
-
-  // Ensure it doesn't block and fails when empty and a negative duration is
-  // used.
-  before = pw_chrono_SystemClock_Now();
-  EXPECT_FALSE(pw_sync_CountingSemaphore_CallTryAcquireFor(
-      &semaphore, PW_SYSTEM_CLOCK_MS(-kRoundedArbitraryDurationInC.ticks)));
-  time_elapsed =
+  pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
   EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
 }
 
-TEST(CountingSemaphore, TryAcquireUntilInC) {
+TEST(CountingSemaphore, TryAcquireForEmptyNegativeTimeoutInC) {
+  CountingSemaphore semaphore;
+
+  // Ensure it doesn't block and fails when empty and a negative duration is
+  // used.
+  pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
+  EXPECT_FALSE(pw_sync_CountingSemaphore_CallTryAcquireFor(
+      &semaphore, PW_SYSTEM_CLOCK_MS(-kRoundedArbitraryDurationInC.ticks)));
+  pw_chrono_SystemClock_Duration time_elapsed =
+      pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
+  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+}
+
+TEST(CountingSemaphore, TryAcquireUntilFullInC) {
   CountingSemaphore semaphore;
   pw_sync_CountingSemaphore_CallRelease(&semaphore);
 
+  // Ensure it doesn't block and succeeds if not empty.
   pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
@@ -230,8 +272,13 @@ TEST(CountingSemaphore, TryAcquireUntilInC) {
       pw_sync_CountingSemaphore_CallTryAcquireUntil(&semaphore, deadline));
   EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
+}
+
+TEST(CountingSemaphore, TryAcquireUntilEmptyFutureDeadlineInC) {
+  CountingSemaphore semaphore;
 
   // Ensure it blocks and fails when empty.
+  pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
       kRoundedArbitraryDurationInC.ticks;
@@ -239,8 +286,13 @@ TEST(CountingSemaphore, TryAcquireUntilInC) {
       pw_sync_CountingSemaphore_CallTryAcquireUntil(&semaphore, deadline));
   EXPECT_GE(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
+}
+
+TEST(CountingSemaphore, TryAcquireUntilEmptyCurrentDeadlineInC) {
+  CountingSemaphore semaphore;
 
   // Ensure it doesn't block and fails when empty and now is used.
+  pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
       kRoundedArbitraryDurationInC.ticks;
@@ -248,9 +300,14 @@ TEST(CountingSemaphore, TryAcquireUntilInC) {
       &semaphore, pw_chrono_SystemClock_Now()));
   EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
+}
+
+TEST(CountingSemaphore, TryAcquireUntilEmptyPastDeadlineInC) {
+  CountingSemaphore semaphore;
 
   // Ensure it doesn't block and fails when empty and a timestamp in the past is
   // used.
+  pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
       kRoundedArbitraryDurationInC.ticks;

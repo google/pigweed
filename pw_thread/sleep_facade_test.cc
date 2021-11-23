@@ -41,7 +41,7 @@ constexpr SystemClock::duration kRoundedArbitraryDuration =
 constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
     PW_SYSTEM_CLOCK_MS(42);
 
-TEST(Sleep, SleepFor) {
+TEST(Sleep, SleepForPositiveDuration) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
   ASSERT_NE(get_id(), thread::Id());
 
@@ -49,21 +49,31 @@ TEST(Sleep, SleepFor) {
   sleep_for(kRoundedArbitraryDuration);
   SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(Sleep, SleepForZeroLengthDuration) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
 
   // Ensure it doesn't sleep when a zero length duration is used.
-  before = SystemClock::now();
+  SystemClock::time_point before = SystemClock::now();
   sleep_for(SystemClock::duration::zero());
-  time_elapsed = SystemClock::now() - before;
-  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
-
-  // Ensure it doesn't sleep when a negative duration is used.
-  before = SystemClock::now();
-  sleep_for(-kRoundedArbitraryDuration);
-  time_elapsed = SystemClock::now() - before;
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
   EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
 }
 
-TEST(Sleep, SleepUntil) {
+TEST(Sleep, SleepForNegativeDuration) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
+
+  // Ensure it doesn't sleep when a negative duration is used.
+  SystemClock::time_point before = SystemClock::now();
+  sleep_for(-kRoundedArbitraryDuration);
+  SystemClock::duration time_elapsed = SystemClock::now() - before;
+  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+}
+
+TEST(Sleep, SleepUntilFutureWakeupTime) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
   ASSERT_NE(get_id(), thread::Id());
 
@@ -71,19 +81,31 @@ TEST(Sleep, SleepUntil) {
       SystemClock::now() + kRoundedArbitraryDuration;
   sleep_until(deadline);
   EXPECT_GE(SystemClock::now(), deadline);
+}
+
+TEST(Sleep, SleepUntilCurrentWakeupTime) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
 
   // Ensure it doesn't sleep when now is used.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   sleep_until(SystemClock::now());
   EXPECT_LT(SystemClock::now(), deadline);
+}
+
+TEST(Sleep, SleepUntilPastWakeupTime) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
 
   // Ensure it doesn't sleep when a timestamp in the past is used.
-  deadline = SystemClock::now() + kRoundedArbitraryDuration;
+  SystemClock::time_point deadline =
+      SystemClock::now() + kRoundedArbitraryDuration;
   sleep_until(SystemClock::now() - kRoundedArbitraryDuration);
   EXPECT_LT(SystemClock::now(), deadline);
 }
 
-TEST(Sleep, SleepForInC) {
+TEST(Sleep, SleepForPositiveDurationInC) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
   ASSERT_NE(get_id(), thread::Id());
 
@@ -92,24 +114,34 @@ TEST(Sleep, SleepForInC) {
   pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
   EXPECT_GE(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+}
+
+TEST(Sleep, SleepForZeroLengthDurationInC) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
 
   // Ensure it doesn't sleep when a zero length duration is used.
-  before = pw_chrono_SystemClock_Now();
+  pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   pw_this_thread_SleepFor(PW_SYSTEM_CLOCK_MS(0));
-  time_elapsed =
-      pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
-  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
-
-  // Ensure it doesn't sleep when a negative duration is used.
-  before = pw_chrono_SystemClock_Now();
-  pw_this_thread_SleepFor(
-      PW_SYSTEM_CLOCK_MS(-kRoundedArbitraryDurationInC.ticks));
-  time_elapsed =
+  pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
   EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
 }
 
-TEST(Sleep, SleepUntilInC) {
+TEST(Sleep, SleepForNegativeDurationInC) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
+
+  // Ensure it doesn't sleep when a negative duration is used.
+  pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
+  pw_this_thread_SleepFor(
+      PW_SYSTEM_CLOCK_MS(-kRoundedArbitraryDurationInC.ticks));
+  pw_chrono_SystemClock_Duration time_elapsed =
+      pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
+  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+}
+
+TEST(Sleep, SleepUntilFutureWakeupTimeInC) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
   ASSERT_NE(get_id(), thread::Id());
 
@@ -120,16 +152,28 @@ TEST(Sleep, SleepUntilInC) {
   pw_this_thread_CallSleepUntil(deadline);
   EXPECT_GE(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
+}
+
+TEST(Sleep, SleepUntilCurrentWakeupTimeInC) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
 
   // Ensure it doesn't sleep when now is used.
+  pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
       kRoundedArbitraryDurationInC.ticks;
   pw_this_thread_CallSleepUntil(pw_chrono_SystemClock_Now());
   EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
+}
+
+TEST(Sleep, SleepUntilPastWakeupTimeInC) {
+  // Ensure we are in a thread context, meaning we are permitted to sleep.
+  ASSERT_NE(get_id(), thread::Id());
 
   // Ensure it doesn't sleep when a timestamp in the past is used.
+  pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
       kRoundedArbitraryDurationInC.ticks;
