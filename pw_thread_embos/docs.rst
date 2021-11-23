@@ -39,11 +39,11 @@ can be created as follows:
   void StartExampleThread() {
     pw::thread::DetachedThread(
         pw::thread::embos::Options()
-            .set_name("static_example_thread")
+            .set_name("example_thread")
             .set_priority(kFooPriority)
             .set_time_slice_interval(kFooTimeSliceInterval)
             .set_context(example_thread_context),
-        example_thread_function)
+        example_thread_function);
   }
 
 
@@ -172,8 +172,7 @@ the scheduler has started is non-fatal, but will result in no action and a
 An ``Aborted`` error status is returned if the provided callback returns
 ``false`` to request an early termination of thread iteration.
 
-Return values
--------------
+*Return values*
 
 * ``FailedPrecondition``: Returned when ``ForEachThread()`` is run before the OS
   has been initialized.
@@ -186,8 +185,8 @@ Snapshot Integration
 This ``pw_thread`` backend provides helper functions that capture embOS thread
 info to a ``pw::thread::Thread`` proto.
 
-SnapshotThread()/SnapshotThreads()
-==================================
+``SnapshotThreads()``
+=====================
 ``SnapshotThread()`` captures the thread name, state, and stack information for
 the provided embOS TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
 the most up-to-date information is captured, the stack pointer for the currently

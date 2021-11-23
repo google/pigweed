@@ -31,7 +31,7 @@ namespace pw::thread::threadx {
 //   pw::thread::Thread example_thread(
 //     pw::thread::threadx::Options()
 //         .set_name("example_thread"),
-//         .set_context(static_example_thread_context),
+//         .set_context(example_thread_context),
 //     example_thread_function);
 //
 //   // Specifies the name, priority, time slice interval, and pre-allocated
@@ -41,7 +41,7 @@ namespace pw::thread::threadx {
 //         .set_name("static_example_thread")
 //         .set_priority(kFooPriority)
 //         .set_time_slice_interval(1)
-//         .set_context(static_example_thread_context),
+//         .set_context(example_thread_context),
 //     example_thread_function);
 //
 class Options : public thread::Options {
@@ -61,6 +61,8 @@ class Options : public thread::Options {
   // Sets the priority for the ThreadX thread from 0 through 31, where a value
   // of 0 represents the highest priority, see ThreadX tx_thread_create for
   // more detail.
+  //
+  // Precondition: priority <= PW_THREAD_THREADX_CONFIG_MIN_PRIORITY
   constexpr Options& set_priority(UINT priority) {
     PW_DASSERT(priority <= PW_THREAD_THREADX_CONFIG_MIN_PRIORITY);
     priority_ = priority;
@@ -108,8 +110,10 @@ class Options : public thread::Options {
     return *this;
   }
 
-  // Set the pre-allocated context (all memory needed to run a thread), see the
-  // pw::thread::threadx::Context for more detail.
+  // Set the pre-allocated context (all memory needed to run a thread). Note
+  // that this is required for this thread creation backend! The Context can
+  // either be constructed with an externally provided std::span<ULONG> stack
+  // or the templated form of ContextWihtStack<kStackSizeWords> can be used.
   constexpr Options& set_context(Context& context) {
     context_ = &context;
     return *this;

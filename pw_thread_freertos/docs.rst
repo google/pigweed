@@ -41,7 +41,7 @@ follows:
             .set_name("static_example_thread")
             .set_priority(kFooPriority)
             .set_static_context(example_thread_context),
-        example_thread_function)
+        example_thread_function);
   }
 
 Alternatively when ``PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED`` is
@@ -182,8 +182,10 @@ It uses ``pw::this_thread::get_id() != thread::Id()`` to ensure it invoked only
 from a thread.
 
 ---------
-utilities
+Utilities
 ---------
+``ForEachThread()``
+===================
 In cases where an operation must be performed for every thread,
 ``ForEachThread()`` can be used to iterate over all the created thread TCBs.
 Note that it's only safe to use this while the scheduler and interrupts are
@@ -195,8 +197,7 @@ non-fatal but will result in no action and a ``FailedPrecondition`` error code.
 An ``Aborted`` error status is returned if the provided callback returns
 ``false`` to request an early termination of thread iteration.
 
-Return values
-=============
+*Return values*
 
 * ``FailedPrecondition``: Returned when ``ForEachThread()`` is run before the OS
   has been initialized.
@@ -228,8 +229,8 @@ through ``pw_thread_freertos_backend/freertos_tsktcb.h``. The facade asserts
 that this definition matches the size of FreeRTOS's ``StaticTask_T`` which is
 the public opaque TCB type.
 
-SnapshotThread()/SnapshotThreads()
-==================================
+``SnapshotThreads()``
+=====================
 ``SnapshotThread()`` captures the thread name, state, and stack information for
 the provided TCB to a ``pw::thread::Thread`` protobuf encoder. To ensure
 the most up-to-date information is captured, the stack pointer for the currently

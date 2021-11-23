@@ -38,12 +38,12 @@ namespace pw::thread::threadx {
 //   std::array<ULONG, kFooStackSizeWords> example_thread_stack;
 //   pw::thread::threadx::Context example_thread_context(example_thread_stack);
 //   void StartExampleThread() {
-//      pw::thread::Thread(
+//      pw::thread::DetachedThread(
 //        pw::thread::threadx::Options()
-//            .set_name("static_example_thread")
+//            .set_name("example_thread")
 //            .set_priority(kFooPriority)
-//            .set_static_context(example_thread_context),
-//        example_thread_function).detach();
+//            .set_context(example_thread_context),
+//        example_thread_function);
 //   }
 class Context {
  public:
