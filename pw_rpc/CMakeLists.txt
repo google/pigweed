@@ -66,10 +66,13 @@ pw_add_module_library(pw_rpc.common
     pw_span
     pw_status
     pw_rpc.protos.pwpb
-    pw_sync.mutex
   PRIVATE_DEPS
     pw_log
 )
+
+if (NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")
+  target_link_libraries(pw_rpc.common PUBLIC pw_sync.mutex)
+endif()
 
 pw_add_module_library(pw_rpc.synchronized_channel_output
   PUBLIC_DEPS
