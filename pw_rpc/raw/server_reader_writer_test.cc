@@ -23,7 +23,7 @@
 namespace pw::rpc {
 
 class TestServiceImpl final
-    : public test::generated::TestService<TestServiceImpl> {
+    : public test::pw_rpc::raw::TestService::Service<TestServiceImpl> {
  public:
   static StatusWithSize TestUnaryRpc(ConstByteSpan, ByteSpan) {
     return StatusWithSize(0);

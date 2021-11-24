@@ -24,7 +24,7 @@ namespace pw::log_rpc {
 // The RPC LogService provides a way to start a log stream on a known RPC
 // channel with a writer provided on a call. Log streams maintenance is flexible
 // and delegated outside the service.
-class LogService final : public log::generated::Logs<LogService> {
+class LogService final : public log::pw_rpc::raw::Logs::Service<LogService> {
  public:
   LogService(RpcLogDrainMap& drains, FilterMap* filters = nullptr)
       : drains_(drains), filters_(filters) {}

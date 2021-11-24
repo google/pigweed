@@ -20,7 +20,8 @@
 namespace pw::rpc {
 namespace {
 
-class MixedService1 : public test::generated::TestService<MixedService1> {
+class MixedService1
+    : public test::pw_rpc::nanopb::TestService::Service<MixedService1> {
  public:
   StatusWithSize TestUnaryRpc(ConstByteSpan, ByteSpan) {
     return StatusWithSize(5);
@@ -52,7 +53,8 @@ class MixedService1 : public test::generated::TestService<MixedService1> {
   bool called_bidirectional_streaming_method = false;
 };
 
-class MixedService2 : public test::generated::TestService<MixedService2> {
+class MixedService2
+    : public test::pw_rpc::nanopb::TestService::Service<MixedService2> {
  public:
   Status TestUnaryRpc(const pw_rpc_test_TestRequest&,
                       pw_rpc_test_TestResponse&) {

@@ -172,6 +172,6 @@ def process_proto_file(proto_file) -> Iterable[OutputFile]:
     generator = RawCodeGenerator(output_filename)
     codegen.generate_package(proto_file, package_root, generator)
 
-    codegen.package_stubs(package_root, generator.output, StubGenerator())
+    codegen.package_stubs(package_root, generator, StubGenerator())
 
     return [generator.output]

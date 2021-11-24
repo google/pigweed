@@ -33,7 +33,7 @@ namespace pw::file {
 // was "flat" (i.e. no directories). This means there's no concept of logical
 // directories, despite any "path like" naming that may be employed by a user.
 class FlatFileSystemService
-    : public generated::FileSystem<FlatFileSystemService> {
+    : public pw_rpc::raw::FileSystem::Service<FlatFileSystemService> {
  public:
   class Entry {
    public:

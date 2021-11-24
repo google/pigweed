@@ -61,13 +61,6 @@ class Call : public IntrusiveList<Call>::Item {
   // True if the Call is active and ready to send responses.
   [[nodiscard]] bool active() const { return rpc_state_ == kActive; }
 
-  // DEPRECATED: open() was renamed to active() because it is clearer and does
-  //     not conflict with Open() in ReaderWriter classes.
-  // TODO(pwbug/472): Remove the open() method.
-  /* [[deprecated("Renamed to active()")]] */ bool open() const {
-    return active();
-  }
-
   uint32_t id() const { return id_; }
 
   uint32_t channel_id() const {

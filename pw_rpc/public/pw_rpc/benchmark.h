@@ -19,7 +19,8 @@ namespace pw::rpc {
 
 // RPC service with low-level RPCs for transmitting data. Used for benchmarking
 // and testing.
-class BenchmarkService : public generated::Benchmark<BenchmarkService> {
+class BenchmarkService
+    : public pw_rpc::raw::Benchmark::Service<BenchmarkService> {
  public:
   static StatusWithSize UnaryEcho(ConstByteSpan request, ByteSpan response);
 

@@ -17,7 +17,8 @@
 
 namespace pw::trace {
 
-class TraceService final : public generated::TraceService<TraceService> {
+class TraceService final
+    : public pw_rpc::nanopb::TraceService::Service<TraceService> {
  public:
   pw::Status Enable(const pw_trace_TraceEnableMessage& request,
                     pw_trace_TraceEnableMessage& response);

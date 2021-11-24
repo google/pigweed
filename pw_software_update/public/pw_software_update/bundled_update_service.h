@@ -27,7 +27,7 @@ namespace pw::software_update {
 // Implementation class for pw.software_update.BundledUpdate.
 // See bundled_update.proto for RPC method documentation.
 class BundledUpdateService
-    : public generated::BundledUpdate<BundledUpdateService> {
+    : public pw_rpc::nanopb::BundledUpdate::Service<BundledUpdateService> {
  public:
   BundledUpdateService(UpdateBundleAccessor& bundle,
                        BundledUpdateBackend& backend,

@@ -291,7 +291,6 @@ class NanopbServerWriter : private internal::NanopbServerCall {
 
   using internal::Call::active;
   using internal::Call::channel_id;
-  using internal::Call::open;
 
   // Writes a response struct. Returns the following Status codes:
   //

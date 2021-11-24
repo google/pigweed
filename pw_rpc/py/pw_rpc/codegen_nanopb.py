@@ -154,38 +154,6 @@ class NanopbCodeGenerator(CodeGenerator):
 
         self.line('}')
 
-        # TODO(frolv): Deprecate this channel-based API.
-        # ======== Deprecated API ========
-        self.line()
-        self.line('// This function is DEPRECATED. Use pw_rpc::nanopb::'
-                  f'{method.service().name()}::{method.name()}() instead.')
-        self.line(f'static {_client_call(method)} {method.name()}(')
-        self.indented_list(f'{RPC_NAMESPACE}::Channel& channel',
-                           *_user_args(method),
-                           end=') {')
-
-        with self.indent():
-            client = (f'static_cast<{RPC_NAMESPACE}::internal::Channel&>('
-                      f'channel).client()')
-            self.line(
-                f'return Client({client}, channel.id()).{method.name()}(')
-
-            args = []
-
-            if not method.client_streaming():
-                args.append('request')
-
-            if method.server_streaming():
-                args.append('std::move(on_next)')
-
-            self.indented_list(*args,
-                               'std::move(on_completed)',
-                               'std::move(on_error)',
-                               end=');')
-
-        self.line('}')
-        # ======== End deprecated API ========
-
     def client_static_function(self, method: ProtoServiceMethod) -> None:
         self.line(f'static {_function(method)}(')
         self.indented_list(f'{RPC_NAMESPACE}::Client& client',
@@ -281,6 +249,6 @@ def process_proto_file(proto_file) -> Iterable[OutputFile]:
     generator = NanopbCodeGenerator(output_filename)
     codegen.generate_package(proto_file, package_root, generator)
 
-    codegen.package_stubs(package_root, generator.output, StubGenerator())
+    codegen.package_stubs(package_root, generator, StubGenerator())
 
     return [generator.output]

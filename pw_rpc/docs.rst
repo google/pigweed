@@ -776,12 +776,12 @@ Example
 
   namespace {
   // Generated clients are namespaced with their proto library.
-  using pw::rpc::nanopb::EchoServiceClient;
+  using EchoClient = pw_rpc::nanopb::EchoService::Client;
 
   // RPC channel ID on which to make client calls.
   constexpr uint32_t kDefaultChannelId = 1;
 
-  EchoServiceClient::EchoCall echo_call;
+  EchoClient::EchoCall echo_call;
 
   // Callback invoked when a response is received. This is called synchronously
   // from Client::ProcessPacket.
@@ -799,7 +799,7 @@ Example
 
   void CallEcho(const char* message) {
     // Create a client to call the EchoService.
-    EchoServiceClient echo_client(my_rpc_client, kDefaultChannelId);
+    EchoClient echo_client(my_rpc_client, kDefaultChannelId);
 
     pw_rpc_EchoMessage request = pw_rpc_EchoMessage_init_default;
     pw::string::Copy(message, request.msg);

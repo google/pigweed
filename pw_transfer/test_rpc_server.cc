@@ -75,7 +75,8 @@ class FileTransferHandler final : public ReadWriteHandler {
       stream_;
 };
 
-class TestServerService : public generated::TestServer<TestServerService> {
+class TestServerService
+    : public pw_rpc::raw::TestServer::Service<TestServerService> {
  public:
   TestServerService(TransferService& transfer_service)
       : transfer_service_(transfer_service) {}

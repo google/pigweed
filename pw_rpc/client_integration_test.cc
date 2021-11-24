@@ -81,7 +81,7 @@ constexpr Benchmark::Client kServiceClient(client, kChannelId);
 class StringReceiver {
  public:
   const char* Wait() {
-    PW_CHECK(sem_.try_acquire_for(500ms));
+    PW_CHECK(sem_.try_acquire_for(1500ms));
     return buffer_;
   }
 

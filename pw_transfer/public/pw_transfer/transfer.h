@@ -32,7 +32,7 @@ struct Chunk;
 
 }  // namespace internal
 
-class TransferService : public generated::Transfer<TransferService> {
+class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
  public:
   // Initializes a TransferService that can be registered with an RPC server.
   //

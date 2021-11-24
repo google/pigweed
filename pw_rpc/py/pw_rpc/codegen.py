@@ -16,7 +16,7 @@
 import abc
 from datetime import datetime
 import os
-from typing import cast, Any, Iterable, Sequence, Union
+from typing import cast, Any, Iterable, Union
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
@@ -175,11 +175,6 @@ def generate_package(file_descriptor_proto, proto_package: ProtoNode,
     gen.line()
     gen.line(f'}}  // namespace pw_rpc::{gen.name()}\n')
 
-    _generate_deprecated_aliases(gen, [
-        cast(ProtoService, n)
-        for n in proto_package if n.type() == ProtoNode.Type.SERVICE
-    ])
-
     if file_namespace:
         gen.line('}  // namespace ' + file_namespace)
 
@@ -283,36 +278,6 @@ def _generate_info(gen: CodeGenerator, namespace: str,
 
         gen.line('};')
         gen.line()
-
-
-def _generate_deprecated_aliases(gen: CodeGenerator,
-                                 services: Sequence[ProtoService]) -> None:
-    """Generates aliases for the original, deprecated naming scheme."""
-    gen.line('// Aliases for the deprecated namespaces.')
-    gen.line('namespace generated {')
-    gen.line()
-
-    for service in services:
-        gen.line('template <typename Implementation>')
-        gen.line(f'using {service.name()} = pw_rpc::{gen.name()}::'
-                 f'{service.name()}::Service<Implementation>;')
-
-    gen.line()
-    gen.line('}  // namespace generated')
-    gen.line()
-
-    # Only generate aliases for the Nanopb client since the raw client will
-    # never have the deprecated structure.
-    if gen.name() == 'nanopb':
-        gen.line(f'namespace {gen.name()} {{')
-        gen.line()
-
-        for service in services:
-            gen.line(f'using {service.name()}Client = '
-                     f'pw_rpc::{gen.name()}::{service.name()}::Client;')
-
-        gen.line()
-        gen.line(f'}}  // namespace {gen.name()}')
 
 
 def _generate_service(gen: CodeGenerator, service: ProtoService) -> None:
@@ -466,7 +431,7 @@ _STUBS_COMMENT = r'''
 '''
 
 
-def package_stubs(proto_package: ProtoNode, output: OutputFile,
+def package_stubs(proto_package: ProtoNode, gen: CodeGenerator,
                   stub_generator: StubGenerator) -> None:
     """Generates the RPC stubs for a package."""
     if proto_package.cpp_namespace():
@@ -474,8 +439,8 @@ def package_stubs(proto_package: ProtoNode, output: OutputFile,
         if file_ns.startswith('::'):
             file_ns = file_ns[2:]
 
-        start_ns = lambda: output.write_line(f'namespace {file_ns} {{\n')
-        finish_ns = lambda: output.write_line(f'}}  // namespace {file_ns}\n')
+        start_ns = lambda: gen.line(f'namespace {file_ns} {{\n')
+        finish_ns = lambda: gen.line(f'}}  // namespace {file_ns}\n')
     else:
         start_ns = finish_ns = lambda: None
 
@@ -484,71 +449,70 @@ def package_stubs(proto_package: ProtoNode, output: OutputFile,
         if node.type() == ProtoNode.Type.SERVICE
     ]
 
-    output.write_line('#ifdef _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS')
-    output.write_line(_STUBS_COMMENT)
+    gen.line('#ifdef _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS')
+    gen.line(_STUBS_COMMENT)
 
-    output.write_line(f'#include "{output.name()}"\n')
+    gen.line(f'#include "{gen.output.name()}"\n')
 
     start_ns()
 
     for node in services:
-        _service_declaration_stub(node, output, stub_generator)
+        _service_declaration_stub(node, gen, stub_generator)
 
-    output.write_line()
+    gen.line()
 
     finish_ns()
 
     start_ns()
 
     for node in services:
-        _service_definition_stub(node, output, stub_generator)
-        output.write_line()
+        _service_definition_stub(node, gen, stub_generator)
+        gen.line()
 
     finish_ns()
 
-    output.write_line('#endif  // _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS')
+    gen.line('#endif  // _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS')
 
 
-def _service_declaration_stub(service: ProtoService, output: OutputFile,
+def _service_declaration_stub(service: ProtoService, gen: CodeGenerator,
                               stub_generator: StubGenerator) -> None:
-    output.write_line(f'// Implementation class for {service.proto_path()}.')
-    output.write_line(
-        f'class {service.name()} '
-        f': public generated::{service.name()}<{service.name()}> {{')
+    gen.line(f'// Implementation class for {service.proto_path()}.')
+    gen.line(f'class {service.name()} : public pw_rpc::{gen.name()}::'
+             f'{service.name()}::Service<{service.name()}> {{')
 
-    output.write_line(' public:')
+    gen.line(' public:')
 
-    with output.indent():
+    with gen.indent():
         blank_line = False
 
         for method in service.methods():
             if blank_line:
-                output.write_line()
+                gen.line()
             else:
                 blank_line = True
 
             signature, _ = _select_stub_methods(stub_generator, method)
 
-            output.write_line(signature(method, '') + ';')
+            gen.line(signature(method, '') + ';')
 
-    output.write_line('};\n')
+    gen.line('};\n')
 
 
-def _service_definition_stub(service: ProtoService, output: OutputFile,
+def _service_definition_stub(service: ProtoService, gen: CodeGenerator,
                              stub_generator: StubGenerator) -> None:
-    output.write_line(f'// Method definitions for {service.proto_path()}.')
+    gen.line(f'// Method definitions for {service.proto_path()}.')
 
     blank_line = False
 
     for method in service.methods():
         if blank_line:
-            output.write_line()
+            gen.line()
         else:
             blank_line = True
 
         signature, stub = _select_stub_methods(stub_generator, method)
 
-        output.write_line(signature(method, f'{service.name()}::') + ' {')
-        with output.indent():
-            stub(method, output)
-        output.write_line('}')
+        gen.line(signature(method, f'{service.name()}::') + ' {')
+        with gen.indent():
+            stub(method, gen.output)
+        gen.line('}')

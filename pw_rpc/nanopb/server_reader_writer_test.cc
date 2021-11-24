@@ -23,7 +23,7 @@
 namespace pw::rpc {
 
 class TestServiceImpl final
-    : public test::generated::TestService<TestServiceImpl> {
+    : public test::pw_rpc::nanopb::TestService::Service<TestServiceImpl> {
  public:
   Status TestUnaryRpc(const pw_rpc_test_TestRequest&,
                       pw_rpc_test_TestResponse&) {

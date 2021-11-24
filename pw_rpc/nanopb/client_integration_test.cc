@@ -41,7 +41,7 @@ constexpr uint32_t kChannelId = 1;
 class PayloadReceiver {
  public:
   const char* Wait() {
-    PW_CHECK(sem_.try_acquire_for(500ms));
+    PW_CHECK(sem_.try_acquire_for(1500ms));
     return reinterpret_cast<const char*>(payload_.payload.bytes);
   }
 

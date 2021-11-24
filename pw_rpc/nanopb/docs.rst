@@ -227,17 +227,21 @@ service client and receive the response.
   #include "chat_protos/chat_service.rpc.pb.h"
 
   namespace {
+
+    using ChatClient = pw_rpc::nanopb::Chat::Client;
+
     MyChannelOutput output;
     pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<1>(&output)};
     pw::rpc::Client client(channels);
 
     // Callback function for GetRoomInformation.
     void LogRoomInformation(const RoomInfoResponse& response, Status status);
-  }
+
+  }  // namespace
 
   void InvokeSomeRpcs() {
-    // Instantiate a service client to call ChatService methods on channel 1.
-    ChatServiceClient chat_client(client, 1);
+    // Instantiate a service client to call Chat service methods on channel 1.
+    ChatClient chat_client(client, 1);
 
     // The RPC will remain active as long as `call` is alive.
     auto call = chat_client.GetRoomInformation(

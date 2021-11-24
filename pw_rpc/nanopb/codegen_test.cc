@@ -22,7 +22,8 @@
 namespace pw::rpc {
 namespace test {
 
-class TestService final : public generated::TestService<TestService> {
+class TestService final
+    : public pw_rpc::nanopb::TestService::Service<TestService> {
  public:
   Status TestUnaryRpc(const pw_rpc_test_TestRequest& request,
                       pw_rpc_test_TestResponse& response) {
@@ -197,7 +198,7 @@ TEST(NanopbCodegen, ClientCall_DefaultConstructor) {
   NanopbClientReader<pw_rpc_test_TestStreamResponse> server_streaming_call;
 }
 
-using TestServiceClient = test::nanopb::TestServiceClient;
+using TestServiceClient = test::pw_rpc::nanopb::TestService::Client;
 
 TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   constexpr uint32_t kServiceId = internal::Hash("pw.rpc.test.TestService");

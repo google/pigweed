@@ -101,7 +101,6 @@ class RawServerReaderWriter : private internal::ServerCall {
       : internal::ServerCall(context, type) {}
 
   using internal::Call::CloseAndSendResponse;
-  using internal::Call::open;  // Deprecated; renamed to active()
 
  private:
   friend class internal::RawMethod;  // Needed to construct
@@ -184,7 +183,6 @@ class RawServerWriter : private RawServerReaderWriter {
 
   using RawServerReaderWriter::active;
   using RawServerReaderWriter::channel_id;
-  using RawServerReaderWriter::open;
 
   using RawServerReaderWriter::set_on_error;
 

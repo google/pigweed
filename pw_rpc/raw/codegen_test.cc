@@ -52,7 +52,8 @@ Vector<std::byte, 64> EncodeResponse(int number) {
 
 namespace test {
 
-class TestService final : public generated::TestService<TestService> {
+class TestService final
+    : public pw_rpc::raw::TestService::Service<TestService> {
  public:
   static StatusWithSize TestUnaryRpc(ConstByteSpan request, ByteSpan response) {
     int64_t integer;

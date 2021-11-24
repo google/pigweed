@@ -31,7 +31,8 @@ namespace pw::metric {
 // method is blocking, and sends all metrics at once (though batched). In the
 // future, we may switch to offering an async version where the Get() method
 // returns immediately, and someone else is responsible for pumping the queue.
-class MetricService final : public generated::MetricService<MetricService> {
+class MetricService final
+    : public pw_rpc::nanopb::MetricService::Service<MetricService> {
  public:
   MetricService(const IntrusiveList<Metric>& metrics,
                 const IntrusiveList<Group>& groups)
