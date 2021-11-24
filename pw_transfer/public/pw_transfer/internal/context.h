@@ -96,17 +96,7 @@ class Context {
   // operation is intended to be deferred, running from a different context than
   // the RPC callback in which the chunk was received.
   void ProcessChunk(ChunkDataBuffer& buffer,
-                    const TransferParameters& max_parameters) {
-    if (type() == kTransmit) {
-      ProcessTransmitChunk();
-    } else {
-      ProcessReceiveChunk(buffer, max_parameters);
-    }
-
-    if (active()) {
-      timer_.InvokeAfter(chunk_timeout_);
-    }
-  }
+                    const TransferParameters& max_parameters);
 
  protected:
   using CompletionFunction = Status (*)(Context&, Status);

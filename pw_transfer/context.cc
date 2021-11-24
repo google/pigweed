@@ -52,6 +52,19 @@ bool Context::ReadChunkData(ChunkDataBuffer& buffer,
   return ReadReceiveChunk(buffer, max_parameters, chunk);
 }
 
+void Context::ProcessChunk(ChunkDataBuffer& buffer,
+                           const TransferParameters& max_parameters) {
+  if (type() == kTransmit) {
+    ProcessTransmitChunk();
+  } else {
+    ProcessReceiveChunk(buffer, max_parameters);
+  }
+
+  if (active()) {
+    timer_.InvokeAfter(chunk_timeout_);
+  }
+}
+
 Status Context::SendInitialTransmitChunk() {
   // A transmitter begins a transfer by just sending its ID.
   internal::Chunk chunk = {};
@@ -112,13 +125,6 @@ bool Context::ReadTransmitChunk(const TransferParameters& max_parameters,
   if (!chunk.pending_bytes.has_value()) {
     // Malformed chunk.
     FinishAndSendStatus(Status::InvalidArgument());
-    return false;
-  }
-
-  if (chunk.pending_bytes == 0u) {
-    PW_LOG_ERROR("Transfer %d receiver requested 0 bytes (invalid); aborting",
-                 static_cast<unsigned>(transfer_id_));
-    FinishAndSendStatus(Status::Internal());
     return false;
   }
 
@@ -280,10 +286,6 @@ void Context::ProcessReceiveChunk(ChunkDataBuffer& buffer,
 }
 
 Status Context::SendNextDataChunk() {
-  if (pending_bytes_ == 0) {
-    return Status::OutOfRange();
-  }
-
   ByteSpan buffer = rpc_writer_->PayloadBuffer();
 
   // Begin by doing a partial encode of all the metadata fields, leaving the
@@ -309,6 +311,15 @@ Status Context::SendNextDataChunk() {
     encoder.WriteRemainingBytes(0).IgnoreError();
     pending_bytes_ = 0;
   } else if (data.ok()) {
+    if (pending_bytes_ == 0u) {
+      PW_LOG_DEBUG(
+          "Transfer %u is not finished, but the receiver cannot accept any "
+          "more data (pending_bytes is 0)",
+          static_cast<unsigned>(transfer_id_));
+      rpc_writer_->ReleasePayloadBuffer();
+      return Status::ResourceExhausted();
+    }
+
     encoder.WriteData(data.value()).IgnoreError();
     last_chunk_offset_ = offset_;
     offset_ += data.value().size();
@@ -336,6 +347,11 @@ Status Context::SendNextDataChunk() {
   }
 
   flags_ |= kFlagsDataSent;
+
+  if (pending_bytes_ == 0) {
+    return Status::OutOfRange();
+  }
+
   return data.status();
 }
 
@@ -418,18 +434,9 @@ Status Context::SendTransferParameters() {
 
 Status Context::UpdateAndSendTransferParameters(
     const TransferParameters& max_parameters) {
-  const size_t write_limit = writer().ConservativeWriteLimit();
-  if (write_limit == 0) {
-    PW_LOG_WARN(
-        "Transfer %u writer returned 0 from ConservativeWriteLimit(); cannot "
-        "continue, aborting with RESOURCE_EXHAUSTED",
-        static_cast<unsigned>(transfer_id_));
-    FinishAndSendStatus(Status::ResourceExhausted());
-    return Status::ResourceExhausted();
-  }
-
-  pending_bytes_ = std::min(max_parameters.pending_bytes(),
-                            static_cast<uint32_t>(write_limit));
+  pending_bytes_ =
+      std::min(max_parameters.pending_bytes(),
+               static_cast<uint32_t>(writer().ConservativeWriteLimit()));
 
   max_chunk_size_bytes_ = MaxWriteChunkSize(
       max_parameters.max_chunk_size_bytes(), rpc_writer_->channel_id());

@@ -41,12 +41,17 @@ class TestMemoryReader : public stream::SeekableReader {
   }
 
   StatusWithSize DoRead(ByteSpan dest) final {
+    if (!read_status.ok()) {
+      return StatusWithSize(read_status, 0);
+    }
+
     auto result = memory_reader_.Read(dest);
     return result.ok() ? StatusWithSize(result->size())
                        : StatusWithSize(result.status(), 0);
   }
 
   Status seek_status;
+  Status read_status;
 
  private:
   stream::MemoryReader memory_reader_;
@@ -74,6 +79,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
   }
 
   void set_seek_status(Status status) { reader_.seek_status = status; }
+  void set_read_status(Status status) { reader_.read_status = status; }
 
   bool prepare_read_called;
   bool finalize_read_called;
@@ -389,16 +395,32 @@ TEST_F(ReadTransfer, AbortAndRestartIfInitialPacketIsReceived) {
   EXPECT_EQ(handler_.finalize_read_status, OkStatus());
 }
 
-TEST_F(ReadTransfer, AbortTransferIfZeroBytesAreRequested) {
+TEST_F(ReadTransfer, ZeroPendingBytesWithRemainingData_Aborts) {
   ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .pending_bytes = 0}));
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
-  EXPECT_TRUE(handler_.finalize_read_called);
-  EXPECT_EQ(handler_.finalize_read_status, Status::Internal());
+  ASSERT_TRUE(handler_.finalize_read_called);
+  EXPECT_EQ(handler_.finalize_read_status, Status::ResourceExhausted());
 
   Chunk chunk = DecodeChunk(ctx_.responses().back());
-  EXPECT_TRUE(chunk.status.has_value());
-  EXPECT_EQ(*chunk.status, Status::Internal());
+  EXPECT_EQ(chunk.status, Status::ResourceExhausted());
+}
+
+TEST_F(ReadTransfer, ZeroPendingBytesNoRemainingData_Completes) {
+  // Make the next read appear to be the end of the stream.
+  handler_.set_read_status(Status::OutOfRange());
+
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .pending_bytes = 0}));
+
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.transfer_id, 3u);
+  EXPECT_EQ(chunk.remaining_bytes, 0u);
+
+  ctx_.SendClientStream(EncodeChunk({.transfer_id = 3, .status = OkStatus()}));
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  ASSERT_TRUE(handler_.finalize_read_called);
+  EXPECT_EQ(handler_.finalize_read_status, OkStatus());
 }
 
 TEST_F(ReadTransfer, SendsErrorIfChunkIsReceivedInCompletedState) {

@@ -203,7 +203,11 @@ sender or the receiver (see `Transfer roles`_).
 | ``PERMISSION_DENIED``   | The transfer does not support the requested       |
 |                         | operation (either reading or writing).            |
 +-------------------------+-------------------------+-------------------------+
-| ``RESOURCE_EXHAUSTED``  | (not sent)              | Storage is full.        |
+| ``RESOURCE_EXHAUSTED``  | The receiver requested  | Storage is full.        |
+|                         | zero bytes, indicating  |                         |
+|                         | their storage is full,  |                         |
+|                         | but there is still data |                         |
+|                         | to send.                |                         |
 +-------------------------+-------------------------+-------------------------+
 | ``UNAVAILABLE``         | The service is busy with other transfers and      |
 |                         | cannot begin a new transfer at this time.         |
