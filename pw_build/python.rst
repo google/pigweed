@@ -184,6 +184,8 @@ Arguments
 ---------
 - ``packages`` - List of ``pw_python_package`` targets whose wheels should be
   included; their dependencies will be pulled in as wheels also.
+- ``directory`` - Output directory for the collected wheels. Defaults to
+  ``$target_out_dir/$target_name``.
 
 Wheel collection under the hood
 -------------------------------

@@ -28,13 +28,22 @@ import("$dir_pw_build/zip.gni")
 # Args:
 #   packages: A list of pw_python_package targets whose wheels should be
 #       included; their dependencies will be pulled in as wheels also.
+#   directory: output directory for the wheels; defaults to
+#       $target_out_dir/$target_name
+#   deps: additional dependencies
+#
 template("pw_python_wheels") {
-  _outer_name = target_name
   _wheel_paths_path = "${target_gen_dir}/${target_name}_wheel_paths.txt"
 
   _deps = []
   if (defined(invoker.deps)) {
     _deps = invoker.deps
+  }
+
+  if (defined(invoker.directory)) {
+    _directory = invoker.directory
+  } else {
+    _directory = "$target_out_dir/$target_name"
   }
 
   _packages = []
@@ -54,7 +63,7 @@ template("pw_python_wheels") {
 
   pw_python_action(target_name) {
     forward_variables_from(invoker, [ "public_deps" ])
-    deps = _deps + [ ":${_outer_name}._wheel_paths" ]
+    deps = _deps + [ ":$target_name._wheel_paths" ]
     module = "pw_build.collect_wheels"
 
     args = [
@@ -63,7 +72,7 @@ template("pw_python_wheels") {
       "--suffix",
       rebase_path(_wheel_paths_path, root_build_dir),
       "--out_dir",
-      rebase_path("${target_out_dir}/python_wheels", root_build_dir),
+      rebase_path(_directory, root_build_dir),
     ]
 
     stamp = true
@@ -102,7 +111,7 @@ template("pw_python_zip_with_setup") {
     _dirs = invoker.dirs
   }
 
-  pw_python_wheels("${target_name}.wheels") {
+  pw_python_wheels("$target_name.wheels") {
     packages = invoker.packages
     forward_variables_from(invoker,
                            [
@@ -111,16 +120,14 @@ template("pw_python_zip_with_setup") {
                            ])
   }
 
-  pw_zip("${target_name}") {
+  pw_zip(target_name) {
     forward_variables_from(invoker, [ "public_deps" ])
     inputs = _inputs + [
                "$dir_pw_build/python_dist/setup.bat > /${target_name}/",
                "$dir_pw_build/python_dist/setup.sh > /${target_name}/",
              ]
 
-    dirs =
-        _dirs +
-        [ "${target_out_dir}/python_wheels/ > /${target_name}/python_wheels/" ]
+    dirs = _dirs + [ "$target_out_dir/$target_name.wheels/ > /$target_name/python_wheels/" ]
 
     output = _zip_path
 
