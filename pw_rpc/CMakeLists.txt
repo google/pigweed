@@ -71,7 +71,8 @@ pw_add_module_library(pw_rpc.common
     pw_log
 )
 
-if (NOT "${pw_sync.mutex_BACKEND}" STREQUAL "pw_sync.mutex.NO_BACKEND_SET")
+if (NOT "${pw_sync.mutex_BACKEND}" STREQUAL "pw_sync.mutex.NO_BACKEND_SET" AND
+    NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")
   target_link_libraries(pw_rpc.common PUBLIC pw_sync.mutex)
 endif()
 
