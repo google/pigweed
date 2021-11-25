@@ -29,6 +29,7 @@ fuchsia_driver("fuchsia_driver") {
 fuchsia_driver_component("driver") {
   component_name = "bt-host"
   deps = [ ":fuchsia_driver" ]
+  info = "driver-info.json"
 }
 
 source_set("sources") {
