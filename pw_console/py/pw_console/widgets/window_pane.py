@@ -14,7 +14,7 @@
 """Window pane base class."""
 
 from abc import ABC
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING, Union
 import functools
 
 from prompt_toolkit.layout.dimension import AnyDimension
@@ -71,7 +71,7 @@ class WindowPane(ABC):
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        application: Optional['ConsoleApp'] = None,
+        application: Union['ConsoleApp', Any] = None,
         pane_title: str = 'Window',
         height: Optional[AnyDimension] = None,
         width: Optional[AnyDimension] = None,

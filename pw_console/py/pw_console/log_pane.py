@@ -90,7 +90,11 @@ class LogContentControl(FormattedTextControl):
             self.log_pane.last_log_content_height += height
         return super().create_content(width, height)
 
-    def __init__(self, log_pane: 'LogPane', *args, **kwargs) -> None:
+    def __init__(self,
+                 log_pane: 'LogPane',
+                 *args,
+                 use_ctrl_c_binding=True,
+                 **kwargs) -> None:
         # pylint: disable=too-many-locals
         self.log_pane = log_pane
 
@@ -212,10 +216,12 @@ class LogContentControl(FormattedTextControl):
             """Reset / erase active filters."""
             self.log_pane.log_view.clear_filters()
 
-        @key_bindings.add('c-c')
-        def _copy_log_lines(_event: KeyPressEvent) -> None:
-            """Copy visible log lines to the system clipboard."""
-            self.log_pane.copy_text()
+        if use_ctrl_c_binding:
+
+            @key_bindings.add('c-c')
+            def _copy_log_lines(_event: KeyPressEvent) -> None:
+                """Copy visible log lines to the system clipboard."""
+                self.log_pane.copy_text()
 
         kwargs['key_bindings'] = key_bindings
         super().__init__(*args, **kwargs)
@@ -265,6 +271,7 @@ class LogPane(WindowPane):
         self,
         application: Any,
         pane_title: str = 'Logs',
+        use_ctrl_c_binding: bool = True,
     ):
         super().__init__(application, pane_title)
 
@@ -298,9 +305,11 @@ class LogPane(WindowPane):
         self.bottom_toolbar = WindowPaneToolbar(self)
         self.bottom_toolbar.add_button(
             ToolbarButton('/', 'Search', self.start_search))
-        self.bottom_toolbar.add_button(
-            ToolbarButton('Ctrl-c', 'Copy Lines',
-                          self.log_view.copy_visible_lines))
+        if use_ctrl_c_binding:
+            self.bottom_toolbar.add_button(
+                ToolbarButton('Ctrl-c', 'Copy Lines',
+                              self.log_view.copy_visible_lines))
+
         self.bottom_toolbar.add_button(
             ToolbarButton('f',
                           'Follow',
