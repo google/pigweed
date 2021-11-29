@@ -39,6 +39,7 @@ pw_doc_group("core_docs") {
     "getting_started.rst",
     "module_structure.rst",
     "os_abstraction_layers.rst",
+    "size_optimizations.rst",
     "style_guide.rst",
   ]
 }

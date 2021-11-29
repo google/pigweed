@@ -19,6 +19,7 @@
   docs/os_abstraction_layers
   targets
   Build System <build_system>
+  docs/size_optimizations
   FAQ <docs/faq>
   docs/module_structure
   module_guides
