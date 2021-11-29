@@ -379,7 +379,7 @@ TEST(StringBuilder, StreamOutput_EmptyStringView) {
   EXPECT_STREQ("hi!", buffer.data());
 }
 
-TEST(StringBuilder, StreamOutput_ByteSpan) {
+TEST(StringBuilder, StreamOutput_ByteArray) {
   StringBuffer<7> buffer;
   std::array<std::byte, 3> data{
       {std::byte(0xc8), std::byte(0x02), std::byte(0x41)}};
@@ -388,10 +388,22 @@ TEST(StringBuilder, StreamOutput_ByteSpan) {
   EXPECT_STREQ("c80241", buffer.data());
 }
 
+TEST(StringBuilder, StreamOutput_ByteSpan) {
+  StringBuffer<11> buffer;
+  std::array<std::byte, 5> data{{std::byte(0),
+                                 std::byte(0xc8),
+                                 std::byte(0x02),
+                                 std::byte(0x41),
+                                 std::byte(0xe0)}};
+  buffer << std::as_bytes(std::span(data));
+  EXPECT_EQ(buffer.status(), OkStatus());
+  EXPECT_STREQ("00c80241e0", buffer.data());
+}
+
 TEST(StringBuilder, StreamOutput_ByteSpanOutOfSpace) {
   StringBuffer<4> buffer;
   std::array<uint8_t, 3> data{{0xc8, 0x02, 0x41}};
-  buffer << as_bytes(std::span(data));
+  buffer << std::as_bytes(std::span(data));
   EXPECT_EQ(buffer.status(), Status::ResourceExhausted());
   EXPECT_STREQ("", buffer.data());
 }

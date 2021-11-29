@@ -243,7 +243,7 @@ class StringBuilder {
   void CopySizeAndStatus(const StringBuilder& other);
 
  private:
-  StringBuilder& WriteBytes(std::span<const std::byte> data);
+  void WriteBytes(std::span<const std::byte> data);
 
   size_t ResizeAndTerminate(size_t chars_to_append);
 
