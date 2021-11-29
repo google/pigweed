@@ -28,3 +28,8 @@ pool("copy_from_cipd") {
 pool("go_download") {
   depth = 1
 }
+
+# Pool to serialize HIL test execution.
+pool("pw_hil_test") {
+  depth = 1
+}
