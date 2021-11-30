@@ -105,11 +105,16 @@ html_theme_options = {
         'color-sidebar-item-background--current': '#f0f0f0',
         'color-sidebar-item-background--hover': '#ffe2f3',
         'color-sidebar-item-expander-background--hover': '#ffe2f3',
+        # Function signature colors
         'color-api-function-border': '#cccccc',
         'color-api-function-background': '#f0f0f0',
         'color-api-class-background': '#e7f2fa',
         'color-api-class-foreground': '#2980b9',
         'color-api-class-border': '#6ab0de',
+        # Namespace::
+        'color-api-pre-name': '#2980b9',
+        # Function name
+        'color-api-name': '#2980b9',
         'color-inline-code-background': '#fafafa',
         'color-inline-code-border': '#cccccc',
         'color-text-selection-background': '#1d5fad',
@@ -123,11 +128,16 @@ html_theme_options = {
         'color-sidebar-item-background--current': '#575757',
         'color-sidebar-item-background--hover': '#4c333f',
         'color-sidebar-item-expander-background--hover': '#4c333f',
+        # Function signature colors
         'color-api-function-border': '#575757',
         'color-api-function-background': '#2b2b2b',
         'color-api-class-background': '#222c35',
         'color-api-class-foreground': '#87c1e5',
         'color-api-class-border': '#5288be',
+        # Namespace::
+        'color-api-pre-name': '#87c1e5',
+        # Function name
+        'color-api-name': '#87c1e5',
         'color-inline-code-background': '#2b2b2b',
         'color-inline-code-border': '#575757',
         'color-text-selection-background': '#2674bf',
