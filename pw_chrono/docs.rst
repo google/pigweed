@@ -351,44 +351,44 @@ sleep modes.
 
 For a type ``PWC`` to meet the ``PigweedClock Requirements``:
 
-  * The type PWC must meet C++14's
-    `Clock <https://en.cppreference.com/w/cpp/named_req/Clock>`_ and
-    `TrivialClock <https://en.cppreference.com/w/cpp/named_req/TrivialClock>`_
-    requirements.
-  * The ``PWC::rep`` must be ``int64_t`` to ensure that there cannot be any
-    overflow risk regardless of the ``PWC::period`` configuration.
-    This is done because we do not expect any clocks with periods coarser than
-    seconds which already require 35 bits.
-  * ``const bool PWC::is_monotonic`` must return true if and only if the clock
-    can never move backwards.
-    This effectively allows one to describe an unsteady but monotonic clock by
-    combining the C++14's Clock requirement's ``const bool PWC::is_steady``.
-  * ``const bool PWC::is_free_running`` must return true if and only if the clock
-    continues to move forward, without risk of overflow, regardless of whether
-    global interrupts are disabled or whether one is in a critical section or even
-    non maskable interrupt.
-  * ``const bool PWC::is_always_enabled`` must return true if the clock is always
-    enabled and available. If false, the clock must:
+* The type PWC must meet C++14's
+  `Clock <https://en.cppreference.com/w/cpp/named_req/Clock>`_ and
+  `TrivialClock <https://en.cppreference.com/w/cpp/named_req/TrivialClock>`_
+  requirements.
+* The ``PWC::rep`` must be ``int64_t`` to ensure that there cannot be any
+  overflow risk regardless of the ``PWC::period`` configuration.
+  This is done because we do not expect any clocks with periods coarser than
+  seconds which already require 35 bits.
+* ``const bool PWC::is_monotonic`` must return true if and only if the clock
+  can never move backwards.
+  This effectively allows one to describe an unsteady but monotonic clock by
+  combining the C++14's Clock requirement's ``const bool PWC::is_steady``.
+* ``const bool PWC::is_free_running`` must return true if and only if the clock
+  continues to move forward, without risk of overflow, regardless of whether
+  global interrupts are disabled or whether one is in a critical section or even
+  non maskable interrupt.
+* ``const bool PWC::is_always_enabled`` must return true if the clock is always
+  enabled and available. If false, the clock must:
 
-      * Ensure the ``const bool is_{steady,monotonic,free_running}`` attributes
-        are all valid while the clock is not enabled to ensure they properly meet
-        the previously stated requirements.
-      * Meet C++14's
-        `BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_
-        requirements (i.e. provide ``void lock()`` & ``void unlock()``) in order
-        to provide ``std::scoped_lock`` support to enable a user to enable the
-        clock.
-      * Provide ``const bool is_{steady,monotonic,free_running}_while_enabled``
-        attributes which meet the attributes only while the clock is enabled.
-  * ``const bool PWC::is_stopped_in_halting_debug_mode`` must return true if and
-    only if the clock halts, without further modification, during halting debug
-    mode , for example during a breakpoint while a hardware debugger is used.
-  * ``const Epoch PWC::epoch`` must return the epoch type of the clock, the
-    ``Epoch`` enumeration is defined in ``pw_chrono/epoch.h``.
-  * The function ``time_point PWC::now() noexcept`` must always be thread and
-    interrupt safe, but not necessarily non-masking and bare-metal interrupt safe.
-  * ``const bool PWC::is_non_masking_interrupt_safe`` must return true if and only
-    if the clock is safe to use from non-masking and bare-metal interrupts.
+  + Ensure the ``const bool is_{steady,monotonic,free_running}`` attributes
+    are all valid while the clock is not enabled to ensure they properly meet
+    the previously stated requirements.
+  + Meet C++14's
+    `BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_
+    requirements (i.e. provide ``void lock()`` & ``void unlock()``) in order
+    to provide ``std::scoped_lock`` support to enable a user to enable the
+    clock.
+  + Provide ``const bool is_{steady,monotonic,free_running}_while_enabled``
+    attributes which meet the attributes only while the clock is enabled.
+* ``const bool PWC::is_stopped_in_halting_debug_mode`` must return true if and
+  only if the clock halts, without further modification, during halting debug
+  mode , for example during a breakpoint while a hardware debugger is used.
+* ``const Epoch PWC::epoch`` must return the epoch type of the clock, the
+  ``Epoch`` enumeration is defined in ``pw_chrono/epoch.h``.
+* The function ``time_point PWC::now() noexcept`` must always be thread and
+  interrupt safe, but not necessarily non-masking and bare-metal interrupt safe.
+* ``const bool PWC::is_non_masking_interrupt_safe`` must return true if and only
+  if the clock is safe to use from non-masking and bare-metal interrupts.
 
 The PigweedClock requirement will not require ``now()`` to be a static function,
 however the upstream façades will follow this approach.
