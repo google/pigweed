@@ -58,6 +58,7 @@ class PeerFuzzer final {
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::ExtendedInquiryResultEventParams>,
         &PeerFuzzer::BrEdrDataRegisterInitializingConnection,
         &PeerFuzzer::BrEdrDataRegisterConnection,
+        &PeerFuzzer::BrEdrUnregisterConnection,
         &PeerFuzzer::BrEdrDataSetBondData,
         &PeerFuzzer::BrEdrDataClearBondData,
         &PeerFuzzer::BrEdrDataAddService,
@@ -182,12 +183,13 @@ class PeerFuzzer final {
     if (!peer_.identity_known() || !peer_.connectable()) {
       return;
     }
-    if (fdp().ConsumeBool()) {
-      bredr_conn_tokens_.emplace_back(peer_.MutBrEdr().RegisterConnection());
-    } else if (!bredr_conn_tokens_.empty()) {
-      bredr_conn_tokens_.pop_back();
-    }
+
+    // Only 1 BR/EDR connection may be registered at a time.
+    bredr_conn_token_.reset();
+    bredr_conn_token_ = peer_.MutBrEdr().RegisterConnection();
   }
+
+  void BrEdrUnregisterConnection() { bredr_conn_token_.reset(); }
 
   void BrEdrDataSetBondData() {
     if (!peer_.identity_known() || !peer_.connectable()) {
@@ -268,7 +270,7 @@ class PeerFuzzer final {
   Peer &peer_;
   std::vector<Peer::ConnectionToken> le_conn_tokens_;
   std::vector<Peer::InitializingConnectionToken> le_init_conn_tokens_;
-  std::vector<Peer::ConnectionToken> bredr_conn_tokens_;
+  std::optional<Peer::ConnectionToken> bredr_conn_token_;
   std::vector<Peer::InitializingConnectionToken> bredr_init_conn_tokens_;
 };
 
