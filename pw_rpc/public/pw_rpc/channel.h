@@ -65,8 +65,7 @@ class Channel {
   static constexpr uint32_t kUnassignedChannelId = 0;
 
   // Creates a dynamically assignable channel without a set ID or output.
-  constexpr Channel()
-      : id_(kUnassignedChannelId), output_(nullptr), client_(nullptr) {}
+  constexpr Channel() : id_(kUnassignedChannelId), output_(nullptr) {}
 
   // Creates a channel with a static ID. The channel's output can also be
   // static, or it can set to null to allow dynamically opening connections
@@ -124,17 +123,9 @@ class Channel {
 
  protected:
   constexpr Channel(uint32_t id, ChannelOutput* output)
-      : id_(id), output_(output), client_(nullptr) {
+      : id_(id), output_(output) {
     PW_ASSERT(id != kUnassignedChannelId);
   }
-
-  // TODO(pwbug/504): Remove client_'s setter/getter from Channel.
-  constexpr Client& client() const {
-    PW_DASSERT(client_ != nullptr);
-    return *client_;
-  }
-
-  constexpr void set_client(Client* client) { client_ = client; }
 
   ChannelOutput& output() const {
     PW_ASSERT(output_ != nullptr);
@@ -146,7 +137,6 @@ class Channel {
  private:
   uint32_t id_;
   ChannelOutput* output_;
-  Client* client_;  // TODO(pwbug/504): Remove client_ from Channel.
 };
 
 }  // namespace pw::rpc

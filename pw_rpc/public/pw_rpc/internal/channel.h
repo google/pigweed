@@ -88,11 +88,6 @@ class Channel : public rpc::Channel {
 
   // Allow setting the channel ID for tests.
   using rpc::Channel::set_channel_id;
-
-  // Allow accessing the client from the channel.
-  // TODO(pwbug/504): Remove this when users have migrated off the old API.
-  using rpc::Channel::client;
-  using rpc::Channel::set_client;
 };
 
 }  // namespace pw::rpc::internal
