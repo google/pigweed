@@ -35,9 +35,7 @@ namespace {
 
 using namespace std::chrono_literals;
 
-// TODO(hepler): Use more iterations when the pw_transfer synchronization issues
-//     that make this flaky are fixed.
-constexpr int kIterations = 1;
+constexpr int kIterations = 5;
 
 constexpr auto kData512 = bytes::Initialized<512>([](size_t i) { return i; });
 constexpr auto kData8192 = bytes::Initialized<8192>([](size_t i) { return i; });
@@ -206,6 +204,7 @@ PW_TRANSFER_TEST_READ(SingleByte_1, "\0");
 PW_TRANSFER_TEST_READ(SingleByte_2, "?");
 PW_TRANSFER_TEST_READ(SmallData, "hunter2");
 PW_TRANSFER_TEST_READ(LargeData, kData512);
+PW_TRANSFER_TEST_READ(VeryLargeData, kData8192);
 
 TEST_F(TransferIntegration, Write_UnknownId) {
   constexpr std::byte kData[] = {std::byte{0}, std::byte{1}, std::byte{2}};
@@ -237,6 +236,7 @@ PW_TRANSFER_TEST_WRITE(SingleByte_2, "?");
 PW_TRANSFER_TEST_WRITE(SmallData, "hunter2");
 PW_TRANSFER_TEST_WRITE(LargeData, kData512);
 PW_TRANSFER_TEST_WRITE(HdlcEscape, kDataHdlcEscape);
+PW_TRANSFER_TEST_WRITE(VeryLargeData, kData8192);
 
 }  // namespace
 }  // namespace pw::transfer
