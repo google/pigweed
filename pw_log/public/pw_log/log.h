@@ -61,13 +61,6 @@
 //
 #include "pw_log_backend/log_backend.h"
 
-// For compatibility with code that uses the deprecated PW_LOG_USE_SHORT_NAMES
-// and PW_LOG_USE_ULTRA_SHORT_NAMES, include the appropriate headers.
-// TODO(hepler): Remove this workaround when all users have migrated.
-#if defined(PW_LOG_USE_SHORT_NAMES) && PW_LOG_USE_SHORT_NAMES == 1
-#include "pw_log/short.h"
-#endif  // PW_LOG_USE_SHORT_NAMES
-
 // The PW_LOG macro accepts the format string and its arguments in a variadic
 // macro. The format string is not listed as a separate argument to avoid adding
 // a comma after the format string when it has no arguments.

@@ -97,13 +97,6 @@
 // build facilities.
 #include "pw_assert/internal/check_impl.h"
 
-// For compatibility, include short.h if PW_ASSERT_USE_SHORT_NAMES is set.
-// TODO(pwbug/350): Remove this include and the PW_ASSERT_USE_SHORT_NAMES macro
-//     when projects have migrated to including the short.h header.
-#if defined(PW_ASSERT_USE_SHORT_NAMES) && PW_ASSERT_USE_SHORT_NAMES == 1
-#include "pw_assert/short.h"
-#endif  // defined(PW_ASSERT_USE_SHORT_NAMES) && PW_ASSERT_USE_SHORT_NAMES == 1
-
 // The pw_assert_backend must provide these macros:
 //
 //   PW_HANDLE_CRASH(msg, ...)
