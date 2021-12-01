@@ -20,21 +20,21 @@
 namespace pw::stream {
 
 // Wraps an std::ifstream with the Reader interface.
-class StdFileReader : public stream::SeekableReader {
+class StdFileReader final : public stream::SeekableReader {
  public:
   StdFileReader(const char* path) : stream_(path, std::ios::binary) {}
 
   void Close() { stream_.close(); }
 
  private:
-  StatusWithSize DoRead(ByteSpan dest) final;
-  Status DoSeek(ssize_t offset, Whence origin) final;
+  StatusWithSize DoRead(ByteSpan dest) override;
+  Status DoSeek(ssize_t offset, Whence origin) override;
 
   std::ifstream stream_;
 };
 
 // Wraps an std::ofstream with the Writer interface.
-class StdFileWriter : public stream::SeekableWriter {
+class StdFileWriter final : public stream::SeekableWriter {
  public:
   StdFileWriter(const char* path)
       : stream_(path, std::ios::binary | std::ios::trunc) {}
@@ -42,8 +42,8 @@ class StdFileWriter : public stream::SeekableWriter {
   void Close() { stream_.close(); }
 
  private:
-  Status DoWrite(ConstByteSpan data) final;
-  Status DoSeek(ssize_t offset, Whence origin) final;
+  Status DoWrite(ConstByteSpan data) override;
+  Status DoSeek(ssize_t offset, Whence origin) override;
 
   std::ofstream stream_;
 };

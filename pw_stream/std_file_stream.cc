@@ -31,6 +31,7 @@ std::ios::seekdir WhenceToSeekDir(Stream::Whence whence) {
 }  // namespace
 
 StatusWithSize StdFileReader::DoRead(ByteSpan dest) {
+  stream_.peek();  // Peek to set EOF if at the end of the file.
   if (stream_.eof()) {
     return StatusWithSize::OutOfRange();
   }
