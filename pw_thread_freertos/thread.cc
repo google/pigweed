@@ -207,7 +207,7 @@ void Thread::detach() {
   }
 #else
   // Safe to resume all tasks while scheduler is not running.
-  vTaskResumeAll();
+  xTaskResumeAll();
 #endif  // INCLUDE_vTaskSuspend == 1
 
   if (thread_done) {
