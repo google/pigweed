@@ -72,7 +72,12 @@ def list_files(commit: Optional[str] = None,
         repo_path = Path.cwd()
 
     if commit:
-        return sorted(_diff_names(commit, pathspecs, repo_path))
+        try:
+            return sorted(_diff_names(commit, pathspecs, repo_path))
+        except subprocess.CalledProcessError:
+            _LOG.warning(
+                'Error comparing with base revision %s of %s, listing all '
+                'files instead of just changed files', commit, repo_path)
 
     return sorted(_ls_files(pathspecs, repo_path))
 
