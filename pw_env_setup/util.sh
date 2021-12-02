@@ -291,6 +291,8 @@ pw_cleanup() {
   unset _PW_DEACTIVATE_SH
   unset _NEW_PW_ROOT
   unset _PW_ENV_SETUP_STATUS
+  unset PW_BRANDING_BANNER
+  unset PW_BRANDING_BANNER_COLOR
 
   unset -f pw_none
   unset -f pw_red
