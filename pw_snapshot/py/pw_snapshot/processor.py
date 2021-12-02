@@ -74,7 +74,7 @@ def process_snapshot(
         symbolizer = LlvmSymbolizer()
 
     cortex_m_cpu_state = pw_cpu_exception_cortex_m.process_snapshot(
-        serialized_snapshot)
+        serialized_snapshot, symbolizer)
     if cortex_m_cpu_state:
         output.append(cortex_m_cpu_state)
 

@@ -192,4 +192,44 @@ Python processor
 ================
 This module's included Python exception analyzer tooling provides snapshot
 integration via a ``process_snapshot()`` function that produces a multi-line
-dump from a serialized snapshot proto.
+dump from a serialized snapshot proto, for example:
+
+.. code-block::
+
+  Exception caused by a usage fault.
+
+  Active Crash Fault Status Register (CFSR) fields:
+  UNDEFINSTR  Undefined Instruction UsageFault.
+      The processor has attempted to execute an undefined
+      instruction. When this bit is set to 1, the PC value stacked
+      for the exception return points to the undefined instruction.
+      An undefined instruction is an instruction that the processor
+      cannot decode.
+
+  All registers:
+  pc         0x0800e1c4 example::Service::Crash(_example_service_CrashRequest const&, _pw_protobuf_Empty&) (src/example_service/service.cc:131)
+  lr         0x0800e141 example::Service::Crash(_example_service_CrashRequest const&, _pw_protobuf_Empty&) (src/example_service/service.cc:128)
+  psr        0x81000000
+  msp        0x20040fd8
+  psp        0x20001488
+  exc_return 0xffffffed
+  cfsr       0x00010000
+  mmfar      0xe000ed34
+  bfar       0xe000ed38
+  icsr       0x00000803
+  hfsr       0x40000000
+  shcsr      0x00000000
+  control    0x00000000
+  r0         0xe03f7847
+  r1         0x714083dc
+  r2         0x0b36dc49
+  r3         0x7fbfbe1a
+  r4         0xc36e8efb
+  r5         0x69a14b13
+  r6         0x0ec35eaa
+  r7         0xa5df5543
+  r8         0xc892b931
+  r9         0xa2372c94
+  r10        0xbd15c968
+  r11        0x759b95ab
+  r12        0x00000000

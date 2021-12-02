@@ -32,6 +32,7 @@ pw_python_package("py") {
   python_deps = [
     "$dir_pw_cli/py",
     "$dir_pw_protobuf_compiler/py",
+    "$dir_pw_symbolizer/py",
     "..:cpu_state_protos.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"

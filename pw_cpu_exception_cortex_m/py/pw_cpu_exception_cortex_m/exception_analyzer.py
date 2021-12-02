@@ -13,17 +13,27 @@
 # the License.
 """Tools to analyze Cortex-M CPU state context captured during an exception."""
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 from pw_cpu_exception_cortex_m import cortex_m_constants
 from pw_cpu_exception_cortex_m_protos import cpu_state_pb2
+import pw_symbolizer
+
+# These registers are symbolized when dumped.
+_SYMBOLIZED_REGISTERS = ('pc', 'lr', 'bfar', 'mmfar', 'msp', 'psp', 'r0', 'r1',
+                         'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9', 'r10',
+                         'r11', 'r12')
 
 
 class CortexMExceptionAnalyzer:
     """This class provides helper functions to dump a ArmV7mCpuState proto."""
-    def __init__(self, cpu_state):
+    def __init__(self,
+                 cpu_state,
+                 symbolizer: Optional[pw_symbolizer.Symbolizer] = None):
         self._cpu_state = cpu_state
-        self._active_cfsr_fields = None
+        self._symbolizer = symbolizer
+        self._active_cfsr_fields: Optional[Tuple[cortex_m_constants.BitField,
+                                                 ...]] = None
 
     def active_cfsr_fields(self) -> Tuple[cortex_m_constants.BitField, ...]:
         """Returns a list of BitFields for each active CFSR flag."""
@@ -115,11 +125,16 @@ class CortexMExceptionAnalyzer:
     def dump_registers(self) -> str:
         """Dumps all captured CPU registers as a multi-line string."""
         registers = []
-        # TODO(amontanez): Do fancier decode of some registers like PC and LR.
         for field in self._cpu_state.DESCRIPTOR.fields:
             if self._cpu_state.HasField(field.name):
                 register_value = getattr(self._cpu_state, field.name)
-                registers.append(f'{field.name:<10} 0x{register_value:08x}')
+                register_str = f'{field.name:<10} 0x{register_value:08x}'
+                if (self._symbolizer is not None
+                        and field.name in _SYMBOLIZED_REGISTERS):
+                    symbol = self._symbolizer.symbolize(register_value)
+                    if symbol.name:
+                        register_str += f' {symbol}'
+                registers.append(register_str)
         return '\n'.join(registers)
 
     def dump_active_active_cfsr_fields(self) -> str:
@@ -153,7 +168,9 @@ class CortexMExceptionAnalyzer:
         return '\n'.join(dump)
 
 
-def process_snapshot(serialized_snapshot: bytes) -> str:
+def process_snapshot(
+        serialized_snapshot: bytes,
+        symbolizer: Optional[pw_symbolizer.Symbolizer] = None) -> str:
     """Returns the stringified result of a SnapshotCpuState message run though
     a CortexMExceptionAnalyzer.
     """
@@ -161,6 +178,8 @@ def process_snapshot(serialized_snapshot: bytes) -> str:
     snapshot.ParseFromString(serialized_snapshot)
 
     if snapshot.HasField('armv7m_cpu_state'):
-        return f'{CortexMExceptionAnalyzer(snapshot.armv7m_cpu_state)}\n'
+        state_analyzer = CortexMExceptionAnalyzer(snapshot.armv7m_cpu_state,
+                                                  symbolizer)
+        return f'{state_analyzer}\n'
 
     return ''

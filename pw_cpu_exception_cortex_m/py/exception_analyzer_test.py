@@ -17,6 +17,7 @@
 import unittest
 from pw_cpu_exception_cortex_m import exception_analyzer, cortex_m_constants
 from pw_cpu_exception_cortex_m_protos import cpu_state_pb2
+import pw_symbolizer
 
 # pylint: disable=protected-access
 
@@ -160,6 +161,25 @@ class TextDumpTest(unittest.TestCase):
             'pc         0xdfadd966',
             'mmfar      0xaf2ea98a',
             'r0         0xf3b235b1',
+        ))
+        self.assertEqual(cpu_state_info.dump_registers(), expected_dump)
+
+    def test_symbolization(self):
+        """Ensure certain registers are symbolized."""
+        cpu_state_proto = cpu_state_pb2.ArmV7mCpuState()
+        known_symbols = (
+            pw_symbolizer.Symbol(0x0800A200, 'foo()', 'src/foo.c', 41),
+            pw_symbolizer.Symbol(0x08000004, 'boot_entry()',
+                                 'src/vector_table.c', 5),
+        )
+        symbolizer = pw_symbolizer.FakeSymbolizer(known_symbols)
+        cpu_state_proto.pc = 0x0800A200
+        cpu_state_proto.lr = 0x08000004
+        cpu_state_info = exception_analyzer.CortexMExceptionAnalyzer(
+            cpu_state_proto, symbolizer)
+        expected_dump = '\n'.join((
+            'pc         0x0800a200 foo() (src/foo.c:41)',
+            'lr         0x08000004 boot_entry() (src/vector_table.c:5)',
         ))
         self.assertEqual(cpu_state_info.dump_registers(), expected_dump)
 
