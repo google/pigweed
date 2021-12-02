@@ -14,7 +14,7 @@
 """Utilities for address symbolization."""
 
 import abc
-from typing import List
+from typing import Iterable, List
 from dataclasses import dataclass
 
 
@@ -83,3 +83,19 @@ class Symbolizer(abc.ABC):
             stack_trace.append(f'      in {symbol.file_and_line()}')
 
         return '\n'.join(stack_trace)
+
+
+class FakeSymbolizer(Symbolizer):
+    """A fake symbolizer that only knows a fixed set of symbols."""
+    def __init__(self, known_symbols: Iterable[Symbol] = None):
+        if known_symbols is not None:
+            self._db = {sym.address: sym for sym in known_symbols}
+        else:
+            self._db = {}
+
+    def symbolize(self, address: int) -> Symbol:
+        """Symbolizes a fixed symbol database."""
+        if address in self._db:
+            return self._db[address]
+
+        return Symbol(address)

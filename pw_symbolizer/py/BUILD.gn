@@ -31,11 +31,13 @@ pw_python_package("py") {
     "pw_symbolizer/symbolizer.py",
   ]
 
+  tests = [ "symbolizer_test.py" ]
+
   # This is harder to test on mac/windows due to differences in how debug info
   # is generated.
   if (host_os == "linux") {
     inputs = [ "symbolizer_test.cc" ]
-    tests = [ "symbolizer_test.py" ]
+    tests += [ "llvm_symbolizer_test.py" ]
     python_test_deps = [ "$dir_pw_cli/py" ]
   }
 

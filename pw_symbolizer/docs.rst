@@ -1,8 +1,8 @@
 .. _module-pw_symbolizer:
 
--------------
+=============
 pw_symbolizer
--------------
+=============
 
 .. warning::
   This module is under construction and may not be ready for use.
@@ -10,6 +10,9 @@ pw_symbolizer
 pw_symbolizer provides python-based tooling for symbolizing addresses emitted by
 on-device firmware.
 
+-----
+Usage
+-----
 Symbolizer
 ==========
 The ``Symbolizer`` abstract base class is an interface for translating addresses
@@ -53,6 +56,24 @@ Which produces output like this:
         in threads.cc:0
     10: at device::system::logging_thread_context (0x08004BE0)
         in threads.cc:0
+
+FakeSymbolizer
+==============
+The ``FakeSymbolizer`` is utility class that implements the ``Symbolizer``
+interface with a fixed database of address to ``Symbol`` mappings. This is
+useful for testing, or as a no-op ``Symbolizer``.
+
+.. code:: py
+
+  import pw_symbolizer
+
+  known_symbols = (
+      pw_symbolizer.Symbol(0x0800A200, 'foo()', 'src/foo.c', 41),
+      pw_symbolizer.Symbol(0x08000004, 'boot_entry()', 'src/vector_table.c', 5),
+  )
+  symbolizer = pw_symbolizer.FakeSymbolizer(known_symbols)
+  sym = symbolizer.symbolize(0x0800A200)
+  print(f'This fake symbolizer knows about: {sym}')
 
 LlvmSymbolizer
 ==============

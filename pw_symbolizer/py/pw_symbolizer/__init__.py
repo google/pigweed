@@ -13,5 +13,5 @@
 # the License.
 """Package that supports address symbolization of device firmware."""
 
-from pw_symbolizer.symbolizer import Symbolizer, Symbol
+from pw_symbolizer.symbolizer import Symbolizer, Symbol, FakeSymbolizer
 from pw_symbolizer.llvm_symbolizer import LlvmSymbolizer
