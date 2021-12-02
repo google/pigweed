@@ -44,12 +44,22 @@ class Server : public internal::Endpoint {
   //   DATA_LOSS - Failed to decode the packet.
   //   INVALID_ARGUMENT - The packet is intended for a client, not a server.
   //
-  Status ProcessPacket(std::span<const std::byte> packet_data,
-                       ChannelOutput& interface)
-      PW_LOCKS_EXCLUDED(internal::rpc_lock());
+  // ProcessPacket optionally accepts a ChannelOutput as a second argument. If
+  // provided, the server will be able to dynamically assign channels as
+  // requests come in instead of requiring channels to be known at compile time.
+  Status ProcessPacket(ConstByteSpan packet_data) {
+    return ProcessPacket(packet_data, nullptr);
+  }
+  Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput& interface) {
+    return ProcessPacket(packet_data, &interface);
+  }
 
  private:
   friend class internal::Call;
+  friend class ClientServer;
+
+  Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput* interface)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock());
 
   std::tuple<Service*, const internal::Method*> FindMethod(
       const internal::Packet& packet);

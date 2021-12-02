@@ -26,13 +26,23 @@ class ClientServer {
       : client_(channels), server_(channels) {}
 
   // Sends a packet to either the client or the server, depending on its type.
-  Status ProcessPacket(std::span<const std::byte> packet,
-                       ChannelOutput& interface);
+  //
+  // ProcessPacket optionally accepts a ChannelOutput as a second argument. If
+  // provided, the server will be able to dynamically assign channels as
+  // requests come in instead of requiring channels to be known at compile time.
+  Status ProcessPacket(ConstByteSpan packet) {
+    return ProcessPacket(packet, nullptr);
+  }
+  Status ProcessPacket(ConstByteSpan packet, ChannelOutput& interface) {
+    return ProcessPacket(packet, &interface);
+  }
 
   constexpr Client& client() { return client_; }
   constexpr Server& server() { return server_; }
 
  private:
+  Status ProcessPacket(ConstByteSpan packet, ChannelOutput* interface);
+
   Client client_;
   Server server_;
 };

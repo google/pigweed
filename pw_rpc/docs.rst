@@ -878,7 +878,7 @@ an RPC client and server with the same set of channels.
   void ProcessRpcData(pw::ConstByteSpan packet) {
     // Calls into both the client and the server, sending the packet to the
     // appropriate one.
-    client_server.ProcessPacket(packet, output);
+    client_server.ProcessPacket(packet);
   }
 
 Testing
