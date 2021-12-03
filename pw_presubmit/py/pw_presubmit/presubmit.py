@@ -500,12 +500,13 @@ class Check:
         endswith: Iterable[str] = '',
         exclude: Iterable[Union[Pattern[str], str]] = ()
     ) -> Check:
+        endswith = self.filter.endswith
+        if endswith:
+            endswith = endswith + _make_str_tuple(endswith)
+        exclude = self.filter.exclude + tuple(re.compile(e) for e in exclude)
+
         return Check(check_function=self._check,
-                     path_filter=_Filter(endswith=self.filter.endswith +
-                                         _make_str_tuple(endswith),
-                                         exclude=self.filter.exclude +
-                                         tuple(re.compile(e)
-                                               for e in exclude)),
+                     path_filter=_Filter(endswith=endswith, exclude=exclude),
                      always_run=self.always_run)
 
     @property
