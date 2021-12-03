@@ -328,15 +328,18 @@ Result<std::string_view> ReadProtoString(protobuf::String str,
 
 Status UpdateBundleAccessor::OpenAndVerify(const ManifestAccessor&) {
   PW_TRY(DoOpen());
-#if !defined(PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION)
   PW_TRY(DoVerify());
-#endif
   return OkStatus();
 }
 
 // Get the target element corresponding to `target_file`
 stream::IntervalReader UpdateBundleAccessor::GetTargetPayload(
     std::string_view target_file_name) {
+  if (!bundle_verified_) {
+    PW_LOG_DEBUG("Bundled has not passed verification yet");
+    return Status::FailedPrecondition();
+  }
+
   protobuf::StringToBytesMap target_payloads =
       decoder_.AsStringToBytesMap(static_cast<uint32_t>(
           pw::software_update::UpdateBundle::Fields::TARGET_PAYLOADS));
@@ -346,8 +349,21 @@ stream::IntervalReader UpdateBundleAccessor::GetTargetPayload(
   return payload.GetBytesReader();
 }
 
+protobuf::Message UpdateBundleAccessor::GetDecoder() {
+  if (!bundle_verified_) {
+    PW_LOG_DEBUG("Bundled has not passed verification yet");
+    return Status::FailedPrecondition();
+  }
+
+  return decoder_;
+}
+
 Result<bool> UpdateBundleAccessor::IsTargetPayloadIncluded(
     std::string_view target_file_name) {
+  if (!bundle_verified_) {
+    PW_LOG_DEBUG("Bundled has not passed verification yet");
+    return Status::FailedPrecondition();
+  }
   // TODO(pwbug/456): Perform personalization check first. If the target
   // is personalized out. Don't need to proceed.
 
@@ -427,9 +443,8 @@ Status UpdateBundleAccessor::PersistManifest(
 }
 
 Status UpdateBundleAccessor::Close() {
-  // TODO(pwbug/456): To be implemented.
   bundle_verified_ = false;
-  return bundle_reader_.Close();
+  return bundle_reader_.IsOpen() ? bundle_reader_.Close() : OkStatus();
 }
 
 Status UpdateBundleAccessor::DoOpen() {
@@ -437,7 +452,6 @@ Status UpdateBundleAccessor::DoOpen() {
   PW_TRY(bundle_reader_.Open());
   decoder_ =
       protobuf::Message(bundle_reader_, bundle_reader_.ConservativeReadLimit());
-  (void)backend_;
   return OkStatus();
 }
 
@@ -448,7 +462,7 @@ Status UpdateBundleAccessor::DoVerify() {
     bundle_verified_ = true;
     return OkStatus();
   }
-
+#if !defined(PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION)
   // Verify and upgrade the on-device trust to the incoming root metadata if
   // one is included.
   PW_TRY(UpgradeRoot());
@@ -463,9 +477,8 @@ Status UpdateBundleAccessor::DoVerify() {
 
   // TODO(pwbug/456): Invoke the backend to do downstream verification of the
   // bundle (e.g. compatibility and manifest completeness checks).
-
+#endif
   bundle_verified_ = true;
-
   return OkStatus();
 }
 
@@ -548,7 +561,12 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return Status::Unauthenticated();
   }
 
-  // Persist the new root.
+  // Persist the root immediately after it is successfully verified. This is
+  // to make sure the trust anchor is up-to-date in storage as soon as
+  // we are confident. Although targets metadata and product-specific
+  // verification have not been done yet. They should be independent from and
+  // not gate the upgrade of root key. This allows timely revokation of
+  // compromise keys.
   stream::IntervalReader new_root_reader = new_root.ToBytes().GetBytesReader();
   PW_TRY(backend_.SafelyPersistRootMetadata(new_root_reader));
 
@@ -635,7 +653,7 @@ Status UpdateBundleAccessor::VerifyTargetsMetadata() {
   Result<stream::SeekableReader*> manifest_reader =
       backend_.GetCurrentManifestReader();
   PW_TRY(manifest_reader.status());
-
+  PW_CHECK_NOTNULL(manifest_reader.value());
   protobuf::Message manifest(*manifest_reader.value(),
                              manifest_reader.value()->ConservativeReadLimit());
 

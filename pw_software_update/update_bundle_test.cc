@@ -38,7 +38,7 @@ constexpr size_t kMetadataBufferSize =
 class TestBundledUpdateBackend final : public BundledUpdateBackend {
  public:
   TestBundledUpdateBackend()
-      : trusted_root_reader_({}), current_manifest_reader_({}) {}
+      : current_manifest_reader_({}), trusted_root_memory_reader_({}) {}
 
   Status ApplyReboot() override { return Status::Unimplemented(); }
   Status PostRebootFinalize() override { return OkStatus(); }
@@ -61,7 +61,11 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
   void DisableBundleTransferHandler() override {}
 
   void SetTrustedRoot(ConstByteSpan trusted_root) {
-    trusted_root_reader_ = stream::MemoryReader(trusted_root);
+    trusted_root_memory_reader_ = stream::MemoryReader(trusted_root);
+    trusted_root_reader_ = stream::IntervalReader(
+        trusted_root_memory_reader_,
+        0,
+        trusted_root_memory_reader_.ConservativeReadLimit());
   }
 
   void SetCurrentManifest(ConstByteSpan current_manifest) {
@@ -77,8 +81,9 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
   }
 
   virtual Status SafelyPersistRootMetadata(
-      [[maybe_unused]] stream::Reader& root_metadata) override {
+      [[maybe_unused]] stream::IntervalReader root_metadata) override {
     new_root_persisted_ = true;
+    trusted_root_reader_ = root_metadata;
     return OkStatus();
   };
 
@@ -91,11 +96,15 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
   }
 
  private:
-  stream::MemoryReader trusted_root_reader_;
+  stream::IntervalReader trusted_root_reader_;
   stream::MemoryReader current_manifest_reader_;
   bool new_root_persisted_ = false;
   size_t backend_verified_files_ = 0;
   Status verify_target_file_result_ = OkStatus();
+
+  // A memory reader for buffer passed by SetTrustedRoot(). This will be used
+  // to back `trusted_root_reader_`
+  stream::MemoryReader trusted_root_memory_reader_;
 };
 
 class UpdateBundleTest : public testing::Test {
@@ -122,6 +131,40 @@ class UpdateBundleTest : public testing::Test {
     ASSERT_OK(blob_writer.Open());
     ASSERT_OK(blob_writer.Write(bundle_data));
     ASSERT_OK(blob_writer.Close());
+  }
+
+  // A helper to verify that all bundle operations are disallowed because
+  // the bundle is not open or verified.
+  void VerifyAllBundleOperationsDisallowed(
+      UpdateBundleAccessor& update_bundle) {
+    // We need to check specificially that failure is due to rejecting
+    // unverified/unopen bundle, not anything else.
+    ASSERT_EQ(update_bundle.GetDecoder().status(),
+              Status::FailedPrecondition());
+    ASSERT_EQ(update_bundle.GetTargetPayload("any").status(),
+              Status::FailedPrecondition());
+    ASSERT_EQ(update_bundle.IsTargetPayloadIncluded("any").status(),
+              Status::FailedPrecondition());
+
+    std::byte manifest_buffer[sizeof(kTestBundleManifest)];
+    stream::MemoryWriter manifest_writer(manifest_buffer);
+    ASSERT_EQ(update_bundle.PersistManifest(manifest_writer),
+              Status::FailedPrecondition());
+  }
+
+  // A helper to verify that UpdateBundleAccessor::OpenAndVerify() fails and
+  // that all bundle operations are disallowed as a result. Also check whether
+  // root metadata should be expected to be persisted.
+  void CheckOpenAndVerifyFail(UpdateBundleAccessor& update_bundle,
+                              bool expect_new_root_persisted) {
+    ASSERT_FALSE(backend().IsNewRootPersisted());
+    ManifestAccessor current_manifest;
+    ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+    ASSERT_EQ(backend().IsNewRootPersisted(), expect_new_root_persisted);
+    VerifyAllBundleOperationsDisallowed(update_bundle);
+
+    ASSERT_OK(update_bundle.Close());
+    VerifyAllBundleOperationsDisallowed(update_bundle);
   }
 
  private:
@@ -206,9 +249,10 @@ TEST_F(UpdateBundleTest, PersistManifest) {
       0);
 }
 
+#if !defined(PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION)
 TEST_F(UpdateBundleTest, PersistManifestFailIfNotVerified) {
   backend().SetTrustedRoot(kDevSignedRoot);
-  StageTestBundle(kTestBadDevSignatureBundle);
+  StageTestBundle(kTestBadProdSignature);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
   ManifestAccessor current_manifest;
@@ -221,7 +265,7 @@ TEST_F(UpdateBundleTest, PersistManifestFailIfNotVerified) {
 
 TEST_F(UpdateBundleTest, BundleVerificationDisabled) {
   backend().SetTrustedRoot(kDevSignedRoot);
-  StageTestBundle(kTestBadDevSignatureBundle);
+  StageTestBundle(kTestBadProdSignature);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend(), true);
 
   // Since bundle verification is disabled. The bad bundle should not report
@@ -253,18 +297,44 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithAllVerification) {
   // No file is personalized out in kTestProdBundle. Backend verification
   // should not be invoked.
   ASSERT_EQ(backend().NumFilesVerified(), static_cast<size_t>(0));
+
+  ASSERT_OK(update_bundle.Close());
+  VerifyAllBundleOperationsDisallowed(update_bundle);
 }
 
-TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadDevSignature) {
+TEST_F(UpdateBundleTest,
+       OpenAndVerifyWithoutIncomingRootSucceedsWithAllVerification) {
   backend().SetTrustedRoot(kDevSignedRoot);
   backend().SetCurrentManifest(kTestBundleManifest);
-  StageTestBundle(kTestBadDevSignatureBundle);
+  // kTestDevBundle does not contain an incoming root. See
+  // pw_software_update/py/pw_software_update/generate_test_bundle.py for
+  // detail of generation.
+  StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
   ManifestAccessor current_manifest;
   ASSERT_FALSE(backend().IsNewRootPersisted());
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
   ASSERT_FALSE(backend().IsNewRootPersisted());
+
+  // No file is personalized out in kTestDevBundle. Backend verification
+  // should not be invoked.
+  ASSERT_EQ(backend().NumFilesVerified(), static_cast<size_t>(0));
+
+  ASSERT_OK(update_bundle.Close());
+  VerifyAllBundleOperationsDisallowed(update_bundle);
+}
+
+TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedRootKeyAndSignature) {
+  backend().SetTrustedRoot(kDevSignedRoot);
+  backend().SetCurrentManifest(kTestBundleManifest);
+  // kTestMismatchedRootKeyAndSignature has a dev root metadata that is
+  // prod signed. The root metadata will not be able to verify itself.
+  // See pw_software_update/py/pw_software_update/generate_test_bundle.py for
+  // detail of generation.
+  StageTestBundle(kTestMismatchedRootKeyAndSignature);
+  UpdateBundleAccessor update_bundle(bundle_blob(), backend());
+  CheckOpenAndVerifyFail(update_bundle, false);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadProdSignature) {
@@ -272,11 +342,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadProdSignature) {
   backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestBadProdSignature);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_FALSE(backend().IsNewRootPersisted());
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
-  ASSERT_FALSE(backend().IsNewRootPersisted());
+  CheckOpenAndVerifyFail(update_bundle, false);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadTargetsSignature) {
@@ -284,9 +350,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadTargetsSignature) {
   backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestBadTargetsSignature);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadTargetsRollBack) {
@@ -294,27 +358,26 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBadTargetsRollBack) {
   backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestTargetsRollback);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
-TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithMissingManifest) {
+TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithoutExistingManifest) {
   backend().SetTrustedRoot(kDevSignedRoot);
   StageTestBundle(kTestProdBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
   ManifestAccessor current_manifest;
+  ASSERT_FALSE(backend().IsNewRootPersisted());
   ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_TRUE(backend().IsNewRootPersisted());
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnRootRollback) {
   backend().SetTrustedRoot(kDevSignedRoot);
+  backend().SetCurrentManifest(kTestBundleManifest);
   StageTestBundle(kTestRootRollback);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, false);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetHashFile0) {
@@ -325,9 +388,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetHashFile0) {
   // The hash value for file 0 in the targets metadata is made incorrect.
   StageTestBundle(kTestBundleMismatchedTargetHashFile0);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetHashFile1) {
@@ -338,9 +399,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetHashFile1) {
   // The hash value for file 1 in the targets metadata is made incorrect.
   StageTestBundle(kTestBundleMismatchedTargetHashFile1);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMissingTargetHashFile0) {
@@ -351,9 +410,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMissingTargetHashFile0) {
   // The hash value for file 0 is removed.
   StageTestBundle(kTestBundleMissingTargetHashFile0);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMissingTargetHashFile1) {
@@ -364,9 +421,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMissingTargetHashFile1) {
   // The hash value for file 1 is removed.
   StageTestBundle(kTestBundleMissingTargetHashFile1);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetLengthFile0) {
@@ -377,9 +432,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetLengthFile0) {
   // The length value for file 0 in the targets metadata is made incorrect (1).
   StageTestBundle(kTestBundleMismatchedTargetLengthFile0);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetLengthFile1) {
@@ -390,9 +443,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnMismatchedTargetLengthFile1) {
   // The length value for file 0 in the targets metadata is made incorrect (1).
   StageTestBundle(kTestBundleMismatchedTargetLengthFile1);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
-
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
 
 TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithPersonalizedOutFile0) {
@@ -435,8 +486,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBackendVerification) {
   StageTestBundle(kTestBundlePersonalizedOutFile1);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
   backend().SetVerifyTargetFileResult(Status::Internal());
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  CheckOpenAndVerifyFail(update_bundle, true);
 }
-
+#endif
 }  // namespace pw::software_update

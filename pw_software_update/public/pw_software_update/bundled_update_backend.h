@@ -138,7 +138,7 @@ class BundledUpdateBackend {
   // TODO(pwbug/456): Investigate whether we should get a writer i.e.
   // GetRootMetadataWriter() instead of passing a reader.
   virtual Status SafelyPersistRootMetadata(
-      [[maybe_unused]] stream::Reader& root_metadata) {
+      [[maybe_unused]] stream::IntervalReader root_metadata) {
     return Status::Unimplemented();
   };
 };

@@ -220,13 +220,22 @@ def gn_teensy_build(ctx: PresubmitContext):
 def gn_software_update_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
     build.install_package(ctx.package_root, 'protobuf')
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 dir_pw_third_party_protobuf='"{}"'.format(ctx.package_root /
-                                                           'protobuf'),
-                 dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
-                                                         'nanopb'),
-                 pw_software_update_LANDING_BUNDLE_VERIFICATION=False)
+    build.install_package(ctx.package_root, 'mbedtls')
+    build.install_package(ctx.package_root, 'micro-ecc')
+    build.gn_gen(
+        ctx.root,
+        ctx.output_dir,
+        dir_pw_third_party_protobuf='"{}"'.format(ctx.package_root /
+                                                  'protobuf'),
+        dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
+        dir_pw_third_party_micro_ecc='"{}"'.format(ctx.package_root /
+                                                   'micro-ecc'),
+        pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
+                                              'pw_crypto:ecdsa_uecc'),
+        dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
+        pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
+                                               'pw_crypto:sha256_mbedtls'),
+        pw_software_update_LANDING_BUNDLE_VERIFICATION=False)
     build.ninja(
         ctx.output_dir,
         *_at_all_optimization_levels('host_clang'),

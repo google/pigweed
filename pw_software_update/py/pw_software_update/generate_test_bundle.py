@@ -58,10 +58,16 @@ YdynPtJkM2gGOWfIcHDuwuxSQmqhRANCAARpvjrXkjG2Fp+ZgREtxeTBBmJmWGS9
 8Ny2tXY+Qggzl77G7wvCNF5+koz7ecsV6sKjK+dFiAXOIdqlga7p2j0A
 -----END PRIVATE KEY-----"""
 
-TEST_TARGETS_KEY = """-----BEGIN PRIVATE KEY-----
+TEST_TARGETS_DEV_KEY = """-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQggRCrido5vZOnkULH
 sxQDt9Qoe/TlEKoqa1bhO1HFbi6hRANCAASVwdXbGWM7+f/r+Z2W6Dbd7CQA0Cbb
 pkBv5PnA+DZnCkFhLW2kTn89zQv8W1x4m9maoINp9QPXQ4/nXlrVHqDg
+-----END PRIVATE KEY-----"""
+
+TEST_TARGETS_PROD_KEY = """-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgx2VdB2EsUKghuLMG
+RmxzqX2jnLTq5pxsFgO5Rrf5jlehRANCAASVijeDpemxVSlgZOOW0yvwE5QkXkq0
+geWonkusMP0+MXopnmN0QlpgaCnG40TSr/W+wFjRmNCklL4dXk01oCwD
 -----END PRIVATE KEY-----"""
 
 TEST_ROOT_VERSION = 2
@@ -86,11 +92,18 @@ def proto_array_declaration(proto, name: str) -> str:
     return byte_array_declaration(proto.SerializeToString(), name)
 
 
-def private_key_pem_bytes(key: ec.EllipticCurvePrivateKey) -> bytes:
-    """Serializes a private key in PEM format"""
+def private_key_public_pem_bytes(key: ec.EllipticCurvePrivateKey) -> bytes:
+    """Serializes the public part of a private key in PEM format"""
     return key.public_key().public_bytes(
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo)
+
+
+def private_key_private_pem_bytes(key: ec.EllipticCurvePrivateKey) -> bytes:
+    """Serializes the private part of a private key in PEM format"""
+    return key.private_bytes(encoding=serialization.Encoding.PEM,
+                             format=serialization.PrivateFormat.PKCS8,
+                             encryption_algorithm=serialization.NoEncryption())
 
 
 class Bundle:
@@ -100,8 +113,10 @@ class Bundle:
             TEST_DEV_KEY.encode(), None)
         self._root_prod_key = serialization.load_pem_private_key(
             TEST_PROD_KEY.encode(), None)
-        self._targets_key = serialization.load_pem_private_key(
-            TEST_TARGETS_KEY.encode(), None)
+        self._targets_dev_key = serialization.load_pem_private_key(
+            TEST_TARGETS_DEV_KEY.encode(), None)
+        self._targets_prod_key = serialization.load_pem_private_key(
+            TEST_TARGETS_PROD_KEY.encode(), None)
         self._payloads: Dict[str, bytes] = {}
         # Adds some update files.
         for key, value in TARGET_FILES.items():
@@ -113,34 +128,39 @@ class Bundle:
 
     def generate_dev_root_metadata(self) -> RootMetadata:
         """Generates a root metadata with the dev key"""
+        # The dev root metadata contains both the prod and the dev public key,
+        # so that it can rotate to prod. But it will only use a dev targets
+        # key.
         return root_metadata.gen_root_metadata(
-            root_metadata.RootKeys([private_key_pem_bytes(self._root_dev_key)
-                                    ]),
+            root_metadata.RootKeys([
+                private_key_public_pem_bytes(self._root_dev_key),
+                private_key_public_pem_bytes(self._root_prod_key),
+            ]),
             root_metadata.TargetsKeys(
-                [private_key_pem_bytes(self._targets_key)]), TEST_ROOT_VERSION)
+                [private_key_public_pem_bytes(self._targets_dev_key)]),
+            TEST_ROOT_VERSION)
 
     def generate_prod_root_metadata(self) -> RootMetadata:
         """Generates a root metadata with the prod key"""
+        # The prod root metadta contains only the prod public key and uses the
+        # prod targets key
         return root_metadata.gen_root_metadata(
             root_metadata.RootKeys(
-                [private_key_pem_bytes(self._root_prod_key)]),
+                [private_key_public_pem_bytes(self._root_prod_key)]),
             root_metadata.TargetsKeys(
-                [private_key_pem_bytes(self._targets_key)]), TEST_ROOT_VERSION)
+                [private_key_public_pem_bytes(self._targets_prod_key)]),
+            TEST_ROOT_VERSION)
 
     def generate_dev_signed_root_metadata(self) -> SignedRootMetadata:
-        """Generates a root metadata signed only by the dev key"""
+        """Generates a dev signed root metadata"""
         signed_root = SignedRootMetadata()
         root_metadata_proto = self.generate_dev_root_metadata()
         signed_root.serialized_root_metadata = \
             root_metadata_proto.SerializeToString()
         return dev_sign.sign_root_metadata(
-            signed_root,
-            self._root_dev_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()))
+            signed_root, private_key_private_pem_bytes(self._root_dev_key))
 
-    def generate_rotation_prod_signed_root_metadata(
+    def generate_prod_signed_root_metadata(
             self,
             root_metadata_proto: RootMetadata = None) -> SignedRootMetadata:
         """Generates a root metadata signed by the prod key"""
@@ -150,16 +170,8 @@ class Bundle:
         signed_root = SignedRootMetadata(
             serialized_root_metadata=root_metadata_proto.SerializeToString())
 
-        for key in [self._root_dev_key, self._root_prod_key]:
-            signature = keys.create_ecdsa_signature(
-                signed_root.serialized_root_metadata,
-                key.private_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption()))
-            signed_root.signatures.append(signature)
-
-        return signed_root
+        return dev_sign.sign_root_metadata(
+            signed_root, private_key_private_pem_bytes(self._root_prod_key))
 
     def generate_targets_metadata(self) -> TargetsMetadata:
         """Generates the targets metadata"""
@@ -168,11 +180,11 @@ class Bundle:
                                                 TEST_TARGETS_VERSION)
         return targets
 
-    def generate_bundle(
+    def generate_unsigned_bundle(
             self,
             targets_metadata: TargetsMetadata = None,
             signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
-        """Generate an update bundle"""
+        """Generate an unsigned (targets metadata) update bundle"""
         bundle = UpdateBundle()
 
         if not targets_metadata:
@@ -185,17 +197,33 @@ class Bundle:
             SignedTargetsMetadata(serialized_targets_metadata=targets_metadata.
                                   SerializeToString()))
 
-        bundle = dev_sign.sign_update_bundle(
-            bundle,
-            self._targets_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()))
-
         for name, payload in self._payloads.items():
             bundle.target_payloads[name] = payload
 
         return bundle
+
+    def generate_dev_signed_bundle(
+            self,
+            targets_metadata_override: TargetsMetadata = None,
+            signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
+        """Generate a dev signed update bundle"""
+        return dev_sign.sign_update_bundle(
+            self.generate_unsigned_bundle(targets_metadata_override,
+                                          signed_root_metadata),
+            private_key_private_pem_bytes(self._targets_dev_key))
+
+    def generate_prod_signed_bundle(
+            self,
+            targets_metadata_override: TargetsMetadata = None,
+            signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
+        """Generate a prod signed update bundle"""
+        # The targets metadata in a prod signed bundle can only be verified
+        # by a prod signed root. Because it is signed by the prod targets key.
+        # The prod signed root however, can be verified by a dev root.
+        return dev_sign.sign_update_bundle(
+            self.generate_unsigned_bundle(targets_metadata_override,
+                                          signed_root_metadata),
+            private_key_private_pem_bytes(self._targets_prod_key))
 
     def generate_manifest(self) -> Manifest:
         """Generates the manifest"""
@@ -223,45 +251,53 @@ def main() -> int:
     test_bundle = Bundle()
 
     dev_signed_root = test_bundle.generate_dev_signed_root_metadata()
-    dev_signed_bundle = test_bundle.generate_bundle(None, dev_signed_root)
+    dev_signed_bundle = test_bundle.generate_dev_signed_bundle()
     manifest_proto = test_bundle.generate_manifest()
     prod_signed_root = \
-        test_bundle.generate_rotation_prod_signed_root_metadata()
-    prod_signed_bundle = test_bundle.generate_bundle(None, prod_signed_root)
+        test_bundle.generate_prod_signed_root_metadata()
+    prod_signed_bundle = test_bundle.generate_prod_signed_bundle(
+        None, prod_signed_root)
 
     # Generates a prod root metadata that fails signature verification against
-    # the dev root (i.e. it has a bad dev signature).
-    bad_dev_signature = test_bundle.generate_prod_root_metadata()
-    signed_bad_dev_signature = \
-        test_bundle\
-            .generate_rotation_prod_signed_root_metadata(bad_dev_signature)
-    # Compromises the first signature, which is dev signed.
-    signed_bad_dev_signature.signatures[0].sig = b'1' * 64
-    signed_bad_dev_signature_bundle = test_bundle.generate_bundle(
-        None, signed_bad_dev_signature)
-
-    # Generates a prod root metadtata that fails to verify itself (bad prod
-    # signature).
+    # the dev root (i.e. it has a bad prod signature). This is done by making
+    # a bad prod signature.
     bad_prod_signature = test_bundle.generate_prod_root_metadata()
     signed_bad_prod_signature = \
         test_bundle\
-            .generate_rotation_prod_signed_root_metadata(
+            .generate_prod_signed_root_metadata(
                 bad_prod_signature)
-    # Compromises the second signature, which is prod signed.
-    signed_bad_prod_signature.signatures[1].sig = b'1' * 64
-    signed_bad_prod_signature_bundle = test_bundle.generate_bundle(
+    # Compromises the signature.
+    signed_bad_prod_signature.signatures[0].sig = b'1' * 64
+    signed_bad_prod_signature_bundle = test_bundle.generate_prod_signed_bundle(
         None, signed_bad_prod_signature)
+
+    # Generates a prod root metadtata that fails to verify itself. Specifically,
+    # the prod signature cannot be verified by the key in the incoming root
+    # metadata. This is done by dev signing a prod root metadata.
+    signed_mismatched_root_key_and_signature = SignedRootMetadata(
+        serialized_root_metadata=test_bundle.generate_prod_root_metadata(
+        ).SerializeToString())
+    dev_root_key = serialization.load_pem_private_key(TEST_DEV_KEY.encode(),
+                                                      None)
+    signature = keys.create_ecdsa_signature(
+        signed_mismatched_root_key_and_signature.serialized_root_metadata,
+        private_key_private_pem_bytes(dev_root_key))  # type: ignore
+    signed_mismatched_root_key_and_signature.signatures.append(signature)
+    mismatched_root_key_and_signature_bundle = test_bundle\
+        .generate_prod_signed_bundle(None,
+                                     signed_mismatched_root_key_and_signature)
 
     # Generates a prod root metadata with rollback attempt.
     root_rollback = test_bundle.generate_prod_root_metadata()
     root_rollback.common_metadata.version = TEST_ROOT_VERSION - 1
     signed_root_rollback = test_bundle.\
-        generate_rotation_prod_signed_root_metadata(root_rollback)
-    root_rollback_bundle = test_bundle.generate_bundle(None,
-                                                       signed_root_rollback)
+        generate_prod_signed_root_metadata(root_rollback)
+    root_rollback_bundle = test_bundle.generate_prod_signed_bundle(
+        None, signed_root_rollback)
 
     # Generates a bundle with a bad target signature.
-    bad_targets_siganture = test_bundle.generate_bundle()
+    bad_targets_siganture = test_bundle.generate_prod_signed_bundle(
+        None, prod_signed_root)
     # Compromises the signature.
     bad_targets_siganture.targets_metadata['targets'].signatures[
         0].sig = b'1' * 64
@@ -269,7 +305,8 @@ def main() -> int:
     # Generates a bundle with rollback attempt
     targets_rollback = test_bundle.generate_targets_metadata()
     targets_rollback.common_metadata.version = TEST_TARGETS_VERSION - 1
-    targets_rollback_bundle = test_bundle.generate_bundle(targets_rollback)
+    targets_rollback_bundle = test_bundle.generate_prod_signed_bundle(
+        targets_rollback, prod_signed_root)
 
     # Generate bundles with mismatched hash
     mismatched_hash_targets_bundles = []
@@ -292,25 +329,28 @@ def main() -> int:
     for idx, payload_file in enumerate(TARGET_FILES.items()):
         mismatched_hash_targets = test_bundle.generate_targets_metadata()
         mismatched_hash_targets.target_files[idx].hashes[0].hash = b'0' * 32
-        mismatched_hash_targets_bundle = test_bundle.generate_bundle(
-            mismatched_hash_targets)
+        mismatched_hash_targets_bundle = test_bundle\
+            .generate_prod_signed_bundle(
+                mismatched_hash_targets, prod_signed_root)
         mismatched_hash_targets_bundles.append(mismatched_hash_targets_bundle)
 
         mismatched_length_targets = test_bundle.generate_targets_metadata()
         mismatched_length_targets.target_files[idx].length = 1
-        mismatched_length_targets_bundle = test_bundle.generate_bundle(
-            mismatched_length_targets)
+        mismatched_length_targets_bundle = test_bundle\
+            .generate_prod_signed_bundle(
+                mismatched_length_targets, prod_signed_root)
         mismatched_length_targets_bundles.append(
             mismatched_length_targets_bundle)
 
         missing_hash_targets = test_bundle.generate_targets_metadata()
         missing_hash_targets.target_files[idx].hashes.pop()
-        missing_hash_targets_bundle = test_bundle.generate_bundle(
-            missing_hash_targets)
+        missing_hash_targets_bundle = test_bundle.generate_prod_signed_bundle(
+            missing_hash_targets, prod_signed_root)
         missing_hash_targets_bundles.append(missing_hash_targets_bundle)
 
         file_name, _ = payload_file
-        personalized_out_bundle = test_bundle.generate_bundle()
+        personalized_out_bundle = test_bundle.generate_prod_signed_bundle(
+            None, prod_signed_root)
         personalized_out_bundle.target_payloads.pop(file_name)
         personalized_out_bundles.append(personalized_out_bundle)
 
@@ -325,8 +365,8 @@ def main() -> int:
         header.write(
             proto_array_declaration(prod_signed_bundle, 'kTestProdBundle'))
         header.write(
-            proto_array_declaration(signed_bad_dev_signature_bundle,
-                                    'kTestBadDevSignatureBundle'))
+            proto_array_declaration(mismatched_root_key_and_signature_bundle,
+                                    'kTestMismatchedRootKeyAndSignature'))
         header.write(
             proto_array_declaration(signed_bad_prod_signature_bundle,
                                     'kTestBadProdSignature'))

@@ -182,14 +182,18 @@ pw_test("update_bundle_test") {
     "$dir_pw_kvs:fake_flash_test_key_value_store",
   ]
   configs = [ ":generated_test_bundle_include" ]
+
+  defines = []
+  if (pw_software_update_LANDING_BUNDLE_VERIFICATION) {
+    defines += [ "PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION" ]
+  }
 }
 
 pw_test_group("tests") {
-  tests = [ ":bundled_update_service_test" ]
-
-  if (!pw_software_update_LANDING_BUNDLE_VERIFICATION) {
-    tests += [ ":update_bundle_test" ]
-  }
+  tests = [
+    ":bundled_update_service_test",
+    ":update_bundle_test",
+  ]
 }
 
 pw_test("bundled_update_service_test") {

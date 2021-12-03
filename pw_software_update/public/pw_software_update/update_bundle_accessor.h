@@ -139,7 +139,12 @@ class UpdateBundleAccessor {
   // TODO(pwbug/456): Figure out a way to propagate error.
   stream::IntervalReader GetTargetPayload(std::string_view target_file);
 
-  protobuf::Message GetDecoder() { return decoder_; }
+  // Returns a protobuf::Message representation of the update bundle.
+  //
+  // Returns:
+  // An instance of protobuf::Message of the udpate bundle.
+  // FAILED_PRECONDITION - Bundle is not open and verified.
+  protobuf::Message GetDecoder();
 
  private:
   blob_store::BlobStore& bundle_;
