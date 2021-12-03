@@ -611,14 +611,6 @@ def filter_paths(endswith: Iterable[str] = '',
     return filter_paths_for_function
 
 
-# TODO(mohrr) Remove after updating downstream projects to use cpp_checks.
-@filter_paths(endswith=('.h'))
-def pragma_once(ctx: PresubmitContext):
-    # pylint: disable=import-outside-toplevel
-    from pw_presubmit import cpp_checks
-    return cpp_checks.pragma_once(ctx)
-
-
 def call(*args, **kwargs) -> None:
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
     attributes, command = tools.format_command(args, kwargs)

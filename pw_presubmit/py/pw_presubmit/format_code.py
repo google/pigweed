@@ -263,10 +263,14 @@ class CodeFormat(NamedTuple):
     fix: Callable[[Iterable], None]
 
 
-C_FORMAT: CodeFormat = CodeFormat(
-    'C and C++',
-    frozenset(['.h', '.hh', '.hpp', '.c', '.cc', '.cpp', '.inc', '.inl']),
-    (r'\.pb\.h$', r'\.pb\.c$'), clang_format_check, clang_format_fix)
+CPP_HEADER_EXTS = frozenset(
+    ('.h', '.hpp', '.hxx', '.h++', '.hh', '.H', '.inc', '.inl'))
+CPP_SOURCE_EXTS = frozenset(('.c', '.cpp', '.cxx', '.c++', '.cc', '.C'))
+CPP_EXTS = CPP_HEADER_EXTS.union(CPP_SOURCE_EXTS)
+
+C_FORMAT: CodeFormat = CodeFormat('C and C++', CPP_EXTS,
+                                  (r'\.pb\.h$', r'\.pb\.c$'),
+                                  clang_format_check, clang_format_fix)
 
 PROTO_FORMAT: CodeFormat = CodeFormat('Protocol buffer', ('.proto', ), (),
                                       clang_format_check, clang_format_fix)

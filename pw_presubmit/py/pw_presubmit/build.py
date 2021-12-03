@@ -31,6 +31,7 @@ from pw_presubmit import (
     call,
     Check,
     filter_paths,
+    format_code,
     log_run,
     plural,
     PresubmitContext,
@@ -234,9 +235,9 @@ def compiled_files(compile_commands: Path) -> Iterable[Path]:
 
 
 def check_compile_commands_for_files(
-        compile_commands: Union[Path, Iterable[Path]],
-        files: Iterable[Path],
-        extensions: Collection[str] = ('.c', '.cc', '.cpp'),
+    compile_commands: Union[Path, Iterable[Path]],
+    files: Iterable[Path],
+    extensions: Collection[str] = format_code.CPP_SOURCE_EXTS,
 ) -> List[Path]:
     """Checks for paths in one or more compile_commands.json files.
 
