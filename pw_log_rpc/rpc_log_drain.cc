@@ -58,6 +58,7 @@ Status RpcLogDrain::Flush() {
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
     // Avoid sending empty packets.
     if (encoder.size() == 0) {
+      server_writer_.ReleaseBuffer();
       continue;
     }
     if (const Status status = server_writer_.Write(encoder); !status.ok()) {
