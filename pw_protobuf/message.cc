@@ -109,6 +109,13 @@ Double Message::Field::As<Double>() {
   return decoder.ReadDouble();
 }
 
+template <>
+Bool Message::Field::As<Bool>() {
+  protobuf::StreamDecoder decoder(field_reader_.Reset());
+  PW_TRY(decoder.Next());
+  return decoder.ReadBool();
+}
+
 Result<bool> Bytes::Equal(ConstByteSpan bytes) {
   stream::IntervalReader bytes_reader = GetBytesReader();
   if (bytes_reader.interval_size() != bytes.size()) {

@@ -96,6 +96,11 @@ class Double : public internal::ProtoIntegerBase<double> {
   using ProtoIntegerBase<double>::ProtoIntegerBase;
 };
 
+class Bool : public internal::ProtoIntegerBase<bool> {
+ public:
+  using ProtoIntegerBase<bool>::ProtoIntegerBase;
+};
+
 // An object that represents a parsed `bytes` field or an error code. The
 // bytes are available via an stream::IntervalReader by GetBytesReader().
 //
@@ -329,6 +334,8 @@ class Message {
   Float AsFloat(uint32_t field_number) { return As<Float>(field_number); }
   Double AsDouble(uint32_t field_number) { return As<Double>(field_number); }
 
+  Bool AsBool(uint32_t field_number) { return As<Bool>(field_number); }
+
   // Parse a sub-field in the message given by `field_number` as another
   // message.
   Message AsMessage(uint32_t field_number) { return As<Message>(field_number); }
@@ -450,6 +457,9 @@ Float Message::Field::As<Float>();
 
 template <>
 Double Message::Field::As<Double>();
+
+template <>
+Bool Message::Field::As<Bool>();
 
 // A helper for parsing `repeated` field. It implements an iterator interface
 // that only iterates through the fields of a given `field_number`.

@@ -111,8 +111,11 @@ TEST(ProtoHelper, AsProtoInteger) {
       // type: float, k = 11, val = 123456.00
       0x5d, 0x00, 0x20, 0xf1, 0x47,
       // type: double, k = 12, val = -123456.789
-      0x61, 0xc9, 0x76, 0xbe, 0x9f, 0x0c, 0x24, 0xfe, 0xc0
-      //0xc0, 0xfe, 0x24, 0x0c, 0x9f, 0xbe, 0x76, 0xc9,
+      0x61, 0xc9, 0x76, 0xbe, 0x9f, 0x0c, 0x24, 0xfe, 0xc0,
+      // type: bool, k = 13, val = true
+      0x68, 0x01,
+      // type: bool, k = 14, val = false
+      0x70, 0x00
   };
   // clang-format on
 
@@ -189,6 +192,18 @@ TEST(ProtoHelper, AsProtoInteger) {
     Double value = parser.AsDouble(12);
     ASSERT_OK(value.status());
     ASSERT_EQ(value.value(), static_cast<double>(-123456.789));
+  }
+
+  {
+    Bool value = parser.AsBool(13);
+    ASSERT_OK(value.status());
+    ASSERT_EQ(value.value(), static_cast<bool>(true));
+  }
+
+  {
+    Bool value = parser.AsBool(14);
+    ASSERT_OK(value.status());
+    ASSERT_EQ(value.value(), static_cast<bool>(false));
   }
 }
 
