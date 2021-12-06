@@ -30,11 +30,20 @@ pw_source_set("config") {
   friend = [ "./*" ]
 }
 
+pw_source_set("log_config") {
+  sources = [ "public/pw_log_rpc/internal/log_config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":config" ]
+  visibility = [ "./*" ]
+  friend = [ "./*" ]
+}
+
 pw_source_set("log_service") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_log_rpc/log_service.h" ]
   sources = [ "log_service.cc" ]
   deps = [
+    ":log_config",
     "$dir_pw_log",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_protobuf",

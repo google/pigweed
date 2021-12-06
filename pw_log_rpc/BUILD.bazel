@@ -24,7 +24,10 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "log_service",
-    srcs = ["log_service.cc"],
+    srcs = [
+        "log_service.cc",
+        "public/pw_log_rpc/internal/log_config.h",
+    ],
     hdrs = ["public/pw_log_rpc/log_service.h"],
     includes = ["public"],
     deps = [

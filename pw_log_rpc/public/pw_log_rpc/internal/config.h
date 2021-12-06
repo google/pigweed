@@ -15,6 +15,8 @@
 // Configuration macros for the pw_rpc module.
 #pragma once
 
+#include <cstddef>
+
 // Log filter modules are optionally tokenized, and thus their backing on-device
 // container can have different sizes. A token may be represented by a 32-bit
 // integer (though it is usually 2 bytes). Default the max module name size to
@@ -30,6 +32,16 @@
 #ifndef PW_LOG_RPC_CONFIG_MAX_FILTER_ID_SIZE
 #define PW_LOG_RPC_CONFIG_MAX_FILTER_ID_SIZE 4
 #endif  // PW_LOG_RPC_CONFIG_MAX_FILTER_ID_SIZE
+
+// The log level to use for this module. Logs below this level are omitted.
+#ifndef PW_LOG_RPC_CONFIG_LOG_LEVEL
+#define PW_LOG_RPC_CONFIG_LOG_LEVEL PW_LOG_LEVEL_INFO
+#endif  // PW_LOG_RPC_CONFIG_LOG_LEVEL
+
+// The log module name to use for this module.
+#ifndef PW_LOG_RPC_CONFIG_LOG_MODULE_NAME
+#define PW_LOG_RPC_CONFIG_LOG_MODULE_NAME "PW_LOG_RPC"
+#endif  // PW_LOG_RPC_CONFIG_LOG_MODULE_NAME
 
 namespace pw::log_rpc::cfg {
 inline constexpr size_t kMaxModuleNameBytes =

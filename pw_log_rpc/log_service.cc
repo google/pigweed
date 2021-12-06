@@ -12,7 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// clang-format off
+#include "pw_log_rpc/internal/log_config.h" // PW_LOG_* macros must be first.
+
 #include "pw_log_rpc/log_service.h"
+// clang-format on
 
 #include "pw_log/log.h"
 #include "pw_log/proto/log.pwpb.h"
@@ -29,7 +33,7 @@ void LogService::Listen(ConstByteSpan, rpc::RawServerWriter& writer) {
   }
 
   if (const Status status = drain.value()->Open(writer); !status.ok()) {
-    PW_LOG_ERROR("Could not start new log stream. %d",
+    PW_LOG_DEBUG("Could not start new log stream. %d",
                  static_cast<int>(status.code()));
   }
 }
