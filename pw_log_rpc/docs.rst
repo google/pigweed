@@ -9,6 +9,10 @@ reporting -- coming soon!
 .. warning::
   This module is under construction and might change in the future.
 
+-----------
+RPC Logging
+-----------
+
 How to Use
 ==========
 1. Set up RPC
@@ -144,6 +148,35 @@ with different priorities.
 Calling ``OpenUnrequestedLogStream()`` is a convenient way to set up a log
 stream that is started without the need to receive an RCP request for logs.
 
+-------------
+Log Filtering
+-------------
+A ``Filter`` anywhere in the path of a ``LogEntry`` proto, for example, in the
+``PW_LOG*`` macro implementation, or in an ``RpcLogDrain`` if using RPC logging.
+The log filtering service provides read and modify access to the ``Filter``\s
+registered in the ``FilterMap``.
+
+How to Use
+==========
+1. Set up RPC
+-------------
+Set up RPC for your target device. See :ref:`module-pw_rpc` for details.
+
+2. Create ``Filter``\s
+----------------------
+Provide each ``Filter`` with its own container for the ``FilterRules`` as big as
+the number of rules desired. These rules can be pre-poluated.
+
+3. Create a ``FilterMap`` and ``FilterService``
+-----------------------------------------------
+Set up the ``FilterMap`` with the filters than can be modified with the
+``FilterService``. Register the service with the RPC server.
+
+4. Use RPCs to retrieve and modify filter rules
+-----------------------------------------------
+
+Components Overview
+===================
 Filter::Rule
 ------------
 Contains a set of values that are compared against a log when set. All
@@ -163,24 +196,25 @@ conditions must be met for the rule to be met.
 
 Filter
 ------
-``Filter`` encapsulates a collection of zero or more ``Filter::Rule``\s and has
+Encapsulates a collection of zero or more ``Filter::Rule``\s and has
 an ID used to modify or retrieve its contents.
 
 FilterMap
 ---------
 Provides a convenient way to retrieve register filters by ID.
 
-Logging example
-===============
+----------------------------
+Logging with filters example
+----------------------------
 The following code shows a sample setup to defer the log handling to the
 ``RpcLogDrainThread`` to avoid having the log streaming block at the log
 callsite.
 
 main.cc
--------
+=======
 .. code-block:: cpp
 
-  #include "foo/foo_log.h"
+  #include "foo/log.h"
   #include "pw_log/log.h"
   #include "pw_thread/detached_thread.h"
   #include "pw_thread_stl/options.h"
@@ -188,7 +222,8 @@ main.cc
   namespace {
 
   void RegisterServices() {
-    pw::rpc::system_server::Server().RegisterService(foo_log::log_service);
+    pw::rpc::system_server::Server().RegisterService(foo::log::log_service);
+    pw::rpc::system_server::Server().RegisterService(foo::log::filter_service);
   }
   }  // namespace
 
@@ -196,25 +231,28 @@ main.cc
     PW_LOG_INFO("Deferred logging over RPC example");
     pw::rpc::system_server::Init();
     RegisterServices();
-    pw::thread::DetachedThread(pw::thread::stl::Options(), foo_log::log_thread);
+    pw::thread::DetachedThread(pw::thread::stl::Options(), foo::log::log_thread);
     pw::rpc::system_server::Start();
     return 0;
   }
 
-foo_log.cc
-----------
+foo/log.cc
+==========
 Example of a log backend implementation, where logs enter the ``MultiSink`` and
-log drains are set up.
+log drains and filters are set up.
 
 .. code-block:: cpp
 
-  #include "foo/foo_log.h"
+  #include "foo/log.h"
 
   #include <array>
   #include <cstdint>
 
   #include "pw_chrono/system_clock.h"
   #include "pw_log/proto_utils.h"
+  #include "pw_log_rpc/log_filter.h"
+  #include "pw_log_rpc/log_filter_map.h"
+  #include "pw_log_rpc/log_filter_service.h"
   #include "pw_log_rpc/log_service.h"
   #include "pw_log_rpc/rpc_log_drain.h"
   #include "pw_log_rpc/rpc_log_drain_map.h"
@@ -225,7 +263,7 @@ log drains are set up.
   #include "pw_sync/mutex.h"
   #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
-  namespace foo_log {
+  namespace foo::log {
   namespace {
   constexpr size_t kLogBufferSize = 5000;
   // Tokenized logs are typically 12-24 bytes.
@@ -259,6 +297,22 @@ log drains are set up.
   std::array<std::byte, kMaxLogEntrySize> log_encode_buffer
       PW_GUARDED_BY(log_encode_lock);
 
+  std::array<Filter::Rule, 2> logs_to_host_filter_rules;
+  std::array<Filter::Rule, 2> logs_to_server_filter_rules{{
+      {
+          .action = Filter::Rule::Action::kKeep,
+          .level_greater_than_or_equal = pw::log::FilterRule::Level::INFO_LEVEL,
+      },
+      {
+          .action = Filter::Rule::Action::kDrop,
+      },
+  }};
+  std::array<Filter, 2> filters{
+      Filter(std::as_bytes(std::span("HOST", 4)), logs_to_host_filter_rules),
+      Filter(std::as_bytes(std::span("WEB", 3)), logs_to_server_filter_rules),
+  };
+  pw::log_rpc::FilterMap filter_map(filters);
+
   extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
       pw_tokenizer_Payload metadata, const uint8_t message[], size_t size_bytes) {
     int64_t timestamp =
@@ -279,15 +333,16 @@ log drains are set up.
   pw::log_rpc::RpcLogDrainMap drain_map(drains);
   pw::log_rpc::RpcLogDrainThread log_thread(GetMultiSink(), drain_map);
   pw::log_rpc::LogService log_service(drain_map);
+  pw::log_rpc::FilterService filter_service(filter_map);
 
   pw::multisink::MultiSink& GetMultiSink() {
     static pw::multisink::MultiSink multisink(multisink_buffer);
     return multisink;
   }
-  }  // namespace foo_log
+  }  // namespace foo::log
 
 Logging in other source files
 -----------------------------
 To defer logging, other source files must simply include ``pw_log/log.h`` and
 use the :ref:`module-pw_log` APIs, as long as the source set that includes
-``foo_log.cc`` is setup as the log backend.
+``foo/log.cc`` is setup as the log backend.

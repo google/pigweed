@@ -160,12 +160,15 @@ message LogEntry {
   // optional bytes data = ?;
 }
 
-message LogRequest {
-  // This will include fields for configuring log filtering.
-}
+message LogRequest {}
 
 message LogEntries {
   repeated LogEntry entries = 1;
+}
+
+// RPC service for accessing logs.
+service Logs {
+  rpc Listen(LogRequest) returns (stream LogEntries);
 }
 
 message FilterRule {
@@ -220,9 +223,8 @@ message FilterIdListResponse {
   repeated bytes filter_id = 1 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 }
 
-// RPC service for accessing logs.
-service Logs {
-  rpc Listen(LogRequest) returns (stream LogEntries);
+// RPC service for retrieving and modifying log filters.
+service Filters {
   rpc SetFilter(SetFilterRequest) returns (pw.protobuf.Empty);
   rpc GetFilter(GetFilterRequest) returns (Filter);
   rpc ListFilterIds(FilterIdListRequest) returns (FilterIdListResponse);

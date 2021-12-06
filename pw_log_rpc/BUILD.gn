@@ -46,11 +46,23 @@ pw_source_set("log_service") {
     ":log_config",
     "$dir_pw_log",
     "$dir_pw_log:protos.pwpb",
+  ]
+  public_deps = [
+    ":rpc_log_drain",
+    "$dir_pw_log:protos.raw_rpc",
+  ]
+}
+
+pw_source_set("log_filter_service") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_log_rpc/log_filter_service.h" ]
+  sources = [ "log_filter_service.cc" ]
+  deps = [
+    "$dir_pw_log:protos.pwpb",
     "$dir_pw_protobuf",
   ]
   public_deps = [
     ":log_filter",
-    ":rpc_log_drain",
     "$dir_pw_log:protos.raw_rpc",
     "$dir_pw_protobuf:bytes_utils",
   ]
@@ -133,6 +145,20 @@ pw_test("log_service_test") {
   ]
 }
 
+pw_test("log_filter_service_test") {
+  sources = [ "log_filter_service_test.cc" ]
+  deps = [
+    ":log_filter",
+    ":log_filter_service",
+    "$dir_pw_log:protos.pwpb",
+    "$dir_pw_protobuf",
+    "$dir_pw_protobuf:bytes_utils",
+    "$dir_pw_result",
+    "$dir_pw_rpc/raw:test_method_context",
+    "$dir_pw_status",
+  ]
+}
+
 pw_test("log_filter_test") {
   sources = [ "log_filter_test.cc" ]
   deps = [
@@ -162,6 +188,7 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":log_filter_test",
+    ":log_filter_service_test",
     ":log_service_test",
     ":rpc_log_drain_test",
   ]

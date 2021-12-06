@@ -36,6 +36,19 @@ pw_cc_library(
         "//pw_log",
         "//pw_log:log_pwpb",
         "//pw_log:protos.raw_rpc",
+    ],
+)
+
+pw_cc_library(
+    name = "log_filter_service",
+    srcs = ["log_filter_service.cc"],
+    hdrs = ["public/pw_log_rpc/log_filter_service.h"],
+    includes = ["public"],
+    deps = [
+        ":log_filter",
+        "//pw_log",
+        "//pw_log:log_pwpb",
+        "//pw_log:protos.raw_rpc",
         "//pw_protobuf",
         "//pw_protobuf:bytes_utils",
     ],
@@ -116,6 +129,21 @@ pw_cc_test(
         "//pw_result",
         "//pw_rpc/raw:test_method_context",
         "//pw_status",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "log_filter_service_test",
+    srcs = ["log_filter_service_test.cc"],
+    deps = [
+        ":log_filter",
+        ":log_filter_service",
+        "//pw_log:log_pwpb",
+        "//pw_protobuf",
+        "//pw_protobuf:bytes_utils",
+        "//pw_result",
+        "//pw_rpc/raw:test_method_context",
         "//pw_unit_test",
     ],
 )
