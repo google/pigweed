@@ -62,11 +62,11 @@ instantly compile, flash, and run tests upon save. Combined with the GN-based
 build which expresses the full dependency tree, only the exact tests affected
 by a file change are run on saves.
 
-The demo below shows `pw_watch <module-pw_watch>`_ building for a
-STMicroelectronics STM32F429I-DISC1 development board, flashing the board with
-the affected test, and verifying the test runs as expected. Once this is set
-up, you can attach multiple devices to run tests in a distributed manner to
-reduce the time it takes to run tests.
+The demo below shows :ref:`module-pw_watch` building for a STMicroelectronics
+STM32F429I-DISC1 development board, flashing the board with the affected test,
+and verifying the test runs as expected. Once this is set up, you can attach
+multiple devices to run tests in a distributed manner to reduce the time it
+takes to run tests.
 
 .. image:: docs/images/pw_watch_on_device_demo.gif
   :width: 800
@@ -75,10 +75,10 @@ reduce the time it takes to run tests.
 ``pw_presubmit`` - Vacuum lint on every commit
 ----------------------------------------------
 Presubmit checks are essential tools, but they take work to set up, and
-projects don’t always get around to it. The
-`pw_presubmit <module-pw_presubmit>`_ module provides tools for setting up high
-quality presubmit checks for any project. We use this framework to run
-Pigweed’s presubmit on our workstations and in our automated building tools.
+projects don’t always get around to it. The :ref:`module-pw_presubmit` module
+provides tools for setting up high quality presubmit checks for any project. We
+use this framework to run Pigweed’s presubmit on our workstations and in our
+automated building tools.
 
 The ``pw_presubmit`` module includes ``pw format``, a tool that provides a
 unified interface for automatically formatting code in a variety of languages.
@@ -110,12 +110,12 @@ however, container solutions are a mixed bag for embedded systems development
 where one frequently needs access to native system resources like USB devices,
 or must operate on Windows.
 
-`pw_env_setup <module-pw_env_setup>`_ is our compromise solution for this
-problem that works on Mac, Windows, and Linux. It leverages the Chrome
-Infrastructure Packaging Deployment system (CIPD) to bootstrap a Python
-installation, which in turn inflates a virtual environment. The tooling is
-installed into your workspace, and makes no changes to your system. This
-tooling is designed to be reused by any project.
+:ref:`module-pw_env_setup` is our compromise solution for this problem that
+works on Mac, Windows, and Linux. It leverages the Chrome Infrastructure
+Packaging Deployment system (CIPD) to bootstrap a Python installation, which in
+turn inflates a virtual environment. The tooling is installed into your
+workspace, and makes no changes to your system. This tooling is designed to be
+reused by any project.
 
 .. image:: docs/images/pw_env_setup_demo.gif
   :width: 800
@@ -125,8 +125,8 @@ tooling is designed to be reused by any project.
 --------------------------------------------
 Unit testing is important, and Pigweed offers a portable library that’s broadly
 compatible with `Google Test <https://github.com/google/googletest>`_. Unlike
-Google Test, `pw_unit_test <module-pw_unit_test>`_ is built on top of embedded
-friendly primitives; for example, it does not use dynamic memory allocation.
+Google Test, :ref:`module-pw_unit_test` is built on top of embedded friendly
+primitives; for example, it does not use dynamic memory allocation.
 Additionally, it is easy to port to new target platforms by implementing the
 `test event handler interface <https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/public/pw_unit_test/event_handler.h>`_.
 
