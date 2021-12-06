@@ -86,6 +86,16 @@ class Sfixed64 : public internal::ProtoIntegerBase<int64_t> {
   using ProtoIntegerBase<int64_t>::ProtoIntegerBase;
 };
 
+class Float : public internal::ProtoIntegerBase<float> {
+ public:
+  using ProtoIntegerBase<float>::ProtoIntegerBase;
+};
+
+class Double : public internal::ProtoIntegerBase<double> {
+ public:
+  using ProtoIntegerBase<double>::ProtoIntegerBase;
+};
+
 // An object that represents a parsed `bytes` field or an error code. The
 // bytes are available via an stream::IntervalReader by GetBytesReader().
 //
@@ -316,6 +326,9 @@ class Message {
     return As<Sfixed64>(field_number);
   }
 
+  Float AsFloat(uint32_t field_number) { return As<Float>(field_number); }
+  Double AsDouble(uint32_t field_number) { return As<Double>(field_number); }
+
   // Parse a sub-field in the message given by `field_number` as another
   // message.
   Message AsMessage(uint32_t field_number) { return As<Message>(field_number); }
@@ -431,6 +444,12 @@ Fixed64 Message::Field::As<Fixed64>();
 
 template <>
 Sfixed64 Message::Field::As<Sfixed64>();
+
+template <>
+Float Message::Field::As<Float>();
+
+template <>
+Double Message::Field::As<Double>();
 
 // A helper for parsing `repeated` field. It implements an iterator interface
 // that only iterates through the fields of a given `field_number`.
