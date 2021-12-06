@@ -16,8 +16,13 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("nanopb.gni")
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
 
 # This file defines a GN source_set for an external installation of nanopb.
 # To use, checkout the nanopb source into a directory, then set the build arg
@@ -36,6 +41,7 @@ if (dir_pw_third_party_nanopb != "") {
       "$dir_pw_third_party_nanopb/pb_decode.h",
       "$dir_pw_third_party_nanopb/pb_encode.h",
     ]
+    public_deps = [ pw_third_party_nanopb_CONFIG ]
     sources = [
       "$dir_pw_third_party_nanopb/pb_common.c",
       "$dir_pw_third_party_nanopb/pb_decode.c",
@@ -63,4 +69,12 @@ if (dir_pw_third_party_nanopb != "") {
   }
   pw_python_group("generate_nanopb_proto") {
   }
+}
+
+config("disable_error_messages_config") {
+  defines = [ "PB_NO_ERRMSG=1" ]
+}
+
+pw_source_set("disable_error_messages") {
+  public_configs = [ ":disable_error_messages_config" ]
 }
