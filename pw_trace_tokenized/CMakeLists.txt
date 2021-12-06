@@ -39,8 +39,9 @@ pw_add_module_library(pw_trace_tokenized.trace_buffer
     pw_log
   PUBLIC_DEPS
     pw_ring_buffer
-    pw_tokenizer
     pw_status
+    pw_tokenizer
+    pw_trace_tokenized
     pw_varint
 )
 
