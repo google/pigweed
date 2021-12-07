@@ -81,6 +81,7 @@ pw_doc_group("docs") {
 pw_source_set("update_bundle") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    "$dir_pw_stream:interval_reader",
     dir_pw_blob_store,
     dir_pw_kvs,
     dir_pw_protobuf,

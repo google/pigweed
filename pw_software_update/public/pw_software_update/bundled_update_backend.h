@@ -19,6 +19,7 @@
 #include "pw_result/result.h"
 #include "pw_software_update/manifest_accessor.h"
 #include "pw_status/status.h"
+#include "pw_stream/interval_reader.h"
 #include "pw_stream/stream.h"
 
 namespace pw::software_update {
@@ -65,7 +66,7 @@ class BundledUpdateBackend {
   // match check), done after TUF bundle verification process if user_manifest
   // was provided as part of the bundle.
   virtual Status VerifyUserManifest(
-      [[maybe_unused]] stream::SeekableReader& user_manifest,
+      [[maybe_unused]] stream::IntervalReader& user_manifest,
       [[maybe_unused]] size_t update_bundle_offset) {
     return OkStatus();
   };
