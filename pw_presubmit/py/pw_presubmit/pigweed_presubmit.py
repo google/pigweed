@@ -376,43 +376,17 @@ _MODULES_THAT_TEST_WITH_BAZEL = [
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
                         'BUILD'))
-def bazel_test(ctx: PresubmitContext):
+def bazel_test(ctx: PresubmitContext) -> None:
     """Runs bazel test on each bazel compatible module"""
-    try:
-        call('bazel',
-             'test',
-             *_MODULES_THAT_TEST_WITH_BAZEL,
-             '--verbose_failures',
-             '--verbose_explanations',
-             '--worker_verbose',
-             '--test_output=errors',
-             cwd=ctx.root,
-             env=build.env_with_clang_vars())
-    except:
-        _LOG.info('If the Bazel build inexplicably fails while the '
-                  'other builds are passing, try deleting the Bazel cache:\n'
-                  '    rm -rf ~/.cache/bazel')
-        raise
+    build.bazel(ctx, 'test', *_MODULES_THAT_TEST_WITH_BAZEL,
+                '--test_output=errors')
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
                         'BUILD'))
-def bazel_build(ctx: PresubmitContext):
-    """Runs Bazel build on each Bazel compatible module"""
-    try:
-        call('bazel',
-             'build',
-             *_MODULES_THAT_BUILD_WITH_BAZEL,
-             '--verbose_failures',
-             '--verbose_explanations',
-             '--worker_verbose',
-             cwd=ctx.root,
-             env=build.env_with_clang_vars())
-    except:
-        _LOG.info('If the Bazel build inexplicably fails while the '
-                  'other builds are passing, try deleting the Bazel cache:\n'
-                  '    rm -rf ~/.cache/bazel')
-        raise
+def bazel_build(ctx: PresubmitContext) -> None:
+    """Runs Bazel build on each Bazel compatible module."""
+    build.bazel(ctx, 'build', *_MODULES_THAT_BUILD_WITH_BAZEL)
 
 
 #
