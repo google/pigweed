@@ -20,28 +20,27 @@ from typing import Dict, List, Iterable, Optional, Union
 
 from prompt_toolkit.completion import WordCompleter
 
-import pw_console.python_logging
 from pw_console.console_app import ConsoleApp
-
 from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
+from pw_console.plugin_mixin import PluginMixin
+import pw_console.python_logging
+from pw_console.widgets import WindowPane, WindowPaneToolbar
 
 
 class PwConsoleEmbed:
     """Embed class for customizing the console before startup."""
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(
-        self,
-        global_vars=None,
-        local_vars=None,
-        loggers: Optional[Union[Dict[str, Iterable[logging.Logger]],
-                                Iterable]] = None,
-        test_mode=False,
-        repl_startup_message: Optional[str] = None,
-        help_text: Optional[str] = None,
-        app_title: Optional[str] = None,
-        config_file_path: Optional[Union[str, Path]] = None,
-    ) -> None:
+    def __init__(self,
+                 global_vars=None,
+                 local_vars=None,
+                 loggers: Optional[Union[Dict[str, Iterable[logging.Logger]],
+                                         Iterable]] = None,
+                 test_mode=False,
+                 repl_startup_message: Optional[str] = None,
+                 help_text: Optional[str] = None,
+                 app_title: Optional[str] = None,
+                 config_file_path: Optional[Union[str, Path]] = None) -> None:
         """Call this to embed pw console at the call point within your program.
 
         Example usage: ::
@@ -111,6 +110,39 @@ class PwConsoleEmbed:
 
         self.setup_python_logging_called = False
         self.hidden_by_default_windows: List[str] = []
+        self.window_plugins: List[WindowPane] = []
+        self.top_toolbar_plugins: List[WindowPaneToolbar] = []
+        self.bottom_toolbar_plugins: List[WindowPaneToolbar] = []
+
+    def add_window_plugin(self, window_pane: WindowPane) -> None:
+        """Include a custom window pane plugin.
+
+        Args:
+            window_pane: Any instance of the WindowPane class.
+        """
+        self.window_plugins.append(window_pane)
+
+    def add_top_toolbar(self, toolbar: WindowPaneToolbar) -> None:
+        """Include a toolbar plugin to display on the top of the screen.
+
+        Top toolbars appear above all window panes and just below the main menu
+        bar. They span the full width of the screen.
+
+        Args:
+            toolbar: Instance of the WindowPaneToolbar class.
+        """
+        self.top_toolbar_plugins.append(toolbar)
+
+    def add_bottom_toolbar(self, toolbar: WindowPaneToolbar) -> None:
+        """Include a toolbar plugin to display at the bottom of the screen.
+
+        Bottom toolbars appear below all window panes and span the full width of
+        the screen.
+
+        Args:
+            toolbar: Instance of the WindowPaneToolbar class.
+        """
+        self.bottom_toolbar_plugins.append(toolbar)
 
     def add_sentence_completer(self,
                                word_meta_dict: Dict[str, str],
@@ -167,6 +199,7 @@ class PwConsoleEmbed:
         pw_console.python_logging.setup_python_logging(last_resort_filename)
 
     def hide_windows(self, *window_titles):
+        """Hide window panes specified by title on console startup."""
         for window_title in window_titles:
             self.hidden_by_default_windows.append(window_title)
 
@@ -188,6 +221,23 @@ class PwConsoleEmbed:
             self.setup_python_logging()
         self._setup_log_panes()
 
+        # Add window pane plugins to the layout.
+        for window_pane in self.window_plugins:
+            window_pane.application = self.console_app
+            self.console_app.window_manager.add_pane(window_pane)
+
+        # Add toolbar plugins to the layout.
+        for toolbar in self.top_toolbar_plugins:
+            toolbar.application = self.console_app
+            self.console_app.window_manager.add_top_toolbar(toolbar)
+        for toolbar in self.bottom_toolbar_plugins:
+            toolbar.application = self.console_app
+            self.console_app.window_manager.add_bottom_toolbar(toolbar)
+
+        # Rebuild prompt_toolkit containers, menu items, and help content with
+        # any new plugins added above.
+        self.console_app.refresh_layout()
+
         # Load external config if passed in.
         if self.config_file_path:
             self.console_app.load_clean_config(self.config_file_path)
@@ -196,6 +246,17 @@ class PwConsoleEmbed:
 
         # Start a thread for running user code.
         self.console_app.start_user_code_thread()
+
+        # Startup any background threads and tasks required by plugins.
+        for window_pane in self.window_plugins:
+            if isinstance(window_pane, PluginMixin):
+                window_pane.plugin_start()
+        for toolbar in self.bottom_toolbar_plugins:
+            if isinstance(toolbar, PluginMixin):
+                toolbar.plugin_start()
+        for toolbar in self.top_toolbar_plugins:
+            if isinstance(toolbar, PluginMixin):
+                toolbar.plugin_start()
 
         # Start the prompt_toolkit UI app.
         asyncio.run(self.console_app.run(test_mode=self.test_mode),

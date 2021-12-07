@@ -613,6 +613,11 @@ class ConsoleApp:
     def apply_window_config(self) -> None:
         self.window_manager.apply_config(self.prefs)
 
+    def refresh_layout(self) -> None:
+        self.window_manager.update_root_container_body()
+        self.update_menu_items()
+        self._update_help_window()
+
     def add_log_handler(
             self,
             window_title: str,
@@ -634,9 +639,7 @@ class ConsoleApp:
         for logger in logger_instances:
             _add_log_handler_to_pane(logger, existing_log_pane, log_level_name)
 
-        self.window_manager.update_root_container_body()
-        self.update_menu_items()
-        self._update_help_window()
+        self.refresh_layout()
         return existing_log_pane
 
     def _user_code_thread_entry(self):

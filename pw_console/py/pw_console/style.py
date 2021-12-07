@@ -309,22 +309,58 @@ def generate_styles(theme_name='dark'):
 
         # Progress Bar Styles
         # Entire set of ProgressBars - no title is used in pw_console
-        "title": "",
-        # Bar title
-        "label": "bold",
-        "percentage": "{}".format(theme.green_accent),
-        "bar": "{}".format(theme.magenta_accent),
+        'title': '',
+        # Actual bar title
+        'label': 'bold',
+        'percentage': '{}'.format(theme.green_accent),
+        'bar': '{}'.format(theme.magenta_accent),
         # Filled part of the bar
-        "bar-a": "{} bold".format(theme.cyan_accent),
+        'bar-a': '{} bold'.format(theme.cyan_accent),
         # End of current progress
-        "bar-b": "{} bold".format(theme.purple_accent),
+        'bar-b': '{} bold'.format(theme.purple_accent),
         # Empty part of the bar
-        "bar-c": "",
+        'bar-c': '',
         # current/total counts
-        "current": "{}".format(theme.cyan_accent),
-        "total": "{}".format(theme.cyan_accent),
-        "time-elapsed": "{}".format(theme.purple_accent),
-        "time-left": "{}".format(theme.magenta_accent),
+        'current': '{}'.format(theme.cyan_accent),
+        'total': '{}'.format(theme.cyan_accent),
+        'time-elapsed': '{}'.format(theme.purple_accent),
+        'time-left': '{}'.format(theme.magenta_accent),
+
+        # Named theme color classes for use in user plugins.
+        'theme-fg-red': '{}'.format(theme.red_accent),
+        'theme-fg-orange': '{}'.format(theme.orange_accent),
+        'theme-fg-yellow': '{}'.format(theme.yellow_accent),
+        'theme-fg-green': '{}'.format(theme.green_accent),
+        'theme-fg-cyan': '{}'.format(theme.cyan_accent),
+        'theme-fg-blue': '{}'.format(theme.blue_accent),
+        'theme-fg-purple': '{}'.format(theme.purple_accent),
+        'theme-fg-magenta': '{}'.format(theme.magenta_accent),
+        'theme-bg-red': 'bg:{}'.format(theme.red_accent),
+        'theme-bg-orange': 'bg:{}'.format(theme.orange_accent),
+        'theme-bg-yellow': 'bg:{}'.format(theme.yellow_accent),
+        'theme-bg-green': 'bg:{}'.format(theme.green_accent),
+        'theme-bg-cyan': 'bg:{}'.format(theme.cyan_accent),
+        'theme-bg-blue': 'bg:{}'.format(theme.blue_accent),
+        'theme-bg-purple': 'bg:{}'.format(theme.purple_accent),
+        'theme-bg-magenta': 'bg:{}'.format(theme.magenta_accent),
+
+        'theme-bg-active': 'bg:{}'.format(theme.active_bg),
+        'theme-fg-active': '{}'.format(theme.active_fg),
+
+        'theme-bg-inactive': 'bg:{}'.format(theme.inactive_bg),
+        'theme-fg-inactive': '{}'.format(theme.inactive_fg),
+
+        'theme-fg-default': '{}'.format(theme.default_fg),
+        'theme-bg-default': 'bg:{}'.format(theme.default_bg),
+
+        'theme-fg-dim': '{}'.format(theme.dim_fg),
+        'theme-bg-dim': 'bg:{}'.format(theme.dim_bg),
+
+        'theme-bg-dialog': 'bg:{}'.format(theme.dialog_bg),
+        'theme-bg-line-highlight': 'bg:{}'.format(theme.line_highlight_bg),
+
+        'theme-bg-button-active': 'bg:{}'.format(theme.button_active_bg),
+        'theme-bg-button-inactive': 'bg:{}'.format(theme.button_inactive_bg),
     } # yapf: disable
 
     return Style.from_dict(pw_console_styles)

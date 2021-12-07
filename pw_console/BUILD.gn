@@ -22,6 +22,7 @@ pw_doc_group("docs") {
     "docs.rst",
     "embedding.rst",
     "internals.rst",
+    "plugins.rst",
     "py/pw_console/docs/user_guide.rst",
     "testing.rst",
   ]

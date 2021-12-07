@@ -19,7 +19,7 @@ import functools
 from itertools import chain
 import logging
 import operator
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, List
 
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import (
@@ -32,6 +32,7 @@ from prompt_toolkit.widgets import MenuItem
 from pw_console.console_prefs import ConsolePrefs, error_unknown_window
 from pw_console.log_pane import LogPane
 import pw_console.widgets.checkbox
+from pw_console.widgets import WindowPaneToolbar
 from pw_console.window_list import WindowList, DisplayMode
 
 _LOG = logging.getLogger(__package__)
@@ -56,6 +57,8 @@ class WindowManager:
         self.window_lists: collections.deque = collections.deque()
         self.window_lists.append(WindowList(self))
         self.key_bindings = self._create_key_bindings()
+        self.top_toolbars: List[WindowPaneToolbar] = []
+        self.bottom_toolbars: List[WindowPaneToolbar] = []
 
     def _create_key_bindings(self) -> KeyBindings:
         bindings = KeyBindings()
@@ -117,6 +120,12 @@ class WindowManager:
         for empty_list in empty_lists:
             self.window_lists.remove(empty_list)
 
+    def add_top_toolbar(self, toolbar: WindowPaneToolbar) -> None:
+        self.top_toolbars.append(toolbar)
+
+    def add_bottom_toolbar(self, toolbar: WindowPaneToolbar) -> None:
+        self.bottom_toolbars.append(toolbar)
+
     def create_root_container(self):
         """Create a vertical or horizontal split container for all active
         panes."""
@@ -143,7 +152,12 @@ class WindowManager:
                 padding_char='│',
                 padding_style='class:pane_separator',
             )
-        return HSplit([split])
+
+        split_items = []
+        split_items.extend(self.top_toolbars)
+        split_items.append(split)
+        split_items.extend(self.bottom_toolbars)
+        return HSplit(split_items)
 
     def update_root_container_body(self):
         # Replace the root MenuContainer body with the new split.

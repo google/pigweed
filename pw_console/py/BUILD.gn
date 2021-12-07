@@ -40,6 +40,7 @@ pw_python_package("py") {
     "pw_console/log_view.py",
     "pw_console/mouse.py",
     "pw_console/pigweed_code_style.py",
+    "pw_console/plugin_mixin.py",
     "pw_console/progress_bar/__init__.py",
     "pw_console/progress_bar/progress_bar_impl.py",
     "pw_console/progress_bar/progress_bar_state.py",

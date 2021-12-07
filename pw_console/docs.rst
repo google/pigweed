@@ -44,6 +44,7 @@ Guides
 
   py/pw_console/docs/user_guide
   embedding
+  plugins
   testing
   internals
 
