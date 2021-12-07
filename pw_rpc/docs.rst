@@ -25,6 +25,35 @@ documents:
 
   This documentation is under construction.
 
+Implementations
+===============
+Pigweed provides several client and server implementations of ``pw_rpc``.
+
+.. list-table::
+  :header-rows: 1
+
+  * - Language
+    - Server
+    - Client
+  * - C++ (raw)
+    - ✅
+    - ✅
+  * - C++ (Nanopb)
+    - ✅
+    - ✅
+  * - C++ (pw_protobuf)
+    - planned
+    - planned
+  * - Java
+    -
+    - in development
+  * - Python
+    -
+    - ✅
+  * - TypeScript
+    -
+    - in development
+
 RPC semantics
 =============
 The semantics of ``pw_rpc`` are similar to `gRPC

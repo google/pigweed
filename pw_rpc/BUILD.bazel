@@ -271,13 +271,6 @@ pw_cc_test(
     ],
 )
 
-proto_library(
-    name = "packet_proto",
-    srcs = [
-        "internal/packet.proto",
-    ],
-)
-
 pw_cc_test(
     name = "server_test",
     srcs = [
@@ -316,7 +309,12 @@ proto_library(
 
 js_proto_library(
     name = "packet_proto_tspb",
-    protos = [":packet_proto"],
+    protos = [":internal_packet_proto"],
+)
+
+java_lite_proto_library(
+    name = "packet_proto_java_lite",
+    deps = [":internal_packet_proto"],
 )
 
 py_proto_library(
