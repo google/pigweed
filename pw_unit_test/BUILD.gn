@@ -27,6 +27,15 @@ declare_args() {
   pw_unit_test_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
 }
 
+# This pool limits the maximum number of unit tests that may run in parallel.
+# Despite the fact that this is a single GN "target", each toolchain owns its
+# own version of this pool, meaning pw_unit_test_POOL_DEPTH may be set
+# differently across targets in a single build, and build steps in one toolchain
+# will not consume pool resources of steps from another toolchain.
+pool("unit_test_pool") {
+  depth = pw_unit_test_POOL_DEPTH
+}
+
 config("default_config") {
   include_dirs = [
     "public",

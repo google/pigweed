@@ -1,8 +1,8 @@
 .. _module-pw_unit_test:
 
-------------
+============
 pw_unit_test
-------------
+============
 ``pw_unit_test`` unit testing library with a `Google Test`_-compatible API,
 built on top of embedded-friendly primitives.
 
@@ -23,8 +23,9 @@ Pigweed.
 
   This documentation is currently incomplete.
 
+------------------
 Writing unit tests
-==================
+------------------
 
 ``pw_unit_test``'s interface is largely compatible with `Google Test`_. Refer to
 the Google Test documentation for examples of to define unit test cases.
@@ -35,11 +36,12 @@ the Google Test documentation for examples of to define unit test cases.
   request a feature addition, please
   `let us know <mailto:pigweed@googlegroups.com>`_.
 
+------------------------
 Using the test framework
-========================
+------------------------
 
 The EventHandler interface
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+==========================
 The ``EventHandler`` class in ``public/pw_unit_test/event_handler.h`` defines
 the interface through which ``pw_unit_test`` communicates the results of its
 test runs. A platform using ``pw_unit_test`` must register an event handler with
@@ -87,7 +89,7 @@ of getting started using ``pw_unit_test``.
 .. _running-tests:
 
 Running tests
-^^^^^^^^^^^^^
+=============
 To run unit tests, link the tests into a single binary with the unit testing
 framework, register an event handler, and call the ``RUN_ALL_TESTS`` macro.
 
@@ -110,7 +112,7 @@ framework, register an event handler, and call the ``RUN_ALL_TESTS`` macro.
   }
 
 Test filtering
-^^^^^^^^^^^^^^
+==============
 If using C++17, filters can be set on the test framework to run only a subset of
 the registered unit tests. This is useful when many tests are bundled into a
 single application image.
@@ -122,7 +124,7 @@ Currently, only a test suite filter is supported. This is set by calling
   Test filtering is only supported in C++17.
 
 Build system integration
-^^^^^^^^^^^^^^^^^^^^^^^^
+========================
 ``pw_unit_test`` integrates directly into Pigweed's GN build system. To define
 simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a target
 which configures the test framework as described in the :ref:`running-tests`
@@ -178,7 +180,6 @@ pw_test template
     sources = [ "large_test.cc" ]
     enable_if = device_has_1m_flash
   }
-
 
 pw_test_group template
 ----------------------
@@ -241,6 +242,65 @@ the facade layer.
    careful when running a facade test on a system that heavily depends on the
    facade being tested.
 
+Build arguments
+---------------
+
+.. option:: pw_unit_test_AUTOMATIC_RUNNER <executable>
+
+  Path to a test runner to automatically run unit tests after they are built.
+
+  If set, a ``pw_test`` target's ``<target_name>.run`` action will invoke the
+  test runner specified by this argument, passing the path to the unit test to
+  run. If this is unset, the ``pw_test`` target's ``<target_name>.run`` step
+  will do nothing.
+
+  Targets that don't support parallelized execution of tests (e.g. a on-device
+  test runner that must flash a device and run the test in serial) should
+  set pw_unit_test_POOL_DEPTH to 1.
+
+  Type: string (name of an executable on the PATH, or path to an executable)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_PUBLIC_DEPS <dependencies>
+
+  Additional dependencies required by all unit test targets. (For example, if
+  using a different test library like Googletest.)
+
+  Type: list of strings (list of dependencies as GN paths)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_MAIN <source_set>
+
+  Implementation of a main function for ``pw_test`` unit test binaries.
+
+  Type: string (GN path to a source set)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_POOL_DEPTH <pool_depth>
+
+  The maximum number of unit tests that may be run concurrently for the
+  current toolchain. Setting this to 0 disables usage of a pool, allowing
+  unlimited parallelization.
+
+  Note: A single target with two toolchain configurations (e.g. release/debug)
+        will use two separate test runner pools by default. Set
+        pw_unit_test_POOL_TOOLCHAIN to the same toolchain for both targets to
+        merge the pools and force serialization.
+
+  Type: integer
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_POOL_TOOLCHAIN <toolchain>
+
+  The toolchain to use when referring to the pw_unit_test runner pool. When
+  this is disabled, the current toolchain is used. This means that every
+  toolchain will use its own pool definition. If two toolchains should share
+  the same pool, this argument should be by one of the toolchains to the GN
+  path of the other toolchain.
+
+  Type: string (GN path to a toolchain)
+  Usage: toolchain-controlled only
+
 RPC service
 ===========
 ``pw_unit_test`` provides an RPC service which runs unit tests on demand and
@@ -285,7 +345,7 @@ logging.
   run_tests(client.rpcs())
 
 pw_unit_test.rpc
-^^^^^^^^^^^^^^^^
+----------------
 .. automodule:: pw_unit_test.rpc
   :members: EventHandler, run_tests
 
