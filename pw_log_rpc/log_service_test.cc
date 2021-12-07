@@ -938,6 +938,30 @@ TEST_F(LogServiceTest, FilterLogs) {
   EXPECT_EQ(entries_found, 3u);
 }
 
+TEST_F(LogServiceTest, ReopenClosedLogStreamWithAcquiredBuffer) {
+  const uint32_t drain_channel_id = kCloseWriterOnErrorDrainId;
+  auto drain = drain_map_.GetDrainFromChannelId(drain_channel_id);
+  ASSERT_TRUE(drain.ok());
+
+  LogService log_service(drain_map_);
+  rpc::RawFakeChannelOutput<10, 128, 512> output;
+  rpc::Channel channel(rpc::Channel::Create<drain_channel_id>(&output));
+  rpc::Server server(std::span(&channel, 1));
+
+  // Request logs.
+  rpc::RawServerWriter writer = rpc::RawServerWriter::Open<Logs::Listen>(
+      server, drain_channel_id, log_service);
+  EXPECT_EQ(drain.value()->Open(writer), OkStatus());
+  // This drain closes on errors.
+  EXPECT_EQ(drain.value()->Flush(), OkStatus());
+
+  // Request log stream with a new writer.
+  writer = rpc::RawServerWriter::Open<Logs::Listen>(
+      server, drain_channel_id, log_service);
+  EXPECT_EQ(drain.value()->Open(writer), OkStatus());
+  EXPECT_EQ(drain.value()->Flush(), OkStatus());
+}
+
 void VerifyFilterRule(protobuf::Decoder& decoder,
                       const Filter::Rule& expected_rule) {
   ASSERT_TRUE(decoder.Next().ok());
