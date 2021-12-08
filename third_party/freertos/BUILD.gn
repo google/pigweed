@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("freertos.gni")
@@ -22,7 +23,24 @@ import("freertos.gni")
 # To use, checkout the freertos source into a directory, then set the build arg
 # dir_pw_third_party_freertos to point to that directory. The freertos library
 # will be available in GN at "$dir_pw_third_party/freertos".
-if (dir_pw_third_party_freertos != "") {
+if (dir_pw_third_party_freertos == "") {
+  group("freertos") {
+  }
+} else if (pw_third_party_freertos_PORT == "") {
+  pw_error("freertos") {
+    message_lines = [
+      "FreeRTOS is being used by $current_toolchain, but pw_third_party_freertos_PORT is not set.",
+      "If this toolchain is intentionally using FreeRTOS, ensure your toolchain configuration for this target sets pw_third_party_freertos_PORT.",
+    ]
+  }
+} else if (pw_third_party_freertos_CONFIG == "") {
+  pw_error("freertos") {
+    message_lines = [
+      "FreeRTOS is being used by $current_toolchain, but pw_third_party_freertos_CONFIG is not set.",
+      "If this toolchain is intentionally using FreeRTOS, ensure your toolchain configuration for this target sets pw_third_party_freertos_CONFIG.",
+    ]
+  }
+} else {
   config("disable_warnings") {
     cflags = [
       "-Wno-error=unused-parameter",
@@ -117,9 +135,6 @@ if (dir_pw_third_party_freertos != "") {
         [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM4F/portmacro.h" ]
     sources = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM4F/port.c" ]
     configs = [ ":disable_warnings" ]
-  }
-} else {
-  group("freertos") {
   }
 }
 
