@@ -1,0 +1,51 @@
+// Copyright 2021 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+#pragma once
+
+// PW_SYSTEM_LOG_BUFFER_SIZE is the log buffer size which determines how many
+// log entries can be buffered prior to streaming them.
+//
+// Defaults to 4KiB.
+#ifndef PW_SYSTEM_LOG_BUFFER_SIZE
+#define PW_SYSTEM_LOG_BUFFER_SIZE 4096
+#endif  // PW_SYSTEM_LOG_BUFFER_SIZE
+
+// PW_SYSTEM_MAX_LOG_ENTRY_SIZE limits the proto-encoded log entry size. This
+// value might depend on a target interface's MTU.
+//
+// Defaults to 512B.
+#ifndef PW_SYSTEM_MAX_LOG_ENTRY_SIZE
+#define PW_SYSTEM_MAX_LOG_ENTRY_SIZE 512
+#endif  // PW_SYSTEM_MAX_LOG_ENTRY_SIZE
+
+// PW_SYSTEM_MAX_TRANSMISSION_UNIT target's MTU.
+//
+// Defaults to 512B.
+#ifndef PW_SYSTEM_MAX_TRANSMISSION_UNIT
+#define PW_SYSTEM_MAX_TRANSMISSION_UNIT 512
+#endif  // PW_SYSTEM_MAX_TRANSMISSION_UNIT
+
+// PW_SYSTEM_DEFAULT_CHANNEL_ID RPC channel ID to host.
+//
+// Defaults to 1.
+#ifndef PW_SYSTEM_DEFAULT_CHANNEL_ID
+#define PW_SYSTEM_DEFAULT_CHANNEL_ID 1
+#endif  // PW_SYSTEM_DEFAULT_CHANNEL_ID
+
+// PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS RPC HDLC default address.
+//
+// Defaults to 82.
+#ifndef PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS
+#define PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS 82
+#endif  // PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS

@@ -12,6 +12,122 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+pw_cc_library(
+    name = "config",
+    hdrs = [
+        "public/pw_system/config.h",
+    ],
+)
+
+pw_cc_library(
+    name = "log",
+    srcs = [
+        "log.cc",
+    ],
+    hdrs = [
+        "pw_system_private/log.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":logger",
+        ":rpc",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_log:proto_utils",
+        "//pw_log_rpc:log_service",
+        "//pw_log_rpc:rpc_log_drain",
+        "//pw_log_rpc:rpc_log_drain_thread",
+        "//pw_log_tokenized:metadata",
+        "//pw_multisink",
+        "//pw_result",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_tokenizer",
+    ],
+)
+
+pw_cc_library(
+    name = "rpc",
+    srcs = [
+        "rpc.cc",
+    ],
+    hdrs = [
+        "pw_system_private/rpc.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":io",
+        ":target_io",
+        "//pw_assert",
+        "//pw_hdlc:pw_rpc",
+        "//pw_hdlc:rpc_channel_output",
+        "//pw_rpc:synchronized_channel_output",
+        "//pw_rpc/system_server:facade",
+        "//pw_sync:mutex",
+        "//pw_thread:thread_core",
+    ],
+)
+
+pw_cc_library(
+    name = "io",
+    hdrs = [
+        "public/pw_system/io.h",
+    ],
+    deps = [
+        "//pw_stream",
+    ],
+)
+
+pw_cc_library(
+    name = "init",
+    srcs = [
+        "init.cc",
+    ],
+    hdrs = [
+        "public/pw_system/init.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":log",
+        ":rpc",
+        "//pw_rpc/nanopb:echo_service",
+        "//pw_thread:thread",
+    ],
+)
+
+# TODO(cachinchilla): Make the target provide this.
+pw_cc_library(
+    name = "target_io",
+    srcs = [
+        "target_io.cc",
+    ],
+    includes = ["public"],
+    deps = [
+        ":io",
+        "//pw_stream",
+        "//pw_stream:sys_io_stream",
+        "//pw_thread_freertos:thread",
+    ],
+)
+
+# TODO(cachinchilla): Make the target provide this.
+pw_cc_library(
+    name = "target_thread_options",
+    hdrs = [
+        "public/pw_system/thread_options.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_thread_freertos:thread",
+    ],
+)

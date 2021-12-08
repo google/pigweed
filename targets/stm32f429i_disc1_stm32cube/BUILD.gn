@@ -20,6 +20,7 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_system/system_target.gni")
 import("$dir_pw_third_party/stm32cube/stm32cube.gni")
+import("$dir_pw_tokenizer/backend.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 
 config("pw_malloc_active") {
@@ -65,6 +66,7 @@ if (current_toolchain != default_toolchain) {
   pw_executable("demo") {
     deps = [
       "$dir_pw_log",
+      "$dir_pw_system:init",
       "$dir_pw_third_party/freertos",
       "$dir_pw_thread:thread",
       "$dir_pw_thread:thread_core",
@@ -81,10 +83,8 @@ if (dir_pw_third_party_stm32cube_f4 != "") {
 
     link_deps = [ "$dir_pigweed/targets/stm32f429i_disc1_stm32cube:pre_init" ]
     build_args = {
-      #TODO: remove dependency on stm32f429i-disc1 rpc server.
-      pw_rpc_system_server_BACKEND =
-          "$dir_pigweed/targets/stm32f429i_disc1:system_rpc_server"
-
+      pw_log_BACKEND = dir_pw_log_tokenized
+      pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = "//pw_system:log"
       pw_third_party_freertos_CONFIG = "$dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f4xx_freertos_config"
       pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm4f"
       pw_sys_io_BACKEND = dir_pw_sys_io_stm32cube
@@ -111,10 +111,7 @@ if (dir_pw_third_party_stm32cube_f4 != "") {
   }
 
   group("demo_app") {
-    deps = [
-      ":demo(:stm32f429i_disc1_stm32cube.size_optimized)",
-      "$dir_pigweed:pigweed_default(//targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube.size_optimized)",
-    ]
+    deps = [ ":demo(:stm32f429i_disc1_stm32cube.size_optimized)" ]
   }
 } else {
   pw_error("demo_app") {
