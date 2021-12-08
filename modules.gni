@@ -105,6 +105,7 @@ declare_args() {
   dir_pw_sys_io_arduino = get_path_info("pw_sys_io_arduino", "abspath")
   dir_pw_sys_io_mcuxpresso = get_path_info("pw_sys_io_mcuxpresso", "abspath")
   dir_pw_sys_io_stdio = get_path_info("pw_sys_io_stdio", "abspath")
+  dir_pw_sys_io_stm32cube = get_path_info("pw_sys_io_stm32cube", "abspath")
   dir_pw_system = get_path_info("pw_system", "abspath")
   dir_pw_target_runner = get_path_info("pw_target_runner", "abspath")
   dir_pw_thread = get_path_info("pw_thread", "abspath")
