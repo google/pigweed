@@ -100,6 +100,24 @@ if (dir_pw_third_party_freertos != "") {
       pw_third_party_freertos_PORT,
     ]
   }
+
+  # ARM CM4F port of FreeRTOS.
+  config("arm_cm4f_includes") {
+    include_dirs = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM4F" ]
+    visibility = [ ":arm_cm4f" ]
+  }
+
+  pw_source_set("arm_cm4f") {
+    public_configs = [
+      ":arm_cm4f_includes",
+      ":public_includes",
+    ]
+    public_deps = [ pw_third_party_freertos_CONFIG ]
+    public =
+        [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM4F/portmacro.h" ]
+    sources = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM4F/port.c" ]
+    configs = [ ":disable_warnings" ]
+  }
 } else {
   group("freertos") {
   }
