@@ -18,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/strings/split_string.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 
 using fuchsia::bluetooth::Bool;
@@ -346,27 +345,6 @@ std::optional<bt::PeerId> PeerIdFromString(const std::string& id) {
     return std::nullopt;
   }
   return bt::PeerId(value);
-}
-
-std::optional<bt::DeviceAddressBytes> AddressBytesFromString(const std::string& addr) {
-  if (addr.size() != 17)
-    return std::nullopt;
-
-  auto split = fxl::SplitString(std::string_view(addr.data(), addr.size()), ":",
-                                fxl::kKeepWhitespace, fxl::kSplitWantAll);
-  if (split.size() != 6)
-    return std::nullopt;
-
-  std::array<uint8_t, 6> bytes;
-  size_t index = 5;
-  for (const auto& octet_str : split) {
-    uint8_t octet;
-    if (!fxl::StringToNumberWithError<uint8_t>(octet_str, &octet, fxl::Base::k16))
-      return std::nullopt;
-    bytes[index--] = octet;
-  }
-
-  return bt::DeviceAddressBytes(bytes);
 }
 
 ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error) {

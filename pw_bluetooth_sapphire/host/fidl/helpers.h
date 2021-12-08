@@ -43,10 +43,6 @@ namespace bthost::fidl_helpers {
 // interfaces have been converted to use integer IDs.
 std::optional<bt::PeerId> PeerIdFromString(const std::string& id);
 
-// Convert a string of the form "XX:XX:XX:XX:XX" to the DeviceAddressBytes it represents.
-// returns nullopt when the conversion fails (due to wrong format)
-std::optional<bt::DeviceAddressBytes> AddressBytesFromString(const std::string& addr);
-
 // Functions for generating a FIDL bluetooth::Status
 
 fuchsia::bluetooth::ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error);
