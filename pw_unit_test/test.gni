@@ -33,6 +33,12 @@ declare_args() {
   # Usage: toolchain-controlled only
   pw_unit_test_AUTOMATIC_RUNNER = ""
 
+  # Optional list of arguments to forward to the automatic runner.
+  #
+  # Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
+  # Usage: toolchain-controlled only
+  pw_unit_test_AUTOMATIC_RUNNER_ARGS = []
+
   # Additional dependencies required by all unit test targets. (For example, if
   # using a different test library like Googletest.)
   #
@@ -232,6 +238,9 @@ template("pw_test") {
         "--test",
         "<TARGET_FILE(:$_test_to_run)>",
       ]
+      if (pw_unit_test_AUTOMATIC_RUNNER_ARGS != []) {
+        args += [ "--" ] + pw_unit_test_AUTOMATIC_RUNNER_ARGS
+      }
       stamp = true
     }
 

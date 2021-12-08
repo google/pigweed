@@ -261,6 +261,14 @@ Build arguments
   Type: string (name of an executable on the PATH, or path to an executable)
   Usage: toolchain-controlled only
 
+.. option:: pw_unit_test_AUTOMATIC_RUNNER_ARGS <args>
+
+  An optional list of strings to pass as args to the test runner specified
+  by pw_unit_test_AUTOMATIC_RUNNER.
+
+  Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
+  Usage: toolchain-controlled only
+
 .. option:: pw_unit_test_PUBLIC_DEPS <dependencies>
 
   Additional dependencies required by all unit test targets. (For example, if
