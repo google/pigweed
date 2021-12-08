@@ -298,6 +298,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_string",
       "$dir_pw_sync",
       "$dir_pw_sys_io",
+      "$dir_pw_system",
       "$dir_pw_thread",
       "$dir_pw_tool",
       "$dir_pw_trace",
