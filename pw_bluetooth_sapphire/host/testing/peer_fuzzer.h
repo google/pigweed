@@ -57,6 +57,7 @@ class PeerFuzzer final {
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::InquiryResultRSSI>,
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::ExtendedInquiryResultEventParams>,
         &PeerFuzzer::BrEdrDataRegisterInitializingConnection,
+        &PeerFuzzer::BrEdrDataUnregisterInitializingConnection,
         &PeerFuzzer::BrEdrDataRegisterConnection,
         &PeerFuzzer::BrEdrUnregisterConnection,
         &PeerFuzzer::BrEdrDataSetBondData,
@@ -169,12 +170,14 @@ class PeerFuzzer final {
   }
 
   void BrEdrDataRegisterInitializingConnection() {
-    if (!peer_.identity_known() || !peer_.connectable()) {
+    if (!peer_.identity_known() || !peer_.connectable() || bredr_conn_token_.has_value()) {
       return;
     }
-    if (fdp().ConsumeBool()) {
-      bredr_init_conn_tokens_.emplace_back(peer_.MutBrEdr().RegisterInitializingConnection());
-    } else if (!bredr_init_conn_tokens_.empty()) {
+    bredr_init_conn_tokens_.emplace_back(peer_.MutBrEdr().RegisterInitializingConnection());
+  }
+
+  void BrEdrDataUnregisterInitializingConnection() {
+    if (!bredr_init_conn_tokens_.empty()) {
       bredr_init_conn_tokens_.pop_back();
     }
   }
