@@ -60,6 +60,10 @@ group("default") {
   }
 }
 
+group("stm32_freertos_demo") {
+  deps = [ "$dir_pigweed/targets/stm32f429i_disc1_stm32cube:demo_app" ]
+}
+
 # This template generates a group that builds pigweed_default with a particular
 # toolchain.
 template("_build_pigweed_default_at_all_optimization_levels") {
