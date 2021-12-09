@@ -7,6 +7,7 @@
 #include <endian.h>
 
 #include <algorithm>
+#include <charconv>
 #include <iterator>
 #include <unordered_set>
 
@@ -340,8 +341,13 @@ bool AddProtocolDescriptorList(bt::sdp::ServiceRecord* rec,
 }  // namespace
 
 std::optional<bt::PeerId> PeerIdFromString(const std::string& id) {
-  uint64_t value;
-  if (!fxl::StringToNumberWithError<decltype(value)>(id, &value, fxl::Base::k16)) {
+  if (id.empty()) {
+    return std::nullopt;
+  }
+
+  uint64_t value = 0;
+  auto [_, error] = std::from_chars(id.data(), id.data() + id.size(), value, /*base=*/16);
+  if (error != std::errc()) {
     return std::nullopt;
   }
   return bt::PeerId(value);

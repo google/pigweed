@@ -1261,5 +1261,19 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithoutAdvertisingData) {
   EXPECT_EQ(fidl_peer.last_updated(), 0);
 }
 
+TEST(HelpersTest, PeerIdFromString) {
+  EXPECT_FALSE(PeerIdFromString(std::string()));
+  EXPECT_FALSE(PeerIdFromString("-1"));
+  EXPECT_FALSE(PeerIdFromString("g"));
+  EXPECT_EQ(PeerIdFromString("0"), std::optional(bt::PeerId(0)));
+  EXPECT_EQ(PeerIdFromString("FFFFFFFFFFFFFFFF"),
+            std::optional(bt::PeerId(std::numeric_limits<uint64_t>::max())));
+  // ID is 1 more than max.
+  EXPECT_FALSE(PeerIdFromString("10000000000000000"));
+  EXPECT_EQ(PeerIdFromString("0123456789"), std::optional(bt::PeerId(0x123456789)));
+  EXPECT_EQ(PeerIdFromString("abcdef"), std::optional(bt::PeerId(0xabcdef)));
+  EXPECT_EQ(PeerIdFromString("ABCDEF"), std::optional(bt::PeerId(0xabcdef)));
+}
+
 }  // namespace
 }  // namespace bthost::fidl_helpers
