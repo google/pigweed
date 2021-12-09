@@ -72,6 +72,17 @@ Status DecodeChunk(ConstByteSpan message, Chunk& chunk) {
         PW_TRY(decoder.ReadUint32(&value));
         chunk.status = static_cast<Status::Code>(value);
         break;
+
+      case ProtoChunk::Fields::WINDOW_END_OFFSET:
+        PW_TRY(decoder.ReadUint32(&chunk.window_end_offset));
+        break;
+
+      case ProtoChunk::Fields::TYPE: {
+        uint32_t type;
+        PW_TRY(decoder.ReadUint32(&type));
+        chunk.type = static_cast<Chunk::Type>(type);
+        break;
+      }
     }
   }
 
@@ -82,6 +93,10 @@ Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
   ProtoChunk::MemoryEncoder encoder(buffer);
 
   encoder.WriteTransferId(chunk.transfer_id).IgnoreError();
+
+  if (chunk.window_end_offset != 0) {
+    encoder.WriteWindowEndOffset(chunk.window_end_offset).IgnoreError();
+  }
 
   if (chunk.pending_bytes.has_value()) {
     encoder.WritePendingBytes(chunk.pending_bytes.value()).IgnoreError();
@@ -105,6 +120,11 @@ Result<ConstByteSpan> EncodeChunk(const Chunk& chunk, ByteSpan buffer) {
   }
   if (chunk.status.has_value()) {
     encoder.WriteStatus(chunk.status.value().code()).IgnoreError();
+  }
+
+  if (chunk.type.has_value()) {
+    encoder.WriteType(static_cast<ProtoChunk::Type>(chunk.type.value()))
+        .IgnoreError();
   }
 
   PW_TRY(encoder.status());

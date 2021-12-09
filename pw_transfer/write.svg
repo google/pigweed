@@ -1,87 +1,131 @@
-<!-- Originally created with blockdiag. See the Git history for the source. -->
-<svg height="760.1" viewBox="0 0 510 691" width="561.0" xmlns="http://www.w3.org/2000/svg" xmlns:inkspace="http://www.inkscape.org/namespaces/inkscape" xmlns:xlink="http://www.w3.org/1999/xlink" style="background-color:white">
-<defs id="defs_block">
-<filter height="1.504" id="filter_blur" inkspace:collect="always" width="1.1575" x="-0.07875" y="-0.252">
-<feGaussianBlur id="feGaussianBlur3780" inkspace:collect="always" stdDeviation="4.2"></feGaussianBlur>
-</filter>
-</defs>
-<title>pw_transfer Writes</title>
-<desc></desc>
-<rect fill="rgb(0,0,0)" height="528" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="165" y="141"></rect>
-<rect fill="rgb(0,0,0)" height="528" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="357" y="141"></rect>
-<polygon fill="rgb(0,0,0)" points="63,134 145,134 153,142 153,149 63,149 63,134" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
-<polygon fill="rgb(0,0,0)" points="377,191 477,191 485,199 485,258 377,258 377,191" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
-<polygon fill="rgb(0,0,0)" points="27,298 145,298 153,306 153,352 27,352 27,298" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
-<polygon fill="rgb(0,0,0)" points="377,392 489,392 497,400 497,459 377,459 377,392" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
-<polygon fill="rgb(0,0,0)" points="27,499 145,499 153,507 153,553 27,553 27,499" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
-<polygon fill="rgb(0,0,0)" points="377,594 459,594 467,602 467,622 377,622 377,594" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
-<rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="105" y="46"></rect>
-<rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="297" y="46"></rect>
-<path d="M 166 80 L 166 679" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4"></path>
-<rect fill="moccasin" height="528" stroke="rgb(0,0,0)" width="8" x="162" y="135"></rect>
-<path d="M 358 80 L 358 679" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4"></path>
-<rect fill="moccasin" height="528" stroke="rgb(0,0,0)" width="8" x="354" y="135"></rect>
-<rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="102" y="40"></rect>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="36" x="166.0" y="66">client</text>
-<rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="294" y="40"></rect>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="36" x="358.0" y="66">server</text>
-<path d="M 174 135 L 350 135" fill="none" stroke="rgb(0,0,0)"></path>
-<polygon fill="rgb(0,0,0)" points="342,131 350,135 342,139" stroke="rgb(0,0,0)"></polygon>
-<polygon fill="rgb(240,248,255)" points="60,128 142,128 150,136 150,143 60,143 60,128" stroke="rgb(0,0,0)"></polygon>
-<path d="M 142 128 L 142 136" fill="none" stroke="rgb(0,0,0)"></path>
-<path d="M 142 136 L 150 136" fill="none" stroke="rgb(0,0,0)"></path>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="101.0" y="141">transfer_id</text>
-<path d="M 174 218 L 350 218" fill="none" stroke="rgb(0,0,0)"></path>
-<polygon fill="rgb(0,0,0)" points="182,214 174,218 182,222" stroke="rgb(0,0,0)"></polygon>
-<polygon fill="rgb(240,248,255)" points="374,185 474,185 482,193 482,252 374,252 374,185" stroke="rgb(0,0,0)"></polygon>
-<path d="M 474 185 L 474 193" fill="none" stroke="rgb(0,0,0)"></path>
-<path d="M 474 193 L 482 193" fill="none" stroke="rgb(0,0,0)"></path>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="415.0" y="198">transfer_id</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="36" x="400.0" y="211">offset</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="78" x="421.0" y="224">pending_bytes</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="84" x="424.0" y="237">max_chunk_size</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="415.0" y="250">chunk_delay</text>
-<path d="M 174 319 L 350 319" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4"></path>
-<polygon fill="rgb(0,0,0)" points="342,315 350,319 342,323" stroke="rgb(0,0,0)"></polygon>
-<polygon fill="rgb(240,248,255)" points="24,292 142,292 150,300 150,346 24,346 24,292" stroke="rgb(0,0,0)"></polygon>
-<path d="M 142 292 L 142 300" fill="none" stroke="rgb(0,0,0)"></path>
-<path d="M 142 300 L 150 300" fill="none" stroke="rgb(0,0,0)"></path>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="65.0" y="305">transfer_id</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="36" x="50.0" y="318">offset</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="24" x="44.0" y="331">data</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="102" x="83.0" y="344">(remaining_bytes)</text>
-<path d="M 174 419 L 350 419" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4"></path>
-<polygon fill="rgb(0,0,0)" points="182,415 174,419 182,423" stroke="rgb(0,0,0)"></polygon>
-<polygon fill="rgb(240,248,255)" points="374,386 486,386 494,394 494,453 374,453 374,386" stroke="rgb(0,0,0)"></polygon>
-<path d="M 486 386 L 486 394" fill="none" stroke="rgb(0,0,0)"></path>
-<path d="M 486 394 L 494 394" fill="none" stroke="rgb(0,0,0)"></path>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="415.0" y="399">transfer_id</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="36" x="400.0" y="412">offset</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="78" x="421.0" y="425">pending_bytes</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="96" x="430.0" y="438">(max_chunk_size)</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="78" x="421.0" y="451">(chunk_delay)</text>
-<path d="M 174 520 L 350 520" fill="none" stroke="rgb(0,0,0)"></path>
-<polygon fill="rgb(0,0,0)" points="342,516 350,520 342,524" stroke="rgb(0,0,0)"></polygon>
-<polygon fill="rgb(240,248,255)" points="24,493 142,493 150,501 150,547 24,547 24,493" stroke="rgb(0,0,0)"></polygon>
-<path d="M 142 493 L 142 501" fill="none" stroke="rgb(0,0,0)"></path>
-<path d="M 142 501 L 150 501" fill="none" stroke="rgb(0,0,0)"></path>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="65.0" y="506">transfer_id</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="36" x="50.0" y="519">offset</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="24" x="44.0" y="532">data</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="102" x="83.0" y="545">remaining_bytes=0</text>
-<path d="M 174 602 L 350 602" fill="none" stroke="rgb(0,0,0)"></path>
-<polygon fill="rgb(0,0,0)" points="182,598 174,602 182,606" stroke="rgb(0,0,0)"></polygon>
-<polygon fill="rgb(240,248,255)" points="374,588 456,588 464,596 464,616 374,616 374,588" stroke="rgb(0,0,0)"></polygon>
-<path d="M 456 588 L 456 596" fill="none" stroke="rgb(0,0,0)"></path>
-<path d="M 456 596 L 464 596" fill="none" stroke="rgb(0,0,0)"></path>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="415.0" y="601">transfer_id</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="54" x="409.0" y="614">status=OK</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="30" x="193.0" y="133">start</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="138" x="281.0" y="216">set transfer parameters</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="90" x="223.0" y="304">requested bytes</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="126" x="241.0" y="317">(zero or more chunks)</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="156" x="272.0" y="404">update transfer parameters</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="317.0" y="417">(as needed)</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="211.0" y="518">final chunk</text>
-<text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="132" x="284.0" y="600">acknowledge completion</text>
+<!-- Created with blockdiag from the source below:
+
+  seqdiag {
+    default_note_color = aliceblue;
+
+    client -> server [
+        label = "start",
+        leftnote = "transfer_id\ntype=TRANSFER_START"
+    ];
+
+    client <- server [
+        noactivate,
+        label = "set transfer parameters",
+        rightnote = "transfer_id\noffset\nwindow_end_offset\ntype=PARAMETERS_RETRANSMIT\nmax_chunk_size\nchunk_delay"
+    ];
+
+    client -\-> server [
+        noactivate,
+        label = "requested bytes\n(zero or more chunks)",
+        leftnote = "transfer_id\noffset\ndata\n(remaining_bytes)"
+    ];
+
+    client <-\- server [
+        noactivate,
+        label = "update transfer parameters\n(as needed)",
+        rightnote = "transfer_id\noffset\nwindow_end_offset\ntype=PARAMETERS_CONTINUE\n(max_chunk_size)\n(chunk_delay)"
+    ];
+
+    client -> server [
+        noactivate,
+        label = "final chunk",
+        leftnote = "transfer_id\noffset\ndata\nremaining_bytes=0"
+    ];
+
+    client <- server [
+        noactivate,
+        label = "acknowledge completion",
+        rightnote = "transfer_id\nstatus=OK"
+    ];
+  }
+
+-->
+<svg height="720" viewBox="0 0 585 720" xmlns="http://www.w3.org/2000/svg" xmlns:inkspace="http://www.inkscape.org/namespaces/inkscape" xmlns:xlink="http://www.w3.org/1999/xlink" style="background-color:white">
+  <defs id="defs_block">
+    <filter height="1.504" id="filter_blur" inkspace:collect="always" width="1.1575" x="-0.07875" y="-0.252">
+      <feGaussianBlur id="feGaussianBlur3780" inkspace:collect="always" stdDeviation="4.2"></feGaussianBlur>
+    </filter>
+  </defs>
+  <title>blockdiag</title>
+  <desc></desc>
+  <rect fill="rgb(0,0,0)" height="558" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="178" y="140"></rect>
+  <rect fill="rgb(0,0,0)" height="558" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="370" y="140"></rect>
+  <polygon fill="rgb(0,0,0)" points="27,126 158,126 166,134 166,154 27,154 27,126" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
+  <polygon fill="rgb(0,0,0)" points="390,194 564,194 572,202 572,274 390,274 390,194" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
+  <polygon fill="rgb(0,0,0)" points="39,314 158,314 166,322 166,368 39,368 39,314" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
+  <polygon fill="rgb(0,0,0)" points="390,408 552,408 560,416 560,488 390,488 390,408" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
+  <polygon fill="rgb(0,0,0)" points="39,528 158,528 166,536 166,582 39,582 39,528" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
+  <polygon fill="rgb(0,0,0)" points="390,623 473,623 481,631 481,651 390,651 390,623" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1"></polygon>
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="118" y="46"></rect>
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="310" y="46"></rect>
+  <path d="M 179 80 L 179 708" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4"></path>
+  <rect fill="moccasin" height="558" stroke="rgb(0,0,0)" width="8" x="175" y="134"></rect>
+  <path d="M 371 80 L 371 708" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4"></path>
+  <rect fill="moccasin" height="558" stroke="rgb(0,0,0)" width="8" x="367" y="134"></rect>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="115" y="40"></rect>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="37" x="179" y="66">client</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="307" y="40"></rect>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="37" x="371" y="66">server</text>
+  <path d="M 187 134 L 363 134" fill="none" stroke="rgb(0,0,0)"></path>
+  <polygon fill="rgb(0,0,0)" points="355,130 363,134 355,138" stroke="rgb(0,0,0)"></polygon>
+  <polygon fill="rgb(240,248,255)" points="24,120 155,120 163,128 163,148 24,148 24,120" stroke="rgb(0,0,0)"></polygon>
+  <path d="M 155 120 L 155 128" fill="none" stroke="rgb(0,0,0)"></path>
+  <path d="M 155 128 L 163 128" fill="none" stroke="rgb(0,0,0)"></path>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="65" y="133">transfer_id</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="115" x="89" y="146">type=TRANSFER_START</text>
+  <path d="M 187 228 L 363 228" fill="none" stroke="rgb(0,0,0)"></path>
+  <polygon fill="rgb(0,0,0)" points="195,224 187,228 195,232" stroke="rgb(0,0,0)"></polygon>
+  <polygon fill="rgb(240,248,255)" points="387,188 561,188 569,196 569,268 387,268 387,188" stroke="rgb(0,0,0)"></polygon>
+  <path d="M 561 188 L 561 196" fill="none" stroke="rgb(0,0,0)"></path>
+  <path d="M 561 196 L 569 196" fill="none" stroke="rgb(0,0,0)"></path>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="428" y="201">transfer_id</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="37" x="413" y="214">offset</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="103" x="446" y="227">window_end_offset</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="158" x="474" y="240">type=PARAMETERS_RETRANSMIT</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="85" x="437" y="253">max_chunk_size</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="428" y="266">chunk_delay</text>
+  <path d="M 187 335 L 363 335" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4"></path>
+  <polygon fill="rgb(0,0,0)" points="355,331 363,335 355,339" stroke="rgb(0,0,0)"></polygon>
+  <polygon fill="rgb(240,248,255)" points="36,308 155,308 163,316 163,362 36,362 36,308" stroke="rgb(0,0,0)"></polygon>
+  <path d="M 155 308 L 155 316" fill="none" stroke="rgb(0,0,0)"></path>
+  <path d="M 155 316 L 163 316" fill="none" stroke="rgb(0,0,0)"></path>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="77" y="321">transfer_id</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="37" x="62" y="334">offset</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="25" x="56" y="347">data</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="103" x="95" y="360">(remaining_bytes)</text>
+  <path d="M 187 442 L 363 442" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4"></path>
+  <polygon fill="rgb(0,0,0)" points="195,438 187,442 195,446" stroke="rgb(0,0,0)"></polygon>
+  <polygon fill="rgb(240,248,255)" points="387,402 549,402 557,410 557,482 387,482 387,402" stroke="rgb(0,0,0)"></polygon>
+  <path d="M 549 402 L 549 410" fill="none" stroke="rgb(0,0,0)"></path>
+  <path d="M 549 410 L 557 410" fill="none" stroke="rgb(0,0,0)"></path>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="428" y="415">transfer_id</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="37" x="413" y="428">offset</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="103" x="446" y="441">window_end_offset</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="146" x="468" y="454">type=PARAMETERS_CONTINUE</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="97" x="443" y="467">(max_chunk_size)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="79" x="434" y="480">(chunk_delay)</text>
+  <path d="M 187 549 L 363 549" fill="none" stroke="rgb(0,0,0)"></path>
+  <polygon fill="rgb(0,0,0)" points="355,545 363,549 355,553" stroke="rgb(0,0,0)"></polygon>
+  <polygon fill="rgb(240,248,255)" points="36,522 155,522 163,530 163,576 36,576 36,522" stroke="rgb(0,0,0)"></polygon>
+  <path d="M 155 522 L 155 530" fill="none" stroke="rgb(0,0,0)"></path>
+  <path d="M 155 530 L 163 530" fill="none" stroke="rgb(0,0,0)"></path>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="77" y="535">transfer_id</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="37" x="62" y="548">offset</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="25" x="56" y="561">data</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="103" x="95" y="574">remaining_bytes=0</text>
+  <path d="M 187 631 L 363 631" fill="none" stroke="rgb(0,0,0)"></path>
+  <polygon fill="rgb(0,0,0)" points="195,627 187,631 195,635" stroke="rgb(0,0,0)"></polygon>
+  <polygon fill="rgb(240,248,255)" points="387,617 470,617 478,625 478,645 387,645 387,617" stroke="rgb(0,0,0)"></polygon>
+  <path d="M 470 617 L 470 625" fill="none" stroke="rgb(0,0,0)"></path>
+  <path d="M 470 625 L 478 625" fill="none" stroke="rgb(0,0,0)"></path>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="428" y="630">transfer_id</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="55" x="422" y="643">status=OK</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="31" x="206" y="132">start</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="140" x="293" y="226">set transfer parameters</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="91" x="236" y="320">requested bytes</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="128" x="255" y="333">(zero or more chunks)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="158" x="284" y="427">update transfer parameters</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="329" y="440">(as needed)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="67" x="224" y="547">final chunk</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="134" x="296" y="629">acknowledge completion</text>
 </svg>

@@ -99,7 +99,7 @@ message Chunk {
   //  Read → N/A
   //  Read ← Remaining bytes to read, excluding any data in this chunk. Set to
   //         0 for the last chunk.
-  // Write → Reamining bytes to write, excluding any data in is chunk. Set to
+  // Write → Remaining bytes to write, excluding any data in is chunk. Set to
   //         0 for the last chunk.
   // Write ← N/A
   optional uint64 remaining_bytes = 7;
@@ -123,4 +123,43 @@ message Chunk {
   // Write → Transfer complete.
   // Write ← Transfer complete.
   optional uint32 status = 8;
+
+  // The offset up to which the transmitter can send data before waiting for the
+  // receiver to acknowledge.
+  //
+  //  Read → Offset up to which the server can send without blocking.
+  //  Read ← N/A
+  // Write → N/A
+  // Write ← Offset up to which the client can send without blocking.
+  //
+  // TODO(frolv): This will replace the pending_bytes field. Once all uses of
+  // transfer are migrated, that field should be removed.
+  uint32 window_end_offset = 9;
+
+  enum Type {
+    // Chunk containing transfer data.
+    TRANSFER_DATA = 0;
+
+    // First chunk of a transfer (only sent by the client). Currently unused.
+    TRANSFER_START = 1;
+
+    // Transfer parameters indicating that the sender should retransmit from the
+    // specified offset.
+    PARAMETERS_RETRANSMIT = 2;
+
+    // Transfer parameters telling the sender to continue sending up to index
+    // `offset + pending_bytes` of data. If the sender is already beyond offset,
+    // it does not have to rewind.
+    PARAMETERS_CONTINUE = 3;
+  };
+
+  // The type of this chunk. This field should only be processed when present.
+  // TODO(frolv): Update all users of pw_transfer and remove the optional
+  // semantics from this field.
+  //
+  //  Read → Chunk type (start/parameters).
+  //  Read ← Chunk type (data).
+  // Write → Chunk type (data).
+  // Write ← Chunk type (start/parameters).
+  optional Type type = 10;
 }

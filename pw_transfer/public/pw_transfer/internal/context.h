@@ -44,6 +44,18 @@ class TransferParameters {
   uint32_t pending_bytes() const { return pending_bytes_; }
   uint32_t max_chunk_size_bytes() const { return max_chunk_size_bytes_; }
 
+  // The fractional position within a window at which a receive transfer should
+  // extend its window size to minimize the amount of time the transmitter
+  // spends blocked.
+  //
+  // For example, a divisor of 2 will extend the window when half of the
+  // requested data has been received, a divisor of three will extend at a third
+  // of the window, and so on.
+  //
+  // TODO(frolv): Find a good threshold for this; maybe make it configurable?
+  static constexpr uint32_t kExtendWindowDivisor = 2;
+  static_assert(kExtendWindowDivisor > 1);
+
  private:
   uint32_t pending_bytes_;
   uint32_t max_chunk_size_bytes_;
@@ -110,6 +122,8 @@ class Context {
         stream_(nullptr),
         rpc_writer_(nullptr),
         offset_(0),
+        window_size_(0),
+        window_end_offset_(0),
         pending_bytes_(0),
         max_chunk_size_bytes_(std::numeric_limits<uint32_t>::max()),
         last_chunk_offset_(0),
@@ -193,6 +207,8 @@ class Context {
                              uint32_t channel_id) const;
 
  private:
+  enum TransmitAction : bool { kExtend, kRetransmit };
+
   void Initialize(Type type,
                   uint32_t transfer_id,
                   work_queue::WorkQueue& work_queue,
@@ -213,10 +229,6 @@ class Context {
 
   // Sends the first chunk in a transmit transfer.
   Status SendInitialTransmitChunk();
-
-  // Updates the context's current parameters based on the fields in a chunk.
-  void UpdateParameters(const TransferParameters& max_parameters,
-                        const Chunk& chunk);
 
   // Functions which extract relevant data from a chunk into the context.
   bool ReadTransmitChunk(const TransferParameters& max_parameters,
@@ -248,12 +260,12 @@ class Context {
 
   // In a receive transfer, sends a parameters chunk telling the transmitter how
   // much data they can send.
-  Status SendTransferParameters();
+  Status SendTransferParameters(TransmitAction action);
 
   // Updates the current receive transfer parameters from the provided object,
   // then sends them.
   Status UpdateAndSendTransferParameters(
-      const TransferParameters& max_parameters);
+      const TransferParameters& max_parameters, TransmitAction action);
 
   void SendStatusChunk(Status status);
   void FinishAndSendStatus(Status status);
@@ -274,6 +286,9 @@ class Context {
   static constexpr uint8_t kFlagsType = 1 << 0;
   static constexpr uint8_t kFlagsDataSent = 1 << 1;
 
+  // TODO(frolv): Make this value configurable per transfer.
+  static constexpr uint32_t kDefaultChunkDelayMicroseconds = 2000;
+
   uint32_t transfer_id_;
   uint8_t flags_;
   TransferState transfer_state_ PW_GUARDED_BY(state_lock_);
@@ -285,13 +300,16 @@ class Context {
   stream::Stream* stream_;
   rpc::Writer* rpc_writer_;
 
-  size_t offset_;
-  size_t pending_bytes_;
-  size_t max_chunk_size_bytes_;
+  uint32_t offset_;
+  uint32_t window_size_;
+  uint32_t window_end_offset_;
+  // TODO(pwbug/584): Remove pending_bytes in favor of window_end_offset.
+  uint32_t pending_bytes_;
+  uint32_t max_chunk_size_bytes_;
 
   union {
-    Status status_;             // Used when state is kCompleted.
-    size_t last_chunk_offset_;  // Used in states kData and kRecovery.
+    Status status_;               // Used when state is kCompleted.
+    uint32_t last_chunk_offset_;  // Used in states kData and kRecovery.
   };
 
   // Timer used to handle timeouts waiting for chunks.

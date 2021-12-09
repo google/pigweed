@@ -32,7 +32,7 @@ Status Context::InitiateTransfer(const TransferParameters& max_parameters) {
   if (type() == kReceive) {
     // A receiver begins a new transfer with a parameters chunk telling the
     // transmitter what to send.
-    PW_TRY(UpdateAndSendTransferParameters(max_parameters));
+    PW_TRY(UpdateAndSendTransferParameters(max_parameters, kRetransmit));
   } else {
     PW_TRY(SendInitialTransmitChunk());
   }
@@ -80,20 +80,6 @@ Status Context::SendInitialTransmitChunk() {
   return rpc_writer_->Write(*result);
 }
 
-void Context::UpdateParameters(const TransferParameters& max_parameters,
-                               const Chunk& chunk) {
-  offset_ = chunk.offset;
-
-  if (chunk.pending_bytes.has_value()) {
-    pending_bytes_ = chunk.pending_bytes.value();
-  }
-
-  if (chunk.max_chunk_size_bytes.has_value()) {
-    max_chunk_size_bytes_ = std::min(chunk.max_chunk_size_bytes.value(),
-                                     max_parameters.max_chunk_size_bytes());
-  }
-}
-
 bool Context::ReadTransmitChunk(const TransferParameters& max_parameters,
                                 const Chunk& chunk) {
   {
@@ -128,33 +114,54 @@ bool Context::ReadTransmitChunk(const TransferParameters& max_parameters,
     return false;
   }
 
-  // If the offsets don't match, attempt to seek on the reader. Not all readers
-  // support seeking; abort with UNIMPLEMENTED if this handler doesn't.
-  if (offset_ != chunk.offset) {
-    if (Status seek_status = reader().Seek(chunk.offset); !seek_status.ok()) {
-      PW_LOG_WARN("Transfer %u seek to %u failed with status %u",
-                  static_cast<unsigned>(transfer_id_),
-                  static_cast<unsigned>(chunk.offset),
-                  seek_status.code());
-
-      // Remap status codes to return one of the following:
-      //
-      //   INTERNAL: invalid seek, never should happen
-      //   DATA_LOSS: the reader is in a bad state
-      //   UNIMPLEMENTED: seeking is not supported
-      //
-      if (seek_status.IsOutOfRange()) {
-        seek_status = Status::Internal();
-      } else if (!seek_status.IsUnimplemented()) {
-        seek_status = Status::DataLoss();
-      }
-
-      FinishAndSendStatus(seek_status);
-      return false;
-    }
+  bool retransmit = true;
+  if (chunk.type.has_value()) {
+    retransmit = chunk.type == Chunk::Type::kParametersRetransmit;
   }
 
-  UpdateParameters(max_parameters, chunk);
+  if (retransmit) {
+    // If the offsets don't match, attempt to seek on the reader. Not all
+    // readers support seeking; abort with UNIMPLEMENTED if this handler
+    // doesn't.
+    if (offset_ != chunk.offset) {
+      if (Status seek_status = reader().Seek(chunk.offset); !seek_status.ok()) {
+        PW_LOG_WARN("Transfer %u seek to %u failed with status %u",
+                    static_cast<unsigned>(transfer_id_),
+                    static_cast<unsigned>(chunk.offset),
+                    seek_status.code());
+
+        // Remap status codes to return one of the following:
+        //
+        //   INTERNAL: invalid seek, never should happen
+        //   DATA_LOSS: the reader is in a bad state
+        //   UNIMPLEMENTED: seeking is not supported
+        //
+        if (seek_status.IsOutOfRange()) {
+          seek_status = Status::Internal();
+        } else if (!seek_status.IsUnimplemented()) {
+          seek_status = Status::DataLoss();
+        }
+
+        FinishAndSendStatus(seek_status);
+        return false;
+      }
+    }
+
+    // Retransmit is the default behavior for older versions of the transfer
+    // protocol. The window_end_offset field is not guaranteed to be set in
+    // these versions, so it must be calculated.
+    offset_ = chunk.offset;
+    window_end_offset_ = offset_ + chunk.pending_bytes.value();
+    pending_bytes_ = chunk.pending_bytes.value();
+  } else {
+    window_end_offset_ = chunk.window_end_offset;
+  }
+
+  if (chunk.max_chunk_size_bytes.has_value()) {
+    max_chunk_size_bytes_ = std::min(chunk.max_chunk_size_bytes.value(),
+                                     max_parameters.max_chunk_size_bytes());
+  }
+
   return true;
 }
 
@@ -217,7 +224,8 @@ bool Context::ReadReceiveChunk(ChunkDataBuffer& buffer,
               "resending transfer parameters",
               static_cast<unsigned>(transfer_id_),
               static_cast<unsigned>(chunk.offset));
-          if (!UpdateAndSendTransferParameters(max_parameters).ok()) {
+          if (!UpdateAndSendTransferParameters(max_parameters, kRetransmit)
+                   .ok()) {
             return false;
           }
         } else {
@@ -278,10 +286,18 @@ void Context::ProcessReceiveChunk(ChunkDataBuffer& buffer,
 
   // TODO(frolv): Release the buffer.
 
+  // Once the transmitter has sent a sufficient amount of data, try to extend
+  // the window to allow it to continue sending data without blocking.
+  uint32_t remaining_window_size = window_end_offset_ - offset_;
+  bool extend_window = remaining_window_size <=
+                       window_size_ / TransferParameters::kExtendWindowDivisor;
+
   if (pending_bytes_ == 0u) {
-    // All pending data has been received. Send a new parameters chunk to start
-    // the next batch.
-    UpdateAndSendTransferParameters(max_parameters);
+    // First chunk of a receive transfer (transfer_id only). This condition
+    // should be updated to explicitly check for the first chunk.
+    UpdateAndSendTransferParameters(max_parameters, kRetransmit);
+  } else if (extend_window) {
+    UpdateAndSendTransferParameters(max_parameters, kExtend);
   }
 }
 
@@ -299,7 +315,8 @@ Status Context::SendNextDataChunk() {
   size_t reserved_size = encoder.size() + 1 /* data key */ + 5 /* data size */;
 
   ByteSpan data_buffer = buffer.subspan(reserved_size);
-  size_t max_bytes_to_send = std::min(pending_bytes_, max_chunk_size_bytes_);
+  size_t max_bytes_to_send =
+      std::min(window_end_offset_ - offset_, max_chunk_size_bytes_);
 
   if (max_bytes_to_send < data_buffer.size()) {
     data_buffer = data_buffer.first(max_bytes_to_send);
@@ -309,12 +326,13 @@ Status Context::SendNextDataChunk() {
   if (data.status().IsOutOfRange()) {
     // No more data to read.
     encoder.WriteRemainingBytes(0).IgnoreError();
+    window_end_offset_ = offset_;
     pending_bytes_ = 0;
   } else if (data.ok()) {
-    if (pending_bytes_ == 0u) {
+    if (offset_ == window_end_offset_) {
       PW_LOG_DEBUG(
           "Transfer %u is not finished, but the receiver cannot accept any "
-          "more data (pending_bytes is 0)",
+          "more data (offset == window_end_offset)",
           static_cast<unsigned>(transfer_id_));
       rpc_writer_->ReleasePayloadBuffer();
       return Status::ResourceExhausted();
@@ -348,7 +366,7 @@ Status Context::SendNextDataChunk() {
 
   flags_ |= kFlagsDataSent;
 
-  if (pending_bytes_ == 0) {
+  if (offset_ == window_end_offset_) {
     return Status::OutOfRange();
   }
 
@@ -375,7 +393,7 @@ bool Context::HandleDataChunk(ChunkDataBuffer& buffer,
         static_cast<unsigned>(transfer_id_),
         static_cast<unsigned>(offset_),
         static_cast<unsigned>(chunk.offset));
-    UpdateAndSendTransferParameters(max_parameters);
+    UpdateAndSendTransferParameters(max_parameters, kRetransmit);
     set_transfer_state(TransferState::kRecovery);
 
     // Return false as there is no immediate deferred work to complete. The
@@ -389,19 +407,25 @@ bool Context::HandleDataChunk(ChunkDataBuffer& buffer,
   return true;
 }
 
-Status Context::SendTransferParameters() {
+Status Context::SendTransferParameters(TransmitAction action) {
   const internal::Chunk parameters = {
       .transfer_id = transfer_id_,
+      .window_end_offset = window_end_offset_,
       .pending_bytes = pending_bytes_,
       .max_chunk_size_bytes = max_chunk_size_bytes_,
-      .offset = static_cast<uint32_t>(offset_),
+      .min_delay_microseconds = kDefaultChunkDelayMicroseconds,
+      .offset = offset_,
+      .type = action == kRetransmit
+                  ? internal::Chunk::Type::kParametersRetransmit
+                  : internal::Chunk::Type::kParametersContinue,
   };
 
   PW_LOG_DEBUG(
       "Transfer %u sending transfer parameters: "
-      "offset=%u, pending_bytes=%u, chunk_size=%u",
+      "offset=%u, window_end_offset=%u, pending_bytes=%u, chunk_size=%u",
       static_cast<unsigned>(transfer_id_),
       static_cast<unsigned>(offset_),
+      static_cast<unsigned>(window_end_offset_),
       static_cast<unsigned>(pending_bytes_),
       static_cast<unsigned>(max_chunk_size_bytes_));
 
@@ -433,15 +457,19 @@ Status Context::SendTransferParameters() {
 }
 
 Status Context::UpdateAndSendTransferParameters(
-    const TransferParameters& max_parameters) {
-  pending_bytes_ =
+    const TransferParameters& max_parameters, TransmitAction action) {
+  size_t pending_bytes =
       std::min(max_parameters.pending_bytes(),
                static_cast<uint32_t>(writer().ConservativeWriteLimit()));
+
+  window_size_ = pending_bytes;
+  window_end_offset_ = offset_ + pending_bytes;
+  pending_bytes_ = pending_bytes;
 
   max_chunk_size_bytes_ = MaxWriteChunkSize(
       max_parameters.max_chunk_size_bytes(), rpc_writer_->channel_id());
 
-  return SendTransferParameters();
+  return SendTransferParameters(action);
 }
 
 void Context::Initialize(Type type,
@@ -464,6 +492,8 @@ void Context::Initialize(Type type,
   stream_ = &stream;
 
   offset_ = 0;
+  window_size_ = 0;
+  window_end_offset_ = 0;
   pending_bytes_ = 0;
   max_chunk_size_bytes_ = std::numeric_limits<uint32_t>::max();
 
@@ -560,7 +590,7 @@ void Context::HandleTimeout() {
     PW_LOG_DEBUG(
         "Receive transfer %u timed out waiting for chunk; resending parameters",
         static_cast<unsigned>(transfer_id_));
-    SendTransferParameters().IgnoreError();
+    SendTransferParameters(kRetransmit).IgnoreError();
     return;
   }
 
@@ -627,10 +657,9 @@ uint32_t Context::MaxWriteChunkSize(uint32_t max_chunk_size_bytes,
   //
   //   TOTAL: 3 + encoded transfer_id + encoded offset + encoded data length
   //
-  size_t max_offset_in_window = offset_ + pending_bytes_;
   max_size -= 3;
   max_size -= varint::EncodedSize(transfer_id_);
-  max_size -= varint::EncodedSize(max_offset_in_window);
+  max_size -= varint::EncodedSize(window_end_offset_);
   max_size -= varint::EncodedSize(max_size);
 
   // A resulting value of zero (or less) renders write transfers unusable, as

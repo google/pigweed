@@ -220,6 +220,16 @@ export class ReadTransfer extends Transfer {
   private remainingTransferSize?: number;
   private offset = 0;
   private pendingBytes: number;
+  private windowEndOffset: number;
+
+  // The fractional position within a window at which a receive transfer should
+  // extend its window size to minimize the amount of time the transmitter
+  // spends blocked.
+  //
+  // For example, a divisor of 2 will extend the window when half of the
+  // requested data has been received, a divisor of three will extend at a third
+  // of the window, and so on.
+  private static EXTEND_WINDOW_DIVISOR = 2;
 
   data = new Uint8Array();
 
@@ -238,6 +248,7 @@ export class ReadTransfer extends Transfer {
     this.maxChunkSize = maxChunkSize;
     this.chunkDelayMicroS = chunkDelayMicroS;
     this.pendingBytes = maxBytesToReceive;
+    this.windowEndOffset = maxBytesToReceive;
   }
 
   protected get initialChunk(): Chunk {
@@ -245,14 +256,21 @@ export class ReadTransfer extends Transfer {
   }
 
   /** Builds an updated transfer parameters chunk to send the server. */
-  private transferParameters(): Chunk {
+  private transferParameters(extend = false): Chunk {
     this.pendingBytes = this.maxBytesToReceive;
+    this.windowEndOffset = this.offset + this.maxBytesToReceive;
+
+    const chunkType = extend
+      ? Chunk.Type.PARAMETERS_CONTINUE
+      : Chunk.Type.PARAMETERS_RETRANSMIT;
 
     const chunk = new Chunk();
     chunk.setTransferId(this.id);
     chunk.setPendingBytes(this.pendingBytes);
     chunk.setMaxChunkSizeBytes(this.maxChunkSize);
     chunk.setOffset(this.offset);
+    chunk.setWindowEndOffset(this.windowEndOffset);
+    chunk.setType(chunkType);
 
     if (this.chunkDelayMicroS !== 0) {
       chunk.setMinDelayMicroseconds(this.chunkDelayMicroS!);
@@ -271,7 +289,6 @@ export class ReadTransfer extends Transfer {
       // Initially, the transfer service only supports in-order transfers.
       // If data is received out of order, request that the server
       // retransmit from the previous offset.
-      this.pendingBytes = 0;
       this.sendChunk(this.transferParameters());
       return;
     }
@@ -306,6 +323,11 @@ export class ReadTransfer extends Transfer {
       }
     }
 
+    const remainingWindowSize = this.windowEndOffset - this.offset;
+    const extendWindow =
+      remainingWindowSize <=
+      this.maxBytesToReceive / ReadTransfer.EXTEND_WINDOW_DIVISOR;
+
     const totalSize =
       this.remainingTransferSize === undefined
         ? undefined
@@ -316,6 +338,8 @@ export class ReadTransfer extends Transfer {
       // All pending data was received. Send out a new parameters chunk
       // for the next block.
       this.sendChunk(this.transferParameters());
+    } else if (extendWindow) {
+      this.sendChunk(this.transferParameters(/*extend=*/ true));
     }
   }
 
@@ -333,7 +357,7 @@ export class WriteTransfer extends Transfer {
   offset = 0;
   maxChunkSize = 0;
   chunkDelayMicroS?: number;
-  maxBytesToSend = 0;
+  windowEndOffset = 0;
   lastChunk: Chunk;
 
   constructor(
@@ -377,8 +401,7 @@ export class WriteTransfer extends Transfer {
     while (true) {
       writeChunk = this.nextChunk();
       this.offset += writeChunk.getData().length;
-      this.maxBytesToSend -= writeChunk.getData().length;
-      const sentRequestedBytes = this.maxBytesToSend === 0;
+      const sentRequestedBytes = this.offset === this.windowEndOffset;
 
       this.updateProgress(this.offset, bytesAknowledged, this.data.length);
       this.sendChunk(writeChunk);
@@ -393,6 +416,11 @@ export class WriteTransfer extends Transfer {
 
   /** Updates transfer state base on a transfer parameters update. */
   private handleParametersUpdate(chunk: Chunk): boolean {
+    let retransmit = true;
+    if (chunk.hasType()) {
+      retransmit = chunk.getType() === Chunk.Type.PARAMETERS_RETRANSMIT;
+    }
+
     if (chunk.getOffset() > this.data.length) {
       // Bad offset; terminate the transfer.
       console.error(
@@ -415,21 +443,34 @@ export class WriteTransfer extends Transfer {
       return false;
     }
 
-    // Check whether the client has sent a previous data offset, which
-    // indicates that some chunks were lost in transmission.
-    if (chunk.getOffset() < this.offset) {
-      console.debug(
-        `Write transfer ${
-          this.id
-        } rolling back to offset ${chunk.getOffset()} from ${this.offset}`
+    if (retransmit) {
+      // Check whether the client has sent a previous data offset, which
+      // indicates that some chunks were lost in transmission.
+      if (chunk.getOffset() < this.offset) {
+        console.debug(
+          `Write transfer ${
+            this.id
+          } rolling back to offset ${chunk.getOffset()} from ${this.offset}`
+        );
+      }
+
+      this.offset = chunk.getOffset();
+
+      // Retransmit is the default behavior for older versions of the
+      // transfer protocol. The window_end_offset field is not guaranteed
+      // to be set in these version, so it must be calculated.
+      const maxBytesToSend = Math.min(
+        chunk.getPendingBytes(),
+        this.data.length - this.offset
+      );
+      this.windowEndOffset = this.offset + maxBytesToSend;
+    } else {
+      // Extend the window to the new end offset specified by the server.
+      this.windowEndOffset = Math.min(
+        chunk.getWindowEndOffset(),
+        this.data.length
       );
     }
-
-    this.offset = chunk.getOffset();
-    this.maxBytesToSend = Math.min(
-      chunk.getPendingBytes(),
-      this.data.length - this.offset
-    );
 
     if (chunk.hasMaxChunkSizeBytes()) {
       this.maxChunkSize = chunk.getMaxChunkSizeBytes();
@@ -446,7 +487,10 @@ export class WriteTransfer extends Transfer {
     const chunk = new Chunk();
     chunk.setTransferId(this.id);
     chunk.setOffset(this.offset);
-    const maxBytesInChunk = Math.min(this.maxChunkSize, this.maxBytesToSend);
+    const maxBytesInChunk = Math.min(
+      this.maxChunkSize,
+      this.windowEndOffset - this.offset
+    );
 
     chunk.setData(this.data.slice(this.offset, this.offset + maxBytesInChunk));
 

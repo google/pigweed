@@ -339,6 +339,76 @@ describe('Encoder', () => {
     expect(sentChunks[2].getData()).toEqual(textEncoder.encode('write'));
   });
 
+  it('write transfer parameters update', async () => {
+    const manager = new Manager(service, DEFAULT_TIMEOUT_S);
+
+    const chunk = new Chunk();
+    chunk.setTransferId(4);
+    chunk.setOffset(0);
+    chunk.setPendingBytes(8);
+    chunk.setMaxChunkSizeBytes(4);
+    chunk.setType(Chunk.Type.PARAMETERS_RETRANSMIT);
+    chunk.setWindowEndOffset(8);
+
+    const chunk2 = new Chunk();
+    chunk2.setTransferId(4);
+    chunk2.setOffset(4);
+    chunk2.setPendingBytes(8);
+    chunk2.setType(Chunk.Type.PARAMETERS_CONTINUE);
+    chunk2.setWindowEndOffset(12);
+
+    const chunk3 = new Chunk();
+    chunk3.setTransferId(4);
+    chunk3.setOffset(8);
+    chunk3.setPendingBytes(8);
+    chunk3.setType(Chunk.Type.PARAMETERS_CONTINUE);
+    chunk3.setWindowEndOffset(16);
+
+    const chunk4 = new Chunk();
+    chunk4.setTransferId(4);
+    chunk4.setOffset(12);
+    chunk4.setPendingBytes(8);
+    chunk4.setType(Chunk.Type.PARAMETERS_CONTINUE);
+    chunk4.setWindowEndOffset(20);
+
+    const chunk5 = new Chunk();
+    chunk5.setTransferId(4);
+    chunk5.setOffset(16);
+    chunk5.setPendingBytes(8);
+    chunk5.setType(Chunk.Type.PARAMETERS_CONTINUE);
+    chunk5.setWindowEndOffset(24);
+
+    const chunk6 = new Chunk();
+    chunk6.setTransferId(4);
+    chunk6.setOffset(20);
+    chunk6.setPendingBytes(8);
+    chunk6.setType(Chunk.Type.PARAMETERS_CONTINUE);
+    chunk6.setWindowEndOffset(28);
+
+    const completeChunk = new Chunk();
+    completeChunk.setTransferId(4);
+    completeChunk.setStatus(Status.OK);
+
+    enqueueServerResponses(service.method('Write')!, [
+      [chunk],
+      [chunk2],
+      [chunk3],
+      [chunk4],
+      [chunk5],
+      [chunk6],
+      [completeChunk],
+    ]);
+
+    await manager.write(4, textEncoder.encode('hello this is a message'));
+    expect(receivedData()).toEqual(textEncoder.encode('hello this is a message'));
+    expect(sentChunks[1].getData()).toEqual(textEncoder.encode('hell'));
+    expect(sentChunks[2].getData()).toEqual(textEncoder.encode('o th'));
+    expect(sentChunks[3].getData()).toEqual(textEncoder.encode('is i'));
+    expect(sentChunks[4].getData()).toEqual(textEncoder.encode('s a '));
+    expect(sentChunks[5].getData()).toEqual(textEncoder.encode('mess'));
+    expect(sentChunks[6].getData()).toEqual(textEncoder.encode('age'));
+  });
+
   it('write transfer progress callback', async () => {
     const manager = new Manager(service, DEFAULT_TIMEOUT_S);
 

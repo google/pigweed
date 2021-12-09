@@ -222,7 +222,7 @@ class WriteTransfer(Transfer):
         # arrive while responding to a prior update.
         self._lock = asyncio.Lock()
         self._offset = 0
-        self._max_bytes_to_send = 0
+        self._window_end_offset = 0
         self._max_chunk_size = 0
         self._chunk_delay_us: Optional[int] = None
 
@@ -260,14 +260,16 @@ class WriteTransfer(Transfer):
                 await asyncio.sleep(self._chunk_delay_us / 1e6)
 
             async with self._lock:
+                if self.done.is_set():
+                    return
+
                 if window_id != self._window_id:
-                    _LOG.debug('Transfer %d: Skipping stale window')
+                    _LOG.debug('Transfer %d: Skipping stale window', self.id)
                     return
 
                 write_chunk = self._next_chunk()
                 self._offset += len(write_chunk.data)
-                self._max_bytes_to_send -= len(write_chunk.data)
-                sent_requested_bytes = self._max_bytes_to_send == 0
+                sent_requested_bytes = self._offset == self._window_end_offset
 
             self._send_chunk(write_chunk)
 
@@ -281,6 +283,10 @@ class WriteTransfer(Transfer):
 
     def _handle_parameters_update(self, chunk: Chunk) -> bool:
         """Updates transfer state based on a transfer parameters update."""
+
+        retransmit = True
+        if chunk.HasField('type'):
+            retransmit = chunk.type == Chunk.Type.PARAMETERS_RETRANSMIT
 
         if chunk.offset > len(self.data):
             # Bad offset; terminate the transfer.
@@ -298,15 +304,27 @@ class WriteTransfer(Transfer):
             self._send_error(Status.INTERNAL)
             return False
 
-        # Check whether the client has sent a previous data offset, which
-        # indicates that some chunks were lost in transmission.
-        if chunk.offset < self._offset:
-            _LOG.debug('Write transfer %d rolling back to offset %d from %d',
-                       self.id, chunk.offset, self._offset)
+        if retransmit:
+            # Check whether the client has sent a previous data offset, which
+            # indicates that some chunks were lost in transmission.
+            if chunk.offset < self._offset:
+                _LOG.debug('Write transfer %d rolling back: offset %d from %d',
+                           self.id, chunk.offset, self._offset)
 
-        self._offset = chunk.offset
-        self._max_bytes_to_send = min(chunk.pending_bytes,
-                                      len(self.data) - self._offset)
+            self._offset = chunk.offset
+
+            # Retransmit is the default behavior for older versions of the
+            # transfer protocol. The window_end_offset field is not guaranteed
+            # to be set in these version, so it must be calculated.
+            max_bytes_to_send = min(chunk.pending_bytes,
+                                    len(self.data) - self._offset)
+            self._window_end_offset = self._offset + max_bytes_to_send
+        else:
+            assert chunk.type == Chunk.Type.PARAMETERS_CONTINUE
+
+            # Extend the window to the new end offset specified by the server.
+            self._window_end_offset = min(chunk.window_end_offset,
+                                          len(self.data))
 
         if chunk.HasField('max_chunk_size_bytes'):
             self._max_chunk_size = chunk.max_chunk_size_bytes
@@ -322,7 +340,8 @@ class WriteTransfer(Transfer):
     def _next_chunk(self) -> Chunk:
         """Returns the next Chunk message to send in the data transfer."""
         chunk = Chunk(transfer_id=self.id, offset=self._offset)
-        max_bytes_in_chunk = min(self._max_chunk_size, self._max_bytes_to_send)
+        max_bytes_in_chunk = min(self._max_chunk_size,
+                                 self._window_end_offset - self._offset)
 
         chunk.data = self.data[self._offset:self._offset + max_bytes_in_chunk]
 
@@ -340,6 +359,16 @@ class ReadTransfer(Transfer):
     client sets a conservative window and chunk size to avoid overloading the
     device. These are configurable in the constructor.
     """
+
+    # The fractional position within a window at which a receive transfer should
+    # extend its window size to minimize the amount of time the transmitter
+    # spends blocked.
+    #
+    # For example, a divisor of 2 will extend the window when half of the
+    # requested data has been received, a divisor of three will extend at a
+    # third of the window, and so on.
+    EXTEND_WINDOW_DIVISOR = 2
+
     def __init__(  # pylint: disable=too-many-arguments
             self,
             transfer_id: int,
@@ -363,6 +392,7 @@ class ReadTransfer(Transfer):
         self._data = bytearray()
         self._offset = 0
         self._pending_bytes = max_bytes_to_receive
+        self._window_end_offset = max_bytes_to_receive
 
     @property
     def data(self) -> bytes:
@@ -383,7 +413,6 @@ class ReadTransfer(Transfer):
             # Initially, the transfer service only supports in-order transfers.
             # If data is received out of order, request that the server
             # retransmit from the previous offset.
-            self._pending_bytes = 0
             self._send_chunk(self._transfer_parameters())
             return
 
@@ -413,23 +442,35 @@ class ReadTransfer(Transfer):
             self._remaining_transfer_size + self._offset)
         self._update_progress(self._offset, self._offset, total_size)
 
+        remaining_window_size = self._window_end_offset - self._offset
+        extend_window = (remaining_window_size <= self._max_bytes_to_receive /
+                         ReadTransfer.EXTEND_WINDOW_DIVISOR)
+
         if self._pending_bytes == 0:
             # All pending data was received. Send out a new parameters chunk for
             # the next block.
             self._send_chunk(self._transfer_parameters())
+        elif extend_window:
+            self._send_chunk(self._transfer_parameters(extend=True))
 
     def _retry_after_timeout(self) -> None:
         self._send_chunk(self._transfer_parameters())
 
-    def _transfer_parameters(self) -> Chunk:
+    def _transfer_parameters(self, extend: bool = False) -> Chunk:
         """Sends an updated transfer parameters chunk to the server."""
 
         self._pending_bytes = self._max_bytes_to_receive
+        self._window_end_offset = self._offset + self._max_bytes_to_receive
+
+        chunk_type = (Chunk.Type.PARAMETERS_CONTINUE
+                      if extend else Chunk.Type.PARAMETERS_RETRANSMIT)
 
         chunk = Chunk(transfer_id=self.id,
                       pending_bytes=self._pending_bytes,
+                      window_end_offset=self._window_end_offset,
                       max_chunk_size_bytes=self._max_chunk_size,
-                      offset=self._offset)
+                      offset=self._offset,
+                      type=chunk_type)
 
         if self._chunk_delay_us:
             chunk.min_delay_microseconds = self._chunk_delay_us

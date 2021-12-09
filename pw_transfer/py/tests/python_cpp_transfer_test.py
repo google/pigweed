@@ -16,8 +16,8 @@
 
 from pathlib import Path
 import random
-from typing import List, Tuple, Union
 import tempfile
+from typing import List, Tuple, Union
 import unittest
 
 from pw_hdlc import rpc
