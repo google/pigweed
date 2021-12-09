@@ -97,3 +97,21 @@ code.literal {
 h4, h5, h6 {
     text-transform: none;
 }
+
+:root {
+  /* SVGs from: https://octicons-git-v2-primer.vercel.app/octicons/ */
+  --icon--check-circle: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zM0 8a8 8 0 1116 0A8 8 0 010 8zm11.78-1.72a.75.75 0 00-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 00-1.06 1.06l2 2a.75.75 0 001.06 0l4.5-4.5z"></path></svg>');
+  --icon--check-circle-fill: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm3.78-9.72a.75.75 0 00-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 00-1.06 1.06l2 2a.75.75 0 001.06 0l4.5-4.5z"></path></svg>');
+}
+
+.admonition.checkmark {
+  border-color: var(--color-admonition-title--tip);
+}
+.admonition.checkmark > .admonition-title {
+  background-color: var(--color-admonition-title-background--tip);
+}
+.admonition.checkmark > .admonition-title::before {
+  background-color: var(--color-admonition-title--tip);
+  -webkit-mask-image: var(--icon--check-circle-fill);
+          mask-image: var(--icon--check-circle-fill);
+}

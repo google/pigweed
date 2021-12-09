@@ -3,7 +3,6 @@
 ===========
 Style Guide
 ===========
-
 .. tip::
   Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
   formatting checks. To speed up the review process, consider adding ``pw
@@ -101,46 +100,51 @@ Pigweed small, flexible, and portable, functions that allocate dynamic memory
 must be avoided. Care must be exercised when using multiple instantiations of a
 template function, which can lead to code bloat.
 
-The following C++ Standard Library headers are always permitted:
+Permitted Headers
+-----------------
+.. admonition:: The following C++ Standard Library headers are always permitted:
+   :class: checkmark
 
-  * ``<array>``
-  * ``<complex>``
-  * ``<initializer_list>``
-  * ``<iterator>``
-  * ``<limits>``
-  * ``<optional>``
-  * ``<random>``
-  * ``<ratio>``
-  * ``<span>``
-  * ``<string_view>``
-  * ``<tuple>``
-  * ``<type_traits>``
-  * ``<utility>``
-  * ``<variant>``
-  * C Standard Library headers (``<c*>``)
+   * ``<array>``
+   * ``<complex>``
+   * ``<initializer_list>``
+   * ``<iterator>``
+   * ``<limits>``
+   * ``<optional>``
+   * ``<random>``
+   * ``<ratio>``
+   * ``<span>``
+   * ``<string_view>``
+   * ``<tuple>``
+   * ``<type_traits>``
+   * ``<utility>``
+   * ``<variant>``
+   * C Standard Library headers (``<c*>``)
 
-With caution, parts of the following headers can be used:
+.. admonition:: With caution, parts of the following headers can be used:
+   :class: warning
 
-  * ``<algorithm>`` -- be wary of potential memory allocation
-  * ``<atomic>`` -- not all MCUs natively support atomic operations
-  * ``<bitset>`` -- conversions to or from strings are disallowed
-  * ``<functional>`` -- do **not** use ``std::function``
-  * ``<new>`` -- for placement new
-  * ``<numeric>`` -- be wary of code size with multiple template instantiations
+   * ``<algorithm>`` -- be wary of potential memory allocation
+   * ``<atomic>`` -- not all MCUs natively support atomic operations
+   * ``<bitset>`` -- conversions to or from strings are disallowed
+   * ``<functional>`` -- do **not** use ``std::function``
+   * ``<new>`` -- for placement new
+   * ``<numeric>`` -- be wary of code size with multiple template instantiations
 
-Never use any of these headers:
+.. admonition:: Never use any of these headers:
+   :class: error
 
-  * Dynamic containers (``<list>``, ``<map>``, ``<set>``, ``<vector>``, etc.)
-  * Streams (``<iostream>``, ``<ostream>``, ``<fstream>``, etc.)
-  * ``<exception>``
-  * ``<future>``, ``<mutex>``, ``<thread>``
-  * ``<memory>``
-  * ``<regex>``
-  * ``<scoped_allocator>``
-  * ``<sstream>``
-  * ``<stdexcept>``
-  * ``<string>``
-  * ``<valarray>``
+   * Dynamic containers (``<list>``, ``<map>``, ``<set>``, ``<vector>``, etc.)
+   * Streams (``<iostream>``, ``<ostream>``, ``<fstream>``, etc.)
+   * ``<exception>``
+   * ``<future>``, ``<mutex>``, ``<thread>``
+   * ``<memory>``
+   * ``<regex>``
+   * ``<scoped_allocator>``
+   * ``<sstream>``
+   * ``<stdexcept>``
+   * ``<string>``
+   * ``<valarray>``
 
 Headers not listed here should be carefully evaluated before they are used.
 
@@ -217,7 +221,7 @@ blank, like this:
 
 .. code-block:: cpp
 
-  // Copyright 2020 The Pigweed Authors
+  // Copyright 2021 The Pigweed Authors
   //
   // Licensed under the Apache License, Version 2.0 (the "License"); you may not
   // use this file except in compliance with the License. You may obtain a copy of
@@ -254,56 +258,57 @@ Entities shall be named according to the `Google style guide
 <https://google.github.io/styleguide/cppguide.html>`_, with the following
 additional requirements.
 
-**C++ code**
-  * All Pigweed C++ code must be in the ``pw`` namespace. Namespaces for
-    modules should be nested under ``pw``. For example,
-    ``pw::string::Format()``.
-  * Whenever possible, private code should be in a source (.cc) file and placed
-    in anonymous namespace nested under ``pw``.
-  * If private code must be exposed in a header file, it must be in a namespace
-    nested under ``pw``. The namespace may be named for its subsystem or use a
-    name that designates it as private, such as ``internal``.
-  * Template arguments for non-type names (e.g. ``template <int kFooBar>``)
-    should follow the constexpr and const variable Google naming convention,
-    which means k prefixed camel case (e.g.
-    ``kCamelCase``). This matches the Google C++ style for variable naming,
-    however the wording in the official style guide isn't explicit for template
-    arguments and could be interpreted to use ``foo_bar`` style naming.
-    For consistency with other variables whose value is always fixed for the
-    duration of the program, the naming convention is ``kCamelCase``, and so
-    that is the style we use in Pigweed.
+C++ code
+--------
+* All Pigweed C++ code must be in the ``pw`` namespace. Namespaces for modules
+  should be nested under ``pw``. For example, ``pw::string::Format()``.
+* Whenever possible, private code should be in a source (.cc) file and placed in
+  anonymous namespace nested under ``pw``.
+* If private code must be exposed in a header file, it must be in a namespace
+  nested under ``pw``. The namespace may be named for its subsystem or use a
+  name that designates it as private, such as ``internal``.
+* Template arguments for non-type names (e.g. ``template <int kFooBar>``) should
+  follow the constexpr and const variable Google naming convention, which means
+  k prefixed camel case (e.g.  ``kCamelCase``). This matches the Google C++
+  style for variable naming, however the wording in the official style guide
+  isn't explicit for template arguments and could be interpreted to use
+  ``foo_bar`` style naming.  For consistency with other variables whose value is
+  always fixed for the duration of the program, the naming convention is
+  ``kCamelCase``, and so that is the style we use in Pigweed.
 
-**C code**
+C code
+------
 In general, C symbols should be prefixed with the module name. If the symbol is
 not associated with a module, use just ``pw`` as the module name. Facade
 backends may chose to prefix symbols with the facade's name to help reduce the
 length of the prefix.
 
-  * Public names used by C code must be prefixed with the module name (e.g.
-    ``pw_tokenizer_*``).
-  * If private code must be exposed in a header, private names used by C code
-    must be prefixed with an underscore followed by the module name (e.g.
-    ``_pw_assert_*``).
-  * Avoid writing C source (.c) files in Pigweed. Prefer to write C++ code with
-    C linkage using ``extern "C"``. Within C source, private C functions and
-    variables must be named with the ``_pw_my_module_*`` prefix and should be
-    declared ``static`` whenever possible; for example,
-    ``_pw_my_module_MyPrivateFunction``.
-  * The C prefix rules apply to
+* Public names used by C code must be prefixed with the module name (e.g.
+  ``pw_tokenizer_*``).
+* If private code must be exposed in a header, private names used by C code must
+  be prefixed with an underscore followed by the module name (e.g.
+  ``_pw_assert_*``).
+* Avoid writing C source (.c) files in Pigweed. Prefer to write C++ code with C
+  linkage using ``extern "C"``. Within C source, private C functions and
+  variables must be named with the ``_pw_my_module_*`` prefix and should be
+  declared ``static`` whenever possible; for example,
+  ``_pw_my_module_MyPrivateFunction``.
+* The C prefix rules apply to
 
-    * C functions (``int pw_foo_FunctionName(void);``),
-    * variables used by C code (``int pw_foo_variable_name;``),
-    * constant variables used by C code (``int pw_foo_kConstantName;``),
-    * structs used by C code (``typedef struct {} pw_foo_StructName;``), and
-    * all of the above for ``extern "C"`` names in C++ code.
+  * C functions (``int pw_foo_FunctionName(void);``),
+  * variables used by C code (``int pw_foo_variable_name;``),
+  * constant variables used by C code (``int pw_foo_kConstantName;``),
+  * structs used by C code (``typedef struct {} pw_foo_StructName;``), and
+  * all of the above for ``extern "C"`` names in C++ code.
 
-    The prefix does not apply to struct members, which use normal Google style.
+  The prefix does not apply to struct members, which use normal Google style.
 
-**Preprocessor macros**
-  * Public Pigweed macros must be prefixed with the module name (e.g.
-    ``PW_MY_MODULE_*``).
-  * Private Pigweed macros must be prefixed with an underscore followed by the
-    module name (e.g. ``_PW_MY_MODULE_*``).
+Preprocessor macros
+-------------------
+* Public Pigweed macros must be prefixed with the module name (e.g.
+  ``PW_MY_MODULE_*``).
+* Private Pigweed macros must be prefixed with an underscore followed by the
+  module name (e.g. ``_PW_MY_MODULE_*``).
 
 **Example**
 
@@ -515,14 +520,14 @@ Preprocessor conditional statements
 When using macros for conditional compilation, prefer to use ``#if`` over
 ``#ifdef``. This checks the value of the macro rather than whether it exists.
 
- * ``#if`` handles undefined macros equivalently to ``#ifdef``. Undefined
-   macros expand to 0 in preprocessor conditional statements.
- * ``#if`` evaluates false for macros defined as 0, while ``#ifdef`` evaluates
-   true.
- * Macros defined using compiler flags have a default value of 1 in GCC and
-   Clang, so they work equivalently for ``#if`` and ``#ifdef``.
- * Macros defined to an empty statement cause compile-time errors in ``#if``
-   statements, which avoids ambiguity about how the macro should be used.
+* ``#if`` handles undefined macros equivalently to ``#ifdef``. Undefined
+  macros expand to 0 in preprocessor conditional statements.
+* ``#if`` evaluates false for macros defined as 0, while ``#ifdef`` evaluates
+  true.
+* Macros defined using compiler flags have a default value of 1 in GCC and
+  Clang, so they work equivalently for ``#if`` and ``#ifdef``.
+* Macros defined to an empty statement cause compile-time errors in ``#if``
+  statements, which avoids ambiguity about how the macro should be used.
 
 All ``#endif`` statements should be commented with the expression from their
 corresponding ``#if``. Do not indent within preprocessor conditional statements.
@@ -566,49 +571,49 @@ nomenclature specific to Pigweed. For each target specified within the build
 file there are a list of dependency fields. Those fields, in their expected
 order, are:
 
-  * ``<public_config>`` -- external build configuration
-  * ``<public_deps>`` -- necessary public dependencies (ie: Pigweed headers)
-  * ``<public>`` -- exposed package public interface header files
-  * ``<config>`` -- package build configuration
-  * ``<sources>`` -- package source code
-  * ``<deps>`` -- package necessary local dependencies
+* ``<public_config>`` -- external build configuration
+* ``<public_deps>`` -- necessary public dependencies (ie: Pigweed headers)
+* ``<public>`` -- exposed package public interface header files
+* ``<config>`` -- package build configuration
+* ``<sources>`` -- package source code
+* ``<deps>`` -- package necessary local dependencies
 
 Assets within each field must be listed in alphabetical order
 
 .. code-block:: cpp
 
-  # Here is a brief example of a GN build file.
+   # Here is a brief example of a GN build file.
 
-  import("$dir_pw_unit_test/test.gni")
+   import("$dir_pw_unit_test/test.gni")
 
-  config("default_config") {
-    include_dirs = [ "public" ]
-  }
+   config("default_config") {
+     include_dirs = [ "public" ]
+   }
 
-  source_set("pw_sample_module") {
-    public_configs = [ ":default_config" ]
-    public_deps = [ dir_pw_status ]
-    public = [ "public/pw_sample_module/sample_module.h" ]
-    sources = [
-      "public/pw_sample_module/internal/sample_module.h",
-      "sample_module.cc",
-      "used_by_sample_module.cc",
-    ]
-    deps = [ dir_pw_varint ]
-  }
+   source_set("pw_sample_module") {
+     public_configs = [ ":default_config" ]
+     public_deps = [ dir_pw_status ]
+     public = [ "public/pw_sample_module/sample_module.h" ]
+     sources = [
+       "public/pw_sample_module/internal/sample_module.h",
+       "sample_module.cc",
+       "used_by_sample_module.cc",
+     ]
+     deps = [ dir_pw_varint ]
+   }
 
-  pw_test_group("tests") {
-    tests = [ ":sample_module_test" ]
-  }
+   pw_test_group("tests") {
+     tests = [ ":sample_module_test" ]
+   }
 
-  pw_test("sample_module_test") {
-    sources = [ "sample_module_test.cc" ]
-    deps = [ ":sample_module" ]
-  }
+   pw_test("sample_module_test") {
+     sources = [ "sample_module_test.cc" ]
+     deps = [ ":sample_module" ]
+   }
 
-  pw_doc_group("docs") {
-    sources = [ "docs.rst" ]
-  }
+   pw_doc_group("docs") {
+     sources = [ "docs.rst" ]
+   }
 
 ------------------
 Build files: Bazel
@@ -623,9 +628,9 @@ Documentation
 -------------
 .. note::
 
-  Pigweed's documentation style guide came after much of the documentation was
-  written, so Pigweed's docs don't yet 100% conform to this style guide. When
-  updating docs, please update them to match the style guide.
+   Pigweed's documentation style guide came after much of the documentation was
+   written, so Pigweed's docs don't yet 100% conform to this style guide. When
+   updating docs, please update them to match the style guide.
 
 Pigweed documentation is written using the `reStructuredText
 <https://docutils.sourceforge.io/rst.html>`_ markup language and processed by
@@ -633,15 +638,9 @@ Pigweed documentation is written using the `reStructuredText
 with the `sphinx-design <https://sphinx-design.readthedocs.io/en/furo-theme/>`_
 extension.
 
-.. _Sphinx: https://www.sphinx-doc.org/
-
-.. inclusive-language: disable
-
-.. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
-
-.. inclusive-language: enable
-
-.. admonition:: Doc Writing Reference Links
+Syntax Reference Links
+======================
+.. admonition:: See also
    :class: seealso
 
    - `reStructuredText Primer`_
@@ -697,55 +696,67 @@ for the ReST heading syntax.
    Don't use this heading level, but if you must, use period characters
    ("....") for the heading.
 
-Do not put blank lines after the headings.
+Do not put blank lines after headings.
+--------------------------------------
+.. admonition:: **Yes**: No blank after heading
+   :class: checkmark
 
-**Yes**: No blank after heading
+   .. code:: rst
 
-.. code:: rst
+      Here is a heading
+      -----------------
+      Note that there is no blank line after the heading separator!
 
-   Here is a heading
-   -----------------
-   Note that there is no blank line after the heading separator!
+.. admonition:: **No**: Unnecessary blank line
+   :class: error
 
-**No**: Unnecessary blank line
+   .. code:: rst
 
-.. code:: rst
+      Here is a heading
+      -----------------
 
-   Here is a heading
-   -----------------
-
-   There is a totally unnecessary blank line above this one. Don't do this.
+      There is a totally unnecessary blank line above this one. Don't do this.
 
 Do not put multiple blank lines before a heading.
+-------------------------------------------------
+.. admonition:: **Yes**: Just one blank after section content before the next heading
+   :class: checkmark
 
-**Yes**: Just one blank after section content before the next heading
+   .. code:: rst
 
-.. code:: rst
+      There is some text here in the section before the next. It's just here to
+      illustrate the spacing standard. Note that there is just one blank line
+      after this paragraph.
 
-   There is some text here in the section before the next. It's just here to
-   illustrate the spacing standard. Note that there is just one blank line
-   after this paragraph.
+      Just one blank!
+      ---------------
+      There is just one blank line before the heading.
 
-   Just one blank!
-   ---------------
-   There is just one blank line before the heading.
+.. admonition:: **No**: Extra blank lines
+   :class: error
 
-**No**: Extra blank lines
+   .. code:: rst
 
-.. code:: rst
-
-   There is some text here in the section before the next. It's just here to
-   illustrate the spacing standard. Note that there are too many blank lines
-   after this paragraph; there should be just one.
-
+      There is some text here in the section before the next. It's just here to
+      illustrate the spacing standard. Note that there are too many blank lines
+      after this paragraph; there should be just one.
 
 
-   Too many blanks
-   ---------------
-   There are too many blanks before the heading for this section.
+
+      Too many blanks
+      ---------------
+      There are too many blanks before the heading for this section.
 
 Tables
 ======
 Consider using ``.. list-table::`` syntax, which is more maintainable and
 easier to edit for complex tables (`details
 <https://docutils.sourceforge.io/docs/ref/rst/directives.html#list-table>`_).
+
+.. _Sphinx: https://www.sphinx-doc.org/
+
+.. inclusive-language: disable
+
+.. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
+
+.. inclusive-language: enable
