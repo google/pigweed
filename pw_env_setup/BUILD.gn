@@ -52,6 +52,7 @@ _pigweed_python_deps = [
   "$dir_pw_status/py",
   "$dir_pw_stm32cube_build/py",
   "$dir_pw_symbolizer/py",
+  "$dir_pw_system/py",
   "$dir_pw_thread/py",
   "$dir_pw_tls_client/py",
   "$dir_pw_tokenizer/py",
