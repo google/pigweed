@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
-#include "src/lib/fxl/functional/cancelable_callback.h"
 
 namespace bt::hci {
 

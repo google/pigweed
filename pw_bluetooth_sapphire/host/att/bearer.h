@@ -26,7 +26,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
-#include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::att {
@@ -288,11 +287,8 @@ class Bearer final : public fbl::RefCounted<Bearer> {
   uint16_t preferred_mtu_;
   uint16_t min_mtu_;
 
-  // Callback passed to l2cap::Channel::OnRxBFrame().
-  fxl::CancelableCallback<void(ByteBufferPtr sdu)> rx_task_;
-
-  // Callback that wraps our internal OnChannelClosed handler.
-  fxl::CancelableClosure chan_closed_cb_;
+  // Set to true on the first call to ShutDownInternal.
+  bool shut_down_ = false;
 
   // Channel closed callback assigned to us via set_closed_callback().
   fit::closure closed_cb_;

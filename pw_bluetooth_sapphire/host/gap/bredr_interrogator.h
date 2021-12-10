@@ -22,7 +22,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
-#include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {

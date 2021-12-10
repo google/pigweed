@@ -7,6 +7,8 @@
 #include <endian.h>
 #include <lib/async/cpp/task.h>
 
+#include <cstddef>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -594,7 +596,8 @@ void FakeController::OnCreateConnectionCommandReceived(
     bt_log(INFO, "fake-hci", "requested peer %s cannot be connected; request will time out",
            peer_address.ToString().c_str());
 
-    pending_bredr_connect_rsp_.Reset([this, peer_address] {
+    bredr_connect_rsp_task_.Cancel();
+    bredr_connect_rsp_task_.set_handler([this, peer_address] {
       hci_spec::ConnectionCompleteEventParams response = {};
 
       response.status = hci_spec::StatusCode::kPageTimeout;
@@ -606,10 +609,8 @@ void FakeController::OnCreateConnectionCommandReceived(
 
     // Default page timeout of 5.12s
     // See Core Spec v5.0 Vol 2, Part E, Section 6.6
-    constexpr zx::duration default_page_timeout = zx::usec(625 * 0x2000);
-
-    async::PostDelayedTask(
-        dispatcher(), [cb = pending_bredr_connect_rsp_.callback()] { cb(); }, default_page_timeout);
+    constexpr zx::duration default_page_timeout = zx::usec(static_cast<int64_t>(625) * 0x2000);
+    bredr_connect_rsp_task_.PostDelayed(dispatcher(), default_page_timeout);
     return;
   }
 
@@ -638,7 +639,8 @@ void FakeController::OnCreateConnectionCommandReceived(
   if (peer->force_pending_connect())
     return;
 
-  pending_bredr_connect_rsp_.Reset([response, peer, this] {
+  bredr_connect_rsp_task_.Cancel();
+  bredr_connect_rsp_task_.set_handler([response, peer, this] {
     bredr_connect_pending_ = false;
 
     if (response.status == hci_spec::StatusCode::kSuccess) {
@@ -652,7 +654,7 @@ void FakeController::OnCreateConnectionCommandReceived(
 
     SendEvent(hci_spec::kConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
   });
-  async::PostTask(dispatcher(), [cb = pending_bredr_connect_rsp_.callback()] { cb(); });
+  bredr_connect_rsp_task_.Post(dispatcher());
 }
 
 void FakeController::OnLECreateConnectionCommandReceived(
@@ -745,35 +747,29 @@ void FakeController::OnLECreateConnectionCommandReceived(
   if (peer->force_pending_connect())
     return;
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  pending_le_connect_rsp_.Reset([response, address = peer_address, self] {
-    if (!self) {
-      // The fake controller has been removed; nothing to be done
-      return;
-    }
-    auto peer = self->FindPeer(address);
+  le_connect_rsp_task_.Cancel();
+  le_connect_rsp_task_.set_handler([response, address = peer_address, this]() {
+    auto peer = FindPeer(address);
     if (!peer) {
       // The peer has been removed; Ignore this response
       return;
     }
 
-    self->le_connect_pending_ = false;
+    le_connect_pending_ = false;
 
     if (response.status == hci_spec::StatusCode::kSuccess) {
       bool not_previously_connected = !peer->connected();
       hci_spec::ConnectionHandle handle = le16toh(response.connection_handle);
       peer->AddLink(handle);
       if (not_previously_connected && peer->connected()) {
-        self->NotifyConnectionState(peer->address(), handle, /*connected=*/true);
+        NotifyConnectionState(peer->address(), handle, /*connected=*/true);
       }
     }
 
-    self->SendLEMetaEvent(hci_spec::kLEConnectionCompleteSubeventCode,
-                          BufferView(&response, sizeof(response)));
+    SendLEMetaEvent(hci_spec::kLEConnectionCompleteSubeventCode,
+                    BufferView(&response, sizeof(response)));
   });
-  async::PostDelayedTask(
-      dispatcher(), [cb = pending_le_connect_rsp_.callback()] { cb(); },
-      settings_.le_connection_delay);
+  le_connect_rsp_task_.PostDelayed(dispatcher(), settings_.le_connection_delay);
 }
 
 void FakeController::OnLEConnectionUpdateCommandReceived(
@@ -1005,7 +1001,7 @@ void FakeController::OnLECreateConnectionCancel() {
   }
 
   le_connect_pending_ = false;
-  pending_le_connect_rsp_.Cancel();
+  le_connect_rsp_task_.Cancel();
   ZX_DEBUG_ASSERT(le_connect_params_);
 
   NotifyConnectionState(le_connect_params_->peer_address, 0, /*connected=*/false,
@@ -1155,7 +1151,7 @@ void FakeController::OnCreateConnectionCancel() {
   }
 
   bredr_connect_pending_ = false;
-  pending_bredr_connect_rsp_.Cancel();
+  bredr_connect_rsp_task_.Cancel();
 
   NotifyConnectionState(pending_bredr_connect_addr_, 0, /*connected=*/false, /*canceled=*/true);
 

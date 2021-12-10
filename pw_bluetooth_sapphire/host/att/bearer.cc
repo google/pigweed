@@ -271,7 +271,6 @@ Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan)
 Bearer::~Bearer() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
-  rx_task_.Cancel();
   chan_ = nullptr;
 
   request_queue_.Reset();
@@ -281,25 +280,26 @@ Bearer::~Bearer() {
 bool Bearer::Activate() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
-  rx_task_.Reset(fit::bind_member(this, &Bearer::OnRxBFrame));
-  chan_closed_cb_.Reset(fit::bind_member(this, &Bearer::OnChannelClosed));
-
-  return chan_->Activate(rx_task_.callback(), chan_closed_cb_.callback());
+  return chan_->Activate(fit::bind_member(this, &Bearer::OnRxBFrame),
+                         fit::bind_member(this, &Bearer::OnChannelClosed));
 }
 
 void Bearer::ShutDown() {
   if (is_open())
-    ShutDownInternal(false /* due_to_timeout */);
+    ShutDownInternal(/*due_to_timeout=*/false);
 }
 
 void Bearer::ShutDownInternal(bool due_to_timeout) {
-  ZX_DEBUG_ASSERT(is_open());
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
-  bt_log(DEBUG, "att", "bearer shutting down");
+  // Prevent this method from being run twice (e.g. by SignalLinkError() below).
+  if (shut_down_) {
+    return;
+  }
+  ZX_ASSERT(is_open());
+  shut_down_ = true;
 
-  rx_task_.Cancel();
-  chan_closed_cb_.Cancel();
+  bt_log(DEBUG, "att", "bearer shutting down");
 
   // This will have no effect if the channel is already closed (e.g. if
   // ShutDown() was called by OnChannelClosed()).
@@ -312,8 +312,9 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
   TransactionQueue req_queue(std::move(request_queue_));
   TransactionQueue ind_queue(std::move(indication_queue_));
 
-  if (closed_cb_)
+  if (closed_cb_) {
     closed_cb_();
+  }
 
   // Terminate all remaining procedures with an error. This is safe even if
   // the bearer got deleted by |closed_cb_|.

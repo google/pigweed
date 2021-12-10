@@ -25,7 +25,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
-#include "src/lib/fxl/functional/cancelable_callback.h"
 
 namespace bt::testing {
 
@@ -665,7 +664,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Variables used for
   // HCI_LE_Create_Connection/HCI_LE_Create_Connection_Cancel.
   uint16_t next_conn_handle_ = 0u;
-  fxl::CancelableClosure pending_le_connect_rsp_;
+  async::TaskClosure le_connect_rsp_task_;
   std::optional<LEConnectParams> le_connect_params_;
   bool le_connect_pending_ = false;
 
@@ -673,7 +672,7 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // HCI_BREDR_Create_Connection/HCI_BREDR_Create_Connection_Cancel.
   bool bredr_connect_pending_ = false;
   DeviceAddress pending_bredr_connect_addr_;
-  fxl::CancelableClosure pending_bredr_connect_rsp_;
+  async::TaskClosure bredr_connect_rsp_task_;
 
   // ID used for L2CAP LE signaling channel commands.
   uint8_t next_le_sig_id_ = 1u;
