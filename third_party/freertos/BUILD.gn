@@ -43,8 +43,8 @@ if (dir_pw_third_party_freertos == "") {
 } else {
   config("disable_warnings") {
     cflags = [
-      "-Wno-error=unused-parameter",
-      "-Wno-error=cast-qual",
+      "-Wno-unused-parameter",
+      "-Wno-cast-qual",
     ]
     visibility = [ ":*" ]
   }
