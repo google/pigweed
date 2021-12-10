@@ -78,7 +78,8 @@ pw_source_set("sleep") {
     "$dir_pw_thread:sleep.facade",
   ]
   assert(
-      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
+      pw_thread_SLEEP_BACKEND != "$dir_pw_thread_stl:sleep" ||
+          pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
           pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_stl:system_clock",
       "The STL pw::this_thread::sleep_{for,until} backend only works with " +
           "the STL pw::chrono::SystemClock backend " +
