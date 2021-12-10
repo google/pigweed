@@ -991,5 +991,39 @@ TEST_F(PeerTest, RegisterAndUnregisterTwoBrEdrInitializingConnections) {
             Peer::ConnectionStateToString(Peer::ConnectionState::kNotConnected));
 }
 
+TEST_F(PeerTest, SettingLeAdvertisingDataOfBondedPeerDoesNotUpdateName) {
+  peer().SetName("alice");
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  peer().MutLe().SetBondData(data);
+
+  const StaticByteBuffer kAdvData(0x08,  // Length
+                                  0x09,  // AD type: Complete Local Name
+                                  'M', 'a', 'l', 'l', 'o', 'r', 'y');
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(0));
+
+  ASSERT_TRUE(peer().name().has_value());
+  EXPECT_EQ(peer().name().value(), "alice");
+}
+
+TEST_F(PeerTest, SettingInquiryDataOfBondedPeerDoesNotUpdateName) {
+  peer().SetName("alice");
+  peer().MutBrEdr().SetBondData(kLTK);
+
+  const StaticByteBuffer kEirData(0x08,  // Length
+                                  0x09,  // AD type: Complete Local Name
+                                  'M', 'a', 'l', 'l', 'o', 'r', 'y');
+  hci_spec::ExtendedInquiryResultEventParams eirep;
+  eirep.num_responses = 1;
+  eirep.bd_addr = peer().address().value();
+  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
+      .Write(kEirData);
+  peer().MutBrEdr().SetInquiryData(eirep);
+
+  ASSERT_TRUE(peer().name().has_value());
+  EXPECT_EQ(peer().name().value(), "alice");
+}
+
 }  // namespace
 }  // namespace bt::gap

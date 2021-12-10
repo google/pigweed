@@ -98,8 +98,10 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data
     adv_timestamp_ = timestamp;
 
     parsed_adv_data_ = std::move(*res);
+
+    // Do not update the name of bonded peers because advertisements are unauthenticated.
     // TODO(fxbug.dev/85365): Populate more Peer fields with relevant fields from parsed_adv_data_.
-    if (parsed_adv_data_->local_name().has_value()) {
+    if (!peer_->bonded() && parsed_adv_data_->local_name().has_value()) {
       // TODO(fxbug.dev/65914): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.
       peer_->SetNameInternal(parsed_adv_data_->local_name().value());
@@ -377,7 +379,10 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
       // TODO(armansito): Parse more fields.
       // TODO(armansito): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.
-      changed = peer_->SetNameInternal(data.ToString());
+      // Do not update the name of bonded peers because inquiry results are unauthenticated.
+      if (!peer_->bonded()) {
+        changed = peer_->SetNameInternal(data.ToString());
+      }
     }
   }
   return changed;
