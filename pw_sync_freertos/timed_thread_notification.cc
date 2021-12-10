@@ -109,7 +109,7 @@ bool TimedThreadNotification::try_acquire_for(SystemClock::duration timeout) {
     native_handle().blocked_thread = nullptr;
 #ifdef configTASK_NOTIFICATION_ARRAY_ENTRIES
     xTaskNotifyStateClearIndexed(
-        pw::sync::freertos::config::kThreadNotificationIndex, nullptr);
+        nullptr, pw::sync::freertos::config::kThreadNotificationIndex);
 #else   // !configTASK_NOTIFICATION_ARRAY_ENTRIES
     xTaskNotifyStateClear(nullptr);
 #endif  // configTASK_NOTIFICATION_ARRAY_ENTRIES

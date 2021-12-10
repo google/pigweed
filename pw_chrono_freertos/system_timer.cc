@@ -77,13 +77,15 @@ void HandleTimerCallback(TimerHandle_t timer_handle) {
   const SystemClock::duration period =
       std::min(pw::chrono::freertos::kMaxTimeout, time_until_deadline);
   PW_CHECK_UINT_EQ(
-      xTimerChangePeriod(
-          &native_type.tcb, static_cast<TickType_t>(period.count()), 0),
+      xTimerChangePeriod(reinterpret_cast<TimerHandle_t>(&native_type.tcb),
+                         static_cast<TickType_t>(period.count()),
+                         0),
       pdPASS,
       "Timer command queue overflowed");
-  PW_CHECK_UINT_EQ(xTimerStart(&native_type.tcb, 0),
-                   pdPASS,
-                   "Timer command queue overflowed");
+  PW_CHECK_UINT_EQ(
+      xTimerStart(reinterpret_cast<TimerHandle_t>(&native_type.tcb), 0),
+      pdPASS,
+      "Timer command queue overflowed");
 }
 
 // FreeRTOS requires a timer to have a non-zero period.
@@ -120,7 +122,7 @@ SystemTimer::SystemTimer(ExpiryCallback&& callback)
 
   // This should never fail since the pointer provided was not null and it
   // should return a pointer to the StaticTimer_t.
-  PW_DCHECK_PTR_EQ(handle, &native_type_.tcb);
+  PW_DCHECK_PTR_EQ(handle, reinterpret_cast<TimerHandle_t>(&native_type_.tcb));
 }
 
 SystemTimer::~SystemTimer() {
@@ -130,15 +132,17 @@ SystemTimer::~SystemTimer() {
   // does not synchronously delete and disable the timer here! This means that
   // if the timer is about to expire and the timer service thread is a lower
   // priority that it may use the native_type_ after it is free'd.
-  PW_CHECK_UINT_EQ(pdPASS,
-                   xTimerDelete(&native_type_.tcb, 0),
-                   "Timer command queue overflowed");
+  PW_CHECK_UINT_EQ(
+      pdPASS,
+      xTimerDelete(reinterpret_cast<TimerHandle_t>(&native_type_.tcb), 0),
+      "Timer command queue overflowed");
 
   // In case the timer is still active as warned above, busy yield loop until it
   // has been removed. Note that this is safe before the scheduler has been
   // started because the timer cannot have been added to the queue yet and ergo
   // it shouldn't attempt to yield.
-  while (xTimerIsTimerActive(&native_type_.tcb)) {
+  while (
+      xTimerIsTimerActive(reinterpret_cast<TimerHandle_t>(&native_type_.tcb))) {
     taskYIELD();
   }
 }
@@ -162,17 +166,19 @@ void SystemTimer::InvokeAt(SystemClock::time_point timestamp) {
       kMinTimerPeriod, time_until_deadline, pw::chrono::freertos::kMaxTimeout);
 
   PW_CHECK_UINT_EQ(
-      xTimerChangePeriod(
-          &native_type_.tcb, static_cast<TickType_t>(period.count()), 0),
+      xTimerChangePeriod(reinterpret_cast<TimerHandle_t>(&native_type_.tcb),
+                         static_cast<TickType_t>(period.count()),
+                         0),
       pdPASS,
       "Timer command queue overflowed");
 
   // Don't enqueue the start multiple times, schedule it once and let the
   // callback cancel.
   if (native_type_.state == State::kCancelled) {
-    PW_CHECK_UINT_EQ(xTimerStart(&native_type_.tcb, 0),
-                     pdPASS,
-                     "Timer command queue overflowed");
+    PW_CHECK_UINT_EQ(
+        xTimerStart(reinterpret_cast<TimerHandle_t>(&native_type_.tcb), 0),
+        pdPASS,
+        "Timer command queue overflowed");
     native_type_.state = State::kScheduled;
   }
 }
@@ -192,9 +198,10 @@ void SystemTimer::Cancel() {
   // processed before the entire command queue is emptied.
   native_type_.state = State::kCancelled;
 
-  PW_CHECK_UINT_EQ(xTimerStop(&native_type_.tcb, 0),
-                   pdPASS,
-                   "Timer command queue overflowed");
+  PW_CHECK_UINT_EQ(
+      xTimerStop(reinterpret_cast<TimerHandle_t>(&native_type_.tcb), 0),
+      pdPASS,
+      "Timer command queue overflowed");
 }
 
 }  // namespace pw::chrono
