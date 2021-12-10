@@ -308,7 +308,7 @@ versions of packages it depends on using a `pip constraints file`_. To pin the
 versions of additional packages your project depends on, run
 ``pw python-packages list <path/to/constraints/file>`` and then add
 ``pw_build_PIP_CONSTRAINTS = ["//path/to/constraints/file"]`` to your project's
-``.gn`` file (see `Pigweed's .gn file` for an example).
+``.gn`` file (see `Pigweed's .gn file`_ for an example).
 
 .. _pip constraints file: https://pip.pypa.io/en/stable/user_guide/#constraints-files
 .. _default constraints: https://cs.opensource.google/pigweed/pigweed/+/main:pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list
