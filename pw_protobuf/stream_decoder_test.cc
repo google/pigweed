@@ -15,6 +15,8 @@
 #include "pw_protobuf/stream_decoder.h"
 
 #include "gtest/gtest.h"
+#include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
 
 namespace pw::protobuf {
@@ -544,6 +546,34 @@ TEST(StreamDecoder, GetLengthDelimitedPayloadBounds) {
   ASSERT_EQ(OkStatus(), decoder.Next());
   ASSERT_EQ(Status::NotFound(),
             decoder.GetLengthDelimitedPayloadBounds().status());
+}
+
+TEST(StreamDecoder, ReadDelimitedField_DoesntOverConsume) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=string, k=1, v="Hello world"
+    0x0a, 0x0b, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd',
+    // type=int32, k=2, v=42
+    0x10, 0x2a,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  ASSERT_EQ(OkStatus(), decoder.Next());
+
+  // This buffer is much larger than the string.
+  char buffer[128];
+  const StatusWithSize size = decoder.ReadString(buffer);
+  EXPECT_EQ(size.status(), OkStatus());
+  EXPECT_EQ(size.size(), 11u);
+
+  // Make sure we can still read the next field.
+  ASSERT_EQ(OkStatus(), decoder.Next());
+  const pw::Result<int32_t> result = decoder.ReadInt32();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), 42);
 }
 
 }  // namespace

@@ -349,7 +349,7 @@ StatusWithSize StreamDecoder::ReadDelimitedField(std::span<std::byte> out) {
     return StatusWithSize::ResourceExhausted();
   }
 
-  Result<ByteSpan> result = reader_.Read(out);
+  Result<ByteSpan> result = reader_.Read(out.first(delimited_field_size_));
   if (!result.ok()) {
     return StatusWithSize(result.status(), 0);
   }
