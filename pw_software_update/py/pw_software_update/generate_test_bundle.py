@@ -73,9 +73,12 @@ geWonkusMP0+MXopnmN0QlpgaCnG40TSr/W+wFjRmNCklL4dXk01oCwD
 TEST_ROOT_VERSION = 2
 TEST_TARGETS_VERSION = 2
 
+USER_MANIFEST_FILE_NAME = 'user_manifest'
+
 TARGET_FILES = {
     'file1': 'file 1 content'.encode(),
     'file2': 'file 2 content'.encode(),
+    USER_MANIFEST_FILE_NAME: 'user manfiest content'.encode(),
 }
 
 
@@ -230,6 +233,8 @@ class Bundle:
         manifest = Manifest()
         manifest.targets_metadata['targets'].CopyFrom(
             self.generate_targets_metadata())
+        if USER_MANIFEST_FILE_NAME in self._payloads:
+            manifest.user_manifest = self._payloads[USER_MANIFEST_FILE_NAME]
         return manifest
 
 

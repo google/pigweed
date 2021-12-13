@@ -25,6 +25,8 @@
 
 namespace pw::software_update {
 
+constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
+
 // UpdateBundleAccessor is responsible for parsing, verifying and providing
 // target payload access of a software update bundle. It takes the following as
 // inputs:

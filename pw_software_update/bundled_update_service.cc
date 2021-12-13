@@ -50,7 +50,6 @@ namespace pw::software_update {
 namespace {
 
 constexpr std::string_view kTopLevelTargetsName = "targets";
-constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
 
 }  // namespace
 

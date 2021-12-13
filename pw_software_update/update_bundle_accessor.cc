@@ -431,7 +431,7 @@ Status UpdateBundleAccessor::PersistManifest(
   stream::IntervalReader metadata_reader = metadata.GetBytesReader();
 
   std::byte stream_pipe_buffer[WRITE_MANIFEST_STREAM_PIPE_BUFFER_SIZE];
-  return protobuf::WriteProtoStringToBytesMapEntry(
+  PW_TRY(protobuf::WriteProtoStringToBytesMapEntry(
       static_cast<uint32_t>(
           pw::software_update::Manifest::Fields::TARGETS_METADATA),
       name_reader,
@@ -439,7 +439,25 @@ Status UpdateBundleAccessor::PersistManifest(
       metadata_reader,
       metadata_reader.interval_size(),
       stream_pipe_buffer,
-      staged_manifest_writer);
+      staged_manifest_writer));
+
+  // Write `user_manifest` file if there is one.
+  Result<bool> user_manifest_exists =
+      IsTargetPayloadIncluded(kUserManifestTargetFileName);
+  PW_TRY(user_manifest_exists);
+  if (user_manifest_exists.value()) {
+    stream::IntervalReader user_manifest_reader =
+        GetTargetPayload(kUserManifestTargetFileName);
+    PW_TRY(user_manifest_reader.status());
+    protobuf::StreamEncoder encoder(staged_manifest_writer, {});
+    PW_TRY(encoder.WriteBytesFromStream(
+        static_cast<uint32_t>(Manifest::Fields::USER_MANIFEST),
+        user_manifest_reader,
+        user_manifest_reader.interval_size(),
+        stream_pipe_buffer));
+  }
+
+  return OkStatus();
 }
 
 Status UpdateBundleAccessor::Close() {
