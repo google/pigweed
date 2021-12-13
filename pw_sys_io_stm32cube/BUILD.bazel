@@ -23,7 +23,10 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "pw_sys_io_stm32cube",
-    srcs = ["sys_io.cc"],
+    srcs = [
+        "pw_sys_io_stm32cube_private/config.h",
+        "sys_io.cc",
+    ],
     hdrs = ["public/pw_sys_io_stm32cube/init.h"],
     deps = [
         "//pw_preprocessor",

@@ -16,21 +16,36 @@
 
 #include <cinttypes>
 
+#include "pw_preprocessor/concat.h"
 #include "pw_status/status.h"
+#include "pw_sys_io_stm32cube_private/config.h"
 #include "stm32cube/stm32cube.h"
 
-#define _CAT(A, B, C) A##B##C
-#define CAT(A, B, C) _CAT(A, B, C)
+// These macros remap config options to the various STM32Cube HAL macro names.
 
-#define USART_INSTANCE CAT(USART, USART_NUM, )
-#define USART_GPIO_ALTERNATE_FUNC CAT(GPIO_AF7_USART, USART_NUM, )
-#define USART_GPIO_PORT CAT(GPIO, USART_GPIO_PORT_CHAR, )
-#define USART_GPIO_TX_PIN CAT(GPIO_PIN_, USART_TX_PIN_NUM, )
-#define USART_GPIO_RX_PIN CAT(GPIO_PIN_, USART_RX_PIN_NUM, )
+// USART_INSTANCE defined to USARTn, where n is the USART peripheral index.
+#define USART_INSTANCE PW_CONCAT(USART, PW_SYS_IO_STM32CUBE_USART_NUM)
 
+// USART_GPIO_ALTERNATE_FUNC defined to GPIO_AF7_USARTn, where n is the USART
+// peripheral index.
+#define USART_GPIO_ALTERNATE_FUNC \
+  PW_CONCAT(GPIO_AF7_USART, PW_SYS_IO_STM32CUBE_USART_NUM)
+
+// USART_GPIO_PORT defined to GPIOx, where x is the GPIO port letter that the
+// TX/RX pins are on.
+#define USART_GPIO_PORT PW_CONCAT(GPIO, PW_SYS_IO_STM32CUBE_GPIO_PORT)
+#define USART_GPIO_TX_PIN PW_CONCAT(GPIO_PIN_, PW_SYS_IO_STM32CUBE_GPIO_TX_PIN)
+#define USART_GPIO_RX_PIN PW_CONCAT(GPIO_PIN_, PW_SYS_IO_STM32CUBE_GPIO_RX_PIN)
+
+// USART_GPIO_PORT_ENABLE defined to __HAL_RCC_GPIOx_CLK_ENABLE, where x is the
+// GPIO port letter that the TX/RX pins are on.
 #define USART_GPIO_PORT_ENABLE \
-  CAT(__HAL_RCC_GPIO, USART_GPIO_PORT_CHAR, _CLK_ENABLE)
-#define USART_ENABLE CAT(__HAL_RCC_USART, USART_NUM, _CLK_ENABLE)
+  PW_CONCAT(__HAL_RCC_GPIO, PW_SYS_IO_STM32CUBE_GPIO_PORT, _CLK_ENABLE)
+
+// USART_ENABLE defined to __HAL_RCC_USARTn_CLK_ENABLE, where n is the USART
+// peripheral index.
+#define USART_ENABLE \
+  PW_CONCAT(__HAL_RCC_USART, PW_SYS_IO_STM32CUBE_USART_NUM, _CLK_ENABLE)
 
 static UART_HandleTypeDef uart;
 
