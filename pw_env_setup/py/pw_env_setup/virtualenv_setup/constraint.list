@@ -1,11 +1,11 @@
-actdiag==2.0.0
+actdiag==3.0.0
 alabaster==0.7.12
 appdirs==1.4.4
 astroid==2.6.6
 Babel==2.9.1
 backcall==0.2.0
 beautifulsoup4==4.10.0
-blockdiag==2.0.1
+blockdiag==3.0.0
 build==0.7.0
 certifi==2021.10.8
 cffi==1.15.0
@@ -14,7 +14,7 @@ coloredlogs==15.0.1
 cryptography==36.0.0
 decorator==5.1.0
 docutils==0.17.1
-funcparserlib==0.3.5
+funcparserlib==1.0.0a0
 furo==2021.11.23
 future==0.18.2
 grpcio==1.42.0
@@ -34,7 +34,7 @@ mccabe==0.6.1
 mypy==0.910
 mypy-extensions==0.4.3
 mypy-protobuf==2.9
-nwdiag==2.0.0
+nwdiag==3.0.0
 packaging==21.3
 parameterized==0.8.1
 parso==0.8.3
@@ -42,7 +42,7 @@ pep517==0.12.0
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==8.2.0
-prompt-toolkit==3.0.23
+prompt-toolkit==3.0.24
 protobuf==3.19.1
 psutil==5.8.0
 ptpython==3.0.20
@@ -61,7 +61,7 @@ PyYAML==6.0
 requests==2.26.0
 robotframework==3.1
 scan-build==2.0.19
-seqdiag==2.0.0
+seqdiag==3.0.0
 six==1.16.0
 snowballstemmer==2.2.0
 soupsieve==2.3.1
