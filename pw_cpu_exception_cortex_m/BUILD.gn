@@ -44,11 +44,20 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
+config("armv7m") {
+  defines = [ "PW_CPU_EXCEPTION_CORTEX_M_ARMV7M=1" ]
+}
+
+config("armv8m") {
+  defines = [ "PW_CPU_EXCEPTION_CORTEX_M_ARMV8M=1" ]
+}
+
 pw_source_set("support_armv7m") {
   public_configs = [ ":public_include_path" ]
+  configs = [ ":armv7m" ]
   deps = [
     ":config",
-    ":cortex_m_constants",
+    ":cortex_m_constants_armv7m",
     ":cpu_exception_armv7m",
     "$dir_pw_cpu_exception:support.facade",
     dir_pw_log,
@@ -57,9 +66,42 @@ pw_source_set("support_armv7m") {
   sources = [ "cpu_state.cc" ]
 }
 
+pw_source_set("support_armv8m") {
+  public_configs = [ ":public_include_path" ]
+  configs = [ ":armv8m" ]
+  deps = [
+    ":config",
+    ":cortex_m_constants_armv8m",
+    ":cpu_exception_armv8m",
+    "$dir_pw_cpu_exception:support.facade",
+    dir_pw_log,
+    dir_pw_string,
+  ]
+  sources = [ "cpu_state.cc" ]
+}
+
 pw_source_set("proto_dump_armv7m") {
+  public_configs = [ ":public_include_path" ]
+  configs = [ ":armv7m" ]
   public_deps = [
     ":cpu_exception_armv7m",
+    dir_pw_protobuf,
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+  public = [ "public/pw_cpu_exception_cortex_m/proto_dump.h" ]
+  deps = [
+    ":config",
+    ":cpu_state_protos.pwpb",
+  ]
+  sources = [ "proto_dump.cc" ]
+}
+
+pw_source_set("proto_dump_armv8m") {
+  public_configs = [ ":public_include_path" ]
+  configs = [ ":armv8m" ]
+  public_deps = [
+    ":cpu_exception_armv8m",
     dir_pw_protobuf,
     dir_pw_status,
     dir_pw_stream,
@@ -76,13 +118,27 @@ pw_proto_library("cpu_state_protos") {
   sources = [ "pw_cpu_exception_cortex_m_protos/cpu_state.proto" ]
 }
 
+pw_source_set("cpu_exception_armv7m") {
+  public_configs = [
+    ":armv7m",
+    ":backend_config",
+    ":public_include_path",
+  ]
+  public = [
+    "public/pw_cpu_exception_cortex_m/cpu_state.h",
+    "public_overrides/pw_cpu_exception_backend/state.h",
+  ]
+  public_deps = [ "$dir_pw_preprocessor" ]
+}
+
 # TODO(pwbug/296): The *_armv7m libraries work on ARMv8-M, but needs some minor
 # patches for complete correctness. Add *_armv8m targets that use the same files
 # but provide preprocessor defines to enable/disable architecture specific code.
-pw_source_set("cpu_exception_armv7m") {
+pw_source_set("cpu_exception_armv8m") {
   public_configs = [
-    ":public_include_path",
+    ":armv8m",
     ":backend_config",
+    ":public_include_path",
   ]
   public = [
     "public/pw_cpu_exception_cortex_m/cpu_state.h",
@@ -92,17 +148,39 @@ pw_source_set("cpu_exception_armv7m") {
 }
 
 pw_source_set("cpu_exception_armv7m.impl") {
+  configs = [ ":armv7m" ]
   sources = [ "entry.cc" ]
   deps = [
     ":config",
-    ":cortex_m_constants",
+    ":cortex_m_constants_armv7m",
     "$dir_pw_cpu_exception:entry.facade",
     "$dir_pw_cpu_exception:handler",
   ]
 }
 
-pw_source_set("snapshot") {
+# TODO(pwbug/296): The *_armv7m libraries work on ARMv8-M, but needs some minor
+# patches for complete correctness. Add *_armv8m targets that use the same files
+# but provide preprocessor defines to enable/disable architecture specific code.
+pw_source_set("cpu_exception_armv8m.impl") {
+  configs = [ ":armv8m" ]
+  sources = [ "entry.cc" ]
+  deps = [
+    ":config",
+    ":cortex_m_constants_armv8m",
+    "$dir_pw_cpu_exception:entry.facade",
+    "$dir_pw_cpu_exception:handler",
+  ]
+}
+
+# TODO(ewout): Deprecate this once customers have been migrated to the arch
+# specific one.
+group("snapshot") {
+  public_deps = [ ":snapshot_armv7m" ]
+}
+
+pw_source_set("snapshot_armv7m") {
   public_configs = [ ":public_include_path" ]
+  configs = [ ":armv7m" ]
   public_deps = [
     ":cpu_exception_armv7m",
     ":cpu_state_protos.pwpb",
@@ -115,25 +193,58 @@ pw_source_set("snapshot") {
   sources = [ "snapshot.cc" ]
   deps = [
     ":config",
-    ":cortex_m_constants",
+    ":cortex_m_constants_armv7m",
     ":proto_dump_armv7m",
     "$dir_pw_cpu_exception:support",
     dir_pw_log,
   ]
 }
 
-pw_source_set("cortex_m_constants") {
+# TODO(pwbug/296): The *_armv7m libraries work on ARMv8-M, but needs some minor
+# patches for complete correctness. Add *_armv8m targets that use the same files
+# but provide preprocessor defines to enable/disable architecture specific code.
+pw_source_set("snapshot_armv8m") {
+  public_configs = [ ":public_include_path" ]
+  configs = [ ":armv8m" ]
+  public_deps = [
+    ":cpu_exception_armv8m",
+    ":cpu_state_protos.pwpb",
+    "$dir_pw_thread:protos.pwpb",
+    "$dir_pw_thread:snapshot",
+    dir_pw_protobuf,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_cpu_exception_cortex_m/snapshot.h" ]
+  sources = [ "snapshot.cc" ]
+  deps = [
+    ":config",
+    ":cortex_m_constants_armv8m",
+    ":proto_dump_armv8m",
+    "$dir_pw_cpu_exception:support",
+    dir_pw_log,
+  ]
+}
+
+pw_source_set("cortex_m_constants_armv7m") {
+  public_configs = [ ":armv7m" ]
+  public = [ "pw_cpu_exception_cortex_m_private/cortex_m_constants.h" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("cortex_m_constants_armv8m") {
+  public_configs = [ ":armv8m" ]
   public = [ "pw_cpu_exception_cortex_m_private/cortex_m_constants.h" ]
   visibility = [ ":*" ]
 }
 
 pw_test_group("tests") {
-  enable_if = pw_cpu_exception_ENTRY_BACKEND ==
-              "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv7m"
-  tests = [ ":cpu_exception_entry_test" ]
+  tests = [ ":cpu_exception_entry_test_armv7m" ]
 }
 
-pw_test("cpu_exception_entry_test") {
+# TODO(pwbug/583): Add an ARMv8-M entry test.
+pw_test("cpu_exception_entry_test_armv7m") {
+  enable_if = pw_cpu_exception_ENTRY_BACKEND ==
+              "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv7m"
   deps = [
     ":cpu_exception_armv7m",
     "$dir_pw_cpu_exception:entry",

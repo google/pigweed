@@ -3,13 +3,13 @@
 =========================
 pw_cpu_exception_cortex_m
 =========================
-This backend provides an ARMv7-M implementation for the CPU exception module
-frontend. See the CPU exception frontend module description for more
-information.
+This backend provides an ARMv7-M and ARMv8-M implementations for the CPU
+exception module frontend. See the CPU exception frontend module description for
+more information.
 
 Setup
 =====
-There are a few ways to set up the ARMv7-M exception handler so the
+There are a few ways to set up the Cortex M exception handler so the
 application's exception handler is properly called during an exception.
 
 **1. Use existing CMSIS functions**
@@ -83,8 +83,8 @@ state so that execution can safely continue.
 Expected Behavior
 -----------------
 In most cases, the CPU state captured by the exception handler will contain the
-ARMv7-M basic register frame in addition to an extended set of registers (see
-``cpu_state.h``).
+ARMv7-M or ARMv8-M basic register frame in addition to an extended set of
+registers (see ``cpu_state.h``).
 
 The exception to this is when the program stack pointer is in an MPU-protected
 or otherwise invalid memory region when the CPU attempts to push the exception
