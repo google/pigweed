@@ -77,7 +77,7 @@ http_archive(
 git_repository(
     name = "rules_cc_toolchain",
     commit = "80b51ba81f14eebe06684efa25261f6dc46e9b29",
-    remote = "https://github.com/silvergasp/rules_cc_toolchain.git",
+    remote = "https://github.com/bazelembedded/rules_cc_toolchain.git",
 )
 
 load("@rules_cc_toolchain//:rules_cc_toolchain_deps.bzl", "rules_cc_toolchain_deps")
@@ -184,7 +184,7 @@ browser_repositories(
 git_repository(
     name = "bazel_embedded",
     commit = "17c93d5fa52c4c78860b8bbd327325fba6c85555",
-    remote = "https://github.com/silvergasp/bazel-embedded.git",
+    remote = "https://github.com/bazelembedded/bazel-embedded.git",
 )
 
 # Instantiate Pigweed configuration for embedded toolchain,
