@@ -166,9 +166,15 @@ void ToString(const pw_cpu_exception_State& cpu_state,
   builder.Format("%s=0x%08" PRIx32 "\n", #name, state_section.name)
 
   // Other registers.
-  _PW_FORMAT_REGISTER(base, pc);
-  _PW_FORMAT_REGISTER(base, lr);
-  _PW_FORMAT_REGISTER(base, psr);
+  if (base.pc != kUndefinedPcLrOrPsrRegValue) {
+    _PW_FORMAT_REGISTER(base, pc);
+  }
+  if (base.lr != kUndefinedPcLrOrPsrRegValue) {
+    _PW_FORMAT_REGISTER(base, lr);
+  }
+  if (base.psr != kUndefinedPcLrOrPsrRegValue) {
+    _PW_FORMAT_REGISTER(base, psr);
+  }
   _PW_FORMAT_REGISTER(extended, msp);
   _PW_FORMAT_REGISTER(extended, psp);
   _PW_FORMAT_REGISTER(extended, exc_return);
@@ -211,9 +217,15 @@ void LogCpuState(const pw_cpu_exception_State& cpu_state) {
   PW_LOG_INFO("  %-10s 0x%08" PRIx32, #name, state_section.name)
 
   // Other registers.
-  _PW_LOG_REGISTER(base, pc);
-  _PW_LOG_REGISTER(base, lr);
-  _PW_LOG_REGISTER(base, psr);
+  if (base.pc != kUndefinedPcLrOrPsrRegValue) {
+    _PW_LOG_REGISTER(base, pc);
+  }
+  if (base.lr != kUndefinedPcLrOrPsrRegValue) {
+    _PW_LOG_REGISTER(base, lr);
+  }
+  if (base.psr != kUndefinedPcLrOrPsrRegValue) {
+    _PW_LOG_REGISTER(base, psr);
+  }
   _PW_LOG_REGISTER(extended, msp);
   _PW_LOG_REGISTER(extended, psp);
   _PW_LOG_REGISTER(extended, exc_return);
