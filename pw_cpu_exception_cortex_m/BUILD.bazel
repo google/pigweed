@@ -30,7 +30,10 @@ pw_cc_library(
 pw_cc_library(
     name = "support_armv7m",
     srcs = ["cpu_state.cc"],
-    hdrs = ["public/pw_cpu_exception_cortex_m/cpu_state.h"],
+    hdrs = [
+        "public/pw_cpu_exception_cortex_m/cpu_state.h",
+        "public_overrides/pw_cpu_exception_backend/state.h",
+    ],
     includes = ["public"],
     deps = [
         ":config",

@@ -16,6 +16,7 @@
 
 #include "pw_cpu_exception_cortex_m/snapshot.h"
 
+#include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_cortex_m/proto_dump.h"
 #include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"

@@ -15,7 +15,6 @@
 
 #include <cstdint>
 
-#include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_cortex_m/cpu_state.h"
 #include "pw_cpu_exception_cortex_m_protos/cpu_state.pwpb.h"
 #include "pw_protobuf/encoder.h"

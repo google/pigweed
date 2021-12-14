@@ -13,8 +13,62 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
-pw_auto_add_simple_module(pw_cpu_exception_cortex_m
-  IMPLEMENTS_FACADE
-    pw_cpu_exception
+pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception_armv7m
+  IMPLEMENTS_FACADES
+    pw_cpu_exception.entry
+  PUBLIC_DEPS
+    pw_preprocessor
+  PRIVATE_DEPS
+    pw_cpu_exception.handler
+  SOURCES
+    entry.cc
+  HEADERS
+    public/pw_cpu_exception_cortex_m/cpu_state.h
+    public_overrides/pw_cpu_exception_backend/state.h
+)
+
+pw_add_module_library(pw_cpu_exception_cortex_m.support_armv7m
+  IMPLEMENTS_FACADES
+    pw_cpu_exception.support
+  PRIVATE_DEPS
+    pw_log
+    pw_string
+  SOURCES
+    cpu_state.cc
+)
+
+pw_proto_library(pw_cpu_exception_cortex_m.cpu_state_protos
+  SOURCES
+    pw_cpu_exception_cortex_m_protos/cpu_state.proto
+)
+
+pw_add_module_library(pw_cpu_exception_cortex_m.proto_dump_armv7m
+  PUBLIC_DEPS
+    pw_cpu_exception.entry
+    pw_protobuf
+    pw_status
+    pw_stream
+  PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
+  SOURCES
+    proto_dump.cc
+  HEADERS
+    public/pw_cpu_exception_cortex_m/proto_dump.h
+)
+
+pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
+  PUBLIC_DEPS
+    pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
+    pw_cpu_exception_cortex_m.cpu_exception_armv7m
+    pw_protobuf
+    pw_status
+  PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.proto_dump_armv7m
+    pw_log
+  SOURCES
+    snapshot.cc
+  HEADERS
+    public/pw_cpu_exception_cortex_m/snapshot.h
 )

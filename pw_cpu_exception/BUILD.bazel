@@ -22,6 +22,7 @@ filegroup(
         "basic_handler.cc",
         "public/pw_cpu_exception/entry.h",
         "public/pw_cpu_exception/handler.h",
+        "public/pw_cpu_exception/state.h",
         "public/pw_cpu_exception/support.h",
         "start_exception_handler.cc",
     ],

@@ -39,25 +39,27 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
+config("backend_config") {
+  include_dirs = [ "public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 pw_source_set("support_armv7m") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [
-    "$dir_pw_cpu_exception:support.facade",
-    dir_pw_preprocessor,
-    dir_pw_string,
-  ]
   deps = [
     ":config",
     ":cortex_m_constants",
+    ":cpu_exception_armv7m",
+    "$dir_pw_cpu_exception:support.facade",
     dir_pw_log,
+    dir_pw_string,
   ]
-  public = [ "public/pw_cpu_exception_cortex_m/cpu_state.h" ]
   sources = [ "cpu_state.cc" ]
 }
 
 pw_source_set("proto_dump_armv7m") {
   public_deps = [
-    ":support_armv7m",
+    ":cpu_exception_armv7m",
     dir_pw_protobuf,
     dir_pw_status,
     dir_pw_stream,
@@ -78,26 +80,32 @@ pw_proto_library("cpu_state_protos") {
 # patches for complete correctness. Add *_armv8m targets that use the same files
 # but provide preprocessor defines to enable/disable architecture specific code.
 pw_source_set("cpu_exception_armv7m") {
-  public_configs = [ ":public_include_path" ]
-  public_deps = [
-    ":proto_dump_armv7m",
-    ":support_armv7m",
-    "$dir_pw_cpu_exception:entry.facade",
-    "$dir_pw_cpu_exception:handler",
-    "$dir_pw_preprocessor",
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
   ]
+  public = [
+    "public/pw_cpu_exception_cortex_m/cpu_state.h",
+    "public_overrides/pw_cpu_exception_backend/state.h",
+  ]
+  public_deps = [ "$dir_pw_preprocessor" ]
+}
+
+pw_source_set("cpu_exception_armv7m.impl") {
   sources = [ "entry.cc" ]
   deps = [
     ":config",
     ":cortex_m_constants",
+    "$dir_pw_cpu_exception:entry.facade",
+    "$dir_pw_cpu_exception:handler",
   ]
 }
 
 pw_source_set("snapshot") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":cpu_exception_armv7m",
     ":cpu_state_protos.pwpb",
-    ":support_armv7m",
     "$dir_pw_thread:protos.pwpb",
     "$dir_pw_thread:snapshot",
     dir_pw_protobuf,
@@ -109,6 +117,7 @@ pw_source_set("snapshot") {
     ":config",
     ":cortex_m_constants",
     ":proto_dump_armv7m",
+    "$dir_pw_cpu_exception:support",
     dir_pw_log,
   ]
 }
@@ -125,7 +134,12 @@ pw_test_group("tests") {
 }
 
 pw_test("cpu_exception_entry_test") {
-  deps = [ ":cpu_exception_armv7m" ]
+  deps = [
+    ":cpu_exception_armv7m",
+    "$dir_pw_cpu_exception:entry",
+    "$dir_pw_cpu_exception:handler",
+    "$dir_pw_cpu_exception:support",
+  ]
   sources = [ "exception_entry_test.cc" ]
 }
 
