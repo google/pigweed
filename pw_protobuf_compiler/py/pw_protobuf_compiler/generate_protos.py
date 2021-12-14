@@ -20,7 +20,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 # Make sure dependencies are optional, since this script may be run when
 # installing Python package dependencies through GN.
@@ -151,7 +151,9 @@ def main() -> int:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    include_paths = [f'-I{line.strip()}' for line in args.include_file]
+    include_paths: List[str] = []
+    if args.include_file:
+        include_paths = [f'-I{line.strip()}' for line in args.include_file]
 
     wrapper_script: Optional[Path] = None
 
