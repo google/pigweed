@@ -26,7 +26,7 @@ class Symbol:
     file: str = ''
     line: int = 0
 
-    def to_string(self, max_filename_len: int = 30) -> str:
+    def to_string(self, max_filename_len: int = 0) -> str:
         if not self.name:
             name = f'0x{self.address:08X}'
         else:
@@ -34,7 +34,7 @@ class Symbol:
 
         return f'{name} ({self.file_and_line(max_filename_len)})'
 
-    def file_and_line(self, max_filename_len: int = 30) -> str:
+    def file_and_line(self, max_filename_len: int = 0) -> str:
         """Returns a file/line number string, with question marks if unknown."""
 
         if not self.file:
