@@ -40,6 +40,7 @@ pw_cc_library(
         ":cortex_m_constants",
         "//pw_log",
         "//pw_preprocessor",
+        "//pw_preprocessor:arch",
         "//pw_string",
     ],
 )
@@ -77,6 +78,7 @@ pw_cc_library(
         # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
         "//pw_cpu_exception",
         "//pw_preprocessor",
+        "//pw_preprocessor:arch",
     ],
 )
 
@@ -104,6 +106,7 @@ pw_cc_library(
     name = "cortex_m_constants",
     hdrs = ["pw_cpu_exception_cortex_m_private/cortex_m_constants.h"],
     visibility = ["//visibility:private"],
+    deps = ["//pw_preprocessor:arch"],
 )
 
 pw_cc_test(

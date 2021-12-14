@@ -48,6 +48,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.support
     pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants
     pw_log
+    pw_preprocessor.arch
     pw_string
   SOURCES
     cpu_state.cc
@@ -91,6 +92,8 @@ pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
 )
 
 pw_add_module_library(pw_cpu_exception_cortex_m.constants
+  PUBLIC_DEPS
+    pw_preprocessor.arch
   HEADERS
     pw_cpu_exception_cortex_m_private/cortex_m_constants.h
 )

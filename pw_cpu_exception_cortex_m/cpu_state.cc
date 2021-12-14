@@ -22,6 +22,7 @@
 #include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_log/log.h"
+#include "pw_preprocessor/arch.h"
 #include "pw_string/string_builder.h"
 
 namespace pw::cpu_exception {
@@ -99,10 +100,11 @@ namespace {
   if (cfsr & kCfsrDivbyzeroMask) {
     PW_LOG_ERROR("  DIVBYZERO: Division by zero");
   }
-  // This flag is only present on ARMv8-M cores.
+#if _PW_ARCH_ARM_V8M_MAINLINE
   if (cfsr & kCfsrStkofMask) {
     PW_LOG_ERROR("  STKOF: Stack overflowed");
   }
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE
 }
 
 void AnalyzeException(const pw_cpu_exception_State& cpu_state) {
@@ -113,7 +115,7 @@ void AnalyzeException(const pw_cpu_exception_State& cpu_state) {
   if (cpu_state.extended.hfsr & kHfsrForcedMask) {
     PW_LOG_CRITICAL("Encountered a nested CPU fault (See active CFSR fields)");
   }
-  // TODO(pwbug/296): #if this out on non-ARMv7-M builds.
+#if _PW_ARCH_ARM_V8M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrStkofMask) {
     if (cpu_state.extended.exc_return & kExcReturnStackMask) {
       PW_LOG_CRITICAL("Encountered stack overflow in thread mode");
@@ -121,6 +123,7 @@ void AnalyzeException(const pw_cpu_exception_State& cpu_state) {
       PW_LOG_CRITICAL("Encountered main (interrupt handler) stack overflow");
     }
   }
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE
   if (cpu_state.extended.cfsr & kCfsrMemFaultMask) {
     if (cpu_state.extended.cfsr & kCfsrMmarvalidMask) {
       PW_LOG_CRITICAL(
@@ -181,6 +184,10 @@ void ToString(const pw_cpu_exception_State& cpu_state,
   _PW_FORMAT_REGISTER(extended, msp);
   _PW_FORMAT_REGISTER(extended, psp);
   _PW_FORMAT_REGISTER(extended, exc_return);
+#if _PW_ARCH_ARM_V8M_MAINLINE
+  _PW_FORMAT_REGISTER(extended, msplim);
+  _PW_FORMAT_REGISTER(extended, psplim);
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE
   _PW_FORMAT_REGISTER(extended, cfsr);
   _PW_FORMAT_REGISTER(extended, mmfar);
   _PW_FORMAT_REGISTER(extended, bfar);
@@ -232,6 +239,10 @@ void LogCpuState(const pw_cpu_exception_State& cpu_state) {
   _PW_LOG_REGISTER(extended, msp);
   _PW_LOG_REGISTER(extended, psp);
   _PW_LOG_REGISTER(extended, exc_return);
+#if _PW_ARCH_ARM_V8M_MAINLINE
+  _PW_LOG_REGISTER(extended, msplim);
+  _PW_LOG_REGISTER(extended, psplim);
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE
   _PW_LOG_REGISTER(extended, cfsr);
   _PW_LOG_REGISTER(extended, mmfar);
   _PW_LOG_REGISTER(extended, bfar);

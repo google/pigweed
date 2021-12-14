@@ -23,6 +23,8 @@ message ArmV7mCpuState {
   optional uint32 psp = 5;
   optional uint32 exc_return = 6;
   optional uint32 cfsr = 7;
+  optional uint32 msplim = 27;
+  optional uint32 psplim = 28;
   optional uint32 mmfar = 8;
   optional uint32 bfar = 9;
   optional uint32 icsr = 10;
@@ -45,7 +47,7 @@ message ArmV7mCpuState {
   optional uint32 r11 = 23;
   optional uint32 r12 = 24;
 
-  // Next tag: 27
+  // Next tag: 29
 }
 
 // This message overlays the pw.snapshot.Snapshot proto. It's valid to encode

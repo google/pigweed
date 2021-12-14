@@ -17,6 +17,7 @@
 
 #include <cstdint>
 
+#include "pw_preprocessor/arch.h"
 #include "pw_preprocessor/compiler.h"
 
 namespace pw::cpu_exception::cortex_m {
@@ -88,6 +89,10 @@ PW_PACKED(struct) ExtraRegisters {
   uint32_t msp;
   uint32_t psp;
   uint32_t control;
+#if _PW_ARCH_ARM_V8M_MAINLINE
+  uint32_t msplim;
+  uint32_t psplim;
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE
   // General purpose registers.
   uint32_t r4;
   uint32_t r5;

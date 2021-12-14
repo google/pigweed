@@ -3,9 +3,12 @@
 =========================
 pw_cpu_exception_cortex_m
 =========================
-This backend provides an ARMv7-M and ARMv8-M implementations for the CPU
-exception module frontend. See the CPU exception frontend module description for
-more information.
+This backend provides an implementations for the CPU exception module frontend
+for the following Cortex-M architectures:
+
+* ARMv7-M - Cortex M3
+* ARMv7-EM - Cortex M4, M7
+* ARMv8-M Mainline - Cortex M33, M33P
 
 Setup
 =====
@@ -26,9 +29,9 @@ application's exception handler is properly called during an exception.
 **2. Modify a startup file**
   Assembly startup files for some microcontrollers initialize the interrupt
   vector table. The functions to call for fault handlers can be changed here.
-  For ARMv7-M, the fault handlers are indexes 3 to 6 of the interrupt vector
-  table. It's also may be helpful to redirect the NMI handler to the entry
-  function (if it's otherwise unused in your project).
+  For ARMv7-M and ARMv8-M, the fault handlers are indexes 3 to 6 of the
+  interrupt vector table. It's also may be helpful to redirect the NMI handler
+  to the entry function (if it's otherwise unused in your project).
 
   Default:
 
@@ -61,7 +64,7 @@ application's exception handler is properly called during an exception.
 
 **3. Modify interrupt vector table at runtime**
   Some applications may choose to modify their interrupt vector tables at
-  runtime. The ARMv7-M exception handler works with this use case (see the
+  runtime. The exception handler works with this use case (see the
   exception_entry_test integration test), but keep in mind that your
   application's exception handler will not be entered if an exception occurs
   before the vector table entries are updated to point to
@@ -83,8 +86,8 @@ state so that execution can safely continue.
 Expected Behavior
 -----------------
 In most cases, the CPU state captured by the exception handler will contain the
-ARMv7-M or ARMv8-M basic register frame in addition to an extended set of
-registers (see ``cpu_state.h``).
+basic register frame in addition to an extended set of registers
+(see ``cpu_state.h``).
 
 The exception to this is when the program stack pointer is in an MPU-protected
 or otherwise invalid memory region when the CPU attempts to push the exception

@@ -16,6 +16,8 @@
 
 #include <cstdint>
 
+#include "pw_preprocessor/arch.h"
+
 namespace pw::cpu_exception::cortex_m {
 
 // CMSIS/Cortex-M/ARMv7 related constants.
@@ -64,7 +66,9 @@ constexpr uint32_t kCfsrUndefinstrMask = (kCfsrUsageFaultStart << 0);
 constexpr uint32_t kCfsrInvstateMask = (kCfsrUsageFaultStart << 1);
 constexpr uint32_t kCfsrInvpcMask = (kCfsrUsageFaultStart << 2);
 constexpr uint32_t kCfsrNocpMask = (kCfsrUsageFaultStart << 3);
+#if _PW_ARCH_ARM_V8M_MAINLINE
 constexpr uint32_t kCfsrStkofMask = (kCfsrUsageFaultStart << 4);
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE
 constexpr uint32_t kCfsrUnalignedMask = (kCfsrUsageFaultStart << 8);
 constexpr uint32_t kCfsrDivbyzeroMask = (kCfsrUsageFaultStart << 9);
 
