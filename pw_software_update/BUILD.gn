@@ -103,7 +103,10 @@ if (pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != "") {
       ":protos.pwpb",
       dir_pw_log,
     ]
-    sources = [ "update_bundle_accessor.cc" ]
+    sources = [
+      "manifest_accessor.cc",
+      "update_bundle_accessor.cc",
+    ]
   }
 } else {
   group("update_bundle") {

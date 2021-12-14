@@ -11,23 +11,26 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#pragma once
+#include "pw_software_update/manifest_accessor.h"
 
-#include "pw_stream/interval_reader.h"
-#include "pw_stream/stream.h"
+#include "pw_assert/check.h"
+#include "pw_software_update/update_bundle_accessor.h"
 
 namespace pw::software_update {
-// TODO(pwbug/456): There may be bettter solution to using a forward
-// declaration here.
-class UpdateBundleAccessor;
-class ManifestAccessor {
- public:
-  explicit ManifestAccessor(UpdateBundleAccessor* update_bundle_accessor);
-  pw::stream::IntervalReader GetUserManifest();
-  Status WriteManifest(stream::Writer& writer);
 
- private:
-  UpdateBundleAccessor* update_bundle_accessor_;
+ManifestAccessor::ManifestAccessor(UpdateBundleAccessor* update_bundle_accessor)
+    : update_bundle_accessor_(update_bundle_accessor) {
+  PW_CHECK_NOTNULL(update_bundle_accessor_);
+}
+
+Status ManifestAccessor::WriteManifest(stream::Writer& writer) {
+  return update_bundle_accessor_->PersistManifest(writer);
+};
+
+pw::stream::IntervalReader ManifestAccessor::GetUserManifest() {
+  stream::IntervalReader user_manifest =
+      update_bundle_accessor_->GetTargetPayload("user_manifest");
+  return user_manifest;
 };
 
 }  // namespace pw::software_update

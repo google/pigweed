@@ -24,6 +24,7 @@
 #include "pw_stream/memory_stream.h"
 
 namespace pw::software_update {
+class BundledUpdateBackend;
 
 constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
 
@@ -42,7 +43,7 @@ constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
 // Exmple of use:
 //
 // UpdateBundleAccessor bundle(blob,helper);
-// auto status = bundle.OpenAndVerify(current_manifest);
+// auto status = bundle.OpenAndVerify();
 // if (!status.ok()) {
 //   // handle error
 //   ...
@@ -107,7 +108,7 @@ class UpdateBundleAccessor {
   //
   // Returns:
   // OK - Bundle was successfully opened and verified.
-  Status OpenAndVerify(const ManifestAccessor& current_manifest);
+  Status OpenAndVerify();
 
   // Closes the bundle by invalidating the verification and closing
   // the reader to release the read-only lock
@@ -147,6 +148,8 @@ class UpdateBundleAccessor {
   // An instance of protobuf::Message of the udpate bundle.
   // FAILED_PRECONDITION - Bundle is not open and verified.
   protobuf::Message GetDecoder();
+
+  ManifestAccessor GetManifestAccessor() { return ManifestAccessor(this); };
 
  private:
   blob_store::BlobStore& bundle_;

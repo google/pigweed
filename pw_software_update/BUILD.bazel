@@ -34,7 +34,10 @@ proto_library(
 
 pw_cc_library(
     name = "update_bundle",
-    srcs = ["update_bundle_accessor.cc"],
+    srcs = [
+        "manifest_accessor.cc",
+        "update_bundle_accessor.cc",
+    ],
     hdrs = [
         "public/pw_software_update/bundled_update_backend.h",
         "public/pw_software_update/config.h",

@@ -18,6 +18,7 @@
 
 #include "pw_result/result.h"
 #include "pw_software_update/manifest_accessor.h"
+#include "pw_software_update/update_bundle_accessor.h"
 #include "pw_status/status.h"
 #include "pw_stream/interval_reader.h"
 #include "pw_stream/stream.h"
@@ -34,7 +35,7 @@ class BundledUpdateBackend {
   // (e.g. by checksum, if failed abort partial update and wipe/mark-invalid
   // running manifest)
   virtual Status VerifyTargetFile(
-      [[maybe_unused]] const ManifestAccessor& manifest,
+      [[maybe_unused]] ManifestAccessor manifest,
       [[maybe_unused]] std::string_view target_file_name) {
     return OkStatus();
   };
@@ -63,11 +64,9 @@ class BundledUpdateBackend {
   virtual Status BeforeBundleVerify() { return OkStatus(); };
 
   // Perform any product-specific bundle verification tasks (e.g. hw version
-  // match check), done after TUF bundle verification process if user_manifest
-  // was provided as part of the bundle.
-  virtual Status VerifyUserManifest(
-      [[maybe_unused]] stream::IntervalReader& user_manifest,
-      [[maybe_unused]] size_t update_bundle_offset) {
+  // match check), done after TUF bundle verification process.
+  virtual Status VerifyManifest(
+      [[maybe_unused]] ManifestAccessor manifest_accessor) {
     return OkStatus();
   };
 

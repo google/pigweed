@@ -44,7 +44,7 @@ class TestBundledUpdateBackend final : public BundledUpdateBackend {
   Status PostRebootFinalize() override { return OkStatus(); }
 
   Status VerifyTargetFile(
-      [[maybe_unused]] const ManifestAccessor& manifest,
+      [[maybe_unused]] ManifestAccessor manifest,
       [[maybe_unused]] std::string_view target_file_name) override {
     backend_verified_files_++;
     return verify_target_file_result_;
@@ -158,8 +158,7 @@ class UpdateBundleTest : public testing::Test {
   void CheckOpenAndVerifyFail(UpdateBundleAccessor& update_bundle,
                               bool expect_new_root_persisted) {
     ASSERT_FALSE(backend().IsNewRootPersisted());
-    ManifestAccessor current_manifest;
-    ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+    ASSERT_NOT_OK(update_bundle.OpenAndVerify());
     ASSERT_EQ(backend().IsNewRootPersisted(), expect_new_root_persisted);
     VerifyAllBundleOperationsDisallowed(update_bundle);
 
@@ -182,8 +181,7 @@ TEST_F(UpdateBundleTest, GetTargetPayload) {
   StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
 
   {
     stream::IntervalReader res = update_bundle.GetTargetPayload("file1");
@@ -216,8 +214,7 @@ TEST_F(UpdateBundleTest, IsTargetPayloadIncluded) {
   StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
 
   Result<bool> res = update_bundle.IsTargetPayloadIncluded("file1");
   ASSERT_OK(res.status());
@@ -237,8 +234,7 @@ TEST_F(UpdateBundleTest, PersistManifest) {
   StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
 
   std::byte manifest_buffer[sizeof(kTestBundleManifest)];
   stream::MemoryWriter manifest_writer(manifest_buffer);
@@ -254,8 +250,7 @@ TEST_F(UpdateBundleTest, PersistManifestFailIfNotVerified) {
   StageTestBundle(kTestBadProdSignature);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
-  ASSERT_NOT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_NOT_OK(update_bundle.OpenAndVerify());
 
   std::byte manifest_buffer[sizeof(kTestBundleManifest)];
   stream::MemoryWriter manifest_writer(manifest_buffer);
@@ -269,8 +264,7 @@ TEST_F(UpdateBundleTest, BundleVerificationDisabled) {
 
   // Since bundle verification is disabled. The bad bundle should not report
   // error.
-  ManifestAccessor current_manifest;
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
 
   // Manifest persisting should be allowed as well.
   std::byte manifest_buffer[sizeof(kTestBundleManifest)];
@@ -288,9 +282,8 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithAllVerification) {
   StageTestBundle(kTestProdBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
   ASSERT_FALSE(backend().IsNewRootPersisted());
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
   ASSERT_TRUE(backend().IsNewRootPersisted());
 
   // No file is personalized out in kTestProdBundle. Backend verification
@@ -311,9 +304,8 @@ TEST_F(UpdateBundleTest,
   StageTestBundle(kTestDevBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
   ASSERT_FALSE(backend().IsNewRootPersisted());
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
   ASSERT_FALSE(backend().IsNewRootPersisted());
 
   // No file is personalized out in kTestDevBundle. Backend verification
@@ -365,9 +357,8 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithoutExistingManifest) {
   StageTestBundle(kTestProdBundle);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
   ASSERT_FALSE(backend().IsNewRootPersisted());
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
   ASSERT_TRUE(backend().IsNewRootPersisted());
 }
 
@@ -455,8 +446,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithPersonalizedOutFile0) {
   StageTestBundle(kTestBundlePersonalizedOutFile0);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
   // Backend specific file check shall be performed only on files personalized
   // out.
   ASSERT_EQ(backend().NumFilesVerified(), static_cast<size_t>(1));
@@ -472,8 +462,7 @@ TEST_F(UpdateBundleTest, OpenAndVerifySucceedsWithPersonalizedOutFile1) {
   StageTestBundle(kTestBundlePersonalizedOutFile1);
   UpdateBundleAccessor update_bundle(bundle_blob(), backend());
 
-  ManifestAccessor current_manifest;
-  ASSERT_OK(update_bundle.OpenAndVerify(current_manifest));
+  ASSERT_OK(update_bundle.OpenAndVerify());
   // Backend specific file check shall be performed only on files personalized
   // out.
   ASSERT_EQ(backend().NumFilesVerified(), static_cast<size_t>(1));

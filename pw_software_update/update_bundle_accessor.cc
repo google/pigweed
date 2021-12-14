@@ -326,7 +326,7 @@ Result<std::string_view> ReadProtoString(protobuf::String str,
 
 }  // namespace
 
-Status UpdateBundleAccessor::OpenAndVerify(const ManifestAccessor&) {
+Status UpdateBundleAccessor::OpenAndVerify() {
   PW_TRY(DoOpen());
   PW_TRY(DoVerify());
   return OkStatus();
@@ -772,8 +772,8 @@ Status UpdateBundleAccessor::VerifyTargetsPayloads() {
           "target payload for %s does not exist. Assumed personalized out",
           target_name_read_buf);
       // Invoke backend specific check
-      ManifestAccessor manifest;  // TODO(pwbug/456): Place-holder for now.
-      PW_TRY(backend_.VerifyTargetFile(manifest, target_name_sv.value()));
+      PW_TRY(backend_.VerifyTargetFile(GetManifestAccessor(),
+                                       target_name_sv.value()));
       continue;
     }
 

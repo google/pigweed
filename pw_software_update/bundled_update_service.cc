@@ -140,8 +140,7 @@ void BundledUpdateService::DoVerify() {
   }
 
   // Do the actual verify.
-  ManifestAccessor manifest;  // TODO(pwbug/456): Place-holder for now.
-  Status status = bundle_.OpenAndVerify(manifest);
+  Status status = bundle_.OpenAndVerify();
   if (!status.ok()) {
     SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
               "Bundle::OpenAndVerify() failed");
@@ -150,15 +149,10 @@ void BundledUpdateService::DoVerify() {
   bundle_open_ = true;
 
   // Have the backend verify the user_manifest if present.
-  stream::IntervalReader user_manifest =
-      bundle_.GetTargetPayload(kUserManifestTargetFileName);
-  if (user_manifest.ok()) {
-    const size_t bundle_offset = user_manifest.start();
-    if (!backend_.VerifyUserManifest(user_manifest, bundle_offset).ok()) {
-      SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
-                "Backend::VerifyUserManifest() failed");
-      return;
-    }
+  if (!backend_.VerifyManifest(bundle_.GetManifestAccessor()).ok()) {
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_VERIFY_FAILED,
+              "Backend::VerifyUserManifest() failed");
+    return;
   }
 
   // Notify backend we're done verifying.
