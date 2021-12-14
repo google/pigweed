@@ -204,7 +204,7 @@ deactivate() {
 pw_bootstrap() {
   _pw_hello "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
 
-  _pw_alias_check=0
+  local _pw_alias_check=0
   alias python > /dev/null 2> /dev/null || _pw_alias_check=$?
   if [ "$_pw_alias_check" -eq 0 ]; then
     pw_bold_red "Error: 'python' is an alias"
@@ -312,8 +312,6 @@ pw_cleanup() {
   unset -f pw_bootstrap
   unset -f pw_activate
   unset -f pw_finalize
-  unset -f _pw_cleanup
-  unset -f _pw_alias_check
   unset -f pw_cleanup
   unset -f _pw_hello
 }
