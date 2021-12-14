@@ -641,11 +641,3 @@ def call(*args, **kwargs) -> None:
 
     if process.returncode:
         raise PresubmitFailure
-
-
-# TODO(mohrr) Remove after updating downstream projects to use build.bazel_lint.
-@filter_paths(endswith=('.bzl', '.bazel'))
-def bazel_lint(ctx: PresubmitContext):
-    # pylint: disable=import-outside-toplevel
-    from pw_presubmit import build
-    return build.bazel_lint(ctx)
