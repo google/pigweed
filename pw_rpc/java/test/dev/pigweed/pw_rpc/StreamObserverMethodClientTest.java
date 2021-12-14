@@ -20,7 +20,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.MessageLite;
-import dev.pigweed.pw_rpc.StreamObserverCall.Dispatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,35 +52,27 @@ public final class StreamObserverMethodClientTest {
   @Mock private StreamObserver<MessageLite> defaultObserver;
 
   private final RpcManager rpcManager = new RpcManager();
-  private StreamObserverMethodClient unaryMethodClient;
-  private StreamObserverMethodClient serverStreamingMethodClient;
-  private StreamObserverMethodClient clientStreamingMethodClient;
-  private StreamObserverMethodClient bidirectionalStreamingMethodClient;
-
-  @SuppressWarnings("unchecked")
-  private StreamObserverCall<SomeMessage, AnotherMessage> pendingCall(PendingRpc rpc) {
-    StreamObserverCall<SomeMessage, AnotherMessage> call =
-        (StreamObserverCall<SomeMessage, AnotherMessage>) rpcManager.getPending(rpc);
-    assertThat(call).isNotNull();
-    return call;
-  }
+  private MethodClient unaryMethodClient;
+  private MethodClient serverStreamingMethodClient;
+  private MethodClient clientStreamingMethodClient;
+  private MethodClient bidirectionalStreamingMethodClient;
 
   @Before
   public void createMethodClient() {
-    unaryMethodClient = new StreamObserverMethodClient(rpcManager, UNARY_RPC, defaultObserver);
+    unaryMethodClient = new MethodClient(rpcManager, UNARY_RPC, defaultObserver);
     serverStreamingMethodClient =
-        new StreamObserverMethodClient(rpcManager, SERVER_STREAMING_RPC, defaultObserver);
+        new MethodClient(rpcManager, SERVER_STREAMING_RPC, defaultObserver);
     clientStreamingMethodClient =
-        new StreamObserverMethodClient(rpcManager, CLIENT_STREAMING_RPC, defaultObserver);
+        new MethodClient(rpcManager, CLIENT_STREAMING_RPC, defaultObserver);
     bidirectionalStreamingMethodClient =
-        new StreamObserverMethodClient(rpcManager, BIDIRECTIONAL_STREAMING_RPC, defaultObserver);
+        new MethodClient(rpcManager, BIDIRECTIONAL_STREAMING_RPC, defaultObserver);
   }
 
   @Test
   public void invokeWithNoObserver_usesDefaultObserver() throws Exception {
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance());
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
-    new Dispatcher().onNext(rpcManager, UNARY_RPC, pendingCall(UNARY_RPC), reply);
+    rpcManager.getPending(UNARY_RPC).onNext(reply.toByteString());
 
     verify(defaultObserver).onNext(reply);
   }
@@ -94,7 +85,7 @@ public final class StreamObserverMethodClientTest {
 
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance(), observer);
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
-    new Dispatcher().onNext(rpcManager, UNARY_RPC, pendingCall(UNARY_RPC), reply);
+    rpcManager.getPending(UNARY_RPC).onNext(reply.toByteString());
 
     verify(observer).onNext(reply);
   }
@@ -149,28 +140,28 @@ public final class StreamObserverMethodClientTest {
   }
 
   @Test
-  public void invokeUnaryFuture_startsRpc() throws Exception {
-    Call call = unaryMethodClient.invokeUnaryFuture(SomeMessage.getDefaultInstance());
-    assertThat(rpcManager.getPending(UNARY_RPC)).isSameInstanceAs(call);
+  public void invokeUnaryFuture_startsRpc() {
+    unaryMethodClient.invokeUnaryFuture(SomeMessage.getDefaultInstance());
+    assertThat(rpcManager.getPending(UNARY_RPC)).isNotNull();
   }
 
   @Test
-  public void invokeServerStreamingFuture_startsRpc() throws Exception {
-    Call call = serverStreamingMethodClient.invokeServerStreamingFuture(
+  public void invokeServerStreamingFuture_startsRpc() {
+    serverStreamingMethodClient.invokeServerStreamingFuture(
         SomeMessage.getDefaultInstance(), (msg) -> {});
-    assertThat(rpcManager.getPending(SERVER_STREAMING_RPC)).isSameInstanceAs(call);
+    assertThat(rpcManager.getPending(SERVER_STREAMING_RPC)).isNotNull();
   }
 
   @Test
-  public void invokeClientStreamingFuture_startsRpc() throws Exception {
-    Call call = clientStreamingMethodClient.invokeClientStreamingFuture();
-    assertThat(rpcManager.getPending(CLIENT_STREAMING_RPC)).isSameInstanceAs(call);
+  public void invokeClientStreamingFuture_startsRpc() {
+    clientStreamingMethodClient.invokeClientStreamingFuture();
+    assertThat(rpcManager.getPending(CLIENT_STREAMING_RPC)).isNotNull();
   }
 
   @Test
-  public void invokeBidirectionalStreamingFuture_startsRpc() throws Exception {
-    Call call = bidirectionalStreamingMethodClient.invokeBidirectionalStreamingFuture((msg) -> {});
-    assertThat(rpcManager.getPending(BIDIRECTIONAL_STREAMING_RPC)).isSameInstanceAs(call);
+  public void invokeBidirectionalStreamingFuture_startsRpc() {
+    bidirectionalStreamingMethodClient.invokeBidirectionalStreamingFuture((msg) -> {});
+    assertThat(rpcManager.getPending(BIDIRECTIONAL_STREAMING_RPC)).isNotNull();
   }
 
   @Test

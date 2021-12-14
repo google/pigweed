@@ -35,14 +35,13 @@ public interface Call {
   @Nullable Status error();
 
   /** Represents a call to a unary or client streaming RPC that uses a future. */
-  interface UnaryFuture<ResponseT extends MessageLite> extends Call {
-    ListenableFuture<UnaryResult<ResponseT>> future();
-  }
+  @SuppressWarnings("ShouldNotSubclass")
+  interface UnaryFuture<ResponseT extends MessageLite>
+      extends Call, ListenableFuture<UnaryResult<ResponseT>> {}
 
   /** Represents a call to a server or bidirectional streaming RPC that uses a future. */
-  interface ServerStreamingFuture extends Call {
-    ListenableFuture<Status> future();
-  }
+  @SuppressWarnings("ShouldNotSubclass")
+  interface ServerStreamingFuture extends Call, ListenableFuture<Status> {}
 
   /** Represents a call to a client or bidirectional streaming RPC. */
   interface ClientStreaming<RequestT extends MessageLite> extends Call {

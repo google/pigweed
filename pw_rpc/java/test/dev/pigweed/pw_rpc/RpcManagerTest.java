@@ -50,6 +50,7 @@ public final class RpcManagerTest {
   private static final int CHANNEL_ID = 555;
 
   @Mock private Channel.Output mockOutput;
+  @Mock private StreamObserverCall<MessageLite, MessageLite> call;
 
   private PendingRpc rpc;
   private RpcManager manager;
@@ -87,8 +88,7 @@ public final class RpcManagerTest {
   public void start_sendingFails_rpcNotPending() throws Exception {
     doThrow(new ChannelOutputException()).when(mockOutput).send(any());
 
-    assertThrows(
-        ChannelOutputException.class, () -> manager.start(rpc, "context...", REQUEST_PAYLOAD));
+    assertThrows(ChannelOutputException.class, () -> manager.start(rpc, call, REQUEST_PAYLOAD));
 
     verify(mockOutput).send(REQUEST);
     assertThat(manager.getPending(rpc)).isNull();
@@ -96,24 +96,23 @@ public final class RpcManagerTest {
 
   @Test
   public void start_succeeds_rpcIsPending() throws Exception {
-    Object context = new Object();
-    assertThat(manager.start(rpc, context, REQUEST_PAYLOAD)).isNull();
+    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
 
-    assertThat(manager.getPending(rpc)).isSameInstanceAs(context);
+    assertThat(manager.getPending(rpc)).isSameInstanceAs(call);
   }
 
   @Test
   public void startThenCancel_rpcNotPending() throws Exception {
-    assertThat(manager.start(rpc, "yo", REQUEST_PAYLOAD)).isNull();
-    assertThat(manager.cancel(rpc)).isEqualTo("yo");
+    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
+    assertThat(manager.cancel(rpc)).isSameInstanceAs(call);
 
     assertThat(manager.getPending(rpc)).isNull();
   }
 
   @Test
   public void startThenCancel_sendsCancelPacket() throws Exception {
-    assertThat(manager.start(rpc, "yo", REQUEST_PAYLOAD)).isNull();
-    assertThat(manager.cancel(rpc)).isEqualTo("yo");
+    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
+    assertThat(manager.cancel(rpc)).isEqualTo(call);
 
     verify(mockOutput).send(cancel());
   }
@@ -122,8 +121,8 @@ public final class RpcManagerTest {
   public void startThenClear_sendsNothing() throws Exception {
     verifyNoMoreInteractions(mockOutput);
 
-    assertThat(manager.start(rpc, "yo", REQUEST_PAYLOAD)).isNull();
-    assertThat(manager.clear(rpc)).isEqualTo("yo");
+    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
+    assertThat(manager.clear(rpc)).isEqualTo(call);
   }
 
   @Test
@@ -135,18 +134,16 @@ public final class RpcManagerTest {
   public void open_sendingFails_rpcIsPending() throws Exception {
     doThrow(new ChannelOutputException()).when(mockOutput).send(any());
 
-    Object context = new Object();
-    assertThat(manager.open(rpc, context, REQUEST_PAYLOAD)).isNull();
+    assertThat(manager.open(rpc, call, REQUEST_PAYLOAD)).isNull();
 
     verify(mockOutput).send(REQUEST);
-    assertThat(manager.getPending(rpc)).isSameInstanceAs(context);
+    assertThat(manager.getPending(rpc)).isSameInstanceAs(call);
   }
 
   @Test
   public void open_success_rpcIsPending() {
-    Object context = new Object();
-    assertThat(manager.open(rpc, context, REQUEST_PAYLOAD)).isNull();
+    assertThat(manager.open(rpc, call, REQUEST_PAYLOAD)).isNull();
 
-    assertThat(manager.getPending(rpc)).isSameInstanceAs(context);
+    assertThat(manager.getPending(rpc)).isSameInstanceAs(call);
   }
 }

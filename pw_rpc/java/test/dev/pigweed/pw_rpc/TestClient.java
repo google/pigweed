@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 public class TestClient {
   private static final int CHANNEL_ID = 1;
 
-  private final Client<StreamObserverMethodClient> client;
+  private final Client client;
 
   private final List<RpcPacket> sentPackets = new ArrayList<>();
   private final List<RpcPacket> enqueuedPackets = new ArrayList<>();
@@ -63,11 +63,10 @@ public class TestClient {
         packetsToProcess.forEach(this::processPacket);
       }
     };
-    client = StreamObserverClient.create(
-        ImmutableList.of(new Channel(CHANNEL_ID, channelOutput)), services);
+    client = Client.create(ImmutableList.of(new Channel(CHANNEL_ID, channelOutput)), services);
   }
 
-  public Client<StreamObserverMethodClient> client() {
+  public Client client() {
     return client;
   }
 

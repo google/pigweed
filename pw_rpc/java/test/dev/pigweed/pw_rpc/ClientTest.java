@@ -19,8 +19,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -56,7 +54,6 @@ public final class ClientTest {
   private static final Method CLIENT_STREAMING_METHOD = SERVICE.method("SomeClientStreaming");
 
   private static final int CHANNEL_ID = 1;
-  private static final String TEST_CONTEXT = "Context object for this test, can be anything";
 
   private static final SomeMessage REQUEST_PAYLOAD =
       SomeMessage.newBuilder().setMagicNumber(54321).build();
@@ -66,20 +63,10 @@ public final class ClientTest {
           .setPayload("12345")
           .build();
 
-  @Mock private ResponseProcessor responseProcessor;
-
-  static class TestMethodClient extends MethodClient {
-    public TestMethodClient(RpcManager rpcs, PendingRpc rpc) {
-      super(rpcs, rpc);
-    }
-
-    void invoke(MessageLite payload) throws ChannelOutputException {
-      rpcs().start(rpc(), TEST_CONTEXT, payload);
-    }
-  }
-
-  private Client<TestMethodClient> client;
+  private Client client;
   private List<RpcPacket> packetsSent;
+
+  @Mock private StreamObserver<AnotherMessage> observer;
 
   private static byte[] response(String service, String method) {
     return response(service, method, Status.OK);
@@ -126,13 +113,13 @@ public final class ClientTest {
   @Before
   public void setup() {
     packetsSent = new ArrayList<>();
-    client = new Client<>(ImmutableList.of(new Channel(1, (data) -> {
+    client = Client.create(ImmutableList.of(new Channel(1, (data) -> {
       try {
         packetsSent.add(RpcPacket.parseFrom(data, ExtensionRegistryLite.getEmptyRegistry()));
       } catch (InvalidProtocolBufferException e) {
         fail("The client sent an invalid packet: " + e);
       }
-    })), ImmutableList.of(SERVICE), responseProcessor, TestMethodClient::new);
+    })), ImmutableList.of(SERVICE));
   }
 
   @Test
@@ -258,9 +245,9 @@ public final class ClientTest {
   }
 
   @Test
-  public void processPacket_serverError_cancelsPending() throws Exception {
-    TestMethodClient method = client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary");
-    method.invoke(SomeMessage.getDefaultInstance());
+  public void processPacket_serverError_abortsPending() throws Exception {
+    MethodClient method = client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary");
+    Call call = method.invokeUnary(SomeMessage.getDefaultInstance());
 
     assertThat(client.processPacket(serverReply(PacketType.SERVER_ERROR,
                    "pw.rpc.test1.TheTestService",
@@ -268,15 +255,14 @@ public final class ClientTest {
                    Status.NOT_FOUND,
                    SomeMessage.getDefaultInstance())))
         .isTrue();
-
-    verify(responseProcessor).onError(any(), any(), same(TEST_CONTEXT), eq(Status.NOT_FOUND));
+    assertThat(call.error()).isEqualTo(Status.NOT_FOUND);
   }
 
   @Test
-  public void processPacket_responseToPendingUnaryMethod_callsResponseProcessor() throws Exception {
-    TestMethodClient method = client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary");
+  public void processPacket_responseToPendingUnaryMethod_callsObserver() throws Exception {
+    MethodClient method = client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary");
 
-    method.invoke(REQUEST_PAYLOAD);
+    method.invokeUnary(REQUEST_PAYLOAD, observer);
 
     assertThat(packetsSent)
         .containsExactly(
@@ -287,18 +273,17 @@ public final class ClientTest {
             "pw.rpc.test1.TheTestService", "SomeUnary", Status.ALREADY_EXISTS, RESPONSE_PAYLOAD)))
         .isTrue();
 
-    verify(responseProcessor).onNext(any(), any(), same(TEST_CONTEXT), eq(RESPONSE_PAYLOAD));
-    verify(responseProcessor)
-        .onCompleted(any(), any(), same(TEST_CONTEXT), eq(Status.ALREADY_EXISTS));
+    verify(observer).onNext(RESPONSE_PAYLOAD);
+    verify(observer).onCompleted(Status.ALREADY_EXISTS);
   }
 
   @Test
-  public void processPacket_responsesToPendingServerStreamingMethod_callsResponseProcessor()
+  public void processPacket_responsesToPendingServerStreamingMethod_callsObserver()
       throws Exception {
-    TestMethodClient method =
+    MethodClient method =
         client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
 
-    method.invoke(REQUEST_PAYLOAD);
+    method.invokeServerStreaming(REQUEST_PAYLOAD, observer);
 
     assertThat(packetsSent)
         .containsExactly(
@@ -308,72 +293,42 @@ public final class ClientTest {
                    "pw.rpc.test1.TheTestService", "SomeServerStreaming", RESPONSE_PAYLOAD)))
         .isTrue();
 
-    verify(responseProcessor).onNext(any(), any(), same(TEST_CONTEXT), eq(RESPONSE_PAYLOAD));
+    verify(observer).onNext(RESPONSE_PAYLOAD);
 
     assertThat(client.processPacket(response(
                    "pw.rpc.test1.TheTestService", "SomeServerStreaming", Status.UNAUTHENTICATED)))
         .isTrue();
 
-    verify(responseProcessor)
-        .onCompleted(any(), any(), same(TEST_CONTEXT), eq(Status.UNAUTHENTICATED));
-  }
-
-  @Test
-  public void processPacket_deprecatedProtocolServerStream() throws Exception {
-    TestMethodClient method =
-        client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
-
-    method.invoke(REQUEST_PAYLOAD);
-
-    assertThat(packetsSent)
-        .containsExactly(
-            requestPacket("pw.rpc.test1.TheTestService", "SomeServerStreaming", REQUEST_PAYLOAD));
-
-    assertThat(
-        client.processPacket(response(
-            "pw.rpc.test1.TheTestService", "SomeServerStreaming", Status.OK, RESPONSE_PAYLOAD)))
-        .isTrue();
-
-    verify(responseProcessor).onNext(any(), any(), same(TEST_CONTEXT), eq(RESPONSE_PAYLOAD));
-
-    assertThat(client.processPacket(serverReply(PacketType.DEPRECATED_SERVER_STREAM_END,
-                   "pw.rpc.test1.TheTestService",
-                   "SomeServerStreaming",
-                   Status.NOT_FOUND,
-                   SomeMessage.getDefaultInstance())))
-        .isTrue();
-
-    verify(responseProcessor).onCompleted(any(), any(), same(TEST_CONTEXT), eq(Status.NOT_FOUND));
+    verify(observer).onCompleted(Status.UNAUTHENTICATED);
   }
 
   @Test
   public void processPacket_responsePacket_completesRpc() throws Exception {
-    TestMethodClient method =
+    MethodClient method =
         client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
 
-    method.invoke(REQUEST_PAYLOAD);
+    method.invokeServerStreaming(REQUEST_PAYLOAD, observer);
 
     assertThat(client.processPacket(
                    response("pw.rpc.test1.TheTestService", "SomeServerStreaming", Status.OK)))
         .isTrue();
 
-    verify(responseProcessor).onCompleted(any(), any(), same(TEST_CONTEXT), eq(Status.OK));
+    verify(observer).onCompleted(Status.OK);
 
     assertThat(client.processPacket(serverStream(
                    "pw.rpc.test1.TheTestService", "SomeServerStreaming", RESPONSE_PAYLOAD)))
         .isTrue();
 
-    verify(responseProcessor, never()).onNext(any(), any(), any(), any());
+    verify(observer, never()).onNext(any());
   }
 
   @Test
   @SuppressWarnings("unchecked") // No idea why, but this test causes "unchecked" warnings
   public void streamObserverClient_create_invokeMethod() throws Exception {
     Channel.Output mockChannelOutput = Mockito.mock(Channel.Output.class);
-    Client<StreamObserverMethodClient> client =
-        StreamObserverClient.create(ImmutableList.of(new Channel(1, mockChannelOutput)),
-            ImmutableList.of(SERVICE),
-            (rpc) -> Mockito.mock(StreamObserver.class));
+    Client client = Client.create(ImmutableList.of(new Channel(1, mockChannelOutput)),
+        ImmutableList.of(SERVICE),
+        (rpc) -> Mockito.mock(StreamObserver.class));
 
     SomeMessage payload = SomeMessage.newBuilder().setMagicNumber(99).build();
     client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary").invokeUnary(payload);

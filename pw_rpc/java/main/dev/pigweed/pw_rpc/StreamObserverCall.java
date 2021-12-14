@@ -14,14 +14,17 @@
 
 package dev.pigweed.pw_rpc;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.AbstractFuture;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_rpc.Call.ClientStreaming;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /**
- * Represents an ongoing RPC call. Uses the StreamObserver interface responding to RPC calls.
- * Intended for use with the StreamObserverClient implementation.
+ * Represents an ongoing RPC call.
  *
  * <p>This call class implements all features of unary, server streaming, client streaming, and
  * bidirectional streaming RPCs. It provides static methods for creating call objects for each RPC
@@ -32,12 +35,132 @@ import javax.annotation.Nullable;
  */
 class StreamObserverCall<RequestT extends MessageLite, ResponseT extends MessageLite>
     implements ClientStreaming<RequestT> {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   private final RpcManager rpcs;
   private final PendingRpc rpc;
   private final StreamObserver<ResponseT> observer;
 
   @Nullable private Status status = null;
   @Nullable private Status error = null;
+
+  /** Base class for a Call that is a ListenableFuture. */
+  private abstract static class StreamObserverFutureCall<RequestT extends MessageLite, ResponseT
+                                                             extends MessageLite, ResultT>
+      extends AbstractFuture<ResultT>
+      implements ClientStreaming<RequestT>, StreamObserver<ResponseT> {
+    private final StreamObserverCall<RequestT, ResponseT> call;
+
+    private StreamObserverFutureCall(RpcManager rpcs, PendingRpc rpc) {
+      call = new StreamObserverCall<>(rpcs, rpc, this);
+    }
+
+    void start(@Nullable RequestT request) {
+      try {
+        call.rpcs.start(call.rpc, call, request);
+      } catch (ChannelOutputException e) {
+        call.error = Status.UNKNOWN;
+        setException(e);
+      }
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+      boolean result = super.cancel(mayInterruptIfRunning);
+      try {
+        call.cancel();
+      } catch (ChannelOutputException e) {
+        setException(e);
+      }
+      return result;
+    }
+
+    @Override
+    public void cancel() throws ChannelOutputException {
+      cancel(true);
+    }
+
+    @Nullable
+    @Override
+    public Status status() {
+      return call.status();
+    }
+
+    @Nullable
+    @Override
+    public Status error() {
+      return call.error();
+    }
+
+    @Override
+    public void send(RequestT request) throws ChannelOutputException, RpcError {
+      call.send(request);
+    }
+
+    @Override
+    public void finish() throws ChannelOutputException {
+      call.finish();
+    }
+
+    @Override
+    public void onError(Status status) {
+      setException(new RpcError(call.rpc, status));
+    }
+  }
+
+  /** Future-based Call class for unary and client streaming RPCs. */
+  static class UnaryResponseFuture<RequestT extends MessageLite, ResponseT extends MessageLite>
+      extends StreamObserverFutureCall<RequestT, ResponseT, UnaryResult<ResponseT>>
+      implements Call.ClientStreamingFuture<RequestT, ResponseT> {
+    @Nullable ResponseT response = null;
+
+    UnaryResponseFuture(RpcManager rpcs, PendingRpc rpc, @Nullable RequestT request) {
+      super(rpcs, rpc);
+      start(request);
+    }
+
+    @Override
+    public void onNext(ResponseT value) {
+      if (response == null) {
+        response = value;
+      } else {
+        setException(new IllegalStateException("Unary RPC received multiple responses."));
+      }
+    }
+
+    @Override
+    public void onCompleted(Status status) {
+      if (response == null) {
+        setException(new IllegalStateException("Unary RPC completed without a response payload"));
+      } else {
+        set(UnaryResult.create(response, status));
+      }
+    }
+  }
+
+  /** Future-based Call class for server and bidirectional streaming RPCs. */
+  static class StreamResponseFuture<RequestT extends MessageLite, ResponseT extends MessageLite>
+      extends StreamObserverFutureCall<RequestT, ResponseT, Status>
+      implements Call.BidirectionalStreamingFuture<RequestT> {
+    private final Consumer<ResponseT> onNext;
+
+    StreamResponseFuture(
+        RpcManager rpcs, PendingRpc rpc, Consumer<ResponseT> onNext, @Nullable RequestT request) {
+      super(rpcs, rpc);
+      this.onNext = onNext;
+      start(request);
+    }
+
+    @Override
+    public void onNext(ResponseT value) {
+      onNext.accept(value);
+    }
+
+    @Override
+    public void onCompleted(Status status) {
+      set(status);
+    }
+  }
 
   /** Invokes the specified RPC. */
   static <RequestT extends MessageLite, ResponseT extends MessageLite>
@@ -105,78 +228,38 @@ class StreamObserverCall<RequestT extends MessageLite, ResponseT extends Message
     }
   }
 
-  static class ClientStreamingFuture<RequestT extends MessageLite, ResponseT extends MessageLite>
-      extends StreamObserverCall<RequestT, ResponseT>
-      implements Call.ClientStreamingFuture<RequestT, ResponseT> {
-    RpcFuture.Unary<ResponseT> future;
-
-    ClientStreamingFuture(RpcManager rpcs,
-        PendingRpc rpc,
-        RpcFuture.Unary<ResponseT> future,
-        @Nullable RequestT request) throws ChannelOutputException {
-      super(rpcs, rpc, future);
-      rpcs.start(rpc, this, request);
-      this.future = future;
-    }
-
-    @Override
-    public ListenableFuture<UnaryResult<ResponseT>> future() {
-      return future;
+  void onNext(ByteString payload) {
+    if (active()) {
+      ResponseT message = parseResponse(payload);
+      if (message != null) {
+        observer.onNext(message);
+      }
     }
   }
 
-  static class BidirectionalStreamingFuture<RequestT extends MessageLite, ResponseT
-                                                extends MessageLite>
-      extends StreamObserverCall<RequestT, ResponseT>
-      implements Call.BidirectionalStreamingFuture<RequestT> {
-    RpcFuture.Stream<ResponseT> future;
-
-    BidirectionalStreamingFuture(RpcManager rpcs,
-        PendingRpc rpc,
-        RpcFuture.Stream<ResponseT> future,
-        @Nullable RequestT request) throws ChannelOutputException {
-      super(rpcs, rpc, future);
-      rpcs.start(rpc, this, request);
-      this.future = future;
-    }
-
-    @Override
-    public ListenableFuture<Status> future() {
-      return future;
+  void onCompleted(Status status) {
+    if (active()) {
+      this.status = status;
+      observer.onCompleted(status);
     }
   }
 
-  /** This class dispatches RPC events to Call objects. */
-  static class Dispatcher implements ResponseProcessor {
-    @Override
-    public void onNext(RpcManager rpcs, PendingRpc rpc, Object context, MessageLite payload) {
-      StreamObserverCall<MessageLite, MessageLite> call = getCall(context);
-      if (call.active()) {
-        call.observer.onNext(payload);
-      }
+  void onError(Status status) {
+    if (active()) {
+      this.error = status;
+      observer.onError(status);
     }
+  }
 
-    @Override
-    public void onCompleted(RpcManager rpcs, PendingRpc rpc, Object context, Status status) {
-      StreamObserverCall<MessageLite, MessageLite> call = getCall(context);
-      if (call.active()) {
-        call.status = status;
-        call.observer.onCompleted(status);
-      }
-    }
-
-    @Override
-    public void onError(RpcManager rpcs, PendingRpc rpc, Object context, Status status) {
-      StreamObserverCall<MessageLite, MessageLite> call = getCall(context);
-      if (call.active()) {
-        call.error = status;
-        call.observer.onError(status);
-      }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static StreamObserverCall<MessageLite, MessageLite> getCall(Object context) {
-      return (StreamObserverCall<MessageLite, MessageLite>) context;
+  @SuppressWarnings("unchecked")
+  @Nullable
+  private ResponseT parseResponse(ByteString payload) {
+    try {
+      return (ResponseT) rpc.method().decodeResponsePayload(payload);
+    } catch (InvalidProtocolBufferException e) {
+      logger.atWarning().withCause(e).log(
+          "Failed to decode response for method %s; skipping packet", rpc.method().name());
+      return null;
     }
   }
 }

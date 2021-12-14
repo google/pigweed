@@ -17,55 +17,82 @@ package dev.pigweed.pw_rpc;
 import com.google.common.flogger.FluentLogger;
 import com.google.protobuf.ExtensionRegistryLite;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.MessageLite;
 import dev.pigweed.pw.rpc.internal.Packet.PacketType;
 import dev.pigweed.pw.rpc.internal.Packet.RpcPacket;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
  * A client for a pw_rpc server. Invokes RPCs through a MethodClient and handles RPC responses
  * through the processPacket function.
- *
- * <p>The Client class has a generic MethodClient parameter T. MethodClient is an abstract class
- * used to invoke service methods. The MethodClient is extended by the user, and may provide an
- * asynchronous or synchronous API as appropriate for the application.
  */
-public class Client<T extends MethodClient> {
+public class Client {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Map<Integer, Channel> channels;
   private final Map<Integer, Service> services;
-  private final ResponseProcessor responseProcessor;
-  private final MethodClientFactory<T> methodClientFactory;
 
-  private final Map<PendingRpc, T> methodClients;
+  private final Map<PendingRpc, MethodClient> methodClients;
   private final RpcManager rpcs;
+
+  private final Function<PendingRpc, StreamObserver<MessageLite>> defaultObserverFactory;
 
   /**
    * Creates a new RPC client.
    *
    * @param channels supported channels, which are used to send requests to the server
    * @param services which RPC services this client supports; used to handle encoding and decoding
-   *     payloads
-   * @param responseProcessor called each time a response to a pending RPC is received
-   * @param methodClientFactory creates MethodClients, which are used to invoke RPCs on a particular
-   *     channel
    */
-  public Client(List<Channel> channels,
+  private Client(List<Channel> channels,
       List<Service> services,
-      ResponseProcessor responseProcessor,
-      MethodClientFactory<T> methodClientFactory) {
+      Function<PendingRpc, StreamObserver<MessageLite>> defaultObserverFactory) {
     this.channels = channels.stream().collect(Collectors.toMap(Channel::id, c -> c));
     this.services = services.stream().collect(Collectors.toMap(Service::id, s -> s));
-    this.responseProcessor = responseProcessor;
-    this.methodClientFactory = methodClientFactory;
 
     this.methodClients = new HashMap<>();
     this.rpcs = new RpcManager();
+
+    this.defaultObserverFactory = defaultObserverFactory;
+  }
+
+  /**
+   * Creates a new pw_rpc client.
+   *
+   * @param channels the set of channels for the client to send requests over
+   * @param services the services to support on this client
+   * @param defaultObserverFactory function that creates a default observer for each RPC
+   * @return the new pw.rpc.Client
+   */
+  public static Client create(List<Channel> channels,
+      List<Service> services,
+      Function<PendingRpc, StreamObserver<MessageLite>> defaultObserverFactory) {
+    return new Client(channels, services, defaultObserverFactory);
+  }
+
+  /** Creates a new pw_rpc client that logs responses when no observer is provided to calls. */
+  public static Client create(List<Channel> channels, List<Service> services) {
+    return create(channels, services, (rpc) -> new StreamObserver<MessageLite>() {
+      @Override
+      public void onNext(MessageLite value) {
+        logger.atFine().log("%s received response: %s", rpc, value);
+      }
+
+      @Override
+      public void onCompleted(Status status) {
+        logger.atInfo().log("%s completed with status %s", rpc, status);
+      }
+
+      @Override
+      public void onError(Status status) {
+        logger.atWarning().log("%s terminated with error %s", rpc, status);
+      }
+    });
   }
 
   /**
@@ -74,7 +101,7 @@ public class Client<T extends MethodClient> {
    * @param channelId the ID for the channel through which to invoke the RPC
    * @param fullMethodName the method name as "package.Service.Method" or "package.Service/Method"
    */
-  public T method(int channelId, String fullMethodName) {
+  public MethodClient method(int channelId, String fullMethodName) {
     for (char delimiter : new char[] {'/', '.'}) {
       int index = fullMethodName.lastIndexOf(delimiter);
       if (index != -1) {
@@ -90,7 +117,7 @@ public class Client<T extends MethodClient> {
    * Returns a MethodClient on the provided channel using separate arguments for "package.Service"
    * and "Method".
    */
-  public T method(int channelId, String fullServiceName, String methodName) {
+  public MethodClient method(int channelId, String fullServiceName, String methodName) {
     try {
       return method(channelId, Ids.calculate(fullServiceName), Ids.calculate(methodName));
     } catch (IllegalArgumentException e) {
@@ -100,7 +127,7 @@ public class Client<T extends MethodClient> {
   }
 
   /** Returns a MethodClient with the provided service and method IDs. */
-  public T method(int channelId, int serviceId, int methodId) {
+  public MethodClient method(int channelId, int serviceId, int methodId) {
     Channel channel = channels.get(channelId);
     if (channel == null) {
       throw new IllegalArgumentException("Unknown channel ID " + channelId);
@@ -118,7 +145,7 @@ public class Client<T extends MethodClient> {
 
     PendingRpc rpc = PendingRpc.create(channel, service, method);
     if (!methodClients.containsKey(rpc)) {
-      methodClients.put(rpc, methodClientFactory.create(rpcs, rpc));
+      methodClients.put(rpc, new MethodClient(rpcs, rpc, defaultObserverFactory.apply(rpc)));
     }
     return methodClients.get(rpc);
   }
@@ -167,12 +194,10 @@ public class Client<T extends MethodClient> {
       return true; // true since the packet was handled, even though it was invalid.
     }
 
-    packet = updatePacketForBackwardsCompatibility(rpc, packet);
-
     // Any packet type other than SERVER_STREAM indicates that this is the last packet for this RPC.
-    Object context =
+    StreamObserverCall<?, ?> call =
         packet.getType().equals(PacketType.SERVER_STREAM) ? rpcs.getPending(rpc) : rpcs.clear(rpc);
-    if (context == null) {
+    if (call == null) {
       logger.atInfo().log(
           "Ignoring packet for RPC (%s) that isn't pending. Pending RPCs are: %s", rpc, rpcs);
       sendError(channel, packet, Status.FAILED_PRECONDITION);
@@ -183,17 +208,17 @@ public class Client<T extends MethodClient> {
       case SERVER_ERROR:
         Status status = decodeStatus(packet);
         logger.atWarning().log("RPC %s failed with error %s", rpc, status);
-        responseProcessor.onError(rpcs, rpc, context, status);
+        call.onError(status);
         break;
       case RESPONSE:
         // Server streaming an unary RPCs include a payload with their response packet.
         if (!rpc.method().isServerStreaming()) {
-          handlePayload(rpc, context, packet);
+          call.onNext(packet.getPayload());
         }
-        responseProcessor.onCompleted(rpcs, rpc, context, decodeStatus(packet));
+        call.onCompleted(decodeStatus(packet));
         break;
       case SERVER_STREAM:
-        handlePayload(rpc, context, packet);
+        call.onNext(packet.getPayload());
         break;
       default:
         logger.atWarning().log(
@@ -232,42 +257,5 @@ public class Client<T extends MethodClient> {
       return Status.UNKNOWN;
     }
     return status;
-  }
-
-  private void handlePayload(PendingRpc rpc, Object context, RpcPacket packet) {
-    try {
-      responseProcessor.onNext(
-          rpcs, rpc, context, rpc.method().decodeResponsePayload(packet.getPayload()));
-    } catch (InvalidProtocolBufferException e) {
-      logger.atWarning().withCause(e).log(
-          "Failed to decode response for method %s; skipping packet", rpc.method().name());
-    }
-  }
-
-  /**
-   * The pw_rpc protocol was updated when client and bidirectional streaming were implemented. This
-   * function adapts packets from the older protocol to use the new protocol.
-   *
-   * @param packet the packet to update, which is modified in place
-   */
-  private static RpcPacket updatePacketForBackwardsCompatibility(PendingRpc rpc, RpcPacket packet) {
-    // The protocol changes only affect server streaming (not bidirectional streaming) RPCs.
-    if (!rpc.method().isServerStreaming() || rpc.method().isClientStreaming()) {
-      return packet;
-    }
-
-    // SERVER_STREAM_END packets are deprecated. They are equivalent to a RESPONSE packet.
-    if (packet.getType() == PacketType.DEPRECATED_SERVER_STREAM_END) {
-      return packet.toBuilder().setType(PacketType.RESPONSE).build();
-    }
-
-    // Prior to the introduction of SERVER_STREAM packets, RESPONSE packets with a payload were used
-    // instead. I f a non-zero payload is present, assume this RESPONSE is equivalent to a
-    // SERVER_STREAM packet.
-    if (packet.getType() == PacketType.RESPONSE && !packet.getPayload().isEmpty()) {
-      return packet.toBuilder().setType(PacketType.SERVER_STREAM).build();
-    }
-
-    return packet;
   }
 }

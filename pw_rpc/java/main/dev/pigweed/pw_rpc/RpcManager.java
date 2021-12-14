@@ -23,21 +23,22 @@ import javax.annotation.Nullable;
 /** Tracks the state of service method invocations. */
 public class RpcManager {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-  private final Map<PendingRpc, Object> pending = new HashMap<>();
+  private final Map<PendingRpc, StreamObserverCall<?, ?>> pending = new HashMap<>();
 
   /**
    * Invokes an RPC.
    *
    * @param rpc channel / service / method tuple that unique identifies this RPC
-   * @param context arbitrary implementation-defined non-null value to associate with the RPC
+   * @param call object for this RPC
    * @param payload the request
    */
   @Nullable
-  public synchronized Object start(PendingRpc rpc, Object context, @Nullable MessageLite payload)
+  public synchronized StreamObserverCall<?, ?> start(
+      PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload)
       throws ChannelOutputException {
     logger.atFine().log("Start %s", rpc);
     rpc.channel().send(Packets.request(rpc, payload));
-    return pending.put(rpc, context);
+    return pending.put(rpc, call);
   }
 
   /**
@@ -47,7 +48,8 @@ public class RpcManager {
    * packet) or cancelled.
    */
   @Nullable
-  public synchronized Object open(PendingRpc rpc, Object context, @Nullable MessageLite payload) {
+  public synchronized StreamObserverCall<?, ?> open(
+      PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload) {
     logger.atFine().log("Open %s", rpc);
     try {
       rpc.channel().send(Packets.request(rpc, payload));
@@ -55,50 +57,52 @@ public class RpcManager {
       logger.atFine().withCause(e).log(
           "Ignoring error opening %s; listening for unrequested responses", rpc);
     }
-    return pending.put(rpc, context);
+    return pending.put(rpc, call);
   }
 
   /** Cancels an ongoing RPC */
   @Nullable
-  public synchronized Object cancel(PendingRpc rpc) throws ChannelOutputException {
-    Object context = pending.remove(rpc);
-    if (context != null) {
+  public synchronized StreamObserverCall<?, ?> cancel(PendingRpc rpc)
+      throws ChannelOutputException {
+    StreamObserverCall<?, ?> call = pending.remove(rpc);
+    if (call != null) {
       logger.atFine().log("Cancel %s", rpc);
       rpc.channel().send(Packets.cancel(rpc));
     }
-    return context;
+    return call;
   }
 
   @Nullable
-  public synchronized Object clientStream(PendingRpc rpc, MessageLite payload)
+  public synchronized StreamObserverCall<?, ?> clientStream(PendingRpc rpc, MessageLite payload)
       throws ChannelOutputException {
-    Object context = pending.get(rpc);
-    if (context != null) {
+    StreamObserverCall<?, ?> call = pending.get(rpc);
+    if (call != null) {
       rpc.channel().send(Packets.clientStream(rpc, payload));
     }
-    return context;
+    return call;
   }
 
   @Nullable
-  public synchronized Object clientStreamEnd(PendingRpc rpc) throws ChannelOutputException {
-    Object context = pending.get(rpc);
-    if (context != null) {
+  public synchronized StreamObserverCall<?, ?> clientStreamEnd(PendingRpc rpc)
+      throws ChannelOutputException {
+    StreamObserverCall<?, ?> call = pending.get(rpc);
+    if (call != null) {
       rpc.channel().send(Packets.clientStreamEnd(rpc));
     }
-    return context;
+    return call;
   }
 
   @Nullable
-  public synchronized Object clear(PendingRpc rpc) {
-    Object context = pending.remove(rpc);
-    if (context != null) {
+  public synchronized StreamObserverCall<?, ?> clear(PendingRpc rpc) {
+    StreamObserverCall<?, ?> call = pending.remove(rpc);
+    if (call != null) {
       logger.atFine().log("Clear %s", rpc);
     }
-    return context;
+    return call;
   }
 
   @Nullable
-  public synchronized Object getPending(PendingRpc rpc) {
+  public synchronized StreamObserverCall<?, ?> getPending(PendingRpc rpc) {
     return pending.get(rpc);
   }
 
