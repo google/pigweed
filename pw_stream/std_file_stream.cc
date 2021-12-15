@@ -44,7 +44,7 @@ StatusWithSize StdFileReader::DoRead(ByteSpan dest) {
   return StatusWithSize(stream_.gcount());
 }
 
-Status StdFileReader::DoSeek(ssize_t offset, Whence origin) {
+Status StdFileReader::DoSeek(ptrdiff_t offset, Whence origin) {
   if (!stream_.seekg(offset, WhenceToSeekDir(origin))) {
     return Status::Unknown();
   }
@@ -63,7 +63,7 @@ Status StdFileWriter::DoWrite(ConstByteSpan data) {
   return Status::Unknown();
 }
 
-Status StdFileWriter::DoSeek(ssize_t offset, Whence origin) {
+Status StdFileWriter::DoSeek(ptrdiff_t offset, Whence origin) {
   if (!stream_.seekp(offset, WhenceToSeekDir(origin))) {
     return Status::Unknown();
   }

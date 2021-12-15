@@ -343,7 +343,7 @@ class BlobStore {
       return offset_;
     }
 
-    Status DoSeek(ssize_t offset, Whence origin) override {
+    Status DoSeek(ptrdiff_t offset, Whence origin) override {
       PW_DASSERT(open_);
       // Note that Open ensures it is ValidToRead() which
       // in turn guarantees store_.ReadableDataBytes() > 0.

@@ -22,18 +22,18 @@
 namespace pw::stream {
 
 // Adds a seek offset to the specified origin.
-constexpr ssize_t ResolveSeekOffset(ssize_t offset,
-                                    Stream::Whence origin,
-                                    size_t end_position,
-                                    size_t current_position) {
+constexpr ptrdiff_t ResolveSeekOffset(ptrdiff_t offset,
+                                      Stream::Whence origin,
+                                      size_t end_position,
+                                      size_t current_position) {
   switch (origin) {
     case Stream::kBeginning:
       return offset;
     case Stream::kCurrent:
-      return static_cast<ssize_t>(current_position) + offset;
+      return static_cast<ptrdiff_t>(current_position) + offset;
     case Stream::kEnd:
     default:
-      return static_cast<ssize_t>(end_position) + offset;
+      return static_cast<ptrdiff_t>(end_position) + offset;
   }
 }
 
@@ -41,11 +41,11 @@ constexpr ssize_t ResolveSeekOffset(ssize_t offset,
 // new position is calculated and assigned to the provided position variable.
 //
 // Returns OUT_OF_RANGE for seeks to a negative position or past the end.
-constexpr Status CalculateSeek(ssize_t offset,
+constexpr Status CalculateSeek(ptrdiff_t offset,
                                Stream::Whence origin,
                                size_t end_position,
                                size_t& current_position) {
-  const ssize_t new_position =
+  const ptrdiff_t new_position =
       ResolveSeekOffset(offset, origin, end_position, current_position);
 
   if (new_position < 0 || static_cast<size_t>(new_position) > end_position) {

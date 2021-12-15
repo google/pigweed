@@ -38,7 +38,7 @@ class NullStream final : public SeekableReaderWriter {
  private:
   Status DoWrite(ConstByteSpan) final { return OkStatus(); }
   StatusWithSize DoRead(ByteSpan) final { return StatusWithSize::OutOfRange(); }
-  Status DoSeek(ssize_t, Whence) final { return OkStatus(); }
+  Status DoSeek(ptrdiff_t, Whence) final { return OkStatus(); }
 };
 
 }  // namespace pw::stream

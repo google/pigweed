@@ -150,7 +150,7 @@ for full details.
         written; no more will be written.
 
 
-  .. cpp:function:: Status Seek(ssize_t offset, Whence origin = kBeginning)
+  .. cpp:function:: Status Seek(ptrdiff_t offset, Whence origin = kBeginning)
 
     Changes the current read & write position in the stream, if supported.
 
@@ -189,7 +189,7 @@ for full details.
 
     Virtual :cpp:func:`Write` function implemented by derived classes.
 
-  .. cpp:function:: private virtual Status DoSeek(ssize_t offset, Whence origin)
+  .. cpp:function:: private virtual Status DoSeek(ptrdiff_t offset, Whence origin)
 
     Virtual :cpp:func:`Seek` function implemented by derived classes.
 

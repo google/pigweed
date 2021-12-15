@@ -162,7 +162,7 @@ class Stream {
   //   OUT_OF_RANGE - Attempted to seek beyond the bounds of the stream. The
   //       position is unchanged.
   //
-  Status Seek(ssize_t offset, Whence origin = kBeginning) {
+  Status Seek(ptrdiff_t offset, Whence origin = kBeginning) {
     return DoSeek(offset, origin);
   }
 
@@ -248,7 +248,7 @@ class Stream {
 
   virtual Status DoWrite(ConstByteSpan data) = 0;
 
-  virtual Status DoSeek(ssize_t offset, Whence origin) = 0;
+  virtual Status DoSeek(ptrdiff_t offset, Whence origin) = 0;
 
   virtual size_t DoTell() const { return kUnknownPosition; }
 
@@ -346,7 +346,7 @@ class NonSeekableReader : public Reader {
  private:
   using Reader::Seek;
 
-  Status DoSeek(ssize_t, Whence) final { return Status::Unimplemented(); }
+  Status DoSeek(ptrdiff_t, Whence) final { return Status::Unimplemented(); }
 };
 
 // A Stream that supports writing but not reading. The Read() method is hidden.
@@ -433,7 +433,7 @@ class NonSeekableWriter : public Writer {
  private:
   using Writer::Seek;
 
-  Status DoSeek(ssize_t, Whence) final { return Status::Unimplemented(); }
+  Status DoSeek(ptrdiff_t, Whence) final { return Status::Unimplemented(); }
 };
 
 // A Stream that supports both reading and writing.
@@ -606,7 +606,7 @@ class NonSeekableReaderWriter : public ReaderWriter {
  private:
   using ReaderWriter::Seek;
 
-  Status DoSeek(ssize_t, Whence) final { return Status::Unimplemented(); }
+  Status DoSeek(ptrdiff_t, Whence) final { return Status::Unimplemented(); }
 };
 
 }  // namespace pw::stream

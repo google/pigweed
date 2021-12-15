@@ -546,6 +546,16 @@ Unsigned integers are permitted in Pigweed. Aim for consistency with existing
 code and the C++ Standard Library. Be very careful mixing signed and unsigned
 integers.
 
+Features not in the C++ standard
+================================
+Avoid features not available in standard C++. This includes compiler extensions
+and features from other standards like POSIX.
+
+For example, use ``ptrdiff_t`` instead of POSIX's ``ssize_t``, unless
+interacting with a POSIX API in intentionally non-portable code. Never use
+POSIX functions with suitable standard or Pigweed alternatives, such as
+``strnlen`` (use ``pw::string::NullTerminatedLength`` instead).
+
 ------------
 Python style
 ------------

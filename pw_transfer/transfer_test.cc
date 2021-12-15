@@ -33,7 +33,7 @@ class TestMemoryReader : public stream::SeekableReader {
   constexpr TestMemoryReader(std::span<const std::byte> data)
       : memory_reader_(data) {}
 
-  Status DoSeek(ssize_t offset, Whence origin) override {
+  Status DoSeek(ptrdiff_t offset, Whence origin) override {
     if (seek_status.ok()) {
       return memory_reader_.Seek(offset, origin);
     }

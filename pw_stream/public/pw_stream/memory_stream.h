@@ -76,7 +76,7 @@ class MemoryWriter : public SeekableWriter {
   // perform a partial write and Status::ResourceExhausted() will be returned.
   Status DoWrite(ConstByteSpan data) final;
 
-  Status DoSeek(ssize_t offset, Whence origin) final {
+  Status DoSeek(ptrdiff_t offset, Whence origin) final {
     return CalculateSeek(offset, origin, dest_.size(), position_);
   }
 
@@ -109,7 +109,7 @@ class MemoryReader final : public SeekableReader {
     return type == LimitType::kRead ? source_.size_bytes() - position_ : 0;
   }
 
-  Status DoSeek(ssize_t offset, Whence origin) override {
+  Status DoSeek(ptrdiff_t offset, Whence origin) override {
     return CalculateSeek(offset, origin, source_.size(), position_);
   }
 

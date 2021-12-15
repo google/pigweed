@@ -80,7 +80,7 @@ class IntervalReader : public SeekableReader {
 
  private:
   StatusWithSize DoRead(ByteSpan destination) final;
-  Status DoSeek(ssize_t offset, Whence origin) final;
+  Status DoSeek(ptrdiff_t offset, Whence origin) final;
   size_t DoTell() const final { return current_ - start_; }
   void Check();
   size_t ConservativeLimit(LimitType limit) const override {

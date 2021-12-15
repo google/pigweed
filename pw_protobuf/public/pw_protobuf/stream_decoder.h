@@ -88,7 +88,7 @@ class StreamDecoder {
           status_(status) {}
 
     StatusWithSize DoRead(ByteSpan destination) final;
-    Status DoSeek(ssize_t offset, Whence origin) final;
+    Status DoSeek(ptrdiff_t offset, Whence origin) final;
 
     StreamDecoder& decoder_;
     size_t start_offset_;

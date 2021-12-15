@@ -46,10 +46,10 @@ StatusWithSize IntervalReader::DoRead(ByteSpan destination) {
   return StatusWithSize(res.value().size());
 }
 
-Status IntervalReader::DoSeek(ssize_t offset, Whence origin) {
+Status IntervalReader::DoSeek(ptrdiff_t offset, Whence origin) {
   Check();
 
-  ssize_t absolute_position = std::numeric_limits<size_t>::max();
+  ptrdiff_t absolute_position = std::numeric_limits<ptrdiff_t>::min();
 
   // Convert from the position within the interval to the position within the
   // source reader stream.

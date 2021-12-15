@@ -34,13 +34,13 @@ class TestNonSeekableReader : public NonSeekableReader {
 class TestRelativeSeekableReader : public RelativeSeekableReader {
  private:
   StatusWithSize DoRead(ByteSpan) override { return StatusWithSize(0); }
-  Status DoSeek(ssize_t, Whence) override { return Status(); }
+  Status DoSeek(ptrdiff_t, Whence) override { return Status(); }
 };
 
 class TestSeekableReader : public SeekableReader {
  private:
   StatusWithSize DoRead(ByteSpan) override { return StatusWithSize(0); }
-  Status DoSeek(ssize_t, Whence) override { return Status(); }
+  Status DoSeek(ptrdiff_t, Whence) override { return Status(); }
 };
 
 class TestNonSeekableWriter : public NonSeekableWriter {
@@ -51,13 +51,13 @@ class TestNonSeekableWriter : public NonSeekableWriter {
 class TestRelativeSeekableWriter : public RelativeSeekableWriter {
  private:
   Status DoWrite(ConstByteSpan) override { return OkStatus(); }
-  Status DoSeek(ssize_t, Whence) override { return OkStatus(); }
+  Status DoSeek(ptrdiff_t, Whence) override { return OkStatus(); }
 };
 
 class TestSeekableWriter : public SeekableWriter {
  private:
   Status DoWrite(ConstByteSpan) override { return OkStatus(); }
-  Status DoSeek(ssize_t, Whence) override { return OkStatus(); }
+  Status DoSeek(ptrdiff_t, Whence) override { return OkStatus(); }
 };
 
 class TestNonSeekableReaderWriter : public NonSeekableReaderWriter {
@@ -70,14 +70,14 @@ class TestRelativeSeekableReaderWriter : public RelativeSeekableReaderWriter {
  private:
   StatusWithSize DoRead(ByteSpan) override { return StatusWithSize(0); }
   Status DoWrite(ConstByteSpan) override { return OkStatus(); }
-  Status DoSeek(ssize_t, Whence) override { return OkStatus(); }
+  Status DoSeek(ptrdiff_t, Whence) override { return OkStatus(); }
 };
 
 class TestSeekableReaderWriter : public SeekableReaderWriter {
  private:
   StatusWithSize DoRead(ByteSpan) override { return StatusWithSize(0); }
   Status DoWrite(ConstByteSpan) override { return OkStatus(); }
-  Status DoSeek(ssize_t, Whence) override { return OkStatus(); }
+  Status DoSeek(ptrdiff_t, Whence) override { return OkStatus(); }
 };
 
 // Test ReaderWriter conversions to Reader/Writer.

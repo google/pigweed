@@ -22,10 +22,10 @@
 
 namespace pw::protobuf {
 
-Status StreamDecoder::BytesReader::DoSeek(ssize_t offset, Whence origin) {
+Status StreamDecoder::BytesReader::DoSeek(ptrdiff_t offset, Whence origin) {
   PW_TRY(status_);
 
-  ssize_t absolute_position = std::numeric_limits<size_t>::max();
+  ptrdiff_t absolute_position = std::numeric_limits<ptrdiff_t>::min();
 
   // Convert from the position within the bytes field to the position within the
   // proto stream.

@@ -271,7 +271,7 @@ void GenerateEncodedStrings(TestDataFile* file) {
   MAKE_TEST_CASE("%ju", static_cast<uintmax_t>(99));
   MAKE_TEST_CASE("%jd", static_cast<intmax_t>(99));
   MAKE_TEST_CASE("%zu", sizeof(uint64_t));
-  MAKE_TEST_CASE("%zd", static_cast<ssize_t>(123));
+  MAKE_TEST_CASE("%zd", static_cast<ptrdiff_t>(123));
   MAKE_TEST_CASE("%td", static_cast<ptrdiff_t>(99));
 
   file->Section("Percent character");
