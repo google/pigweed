@@ -12,7 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+# Do not rely on the PW_ROOT environment variable being set through bootstrap.
+# Regardless of whether it's set or not the following include will ensure it is.
+include(${CMAKE_CURRENT_LIST_DIR}/../../pw_build/pigweed.cmake)
 
 pw_set_backend(pw_assert pw_assert_log)
 pw_set_backend(pw_chrono.system_clock pw_chrono_stl.system_clock)

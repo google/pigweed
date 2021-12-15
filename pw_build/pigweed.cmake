@@ -13,6 +13,15 @@
 # the License.
 include_guard(GLOBAL)
 
+# The PW_ROOT environment variable should be set in bootstrap. If it is not set,
+# set it to the root of the Pigweed repository.
+if("$ENV{PW_ROOT}" STREQUAL "")
+  get_filename_component(pw_root "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+  message("The PW_ROOT environment variable is not set; "
+          "using ${pw_root} within CMake")
+  set(ENV{PW_ROOT} "${pw_root}")
+endif()
+
 # Wrapper around cmake_parse_arguments that fails with an error if any arguments
 # remained unparsed.
 macro(_pw_parse_argv_strict function start_arg options one multi)

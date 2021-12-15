@@ -16,13 +16,9 @@ project(Pigweed)
 
 cmake_minimum_required(VERSION 3.16)
 
-# The PW_ROOT environment variable should be set in bootstrap. If it is not set,
-# set it to this directory.
-if("$ENV{PW_ROOT}" STREQUAL "")
-  message("The PW_ROOT environment variable is not set; "
-          "using ${CMAKE_CURRENT_LIST_DIR} within CMake")
-  set(ENV{PW_ROOT} "${CMAKE_CURRENT_LIST_DIR}")
-endif()
+# Do not rely on the PW_ROOT environment variable being set through bootstrap.
+# Regardless of whether it's set or not the following include will ensure it is.
+include(pw_build/pigweed.cmake)
 
 add_subdirectory(pw_assert EXCLUDE_FROM_ALL)
 add_subdirectory(pw_assert_basic EXCLUDE_FROM_ALL)
