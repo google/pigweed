@@ -378,6 +378,18 @@ of the stream into a provided buffer.
     return status.IsOutOfRange() ? OkStatus() : status;
   }
 
+Where the length of the protobuf message is known in advance, the decoder can
+be prevented from reading from the stream beyond the known bounds by specifying
+the known length to the decoder:
+
+.. code-block:: c++
+
+  pw::protobuf::StreamDecoder decoder(reader, message_length);
+
+When a decoder constructed in this way goes out of scope, it will consume any
+remaining bytes in `message_length` allowing the next `Read` to be data after
+the protobuf, even when it was not fully parsed.
+
 The ``StreamDecoder`` can also return a ``StreamDecoder::BytesReader`` for
 reading bytes fields, avoiding the need to copy data out directly.
 

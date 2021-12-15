@@ -98,8 +98,14 @@ class StreamDecoder {
   };
 
   constexpr StreamDecoder(stream::Reader& reader)
+      : StreamDecoder(reader, std::numeric_limits<size_t>::max()) {}
+
+  // Allow the maximum length of the protobuf to be specified to the decoder
+  // for streaming situations. When constructed in this way, the decoder will
+  // consume any remaining bytes when it goes out of scope.
+  constexpr StreamDecoder(stream::Reader& reader, size_t length)
       : reader_(reader),
-        stream_bounds_({0, std::numeric_limits<size_t>::max()}),
+        stream_bounds_({0, length}),
         position_(0),
         current_field_(kInitialFieldKey),
         delimited_field_size_(0),

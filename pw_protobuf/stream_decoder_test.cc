@@ -714,5 +714,52 @@ TEST(StreamDecoder, ReadDelimitedField_DoesntOverConsume) {
   EXPECT_EQ(result.value(), 42);
 }
 
+TEST(StreamDecoder, Decode_WithLength) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=int32, k=1, v=42
+    0x08, 0x2a,
+    // This field is beyond the range of the protobuf:
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader, /*length=*/2u);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  Result<int32_t> int32 = decoder.ReadInt32();
+  ASSERT_EQ(int32.status(), OkStatus());
+  EXPECT_EQ(int32.value(), 42);
+
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
+TEST(StreamDecoder, Decode_WithLength_SkipsToEnd) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=string, k=1, v="Hello world"
+    0x08, 0x0b, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd',
+    // This field is beyond the range of the protobuf:
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  {
+    StreamDecoder decoder(reader, /*length=*/13u);
+
+    EXPECT_EQ(decoder.Next(), OkStatus());
+    ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+    // Don't read the value out, or advance further. Destructing the object
+    // should advance to the end of the length given.
+  }
+
+  EXPECT_EQ(reader.Tell(), 13u);
+}
+
 }  // namespace
 }  // namespace pw::protobuf

@@ -14,6 +14,8 @@
 
 #include "pw_protobuf/stream_decoder.h"
 
+#include <limits>
+
 #include "pw_assert/check.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -84,6 +86,11 @@ StatusWithSize StreamDecoder::BytesReader::DoRead(ByteSpan destination) {
 StreamDecoder::~StreamDecoder() {
   if (parent_ != nullptr) {
     parent_->CloseNestedDecoder(*this);
+  } else if (stream_bounds_.high < std::numeric_limits<size_t>::max()) {
+    if (status_.ok()) {
+      // Advance the stream to the end of the bounds.
+      PW_CHECK(Advance(stream_bounds_.high).ok());
+    }
   }
 }
 
