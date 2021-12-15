@@ -171,10 +171,10 @@ class CortexMExceptionAnalyzer:
 def process_snapshot(
         serialized_snapshot: bytes,
         symbolizer: Optional[pw_symbolizer.Symbolizer] = None) -> str:
-    """Returns the stringified result of a SnapshotCpuState message run though
-    a CortexMExceptionAnalyzer.
+    """Returns the stringified result of a SnapshotCpuStateOverlay message run
+    though a CortexMExceptionAnalyzer.
     """
-    snapshot = cpu_state_pb2.SnapshotCpuState()
+    snapshot = cpu_state_pb2.SnapshotCpuStateOverlay()
     snapshot.ParseFromString(serialized_snapshot)
 
     if snapshot.HasField('armv7m_cpu_state'):

@@ -16,7 +16,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_protobuf/encoder.h"
 
-namespace pw::cpu_exception {
+namespace pw::cpu_exception::cortex_m {
 
 Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
                          const pw_cpu_exception_State& cpu_state) {
@@ -25,8 +25,8 @@ Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
   cortex_m::ArmV7mCpuState::StreamEncoder& state_encoder =
       *static_cast<cortex_m::ArmV7mCpuState::StreamEncoder*>(&dest);
 
-  const CortexMExceptionRegisters& base = cpu_state.base;
-  const CortexMExtraRegisters& extended = cpu_state.extended;
+  const ExceptionRegisters& base = cpu_state.base;
+  const ExtraRegisters& extended = cpu_state.extended;
 
   // Special and mem-mapped registers.
   if (base.pc != kUndefinedPcLrOrPsrRegValue) {
@@ -73,4 +73,4 @@ Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
   return OkStatus();
 }
 
-}  // namespace pw::cpu_exception
+}  // namespace pw::cpu_exception::cortex_m

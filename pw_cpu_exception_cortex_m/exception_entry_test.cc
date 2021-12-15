@@ -21,27 +21,16 @@
 #include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 
-namespace pw::cpu_exception {
+namespace pw::cpu_exception::cortex_m {
 namespace {
+
+using pw::cpu_exception::RawFaultingCpuState;
 
 // CMSIS/Cortex-M/ARMv7 related constants.
 // These values are from the ARMv7-M Architecture Reference Manual DDI 0403E.b.
 // https://static.docs.arm.com/ddi0403/e/DDI0403E_B_armv7m_arm.pdf
-
-// Exception ISR number. (ARMv7-M Section B1.5.2)
-constexpr uint32_t kHardFaultIsrNum = 0x3u;
-constexpr uint32_t kMemFaultIsrNum = 0x4u;
-constexpr uint32_t kBusFaultIsrNum = 0x5u;
-constexpr uint32_t kUsageFaultIsrNum = 0x6u;
-
-// Masks for individual bits of HFSR. (ARMv7-M Section B3.2.16)
-constexpr uint32_t kForcedHardfaultMask = 0x1u << 30;
-
-// Masks for individual bits of CFSR. (ARMv7-M Section B3.2.15)
-constexpr uint32_t kUsageFaultStart = 0x1u << 16;
-constexpr uint32_t kUnalignedFaultMask = kUsageFaultStart << 8;
-constexpr uint32_t kDivByZeroFaultMask = kUsageFaultStart << 9;
 
 // CCR flags. (ARMv7-M Section B3.2.8)
 constexpr uint32_t kUnalignedTrapEnableMask = 0x1u << 3;
@@ -52,9 +41,6 @@ constexpr uint32_t kMemFaultEnableMask = 0x1 << 16;
 constexpr uint32_t kBusFaultEnableMask = 0x1 << 17;
 constexpr uint32_t kUsageFaultEnableMask = 0x1 << 18;
 
-// Bit masks for an exception return value. (ARMv7-M Section B1.5.8)
-constexpr uint32_t kExcReturnBasicFrameMask = (0x1u << 4);
-
 // CPCAR mask that enables FPU. (ARMv7-M Section B3.2.20)
 constexpr uint32_t kFpuEnableMask = (0xFu << 20);
 
@@ -63,12 +49,6 @@ volatile uint32_t& cortex_m_vtor =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED08u);
 volatile uint32_t& cortex_m_ccr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED14u);
-volatile uint32_t& cortex_m_shcsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
-volatile uint32_t& cortex_m_cfsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
-volatile uint32_t& cortex_m_hfsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED2Cu);
 volatile uint32_t& cortex_m_cpacr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
 
@@ -413,7 +393,7 @@ TEST(FaultEntry, ExtendedFault) {
   BeginExtendedFaultTest();
   ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
-  const CortexMExtraRegisters& extended_registers = captured_state.extended;
+  const ExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -421,7 +401,7 @@ TEST(FaultEntry, ExtendedFault) {
 
   // Check expected values for this crash.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
-            static_cast<uint32_t>(kDivByZeroFaultMask));
+            static_cast<uint32_t>(kCfsrDivbyzeroMask));
   EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
 }
 
@@ -430,7 +410,7 @@ TEST(FaultEntry, ExtendedUnalignedStackFault) {
   BeginExtendedFaultUnalignedStackTest();
   ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
-  const CortexMExtraRegisters& extended_registers = captured_state.extended;
+  const ExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -438,7 +418,7 @@ TEST(FaultEntry, ExtendedUnalignedStackFault) {
 
   // Check expected values for this crash.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
-            static_cast<uint32_t>(kDivByZeroFaultMask));
+            static_cast<uint32_t>(kCfsrDivbyzeroMask));
   EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
 }
 
@@ -506,7 +486,7 @@ TEST(FaultEntry, FloatFault) {
   Setup(/*use_fpu=*/true);
   BeginExtendedFaultFloatTest();
   ASSERT_EQ(exceptions_handled, 1u);
-  const CortexMExtraRegisters& extended_registers = captured_state.extended;
+  const ExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -514,7 +494,7 @@ TEST(FaultEntry, FloatFault) {
 
   // Check expected values for this crash.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
-            static_cast<uint32_t>(kDivByZeroFaultMask));
+            static_cast<uint32_t>(kCfsrDivbyzeroMask));
   EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
 
   // Check fpu state was pushed during exception
@@ -529,7 +509,7 @@ TEST(FaultEntry, FloatUnalignedStackFault) {
   BeginExtendedFaultUnalignedStackFloatTest();
   ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
-  const CortexMExtraRegisters& extended_registers = captured_state.extended;
+  const ExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -537,7 +517,7 @@ TEST(FaultEntry, FloatUnalignedStackFault) {
 
   // Check expected values for this crash.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
-            static_cast<uint32_t>(kDivByZeroFaultMask));
+            static_cast<uint32_t>(kCfsrDivbyzeroMask));
   EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
 
   // Check fpu state was pushed during exception.
@@ -575,21 +555,21 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
   // Clear HFSR forced (nested) hard fault mask if set. This will only be
   // set by the nested fault test.
   EXPECT_EQ(state->extended.hfsr, cortex_m_hfsr);
-  if (cortex_m_hfsr & kForcedHardfaultMask) {
-    cortex_m_hfsr = kForcedHardfaultMask;
+  if (cortex_m_hfsr & kHfsrForcedMask) {
+    cortex_m_hfsr = kHfsrForcedMask;
   }
 
-  if (cortex_m_cfsr & kUnalignedFaultMask) {
+  if (cortex_m_cfsr & kCfsrUnalignedMask) {
     // Copy captured state to check later.
     std::memcpy(&captured_states[exceptions_handled],
                 state,
                 sizeof(pw_cpu_exception_State));
 
     // Disable unaligned read/write trapping to "handle" exception.
-    cortex_m_cfsr = kUnalignedFaultMask;
+    cortex_m_cfsr = kCfsrUnalignedMask;
     exceptions_handled++;
     return;
-  } else if (cortex_m_cfsr & kDivByZeroFaultMask) {
+  } else if (cortex_m_cfsr & kCfsrDivbyzeroMask) {
     // Copy captured state to check later.
     std::memcpy(&captured_states[exceptions_handled],
                 state,
@@ -605,7 +585,7 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
     }
 
     // Disable divide-by-zero trapping to "handle" exception.
-    cortex_m_cfsr = kDivByZeroFaultMask;
+    cortex_m_cfsr = kCfsrDivbyzeroMask;
     exceptions_handled++;
     return;
   }
@@ -618,4 +598,4 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
 }
 
 }  // namespace
-}  // namespace pw::cpu_exception
+}  // namespace pw::cpu_exception::cortex_m

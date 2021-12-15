@@ -246,6 +246,7 @@ pw_test("cpu_exception_entry_test_armv7m") {
   enable_if = pw_cpu_exception_ENTRY_BACKEND ==
               "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv7m"
   deps = [
+    ":cortex_m_constants_armv7m",
     ":cpu_exception_armv7m",
     "$dir_pw_cpu_exception:entry",
     "$dir_pw_cpu_exception:handler",

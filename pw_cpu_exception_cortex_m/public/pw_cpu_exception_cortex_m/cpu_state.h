@@ -19,7 +19,7 @@
 
 #include "pw_preprocessor/compiler.h"
 
-namespace pw::cpu_exception {
+namespace pw::cpu_exception::cortex_m {
 
 // The PC, LR, and PSR registers are not captured when the program stack
 // pointer is in an MPU-protected or otherwise invalid memory region. In
@@ -33,7 +33,7 @@ namespace pw::cpu_exception {
 constexpr uintptr_t kUndefinedPcLrOrPsrRegValue = 0xFFFF'FFFF;
 
 // This is dictated by ARMv7-M architecture. Do not change.
-PW_PACKED(struct) CortexMExceptionRegisters {
+PW_PACKED(struct) ExceptionRegisters {
   uint32_t r0;
   uint32_t r1;
   uint32_t r2;
@@ -45,7 +45,7 @@ PW_PACKED(struct) CortexMExceptionRegisters {
 };
 
 // This is dictated by ARMv7-M architecture. Do not change.
-PW_PACKED(struct) CortexMExceptionRegistersFpu {
+PW_PACKED(struct) ExceptionRegistersFpu {
   uint32_t s0;
   uint32_t s1;
   uint32_t s2;
@@ -75,7 +75,7 @@ inline constexpr uint32_t kPsrExtraStackAlignBit = (1 << 9);
 // values are populated in assembly).
 //
 // NOTE: Memory mapped registers are NOT restored upon fault return!
-PW_PACKED(struct) CortexMExtraRegisters {
+PW_PACKED(struct) ExtraRegisters {
   // Memory mapped registers.
   uint32_t cfsr;
   uint32_t mmfar;
@@ -99,11 +99,11 @@ PW_PACKED(struct) CortexMExtraRegisters {
   uint32_t r11;
 };
 
-}  // namespace pw::cpu_exception
+}  // namespace pw::cpu_exception::cortex_m
 
 PW_PACKED(struct) pw_cpu_exception_State {
-  pw::cpu_exception::CortexMExtraRegisters extended;
-  pw::cpu_exception::CortexMExceptionRegisters base;
+  pw::cpu_exception::cortex_m::ExtraRegisters extended;
+  pw::cpu_exception::cortex_m::ExceptionRegisters base;
   // TODO(amontanez): FPU registers may or may not be here as well. Make the
   // availability of the FPU registers a compile-time configuration when FPU
   // register support is added.

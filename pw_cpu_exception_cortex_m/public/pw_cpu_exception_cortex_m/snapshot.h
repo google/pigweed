@@ -22,15 +22,15 @@
 #include "pw_thread/snapshot.h"
 #include "pw_thread_protos/thread.pwpb.h"
 
-namespace pw::cpu_exception_cortex_m {
+namespace pw::cpu_exception::cortex_m {
 
 // Takes the provided pw_cpu_exception_State, and writes the cpu register state
-// to the provided SnapshotCpuState encoder.
+// to the provided SnapshotCpuStateOverlay encoder.
 //
 // Captures the pw.cpu_exception.cortex_m.ArmV7mCpuState proto field.
 Status SnapshotCpuState(
     const pw_cpu_exception_State& cpu_state,
-    cpu_exception::cortex_m::SnapshotCpuState::StreamEncoder& encoder);
+    cpu_exception::cortex_m::SnapshotCpuStateOverlay::StreamEncoder& encoder);
 
 // Captures the main stack thread if active as part of a snapshot based on a
 // previously captured cpu_state.
@@ -74,4 +74,4 @@ inline Status SnapshotMainStackThread(
       stack_low_addr, stack_high_addr, encoder, thread_stack_callback);
 }
 
-}  // namespace pw::cpu_exception_cortex_m
+}  // namespace pw::cpu_exception::cortex_m

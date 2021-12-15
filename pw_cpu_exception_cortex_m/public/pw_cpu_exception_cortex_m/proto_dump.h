@@ -17,7 +17,7 @@
 #include "pw_protobuf/encoder.h"
 #include "pw_status/status.h"
 
-namespace pw::cpu_exception {
+namespace pw::cpu_exception::cortex_m {
 
 // Dumps the cpu state struct as a proto (defined in
 // pw_cpu_exception_cortex_m_protos/cpu_state.proto). The final proto is up to
@@ -30,4 +30,4 @@ namespace pw::cpu_exception {
 Status DumpCpuStateProto(protobuf::StreamEncoder& dest,
                          const pw_cpu_exception_State& cpu_state);
 
-}  // namespace pw::cpu_exception
+}  // namespace pw::cpu_exception::cortex_m

@@ -25,6 +25,7 @@
 #include "pw_string/string_builder.h"
 
 namespace pw::cpu_exception {
+namespace cortex_m {
 namespace {
 
 [[maybe_unused]] void AnalyzeCfsr(const uint32_t cfsr) {
@@ -147,7 +148,9 @@ void AnalyzeException(const pw_cpu_exception_State& cpu_state) {
   AnalyzeCfsr(cpu_state.extended.cfsr);
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
 }
+
 }  // namespace
+}  // namespace cortex_m
 
 std::span<const uint8_t> RawFaultingCpuState(
     const pw_cpu_exception_State& cpu_state) {
@@ -159,20 +162,20 @@ std::span<const uint8_t> RawFaultingCpuState(
 void ToString(const pw_cpu_exception_State& cpu_state,
               const std::span<char>& dest) {
   StringBuilder builder(dest);
-  const CortexMExceptionRegisters& base = cpu_state.base;
-  const CortexMExtraRegisters& extended = cpu_state.extended;
+  const cortex_m::ExceptionRegisters& base = cpu_state.base;
+  const cortex_m::ExtraRegisters& extended = cpu_state.extended;
 
 #define _PW_FORMAT_REGISTER(state_section, name) \
   builder.Format("%s=0x%08" PRIx32 "\n", #name, state_section.name)
 
   // Other registers.
-  if (base.pc != kUndefinedPcLrOrPsrRegValue) {
+  if (base.pc != cortex_m::kUndefinedPcLrOrPsrRegValue) {
     _PW_FORMAT_REGISTER(base, pc);
   }
-  if (base.lr != kUndefinedPcLrOrPsrRegValue) {
+  if (base.lr != cortex_m::kUndefinedPcLrOrPsrRegValue) {
     _PW_FORMAT_REGISTER(base, lr);
   }
-  if (base.psr != kUndefinedPcLrOrPsrRegValue) {
+  if (base.psr != cortex_m::kUndefinedPcLrOrPsrRegValue) {
     _PW_FORMAT_REGISTER(base, psr);
   }
   _PW_FORMAT_REGISTER(extended, msp);
@@ -206,10 +209,10 @@ void ToString(const pw_cpu_exception_State& cpu_state,
 
 // Using this function adds approximately 100 bytes to binary size.
 void LogCpuState(const pw_cpu_exception_State& cpu_state) {
-  const CortexMExceptionRegisters& base = cpu_state.base;
-  const CortexMExtraRegisters& extended = cpu_state.extended;
+  const cortex_m::ExceptionRegisters& base = cpu_state.base;
+  const cortex_m::ExtraRegisters& extended = cpu_state.extended;
 
-  AnalyzeException(cpu_state);
+  cortex_m::AnalyzeException(cpu_state);
 
   PW_LOG_INFO("All captured CPU registers:");
 
@@ -217,13 +220,13 @@ void LogCpuState(const pw_cpu_exception_State& cpu_state) {
   PW_LOG_INFO("  %-10s 0x%08" PRIx32, #name, state_section.name)
 
   // Other registers.
-  if (base.pc != kUndefinedPcLrOrPsrRegValue) {
+  if (base.pc != cortex_m::kUndefinedPcLrOrPsrRegValue) {
     _PW_LOG_REGISTER(base, pc);
   }
-  if (base.lr != kUndefinedPcLrOrPsrRegValue) {
+  if (base.lr != cortex_m::kUndefinedPcLrOrPsrRegValue) {
     _PW_LOG_REGISTER(base, lr);
   }
-  if (base.psr != kUndefinedPcLrOrPsrRegValue) {
+  if (base.psr != cortex_m::kUndefinedPcLrOrPsrRegValue) {
     _PW_LOG_REGISTER(base, psr);
   }
   _PW_LOG_REGISTER(extended, msp);

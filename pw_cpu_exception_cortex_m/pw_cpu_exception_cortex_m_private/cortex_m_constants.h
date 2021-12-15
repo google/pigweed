@@ -16,7 +16,7 @@
 
 #include <cstdint>
 
-namespace pw::cpu_exception {
+namespace pw::cpu_exception::cortex_m {
 
 // CMSIS/Cortex-M/ARMv7 related constants.
 // These values are from the ARMv7-M Architecture Reference Manual DDI 0403E.b.
@@ -95,4 +95,4 @@ inline volatile uint32_t& cortex_m_hfsr =
 inline volatile uint32_t& cortex_m_shcsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
 
-}  // namespace pw::cpu_exception
+}  // namespace pw::cpu_exception::cortex_m

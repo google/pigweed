@@ -26,7 +26,7 @@
 PW_EXTERN_C PW_NO_PROLOGUE __attribute__((alias("pw_cpu_exception_Entry"))) void
 pw_CpuExceptionEntry(void);
 
-namespace pw::cpu_exception {
+namespace pw::cpu_exception::cortex_m {
 namespace {
 
 // If the CPU fails to capture some registers, the captured struct members will
@@ -65,7 +65,7 @@ void CloneBaseRegistersFromPsp(pw_cpu_exception_State* cpu_state) {
     //                  complexity.
     std::memcpy(&cpu_state->base,
                 reinterpret_cast<void*>(cpu_state->extended.psp),
-                sizeof(CortexMExceptionRegisters));
+                sizeof(ExceptionRegisters));
   } else {
     // If CPU context wasn't pushed to stack on exception entry, we can't
     // recover psr, lr, and pc from exception-time. Make these values clearly
@@ -90,15 +90,15 @@ void RestoreBaseRegistersToPsp(pw_cpu_exception_State* cpu_state) {
       !(cpu_state->extended.cfsr & kCfsrMstkerrMask)) {
     std::memcpy(reinterpret_cast<void*>(cpu_state->extended.psp),
                 &cpu_state->base,
-                sizeof(CortexMExceptionRegisters));
+                sizeof(ExceptionRegisters));
   }
 }
 
 // Determines the size of the CPU-pushed context frame.
 uint32_t CpuContextSize(const pw_cpu_exception_State& cpu_state) {
-  uint32_t cpu_context_size = sizeof(CortexMExceptionRegisters);
+  uint32_t cpu_context_size = sizeof(ExceptionRegisters);
   if (FpuStateWasPushed(cpu_state)) {
-    cpu_context_size += sizeof(CortexMExceptionRegistersFpu);
+    cpu_context_size += sizeof(ExceptionRegistersFpu);
   }
   if (cpu_state.base.psr & kPsrExtraStackAlignBit) {
     // Account for the extra 4-bytes the processor
@@ -133,10 +133,10 @@ uint32_t CalculateMspDelta(const pw_cpu_exception_State& cpu_state) {
     //                  it when patching MSP. To add FPU capture support,
     //                  delete this if block as CpuContextSize() will include
     //                  FPU context size in the calculation.
-    return sizeof(CortexMExceptionRegisters) + sizeof(CortexMExtraRegisters);
+    return sizeof(ExceptionRegisters) + sizeof(ExtraRegisters);
   }
 
-  return CpuContextSize(cpu_state) + sizeof(CortexMExtraRegisters);
+  return CpuContextSize(cpu_state) + sizeof(ExtraRegisters);
 }
 
 }  // namespace
@@ -211,9 +211,9 @@ void pw_cpu_exception_Entry(void) {
       // for more details)
       // The following block of assembly is equivalent to:
       //   if (lr & (1 << 2)) {
-      //     msp -= sizeof(CortexMExceptionRegisters);
-      //     CortexMExceptionRegisters* state =
-      //         (CortexMExceptionRegisters*) msp;
+      //     msp -= sizeof(ExceptionRegisters);
+      //     ExceptionRegisters* state =
+      //         (ExceptionRegisters*) msp;
       //     state->r0 = r0;
       //     state->r1 = r1;
       //     state->r2 = r2;
@@ -277,11 +277,11 @@ void pw_cpu_exception_Entry(void) {
       // Exit exception.
       " bx lr                                                 \n"
       : /*output=*/
-      : /*input=*/[base_state_size]"i"(sizeof(CortexMExceptionRegisters)),
-                  [extra_state_size]"i"(sizeof(CortexMExtraRegisters))
+      : /*input=*/[base_state_size]"i"(sizeof(ExceptionRegisters)),
+                  [extra_state_size]"i"(sizeof(ExtraRegisters))
       // clang-format on
   );
 }
 
 }  // extern "C"
-}  // namespace pw::cpu_exception
+}  // namespace pw::cpu_exception::cortex_m
