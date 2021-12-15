@@ -12,6 +12,16 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
+// Returns true if |url| is a valid URI.
+bool IsValidUrl(std::string& url) {
+  // Pulled from [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986).
+  // See Section 2.2 for the set of reserved characters.
+  // See Section 2.3 for the set of unreserved characters.
+  constexpr char kValidUrlChars[] =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~!#$&'()*+,/:;=?@[]";
+  return url.find_first_not_of(kValidUrlChars) == std::string::npos;
+}
+
 namespace bt::sdp {
 
 namespace {
@@ -182,6 +192,17 @@ void DataElement::Set<std::vector<DataElement>>(std::vector<DataElement> value) 
   SetVariableSize(AggregateSize(aggregate_));
 }
 
+void DataElement::SetUrl(std::string url) {
+  if (!IsValidUrl(url)) {
+    bt_log(WARN, "sdp", "Invalid URL in SetUrl: %s", url.c_str());
+    return;
+  }
+
+  type_ = Type::kUrl;
+  SetVariableSize(url.size());
+  string_ = url;
+}
+
 void DataElement::SetAlternative(std::vector<DataElement> items) {
   type_ = Type::kAlternative;
   aggregate_ = std::move(items);
@@ -309,6 +330,14 @@ std::optional<std::vector<DataElement>> DataElement::Get<std::vector<DataElement
   return ret;
 }
 
+std::optional<std::string> DataElement::GetUrl() const {
+  std::optional<std::string> ret;
+  if (type_ == Type::kUrl) {
+    ret = string_;
+  }
+  return ret;
+}
+
 void DataElement::SetVariableSize(size_t length) {
   if (length <= std::numeric_limits<uint8_t>::max()) {
     size_ = Size::kNextOne;
@@ -369,6 +398,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
   if (cursor.size() < data_bytes) {
     return 0;
   }
+
   switch (type_desc) {
     case Type::kNull: {
       if (size_desc != Size::kOneByte) {
@@ -472,11 +502,10 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (static_cast<uint8_t>(size_desc) < 5) {
         return 0;
       }
-      // TODO(jamuraa): implement the URL type.
+      std::string str(cursor.data(), cursor.data() + data_bytes);
+      elem->SetUrl(str);
       return bytes_read + data_bytes;
     }
-    default:
-      return 0;
   }
 }
 
@@ -565,7 +594,8 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
       pos += written;
       return pos;
     }
-    case Type::kString: {
+    case Type::kString:
+    case Type::kUrl: {
       size_t used = WriteLength(&cursor, string_.size());
       ZX_DEBUG_ASSERT(used);
       pos += used;
@@ -586,9 +616,6 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
         cursor = cursor.mutable_view(used);
       }
       return pos;
-    }
-    default: {
-      // Fallthrough to error.
     }
   }
   return 0;
@@ -615,6 +642,8 @@ std::string DataElement::ToString() const {
       return bt_lib_cpp_string::StringPrintf("UUID(%s)", uuid_.ToString().c_str());
     case Type::kString:
       return bt_lib_cpp_string::StringPrintf("String(%s)", string_.c_str());
+    case Type::kUrl:
+      return bt_lib_cpp_string::StringPrintf("Url(%s)", string_.c_str());
     case Type::kSequence: {
       std::string str;
       for (const auto& it : aggregate_) {
@@ -629,11 +658,6 @@ std::string DataElement::ToString() const {
       }
       return bt_lib_cpp_string::StringPrintf("Alternatives { %s}", str.c_str());
     }
-    default:
-      bt_log(TRACE, "sdp", "unhandled type (%hhu) in ToString()", type_);
-      // Fallthrough to unknown.
   }
-
-  return "(unknown)";
 }
 }  // namespace bt::sdp

@@ -263,6 +263,9 @@ TEST(DataElementTest, ToString) {
   EXPECT_EQ("SignedInt:4(-54321)", DataElement(int32_t{-54321}).ToString());
   EXPECT_EQ("UUID(00000100-0000-1000-8000-00805f9b34fb)", DataElement(protocol::kL2CAP).ToString());
   EXPECT_EQ("String(fuchsia💖)", DataElement(std::string("fuchsia💖")).ToString());
+  DataElement elem;
+  elem.SetUrl(std::string("http://foobar.dev"));
+  EXPECT_EQ("Url(http://foobar.dev)", elem.ToString());
   std::vector<DataElement> strings;
   strings.emplace_back(std::string("hello"));
   strings.emplace_back(std::string("sapphire🔷"));
@@ -274,6 +277,58 @@ TEST(DataElementTest, ToString) {
   strings.emplace_back(std::string("sapphire🔷"));
   alts.SetAlternative(std::move(strings));
   EXPECT_EQ("Alternatives { String(hello) String(sapphire🔷) }", alts.ToString());
+}
+
+TEST(DataElementTest, SetAndGetUrl) {
+  DataElement elem;
+  elem.SetUrl(std::string("https://foobar.dev"));
+
+  EXPECT_FALSE(elem.Get<std::string>());
+  EXPECT_EQ(DataElement::Type::kUrl, elem.type());
+  EXPECT_EQ(std::string("https://foobar.dev"), *elem.GetUrl());
+}
+
+TEST(DataElementTest, SetInvalidUrlStringIsNoOp) {
+  DataElement elem;
+  EXPECT_EQ(DataElement::Type::kNull, elem.type());
+  elem.SetUrl(std::string("https://foobar🔷.dev"));
+
+  EXPECT_FALSE(elem.GetUrl());
+  EXPECT_EQ(DataElement::Type::kNull, elem.type());
+}
+
+TEST(DataElementTest, ReadUrlFromBuffer) {
+  auto buf =
+      CreateStaticByteBuffer(0x45,  // Type (8: URL) & Size (5: in an additional byte) = 0b01000 101
+                             0x0B,  // 11 Bytes
+                             'F', 'u', 'c', 'h', 's', 'i', 'a', '.', 'd', 'e', 'v',  // URL String
+                             0xDE, 0xAD, 0xBE, 0xEF  // Extra data (shouldn't be parsed)
+      );
+
+  DataElement read_elem;
+  EXPECT_EQ(13u, DataElement::Read(&read_elem, buf));
+
+  EXPECT_EQ(DataElement::Type::kUrl, read_elem.type());
+  EXPECT_EQ(std::string("Fuchsia.dev"), *read_elem.GetUrl());
+}
+
+TEST(DataElementTest, WriteUrlToBuffer) {
+  DataElement url_elem;
+  url_elem.SetUrl(std::string("Test.com"));
+
+  auto expected =
+      CreateStaticByteBuffer(0x45,  // Type (8: URL) & Size (5: in an additional byte) = 0b01000 101
+                             0x08,  // 8 Bytes
+                             'T', 'e', 's', 't', '.', 'c', 'o', 'm'  // URL String
+      );
+
+  DynamicByteBuffer write_buf(10);
+
+  size_t written = url_elem.Write(&write_buf);
+
+  EXPECT_EQ(expected.size(), written);
+  EXPECT_EQ(written, url_elem.WriteSize());
+  EXPECT_TRUE(ContainersEqual(expected, write_buf));
 }
 
 }  // namespace

@@ -99,20 +99,29 @@ class DataElement {
 
   // Sets the value of this element to |value|.
   // Defined specializations:
-  // typename                - type()
-  // std::nullptr_t          - kNull
-  // uint8_t, .., uint64_t   - kUnsignedInt
-  // int8_t .. int64_t       - kSignedInt
-  // const UUID&     - kUuid
-  // const std::string&      - kString
-  // bool                    - kBoolean
-  // std::vector<DataElemnt> - kSequence
-  // (not available)         - kUrl (not used in any known profiles)
+  // typename                 - type()
+  // std::nullptr_t           - kNull
+  // uint8_t, .., uint64_t    - kUnsignedInt
+  // int8_t .. int64_t        - kSignedInt
+  // const UUID&              - kUuid
+  // const std::string&       - kString
+  // bool                     - kBoolean
+  // std::vector<DataElement> - kSequence
+  // (Use SetUrl())           - kUrl
   template <typename T>
   void Set(T value);
 
   // Sets this element's value to an alternative of the items in |items|
   void SetAlternative(std::vector<DataElement> items);
+
+  // Sets this element's value to the provided |url|.
+  // No-op if |url| contains invalid URI characters as defined in
+  // [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986).
+  void SetUrl(std::string url);
+
+  // Get the URL value of this element.
+  // Returns an optional without a value if the wrong type is stored.
+  std::optional<std::string> GetUrl() const;
 
   // Get the value of this element.
   // Has the same defined specializations as Set().
