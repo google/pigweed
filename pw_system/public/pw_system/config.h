@@ -49,3 +49,11 @@
 #ifndef PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS
 #define PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS 82
 #endif  // PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS
+
+// PW_SYSTEM_WORK_QUEUE_MAX_ENTRIES specifies the maximum number of work queue
+// entries that may be staged at once.
+//
+// Defaults to 32.
+#ifndef PW_SYSTEM_WORK_QUEUE_MAX_ENTRIES
+#define PW_SYSTEM_WORK_QUEUE_MAX_ENTRIES 32
+#endif  // PW_SYSTEM_WORK_QUEUE_MAX_ENTRIES

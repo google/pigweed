@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_binary",
     "pw_cc_library",
 )
 
@@ -105,6 +106,20 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "work_queue",
+    srcs = [
+        "work_queue.cc",
+    ],
+    hdrs = [
+        "public/pw_system/work_queue.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_work_queue",
+    ],
+)
+
 # TODO(cachinchilla): Make the target provide this.
 pw_cc_library(
     name = "target_io",
@@ -116,18 +131,55 @@ pw_cc_library(
         ":io",
         "//pw_stream",
         "//pw_stream:sys_io_stream",
-        "//pw_thread_freertos:thread",
     ],
 )
 
 # TODO(cachinchilla): Make the target provide this.
 pw_cc_library(
-    name = "target_thread_options",
+    name = "target_hooks",
     hdrs = [
-        "public/pw_system/thread_options.h",
+        "public/pw_system/target_hooks.h",
     ],
     includes = ["public"],
     deps = [
+        "//pw_thread:thread",
+    ],
+)
+
+pw_cc_library(
+    name = "stl_target_hooks",
+    srcs = [
+        "stl_target_hooks.cc",
+    ],
+    deps = [
+        "//pw_thread:sleep",
+        "//pw_thread:thread",
+        "//pw_thread_stl:thread",
+    ],
+)
+
+pw_cc_library(
+    name = "freertos_target_hooks",
+    srcs = [
+        "freertos_target_hooks.cc",
+    ],
+
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+    # currently do not have Bazel support.
+    deps = [
+        "//pw_thread:thread",
         "//pw_thread_freertos:thread",
+    ],
+)
+
+pw_cc_binary(
+    name = "system_example",
+    srcs = ["example_user_app_init.cc"],
+    deps = [
+        ":init",
+        ":io",
+        ":target_hooks",
+        "//pw_stream",
+        "//pw_stream:sys_io_stream",
     ],
 )

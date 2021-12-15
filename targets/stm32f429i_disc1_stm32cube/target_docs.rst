@@ -20,12 +20,14 @@ locations the repositories were downloaded to.
 
   pw package install freertos
   pw package install stm32cube_f4
+  pw package install nanopb
 
   gn args out
     # Add these lines, replacing ${PW_ROOT} with the path to the location that
     # Pigweed is checked out at.
     dir_pw_third_party_freertos = "${PW_ROOT}/.environment/packages/freertos"
     dir_pw_third_party_stm32cube_f4 = "${PW_ROOT}/.environment/packages/stm32cube_f4"
+    dir_pw_third_party_nanopb = "${PW_ROOT}/.environment/packages/nanopb"
 
 Building and running the demo
 =============================
@@ -34,7 +36,7 @@ flashed to a device with the following commands:
 
 .. code:: sh
 
-  ninja -C out stm32_freertos_demo
+  ninja -C out pw_system_demo
 
-  openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg -c "program out/stm32f429i_disc1_stm32cube_size_optimized/obj/targets/stm32f429i_disc1_stm32cube/bin/demo.elf reset exit"
+  openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg -c "program out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf reset exit"
 

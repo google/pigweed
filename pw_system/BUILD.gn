@@ -14,116 +14,185 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/third_party/freertos/freertos.gni")
+import("$dir_pigweed/third_party/nanopb/nanopb.gni")
+import("$dir_pigweed/third_party/stm32cube/stm32cube.gni")
+import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("backend.gni")
 
-if (current_toolchain == get_path_info(
-        "$dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube.size_optimized",
-        "abspath")) {
-  declare_args() {
-    # The build target that overrides the default configuration options for this
-    # module. This should point to a source set that provides defines through a
-    # public config (which may -include a file or add defines directly).
-    pw_system_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
-  }
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_system_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
-  config("public_include_path") {
-    include_dirs = [ "public" ]
-  }
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
-  pw_source_set("config") {
-    sources = [ "public/pw_system/config.h" ]
-    public_configs = [ ":public_include_path" ]
-    public_deps = [ pw_system_CONFIG ]
-    visibility = [ "./*" ]
-    friend = [ "./*" ]
-  }
+pw_source_set("config") {
+  sources = [ "public/pw_system/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_system_CONFIG ]
+  visibility = [ "./*" ]
+  friend = [ "./*" ]
+}
 
-  pw_source_set("log") {
-    public_configs = [ ":public_include_path" ]
-    sources = [
-      "log.cc",
-      "pw_system_private/log.h",
-    ]
-    public_deps = [
-      ":config",
-      "$dir_pw_log_rpc:log_service",
-      "$dir_pw_log_rpc:rpc_log_drain_thread",
-    ]
+group("pw_system") {
+  public_deps = [
+    ":init",
+    ":io",
+    ":log",
+    ":rpc",
+    ":work_queue",
+  ]
+  deps = [ ":target_hooks" ]
+}
+
+pw_source_set("log") {
+  public_configs = [ ":public_include_path" ]
+  sources = [
+    "log.cc",
+    "pw_system_private/log.h",
+  ]
+  public_deps = [
+    ":config",
+    "$dir_pw_log_rpc:log_service",
+    "$dir_pw_log_rpc:rpc_log_drain_thread",
+  ]
+  deps = [
+    ":rpc",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_log:proto_utils",
+    "$dir_pw_log_rpc:rpc_log_drain",
+    "$dir_pw_log_tokenized:metadata",
+    "$dir_pw_multisink",
+    "$dir_pw_result",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_tokenizer",
+    "$dir_pw_tokenizer:global_handler_with_payload.facade",
+  ]
+}
+
+pw_source_set("rpc") {
+  visibility = [ ":*" ]
+  sources = [
+    "pw_system_private/rpc.h",
+    "rpc.cc",
+  ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":config",
+    "$dir_pw_rpc/system_server:facade",
+    "$dir_pw_thread:thread_core",
+  ]
+  deps = [
+    ":io",
+    ":target_io",  # This should be provided by the target.
+    "$dir_pw_assert",
+    "$dir_pw_hdlc:pw_rpc",
+    "$dir_pw_hdlc:rpc_channel_output",
+    "$dir_pw_rpc:synchronized_channel_output",
+    "$dir_pw_sync:mutex",
+  ]
+}
+
+pw_source_set("io") {
+  visibility = [ ":*" ]
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_system/io.h" ]
+  public_deps = [ "$dir_pw_stream" ]
+}
+
+pw_source_set("init") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_system/init.h" ]
+  sources = [ "init.cc" ]
+  deps = [
+    ":log",
+    ":rpc",
+    ":target_hooks.facade",
+    ":work_queue",
+    "$dir_pw_rpc/nanopb:echo_service",
+    "$dir_pw_thread:thread",
+  ]
+}
+
+pw_source_set("work_queue") {
+  visibility = [ ":*" ]
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_system/work_queue.h" ]
+  sources = [ "work_queue.cc" ]
+  public_deps = [ "$dir_pw_work_queue" ]
+  deps = [ ":config" ]
+}
+
+# TODO(cachinchilla): Make the target provide this.
+pw_source_set("target_io") {
+  sources = [ "target_io.cc" ]
+  deps = [
+    ":io",
+    "$dir_pw_stream",
+    "$dir_pw_stream:sys_io_stream",
+  ]
+}
+
+pw_facade("target_hooks") {
+  backend = pw_system_BACKEND
+  public = [ "public/pw_system/target_hooks.h" ]
+  public_deps = [ "$dir_pw_thread:thread" ]
+  public_configs = [ ":public_include_path" ]
+}
+
+if (pw_system_BACKEND == "") {
+  # Do nothing, prevents errors from trying to parse pw_system_BACKEND as a
+  # build target when it's unset.
+} else if (get_label_info(pw_system_BACKEND, "label_no_toolchain") ==
+           get_label_info(":stl_target_hooks", "label_no_toolchain")) {
+  pw_source_set("stl_target_hooks") {
     deps = [
-      ":rpc",
-      "$dir_pw_bytes",
-      "$dir_pw_log",
-      "$dir_pw_log:proto_utils",
-      "$dir_pw_log_rpc:rpc_log_drain",
-      "$dir_pw_log_tokenized:metadata",
-      "$dir_pw_multisink",
-      "$dir_pw_result",
-      "$dir_pw_sync:interrupt_spin_lock",
-      "$dir_pw_sync:lock_annotations",
-      "$dir_pw_sync:mutex",
-      "$dir_pw_tokenizer",
+      ":init",
+      "$dir_pw_thread:sleep",
+      "$dir_pw_thread:thread",
+      "$dir_pw_thread_stl:thread",
     ]
+    sources = [ "stl_target_hooks.cc" ]
   }
-
-  pw_source_set("rpc") {
-    visibility = [ ":*" ]
-    sources = [
-      "pw_system_private/rpc.h",
-      "rpc.cc",
-    ]
-    public_configs = [ ":public_include_path" ]
-    public_deps = [
-      ":config",
-      "$dir_pw_rpc/system_server:facade",
-      "$dir_pw_thread:thread_core",
-    ]
+} else if (get_label_info(pw_system_BACKEND, "label_no_toolchain") ==
+           get_label_info(":freertos_target_hooks", "label_no_toolchain")) {
+  pw_source_set("freertos_target_hooks") {
     deps = [
-      ":io",
-      ":target_io",  # This should be provided by the target.
-      "$dir_pw_assert",
-      "$dir_pw_hdlc:pw_rpc",
-      "$dir_pw_hdlc:rpc_channel_output",
-      "$dir_pw_rpc:synchronized_channel_output",
-      "$dir_pw_sync:mutex",
-    ]
-  }
-
-  pw_source_set("io") {
-    visibility = [ ":*" ]
-    public_configs = [ ":public_include_path" ]
-    public = [ "public/pw_system/io.h" ]
-    public_deps = [ "$dir_pw_stream" ]
-  }
-
-  pw_source_set("init") {
-    public_configs = [ ":public_include_path" ]
-    public = [ "public/pw_system/init.h" ]
-    sources = [ "init.cc" ]
-    deps = [
-      ":log",
-      ":rpc",
-      "$dir_pw_rpc/nanopb:echo_service",
+      ":init",
+      "$dir_pw_third_party/freertos",
+      "$dir_pw_thread:thread",
       "$dir_pw_thread_freertos:thread",
     ]
+    sources = [ "freertos_target_hooks.cc" ]
   }
+}
 
-  # TODO(cachinchilla): Make the target provide this.
-  pw_source_set("target_io") {
-    sources = [ "target_io.cc" ]
-    deps = [
-      ":io",
-      "$dir_pw_stream",
-      "$dir_pw_stream:sys_io_stream",
-      "$dir_pw_thread_freertos:thread",
-    ]
-  }
+pw_executable("system_example") {
+  sources = [ "example_user_app_init.cc" ]
+  deps = [
+    ":pw_system",
+    "$dir_pw_log",
+    "$dir_pw_thread:sleep",
+  ]
+}
 
-  # TODO(cachinchilla): Make the target provide this.
-  pw_source_set("target_thread_options") {
-    public = [ "public/pw_system/thread_options.h" ]
-    deps = [ "$dir_pw_thread_freertos:thread" ]
+group("system_examples") {
+  deps =
+      [ ":system_example($dir_pigweed/targets/host:host_clang_size_optimized)" ]
+  if (dir_pw_third_party_stm32cube_f4 != "" &&
+      dir_pw_third_party_nanopb != "" && dir_pw_third_party_freertos != "") {
+    deps += [ ":system_example($dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube.size_optimized)" ]
   }
 }
 

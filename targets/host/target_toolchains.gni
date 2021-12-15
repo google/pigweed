@@ -19,6 +19,7 @@ import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_rpc/system_server/backend.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
+import("$dir_pw_system/backend.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
@@ -70,6 +71,8 @@ _host_common = {
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
   pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
+
+  pw_system_BACKEND = "$dir_pw_system:stl_target_hooks"
 
   pw_build_LINK_DEPS = []  # Explicit list overwrite required by GN
   pw_build_LINK_DEPS = [

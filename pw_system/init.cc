@@ -16,7 +16,8 @@
 
 #include "pw_log/log.h"
 #include "pw_rpc/echo_service_nanopb.h"
-#include "pw_system/thread_options.h"
+#include "pw_system/target_hooks.h"
+#include "pw_system/work_queue.h"
 #include "pw_system_private/log.h"
 #include "pw_system_private/rpc.h"
 #include "pw_thread/detached_thread.h"
@@ -24,9 +25,8 @@
 namespace pw::system {
 namespace {
 rpc::EchoService echo_service;
-}  // namespace
 
-void Init() {
+void InitImpl() {
   PW_LOG_INFO("System init");
 
   // Setup logging.
@@ -45,6 +45,15 @@ void Init() {
   // Start threads.
   thread::DetachedThread(system::LogThreadOptions(), GetLogThread());
   thread::DetachedThread(system::RpcThreadOptions(), GetRpcDispatchThread());
+
+  GetWorkQueue().CheckPushWork(UserAppInit);
+}
+
+}  // namespace
+
+void Init() {
+  thread::DetachedThread(system::WorkQueueThreadOptions(), GetWorkQueue());
+  GetWorkQueue().CheckPushWork(InitImpl);
 }
 
 }  // namespace pw::system

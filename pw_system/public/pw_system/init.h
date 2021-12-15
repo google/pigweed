@@ -15,6 +15,21 @@
 
 namespace pw::system {
 
+// This function should be called after all required platform initialization is
+// complete, but before the scheduler is started. This function WILL return so
+// the caller may start the scheduler if needed.
+//
+// Init will start logging, RPC, and work queue threads, and do any
+// initialization required for those systems. Note that this initialization is
+// largely not synchronous: only the work queue thread is dispatched, and the
+// remainder of the initialization is added as a work queue item so it can be
+// run in the normal context of a running scheduler/OS. This means RPC and
+// logging will not be fully initialized until after that first work queue item
+// is complete.
+//
+// To run something after pw_system's initialization is complete,
+// simply add a callback to the work queue after calling pw::system::Init()
+// rather than directly calling the function itself.
 void Init();
 
 }  // namespace pw::system
