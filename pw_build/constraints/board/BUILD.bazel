@@ -13,6 +13,8 @@
 # the License.
 package(default_visibility = ["//visibility:public"])
 
+licenses(["notice"])
+
 constraint_setting(
     name = "board",
 )
