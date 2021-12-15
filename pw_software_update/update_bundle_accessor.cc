@@ -462,7 +462,7 @@ Status UpdateBundleAccessor::DoVerify() {
     bundle_verified_ = true;
     return OkStatus();
   }
-#if !defined(PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION)
+
   // Verify and upgrade the on-device trust to the incoming root metadata if
   // one is included.
   PW_TRY(UpgradeRoot());
@@ -477,7 +477,7 @@ Status UpdateBundleAccessor::DoVerify() {
 
   // TODO(pwbug/456): Invoke the backend to do downstream verification of the
   // bundle (e.g. compatibility and manifest completeness checks).
-#endif
+
   bundle_verified_ = true;
   return OkStatus();
 }

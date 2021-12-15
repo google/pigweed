@@ -249,7 +249,6 @@ TEST_F(UpdateBundleTest, PersistManifest) {
       0);
 }
 
-#if !defined(PW_SOFTWARE_UPDATE_LANDING_BUNDLE_VERIFICATION)
 TEST_F(UpdateBundleTest, PersistManifestFailIfNotVerified) {
   backend().SetTrustedRoot(kDevSignedRoot);
   StageTestBundle(kTestBadProdSignature);
@@ -488,5 +487,5 @@ TEST_F(UpdateBundleTest, OpenAndVerifyFailsOnBackendVerification) {
   backend().SetVerifyTargetFileResult(Status::Internal());
   CheckOpenAndVerifyFail(update_bundle, true);
 }
-#endif
+
 }  // namespace pw::software_update

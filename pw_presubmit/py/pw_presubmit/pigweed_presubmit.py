@@ -234,8 +234,7 @@ def gn_software_update_build(ctx: PresubmitContext):
                                               'pw_crypto:ecdsa_uecc'),
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
-                                               'pw_crypto:sha256_mbedtls'),
-        pw_software_update_LANDING_BUNDLE_VERIFICATION=False)
+                                               'pw_crypto:sha256_mbedtls'))
     build.ninja(
         ctx.output_dir,
         *_at_all_optimization_levels('host_clang'),
