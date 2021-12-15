@@ -288,7 +288,8 @@ class WindowList:
         old_values = [
             p.height.preferred for p in self.active_panes if p.show_pane
         ]
-        old_total = sum(old_values)
+        # Make sure the old total is not zero.
+        old_total = max(sum(old_values), 1)
         percentages = [value / old_total for value in old_values]
         new_heights = [
             int(available_height * percentage) for percentage in percentages

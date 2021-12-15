@@ -281,28 +281,39 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         if self.repl_pane is None:
             return False
 
+        repl_input_text = buff.text
         # Exit if quit or exit
-        if buff.text.strip() in ['quit', 'quit()', 'exit', 'exit()']:
+        if repl_input_text.strip() in ['quit', 'quit()', 'exit', 'exit()']:
             self.repl_pane.application.application.exit()  # type: ignore
 
         # Create stdout and stderr proxies
         temp_stdout = io.StringIO()
         temp_stderr = io.StringIO()
 
+        # The help() command with no args uses it's own interactive prompt which
+        # will not work if prompt_toolkit is running.
+        if repl_input_text.strip() in ['help()']:
+            # Run nothing
+            repl_input_text = ''
+            # Override stdout
+            temp_stdout.write(
+                'Error: Interactive help() is not compatible with this repl.')
+
         # Execute the repl code in the the separate user_code thread loop.
         future = asyncio.run_coroutine_threadsafe(
             # This function will be executed in a separate thread.
-            self._run_user_code(buff.text, temp_stdout, temp_stderr),
+            self._run_user_code(repl_input_text, temp_stdout, temp_stderr),
             # Using this asyncio event loop.
             self.repl_pane.application.user_code_loop)  # type: ignore
 
         # Save the input text and future object.
-        self.repl_pane.append_executed_code(buff.text, future, temp_stdout,
+        self.repl_pane.append_executed_code(repl_input_text, future,
+                                            temp_stdout,
                                             temp_stderr)  # type: ignore
 
         # Run user_code_complete_callback() when done.
         done_callback = functools.partial(self.user_code_complete_callback,
-                                          buff.text)
+                                          repl_input_text)
         future.add_done_callback(done_callback)
 
         # Rebuild the parent ReplPane output buffer.
