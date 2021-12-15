@@ -81,6 +81,7 @@ _target_config = {
 
   pw_build_LINK_DEPS = [
     "$dir_pw_assert:impl",
+    "$dir_pw_cpu_exception:entry_impl",
     "$dir_pw_log:impl",
   ]
 
