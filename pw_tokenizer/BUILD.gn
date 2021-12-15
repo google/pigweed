@@ -41,7 +41,7 @@ config("linker_script") {
 
   # Automatically add the tokenizer linker sections when cross-compiling or
   # building for Linux. macOS and Windows executables are not supported.
-  if (current_os == "") {
+  if (current_os == "" || current_os == "freertos") {
     ldflags = [
       "-T",
       rebase_path("pw_tokenizer_linker_sections.ld", root_build_dir),
