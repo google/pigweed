@@ -747,6 +747,58 @@ Do not put multiple blank lines before a heading.
       ---------------
       There are too many blanks before the heading for this section.
 
+Directives
+==========
+Indent directives 3 spaces; and put a blank line between the directive and the
+content. This aligns the directive content with the directive name.
+
+.. admonition:: **Yes**: Three space indent for directives; and nested
+   :class: checkmark
+
+   .. code:: none
+
+      Here is a paragraph that has some content. After this content is a
+      directive.
+
+      .. my_directive::
+
+         Note that this line's start aligns with the "m" above. The 3-space
+         alignment accounts for the ".. " prefix for directives, to vertically
+         align the directive name with the content.
+
+         This indentation must continue for nested directives.
+
+         .. nested_directive::
+
+            Here is some nested directive content.
+
+.. admonition:: **No**: One space, two spaces, four spaces, or other indents
+   for directives
+   :class: error
+
+   .. code:: none
+
+      Here is a paragraph with some content.
+
+      .. my_directive::
+
+        The indentation here is incorrect! It's one space short; doesn't align
+        with the directive name above.
+
+        .. nested_directive::
+
+            This isn't indented correctly either; it's too much (4 spaces).
+
+.. admonition:: **No**: Missing blank between directive and content.
+   :class: error
+
+   .. code:: none
+
+      Here is a paragraph with some content.
+
+      .. my_directive::
+         Note the lack of blank line above here.
+
 Tables
 ======
 Consider using ``.. list-table::`` syntax, which is more maintainable and
