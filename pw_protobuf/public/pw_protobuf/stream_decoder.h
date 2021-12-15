@@ -42,7 +42,7 @@ namespace pw::protobuf {
 //
 // Example usage:
 //
-//   stream::SeekableReader& my_stream = GetProtoStream();
+//   stream::Reader& my_stream = GetProtoStream();
 //   StreamDecoder decoder(my_stream);
 //
 //   while (decoder.Next().ok()) {
@@ -63,8 +63,9 @@ class StreamDecoder {
   // stream::Reader for a bytes field in a streamed proto message.
   //
   // Shares the StreamDecoder's reader, limiting it to the bounds of a bytes
-  // field.
-  class BytesReader : public stream::SeekableReader {
+  // field. If the StreamDecoder's reader does not supporting seeking, this
+  // will also not.
+  class BytesReader : public stream::RelativeSeekableReader {
    public:
     ~BytesReader() { decoder_.CloseBytesReader(*this); }
 
@@ -96,9 +97,10 @@ class StreamDecoder {
     Status status_;
   };
 
-  constexpr StreamDecoder(stream::SeekableReader& reader)
+  constexpr StreamDecoder(stream::Reader& reader)
       : reader_(reader),
         stream_bounds_({0, std::numeric_limits<size_t>::max()}),
+        position_(0),
         current_field_(kInitialFieldKey),
         delimited_field_size_(0),
         delimited_field_offset_(0),
@@ -244,8 +246,8 @@ class StreamDecoder {
     return ReadDelimitedField(out);
   }
 
-  // Returns a stream::SeekableReader to a bytes (or string) field at the
-  // current position in the protobuf.
+  // Returns a stream::Reader to a bytes (or string) field at the current
+  // position in the protobuf.
   //
   // The BytesReader shares the same stream as the decoder, using RAII to manage
   // ownership of the stream. The decoder cannot be used while the BytesStream
@@ -272,6 +274,7 @@ class StreamDecoder {
   //     }
   //   }
   //
+  // The returned decoder is seekable if the stream's decoder is seekable.
   BytesReader GetBytesReader();
 
   // Returns a decoder to a nested protobuf message located at the current
@@ -304,12 +307,13 @@ class StreamDecoder {
   static constexpr FieldKey kInitialFieldKey =
       FieldKey(20000, WireType::kVarint);
 
-  constexpr StreamDecoder(stream::SeekableReader& reader,
+  constexpr StreamDecoder(stream::Reader& reader,
                           StreamDecoder* parent,
                           size_t low,
                           size_t high)
       : reader_(reader),
         stream_bounds_({low, high}),
+        position_(parent->position_),
         current_field_(kInitialFieldKey),
         delimited_field_size_(0),
         delimited_field_offset_(0),
@@ -320,11 +324,12 @@ class StreamDecoder {
 
   // Creates an unusable decoder in an error state. This is required as
   // GetNestedEncoder does not have a way to report an error in its API.
-  constexpr StreamDecoder(stream::SeekableReader& reader,
+  constexpr StreamDecoder(stream::Reader& reader,
                           StreamDecoder* parent,
                           Status status)
       : reader_(reader),
         stream_bounds_({0, std::numeric_limits<size_t>::max()}),
+        position_(0),
         current_field_(kInitialFieldKey),
         delimited_field_size_(0),
         delimited_field_offset_(0),
@@ -334,6 +339,8 @@ class StreamDecoder {
         status_(status) {
     PW_ASSERT(!status.ok());
   }
+
+  Status Advance(size_t end_position);
 
   void CloseBytesReader(BytesReader& reader);
   void CloseNestedDecoder(StreamDecoder& nested);
@@ -362,8 +369,9 @@ class StreamDecoder {
 
   Status CheckOkToRead(WireType type);
 
-  stream::SeekableReader& reader_;
+  stream::Reader& reader_;
   Bounds stream_bounds_;
+  size_t position_;
 
   FieldKey current_field_;
   size_t delimited_field_size_;

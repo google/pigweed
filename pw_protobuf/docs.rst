@@ -321,8 +321,7 @@ StreamDecoder
 =============
 Sometimes, a serialized protobuf message may be too large to fit into an
 in-memory buffer. To faciliate working with that type of data, ``pw_protobuf``
-provides a ``StreamDecoder`` which reads data from a
-``pw::stream::SeekableReader``.
+provides a ``StreamDecoder`` which reads data from a ``pw::stream::Reader``.
 
 .. admonition:: When to use a stream decoder
 
@@ -341,7 +340,7 @@ of the stream into a provided buffer.
   #include "pw_protobuf/decoder.h"
   #include "pw_status/try.h"
 
-  pw::Status DecodeProtoFromStream(pw::stream::SeekableReader& reader) {
+  pw::Status DecodeProtoFromStream(pw::stream::Reader& reader) {
     pw::protobuf::StreamDecoder decoder(reader);
     pw::Status status;
 
@@ -379,8 +378,8 @@ of the stream into a provided buffer.
     return status.IsOutOfRange() ? OkStatus() : status;
   }
 
-The ``StreamDecoder`` can also return a ``Stream::SeekableReader`` for reading
-bytes fields, avoiding the need to copy data out directly.
+The ``StreamDecoder`` can also return a ``StreamDecoder::BytesReader`` for
+reading bytes fields, avoiding the need to copy data out directly.
 
 .. code-block:: c++
 
@@ -393,6 +392,9 @@ bytes fields, avoiding the need to copy data out directly.
     // active, any attempts to use the decoder will result in a crash. When the
     // reader goes out of scope, it will close itself and reactive the decoder.
   }
+
+This reader supports seeking only if the ``StreamDecoder``'s reader supports
+seeking.
 
 If the current field is a nested protobuf message, the ``StreamDecoder`` can
 provide a decoder for the nested message. While the nested decoder is active,

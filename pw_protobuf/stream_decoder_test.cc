@@ -18,9 +18,31 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_stream/stream.h"
 
 namespace pw::protobuf {
 namespace {
+// Non-seekable wrapper for MemoryReader for testing behavior when seeking is
+// not available.
+class NonSeekableMemoryReader : public stream::NonSeekableReader {
+ public:
+  explicit NonSeekableMemoryReader(stream::MemoryReader& reader)
+      : reader_(reader) {}
+
+  size_t bytes_read() const { return reader_.bytes_read(); }
+  const std::byte* data() const { return reader_.data(); }
+
+ private:
+  virtual StatusWithSize DoRead(ByteSpan destination) override {
+    const pw::Result<pw::ByteSpan> result = reader_.Read(destination);
+    if (!result.ok()) {
+      return StatusWithSize(result.status(), 0);
+    }
+    return StatusWithSize(result.value().size_bytes());
+  }
+
+  stream::MemoryReader& reader_;
+};
 
 TEST(StreamDecoder, Decode) {
   // clang-format off
@@ -103,6 +125,41 @@ TEST(StreamDecoder, Decode_SkipsUnusedFields) {
   // clang-format on
 
   stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  // Don't process any fields except for the fourth. Next should still iterate
+  // correctly despite field values not being consumed.
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 4u);
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
+TEST(StreamDecoder, Decode_NonSeekable_SkipsUnusedFields) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=int32, k=1, v=42
+    0x08, 0x2a,
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+    // type=bool, k=3, v=false
+    0x18, 0x00,
+    // type=double, k=4, v=3.14159
+    0x21, 0x6e, 0x86, 0x1b, 0xf0, 0xf9, 0x21, 0x09, 0x40,
+    // type=fixed32, k=5, v=0xdeadbeef
+    0x2d, 0xef, 0xbe, 0xad, 0xde,
+    // type=string, k=6, v="Hello world"
+    0x32, 0x0b, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd',
+  };
+  // clang-format on
+
+  // Test with a non-seekable memory reader
+  stream::MemoryReader wrapped_reader(std::as_bytes(std::span(encoded_proto)));
+  NonSeekableMemoryReader reader(wrapped_reader);
   StreamDecoder decoder(reader);
 
   // Don't process any fields except for the fourth. Next should still iterate
@@ -248,6 +305,47 @@ TEST(StreamDecoder, Decode_Nested_SeeksToNextFieldOnDestruction) {
   // clang-format on
 
   stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 1u);
+
+  // Create a nested encoder for the nested field, but don't use it.
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 6u);
+  { StreamDecoder nested = decoder.GetNestedDecoder(); }
+
+  // The root decoder should still advance to the next field after the nested
+  // decoder is closed.
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(*decoder.FieldNumber(), 2u);
+
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
+TEST(StreamDecoder,
+     Decode_Nested_NonSeekable_AdvancesToNextFieldOnDestruction) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // type=int32, k=1, v=42
+    0x08, 0x2a,
+
+    // Submessage (bytes) key=8, length=4
+    0x32, 0x04,
+    // type=uint32, k=1, v=2
+    0x08, 0x02,
+    // type=uint32, k=2, v=7
+    0x10, 0x07,
+    // End submessage
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  // Test with a non-seekable memory reader
+  stream::MemoryReader wrapped_reader(std::as_bytes(std::span(encoded_proto)));
+  NonSeekableMemoryReader reader(wrapped_reader);
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
@@ -471,6 +569,46 @@ TEST(StreamDecoder, Decode_BytesReader_Close) {
   // clang-format on
 
   stream::MemoryReader reader(std::as_bytes(std::span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  EXPECT_EQ(*decoder.FieldNumber(), 1u);
+  {
+    // Partially consume the bytes field.
+    StreamDecoder::BytesReader bytes = decoder.GetBytesReader();
+
+    std::byte buffer[2];
+    EXPECT_EQ(bytes.Read(buffer).status(), OkStatus());
+    EXPECT_EQ(std::memcmp(buffer, encoded_proto + 2, sizeof(buffer)), 0);
+  }
+
+  // Continue reading the top-level message.
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  EXPECT_EQ(*decoder.FieldNumber(), 2u);
+
+  EXPECT_EQ(decoder.Next(), Status::OutOfRange());
+}
+
+TEST(StreamDecoder, Decode_BytesReader_NonSeekable_Close) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    // bytes key=1, length=14
+    0x0a, 0x0e,
+
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d,
+    // End bytes
+
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+  };
+  // clang-format on
+
+  // Test with a non-seekable memory reader
+  stream::MemoryReader wrapped_reader(std::as_bytes(std::span(encoded_proto)));
+  NonSeekableMemoryReader reader(wrapped_reader);
   StreamDecoder decoder(reader);
 
   EXPECT_EQ(decoder.Next(), OkStatus());
