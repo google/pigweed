@@ -31,7 +31,7 @@ Running...
 {% if code.exception_text %}
 {{ code.exception_text }}
 {% elif code.result_object %}
-{{ pprint_respecting_width(code.result_object) }}
+{{ result_format(code.result_object) }}
 {% elif code.output %}
 {{ code.output }}
 {% endif %}

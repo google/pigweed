@@ -1,5 +1,6 @@
 .. _module-pw_console-testing:
 
+=====================
 Manual Test Procedure
 =====================
 
@@ -9,7 +10,7 @@ user interface are preferred but not always possible. For those situations
 manual tests should be added here to validate expected behavior.
 
 Run in Test Mode
-----------------
+================
 
 Begin each section below by running the console in test mode:
 
@@ -18,7 +19,7 @@ Begin each section below by running the console in test mode:
   pw console --test-mode
 
 Test Sections
--------------
+=============
 
 Log Pane: Basic Actions
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -529,8 +530,21 @@ Python Input & Output
        |
      - |checkbox|
 
+   * - 5
+     - | Enter the following text and press enter to run
+       | ``globals()``
+     - | The results should appear pretty printed
+     - |checkbox|
+
+   * - 6
+     - | With the cursor over the Python Output,
+       | use the mouse wheel to scroll up and down.
+     - | The output window should be able to scroll all
+       | the way to the beginning and end of the buffer.
+     - |checkbox|
+
 Add note to the commit message
-------------------------------
+==============================
 
 Add a ``Testing:`` line to your commit message and mention the steps
 executed. For example:

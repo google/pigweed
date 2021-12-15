@@ -57,6 +57,8 @@ from pw_console.widgets import (
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
 
+_LOG_OUTPUT_SCROLL_AMOUNT = 5
+
 
 class LogContentControl(FormattedTextControl):
     """LogPane prompt_toolkit UIControl for displaying LogContainer lines."""
@@ -242,12 +244,12 @@ class LogContentControl(FormattedTextControl):
             return None
 
         if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            self.log_pane.log_view.scroll_down(lines=5)
+            self.log_pane.log_view.scroll_down(lines=_LOG_OUTPUT_SCROLL_AMOUNT)
             # Mouse event handled, return None.
             return None
 
         if mouse_event.event_type == MouseEventType.SCROLL_UP:
-            self.log_pane.log_view.scroll_up(lines=5)
+            self.log_pane.log_view.scroll_up(lines=_LOG_OUTPUT_SCROLL_AMOUNT)
             # Mouse event handled, return None.
             return None
 

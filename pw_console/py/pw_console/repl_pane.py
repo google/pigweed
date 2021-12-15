@@ -68,6 +68,8 @@ _LOG = logging.getLogger(__package__)
 _Namespace = Dict[str, Any]
 _GetNamespace = Callable[[], _Namespace]
 
+_REPL_OUTPUT_SCROLL_AMOUNT = 5
+
 
 @dataclass
 class UserCodeExecution:
@@ -113,6 +115,8 @@ class ReplPane(WindowPane):
         self.pw_ptpython_repl = python_repl
         self.pw_ptpython_repl.set_repl_pane(self)
 
+        self.wrap_output_lines = True
+
         self.startup_message = startup_message if startup_message else ''
 
         self.output_field = TextArea(
@@ -120,7 +124,7 @@ class ReplPane(WindowPane):
             focusable=True,
             focus_on_click=True,
             scrollbar=True,
-            wrap_lines=False,
+            wrap_lines=Condition(lambda: self.wrap_output_lines),
             lexer=PygmentsLexer(PythonConsoleLexer),
         )
 
@@ -133,6 +137,12 @@ class ReplPane(WindowPane):
             self.copy_output_selection()
 
         self.output_field.control.key_bindings = key_bindings
+
+        # Override output buffer mouse wheel scroll
+        self.output_field.window._scroll_up = (  # type: ignore
+            self.scroll_output_up)
+        self.output_field.window._scroll_down = (  # type: ignore
+            self.scroll_output_down)
 
         self.bottom_toolbar = self._create_input_toolbar()
         self.results_toolbar = self._create_output_toolbar()
@@ -182,6 +192,24 @@ class ReplPane(WindowPane):
                 ),
                 floats=[]),
             filter=Condition(lambda: self.show_pane))
+
+    def toggle_wrap_output_lines(self):
+        """Enable or disable output line wraping/truncation."""
+        self.wrap_output_lines = not self.wrap_output_lines
+
+    def scroll_output_down(self) -> None:
+        """Scroll the output buffer down on mouse wheel down events."""
+        for _i in range(_REPL_OUTPUT_SCROLL_AMOUNT):
+            # There is no move cursor more than one line at a time function.
+            self.output_field.control.move_cursor_down()
+        self.output_field.window.vertical_scroll += _REPL_OUTPUT_SCROLL_AMOUNT
+
+    def scroll_output_up(self) -> None:
+        """Scroll the output buffer up on mouse wheel up events."""
+        for _i in range(_REPL_OUTPUT_SCROLL_AMOUNT):
+            # There is no move cursor more than one line at a time function.
+            self.output_field.control.move_cursor_up()
+        self.output_field.window.vertical_scroll -= _REPL_OUTPUT_SCROLL_AMOUNT
 
     def focus_output(self):
         self.application.focus_on_container(self.output_field)
@@ -242,6 +270,11 @@ class ReplPane(WindowPane):
             focus_check_container=self.output_field,
             include_resize_handle=False,
         )
+        results_toolbar.add_button(
+            ToolbarButton(description='Wrap lines',
+                          mouse_handler=self.toggle_wrap_output_lines,
+                          is_checkbox=True,
+                          checked=lambda: self.wrap_output_lines))
         results_toolbar.add_button(
             ToolbarButton('Ctrl-Alt-c', 'Copy All Output', self.copy_text))
         results_toolbar.add_button(
@@ -394,9 +427,10 @@ class ReplPane(WindowPane):
             indent=2, width=content_width).pformat
 
         executed_code = code_items or self.executed_code
+
         template = self.application.get_template('repl_output.jinja')
         return template.render(code_items=executed_code,
-                               pprint_respecting_width=pprint_respecting_width,
+                               result_format=pprint_respecting_width,
                                show_index=show_index)
 
     def update_output_buffer(self, *unused_args):

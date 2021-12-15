@@ -161,8 +161,10 @@ class WindowPaneToolbar:
 
         # Set parent_window_pane related options
         if self.parent_window_pane:
-            self.title = self.parent_window_pane.pane_title()
-            self.subtitle = self.parent_window_pane.pane_subtitle
+            if not title:
+                self.title = self.parent_window_pane.pane_title()
+            if not subtitle:
+                self.subtitle = self.parent_window_pane.pane_subtitle
             self.focus_check_container = self.parent_window_pane
             self.focus_action_callable = self.parent_window_pane.focus_self
 
