@@ -46,6 +46,7 @@ pw_source_set("pw_protobuf") {
   public_deps = [
     ":config",
     "$dir_pw_stream:interval_reader",
+    "$dir_pw_varint:stream",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_log,

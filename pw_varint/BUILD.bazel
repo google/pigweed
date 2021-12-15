@@ -38,6 +38,22 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "stream",
+    srcs = [
+        "stream.cc",
+    ],
+    hdrs = [
+        "public/pw_varint/stream.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":pw_varint",
+        "//pw_status",
+        "//pw_stream",
+    ],
+)
+
 pw_cc_test(
     name = "varint_test",
     srcs = [
@@ -46,6 +62,17 @@ pw_cc_test(
     ],
     deps = [
         ":pw_varint",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "stream_test",
+    srcs = [
+        "stream_test.cc",
+    ],
+    deps = [
+        ":stream",
         "//pw_unit_test",
     ],
 )

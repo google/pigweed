@@ -33,6 +33,22 @@ Returns the size of a signed integer when ZigZag encoded as a varint.
 Returns the maximum integer value that can be encoded as a varint into the
 specified number of bytes.
 
+
+Stream API
+----------
+
+.. cpp:function:: StatusWithSize Read(stream::Reader& reader, int64_t* output)
+.. cpp:function:: StatusWithSize Read(stream::Reader& reader, uint64_t* output)
+
+Decoders a varint from the current position of a stream. If reading into a
+signed integer, the value is ZigZag decoded.
+
+Returns the number of bytes read from the stream, places the value in `output`,
+if successful. Returns `OutOfRange` if the varint does not fit in to the type,
+or if the input is exhausted before the number terminates.
+
+Reads a maximum of 10 bytes.
+
 Dependencies
 ============
 * ``pw_span``

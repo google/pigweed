@@ -18,4 +18,6 @@ pw_auto_add_simple_module(pw_varint
   PUBLIC_DEPS
     pw_preprocessor
     pw_span
+    pw_status
+    pw_stream
 )

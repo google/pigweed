@@ -360,8 +360,6 @@ class StreamDecoder {
 
   StatusWithSize ReadDelimitedField(std::span<std::byte> out);
 
-  StatusWithSize ReadVarint(uint64_t* output);
-
   Status CheckOkToRead(WireType type);
 
   stream::SeekableReader& reader_;

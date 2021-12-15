@@ -32,8 +32,22 @@ pw_source_set("pw_varint") {
   public = [ "public/pw_varint/varint.h" ]
 }
 
+pw_source_set("stream") {
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+  public = [ "public/pw_varint/stream.h" ]
+  sources = [ "stream.cc" ]
+  deps = [ ":pw_varint" ]
+}
+
 pw_test_group("tests") {
-  tests = [ ":varint_test" ]
+  tests = [
+    ":stream_test",
+    ":varint_test",
+  ]
 }
 
 pw_test("varint_test") {
@@ -42,6 +56,14 @@ pw_test("varint_test") {
     "varint_test.cc",
     "varint_test_c.c",
   ]
+}
+
+pw_test("stream_test") {
+  deps = [
+    ":stream",
+    dir_pw_stream,
+  ]
+  sources = [ "stream_test.cc" ]
 }
 
 pw_doc_group("docs") {

@@ -17,6 +17,7 @@
 #include "pw_assert/check.h"
 #include "pw_status/status_with_size.h"
 #include "pw_status/try.h"
+#include "pw_varint/stream.h"
 #include "pw_varint/varint.h"
 
 namespace pw::protobuf {
@@ -219,7 +220,7 @@ Status StreamDecoder::ReadFieldKey() {
   PW_DCHECK(field_consumed_);
 
   uint64_t varint = 0;
-  if (StatusWithSize sws = ReadVarint(&varint); !sws.ok()) {
+  if (StatusWithSize sws = varint::Read(reader_, &varint); !sws.ok()) {
     return sws.status();
   }
 
@@ -232,7 +233,7 @@ Status StreamDecoder::ReadFieldKey() {
   if (current_field_.wire_type() == WireType::kDelimited) {
     // Read the length varint of length-delimited fields immediately to simplify
     // later processing of the field.
-    if (StatusWithSize sws = ReadVarint(&varint); !sws.ok()) {
+    if (StatusWithSize sws = varint::Read(reader_, &varint); !sws.ok()) {
       return sws.status();
     }
 
@@ -265,7 +266,7 @@ Status StreamDecoder::SkipField() {
   switch (current_field_.wire_type()) {
     case WireType::kVarint:
       // Consume the varint field; nothing more to skip afterward.
-      PW_TRY(ReadVarint(&value));
+      PW_TRY(varint::Read(reader_, &value));
       break;
 
     case WireType::kDelimited:
@@ -301,7 +302,7 @@ Status StreamDecoder::ReadVarintField(uint64_t* out) {
   PW_TRY(CheckOkToRead(WireType::kVarint));
 
   uint64_t value;
-  StatusWithSize sws = ReadVarint(&value);
+  StatusWithSize sws = varint::Read(reader_, &value);
   if (sws.IsOutOfRange()) {
     // Out of range indicates the end of the stream. As a value is expected
     // here, report it as a data loss and terminate the decode operation.
@@ -356,33 +357,6 @@ StatusWithSize StreamDecoder::ReadDelimitedField(std::span<std::byte> out) {
 
   field_consumed_ = true;
   return StatusWithSize(result.value().size());
-}
-
-StatusWithSize StreamDecoder::ReadVarint(uint64_t* output) {
-  uint64_t value = 0;
-  size_t count = 0;
-
-  while (true) {
-    if (count >= varint::kMaxVarint64SizeBytes) {
-      // Varint can't fit a uint64_t.
-      return StatusWithSize::OutOfRange();
-    }
-
-    std::byte b;
-    if (auto result = reader_.Read(std::span(&b, 1)); !result.ok()) {
-      return StatusWithSize(result.status(), 0);
-    }
-
-    value |= static_cast<uint64_t>(b & std::byte(0x7f)) << (7 * count);
-    ++count;
-
-    if ((b & std::byte(0x80)) == std::byte(0)) {
-      break;
-    }
-  }
-
-  *output = value;
-  return StatusWithSize(count);
 }
 
 Status StreamDecoder::CheckOkToRead(WireType type) {
