@@ -33,7 +33,8 @@ void Init() {
   const Status status = GetLogThread().OpenUnrequestedLogStream(
       kDefaultChannelId, GetRpcServer(), GetLogService());
   if (!status.ok()) {
-    PW_LOG_ERROR("Error opening OpenUnrequestedLogStream %s", status.str());
+    PW_LOG_ERROR("Error opening unrequested log streams %d",
+                 static_cast<int>(status.code()));
   }
 
   PW_LOG_INFO("Registering RPC services");
