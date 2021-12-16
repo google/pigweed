@@ -155,6 +155,10 @@ As an example you can use these as follows:
     Bar(42ms);
   }
 
+For these helper duration types to be compatible with API's that take a
+`SystemClock::duration` either an :ref:`implicit<Implicit lossless conversions>`
+or :ref:`explicit lossy<Explicit lossy conversions>` conversion must be done.
+
 Converting between time units and clock durations
 =================================================
 So why go through all of this trouble instead of just using ticks or instead
@@ -187,6 +191,8 @@ a 1kHz RTOS tick period and you would like to express a timeout duration:
     }
   }
 
+.. _Implicit lossless conversions:
+
 Implicit lossless conversions
 -----------------------------
 Wait, but how does this work? Is there a hidden cost? The ``duration`` type
@@ -217,6 +223,8 @@ some values like ``0``, ``1000``, etc.
   // constexpr std::chrono::seconds this_does_not_compile =
   //    std::chrono::milliseconds(1000);
 
+.. _Explicit lossy conversions:
+
 Explicit lossy conversions
 --------------------------
 Although we recommend sticking to implicit lossless conversions, what if for
@@ -234,9 +242,11 @@ recommends explicitly using:
   to round to the nearest, rounding to even in halfway cases.
 * `std::chrono::ceil <https://en.cppreference.com/w/cpp/chrono/duration/ceil>`_
   to round up.
+* `pw::chrono::SystemClock::for_at_least` to round up using the `SystemClock::period`,
+  as a more explicit form of std::chrono::ceil.
 
 .. Note::
-  Pigwed does not recommend using ``std::chrono::duration_cast<>`` which
+  Pigweed does not recommend using ``std::chrono::duration_cast<>`` which
   truncates dowards zero like ``static_cast``. This is typically not the desired
   rounding behavior when dealing with time units. Instead, where possible we
   recommend the more explicit, self-documenting ``std::chrono::floor``,
