@@ -6,11 +6,11 @@
 
 #include <fuchsia/bluetooth/bredr/cpp/fidl_test_base.h>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "fuchsia/bluetooth/bredr/cpp/fidl.h"
 #include "lib/fidl/cpp/vector.h"
+#include "lib/zx/socket.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
@@ -125,22 +125,47 @@ class ProfileServerTest : public TestingBase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTest);
 };
 
-// TODO(fxbug.dev/64167): Replace GMock usage with homegrown mocks.
-class MockConnectionReceiver : public fidlbredr::testing::ConnectionReceiver_TestBase {
+class FakeConnectionReceiver : public fidlbredr::testing::ConnectionReceiver_TestBase {
  public:
-  MockConnectionReceiver(fidl::InterfaceRequest<ConnectionReceiver> request,
+  FakeConnectionReceiver(fidl::InterfaceRequest<ConnectionReceiver> request,
                          async_dispatcher_t* dispatcher)
-      : binding_(this, std::move(request), dispatcher) {}
+      : binding_(this, std::move(request), dispatcher), connected_count_(0) {}
 
-  ~MockConnectionReceiver() override = default;
+  void Connected(fuchsia::bluetooth::PeerId peer_id, fidlbredr::Channel channel,
+                 std::vector<fidlbredr::ProtocolDescriptor> protocol) override {
+    peer_id_ = peer_id;
+    channel_ = std::move(channel);
+    protocol_ = std::move(protocol);
+    connected_count_++;
+  }
 
-  MOCK_METHOD(void, Connected,
-              (fuchsia::bluetooth::PeerId peer_id, fidlbredr::Channel channel,
-               std::vector<fidlbredr::ProtocolDescriptor> protocol),
-              (override));
+  size_t connected_count() const { return connected_count_; }
+  const std::optional<fuchsia::bluetooth::PeerId>& peer_id() const { return peer_id_; }
+  const std::optional<fidlbredr::Channel>& channel() const { return channel_; }
+  const std::optional<std::vector<fidlbredr::ProtocolDescriptor>>& protocol() const {
+    return protocol_;
+  }
+
+  std::optional<fidl::InterfacePtr<fidlbredr::AudioDirectionExt>> bind_ext_direction() {
+    if (!channel().has_value()) {
+      return std::nullopt;
+    }
+    auto client = channel_.value().mutable_ext_direction()->Bind();
+    return client;
+  }
+
+  fidlbredr::Channel take_channel() {
+    auto channel = std::move(channel_.value());
+    channel_.reset();
+    return channel;
+  }
 
  private:
   fidl::Binding<ConnectionReceiver> binding_;
+  size_t connected_count_;
+  std::optional<fuchsia::bluetooth::PeerId> peer_id_;
+  std::optional<fidlbredr::Channel> channel_;
+  std::optional<std::vector<fidlbredr::ProtocolDescriptor>> protocol_;
 
   void NotImplemented_(const std::string& name) override {
     FAIL() << name << " is not implemented";
@@ -512,10 +537,8 @@ TEST_F(ProfileServerTestConnectedPeer,
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
-  using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
-  auto connect_receiver = std::make_unique<StrictMock<MockConnectionReceiver>>(
-      connect_receiver_handle.NewRequest(), dispatcher());
+  FakeConnectionReceiver connect_receiver(connect_receiver_handle.NewRequest(), dispatcher());
 
   std::vector<fidlbredr::ServiceDefinition> services;
   services.emplace_back(MakeFIDLServiceDefinition());
@@ -524,21 +547,19 @@ TEST_F(ProfileServerTestConnectedPeer,
                       std::move(connect_receiver_handle), NopAdvertiseCallback);
   RunLoopUntilIdle();
 
-  EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
-      .WillOnce([expected_id = peer()->identifier(), kTxMtu](fuchsia::bluetooth::PeerId peer_id,
-                                                             fidlbredr::Channel channel,
-                                                             ::testing::Unused) {
-        ASSERT_EQ(expected_id.value(), peer_id.value);
-        ASSERT_TRUE(channel.has_socket());
-        EXPECT_EQ(channel.channel_mode(), fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
-        EXPECT_EQ(channel.max_tx_sdu_size(), kTxMtu);
-        EXPECT_FALSE(channel.has_ext_direction());
-        EXPECT_FALSE(channel.has_flush_timeout());
-      });
-
+  ASSERT_EQ(connect_receiver.connected_count(), 0u);
   EXPECT_TRUE(
       l2cap()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41, kTxMtu));
   RunLoopUntilIdle();
+
+  ASSERT_EQ(connect_receiver.connected_count(), 1u);
+  ASSERT_EQ(connect_receiver.peer_id().value().value, peer()->identifier().value());
+  ASSERT_TRUE(connect_receiver.channel().value().has_socket());
+  EXPECT_EQ(connect_receiver.channel().value().channel_mode(),
+            fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
+  EXPECT_EQ(connect_receiver.channel().value().max_tx_sdu_size(), kTxMtu);
+  EXPECT_FALSE(connect_receiver.channel().value().has_ext_direction());
+  EXPECT_FALSE(connect_receiver.channel().value().has_flush_timeout());
 }
 
 class AclPrioritySupportedTest : public ProfileServerTestConnectedPeer {
@@ -641,10 +662,8 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
   fbl::RefPtr<bt::l2cap::testing::FakeChannel> fake_channel;
   l2cap()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
 
-  using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
-  auto connect_receiver = std::make_unique<StrictMock<MockConnectionReceiver>>(
-      connect_receiver_handle.NewRequest(), dispatcher());
+  FakeConnectionReceiver connect_receiver(connect_receiver_handle.NewRequest(), dispatcher());
 
   std::vector<fidlbredr::ServiceDefinition> services;
   services.emplace_back(MakeFIDLServiceDefinition());
@@ -653,17 +672,16 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
                       std::move(connect_receiver_handle), NopAdvertiseCallback);
   RunLoopUntilIdle();
 
-  std::optional<fidlbredr::Channel> channel;
-  EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
-      .WillOnce([&channel](fuchsia::bluetooth::PeerId peer_id, fidlbredr::Channel cb_channel,
-                           ::testing::Unused) { channel = std::move(cb_channel); });
-
+  ASSERT_EQ(connect_receiver.connected_count(), 0u);
   EXPECT_TRUE(
       l2cap()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41, kTxMtu));
+
   RunLoopUntilIdle();
-  ASSERT_TRUE(channel.has_value());
-  ASSERT_TRUE(channel->has_ext_direction());
-  auto client = channel->mutable_ext_direction()->Bind();
+  ASSERT_EQ(connect_receiver.connected_count(), 1u);
+  ASSERT_TRUE(connect_receiver.channel().has_value());
+  ASSERT_TRUE(connect_receiver.channel().value().has_ext_direction());
+  // Taking value() is safe because of the has_ext_direction() check.
+  auto client = connect_receiver.bind_ext_direction().value();
 
   size_t priority_cb_count = 0;
   client->SetPriority(fidlbredr::A2dpDirectionPriority::SINK, [&](auto result) {
@@ -744,10 +762,8 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectionReceiverReturnsValidSocket) {
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
-  using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
-  auto connect_receiver = std::make_unique<StrictMock<MockConnectionReceiver>>(
-      connect_receiver_handle.NewRequest(), dispatcher());
+  FakeConnectionReceiver connect_receiver(connect_receiver_handle.NewRequest(), dispatcher());
 
   std::optional<fbl::RefPtr<bt::l2cap::testing::FakeChannel>> fake_chan;
   l2cap()->set_channel_callback([&fake_chan](auto chan) { fake_chan = std::move(chan); });
@@ -757,26 +773,20 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectionReceiverReturnsValidSocket) {
   std::vector<fidlbredr::ServiceDefinition> services;
   services.emplace_back(MakeFIDLServiceDefinition());
 
-  std::optional<fidlbredr::Channel> channel;
-
-  EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
-      .WillOnce([expected_id = peer()->identifier(), &channel](fuchsia::bluetooth::PeerId peer_id,
-                                                               fidlbredr::Channel cb_channel,
-                                                               ::testing::Unused) {
-        ASSERT_EQ(expected_id.value(), peer_id.value);
-        channel = std::move(cb_channel);
-      });
-
   client()->Advertise(std::move(services), std::move(fidl_chan_params),
                       std::move(connect_receiver_handle), NopAdvertiseCallback);
   RunLoopUntilIdle();
 
+  ASSERT_EQ(connect_receiver.connected_count(), 0u);
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41));
   RunLoopUntilIdle();
 
-  ASSERT_TRUE(channel.has_value());
-  ASSERT_TRUE(channel->has_socket());
-  auto& socket = channel->socket();
+  ASSERT_EQ(connect_receiver.connected_count(), 1u);
+  ASSERT_EQ(connect_receiver.peer_id().value().value, peer()->identifier().value());
+  ASSERT_TRUE(connect_receiver.channel().has_value());
+  ASSERT_TRUE(connect_receiver.channel().value().has_socket());
+  // Taking channel is safe because of the previous checks.
+  auto channel = connect_receiver.take_channel();
 
   ASSERT_TRUE(fake_chan.has_value());
   auto fake_chan_ptr = fake_chan->get();
@@ -786,7 +796,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectionReceiverReturnsValidSocket) {
 
   const char write_data[2] = "a";
   size_t bytes_written = 0;
-  auto status = socket.write(0, write_data, sizeof(write_data) - 1, &bytes_written);
+  auto status = channel.socket().write(0, write_data, sizeof(write_data) - 1, &bytes_written);
   EXPECT_EQ(ZX_OK, status);
   EXPECT_EQ(1u, bytes_written);
   RunLoopUntilIdle();
@@ -1067,17 +1077,13 @@ TEST_F(ProfileServerTestFakeAdapter, AdvertiseChannelParametersContainsFlushTime
   fidlbredr::ChannelParameters chan_params;
   chan_params.set_flush_timeout(kFlushTimeout.get());
 
-  std::optional<fidlbredr::Channel> fidl_channel;
-  using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
-  auto connect_receiver = std::make_unique<StrictMock<MockConnectionReceiver>>(
-      connect_receiver_handle.NewRequest(), dispatcher());
-  EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
-      .WillOnce([&fidl_channel](::testing::Unused, fidlbredr::Channel cb_channel,
-                                ::testing::Unused) { fidl_channel = std::move(cb_channel); });
+  FakeConnectionReceiver connect_receiver(connect_receiver_handle.NewRequest(), dispatcher());
+
   client()->Advertise(std::move(services), std::move(chan_params),
                       std::move(connect_receiver_handle), NopAdvertiseCallback);
   RunLoopUntilIdle();
+
   ASSERT_EQ(adapter()->fake_bredr()->registered_services().size(), 1u);
   auto service_iter = adapter()->fake_bredr()->registered_services().begin();
   EXPECT_EQ(service_iter->second.channel_params.flush_timeout, std::optional(kFlushTimeout));
@@ -1089,9 +1095,10 @@ TEST_F(ProfileServerTestFakeAdapter, AdvertiseChannelParametersContainsFlushTime
                                                bt::LinkType::kACL, chan_info));
   service_iter->second.connect_callback(channel, MakeL2capProtocolListElement());
   RunLoopUntilIdle();
-  ASSERT_TRUE(fidl_channel);
-  ASSERT_TRUE(fidl_channel->has_flush_timeout());
-  EXPECT_EQ(fidl_channel->flush_timeout(), kFlushTimeout.get());
+
+  ASSERT_TRUE(connect_receiver.channel().has_value());
+  ASSERT_TRUE(connect_receiver.channel().value().has_flush_timeout());
+  EXPECT_EQ(connect_receiver.channel().value().flush_timeout(), kFlushTimeout.get());
 }
 
 TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersSucceeds) {
