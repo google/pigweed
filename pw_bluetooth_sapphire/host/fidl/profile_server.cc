@@ -150,8 +150,8 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
       return elem;
     }
     case bt::sdp::DataElement::Type::kUrl: {
-      bt_log(INFO, "fidl", "no support for Url types in DataElement yet");
-      return nullptr;
+      elem->set_url(*in->GetUrl());
+      return elem;
     }
     case bt::sdp::DataElement::Type::kNull: {
       bt_log(INFO, "fidl", "no support for null DataElement types in FIDL");

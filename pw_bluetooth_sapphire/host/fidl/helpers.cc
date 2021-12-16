@@ -141,6 +141,9 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement&
       return bt::sdp::DataElement(fidl.uint64());
     case fbredr::DataElement::Tag::kStr:
       return bt::sdp::DataElement(fidl.str());
+    case fbredr::DataElement::Tag::kUrl:
+      out.SetUrl(fidl.url());
+      break;
     case fbredr::DataElement::Tag::kB:
       return bt::sdp::DataElement(fidl.b());
     case fbredr::DataElement::Tag::kUuid:
@@ -171,7 +174,7 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement&
       break;
     }
     default:
-      // Types not handled: Null datatype (never used) and Url data type (not supported by Set)
+      // Types not handled: Null datatype (never used)
       bt_log(WARN, "fidl", "Encountered FidlToDataElement type not handled.");
       return std::nullopt;
   }

@@ -78,7 +78,7 @@ void FakeAdapter::FakeLowEnergy::StartAdvertising(
 FakeAdapter::FakeBrEdr::RegistrationHandle FakeAdapter::FakeBrEdr::RegisterService(
     std::vector<sdp::ServiceRecord> records, l2cap::ChannelParameters chan_params,
     ServiceConnectCallback conn_cb) {
-  auto handle = next_registration_handle_++;
+  auto handle = next_service_handle_++;
   registered_services_.emplace(
       handle, RegisteredService{std::move(records), chan_params, std::move(conn_cb)});
   return handle;
@@ -92,6 +92,23 @@ void FakeAdapter::SetLocalName(std::string name, hci::StatusCallback callback) {
 void FakeAdapter::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) {
   device_class_ = dev_class;
   callback(hci::Status());
+}
+
+BrEdrConnectionManager::SearchId FakeAdapter::FakeBrEdr::AddServiceSearch(
+    const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes, SearchCallback callback) {
+  auto handle = next_search_handle_++;
+  registered_searches_.emplace(handle,
+                               RegisteredSearch{uuid, std::move(attributes), std::move(callback)});
+  return SearchId(handle);
+}
+
+void FakeAdapter::FakeBrEdr::TriggerServiceFound(
+    PeerId peer_id, UUID uuid, std::map<sdp::AttributeId, sdp::DataElement> attributes) {
+  for (auto it = registered_searches_.begin(); it != registered_searches_.end(); it++) {
+    if (it->second.uuid == uuid) {
+      it->second.callback(peer_id, attributes);
+    }
+  }
 }
 
 }  // namespace bt::gap::testing

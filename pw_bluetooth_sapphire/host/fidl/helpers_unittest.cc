@@ -661,12 +661,12 @@ TEST(HelpersTest, ServiceDefinitionToServiceRecord) {
   valid_attribute.element.set_uint8(0x01);
   valid_attribute.id = valid_att_id;
   def.mutable_additional_attributes()->emplace_back(std::move(valid_attribute));
-  // Add an invalid additional attribute that should not convert.
-  bt::sdp::AttributeId invalid_att_id = 0x1112;
-  fuchsia::bluetooth::bredr::Attribute invalid_attribute;
-  invalid_attribute.element.set_url("");
-  invalid_attribute.id = invalid_att_id;
-  def.mutable_additional_attributes()->emplace_back(std::move(invalid_attribute));
+  // Add a URL attribute.
+  bt::sdp::AttributeId url_attr_id = 0x1112;  // Random ID
+  fuchsia::bluetooth::bredr::Attribute url_attribute;
+  url_attribute.element.set_url("foobar.dev");
+  url_attribute.id = url_attr_id;
+  def.mutable_additional_attributes()->emplace_back(std::move(url_attribute));
 
   // Confirm converted ServiceRecord fields match ServiceDefinition
   auto rec = ServiceDefinitionToServiceRecord(def);
@@ -743,7 +743,8 @@ TEST(HelpersTest, ServiceDefinitionToServiceRecord) {
 
   // Confirm additional attributes
   EXPECT_TRUE(rec.value().HasAttribute(valid_att_id));
-  EXPECT_FALSE(rec.value().HasAttribute(invalid_att_id));
+  EXPECT_TRUE(rec.value().HasAttribute(url_attr_id));
+  EXPECT_EQ(*rec.value().GetAttribute(url_attr_id).GetUrl(), "foobar.dev");
 }
 
 TEST(HelpersTest, FidlToBrEdrSecurityRequirements) {

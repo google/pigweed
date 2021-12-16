@@ -9,12 +9,16 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "fuchsia/bluetooth/bredr/cpp/fidl.h"
+#include "lib/fidl/cpp/vector.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
@@ -58,6 +62,14 @@ fidlbredr::ServiceDefinition MakeFIDLServiceDefinition() {
   prof_desc.major_version = 1;
   prof_desc.minor_version = 3;
   def.mutable_profile_descriptors()->emplace_back(prof_desc);
+
+  // Additional attributes are also OK.
+  fidlbredr::Attribute addl_attr;
+  addl_attr.id = 0x000A;  // Documentation URL ID
+  fidlbredr::DataElement doc_url_el;
+  doc_url_el.set_url("fuchsia.dev");
+  addl_attr.element = std::move(doc_url_el);
+  def.mutable_additional_attributes()->emplace_back(std::move(addl_attr));
 
   return def;
 }
@@ -129,6 +141,36 @@ class MockConnectionReceiver : public fidlbredr::testing::ConnectionReceiver_Tes
 
  private:
   fidl::Binding<ConnectionReceiver> binding_;
+
+  void NotImplemented_(const std::string& name) override {
+    FAIL() << name << " is not implemented";
+  }
+};
+
+class FakeSearchResults : public fidlbredr::testing::SearchResults_TestBase {
+ public:
+  FakeSearchResults(fidl::InterfaceRequest<SearchResults> request, async_dispatcher_t* dispatcher)
+      : binding_(this, std::move(request), dispatcher), service_found_count_(0) {}
+
+  void ServiceFound(fuchsia::bluetooth::PeerId peer_id,
+                    fidl::VectorPtr<fidlbredr::ProtocolDescriptor> protocol,
+                    std::vector<fidlbredr::Attribute> attributes,
+                    ServiceFoundCallback callback) override {
+    peer_id_ = peer_id;
+    attributes_ = std::move(attributes);
+    callback();
+    service_found_count_++;
+  }
+
+  size_t service_found_count() const { return service_found_count_; }
+  const std::optional<fuchsia::bluetooth::PeerId>& peer_id() const { return peer_id_; }
+  const std::optional<std::vector<fidlbredr::Attribute>>& attributes() const { return attributes_; }
+
+ private:
+  fidl::Binding<SearchResults> binding_;
+  std::optional<fuchsia::bluetooth::PeerId> peer_id_;
+  std::optional<std::vector<fidlbredr::Attribute>> attributes_;
+  size_t service_found_count_;
 
   void NotImplemented_(const std::string& name) override {
     FAIL() << name << " is not implemented";
@@ -1145,6 +1187,44 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersFails) {
   EXPECT_FALSE(result_chan_params->has_flush_timeout());
   l2cap_client.Unbind();
   RunLoopUntilIdle();
+}
+
+TEST_F(ProfileServerTestFakeAdapter, ServiceFoundRelayedToFidlClient) {
+  fidl::InterfaceHandle<fidlbredr::SearchResults> search_results_handle;
+  FakeSearchResults search_results(search_results_handle.NewRequest(), dispatcher());
+
+  auto search_uuid = fidlbredr::ServiceClassProfileIdentifier::AUDIO_SINK;
+  auto attr_ids = std::vector<uint16_t>();
+
+  EXPECT_EQ(adapter()->fake_bredr()->registered_searches().size(), 0u);
+  EXPECT_EQ(search_results.service_found_count(), 0u);
+
+  // FIDL client registers a service search.
+  client()->Search(search_uuid, std::move(attr_ids), std::move(search_results_handle));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(adapter()->fake_bredr()->registered_searches().size(), 1u);
+
+  // Trigger a match on the service search with some data. Should be received by the FIDL
+  // client.
+  auto peer_id = bt::PeerId{10};
+  bt::UUID uuid(static_cast<uint32_t>(search_uuid));
+
+  bt::sdp::AttributeId attr_id = 50;  // Random Attribute ID
+  auto elem = bt::sdp::DataElement();
+  elem.SetUrl("https://foobar.dev");  // Random URL
+  auto attributes = std::map<bt::sdp::AttributeId, bt::sdp::DataElement>();
+  attributes.emplace(attr_id, std::move(elem));
+  adapter()->fake_bredr()->TriggerServiceFound(peer_id, uuid, std::move(attributes));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(search_results.service_found_count(), 1u);
+  EXPECT_EQ(search_results.peer_id().value().value, peer_id.value());
+  EXPECT_EQ(search_results.attributes().value().size(), 1u);
+  EXPECT_EQ(search_results.attributes().value()[0].id, attr_id);
+  EXPECT_EQ(search_results.attributes().value()[0].element.url(),
+            std::string("https://foobar.dev"));
 }
 
 }  // namespace

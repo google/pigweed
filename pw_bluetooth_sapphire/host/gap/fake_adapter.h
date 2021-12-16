@@ -112,6 +112,12 @@ class FakeAdapter final : public Adapter {
       ServiceConnectCallback connect_callback;
     };
 
+    struct RegisteredSearch {
+      UUID uuid;
+      std::unordered_set<sdp::AttributeId> attributes;
+      SearchCallback callback;
+    };
+
     FakeBrEdr() = default;
     ~FakeBrEdr() override = default;
 
@@ -120,8 +126,17 @@ class FakeAdapter final : public Adapter {
     using ChannelCallback = fit::function<void(fbl::RefPtr<l2cap::testing::FakeChannel>)>;
     void set_l2cap_channel_callback(ChannelCallback cb) { channel_cb_ = std::move(cb); }
 
+    // Notifies all registered searches associated with the provided |uuid| with the peer's
+    // service |attributes|.
+    void TriggerServiceFound(PeerId peer_id, UUID uuid,
+                             std::map<sdp::AttributeId, sdp::DataElement> attributes);
+
     const std::map<RegistrationHandle, RegisteredService>& registered_services() const {
       return registered_services_;
+    }
+
+    const std::map<RegistrationHandle, RegisteredSearch>& registered_searches() const {
+      return registered_searches_;
     }
 
     // BrEdr overrides:
@@ -138,9 +153,7 @@ class FakeAdapter final : public Adapter {
     PeerId GetPeerId(hci_spec::ConnectionHandle handle) const override { return PeerId(); }
 
     SearchId AddServiceSearch(const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
-                              SearchCallback callback) override {
-      return SearchId();
-    }
+                              SearchCallback callback) override;
 
     bool RemoveServiceSearch(SearchId id) override { return false; }
 
@@ -174,8 +187,10 @@ class FakeAdapter final : public Adapter {
    private:
     // Callback used by tests to get new channel refs.
     ChannelCallback channel_cb_;
-    RegistrationHandle next_registration_handle_ = 1;
+    RegistrationHandle next_service_handle_ = 1;
+    RegistrationHandle next_search_handle_ = 1;
     std::map<RegistrationHandle, RegisteredService> registered_services_;
+    std::map<RegistrationHandle, RegisteredSearch> registered_searches_;
   };
 
   BrEdr* bredr() const override { return fake_bredr_.get(); }
