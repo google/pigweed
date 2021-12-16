@@ -19,6 +19,8 @@
 
 #if PW_RPC_USE_GLOBAL_MUTEX
 
+#include <mutex>
+
 #include "pw_sync/mutex.h"  // nogncheck
 
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
@@ -27,14 +29,8 @@ namespace pw::rpc::internal {
 
 #if PW_RPC_USE_GLOBAL_MUTEX
 
-class PW_LOCKABLE("pw::rpc::internal::RpcLock") RpcLock {
- public:
-  void lock() PW_EXCLUSIVE_LOCK_FUNCTION() { mutex_.lock(); }
-  void unlock() PW_UNLOCK_FUNCTION() { mutex_.unlock(); }
-
- private:
-  sync::Mutex mutex_;
-};
+using RpcLock = sync::Mutex;
+using LockGuard = std::lock_guard<RpcLock>;
 
 #else
 
@@ -42,6 +38,11 @@ class PW_LOCKABLE("pw::rpc::internal::RpcLock") RpcLock {
  public:
   constexpr void lock() PW_EXCLUSIVE_LOCK_FUNCTION() {}
   constexpr void unlock() PW_UNLOCK_FUNCTION() {}
+};
+
+class LockGuard {
+ public:
+  constexpr LockGuard(RpcLock&) {}
 };
 
 #endif  // PW_RPC_USE_GLOBAL_MUTEX

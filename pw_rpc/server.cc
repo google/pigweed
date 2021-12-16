@@ -19,7 +19,6 @@
 // clang-format on
 
 #include <algorithm>
-#include <mutex>
 
 #include "pw_log/log.h"
 #include "pw_rpc/internal/endpoint.h"

@@ -14,11 +14,11 @@
 #pragma once
 
 #include <cstdint>
-#include <mutex>
 
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
 #include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/lock.h"
 
 namespace pw::rpc::internal {
 
@@ -113,7 +113,7 @@ class UnaryResponseClientCall : public ClientCall {
 
   UnaryResponseClientCall& operator=(UnaryResponseClientCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     MoveUnaryResponseClientCallFrom(other);
     return *this;
   }
@@ -184,7 +184,7 @@ class StreamResponseClientCall : public ClientCall {
 
   StreamResponseClientCall& operator=(StreamResponseClientCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     MoveStreamResponseClientCallFrom(other);
     return *this;
   }

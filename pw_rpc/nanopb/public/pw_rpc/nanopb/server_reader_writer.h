@@ -19,6 +19,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/open_call.h"
@@ -58,7 +59,7 @@ class NanopbServerCall : public internal::ServerCall {
 
   NanopbServerCall& operator=(NanopbServerCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     MoveNanopbServerCallFrom(other);
     return *this;
   }
@@ -98,7 +99,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
 
   BaseNanopbServerReader& operator=(BaseNanopbServerReader&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     MoveNanopbServerCallFrom(other);
     set_on_next_locked(std::move(other.nanopb_on_next_));
     return *this;
@@ -106,7 +107,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
 
   void set_on_next(Function<void(const Request& request)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     set_on_next_locked(std::move(on_next));
   }
 

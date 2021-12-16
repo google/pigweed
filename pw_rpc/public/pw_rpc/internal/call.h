@@ -14,7 +14,6 @@
 #pragma once
 
 #include <cstddef>
-#include <mutex>
 #include <span>
 #include <utility>
 
@@ -132,7 +131,7 @@ class Call : public IntrusiveList<Call>::Item {
   // function.
   void set_on_next(Function<void(ConstByteSpan)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock{rpc_lock()};
+    LockGuard lock{rpc_lock()};
     set_on_next_locked(std::move(on_next));
   }
 

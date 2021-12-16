@@ -13,11 +13,10 @@
 // the License.
 #pragma once
 
-#include <mutex>
-
 #include "pw_function/function.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/config.h"
+#include "pw_rpc/internal/lock.h"
 
 namespace pw::rpc::internal {
 
@@ -47,7 +46,7 @@ class ServerCall : public Call {
 
   // Version of operator= used by the raw call classes.
   ServerCall& operator=(ServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     MoveServerCallFrom(other);
     return *this;
   }

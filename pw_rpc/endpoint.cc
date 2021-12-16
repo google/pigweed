@@ -18,8 +18,6 @@
 #include "pw_rpc/internal/endpoint.h"
 // clang-format on
 
-#include <mutex>
-
 #include "pw_log/log.h"
 #include "pw_rpc/internal/lock.h"
 
@@ -63,7 +61,7 @@ Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
 }
 
 void Endpoint::RegisterCall(Call& call) {
-  std::lock_guard lock(rpc_lock());
+  LockGuard lock(rpc_lock());
 
   Call* const existing_call =
       FindCallById(call.channel_id(), call.service_id(), call.method_id());

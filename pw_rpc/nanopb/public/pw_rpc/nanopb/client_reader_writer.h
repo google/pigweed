@@ -19,6 +19,7 @@
 
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/client_call.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/nanopb/internal/common.h"
 
 namespace pw::rpc {
@@ -70,7 +71,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
 
   NanopbUnaryResponseClientCall& operator=(
       NanopbUnaryResponseClientCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     MoveUnaryResponseClientCallFrom(other);
     serde_ = other.serde_;
     set_on_completed(std::move(other.nanopb_on_completed_));
@@ -146,7 +147,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
 
   NanopbStreamResponseClientCall& operator=(
       NanopbStreamResponseClientCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     MoveStreamResponseClientCallFrom(other);
     serde_ = other.serde_;
     set_on_next_locked(std::move(other.nanopb_on_next_));
@@ -172,7 +173,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
 
   void set_on_next(Function<void(const Response& response)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     set_on_next_locked(std::move(on_next));
   }
 

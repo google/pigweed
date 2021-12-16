@@ -18,8 +18,6 @@
 #include "pw_rpc/client.h"
 // clang-format on
 
-#include <mutex>
-
 #include "pw_log/log.h"
 #include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/internal/packet.h"

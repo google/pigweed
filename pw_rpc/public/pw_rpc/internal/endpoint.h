@@ -13,7 +13,6 @@
 // the License.
 #pragma once
 
-#include <mutex>
 #include <span>
 
 #include "pw_containers/intrusive_list.h"
@@ -40,7 +39,7 @@ class Endpoint {
 
   // Finds an RPC Channel with this ID or nullptr if none matches.
   rpc::Channel* GetChannel(uint32_t id) const PW_LOCKS_EXCLUDED(rpc_lock()) {
-    std::lock_guard lock(rpc_lock());
+    LockGuard lock(rpc_lock());
     return GetInternalChannel(id);
   }
 
