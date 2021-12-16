@@ -10,7 +10,7 @@ Usage
 =====
 To enable nanopb code generation, the build argument
 ``dir_pw_third_party_nanopb`` must be set to point to a local nanopb
-installation.
+installation. Nanopb 0.4 is recommended, but Nanopb 0.3 is also supported.
 
 Define a ``pw_proto_library`` containing the .proto file defining your service
 (and optionally other related protos), then depend on the ``nanopb_rpc``

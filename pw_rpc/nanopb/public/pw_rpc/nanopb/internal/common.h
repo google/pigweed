@@ -20,8 +20,18 @@
 
 namespace pw::rpc::internal {
 
-// Use a void* to cover both Nanopb 3's pb_field_s and Nanopb 4's pb_msgdesc_s.
-using NanopbMessageDescriptor = const pb_msgdesc_s*;
+// Nanopb 0.3 uses pb_field_t, but Nanopb 4 uses pb_msgdesc_t. Determine which
+// type to use by deducing it from the pb_field_iter_begin function.
+template <typename PbFieldIterBeginFunction>
+struct NanopbDescriptorTraits;
+
+template <typename T>
+struct NanopbDescriptorTraits<bool(pb_field_iter_t*, T, void*)> {
+  using Type = T;
+};
+
+using NanopbMessageDescriptor =
+    NanopbDescriptorTraits<decltype(pb_field_iter_begin)>::Type;
 
 // Serializer/deserializer for a Nanopb protobuf message.
 class NanopbSerde {
