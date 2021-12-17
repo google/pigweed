@@ -547,6 +547,14 @@ C++
       This makes it appear like there is a single executor of a timer instance's
       ExpiryCallback.
 
+  .. cpp:function:: ~SystemTimer()
+
+    Cancels the timer and blocks if necssary if the callback is already being
+    processed.
+
+    **Postcondition:** The expiry callback is not in progress and will not be
+    called in the future.
+
   .. cpp:function:: void InvokeAfter(chrono::SystemClock::duration delay)
 
     Invokes the expiry callback as soon as possible after at least the

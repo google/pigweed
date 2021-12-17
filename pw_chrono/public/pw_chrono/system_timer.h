@@ -53,7 +53,14 @@ class SystemTimer {
       Function<void(SystemClock::time_point expired_deadline)>;
 
   SystemTimer(ExpiryCallback&& callback);
-  ~SystemTimer();  // Cancels the timer.
+
+  // Cancels the timer and blocks if necssary if the callback is already being
+  // processed.
+  //
+  // Postcondition: The expiry callback is not in progress and will not be
+  // called in the future.
+  ~SystemTimer();
+
   SystemTimer(const SystemTimer&) = delete;
   SystemTimer(SystemTimer&&) = delete;
   SystemTimer& operator=(const SystemTimer&) = delete;
