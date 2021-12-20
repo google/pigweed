@@ -26,7 +26,7 @@ def crlset_tools_repo_path(path: pathlib.Path) -> pathlib.Path:
 
 
 def crlset_exec_path(path: pathlib.Path) -> pathlib.Path:
-    return crlset_tools_repo_path(path) / 'crlset'
+    return path / 'crlset_exec'
 
 
 def crlset_file_path(path: pathlib.Path) -> pathlib.Path:
@@ -61,9 +61,11 @@ class CRLSet(pw_package.package_manager.Package):
         self._crlset_tools.install(crlset_tools_repo_path(path))
 
         # Build the go tool
-        subprocess.run(['go', 'build', 'crlset.go'],
-                       check=True,
-                       cwd=crlset_tools_repo_path(path))
+        subprocess.run(
+            ['go', 'build', '-o',
+             crlset_exec_path(path), 'crlset.go'],
+            check=True,
+            cwd=crlset_tools_repo_path(path))
 
         crlset_tools_exec = crlset_exec_path(path)
         if not os.path.exists(crlset_tools_exec):
