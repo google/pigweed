@@ -15,11 +15,19 @@
 
 #include <cstdint>
 
+#include "pw_preprocessor/arch.h"
+
 namespace pw::interrupt {
 
-#if defined(PW_INTERRUPT_CORTEX_M_ARMV6M) || \
-    defined(PW_INTERRUPT_CORTEX_M_ARMV7M) || \
-    defined(PW_INTERRUPT_CORTEX_M_ARMV8M)
+#if !_PW_ARCH_ARM_CORTEX_M
+#error You can only build this for ARM Cortex-M architectures. If you are \
+       trying to do this and are still seeing this error, see \
+       pw_preprocessor/arch.h
+#endif  // !_PW_ARCH_ARM_CORTEX_M
+
+#if _PW_ARCH_ARM_V6M || _PW_ARCH_ARM_V7M || _PW_ARCH_ARM_V7EM || \
+    _PW_ARCH_ARM_V8M_BASELINE || _PW_ARCH_ARM_V8M_MAINLINE ||    \
+    _PW_ARCH_ARM_V8_1M_MAINLINE
 inline bool InInterruptContext() {
   // ARMv7M Reference manual section B1.4.2 describes how the Interrupt
   // Program Status Register (IPSR) is zero if there is no exception (interrupt)
@@ -29,7 +37,7 @@ inline bool InInterruptContext() {
   return ipsr != 0;
 }
 #else
-#error "Please select an architecture specific backend."
+#error "Your selected ARM Cortex-M arch is not yet supported by this module."
 #endif
 
 }  // namespace pw::interrupt

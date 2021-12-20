@@ -14,7 +14,20 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_preprocessor)
+pw_add_module_library(pw_preprocessor
+  HEADERS
+    public/pw_preprocessor/arguments.h
+    public/pw_preprocessor/boolean.h
+    public/pw_preprocessor/compiler.h
+    public/pw_preprocessor/concat.h
+    public/pw_preprocessor/util.h
+    public/pw_preprocessor/internal/arg_count_impl.h
+)
+
+pw_add_module_library(pw_preprocessor.arch
+  HEADERS
+    public/pw_preprocessor/arch.h
+)
 
 if(Zephyr_FOUND AND CONFIG_PIGWEED_PREPROCESSOR)
   zephyr_link_libraries(pw_preprocessor)

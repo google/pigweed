@@ -21,39 +21,43 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "armv7m",
+    name = "pw_boot_cortex_m",
     srcs = [
         "core_init.c",
         "public/pw_boot_cortex_m/boot.h",
     ],
-    defines = ["PW_BOOT_CORTEX_M_ARMV7M"],
     includes = ["public"],
     target_compatible_with = select({
-        "@platforms//cpu:armv7e-m": [],
         "@platforms//cpu:armv7-m": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        "//pw_boot:facade",
-        "//pw_preprocessor",
-    ],
-)
-
-pw_cc_library(
-    name = "armv8m",
-    srcs = [
-        "core_init.c",
-        "public/pw_boot_cortex_m/boot.h",
-    ],
-    defines = ["PW_BOOT_CORTEX_M_ARMV8M"],
-    includes = ["public"],
-    target_compatible_with = select({
-        "@platforms//cpu:armv8e-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
         "@platforms//cpu:armv8-m": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
         "//pw_boot:facade",
         "//pw_preprocessor",
+        "//pw_preprocessor:arch",
     ],
+)
+
+# The following targets are deprecated, depend on ":pw_boot_cortex_m" instead.
+pw_cc_library(
+    name = "armv7m",
+    target_compatible_with = select({
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [":pw_boot_cortex_m"],
+)
+
+pw_cc_library(
+    name = "armv8m",
+    target_compatible_with = select({
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [":pw_boot_cortex_m"],
 )

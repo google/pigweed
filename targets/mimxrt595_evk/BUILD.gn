@@ -99,7 +99,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public_configs = [ ":pw_malloc_active" ]
     deps = [
       "$dir_pw_boot",
-      "$dir_pw_boot_cortex_m:armv8m",
+      "$dir_pw_boot_cortex_m",
       "$dir_pw_preprocessor",
       "$dir_pw_sys_io_mcuxpresso",
       pw_third_party_mcuxpresso_SDK,

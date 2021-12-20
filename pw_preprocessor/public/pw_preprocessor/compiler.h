@@ -18,6 +18,10 @@
 
 #include <assert.h>
 
+// TODO(pwbug/593): compiler.h should be refactored out of pw_preprocessor as
+// the scope is outside of the module. Perhaps it should be split up and placed
+// under pw_compiler, e.g. pw_compiler/attributes.h & pw_compiler/builtins.h.
+
 // Marks a struct or class as packed.
 #define PW_PACKED(declaration) declaration __attribute__((packed))
 

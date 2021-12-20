@@ -35,7 +35,7 @@ if (current_toolchain != default_toolchain) {
     configs = [ ":pw_malloc_active" ]
     public_deps = [
       "$dir_pw_boot",
-      "$dir_pw_boot_cortex_m:armv7m",
+      "$dir_pw_boot_cortex_m",
       "$dir_pw_sys_io_baremetal_stm32f429",
     ]
     deps = [

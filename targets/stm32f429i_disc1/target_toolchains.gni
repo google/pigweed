@@ -44,12 +44,11 @@ _target_config = {
 
   # Facade backends
   pw_assert_BACKEND = dir_pw_assert_basic
-  pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
+  pw_boot_BACKEND = "$dir_pw_boot_cortex_m"
   pw_cpu_exception_ENTRY_BACKEND =
-      "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv7m"
+      "$dir_pw_cpu_exception_cortex_m:cpu_exception"
   pw_cpu_exception_HANDLER_BACKEND = "$dir_pw_cpu_exception:basic_handler"
-  pw_cpu_exception_SUPPORT_BACKEND =
-      "$dir_pw_cpu_exception_cortex_m:support_armv7m"
+  pw_cpu_exception_SUPPORT_BACKEND = "$dir_pw_cpu_exception_cortex_m:support"
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
       "$dir_pw_sync_baremetal:interrupt_spin_lock"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_baremetal:mutex"

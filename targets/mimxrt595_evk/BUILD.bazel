@@ -31,7 +31,7 @@ pw_cc_library(
     ],
     deps = [
         "//pw_boot",
-        "//pw_boot_cortex_m:armv8m",
+        "//pw_boot_cortex_m",
         "//pw_preprocessor",
         "//pw_sys_io_mcuxpresso",
     ],

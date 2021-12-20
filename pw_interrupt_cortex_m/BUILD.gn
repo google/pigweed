@@ -27,20 +27,11 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
-config("armv6m") {
-  defines = [ "PW_INTERRUPT_CORTEX_M_ARMV6M=1" ]
-}
-
-config("armv7m") {
-  defines = [ "PW_INTERRUPT_CORTEX_M_ARMV7M=1" ]
-}
-
-config("armv8m") {
-  defines = [ "PW_INTERRUPT_CORTEX_M_ARMV8M=1" ]
-}
-
-_context_common = {
-  public_deps = [ "$dir_pw_interrupt:context.facade" ]
+pw_source_set("context") {
+  public_deps = [
+    "$dir_pw_interrupt:context.facade",
+    "$dir_pw_preprocessor:arch",
+  ]
   public_configs = [
     ":public_include_path",
     ":backend_config",
@@ -51,22 +42,15 @@ _context_common = {
   ]
 }
 
-# This targets provides the ARMv6-M backend for pw_interrupt's context facade.
-pw_source_set("context_armv6m") {
-  forward_variables_from(_context_common, "*")
-  public_configs += [ ":armv6m" ]
+# These targets are deprecated, use ":context" directly.
+group("context_armv6m") {
+  public_deps = [ ":context" ]
 }
-
-# This targets provides the ARMv7-M backend for pw_interrupt's context facade.
-pw_source_set("context_armv7m") {
-  forward_variables_from(_context_common, "*")
-  public_configs += [ ":armv7m" ]
+group("context_armv7m") {
+  public_deps = [ ":context" ]
 }
-
-# This targets provides the ARMv8-M backend for pw_interrupt's context facade.
-pw_source_set("context_armv8m") {
-  forward_variables_from(_context_common, "*")
-  public_configs += [ ":armv8m" ]
+group("context_armv8m") {
+  public_deps = [ ":context" ]
 }
 
 pw_doc_group("docs") {

@@ -27,7 +27,7 @@ if (current_toolchain != default_toolchain) {
   pw_source_set("pre_init") {
     public_deps = [
       "$dir_pw_boot",
-      "$dir_pw_boot_cortex_m:armv7m",
+      "$dir_pw_boot_cortex_m",
       "$dir_pw_sys_io_baremetal_lm3s6965evb",
     ]
     deps = [ "$dir_pw_preprocessor" ]

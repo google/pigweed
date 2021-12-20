@@ -33,7 +33,7 @@ _target_config = {
 
   # Facade backends
   pw_assert_BACKEND = dir_pw_assert_basic
-  pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv8m"
+  pw_boot_BACKEND = "$dir_pw_boot_cortex_m"
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
       "$dir_pw_sync_baremetal:interrupt_spin_lock"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_baremetal:mutex"

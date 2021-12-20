@@ -13,6 +13,19 @@
 // the License.
 #pragma once
 
+#include "pw_preprocessor/arch.h"
+
+#if !_PW_ARCH_ARM_CORTEX_M
+#error You can only build this for ARM Cortex-M architectures. If you are \
+       trying to do this and are still seeing this error, see \
+       pw_preprocessor/arch.h
+#endif  // !_PW_ARCH_ARM_CORTEX_M
+
+#if !_PW_ARCH_ARM_V7M && !_PW_ARCH_ARM_V7EM && !_PW_ARCH_ARM_V8M_MAINLINE && \
+    !_PW_ARCH_ARM_V8_1M_MAINLINE
+#error "Your selected ARM Cortex-M arch is not yet supported by this module."
+#endif
+
 // Which log level to use for this module.
 #ifndef PW_CPU_EXCEPTION_CORTEX_M_LOG_LEVEL
 #define PW_CPU_EXCEPTION_CORTEX_M_LOG_LEVEL PW_LOG_LEVEL_DEBUG

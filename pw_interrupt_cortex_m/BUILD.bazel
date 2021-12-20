@@ -22,45 +22,53 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "context_armv7m_headers",
+    name = "context_headers",
     hdrs = [
         "public/pw_interrupt_cortex_m/context_inline.h",
         "public_overrides/pw_interrupt_backend/context_inline.h",
     ],
-    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV7M=1"],
     includes = [
         "public",
         "public_overrides",
+    ],
+    deps = [
+        "//pw_preprocessor:arch",
+    ],
+)
+
+pw_cc_library(
+    name = "context",
+    deps = [
+        ":context_headers",
+        "//pw_interrupt:context_facade",
+    ],
+)
+
+# The following targets are deprecated, depend on ":context" instead.
+pw_cc_library(
+    name = "context_armv7m_headers",
+    deps = [
+        ":context_headers",
     ],
 )
 
 pw_cc_library(
     name = "context_armv7m",
-    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV7M=1"],
     deps = [
-        ":context_armv7m_headers",
-        "//pw_interrupt:context_facade",
+        ":context",
     ],
 )
 
 pw_cc_library(
     name = "context_armv8m_headers",
-    hdrs = [
-        "public/pw_interrupt_cortex_m/context.h",
-        "public_overrides/pw_interrupt_backend/context_backend.h",
-    ],
-    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV8M=1"],
-    includes = [
-        "public",
-        "public_overrides",
+    deps = [
+        ":context_headers",
     ],
 )
 
 pw_cc_library(
     name = "context_armv8m",
-    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV8M=1"],
     deps = [
-        ":context_armv8m_headers",
-        "//pw_interrupt:context_facade",
+        ":context",
     ],
 )

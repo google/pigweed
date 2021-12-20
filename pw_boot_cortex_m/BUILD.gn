@@ -28,8 +28,16 @@ declare_args() {
   pw_boot_cortex_m_LINKER_SCRIPT = ":cortex_m_linker_script"
 }
 
-if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m" ||
-    pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv8m") {
+if (pw_boot_BACKEND != "$dir_pw_boot_cortex_m" &&
+    pw_boot_BACKEND != "$dir_pw_boot_cortex_m:armv7m" &&
+    pw_boot_BACKEND != "$dir_pw_boot_cortex_m:armv8m") {
+  group("pw_boot_cortex_m") {
+  }
+  group("armv7m") {
+  }
+  group("armv8m") {
+  }
+} else {
   config("default_config") {
     include_dirs = [ "public" ]
   }
@@ -40,39 +48,25 @@ if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m" ||
     defines = pw_boot_cortex_m_LINK_CONFIG_DEFINES
     linker_script = "basic_cortex_m.ld"
   }
-}
 
-if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv7m") {
-  pw_source_set("armv7m") {
-    defines = [ "PW_BOOT_CORTEX_M_ARMV7M" ]
+  pw_source_set("pw_boot_cortex_m") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_boot_cortex_m/boot.h" ]
     public_deps = [ "$dir_pw_preprocessor" ]
     deps = [
       "$dir_pw_boot:facade",
+      "$dir_pw_preprocessor:arch",
       pw_boot_cortex_m_LINKER_SCRIPT,
     ]
     sources = [ "core_init.c" ]
   }
-} else {
+
+  # These targets are deprecated, use ":pw_boot_cortex_m" directly.
   group("armv7m") {
+    public_deps = [ ":pw_boot_cortex_m" ]
   }
-}
-
-if (pw_boot_BACKEND == "$dir_pw_boot_cortex_m:armv8m") {
-  pw_source_set("armv8m") {
-    defines = [ "PW_BOOT_CORTEX_M_ARMV8M" ]
-    public_configs = [ ":default_config" ]
-    public = [ "public/pw_boot_cortex_m/boot.h" ]
-    public_deps = [ "$dir_pw_preprocessor" ]
-    deps = [
-      "$dir_pw_boot:facade",
-      pw_boot_cortex_m_LINKER_SCRIPT,
-    ]
-    sources = [ "core_init.c" ]
-  }
-} else {
   group("armv8m") {
+    public_deps = [ ":pw_boot_cortex_m" ]
   }
 }
 

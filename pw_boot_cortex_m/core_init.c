@@ -57,7 +57,19 @@
 
 #include "pw_boot/boot.h"
 #include "pw_boot_cortex_m/boot.h"
+#include "pw_preprocessor/arch.h"
 #include "pw_preprocessor/compiler.h"
+
+#if !_PW_ARCH_ARM_CORTEX_M
+#error You can only build this for ARM Cortex-M architectures. If you are \
+       trying to do this and are still seeing this error, see \
+       pw_preprocessor/arch.h
+#endif  // !_PW_ARCH_ARM_CORTEX_M
+
+#if !_PW_ARCH_ARM_V6M && !_PW_ARCH_ARM_V7M && !_PW_ARCH_ARM_V7EM && \
+    !_PW_ARCH_ARM_V8M_MAINLINE && !_PW_ARCH_ARM_V8_1M_MAINLINE
+#error "Your selected Cortex-M arch is not yet supported by this module."
+#endif
 
 // Extern symbols provided by linker script.
 // These symbols tell us where various memory sections start and end.
@@ -109,7 +121,7 @@ void pw_boot_Entry() {
   // not safe to run handlers until after this function returns.
   asm volatile("cpsid i");
 
-#ifdef PW_BOOT_CORTEX_M_ARMV8M
+#if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
   // Configure MSP and MSPLIM.
   asm volatile(
       "msr msp, %0    \n"
@@ -120,7 +132,7 @@ void pw_boot_Entry() {
       : /*clobbers=*/
       // clang-format on
   );
-#endif
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
 
   // Run any init that must be done before static init of RAM which preps the
   // .data (static values not yet loaded into ram) and .bss sections (not yet

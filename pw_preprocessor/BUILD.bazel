@@ -24,8 +24,24 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "pw_preprocessor",
-    srcs = ["public/pw_preprocessor/internal/arg_count_impl.h"],
-    hdrs = glob(["public/pw_preprocessor/*.h"]),
+    srcs = [
+        "public/pw_preprocessor/internal/arg_count_impl.h",
+    ],
+    hdrs = [
+        "public/pw_preprocessor/arguments.h",
+        "public/pw_preprocessor/boolean.h",
+        "public/pw_preprocessor/compiler.h",
+        "public/pw_preprocessor/concat.h",
+        "public/pw_preprocessor/util.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "cortex_m",
+    hdrs = [
+        "public/pw_preprocessor/arch.h",
+    ],
     includes = ["public"],
 )
 

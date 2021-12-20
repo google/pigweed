@@ -37,7 +37,7 @@ _target_config = {
 
   # Facade backends
   pw_assert_BACKEND = dir_pw_assert_basic
-  pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
+  pw_boot_BACKEND = "$dir_pw_boot_cortex_m"
   pw_log_BACKEND = dir_pw_log_basic
   pw_sys_io_BACKEND = dir_pw_sys_io_baremetal_lm3s6965evb
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
