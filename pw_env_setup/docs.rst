@@ -261,6 +261,10 @@ here.
   complain if one of the required submodules is not present. Combining this
   with ``optional_submodules`` is not supported.
 
+``pw_packages``
+  A list of packages to install using :ref:`pw_package <module-pw_package>`
+  after the rest of bootstrap completes.
+
 An example of a config file is below.
 
 .. code-block:: json
@@ -279,6 +283,7 @@ An example of a config file is below.
       ],
       "system_packages": false
     },
+    "pw_packages": [],
     "optional_submodules": [
       "optional/submodule/one",
       "optional/submodule/two"

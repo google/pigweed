@@ -150,7 +150,7 @@ class ConfigError(Exception):
     pass
 
 
-def result_func(glob_warnings):
+def result_func(glob_warnings=()):
     def result(status, *args):
         return _Result(status, *([str(x) for x in glob_warnings] + list(args)))
 
@@ -203,6 +203,7 @@ class EnvSetup(object):
         self._optional_submodules = []
         self._required_submodules = []
         self._virtualenv_system_packages = False
+        self._pw_packages = []
         self._root_variable = None
 
         self._config_file_name = getattr(config_file, 'name', 'config file')
@@ -269,6 +270,9 @@ class EnvSetup(object):
         self._cipd_package_file.extend(
             os.path.join(self._project_root, x)
             for x in config.pop('cipd_package_files', ()))
+
+        for pkg in config.pop('pw_packages', ()):
+            self._pw_packages.append(pkg)
 
         virtualenv = config.pop('virtualenv', {})
 
@@ -367,6 +371,7 @@ class EnvSetup(object):
         steps = [
             ('CIPD package manager', self.cipd),
             ('Python environment', self.virtualenv),
+            ('pw packages', self.pw_package),
             ('Host tools', self.host_tools),
         ]
 
@@ -543,6 +548,36 @@ Then use `set +x` to go back to normal.
                 use_pinned_pip_packages=self._use_pinned_pip_packages,
         ):
             return result(_Result.Status.FAILED)
+
+        return result(_Result.Status.DONE)
+
+    def pw_package(self, unused_spin):
+        """Install "default" pw packages."""
+
+        result = result_func()
+
+        if not self._pw_packages:
+            return result(_Result.Status.SKIPPED)
+
+        logdir = os.path.join(self._install_dir, 'packages')
+        if not os.path.isdir(logdir):
+            os.makedirs(logdir)
+
+        for pkg in self._pw_packages:
+            print('installing {}'.format(pkg))
+            cmd = ['pw', 'package', 'install', pkg]
+
+            log = os.path.join(logdir, '{}.log'.format(pkg))
+            try:
+                with open(log, 'w') as outs, self._env():
+                    print(*cmd, file=outs)
+                    subprocess.check_call(cmd,
+                                          stdout=outs,
+                                          stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError:
+                with open(log, 'r') as ins:
+                    sys.stderr.write(ins.read())
+                    raise
 
         return result(_Result.Status.DONE)
 

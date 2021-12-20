@@ -11,5 +11,6 @@
     "gn_targets": [
       ":python.install"
     ]
-  }
+  },
+  "pw_packages": []
 }
