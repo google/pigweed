@@ -46,8 +46,8 @@ static_assert(!ConvertsToSpan<bool[]>());
 static_assert(!ConvertsToSpan<const int[]>());
 static_assert(!ConvertsToSpan<bool (&)[]>());
 static_assert(!ConvertsToSpan<const int (&)[]>());
-static_assert(!ConvertsToSpan<bool(&&)[]>());
-static_assert(!ConvertsToSpan<const int(&&)[]>());
+static_assert(!ConvertsToSpan<bool (&&)[]>());
+static_assert(!ConvertsToSpan<const int (&&)[]>());
 
 // C arrays convert to span.
 static_assert(ConvertsToSpan<std::array<int, 5>>());
@@ -61,10 +61,10 @@ static_assert(ConvertsToSpan<bool (&)[1]>());
 static_assert(ConvertsToSpan<char (&)[35]>());
 static_assert(ConvertsToSpan<const int (&)[35]>());
 
-static_assert(ConvertsToSpan<bool(&&)[1]>());
-static_assert(ConvertsToSpan<bool(&&)[1]>());
-static_assert(ConvertsToSpan<char(&&)[35]>());
-static_assert(ConvertsToSpan<const int(&&)[35]>());
+static_assert(ConvertsToSpan<bool (&&)[1]>());
+static_assert(ConvertsToSpan<bool (&&)[1]>());
+static_assert(ConvertsToSpan<char (&&)[35]>());
+static_assert(ConvertsToSpan<const int (&&)[35]>());
 
 // Container types convert to span.
 struct FakeContainer {

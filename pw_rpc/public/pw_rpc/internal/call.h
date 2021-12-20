@@ -146,7 +146,8 @@ class Call : public IntrusiveList<Call>::Item {
         rpc_state_{},
         type_{},
         call_type_{},
-        client_stream_state_{} {}
+        client_stream_state_ {}
+  {}
 
   // Creates an active server-side Call.
   Call(const CallContext& context, MethodType type)

@@ -30,7 +30,7 @@ constexpr std::array<std::remove_cv_t<T>, kSize> CopyArray(
 
 template <typename T, size_t kSize, size_t... kIndices>
 constexpr std::array<std::remove_cv_t<T>, kSize> MoveArray(
-    T(&&values)[kSize], std::index_sequence<kIndices...>) {
+    T (&&values)[kSize], std::index_sequence<kIndices...>) {
   return {{std::move(values[kIndices])...}};
 }
 
@@ -44,7 +44,7 @@ constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T (&values)[kSize]) {
 }
 
 template <typename T, size_t kSize>
-constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T(&&values)[kSize]) {
+constexpr std::array<std::remove_cv_t<T>, kSize> to_array(T (&&values)[kSize]) {
   return impl::MoveArray(std::move(values), std::make_index_sequence<kSize>{});
 }
 

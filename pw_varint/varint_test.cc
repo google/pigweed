@@ -40,17 +40,14 @@ size_t pw_varint_CallZigZagDecode(void* input,
 
 class Varint : public ::testing::Test {
  protected:
-  Varint()
-      : buffer_{std::byte{'a'},
-                std::byte{'b'},
-                std::byte{'c'},
-                std::byte{'d'},
-                std::byte{'e'},
-                std::byte{'f'},
-                std::byte{'g'},
-                std::byte{'h'},
-                std::byte{'i'},
-                std::byte{'j'}} {}
+  Varint() : buffer_ {
+    std::byte{'a'}, std::byte{'b'}, std::byte{'c'}, std::byte{'d'},
+        std::byte{'e'}, std::byte{'f'}, std::byte{'g'}, std::byte{'h'},
+        std::byte{'i'}, std::byte {
+      'j'
+    }
+  }
+  {}
   std::byte buffer_[10];
 };
 

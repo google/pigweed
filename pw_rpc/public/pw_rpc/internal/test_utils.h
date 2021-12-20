@@ -36,7 +36,8 @@ class TestOutput : public ChannelOutput {
   static constexpr size_t buffer_size() { return kOutputBufferSize; }
 
   constexpr TestOutput(const char* name = "TestOutput")
-      : ChannelOutput(name), sent_data_{} {}
+      : ChannelOutput(name), sent_data_ {}
+  {}
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 

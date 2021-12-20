@@ -33,7 +33,8 @@ constexpr TestStruct kExpectedStruct = {.day = 18, .month = 5, .year = 2020};
 
 class MemoryWriterTest : public ::testing::Test {
  protected:
-  MemoryWriterTest() : memory_buffer_{} {}
+  MemoryWriterTest() : memory_buffer_ {}
+  {}
   std::array<std::byte, kSinkBufferSize> memory_buffer_;
 };
 

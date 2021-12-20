@@ -173,7 +173,8 @@ class FakeChannelOutputBuffer : public FakeChannelOutput {
   constexpr FakeChannelOutputBuffer()
       : FakeChannelOutput(packets_, payloads_, encoding_buffer),
         encoding_buffer{},
-        payloads_{} {}
+        payloads_ {}
+  {}
 
   std::byte encoding_buffer[kOutputSizeBytes];
   Vector<std::byte, kPayloadsBufferSizeBytes> payloads_;

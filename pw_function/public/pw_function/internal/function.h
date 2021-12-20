@@ -193,7 +193,8 @@ using FunctionStorage =
 template <size_t kSizeBytes, typename Return, typename... Args>
 class FunctionTargetHolder {
  public:
-  constexpr FunctionTargetHolder() : null_function_{} {}
+  constexpr FunctionTargetHolder() : null_function_ {}
+  {}
 
   FunctionTargetHolder(const FunctionTargetHolder&) = delete;
   FunctionTargetHolder(FunctionTargetHolder&&) = delete;
