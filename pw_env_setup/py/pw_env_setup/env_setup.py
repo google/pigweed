@@ -572,6 +572,7 @@ Then use `set +x` to go back to normal.
                 with open(log, 'w') as outs, self._env():
                     print(*cmd, file=outs)
                     subprocess.check_call(cmd,
+                                          cwd=self._project_root,
                                           stdout=outs,
                                           stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
