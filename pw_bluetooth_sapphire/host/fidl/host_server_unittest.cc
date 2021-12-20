@@ -10,7 +10,6 @@
 #include <lib/inspect/testing/cpp/inspect.h>
 #include <lib/zx/channel.h>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
@@ -66,34 +65,12 @@ const fbt::Address kTestFidlAddrResolvable{fbt::AddressType::RANDOM,
 const fbt::Address kTestFidlAddrNonResolvable{fbt::AddressType::RANDOM,
                                               {0x55, 0x44, 0x33, 0x22, 0x11, 0x00}};
 
-// TODO(fxbug.dev/64167): Replace GMock usage with homegrown mocks.
-class MockPairingDelegate : public fsys::testing::PairingDelegate_TestBase {
- public:
-  MockPairingDelegate(fidl::InterfaceRequest<PairingDelegate> request,
-                      async_dispatcher_t* dispatcher)
-      : binding_(this, std::move(request), dispatcher) {}
-
-  ~MockPairingDelegate() override = default;
-
-  MOCK_METHOD(void, OnPairingRequest,
-              (fsys::Peer device, fsys::PairingMethod method, uint32_t displayed_passkey,
-               OnPairingRequestCallback callback),
-              (override));
-  MOCK_METHOD(void, OnPairingComplete, (fbt::PeerId id, bool success), (override));
-  MOCK_METHOD(void, OnRemoteKeypress, (fbt::PeerId id, fsys::PairingKeypress keypress), (override));
-
- private:
-  fidl::Binding<PairingDelegate> binding_;
-
-  void NotImplemented_(const std::string& name) override {
-    FAIL() << name << " is not implemented";
-  }
-};
-
 class MockFidlPairingDelegate : public fsys::testing::PairingDelegate_TestBase {
  public:
   using PairingRequestCallback =
       fit::function<void(fsys::Peer, fsys::PairingMethod, uint32_t, OnPairingRequestCallback)>;
+  using PairingCompleteCallback = fit::function<void(fbt::PeerId, bool)>;
+  using RemoteKeypressCallback = fit::function<void(fbt::PeerId, fsys::PairingKeypress)>;
 
   MockFidlPairingDelegate(fidl::InterfaceRequest<PairingDelegate> request,
                           async_dispatcher_t* dispatcher)
@@ -106,7 +83,17 @@ class MockFidlPairingDelegate : public fsys::testing::PairingDelegate_TestBase {
     pairing_request_cb_(std::move(device), method, displayed_passkey, std::move(callback));
   }
 
+  void OnPairingComplete(fbt::PeerId id, bool success) override {
+    pairing_complete_cb_(id, success);
+  }
+
+  void OnRemoteKeypress(fbt::PeerId id, fsys::PairingKeypress keypress) override {
+    remote_keypress_cb_(id, keypress);
+  }
+
   void set_pairing_request_cb(PairingRequestCallback cb) { pairing_request_cb_ = std::move(cb); }
+  void set_pairing_complete_cb(PairingCompleteCallback cb) { pairing_complete_cb_ = std::move(cb); }
+  void set_remote_keypress_cb(RemoteKeypressCallback cb) { remote_keypress_cb_ = std::move(cb); }
 
  private:
   void NotImplemented_(const std::string& name) override {
@@ -115,6 +102,8 @@ class MockFidlPairingDelegate : public fsys::testing::PairingDelegate_TestBase {
 
   fidl::Binding<PairingDelegate> binding_;
   PairingRequestCallback pairing_request_cb_;
+  PairingCompleteCallback pairing_complete_cb_;
+  RemoteKeypressCallback remote_keypress_cb_;
 };
 
 class HostServerTest : public bthost::testing::AdapterTestFixture {
@@ -153,22 +142,6 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
 
   // Mutable reference to the Host client interface pointer.
   fuchsia::bluetooth::host::HostPtr& host_client_ptr() { return host_; }
-
-  // Create and bind a MockPairingDelegate and attach it to the HostServer under test. It is
-  // heap-allocated to permit its explicit destruction.
-  [[nodiscard]] std::unique_ptr<MockPairingDelegate> SetMockPairingDelegate(
-      fsys::InputCapability input_capability, fsys::OutputCapability output_capability) {
-    using ::testing::StrictMock;
-    fidl::InterfaceHandle<fsys::PairingDelegate> pairing_delegate_handle;
-    auto pairing_delegate = std::make_unique<StrictMock<MockPairingDelegate>>(
-        pairing_delegate_handle.NewRequest(), dispatcher());
-    host_client()->SetPairingDelegate(input_capability, output_capability,
-                                      std::move(pairing_delegate_handle));
-
-    // Wait for the Access/SetPairingDelegate message to process.
-    RunLoopUntilIdle();
-    return pairing_delegate;
-  }
 
   // Create and bind a MockFidlPairingDelegate and attach it to the HostServer under test. It is
   // heap-allocated to permit its explicit destruction.
@@ -258,7 +231,7 @@ class HostServerPairingTest : public HostServerTest {
 
   void NewPairingTest(fsys::InputCapability input_cap, fsys::OutputCapability output_cap,
                       bool is_le = true) {
-    pairing_delegate_ = SetMockPairingDelegate(input_cap, output_cap);
+    pairing_delegate_ = SetMockFidlPairingDelegate(input_cap, output_cap);
     if (!fake_peer_ || !fake_chan_) {
       ASSERT_FALSE(fake_peer_);
       ASSERT_FALSE(fake_chan_);
@@ -283,7 +256,7 @@ class HostServerPairingTest : public HostServerTest {
   FakeChannel* fake_chan() { return fake_chan_; }
 
  private:
-  std::unique_ptr<MockPairingDelegate> pairing_delegate_;
+  std::unique_ptr<MockFidlPairingDelegate> pairing_delegate_;
   bt::gap::Peer* fake_peer_ = nullptr;
   FakeChannel* fake_chan_ = nullptr;
 };
@@ -325,7 +298,7 @@ TEST_F(HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   EXPECT_EQ(bt::sm::IOCapability::kNoInputNoOutput, host_pairing_delegate->io_capability());
 
   auto fidl_pairing_delegate =
-      SetMockPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
+      SetMockFidlPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
   EXPECT_EQ(bt::sm::IOCapability::kKeyboardDisplay, host_pairing_delegate->io_capability());
 }
 
@@ -335,35 +308,42 @@ TEST_F(HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
-      SetMockPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
+      SetMockFidlPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
 
   // fuchsia::bluetooth::PeerId has no equality operator
-  EXPECT_CALL(*fidl_pairing_delegate, OnPairingComplete(_, false))
-      .WillOnce([](fbt::PeerId id, Unused) { EXPECT_EQ(0xc0decafe, id.value); });
-  host_pairing_delegate->CompletePairing(bt::PeerId(0xc0decafe),
+  std::optional<fbt::PeerId> actual_id;
+  fidl_pairing_delegate->set_pairing_complete_cb(
+      [&actual_id](fbt::PeerId id, Unused) { actual_id = id; });
+  auto id = bt::PeerId(0xc0decafe);
+  host_pairing_delegate->CompletePairing(id,
                                          bt::sm::Status(bt::sm::ErrorCode::kConfirmValueFailed));
 
   // Wait for the PairingDelegate/OnPairingComplete message to process.
   RunLoopUntilIdle();
+
+  EXPECT_TRUE(actual_id.has_value());
+  EXPECT_EQ(id.value(), actual_id.value().value);
 }
 
 TEST_F(HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
-      SetMockPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
+      SetMockFidlPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
 
   auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  EXPECT_CALL(*fidl_pairing_delegate, OnPairingRequest(_, fsys::PairingMethod::CONSENT, 0u, _))
-      .WillOnce(
-          [id = peer->identifier()](fsys::Peer peer, Unused, Unused,
-                                    fsys::PairingDelegate::OnPairingRequestCallback callback) {
-            ASSERT_TRUE(peer.has_id());
-            EXPECT_EQ(id.value(), peer.id().value);
-            callback(/*accept=*/true, /*entered_passkey=*/0u);
-          });
+  fidl_pairing_delegate->set_pairing_request_cb(
+      [id = peer->identifier()](fsys::Peer peer, fsys::PairingMethod method,
+                                uint32_t displayed_passkey,
+                                fsys::PairingDelegate::OnPairingRequestCallback callback) {
+        ASSERT_TRUE(peer.has_id());
+        EXPECT_EQ(id.value(), peer.id().value);
+        EXPECT_EQ(method, fsys::PairingMethod::CONSENT);
+        EXPECT_EQ(displayed_passkey, 0u);
+        callback(/*accept=*/true, /*entered_passkey=*/0u);
+      });
 
   bool confirm_cb_value = false;
   bt::gap::PairingDelegate::ConfirmCallback confirm_cb = [&confirm_cb_value](bool confirmed) {
@@ -380,19 +360,20 @@ TEST_F(HostServerTest, HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparis
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
-      SetMockPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
+      SetMockFidlPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
 
   auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   // This call should use PASSKEY_DISPLAY to request that the user perform peer passkey entry.
-  using OnPairingRequestCallback = fsys::PairingDelegate::OnPairingRequestCallback;
-  EXPECT_CALL(*fidl_pairing_delegate,
-              OnPairingRequest(_, fsys::PairingMethod::PASSKEY_DISPLAY, 12345, _))
-      .WillOnce([id = peer->identifier()](fsys::Peer peer, Unused, Unused,
-                                          OnPairingRequestCallback callback) {
+  fidl_pairing_delegate->set_pairing_request_cb(
+      [id = peer->identifier()](fsys::Peer peer, fsys::PairingMethod method,
+                                uint32_t displayed_passkey,
+                                fsys::PairingDelegate::OnPairingRequestCallback callback) {
         ASSERT_TRUE(peer.has_id());
         EXPECT_EQ(id.value(), peer.id().value);
+        EXPECT_EQ(method, fsys::PairingMethod::PASSKEY_DISPLAY);
+        EXPECT_EQ(displayed_passkey, 12345u);
         callback(/*accept=*/false, /*entered_passkey=*/0u);
       });
 
@@ -411,12 +392,14 @@ TEST_F(HostServerTest, HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparis
 
   // This call should use PASSKEY_COMPARISON to request that the user compare the passkeys shown on
   // the local and peer devices.
-  EXPECT_CALL(*fidl_pairing_delegate,
-              OnPairingRequest(_, fsys::PairingMethod::PASSKEY_COMPARISON, 12345, _))
-      .WillOnce([id = peer->identifier()](fsys::Peer peer, Unused, Unused,
-                                          OnPairingRequestCallback callback) {
+  fidl_pairing_delegate->set_pairing_request_cb(
+      [id = peer->identifier()](fsys::Peer peer, fsys::PairingMethod method,
+                                uint32_t displayed_passkey,
+                                fsys::PairingDelegate::OnPairingRequestCallback callback) {
         ASSERT_TRUE(peer.has_id());
         EXPECT_EQ(id.value(), peer.id().value);
+        EXPECT_EQ(method, fsys::PairingMethod::PASSKEY_COMPARISON);
+        EXPECT_EQ(displayed_passkey, 12345u);
         callback(/*accept=*/false, /*entered_passkey=*/0u);
       });
 
@@ -433,44 +416,41 @@ TEST_F(HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFidl) {
   using namespace ::testing;
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
-      SetMockPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
+      SetMockFidlPairingDelegate(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
 
   auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
-
-  using OnPairingRequestCallback = fsys::PairingDelegate::OnPairingRequestCallback;
-  EXPECT_CALL(*fidl_pairing_delegate,
-              OnPairingRequest(_, fsys::PairingMethod::PASSKEY_ENTRY, 0u, _))
-      .WillOnce([id = peer->identifier()](fsys::Peer peer, Unused, Unused,
-                                          OnPairingRequestCallback callback) {
-        ASSERT_TRUE(peer.has_id());
-        EXPECT_EQ(id.value(), peer.id().value);
-        callback(/*accept=*/false, 12345);
-      })
-      .WillOnce([id = peer->identifier()](fsys::Peer peer, Unused, Unused,
-                                          OnPairingRequestCallback callback) {
-        ASSERT_TRUE(peer.has_id());
-        EXPECT_EQ(id.value(), peer.id().value);
-        callback(/*accept=*/true, 0u);
-      })
-      .WillOnce([id = peer->identifier()](fsys::Peer peer, Unused, Unused,
-                                          OnPairingRequestCallback callback) {
-        ASSERT_TRUE(peer.has_id());
-        EXPECT_EQ(id.value(), peer.id().value);
-        callback(/*accept=*/true, 12345);
-      });
 
   std::optional<int64_t> passkey_response;
   auto response_cb = [&passkey_response](int64_t passkey) { passkey_response = passkey; };
 
   // The first request is rejected and should receive a negative passkey value, regardless what was
   // passed over FIDL (i.e. 12345).
+  fidl_pairing_delegate->set_pairing_request_cb(
+      [id = peer->identifier()](fsys::Peer peer, fsys::PairingMethod method,
+                                uint32_t displayed_passkey,
+                                fsys::PairingDelegate::OnPairingRequestCallback callback) {
+        ASSERT_TRUE(peer.has_id());
+        EXPECT_EQ(id.value(), peer.id().value);
+        EXPECT_EQ(method, fsys::PairingMethod::PASSKEY_ENTRY);
+        EXPECT_EQ(displayed_passkey, 0u);
+        callback(/*accept=*/false, /*entered_passkey=*/12345);
+      });
+
   host_pairing_delegate->RequestPasskey(peer->identifier(), response_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(passkey_response.has_value());
   EXPECT_LT(passkey_response.value(), 0);
 
   // The second request should be accepted with the passkey set to "0".
+  fidl_pairing_delegate->set_pairing_request_cb(
+      [id = peer->identifier()](fsys::Peer peer, Unused, Unused,
+                                fsys::PairingDelegate::OnPairingRequestCallback callback) {
+        ASSERT_TRUE(peer.has_id());
+        EXPECT_EQ(id.value(), peer.id().value);
+        callback(/*accept=*/true, /*entered_passkey=*/0);
+      });
+
   passkey_response.reset();
   host_pairing_delegate->RequestPasskey(peer->identifier(), response_cb);
   RunLoopUntilIdle();
@@ -478,6 +458,14 @@ TEST_F(HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFidl) {
   EXPECT_EQ(0, passkey_response.value());
 
   // The third request should be accepted with the passkey set to "12345".
+  fidl_pairing_delegate->set_pairing_request_cb(
+      [id = peer->identifier()](fsys::Peer peer, Unused, Unused,
+                                fsys::PairingDelegate::OnPairingRequestCallback callback) {
+        ASSERT_TRUE(peer.has_id());
+        EXPECT_EQ(id.value(), peer.id().value);
+        callback(/*accept=*/true, /*entered_passkey=*/12345);
+      });
+
   passkey_response.reset();
   host_pairing_delegate->RequestPasskey(peer->identifier(), response_cb);
   RunLoopUntilIdle();
