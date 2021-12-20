@@ -290,6 +290,43 @@ function(pw_set_backend FACADE BACKEND)
   set("${FACADE}_BACKEND" "${BACKEND}" CACHE STRING "Backend for ${NAME}" FORCE)
 endfunction(pw_set_backend)
 
+# Set up the default pw_build_DEFAULT_MODULE_CONFIG.
+set("pw_build_DEFAULT_MODULE_CONFIG" pw_build.empty CACHE STRING
+    "Default implementation for all Pigweed module configurations.")
+
+# Declares a module configuration variable for module libraries to depend on.
+# Configs should be set to libraries which can be used to provide defines
+# directly or though included header files.
+#
+# The configs can be selected either through the pw_set_module_config function
+# to set the pw_build_DEFAULT_MODULE_CONFIG used by default for all Pigweed
+# modules or by selecting a specific one for the given NAME'd configuration.
+#
+# Args:
+#
+#   NAME: name to use for the target which can be depended on for the config.
+function(pw_add_module_config NAME)
+  _pw_parse_argv_strict(pw_add_module_config 1 "" "" "")
+
+  # Declare the module configuration variable for this module.
+  set("${NAME}" "${pw_build_DEFAULT_MODULE_CONFIG}"
+      CACHE STRING "Module configuration for ${NAME}")
+endfunction(pw_add_module_config)
+
+# Sets which config library to use for the given module.
+#
+# This can be used to set a specific module configuration or the default
+# module configuration used for all Pigweed modules:
+#
+#   pw_set_module_config(pw_build_DEFAULT_MODULE_CONFIG my_config)
+#   pw_set_module_config(pw_foo_CONFIG my_foo_config)
+function(pw_set_module_config NAME LIBRARY)
+  _pw_parse_argv_strict(pw_set_module_config 2 "" "" "")
+
+  # Update the module configuration variable.
+  set("${NAME}" "${LIBRARY}" CACHE STRING "Config for ${NAME}" FORCE)
+endfunction(pw_set_module_config)
+
 # Declares a unit test. Creates two targets:
 #
 #  * <TEST_NAME> - the test executable

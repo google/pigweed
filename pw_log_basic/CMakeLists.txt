@@ -14,10 +14,13 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_module_config(pw_log_basic_CONFIG)
+
 pw_auto_add_simple_module(pw_log_basic
   IMPLEMENTS_FACADE
     pw_log
   PRIVATE_DEPS
     pw_string
     pw_sys_io
+    ${pw_log_basic_CONFIG}
 )

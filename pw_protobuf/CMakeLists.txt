@@ -15,6 +15,15 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
+pw_add_module_config(pw_protobuf_CONFIG)
+
+pw_add_module_library(pw_protobuf.config
+  PUBLIC_DEPS
+    ${pw_protobuf_CONFIG}
+  HEADERS
+    public/pw_protobuf/config.h
+)
+
 pw_add_module_library(pw_protobuf
   SOURCES
     decoder.cc
@@ -24,6 +33,7 @@ pw_add_module_library(pw_protobuf
   PUBLIC_DEPS
     pw_assert
     pw_bytes
+    pw_protobuf.config
     pw_result
     pw_status
     pw_stream

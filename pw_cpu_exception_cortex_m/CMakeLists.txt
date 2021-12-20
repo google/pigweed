@@ -15,6 +15,15 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
+pw_add_module_config(pw_cpu_exception_cortex_m_CONFIG)
+
+pw_add_module_library(pw_cpu_exception_cortex_m.config
+  PUBLIC_DEPS
+    ${pw_cpu_exception_cortex_m_CONFIG}
+  HEADERS
+    pw_cpu_exception_cortex_m_private/config.h
+)
+
 pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception_armv7m
   IMPLEMENTS_FACADES
     pw_cpu_exception.entry
@@ -22,6 +31,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception_armv7m
     pw_preprocessor
   PRIVATE_DEPS
     pw_cpu_exception.handler
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants_armv7m
   SOURCES
     entry.cc
@@ -39,6 +49,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception_armv8m
     pw_preprocessor
   PRIVATE_DEPS
     pw_cpu_exception.handler
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants_armv8m
   SOURCES
     entry.cc
@@ -53,6 +64,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.support_armv7m
   IMPLEMENTS_FACADES
     pw_cpu_exception.support
   PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants_armv7m
     pw_log
     pw_string
@@ -66,6 +78,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.support_armv8m
   IMPLEMENTS_FACADES
     pw_cpu_exception.support
   PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants_armv8m
     pw_log
     pw_string
@@ -87,6 +100,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.proto_dump_armv7m
     pw_status
     pw_stream
   PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
   SOURCES
     proto_dump.cc
@@ -103,6 +117,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.proto_dump_armv8m
     pw_status
     pw_stream
   PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
   SOURCES
     proto_dump.cc
@@ -119,6 +134,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.snapshot_armv7m
     pw_protobuf
     pw_status
   PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants_armv7m
     pw_cpu_exception_cortex_m.proto_dump_armv7m
     pw_log
@@ -137,6 +153,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.snapshot_armv8m
     pw_protobuf
     pw_status
   PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants_armv8m
     pw_cpu_exception_cortex_m.proto_dump_armv8m
     pw_log

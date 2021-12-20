@@ -14,9 +14,12 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_module_config(pw_log_tokenized_CONFIG)
+
 pw_auto_add_simple_module(pw_log_tokenized
   IMPLEMENTS_FACADE
     pw_log
   PUBLIC_DEPS
     pw_tokenizer
+    ${pw_log_tokenized_CONFIG}
 )

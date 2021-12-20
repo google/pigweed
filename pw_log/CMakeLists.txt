@@ -14,7 +14,10 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_module_config(pw_log_CONFIG)
+
 pw_add_facade(pw_log
   PUBLIC_DEPS
     pw_preprocessor
+    ${pw_log_CONFIG}
 )

@@ -15,6 +15,15 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
+pw_add_module_config(pw_transfer_CONFIG)
+
+pw_add_module_library(pw_transfer.config
+  PUBLIC_DEPS
+    ${pw_transfer_CONFIG}
+  HEADERS
+    public/pw_transfer/internal/config.h
+)
+
 pw_add_module_library(pw_transfer
   PUBLIC_DEPS
     pw_assert
@@ -55,6 +64,7 @@ pw_add_module_library(pw_transfer.context
     pw_stream
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
+    pw_transfer.config
     pw_work_queue
   PRIVATE_DEPS
     pw_protobuf

@@ -14,6 +14,15 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_module_config(pw_tokenizer_CONFIG)
+
+pw_add_module_library(pw_tokenizer.config
+  PUBLIC_DEPS
+    ${pw_tokenizer_CONFIG}
+  HEADERS
+    public/pw_tokenizer/config.h
+)
+
 pw_add_module_library(pw_tokenizer
   SOURCES
     encode_args.cc
@@ -24,6 +33,7 @@ pw_add_module_library(pw_tokenizer
     pw_polyfill.overrides
     pw_preprocessor
     pw_span
+    pw_tokenizer.config
   PRIVATE_DEPS
     pw_varint
 )

@@ -14,4 +14,9 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_multisink)
+pw_add_module_config(pw_multisink_CONFIG)
+
+pw_auto_add_simple_module(pw_multisink
+  PUBLIC_DEPS
+    ${pw_multisink_CONFIG}
+)

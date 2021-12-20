@@ -14,6 +14,8 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_module_config(pw_kvs_CONFIG)
+
 pw_auto_add_simple_module(pw_kvs
   PUBLIC_DEPS
     pw_containers
@@ -23,6 +25,7 @@ pw_auto_add_simple_module(pw_kvs
     pw_assert
     pw_bytes
     pw_checksum
+    ${pw_kvs_CONFIG}
     pw_log
     pw_string
 )
