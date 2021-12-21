@@ -72,7 +72,9 @@ _host_common = {
   pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
 
-  pw_system_BACKEND = "$dir_pw_system:stl_target_hooks"
+  # TODO(amontanez): Put these into a pw_system_target and make a host target.
+  pw_system_TARGET_HOOKS_BACKEND = "$dir_pw_system:stl_target_hooks"
+  pw_system_IO_BACKEND = "$dir_pw_system:sys_io_target_io"
 
   pw_build_LINK_DEPS = []  # Explicit list overwrite required by GN
   pw_build_LINK_DEPS = [

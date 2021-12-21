@@ -30,5 +30,5 @@ PW_SYSTEM_FREERTOS_BACKENDS = {
   pw_thread_SLEEP_BACKEND = "$dir_pw_thread_freertos:sleep"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_freertos:thread"
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_freertos:yield"
-  pw_system_BACKEND = "$dir_pw_system:freertos_target_hooks"
+  pw_system_TARGET_HOOKS_BACKEND = "$dir_pw_system:freertos_target_hooks"
 }

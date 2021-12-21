@@ -95,7 +95,6 @@ pw_source_set("rpc") {
   ]
   deps = [
     ":io",
-    ":target_io",  # This should be provided by the target.
     "$dir_pw_assert",
     "$dir_pw_hdlc:pw_rpc",
     "$dir_pw_hdlc:rpc_channel_output",
@@ -104,7 +103,8 @@ pw_source_set("rpc") {
   ]
 }
 
-pw_source_set("io") {
+pw_facade("io") {
+  backend = pw_system_IO_BACKEND
   visibility = [ ":*" ]
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_system/io.h" ]
@@ -134,27 +134,27 @@ pw_source_set("work_queue") {
   deps = [ ":config" ]
 }
 
-# TODO(cachinchilla): Make the target provide this.
-pw_source_set("target_io") {
+pw_source_set("sys_io_target_io") {
   sources = [ "target_io.cc" ]
   deps = [
-    ":io",
+    ":io.facade",
     "$dir_pw_stream",
     "$dir_pw_stream:sys_io_stream",
   ]
 }
 
 pw_facade("target_hooks") {
-  backend = pw_system_BACKEND
+  backend = pw_system_TARGET_HOOKS_BACKEND
   public = [ "public/pw_system/target_hooks.h" ]
   public_deps = [ "$dir_pw_thread:thread" ]
   public_configs = [ ":public_include_path" ]
 }
 
-if (pw_system_BACKEND == "") {
-  # Do nothing, prevents errors from trying to parse pw_system_BACKEND as a
+if (pw_system_TARGET_HOOKS_BACKEND == "") {
+  # Do nothing, prevents errors from trying to parse pw_system_TARGET_HOOKS_BACKEND as a
   # build target when it's unset.
-} else if (get_label_info(pw_system_BACKEND, "label_no_toolchain") ==
+} else if (get_label_info(pw_system_TARGET_HOOKS_BACKEND,
+                          "label_no_toolchain") ==
            get_label_info(":stl_target_hooks", "label_no_toolchain")) {
   pw_source_set("stl_target_hooks") {
     deps = [
@@ -165,7 +165,8 @@ if (pw_system_BACKEND == "") {
     ]
     sources = [ "stl_target_hooks.cc" ]
   }
-} else if (get_label_info(pw_system_BACKEND, "label_no_toolchain") ==
+} else if (get_label_info(pw_system_TARGET_HOOKS_BACKEND,
+                          "label_no_toolchain") ==
            get_label_info(":freertos_target_hooks", "label_no_toolchain")) {
   pw_source_set("freertos_target_hooks") {
     deps = [
