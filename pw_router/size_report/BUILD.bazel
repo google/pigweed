@@ -39,6 +39,7 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
+        "//pw_router:egress_function",
         "//pw_router:static_router",
         "//pw_sys_io",
     ],

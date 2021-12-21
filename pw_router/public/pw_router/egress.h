@@ -17,15 +17,10 @@
 #include <span>
 
 #include "pw_bytes/span.h"
+#include "pw_router/packet_parser.h"
 #include "pw_status/status.h"
 
 namespace pw::router {
-
-// Data extracted from a packet which is forwarded to the egress.
-struct PacketMetadata {
-  // Project-defined priority of the packet.
-  std::optional<uint32_t> priority;
-};
 
 // Data egress for a router to send packets over some transport system.
 class Egress {
@@ -33,11 +28,12 @@ class Egress {
   virtual ~Egress() = default;
 
   // Sends a complete packet/frame over the transport. Returns OK on success, or
-  // an error status on failure.
+  // an error status on failure. Invoked with the packet data and the parser
+  // from the RoutePacket() call.
   //
   // TODO(frolv): Document possible return values.
   virtual Status SendPacket(ConstByteSpan packet,
-                            const PacketMetadata& metadata) = 0;
+                            const PacketParser& parser) = 0;
 };
 
 }  // namespace pw::router

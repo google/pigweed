@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_sync/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -30,8 +29,6 @@ pw_source_set("static_router") {
   public_deps = [
     ":egress",
     ":packet_parser",
-    "$dir_pw_sync:lock_annotations",
-    "$dir_pw_sync:mutex",
     dir_pw_metric,
   ]
   public = [ "public/pw_router/static_router.h" ]
@@ -41,7 +38,10 @@ pw_source_set("static_router") {
 pw_source_set("egress") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_router/egress.h" ]
-  public_deps = [ dir_pw_bytes ]
+  public_deps = [
+    ":packet_parser",
+    dir_pw_bytes,
+  ]
 }
 
 pw_source_set("packet_parser") {
@@ -61,9 +61,7 @@ pw_source_set("egress_function") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
-  # TODO(frolv): This size report can't currently be built as the docs target
-  # does not have a mutex backend.
-  # report_deps = [ ":static_router_size" ]
+  report_deps = [ ":static_router_size" ]
 }
 
 pw_test_group("tests") {
@@ -76,7 +74,6 @@ pw_test("static_router_test") {
     ":static_router",
   ]
   sources = [ "static_router_test.cc" ]
-  enable_if = pw_sync_MUTEX_BACKEND != ""
 }
 
 pw_size_report("static_router_size") {

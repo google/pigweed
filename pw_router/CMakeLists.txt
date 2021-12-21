@@ -32,6 +32,7 @@ endif()
 pw_add_module_library(pw_router.egress
   PUBLIC_DEPS
     pw_bytes
+    pw_router.packet_parser
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_EGRESS)
   zephyr_link_libraries(pw_router.egress)
@@ -47,7 +48,8 @@ endif()
 
 pw_add_module_library(pw_router.egress_function
   PUBLIC_DEPS
-    pw_rpc.egress
+    pw_function
+    pw_router.egress
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_EGRESS_FUNCTION)
   zephyr_link_libraries(pw_router.egress_function)
@@ -55,5 +57,6 @@ endif()
 
 pw_auto_add_module_tests(pw_router
   PRIVATE_DEPS
+    pw_router.egress_function
     pw_router.static_router
 )

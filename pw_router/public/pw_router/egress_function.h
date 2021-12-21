@@ -24,16 +24,15 @@ namespace pw::router {
 class EgressFunction final : public Egress {
  public:
   EgressFunction(
-      Function<Status(ConstByteSpan, const PacketMetadata&)>&& function)
+      Function<Status(ConstByteSpan, const PacketParser&)>&& function)
       : func_(std::move(function)) {}
 
-  Status SendPacket(ConstByteSpan packet,
-                    const PacketMetadata& metadata) final {
-    return func_(packet, metadata);
+  Status SendPacket(ConstByteSpan packet, const PacketParser& parser) final {
+    return func_(packet, parser);
   }
 
  private:
-  Function<Status(ConstByteSpan, const PacketMetadata&)> func_;
+  Function<Status(ConstByteSpan, const PacketParser&)> func_;
 };
 
 }  // namespace pw::router

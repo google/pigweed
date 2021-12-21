@@ -54,12 +54,12 @@ class BasicPacketParser : public pw::router::PacketParser {
   const BasicPacket* packet_;
 };
 
-BasicPacketParser parser;
-pw::router::EgressFunction sys_io_egress(+[](pw::ConstByteSpan packet) {
+pw::router::EgressFunction sys_io_egress(+[](pw::ConstByteSpan packet,
+                                             const pw::router::PacketParser&) {
   return pw::sys_io::WriteBytes(packet).status();
 });
 constexpr pw::router::StaticRouter::Route routes[] = {{1, sys_io_egress}};
-pw::router::StaticRouter router(parser, routes);
+pw::router::StaticRouter router(routes);
 
 }  // namespace
 
@@ -76,9 +76,11 @@ int main() {
   pw::sys_io::ReadBytes(packet_buffer);
   pw::sys_io::WriteBytes(packet_buffer);
 
+  BasicPacketParser parser;
+
   while (true) {
     pw::sys_io::ReadBytes(packet_buffer);
-    router.RoutePacket(packet_buffer);
+    router.RoutePacket(packet_buffer, parser);
   }
 
   return static_cast<int>(packet.payload);

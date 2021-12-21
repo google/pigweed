@@ -15,46 +15,30 @@
 #include "pw_router/static_router.h"
 
 #include <algorithm>
-#include <mutex>
 
 namespace pw::router {
 
-Status StaticRouter::RoutePacket(ConstByteSpan packet) {
-  uint32_t address;
-  PacketMetadata metadata = {};
+Status StaticRouter::RoutePacket(ConstByteSpan packet, PacketParser& parser) {
+  if (!parser.Parse(packet)) {
+    parser_errors_.Increment();
+    return Status::DataLoss();
+  }
 
-  {
-    // Only packet parsing is synchronized within the router; egresses must be
-    // synchronized externally.
-    std::lock_guard lock(mutex_);
-
-    if (!parser_.Parse(packet)) {
-      parser_errors_.Increment();
-      return Status::DataLoss();
-    }
-
-    std::optional<uint32_t> result = parser_.GetDestinationAddress();
-    if (!result.has_value()) {
-      parser_errors_.Increment();
-      return Status::DataLoss();
-    }
-
-    address = result.value();
-
-    // Populate the metadata with fields extracted from the packet.
-    metadata.priority = parser_.GetPriority();
+  std::optional<uint32_t> maybe_address = parser.GetDestinationAddress();
+  if (!maybe_address.has_value()) {
+    parser_errors_.Increment();
+    return Status::DataLoss();
   }
 
   auto route = std::find_if(routes_.begin(), routes_.end(), [&](auto r) {
-    return r.address == address;
+    return r.address == *maybe_address;
   });
   if (route == routes_.end()) {
     route_errors_.Increment();
     return Status::NotFound();
   }
 
-  if (Status status = route->egress.SendPacket(packet, metadata);
-      !status.ok()) {
+  if (Status status = route->egress.SendPacket(packet, parser); !status.ok()) {
     egress_errors_.Increment();
     return Status::Unavailable();
   }

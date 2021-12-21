@@ -32,7 +32,6 @@ pw_cc_library(
         ":packet_parser",
         "//pw_log",
         "//pw_metric:metric",
-        "//pw_sync:mutex",
     ],
 )
 
@@ -40,8 +39,8 @@ pw_cc_library(
     name = "egress",
     hdrs = ["public/pw_router/egress.h"],
     deps = [
+        ":packet_parser",
         "//pw_bytes",
-        "//pw_function",
     ],
 )
 
@@ -54,7 +53,10 @@ pw_cc_library(
 pw_cc_library(
     name = "egress_function",
     hdrs = ["public/pw_router/egress_function.h"],
-    deps = [":egress"],
+    deps = [
+        ":egress",
+        "//pw_function",
+    ],
 )
 
 pw_cc_test(

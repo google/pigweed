@@ -22,10 +22,28 @@ The Egress class is a virtual interface for sending packet data over a network
 link. Egress implementations provide a single ``SendPacket`` function, which
 takes the raw packet data and transmits it.
 
-Egresses are provided with optional metadata extracted from the packet, if it
-exists, to aid with transmitting decisions. For example, if packets in a project
-include a priority, egresses may use it to provide quality-of-service by
-dropping certain packets under heavy load.
+Egresses are invoked with the ``PacketParser`` used to process the packet. This
+allows additional information to be extracted from each packet to assist with
+transmitting decisions. For example, if packets in a project include a priority,
+egresses may use it to provide quality-of-service by dropping certain packets
+under heavy load.
+
+.. code-block:: c++
+
+  Status MyEgress::SendPacket(
+      ConstByteSpan packet, const PacketParser& parser) override {
+    // Downcast the base PacketParser to the custom implementation that was
+    // passed into RoutePacket().
+    const CustomPacketParser& custom_parser =
+        static_cast<const CustomPacketParser&>(parser);
+
+    // Custom packet fields can now be accessed if necessary.
+    if (custom_parser.priority() == MyPacketPriority::kHigh) {
+      return SendHighPriorityPacket(packet);
+    }
+
+    return SendStandardPriorityPacket(packet);
+  }
 
 Some common egress implementations are provided upstream in Pigweed.
 
@@ -45,29 +63,28 @@ Usage example
 
   namespace {
 
-  // Define packet parser and egresses.
-  HdlcFrameParser hdlc_parser;
+  // Define the router egresses.
   UartEgress uart_egress;
   BluetoothEgress ble_egress;
 
   // Define the routing table.
   constexpr pw::router::StaticRouter::Route routes[] = {{1, uart_egress},
                                                         {7, ble_egress}};
-  pw::router::StaticRouter router(hdlc_parser, routes);
+  pw::router::StaticRouter router(routes);
 
   }  // namespace
 
   void ProcessPacket(pw::ConstByteSpan packet) {
-    router.RoutePacket(packet);
+    HdlcFrameParser hdlc_parser;
+    router.RoutePacket(packet, hdlc_parser);
   }
 
-.. TODO(frolv): Re-enable this when the size report builds.
-.. Size report
-.. -----------
-.. The following size report shows the cost of a ``StaticRouter`` with a simple
-.. ``PacketParser`` implementation and a single route using an ``EgressFunction``.
+Size report
+-----------
+The following size report shows the cost of a ``StaticRouter`` with a simple
+``PacketParser`` implementation and a single route using an ``EgressFunction``.
 
-.. .. include:: static_router_size
+.. include:: static_router_size
 
 Zephyr
 ======

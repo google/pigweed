@@ -20,8 +20,6 @@
 #include "pw_router/egress.h"
 #include "pw_router/packet_parser.h"
 #include "pw_status/status.h"
-#include "pw_sync/lock_annotations.h"
-#include "pw_sync/mutex.h"
 
 namespace pw::router {
 
@@ -40,8 +38,7 @@ class StaticRouter {
     Egress& egress;
   };
 
-  StaticRouter(PacketParser& parser, std::span<const Route> routes)
-      : parser_(parser), routes_(routes) {}
+  StaticRouter(std::span<const Route> routes) : routes_(routes) {}
 
   StaticRouter(const StaticRouter&) = delete;
   StaticRouter(StaticRouter&&) = delete;
@@ -63,12 +60,10 @@ class StaticRouter {
   //   NOT_FOUND - No registered route for the packet.
   //   UNAVAILABLE - Route egress did not accept packet.
   //
-  Status RoutePacket(ConstByteSpan packet) PW_LOCKS_EXCLUDED(mutex_);
+  Status RoutePacket(ConstByteSpan packet, PacketParser& parser);
 
  private:
-  PacketParser& parser_ PW_GUARDED_BY(mutex_);
   const std::span<const Route> routes_;
-  sync::Mutex mutex_;
   PW_METRIC_GROUP(metrics_, "static_router");
   PW_METRIC(metrics_, parser_errors_, "parser_errors", 0u);
   PW_METRIC(metrics_, route_errors_, "route_errors", 0u);

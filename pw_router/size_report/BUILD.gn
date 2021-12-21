@@ -30,5 +30,8 @@ pw_executable("base") {
 
 pw_executable("static_router_with_one_route") {
   sources = [ "static_router_with_one_route.cc" ]
-  deps = _common_deps + [ "..:static_router" ]
+  deps = _common_deps + [
+           "..:static_router",
+           "..:egress_function",
+         ]
 }
