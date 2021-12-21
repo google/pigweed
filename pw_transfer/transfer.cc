@@ -76,7 +76,9 @@ void TransferService::HandleChunk(ConstByteSpan message,
                    static_cast<unsigned>(chunk.transfer_id),
                    static_cast<int>(status.code()));
     }
-    transfer.Finish(status).IgnoreError();
+    if (transfer.active()) {
+      transfer.Finish(status).IgnoreError();
+    }
     return;
   }
 
