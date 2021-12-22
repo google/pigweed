@@ -163,6 +163,10 @@ void Peer::LowEnergyData::SetPreferredConnectionParameters(
   preferred_conn_params_ = params;
 }
 
+bool Peer::LowEnergyData::StoreBond(const sm::PairingData& bond_data) {
+  return peer_->store_le_bond_callback_(bond_data);
+}
+
 void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
   ZX_DEBUG_ASSERT(peer_->connectable());
   ZX_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
@@ -416,11 +420,13 @@ void Peer::BrEdrData::AddService(UUID uuid) {
 }
 
 Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
-           PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-           bool connectable, PeerMetrics* peer_metrics)
+           PeerCallback dual_mode_callback, StoreLowEnergyBondCallback store_le_bond_callback,
+           PeerId identifier, const DeviceAddress& address, bool connectable,
+           PeerMetrics* peer_metrics)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
+      store_le_bond_callback_(std::move(store_le_bond_callback)),
       identifier_(identifier, MakeToStringInspectConvertFunction()),
       technology_((address.type() == DeviceAddress::Type::kBREDR) ? TechnologyType::kClassic
                                                                   : TechnologyType::kLowEnergy,

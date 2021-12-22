@@ -156,15 +156,6 @@ class PeerCache final {
     }
   }
 
-  // Used by connection managers to increment peer bonding metrics.
-  void LogLeBondingEvent(bool success) {
-    if (success) {
-      peer_metrics_.LogLeBondSuccessEvent();
-    } else {
-      peer_metrics_.LogLeBondFailureEvent();
-    }
-  }
-
  private:
   class PeerRecord final {
    public:

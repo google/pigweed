@@ -81,8 +81,9 @@ class PeerTest : public ::gtest::TestLoopFixture {
     address_ = address;
     peer_ = std::make_unique<Peer>(fit::bind_member(this, &PeerTest::NotifyListenersCallback),
                                    fit::bind_member(this, &PeerTest::UpdateExpiryCallback),
-                                   fit::bind_member(this, &PeerTest::DualModeCallback), PeerId(1),
-                                   address_, connectable, &metrics_);
+                                   fit::bind_member(this, &PeerTest::DualModeCallback),
+                                   fit::bind_member(this, &PeerTest::StoreLowEnergyBondCallback),
+                                   PeerId(1), address_, connectable, &metrics_);
     peer_->AttachInspect(peer_inspector_.GetRoot());
     // Reset metrics as they should only apply to the new peer under test.
     metrics_.AttachInspect(metrics_inspector_.GetRoot());
@@ -170,6 +171,9 @@ class PeerTest : public ::gtest::TestLoopFixture {
   }
   void set_update_expiry_cb(Peer::PeerCallback cb) { update_expiry_cb_ = std::move(cb); }
   void set_dual_mode_cb(Peer::PeerCallback cb) { dual_mode_cb_ = std::move(cb); }
+  void set_store_le_bond_cb(Peer::StoreLowEnergyBondCallback cb) {
+    store_le_bond_cb_ = std::move(cb);
+  }
 
  private:
   void NotifyListenersCallback(const Peer& peer, Peer::NotifyListenersChange change) {
@@ -190,11 +194,19 @@ class PeerTest : public ::gtest::TestLoopFixture {
     }
   }
 
+  bool StoreLowEnergyBondCallback(const sm::PairingData& data) {
+    if (store_le_bond_cb_) {
+      return store_le_bond_cb_(data);
+    }
+    return false;
+  }
+
   std::unique_ptr<Peer> peer_;
   DeviceAddress address_;
   Peer::NotifyListenersCallback notify_listeners_cb_;
   Peer::PeerCallback update_expiry_cb_;
   Peer::PeerCallback dual_mode_cb_;
+  Peer::StoreLowEnergyBondCallback store_le_bond_cb_;
   inspect::Inspector metrics_inspector_;
   PeerMetrics metrics_;
   inspect::Inspector peer_inspector_;
@@ -1023,6 +1035,20 @@ TEST_F(PeerTest, SettingInquiryDataOfBondedPeerDoesNotUpdateName) {
 
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(peer().name().value(), "alice");
+}
+
+TEST_F(PeerTest, LowEnergyStoreBondCallsCallback) {
+  int cb_count = 0;
+  set_store_le_bond_cb([&cb_count](const sm::PairingData& data) {
+    cb_count++;
+    return true;
+  });
+
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  EXPECT_TRUE(peer().MutLe().StoreBond(data));
+  EXPECT_EQ(cb_count, 1);
 }
 
 }  // namespace

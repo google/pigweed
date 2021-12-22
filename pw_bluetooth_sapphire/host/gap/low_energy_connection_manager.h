@@ -99,7 +99,6 @@ class LowEnergyConnectionManager final {
   void Connect(PeerId peer_id, ConnectionResultCallback callback,
                LowEnergyConnectionOptions connection_options);
 
-  PeerCache* peer_cache() { return peer_cache_; }
   hci::LocalAddressDelegate* local_address_delegate() const { return local_address_delegate_; }
 
   // Disconnects any existing or pending LE connection to |peer_id|, invalidating all

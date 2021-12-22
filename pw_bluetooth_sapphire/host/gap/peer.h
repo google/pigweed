@@ -50,14 +50,17 @@ class Peer final {
   };
   using NotifyListenersCallback = fit::function<void(const Peer&, NotifyListenersChange)>;
 
+  using StoreLowEnergyBondCallback = fit::function<bool(const sm::PairingData&)>;
+
   // Caller must ensure that callbacks are non-empty.
   // Note that the ctor is only intended for use by PeerCache.
   // Expanding access would a) violate the constraint that all Peers
   // are created through a PeerCache, and b) introduce lifetime issues
   // (do the callbacks outlive |this|?).
   Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
-       PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-       bool connectable, PeerMetrics* peer_metrics);
+       PeerCallback dual_mode_callback, StoreLowEnergyBondCallback store_le_bond_callback,
+       PeerId identifier, const DeviceAddress& address, bool connectable,
+       PeerMetrics* peer_metrics);
 
   // Connection state as considered by the GAP layer. This may not correspond
   // exactly with the presence or absence of a link at the link layer. For
@@ -210,8 +213,12 @@ class Peer final {
     void SetConnectionParameters(const hci_spec::LEConnectionParameters& value);
     void SetPreferredConnectionParameters(const hci_spec::LEPreferredConnectionParameters& value);
 
+    // Stores the bond in PeerCache, which updates the address map and calls SetBondData.
+    bool StoreBond(const sm::PairingData& bond_data);
+
     // Stores LE bonding data and makes this "bonded."
     // Marks as non-temporary if necessary.
+    // This should only be called by PeerCache.
     void SetBondData(const sm::PairingData& bond_data);
 
     // Removes any stored keys. Does not make the peer temporary, even if it
@@ -586,6 +593,7 @@ class Peer final {
   NotifyListenersCallback notify_listeners_callback_;
   PeerCallback update_expiry_callback_;
   PeerCallback dual_mode_callback_;
+  StoreLowEnergyBondCallback store_le_bond_callback_;
 
   StringInspectable<PeerId> identifier_;
   StringInspectable<TechnologyType> technology_;

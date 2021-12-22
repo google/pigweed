@@ -1217,7 +1217,8 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
   const bt::PeerId kPeerId(1);
   const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
   bt::gap::PeerMetrics metrics;
-  bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, kPeerId, kAddr,
+  bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, [](auto&) { return false; },
+                     kPeerId, kAddr,
                      /*connectable=*/true, &metrics);
   peer.SetName("name");
   const int8_t kRssi = 1;
@@ -1247,7 +1248,8 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithoutAdvertisingData) {
   const bt::PeerId kPeerId(1);
   const bt::DeviceAddress kAddr(bt::DeviceAddress::Type::kLEPublic, {1, 0, 0, 0, 0, 0});
   bt::gap::PeerMetrics metrics;
-  bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, kPeerId, kAddr,
+  bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, [](auto&) { return false; },
+                     kPeerId, kAddr,
                      /*connectable=*/true, &metrics);
 
   fble::Peer fidl_peer = PeerToFidlLe(peer);

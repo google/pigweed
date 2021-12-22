@@ -311,9 +311,11 @@ bool LowEnergyConnector::InitializeConnection(hci::ConnectionPtr link) {
   auto peer_disconnect_cb = fit::bind_member(this, &LowEnergyConnector::OnPeerDisconnect);
   auto error_cb = [this]() { NotifyFailure(); };
 
+  Peer* peer = peer_cache_->FindById(peer_id_);
+  ZX_ASSERT(peer);
   auto connection = std::make_unique<LowEnergyConnection>(
-      peer_id_, std::move(link), options_, peer_disconnect_cb, error_cb, le_connection_manager_,
-      l2cap_, gatt_, transport_);
+      peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb, error_cb,
+      le_connection_manager_, l2cap_, gatt_, transport_);
   if (*state_ == State::kFailed) {
     bt_log(WARN, "gap-le", "connection initialization failed (peer: %s)", bt_str(peer_id_));
     return false;

@@ -123,6 +123,8 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
 bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bond_data) {
   ZX_ASSERT(bond_data.irk.has_value() == bond_data.identity_address.has_value());
 
+  auto log_bond_failure = fit::defer([this] { peer_metrics_.LogLeBondFailureEvent(); });
+
   auto* peer = FindById(identifier);
   if (!peer) {
     bt_log(WARN, "gap-le", "failed to store bond for unknown peer (peer: %s)", bt_str(identifier));
@@ -173,6 +175,8 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
     NotifyPeerBonded(*peer);
   }
 
+  log_bond_failure.cancel();
+  peer_metrics_.LogLeBondSuccessEvent();
   return true;
 }
 
@@ -313,10 +317,15 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
     return nullptr;
   }
 
+  auto store_le_bond_cb = [this, identifier](const sm::PairingData& data) {
+    return StoreLowEnergyBond(identifier, data);
+  };
+
   std::unique_ptr<Peer> peer(new Peer(fit::bind_member(this, &PeerCache::NotifyPeerUpdated),
                                       fit::bind_member(this, &PeerCache::UpdateExpiry),
-                                      fit::bind_member(this, &PeerCache::MakeDualMode), identifier,
-                                      address, connectable, &peer_metrics_));
+                                      fit::bind_member(this, &PeerCache::MakeDualMode),
+                                      std::move(store_le_bond_cb), identifier, address, connectable,
+                                      &peer_metrics_));
   if (node_) {
     peer->AttachInspect(node_, node_.UniqueName("peer_"));
   }

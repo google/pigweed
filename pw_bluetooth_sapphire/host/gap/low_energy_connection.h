@@ -39,7 +39,7 @@ namespace internal {
 // event is received (as indicated by peer_disconnect_cb).
 class LowEnergyConnection final : public sm::Delegate {
  public:
-  // |peer_id| is the identifier of the peer that this connection is connected to.
+  // |peer| is the peer that this connection is connected to.
   // |link| is the underlying LE HCI connection that this connection corresponds to.
   // |peer_disconnect_cb| will be called when the peer disconnects.
   // |error_cb| will be called when a fatal connection error occurs and the connection should be
@@ -48,7 +48,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // |l2cap|, |gatt|, and |transport| are pointers to the interfaces of the corresponding layers.
   using PeerDisconnectCallback = fit::callback<void(hci_spec::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
-  LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
+  LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::Connection> link,
                       LowEnergyConnectionOptions connection_options,
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
@@ -113,7 +113,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   size_t ref_count() const { return refs_->size(); }
 
-  PeerId peer_id() const { return peer_id_; }
+  PeerId peer_id() const { return peer_->identifier(); }
   hci_spec::ConnectionHandle handle() const { return link_->handle(); }
   hci::Connection* link() const { return link_.get(); }
   sm::BondableMode bondable_mode() const {
@@ -251,7 +251,10 @@ class LowEnergyConnection final : public sm::Delegate {
                       ConfirmCallback confirm) override;
   void RequestPasskey(PasskeyResponseCallback respond) override;
 
-  PeerId peer_id_;
+  // Notifies Peer of connection destruction. This should be ordered first so that it is
+  // destroyed last.
+  std::optional<Peer::ConnectionToken> peer_conn_token_;
+
   fxl::WeakPtr<Peer> peer_;
   std::unique_ptr<hci::Connection> link_;
   LowEnergyConnectionOptions connection_options_;
@@ -310,9 +313,6 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Null until service discovery completes.
   std::optional<GenericAccessClient> gap_service_client_;
-
-  // Notifies Peer of connection destruction.
-  std::optional<Peer::ConnectionToken> peer_conn_token_;
 
   fxl::WeakPtrFactory<LowEnergyConnection> weak_ptr_factory_;
 
