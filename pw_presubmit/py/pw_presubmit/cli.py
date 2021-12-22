@@ -39,8 +39,13 @@ def add_path_arguments(parser) -> None:
         '-b',
         '--base',
         metavar='commit',
-        help=('Git revision against which to diff for changed files. '
-              'If none is provided, the entire repository is used.'))
+        help='Git revision against which to diff for changed files.')
+    parser.add_argument(
+        '--full',
+        dest='base',
+        action='store_const',
+        const=None,
+        help='Run presubmit on all files, not just changed files.')
     parser.add_argument(
         '-e',
         '--exclude',
