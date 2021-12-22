@@ -84,6 +84,17 @@ struct ACLDataHeader {
   uint16_t data_total_length;
 } __PACKED;
 
+struct SynchronousDataHeader {
+  // The first 16-bits contain the following fields, in order:
+  // - 12-bits: Connection Handle
+  // - 2-bits: Packet Status Flag
+  // - 2-bits: RFU
+  uint16_t handle_and_flags;
+
+  // Length of the data following the header.
+  uint8_t data_total_length;
+} __PACKED;
+
 // Generic return parameter struct for commands that only return a status. This
 // can also be used to check the status of HCI commands with more complex return
 // parameters.

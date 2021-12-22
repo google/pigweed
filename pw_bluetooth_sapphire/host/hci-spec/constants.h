@@ -1327,6 +1327,10 @@ constexpr size_t kMaxEventPacketPayloadSize = 255;
 // stack.
 constexpr size_t kMaxACLPayloadSize = 1024;
 
+// The maximum number of bytes in a HCI Synchronous Data packet payload.
+// This is based on the maximum value of the 1-byte Data_Total_Length field of a Synchronous Data packet.
+constexpr size_t kMaxSynchronousDataPacketPayloadSize = 255;
+
 // Values that can be used in HCI Read|WriteFlowControlMode commands.
 enum class FlowControlMode : uint8_t {
   // Packet based data flow control mode (default for a Primary Controller)
@@ -1350,6 +1354,15 @@ enum class ACLPacketBoundaryFlag : uint8_t {
 enum class ACLBroadcastFlag : uint8_t {
   kPointToPoint              = 0x00,
   kActivePeripheralBroadcast = 0x01,
+};
+
+// The Packet Status Flag is contained in bits 4 to 5 of the second octet of
+// a HCI Synchronous Data packet (Core Spec v5.2, Vol 4, Part E, Sec 5.4.3).
+enum class SynchronousDataPacketStatusFlag : uint8_t {
+  kCorrectlyReceived  = 0x00,
+  kPossiblyInvalid  = 0x01,
+  kNoDataReceived  = 0x02,
+  kDataPartiallyLost = 0x03,
 };
 
 // A connection role. Used for LE and BR/EDR connection roles.

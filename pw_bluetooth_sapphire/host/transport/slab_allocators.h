@@ -59,6 +59,7 @@ namespace bt::hci::slab_allocators {
 // usage.
 constexpr size_t kMaxControlSlabSize = 65536;  // 64K
 constexpr size_t kMaxACLSlabSize = 65536;      // 64K
+constexpr size_t kMaxScoSlabSize = 33024;      // exactly 128 max size SCO packets
 constexpr size_t kMaxNumSlabs = 100;
 
 // The largest possible control packet size.
@@ -88,6 +89,11 @@ constexpr size_t kSmallACLDataPayloadSize = 64;
 constexpr size_t kSmallACLDataPacketSize =
     sizeof(hci_spec::ACLDataHeader) + kSmallACLDataPayloadSize;
 constexpr size_t kNumSmallACLDataPackets = kMaxACLSlabSize / kSmallACLDataPacketSize;
+
+constexpr size_t kMaxScoDataPayloadSize = hci_spec::kMaxSynchronousDataPacketPayloadSize;
+constexpr size_t kMaxScoDataPacketSize =
+    sizeof(hci_spec::SynchronousDataHeader) + kMaxScoDataPayloadSize;
+constexpr size_t kNumMaxScoDataPackets = kMaxScoSlabSize / kMaxScoDataPacketSize;
 
 namespace internal {
 
