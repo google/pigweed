@@ -56,7 +56,7 @@ class BrEdrConnectionRequest final {
 
   void BeginIncoming() { has_incoming_.Set(true); }
   void CompleteIncoming() { has_incoming_.Set(false); }
-  bool HasIncoming() { return *has_incoming_; }
+  bool HasIncoming() const { return *has_incoming_; }
   bool AwaitingOutgoing() { return !callbacks_->empty(); }
 
   // Attach request inspect node as a child of |parent| named |name|.

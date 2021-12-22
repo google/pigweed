@@ -1134,36 +1134,19 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
 
 std::optional<BrEdrConnectionManager::CreateConnectionParams>
 BrEdrConnectionManager::NextCreateConnectionParams() {
-  if (connection_requests_.empty()) {
-    bt_log(TRACE, "gap-bredr", "no pending requests remaining");
-    return std::nullopt;
-  }
-
-  Peer* peer = nullptr;
-  // We use a rough heuristic of ordering likely connection requests by presence in the peer cache.
-  // If a peer is still in the cache, that implies it was seen more recently which is likely to
-  // correlate with being physically close and therefore still in range when we attempt to connect.
-  //
-  // So first try a request for which we have a peer struct:
-  for (auto& [identifier, request] : connection_requests_) {
-    const auto& addr = request.address();
-    peer = cache_->FindByAddress(addr);
-    if (peer && peer->bredr() && !request.HasIncoming())
-      return std::optional(CreateConnectionParams{peer->identifier(), addr,
+  for (auto& [peer_id, request] : connection_requests_) {
+    // The peer should still be in PeerCache because it was marked "initializing" when the
+    // connection was requested.
+    const Peer* peer = cache_->FindById(peer_id);
+    ZX_ASSERT(peer);
+    if (peer->bredr() && !request.HasIncoming()) {
+      return std::optional(CreateConnectionParams{peer->identifier(), request.address(),
                                                   peer->bredr()->clock_offset(),
                                                   peer->bredr()->page_scan_repetition_mode()});
-  }
-
-  // Otherwise, fall back to any other requests - it is entirely possible that while a connection is
-  // pending, discovery has ended and the peer which was intended to be connected to has timed out
-  // of the peer cache, but may still be in range and connectable.
-  for (auto& [identifier, request] : connection_requests_) {
-    if (!request.HasIncoming()) {
-      return std::optional(
-          CreateConnectionParams{identifier, request.address(), std::nullopt, std::nullopt});
     }
   }
-  // Finally, if we didn't find a connection request we could process at this time:
+
+  bt_log(TRACE, "gap-bredr", "no pending outbound connection requests remaining");
   return std::nullopt;
 }
 
