@@ -1170,6 +1170,8 @@ void FakeController::OnReadBufferSize() {
   std::memset(&params, 0, sizeof(params));
   params.hc_acl_data_packet_length = htole16(settings_.acl_data_packet_length);
   params.hc_total_num_acl_data_packets = settings_.total_num_acl_data_packets;
+  params.hc_synchronous_data_packet_length = htole16(settings_.synchronous_data_packet_length);
+  params.hc_total_num_synchronous_data_packets = settings_.total_num_synchronous_data_packets;
   RespondWithCommandComplete(hci_spec::kReadBufferSize, BufferView(&params, sizeof(params)));
 }
 

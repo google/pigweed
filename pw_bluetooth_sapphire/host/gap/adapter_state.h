@@ -72,6 +72,9 @@ class AdapterState final {
   // Returns the BR/EDR ACL data buffer capacity.
   const hci::DataBufferInfo& bredr_data_buffer_info() const { return bredr_data_buffer_info_; }
 
+  // Returns the SCO buffer capacity.
+  const hci::DataBufferInfo& sco_buffer_info() const { return sco_buffer_info_; }
+
   // Returns the BR/EDR local name
   const std::string local_name() const { return local_name_; }
 
@@ -104,6 +107,9 @@ class AdapterState final {
   // The BR/EDR ACL data buffer size. We store this here as it is needed on
   // dual-mode controllers even if the host stack is compiled for LE-only.
   hci::DataBufferInfo bredr_data_buffer_info_;
+
+  // The SCO buffer size.
+  hci::DataBufferInfo sco_buffer_info_;
 
   // BLE-specific state.
   LowEnergyState le_state_;

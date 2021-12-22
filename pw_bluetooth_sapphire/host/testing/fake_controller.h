@@ -76,6 +76,8 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
     uint8_t total_num_acl_data_packets;
     uint16_t le_acl_data_packet_length;
     uint8_t le_total_num_acl_data_packets;
+    uint16_t synchronous_data_packet_length;
+    uint8_t total_num_synchronous_data_packets;
   };
 
   // Current device low energy scan state.

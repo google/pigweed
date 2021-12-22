@@ -24,6 +24,8 @@ adapter:
     bredr_max_data_length
     le_max_num_packets
     le_max_data_length
+    sco_max_num_packets
+    sco_max_data_length
     lmp_features
     le_features
     acl_data_channel:

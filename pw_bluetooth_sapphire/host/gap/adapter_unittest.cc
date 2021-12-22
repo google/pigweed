@@ -894,9 +894,12 @@ TEST_F(AdapterTest, InspectHierarchy) {
   // Return valid buffer information and enable LE support. (This should
   // succeed).
   FakeController::Settings settings;
+  settings.AddBREDRSupportedCommands();
   settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
+  settings.synchronous_data_packet_length = 6;
+  settings.total_num_synchronous_data_packets = 2;
   test_device()->set_settings(settings);
 
   InitializeAdapter(std::move(init_cb));
@@ -940,6 +943,8 @@ TEST_F(AdapterTest, InspectHierarchy) {
                      adapter()->state().low_energy_state().data_buffer_info().max_num_packets()),
               UintIs("le_max_data_length",
                      adapter()->state().low_energy_state().data_buffer_info().max_data_length()),
+              UintIs("sco_max_num_packets", adapter()->state().sco_buffer_info().max_num_packets()),
+              UintIs("sco_max_data_length", adapter()->state().sco_buffer_info().max_data_length()),
               StringIs("lmp_features", adapter()->state().features().ToString()),
               StringIs(
                   "le_features",
@@ -1102,6 +1107,33 @@ TEST_F(AdapterConstructorTest, GattCallbacks) {
 
   auto persisted_data_4 = gatt_->CallRetrieveServiceChangedCCCCallback(le_peer_id);
   EXPECT_EQ(persisted_data_4, std::nullopt);
+}
+
+TEST_F(AdapterTest, BufferSizesRecordedInState) {
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+
+  FakeController::Settings settings;
+  // Enable ReadBuffer commands.
+  settings.AddBREDRSupportedCommands();
+  settings.AddLESupportedCommands();
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.le_acl_data_packet_length = 1;
+  settings.le_total_num_acl_data_packets = 2;
+  settings.acl_data_packet_length = 3;
+  settings.total_num_acl_data_packets = 4;
+  settings.synchronous_data_packet_length = 5;
+  settings.total_num_synchronous_data_packets = 6;
+  test_device()->set_settings(settings);
+
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_EQ(adapter()->state().low_energy_state().data_buffer_info().max_data_length(), 1u);
+  EXPECT_EQ(adapter()->state().low_energy_state().data_buffer_info().max_num_packets(), 2u);
+  EXPECT_EQ(adapter()->state().bredr_data_buffer_info().max_data_length(), 3u);
+  EXPECT_EQ(adapter()->state().bredr_data_buffer_info().max_num_packets(), 4u);
+  EXPECT_EQ(adapter()->state().sco_buffer_info().max_data_length(), 5u);
+  EXPECT_EQ(adapter()->state().sco_buffer_info().max_num_packets(), 6u);
 }
 
 }  // namespace

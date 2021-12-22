@@ -331,6 +331,8 @@ class AdapterImpl final : public Adapter {
     inspect::UintProperty bredr_max_data_length;
     inspect::UintProperty le_max_num_packets;
     inspect::UintProperty le_max_data_length;
+    inspect::UintProperty sco_max_num_packets;
+    inspect::UintProperty sco_max_data_length;
     inspect::StringProperty lmp_features;
     inspect::StringProperty le_features;
   };
@@ -714,10 +716,15 @@ void AdapterImpl::InitializeStep2(InitializeCallback callback) {
             return;
           }
           auto params = cmd_complete.return_params<hci_spec::ReadBufferSizeReturnParams>();
-          uint16_t mtu = le16toh(params->hc_acl_data_packet_length);
-          uint16_t max_count = le16toh(params->hc_total_num_acl_data_packets);
-          if (mtu && max_count) {
-            state_.bredr_data_buffer_info_ = hci::DataBufferInfo(mtu, max_count);
+          uint16_t acl_mtu = le16toh(params->hc_acl_data_packet_length);
+          uint16_t acl_max_count = le16toh(params->hc_total_num_acl_data_packets);
+          if (acl_mtu && acl_max_count) {
+            state_.bredr_data_buffer_info_ = hci::DataBufferInfo(acl_mtu, acl_max_count);
+          }
+          uint16_t sco_mtu = le16toh(params->hc_synchronous_data_packet_length);
+          uint16_t sco_max_count = le16toh(params->hc_total_num_synchronous_data_packets);
+          if (sco_mtu && sco_max_count) {
+            state_.sco_buffer_info_ = hci::DataBufferInfo(sco_mtu, sco_max_count);
           }
         });
   }
@@ -1032,6 +1039,11 @@ void AdapterImpl::UpdateInspectProperties() {
       "le_max_num_packets", state_.low_energy_state().data_buffer_info().max_num_packets());
   inspect_properties_.le_max_data_length = adapter_node_.CreateUint(
       "le_max_data_length", state_.low_energy_state().data_buffer_info().max_data_length());
+
+  inspect_properties_.sco_max_num_packets =
+      adapter_node_.CreateUint("sco_max_num_packets", state_.sco_buffer_info().max_num_packets());
+  inspect_properties_.sco_max_data_length =
+      adapter_node_.CreateUint("sco_max_data_length", state_.sco_buffer_info().max_data_length());
 
   inspect_properties_.lmp_features =
       adapter_node_.CreateString("lmp_features", state_.features().ToString());
