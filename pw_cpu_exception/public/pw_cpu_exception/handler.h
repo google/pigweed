@@ -13,14 +13,11 @@
 // the License.
 #pragma once
 
+#include "pw_cpu_exception/state.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
 PW_EXTERN_C_START
-
-// Forward declaration of pw_cpu_exception_State. Definition provided by cpu
-// exception entry backend.
-struct pw_cpu_exception_State;
 
 // By default, the exception entry function will terminate by handing execution
 // over to pw_cpu_exception_DefaultHandler(). This can be used to override the

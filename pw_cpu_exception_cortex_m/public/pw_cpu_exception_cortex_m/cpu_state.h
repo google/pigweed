@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#ifdef __cplusplus
+
 #include <cstdint>
 
 #include "pw_preprocessor/compiler.h"
@@ -106,3 +108,9 @@ PW_PACKED(struct) pw_cpu_exception_State {
   // availability of the FPU registers a compile-time configuration when FPU
   // register support is added.
 };
+
+#else  // !__cplusplus
+
+typedef struct pw_cpu_exception_State pw_cpu_exception_State;
+
+#endif  // __cplusplus
