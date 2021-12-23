@@ -25,3 +25,8 @@
 
 // The maximum allowed length of a target name.
 #define MAX_TARGET_NAME_LENGTH 32
+
+// Not recommended. Disable compilation of bundle verification.
+#ifndef PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
+#define PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION (false)
+#endif  // PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION

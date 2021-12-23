@@ -474,6 +474,11 @@ Status UpdateBundleAccessor::DoOpen() {
 }
 
 Status UpdateBundleAccessor::DoVerify() {
+#if PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
+  PW_LOG_WARN("Update bundle verification is disabled.");
+  bundle_verified_ = true;
+  return OkStatus();
+#else   // PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
   bundle_verified_ = false;
   if (disable_verification_) {
     PW_LOG_WARN("Update bundle verification is disabled.");
@@ -498,6 +503,7 @@ Status UpdateBundleAccessor::DoVerify() {
 
   bundle_verified_ = true;
   return OkStatus();
+#endif  // PW_SOFTWARE_UPDATE_DISABLE_BUNDLE_VERIFICATION
 }
 
 protobuf::Message UpdateBundleAccessor::GetOnDeviceTrustedRoot() {
