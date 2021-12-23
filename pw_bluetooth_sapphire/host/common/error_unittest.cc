@@ -208,6 +208,16 @@ TEST(ErrorTest, ToResultFromLegacyStatusType) {
             ToResult(Status<TestError>(HostError::kCanceled)));
 }
 
+TEST(ErrorTest, ToResultFromBtError) {
+  fitx::result<Error<TestError>, int> error_with_value = fitx::error(MakeError(TestError::kFail1));
+
+  // Note that ToResult is unnecessary here. |fitx::error(error_with_value.error_value())| can be
+  // used to construct a fitx::result. This test ensures that ToResult doesn't produce unexpected
+  // behavior.
+  const fitx::result<Error<TestError>> result = ToResult(std::move(error_with_value).error_value());
+  EXPECT_EQ(ToResult(TestError::kFail1), result);
+}
+
 TEST(ErrorTest, ToResultFromTakeError) {
   fitx::result<Error<TestError>, int> error_with_value = fitx::error(MakeError(TestError::kFail1));
 

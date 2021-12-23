@@ -56,6 +56,15 @@ template <typename ProtocolErrorCode>
   return fitx::error(Error(std::move(proto_error)));
 }
 
+// Create a fitx::result<Error<…>> from an Error.
+// This overload takes precedence over the ToResult(ProtocolErrorCode) in order to avoid creating
+// fitx::result<Error<Error<…>> types.
+template <typename ProtocolErrorCode>
+[[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(
+    Error<ProtocolErrorCode> error) {
+  return fitx::error(std::move(error));
+}
+
 // Create a fitx::result<Error<…>> from a wrapped protocol error.
 // This is used when calling, for example
 //   fitx::result<Error<…>, int> result = …;
