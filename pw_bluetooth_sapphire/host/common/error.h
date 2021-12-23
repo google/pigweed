@@ -53,7 +53,18 @@ template <typename ProtocolErrorCode>
   if (ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error)) {
     return fitx::success();
   }
-  return fitx::error(Error(proto_error));
+  return fitx::error(Error(std::move(proto_error)));
+}
+
+// Create a fitx::result<Error<…>> from a wrapped protocol error.
+// This is used when calling, for example
+//   fitx::result<Error<…>, int> result = …;
+//   fitx::result error_without_value = ToResult(result.take_error());
+// which extracts the error from |result| into a new variable that does not hold a success value.
+template <typename ProtocolErrorCode>
+[[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(
+    fitx::error<Error<ProtocolErrorCode>> result) {
+  return result;
 }
 
 // TODO(fxbug.dev/86900): Remove this alongside bt::Status
