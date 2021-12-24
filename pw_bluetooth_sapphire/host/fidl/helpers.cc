@@ -441,7 +441,7 @@ fuchsia::bluetooth::gatt2::Error AttStatusToGattFidlError(bt::Status<bt::att::Er
   ZX_ASSERT(!status.is_success());
   switch (status.error()) {
     case bt::HostError::kPacketMalformed:
-      return fuchsia::bluetooth::gatt2::Error::INVALID_RESPONSE;
+      return fuchsia::bluetooth::gatt2::Error::INVALID_PDU;
     case bt::HostError::kInvalidParameters:
       return fuchsia::bluetooth::gatt2::Error::INVALID_PARAMETERS;
     case bt::HostError::kProtocolError:
@@ -459,10 +459,10 @@ fuchsia::bluetooth::gatt2::Error AttStatusToGattFidlError(bt::Status<bt::att::Er
         case bt::att::ErrorCode::kInvalidHandle:
           return fuchsia::bluetooth::gatt2::Error::INVALID_HANDLE;
         default:
-          return fuchsia::bluetooth::gatt2::Error::FAILURE;
+          return fuchsia::bluetooth::gatt2::Error::UNLIKELY_ERROR;
       }
     default:
-      return fuchsia::bluetooth::gatt2::Error::FAILURE;
+      return fuchsia::bluetooth::gatt2::Error::UNLIKELY_ERROR;
   }
 }
 

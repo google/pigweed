@@ -254,7 +254,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
   ASSERT_TRUE(fidl_result.has_value());
   ASSERT_TRUE(fidl_result->is_err());
   const auto& err = fidl_result->err();
-  EXPECT_EQ(fbg::Error::FAILURE, err);
+  EXPECT_EQ(fbg::Error::UNLIKELY_ERROR, err);
 }
 
 TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeInvalidUuid) {
@@ -424,7 +424,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadCharacteristicFailure) {
   RunLoopUntilIdle();
   ASSERT_TRUE(fidl_result.has_value());
   ASSERT_TRUE(fidl_result->is_error());
-  EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
+  EXPECT_EQ(fidl_result->error(), fbg::Error::UNLIKELY_ERROR);
 }
 
 TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadShortDescriptor) {
@@ -554,7 +554,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadDescriptorFailure) {
   RunLoopUntilIdle();
   ASSERT_TRUE(fidl_result.has_value());
   ASSERT_TRUE(fidl_result->is_error());
-  EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
+  EXPECT_EQ(fidl_result->error(), fbg::Error::UNLIKELY_ERROR);
 }
 
 TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicHandleTooLarge) {
@@ -664,7 +664,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponseValueTooL
   EXPECT_EQ(write_count, 1);
   ASSERT_TRUE(fidl_result.has_value());
   ASSERT_TRUE(fidl_result->is_error());
-  EXPECT_EQ(fidl_result->error(), fbg::Error::FAILURE);
+  EXPECT_EQ(fidl_result->error(), fbg::Error::UNLIKELY_ERROR);
 }
 
 TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristic) {

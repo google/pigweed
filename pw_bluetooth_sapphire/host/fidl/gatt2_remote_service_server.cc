@@ -171,7 +171,7 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
             cb(fpromise::error(fbg::Error::INVALID_PARAMETERS));
             return;
           default:
-            cb(fpromise::error(fbg::Error::FAILURE));
+            cb(fpromise::error(fbg::Error::UNLIKELY_ERROR));
             return;
         }
 

@@ -109,11 +109,11 @@ TEST(HelpersTest, GattStatusToFidl) {
 
 TEST(HelpersTest, AttStatusToGattFidlError) {
   // Host errors
-  EXPECT_EQ(fbg2::Error::INVALID_RESPONSE,
+  EXPECT_EQ(fbg2::Error::INVALID_PDU,
             AttStatusToGattFidlError(bt::att::Status(bt::HostError::kPacketMalformed)));
   EXPECT_EQ(fbg2::Error::INVALID_PARAMETERS,
             AttStatusToGattFidlError(bt::att::Status(bt::HostError::kInvalidParameters)));
-  EXPECT_EQ(fbg2::Error::FAILURE,
+  EXPECT_EQ(fbg2::Error::UNLIKELY_ERROR,
             AttStatusToGattFidlError(bt::att::Status(bt::HostError::kTimedOut)));
 
   // Protocol errors
@@ -132,7 +132,7 @@ TEST(HelpersTest, AttStatusToGattFidlError) {
             AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kReadNotPermitted)));
   EXPECT_EQ(fbg2::Error::INVALID_HANDLE,
             AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kInvalidHandle)));
-  EXPECT_EQ(fbg2::Error::FAILURE,
+  EXPECT_EQ(fbg2::Error::UNLIKELY_ERROR,
             AttStatusToGattFidlError(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
 }
 
