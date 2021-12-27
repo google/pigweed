@@ -86,10 +86,10 @@ traitlets==5.1.1
 types-docutils==0.17.1
 types-futures==3.3.1
 types-protobuf==3.18.2
-types-Pygments==2.9.6
+types-Pygments==2.9.7
 types-PyYAML==6.0.1
 types-setuptools==57.4.4
-types-six==1.16.3
+types-six==1.16.4
 typing_extensions==4.0.1
 urllib3==1.26.7
 watchdog==2.1.6
