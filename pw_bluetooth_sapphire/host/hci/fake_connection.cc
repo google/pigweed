@@ -13,9 +13,9 @@ FakeConnection::FakeConnection(hci_spec::ConnectionHandle handle, bt::LinkType l
       conn_state_(State::kConnected),
       weak_ptr_factory_(this) {}
 
-void FakeConnection::TriggerEncryptionChangeCallback(Status status, bool enabled) {
+void FakeConnection::TriggerEncryptionChangeCallback(hci::Result<bool> result) {
   ZX_DEBUG_ASSERT(encryption_change_callback());
-  encryption_change_callback()(status, enabled);
+  encryption_change_callback()(result);
 }
 
 fxl::WeakPtr<Connection> FakeConnection::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }

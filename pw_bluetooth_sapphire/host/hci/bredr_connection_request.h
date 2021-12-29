@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
 
@@ -47,7 +47,7 @@ constexpr hci_spec::PacketTypeType kEnableAllPacketTypes =
 // BrEdrConnectionManager
 class BrEdrConnectionRequest final {
  public:
-  using OnCompleteDelegate = fit::function<void(Status, PeerId)>;
+  using OnCompleteDelegate = fit::function<void(Result<>, PeerId)>;
 
   BrEdrConnectionRequest(PeerId id, DeviceAddress addr, fit::closure timeout_cb)
       : state_(RequestState::kPending),
@@ -77,7 +77,7 @@ class BrEdrConnectionRequest final {
   // Complete the request, either successfully or not, and return the status
   // of the Request - In the case of Timeout or Cancellation, this will be
   // different from the status sent by the controller.
-  Status CompleteRequest(Status status);
+  Result<> CompleteRequest(Result<> status);
 
   // Mark the request as Timed out; triggered when the command timeout runs out
   // and called by BrEdrConnectionManager;

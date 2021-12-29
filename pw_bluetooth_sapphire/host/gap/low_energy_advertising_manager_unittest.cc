@@ -11,6 +11,7 @@
 
 #include <fbl/macros.h>
 
+#include "lib/fitx/internal/result.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -19,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt {
 using testing::FakeController;
@@ -65,18 +67,18 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                         const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
                         ConnectionCallback connect_callback,
-                        hci::StatusCallback callback) override {
-    if (!pending_error_) {
+                        hci::ResultFunction<> callback) override {
+    if (pending_error_.is_error()) {
       callback(pending_error_);
-      pending_error_ = hci::Status();
+      pending_error_ = fitx::ok();
       return;
     }
     if (data.CalculateBlockSize(/*include_flags=*/true) > max_ad_size_) {
-      callback(hci::Status(HostError::kInvalidParameters));
+      callback(ToResult(HostError::kInvalidParameters));
       return;
     }
     if (scan_rsp.CalculateBlockSize(/*include_flags=*/false) > max_ad_size_) {
-      callback(hci::Status(HostError::kInvalidParameters));
+      callback(ToResult(HostError::kInvalidParameters));
       return;
     }
     AdvertisementStatus new_status;
@@ -87,7 +89,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     new_status.interval_max = adv_options.interval.max();
     new_status.anonymous = adv_options.anonymous;
     ads_->emplace(address, std::move(new_status));
-    callback(hci::Status());
+    callback(fitx::ok());
   }
 
   void StopAdvertising(const DeviceAddress& address) override { ads_->erase(address); }
@@ -108,7 +110,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   // Sets this faker up to send an error back from the next StartAdvertising
   // call. Set to success to disable a previously called error.
-  void ErrorOnNext(hci::Status error_status) { pending_error_ = error_status; }
+  void ErrorOnNext(hci::Result<> error_status) { pending_error_ = error_status; }
 
  private:
   std::unique_ptr<hci::CommandPacket> BuildEnablePacket(
@@ -151,7 +153,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   size_t max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
-  hci::Status pending_error_;
+  hci::Result<> pending_error_ = fitx::ok();
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
 };
@@ -192,17 +194,17 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   }
 
   LowEnergyAdvertisingManager::AdvertisingStatusCallback GetErrorCallback() {
-    return [this](AdvertisementInstance instance, hci::Status status) {
+    return [this](AdvertisementInstance instance, hci::Result<> status) {
       EXPECT_EQ(kInvalidAdvertisementId, instance.id());
-      EXPECT_FALSE(status);
+      EXPECT_TRUE(status.is_error());
       last_status_ = status;
     };
   }
 
   LowEnergyAdvertisingManager::AdvertisingStatusCallback GetSuccessCallback() {
-    return [this](AdvertisementInstance instance, hci::Status status) {
+    return [this](AdvertisementInstance instance, hci::Result<> status) {
       EXPECT_NE(kInvalidAdvertisementId, instance.id());
-      EXPECT_TRUE(status);
+      EXPECT_TRUE(status.is_ok());
       last_instance_ = std::move(instance);
       last_status_ = status;
     };
@@ -233,7 +235,7 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
 
   // Returns and clears the last callback status. This resets the state to
   // detect another callback.
-  const std::optional<hci::Status> MoveLastStatus() { return std::move(last_status_); }
+  const std::optional<hci::Result<>> MoveLastStatus() { return std::move(last_status_); }
 
   FakeLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
@@ -245,7 +247,7 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   // layering issues have been fixed.
   std::unordered_map<DeviceAddress, AdvertisementStatus> ad_store_;
   AdvertisementInstance last_instance_;
-  std::optional<hci::Status> last_status_;
+  std::optional<hci::Result<>> last_status_;
   std::unique_ptr<FakeLowEnergyAdvertiser> advertiser_;
   std::unique_ptr<LowEnergyAdvertisingManager> adv_mgr_;
 
@@ -318,7 +320,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, RegisterUnregister) {
 
 //  - When the advertiser returns an error, we return an error
 TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
-  advertiser()->ErrorOnNext(hci::Status(hci_spec::kInvalidHCICommandParameters));
+  advertiser()->ErrorOnNext(ToResult(hci_spec::kInvalidHCICommandParameters));
 
   EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
@@ -477,7 +479,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
                                 AdvertisingInterval::FAST1, /*anonymous=*/false,
                                 /*include_tx_power_level*/ false,
                                 [&](AdvertisementInstance i, auto status) {
-                                  ASSERT_TRUE(status);
+                                  ASSERT_TRUE(status.is_ok());
                                   instance = std::move(i);
                                 });
     RunLoopUntilIdle();
@@ -496,7 +498,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
                               AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level*/ false,
                               [&](AdvertisementInstance i, auto status) {
-                                ASSERT_TRUE(status);
+                                ASSERT_TRUE(status.is_ok());
                                 instance = std::move(i);
                               });
   RunLoopUntilIdle();
@@ -514,7 +516,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAdvert
                               AdvertisingInterval::FAST1, /*anonymous=*/false,
                               /*include_tx_power_level*/ false,
                               [&](AdvertisementInstance i, auto status) {
-                                ASSERT_TRUE(status);
+                                ASSERT_TRUE(status.is_ok());
                                 *instance = std::move(i);
                               });
   RunLoopUntilIdle();

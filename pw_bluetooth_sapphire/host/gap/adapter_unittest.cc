@@ -270,15 +270,14 @@ TEST_F(AdapterTest, SetNameError) {
                                           hci_spec::StatusCode::kHardwareFailure);
   ASSERT_TRUE(EnsureInitialized());
 
-  hci::Status result;
+  hci::Result<> result = fitx::ok();
   auto name_cb = [&result](const auto& status) { result = status; };
 
   adapter()->SetLocalName(kNewName, name_cb);
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(result);
-  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, result.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), result);
 }
 
 TEST_F(AdapterTest, SetNameSuccess) {
@@ -289,13 +288,13 @@ TEST_F(AdapterTest, SetNameSuccess) {
   test_device()->set_settings(settings);
   ASSERT_TRUE(EnsureInitialized());
 
-  hci::Status result;
+  hci::Result<> result = ToResult(HostError::kFailed);
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(kNewName, name_cb);
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(result);
+  EXPECT_TRUE(result.is_ok());
   EXPECT_EQ(kNewName, test_device()->local_name());
 }
 
@@ -309,13 +308,13 @@ TEST_F(AdapterTest, SetNameLargerThanMax) {
   test_device()->set_settings(settings);
   ASSERT_TRUE(EnsureInitialized());
 
-  hci::Status result;
+  hci::Result<> result = ToResult(HostError::kFailed);
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(long_name, name_cb);
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(result);
+  EXPECT_TRUE(result.is_ok());
   EXPECT_EQ(long_name, adapter()->state().local_name());
 }
 
@@ -329,13 +328,13 @@ TEST_F(AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
   ASSERT_TRUE(EnsureInitialized());
   ASSERT_TRUE(adapter()->bredr());
 
-  hci::Status result;
+  hci::Result<> result = ToResult(HostError::kFailed);
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(kNewName, name_cb);
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(result);
+  EXPECT_TRUE(result.is_ok());
   EXPECT_EQ(kNewName, adapter()->state().local_name());
   EXPECT_EQ(kNewName, adapter()->local_name());
 }
@@ -351,13 +350,13 @@ TEST_F(AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
   ASSERT_TRUE(EnsureInitialized());
   EXPECT_TRUE(adapter()->bredr());
 
-  hci::Status result;
+  hci::Result<> result = ToResult(HostError::kFailed);
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(long_name, name_cb);
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(result);
+  EXPECT_TRUE(result.is_ok());
   // Both the adapter & discovery manager local name should be the original (untruncated) name.
   EXPECT_EQ(long_name, adapter()->state().local_name());
   EXPECT_EQ(long_name, adapter()->local_name());
@@ -375,7 +374,7 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
                                           hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
   ASSERT_TRUE(EnsureInitialized());
 
-  hci::Status result;
+  hci::Result<> result = fitx::ok();
   auto name_cb = [&result](const auto& status) { result = status; };
 
   adapter()->SetLocalName(kNewName, name_cb);
@@ -383,8 +382,7 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
   RunLoopUntilIdle();
 
   // kWriteLocalName will succeed, but kWriteExtendedInquiryResponse will fail
-  EXPECT_FALSE(result);
-  EXPECT_EQ(hci_spec::StatusCode::kConnectionTerminatedByLocalHost, result.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionTerminatedByLocalHost), result);
   // The |local_name_| should not be set.
   EXPECT_NE(kNewName, adapter()->state().local_name());
   EXPECT_NE(kNewName, adapter()->local_name());
@@ -523,9 +521,9 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   InitializeAdapter([](bool) {});
 
   AdvertisementInstance instance;
-  auto adv_cb = [&](auto i, hci::Status status) {
+  auto adv_cb = [&](auto i, hci::Result<> status) {
     instance = std::move(i);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   };
 
   // Advertising should use the public address by default.
@@ -671,7 +669,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref;
   auto connect_cb = [&conn_ref](auto result) {
     ASSERT_TRUE(result.is_ok());
-    conn_ref = result.take_value();
+    conn_ref = std::move(result).value();
   };
 
   // A connection request should use the public address by default.
@@ -744,7 +742,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   auto connect_cb = [&error, &connect_cb_calls](auto result) {
     connect_cb_calls++;
     ASSERT_TRUE(result.is_error());
-    error = result.error();
+    error = result.error_value();
   };
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
@@ -813,7 +811,7 @@ TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref;
   auto connect_cb = [&](auto result) {
     ASSERT_TRUE(result.is_ok());
-    conn_ref = result.take_value();
+    conn_ref = std::move(result).value();
     ASSERT_TRUE(conn_ref);
   };
 
@@ -850,7 +848,7 @@ TEST_F(AdapterTest, IsDiscoverableLowEnergy) {
                                     AdvertisingInterval::FAST1, /*anonymous=*/false,
                                     /*include_tx_power_level=*/false, /*connectable=*/std::nullopt,
                                     [&](AdvertisementInstance i, auto status) {
-                                      ASSERT_TRUE(status);
+                                      ASSERT_TRUE(status.is_ok());
                                       instance = std::move(i);
                                     });
   RunLoopUntilIdle();
@@ -982,9 +980,9 @@ TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) 
   InitializeAdapter([](bool) {});
 
   AdvertisementInstance instance;
-  auto adv_cb = [&](auto i, hci::Status status) {
+  auto adv_cb = [&](auto i, hci::Result<> status) {
     instance = std::move(i);
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   };
 
   std::optional<Adapter::LowEnergy::ConnectionResult> conn_result;
@@ -1020,7 +1018,7 @@ TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result);
   ASSERT_TRUE(conn_result->is_ok());
-  std::unique_ptr<LowEnergyConnectionHandle> conn_handle = conn_result->take_value();
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle = std::move(*conn_result).value();
   ASSERT_TRUE(conn_handle);
   EXPECT_EQ(conn_handle->bondable_mode(), sm::BondableMode::NonBondable);
   EXPECT_EQ(*conn_cb_advertisement_id, instance.id());

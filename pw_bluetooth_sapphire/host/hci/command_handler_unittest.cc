@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
@@ -21,12 +22,12 @@ constexpr uint8_t kTestEventParam = 3u;
 template <bool DecodeSucceeds>
 struct TestEvent {
   uint8_t test_param;
-  static fpromise::result<TestEvent, HostError> Decode(const EventPacket& packet) {
+  static fitx::result<bt::Error<NoProtocolError>, TestEvent> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fpromise::error(HostError::kPacketMalformed);
+      return ToResult(HostError::kPacketMalformed).take_error();
     }
 
-    return fpromise::ok(TestEvent{.test_param = kTestEventParam});
+    return fitx::ok(TestEvent{.test_param = kTestEventParam});
   }
 
   static constexpr hci_spec::EventCode kEventCode = hci_spec::kInquiryCompleteEventCode;
@@ -45,12 +46,13 @@ template <bool DecodeSucceeds>
 struct TestCommandCompleteEvent {
   uint8_t test_param;
 
-  static fpromise::result<TestCommandCompleteEvent, HostError> Decode(const EventPacket& packet) {
+  static fitx::result<bt::Error<NoProtocolError>, TestCommandCompleteEvent> Decode(
+      const EventPacket& packet) {
     if (!DecodeSucceeds) {
-      return fpromise::error(HostError::kPacketMalformed);
+      return ToResult(HostError::kPacketMalformed).take_error();
     }
 
-    return fpromise::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
+    return fitx::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
   }
 
   static constexpr hci_spec::EventCode kEventCode = hci_spec::kCommandCompleteEventCode;
@@ -121,30 +123,30 @@ TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
       testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kCommandDisallowed);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
-  std::optional<Status> status;
-  handler().SendCommand(kTestCommandWithCommandCompleteEvent, [&status](auto result) {
+  std::optional<hci::Error> error;
+  handler().SendCommand(kTestCommandWithCommandCompleteEvent, [&error](auto result) {
     ASSERT_TRUE(result.is_error());
-    status = result.error();
+    error = std::move(result).error_value();
   });
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(status.value(), Status(hci_spec::StatusCode::kCommandDisallowed));
+  ASSERT_TRUE(error.has_value());
+  EXPECT_TRUE(error->is(hci_spec::StatusCode::kCommandDisallowed));
 }
 
 TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
   const auto kEventPacket = testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
-  std::optional<Status> status;
-  handler().SendCommand(kTestCommandWithUndecodableCommandCompleteEvent, [&status](auto result) {
+  std::optional<hci::Error> error;
+  handler().SendCommand(kTestCommandWithUndecodableCommandCompleteEvent, [&error](auto result) {
     ASSERT_TRUE(result.is_error());
-    status = result.error();
+    error = std::move(result).error_value();
   });
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(status.has_value());
-  EXPECT_EQ(status.value(), Status(HostError::kPacketMalformed));
+  ASSERT_TRUE(error.has_value());
+  EXPECT_TRUE(error->is(HostError::kPacketMalformed));
 }
 
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {

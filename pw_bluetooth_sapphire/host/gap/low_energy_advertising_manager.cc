@@ -107,7 +107,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
   // Can't be anonymous and connectable
   if (anonymous && connect_callback) {
     bt_log(DEBUG, "gap-le", "can't advertise anonymously and connectable!");
-    status_callback(AdvertisementInstance(), hci::Status(HostError::kInvalidParameters));
+    status_callback(AdvertisementInstance(), ToResult(HostError::kInvalidParameters));
     return;
   }
 
@@ -156,12 +156,12 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
           };
         }
         auto status_cb_wrapper = [self, ad_ptr = std::move(ad_ptr),
-                                  status_cb = std::move(status_cb)](hci::Status status) mutable {
+                                  status_cb = std::move(status_cb)](hci::Result<> status) mutable {
           if (!self) {
             return;
           }
 
-          if (!status) {
+          if (status.is_error()) {
             status_cb(AdvertisementInstance(), status);
             return;
           }

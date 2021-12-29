@@ -16,8 +16,7 @@ namespace bt::gap::internal {
 
 class LowEnergyConnector final {
  public:
-  using ResultCallback =
-      fit::callback<void(fpromise::result<std::unique_ptr<LowEnergyConnection>, hci::Status>)>;
+  using ResultCallback = fit::callback<void(hci::Result<std::unique_ptr<LowEnergyConnection>>)>;
 
   // Initiate an outbound connection to |peer_id|. |cb| will be called with the result of the
   // procedure.
@@ -78,14 +77,14 @@ class LowEnergyConnector final {
 
   // Initiate HCI connection procedure.
   void RequestCreateConnection();
-  void OnConnectResult(hci::Status status, hci::ConnectionPtr link);
+  void OnConnectResult(hci::Result<> status, hci::ConnectionPtr link);
 
   // Creates LowEnergyConnection and initializes fixed channels & timers.
   // Returns true on success, false on failure.
   bool InitializeConnection(hci::ConnectionPtr link);
 
   void StartInterrogation();
-  void OnInterrogationComplete(hci::Status status);
+  void OnInterrogationComplete(hci::Result<> status);
 
   // Handle a disconnect during kInterrogating or
   // kAwaitingConnectionFailedToBeEstablishedDisconnect.
@@ -105,7 +104,7 @@ class LowEnergyConnector final {
   bool MaybeRetryConnection();
 
   void NotifySuccess();
-  void NotifyFailure(hci::Status status = hci::Status(HostError::kFailed));
+  void NotifyFailure(hci::Result<> status = ToResult(HostError::kFailed));
 
   StringInspectable<State> state_;
 

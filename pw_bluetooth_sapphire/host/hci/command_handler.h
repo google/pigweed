@@ -6,11 +6,11 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_HANDLER_H_
 
 #include <lib/fit/defer.h>
-#include <lib/fpromise/result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
@@ -39,12 +39,11 @@ class CommandHandler {
   // static OpCode opcode();
   //
   // EventT must implement:
-  // static fpromise::result<EventT, HostError> Decode(const EventPacket& packet);
+  // static fitx::result<bt::Error<NoProtocolError>, EventT> Decode(const EventPacket& packet);
   // static constexpr uint8_t kEventCode = ...;
   template <typename CommandT>
   CommandChannel::TransactionId SendCommand(
-      CommandT command,
-      fit::callback<void(fpromise::result<typename CommandT::EventT, Status>)> event_cb) {
+      CommandT command, fit::callback<void(Result<typename CommandT::EventT>)> event_cb) {
     // EventT should be the command complete event code. Use SendCommandFinishOnStatus to only
     // handle the command status event.
     static_assert(CommandT::EventT::kEventCode != hci_spec::kCommandStatusEventCode);
@@ -56,9 +55,9 @@ class CommandHandler {
       ZX_ASSERT_MSG(event_cb, "SendCommand event callback already called (opcode: %#.4x)",
                     CommandT::opcode());
 
-      auto status = event_packet.ToStatus();
-      if (!status.is_success()) {
-        event_cb(fpromise::error(status));
+      auto status = event_packet.ToResult();
+      if (status.is_error()) {
+        event_cb(status.take_error());
         return;
       }
 
@@ -75,12 +74,11 @@ class CommandHandler {
       auto event_result = CommandT::EventT::Decode(event_packet);
       if (event_result.is_error()) {
         bt_log(WARN, "hci", "Error decoding event packet (event: %#.2x, error: %s)",
-               event_packet.event_code(), HostErrorToString(event_result.error()).c_str());
-        event_cb(fpromise::error(hci::Status(event_result.error())));
+               event_packet.event_code(), bt_str(event_result.error_value()));
+        event_cb(event_result.take_error());
         return;
       }
-
-      event_cb(fpromise::ok(event_result.take_value()));
+      event_cb(event_result.take_value());
     };
     return channel_->SendCommand(std::move(encoded), std::move(event_packet_cb),
                                  CommandT::EventT::kEventCode);
@@ -105,7 +103,7 @@ class CommandHandler {
   // });
   template <typename CommandT>
   CommandChannel::TransactionId SendCommandFinishOnStatus(
-      CommandT command, fit::callback<void(fpromise::result<void, Status>)> status_cb) {
+      CommandT command, fit::callback<void(hci::Result<>)> status_cb) {
     ZX_ASSERT(status_cb);
 
     auto encoded = command.Encode();
@@ -113,13 +111,7 @@ class CommandHandler {
                                auto id, const EventPacket& event_packet) mutable {
       ZX_ASSERT(event_packet.event_code() == hci_spec::kCommandStatusEventCode);
 
-      auto status = event_packet.ToStatus();
-      if (!status.is_success()) {
-        status_cb(fpromise::error(status));
-        return;
-      }
-
-      status_cb(fpromise::ok());
+      status_cb(event_packet.ToResult());
     };
     return channel_->SendCommand(std::move(encoded), std::move(event_packet_cb),
                                  hci_spec::kCommandStatusEventCode);
@@ -128,7 +120,7 @@ class CommandHandler {
   // Wrapper around CommandChannel::AddEventHandler that calls |handler| with an EventT.
   //
   // EventT must implement:
-  // static fpromise::result<EventT, HostError> Decode(const EventPacket& packet);
+  // static fitx::result<bt::Error<NoProtocolError>, EventT> Decode(const EventPacket& packet);
   // static constexpr uint8_t kEventCode = ...;
   template <typename EventT>
   CommandChannel::EventHandlerId AddEventHandler(
@@ -139,10 +131,10 @@ class CommandHandler {
       auto event_result = EventT::Decode(event_packet);
       if (event_result.is_error()) {
         bt_log(WARN, "hci", "Error decoding event packet (event: %#.2x, error: %s)",
-               event_packet.event_code(), HostErrorToString(event_result.error()).c_str());
+               event_packet.event_code(), bt_str(event_result.error_value()));
         return CommandChannel::EventCallbackResult::kContinue;
       }
-      return handler(event_result.take_value());
+      return handler(std::move(event_result).value());
     };
     return channel_->AddEventHandler(EventT::kEventCode, std::move(event_packet_cb));
   }

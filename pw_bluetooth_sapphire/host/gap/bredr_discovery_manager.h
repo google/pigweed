@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -113,7 +114,7 @@ class BrEdrDiscoveryManager final {
   // Starts discovery and reports the status via |callback|. If discovery has
   // been successfully started, the callback will receive a session object that
   // it owns. If no sessions are owned, peer discovery is stopped.
-  using DiscoveryCallback = fit::function<void(const hci::Status& status,
+  using DiscoveryCallback = fit::function<void(const hci::Result<>& status,
                                                std::unique_ptr<BrEdrDiscoverySession> session)>;
   void RequestDiscovery(DiscoveryCallback callback);
 
@@ -123,14 +124,14 @@ class BrEdrDiscoveryManager final {
   // Requests this device be discoverable. We are discoverable as long as
   // anyone holds a discoverable session.
   using DiscoverableCallback = fit::function<void(
-      const hci::Status& status, std::unique_ptr<BrEdrDiscoverableSession> session)>;
+      const hci::Result<>& status, std::unique_ptr<BrEdrDiscoverableSession> session)>;
   void RequestDiscoverable(DiscoverableCallback callback);
 
   bool discoverable() const { return !discoverable_.empty(); }
 
   // Updates local name of BrEdrDiscoveryManager.
   // Updates the extended inquiry response to include the new |name|.
-  void UpdateLocalName(std::string name, hci::StatusCallback callback);
+  void UpdateLocalName(std::string name, hci::ResultFunction<> callback);
 
   // Returns the BR/EDR local name used for EIR.
   std::string local_name() const { return local_name_; }
@@ -183,7 +184,7 @@ class BrEdrDiscoveryManager final {
 
   // Updates the EIR response data with |name|.
   // Currently, only the name field in EIR is supported.
-  void UpdateEIRResponseData(std::string name, hci::StatusCallback callback);
+  void UpdateEIRResponseData(std::string name, hci::ResultFunction<> callback);
 
   // Updates the Inspect properties
   void UpdateInspectProperties();
@@ -248,7 +249,7 @@ class BrEdrDiscoveryManager final {
   std::unordered_set<BrEdrDiscoverableSession*> discoverable_;
 
   // The set of callbacks that are waiting on inquiry scan to be active.
-  std::queue<hci::StatusCallback> pending_discoverable_;
+  std::queue<hci::ResultFunction<>> pending_discoverable_;
 
   // The Handler IDs of the event handlers for inquiry results.
   hci::CommandChannel::EventHandlerId result_handler_id_;

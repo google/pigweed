@@ -146,7 +146,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto status = event.ToStatus();
+  auto status = event.ToResult();
   if (bt_is_error(
           status, INFO, "gap-sco",
           "SCO connection failed to be established; trying next parameters if available (peer: %s)",
@@ -239,8 +239,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
   accept_params->connection_parameters = ConnectionParametersToLe(
       in_progress_request_->parameters[in_progress_request_->current_param_index]);
   SendCommandWithStatusCallback(std::move(accept), [self = weak_ptr_factory_.GetWeakPtr(),
-                                                    peer_id = peer_id_](hci::Status status) {
-    if (!self || status.is_success()) {
+                                                    peer_id = peer_id_](hci::Result<> status) {
+    if (!self || status.is_ok()) {
       return;
     }
     bt_is_error(
@@ -337,8 +337,8 @@ void ScoConnectionManager::TryCreateNextConnection() {
         hci::CommandPacket::New(hci_spec::kEnhancedSetupSynchronousConnection, sizeof(command));
     *packet->mutable_payload<decltype(command)>() = command;
 
-    auto status_cb = [self = weak_ptr_factory_.GetWeakPtr()](hci::Status status) {
-      if (!self || status.is_success()) {
+    auto status_cb = [self = weak_ptr_factory_.GetWeakPtr()](hci::Result<> status) {
+      if (!self || status.is_ok()) {
         return;
       }
       bt_is_error(status, WARN, "sco", "SCO setup connection command failed");
@@ -391,11 +391,11 @@ void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
 }
 
 void ScoConnectionManager::SendCommandWithStatusCallback(
-    std::unique_ptr<hci::CommandPacket> command_packet, hci::StatusCallback cb) {
+    std::unique_ptr<hci::CommandPacket> command_packet, hci::ResultFunction<> cb) {
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
     command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
-      cb(event.ToStatus());
+      cb(event.ToResult());
     };
   }
   transport_->command_channel()->SendCommand(std::move(command_packet), std::move(command_cb));

@@ -26,14 +26,13 @@ class MockAclDataChannel final : public AclDataChannel {
 
   using RequestAclPriorityCallback =
       fit::function<void(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
-                         fit::callback<void(fpromise::result<>)> callback)>;
+                         fit::callback<void(fitx::result<fitx::failed>)> callback)>;
   void set_request_acl_priority_cb(RequestAclPriorityCallback cb) {
     request_acl_priority_cb_ = std::move(cb);
   }
 
   using SetBrEdrAutomaticFlushTimeoutCallback =
-      fit::function<void(zx::duration, hci_spec::ConnectionHandle,
-                         fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)>)>;
+      fit::function<void(zx::duration, hci_spec::ConnectionHandle, fit::callback<void(Result<>)>)>;
   void set_set_bredr_automatic_flush_timeout_cb(SetBrEdrAutomaticFlushTimeoutCallback callback) {
     flush_timeout_cb_ = std::move(callback);
   }
@@ -66,15 +65,14 @@ class MockAclDataChannel final : public AclDataChannel {
   const DataBufferInfo& GetBufferInfo() const override { return bredr_buffer_info_; }
   const DataBufferInfo& GetLeBufferInfo() const override { return le_buffer_info_; }
   void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
-                          fit::callback<void(fpromise::result<>)> callback) override {
+                          fit::callback<void(fitx::result<fitx::failed>)> callback) override {
     if (request_acl_priority_cb_) {
       request_acl_priority_cb_(priority, handle, std::move(callback));
     }
   }
 
-  void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
-      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) override {
+  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
+                                     fit::callback<void(Result<>)> callback) override {
     if (flush_timeout_cb_) {
       flush_timeout_cb_(flush_timeout, handle, std::move(callback));
     }

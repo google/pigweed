@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::gap {
 
@@ -34,7 +34,7 @@ class BrEdrConnection;
 // HasIncoming()
 class BrEdrConnectionRequest final {
  public:
-  using OnComplete = fit::function<void(hci::Status, BrEdrConnection*)>;
+  using OnComplete = fit::function<void(hci::Result<>, BrEdrConnection*)>;
   using RefFactory = fit::function<BrEdrConnection*()>;
 
   // Construct without a callback. Can be used for incoming only requests
@@ -52,7 +52,7 @@ class BrEdrConnectionRequest final {
   // Notifies all elements in |callbacks| with |status| and the result of
   // |generate_ref|. Called by the appropriate manager once a connection request
   // has completed, successfully or otherwise
-  void NotifyCallbacks(hci::Status status, const RefFactory& generate_ref);
+  void NotifyCallbacks(hci::Result<> status, const RefFactory& generate_ref);
 
   void BeginIncoming() { has_incoming_.Set(true); }
   void CompleteIncoming() { has_incoming_.Set(false); }

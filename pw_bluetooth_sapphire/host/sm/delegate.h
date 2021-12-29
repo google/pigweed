@@ -8,7 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::sm {
 
@@ -47,7 +47,7 @@ class Delegate {
   // the LTK or STK used to encrypt the connection was rejected by the peer device.
   //
   // The underlying link should disconnect after this callback runs.
-  virtual void OnAuthenticationFailure(hci::Status status) = 0;
+  virtual void OnAuthenticationFailure(hci::Result<> status) = 0;
 
   // Called when the security properties of the link change.
   virtual void OnNewSecurityProperties(const SecurityProperties& sec) = 0;

@@ -16,7 +16,7 @@ LowEnergyInterrogator::LowEnergyInterrogator(PeerCache* cache, fxl::WeakPtr<hci:
 void LowEnergyInterrogator::SendCommands(InterrogationRefPtr interrogation) {
   Peer* peer = peer_cache()->FindById(interrogation->peer_id());
   if (!peer) {
-    interrogation->Complete(hci::Status(HostError::kFailed));
+    interrogation->Complete(ToResult(HostError::kFailed));
     return;
   }
 
@@ -50,7 +50,7 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
     }
 
     if (hci_is_error(event, WARN, "gap-le", "LE read remote features failed")) {
-      interrogation->Complete(event.ToStatus());
+      interrogation->Complete(event.ToResult());
       return;
     }
 
@@ -68,7 +68,7 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
-      interrogation->Complete(hci::Status(HostError::kFailed));
+      interrogation->Complete(ToResult(HostError::kFailed));
       return;
     }
 

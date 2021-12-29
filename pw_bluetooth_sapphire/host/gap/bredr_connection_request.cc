@@ -29,7 +29,7 @@ BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId
   callbacks_.Mutable()->push_back(std::move(callback));
 }
 
-void BrEdrConnectionRequest::NotifyCallbacks(hci::Status status, const RefFactory& generate_ref) {
+void BrEdrConnectionRequest::NotifyCallbacks(hci::Result<> status, const RefFactory& generate_ref) {
   // Clear token before notifying callbacks so that connection state change is reflected in
   // callbacks.
   peer_init_conn_token_.reset();

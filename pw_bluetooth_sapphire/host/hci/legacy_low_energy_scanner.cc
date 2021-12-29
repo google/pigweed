@@ -150,12 +150,12 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
                                          : hci_spec::GenericEnableParam::kDisable;
 
   hci_cmd_runner()->QueueCommand(std::move(command));
-  hci_cmd_runner()->RunCommands([this, period = options.period](Status status) {
+  hci_cmd_runner()->RunCommands([this, period = options.period](Result<> status) {
     ZX_DEBUG_ASSERT(scan_cb_);
     ZX_DEBUG_ASSERT(state() == State::kInitiating);
 
-    if (!status) {
-      if (status.error() == HostError::kCanceled) {
+    if (status.is_error()) {
+      if (status == ToResult(HostError::kCanceled)) {
         bt_log(DEBUG, "hci-le", "scan canceled");
         return;
       }
@@ -165,7 +165,7 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
       ZX_DEBUG_ASSERT(!scan_cb_);
       set_state(State::kIdle);
 
-      bt_log(ERROR, "hci-le", "failed to start scan: %s", status.ToString().c_str());
+      bt_log(ERROR, "hci-le", "failed to start scan: %s", bt_str(status));
       cb(ScanStatus::kFailed);
       return;
     }
@@ -234,21 +234,19 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   enable_params->filter_duplicates = hci_spec::GenericEnableParam::kDisable;
 
   hci_cmd_runner()->QueueCommand(std::move(command));
-  hci_cmd_runner()->RunCommands([this, stopped](Status status) {
+  hci_cmd_runner()->RunCommands([this, stopped](Result<> status) {
     ZX_DEBUG_ASSERT(scan_cb_);
     ZX_DEBUG_ASSERT(state() == State::kStopping);
 
-    if (!status) {
-      bt_log(WARN, "hci-le", "failed to stop scan: %s", status.ToString().c_str());
-      // Something went wrong but there isn't really a meaningful way to
-      // recover, so we just fall through and notify the caller with
-      // ScanStatus::kFailed instead.
-    }
+    bt_is_error(status, WARN, "hci-le", "failed to stop scan: %s", bt_str(status));
+    // Something went wrong but there isn't really a meaningful way to recover, so we just fall
+    // through and notify the caller with ScanStatus::kFailed instead.
 
     auto cb = std::move(scan_cb_);
     set_state(State::kIdle);
 
-    cb(!status ? ScanStatus::kFailed : (stopped ? ScanStatus::kStopped : ScanStatus::kComplete));
+    cb(status.is_error() ? ScanStatus::kFailed
+                         : (stopped ? ScanStatus::kStopped : ScanStatus::kComplete));
   });
 }
 

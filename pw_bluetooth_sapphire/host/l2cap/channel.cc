@@ -11,6 +11,7 @@
 #include <functional>
 #include <memory>
 
+#include "lib/fitx/result.h"
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
@@ -187,10 +188,10 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
 }
 
 void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
-                                     fit::callback<void(fpromise::result<>)> callback) {
+                                     fit::callback<void(fitx::result<fitx::failed>)> callback) {
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring ACL priority request on inactive channel");
-    callback(fpromise::error());
+    callback(fitx::failed());
     return;
   }
 
@@ -203,22 +204,21 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
                             });
 }
 
-void ChannelImpl::SetBrEdrAutomaticFlushTimeout(
-    zx::duration flush_timeout,
-    fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) {
+void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+                                                fit::callback<void(hci::Result<>)> callback) {
   ZX_ASSERT(link_type_ == bt::LinkType::kACL);
 
   // Channel may be inactive if this method is called before activation.
   if (!link_) {
     bt_log(DEBUG, "l2cap", "Ignoring %s on closed channel", __FUNCTION__);
-    callback(fpromise::error(hci_spec::StatusCode::kCommandDisallowed));
+    callback(ToResult(hci_spec::StatusCode::kCommandDisallowed));
     return;
   }
 
   auto cb_wrapper = [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback),
                      flush_timeout](auto result) mutable {
     if (!self) {
-      cb(fpromise::error(hci_spec::StatusCode::kUnspecifiedError));
+      cb(ToResult(hci_spec::StatusCode::kUnspecifiedError));
       return;
     }
 

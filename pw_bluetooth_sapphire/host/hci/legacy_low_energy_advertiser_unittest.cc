@@ -69,22 +69,22 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
 
   LegacyLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
-  StatusCallback GetSuccessCallback() {
-    return [this](Status status) {
+  ResultFunction<> GetSuccessCallback() {
+    return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_TRUE(status) << status.ToString();
+      EXPECT_TRUE(status.is_ok()) << bt_str(status);
     };
   }
 
-  StatusCallback GetErrorCallback() {
-    return [this](Status status) {
+  ResultFunction<> GetErrorCallback() {
+    return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_FALSE(status);
+      EXPECT_TRUE(status.is_error()) << bt_str(status);
     };
   }
 
   // Retrieves the last status, and resets the last status to empty.
-  std::optional<Status> MoveLastStatus() { return std::move(last_status_); }
+  std::optional<Result<>> MoveLastStatus() { return std::move(last_status_); }
 
   // Makes some fake advertising data.
   // |include_flags| signals whether to include flag encoding size in the data calculation.
@@ -138,7 +138,7 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
  private:
   std::unique_ptr<LegacyLowEnergyAdvertiser> advertiser_;
 
-  std::optional<Status> last_status_;
+  std::optional<Result<>> last_status_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiserTest);
 };
@@ -358,8 +358,9 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
                                  GetErrorCallback());
   RunLoopUntilIdle();
   auto status = MoveLastStatus();
-  ASSERT_TRUE(status);
-  EXPECT_EQ(HostError::kProtocolError, status->error());
+  ASSERT_TRUE(status.has_value());
+  ASSERT_TRUE(status->is_error());
+  EXPECT_TRUE(status->error_value().is_protocol_error());
 }
 
 // TODO(create bug): This test should really belong in LowEnergyAdvertiser's unittest file

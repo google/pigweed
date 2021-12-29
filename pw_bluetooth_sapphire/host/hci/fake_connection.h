@@ -15,7 +15,7 @@ class FakeConnection final : public Connection {
                  const DeviceAddress& local_address, const DeviceAddress& peer_address);
 
   // Triggers the encryption change callback.
-  void TriggerEncryptionChangeCallback(Status status, bool enabled);
+  void TriggerEncryptionChangeCallback(hci::Result<bool> result);
 
   void TriggerPeerDisconnectCallback() {
     peer_disconnect_callback()(this, hci_spec::StatusCode::kRemoteUserTerminatedConnection);

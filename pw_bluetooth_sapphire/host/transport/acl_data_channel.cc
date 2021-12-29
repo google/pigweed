@@ -94,10 +94,9 @@ class AclDataChannelImpl final : public AclDataChannel {
   const DataBufferInfo& GetBufferInfo() const override;
   const DataBufferInfo& GetLeBufferInfo() const override;
   void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
-                          fit::callback<void(fpromise::result<>)> callback) override;
-  void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
-      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) override;
+                          fit::callback<void(fitx::result<fitx::failed>)> callback) override;
+  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
+                                     fit::callback<void(Result<>)> callback) override;
 
  private:
   // Represents a queued ACL data packet.
@@ -566,9 +565,9 @@ const DataBufferInfo& AclDataChannelImpl::GetLeBufferInfo() const {
   return le_buffer_info_.IsAvailable() ? le_buffer_info_ : bredr_buffer_info_;
 }
 
-void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority,
-                                            hci_spec::ConnectionHandle handle,
-                                            fit::callback<void(fpromise::result<>)> callback) {
+void AclDataChannelImpl::RequestAclPriority(
+    hci::AclPriority priority, hci_spec::ConnectionHandle handle,
+    fit::callback<void(fitx::result<fitx::failed>)> callback) {
   bt_log(TRACE, "hci", "sending ACL priority command");
 
   bt_vendor_set_acl_priority_params_t priority_params = {
@@ -584,13 +583,13 @@ void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority,
       transport_->EncodeVendorCommand(BT_VENDOR_COMMAND_SET_ACL_PRIORITY, cmd_params);
   if (encode_result.is_error()) {
     bt_log(TRACE, "hci", "encoding ACL priority command failed");
-    callback(fpromise::error());
+    callback(fitx::failed());
     return;
   }
   auto encoded = encode_result.take_value();
   if (encoded.size() < sizeof(hci_spec::CommandHeader)) {
     bt_log(TRACE, "hci", "encoded ACL priority command too small (size: %zu)", encoded.size());
-    callback(fpromise::error());
+    callback(fitx::failed());
     return;
   }
 
@@ -604,26 +603,26 @@ void AclDataChannelImpl::RequestAclPriority(hci::AclPriority priority,
       std::move(packet),
       [cb = std::move(callback), priority](auto id, const hci::EventPacket& event) mutable {
         if (hci_is_error(event, WARN, "hci", "acl priority failed")) {
-          cb(fpromise::error());
+          cb(fitx::failed());
           return;
         }
 
         bt_log(DEBUG, "hci", "acl priority updated (priority: %#.8x)",
                static_cast<uint32_t>(priority));
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 }
 
-void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(
-    zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
-    fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) {
+void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+                                                       hci_spec::ConnectionHandle handle,
+                                                       fit::callback<void(Result<>)> callback) {
   auto link_iter = registered_links_.find(handle);
   ZX_ASSERT(link_iter != registered_links_.end());
   ZX_ASSERT(link_iter->second == bt::LinkType::kACL);
 
   if (flush_timeout < zx::msec(1) || (flush_timeout > hci_spec::kMaxAutomaticFlushTimeoutDuration &&
                                       flush_timeout != zx::duration::infinite())) {
-    callback(fpromise::error(hci_spec::StatusCode::kInvalidHCICommandParameters));
+    callback(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters));
     return;
   }
 
@@ -652,13 +651,11 @@ void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(
       std::move(packet),
       [cb = std::move(callback), handle, flush_timeout](auto, const EventPacket& event) mutable {
         if (hci_is_error(event, WARN, "hci", "WriteAutomaticFlushTimeout command failed")) {
-          cb(fpromise::error(event.ToStatus().protocol_error()));
-          return;
+        } else {
+          bt_log(DEBUG, "hci", "automatic flush timeout updated (handle: %#.4x, timeout: %ld ms)",
+                 handle, flush_timeout.to_msecs());
         }
-
-        bt_log(DEBUG, "hci", "automatic flush timeout updated (handle: %#.4x, timeout: %ld ms)",
-               handle, flush_timeout.to_msecs());
-        cb(fpromise::ok());
+        cb(event.ToResult());
       });
 }
 

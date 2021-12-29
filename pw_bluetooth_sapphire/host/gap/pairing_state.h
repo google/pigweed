@@ -11,6 +11,7 @@
 
 #include <fbl/macros.h>
 
+#include "lib/fitx/internal/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -19,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::gap {
 
@@ -160,7 +162,7 @@ class PairingState final {
   // Used to report the status of each pairing procedure on this link. |status|
   // will contain HostError::kNotSupported if the pairing procedure does not
   // proceed in the order of events expected.
-  using StatusCallback = fit::function<void(hci_spec::ConnectionHandle, hci::Status)>;
+  using StatusCallback = fit::function<void(hci_spec::ConnectionHandle, hci::Result<>)>;
 
   // Constructs a PairingState for the ACL connection |link| to |peer_id|.
   // |link_initiated| should be true if this device connected, and false if it
@@ -250,7 +252,7 @@ class PairingState final {
   void OnAuthenticationComplete(hci_spec::StatusCode status_code);
 
   // Handler for hci::Connection::set_encryption_change_callback.
-  void OnEncryptionChange(hci::Status status, bool enabled);
+  void OnEncryptionChange(hci::Result<bool> result);
 
  private:
   enum class State {
@@ -368,13 +370,13 @@ class PairingState final {
   // Call the permanent status callback this object was created with as well as any completed
   // request callbacks from local initiators. Resets the current pairing and may initiate a new
   // pairing if any requests have not been completed.
-  void SignalStatus(hci::Status status);
+  void SignalStatus(hci::Result<> status);
 
   // Determines which pairing requests have been completed by the current link key and/or status and
   // removes them from the queue. If any pairing requests were not completed, starts a new pairing
   // procedure. Returns a list of closures that call the status callbacks of completed pairing
   // requests.
-  std::vector<fit::closure> CompletePairingRequests(hci::Status status);
+  std::vector<fit::closure> CompletePairingRequests(hci::Result<> status);
 
   // Starts the pairing procedure for the next queued pairing request, if any.
   void InitiateNextPairingRequest();

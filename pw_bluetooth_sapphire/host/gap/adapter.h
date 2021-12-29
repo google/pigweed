@@ -274,10 +274,10 @@ class Adapter {
     // be initiated if the current link key does not meet the |security| requirements. |callback|
     // will be called with the result of the procedure, successful or not.
     virtual void Pair(PeerId peer_id, BrEdrSecurityRequirements security,
-                      hci::StatusCallback callback) = 0;
+                      hci::ResultFunction<> callback) = 0;
 
     // Set whether this host is connectable.
-    virtual void SetConnectable(bool connectable, hci::StatusCallback status_cb) = 0;
+    virtual void SetConnectable(bool connectable, hci::ResultFunction<> status_cb) = 0;
 
     // Starts discovery and reports the status via |callback|. If discovery has
     // been successfully started, the callback will receive a session object that
@@ -359,12 +359,12 @@ class Adapter {
 
   // Sets the Local Name of this adapter, for both BR/EDR discoverability and
   // public LE services.
-  virtual void SetLocalName(std::string name, hci::StatusCallback callback) = 0;
+  virtual void SetLocalName(std::string name, hci::ResultFunction<> callback) = 0;
 
   virtual std::string local_name() const = 0;
 
   // Sets the Device Class of this adapter.
-  virtual void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) = 0;
+  virtual void SetDeviceClass(DeviceClass dev_class, hci::ResultFunction<> callback) = 0;
 
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE peer in the directed connectable mode (Vol 3,

@@ -313,7 +313,7 @@ void LowEnergyConnection::RequestConnectionParameterUpdate(
 
   if (ll_connection_parameters_req_supported) {
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto status_cb = [self, params](hci::Status status) {
+    auto status_cb = [self, params](hci::Result<> status) {
       if (!self) {
         return;
       }
@@ -328,11 +328,11 @@ void LowEnergyConnection::RequestConnectionParameterUpdate(
 }
 
 void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
-    hci_spec::LEPreferredConnectionParameters params, hci::Status status) {
+    hci_spec::LEPreferredConnectionParameters params, hci::Result<> status) {
   // The next LE Connection Update complete event is for this command iff the command |status|
   // is success.
-  if (!status.is_success()) {
-    if (status.protocol_error() == hci_spec::StatusCode::kUnsupportedRemoteFeature) {
+  if (status.is_error()) {
+    if (status == ToResult(hci_spec::StatusCode::kUnsupportedRemoteFeature)) {
       // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
       bt_log(
           INFO, "gap-le",
@@ -346,8 +346,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
   // Note that this callback is for the Connection Update Complete event, not the Connection Update
   // status event, which is handled by the above code (see v5.2, Vol. 4, Part E 7.7.15 / 7.7.65.3).
   le_conn_update_complete_command_callback_ = [this, params](hci_spec::StatusCode status) {
-    // Retry connection parameter update with l2cap if the peer doesn't support LL
-    // procedure.
+    // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
     if (status == hci_spec::StatusCode::kUnsupportedRemoteFeature) {
       bt_log(INFO, "gap-le",
              "peer does not support HCI LE Connection Update command, trying l2cap request "
@@ -405,7 +404,7 @@ void LowEnergyConnection::UpdateConnectionParams(
     hci_is_error(event, TRACE, "gap-le",
                  "controller rejected connection parameters (handle: %#.4x)", handle);
     if (cb) {
-      cb(event.ToStatus());
+      cb(event.ToResult());
     }
   };
 
@@ -583,7 +582,7 @@ void LowEnergyConnection::OnPairingComplete(sm::Status status) {
   }
 }
 
-void LowEnergyConnection::OnAuthenticationFailure(hci::Status status) {
+void LowEnergyConnection::OnAuthenticationFailure(hci::Result<> status) {
   // TODO(armansito): Clear bonding data from the remote peer cache as any
   // stored link key is not valid.
   bt_log(WARN, "gap-le", "link layer authentication failed (status: %s, peer: %s)", bt_str(status),

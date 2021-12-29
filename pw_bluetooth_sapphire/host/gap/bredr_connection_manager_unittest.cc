@@ -24,7 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::gap {
@@ -824,7 +824,7 @@ TEST_F(BrEdrConnectionManagerTest, DisableConnectivity) {
   size_t cb_count = 0;
   auto cb = [&cb_count](const auto& status) {
     cb_count++;
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   };
 
   EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
@@ -850,7 +850,7 @@ TEST_F(BrEdrConnectionManagerTest, EnableConnectivity) {
   size_t cb_count = 0;
   auto cb = [&cb_count](const auto& status) {
     cb_count++;
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   };
 
   EXPECT_CMD_PACKET_OUT(test_device(), kWritePageScanActivity, &kWritePageScanActivityRsp);
@@ -2465,23 +2465,13 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(IsNotConnected(peer));
 
-  hci::Status status;
+  hci::Result<> status = fitx::ok();
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), CALLBACK_EXPECT_FAILURE(status)));
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(hci_spec::StatusCode::kConnectionFailedToBeEstablished, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionFailedToBeEstablished), status);
   EXPECT_TRUE(IsNotConnected(peer));
-}
-
-::testing::AssertionResult StatusEqual(hci_spec::StatusCode expected, hci_spec::StatusCode actual) {
-  if (expected == actual)
-    return ::testing::AssertionSuccess();
-  else
-    return ::testing::AssertionFailure()
-           << expected << " is '" << hci_spec::StatusCodeToString(expected) << "', " << actual
-           << " is '" << hci_spec::StatusCodeToString(actual) << "'";
 }
 
 // Connection Complete event reports error
@@ -2491,7 +2481,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
                         &kConnectionCompleteError);
 
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   bool callback_run = false;
 
   auto callback = [&status, &callback_run](auto cb_status, auto conn_ref) {
@@ -2507,9 +2497,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
 
   EXPECT_TRUE(callback_run);
 
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_TRUE(
-      StatusEqual(hci_spec::StatusCode::kConnectionFailedToBeEstablished, status.protocol_error()));
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionFailedToBeEstablished), status);
   EXPECT_TRUE(IsNotConnected(peer));
 }
 
@@ -2520,7 +2508,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnectionCancel, &kCreateConnectionCancelRsp,
                         &kConnectionCompleteCanceled);
 
-  hci::Status status;
+  hci::Result<> status = fitx::ok();
   auto callback = [&status](auto cb_status, auto conn_ref) {
     EXPECT_FALSE(conn_ref);
     status = cb_status;
@@ -2531,8 +2519,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopFor(kBrEdrCreateConnectionTimeout);
   RunLoopFor(kBrEdrCreateConnectionTimeout);
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kTimedOut, status.error()) << status.ToString();
+  EXPECT_EQ(ToResult(HostError::kTimedOut), status) << bt_str(status);
   EXPECT_TRUE(IsNotConnected(peer));
 }
 
@@ -2548,7 +2535,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
   QueueDisconnection(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
@@ -2560,8 +2547,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
-  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kCentral);
@@ -2583,7 +2569,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
   EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kReadRemoteSupportedFeatures,
                         &kReadRemoteSupportedFeaturesRsp);
 
-  hci::Status status;
+  hci::Result<> status = fitx::ok();
   BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     EXPECT_FALSE(cb_conn_ref);
@@ -2598,8 +2584,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
   QueueDisconnection(kConnectionHandle);
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kNotSupported, status.error()) << status.ToString();
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status) << bt_str(status);
   EXPECT_TRUE(IsNotConnected(peer));
 }
 
@@ -2615,7 +2600,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   QueueDisconnection(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   int num_callbacks = 0;
   BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status, auto cb_conn_ref) {
@@ -2630,8 +2615,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
-  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 1);
@@ -2640,8 +2624,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   // synchronously.
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   EXPECT_EQ(num_callbacks, 2);
-  EXPECT_TRUE(status);
-  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
 }
@@ -2659,7 +2642,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   QueueDisconnection(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   int num_callbacks = 0;
   BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status, auto cb_conn_ref) {
@@ -2680,8 +2663,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   // Run the loop which should complete both requests
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
-  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 2);
@@ -2699,7 +2681,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInt
   QueueDisconnection(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   int num_callbacks = 0;
   BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status, auto cb_conn_ref) {
@@ -2722,8 +2704,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInt
   CompleteInterrogation(kConnectionHandle);
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
-  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(num_callbacks, 2);
@@ -2744,14 +2725,14 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   QueueDisconnection(kConnectionHandle2);
 
   // Initialize as success to verify that |callback_a| assigns failure.
-  hci::Status status_a;
+  hci::Result<> status_a = fitx::ok();
   auto callback_a = [&status_a](auto cb_status, auto cb_conn_ref) {
     status_a = cb_status;
     EXPECT_FALSE(cb_conn_ref);
   };
 
   // Initialize as error to verify that |callback_b| assigns success.
-  hci::Status status_b(HostError::kFailed);
+  hci::Result<> status_b = ToResult(HostError::kFailed);
   BrEdrConnection* connection = nullptr;
   auto callback_b = [&status_b, &connection](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
@@ -2774,9 +2755,8 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   RunLoopFor(kBrEdrCreateConnectionTimeout);
   RunLoopFor(kBrEdrCreateConnectionTimeout);
 
-  EXPECT_FALSE(status_a);
-  EXPECT_TRUE(status_b);
-  EXPECT_EQ(status_b.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(status_a.is_error());
+  EXPECT_TRUE(status_b.is_ok());
   EXPECT_TRUE(HasConnectionTo(peer_b, connection));
   EXPECT_TRUE(IsNotConnected(peer_a));
   EXPECT_FALSE(IsNotConnected(peer_b));
@@ -2858,7 +2838,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   QueueShortInterrogation(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   BrEdrConnection* connection = nullptr;
   auto callback = [&status, &connection](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
@@ -2872,8 +2852,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   // Complete connection.
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  EXPECT_TRUE(status);
-  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(HasConnectionTo(peer, connection));
   EXPECT_FALSE(IsNotConnected(peer));
 
@@ -3016,8 +2995,8 @@ TEST_F(BrEdrConnectionManagerTest, PairUnconnectedPeer) {
   EXPECT_TRUE(peer->temporary());
   ASSERT_EQ(peer_cache()->count(), 1u);
   uint count_cb_called = 0;
-  auto cb = [&count_cb_called](hci::Status status) {
-    ASSERT_EQ(status.error(), bt::HostError::kNotFound);
+  auto cb = [&count_cb_called](hci::Result<> status) {
+    ASSERT_EQ(ToResult(bt::HostError::kNotFound), status);
     count_cb_called++;
   };
   connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, cb);
@@ -3054,10 +3033,10 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
 
   // Make the pairing error a "bad" error to confirm the callback is called at the end of the
   // pairing process.
-  auto pairing_error = HostError::kPacketMalformed;
-  auto pairing_complete_cb = [&pairing_error](hci::Status status) {
-    ASSERT_TRUE(status);
-    pairing_error = status.error();
+  hci::Result<> pairing_status = ToResult(HostError::kPacketMalformed);
+  auto pairing_complete_cb = [&pairing_status](hci::Result<> status) {
+    ASSERT_TRUE(status.is_ok());
+    pairing_status = status;
   };
 
   connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
@@ -3065,7 +3044,7 @@ TEST_F(BrEdrConnectionManagerTest, Pair) {
   ASSERT_FALSE(peer->bonded());
   RunLoopUntilIdle();
 
-  ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_EQ(ToResult(HostError::kNoError), pairing_status);
   ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
@@ -3102,26 +3081,26 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
 
   // Make the pairing error a "bad" error to confirm the callback is called at the end of the
   // pairing process.
-  auto pairing_error = HostError::kPacketMalformed;
-  auto pairing_complete_cb = [&pairing_error](hci::Status status) {
-    ASSERT_TRUE(status);
-    pairing_error = status.error();
+  hci::Result<> pairing_status = ToResult(HostError::kPacketMalformed);
+  auto pairing_complete_cb = [&pairing_status](hci::Result<> status) {
+    ASSERT_TRUE(status.is_ok());
+    pairing_status = status;
   };
 
   connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
   RunLoopUntilIdle();
 
-  ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_EQ(ToResult(HostError::kNoError), pairing_status);
   ASSERT_TRUE(IsConnected(peer));
   ASSERT_TRUE(peer->bonded());
 
-  pairing_error = HostError::kPacketMalformed;
+  pairing_status = ToResult(HostError::kPacketMalformed);
   connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
 
   // Note that we do not call QueueSuccessfulPairing twice, even though we pair twice - this is to
   // test that pairing on an already-paired link succeeds without sending any messages to the peer.
   RunLoopUntilIdle();
-  ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_EQ(ToResult(HostError::kNoError), pairing_status);
   ASSERT_TRUE(peer->bonded());
 
   QueueDisconnection(kConnectionHandle);
@@ -3187,7 +3166,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) 
   QueueDisconnection(kConnectionHandle, hci_spec::StatusCode::kAuthenticationFailure);
 
   // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
@@ -3198,7 +3177,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) 
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(peer->bredr());
   RunLoopUntilIdle();
-  ASSERT_TRUE(status);
+  ASSERT_TRUE(status.is_ok());
 
   test_device()->SendCommandChannelPacket(
       testing::EncryptionChangeEventPacket(hci_spec::StatusCode::kConnectionTerminatedMICFailure,
@@ -3486,12 +3465,12 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
 
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   BrEdrConnection* conn_ref = nullptr;
   auto should_succeed = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     // We expect this callback to be executed, with a succesful connection
     EXPECT_TRUE(cb_conn_ref);
-    EXPECT_TRUE(cb_status.is_success());
+    EXPECT_TRUE(cb_status.is_ok());
     status = cb_status;
     conn_ref = std::move(cb_conn_ref);
   };
@@ -3520,7 +3499,7 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   // We expect to connect and begin interrogation, and for our connect() callback to have been run
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_success());
+  EXPECT_TRUE(status.is_ok());
 
   // Peers are marked as initializing until a pairing procedure finishes.
   EXPECT_TRUE(IsInitializing(peer));
@@ -3531,11 +3510,11 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
 TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->bredr() && IsNotConnected(peer));
-  hci::Status status(HostError::kFailed);
+  hci::Result<> status = ToResult(HostError::kFailed);
   BrEdrConnection* conn_ref = nullptr;
   auto should_succeed = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
-    EXPECT_TRUE(cb_status.is_success());
+    EXPECT_TRUE(cb_status.is_ok());
     status = cb_status;
     conn_ref = std::move(cb_conn_ref);
   };
@@ -3559,7 +3538,7 @@ TEST_F(BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
   // been executed when the incoming connection succeeded.
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_success());
+  EXPECT_TRUE(status.is_ok());
 
   // Peers are marked as initializing until a pairing procedure finishes.
   EXPECT_TRUE(IsInitializing(peer));

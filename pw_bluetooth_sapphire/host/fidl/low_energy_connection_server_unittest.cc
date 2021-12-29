@@ -71,7 +71,7 @@ class LowEnergyConnectionServerTest : public bthost::testing::AdapterTestFixture
     RunLoopUntilIdle();
     ZX_ASSERT(conn_result);
     ZX_ASSERT(conn_result->is_ok());
-    return conn_result->take_value();
+    return std::move(*conn_result).value();
   }
 
   std::unique_ptr<LowEnergyConnectionServer> server_;

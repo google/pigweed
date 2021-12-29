@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::gap {
 namespace {
@@ -41,7 +42,7 @@ const auto kTestChangedLinkKeyType = hci_spec::LinkKeyType::kChangedCombination;
 const BrEdrSecurityRequirements kNoSecurityRequirements{.authentication = false,
                                                         .secure_connections = false};
 
-void NoOpStatusCallback(hci_spec::ConnectionHandle, hci::Status) {}
+void NoOpStatusCallback(hci_spec::ConnectionHandle, hci::Result<>) {}
 void NoOpUserConfirmationCallback(bool) {}
 void NoOpUserPasskeyCallback(std::optional<uint32_t>) {}
 
@@ -166,8 +167,8 @@ TEST_F(PairingStateTest, StatusCallbackMayDestroyPairingState) {
   std::unique_ptr<PairingState> pairing_state;
   bool cb_called = false;
   auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle handle,
-                                                hci::Status status) {
-    EXPECT_FALSE(status.is_success());
+                                                hci::Result<> status) {
+    EXPECT_TRUE(status.is_error());
     cb_called = true;
 
     // Note that this lambda is owned by the PairingState so its captures are invalid after this.
@@ -191,8 +192,8 @@ TEST_F(PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
                                      MakeAuthRequestCallback(), NoOpStatusCallback);
   bool cb_called = false;
   auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle handle,
-                                                hci::Status status) {
-    EXPECT_FALSE(status.is_success());
+                                                hci::Result<> status) {
+    EXPECT_TRUE(status.is_error());
     cb_called = true;
 
     // Note that this lambda is owned by the PairingState so its captures are invalid after this.
@@ -212,7 +213,7 @@ TEST_F(PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
 class TestStatusHandler final {
  public:
   auto MakeStatusCallback() {
-    return [this](hci_spec::ConnectionHandle handle, hci::Status status) {
+    return [this](hci_spec::ConnectionHandle handle, hci::Result<> status) {
       call_count_++;
       handle_ = handle;
       status_ = status;
@@ -229,7 +230,7 @@ class TestStatusHandler final {
  private:
   int call_count_ = 0;
   std::optional<hci_spec::ConnectionHandle> handle_;
-  std::optional<hci::Status> status_;
+  std::optional<hci::Result<>> status_;
 };
 
 TEST_F(PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
@@ -241,13 +242,12 @@ TEST_F(PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
   EXPECT_EQ(0, handler.call_count());
   EXPECT_FALSE(handler.status());
 
-  status_cb(hci_spec::ConnectionHandle(0x0A0B),
-            hci::Status(hci_spec::StatusCode::kPairingNotAllowed));
+  status_cb(hci_spec::ConnectionHandle(0x0A0B), ToResult(hci_spec::StatusCode::kPairingNotAllowed));
   EXPECT_EQ(1, handler.call_count());
   ASSERT_TRUE(handler.handle());
   EXPECT_EQ(hci_spec::ConnectionHandle(0x0A0B), *handler.handle());
   ASSERT_TRUE(handler.status());
-  EXPECT_EQ(hci::Status(hci_spec::StatusCode::kPairingNotAllowed), *handler.status());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPairingNotAllowed), *handler.status());
 }
 
 TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
@@ -263,7 +263,7 @@ TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithEr
   ASSERT_TRUE(link_status_handler.handle());
   EXPECT_EQ(kTestHandle, *link_status_handler.handle());
   ASSERT_TRUE(link_status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kNotSupported), *link_status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), *link_status_handler.status());
 
   // Try to initiate pairing again.
   TestStatusHandler pairing_status_handler;
@@ -276,7 +276,7 @@ TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithEr
   ASSERT_TRUE(pairing_status_handler.handle());
   EXPECT_EQ(kTestHandle, *pairing_status_handler.handle());
   ASSERT_TRUE(pairing_status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kCanceled), *pairing_status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kCanceled), *pairing_status_handler.status());
 }
 
 TEST_F(PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
@@ -296,7 +296,7 @@ TEST_F(PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback)
   ASSERT_EQ(0, connection.start_encryption_count());
   ASSERT_EQ(0, status_handler.call_count());
 
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(0, status_handler.call_count());
 }
 
@@ -314,7 +314,7 @@ TEST_F(PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(HostError::kInsufficientSecurity, status_handler.status()->error());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
@@ -360,12 +360,12 @@ TEST_F(PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
   ASSERT_EQ(0, status_handler.call_count());
 
   EXPECT_EQ(1, connection.start_encryption_count());
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(), *status_handler.status());
+  EXPECT_EQ(fitx::ok(), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
@@ -383,12 +383,13 @@ TEST_F(PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
   ASSERT_EQ(0, status_handler.call_count());
 
   EXPECT_EQ(1, connection.start_encryption_count());
-  connection.TriggerEncryptionChangeCallback(hci::Status(HostError::kInsufficientSecurity), false);
+  connection.TriggerEncryptionChangeCallback(
+      ToResult(HostError::kInsufficientSecurity).take_error());
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithError) {
@@ -406,12 +407,12 @@ TEST_F(PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithErr
   ASSERT_EQ(0, status_handler.call_count());
 
   EXPECT_EQ(1, connection.start_encryption_count());
-  connection.TriggerEncryptionChangeCallback(hci::Status(), false);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(false));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kFailed), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kFailed), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
@@ -436,17 +437,17 @@ TEST_F(PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
   ASSERT_EQ(0, status_handler_0.call_count());
   ASSERT_EQ(0, status_handler_1.call_count());
 
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler_0.call_count());
   EXPECT_EQ(1, status_handler_1.call_count());
   ASSERT_TRUE(status_handler_0.handle());
   EXPECT_EQ(kTestHandle, *status_handler_0.handle());
   ASSERT_TRUE(status_handler_0.status());
-  EXPECT_EQ(hci::Status(), *status_handler_0.status());
+  EXPECT_EQ(fitx::ok(), *status_handler_0.status());
   ASSERT_TRUE(status_handler_1.handle());
   EXPECT_EQ(kTestHandle, *status_handler_1.handle());
   ASSERT_TRUE(status_handler_1.status());
-  EXPECT_EQ(hci::Status(), *status_handler_1.status());
+  EXPECT_EQ(fitx::ok(), *status_handler_1.status());
 
   // Errors for a new pairing shouldn't invoke the initiators' callbacks.
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
@@ -480,12 +481,12 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   ASSERT_EQ(0, status_handler.call_count());
 
   // The attempt to initiate pairing should have its status callback notified.
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(), *status_handler.status());
+  EXPECT_EQ(fitx::ok(), *status_handler.status());
 
   // Errors for a new pairing shouldn't invoke the attempted initiator's callback.
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
@@ -525,7 +526,7 @@ TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
   ASSERT_EQ(1, request_status.call_count());
   ASSERT_TRUE(request_status.handle());
   EXPECT_EQ(kTestHandle, *request_status.handle());
-  EXPECT_EQ(hci::Status(HostError::kLinkDisconnected), *request_status.status());
+  EXPECT_EQ(ToResult(HostError::kLinkDisconnected), *request_status.status());
 }
 
 TEST_F(PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDelegate) {
@@ -552,7 +553,7 @@ TEST_F(PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDeleg
   EXPECT_EQ(1, owner_status_handler.call_count());
   EXPECT_EQ(1, initiator_status_handler.call_count());
   ASSERT_TRUE(initiator_status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kNotReady), *initiator_status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kNotReady), *initiator_status_handler.status());
   EXPECT_EQ(initiator_status_handler.status(), owner_status_handler.status());
 }
 
@@ -573,7 +574,7 @@ TEST_F(PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDeleg
   // All callbacks should be notified of pairing failure
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kNotReady), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kNotReady), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
@@ -599,7 +600,7 @@ TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
@@ -624,7 +625,7 @@ TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
@@ -921,7 +922,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
 
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(hci::Status(hci_spec::StatusCode::kAuthenticationFailure), *status_handler.status());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kAuthenticationFailure), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationRejectedInitiator) {
@@ -962,11 +963,10 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
 
   EXPECT_EQ(1, owner_status_handler.call_count());
   ASSERT_TRUE(owner_status_handler.status());
-  EXPECT_EQ(hci::Status(hci_spec::StatusCode::kAuthenticationFailure),
-            *owner_status_handler.status());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kAuthenticationFailure), *owner_status_handler.status());
   EXPECT_EQ(1, initiator_status_handler.call_count());
   ASSERT_TRUE(initiator_status_handler.status());
-  EXPECT_EQ(hci::Status(hci_spec::StatusCode::kAuthenticationFailure),
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kAuthenticationFailure),
             *initiator_status_handler.status());
 }
 
@@ -1133,7 +1133,7 @@ TEST_P(HandlesEvent, InIdleState) {
     ASSERT_TRUE(status_handler().handle());
     EXPECT_EQ(kTestHandle, *status_handler().handle());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1147,7 +1147,7 @@ TEST_P(HandlesEvent, InInitiatorWaitLinkKeyRequestState) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1162,7 +1162,7 @@ TEST_P(HandlesEvent, InInitiatorWaitIoCapRequest) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1181,7 +1181,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1197,7 +1197,7 @@ TEST_P(HandlesEvent, InInitiatorWaitIoCapResponseState) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1211,7 +1211,7 @@ TEST_P(HandlesEvent, InResponderWaitIoCapRequestState) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1229,9 +1229,9 @@ TEST_P(HandlesEvent, InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate
   ASSERT_TRUE(status_handler().status());
   if (event() == LinkKeyRequest || event() == IoCapabilityResponse) {
     // Peer attempted to pair again, which raises an additional "not ready" error.
-    EXPECT_EQ(hci::Status(HostError::kNotReady), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotReady), status_handler().status());
   } else {
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1252,7 +1252,7 @@ TEST_P(HandlesEvent, InWaitUserConfirmationStateAsInitiator) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1273,7 +1273,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsInitiator) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1294,7 +1294,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyNotificationStateAsInitiator) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1314,7 +1314,7 @@ TEST_P(HandlesEvent, InWaitUserConfirmationStateAsResponder) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1333,7 +1333,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsResponder) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1352,7 +1352,7 @@ TEST_P(HandlesEvent, InWaitUserNotificationStateAsResponder) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1368,7 +1368,7 @@ TEST_P(HandlesEvent, InWaitPairingCompleteState) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1387,7 +1387,7 @@ TEST_P(HandlesEvent, InWaitLinkKeyState) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1410,7 +1410,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteStateAfterSimplePairing) {
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1431,7 +1431,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
   // Should not receive anything other than OnEncryptionChange.
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
 }
 
 TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
@@ -1448,7 +1448,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
   // Should not receive anything other than OnEncryptionChange.
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
 }
 
 TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
@@ -1464,10 +1464,10 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   ASSERT_TRUE(pairing_state().initiator());
 
   // Successfully enabling encryption should allow pairing to start again.
-  pairing_state().OnEncryptionChange(hci::Status(), true);
+  pairing_state().OnEncryptionChange(fitx::ok(true));
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_TRUE(status_handler().status()->is_success());
+  EXPECT_TRUE(status_handler().status()->is_ok());
   EXPECT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1476,7 +1476,7 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   } else {
     EXPECT_EQ(2, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
-    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+    EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
   }
 }
 
@@ -1490,12 +1490,12 @@ TEST_P(HandlesEvent, InFailedStateAfterPairingFailed) {
   pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::kAuthenticationFailure);
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_FALSE(status_handler().status()->is_success());
+  EXPECT_FALSE(status_handler().status()->is_ok());
 
   RETURN_IF_FATAL(InjectEvent());
   EXPECT_EQ(2, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
 }
 
 TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
@@ -1512,12 +1512,12 @@ TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
   pairing_state().OnAuthenticationComplete(hci_spec::StatusCode::kAuthenticationFailure);
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_FALSE(status_handler().status()->is_success());
+  EXPECT_FALSE(status_handler().status()->is_ok());
 
   RETURN_IF_FATAL(InjectEvent());
   EXPECT_EQ(2, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
 }
 
 // PairingAction expected answers are inferred from "device A" Authentication
@@ -1738,7 +1738,7 @@ TEST_F(PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
   EXPECT_FALSE(pairing_state.initiator());
   EXPECT_EQ(0, status_handler.call_count());
   ASSERT_EQ(1, initiator_status_handler.call_count());
-  EXPECT_TRUE(initiator_status_handler.status()->is_success());
+  EXPECT_TRUE(initiator_status_handler.status()->is_ok());
 }
 
 TEST_F(PairingStateTest,
@@ -1845,7 +1845,7 @@ TEST_F(PairingStateTest, SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPai
   const auto status_code = hci_spec::StatusCode::kPairingNotAllowed;
   pairing_state.OnSimplePairingComplete(status_code);
   ASSERT_EQ(1, status_handler.call_count());
-  EXPECT_EQ(hci::Status(status_code), status_handler.status().value());
+  EXPECT_EQ(ToResult(status_code), status_handler.status().value());
 }
 
 TEST_F(PairingStateDeathTest, OnLinkKeyRequestReceivedMissingPeerAsserts) {
@@ -1880,7 +1880,7 @@ TEST_F(PairingStateTest, AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPa
   const auto status_code = hci_spec::StatusCode::kAuthenticationFailure;
   pairing_state.OnAuthenticationComplete(status_code);
   ASSERT_EQ(1, status_handler.call_count());
-  EXPECT_EQ(hci::Status(status_code), status_handler.status().value());
+  EXPECT_EQ(ToResult(status_code), status_handler.status().value());
 }
 
 TEST_F(PairingStateTest,
@@ -1906,14 +1906,14 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(0, status_handler.call_count());
   EXPECT_EQ(1, connection.start_encryption_count());
 
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_TRUE(status_handler.status()->is_success());
+  EXPECT_TRUE(status_handler.status()->is_ok());
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
-  EXPECT_TRUE(initiate_status_handler_0.status()->is_success());
+  EXPECT_TRUE(initiate_status_handler_0.status()->is_ok());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
-  EXPECT_TRUE(initiate_status_handler_1.status()->is_success());
+  EXPECT_TRUE(initiate_status_handler_1.status()->is_ok());
 }
 
 TEST_F(
@@ -1944,16 +1944,14 @@ TEST_F(
   EXPECT_EQ(0, status_handler.call_count());
   EXPECT_EQ(1, connection.start_encryption_count());
 
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_TRUE(status_handler.status()->is_success());
+  EXPECT_TRUE(status_handler.status()->is_ok());
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
-  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity),
-            initiate_status_handler_0.status().value());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_0.status().value());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
-  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity),
-            initiate_status_handler_1.status().value());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_1.status().value());
 }
 
 TEST_F(PairingStateTest,
@@ -1984,15 +1982,14 @@ TEST_F(PairingStateTest,
   FakePairingDelegate fake_pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(fake_pairing_delegate.GetWeakPtr());
 
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_TRUE(status_handler.status()->is_success());
+  EXPECT_TRUE(status_handler.status()->is_ok());
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
-  EXPECT_TRUE(initiate_status_handler_0.status()->is_success());
+  EXPECT_TRUE(initiate_status_handler_0.status()->is_ok());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
-  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity),
-            initiate_status_handler_1.status().value());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_1.status().value());
 
   // Pairing for second request should not start.
   EXPECT_FALSE(pairing_state.initiator());
@@ -2029,11 +2026,11 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   EXPECT_EQ(0, status_handler.call_count());
   EXPECT_EQ(1, connection.start_encryption_count());
 
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   ASSERT_EQ(1, status_handler.call_count());
-  EXPECT_TRUE(status_handler.status()->is_success());
+  EXPECT_TRUE(status_handler.status()->is_ok());
   ASSERT_EQ(1, initiator_status_handler_0.call_count());
-  EXPECT_TRUE(initiator_status_handler_0.status()->is_success());
+  EXPECT_TRUE(initiator_status_handler_0.status()->is_ok());
   EXPECT_EQ(0, initiator_status_handler_1.call_count());
 
   fake_pairing_delegate.SetDisplayPasskeyCallback([](PeerId peer_id, uint32_t value,
@@ -2059,12 +2056,12 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::kSuccess);
   EXPECT_EQ(2, connection.start_encryption_count());
 
-  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
   ASSERT_EQ(2, status_handler.call_count());
-  EXPECT_TRUE(status_handler.status()->is_success());
+  EXPECT_TRUE(status_handler.status()->is_ok());
   EXPECT_EQ(1, initiator_status_handler_0.call_count());
   ASSERT_EQ(1, initiator_status_handler_1.call_count());
-  EXPECT_TRUE(initiator_status_handler_1.status()->is_success());
+  EXPECT_TRUE(initiator_status_handler_1.status()->is_ok());
 
   // No further pairing should occur.
   EXPECT_EQ(2u, auth_request_count());

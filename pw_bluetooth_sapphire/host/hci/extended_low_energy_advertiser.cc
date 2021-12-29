@@ -279,9 +279,9 @@ void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(const EventPack
   ZX_ASSERT(event.params<hci_spec::CommandCompleteEventParams>().command_opcode ==
             hci_spec::kLESetExtendedAdvertisingParameters);
 
-  Status status = event.ToStatus();
-  if (bt_is_error(status, WARN, "hci-le", "set advertising parameters, error received: %s",
-                  bt_str(status))) {
+  Result<> result = event.ToResult();
+  if (bt_is_error(result, WARN, "hci-le", "set advertising parameters, error received: %s",
+                  bt_str(result))) {
     return;  // full error handling done in super class, can just return here
   }
 
@@ -298,8 +298,8 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
                                                    const AdvertisingData& scan_rsp,
                                                    AdvertisingOptions options,
                                                    ConnectionCallback connect_callback,
-                                                   StatusCallback status_callback) {
-  ZX_ASSERT(status_callback);
+                                                   ResultFunction<> result_callback) {
+  ZX_ASSERT(result_callback);
   ZX_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   // if there is an operation currently in progress, enqueue this operation and we will get to it
@@ -316,8 +316,8 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
     op_queue_.push([this, address, data = std::move(copied_data),
                     scan_rsp = std::move(copied_scan_rsp), options,
                     conn_cb = std::move(connect_callback),
-                    status_cb = std::move(status_callback)]() mutable {
-      StartAdvertising(address, data, scan_rsp, options, std::move(conn_cb), std::move(status_cb));
+                    result_cb = std::move(result_callback)]() mutable {
+      StartAdvertising(address, data, scan_rsp, options, std::move(conn_cb), std::move(result_cb));
     });
 
     return;
@@ -325,7 +325,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
 
   if (options.anonymous) {
     bt_log(WARN, "hci-le", "anonymous advertising not supported");
-    status_callback(Status(HostError::kNotSupported));
+    result_callback(ToResult(HostError::kNotSupported));
     return;
   }
 
@@ -341,13 +341,13 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
 
   if (size_t size = data.CalculateBlockSize(/*include_flags=*/true); size > size_limit) {
     bt_log(WARN, "hci-le", "advertising data too large (actual: %zu, max: %zu)", size, size_limit);
-    status_callback(Status(HostError::kAdvertisingDataTooLong));
+    result_callback(ToResult(HostError::kAdvertisingDataTooLong));
     return;
   }
 
   if (size_t size = scan_rsp.CalculateBlockSize(/*include_flags=*/false); size > size_limit) {
     bt_log(WARN, "hci-le", "scan response too large (actual: %zu, max: %zu)", size, size_limit);
-    status_callback(Status(HostError::kScanResponseTooLong));
+    result_callback(ToResult(HostError::kScanResponseTooLong));
     return;
   }
 
@@ -366,7 +366,7 @@ void ExtendedLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
   // unable to support another advertising set, it will respond with a memory capacity exceeded
   // error.
   StartAdvertisingInternal(address, data, scan_rsp, options.interval, options.flags,
-                           std::move(connect_callback), std::move(status_callback));
+                           std::move(connect_callback), std::move(result_callback));
 }
 
 void ExtendedLowEnergyAdvertiser::StopAdvertising() {
@@ -412,9 +412,9 @@ CommandChannel::EventCallbackResult ExtendedLowEnergyAdvertiser::OnAdvertisingSe
   ZX_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
             hci_spec::kLEAdvertisingSetTerminatedSubeventCode);
 
-  Status status = event.ToStatus();
-  if (bt_is_error(status, ERROR, "hci-le", "advertising set terminated event, error received %s",
-                  bt_str(status))) {
+  Result<> result = event.ToResult();
+  if (bt_is_error(result, ERROR, "hci-le", "advertising set terminated event, error received %s",
+                  bt_str(result))) {
     return CommandChannel::EventCallbackResult::kContinue;
   }
 

@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
@@ -47,16 +47,16 @@ class ConnectionImpl final : public Connection {
   bool LEStartEncryption(const hci_spec::LinkKey& ltk);
 
   // Called when encryption is enabled or disabled as a result of the link layer
-  // encryption "start" or "pause" procedure. If |status| indicates failure,
+  // encryption "start" or "pause" procedure. If |result| indicates failure,
   // then this method will disconnect the link before notifying the encryption
   // change handler.
-  void HandleEncryptionStatus(Status status, bool enabled);
+  void HandleEncryptionStatus(Result<bool> result);
 
   // Request the current encryption key size and call |key_size_validity_cb|
   // when the controller responds. |key_size_validity_cb| will be called with a
   // success only if the link is encrypted with a key of size at least
   // |hci_spec::kMinEncryptionKeySize|. Only valid for ACL-U connections.
-  void ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb);
+  void ValidateAclEncryptionKeySize(hci::ResultFunction<> key_size_validity_cb);
 
   // HCI event handlers.
   CommandChannel::EventCallbackResult OnEncryptionChangeEvent(const EventPacket& event);
@@ -242,7 +242,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
   }
 
   bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2x",
-         bt_str(event.ToStatus()), handle, params.reason);
+         bt_str(event.ToResult()), handle, params.reason);
 
   // Stop data flow and revoke queued packets for this connection.
   hci->acl_data_channel()->UnregisterLink(handle);
@@ -333,7 +333,7 @@ bool ConnectionImpl::BrEdrStartEncryption() {
       return;
     }
 
-    const Status status = event.ToStatus();
+    Result<> status = event.ToResult();
     if (!bt_is_error(status, ERROR, "hci-bredr", "could not set encryption on link %#.04x",
                      handle)) {
       bt_log(DEBUG, "hci-bredr", "requested encryption start on %#.04x", handle);
@@ -341,7 +341,7 @@ bool ConnectionImpl::BrEdrStartEncryption() {
     }
 
     if (self->encryption_change_callback()) {
-      self->encryption_change_callback()(status, false);
+      self->encryption_change_callback()(status.take_error());
     }
   };
 
@@ -369,14 +369,14 @@ bool ConnectionImpl::LEStartEncryption(const hci_spec::LinkKey& ltk) {
       return;
     }
 
-    const Status status = event.ToStatus();
+    Result<> status = event.ToResult();
     if (!bt_is_error(status, ERROR, "hci-le", "could not set encryption on link %#.04x", handle)) {
       bt_log(DEBUG, "hci-le", "requested encryption start on %#.04x", handle);
       return;
     }
 
     if (self->encryption_change_callback()) {
-      self->encryption_change_callback()(status, false);
+      self->encryption_change_callback()(status.take_error());
     }
   };
 
@@ -384,7 +384,7 @@ bool ConnectionImpl::LEStartEncryption(const hci_spec::LinkKey& ltk) {
                                               hci_spec::kCommandStatusEventCode) != 0u;
 }
 
-void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
+void ConnectionImpl::HandleEncryptionStatus(Result<bool> result) {
   // "On an authentication failure, the connection shall be automatically
   // disconnected by the Link Layer." (HCI_LE_Start_Encryption, Vol 2, Part E,
   // 7.8.24). We make sure of this by telling the controller to disconnect.
@@ -393,10 +393,8 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   // link after pairing failures (supported by TS GAP/SEC/SEM/BV-10-C), but do
   // not specify actions to take after encryption failures. We'll choose to
   // disconnect ACL links after encryption failure.
-  if (!status) {
+  if (result.is_error()) {
     Disconnect(hci_spec::StatusCode::kAuthenticationFailure);
-  } else {
-    // TODO(fxbug.dev/801): Tell the data channel to resume data flow.
   }
 
   if (!encryption_change_callback()) {
@@ -404,10 +402,10 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
     return;
   }
 
-  encryption_change_callback()(status, enabled);
+  encryption_change_callback()(result);
 }
 
-void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb) {
+void ConnectionImpl::ValidateAclEncryptionKeySize(hci::ResultFunction<> key_size_validity_cb) {
   ZX_ASSERT(ll_type() == bt::LinkType::kACL);
   ZX_ASSERT(conn_state_ == Connection::State::kConnected);
 
@@ -422,7 +420,7 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
       return;
     }
 
-    Status status = event.ToStatus();
+    Result<> status = event.ToResult();
     if (!bt_is_error(status, ERROR, "hci", "Could not read ACL encryption key size on %#.4x",
                      self->handle())) {
       const auto& return_params =
@@ -433,7 +431,7 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
       if (key_size < hci_spec::kMinEncryptionKeySize) {
         bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient", self->handle(),
                key_size);
-        status = Status(HostError::kInsufficientSecurity);
+        status = ToResult(HostError::kInsufficientSecurity);
       }
     }
     valid_cb(status);
@@ -465,20 +463,21 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  Status status(params.status);
+  Result<> status = event.ToResult();
   bool enabled = params.encryption_enabled != hci_spec::EncryptionStatus::kOff;
 
   bt_log(DEBUG, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
-         status.ToString().c_str());
+         bt_str(status));
 
-  if (ll_type() == bt::LinkType::kACL && status && enabled) {
-    ValidateAclEncryptionKeySize([this](const Status& key_valid_status) {
-      HandleEncryptionStatus(key_valid_status, true /* enabled */);
+  if (ll_type() == bt::LinkType::kACL && status.is_ok() && enabled) {
+    ValidateAclEncryptionKeySize([this](Result<> key_valid_status) {
+      HandleEncryptionStatus(key_valid_status.is_ok() ? Result<bool>(fitx::ok(true))
+                                                      : key_valid_status.take_error());
     });
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  HandleEncryptionStatus(status, enabled);
+  HandleEncryptionStatus(status.is_ok() ? Result<bool>(fitx::ok(enabled)) : status.take_error());
 
   return CommandChannel::EventCallbackResult::kContinue;
 }
@@ -506,13 +505,12 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshComple
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  Status status(params.status);
-
-  bt_log(DEBUG, "hci", "encryption key refresh %s", status.ToString().c_str());
+  Result<> status = event.ToResult();
+  bt_log(DEBUG, "hci", "encryption key refresh %s", bt_str(status));
 
   // Report that encryption got disabled on failure status. The accuracy of this
   // isn't that important since the link will be disconnected.
-  HandleEncryptionStatus(status, static_cast<bool>(status));
+  HandleEncryptionStatus(status.is_ok() ? Result<bool>(fitx::ok(true)) : status.take_error());
 
   return CommandChannel::EventCallbackResult::kContinue;
 }

@@ -17,16 +17,16 @@ LowEnergyConnectionRequest::LowEnergyConnectionRequest(
   callbacks_.Mutable()->push_back(std::move(first_callback));
 }
 
-void LowEnergyConnectionRequest::NotifyCallbacks(fpromise::result<RefFunc, HostError> result) {
+void LowEnergyConnectionRequest::NotifyCallbacks(fitx::result<HostError, RefFunc> result) {
   peer_conn_token_.reset();
 
   for (const auto& callback : *callbacks_) {
     if (result.is_error()) {
-      callback(fpromise::error(result.error()));
+      callback(fitx::error(result.error_value()));
       continue;
     }
     auto conn_ref = result.value()();
-    callback(fpromise::ok(std::move(conn_ref)));
+    callback(fitx::ok(std::move(conn_ref)));
   }
 }
 

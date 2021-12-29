@@ -113,7 +113,7 @@ LowEnergyConnector::~LowEnergyConnector() {
   if (*state_ != State::kComplete && *state_ != State::kFailed) {
     bt_log(WARN, "gap-le", "destroying LowEnergyConnector before procedure completed (peer: %s)",
            bt_str(peer_id_));
-    NotifyFailure(hci::Status(HostError::kCanceled));
+    NotifyFailure(ToResult(HostError::kCanceled));
   }
 
   if (hci_connector_ && hci_connector_->request_pending()) {
@@ -133,12 +133,12 @@ void LowEnergyConnector::Cancel() {
   switch (*state_) {
     case State::kStartingScanning:
       discovery_session_.reset();
-      NotifyFailure(hci::Status(HostError::kCanceled));
+      NotifyFailure(ToResult(HostError::kCanceled));
       break;
     case State::kScanning:
       discovery_session_.reset();
       scan_timeout_task_.reset();
-      NotifyFailure(hci::Status(HostError::kCanceled));
+      NotifyFailure(ToResult(HostError::kCanceled));
       break;
     case State::kConnecting:
       // The connector will call the result callback with a cancelled result.
@@ -150,7 +150,7 @@ void LowEnergyConnector::Cancel() {
       break;
     case State::kPauseBeforeConnectionRetry:
       request_create_connection_task_.Cancel();
-      NotifyFailure(hci::Status(HostError::kCanceled));
+      NotifyFailure(ToResult(HostError::kCanceled));
       break;
     case State::kAwaitingConnectionFailedToBeEstablishedDisconnect:
       // Waiting for disconnect complete, nothing to do.
@@ -218,7 +218,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   // Failed to start scan, abort connection procedure.
   if (!session) {
     bt_log(INFO, "gap-le", "failed to start scan (peer: %s)", bt_str(peer_id_));
-    NotifyFailure(hci::Status(HostError::kFailed));
+    NotifyFailure(ToResult(HostError::kFailed));
     return;
   }
 
@@ -229,7 +229,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   scan_timeout_task_.emplace([this] {
     ZX_ASSERT(*state_ == State::kScanning);
     bt_log(INFO, "gap-le", "scan for pending connection timed out (peer: %s)", bt_str(peer_id_));
-    NotifyFailure(hci::Status(HostError::kTimedOut));
+    NotifyFailure(ToResult(HostError::kTimedOut));
   });
   // The scan timeout may include time during which scanning is paused.
   scan_timeout_task_->PostDelayed(async_get_default_dispatcher(), kLEGeneralCepScanTimeout);
@@ -244,7 +244,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
     bt_log(INFO, "gap-le", "discovery error while scanning for peer (peer: %s)",
            bt_str(self->peer_id_));
     self->scan_timeout_task_.reset();
-    self->NotifyFailure(hci::Status(HostError::kFailed));
+    self->NotifyFailure(ToResult(HostError::kFailed));
   });
 
   discovery_session_->SetResultCallback([self](auto& peer) {
@@ -274,7 +274,7 @@ void LowEnergyConnector::RequestCreateConnection() {
   auto pause_token = discovery_manager_->PauseDiscovery();
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self, pause = std::move(pause_token)](hci::Status status, auto link) {
+  auto status_cb = [self, pause = std::move(pause_token)](hci::Result<> status, auto link) {
     if (self) {
       self->OnConnectResult(status, std::move(link));
     }
@@ -288,8 +288,8 @@ void LowEnergyConnector::RequestCreateConnection() {
       kInitialConnectionParameters, std::move(status_cb), hci_request_timeout_));
 }
 
-void LowEnergyConnector::OnConnectResult(hci::Status status, hci::ConnectionPtr link) {
-  if (!status) {
+void LowEnergyConnector::OnConnectResult(hci::Result<> status, hci::ConnectionPtr link) {
+  if (status.is_error()) {
     bt_log(INFO, "gap-le", "failed to connect to peer (id: %s, status: %s)", bt_str(peer_id_),
            bt_str(status));
 
@@ -334,7 +334,7 @@ void LowEnergyConnector::StartInterrogation() {
                       fit::bind_member(this, &LowEnergyConnector::OnInterrogationComplete));
 }
 
-void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
+void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {
   // If a disconnect event is received before interrogation completes, state_ will be either kFailed
   // or kPauseBeforeConnectionRetry depending on the status of the disconnect.
   ZX_ASSERT(*state_ == State::kInterrogating || *state_ == State::kFailed ||
@@ -348,8 +348,7 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
   // If the controller responds to an interrogation command with the 0x3e
   // "kConnectionFailedToBeEstablished" error, it will send a Disconnection Complete event soon
   // after. Wait for this event before initating a retry.
-  if (status.is_protocol_error() &&
-      status.protocol_error() == hci_spec::kConnectionFailedToBeEstablished) {
+  if (status.is_error() && status.error_value().is(hci_spec::kConnectionFailedToBeEstablished)) {
     bt_log(INFO, "gap-le",
            "Received kConnectionFailedToBeEstablished during interrogation. Waiting for Disconnect "
            "Complete. (peer: %s)",
@@ -358,7 +357,7 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
     return;
   }
 
-  if (!status.is_success()) {
+  if (status.is_error()) {
     bt_log(INFO, "gap-le", "interrogation failed with %s (peer: %s)", bt_str(status),
            bt_str(peer_id_));
     NotifyFailure();
@@ -369,23 +368,23 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
   NotifySuccess();
 }
 
-void LowEnergyConnector::OnPeerDisconnect(hci_spec::StatusCode status) {
+void LowEnergyConnector::OnPeerDisconnect(hci_spec::StatusCode status_code) {
   // The peer can't disconnect while scanning or connecting, and we unregister from
   // disconnects after kFailed & kComplete.
   ZX_ASSERT_MSG(*state_ == State::kInterrogating ||
                     *state_ == State::kAwaitingConnectionFailedToBeEstablishedDisconnect,
                 "Received peer disconnect during invalid state (state: %s, status: %s)",
-                StateToString(*state_), bt_str(hci::Status(status)));
+                StateToString(*state_), bt_str(ToResult(status_code)));
   if (*state_ == State::kInterrogating &&
-      status != hci_spec::StatusCode::kConnectionFailedToBeEstablished) {
-    NotifyFailure(hci::Status(status));
+      status_code != hci_spec::StatusCode::kConnectionFailedToBeEstablished) {
+    NotifyFailure(ToResult(status_code));
     return;
   }
 
   // state_ is kAwaitingConnectionFailedToBeEstablished or kInterrogating with a 0x3e error, so
   // retry connection
   if (!MaybeRetryConnection()) {
-    NotifyFailure(hci::Status(status));
+    NotifyFailure(ToResult(status_code));
   }
 }
 
@@ -423,14 +422,14 @@ void LowEnergyConnector::NotifySuccess() {
     ZX_PANIC("connection error without handler set (peer: %s)", bt_str(peer_id));
   });
 
-  result_cb_(fpromise::ok(std::move(connection_)));
+  result_cb_(fitx::ok(std::move(connection_)));
 }
 
-void LowEnergyConnector::NotifyFailure(hci::Status status) {
+void LowEnergyConnector::NotifyFailure(hci::Result<> status) {
   state_.Set(State::kFailed);
   // The result callback must only be called once, so extraneous failures should be ignored.
   if (result_cb_) {
-    result_cb_(fpromise::error(status));
+    result_cb_(fitx::error(status.take_error()));
   }
 }
 

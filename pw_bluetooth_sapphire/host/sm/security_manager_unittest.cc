@@ -21,7 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "util.h"
 
 namespace bt::sm {
@@ -111,7 +111,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   }
 
   // Called by |pairing_| when any encryption procedure fails.
-  void OnAuthenticationFailure(hci::Status status) override {
+  void OnAuthenticationFailure(hci::Result<> status) override {
     auth_failure_callback_count_++;
     auth_failure_status_ = status;
   }
@@ -342,7 +342,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   int pairing_data_callback_count() const { return pairing_data_callback_count_; }
 
   int auth_failure_callback_count() const { return auth_failure_callback_count_; }
-  const hci::Status& auth_failure_status() const { return auth_failure_status_; }
+  const hci::Result<>& auth_failure_status() const { return auth_failure_status_; }
 
   int local_id_info_callback_count() const { return local_id_info_callback_count_; }
 
@@ -432,7 +432,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
   // State tracking the OnAuthenticationFailure event.
   int auth_failure_callback_count_ = 0;
-  hci::Status auth_failure_status_;
+  hci::Result<> auth_failure_status_ = fitx::ok();
 
   // State tracking the OnIdentityInformationRequest event.
   int local_id_info_callback_count_ = 0;
@@ -570,7 +570,7 @@ class InitiatorPairingTest : public SecurityManagerTest {
     EXPECT_EQ(1, fake_link()->start_encryption_count());
 
     // Resolve the encryption request.
-    fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -752,7 +752,7 @@ class ResponderPairingTest : public SecurityManagerTest {
     EXPECT_EQ(0, fake_link()->start_encryption_count());
 
     // Pretend that the initiator succeeded in encrypting the connection.
-    fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+    fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -992,11 +992,11 @@ TEST_F(InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnectionsO
   RunLoopUntilIdle();
   // After setting SC Only mode, assigning and encrypting with an unauthenticated LTK should cause
   // the channel to be disconnected with an authentication failure.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, auth_failure_callback_count());
-  EXPECT_EQ(HostError::kInsufficientSecurity, auth_failure_status().error());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), auth_failure_status());
   EXPECT_TRUE(fake_chan()->link_error());
 }
 
@@ -1671,8 +1671,8 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(SecurityProperties(), pairing()->security());
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(hci_spec::StatusCode::kPinOrKeyMissing),
-                                               false /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(
+      ToResult(hci_spec::StatusCode::kPinOrKeyMissing).take_error());
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1680,7 +1680,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, auth_failure_callback_count());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, security_status().protocol_error());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
 
   // No security property update should have been sent since the security
   // properties have not changed.
@@ -1701,7 +1701,7 @@ TEST_F(InitiatorPairingTest, EncryptionDisabledInPhase2) {
   EXPECT_EQ(1, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityProperties(), pairing()->security());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), false /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(false /* enabled */));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1746,7 +1746,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
 
   // Pairing should succeed without any pairing data.
@@ -1840,7 +1840,7 @@ TEST_F(InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
 
   // Pairing should succeed without any messages being sent in "Phase 3". The LTK was generated in
@@ -1890,7 +1890,7 @@ TEST_F(InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
 
   // Pairing should succeed with the LTK as we are in SC, but as the pairing is non-bondable, no
@@ -2280,7 +2280,7 @@ TEST_F(InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
   set_local_id_info(std::nullopt);
 
   // Encrypt with the STK to finish phase 2.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
 
   // Pairing should have been aborted.
@@ -2513,7 +2513,7 @@ TEST_F(InitiatorPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());
@@ -2545,7 +2545,7 @@ TEST_F(InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   ReceiveEncryptionInformation(kLTK);
   ReceiveCentralIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_TRUE(security_status());
@@ -2707,7 +2707,7 @@ TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDis
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  ASSERT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
 }
 
 TEST_F(ResponderPairingTest, SuccessfulPairAfterResetInProgressPairing) {
@@ -2775,7 +2775,7 @@ TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
   AuthReqField expected_auth_req = AuthReq::kBondingFlag | AuthReq::kMITM;
   EXPECT_EQ(1, security_request_count());
   EXPECT_EQ(expected_auth_req, security_request_payload());
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /*enabled*/);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
 
   // Security should be upgraded.
   EXPECT_EQ(1, security_callback_count());
@@ -2807,7 +2807,7 @@ TEST_F(ResponderPairingTest, SecurityRequestInitiatorEncryptsWithInsufficientSec
   EXPECT_EQ(expected_auth_req, security_request_payload());
 
   // Pretend the SMP initiator started encryption with the bonded LTK of SecurityLevel::kEncrypted.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /*enabled*/);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
 
   // If the peer responds to our MITM security request by encrypting with an unauthenticated key,
   // they stored the LTK/handle security request incorrectly - either way, disconnect the link.
@@ -3084,7 +3084,7 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(fake_link()->ltk(), pairing_data().local_ltk->key());
 
   // Make sure that an encryption change has no effect.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
   EXPECT_EQ(1, pairing_data_callback_count());
 
@@ -3287,7 +3287,7 @@ TEST_F(ResponderPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());
@@ -3302,22 +3302,22 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
 
   EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
   fake_link()->set_le_ltk(kModifiedLtk);
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /*enabled*/);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  ASSERT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
 }
 
 TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   // The LE link LTK should always be assigned through SM, so while encryption could succeed with
   // a link LTK but no SM LTK, this is a violation of bt-host assumptions and we will disconnect.
   fake_link()->set_le_ltk(hci_spec::LinkKey({1}, 2, 3));
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /*enabled*/);
+  fake_link()->TriggerEncryptionChangeCallback(fitx::ok(true /* enabled */));
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
+  ASSERT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
 }
 
 // As responder, we reject security requests, as the initiator should never send them.

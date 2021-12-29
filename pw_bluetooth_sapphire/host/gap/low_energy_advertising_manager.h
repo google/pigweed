@@ -99,7 +99,7 @@ class LowEnergyAdvertisingManager {
   using ConnectionCallback =
       fit::function<void(AdvertisementId advertisement_id, std::unique_ptr<hci::Connection> link)>;
   using AdvertisingStatusCallback =
-      fit::function<void(AdvertisementInstance instance, hci::Status status)>;
+      fit::function<void(AdvertisementInstance instance, hci::Result<> status)>;
   void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
                         ConnectionCallback connect_callback, AdvertisingInterval interval,
                         bool anonymous, bool include_tx_power_level,

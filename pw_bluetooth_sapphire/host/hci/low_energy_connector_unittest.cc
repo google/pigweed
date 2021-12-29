@@ -100,7 +100,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnection) {
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_FALSE(connector()->pending_peer_address());
 
-  hci::Status status;
+  Result<> status = fitx::ok();
   ConnectionPtr conn;
   bool callback_called = false;
 
@@ -127,7 +127,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnection) {
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_FALSE(connector()->pending_peer_address());
   EXPECT_TRUE(callback_called);
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(in_connections().empty());
 
   ASSERT_TRUE(conn);
@@ -145,7 +145,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
 
   EXPECT_FALSE(connector()->request_pending());
 
-  hci::Status status;
+  Result<> status = fitx::ok();
   ConnectionPtr conn;
   bool callback_called = false;
 
@@ -165,9 +165,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
 
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
-  EXPECT_FALSE(status);
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(hci_spec::StatusCode::kCommandDisallowed, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kCommandDisallowed), status);
   EXPECT_FALSE(conn);
   EXPECT_TRUE(in_connections().empty());
 }
@@ -180,7 +178,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionEventError) {
 
   EXPECT_FALSE(connector()->request_pending());
 
-  hci::Status status;
+  Result<> status = fitx::ok();
   ConnectionPtr conn;
   bool callback_called = false;
 
@@ -200,9 +198,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionEventError) {
 
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
-  EXPECT_FALSE(status);
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(hci_spec::StatusCode::kConnectionRejectedSecurity, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionRejectedSecurity), status);
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(conn);
 }
@@ -215,7 +211,7 @@ TEST_F(LowEnergyConnectorTest, Cancel) {
   fake_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  hci::Status status;
+  hci::Result<> status = fitx::ok();
   ConnectionPtr conn;
   bool callback_called = false;
 
@@ -246,7 +242,7 @@ TEST_F(LowEnergyConnectorTest, Cancel) {
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
   EXPECT_TRUE(request_canceled);
-  EXPECT_EQ(HostError::kCanceled, status.error());
+  EXPECT_EQ(ToResult(HostError::kCanceled), status);
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(conn);
 }
@@ -287,7 +283,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
   auto fake_peer = std::make_unique<FakePeer>(kTestAddress, true, true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  hci::Status status;
+  Result<> status = fitx::ok();
   ConnectionPtr conn;
   unsigned int callback_count = 0;
 
@@ -317,7 +313,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, callback_count);
   ASSERT_EQ(1u, in_connections().size());
 
@@ -336,7 +332,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionTimeout) {
   // We do not set up any fake devices. This will cause the request to time out.
   EXPECT_FALSE(connector()->request_pending());
 
-  hci::Status status;
+  Result<> status = fitx::ok();
   ConnectionPtr conn;
   bool callback_called = false;
 
@@ -359,7 +355,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionTimeout) {
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
   EXPECT_TRUE(request_canceled);
-  EXPECT_EQ(HostError::kTimedOut, status.error()) << status.ToString();
+  EXPECT_EQ(ToResult(HostError::kTimedOut), status) << bt_str(status);
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(conn);
 }
@@ -454,7 +450,7 @@ TEST_F(LowEnergyConnectorTest, ConnectUsingRandomAddress) {
 }
 
 TEST_F(LowEnergyConnectorTest, CancelConnectWhileWaitingForLocalAddress) {
-  Status status;
+  Result<> status = fitx::ok();
   ConnectionPtr conn;
   auto callback = [&](auto s, auto c) {
     status = s;
@@ -479,7 +475,7 @@ TEST_F(LowEnergyConnectorTest, CancelConnectWhileWaitingForLocalAddress) {
   EXPECT_FALSE(request_canceled);
 
   // Our request should have resulted in an error.
-  EXPECT_EQ(HostError::kCanceled, status.error());
+  EXPECT_EQ(ToResult(HostError::kCanceled), status);
   EXPECT_FALSE(conn);
 }
 

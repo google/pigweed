@@ -188,12 +188,12 @@ class AdapterImpl final : public Adapter {
     }
 
     void Pair(PeerId peer_id, BrEdrSecurityRequirements security,
-              hci::StatusCallback callback) override {
+              hci::ResultFunction<> callback) override {
       adapter_->bredr_connection_manager_->Pair(peer_id, security, std::move(callback));
       adapter_->metrics_.bredr.pair_requests.Add();
     }
 
-    void SetConnectable(bool connectable, hci::StatusCallback status_cb) override {
+    void SetConnectable(bool connectable, hci::ResultFunction<> status_cb) override {
       adapter_->bredr_connection_manager_->SetConnectable(connectable, std::move(status_cb));
       if (connectable) {
         adapter_->metrics_.bredr.set_connectable_true_events.Add();
@@ -252,11 +252,11 @@ class AdapterImpl final : public Adapter {
 
   bool IsDiscovering() const override;
 
-  void SetLocalName(std::string name, hci::StatusCallback callback) override;
+  void SetLocalName(std::string name, hci::ResultFunction<> callback) override;
 
   std::string local_name() const override { return bredr_discovery_manager_->local_name(); }
 
-  void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) override;
+  void SetDeviceClass(DeviceClass dev_class, hci::ResultFunction<> callback) override;
 
   void set_auto_connect_callback(AutoConnectCallback callback) override {
     auto_conn_cb_ = std::move(callback);
@@ -574,17 +574,17 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
         state_.controller_address_ = params->bd_addr;
       });
 
-  init_seq_runner_->RunCommands([callback = std::move(callback), this](hci::Status status) mutable {
-    if (!status) {
-      bt_log(ERROR, "gap", "Failed to obtain initial controller information: %s",
-             status.ToString().c_str());
-      CleanUp();
-      callback(false);
-      return;
-    }
+  init_seq_runner_->RunCommands(
+      [callback = std::move(callback), this](hci::Result<> status) mutable {
+        if (bt_is_error(status, ERROR, "gap", "Failed to obtain initial controller information: %s",
+                        bt_str(status))) {
+          CleanUp();
+          callback(false);
+          return;
+        }
 
-    InitializeStep2(std::move(callback));
-  });
+        InitializeStep2(std::move(callback));
+      });
 
   return true;
 }
@@ -620,11 +620,11 @@ bool AdapterImpl::IsDiscovering() const {
          (bredr_discovery_manager_ && bredr_discovery_manager_->discovering());
 }
 
-void AdapterImpl::SetLocalName(std::string name, hci::StatusCallback callback) {
+void AdapterImpl::SetLocalName(std::string name, hci::ResultFunction<> callback) {
   // TODO(fxbug.dev/40836): set the public LE advertisement name from |name|
   // If BrEdr is not supported, skip the name update.
   if (!bredr_discovery_manager_) {
-    callback(hci::Status(bt::HostError::kNotSupported));
+    callback(ToResult(bt::HostError::kNotSupported));
     return;
   }
 
@@ -640,7 +640,7 @@ void AdapterImpl::SetLocalName(std::string name, hci::StatusCallback callback) {
       });
 }
 
-void AdapterImpl::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) {
+void AdapterImpl::SetDeviceClass(DeviceClass dev_class, hci::ResultFunction<> callback) {
   auto write_dev_class = hci::CommandPacket::New(hci_spec::kWriteClassOfDevice,
                                                  sizeof(hci_spec::WriteClassOfDeviceCommandParams));
   write_dev_class->mutable_payload<hci_spec::WriteClassOfDeviceCommandParams>()->class_of_device =
@@ -648,7 +648,7 @@ void AdapterImpl::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback call
   hci_->command_channel()->SendCommand(
       std::move(write_dev_class), [cb = std::move(callback)](auto, const hci::EventPacket& event) {
         hci_is_error(event, WARN, "gap", "set device class failed");
-        cb(event.ToStatus());
+        cb(event.ToResult());
       });
 }
 
@@ -806,15 +806,16 @@ void AdapterImpl::InitializeStep2(InitializeCallback callback) {
         });
   }
 
-  init_seq_runner_->RunCommands([callback = std::move(callback), this](hci::Status status) mutable {
-    if (bt_is_error(status, ERROR, "gap",
-                    "failed to obtain initial controller information (step 2)")) {
-      CleanUp();
-      callback(false);
-      return;
-    }
-    InitializeStep3(std::move(callback));
-  });
+  init_seq_runner_->RunCommands(
+      [callback = std::move(callback), this](hci::Result<> status) mutable {
+        if (bt_is_error(status, ERROR, "gap",
+                        "failed to obtain initial controller information (step 2)")) {
+          CleanUp();
+          callback(false);
+          return;
+        }
+        InitializeStep3(std::move(callback));
+      });
 }
 
 void AdapterImpl::InitializeStep3(InitializeCallback callback) {
@@ -925,15 +926,16 @@ void AdapterImpl::InitializeStep3(InitializeCallback callback) {
         });
   }
 
-  init_seq_runner_->RunCommands([callback = std::move(callback), this](hci::Status status) mutable {
-    if (bt_is_error(status, ERROR, "gap",
-                    "failed to obtain initial controller information (step 3)")) {
-      CleanUp();
-      callback(false);
-      return;
-    }
-    InitializeStep4(std::move(callback));
-  });
+  init_seq_runner_->RunCommands(
+      [callback = std::move(callback), this](hci::Result<> status) mutable {
+        if (bt_is_error(status, ERROR, "gap",
+                        "failed to obtain initial controller information (step 3)")) {
+          CleanUp();
+          callback(false);
+          return;
+        }
+        InitializeStep4(std::move(callback));
+      });
 }
 
 void AdapterImpl::InitializeStep4(InitializeCallback callback) {
@@ -1175,11 +1177,11 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
 
         if (result.is_error()) {
           bt_log(INFO, "gap", "failed to auto-connect (peer: %s, error: %s)", bt_str(peer_id),
-                 HostErrorToString(result.error()).c_str());
+                 HostErrorToString(result.error_value()).c_str());
           return;
         }
 
-        auto conn = result.take_value();
+        auto conn = std::move(result).value();
         ZX_ASSERT(conn);
         bt_log(INFO, "gap", "peer auto-connected (peer: %s)", bt_str(peer_id));
         if (self->auto_conn_cb_) {

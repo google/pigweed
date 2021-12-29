@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
 
@@ -67,8 +67,8 @@ void BrEdrConnectionRequest::CreateConnection(
     if (!self)
       return;
 
-    Status status = event.ToStatus();
-    if (!status) {
+    Result<> status = event.ToResult();
+    if (status.is_error()) {
       on_command_fail(status, peer_id);
     } else {
       // The request was started but has not completed; initiate the command
@@ -86,20 +86,20 @@ void BrEdrConnectionRequest::CreateConnection(
 }
 
 // Status is either a Success or an Error value
-Status BrEdrConnectionRequest::CompleteRequest(Status status) {
+Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
   bt_log(INFO, "hci-bredr", "connection complete (peer: %s, status: %s)", bt_str(peer_id_),
          bt_str(status));
   timeout_task_.Cancel();
 
-  if (!status.is_success()) {
+  if (status.is_error()) {
     if (state_ == RequestState::kTimedOut) {
-      status = Status(HostError::kTimedOut);
-    } else if (status.protocol_error() == hci_spec::StatusCode::kUnknownConnectionId) {
+      status = ToResult(HostError::kTimedOut);
+    } else if (status == ToResult(hci_spec::StatusCode::kUnknownConnectionId)) {
       // The "Unknown Connection Identifier" error code is returned if this
       // event was sent due to a successful cancellation via the
       // HCI_Create_Connection_Cancel command
       // See Core Spec v5.0 Vol 2, Part E, Section 7.1.7
-      status = Status(HostError::kCanceled);
+      status = ToResult(HostError::kCanceled);
     }
   }
   return status;

@@ -585,7 +585,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
 }
 
 void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority,
-                                     fit::callback<void(fpromise::result<>)> callback) {
+                                     fit::callback<void(fitx::result<fitx::failed>)> callback) {
   ZX_ASSERT(channel);
   auto iter = channels_.find(channel->id());
   ZX_ASSERT(iter != channels_.end());
@@ -598,12 +598,11 @@ void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority
   }
 }
 
-void LogicalLink::SetBrEdrAutomaticFlushTimeout(
-    zx::duration flush_timeout,
-    fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) {
+void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+                                                fit::callback<void(hci::Result<>)> callback) {
   if (type_ != bt::LinkType::kACL) {
     bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
-    callback(fpromise::error(hci_spec::StatusCode::kInvalidHCICommandParameters));
+    callback(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters));
     return;
   }
 
@@ -663,7 +662,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Prevent closed channels with queued requests from upgrading channel priority.
   if (channels_.find(request.channel->id()) == channels_.end() &&
       request.priority != hci::AclPriority::kNormal) {
-    request.callback(fpromise::error());
+    request.callback(fitx::failed());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
     return;
@@ -672,7 +671,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Skip sending command if desired priority is already set. Do this here instead of Channel in
   // case Channel queues up multiple requests.
   if (request.channel->requested_acl_priority() == request.priority) {
-    request.callback(fpromise::ok());
+    request.callback(fitx::ok());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
     return;
@@ -689,7 +688,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
       // command and just report success.
       if (request.priority == hci::AclPriority::kNormal ||
           request.priority == chan->requested_acl_priority()) {
-        request.callback(fpromise::ok());
+        request.callback(fitx::ok());
         break;
       }
 
@@ -697,7 +696,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
       // (e.g. sink vs. source), report an error.
       if (request.priority != hci::AclPriority::kNormal &&
           request.priority != chan->requested_acl_priority()) {
-        request.callback(fpromise::error());
+        request.callback(fitx::failed());
         break;
       }
     }

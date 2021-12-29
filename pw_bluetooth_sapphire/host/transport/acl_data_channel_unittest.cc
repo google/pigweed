@@ -1249,7 +1249,7 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
   acl_data_channel()->RegisterLink(kLinkHandle, bt::LinkType::kACL);
 
-  std::optional<fpromise::result<void, hci_spec::StatusCode>> cb_status;
+  std::optional<Result<>> cb_status;
   auto result_cb = [&](auto status) { cb_status = status; };
 
   // Test command complete error
@@ -1262,7 +1262,7 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   ASSERT_TRUE(cb_status->is_error());
-  EXPECT_EQ(cb_status->error(), hci_spec::StatusCode::kUnknownConnectionId);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kUnknownConnectionId), *cb_status);
   cb_status.reset();
 
   // Test flush timeout = 0 (no command should be sent)
@@ -1270,7 +1270,7 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(cb_status->error(), hci_spec::StatusCode::kInvalidHCICommandParameters);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
 
   // Test infinite flush timeout (flush timeout of 0 should be sent).
   const auto kCommandComplete = testing::CommandCompletePacket(
@@ -1301,7 +1301,7 @@ TEST_F(ACLDataChannelTest, SetAutomaticFlushTimeout) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(cb_status->error(), hci_spec::StatusCode::kInvalidHCICommandParameters);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
 }
 
 TEST_F(ACLDataChannelTest,

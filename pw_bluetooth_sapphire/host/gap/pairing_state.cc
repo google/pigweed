@@ -4,7 +4,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 
+#include "lib/fitx/internal/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -31,7 +33,7 @@ PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::Connection* link, bool 
   cleanup_cb_ = [](PairingState* self) {
     self->link_->set_encryption_change_callback(nullptr);
     auto callbacks_to_signal =
-        self->CompletePairingRequests(hci::Status(HostError::kLinkDisconnected));
+        self->CompletePairingRequests(ToResult(HostError::kLinkDisconnected));
 
     bt_log(TRACE, "gap-bredr", "Signaling %zu unresolved pairing listeners for %#.4x",
            callbacks_to_signal.size(), self->handle());
@@ -58,7 +60,7 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
     if (link_->ltk_type() &&
         SecurityPropertiesMeetRequirements(sm::SecurityProperties(*link_->ltk_type()),
                                            security_requirements)) {
-      status_cb(handle(), hci::Status());
+      status_cb(handle(), fitx::ok());
       return;
     }
     // TODO(fxbug.dev/42403): If there is no pairing delegate set AND the current peer does not have
@@ -92,7 +94,7 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
     // In the error state, we should expect no pairing to be created and cancel this particular
     // request immediately.
     ZX_ASSERT(state() == State::kFailed);
-    status_cb(handle(), hci::Status(HostError::kCanceled));
+    status_cb(handle(), ToResult(HostError::kCanceled));
   }
 }
 
@@ -129,7 +131,7 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
     // We set the state_ to Idle instead of Failed because it is possible that a PairingDelegate
     // will be set before the next pairing attempt, allowing it to succeed.
     state_ = State::kIdle;
-    SignalStatus(hci::Status(HostError::kNotReady));
+    SignalStatus(ToResult(HostError::kNotReady));
     return std::nullopt;
   }
 
@@ -271,16 +273,16 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
 void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
   // The pairing process may fail early, which the controller will deliver as an Simple Pairing
   // Complete with a non-success status. Log and proxy the error code.
-  if (const hci::Status status(status_code);
+  if (const fitx::result result = ToResult(status_code);
       is_pairing() &&
-      bt_is_error(status, INFO, "gap-bredr", "Pairing failed on link %#.4x (id: %s)", handle(),
+      bt_is_error(result, INFO, "gap-bredr", "Pairing failed on link %#.4x (id: %s)", handle(),
                   bt_str(peer_id()))) {
     // TODO(fxbug.dev/37447): Checking pairing_delegate() for reset like this isn't thread safe.
     if (pairing_delegate()) {
       pairing_delegate()->CompletePairing(peer_id(), sm::Status(HostError::kFailed));
     }
     state_ = State::kFailed;
-    SignalStatus(status);
+    SignalStatus(result);
     return;
   }
 
@@ -354,7 +356,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
              "Got Changed Combination key but link %#.4x (id: %s) has no current key", handle(),
              bt_str(peer_id()));
       state_ = State::kFailed;
-      SignalStatus(hci::Status(HostError::kInsufficientSecurity));
+      SignalStatus(ToResult(HostError::kInsufficientSecurity));
       return;
     }
 
@@ -379,7 +381,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     bt_log(WARN, "gap-bredr", "Link key (type %hhu) for %#.4x (id: %s) has insufficient security",
            key_type, handle(), bt_str(peer_id()));
     state_ = State::kFailed;
-    SignalStatus(hci::Status(HostError::kInsufficientSecurity));
+    SignalStatus(ToResult(HostError::kInsufficientSecurity));
     return;
   }
 
@@ -391,7 +393,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     bt_log(WARN, "gap-bredr", "Expected %sauthenticated link key for %#.4x (id: %s), got %hhu",
            current_pairing_->authenticated ? "" : "un", handle(), bt_str(peer_id()), key_type);
     state_ = State::kFailed;
-    SignalStatus(hci::Status(HostError::kInsufficientSecurity));
+    SignalStatus(ToResult(HostError::kInsufficientSecurity));
     return;
   }
 
@@ -406,11 +408,11 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
 void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
   // The pairing process may fail early, which the controller will deliver as an Authentication
   // Complete with a non-success status. Log and proxy the error code.
-  if (const hci::Status status(status_code);
-      bt_is_error(status, INFO, "gap-bredr", "Authentication failed on link %#.4x (id: %s)",
+  if (const fitx::result result = ToResult(status_code);
+      bt_is_error(result, INFO, "gap-bredr", "Authentication failed on link %#.4x (id: %s)",
                   handle(), bt_str(peer_id()))) {
     state_ = State::kFailed;
-    SignalStatus(status);
+    SignalStatus(result);
     return;
   }
 
@@ -423,33 +425,33 @@ void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
   EnableEncryption();
 }
 
-void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
+void PairingState::OnEncryptionChange(hci::Result<bool> result) {
   if (state() != State::kWaitEncryption) {
     // Ignore encryption changes when not expecting them because they may be triggered by the peer
     // at any time (v5.0 Vol 2, Part F, Sec 4.4).
     bt_log(TRACE, "gap-bredr", "%#.4x (id: %s): %s(%s, %s) in state \"%s\"; taking no action",
-           handle(), bt_str(peer_id()), __func__, bt_str(status), enabled ? "true" : "false",
-           ToString(state()));
+           handle(), bt_str(peer_id()), __func__, bt_str(result),
+           result.is_ok() ? (result.value() ? "true" : "false") : "?", ToString(state()));
     return;
   }
 
-  if (status && !enabled) {
+  if (result.is_ok() && !result.value()) {
     // With Secure Connections, encryption should never be disabled (v5.0 Vol 2,
     // Part E, Sec 7.1.16) at all.
     bt_log(WARN, "gap-bredr", "Pairing failed due to encryption disable on link %#.4x (id: %s)",
            handle(), bt_str(peer_id()));
-    status = hci::Status(HostError::kFailed);
+    result = ToResult(HostError::kFailed).take_error();
   }
 
   // Perform state transition.
-  if (status) {
+  if (result.is_ok()) {
     // Reset state for another pairing.
     state_ = State::kIdle;
   } else {
     state_ = State::kFailed;
   }
 
-  SignalStatus(status);
+  SignalStatus(result.is_ok() ? fitx::ok() : ToResult(result.take_error()));
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
@@ -539,7 +541,7 @@ PairingState::State PairingState::GetStateForPairingEvent(hci_spec::EventCode ev
   return State::kFailed;
 }
 
-void PairingState::SignalStatus(hci::Status status) {
+void PairingState::SignalStatus(hci::Result<> status) {
   bt_log(TRACE, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) with %s", handle(),
          bt_str(peer_id()), bt_str(status));
 
@@ -555,7 +557,7 @@ void PairingState::SignalStatus(hci::Status status) {
   }
 }
 
-std::vector<fit::closure> PairingState::CompletePairingRequests(hci::Status status) {
+std::vector<fit::closure> PairingState::CompletePairingRequests(hci::Result<> status) {
   std::vector<fit::closure> callbacks_to_signal;
 
   if (!is_pairing()) {
@@ -563,7 +565,7 @@ std::vector<fit::closure> PairingState::CompletePairingRequests(hci::Status stat
     return callbacks_to_signal;
   }
 
-  if (!status.is_success()) {
+  if (status.is_error()) {
     // On pairing failure, signal all requests.
     for (auto& request : request_queue_) {
       callbacks_to_signal.push_back(
@@ -592,7 +594,7 @@ std::vector<fit::closure> PairingState::CompletePairingRequests(hci::Status stat
       auto sec_props_satisfied =
           SecurityPropertiesMeetRequirements(security_properties, request.security_requirements);
       auto request_status =
-          sec_props_satisfied ? status : hci::Status(HostError::kInsufficientSecurity);
+          sec_props_satisfied ? status : ToResult(HostError::kInsufficientSecurity);
 
       callbacks_to_signal.push_back(
           [handle = handle(), request_status, cb = std::move(request.status_callback)]() {
@@ -628,7 +630,7 @@ void PairingState::EnableEncryption() {
   if (!link_->StartEncryption()) {
     bt_log(ERROR, "gap-bredr", "%#.4x (id: %s): Failed to enable encryption (state \"%s\")",
            handle(), bt_str(peer_id()), ToString(state()));
-    status_callback_(link_->handle(), hci::Status(HostError::kFailed));
+    status_callback_(link_->handle(), ToResult(HostError::kFailed));
     state_ = State::kFailed;
     return;
   }
@@ -639,7 +641,7 @@ void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
   bt_log(ERROR, "gap-bredr", "%#.4x (id: %s): Unexpected event %s while in state \"%s\"", handle(),
          bt_str(peer_id()), handler_name, ToString(state()));
   state_ = State::kFailed;
-  SignalStatus(hci::Status(HostError::kNotSupported));
+  SignalStatus(ToResult(HostError::kNotSupported));
 }
 
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {

@@ -16,7 +16,9 @@
 
 #include <fbl/macros.h>
 
+#include "lib/fitx/result.h"
 #include "low_energy_connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connector.h"
@@ -28,6 +30,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -94,7 +97,7 @@ class LowEnergyConnectionManager final {
   //
   // The status of the procedure is reported in |callback| in the case of an
   // error.
-  using ConnectionResult = fpromise::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>;
+  using ConnectionResult = fitx::result<HostError, std::unique_ptr<LowEnergyConnectionHandle>>;
   using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
   void Connect(PeerId peer_id, ConnectionResultCallback callback,
                LowEnergyConnectionOptions connection_options);
@@ -187,17 +190,15 @@ class LowEnergyConnectionManager final {
 
   // Called by internal::LowEnergyConnector to indicate the result of a local connect request.
   void OnLocalInitiatedConnectResult(
-      fpromise::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
+      hci::Result<std::unique_ptr<internal::LowEnergyConnection>> result);
 
   // Called by internal::LowEnergyConnector to indicate the result of a remote connect request.
   void OnRemoteInitiatedConnectResult(
-      PeerId peer_id,
-      fpromise::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
+      PeerId peer_id, hci::Result<std::unique_ptr<internal::LowEnergyConnection>> result);
 
   // Either report an error to clients or initialize the connection and report success to clients.
-  void ProcessConnectResult(
-      fpromise::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result,
-      internal::LowEnergyConnectionRequest request);
+  void ProcessConnectResult(hci::Result<std::unique_ptr<internal::LowEnergyConnection>> result,
+                            internal::LowEnergyConnectionRequest request);
 
   // Finish setting up connection, adding to |connections_| map, and notifying clients.
   bool InitializeConnection(std::unique_ptr<internal::LowEnergyConnection> connection,

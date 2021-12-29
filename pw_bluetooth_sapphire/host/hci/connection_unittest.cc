@@ -401,10 +401,9 @@ TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
   bool callback = false;
   auto conn = NewLEConnection();
   conn->set_le_ltk(hci_spec::LinkKey(kLTK, kRand, kEDiv));
-  conn->set_encryption_change_callback([&](Status status, bool enabled) {
-    EXPECT_FALSE(status);
-    EXPECT_FALSE(enabled);
-    EXPECT_EQ(hci_spec::StatusCode::kCommandDisallowed, status.protocol_error());
+  conn->set_encryption_change_callback([&](Result<bool> result) {
+    ASSERT_TRUE(result.is_error());
+    EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kCommandDisallowed));
     callback = true;
   });
 
@@ -436,7 +435,7 @@ TEST_F(ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
   bool callback = false;
   auto conn = NewLEConnection();
   conn->set_le_ltk(hci_spec::LinkKey(kLTK, kRand, kEDiv));
-  conn->set_encryption_change_callback([&](Status status, bool enabled) { callback = true; });
+  conn->set_encryption_change_callback([&](auto) { callback = true; });
 
   EXPECT_TRUE(conn->StartEncryption());
 
@@ -466,10 +465,9 @@ TEST_F(ConnectionTest, AclStartEncryptionFailsAtStatus) {
   bool callback = false;
   auto conn = NewACLConnection();
   conn->set_bredr_link_key(hci_spec::LinkKey(kLTK, 0, 0), kLinkKeyType);
-  conn->set_encryption_change_callback([&](Status status, bool enabled) {
-    EXPECT_FALSE(status);
-    EXPECT_FALSE(enabled);
-    EXPECT_EQ(hci_spec::StatusCode::kCommandDisallowed, status.protocol_error());
+  conn->set_encryption_change_callback([&](Result<bool> result) {
+    ASSERT_TRUE(result.is_error());
+    EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kCommandDisallowed));
     callback = true;
   });
 
@@ -498,7 +496,7 @@ TEST_F(ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
   bool callback = false;
   auto conn = NewACLConnection();
   conn->set_bredr_link_key(hci_spec::LinkKey(kLTK, 0, 0), kLinkKeyType);
-  conn->set_encryption_change_callback([&](Status status, bool enabled) { callback = true; });
+  conn->set_encryption_change_callback([&](auto) { callback = true; });
 
   EXPECT_TRUE(conn->StartEncryption());
 
@@ -529,7 +527,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
   bool callback = false;
   auto conn = NewConnection();
   SetTestLinkKey(conn.get());
-  conn->set_encryption_change_callback([&](Status, bool) { callback = true; });
+  conn->set_encryption_change_callback([&](auto) { callback = true; });
 
   test_device()->SendCommandChannelPacket(kEncChangeMalformed);
   test_device()->SendCommandChannelPacket(kEncChangeWrongHandle);
@@ -592,12 +590,10 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   int callback_count = 0;
   auto conn = NewConnection();
 
-  Status status(HostError::kFailed);
-  bool enabled = false;
-  conn->set_encryption_change_callback([&](Status cb_status, bool cb_enabled) {
+  Result<bool> result = ToResult(HostError::kFailed).take_error();
+  conn->set_encryption_change_callback([&](Result<bool> cb_result) {
     callback_count++;
-    status = cb_status;
-    enabled = cb_enabled;
+    result = cb_result;
   });
 
   if (conn->ll_type() == bt::LinkType::kACL) {
@@ -609,15 +605,15 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
-  EXPECT_TRUE(status);
-  EXPECT_TRUE(enabled);
+  EXPECT_TRUE(result.is_ok());
+  EXPECT_TRUE(result.value_or(false));
 
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventDisabled);
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, callback_count);
-  EXPECT_TRUE(status);
-  EXPECT_FALSE(enabled);
+  EXPECT_TRUE(result.is_ok());
+  EXPECT_FALSE(result.value_or(true));
 
   // The host should disconnect the link if encryption fails.
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
@@ -625,8 +621,8 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(3, callback_count);
-  EXPECT_FALSE(status);
-  EXPECT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, status.protocol_error());
+  ASSERT_TRUE(result.is_error());
+  EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kPinOrKeyMissing));
 }
 
 TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
@@ -668,10 +664,9 @@ TEST_F(ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
 
   int callback_count = 0;
   auto conn = NewACLConnection();
-  conn->set_encryption_change_callback([&callback_count](Status status, bool enabled) {
+  conn->set_encryption_change_callback([&callback_count](Result<bool> result) {
     callback_count++;
-    EXPECT_FALSE(status);
-    EXPECT_TRUE(enabled);
+    EXPECT_TRUE(result.is_error());
   });
 
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
@@ -696,10 +691,9 @@ TEST_F(ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
 
   int callback_count = 0;
   auto conn = NewACLConnection();
-  conn->set_encryption_change_callback([&callback_count](Status status, bool enabled) {
+  conn->set_encryption_change_callback([&callback_count](Result<bool> result) {
     callback_count++;
-    EXPECT_FALSE(status);
-    EXPECT_TRUE(enabled);
+    EXPECT_TRUE(result.is_error());
   });
 
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
@@ -729,20 +723,18 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   int callback_count = 0;
   auto conn = NewConnection();
 
-  Status status(HostError::kFailed);
-  bool enabled = false;
-  conn->set_encryption_change_callback([&](Status cb_status, bool cb_enabled) {
+  Result<bool> result = ToResult(HostError::kFailed).take_error();
+  conn->set_encryption_change_callback([&](Result<bool> cb_result) {
     callback_count++;
-    status = cb_status;
-    enabled = cb_enabled;
+    result = cb_result;
   });
 
   test_device()->SendCommandChannelPacket(kEncryptionKeyRefresh);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
-  EXPECT_TRUE(status);
-  EXPECT_TRUE(enabled);
+  EXPECT_TRUE(result.is_ok());
+  EXPECT_TRUE(result.value());
 
   // The host should disconnect the link if encryption fails.
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
@@ -750,9 +742,8 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, callback_count);
-  EXPECT_FALSE(status);
-  EXPECT_EQ(hci_spec::StatusCode::kPinOrKeyMissing, status.protocol_error());
-  EXPECT_FALSE(enabled);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kPinOrKeyMissing));
 }
 
 TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {

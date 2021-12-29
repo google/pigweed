@@ -365,7 +365,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
     settings.ApplyDualModeDefaults();
     test_device()->set_settings(settings);
 
-    bt::hci::Status status(bt::HostError::kFailed);
+    bt::hci::Result<> status = ToResult(bt::HostError::kFailed);
     auto connect_cb = [this, &status](auto cb_status, auto cb_conn_ref) {
       ASSERT_TRUE(cb_conn_ref);
       status = cb_status;
@@ -376,7 +376,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
     EXPECT_EQ(bt::gap::Peer::ConnectionState::kInitializing, peer_->bredr()->connection_state());
 
     RunLoopUntilIdle();
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     ASSERT_TRUE(connection_);
     EXPECT_EQ(peer_->identifier(), connection_->peer_id());
     EXPECT_NE(bt::gap::Peer::ConnectionState::kNotConnected, peer_->bredr()->connection_state());

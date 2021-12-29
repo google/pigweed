@@ -79,9 +79,9 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   test_device()->StartCmdChannel(test_cmd_chan());
   test_device()->StartAclChannel(test_acl_chan());
 
-  Status status;
+  Result<> status = fitx::ok();
   int status_cb_called = 0;
-  auto status_cb = [&](Status cb_status) {
+  auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
     status_cb_called++;
   };
@@ -107,7 +107,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
   cb_called = 0;
 
   // Sequence 2 (test)
@@ -125,7 +125,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(2, status_cb_called);
-  EXPECT_EQ(hci_spec::StatusCode::kReserved0, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kReserved0), status);
   cb_called = 0;
 
   // Sequence 3 (test)
@@ -144,7 +144,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(3, status_cb_called);
-  EXPECT_EQ(hci_spec::StatusCode::kReserved0, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kReserved0), status);
   cb_called = 0;
 
   // Sequence 4 (test)
@@ -161,7 +161,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(4, status_cb_called);
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   cb_called = 0;
   status_cb_called = 0;
 
@@ -179,7 +179,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(0, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 }
 
 TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
@@ -212,9 +212,9 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   test_device()->StartCmdChannel(test_cmd_chan());
   test_device()->StartAclChannel(test_acl_chan());
 
-  Status status;
+  Result<> status = fitx::ok();
   int status_cb_called = 0;
-  auto status_cb = [&](Status cb_status) {
+  auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
     status_cb_called++;
   };
@@ -246,10 +246,10 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
 
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(HostError::kCanceled, status.error());
+  EXPECT_EQ(ToResult(HostError::kCanceled), status);
   cb_called = 0;
   status_cb_called = 0;
-  status = Status();
+  status = fitx::ok();
 
   // Sequence 2: Sequence will be cancelled after first command. This tests
   // canceling a sequence from a CommandCompleteCallback.
@@ -274,7 +274,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
 
   EXPECT_EQ(0, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(HostError::kCanceled, status.error());
+  EXPECT_EQ(ToResult(HostError::kCanceled), status);
 
   // Sequence 3: Sequence will be cancelled after first command and immediately
   // followed by a second command which will fail. This tests canceling a
@@ -285,7 +285,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
     EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
     EXPECT_EQ(2, status_cb_called);
-    EXPECT_EQ(HostError::kCanceled, status.error());
+    EXPECT_EQ(ToResult(HostError::kCanceled), status);
 
     // Queue multiple commands (only one will execute since MockController
     // will send back an error status.
@@ -311,7 +311,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_EQ(1, cb_called);
   // The result callback should have been called with the failure result.
   EXPECT_EQ(3, status_cb_called);
-  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
@@ -371,8 +371,8 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   auto cb = [&](const auto&) { cb_called++; };
 
   int status_cb_called = 0;
-  Status status(HostError::kFailed);
-  auto status_cb = [&](Status cb_status) {
+  Result<> status = ToResult(HostError::kFailed);
+  auto status_cb = [&](Result<> cb_status) {
     status = cb_status;
     status_cb_called++;
   };
@@ -405,7 +405,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(5, cb_called);
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1, status_cb_called);
   cb_called = 0;
   status_cb_called = 0;
@@ -433,7 +433,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
 
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
 }
 
 }  // namespace

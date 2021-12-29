@@ -52,7 +52,7 @@ void FakeAdapter::FakeLowEnergy::Connect(PeerId peer_id, ConnectionResultCallbac
   auto handle = std::make_unique<LowEnergyConnectionHandle>(
       peer_id, /*handle=*/1,
       /*release_cb=*/[](auto) {}, std::move(bondable_cb), std::move(security_cb));
-  callback(fpromise::ok(std::move(handle)));
+  callback(fitx::ok(std::move(handle)));
 }
 
 bool FakeAdapter::FakeLowEnergy::Disconnect(PeerId peer_id) { return connections_.erase(peer_id); }
@@ -84,14 +84,14 @@ FakeAdapter::FakeBrEdr::RegistrationHandle FakeAdapter::FakeBrEdr::RegisterServi
   return handle;
 }
 
-void FakeAdapter::SetLocalName(std::string name, hci::StatusCallback callback) {
+void FakeAdapter::SetLocalName(std::string name, hci::ResultFunction<> callback) {
   local_name_ = name;
-  callback(hci::Status());
+  callback(fitx::ok());
 }
 
-void FakeAdapter::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) {
+void FakeAdapter::SetDeviceClass(DeviceClass dev_class, hci::ResultFunction<> callback) {
   device_class_ = dev_class;
-  callback(hci::Status());
+  callback(fitx::ok());
 }
 
 BrEdrConnectionManager::SearchId FakeAdapter::FakeBrEdr::AddServiceSearch(

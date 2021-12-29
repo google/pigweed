@@ -119,7 +119,7 @@ class ScoConnectionManager final {
   void CompleteRequest(ConnectionResult);
 
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
-                                     hci::StatusCallback cb);
+                                     hci::ResultFunction<> cb);
 
   void SendRejectConnectionCommand(DeviceAddressBytes addr, hci_spec::StatusCode reason);
 

@@ -4,6 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/extended_low_energy_advertiser.h"
 
+#include <optional>
+
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 
@@ -52,17 +54,17 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
 
   ExtendedLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
-  StatusCallback GetSuccessCallback() {
-    return [this](Status status) {
+  ResultFunction<> GetSuccessCallback() {
+    return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_TRUE(status) << status.ToString();
+      EXPECT_TRUE(status.is_ok()) << bt_str(status);
     };
   }
 
-  StatusCallback GetErrorCallback() {
-    return [this](Status status) {
+  ResultFunction<> GetErrorCallback() {
+    return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_FALSE(status);
+      EXPECT_TRUE(status.is_error()) << bt_str(status);
     };
   }
 
@@ -79,19 +81,17 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
     return result;
   }
 
-  std::optional<Status> GetLastStatus() {
+  std::optional<Result<>> GetLastStatus() {
     if (!last_status_) {
       return std::nullopt;
     }
 
-    Status status = last_status_.value();
-    last_status_.reset();
-    return status;
+    return std::exchange(last_status_, std::nullopt).value();
   }
 
  private:
   std::unique_ptr<ExtendedLowEnergyAdvertiser> advertiser_;
-  std::optional<Status> last_status_;
+  std::optional<Result<>> last_status_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiserTest);
 };

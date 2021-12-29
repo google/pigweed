@@ -30,25 +30,27 @@ namespace fble = fuchsia::bluetooth::le;
 namespace bthost {
 namespace {
 
-fble::PeripheralError FidlErrorFromStatus(bt::hci::Status status) {
-  switch (status.error()) {
-    case bt::HostError::kNoError:
-      ZX_PANIC("FidlErrorFromStatus called on success status");
-      break;
-    case bt::HostError::kNotSupported:
-      return fble::PeripheralError::NOT_SUPPORTED;
-    case bt::HostError::kInvalidParameters:
-      return fble::PeripheralError::INVALID_PARAMETERS;
-    case bt::HostError::kAdvertisingDataTooLong:
-      return fble::PeripheralError::ADVERTISING_DATA_TOO_LONG;
-    case bt::HostError::kScanResponseTooLong:
-      return fble::PeripheralError::SCAN_RESPONSE_DATA_TOO_LONG;
-    case bt::HostError::kCanceled:
-      return fble::PeripheralError::ABORTED;
-    default:
-      break;
-  }
-  return fble::PeripheralError::FAILED;
+fble::PeripheralError FidlErrorFromStatus(bt::hci::Result<> status) {
+  ZX_ASSERT_MSG(status.is_error(), "FidlErrorFromStatus called on success status");
+  return status.error_value().Visit(
+      [](bt::HostError host_error) {
+        switch (host_error) {
+          case bt::HostError::kNotSupported:
+            return fble::PeripheralError::NOT_SUPPORTED;
+          case bt::HostError::kInvalidParameters:
+            return fble::PeripheralError::INVALID_PARAMETERS;
+          case bt::HostError::kAdvertisingDataTooLong:
+            return fble::PeripheralError::ADVERTISING_DATA_TOO_LONG;
+          case bt::HostError::kScanResponseTooLong:
+            return fble::PeripheralError::SCAN_RESPONSE_DATA_TOO_LONG;
+          case bt::HostError::kCanceled:
+            return fble::PeripheralError::ABORTED;
+          default:
+            break;
+        }
+        return fble::PeripheralError::FAILED;
+      },
+      [](auto /*hci_error*/) { return fble::PeripheralError::FAILED; });
 }
 
 }  // namespace
@@ -79,15 +81,15 @@ LowEnergyPeripheralServer::AdvertisementInstance::~AdvertisementInstance() {
 
 void LowEnergyPeripheralServer::AdvertisementInstance::StartAdvertising() {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self](auto adv_instance, bt::hci::Status status) {
+  auto status_cb = [self](auto adv_instance, bt::hci::Result<> status) {
     if (!self) {
       bt_log(DEBUG, LOG_TAG, "advertisement canceled before advertising started");
       // Destroying `adv_instance` will stop advertising.
       return;
     }
 
-    if (!status) {
-      bt_log(WARN, LOG_TAG, "failed to start advertising (status: %s)", bt_str(status));
+    if (bt_is_error(status, WARN, LOG_TAG, "failed to start advertising (status: %s)",
+                    bt_str(status))) {
       self->CloseWith(fpromise::error(FidlErrorFromStatus(status)));
       self->peripheral_server_->RemoveAdvertisingInstance(self->id_);
       return;
@@ -123,7 +125,7 @@ void LowEnergyPeripheralServer::AdvertisementInstance::OnConnected(
     return;
   }
 
-  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn = result.take_value();
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn = std::move(result).value();
   bt::PeerId peer_id = conn->peer_identifier();
   bt::gap::Peer* peer = peripheral_server_->adapter()->peer_cache()->FindById(peer_id);
   ZX_ASSERT(peer);
@@ -254,7 +256,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto status_cb = [self, callback = std::move(callback), func = __FUNCTION__](
-                       auto instance, bt::hci::Status status) {
+                       auto instance, bt::hci::Result<> status) {
     // Advertising will be stopped when |instance| gets destroyed.
     if (!self) {
       return;
@@ -264,7 +266,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
     ZX_ASSERT(self->advertisement_deprecated_->id() == bt::gap::kInvalidAdvertisementId);
 
     fble::Peripheral_StartAdvertising_Result result;
-    if (!status) {
+    if (status.is_error()) {
       bt_log(WARN, LOG_TAG, "%s: failed to start advertising (status: %s)", func, bt_str(status));
 
       result.set_err(FidlErrorFromStatus(status));
@@ -273,7 +275,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
       // scenario is if StartAdvertising was called while a previous call was in progress. This
       // aborts the prior request causing it to end with the "kCanceled" status. This means that
       // another request is currently progress.
-      if (status.error() != bt::HostError::kCanceled) {
+      if (!status.error_value().is(bt::HostError::kCanceled)) {
         self->advertisement_deprecated_.reset();
       }
 
@@ -333,7 +335,7 @@ void LowEnergyPeripheralServer::OnConnectedDeprecated(
     return;
   }
 
-  auto conn = result.take_value();
+  auto conn = std::move(result).value();
   auto peer_id = conn->peer_identifier();
   auto* peer = adapter()->peer_cache()->FindById(peer_id);
   ZX_ASSERT(peer);
@@ -375,7 +377,7 @@ void LowEnergyPeripheralServer::StartAdvertisingInternal(
     auto maybe_adv_data = fidl_helpers::AdvertisingDataFromFidl(parameters.data());
     if (!maybe_adv_data) {
       bt_log(WARN, LOG_TAG, "invalid advertising data");
-      status_cb({}, bt::hci::Status(bt::HostError::kInvalidParameters));
+      status_cb({}, ToResult(bt::HostError::kInvalidParameters));
       return;
     }
     adv_data = std::move(*maybe_adv_data);
@@ -389,7 +391,7 @@ void LowEnergyPeripheralServer::StartAdvertisingInternal(
     auto maybe_scan_rsp = fidl_helpers::AdvertisingDataFromFidl(parameters.scan_response());
     if (!maybe_scan_rsp) {
       bt_log(WARN, LOG_TAG, "invalid scan response in advertising data");
-      status_cb({}, bt::hci::Status(bt::HostError::kInvalidParameters));
+      status_cb({}, ToResult(bt::HostError::kInvalidParameters));
       return;
     }
     scan_rsp = std::move(*maybe_scan_rsp);

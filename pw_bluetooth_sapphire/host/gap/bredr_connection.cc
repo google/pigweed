@@ -44,7 +44,7 @@ BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::C
 BrEdrConnection::~BrEdrConnection() {
   if (auto request = std::exchange(request_, std::nullopt); request.has_value()) {
     // Connection never completed so signal the requester(s).
-    request->NotifyCallbacks(hci::Status(HostError::kNotSupported), [] { return nullptr; });
+    request->NotifyCallbacks(ToResult(HostError::kNotSupported), [] { return nullptr; });
   }
 
   sco_manager_.reset();
@@ -58,13 +58,13 @@ void BrEdrConnection::OnInterrogationComplete() {
 
   // Fulfill and clear request so that the dtor does not signal requester(s) with errors.
   if (auto request = std::exchange(request_, std::nullopt); request.has_value()) {
-    request->NotifyCallbacks(hci::Status(), [this] { return this; });
+    request->NotifyCallbacks(fitx::ok(), [this] { return this; });
   }
 }
 
 void BrEdrConnection::AddRequestCallback(BrEdrConnection::Request::OnComplete cb) {
   if (!request_.has_value()) {
-    cb(hci::Status(), this);
+    cb(fitx::ok(), this);
     return;
   }
 
@@ -104,7 +104,8 @@ void BrEdrConnection::AttachInspect(inspect::Node& parent, std::string name) {
       inspect_node_.CreateString(kInspectPeerIdPropertyName, peer_id_.ToString());
 }
 
-void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle, hci::Status status) {
+void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle,
+                                           hci::Result<> status) {
   if (bt_is_error(status, DEBUG, "gap-bredr",
                   "PairingState error status, disconnecting (peer id: %s)", bt_str(peer_id_))) {
     if (disconnect_cb_) {

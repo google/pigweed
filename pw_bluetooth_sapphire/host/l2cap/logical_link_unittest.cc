@@ -115,7 +115,7 @@ TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
       [&](auto timeout, auto handle, auto cb) {
         EXPECT_EQ(timeout, kTimeout);
         EXPECT_EQ(handle, link()->handle());
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 
   bool cb_called = false;
@@ -139,8 +139,8 @@ TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
   bool cb_called = false;
   link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
     cb_called = true;
-    EXPECT_TRUE(result.is_error());
-    EXPECT_EQ(result.error(), hci_spec::StatusCode::kInvalidHCICommandParameters);
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), result.error_value());
   });
   EXPECT_TRUE(cb_called);
 }

@@ -84,7 +84,7 @@ class BrEdrConnection final {
   void set_peer_connection_token(Peer::ConnectionToken conn_token);
 
   // Called by |pairing_state_| when pairing completes with |status|.
-  void OnPairingStateStatus(hci_spec::ConnectionHandle handle, hci::Status status);
+  void OnPairingStateStatus(hci_spec::ConnectionHandle handle, hci::Result<> status);
 
   bool interrogation_complete() const { return !request_.has_value(); }
 

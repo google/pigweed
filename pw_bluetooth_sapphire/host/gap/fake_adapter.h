@@ -158,9 +158,9 @@ class FakeAdapter final : public Adapter {
     bool RemoveServiceSearch(SearchId id) override { return false; }
 
     void Pair(PeerId peer_id, BrEdrSecurityRequirements security,
-              hci::StatusCallback callback) override {}
+              hci::ResultFunction<> callback) override {}
 
-    void SetConnectable(bool connectable, hci::StatusCallback status_cb) override {}
+    void SetConnectable(bool connectable, hci::ResultFunction<> status_cb) override {}
 
     void RequestDiscovery(DiscoveryCallback callback) override {}
 
@@ -206,11 +206,11 @@ class FakeAdapter final : public Adapter {
 
   bool IsDiscovering() const override { return is_discovering_; }
 
-  void SetLocalName(std::string name, hci::StatusCallback callback) override;
+  void SetLocalName(std::string name, hci::ResultFunction<> callback) override;
 
   std::string local_name() const override { return local_name_; }
 
-  void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) override;
+  void SetDeviceClass(DeviceClass dev_class, hci::ResultFunction<> callback) override;
 
   void set_auto_connect_callback(AutoConnectCallback callback) override {}
 

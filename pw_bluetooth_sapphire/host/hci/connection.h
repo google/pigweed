@@ -16,8 +16,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
@@ -156,10 +156,9 @@ class Connection {
   // terminology. For LE, returns std::nullopt.
   const std::optional<hci_spec::LinkKeyType>& ltk_type() const { return ltk_type_; }
 
-  // Assigns a callback that will run when the encryption state of the
-  // underlying link changes. The |enabled| parameter should be ignored if
-  // |status| indicates an error.
-  using EncryptionChangeCallback = fit::function<void(Status, bool enabled)>;
+  // Assigns a callback that will run when the encryption state of the underlying link changes. The
+  // bool value parameter represents the new state.
+  using EncryptionChangeCallback = ResultFunction<bool>;
   void set_encryption_change_callback(EncryptionChangeCallback callback) {
     encryption_change_callback_ = std::move(callback);
   }

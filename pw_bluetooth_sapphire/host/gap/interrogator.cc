@@ -24,11 +24,11 @@ Interrogator::Interrogation::Interrogation(PeerId peer_id, hci_spec::ConnectionH
 Interrogator::Interrogation::~Interrogation() {
   // Interrogation may have already completed if there was an error.
   // Otherwise, complete with success because all commands completed.
-  Complete(hci::Status());
+  Complete(fitx::ok());
   ZX_ASSERT_MSG(!result_cb_, "interrogation result callback never called");
 }
 
-void Interrogator::Interrogation::Complete(hci::Status status) {
+void Interrogator::Interrogation::Complete(hci::Result<> status) {
   // Each interrogation step may fail but only invoke the status callback once, for the earliest
   // success/failure encountered.
   if (!result_cb_) {
@@ -60,7 +60,8 @@ void Interrogator::Start(PeerId peer_id, hci_spec::ConnectionHandle handle,
   ZX_ASSERT(result_cb);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto result_cb_wrapped = [self, peer_id, cb = std::move(result_cb)](hci::Status status) mutable {
+  auto result_cb_wrapped = [self, peer_id,
+                            cb = std::move(result_cb)](hci::Result<> status) mutable {
     if (!self) {
       bt_log(DEBUG, "gap",
              "Interrogator already destroyed in interrogation result callback (peer id: %s)",
@@ -89,7 +90,7 @@ void Interrogator::Cancel(PeerId peer_id) {
   }
 
   // Result callback will remove Interrogation from |pending_|.
-  it->second->Complete(hci::Status(HostError::kCanceled));
+  it->second->Complete(ToResult(HostError::kCanceled));
 }
 
 void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogation) {
@@ -109,7 +110,7 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
     }
 
     if (hci_is_error(event, WARN, "gap", "read remote version info failed")) {
-      interrogation->Complete(event.ToStatus());
+      interrogation->Complete(event.ToResult());
       return;
     }
 
@@ -126,7 +127,7 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
-      interrogation->Complete(hci::Status(HostError::kFailed));
+      interrogation->Complete(ToResult(HostError::kFailed));
       return;
     }
     peer->set_version(params.lmp_version, params.manufacturer_name, params.lmp_subversion);

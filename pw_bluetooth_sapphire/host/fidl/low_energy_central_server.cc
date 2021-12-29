@@ -313,7 +313,7 @@ void LowEnergyCentralServer::Connect(fuchsia::bluetooth::PeerId id, fble::Connec
       return;
     }
 
-    auto conn_ref = result.take_value();
+    auto conn_ref = std::move(result).value();
     ZX_ASSERT(conn_ref);
     ZX_ASSERT(peer_id == conn_ref->peer_identifier());
 
@@ -466,12 +466,12 @@ void LowEnergyCentralServer::ConnectPeripheral(
     if (result.is_error()) {
       bt_log(INFO, "fidl", "%s: failed to connect to peer (peer: %s)", func, bt_str(peer_id));
       self->connections_deprecated_.erase(peer_id);
-      callback(fidl_helpers::StatusToFidlDeprecated(bt::hci::Status(result.error()),
+      callback(fidl_helpers::StatusToFidlDeprecated(bt::hci::Status(result.error_value()),
                                                     "failed to connect"));
       return;
     }
 
-    auto conn_ref = result.take_value();
+    auto conn_ref = std::move(result).value();
     ZX_ASSERT(conn_ref);
     ZX_ASSERT(peer_id == conn_ref->peer_identifier());
 

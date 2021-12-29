@@ -140,9 +140,8 @@ TEST(PacketTest, EventPacketStatus) {
   packet->mutable_view()->mutable_data().Write(evt);
   packet->InitializeFromBuffer();
 
-  Status status = packet->ToStatus();
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
+  Result<> status = packet->ToResult();
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
 }
 
 TEST(PacketTest, CommandCompleteEventStatus) {
@@ -162,9 +161,8 @@ TEST(PacketTest, CommandCompleteEventStatus) {
   packet->mutable_view()->mutable_data().Write(evt);
   packet->InitializeFromBuffer();
 
-  Status status = packet->ToStatus();
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure, status.protocol_error());
+  Result<> status = packet->ToResult();
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kHardwareFailure), status);
 }
 
 TEST(PacketTest, EventPacketMalformed) {
@@ -184,9 +182,8 @@ TEST(PacketTest, EventPacketMalformed) {
   packet->mutable_view()->mutable_data().Write(evt);
   packet->InitializeFromBuffer();
 
-  Status status = packet->ToStatus();
-  EXPECT_FALSE(status.is_protocol_error());
-  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+  Result<> status = packet->ToResult();
+  EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 TEST(PacketTest, LEEventParams) {

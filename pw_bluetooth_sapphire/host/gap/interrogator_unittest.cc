@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::gap {
 
@@ -100,9 +100,9 @@ TEST_F(InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
 
   ASSERT_FALSE(ref.has_value());
 
-  std::optional<hci::Status> result;
+  std::optional<hci::Result<>> result;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&](hci::Status status) { result = status; });
+                        [&](hci::Result<> status) { result = status; });
 
   ASSERT_TRUE(ref.has_value());
   EXPECT_FALSE(result.has_value());
@@ -111,7 +111,7 @@ TEST_F(InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
   ref.reset();
 
   ASSERT_TRUE(result.has_value());
-  EXPECT_TRUE(result->is_success());
+  EXPECT_TRUE(result->is_ok());
 }
 
 TEST_F(InterrogatorTest,
@@ -127,9 +127,9 @@ TEST_F(InterrogatorTest,
 
   ASSERT_FALSE(ref.has_value());
 
-  std::optional<hci::Status> result;
+  std::optional<hci::Result<>> result;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&](hci::Status status) { result = status; });
+                        [&](hci::Result<> status) { result = status; });
 
   ASSERT_TRUE(ref.has_value());
   EXPECT_FALSE(result.has_value());
@@ -138,7 +138,7 @@ TEST_F(InterrogatorTest,
 
   // The result callback should be called synchronously.
   EXPECT_TRUE(result.has_value());
-  EXPECT_EQ(result.value(), hci::Status(HostError::kCanceled));
+  EXPECT_EQ(result.value(), ToResult(HostError::kCanceled));
 
   test_device()->SendCommandChannelPacket(
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle));
@@ -159,9 +159,9 @@ TEST_F(InterrogatorTest, Cancel) {
 
   ASSERT_FALSE(ref.has_value());
 
-  std::optional<hci::Status> result;
+  std::optional<hci::Result<>> result;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&](hci::Status status) { result = status; });
+                        [&](hci::Result<> status) { result = status; });
 
   ASSERT_TRUE(ref.has_value());
   EXPECT_FALSE(result.has_value());
@@ -170,7 +170,7 @@ TEST_F(InterrogatorTest, Cancel) {
 
   // The result callback should be called synchronously.
   EXPECT_TRUE(result.has_value());
-  EXPECT_EQ(result.value(), hci::Status(HostError::kCanceled));
+  EXPECT_EQ(result.value(), ToResult(HostError::kCanceled));
 
   // Events after Cancel() should be ignored.
   test_device()->SendCommandChannelPacket(
@@ -178,7 +178,7 @@ TEST_F(InterrogatorTest, Cancel) {
 
   // Process command complete callback.
   RunLoopUntilIdle();
-  EXPECT_EQ(result.value(), hci::Status(HostError::kCanceled));
+  EXPECT_EQ(result.value(), ToResult(HostError::kCanceled));
 }
 
 }  // namespace bt::gap

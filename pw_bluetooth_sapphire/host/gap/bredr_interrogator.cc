@@ -18,7 +18,7 @@ BrEdrInterrogator::BrEdrInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transpo
 void BrEdrInterrogator::SendCommands(InterrogationRefPtr interrogation) {
   Peer* peer = peer_cache()->FindById(interrogation->peer_id());
   if (!peer) {
-    interrogation->Complete(hci::Status(HostError::kFailed));
+    interrogation->Complete(ToResult(HostError::kFailed));
     return;
   }
 
@@ -40,7 +40,7 @@ void BrEdrInterrogator::SendCommands(InterrogationRefPtr interrogation) {
 void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation) {
   Peer* peer = peer_cache()->FindById(interrogation->peer_id());
   if (!peer) {
-    interrogation->Complete(hci::Status(HostError::kFailed));
+    interrogation->Complete(ToResult(HostError::kFailed));
     return;
   }
   ZX_ASSERT(peer->bredr());
@@ -65,7 +65,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
     }
 
     if (hci_is_error(event, WARN, "gap-bredr", "remote name request failed")) {
-      interrogation->Complete(event.ToStatus());
+      interrogation->Complete(event.ToResult());
       return;
     }
 
@@ -82,7 +82,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
 
     Peer* const peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
-      interrogation->Complete(hci::Status(HostError::kFailed));
+      interrogation->Complete(ToResult(HostError::kFailed));
       return;
     }
     const auto remote_name_end = std::find(params.remote_name, std::end(params.remote_name), '\0');
@@ -109,7 +109,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
     }
 
     if (hci_is_error(event, WARN, "gap-bredr", "read remote supported features failed")) {
-      interrogation->Complete(event.ToStatus());
+      interrogation->Complete(event.ToResult());
       return;
     }
 
@@ -127,7 +127,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
-      interrogation->Complete(hci::Status(HostError::kFailed));
+      interrogation->Complete(ToResult(HostError::kFailed));
       return;
     }
     peer->SetFeaturePage(0, le64toh(params.lmp_features));
@@ -160,7 +160,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
 
     if (hci_is_error(event, WARN, "gap-bredr", "read remote extended features failed (peer id: %s)",
                      bt_str(interrogation->peer_id()))) {
-      interrogation->Complete(event.ToStatus());
+      interrogation->Complete(event.ToResult());
       return;
     }
 
@@ -175,7 +175,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
-      interrogation->Complete(hci::Status(HostError::kFailed));
+      interrogation->Complete(ToResult(HostError::kFailed));
       return;
     }
 

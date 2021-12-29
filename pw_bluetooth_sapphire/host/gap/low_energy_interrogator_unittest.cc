@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::gap {
 
@@ -88,13 +88,13 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_FALSE(peer->version());
   EXPECT_FALSE(peer->le()->features());
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
 
   EXPECT_TRUE(peer->version());
   ASSERT_TRUE(peer->le()->features());
@@ -115,12 +115,12 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeature
   peer->MutLe().SetFeatures(kFeatures);
   EXPECT_TRUE(peer->le()->features());
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
   ASSERT_TRUE(peer->le()->features());
   EXPECT_EQ(kFeatures.le_features, peer->le()->features()->le_features);
 }
@@ -130,13 +130,13 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
   status = std::nullopt;
 
   // Remote version should always be read, even if already known.
@@ -146,11 +146,11 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
                         &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
 
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
 }
 
 TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
@@ -167,12 +167,12 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   ASSERT_TRUE(peer->le());
   EXPECT_FALSE(peer->le()->features());
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_FALSE(status->is_success());
+  EXPECT_FALSE(status->is_ok());
   EXPECT_FALSE(peer->le()->features().has_value());
 }
 
@@ -191,9 +191,9 @@ TEST_F(LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesComplete)
   ASSERT_TRUE(peer->le());
   EXPECT_FALSE(peer->le()->features());
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   EXPECT_FALSE(status.has_value());
 
@@ -202,7 +202,7 @@ TEST_F(LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesComplete)
   test_device()->SendCommandChannelPacket(le_remote_features_complete_packet);
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_FALSE(status->is_success());
+  EXPECT_FALSE(status->is_ok());
 }
 
 TEST_F(LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCanceledInterrogation) {
@@ -221,21 +221,21 @@ TEST_F(LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCanceledInt
   EXPECT_FALSE(peer->version());
   EXPECT_FALSE(peer->le()->features());
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   EXPECT_FALSE(status.has_value());
 
   interrogator()->Cancel(peer->identifier());
   RunLoopUntilIdle();
   EXPECT_TRUE(status.has_value());
-  EXPECT_FALSE(status->is_success());
+  EXPECT_FALSE(status->is_ok());
 
   test_device()->SendCommandChannelPacket(le_remote_features_complete_packet);
   RunLoopUntilIdle();
   EXPECT_TRUE(status.has_value());
-  EXPECT_FALSE(status->is_success());
+  EXPECT_FALSE(status->is_ok());
   // The read remote features handler should not update the features of a canceled interrogation.
   EXPECT_FALSE(peer->le()->features().has_value());
 }

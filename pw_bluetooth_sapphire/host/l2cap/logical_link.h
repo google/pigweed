@@ -21,7 +21,6 @@
 #include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 
-#include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
@@ -137,16 +136,15 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   //
   // Requests are queued and handled sequentially in order to prevent race conditions.
   void RequestAclPriority(Channel* channel, hci::AclPriority priority,
-                          fit::callback<void(fpromise::result<>)> callback);
+                          fit::callback<void(fitx::result<fitx::failed>)> callback);
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
   // |flush_timeout| must be in the range [1ms - hci_spec::kMaxAutomaticFlushTimeoutDuration]. A
   // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic
   // flush), the default.
-  void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout,
-      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback);
+  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+                                     fit::callback<void(hci::Result<>)> callback);
 
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
@@ -296,7 +294,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   struct PendingAclRequest {
     fbl::RefPtr<ChannelImpl> channel;
     hci::AclPriority priority;
-    fit::callback<void(fpromise::result<>)> callback;
+    fit::callback<void(fitx::result<fitx::failed>)> callback;
   };
   std::queue<PendingAclRequest> pending_acl_requests_;
 

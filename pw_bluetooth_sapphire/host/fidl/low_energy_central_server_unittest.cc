@@ -286,7 +286,7 @@ TEST_F(LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm) {
       peer->identifier(),
       [&le_conn](auto result) {
         ASSERT_TRUE(result.is_ok());
-        le_conn = result.take_value();
+        le_conn = std::move(result).value();
       },
       bt::gap::LowEnergyConnectionOptions());
   RunLoopUntilIdle();
@@ -1011,7 +1011,7 @@ TEST_F(LowEnergyCentralServerTest, ConnectToPeerAlreadyConnectedInLowEnergyConne
       peer->identifier(),
       [&le_conn](auto result) {
         ASSERT_TRUE(result.is_ok());
-        le_conn = result.take_value();
+        le_conn = std::move(result).value();
       },
       bt::gap::LowEnergyConnectionOptions());
   RunLoopUntilIdle();

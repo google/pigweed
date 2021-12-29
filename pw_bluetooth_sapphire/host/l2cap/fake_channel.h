@@ -75,10 +75,9 @@ class FakeChannel : public Channel {
   void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                        async_dispatcher_t* dispatcher) override;
   void RequestAclPriority(hci::AclPriority priority,
-                          fit::callback<void(fpromise::result<>)> cb) override;
-  void SetBrEdrAutomaticFlushTimeout(
-      zx::duration flush_timeout,
-      fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> callback) override;
+                          fit::callback<void(fitx::result<fitx::failed>)> cb) override;
+  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+                                     fit::callback<void(hci::Result<>)> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
 
  private:

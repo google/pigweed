@@ -395,7 +395,7 @@ TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFat
   std::unique_ptr<BrEdrDiscoverySession> session;
 
   discovery_manager()->RequestDiscovery([&session](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     session = std::move(cb_session);
   });
 
@@ -431,7 +431,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   size_t peers_found = 0u;
 
   discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
     session = std::move(cb_session);
   });
@@ -477,7 +477,7 @@ TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
   size_t peers_found1 = 0u;
 
   discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
     session1 = std::move(cb_session);
   });
@@ -494,7 +494,7 @@ TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
   size_t peers_found2 = 0u;
 
   discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
     session2 = std::move(cb_session);
   });
@@ -557,7 +557,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   size_t peers_found1 = 0u;
 
   discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
     session1 = std::move(cb_session);
   });
@@ -577,7 +577,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   std::unique_ptr<BrEdrDiscoverySession> session2;
   size_t peers_found2 = 0u;
   discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
     session2 = std::move(cb_session);
   });
@@ -632,10 +632,9 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
   std::unique_ptr<BrEdrDiscoverySession> session;
 
   discovery_manager()->RequestDiscovery([](auto status, auto cb_session) {
-    EXPECT_FALSE(status);
+    EXPECT_TRUE(status.is_error());
     EXPECT_FALSE(cb_session);
-    EXPECT_EQ(HostError::kProtocolError, status.error());
-    EXPECT_EQ(hci_spec::kHardwareFailure, status.protocol_error());
+    EXPECT_EQ(ToResult(hci_spec::kHardwareFailure), status);
   });
 
   EXPECT_FALSE(discovery_manager()->discovering());
@@ -658,7 +657,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
 
   discovery_manager()->RequestDiscovery(
       [&session, &peers_found, &error_callback](auto status, auto cb_session) {
-        EXPECT_TRUE(status);
+        EXPECT_TRUE(status.is_ok());
         cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
         cb_session->set_error_callback([&error_callback]() { error_callback = true; });
         session = std::move(cb_session);
@@ -746,10 +745,10 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalNameMaxLen, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci_spec::kPairingNotAllowed);
+  hci::Result<> result = ToResult(hci_spec::kPairingNotAllowed);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     callback_count++;
     result = status;
   };
@@ -781,7 +780,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci_spec::kSuccess), result);
+  EXPECT_EQ(ToResult(hci_spec::kSuccess), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -791,10 +790,10 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci_spec::kPairingNotAllowed);
+  hci::Result<> result = ToResult(hci_spec::kPairingNotAllowed);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     callback_count++;
     result = status;
   };
@@ -822,7 +821,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci_spec::kSuccess), result);
+  EXPECT_EQ(ToResult(hci_spec::kSuccess), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -832,10 +831,10 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci_spec::kUnsupportedRemoteFeature);
+  hci::Result<> result = ToResult(hci_spec::kUnsupportedRemoteFeature);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
-    EXPECT_FALSE(status);
+    EXPECT_TRUE(status.is_error());
     callback_count++;
     result = status;
   };
@@ -855,7 +854,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci_spec::kHardwareFailure), result);
+  EXPECT_EQ(ToResult(hci_spec::kHardwareFailure), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -866,10 +865,10 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Status result = hci::Status(hci_spec::kUnsupportedRemoteFeature);
+  hci::Result<> result = ToResult(hci_spec::kUnsupportedRemoteFeature);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
-    EXPECT_FALSE(status);
+    EXPECT_TRUE(status.is_error());
     callback_count++;
     result = status;
   };
@@ -900,7 +899,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(hci::Status(hci_spec::kHardwareFailure), result);
+  EXPECT_EQ(ToResult(hci_spec::kHardwareFailure), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -912,7 +911,7 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableSet) {
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     sessions.emplace_back(std::move(cb_session));
   };
 
@@ -963,7 +962,7 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     sessions.emplace_back(std::move(cb_session));
   };
 
@@ -1030,7 +1029,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   size_t peers_found1 = 0u;
 
   discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
     session1 = std::move(cb_session);
   });
@@ -1073,7 +1072,7 @@ TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualM
   size_t peers_found = 0u;
 
   discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
   });
@@ -1106,7 +1105,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   size_t peers_found = 0u;
 
   discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
   });
@@ -1130,7 +1129,7 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
 
   std::unique_ptr<BrEdrDiscoverableSession> discoverable_session;
   auto session_cb = [&discoverable_session](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     discoverable_session = std::move(cb_session);
   };
 
@@ -1171,7 +1170,7 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
   std::unique_ptr<BrEdrDiscoverySession> discovery_session;
 
   discovery_manager()->RequestDiscovery([&discovery_session](auto status, auto cb_session) {
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     discovery_session = std::move(cb_session);
   });
 

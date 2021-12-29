@@ -12,7 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
 
@@ -81,8 +81,7 @@ class SequentialCommandRunner final {
   //
   // RunCommands() will always send at least one HCI command to CommandChannel
   // if any are queued, which can not be prevented by a call to Cancel().
-  using StatusCallback = fit::function<void(Status status)>;
-  void RunCommands(StatusCallback status_callback);
+  void RunCommands(ResultFunction<> status_callback);
 
   // Returns true if commands can be queued and run on this instance. This
   // returns false if RunCommands() is currently in progress.
@@ -114,9 +113,9 @@ class SequentialCommandRunner final {
   // Completes the sequence with |status| no commands are running or queued.
   // Runs the next queued command if it doesn't wait for the previous commands.
   // Runs the next queued command if no commands are running.
-  void TryRunNextQueuedCommand(Status status = Status());
+  void TryRunNextQueuedCommand(Result<> status = fitx::ok());
   void Reset();
-  void NotifyStatusAndReset(Status status);
+  void NotifyStatusAndReset(Result<> status);
 
   async_dispatcher_t* dispatcher_;
   fxl::WeakPtr<Transport> transport_;
@@ -131,7 +130,7 @@ class SequentialCommandRunner final {
 
   // Callback assigned in RunCommands(). If this is non-null then this object is
   // currently executing a sequence.
-  StatusCallback status_callback_;
+  ResultFunction<> status_callback_;
 
   // Number assigned to the current sequence. Each "sequence" begins on a call
   // to RunCommands() and ends either on a call to Cancel() or when

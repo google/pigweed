@@ -42,7 +42,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                         const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
                         ConnectionCallback connect_callback,
-                        StatusCallback status_callback) override;
+                        ResultFunction<> result_callback) override;
 
   // Stops advertisement on all currently advertising addresses. Idempotent and asynchronous.
   // Returns true if advertising will be stopped, false otherwise.

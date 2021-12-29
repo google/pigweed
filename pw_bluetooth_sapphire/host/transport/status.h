@@ -9,6 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 // This file provides a Status template specialization for hci::Status
 //
@@ -33,6 +34,10 @@ namespace bt {
 template <>
 struct ProtocolErrorTraits<hci_spec::StatusCode> {
   static std::string ToString(hci_spec::StatusCode ecode);
+
+  static constexpr bool is_success(hci_spec::StatusCode ecode) {
+    return ecode == hci_spec::StatusCode::kSuccess;
+  }
 };
 
 namespace hci {

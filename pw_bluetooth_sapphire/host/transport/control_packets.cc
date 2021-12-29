@@ -7,6 +7,7 @@
 #include <zircon/assert.h>
 
 #include "slab_allocators.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
 namespace slab_allocators {
@@ -132,6 +133,7 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
     CASE_EVENT_STATUS(DisconnectionComplete);
     CASE_EVENT_STATUS(InquiryComplete);
     CASE_EVENT_STATUS(EncryptionChange);
+    CASE_EVENT_STATUS(EncryptionKeyRefreshComplete);
     CASE_EVENT_STATUS(RemoteNameRequestComplete);
     CASE_EVENT_STATUS(ReadRemoteVersionInfoComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
@@ -162,12 +164,12 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
 #undef CASE_EVENT_STATUS
 }
 
-Status EventPacket::ToStatus() const {
+hci::Result<> EventPacket::ToResult() const {
   hci_spec::StatusCode code;
   if (!ToStatusCode(&code)) {
-    return Status(HostError::kPacketMalformed);
+    return bt::ToResult(HostError::kPacketMalformed);
   }
-  return Status(code);
+  return bt::ToResult(code);
 }
 
 void EventPacket::InitializeFromBuffer() {

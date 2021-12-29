@@ -87,26 +87,26 @@ class LowEnergyAdvertiserTest : public TestingBase {
 
   LowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
-  StatusCallback GetSuccessCallback() {
-    return [this](Status status) {
+  ResultFunction<> GetSuccessCallback() {
+    return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_TRUE(status) << status.ToString();
+      EXPECT_TRUE(status.is_ok()) << bt_str(status);
     };
   }
 
-  StatusCallback GetErrorCallback() {
-    return [this](Status status) {
+  ResultFunction<> GetErrorCallback() {
+    return [this](Result<> status) {
       last_status_ = status;
-      EXPECT_FALSE(status);
+      EXPECT_TRUE(status.is_error());
     };
   }
 
-  std::optional<Status> GetLastStatus() {
+  std::optional<Result<>> GetLastStatus() {
     if (!last_status_) {
       return std::nullopt;
     }
 
-    Status status = last_status_.value();
+    Result<> status = last_status_.value();
     last_status_.reset();
     return status;
   }
@@ -183,7 +183,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
 
  private:
   std::unique_ptr<LowEnergyAdvertiser> advertiser_;
-  std::optional<Status> last_status_;
+  std::optional<Result<>> last_status_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertiserTest);
 };
@@ -699,7 +699,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLong) {
   this->RunLoopUntilIdle();
   auto status = this->GetLastStatus();
   ASSERT_TRUE(status);
-  EXPECT_EQ(HostError::kAdvertisingDataTooLong, status->error());
+  EXPECT_EQ(ToResult(HostError::kAdvertisingDataTooLong), *status);
 }
 
 TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLongWithTxPower) {
@@ -715,7 +715,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingDataTooLongWithTxPower) {
   this->RunLoopUntilIdle();
   auto status = this->GetLastStatus();
   ASSERT_TRUE(status);
-  EXPECT_EQ(HostError::kAdvertisingDataTooLong, status->error());
+  EXPECT_EQ(ToResult(HostError::kAdvertisingDataTooLong), *status);
 }
 
 TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLong) {
@@ -728,7 +728,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLong) {
   this->RunLoopUntilIdle();
   auto status = this->GetLastStatus();
   ASSERT_TRUE(status);
-  EXPECT_EQ(HostError::kScanResponseTooLong, status->error());
+  EXPECT_EQ(ToResult(HostError::kScanResponseTooLong), *status);
 }
 
 TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLongWithTxPower) {
@@ -742,7 +742,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLongWithTxPower) {
   this->RunLoopUntilIdle();
   auto status = this->GetLastStatus();
   ASSERT_TRUE(status);
-  EXPECT_EQ(HostError::kScanResponseTooLong, status->error());
+  EXPECT_EQ(ToResult(HostError::kScanResponseTooLong), *status);
 }
 
 }  // namespace

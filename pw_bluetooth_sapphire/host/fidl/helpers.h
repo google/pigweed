@@ -19,6 +19,7 @@
 #include "lib/fpromise/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -75,16 +76,35 @@ fuchsia::bluetooth::Status StatusToFidlDeprecated(const bt::Status<ProtocolError
 // HostError::kNoError is not allowed.
 fuchsia::bluetooth::sys::Error HostErrorToFidl(bt::HostError error);
 
+// Convert a bt::Error to fuchsia.bluetooth.sys.Error. This function does only deals with
+// bt::HostError codes and does not support Bluetooth protocol-specific errors; to
+// represent such errors use protocol-specific FIDL error types.
+template <typename ProtocolErrorCode>
+fuchsia::bluetooth::sys::Error HostErrorToFidl(const bt::Error<ProtocolErrorCode>& error) {
+  if (!error.is_host_error()) {
+    return fuchsia::bluetooth::sys::Error::FAILED;
+  }
+  return HostErrorToFidl(error.host_error());
+}
+
+// Convert any bt::Status to a fpromise::result that uses the fuchsia.bluetooth.sys library error
+// codes.
+template <typename ProtocolErrorCode>
+fpromise::result<void, fuchsia::bluetooth::sys::Error> ResultToFidl(
+    const fitx::result<bt::Error<ProtocolErrorCode>>& status) {
+  if (status.is_ok()) {
+    return fpromise::ok();
+  } else {
+    return fpromise::error(HostErrorToFidl(std::move(status).error_value()));
+  }
+}
+
 // Convert any bt::Status to a fpromise::result that uses the fuchsia.bluetooth.sys library error
 // codes.
 template <typename ProtocolErrorCode>
 fpromise::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
     bt::Status<ProtocolErrorCode> status) {
-  if (status) {
-    return fpromise::ok();
-  } else {
-    return fpromise::error(HostErrorToFidl(status.error()));
-  }
+  return ResultToFidl(ToResult(status));
 }
 
 // Convert a bt::Status to fuchsia.bluetooth.gatt.Error. |status| must not indicate success.

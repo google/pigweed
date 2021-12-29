@@ -30,7 +30,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                         const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
                         ConnectionCallback connect_callback,
-                        StatusCallback status_callback) override;
+                        ResultFunction<> status_callback) override;
 
   void StopAdvertising() override;
 
@@ -75,7 +75,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     AdvertisingData data;
     AdvertisingData scan_rsp;
     ConnectionCallback connect_callback;
-    StatusCallback status_callback;
+    ResultFunction<> result_callback;
   };
   std::optional<StagedParams> staged_params_;
   bool starting_ = false;

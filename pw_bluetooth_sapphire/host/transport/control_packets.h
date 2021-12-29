@@ -13,8 +13,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 
 namespace bt::hci {
 
@@ -109,7 +109,7 @@ class Packet<hci_spec::EventHeader> : public PacketBase<hci_spec::EventHeader, E
   // the documentation on Tohci_spec::StatusCode() as the same conditions apply to this
   // method. Instead of a boolean, this returns a default status of type
   // HostError::kMalformedPacket.
-  Status ToStatus() const;
+  Result<> ToResult() const;
 
   // Initializes the internal PacketView by reading the header portion of the
   // underlying buffer.
@@ -123,6 +123,6 @@ class Packet<hci_spec::EventHeader> : public PacketBase<hci_spec::EventHeader, E
 
 // Convenience macros to check and log any non-Success status of an event.
 // Evaluate to true if the event status is not success.
-#define hci_is_error(event, flag, tag, fmt...) bt_is_error(event.ToStatus(), flag, tag, fmt)
+#define hci_is_error(event, flag, tag, fmt...) bt_is_error(event.ToResult(), flag, tag, fmt)
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_CONTROL_PACKETS_H_

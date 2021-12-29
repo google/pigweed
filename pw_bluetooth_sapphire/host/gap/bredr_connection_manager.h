@@ -24,7 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -69,7 +69,7 @@ class BrEdrConnectionManager final {
   ~BrEdrConnectionManager();
 
   // Set whether this host is connectable
-  void SetConnectable(bool connectable, hci::StatusCallback status_cb);
+  void SetConnectable(bool connectable, hci::ResultFunction<> status_cb);
 
   // Returns the PairingDelegate currently assigned to this connection manager.
   PairingDelegate* pairing_delegate() const { return pairing_delegate_.get(); }
@@ -122,7 +122,7 @@ class BrEdrConnectionManager final {
   // This function is idempotent.
   bool RemoveServiceSearch(SearchId id);
 
-  using ConnectResultCallback = fit::function<void(hci::Status, BrEdrConnection*)>;
+  using ConnectResultCallback = fit::function<void(hci::Result<>, BrEdrConnection*)>;
 
   // Initiates an outgoing Create Connection Request to attempt to connect to
   // the peer identified by |peer_id|. Returns false if the connection
@@ -134,7 +134,7 @@ class BrEdrConnectionManager final {
   // Initiate pairing to the peer with |peer_id| using the bondable preference. Pairing will only be
   // initiated if the current link key does not meet the |security| requirements. |callback| will be
   // called with the result of the procedure, successful or not.
-  void Pair(PeerId peer_id, BrEdrSecurityRequirements security, hci::StatusCallback callback);
+  void Pair(PeerId peer_id, BrEdrSecurityRequirements security, hci::ResultFunction<> callback);
 
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
   // the peer is disconnected, false if the peer can not be disconnected.
@@ -154,7 +154,7 @@ class BrEdrConnectionManager final {
   struct ConnectionComplete {
     DeviceAddress addr;
     hci_spec::ConnectionHandle handle;
-    hci::Status status;
+    hci_spec::StatusCode status_code;
     hci_spec::LinkType link_type;
 
     // Create from an hci ConnectionComplete event
@@ -162,7 +162,7 @@ class BrEdrConnectionManager final {
     // ConnectionComplete event; otherwise it will assert
     explicit ConnectionComplete(const hci::EventPacket& event);
 
-    hci::Status ToStatus() { return status; }
+    hci::Result<> ToResult() { return bt::ToResult(status_code); }
   };
 
   // TODO(fxbug.dev/58020) - eventually replace these with auto-generated implementations
@@ -185,7 +185,7 @@ class BrEdrConnectionManager final {
   void SendCreateConnectionCancelCommand(DeviceAddress addr);
 
   // Attempt to complete the active connection request for the peer |peer_id| with status |status|
-  void CompleteRequest(PeerId peer_id, DeviceAddress address, hci::Status status,
+  void CompleteRequest(PeerId peer_id, DeviceAddress address, hci::Result<> status,
                        hci_spec::ConnectionHandle handle);
 
   // Is there a current incoming connection request in progress for the given address
@@ -194,7 +194,7 @@ class BrEdrConnectionManager final {
   // Writes page timeout duration to the controller.
   // |page_timeout| must be in the range [kMinPageTimeoutDuration, kMaxPageTimeoutDuration]
   // |cb| will be called with the resulting return parameter status.
-  void WritePageTimeout(zx::duration page_timeout, hci::StatusCallback cb);
+  void WritePageTimeout(zx::duration page_timeout, hci::ResultFunction<> cb);
 
   // Reads the controller page scan settings.
   void ReadPageScanSettings();
@@ -203,7 +203,7 @@ class BrEdrConnectionManager final {
   // If |interlaced| is true, and the controller does not support interlaced
   // page scan mode, standard mode is used.
   void WritePageScanSettings(uint16_t interval, uint16_t window, bool interlaced,
-                             hci::StatusCallback cb);
+                             hci::ResultFunction<> cb);
 
   // Helper to register an event handler to run.
   hci::CommandChannel::EventHandlerId AddEventHandler(const hci_spec::EventCode& code,
@@ -276,35 +276,35 @@ class BrEdrConnectionManager final {
 
   // Helpers for sending commands on the command channel for this controller.
   // All callbacks will run on |dispatcher_|.
-  void SendAuthenticationRequested(hci_spec::ConnectionHandle handle, hci::StatusCallback cb);
+  void SendAuthenticationRequested(hci_spec::ConnectionHandle handle, hci::ResultFunction<> cb);
   void SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr,
                                     hci_spec::IOCapability io_capability, uint8_t oob_data_present,
                                     hci_spec::AuthRequirements auth_requirements,
-                                    hci::StatusCallback cb = nullptr);
+                                    hci::ResultFunction<> cb = nullptr);
   void SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr, hci_spec::StatusCode reason,
-                                            hci::StatusCallback cb = nullptr);
+                                            hci::ResultFunction<> cb = nullptr);
   void SendUserConfirmationRequestReply(DeviceAddressBytes bd_addr,
-                                        hci::StatusCallback cb = nullptr);
+                                        hci::ResultFunction<> cb = nullptr);
   void SendUserConfirmationRequestNegativeReply(DeviceAddressBytes bd_addr,
-                                                hci::StatusCallback cb = nullptr);
+                                                hci::ResultFunction<> cb = nullptr);
   void SendUserPasskeyRequestReply(DeviceAddressBytes bd_addr, uint32_t numeric_value,
-                                   hci::StatusCallback cb = nullptr);
+                                   hci::ResultFunction<> cb = nullptr);
   void SendUserPasskeyRequestNegativeReply(DeviceAddressBytes bd_addr,
-                                           hci::StatusCallback cb = nullptr);
+                                           hci::ResultFunction<> cb = nullptr);
   void SendLinkKeyRequestNegativeReply(DeviceAddressBytes bd_addr,
-                                       hci::StatusCallback cb = nullptr);
+                                       hci::ResultFunction<> cb = nullptr);
   void SendLinkKeyRequestReply(DeviceAddressBytes bd_addr, hci_spec::LinkKey link_key,
-                               hci::StatusCallback cb = nullptr);
-  void SendAcceptConnectionRequest(DeviceAddressBytes addr, hci::StatusCallback cb = nullptr);
+                               hci::ResultFunction<> cb = nullptr);
+  void SendAcceptConnectionRequest(DeviceAddressBytes addr, hci::ResultFunction<> cb = nullptr);
   void SendRejectConnectionRequest(DeviceAddress addr, hci_spec::StatusCode reason,
-                                   hci::StatusCallback cb = nullptr);
+                                   hci::ResultFunction<> cb = nullptr);
   void SendRejectSynchronousRequest(DeviceAddress addr, hci_spec::StatusCode reason,
-                                    hci::StatusCallback cb = nullptr);
+                                    hci::ResultFunction<> cb = nullptr);
 
   // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr, the event returned
   // will be decoded for its status, which is passed to |cb|.
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
-                                     hci::StatusCallback cb);
+                                     hci::ResultFunction<> cb);
 
   // Record a disconnection in Inspect's list of disconnections.
   void RecordDisconnectInspect(const BrEdrConnection& conn);

@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::gap {
 
@@ -124,12 +124,12 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestCo
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
-  std::optional<hci::Status> status;
+  hci::Result<> status = fitx::ok();
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(status.value_or(hci::Status()));
+  EXPECT_TRUE(status.is_error());
 }
 
 TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
@@ -142,13 +142,13 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_FALSE(peer->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
   EXPECT_EQ(0u, peer->features().last_page_number());
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
 
   EXPECT_TRUE(peer->name());
   EXPECT_TRUE(peer->version());
@@ -162,21 +162,21 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
   status = std::nullopt;
 
   QueueSuccessfulReadRemoteExtendedFeatures(kConnectionHandle);
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
 }
 
 TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
@@ -191,12 +191,12 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_FALSE(peer->name());
 
-  std::optional<hci::Status> status;
+  std::optional<hci::Result<>> status;
   interrogator()->Start(peer->identifier(), kConnectionHandle,
-                        [&status](hci::Status cb_status) { status = cb_status; });
+                        [&status](hci::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(status.has_value());
-  EXPECT_FALSE(status->is_success());
+  EXPECT_FALSE(status->is_ok());
 }
 }  // namespace bt::gap

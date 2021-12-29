@@ -84,7 +84,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // |timeout_ms| specifies a time period after which the request will time out. When a request to
   // create connection times out, |status_callback| will be called with a null |link| and a |status|
   // with error Host::Error::kTimedOut.
-  using StatusCallback = fit::function<void(Status status, ConnectionPtr link)>;
+  using StatusCallback = fit::function<void(Result<> status, ConnectionPtr link)>;
   bool CreateConnection(bool use_accept_list, const DeviceAddress& peer_address,
                         uint16_t scan_interval, uint16_t scan_window,
                         const hci_spec::LEPreferredConnectionParameters& initial_parameters,
@@ -149,7 +149,7 @@ class LowEnergyConnector : public LocalAddressClient {
   CommandChannel::EventCallbackResult OnConnectionCompleteEvent(const EventPacket& event);
 
   // Called when a LE Create Connection request has completed.
-  void OnCreateConnectionComplete(Status status, ConnectionPtr link);
+  void OnCreateConnectionComplete(Result<> result, ConnectionPtr link);
 
   // Called when a LE Create Connection request has timed out.
   void OnCreateConnectionTimeout();

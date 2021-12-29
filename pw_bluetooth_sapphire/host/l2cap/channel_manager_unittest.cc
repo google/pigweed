@@ -2367,7 +2367,7 @@ TEST_F(ChannelManagerTest, RequestAclPriorityNormal) {
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 
   size_t result_cb_count = 0;
@@ -2397,7 +2397,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 
   size_t result_cb_count = 0;
@@ -2440,7 +2440,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResul
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 
   size_t result_cb_count = 0;
@@ -2473,7 +2473,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
       [&requested_priority](auto priority, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         requested_priority = priority;
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 
   size_t result_cb_count = 0;
@@ -2506,7 +2506,8 @@ TEST_F(ChannelManagerTest,
 
   auto channel = SetUpOutboundChannel();
 
-  std::vector<std::pair<hci::AclPriority, fit::callback<void(fpromise::result<>)>>> requests;
+  std::vector<std::pair<hci::AclPriority, fit::callback<void(fitx::result<fitx::failed>)>>>
+      requests;
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requests.push_back({priority, std::move(cb)});
@@ -2526,13 +2527,13 @@ TEST_F(ChannelManagerTest,
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
   ASSERT_EQ(requests.size(), 1u);
 
-  requests[0].second(fpromise::ok());
+  requests[0].second(fitx::ok());
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
   EXPECT_EQ(result_cb_count, 1u);
   ASSERT_EQ(requests.size(), 2u);
   EXPECT_EQ(requests[1].first, hci::AclPriority::kNormal);
 
-  requests[1].second(fpromise::ok());
+  requests[1].second(fitx::ok());
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
@@ -2544,7 +2545,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkFails) {
 
   acl_data_channel()->set_request_acl_priority_cb([](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
-    cb(fpromise::error());
+    cb(fitx::failed());
   });
 
   size_t result_cb_count = 0;
@@ -2574,7 +2575,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requested_priority = priority;
-    cb(fpromise::ok());
+    cb(fitx::ok());
   });
 
   size_t result_cb_count = 0;
@@ -2626,7 +2627,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requested_priority = priority;
-    cb(fpromise::ok());
+    cb(fitx::ok());
   });
 
   size_t result_cb_count = 0;
@@ -2675,7 +2676,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   auto channel_0 = SetUpOutboundChannel(kChannelIds0.first, kChannelIds0.second);
   auto channel_1 = SetUpOutboundChannel(kChannelIds1.first, kChannelIds1.second);
 
-  std::vector<fit::callback<void(fpromise::result<>)>> command_callbacks;
+  std::vector<fit::callback<void(fitx::result<fitx::failed>)>> command_callbacks;
   acl_data_channel()->set_request_acl_priority_cb(
       [&](auto priority, auto handle, auto cb) { command_callbacks.push_back(std::move(cb)); });
 
@@ -2690,7 +2691,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   EXPECT_EQ(result_cb_count_1, 0u);
   ASSERT_EQ(command_callbacks.size(), 1u);
 
-  command_callbacks[0](fpromise::ok());
+  command_callbacks[0](fitx::ok());
   EXPECT_EQ(result_cb_count_0, 1u);
   // Second request should be notified of conflict error.
   EXPECT_EQ(result_cb_count_1, 1u);
@@ -2717,7 +2718,8 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
 
   auto channel = SetUpOutboundChannel();
 
-  std::vector<std::pair<hci::AclPriority, fit::callback<void(fpromise::result<>)>>> requests;
+  std::vector<std::pair<hci::AclPriority, fit::callback<void(fitx::result<fitx::failed>)>>>
+      requests;
   acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requests.push_back({priority, std::move(cb)});
@@ -2729,7 +2731,7 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 1u);
-  requests[0].second(fpromise::ok());
+  requests[0].second(fitx::ok());
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
 
   // Source request is queued and request is sent.
@@ -2756,14 +2758,14 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
   channel->Deactivate();
 
   // Send result to source request. Second sink request should receive error result too.
-  requests[1].second(fpromise::ok());
+  requests[1].second(fitx::ok());
   EXPECT_EQ(result_cb_count, 3u);
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSource);
   ASSERT_EQ(requests.size(), 3u);
   EXPECT_EQ(requests[2].first, hci::AclPriority::kNormal);
 
   // Send response to normal request.
-  requests[2].second(fpromise::ok());
+  requests[2].second(fitx::ok());
   EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
@@ -2828,8 +2830,7 @@ TEST_F(ChannelManagerTest,
   RunLoopUntilIdle();
 
   int flush_timeout_cb_count = 0;
-  fit::callback<void(fpromise::result<void, hci_spec::StatusCode>)> flush_timeout_result_cb =
-      nullptr;
+  fit::callback<void(hci::Result<>)> flush_timeout_result_cb = nullptr;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
       [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;
@@ -2854,7 +2855,7 @@ TEST_F(ChannelManagerTest,
   ASSERT_TRUE(flush_timeout_result_cb);
 
   // Calling result callback should cause channel to be returned.
-  flush_timeout_result_cb(fpromise::ok());
+  flush_timeout_result_cb(fitx::ok());
   ASSERT_TRUE(channel);
   ASSERT_TRUE(channel->info().flush_timeout.has_value());
   EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
@@ -2883,7 +2884,7 @@ TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFai
         flush_timeout_cb_count++;
         EXPECT_EQ(duration, kFlushTimeout);
         EXPECT_EQ(handle, kTestHandle1);
-        cb(fpromise::error(hci_spec::StatusCode::kUnspecifiedError));
+        cb(ToResult(hci_spec::StatusCode::kUnspecifiedError));
       });
 
   ChannelParameters chan_params;
@@ -2918,7 +2919,7 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
         flush_timeout_cb_count++;
         EXPECT_EQ(duration, kFlushTimeout);
         EXPECT_EQ(handle, kTestHandle1);
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 
   ChannelParameters chan_params;
@@ -2975,7 +2976,7 @@ TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
         flush_timeout_cb_count++;
         EXPECT_EQ(duration, zx::duration(0));
         EXPECT_EQ(handle, kTestHandle1);
-        cb(fpromise::ok());
+        cb(fitx::ok());
       });
 
   flushable_channel->SetBrEdrAutomaticFlushTimeout(
@@ -3019,12 +3020,11 @@ TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
       [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;
-        cb(fpromise::error(hci_spec::StatusCode::kUnknownConnectionId));
+        cb(ToResult(hci_spec::StatusCode::kUnknownConnectionId));
       });
 
   channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [](auto result) {
-    ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(result.error(), hci_spec::StatusCode::kUnknownConnectionId);
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::kUnknownConnectionId), result);
   });
   EXPECT_EQ(flush_timeout_cb_count, 1);
 
@@ -3057,8 +3057,7 @@ TEST_F(ChannelManagerTest, SetFlushTimeoutOnDeactivatedChannel) {
   int flush_timeout_cb_count = 0;
   channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [&](auto result) {
     flush_timeout_cb_count++;
-    ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(result.error(), hci_spec::StatusCode::kCommandDisallowed);
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::kCommandDisallowed), result);
   });
 
   RunLoopUntilIdle();

@@ -29,7 +29,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "util.h"
 
 namespace bt::sm {
@@ -100,7 +100,7 @@ class SecurityManagerImpl final : public SecurityManager,
       gap::LeSecurityMode mode);
 
   // Called when the encryption state of the LE link changes.
-  void OnEncryptionChange(hci::Status status, bool enabled);
+  void OnEncryptionChange(hci::Result<bool> enabled_result);
 
   // Called when the link is encrypted at the end of pairing Phase 2.
   void EndPhase2();
@@ -438,17 +438,18 @@ bool SecurityManagerImpl::CurrentLtkInsufficientlySecureForEncryption(
           current_ltk_sec != SecurityLevel::kSecureAuthenticated);
 }
 
-void SecurityManagerImpl::OnEncryptionChange(hci::Status status, bool enabled) {
+void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
   // First notify the delegate in case of failure.
-  if (bt_is_error(status, ERROR, "sm", "link layer authentication failed")) {
+  if (bt_is_error(enabled_result, ERROR, "sm", "link layer authentication failed")) {
     ZX_ASSERT(delegate_);
-    delegate_->OnAuthenticationFailure(status);
+    delegate_->OnAuthenticationFailure(fitx::error(enabled_result.error_value()));
   }
 
-  if (!status || !enabled) {
+  if (enabled_result.is_error() || !enabled_result.value()) {
     bt_log(WARN, "sm", "encryption of link (handle: %#.4x) %s%s!", le_link_->handle(),
-           !status ? bt_lib_cpp_string::StringPrintf("failed with %s", bt_str(status)).c_str()
-                   : "disabled",
+           enabled_result.is_error()
+               ? bt_lib_cpp_string::StringPrintf("failed with %s", bt_str(enabled_result)).c_str()
+               : "disabled",
            SecurityUpgradeInProgress() ? "" : " during security upgrade");
     SetSecurityProperties(sm::SecurityProperties());
     if (SecurityUpgradeInProgress()) {
@@ -460,7 +461,7 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Status status, bool enabled) {
   SecurityRequestPhase* security_request_phase = std::get_if<SecurityRequestPhase>(&current_phase_);
   if (CurrentLtkInsufficientlySecureForEncryption(ltk_, security_request_phase, security_mode())) {
     bt_log(WARN, "sm", "peer encrypted link with insufficiently secure key, disconnecting");
-    delegate_->OnAuthenticationFailure(hci::Status(HostError::kInsufficientSecurity));
+    delegate_->OnAuthenticationFailure(ToResult(HostError::kInsufficientSecurity));
     sm_chan_->SignalLinkError();
     return;
   }
@@ -822,7 +823,7 @@ Status SecurityManagerImpl::ValidateExistingLocalLtk() {
   if (!status) {
     // SM does not own the link, so although the checks above should never fail, disconnecting the
     // link (vs. ASSERTing these checks) is safer against non-SM code potentially touching the key.
-    delegate_->OnAuthenticationFailure(hci::Status(hci_spec::StatusCode::kPinOrKeyMissing));
+    delegate_->OnAuthenticationFailure(ToResult(hci_spec::StatusCode::kPinOrKeyMissing));
     sm_chan_->SignalLinkError();
   }
   return status;

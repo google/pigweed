@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt {
 class AdvertisingData;
@@ -102,7 +103,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   virtual void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
                                 ConnectionCallback connect_callback,
-                                StatusCallback status_callback) = 0;
+                                ResultFunction<> result_callback) = 0;
 
   // Stops advertisement on all currently advertising addresses. Idempotent and asynchronous.
   virtual void StopAdvertising();
@@ -180,7 +181,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   void StartAdvertisingInternal(const DeviceAddress& address, const AdvertisingData& data,
                                 const AdvertisingData& scan_rsp, AdvertisingIntervalRange interval,
                                 AdvFlags flags, ConnectionCallback connect_callback,
-                                StatusCallback callback);
+                                hci::ResultFunction<> callback);
 
   // Unconditionally stop advertising (all checks muts be performed in the methods that call this
   // one).
@@ -216,7 +217,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // StartAdvertisingInternal. Developers should not call this function directly.
   bool StartAdvertisingInternalStep2(const DeviceAddress& address, AdvFlags flags,
                                      ConnectionCallback connect_callback,
-                                     StatusCallback status_callback);
+                                     hci::ResultFunction<> status_callback);
 
   // Enqueue onto the HCI command runner the HCI commands necessary to stop advertising and
   // completely remove a given address from the controller's memory. If even one of the HCI commands

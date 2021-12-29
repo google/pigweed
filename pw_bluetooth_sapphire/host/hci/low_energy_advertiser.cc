@@ -17,14 +17,14 @@ LowEnergyAdvertiser::LowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
 void LowEnergyAdvertiser::StartAdvertisingInternal(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
     AdvertisingIntervalRange interval, AdvFlags flags, ConnectionCallback connect_callback,
-    StatusCallback status_callback) {
+    hci::ResultFunction<> result_callback) {
   if (IsAdvertising(address)) {
     // Temporarily disable advertising so we can tweak the parameters
     std::unique_ptr<CommandPacket> packet =
         BuildEnablePacket(address, hci_spec::GenericEnableParam::kDisable);
     if (!packet) {
       bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
-      status_callback(Status(HostError::kCanceled));
+      result_callback(ToResult(HostError::kCanceled));
       return;
     }
 
@@ -53,7 +53,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
       BuildSetAdvertisingParams(address, type, own_addr_type, interval);
   if (!set_adv_params_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI set params packet for %s", bt_str(address));
-    status_callback(Status(HostError::kCanceled));
+    result_callback(ToResult(HostError::kCanceled));
     return;
   }
 
@@ -63,21 +63,21 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
 
   // In order to support use cases where advertisers use the return parameters of the
   // SetAdvertisingParams HCI command, we place the remaining advertising setup HCI commands in the
-  // status callback here. SequentialCommandRunner doesn't allow enqueuing commands within a
+  // result callback here. SequentialCommandRunner doesn't allow enqueuing commands within a
   // callback (during a run).
   hci_cmd_runner_->RunCommands(
-      [this, address, flags, status_callback = std::move(status_callback),
-       connect_callback = std::move(connect_callback)](Status status) mutable {
-        if (bt_is_error(status, WARN, "hci-le", "failed to start advertising for %s",
+      [this, address, flags, result_callback = std::move(result_callback),
+       connect_callback = std::move(connect_callback)](hci::Result<> result) mutable {
+        if (bt_is_error(result, WARN, "hci-le", "failed to start advertising for %s",
                         bt_str(address))) {
-          status_callback(status);
+          result_callback(result);
           return;
         }
 
         bool success = StartAdvertisingInternalStep2(address, flags, std::move(connect_callback),
-                                                     std::move(status_callback));
+                                                     std::move(result_callback));
         if (!success) {
-          status_callback(Status(HostError::kCanceled));
+          result_callback(ToResult(HostError::kCanceled));
         }
       });
 }
@@ -85,7 +85,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
 bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& address,
                                                         AdvFlags flags,
                                                         ConnectionCallback connect_callback,
-                                                        StatusCallback status_callback) {
+                                                        hci::ResultFunction<> result_callback) {
   using PacketPtr = std::unique_ptr<CommandPacket>;
 
   PacketPtr set_adv_data_packet = BuildSetAdvertisingData(address, staged_parameters_.data, flags);
@@ -113,16 +113,16 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
 
   staged_parameters_.reset();
   hci_cmd_runner_->RunCommands(
-      [this, address, status_callback = std::move(status_callback),
-       connect_callback = std::move(connect_callback)](Status status) mutable {
-        if (bt_is_error(status, WARN, "hci-le", "failed to start advertising for %s",
+      [this, address, result_callback = std::move(result_callback),
+       connect_callback = std::move(connect_callback)](Result<> result) mutable {
+        if (bt_is_error(result, WARN, "hci-le", "failed to start advertising for %s",
                         bt_str(address))) {
         } else {
           bt_log(INFO, "hci-le", "advertising enabled for %s", bt_str(address));
           connection_callbacks_.emplace(address, std::move(connect_callback));
         }
 
-        status_callback(status);
+        result_callback(result);
         OnCurrentOperationComplete();
       });
 
@@ -154,8 +154,8 @@ void LowEnergyAdvertiser::StopAdvertising() {
   }
 
   if (hci_cmd_runner_->HasQueuedCommands()) {
-    hci_cmd_runner_->RunCommands([this](Status status) {
-      bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(status));
+    hci_cmd_runner_->RunCommands([this](hci::Result<> result) {
+      bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(result));
       OnCurrentOperationComplete();
     });
   }
@@ -172,8 +172,8 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(const DeviceAddress& address) 
     return;
   }
 
-  hci_cmd_runner_->RunCommands([this, address](Status status) {
-    bt_log(INFO, "hci-le", "advertising stopped for %s: %s", bt_str(address), bt_str(status));
+  hci_cmd_runner_->RunCommands([this, address](Result<> result) {
+    bt_log(INFO, "hci-le", "advertising stopped for %s: %s", bt_str(address), bt_str(result));
     OnCurrentOperationComplete();
   });
 

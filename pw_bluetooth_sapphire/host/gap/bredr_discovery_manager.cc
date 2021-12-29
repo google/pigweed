@@ -133,7 +133,7 @@ void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
   if (!discovering_.empty() || !zombie_discovering_.empty()) {
     bt_log(DEBUG, "gap-bredr", "add to active sessions");
     auto session = AddDiscoverySession();
-    callback(hci::Status(), std::move(session));
+    callback(fitx::ok(), std::move(session));
     return;
   }
 
@@ -180,7 +180,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         if (!self) {
           return;
         }
-        auto status = event.ToStatus();
+        auto status = event.ToResult();
         if (bt_is_error(status, WARN, "gap-bredr", "inquiry error")) {
           // Failure of some kind, signal error to the sessions.
           self->InvalidateDiscoverySessions();
@@ -198,7 +198,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
           while (!self->pending_discovery_.empty()) {
             auto callback = std::move(self->pending_discovery_.front());
             self->pending_discovery_.pop();
-            callback(status, (status ? self->AddDiscoverySession() : nullptr));
+            callback(status, (status.is_ok() ? self->AddDiscoverySession() : nullptr));
           }
           return;
         }
@@ -283,7 +283,8 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name, hci::StatusCallback callback) {
+void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
+                                                  hci::ResultFunction<> callback) {
   DataType name_type = DataType::kCompleteLocalName;
   size_t name_size = name.size();
   if (name.size() >= (hci_spec::kExtendedInquiryResponseMaxNameBytes)) {
@@ -308,11 +309,11 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name, hci::StatusC
         if (!hci_is_error(event, WARN, "gap", "write EIR failed")) {
           self->local_name_ = std::move(name);
         }
-        cb(event.ToStatus());
+        cb(event.ToResult());
       });
 }
 
-void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::StatusCallback callback) {
+void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::ResultFunction<> callback) {
   size_t name_size = name.size();
   if (name.size() >= hci_spec::kMaxNameLength) {
     name_size = hci_spec::kMaxNameLength;
@@ -329,7 +330,7 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::StatusCallbac
       std::move(write_name), [self, name = std::move(name), cb = std::move(callback)](
                                  auto, const hci::EventPacket& event) mutable {
         if (hci_is_error(event, WARN, "gap", "set local name failed")) {
-          cb(event.ToStatus());
+          cb(event.ToResult());
           return;
         }
         // If the WriteLocalName command was successful, update the extended inquiry data.
@@ -455,14 +456,14 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
   ZX_DEBUG_ASSERT(callback);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self, cb = callback.share()](const auto& status) {
-    cb(status, (status ? self->AddDiscoverableSession() : nullptr));
+  auto result_cb = [self, cb = callback.share()](const hci::Result<>& result) {
+    cb(result, (result.is_ok() ? self->AddDiscoverableSession() : nullptr));
   };
 
   auto update_inspect = fit::defer([self]() { self->UpdateInspectProperties(); });
 
   if (!pending_discoverable_.empty()) {
-    pending_discoverable_.push(std::move(status_cb));
+    pending_discoverable_.push(std::move(result_cb));
     bt_log(INFO, "gap-bredr", "discoverable mode starting: %lu pending",
            pending_discoverable_.size());
     return;
@@ -470,11 +471,11 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
 
   // If we're already discoverable, just add a session.
   if (!discoverable_.empty()) {
-    status_cb(hci::Status());
+    result_cb(fitx::ok());
     return;
   }
 
-  pending_discoverable_.push(std::move(status_cb));
+  pending_discoverable_.push(std::move(result_cb));
   SetInquiryScan();
 }
 
@@ -489,7 +490,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
       return;
     }
 
-    auto status = event.ToStatus();
+    auto status = event.ToResult();
     auto resolve_pending = fit::defer([self, &status]() {
       while (!self->pending_discoverable_.empty()) {
         auto cb = std::move(self->pending_discoverable_.front());
@@ -534,7 +535,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
           while (!self->pending_discoverable_.empty()) {
             auto cb = std::move(self->pending_discoverable_.front());
             self->pending_discoverable_.pop();
-            cb(event.ToStatus());
+            cb(event.ToResult());
           }
           self->UpdateInspectProperties();
         });
