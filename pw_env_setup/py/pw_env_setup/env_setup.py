@@ -414,7 +414,7 @@ Then use `set +x` to go back to normal.
             )
 
             start = time.time()
-            spin = spinner.Spinner()
+            spin = spinner.Spinner(self._quiet)
             with spin():
                 result = step(spin)
             stop = time.time()
