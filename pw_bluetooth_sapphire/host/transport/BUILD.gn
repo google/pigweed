@@ -17,6 +17,8 @@ static_library("transport") {
     "control_packets.h",
     "device_wrapper.cc",
     "device_wrapper.h",
+    "error.cc",
+    "error.h",
     "hci_defs.h",
     "link_type.cc",
     "link_type.h",
@@ -24,8 +26,6 @@ static_library("transport") {
     "sco_data_packet.cc",
     "sco_data_packet.h",
     "slab_allocators.h",
-    "status.cc",
-    "status.h",
     "transport.cc",
     "transport.h",
   ]
@@ -71,7 +71,6 @@ source_set("tests") {
     "packet_unittest.cc",
     "sco_data_packet_unittest.cc",
     "slab_allocators_unittest.cc",
-    "status_unittest.cc",
     "transport_unittest.cc",
   ]
 

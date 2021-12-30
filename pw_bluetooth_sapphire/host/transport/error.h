@@ -7,7 +7,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 
 namespace bt {
 namespace hci {
@@ -21,6 +20,17 @@ template <typename... V>
 using ResultFunction = fit::function<void(bt::hci::Result<V...> result)>;
 
 }  // namespace hci
+
+// Specializations for hci_spec::StatusCode.
+template <>
+struct ProtocolErrorTraits<hci_spec::StatusCode> {
+  static std::string ToString(hci_spec::StatusCode ecode);
+
+  static constexpr bool is_success(hci_spec::StatusCode ecode) {
+    return ecode == hci_spec::StatusCode::kSuccess;
+  }
+};
+
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ERROR_H_
