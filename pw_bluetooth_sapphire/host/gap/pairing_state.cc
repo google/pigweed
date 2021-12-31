@@ -22,6 +22,7 @@ PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::Connection* link, bool 
       peer_(std::move(peer)),
       link_(link),
       outgoing_connection_(link_initiated),
+      peer_missing_key_(false),
       state_(State::kIdle),
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {
@@ -307,7 +308,9 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
 
   std::optional<sm::LTK> link_key;
 
-  if (peer_->bredr() && peer_->bredr()->bonded()) {
+  if (peer_missing_key_) {
+    bt_log(INFO, "gap-bredr", "peer %s missing key, ignoring our key", bt_str(peer_->identifier()));
+  } else if (peer_->bredr() && peer_->bredr()->bonded()) {
     bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s", bt_str(peer_->identifier()));
 
     ZX_ASSERT(peer_->bredr()->link_key().has_value());
@@ -406,6 +409,20 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
 }
 
 void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
+  if (is_pairing() && peer_->bredr() && peer_->bredr()->bonded() &&
+      status_code == hci_spec::StatusCode::kPinOrKeyMissing) {
+    // We have provided our link key, but the remote side says they don't have a key.
+    // Pretend we don't have a link key, then start the pairing over.
+    // We will get consent even if we are otherwise kAutomatic
+    bt_log(INFO, "gap-bredr",
+           "Re-initiating pairing on %#.4x (id %s) as remote side reports no key.", handle(),
+           bt_str(peer_id()));
+    peer_missing_key_ = true;
+    current_pairing_->allow_automatic = false;
+    state_ = State::kInitiatorWaitLinkKeyRequest;
+    send_auth_request_callback_();
+    return;
+  }
   // The pairing process may fail early, which the controller will deliver as an Authentication
   // Complete with a non-success status. Log and proxy the error code.
   if (const fitx::result result = ToResult(status_code);
@@ -480,17 +497,17 @@ void PairingState::Pairing::ComputePairingData() {
   } else {
     action = GetResponderPairingAction(peer_iocap, local_iocap);
   }
-  if (!outgoing_ && action == PairingAction::kAutomatic) {
+  if (!allow_automatic && action == PairingAction::kAutomatic) {
     action = PairingAction::kGetConsent;
   }
   expected_event = GetExpectedEvent(local_iocap, peer_iocap);
   ZX_DEBUG_ASSERT(GetStateForPairingEvent(expected_event) != State::kFailed);
   authenticated = IsPairingAuthenticated(local_iocap, peer_iocap);
   bt_log(DEBUG, "gap-bredr",
-         "As %s %s with local %hhu/peer %hhu capabilities, expecting an %sauthenticated %u pairing "
-         "using %#x",
-         outgoing_ ? "outgoing" : "incoming", initiator ? "initiator" : "responder", local_iocap,
-         peer_iocap, authenticated ? "" : "un", action, expected_event);
+         "As %s with local %hhu/peer %hhu capabilities, expecting an %sauthenticated %u pairing "
+         "using %#x%s",
+         initiator ? "initiator" : "responder", local_iocap, peer_iocap, authenticated ? "" : "un",
+         action, expected_event, allow_automatic ? "" : " (auto not allowed)");
 }
 
 const char* PairingState::ToString(PairingState::State state) {

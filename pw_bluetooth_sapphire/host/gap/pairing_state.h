@@ -108,6 +108,8 @@ enum class PairingAction {
 //     ◀ Simple Pairing Complete (status may be error)
 //     ◀ Link Key Notification (key may be insufficient)
 //     ◀ Authentication Complete (status may be error)
+//       If status is PIN or Key missing, return to:
+//         Authentication Requested▶ (use Link Key Request Negative Reply)
 // Set Connection Encryption▶
 //     ◀ Command Status
 //     ◀ Encryption Change (status may be error or encryption may be disabled)
@@ -319,6 +321,9 @@ class PairingState final {
     // True if the local device initiated pairing.
     bool initiator;
 
+    // True if we allow automatic pairing. (when outgoing connection and not re-pairing)
+    bool allow_automatic;
+
     // IO Capability obtained from the pairing delegate.
     hci_spec::IOCapability local_iocap;
 
@@ -342,10 +347,7 @@ class PairingState final {
     BrEdrSecurityRequirements preferred_security;
 
    private:
-    explicit Pairing(bool outgoing) : outgoing_(outgoing), weak_ptr_factory_(this) {}
-
-    // True if the link for this pairing was initiated locally.
-    bool outgoing_;
+    explicit Pairing(bool automatic) : allow_automatic(automatic), weak_ptr_factory_(this) {}
 
     fxl::WeakPtrFactory<Pairing> weak_ptr_factory_;
   };
@@ -402,6 +404,9 @@ class PairingState final {
 
   // True when the BR/EDR |link_| was locally requested.
   bool outgoing_connection_;
+
+  // True when the remote device has reported it doesn't have a link key.
+  bool peer_missing_key_;
 
   fxl::WeakPtr<PairingDelegate> pairing_delegate_;
 

@@ -133,7 +133,7 @@ TEST_F(PairingStateTest, PairingStateBecomesInitiatorAfterLocalPairingInitiated)
   EXPECT_TRUE(pairing_state.initiator());
 }
 
-TEST_F(PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
+TEST_F(PairingStateTest, PairingStateSendsAuthenticationRequestOnceForDuplicateRequest) {
   auto connection = MakeFakeConnection();
   PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/false,
                              MakeAuthRequestCallback(), NoOpStatusCallback);
@@ -1881,6 +1881,143 @@ TEST_F(PairingStateTest, AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPa
   pairing_state.OnAuthenticationComplete(status_code);
   ASSERT_EQ(1, status_handler.call_count());
   EXPECT_EQ(ToResult(status_code), status_handler.status().value());
+}
+
+TEST_F(PairingStateTest,
+       AuthenticationCompleteWithMissingKeyRetriesWithoutKeyAndDoesntAutoConfirmRejected) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/true,
+                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  auto existing_link_key =
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+
+  peer()->MutBrEdr().SetBondData(existing_link_key);
+  EXPECT_FALSE(connection.ltk().has_value());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(1u, auth_request_count());
+
+  auto reply_key = pairing_state.OnLinkKeyRequest();
+  ASSERT_TRUE(reply_key.has_value());
+  EXPECT_EQ(kTestLinkKey, reply_key.value());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  // Peer says that they don't have a key.
+  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::kPinOrKeyMissing);
+  ASSERT_EQ(0, status_handler.call_count());
+  // We should retry the authentication request, this time pretending we don't have a key.
+  EXPECT_EQ(2u, auth_request_count());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(false);
+  });
+  bool confirmed = true;
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          [&confirmed](bool confirm) { confirmed = confirm; });
+
+  EXPECT_FALSE(confirmed);
+
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    EXPECT_FALSE(status);
+  });
+
+  // The controller sends a SimplePairingComplete indicating the failure after we send a
+  // Negative Confirmation.
+  const auto status_code = hci_spec::StatusCode::kAuthenticationFailure;
+  pairing_state.OnSimplePairingComplete(status_code);
+
+  // The bonding key should not have been touched.
+  EXPECT_EQ(existing_link_key, peer()->bredr()->link_key());
+
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.status().has_value());
+  EXPECT_EQ(ToResult(status_code), status_handler.status().value());
+}
+
+TEST_F(PairingStateTest,
+       AuthenticationCompleteWithMissingKeyRetriesWithoutKeyAndDoesntAutoConfirmAccepted) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(peer()->GetWeakPtr(), &connection, /*link_initiated=*/true,
+                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  auto existing_link_key =
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+
+  peer()->MutBrEdr().SetBondData(existing_link_key);
+  EXPECT_FALSE(connection.ltk().has_value());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(1u, auth_request_count());
+
+  auto reply_key = pairing_state.OnLinkKeyRequest();
+  ASSERT_TRUE(reply_key.has_value());
+  EXPECT_EQ(kTestLinkKey, reply_key.value());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  // Peer says that they don't have a key.
+  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::kPinOrKeyMissing);
+  ASSERT_EQ(0, status_handler.call_count());
+  // We should retry the authentication request, this time pretending we don't have a key.
+  EXPECT_EQ(2u, auth_request_count());
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
+  EXPECT_EQ(0, status_handler.call_count());
+
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    ASSERT_TRUE(cb);
+    cb(true);
+  });
+  bool confirmed = false;
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          [&confirmed](bool confirm) { confirmed = confirm; });
+
+  EXPECT_TRUE(confirmed);
+
+  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(peer()->identifier(), peer_id);
+    EXPECT_TRUE(status);
+  });
+
+  // The controller sends a SimplePairingComplete indicating the success, then the controller
+  // sends us the new link key, and Authentication Complete.
+  // Negative Confirmation.
+  auto status_code = hci_spec::StatusCode::kSuccess;
+  pairing_state.OnSimplePairingComplete(status_code);
+
+  const auto new_link_key_value = UInt128{0xC0, 0xDE, 0xFA, 0xCE, 0x00, 0x00, 0x00, 0x00,
+                                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
+
+  pairing_state.OnLinkKeyNotification(new_link_key_value, kTestUnauthenticatedLinkKeyType);
+  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::kSuccess);
+  // then we request encryption, which when it finishes, completes pairing.
+  ASSERT_EQ(1, connection.start_encryption_count());
+  connection.TriggerEncryptionChangeCallback(fitx::ok(true));
+
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.status().has_value());
+  EXPECT_EQ(ToResult(status_code), status_handler.status().value());
+
+  // The new link key should be stored in the connection now.
+  auto new_link_key = hci_spec::LinkKey(new_link_key_value, 0, 0);
+  EXPECT_EQ(new_link_key, connection.ltk());
 }
 
 TEST_F(PairingStateTest,
