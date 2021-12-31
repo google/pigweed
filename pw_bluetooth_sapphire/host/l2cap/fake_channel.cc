@@ -133,7 +133,7 @@ void FakeChannel::RequestAclPriority(hci::AclPriority priority,
 }
 
 void FakeChannel::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                                fit::callback<void(hci::Result<>)> callback) {
+                                                hci::ResultCallback<> callback) {
   if (!flush_timeout_succeeds_) {
     callback(ToResult(hci_spec::StatusCode::kUnspecifiedError));
     return;

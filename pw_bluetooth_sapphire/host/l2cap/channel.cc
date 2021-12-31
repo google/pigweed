@@ -205,7 +205,7 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
 }
 
 void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                                fit::callback<void(hci::Result<>)> callback) {
+                                                hci::ResultCallback<> callback) {
   ZX_ASSERT(link_type_ == bt::LinkType::kACL);
 
   // Channel may be inactive if this method is called before activation.

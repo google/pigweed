@@ -42,8 +42,8 @@ class CommandHandler {
   // static fitx::result<bt::Error<NoProtocolError>, EventT> Decode(const EventPacket& packet);
   // static constexpr uint8_t kEventCode = ...;
   template <typename CommandT>
-  CommandChannel::TransactionId SendCommand(
-      CommandT command, fit::callback<void(Result<typename CommandT::EventT>)> event_cb) {
+  CommandChannel::TransactionId SendCommand(CommandT command,
+                                            ResultCallback<typename CommandT::EventT> event_cb) {
     // EventT should be the command complete event code. Use SendCommandFinishOnStatus to only
     // handle the command status event.
     static_assert(CommandT::EventT::kEventCode != hci_spec::kCommandStatusEventCode);
@@ -102,8 +102,8 @@ class CommandHandler {
   //    }
   // });
   template <typename CommandT>
-  CommandChannel::TransactionId SendCommandFinishOnStatus(
-      CommandT command, fit::callback<void(hci::Result<>)> status_cb) {
+  CommandChannel::TransactionId SendCommandFinishOnStatus(CommandT command,
+                                                          hci::ResultCallback<> status_cb) {
     ZX_ASSERT(status_cb);
 
     auto encoded = command.Encode();

@@ -11,12 +11,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::gap::internal {
 
 class LowEnergyConnector final {
  public:
-  using ResultCallback = fit::callback<void(hci::Result<std::unique_ptr<LowEnergyConnection>>)>;
+  using ResultCallback = hci::ResultCallback<std::unique_ptr<LowEnergyConnection>>;
 
   // Initiate an outbound connection to |peer_id|. |cb| will be called with the result of the
   // procedure.

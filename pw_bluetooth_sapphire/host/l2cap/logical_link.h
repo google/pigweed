@@ -143,8 +143,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // |flush_timeout| must be in the range [1ms - hci_spec::kMaxAutomaticFlushTimeoutDuration]. A
   // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic
   // flush), the default.
-  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                     fit::callback<void(hci::Result<>)> callback);
+  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout, hci::ResultCallback<> callback);
 
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);

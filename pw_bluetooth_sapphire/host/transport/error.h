@@ -19,6 +19,9 @@ using Result = fitx::result<bt::hci::Error, V...>;
 template <typename... V>
 using ResultFunction = fit::function<void(bt::hci::Result<V...> result)>;
 
+template <typename... V>
+using ResultCallback = fit::callback<void(bt::hci::Result<V...> result)>;
+
 }  // namespace hci
 
 // Specializations for hci_spec::StatusCode.

@@ -96,7 +96,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
                           fit::callback<void(fitx::result<fitx::failed>)> callback) override;
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
-                                     fit::callback<void(Result<>)> callback) override;
+                                     ResultCallback<> callback) override;
 
  private:
   // Represents a queued ACL data packet.
@@ -615,7 +615,7 @@ void AclDataChannelImpl::RequestAclPriority(
 
 void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                                        hci_spec::ConnectionHandle handle,
-                                                       fit::callback<void(Result<>)> callback) {
+                                                       ResultCallback<> callback) {
   auto link_iter = registered_links_.find(handle);
   ZX_ASSERT(link_iter != registered_links_.end());
   ZX_ASSERT(link_iter->second == bt::LinkType::kACL);

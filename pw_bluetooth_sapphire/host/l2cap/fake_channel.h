@@ -77,7 +77,7 @@ class FakeChannel : public Channel {
   void RequestAclPriority(hci::AclPriority priority,
                           fit::callback<void(fitx::result<fitx::failed>)> cb) override;
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                     fit::callback<void(hci::Result<>)> callback) override;
+                                     hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
 
  private:

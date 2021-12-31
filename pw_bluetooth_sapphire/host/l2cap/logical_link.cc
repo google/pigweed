@@ -599,7 +599,7 @@ void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority
 }
 
 void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                                fit::callback<void(hci::Result<>)> callback) {
+                                                hci::ResultCallback<> callback) {
   if (type_ != bt::LinkType::kACL) {
     bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
     callback(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters));

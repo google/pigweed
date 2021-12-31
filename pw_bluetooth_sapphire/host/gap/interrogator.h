@@ -49,7 +49,7 @@ class Interrogator {
 
   // Starts interrogation. Calls |callback| when the sequence is completed or
   // fails. Start must not be called for peers with outstanding interrogations.
-  using ResultCallback = fit::callback<void(hci::Result<> status)>;
+  using ResultCallback = hci::ResultCallback<>;
   void Start(PeerId peer_id, hci_spec::ConnectionHandle handle, ResultCallback callback);
 
   // Abandons any interrogation of |peer_id|.  Their callbacks will be called

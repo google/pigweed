@@ -212,7 +212,7 @@ class AclDataChannel {
   // returned to |callback|.
   virtual void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                              hci_spec::ConnectionHandle handle,
-                                             fit::callback<void(Result<>)> callback) = 0;
+                                             ResultCallback<> callback) = 0;
 };
 
 }  // namespace bt::hci

@@ -214,7 +214,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // NOTE: If the local host is an LE peripheral, then the local controller and the remote
   // LE central must have indicated support for this procedure in the LE feature mask. Otherwise,
   // L2capRequestConnectionParameterUpdate(...) should be used instead.
-  using StatusCallback = fit::callback<void(hci::Result<>)>;
+  using StatusCallback = hci::ResultCallback<>;
   void UpdateConnectionParams(const hci_spec::LEPreferredConnectionParameters& params,
                               StatusCallback status_cb = nullptr);
 

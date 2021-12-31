@@ -2830,7 +2830,7 @@ TEST_F(ChannelManagerTest,
   RunLoopUntilIdle();
 
   int flush_timeout_cb_count = 0;
-  fit::callback<void(hci::Result<>)> flush_timeout_result_cb = nullptr;
+  hci::ResultCallback<> flush_timeout_result_cb = nullptr;
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
       [&](zx::duration duration, hci_spec::ConnectionHandle handle, auto cb) {
         flush_timeout_cb_count++;

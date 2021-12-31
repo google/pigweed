@@ -32,7 +32,7 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   using SetBrEdrAutomaticFlushTimeoutCallback =
-      fit::function<void(zx::duration, hci_spec::ConnectionHandle, fit::callback<void(Result<>)>)>;
+      fit::function<void(zx::duration, hci_spec::ConnectionHandle, ResultCallback<>)>;
   void set_set_bredr_automatic_flush_timeout_cb(SetBrEdrAutomaticFlushTimeoutCallback callback) {
     flush_timeout_cb_ = std::move(callback);
   }
@@ -72,7 +72,7 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout, hci_spec::ConnectionHandle handle,
-                                     fit::callback<void(Result<>)> callback) override {
+                                     ResultCallback<> callback) override {
     if (flush_timeout_cb_) {
       flush_timeout_cb_(flush_timeout, handle, std::move(callback));
     }

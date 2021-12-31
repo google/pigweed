@@ -190,7 +190,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (packets will be
   // marked flushable, but there will be no automatic flush timeout).
   virtual void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                             fit::callback<void(hci::Result<>)> callback) = 0;
+                                             hci::ResultCallback<> callback) = 0;
 
   // Attach this channel as a child node of |parent| with the given |name|.
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
@@ -273,7 +273,7 @@ class ChannelImpl : public Channel {
   void RequestAclPriority(hci::AclPriority priority,
                           fit::callback<void(fitx::result<fitx::failed>)> callback) override;
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
-                                     fit::callback<void(hci::Result<>)> callback) override;
+                                     hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
 
  private:
