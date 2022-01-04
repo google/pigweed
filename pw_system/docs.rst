@@ -11,6 +11,9 @@ GN Target Toolchain Template
 This module includes a target toolchain template called ``pw_system_target``
 that reduces the amount of work required to declare a target toolchain with
 pre-selected backends for pw_log, pw_assert, pw_malloc, pw_thread, and more.
+The configurability and extensibility of this template is relatively limited,
+as this template serves as a "one-size-fits-all" starting point rather than
+being foundational infrastructure.
 
 .. code-block::
 
