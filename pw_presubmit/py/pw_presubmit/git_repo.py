@@ -24,6 +24,8 @@ from pw_presubmit.tools import log_run, plural
 _LOG = logging.getLogger(__name__)
 PathOrStr = Union[Path, str]
 
+USE_TRACKING_BRANCH = object()
+
 
 def git_stdout(*args: PathOrStr,
                show_stderr=False,
@@ -55,6 +57,45 @@ def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
         yield git_root / file
 
 
+def tracking_branch(repo_path: Path = None,
+                    suppress_exception: bool = True) -> Optional[str]:
+    """Returns the tracking branch of the current branch.
+
+    Since most callers of this function can safely handle a return value of
+    None, default to suppressing exceptions and returning None when they
+    happen.
+
+    Args:
+        repo_path: repo path from which to run commands; defaults to Path.cwd()
+        suppress_exception: Whether to suppress CalledProcessError exceptions
+
+    Raises:
+        CalledProcessError: HEAD does not point to a branch or the branch is not
+            tracking another branch.
+    """
+    if repo_path is None:
+        repo_path = Path.cwd()
+
+    # This command should raise an exception if repo_path is not a git
+    # repository. Always raise errors in that case.
+    _ = git_stdout('remote', '-v', repo=repo_path)
+
+    # This command should only error out if there's no upstream branch set.
+    try:
+        return git_stdout('rev-parse',
+                          '--abbrev-ref',
+                          '--symbolic-full-name',
+                          '@{u}',
+                          repo=repo_path)
+
+    except subprocess.CalledProcessError:
+        if not suppress_exception:
+            raise
+        _LOG.warning('Error retrieving remote tracking branch of %s',
+                     repo_path)
+        return None
+
+
 def list_files(commit: Optional[str] = None,
                pathspecs: Collection[PathOrStr] = (),
                repo_path: Optional[Path] = None) -> List[Path]:
@@ -70,6 +111,9 @@ def list_files(commit: Optional[str] = None,
     """
     if repo_path is None:
         repo_path = Path.cwd()
+
+    if commit is USE_TRACKING_BRANCH:
+        commit = tracking_branch(repo_path)
 
     if commit:
         try:
