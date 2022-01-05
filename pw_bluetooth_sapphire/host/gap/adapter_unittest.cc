@@ -93,8 +93,6 @@ class AdapterTest : public TestingBase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);
 };
 
-using GAP_AdapterTest = AdapterTest;
-
 TEST_F(AdapterTest, InitializeFailureNoFeaturesSupported) {
   bool success;
   int init_cb_count = 0;

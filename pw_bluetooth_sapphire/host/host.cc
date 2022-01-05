@@ -19,7 +19,13 @@ Host::Host(const bt_hci_protocol_t& hci_proto, std::optional<bt_vendor_protocol_
 
 Host::~Host() {}
 
-bool Host::Initialize(inspect::Node& root_node, InitCallback callback) {
+// static
+fbl::RefPtr<Host> Host::Create(const bt_hci_protocol_t& hci_proto,
+                               std::optional<bt_vendor_protocol_t> vendor_proto) {
+  return fbl::AdoptRef(new Host(hci_proto, vendor_proto));
+}
+
+bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallback error_cb) {
   auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_, vendor_proto_);
 
   auto hci_result = hci::Transport::Create(std::move(dev));
@@ -42,17 +48,19 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback callback) {
   // initial setup in GAP. The data domain will be initialized by GAP because it
   // both sets up the HCI ACL data channel that L2CAP relies on and registers
   // L2CAP services.
-  auto gap_init_callback = [callback = std::move(callback)](bool success) {
+  auto gap_init_callback = [callback = std::move(init_cb)](bool success) mutable {
     bt_log(DEBUG, "bt-host", "GAP init complete (%s)", (success ? "success" : "failure"));
 
     callback(success);
   };
 
+  auto transport_closed_callback = [error_cb = std::move(error_cb)]() mutable {
+    bt_log(WARN, "bt-host", "bt-host: HCI transport has closed");
+    error_cb();
+  };
+
   bt_log(DEBUG, "bt-host", "initializing GAP");
-  // TODO(fxbug.dev/52588): remove bt-host device and shut down the stack when HCI transport has
-  // closed.
-  return gap_->Initialize(std::move(gap_init_callback),
-                          [] { bt_log(DEBUG, "bt-host", "bt-host: HCI transport has closed"); });
+  return gap_->Initialize(std::move(gap_init_callback), std::move(transport_closed_callback));
 }
 
 void Host::ShutDown() {

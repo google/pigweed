@@ -49,9 +49,16 @@ class HostServer;
 // should be called on the Host thread only.
 class Host final : public fbl::RefCounted<Host> {
  public:
-  // Initializes the system and reports the status in |success|.
-  using InitCallback = fit::function<void(bool success)>;
-  bool Initialize(inspect::Node& root_node, InitCallback callback);
+  // Initializes the system and reports the status to the |init_cb| in |success|.
+  // |error_cb| will be called if a transport error occurs in the Host after initialization.
+  // on an error, Host::Shutdown should be called to shut down the host.
+  using InitCallback = fit::callback<void(bool success)>;
+  using ErrorCallback = fit::callback<void()>;
+  bool Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallback error_cb);
+
+  // Creates a new Host.
+  static fbl::RefPtr<Host> Create(const bt_hci_protocol_t& hci_proto,
+                                  std::optional<bt_vendor_protocol_t> vendor_proto);
 
   // Shuts down all systems.
   void ShutDown();
@@ -63,7 +70,6 @@ class Host final : public fbl::RefCounted<Host> {
   bt::gatt::GATT* gatt() const { return gatt_.get(); }
 
  private:
-  friend class HostDevice;
   friend class ::fbl::RefPtr<Host>;
 
   explicit Host(const bt_hci_protocol_t& hci_proto,

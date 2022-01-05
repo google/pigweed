@@ -6,6 +6,7 @@ import("//build/bind/bind.gni")
 import("//build/components.gni")
 import("//build/drivers.gni")
 import("//build/fuzzing/fuzzer.gni")
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 driver_bind_rules("bt_host_bind") {
   rules = "bt_host.bind"
@@ -112,9 +113,27 @@ fuzzers_package("fuzzers") {
   ]
 }
 
+source_set("device_tests") {
+  testonly = true
+
+  sources = [ "host_unittest.cc" ]
+
+  deps = [
+    ":sources",
+    "//sdk/lib/inspect/testing/cpp",
+    "//src/lib/testing/loop_fixture",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+bt_gtest_package("bt-host-device-tests") {
+  deps = [ ":device_tests" ]
+}
+
 group("tests") {
   testonly = true
   deps = [
+    ":bt-host-device-tests",
     ":fuzzers",
     "att:bt-host-att-tests",
     "common:bt-host-common-tests",

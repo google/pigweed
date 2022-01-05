@@ -80,60 +80,64 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
   std::lock_guard<std::mutex> lock(mtx_);
 
   auto vendor_result = GetVendorProtocol();
-  if (vendor_result.is_ok()) {
-    vendor_proto_ = vendor_result.value();
-  } else {
+  if (vendor_result.is_error()) {
     bt_log(WARN, "bt-host", "failed to obtain bt-vendor protocol ops: %s",
-           zx_status_get_string(vendor_result.error()));
+           zx_status_get_string(vendor_result.error_value()));
+  } else {
+    vendor_proto_ = vendor_result.value();
   }
 
+  InitializeHostLocked([this, txn{std::move(txn)}](bool success) mutable {
+    std::lock_guard<std::mutex> lock(mtx_);
+    // host_ must be defined here as Bind() must have been called and the runloop has not
+    // yet been been drained in Unbind().
+    ZX_DEBUG_ASSERT(host_);
+
+    if (!success) {
+      bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
+      txn.Reply(ZX_ERR_INTERNAL);
+      // DDK will call Unbind here to clean up.
+    } else {
+      bt_log(DEBUG, "bt-host", "adapter initialized; make device visible");
+      txn.Reply(ZX_OK);
+    }
+  });
+}
+
+void HostDevice::InitializeHostLocked(fit::function<void(bool success)> callback) {
   loop_.StartThread("bt-host (gap)");
 
   // Send the bootstrap message to Host. The Host object can only be accessed on
   // the Host thread.
-  async::PostTask(loop_.dispatcher(), [this, txn{std::move(txn)}]() mutable {
+  async::PostTask(loop_.dispatcher(), [this, callback{std::move(callback)}]() mutable {
     bt_log(TRACE, "bt-host", "host thread start");
 
     std::lock_guard<std::mutex> lock(mtx_);
-    host_ = fbl::AdoptRef(new Host(hci_proto_, vendor_proto_));
+    host_ = Host::Create(hci_proto_, vendor_proto_);
     bt_host_node_ = inspect_.GetRoot().CreateChild("bt-host");
-    host_->Initialize(bt_host_node_, [this, txn{std::move(txn)}](bool success) mutable {
-      std::lock_guard<std::mutex> lock(mtx_);
-
-      // host_ must be defined here as Bind() must have been called and the runloop has not
-      // yet been been drained in Unbind().
-      ZX_DEBUG_ASSERT(host_);
-
-      if (!success) {
-        bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
-        txn.Reply(ZX_ERR_INTERNAL);
-        // DDK will call Unbind here to clean up.
-      } else {
-        bt_log(DEBUG, "bt-host", "adapter initialized; make device visible");
-        txn.Reply(ZX_OK);
-        return;
-      }
+    host_->Initialize(bt_host_node_, std::move(callback), [this]() {
+      bt_log(WARN, "bt-host", "transport error, shutting down and removing host..");
+      DdkAsyncRemove();
     });
+  });
+}
+
+void HostDevice::ShutdownHost() {
+  std::lock_guard<std::mutex> lock(mtx_);
+  async::PostTask(loop_.dispatcher(), [this] {
+    std::lock_guard<std::mutex> lock(mtx_);
+    host_->ShutDown();
+    host_ = nullptr;
+    loop_.Quit();
   });
 }
 
 void HostDevice::DdkUnbind(ddk::UnbindTxn txn) {
   bt_log(DEBUG, "bt-host", "unbind");
 
-  {
-    std::lock_guard<std::mutex> lock(mtx_);
+  ShutdownHost();
 
-    async::PostTask(loop_.dispatcher(), [this] {
-      std::lock_guard<std::mutex> lock(mtx_);
-      host_->ShutDown();
-      host_ = nullptr;
-      loop_.Quit();
-    });
-
-    // Don't hold lock waiting on the loop to terminate.
-  }
-
-  // Make sure that the ShutDown task runs before this returns.
+  // Make sure that the Shutdown task runs before this returns.
   bt_log(TRACE, "bt-host", "waiting for shut down tasks to complete");
   loop_.JoinThreads();
 
@@ -161,29 +165,29 @@ void HostDevice::Open(OpenRequestView request, OpenCompleter::Sync& completer) {
   });
 }
 
-fpromise::result<bt_vendor_protocol_t, zx_status_t> HostDevice::GetVendorProtocol() {
+fitx::result<zx_status_t, bt_vendor_protocol_t> HostDevice::GetVendorProtocol() {
   bt_vendor_protocol_t vendor_proto = {};
   zx_status_t status = device_get_protocol(parent_, ZX_PROTOCOL_BT_VENDOR, &vendor_proto);
   if (status != ZX_OK) {
-    return fpromise::error(status);
+    return fitx::error(status);
   }
 
   if (!vendor_proto.ops) {
     bt_log(WARN, "bt-host", "bt-vendor device ops required");
-    return fpromise::error(ZX_ERR_NOT_SUPPORTED);
+    return fitx::error(ZX_ERR_NOT_SUPPORTED);
   }
 
   if (!vendor_proto.ops->get_features) {
     bt_log(WARN, "bt-host", "bt-vendor op required: get_features");
-    return fpromise::error(ZX_ERR_NOT_SUPPORTED);
+    return fitx::error(ZX_ERR_NOT_SUPPORTED);
   }
 
   if (!vendor_proto.ops->encode_command) {
     bt_log(WARN, "bt-host", "bt-vendor op required: encode_command");
-    return fpromise::error(ZX_ERR_NOT_SUPPORTED);
+    return fitx::error(ZX_ERR_NOT_SUPPORTED);
   }
 
-  return fpromise::ok(vendor_proto);
+  return fitx::ok(vendor_proto);
 }
 
 }  // namespace bthost

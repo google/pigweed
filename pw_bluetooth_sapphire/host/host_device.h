@@ -11,6 +11,7 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
+#include <lib/fitx/result.h>
 
 #include <mutex>
 
@@ -43,7 +44,15 @@ class HostDevice final : public HostDeviceType {
   // Returns the status of the fidl send operation.
   void Open(OpenRequestView request, OpenCompleter::Sync& completer);
 
-  fpromise::result<bt_vendor_protocol_t, zx_status_t> GetVendorProtocol();
+  // Get the vendor protocol that is supported by the underlying host device.
+  fitx::result<zx_status_t, bt_vendor_protocol_t> GetVendorProtocol();
+
+  // Initializes the host and the host thread.
+  // Calls |cb| when complete with a success or error.
+  void InitializeHostLocked(fit::function<void(bool success)> callback) __TA_REQUIRES(mtx_);
+
+  // Shuts down the host thread, destroying and shutting down the host.
+  void ShutdownHost();
 
   // Guards access to members below.
   std::mutex mtx_;
