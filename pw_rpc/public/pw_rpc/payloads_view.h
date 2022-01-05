@@ -20,6 +20,8 @@
 // This code is inteded for testing, not for deployment.
 #pragma once
 
+#include <tuple>
+
 #include "pw_containers/filtered_view.h"
 #include "pw_containers/vector.h"
 #include "pw_containers/wrapped_iterator.h"
