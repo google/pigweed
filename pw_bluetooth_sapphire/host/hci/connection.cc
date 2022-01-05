@@ -10,6 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
@@ -241,8 +242,9 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2x",
-         bt_str(event.ToResult()), handle, params.reason);
+  bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2x (%s)",
+         bt_str(event.ToResult()), handle, params.reason,
+         hci_spec::StatusCodeToString(params.reason).c_str());
 
   // Stop data flow and revoke queued packets for this connection.
   hci->acl_data_channel()->UnregisterLink(handle);
