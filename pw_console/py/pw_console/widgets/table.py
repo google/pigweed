@@ -204,7 +204,7 @@ class TableView:
             log.record.message)
         message = log.metadata.fields.get(
             'msg',
-            message_text.strip(),  # Remove any trailing line breaks
+            message_text.rstrip(),  # Remove any trailing line breaks
         )
         # Alternatively ANSI formatting can be preserved with:
         #   message = ANSI(log.record.message).__pt_formatted_text__()
@@ -235,7 +235,7 @@ class TableView:
                     i + index_modifier) if 0 <= i <= 7 else default_style
 
                 style = self.prefs.column_style(column_name,
-                                                column_value.strip(),
+                                                column_value.rstrip(),
                                                 default=fallback_style)
 
                 fragments.append((style, column_value))
