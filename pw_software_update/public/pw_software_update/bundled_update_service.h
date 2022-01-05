@@ -48,6 +48,10 @@ class BundledUpdateService
   Status Start(const pw_software_update_StartRequest& request,
                pw_software_update_BundledUpdateStatus& response);
 
+  // Sync
+  Status SetTransferred(const pw_protobuf_Empty& request,
+                        pw_software_update_BundledUpdateStatus& response);
+
   // Async
   Status Verify(const pw_protobuf_Empty& request,
                 pw_software_update_BundledUpdateStatus& response);

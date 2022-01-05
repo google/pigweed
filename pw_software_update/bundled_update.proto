@@ -149,6 +149,13 @@ service BundledUpdate {
   // Precondition: Device update state must be INACTIVE.
   rpc Start(StartRequest) returns (BundledUpdateStatus);
 
+  // Manually set the bundle status as transferred. It can be used to recover
+  // a previously finished transfer or used when transfer happens on a side
+  // channel without involvement of pw_transfer
+  //
+  // Precondition: Device update state must be INACTIVE or TRANSFERRING
+  rpc SetTransferred(pw.protobuf.Empty) returns (BundledUpdateStatus);
+
   // Verify the bundle in the staging area. Returns immediately, but
   // verification runs asynchronously. Poll for completion with GetStatus().
   //

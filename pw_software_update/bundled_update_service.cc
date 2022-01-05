@@ -115,6 +115,24 @@ Status BundledUpdateService::Start(
   return OkStatus();
 }
 
+Status BundledUpdateService::SetTransferred(
+    const pw_protobuf_Empty&,
+    ::pw_software_update_BundledUpdateStatus& response) {
+  if (status_.state !=
+          pw_software_update_BundledUpdateState_Enum_TRANSFERRING &&
+      status_.state != pw_software_update_BundledUpdateState_Enum_INACTIVE) {
+    SET_ERROR(pw_software_update_BundledUpdateResult_Enum_UNKNOWN_ERROR,
+              "SetTransferred() can only be called from TRANSFERRING or "
+              "INACTIVE state. State: %d",
+              static_cast<int>(status_.state));
+    response = status_;
+    return OkStatus();
+  }
+  NotifyTransferSucceeded();
+  response = status_;
+  return OkStatus();
+}
+
 // TODO: Check for "ABORTING" state and bail if it's set.
 void BundledUpdateService::DoVerify() {
   std::lock_guard guard(mutex_);
@@ -495,17 +513,19 @@ void BundledUpdateService::NotifyTransferSucceeded() {
   if (status_.state !=
       pw_software_update_BundledUpdateState_Enum_TRANSFERRING) {
     // This can happen if the update gets Abort()'d during the transfer and
-    // the transfer completes successfuly.
+    // the transfer completes successfully.
     PW_LOG_WARN(
         "Got transfer succeeded notification when not in TRANSFERRING state. "
         "State: %d",
         static_cast<int>(status_.state));
-    return;
+  }
+  if (status_.has_transfer_id) {
+    backend_.DisableBundleTransferHandler();
+    status_.has_transfer_id = false;
+  } else {
+    PW_LOG_WARN("No ongoing transfer found, forcefully set TRANSFERRED.");
   }
 
-  PW_DCHECK(status_.has_transfer_id);
-  backend_.DisableBundleTransferHandler();
-  status_.has_transfer_id = false;
   status_.state = pw_software_update_BundledUpdateState_Enum_TRANSFERRED;
 }
 
