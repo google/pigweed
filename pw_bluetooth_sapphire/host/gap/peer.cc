@@ -433,6 +433,7 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
                   [](TechnologyType t) { return TechnologyTypeToString(t); }),
       address_(address, MakeToStringInspectConvertFunction()),
       identity_known_(false),
+      name_(std::nullopt, [](const std::optional<std::string>& v) { return v ? *v : ""; }),
       lmp_version_(std::nullopt,
                    [](const std::optional<hci_spec::HCIVersion>& v) {
                      return v ? hci_spec::HCIVersionToString(*v) : "";
@@ -465,11 +466,12 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
   }
 }
 
-void Peer::AttachInspect(inspect::Node& parent, std::string name) {
-  node_ = parent.CreateChild(name);
+void Peer::AttachInspect(inspect::Node& parent, std::string node_name) {
+  node_ = parent.CreateChild(node_name);
   identifier_.AttachInspect(node_, kInspectPeerIdName);
   technology_.AttachInspect(node_, kInspectTechnologyName);
   address_.AttachInspect(node_, kInspectAddressName);
+  name_.AttachInspect(node_, kInspectPeerNameName);
   lmp_version_.AttachInspect(node_, kInspectVersionName);
   lmp_manufacturer_.AttachInspect(node_, kInspectManufacturerName);
   lmp_features_.AttachInspect(node_, kInspectFeaturesName);
@@ -562,8 +564,8 @@ bool Peer::SetNameInternal(const std::string& name) {
            bt_str(*this), oss.str().c_str());
     return false;
   }
-  if (!name_ || *name_ != name) {
-    name_ = name;
+  if (!*name_ || name_.value() != name) {
+    name_.Set(name);
     return true;
   }
   return false;

@@ -217,6 +217,8 @@ class PeerDeathTest : public PeerTest {};
 TEST_F(PeerTest, InspectHierarchy) {
   peer().set_version(hci_spec::HCIVersion::k5_0, kManufacturer, kSubversion);
 
+  peer().SetName("Sapphire💖");
+
   peer().MutLe();
   ASSERT_TRUE(peer().le().has_value());
 
@@ -251,6 +253,7 @@ TEST_F(PeerTest, InspectHierarchy) {
     NodeMatches(
       PropertyList(UnorderedElementsAre(
         StringIs(Peer::kInspectPeerIdName, peer().identifier().ToString()),
+        StringIs(Peer::kInspectPeerNameName, peer().name().value()),
         StringIs(Peer::kInspectTechnologyName, TechnologyTypeToString(peer().technology())),
         StringIs(Peer::kInspectAddressName, peer().address().ToString()),
         BoolIs(Peer::kInspectConnectableName, peer().connectable()),

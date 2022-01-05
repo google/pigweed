@@ -95,6 +95,7 @@ class Peer final {
   };
 
   static constexpr const char* kInspectPeerIdName = "peer_id";
+  static constexpr const char* kInspectPeerNameName = "name";
   static constexpr const char* kInspectTechnologyName = "technology";
   static constexpr const char* kInspectAddressName = "address";
   static constexpr const char* kInspectConnectableName = "connectable";
@@ -460,7 +461,7 @@ class Peer final {
   // Gets the user-friendly name of the device, if it's known. This can be
   // assigned based on LE advertising data, BR/EDR inquiry data, or by directly
   // calling the SetName() method.
-  const std::optional<std::string>& name() const { return name_; }
+  const std::optional<std::string>& name() const { return *name_; }
 
   // Returns the set of features of this device.
   const hci_spec::LMPFeatureSet& features() const { return *lmp_features_; }
@@ -601,7 +602,7 @@ class Peer final {
   StringInspectable<DeviceAddress> address_;
   bool identity_known_;
 
-  std::optional<std::string> name_;
+  StringInspectable<std::optional<std::string>> name_;
   StringInspectable<std::optional<hci_spec::HCIVersion>> lmp_version_;
   StringInspectable<std::optional<uint16_t>> lmp_manufacturer_;
   std::optional<uint16_t> lmp_subversion_;
