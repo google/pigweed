@@ -93,6 +93,12 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
     handlers_.remove(handler);
   }
 
+  void set_chunk_timeout(chrono::SystemClock::duration chunk_timeout) {
+    chunk_timeout_ = chunk_timeout;
+  }
+
+  void set_max_retries(uint8_t max_retries) { max_retries_ = max_retries; }
+
  private:
   // Calls transfer.Finish() and sends the final status chunk.
   void FinishTransfer(internal::ServerContext& transfer, Status status);
