@@ -41,7 +41,7 @@ def add_path_arguments(parser) -> None:
         '-b',
         '--base',
         metavar='commit',
-        default=git_repo.USE_TRACKING_BRANCH,
+        default=git_repo.TRACKING_BRANCH_ALIAS,
         help=('Git revision against which to diff for changed files. '
               'Default is the tracking branch of the current branch.'))
     base.add_argument(

@@ -24,7 +24,8 @@ from pw_presubmit.tools import log_run, plural
 _LOG = logging.getLogger(__name__)
 PathOrStr = Union[Path, str]
 
-USE_TRACKING_BRANCH = object()
+TRACKING_BRANCH_ALIAS = '@{upstream}'
+_TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'
 
 
 def git_stdout(*args: PathOrStr,
@@ -57,42 +58,36 @@ def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
         yield git_root / file
 
 
-def tracking_branch(repo_path: Path = None,
-                    suppress_exception: bool = True) -> Optional[str]:
+def tracking_branch(repo_path: Path = None) -> Optional[str]:
     """Returns the tracking branch of the current branch.
 
     Since most callers of this function can safely handle a return value of
-    None, default to suppressing exceptions and returning None when they
-    happen.
+    None, suppress exceptions and return None if there is no tracking branch.
 
     Args:
-        repo_path: repo path from which to run commands; defaults to Path.cwd()
-        suppress_exception: Whether to suppress CalledProcessError exceptions
+      repo_path: repo path from which to run commands; defaults to Path.cwd()
 
     Raises:
-        CalledProcessError: HEAD does not point to a branch or the branch is not
-            tracking another branch.
+      ValueError: if repo_path is not in a Git repository
+
+    Returns:
+      the remote tracking branch name or None if there is none
     """
     if repo_path is None:
         repo_path = Path.cwd()
 
-    # This command should raise an exception if repo_path is not a git
-    # repository. Always raise errors in that case.
-    _ = git_stdout('remote', '-v', repo=repo_path)
+    if not is_repo(repo_path or Path.cwd()):
+        raise ValueError(f'{repo_path} is not within a Git repository')
 
     # This command should only error out if there's no upstream branch set.
     try:
         return git_stdout('rev-parse',
                           '--abbrev-ref',
                           '--symbolic-full-name',
-                          '@{u}',
+                          TRACKING_BRANCH_ALIAS,
                           repo=repo_path)
 
     except subprocess.CalledProcessError:
-        if not suppress_exception:
-            raise
-        _LOG.warning('Error retrieving remote tracking branch of %s',
-                     repo_path)
         return None
 
 
@@ -112,7 +107,7 @@ def list_files(commit: Optional[str] = None,
     if repo_path is None:
         repo_path = Path.cwd()
 
-    if commit is USE_TRACKING_BRANCH:
+    if commit in _TRACKING_BRANCH_ALIASES:
         commit = tracking_branch(repo_path)
 
     if commit:
@@ -163,6 +158,13 @@ def _describe_constraints(git_root: Path, repo_path: Path,
         yield (
             f'under the {repo_path.resolve().relative_to(git_root.resolve())} '
             'subdirectory')
+
+    if commit in _TRACKING_BRANCH_ALIASES:
+        commit = tracking_branch(git_root)
+        if commit is None:
+            _LOG.warning(
+                'Attempted to list files changed since the remote tracking '
+                'branch, but the repo is not tracking a branch')
 
     if commit:
         yield f'that have changed since {commit}'

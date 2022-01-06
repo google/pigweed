@@ -439,16 +439,12 @@ def run(program: Sequence[Callable],
     files: List[Path] = []
 
     for repo, pathspecs in pathspecs_by_repo.items():
-        repo_base = base
-        if repo_base is git_repo.USE_TRACKING_BRANCH:
-            repo_base = git_repo.tracking_branch(repo)
-
         files += tools.exclude_paths(
-            exclude, git_repo.list_files(repo_base, pathspecs, repo), root)
+            exclude, git_repo.list_files(base, pathspecs, repo), root)
 
         _LOG.info(
             'Checking %s',
-            git_repo.describe_files(repo, repo, repo_base, pathspecs, exclude))
+            git_repo.describe_files(repo, repo, base, pathspecs, exclude))
 
     if output_directory is None:
         output_directory = root / '.presubmit'
