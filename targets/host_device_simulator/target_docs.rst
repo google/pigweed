@@ -38,4 +38,4 @@ run with the following commands:
   ./out/host_device_simulator.size_optimized/obj/pw_system/bin/system_example
 
 To communicate with the launched process, use
-``pw rpc -s localhost:33000 <protos>``.
+``pw rpc -s localhost:33000 --proto-globs pw_rpc/echo.proto``.

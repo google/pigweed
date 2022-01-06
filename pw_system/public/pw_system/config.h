@@ -57,3 +57,11 @@
 #ifndef PW_SYSTEM_WORK_QUEUE_MAX_ENTRIES
 #define PW_SYSTEM_WORK_QUEUE_MAX_ENTRIES 32
 #endif  // PW_SYSTEM_WORK_QUEUE_MAX_ENTRIES
+
+// PW_SYSTEM_SOCKET_IO_PORT specifies the port number to use for the socket
+// stream implementation of pw_system's I/O interface.
+//
+// Defaults to 33000.
+#ifndef PW_SYSTEM_SOCKET_IO_PORT
+#define PW_SYSTEM_SOCKET_IO_PORT 33000
+#endif  // PW_SYSTEM_SOCKET_IO_PORT

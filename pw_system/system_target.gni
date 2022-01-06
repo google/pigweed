@@ -124,10 +124,7 @@ template("pw_system_target") {
       pw_log_BACKEND = dir_pw_log_string
       pw_log_string_BACKEND = "$dir_pw_system:log"
       pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
-
-      # Don't use pw_sys_io, as stdio isn't great for RPC interaction on a host.
-      # TODO(amontanez): This should be a socket stream.
-      pw_system_IO_BACKEND = "$dir_pw_system:sys_io_target_io"
+      pw_system_IO_BACKEND = "$dir_pw_system:socket_target_io"
     }
 
     if (host_os != "win") {

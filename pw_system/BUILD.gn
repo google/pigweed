@@ -146,6 +146,17 @@ pw_source_set("sys_io_target_io") {
   ]
 }
 
+pw_source_set("socket_target_io") {
+  sources = [ "socket_target_io.cc" ]
+  deps = [
+    ":config",
+    ":io.facade",
+    "$dir_pw_assert",
+    "$dir_pw_stream",
+    "$dir_pw_stream:socket_stream",
+  ]
+}
+
 pw_facade("target_hooks") {
   backend = pw_system_TARGET_HOOKS_BACKEND
   public = [ "public/pw_system/target_hooks.h" ]
@@ -162,6 +173,7 @@ if (pw_system_TARGET_HOOKS_BACKEND == "") {
   pw_source_set("stl_target_hooks") {
     deps = [
       ":init",
+      "$dir_pw_log",
       "$dir_pw_thread:sleep",
       "$dir_pw_thread:thread",
       "$dir_pw_thread_stl:thread",
