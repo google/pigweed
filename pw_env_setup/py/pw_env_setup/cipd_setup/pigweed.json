@@ -26,14 +26,15 @@
     ]
   },
   {
-    "path": "infra/cmake/${platform}",
+    "path": "fuchsia/third_party/cmake/${platform}",
     "platforms": [
-      "linux-amd64",
       "mac-amd64",
+      "linux-amd64",
+      "linux-arm64",
       "windows-amd64"
     ],
     "tags": [
-      "version:3.16.1"
+      "version:3.22.20211026-geeb4540"
     ]
   },
   {
