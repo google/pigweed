@@ -110,7 +110,10 @@ Status Client::StartNewTransfer(uint32_t transfer_id,
   return context->InitiateTransfer(max_parameters_);
 }
 
-Client::ClientContext* Client::GetActiveTransfer(uint32_t transfer_id) {
+// TODO(pwbug/592): This function should be updated to only return active
+// transfers. Calling ReadChunkData() / Finish() on inactive transfers is
+// unintuitive and has led to several bugs where not all cases are handled.
+Client::ClientContext* Client::GetTransferById(uint32_t transfer_id) {
   std::lock_guard lock(transfer_context_mutex_);
   auto it =
       std::find_if(transfer_contexts_.begin(),
@@ -133,7 +136,7 @@ void Client::OnChunk(ConstByteSpan data, Type type) {
     return;
   }
 
-  ClientContext* ctx = GetActiveTransfer(chunk.transfer_id);
+  ClientContext* ctx = GetTransferById(chunk.transfer_id);
   if (ctx == nullptr) {
     // TODO(frolv): Handle this error case.
     return;
@@ -143,7 +146,10 @@ void Client::OnChunk(ConstByteSpan data, Type type) {
     PW_LOG_ERROR(
         "Received a read chunk for transfer %u, but it is a write transfer",
         static_cast<unsigned>(ctx->transfer_id()));
-    ctx->Finish(Status::Internal());
+    if (ctx->active()) {
+      // TODO(pwbug/592): Remove the active() check.
+      ctx->Finish(Status::Internal());
+    }
     return;
   }
 
@@ -151,14 +157,20 @@ void Client::OnChunk(ConstByteSpan data, Type type) {
     PW_LOG_ERROR(
         "Received a write chunk for transfer %u, but it is a read transfer",
         static_cast<unsigned>(ctx->transfer_id()));
-    ctx->Finish(Status::Internal());
+    if (ctx->active()) {
+      // TODO(pwbug/592): Remove the active() check.
+      ctx->Finish(Status::Internal());
+    }
     return;
   }
 
-  if (chunk.status.has_value()) {
+  if (chunk.status.has_value() && ctx->active()) {
     // A status field indicates that the transfer has finished.
+    //
     // TODO(frolv): This is invoked from the RPC client thread -- should it be
     // run in the work queue instead?
+    //
+    // TODO(pwbug/592): Remove the active() check.
     ctx->Finish(chunk.status.value());
     return;
   }

@@ -97,7 +97,7 @@ class Client {
                           CompletionFunc&& on_completion,
                           chrono::SystemClock::duration timeout);
 
-  ClientContext* GetActiveTransfer(uint32_t transfer_id);
+  ClientContext* GetTransferById(uint32_t transfer_id);
 
   // Function called when a chunk is received, from the context of the RPC
   // client thread.
