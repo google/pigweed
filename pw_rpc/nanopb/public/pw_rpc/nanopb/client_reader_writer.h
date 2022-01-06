@@ -91,7 +91,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
             } else {
               // TODO: it's silly to lock this just to call the callback
               rpc_lock().lock();
-              on_error(Status::DataLoss());
+              CallOnError(Status::DataLoss());
             }
           }
         });
@@ -189,7 +189,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
           nanopb_on_next_(response_struct);
         } else {
           rpc_lock().lock();
-          on_error(Status::DataLoss());
+          CallOnError(Status::DataLoss());
         }
       }
     });

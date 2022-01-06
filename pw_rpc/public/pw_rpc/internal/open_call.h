@@ -50,7 +50,7 @@ CallContext OpenContext(Server& server,
                   "streaming RPCs.");
   }
 
-  // TODO(hepler): Update the CallContext to store the ID instead, and lookup
+  // TODO(pwbug/505): Update the CallContext to store the ID instead, and lookup
   //     the channel by ID.
   rpc::Channel* channel = server.GetChannel(channel_id);
   PW_ASSERT(channel != nullptr);

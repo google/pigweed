@@ -18,7 +18,7 @@ namespace pw::rpc::internal {
 
 void ServerCall::MoveServerCallFrom(ServerCall& other) {
   // If this call is active, finish it first.
-  if (active()) {
+  if (active_locked()) {
     Close();
     SendPacket(PacketType::RESPONSE,
                {},

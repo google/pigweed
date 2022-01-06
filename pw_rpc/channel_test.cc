@@ -74,7 +74,8 @@ TEST(Channel, OutputBuffer_TooSmall) {
   Channel::OutputBuffer output_buffer = channel.AcquireBuffer();
   EXPECT_TRUE(output_buffer.payload(kTestPacket).empty());
 
-  EXPECT_EQ(Status::Internal(), channel.Send(output_buffer, kTestPacket));
+  rpc_lock().lock();
+  EXPECT_EQ(Status::Internal(), channel.SendBuffer(output_buffer, kTestPacket));
 }
 
 TEST(Channel, OutputBuffer_ExactFit) {
@@ -87,7 +88,8 @@ TEST(Channel, OutputBuffer_ExactFit) {
   EXPECT_EQ(payload.size(), output.buffer().size() - kReservedSize);
   EXPECT_EQ(output.buffer().data() + kReservedSize, payload.data());
 
-  EXPECT_EQ(OkStatus(), channel.Send(output_buffer, kTestPacket));
+  rpc_lock().lock();
+  EXPECT_EQ(OkStatus(), channel.SendBuffer(output_buffer, kTestPacket));
 }
 
 TEST(Channel, OutputBuffer_PayloadDoesNotFit_ReportsError) {
@@ -98,6 +100,7 @@ TEST(Channel, OutputBuffer_PayloadDoesNotFit_ReportsError) {
   byte data[1] = {};
   packet.set_payload(data);
 
+  rpc_lock().lock();
   EXPECT_EQ(Status::Internal(), channel.Send(packet));
 }
 
@@ -111,7 +114,8 @@ TEST(Channel, OutputBuffer_ExtraRoom) {
   EXPECT_EQ(payload.size(), output.buffer().size() - kReservedSize);
   EXPECT_EQ(output.buffer().data() + kReservedSize, payload.data());
 
-  EXPECT_EQ(OkStatus(), channel.Send(output_buffer, kTestPacket));
+  rpc_lock().lock();
+  EXPECT_EQ(OkStatus(), channel.SendBuffer(output_buffer, kTestPacket));
 }
 
 TEST(Channel, OutputBuffer_ReturnsStatusFromChannelOutputSend) {
@@ -121,7 +125,8 @@ TEST(Channel, OutputBuffer_ReturnsStatusFromChannelOutputSend) {
   Channel::OutputBuffer output_buffer = channel.AcquireBuffer();
   output.set_send_status(Status::Aborted());
 
-  EXPECT_EQ(Status::Aborted(), channel.Send(output_buffer, kTestPacket));
+  rpc_lock().lock();
+  EXPECT_EQ(Status::Aborted(), channel.SendBuffer(output_buffer, kTestPacket));
 }
 
 TEST(Channel, OutputBuffer_Contains_FalseWhenEmpty) {

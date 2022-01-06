@@ -64,9 +64,9 @@ Call::Call(Endpoint& endpoint_ref,
 }
 
 void Call::MoveFrom(Call& other) {
-  PW_DCHECK(!active());
+  PW_DCHECK(!active_locked());
 
-  if (!other.active()) {
+  if (!other.active_locked()) {
     return;  // Nothing else to do; this call is already closed.
   }
 
@@ -104,7 +104,7 @@ Status Call::CloseAndSendFinalPacket(PacketType type,
                                      ConstByteSpan response,
                                      Status status) {
   rpc_lock().lock();
-  if (!active()) {
+  if (!active_locked()) {
     rpc_lock().unlock();
     return Status::FailedPrecondition();
   }
@@ -112,7 +112,7 @@ Status Call::CloseAndSendFinalPacket(PacketType type,
   return SendPacket(type, response, status);
 }
 
-ByteSpan Call::PayloadBuffer() {
+ByteSpan Call::PayloadBufferLocked() {
   // Only allow having one active buffer at a time.
   if (response_.empty()) {
     response_ = channel().AcquireBuffer();
@@ -126,7 +126,7 @@ ByteSpan Call::PayloadBuffer() {
 
 Status Call::Write(ConstByteSpan payload) {
   rpc_lock().lock();
-  if (!active()) {
+  if (!active_locked()) {
     rpc_lock().unlock();
     return Status::FailedPrecondition();
   }
@@ -139,10 +139,10 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   const Packet packet = MakePacket(type, payload, status);
 
   if (!buffer().Contains(payload)) {
-    ByteSpan buffer = PayloadBuffer();
+    ByteSpan buffer = PayloadBufferLocked();
 
     if (payload.size() > buffer.size()) {
-      ReleasePayloadBuffer();
+      ReleasePayloadBufferLocked();
       rpc_lock().unlock();
       return Status::OutOfRange();
     }
@@ -150,17 +150,16 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
     std::copy_n(payload.data(), payload.size(), buffer.data());
   }
 
-  rpc_lock().unlock();
-  return channel().Send(response_, packet);
+  return channel().SendBuffer(response_, packet);
 }
 
-void Call::ReleasePayloadBuffer() {
-  PW_DCHECK(active());
+void Call::ReleasePayloadBufferLocked() {
+  PW_DCHECK(active_locked());
   channel().Release(response_);
 }
 
 void Call::Close() {
-  if (active()) {
+  if (active_locked()) {
     endpoint().UnregisterCall(*this);
   }
 

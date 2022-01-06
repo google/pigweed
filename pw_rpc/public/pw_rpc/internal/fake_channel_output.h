@@ -36,6 +36,8 @@ class FakeChannelOutput : public ChannelOutput {
   FakeChannelOutput(const FakeChannelOutput&) = delete;
   FakeChannelOutput(FakeChannelOutput&&) = delete;
 
+  ~FakeChannelOutput();
+
   FakeChannelOutput& operator=(const FakeChannelOutput&) = delete;
   FakeChannelOutput& operator=(FakeChannelOutput&&) = delete;
 
@@ -144,19 +146,27 @@ class FakeChannelOutput : public ChannelOutput {
  private:
   friend class rpc::FakeServer;
 
-  ByteSpan AcquireBuffer() final { return encoding_buffer_; }
+  ByteSpan AcquireBuffer() final;
 
   // Processes buffer according to packet type and `return_after_packet_count_`
   // value as follows:
   // When positive, returns `send_status_` once,
   // When equals 0, returns `send_status_` in all future calls,
   // When negative, ignores `send_status_` processes buffer.
-  Status SendAndReleaseBuffer(ConstByteSpan buffer) final;
+  Status SendAndReleaseBuffer(ConstByteSpan buffer) final {
+    const Status status = HandlePacket(buffer);
+    // Clear the encoding buffer to catch code that uses this buffer after
+    // releasing it.
+    std::fill(encoding_buffer_.begin(), encoding_buffer_.end(), std::byte{0});
+    return status;
+  }
 
-  void CopyPayloadToBuffer(const ConstByteSpan& payload);
+  Status HandlePacket(ConstByteSpan buffer);
+  void CopyPayloadToBuffer(Packet& packet);
 
   int return_after_packet_count_ = -1;
   unsigned total_response_packets_ = 0;
+  bool buffer_acquired_ = false;
 
   Vector<Packet>& packets_;
   Vector<std::byte>& payloads_;
@@ -171,14 +181,15 @@ template <size_t kOutputSizeBytes,
 class FakeChannelOutputBuffer : public FakeChannelOutput {
  protected:
   constexpr FakeChannelOutputBuffer()
-      : FakeChannelOutput(packets_, payloads_, encoding_buffer),
-        encoding_buffer{},
-        payloads_ {}
+      : FakeChannelOutput(
+            packets_array_, payloads_array_, encoding_buffer_array_),
+        encoding_buffer_array_{},
+        payloads_array_ {}
   {}
 
-  std::byte encoding_buffer[kOutputSizeBytes];
-  Vector<std::byte, kPayloadsBufferSizeBytes> payloads_;
-  Vector<Packet, kMaxPackets> packets_;
+  std::byte encoding_buffer_array_[kOutputSizeBytes];
+  Vector<std::byte, kPayloadsBufferSizeBytes> payloads_array_;
+  Vector<Packet, kMaxPackets> packets_array_;
 };
 
 }  // namespace internal::test

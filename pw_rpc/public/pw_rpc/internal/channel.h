@@ -17,6 +17,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc::internal {
@@ -74,12 +75,15 @@ class Channel : public rpc::Channel {
     return OutputBuffer(output().AcquireBuffer());
   }
 
-  Status Send(const internal::Packet& packet) {
+  // Sends an RPC packet. Acquires and uses a ChannelOutput buffer.
+  Status Send(const internal::Packet& packet) PW_UNLOCK_FUNCTION(rpc_lock()) {
     OutputBuffer buffer = AcquireBuffer();
-    return Send(buffer, packet);
+    return SendBuffer(buffer, packet);
   }
 
-  Status Send(OutputBuffer& buffer, const internal::Packet& packet);
+  // Sends an RPC packet using the provided output buffer.
+  Status SendBuffer(OutputBuffer& buffer, const internal::Packet& packet)
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
   void Release(OutputBuffer& buffer) {
     output().DiscardBuffer(buffer.buffer_);

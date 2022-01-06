@@ -31,21 +31,26 @@ std::span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
                                          : std::span<byte>();
 }
 
-Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
+Status Channel::SendBuffer(OutputBuffer& buffer,
+                           const internal::Packet& packet) {
   Result encoded = packet.Encode(buffer.buffer_);
 
   if (!encoded.ok()) {
+    const std::span released_buffer = buffer.buffer_;
+    buffer.buffer_ = {};
+    rpc_lock().unlock();
+
+    output().DiscardBuffer(released_buffer);
     PW_LOG_ERROR(
         "Failed to encode RPC packet type %u to channel %u buffer, status %u",
         static_cast<unsigned>(packet.type()),
         static_cast<unsigned>(id()),
         encoded.status().code());
-    output().DiscardBuffer(buffer.buffer_);
-    buffer.buffer_ = {};
     return Status::Internal();
   }
 
   buffer.buffer_ = {};
+  rpc_lock().unlock();
   Status status = output().SendAndReleaseBuffer(encoded.value());
 
   if (!status.ok()) {
