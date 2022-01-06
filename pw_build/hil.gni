@@ -34,6 +34,9 @@ template("pw_hil_test") {
       action = {
         pool = "$dir_pw_build/pool:pw_hil_test($default_toolchain)"
         stamp = true
+
+        # We want the test stdout to be saved.
+        capture_output = false
       }
       forward_variables_from(invoker, "*", [ "target_type" ])
     }
