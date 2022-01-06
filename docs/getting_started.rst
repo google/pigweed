@@ -7,11 +7,11 @@ This guide will walk you through the typical upstream development workflow.
 
 .. note::
 
-  We don't yet have thorough documentation for leveraging Pigweed in a separate
-  project (our intended use case!). The `sample project
+  This documentation and the `sample project
   <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
-  shows how to use Pigweed as a library in your broader project, but you may
-  need further guidance.
+  show how to use Pigweed as a library in your existing project. Using Pigweed
+  as the foundation for *new* projects is our intended use case, but you may
+  need more guidance than this documentation provides to do that right now.
 
   We're happy to help you get your project setup; just drop in our `chat room
   <https://discord.gg/M9NSeTA>`_ or send a note to the `mailing list
