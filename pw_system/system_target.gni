@@ -121,6 +121,8 @@ template("pw_system_target") {
   } else if (invoker.cpu == PW_SYSTEM_CPU.NATIVE) {
     _current_cpu = host_cpu
     _arch_build_args = {
+      pw_log_BACKEND = dir_pw_log_string
+      pw_log_string_BACKEND = "$dir_pw_system:log"
       pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
 
       # Don't use pw_sys_io, as stdio isn't great for RPC interaction on a host.
