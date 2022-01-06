@@ -51,11 +51,43 @@ and detokenize tokenized fields as appropriate.
 
 See :ref:`module-pw_tokenizer-proto` for details.
 
-Utility functions
------------------
-Conversion into the ``log.proto`` format from a tokenized log message can be
-performed using the ``pw_log/proto_utils.h`` headers. Given tokenized data and
-a payload, the headers provide a quick way to encode to the LogEntry protobuf.
+Packing and unpacking line_level
+--------------------------------
+As a way to minimize on-the-wire log message size, the log level and the line
+number of a given log statement are packed into a single proto field. There are
+helpers in ``pw_log/proto_utils.h`` for properly packing and unpacking this
+field.
+
+.. code-block:: cpp
+
+   #include "pw_bytes/span.h"
+   #include "pw_log/levels.h"
+   #include "pw_log/proto_utils.h"
+   #include "pw_protobuf/decoder.h"
+
+  bool FilterLog(pw::ConstByteSpan serialized_log) {
+    pw::protobuf::Decoder log_decoder(serialized_log);
+    while (log_decoder.Next().ok()) {
+      if (log_decoder.FieldNumber() == 2) {
+        uint32_t line_and_level;
+        entry_decoder.ReadUint32(&line_and_level);
+        PW_DCHECK(entry_decoder.ok());
+
+        uint8_t level = std::get<1>(pw::log::UnpackLineLevel(line_and_level));
+        if (level < PW_LOG_LEVEL_INFO) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+Log encoding helpers
+--------------------
+Encoding logs to the ``log.proto`` format can be performed using the helpers
+provided in the ``pw_log/proto_utils.h`` header. Separate helpers are provided
+for encoding tokenized logs and string-based logs.
 
 .. code-block:: cpp
 
@@ -76,4 +108,3 @@ a payload, the headers provide a quick way to encode to the LogEntry protobuf.
        EmitProtoLogEntry(result.value());
      }
    }
-

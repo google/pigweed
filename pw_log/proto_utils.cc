@@ -15,6 +15,7 @@
 #include "pw_log/proto_utils.h"
 
 #include <span>
+#include <string_view>
 
 #include "pw_bytes/endian.h"
 #include "pw_log/levels.h"
@@ -23,6 +24,40 @@
 #include "pw_protobuf/wire_format.h"
 
 namespace pw::log {
+
+Result<ConstByteSpan> EncodeLog(int level,
+                                unsigned int flags,
+                                std::string_view module_name,
+                                std::string_view file_name,
+                                int line_number,
+                                int64_t ticks_since_epoch,
+                                std::string_view message,
+                                ByteSpan encode_buffer) {
+  // Encode message to the LogEntry protobuf.
+  LogEntry::MemoryEncoder encoder(encode_buffer);
+
+  if (message.empty()) {
+    return Status::InvalidArgument();
+  }
+
+  // Defer status checks until the end.
+  Status status = encoder.WriteMessage(std::as_bytes(std::span(message)));
+  status = encoder.WriteLineLevel(PackLineLevel(line_number, level));
+  if (flags != 0) {
+    status = encoder.WriteFlags(flags);
+  }
+  status = encoder.WriteTimestamp(ticks_since_epoch);
+
+  // Module name and file name may or may not be present.
+  if (!module_name.empty()) {
+    status = encoder.WriteModule(std::as_bytes(std::span(module_name)));
+  }
+  if (!file_name.empty()) {
+    status = encoder.WriteFile(std::as_bytes(std::span(file_name)));
+  }
+  PW_TRY(encoder.status());
+  return ConstByteSpan(encoder);
+}
 
 Result<ConstByteSpan> EncodeTokenizedLog(pw::log_tokenized::Metadata metadata,
                                          ConstByteSpan tokenized_data,
@@ -34,8 +69,7 @@ Result<ConstByteSpan> EncodeTokenizedLog(pw::log_tokenized::Metadata metadata,
   // Defer status checks until the end.
   Status status = encoder.WriteMessage(tokenized_data);
   status = encoder.WriteLineLevel(
-      (metadata.level() & PW_LOG_LEVEL_BITMASK) |
-      ((metadata.line_number() << PW_LOG_LEVEL_BITS) & ~PW_LOG_LEVEL_BITMASK));
+      PackLineLevel(metadata.line_number(), metadata.level()));
   if (metadata.flags() != 0) {
     status = encoder.WriteFlags(metadata.flags());
   }
