@@ -66,12 +66,13 @@ void Endpoint::RegisterCall(Call& call) {
   Call* const existing_call =
       FindCallById(call.channel_id(), call.service_id(), call.method_id());
 
-  if (existing_call != nullptr) {
-    existing_call->HandleError(Status::Cancelled());
-    rpc_lock().lock();  // Reacquire after releasing to call the user callback
-  }
-
   RegisterUniqueCall(call);
+
+  if (existing_call != nullptr) {
+    existing_call->ReplaceWithNewInstance(call);
+  } else {
+    rpc_lock().unlock();
+  }
 }
 
 Channel* Endpoint::GetInternalChannel(uint32_t id) const {

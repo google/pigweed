@@ -113,6 +113,23 @@ class Call : public IntrusiveList<Call>::Item {
     on_error(status);
   }
 
+  // Replaces this Call with a new Call object for the same RPC.
+  void ReplaceWithNewInstance(Call& call) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    // If the original call had acquired a buffer from a ChannelOutput, move it
+    // into the new call instance. Moving the ChannelOutput buffer rather than
+    // closing it prevents code working with the original call object in another
+    // thread from sending a stale buffer if the call object is replaced.
+    //
+    // However, this does NOT fix the stale buffer issue if the RPC body uses
+    // the OutputBuffer before passing it off to the other thread.
+    //
+    // TODO(pwbug/591): Resolve how to handle replacing a call that is holding a
+    //     buffer reference. Easiest solution: ban replying to RPCs on multiple
+    //     threads.
+    call.response_ = std::move(response_);
+    HandleError(Status::Cancelled());
+  }
+
   bool has_client_stream() const { return HasClientStream(type_); }
   bool has_server_stream() const { return HasServerStream(type_); }
 

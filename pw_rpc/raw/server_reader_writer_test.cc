@@ -146,6 +146,37 @@ TEST(RawUnaryResponder, Move_FinishesActiveCall) {
   EXPECT_EQ(completions.back(), OkStatus());
 }
 
+TEST(RawUnaryResponder, ReplaceActiveCall_DoesNotFinishCall) {
+  ReaderWriterTestContext ctx;
+  RawUnaryResponder active_call =
+      RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  std::span buffer = active_call.PayloadBuffer();
+  constexpr const char kData[] = "Some data!";
+  ASSERT_GE(buffer.size(), sizeof(kData));
+  std::memcpy(buffer.data(), kData, sizeof(kData));
+
+  RawUnaryResponder new_active_call =
+      RawUnaryResponder::Open<TestService::TestUnaryRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  active_call = std::move(new_active_call);
+
+  ASSERT_TRUE(ctx.output.completions<TestService::TestUnaryRpc>().empty());
+
+  EXPECT_EQ(OkStatus(), active_call.Finish(buffer, Status::InvalidArgument()));
+
+  EXPECT_STREQ(
+      reinterpret_cast<const char*>(
+          ctx.output.payloads<TestService::TestUnaryRpc>().back().data()),
+      kData);
+
+  const auto completions = ctx.output.completions<TestService::TestUnaryRpc>();
+  ASSERT_EQ(completions.size(), 1u);
+  EXPECT_EQ(completions.back(), Status::InvalidArgument());
+}
+
 TEST(RawUnaryResponder, OutOfScope_FinishesActiveCall) {
   ReaderWriterTestContext ctx;
 
@@ -158,6 +189,53 @@ TEST(RawUnaryResponder, OutOfScope_FinishesActiveCall) {
   const auto completions = ctx.output.completions<TestService::TestUnaryRpc>();
   ASSERT_EQ(completions.size(), 1u);
   EXPECT_EQ(completions.back(), OkStatus());
+}
+
+TEST(RawServerWriter, Move_InactiveToActive_FinishesActiveCall) {
+  ReaderWriterTestContext ctx;
+  RawServerWriter active_call =
+      RawServerWriter::Open<TestService::TestServerStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  EXPECT_GT(active_call.PayloadBuffer().size(), 0u);
+
+  RawServerWriter inactive_call;
+
+  active_call = std::move(inactive_call);
+
+  const auto completions =
+      ctx.output.completions<TestService::TestServerStreamRpc>();
+  ASSERT_EQ(completions.size(), 1u);
+  EXPECT_EQ(completions.back(), OkStatus());
+}
+
+TEST(RawServerWriter, ReplaceActiveCall_DoesNotFinishCall) {
+  ReaderWriterTestContext ctx;
+  RawServerWriter active_call =
+      RawServerWriter::Open<TestService::TestServerStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  std::span buffer = active_call.PayloadBuffer();
+  constexpr const char kData[] = "Some data!";
+  ASSERT_GE(buffer.size(), sizeof(kData));
+  std::memcpy(buffer.data(), kData, sizeof(kData));
+
+  RawServerWriter new_active_call =
+      RawServerWriter::Open<TestService::TestServerStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+
+  active_call = std::move(new_active_call);
+
+  ASSERT_TRUE(
+      ctx.output.completions<TestService::TestServerStreamRpc>().empty());
+
+  EXPECT_EQ(OkStatus(), active_call.Write(buffer));
+
+  EXPECT_STREQ(reinterpret_cast<const char*>(
+                   ctx.output.payloads<TestService::TestServerStreamRpc>()
+                       .back()
+                       .data()),
+               kData);
 }
 
 constexpr const char kWriterData[] = "20X6";
