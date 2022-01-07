@@ -46,12 +46,10 @@ pw_source_set("overrides") {
     "$dir_pw_span:polyfill",
   ]
   inputs = [
-    "public_overrides/assert.h",
     "public_overrides/bit",
     "public_overrides/cstddef",
     "public_overrides/iterator",
     "public_overrides/type_traits",
-    "public_overrides/utility",
   ]
 }
 
@@ -63,13 +61,11 @@ pw_source_set("standard_library") {
   public_configs = [ ":standard_library_public" ]
   remove_public_deps = [ "*" ]
   public = [
-    "standard_library_public/pw_polyfill/standard_library/assert.h",
     "standard_library_public/pw_polyfill/standard_library/bit.h",
     "standard_library_public/pw_polyfill/standard_library/cstddef.h",
     "standard_library_public/pw_polyfill/standard_library/iterator.h",
     "standard_library_public/pw_polyfill/standard_library/namespace.h",
     "standard_library_public/pw_polyfill/standard_library/type_traits.h",
-    "standard_library_public/pw_polyfill/standard_library/utility.h",
   ]
   visibility = [
     ":overrides",

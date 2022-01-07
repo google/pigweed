@@ -21,7 +21,6 @@
 #include "pw_polyfill/standard_library/cstddef.h"
 #include "pw_polyfill/standard_library/iterator.h"
 #include "pw_polyfill/standard_library/type_traits.h"
-#include "pw_polyfill/standard_library/utility.h"
 
 namespace pw {
 namespace polyfill {
@@ -141,18 +140,7 @@ TEST(TypeTraits, Aliases) {
                 "Alias must be defined");
 }
 
-TEST(Utility, IntegerSequence) {
-  static_assert(std::integer_sequence<int>::size() == 0,
-                "zero-length integer_sequence");
-  static_assert(std::integer_sequence<int, 9, 8, 7>::size() == 3,
-                "integer_sequence with size 3");
-  static_assert(std::make_index_sequence<1>::size() == 1,
-                "integer_sequence with size 1");
-  static_assert(std::make_index_sequence<123>::size() == 123,
-                "integer_sequence with size 1");
-}
-
-TEST(Utility, LogicalTraits) {
+TEST(TypeTraits, LogicalTraits) {
   static_assert(std::conjunction<std::true_type, std::true_type>::value,
                 "conjunction should be true");
   static_assert(!std::conjunction<std::true_type, std::false_type>::value,

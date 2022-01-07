@@ -35,10 +35,8 @@ Header              Feature                           Level of support          
 <bit>               std::endian                       full                             __cpp_lib_endian
 <cstdlib>           std::byte                         full                             __cpp_lib_byte
 <iterator>          std::data, std::size              full                             __cpp_lib_nonmember_container_access
-<type_traits>       \*_t trait aliases                partial (can expand as needed)   __cpp_lib_transformation_trait_aliases
-<type_traits>       std::is_null_pointer              full                             __cpp_lib_is_null_pointer
-<utilty>            std::integer_sequence & helpers   full                             __cpp_lib_integer_sequence
-(language feature)  static_assert with no message     full                             __cpp_static_assert
+<type_traits>       std::bool_constant                full                             __cpp_lib_bool_constant
+<type_traits>       std::negation, etc.               full                             __cpp_lib_logical_traits
 ==================  ================================  ===============================  ========================================
 
 ----------------------------------------------------
