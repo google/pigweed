@@ -61,7 +61,7 @@ Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
 }
 
 void Endpoint::RegisterCall(Call& call) {
-  LockGuard lock(rpc_lock());
+  rpc_lock().lock();
 
   Call* const existing_call = FindCallById(
       call.channel_id_locked(), call.service_id(), call.method_id());
