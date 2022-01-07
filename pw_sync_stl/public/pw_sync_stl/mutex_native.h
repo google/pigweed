@@ -17,7 +17,19 @@
 
 namespace pw::sync::backend {
 
-using NativeMutex = std::timed_mutex;
+// The NativeMutex class adds a flag that tracks whether the std::timed_mutex is
+// locked. The C++ standard states that misusing a mutex is undefined behavior,
+// so library implementations may simply ignore misuse. This ensures misuse hits
+// a PW_CHECK.
+struct NativeMutex {
+  // The locked state is tracked in a variable. This function asserts if the
+  // state is inconsistent (e.g. unlocking an unlocked mutex).
+  void SetLockedState(bool new_state);
+
+  std::timed_mutex mutex;
+  bool locked = false;
+};
+
 using NativeMutexHandle = std::timed_mutex&;
 
 }  // namespace pw::sync::backend

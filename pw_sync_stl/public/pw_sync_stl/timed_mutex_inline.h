@@ -19,12 +19,20 @@
 namespace pw::sync {
 
 inline bool TimedMutex::try_lock_for(chrono::SystemClock::duration timeout) {
-  return native_handle().try_lock_for(timeout);
+  if (native_handle().try_lock_for(timeout)) {
+    native_type().SetLockedState(true);
+    return true;
+  }
+  return false;
 }
 
 inline bool TimedMutex::try_lock_until(
     chrono::SystemClock::time_point deadline) {
-  return native_handle().try_lock_until(deadline);
+  if (native_handle().try_lock_until(deadline)) {
+    native_type().SetLockedState(true);
+    return true;
+  }
+  return false;
 }
 
 }  // namespace pw::sync

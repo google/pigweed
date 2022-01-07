@@ -17,4 +17,8 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_module_library(pw_sync_stl.mutex_backend
   IMPLEMENTS_FACADES
     pw_sync.mutex
+  PUBLIC_DEPS
+    pw_assert
+  SOURCES
+    mutex.cc
 )

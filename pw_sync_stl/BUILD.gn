@@ -91,6 +91,9 @@ pw_source_set("mutex_backend") {
     "public_overrides/pw_sync_backend/mutex_native.h",
   ]
   public_deps = [ "$dir_pw_sync:mutex.facade" ]
+  deps = [ dir_pw_assert ]
+
+  sources = [ "mutex.cc" ]
 }
 
 # This target provides the backend for pw::sync::TimedMutex.

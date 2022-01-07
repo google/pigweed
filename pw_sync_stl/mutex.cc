@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,35 +11,27 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#pragma once
 
 #include "pw_sync/mutex.h"
 
+#include "pw_assert/check.h"
+#include "pw_sync_stl/mutex_native.h"
+
 namespace pw::sync {
 
-inline Mutex::Mutex() : native_type_() {}
-
-inline void Mutex::lock() {
-  native_handle().lock();
-  native_type_.SetLockedState(true);
+Mutex::~Mutex() {
+  PW_CHECK(!native_type_.locked, "Mutex was locked when it went out of scope");
 }
 
-inline bool Mutex::try_lock() {
-  if (native_handle().try_lock()) {
-    native_type_.SetLockedState(true);
-    return true;
-  }
-  return false;
+namespace backend {
+
+void NativeMutex::SetLockedState(bool new_state) {
+  PW_CHECK_UINT_NE(locked,
+                   new_state,
+                   "Called %slock(), but the mutex is already in that state",
+                   new_state ? "" : "un");
+  locked = new_state;
 }
 
-inline void Mutex::unlock() {
-  native_type_.SetLockedState(false);
-  native_handle().unlock();
-}
-
-// Return a std::timed_mutex instead of the customized NativeMutex class.
-inline Mutex::native_handle_type Mutex::native_handle() {
-  return native_type_.mutex;
-}
-
+}  // namespace backend
 }  // namespace pw::sync

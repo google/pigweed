@@ -69,6 +69,13 @@ class PW_LOCKABLE("pw::sync::Mutex") Mutex {
 
   native_handle_type native_handle();
 
+ protected:
+  // Expose the NativeMutex directly to derived classes (TimedMutex) in
+  // case implementations use different types for backend::NativeMutex and
+  // native_handle().
+  backend::NativeMutex& native_type() { return native_type_; }
+  const backend::NativeMutex& native_type() const { return native_type_; }
+
  private:
   // This may be a wrapper around a native type with additional members.
   backend::NativeMutex native_type_;

@@ -11,7 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
 #pragma once
 
 #include "pw_rpc/internal/config.h"
@@ -40,9 +39,12 @@ class PW_LOCKABLE("pw::rpc::internal::RpcLock") RpcLock {
   constexpr void unlock() PW_UNLOCK_FUNCTION() {}
 };
 
-class LockGuard {
+class PW_SCOPED_LOCKABLE LockGuard {
  public:
-  constexpr LockGuard(RpcLock&) {}
+  constexpr LockGuard([[maybe_unused]] RpcLock& mutex)
+      PW_EXCLUSIVE_LOCK_FUNCTION(mutex) {}
+
+  ~LockGuard() PW_UNLOCK_FUNCTION() = default;
 };
 
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
