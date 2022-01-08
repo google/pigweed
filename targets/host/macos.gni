@@ -14,11 +14,6 @@
 
 import("host_common.gni")
 
-declare_args() {
-  # Specifies the toolchain to use for this build.
-  pw_target_toolchain = "$dir_pw_toolchain:host_clang_og"
-}
-
 pw_executable_config.bloaty_config_file =
     get_path_info("macos.bloaty", "abspath")
 

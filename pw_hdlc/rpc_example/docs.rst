@@ -129,6 +129,6 @@ Run pw_rpc server
 
 .. code-block:: sh
 
-  out/host_clang_debug/obj/pw_hdlc/rpc_example/bin/rpc_example
+  out/pw_strict_host_clang_debug/obj/pw_hdlc/rpc_example/bin/rpc_example
 
 Then you can invoke RPCs from the interactive console on the client side.

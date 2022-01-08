@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -123,12 +123,12 @@ _gcc_default_configs = [
   "$dir_pw_toolchain/host_gcc:threading_support",
 ]
 
-pw_target_toolchain_host = {
-  _excluded_members = [
-    "defaults",
-    "name",
-  ]
+_excluded_members = [
+  "defaults",
+  "name",
+]
 
+pw_target_toolchain_host = {
   clang_debug = {
     name = "host_clang_debug"
     _toolchain_base = pw_toolchain_host_clang.debug
@@ -290,4 +290,86 @@ pw_target_toolchain_host_list = [
   pw_target_toolchain_host.gcc_debug,
   pw_target_toolchain_host.gcc_speed_optimized,
   pw_target_toolchain_host.gcc_size_optimized,
+]
+
+# Additional configuration intended only for upstream Pigweed use.
+_pigweed_internal = {
+}
+
+# Host toolchains exclusively for upstream Pigweed use. To give upstream Pigweed
+# flexibility in how it compiles code, these toolchains may not be used by
+# downstream projects.
+pw_internal_host_toolchains = [
+  {
+    name = "pw_strict_host_clang_debug"
+    _toolchain_base = pw_toolchain_host_clang.debug
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _clang_default_configs
+    }
+  },
+  {
+    name = "pw_strict_host_clang_speed_optimized"
+    _toolchain_base = pw_toolchain_host_clang.speed_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _clang_default_configs
+    }
+  },
+  {
+    name = "pw_strict_host_clang_size_optimized"
+    _toolchain_base = pw_toolchain_host_clang.size_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _clang_default_configs
+    }
+  },
+  {
+    name = "pw_strict_host_gcc_debug"
+    _toolchain_base = pw_toolchain_host_gcc.debug
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _gcc_default_configs
+    }
+  },
+  {
+    name = "pw_strict_host_gcc_speed_optimized"
+    _toolchain_base = pw_toolchain_host_gcc.speed_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _gcc_default_configs
+    }
+  },
+  {
+    name = "pw_strict_host_gcc_size_optimized"
+    _toolchain_base = pw_toolchain_host_gcc.size_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _gcc_default_configs
+    }
+  },
 ]

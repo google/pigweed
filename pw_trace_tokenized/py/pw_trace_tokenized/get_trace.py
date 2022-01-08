@@ -12,16 +12,19 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-r"""
+"""
 Generates json trace files viewable using chrome://tracing using RPCs from a
 connected HdlcRpcClient.
 
 Example usage:
 python pw_trace_tokenized/py/pw_trace_tokenized/get_trace.py -s localhost:33000
   -o trace.json
-  -t out/host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
+  -t
+  out/pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
   pw_trace_tokenized/pw_trace_protos/trace_rpc.proto
-"""
+"""  # pylint: disable=line-too-long
+# pylint: enable=line-too-long
+
 import argparse
 import logging
 import glob

@@ -23,17 +23,17 @@ default_args = {
 
 BUILD
 ninja -C out
-host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
+pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
 
 RUN
-./out/host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
+./out/pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
 
 DECODE
 python pw_trace_tokenized/py/pw_trace_tokenized/get_trace.py
  -s localhost:33000
  -o trace.json
  -t
- out/host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
+ out/pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
  pw_trace_tokenized/pw_trace_protos/trace_rpc.proto
 
 VIEW

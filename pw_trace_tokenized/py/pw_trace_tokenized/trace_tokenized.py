@@ -12,14 +12,16 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-r"""
+"""
 Generates json trace files viewable using chrome://tracing from binary
 trace files.
 
 Example usage:
 python pw_trace_tokenized/py/trace_tokenized.py -i trace.bin -o trace.json
-./out/host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_basic
-"""
+out/pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_basic
+"""  # pylint: disable=line-too-long
+# pylint: enable=line-too-long
+
 from enum import IntEnum
 import argparse
 import logging

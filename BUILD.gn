@@ -73,6 +73,8 @@ group("pw_system_demo") {
   deps = [ "$dir_pw_system:system_examples" ]
 }
 
+_internal_toolchains = "$dir_pigweed/targets/host/pigweed_internal"
+
 # This template generates a group that builds pigweed_default with a particular
 # toolchain.
 template("_build_pigweed_default_at_all_optimization_levels") {
@@ -98,11 +100,11 @@ template("_build_pigweed_default_at_all_optimization_levels") {
 
 # Select a default toolchain based on host OS.
 if (host_os == "linux") {
-  _default_toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
+  _default_toolchain_prefix = "$_internal_toolchains:pw_strict_host_clang_"
 } else if (host_os == "mac") {
-  _default_toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
+  _default_toolchain_prefix = "$_internal_toolchains:pw_strict_host_clang_"
 } else if (host_os == "win") {
-  _default_toolchain_prefix = "$dir_pigweed/targets/host:host_gcc_"
+  _default_toolchain_prefix = "$_internal_toolchains:pw_strict_host_gcc_"
 } else {
   assert(false, "Please define a host config for your system: $host_os")
 }
@@ -114,11 +116,11 @@ _build_pigweed_default_at_all_optimization_levels("host") {
 }
 
 _build_pigweed_default_at_all_optimization_levels("host_clang") {
-  toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
+  toolchain_prefix = "$_internal_toolchains:pw_strict_host_clang_"
 }
 
 _build_pigweed_default_at_all_optimization_levels("host_gcc") {
-  toolchain_prefix = "$dir_pigweed/targets/host:host_gcc_"
+  toolchain_prefix = "$_internal_toolchains:pw_strict_host_gcc_"
 }
 
 if (pw_third_party_mcuxpresso_SDK != "") {
@@ -147,11 +149,11 @@ _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
 }
 
-# Run clang-tidy on pigweed_default with host_clang_debug toolchain options.
+# Run clang-tidy on pigweed_default with pw_strict_host_clang_debug toolchain options.
 # Make sure to invoke gn clean out when any relevant .clang-tidy
 # file is updated.
 group("static_analysis") {
-  _toolchain = "$dir_pigweed/targets/host:host_clang_debug"
+  _toolchain = "$_internal_toolchains:pw_strict_host_clang_debug"
   deps = [ ":pigweed_default($_toolchain.static_analysis)" ]
 }
 
