@@ -683,6 +683,27 @@ TEST_F(BlobStoreTest, InvalidReadOffset) {
   ASSERT_EQ(Status::InvalidArgument(), reader.Open(kOffset));
 }
 
+TEST_F(BlobStoreTest, ReadSeekClosedReader) {
+  InitSourceBufferToRandom(0x11309);
+  WriteTestBlock();
+
+  kvs::ChecksumCrc16 checksum;
+
+  char name[16] = "TestBlobBlock";
+  constexpr size_t kBufferSize = 16;
+  BlobStoreBuffer<kBufferSize> blob(
+      name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
+  EXPECT_EQ(OkStatus(), blob.Init());
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(OkStatus(), reader.Open());
+  ASSERT_EQ(OkStatus(), reader.Close());
+
+  EXPECT_EQ(Status::FailedPrecondition(), reader.Seek(0));
+
+  std::byte read_buffer[32];
+  EXPECT_EQ(Status::FailedPrecondition(), reader.Read(read_buffer).status());
+}
+
 TEST_F(BlobStoreTest, InvalidSeekOffset) {
   InitSourceBufferToRandom(0x11309);
   WriteTestBlock();

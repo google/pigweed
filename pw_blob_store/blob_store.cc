@@ -706,7 +706,10 @@ size_t BlobStore::BlobReader::DoTell() const {
 }
 
 Status BlobStore::BlobReader::DoSeek(ptrdiff_t offset, Whence origin) {
-  PW_DCHECK(open_);
+  if (!open_) {
+    return Status::FailedPrecondition();
+  }
+
   // Note that Open ensures it is ValidToRead() which
   // in turn guarantees store_.ReadableDataBytes() > 0.
 
@@ -718,7 +721,10 @@ Status BlobStore::BlobReader::DoSeek(ptrdiff_t offset, Whence origin) {
 }
 
 StatusWithSize BlobStore::BlobReader::DoRead(ByteSpan dest) {
-  PW_DCHECK(open_);
+  if (!open_) {
+    return StatusWithSize::FailedPrecondition();
+  }
+
   StatusWithSize status = store_.Read(offset_, dest);
   if (status.ok()) {
     offset_ += status.size();
