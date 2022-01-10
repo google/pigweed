@@ -118,7 +118,8 @@ def check_auth(cipd, package_files, spin):
         with spin.pause():
             stderr = lambda *args: print(*args, file=sys.stderr)
             stderr()
-            stderr('No access to the following CIPD paths:')
+            stderr('Not logged in to CIPD and no anonymous access to the '
+                   'following CIPD paths:')
             for path in inaccessible_paths:
                 stderr('  {}'.format(path))
             stderr()
