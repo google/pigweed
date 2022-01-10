@@ -675,4 +675,55 @@ Status BlobStore::BlobWriter::Close() {
   return OkStatus();
 }
 
+size_t BlobStore::BlobReader::ConservativeLimit(LimitType limit) const {
+  if (limit == LimitType::kRead) {
+    PW_DCHECK(open_);
+    return store_.ReadableDataBytes() - offset_;
+  }
+  return 0;
+}
+
+Status BlobStore::BlobReader::Open(size_t offset) {
+  PW_DCHECK(!open_);
+  if (!store_.ValidToRead()) {
+    return Status::FailedPrecondition();
+  }
+  if (offset >= store_.ReadableDataBytes()) {
+    return Status::InvalidArgument();
+  }
+
+  offset_ = offset;
+  Status status = store_.OpenRead();
+  if (status.ok()) {
+    open_ = true;
+  }
+  return status;
+}
+
+size_t BlobStore::BlobReader::DoTell() const {
+  PW_DCHECK(open_);
+  return offset_;
+}
+
+Status BlobStore::BlobReader::DoSeek(ptrdiff_t offset, Whence origin) {
+  PW_DCHECK(open_);
+  // Note that Open ensures it is ValidToRead() which
+  // in turn guarantees store_.ReadableDataBytes() > 0.
+
+  size_t pos = offset_;
+  PW_TRY(CalculateSeek(offset, origin, store_.ReadableDataBytes() - 1, pos));
+  offset_ = pos;
+
+  return OkStatus();
+}
+
+StatusWithSize BlobStore::BlobReader::DoRead(ByteSpan dest) {
+  PW_DCHECK(open_);
+  StatusWithSize status = store_.Read(offset_, dest);
+  if (status.ok()) {
+    offset_ += status.size();
+  }
+  return status;
+}
+
 }  // namespace pw::blob_store

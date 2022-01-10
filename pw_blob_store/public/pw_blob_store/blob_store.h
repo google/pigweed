@@ -258,8 +258,10 @@ class BlobStore {
    public:
     constexpr BlobReader(BlobStore& store)
         : store_(store), open_(false), offset_(0) {}
+
     BlobReader(const BlobReader&) = delete;
     BlobReader& operator=(const BlobReader&) = delete;
+
     ~BlobReader() {
       if (open_) {
         Close().IgnoreError();  // TODO(pwbug/387): Handle Status properly
@@ -274,22 +276,7 @@ class BlobStore {
     // FAILED_PRECONDITION - No readable blob available.
     // INVALID_ARGUMENT - Invalid offset.
     // UNAVAILABLE - Unable to open, already open.
-    Status Open(size_t offset = 0) {
-      PW_DASSERT(!open_);
-      if (!store_.ValidToRead()) {
-        return Status::FailedPrecondition();
-      }
-      if (offset >= store_.ReadableDataBytes()) {
-        return Status::InvalidArgument();
-      }
-
-      offset_ = offset;
-      Status status = store_.OpenRead();
-      if (status.ok()) {
-        open_ = true;
-      }
-      return status;
-    }
+    Status Open(size_t offset = 0);
 
     // Finish reading a blob. Close fails in the closed state, do NOT retry
     // Close on error. Returns:
@@ -315,18 +302,7 @@ class BlobStore {
       return store_.GetFileName(dest);
     }
 
-    bool IsOpen() { return open_; }
-
-    // Probable (not guaranteed) minimum number of bytes at this time that can
-    // be read. Returns zero if, in the current state, Read would return status
-    // other than OK. See stream.h for additional details.
-    size_t ConservativeLimit(LimitType limit) const override {
-      if (limit == LimitType::kRead) {
-        PW_DASSERT(open_);
-        return store_.ReadableDataBytes() - offset_;
-      }
-      return 0;
-    }
+    bool IsOpen() const { return open_; }
 
     // Get a span with the MCU pointer and size of the data. Returns:
     //
@@ -338,33 +314,17 @@ class BlobStore {
       return store_.GetMemoryMappedBlob();
     }
 
-    size_t DoTell() const override {
-      PW_DASSERT(open_);
-      return offset_;
-    }
-
-    Status DoSeek(ptrdiff_t offset, Whence origin) override {
-      PW_DASSERT(open_);
-      // Note that Open ensures it is ValidToRead() which
-      // in turn guarantees store_.ReadableDataBytes() > 0.
-
-      size_t pos = offset_;
-      PW_TRY(
-          CalculateSeek(offset, origin, store_.ReadableDataBytes() - 1, pos));
-      offset_ = pos;
-
-      return OkStatus();
-    }
-
    private:
-    StatusWithSize DoRead(ByteSpan dest) override {
-      PW_DASSERT(open_);
-      StatusWithSize status = store_.Read(offset_, dest);
-      if (status.ok()) {
-        offset_ += status.size();
-      }
-      return status;
-    }
+    // Probable (not guaranteed) minimum number of bytes at this time that can
+    // be read. Returns zero if, in the current state, Read would return status
+    // other than OK. See stream.h for additional details.
+    size_t ConservativeLimit(LimitType limit) const override;
+
+    size_t DoTell() const override;
+
+    Status DoSeek(ptrdiff_t offset, Whence origin) override;
+
+    StatusWithSize DoRead(ByteSpan dest) override;
 
     BlobStore& store_;
     bool open_;
