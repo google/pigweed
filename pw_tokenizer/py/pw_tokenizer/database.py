@@ -166,8 +166,32 @@ def read_tokenizer_metadata(elf) -> Dict[str, int]:
     return metadata
 
 
+def _database_from_strings(strings: List[str]) -> tokens.Database:
+    """Generates a C and C++ compatible database from untokenized strings."""
+    # Generate a C compatible database from the fixed length hash.
+    c_db = tokens.Database.from_strings(
+        strings,
+        tokenize=lambda string: tokens.pw_tokenizer_65599_hash(
+            string, tokens.DEFAULT_C_HASH_LENGTH))
+
+    # Generate a C++ compatible database by allowing the hash to follow the
+    # string length.
+    cpp_db = tokens.Database.from_strings(
+        strings, tokenize=tokens.pw_tokenizer_65599_hash)
+
+    # Use a union of the C and C++ compatible databases.
+    return tokens.Database.merged(c_db, cpp_db)
+
+
+def _database_from_json(fd) -> tokens.Database:
+    return _database_from_strings(json.load(fd))
+
+
 def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
-    """Loads a Database from a database object, ELF, CSV, or binary database."""
+    """Loads a Database from supported database types.
+
+    Supports Database objects, JSONs, ELFs, CSVs, and binary databases.
+    """
     if db is None:
         return tokens.Database()
 
@@ -177,7 +201,7 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
     if isinstance(db, elf_reader.Elf):
         return _database_from_elf(db, domain)
 
-    # If it's a str, it might be a path. Check if it's an ELF or CSV.
+    # If it's a str, it might be a path. Check if it's an ELF, CSV, or JSON.
     if isinstance(db, (str, Path)):
         if not os.path.exists(db):
             raise FileNotFoundError(
@@ -188,6 +212,11 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
             if elf_reader.compatible_file(fd):
                 return _database_from_elf(fd, domain)
 
+        # Generate a database from JSON.
+        if str(db).endswith('.json'):
+            with open(db, 'r') as json_fd:
+                return _database_from_json(json_fd)
+
         # Read the path as a packed binary or CSV file.
         return tokens.DatabaseFile(db)
 
@@ -195,8 +224,12 @@ def _load_token_database(db, domain: Pattern[str]) -> tokens.Database:
     if elf_reader.compatible_file(db):
         return _database_from_elf(db, domain)
 
-    # Read the database as CSV or packed binary from a file object's path.
+    # Read the database as JSON, CSV, or packed binary from a file object's
+    # path.
     if hasattr(db, 'name') and os.path.exists(db.name):
+        if db.name.endswith('.json'):
+            return _database_from_json(db)
+
         return tokens.DatabaseFile(db.name)
 
     # Read CSV directly from the file object.
@@ -207,7 +240,10 @@ def load_token_database(
     *databases,
     domain: Union[str,
                   Pattern[str]] = tokens.DEFAULT_DOMAIN) -> tokens.Database:
-    """Loads a Database from database objects, ELFs, CSVs, or binary files."""
+    """Loads a Database from supported database types.
+
+    Supports Database objects, JSONs, ELFs, CSVs, and binary databases.
+    """
     domain = re.compile(domain)
     return tokens.Database.merged(*(_load_token_database(db, domain)
                                     for db in databases))
@@ -333,8 +369,9 @@ def expand_paths_or_globs(*paths_or_globs: str) -> Iterable[Path]:
                 raise FileNotFoundError(f'{path_or_glob} is not a valid path')
 
             for path in paths:
-                # Resolve globs to CSV or compatible binary files.
-                if elf_reader.compatible_file(path) or path.endswith('.csv'):
+                # Resolve globs to JSON, CSV, or compatible binary files.
+                if elf_reader.compatible_file(path) or path.endswith(
+                    ('.csv', '.json')):
                     yield Path(path)
 
 

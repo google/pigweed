@@ -98,6 +98,25 @@ e13b0f94,          ,"%llu"
 e65aefef,          ,"Won't fit : %s%d"
 '''
 
+JSON_SOURCE_STRINGS = '''\
+[
+  "pigweed/pw_polyfill/standard_library_public/pw_polyfill/standard_library/assert.h",
+  "protocol_buffer/gen/pigweed/pw_protobuf/common_protos.proto_library/nanopb/pw_protobuf_protos/status.pb.h",
+  "pigweed/pw_rpc/client_server.cc",
+  "pigweed/pw_rpc/public/pw_rpc/client_server.h",
+  "This is a very long string that will produce two tokens; one for C++ and one for C. This is because this string exceeds the default C hash length."
+]
+'''
+
+CSV_STRINGS = '''\
+2cbf627a,          ,"pigweed/pw_rpc/client_server.cc"
+666562a1,          ,"protocol_buffer/gen/pigweed/pw_protobuf/common_protos.proto_library/nanopb/pw_protobuf_protos/status.pb.h"
+6c1e6eb3,          ,"pigweed/pw_rpc/public/pw_rpc/client_server.h"
+b25a9932,          ,"This is a very long string that will produce two tokens; one for C++ and one for C. This is because this string exceeds the default C hash length."
+eadf017f,          ,"pigweed/pw_polyfill/standard_library_public/pw_polyfill/standard_library/assert.h"
+f815dc5c,          ,"This is a very long string that will produce two tokens; one for C++ and one for C. This is because this string exceeds the default C hash length."
+'''
+
 EXPECTED_REPORT = {
     str(TOKENIZED_ENTRIES_ELF): {
         '': {
@@ -246,6 +265,16 @@ class DatabaseCommandLineTest(unittest.TestCase):
         self.assertEqual(
             CSV_DEFAULT_DOMAIN.replace('Jello', sub).replace('Hello', sub),
             self._csv.read_text())
+
+    def test_json_strings(self):
+        strings_file = self._dir / "strings.json"
+
+        with open(strings_file, 'w') as file:
+            file.write(JSON_SOURCE_STRINGS)
+
+        run_cli('create', '--force', '--database', self._csv, strings_file)
+        self.assertEqual(CSV_STRINGS.splitlines(),
+                         self._csv.read_text().splitlines())
 
 
 class LegacyDatabaseCommandLineTest(DatabaseCommandLineTest):

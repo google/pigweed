@@ -662,6 +662,15 @@ compared with the CSV database's 211 B.
   0x70: 25 75 20 25 64 00 54 68 65 20 61 6e 73 77 65 72  %u %d.The answer
   0x80: 20 69 73 3a 20 25 73 00 25 6c 6c 75 00            is: %s.%llu.
 
+
+JSON support
+------------
+While pw_tokenizer doesn't specify a JSON database format, a token database can
+be created from a JSON formatted array of strings. This is useful for side-band
+token database generation for strings that are not embedded as parsable tokens
+in compiled binaries. See :ref:`module-pw_tokenizer-database-creation` for
+instructions on generating a token database from a JSON file.
+
 Managing token databases
 ------------------------
 Token databases are managed with the ``database.py`` script. This script can be
@@ -672,20 +681,23 @@ An example ELF file with tokenized logs is provided at
 ``pw_tokenizer/py/example_binary_with_tokenized_strings.elf``. You can use that
 file to experiment with the ``database.py`` commands.
 
+.. _module-pw_tokenizer-database-creation:
+
 Create a database
 ^^^^^^^^^^^^^^^^^
 The ``create`` command makes a new token database from ELF files (.elf, .o, .so,
-etc.), archives (.a), or existing token databases (CSV or binary).
+etc.), archives (.a), existing token databases (CSV or binary), or a JSON file
+containing an array of strings.
 
 .. code-block:: sh
 
   ./database.py create --database DATABASE_NAME ELF_OR_DATABASE_FILE...
 
-Two database formats are supported: CSV and binary. Provide ``--type binary`` to
-``create`` to generate a binary database instead of the default CSV. CSV
-databases are great for checking into a source control or for human review.
-Binary databases are more compact and simpler to parse. The C++ detokenizer
-library only supports binary databases currently.
+Two database output formats are supported: CSV and binary. Provide
+``--type binary`` to ``create`` to generate a binary database instead of the
+default CSV. CSV databases are great for checking into a source control or for
+human review. Binary databases are more compact and simpler to parse. The C++
+detokenizer library only supports binary databases currently.
 
 Update a database
 ^^^^^^^^^^^^^^^^^
