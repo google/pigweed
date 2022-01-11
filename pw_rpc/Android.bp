@@ -26,6 +26,7 @@ java_library {
         "pw_rpc_packet_proto_java_lite",
     ],
     plugins: ["auto_value_plugin"],
+    sdk_version: "current",
 }
 
 java_library_static {
@@ -35,4 +36,16 @@ java_library_static {
         type: "lite",
     },
     srcs: ["internal/packet.proto"],
+    sdk_version: "current",
+}
+
+java_library_static {
+    name: "pw_rpc_echo_proto_java_lite",
+    visibility: ["//visibility:public"],
+    host_supported: true,
+    proto: {
+        type: "lite",
+    },
+    srcs: ["echo.proto"],
+    sdk_version: "current",
 }
