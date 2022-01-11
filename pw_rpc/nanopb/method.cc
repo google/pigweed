@@ -60,7 +60,6 @@ bool NanopbMethod::DecodeRequest(Channel& channel,
     return true;
   }
 
-  rpc_lock().lock();
   channel.Send(Packet::ServerError(request, Status::DataLoss())).IgnoreError();
   PW_LOG_WARN("Nanopb failed to decode request payload from channel %u",
               unsigned(channel.id()));

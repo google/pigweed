@@ -20,6 +20,8 @@ void ServerCall::MoveServerCallFrom(ServerCall& other) {
   // If this call is active, finish it first.
   if (active_locked()) {
     Close();
+    // TODO(pwbug/597): Ensure the call object is locked before releasing the
+    //     RPC mutex.
     SendPacket(PacketType::RESPONSE,
                {},
                OkStatus());  // Unlocks when it sends a packet

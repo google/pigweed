@@ -50,6 +50,8 @@ Status Client::ProcessPacket(ConstByteSpan data) {
   }
 
   if (call == nullptr || call->id() != packet.call_id()) {
+    internal::rpc_lock().unlock();
+
     // The call for the packet does not exist. If the packet is a server stream
     // message, notify the server so that it can kill the stream. Otherwise,
     // silently drop the packet (as it would terminate the RPC anyway).
@@ -57,8 +59,6 @@ Status Client::ProcessPacket(ConstByteSpan data) {
       channel->Send(Packet::ClientError(packet, Status::FailedPrecondition()))
           .IgnoreError();
       PW_LOG_WARN("RPC client received stream message for an unknown call");
-    } else {
-      internal::rpc_lock().unlock();
     }
     return OkStatus();  // OK since the packet was handled
   }
@@ -83,7 +83,6 @@ Status Client::ProcessPacket(ConstByteSpan data) {
       } else {
         call->HandleError(Status::InvalidArgument());
         PW_LOG_DEBUG("Received SERVER_STREAM for RPC without a server stream");
-        internal::rpc_lock().lock();
         // Report the error to the server so it can abort the RPC.
         channel->Send(Packet::ClientError(packet, Status::InvalidArgument()))
             .IgnoreError();  // Errors are logged in Channel::Send.

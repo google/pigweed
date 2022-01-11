@@ -100,7 +100,6 @@ TEST(Channel, OutputBuffer_PayloadDoesNotFit_ReportsError) {
   byte data[1] = {};
   packet.set_payload(data);
 
-  rpc_lock().lock();
   EXPECT_EQ(Status::Internal(), channel.Send(packet));
 }
 
@@ -144,6 +143,7 @@ TEST(Channel, OutputBuffer_Contains_TrueIfContained) {
   Channel::OutputBuffer buffer = channel.AcquireBuffer();
   EXPECT_TRUE(buffer.Contains(output.buffer()));
 
+  rpc_lock().lock();
   channel.Release(buffer);
 }
 
@@ -158,6 +158,7 @@ TEST(Channel, OutputBuffer_Contains_FalseIfOutside) {
   std::span after(output.buffer().data() + output.buffer().size() - 1, 2);
   EXPECT_FALSE(buffer.Contains(after));
 
+  rpc_lock().lock();
   channel.Release(buffer);
 }
 

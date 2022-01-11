@@ -16,6 +16,7 @@
 #include <span>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_status/status.h"
@@ -71,27 +72,40 @@ class Channel : public rpc::Channel {
   };
 
   // Acquires a buffer for the packet.
-  OutputBuffer AcquireBuffer() const {
+  OutputBuffer AcquireBuffer() const PW_LOCKS_EXCLUDED(rpc_lock()) {
     return OutputBuffer(output().AcquireBuffer());
   }
 
   // Sends an RPC packet. Acquires and uses a ChannelOutput buffer.
-  Status Send(const internal::Packet& packet) PW_UNLOCK_FUNCTION(rpc_lock()) {
-    OutputBuffer buffer = AcquireBuffer();
-    return SendBuffer(buffer, packet);
+  Status Send(const internal::Packet& packet) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    return SendSpan(output().AcquireBuffer(), packet);
   }
 
   // Sends an RPC packet using the provided output buffer.
   Status SendBuffer(OutputBuffer& buffer, const internal::Packet& packet)
-      PW_UNLOCK_FUNCTION(rpc_lock());
-
-  void Release(OutputBuffer& buffer) {
-    output().DiscardBuffer(buffer.buffer_);
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
+    // TODO(pwbug/597): It would be cleaner if the Call object released the
+    //     OutputBuffer, unlocked the RPC mutex, and then passed a span to this
+    //     function.
+    const std::span released_buffer = buffer.buffer_;
     buffer.buffer_ = {};
+    rpc_lock().unlock();
+    return SendSpan(released_buffer, packet);
+  }
+
+  void Release(OutputBuffer& buffer) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    const ConstByteSpan released_buffer = buffer.buffer_;
+    buffer.buffer_ = {};
+    rpc_lock().unlock();
+    output().DiscardBuffer(released_buffer);
   }
 
   // Allow setting the channel ID for tests.
   using rpc::Channel::set_channel_id;
+
+ private:
+  Status SendSpan(ByteSpan buffer, const internal::Packet& packet) const
+      PW_LOCKS_EXCLUDED(rpc_lock());
 };
 
 }  // namespace pw::rpc::internal

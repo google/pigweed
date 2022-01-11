@@ -18,6 +18,7 @@
 #include <type_traits>
 
 #include "pw_assert/assert.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
@@ -41,7 +42,8 @@ class ChannelOutput {
 
   // Acquire a buffer into which to write an outgoing RPC packet. The
   // implementation is expected to handle synchronization if necessary.
-  virtual std::span<std::byte> AcquireBuffer() = 0;
+  virtual std::span<std::byte> AcquireBuffer()
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) = 0;
 
   // Sends the contents of a buffer previously obtained from AcquireBuffer().
   // This may be called with an empty span, in which case the buffer should be
@@ -50,9 +52,11 @@ class ChannelOutput {
   // Returns OK if the operation succeeded, or an implementation-defined Status
   // value if there was an error. The implementation must NOT return
   // FAILED_PRECONDITION or INTERNAL, which are reserved by pw_rpc.
-  virtual Status SendAndReleaseBuffer(std::span<const std::byte> buffer) = 0;
+  virtual Status SendAndReleaseBuffer(std::span<const std::byte> buffer)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) = 0;
 
-  void DiscardBuffer(std::span<const std::byte> buffer) {
+  void DiscardBuffer(std::span<const std::byte> buffer)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
     SendAndReleaseBuffer(buffer.first(0)).IgnoreError();
   }
 

@@ -28,6 +28,8 @@ class ClientCall : public Call {
   ~ClientCall() PW_LOCKS_EXCLUDED(rpc_lock()) {
     rpc_lock().lock();
     if (client_stream_open()) {
+      // TODO(pwbug/597): Ensure the call object is locked before releasing the
+      //     RPC mutex.
       EndClientStream();
       rpc_lock().lock();  // Reacquire after sending the packet
     }
@@ -56,6 +58,8 @@ class ClientCall : public Call {
   void MoveClientCallFrom(ClientCall& other)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     if (client_stream_open()) {
+      // TODO(pwbug/597): Ensure the call object is locked before releasing the
+      //     RPC mutex.
       EndClientStream();
       rpc_lock().lock();  // Reacquire after sending the packet
     }
@@ -125,6 +129,7 @@ class UnaryResponseClientCall : public ClientCall {
   }
 
   void set_on_completed(Function<void(ConstByteSpan, Status)>&& on_completed) {
+    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
     on_completed_ = std::move(on_completed);
   }
 
@@ -161,6 +166,7 @@ class StreamResponseClientCall : public ClientCall {
     Close();
     const bool invoke_callback = on_completed_ != nullptr;
 
+    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
     rpc_lock().unlock();
 
     if (invoke_callback) {
@@ -196,6 +202,7 @@ class StreamResponseClientCall : public ClientCall {
   }
 
   void set_on_completed(Function<void(Status)>&& on_completed) {
+    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
     on_completed_ = std::move(on_completed);
   }
 

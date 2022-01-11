@@ -153,13 +153,14 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   const Packet packet = MakePacket(type, payload, status);
 
   if (!buffer().Contains(payload)) {
+    // TODO(pwbug/597): Ensure the call object is locked before releasing the
+    //     RPC lock.
     rpc_lock().unlock();
     ByteSpan buffer = PayloadBuffer();
     rpc_lock().lock();
 
     if (payload.size() > buffer.size()) {
       ReleasePayloadBufferLocked();
-      rpc_lock().unlock();
       return Status::OutOfRange();
     }
 

@@ -116,6 +116,7 @@ class Call : public IntrusiveList<Call>::Item {
   void HandlePayload(ConstByteSpan message) const
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     const bool invoke = on_next_ != nullptr;
+    // TODO(pwbug/597): Ensure on_next_ is properly guarded.
     rpc_lock().unlock();
 
     if (invoke) {
@@ -164,7 +165,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Releases the buffer without sending a packet.
   void ReleasePayloadBuffer() PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    rpc_lock().lock();
     ReleasePayloadBufferLocked();
   }
 
@@ -230,6 +231,7 @@ class Call : public IntrusiveList<Call>::Item {
   void CallOnError(Status error) PW_UNLOCK_FUNCTION(rpc_lock()) {
     const bool invoke = on_error_ != nullptr;
 
+    // TODO(pwbug/597): Ensure on_error_ is properly guarded.
     rpc_lock().unlock();
     if (invoke) {
       on_error_(error);
@@ -277,7 +279,7 @@ class Call : public IntrusiveList<Call>::Item {
        MethodType type,
        CallType call_type);
 
-  void ReleasePayloadBufferLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+  void ReleasePayloadBufferLocked() PW_UNLOCK_FUNCTION(rpc_lock());
 
   Packet MakePacket(PacketType type,
                     ConstByteSpan payload,
