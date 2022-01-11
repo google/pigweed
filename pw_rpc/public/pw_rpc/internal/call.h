@@ -160,10 +160,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Acquires a buffer into which to write a payload or returns a previously
   // acquired buffer. The Call MUST be active when this is called!
-  [[nodiscard]] ByteSpan PayloadBuffer() PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
-    return PayloadBufferLocked();
-  }
+  [[nodiscard]] ByteSpan PayloadBuffer() PW_LOCKS_EXCLUDED(rpc_lock());
 
   // Releases the buffer without sending a packet.
   void ReleasePayloadBuffer() PW_LOCKS_EXCLUDED(rpc_lock()) {
@@ -280,8 +277,6 @@ class Call : public IntrusiveList<Call>::Item {
        MethodType type,
        CallType call_type);
 
-  [[nodiscard]] ByteSpan PayloadBufferLocked()
-      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
   void ReleasePayloadBufferLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   Packet MakePacket(PacketType type,

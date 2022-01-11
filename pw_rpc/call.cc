@@ -112,16 +112,30 @@ Status Call::CloseAndSendFinalPacket(PacketType type,
   return SendPacket(type, response, status);
 }
 
-ByteSpan Call::PayloadBufferLocked() {
+ByteSpan Call::PayloadBuffer() {
+  rpc_lock().lock();
+
   // Only allow having one active buffer at a time.
   if (response_.empty()) {
-    response_ = channel().AcquireBuffer();
+    Channel& c = channel();
+    rpc_lock().unlock();
+
+    // Don't call AcquireBuffer with rpc_lock() held, as this may cause deadlock
+    // if the channel is also protected by a mutex.
+    Channel::OutputBuffer buffer = c.AcquireBuffer();
+
+    rpc_lock().lock();
+    response_ = std::move(buffer);
   }
 
   // The packet type is only used to size the payload buffer.
   // TODO(pwrev/506): Replace the packet header calculation with a constant
   //     rather than creating a packet.
-  return response_.payload(MakePacket(PacketType::CLIENT_STREAM, {}));
+  ByteSpan buffer =
+      response_.payload(MakePacket(PacketType::CLIENT_STREAM, {}));
+  rpc_lock().unlock();
+
+  return buffer;
 }
 
 Status Call::Write(ConstByteSpan payload) {
@@ -139,7 +153,9 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   const Packet packet = MakePacket(type, payload, status);
 
   if (!buffer().Contains(payload)) {
-    ByteSpan buffer = PayloadBufferLocked();
+    rpc_lock().unlock();
+    ByteSpan buffer = PayloadBuffer();
+    rpc_lock().lock();
 
     if (payload.size() > buffer.size()) {
       ReleasePayloadBufferLocked();
