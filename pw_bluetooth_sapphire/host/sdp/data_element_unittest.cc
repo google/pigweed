@@ -63,6 +63,17 @@ TEST(DataElementTest, Read) {
   EXPECT_EQ(std::string("Fuchsia💖"), *elem.Get<std::string>());
 }
 
+TEST(DataElementTest, ReadInvalidType) {
+  auto buf = CreateStaticByteBuffer(
+      0xFD,  // Type (Invalid) & Size (5: in an additional byte) = 0b11111 101
+      0x0B,  // Bytes
+      'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96  // String
+  );
+
+  DataElement elem;
+  EXPECT_EQ(0u, DataElement::Read(&elem, buf));
+}
+
 TEST(DataElementTest, ReadUUID) {
   auto buf = CreateStaticByteBuffer(0x19,  // Type (3: UUID) & Size (1: two bytes) = 0b00011 001
                                     0x01, 0x00  // L2CAP

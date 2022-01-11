@@ -507,6 +507,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       return bytes_read + data_bytes;
     }
   }
+  return 0;
 }
 
 size_t DataElement::WriteSize() const {
@@ -658,6 +659,11 @@ std::string DataElement::ToString() const {
       }
       return bt_lib_cpp_string::StringPrintf("Alternatives { %s}", str.c_str());
     }
+    default:
+      bt_log(TRACE, "sdp", "unhandled type (%hhu) in ToString()", type_);
+      // Fallthrough to unknown.
   }
+
+  return "(unknown)";
 }
 }  // namespace bt::sdp
