@@ -34,7 +34,7 @@ namespace pw::cpu_exception::cortex_m {
 constexpr uintptr_t kUndefinedPcLrOrPsrRegValue = 0xFFFF'FFFF;
 
 // This is dictated by ARMv7-M architecture. Do not change.
-PW_PACKED(struct) ExceptionRegisters {
+struct ExceptionRegisters {
   uint32_t r0;
   uint32_t r1;
   uint32_t r2;
@@ -44,9 +44,11 @@ PW_PACKED(struct) ExceptionRegisters {
   uint32_t pc;   // Program counter, note this may be invalid.
   uint32_t psr;  // Program status register, note this may be invalid.
 };
+static_assert(sizeof(ExceptionRegisters) == (sizeof(uint32_t) * 8),
+              "There's unexpected padding.");
 
 // This is dictated by ARMv7-M architecture. Do not change.
-PW_PACKED(struct) ExceptionRegistersFpu {
+struct ExceptionRegistersFpu {
   uint32_t s0;
   uint32_t s1;
   uint32_t s2;
@@ -66,6 +68,8 @@ PW_PACKED(struct) ExceptionRegistersFpu {
   uint32_t fpscr;
   uint32_t reserved;
 };
+static_assert(sizeof(ExceptionRegistersFpu) == (sizeof(uint32_t) * 18),
+              "There's unexpected padding.");
 
 // Bit in the PSR that indicates CPU added an extra word on the stack to
 // align it during context save for an exception.
@@ -76,7 +80,7 @@ inline constexpr uint32_t kPsrExtraStackAlignBit = (1 << 9);
 // values are populated in assembly).
 //
 // NOTE: Memory mapped registers are NOT restored upon fault return!
-PW_PACKED(struct) ExtraRegisters {
+struct ExtraRegisters {
   // Memory mapped registers.
   uint32_t cfsr;
   uint32_t mmfar;
@@ -103,10 +107,17 @@ PW_PACKED(struct) ExtraRegisters {
   uint32_t r10;
   uint32_t r11;
 };
+static_assert(sizeof(ExtraRegisters) ==
+#if _PW_ARCH_ARM_V8M_MAINLINE
+                  (sizeof(uint32_t) * 20),
+#else   // !_PW_ARCH_ARM_V8M_MAINLINE
+                  (sizeof(uint32_t) * 18),
+#endif  // _PW_ARCH_ARM_V8M_MAINLINE
+              "There's unexpected padding.");
 
 }  // namespace pw::cpu_exception::cortex_m
 
-PW_PACKED(struct) pw_cpu_exception_State {
+struct pw_cpu_exception_State {
   pw::cpu_exception::cortex_m::ExtraRegisters extended;
   pw::cpu_exception::cortex_m::ExceptionRegisters base;
   // TODO(amontanez): FPU registers may or may not be here as well. Make the
