@@ -115,7 +115,7 @@ uint32_t CalculatePspDelta(const pw_cpu_exception_State& cpu_state) {
   // need to be shifted.
   if (!PspWasActive(cpu_state) || (cpu_state.extended.cfsr & kCfsrStkerrMask) ||
 #if _PW_ARCH_ARM_V8M_MAINLINE
-      (cpu_state->extended.cfsr & kCfsrStkofMask) ||
+      (cpu_state.extended.cfsr & kCfsrStkofMask) ||
 #endif  // _PW_ARCH_ARM_V8M_MAINLINE
       (cpu_state.extended.cfsr & kCfsrMstkerrMask)) {
     return 0;
