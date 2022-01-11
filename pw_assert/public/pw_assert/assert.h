@@ -14,14 +14,7 @@
 #pragma once
 
 #include "pw_assert/config.h"  // For PW_ASSERT_ENABLE_DEBUG
-#include "pw_preprocessor/compiler.h"
-#include "pw_preprocessor/util.h"
-
-PW_EXTERN_C_START
-
-PW_NO_RETURN void pw_assert_HandleFailure(void);
-
-PW_EXTERN_C_END
+#include "pw_assert_backend/assert_lite_backend.h"
 
 // A header- and constexpr-safe version of PW_CHECK().
 //
@@ -34,11 +27,11 @@ PW_EXTERN_C_END
 // stringified expression. Use these macros only when absolutely necessary --
 // in headers, constexr contexts, or in rare cases where the call site overhead
 // of a full PW_CHECK must be avoided. Use PW_CHECK_*() whenever possible.
-#define PW_ASSERT(condition)     \
-  do {                           \
-    if (!(condition)) {          \
-      pw_assert_HandleFailure(); \
-    }                            \
+#define PW_ASSERT(condition)                \
+  do {                                      \
+    if (!(condition)) {                     \
+      PW_ASSERT_HANDLE_FAILURE(#condition); \
+    }                                       \
   } while (0)
 
 // A header- and constexpr-safe version of PW_DCHECK().
@@ -54,6 +47,6 @@ PW_EXTERN_C_END
 #define PW_DASSERT(condition)                            \
   do {                                                   \
     if ((PW_ASSERT_ENABLE_DEBUG == 1) && !(condition)) { \
-      pw_assert_HandleFailure();                         \
+      PW_ASSERT_HANDLE_FAILURE(#condition);              \
     }                                                    \
   } while (0)

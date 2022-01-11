@@ -25,12 +25,23 @@ declare_args() {
   # public config (which may -include a file or add defines directly).
   pw_assert_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
 
-  # Backend for the pw_assert module.
+  # Backend for the pw_assert module's CHECK facade.
   pw_assert_BACKEND = ""
+
+  # Backend for the pw_assert module's ASSERT facade.
+  #
+  # Warning: This naming is transitional. Modifying this build argument WILL
+  #     result in future breakages. (pwbug/246)
+  pw_assert_LITE_BACKEND = "${dir_pw_assert}:lite_compatibility_backend"
 }
 
 config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+config("lite_backend_overrides") {
+  include_dirs = [ "assert_lite_public_overrides" ]
   visibility = [ ":*" ]
 }
 
@@ -80,20 +91,27 @@ pw_facade("check") {
 }
 
 # Provide "pw_assert/assert.h" in its own source set, so it can be used without
-# depending on pw_assert_BACKEND. This makes it possible to use PW_ASSERT in
-# situations that might result in circular dependencies, such as in low-level
-# headers like polyfill or span. See the docs for more discussion around where
-# to use which assert headers.
-#
-# The implementation function pw_assert_HandleFailure() must be provided at link
-# time. It is linked by the pw_assert:pw_assert (or pw_assert:check) targets.
-pw_source_set("assert") {
+# depending on pw_assert_BACKEND.
+pw_facade("assert") {
+  backend = pw_assert_LITE_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_assert/assert.h" ]
-  public_deps = [
-    ":config",
-    dir_pw_preprocessor,
-  ]
+  public_deps = [ ":config" ]
+}
+
+# This backend to pw_assert's PW_ASSERT()/PW_DASSERT() macros provides backwards
+# compatibility with pw_assert's previous C-symbol based API.
+#
+# Warning: The "lite" naming is transitional. assert_lite_backend.h headers
+# will be renamed as the pw_assert API is reassessed. (pwbug/246)
+pw_source_set("lite_compatibility_backend") {
+  public_configs = [ ":lite_backend_overrides" ]
+  public_deps = [ dir_pw_preprocessor ]
+  public =
+      [ "assert_lite_public_overrides/pw_assert_backend/assert_lite_backend.h" ]
+}
+
+group("lite_compatibility_backend.impl") {
 }
 
 # pw_assert is low-level and ubiquitous. Because of this, it can often cause
@@ -112,6 +130,10 @@ group("impl") {
   if (pw_assert_BACKEND != "") {
     public_deps +=
         [ get_label_info(pw_assert_BACKEND, "label_no_toolchain") + ".impl" ]
+  }
+  if (pw_assert_LITE_BACKEND != "") {
+    public_deps += [ get_label_info(pw_assert_LITE_BACKEND,
+                                    "label_no_toolchain") + ".impl" ]
   }
 }
 

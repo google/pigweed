@@ -595,6 +595,36 @@ necessary, ``pw_assert.impl`` can be an empty group. Circular dependencies are a
 common problem with ``pw_assert`` because it is so widely used. See
 :ref:`module-pw_assert-circular-deps`.
 
+Macro-based PW_ASSERT()/PW_DASSERT() backend
+============================================
+The pw_assert API is being re-assessed to provide more helpful information in
+contexts where ``PW_CHECK_*()`` macros cannot be used. A first step towards this
+is providing a macro-based backend API for the ``PW_ASSERT()`` and
+``PW_DASSERT()`` macros.
+
+.. warning::
+  This part of ``pw_assert``'s API is transitional, and any project-specific
+  reliance on any of the API mentioned here will likely experience breakages.
+  In particular, ``PW_ASSERT_HANDLE_FAILURE`` and ``PW_HANDLE_ASSERT_FAILURE``
+  are extremely confusingly similar and are NOT interchangeable.
+
+A macro-based backend for the ``PW_ASSERT()`` macros must provide the following
+macro in a header at ``pw_assert_backend/assert_lite_backend.h``.
+
+.. cpp:function:: PW_ASSERT_HANDLE_FAILURE(expression)
+
+  Handle a low-level crash. This crash entry happens through
+  ``pw_assert/assert.h``. Backends must ensure their implementation is safe for
+  usage in headers, constexpr contexts, and templates. This macro should expand
+  to an expression that does not return.
+
+Similar to the ``PW_CHECK_*()`` facade, the header backend that provides an
+expansion for the ``PW_ASSERT_HANDLE_FAILURE()`` macro can be controlled in the
+GN build using the ``pw_assert_LITE_BACKEND`` build argument. In addition to
+the header-based target at ``${pw_assert_LITE_BACKEND}``, a source set at
+``${pw_assert_LITE_BACKEND}.impl`` is also required as a way to reduce the
+impact of :ref:`circular dependencies <module-pw_assert-circular-deps>`.
+
 --------------------------
 Frequently Asked Questions
 --------------------------
