@@ -23,6 +23,25 @@ namespace bt {
 template <typename ProtocolErrorCode>
 class Error;
 
+namespace detail {
+
+// Detects whether the given expression implicitly converts to a bt::Error.
+template <typename T, typename = void>
+struct IsError : std::false_type {};
+
+// This specialization is used when
+//   1. T can be deduced as a template template (i.e. T<U>)
+//   2. A function that takes Error<U> would accept a T<U>&& value as its parameter
+template <template <typename> class T, typename U>
+struct IsError<T<U>,
+               std::void_t<decltype(std::declval<void (&)(Error<U>)>()(std::declval<T<U>>()))>>
+    : std::true_type {};
+
+template <typename T>
+static constexpr bool IsErrorV = IsError<T>::value;
+
+}  // namespace detail
+
 // Marker used to indicate that an Error holds only HostError.
 class NoProtocolError {
   friend class Error<NoProtocolError>;
@@ -92,6 +111,7 @@ template <typename ProtocolErrorCode>
 class [[nodiscard]] Error {
   static_assert(!std::is_same_v<HostError, ProtocolErrorCode>,
                 "HostError can not be a protocol error");
+  static_assert(!detail::IsErrorV<ProtocolErrorCode>, "ProtocolErrorCode can not be a bt::Error");
 
  public:
   Error() = delete;
@@ -264,7 +284,7 @@ constexpr bool operator==(const HostError& lhs, const Error<ProtocolErrorCode>& 
 template <typename ProtocolErrorCode, typename... Ts>
 constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, Ts...>& lhs,
                           const Error<ProtocolErrorCode>& rhs) {
-  static_assert(std::conjunction_v<std::negation<std::is_same<Ts, Error<ProtocolErrorCode>>>...>,
+  static_assert(std::conjunction_v<std::negation<detail::IsError<Ts>>...>,
                 "fitx::result should not contain Error as a success value");
   return lhs.is_error() && (lhs.error_value() == rhs);
 }
@@ -276,8 +296,7 @@ constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, Ts...>& l
 template <typename ProtocolErrorCode, typename OtherProtoErrCode, typename T>
 constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, T>& lhs,
                           const fitx::result<Error<OtherProtoErrCode>, T>& rhs) {
-  static_assert(!std::is_same_v<T, Error<ProtocolErrorCode>>,
-                "fitx::result should not contain Error as a success value");
+  static_assert(!detail::IsErrorV<T>, "fitx::result should not contain Error as a success value");
   if (lhs.is_ok() != rhs.is_ok()) {
     return false;
   }

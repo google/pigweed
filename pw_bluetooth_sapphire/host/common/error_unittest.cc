@@ -17,6 +17,10 @@ enum class TestError : uint8_t {
   kFail2 = 2,
 };
 
+// Test detail::IsErrorV
+static_assert(detail::IsErrorV<Error<TestError>>);
+static_assert(!detail::IsErrorV<TestError>);
+
 }  // namespace
 
 // This template specialization must be in ::bt for name lookup reasons
