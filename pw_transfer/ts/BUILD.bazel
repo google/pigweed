@@ -58,8 +58,8 @@ ts_library(
     deps = [
         ":lib",
         ":transfer_proto_collection",
-        "//pw_rpc:packet_proto_tspb",
         "//pw_rpc/ts:lib",
+        "//pw_rpc/ts:packet_proto_tspb",
         "//pw_status/ts:pw_status",
         "//pw_transfer:transfer_proto_tspb",
         "@npm//@types/jasmine",

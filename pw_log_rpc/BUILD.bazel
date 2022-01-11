@@ -34,8 +34,8 @@ pw_cc_library(
         ":log_filter",
         ":rpc_log_drain",
         "//pw_log",
-        "//pw_log:log_pwpb",
-        "//pw_log:protos.raw_rpc",
+        "//pw_log:log_proto_cc.pwpb",
+        "//pw_log:log_proto_cc.raw_rpc",
     ],
 )
 
@@ -47,8 +47,8 @@ pw_cc_library(
     deps = [
         ":log_filter",
         "//pw_log",
-        "//pw_log:log_pwpb",
-        "//pw_log:protos.raw_rpc",
+        "//pw_log:log_proto_cc.pwpb",
+        "//pw_log:log_proto_cc.raw_rpc",
         "//pw_protobuf",
         "//pw_protobuf:bytes_utils",
     ],
@@ -56,20 +56,21 @@ pw_cc_library(
 
 pw_cc_library(
     name = "log_filter",
-    srcs = ["log_filter.cc"],
+    srcs = [
+        "log_filter.cc",
+        "public/pw_log_rpc/internal/config.h",
+    ],
     hdrs = [
         "public/pw_log_rpc/log_filter.h",
         "public/pw_log_rpc/log_filter_map.h",
     ],
     includes = ["public"],
     deps = [
-        "public/pw_log_rpc/internal/config.h",
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers:vector",
         "//pw_log",
-        "//pw_log:log_pwpb",
-        "//pw_log:protos.pwpb",
+        "//pw_log:log_proto_cc.pwpb",
         "//pw_protobuf",
         "//pw_status",
     ],
@@ -86,8 +87,8 @@ pw_cc_library(
     deps = [
         ":log_filter",
         "//pw_assert",
-        "//pw_log:log_pwpb",
-        "//pw_log:protos.raw_rpc",
+        "//pw_log:log_proto_cc.pwpb",
+        "//pw_log:log_proto_cc.raw_rpc",
         "//pw_multisink",
         "//pw_protobuf",
         "//pw_result",
@@ -121,9 +122,9 @@ pw_cc_test(
         ":log_service",
         "//pw_containers:vector",
         "//pw_log",
-        "//pw_log:log_pwpb",
+        "//pw_log:log_proto_cc.pwpb",
         "//pw_log:proto_utils",
-        "//pw_log_tokenized:metadata",
+        "//pw_log_tokenized:headers",
         "//pw_protobuf",
         "//pw_protobuf:bytes_utils",
         "//pw_result",
@@ -139,7 +140,7 @@ pw_cc_test(
     deps = [
         ":log_filter",
         ":log_filter_service",
-        "//pw_log:log_pwpb",
+        "//pw_log:log_proto_cc.pwpb",
         "//pw_protobuf",
         "//pw_protobuf:bytes_utils",
         "//pw_result",
@@ -153,9 +154,9 @@ pw_cc_test(
     srcs = ["log_filter_test.cc"],
     deps = [
         ":log_filter",
-        "//pw_log:log_pwpb",
+        "//pw_log:log_proto_cc.pwpb",
         "//pw_log:proto_utils",
-        "//pw_log_tokenized:metadata",
+        "//pw_log_tokenized:headers",
         "//pw_result",
         "//pw_status",
         "//pw_unit_test",

@@ -56,7 +56,7 @@ ts_library(
     deps = [
         ":test_proto_collection",
         "//pw_protobuf_compiler:test_protos_tspb",
-        "//pw_rpc:packet_proto_tspb",
+        "//pw_rpc/ts:packet_proto_tspb",
         "@npm//@types/google-protobuf",
         "@npm//@types/jasmine",
     ],

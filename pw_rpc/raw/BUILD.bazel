@@ -36,7 +36,7 @@ pw_cc_library(
     deps = [
         "//pw_bytes",
         "//pw_rpc",
-        "//pw_rpc:internal_packet_pwpb",
+        "//pw_rpc:internal_packet_cc.pwpb",
     ],
 )
 
@@ -47,7 +47,7 @@ pw_cc_library(
     deps = [
         "//pw_bytes",
         "//pw_rpc",
-        "//pw_rpc:internal_packet_pwpb",
+        "//pw_rpc:internal_packet_cc.pwpb",
     ],
 )
 
@@ -102,7 +102,7 @@ pw_cc_test(
     deps = [
         ":client_api",
         ":client_testing",
-        "//pw_rpc:pw_rpc_test_pwpb",
+        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
     ],
 )
 
@@ -118,7 +118,8 @@ pw_cc_test(
         ":test_method_context",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_pwpb",
+        "//pw_rpc:pw_rpc_test_cc.pwpb",
+        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
     ],
 )
 
@@ -131,7 +132,7 @@ pw_cc_test(
         ":server_api",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_pwpb",
+        "//pw_rpc:pw_rpc_test_cc.pwpb",
     ],
 )
 
@@ -141,12 +142,8 @@ pw_cc_test(
         "method_info_test.cc",
     ],
     deps = [
-        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_pwpb",
-        # TODO(hepler): RPC deps not used directly should be provided by the proto library
-        "//pw_rpc/raw:client_api",
-        "//pw_rpc/raw:server_api",
+        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
     ],
 )
 
@@ -159,7 +156,7 @@ pw_cc_test(
         ":server_api",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_pwpb",
+        "//pw_rpc:pw_rpc_test_cc.pwpb",
     ],
 )
 
@@ -167,12 +164,10 @@ pw_cc_test(
     name = "server_reader_writer_test",
     srcs = ["server_reader_writer_test.cc"],
     deps = [
-        # TODO(hepler): RPC deps not used directly should be provided by the proto library
-        ":client_api",
-        ":server_api",
         ":test_method_context",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_pwpb",
+        "//pw_rpc:pw_rpc_test_cc.pwpb",
+        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
     ],
 )
 
@@ -180,10 +175,7 @@ pw_cc_test(
     name = "stub_generation_test",
     srcs = ["stub_generation_test.cc"],
     deps = [
-        # TODO(hepler): RPC deps not used directly should be provided by the proto library
-        "//pw_rpc",
-        "//pw_rpc:pw_rpc_test_pwpb",
-        ":server_api",
-        ":client_api",
+        "//pw_rpc:pw_rpc_test_cc.pwpb",
+        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
     ],
 )

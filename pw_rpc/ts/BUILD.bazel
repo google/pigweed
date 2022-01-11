@@ -35,8 +35,8 @@ ts_project(
     declaration = True,
     source_map = True,
     deps = [
+        ":packet_proto_tspb",
         "//pw_protobuf_compiler/ts:pw_protobuf_compiler",
-        "//pw_rpc:packet_proto_tspb",
         "//pw_status/ts:pw_status",
         "@npm//@types/google-protobuf",
         "@npm//wait-queue",
@@ -52,8 +52,8 @@ js_library(
 
 ts_proto_collection(
     name = "rpc_proto_collection",
-    js_proto_library = "@//pw_rpc/ts:test_protos_tspb",
-    proto_library = "@//pw_rpc/ts:test_protos",
+    js_proto_library = "@pigweed//pw_rpc/ts:test_protos_tspb",
+    proto_library = "@pigweed//pw_rpc/ts:test_protos",
 )
 
 ts_library(
@@ -68,11 +68,11 @@ ts_library(
         ":test_protos",
     ],
     deps = [
-        "test_protos_tspb",
         ":lib",
+        ":packet_proto_tspb",
         ":rpc_proto_collection",
+        ":test_protos_tspb",
         "//pw_protobuf_compiler/ts:pw_protobuf_compiler",
-        "//pw_rpc:packet_proto_tspb",
         "//pw_status/ts:pw_status",
         "@npm//@types/google-protobuf",
         "@npm//@types/jasmine",
@@ -98,4 +98,9 @@ proto_library(
 js_proto_library(
     name = "test_protos_tspb",
     protos = [":test_protos"],
+)
+
+js_proto_library(
+    name = "packet_proto_tspb",
+    protos = ["//pw_rpc:internal_packet_proto"],
 )

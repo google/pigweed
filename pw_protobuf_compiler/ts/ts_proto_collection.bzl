@@ -37,7 +37,7 @@ def _lib(name, proto_library, js_proto_library):
         deps = [
             js_proto_library,
             "@//pw_protobuf_compiler/ts:pw_protobuf_compiler",
-            "@//pw_rpc:packet_proto_tspb",
+            "@//pw_rpc/ts:packet_proto_tspb",
             "@npm//@types/google-protobuf",
             "@npm//@types/node",
             "@npm//base64-js",
