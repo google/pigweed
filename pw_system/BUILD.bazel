@@ -42,6 +42,7 @@ pw_cc_library(
         ":logger",
         ":rpc",
         "//pw_bytes",
+        "//pw_chrono:system_clock",
         "//pw_log",
         "//pw_log:proto_utils",
         "//pw_log_rpc:log_service",
@@ -120,7 +121,6 @@ pw_cc_library(
     ],
 )
 
-# TODO(cachinchilla): Make the target provide this.
 pw_cc_library(
     name = "target_io",
     srcs = [
@@ -134,7 +134,6 @@ pw_cc_library(
     ],
 )
 
-# TODO(cachinchilla): Make the target provide this.
 pw_cc_library(
     name = "target_hooks",
     hdrs = [

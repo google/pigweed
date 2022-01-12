@@ -31,6 +31,7 @@ pw_add_module_library("pw_system.log"
   PRIVATE_DEPS
     "pw_system.rpc"
     "pw_bytes"
+    "pw_chrono.system_clock"
     "pw_log"
     "pw_log.proto_utils"
     "pw_log_rpc.rpc_log_drain"

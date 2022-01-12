@@ -32,6 +32,7 @@ An example echo RPC command:
 """
 
 import argparse
+import datetime
 import glob
 from inspect import cleandoc
 import logging
@@ -260,10 +261,18 @@ def console(device: str,
     if serial_debug:
         serial_impl = SerialWithLogging
 
+    timestamp_decoder = None
     if socket_addr is None:
         serial_device = serial_impl(device, baudrate, timeout=1)
         read = lambda: serial_device.read(8192)
         write = serial_device.write
+
+        # Overwrite decoder for serial device.
+        def milliseconds_to_string(timestamp):
+            """Parses milliseconds since boot to a human-readable string."""
+            return str(datetime.timedelta(seconds=timestamp / 1e3))[:-3]
+
+        timestamp_decoder = milliseconds_to_string
     else:
         try:
             socket_device = SocketClientImpl(socket_addr)
@@ -278,6 +287,7 @@ def console(device: str,
                            write,
                            protos,
                            detokenizer,
+                           timestamp_decoder=timestamp_decoder,
                            rpc_timeout_s=5)
 
     _start_ipython_terminal(device_client, serial_debug, config_file)

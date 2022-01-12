@@ -18,6 +18,7 @@
 #include <cstddef>
 
 #include "pw_bytes/span.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_log/proto_utils.h"
 #include "pw_log_rpc/rpc_log_drain.h"
 #include "pw_log_rpc/rpc_log_drain_map.h"
@@ -60,6 +61,8 @@ std::array<RpcLogDrain, 1> drains{{
 
 log_rpc::RpcLogDrainMap drain_map(drains);
 
+const int64_t boot_time_count =
+    pw::chrono::SystemClock::now().time_since_epoch().count();
 }  // namespace
 
 // Deferred log buffer, for storing log entries while logging_thread_ streams
@@ -79,12 +82,14 @@ log_rpc::LogService& GetLogService() {
   return log_service;
 }
 
+// Provides time since boot in units defined by the target's pw_chrono backend.
 int64_t GetTimestamp() {
-  // TODO(cachinchilla): update method to get timestamp according to target.
-  return 0;
+  return pw::chrono::SystemClock::now().time_since_epoch().count() -
+         boot_time_count;
 }
 
-// TODO (cachinchilla): Finish this!
+// Implementation for tokenized log handling. This will be optimized out for
+// devices that only use string logging.
 extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
     pw_tokenizer_Payload payload, const uint8_t message[], size_t size_bytes) {
   log_tokenized::Metadata metadata = payload;
