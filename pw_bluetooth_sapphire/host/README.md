@@ -4,6 +4,25 @@
 
 `$ fx test //src/connectivity/bluetooth/core/bt-host`
 
+### Fuzz Testing
+
+bt-host contains fuzz tests for several libraries. Make sure to include the desired fuzzing target
+in your `fx set`. For example, to include all bt-host fuzzing targets, use:
+
+```
+fx set core.x64 --fuzz-with asan --with //src/connectivity/bluetooth/core/bt-host:fuzzers
+```
+
+Before running the test, ensure QEMU is running.
+
+Run `fx fuzz list` to see the full list of available fuzzing targets. To run a specific fuzz test,
+do `fx fuzz $package/$fuzzer` where `$package` and `$fuzzer` match those reported by `fx fuzz list`.
+
+
+
+See the [fuzzing documentation](https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/overview?hl=en)
+for a more in depth guide.
+
 ## Inspect
 
 `bt-host` uses the [standard driver processes](https://fuchsia.googlesource.com/fuchsia/+/57edce1df72b148c33e8f219bddbd038cdbb861b/zircon/system/ulib/inspect/) to expose its inspect hierarchy
