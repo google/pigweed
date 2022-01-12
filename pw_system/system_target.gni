@@ -190,6 +190,7 @@ template("pw_system_target") {
     _malloc_build_args = {
       pw_malloc_BACKEND = dir_pw_malloc_freelist
     }
+    _link_deps += [ dir_pw_malloc ]
   } else {
     _malloc_build_args = {
     }
