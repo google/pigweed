@@ -22,7 +22,6 @@ java_library {
     ],
     libs: [
         "auto_value_annotations",
-        "flogger-0.5.1",
         "guava",
         "jsr305",
         "libprotobuf-java-lite",

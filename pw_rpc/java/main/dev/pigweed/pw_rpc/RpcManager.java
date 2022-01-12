@@ -14,7 +14,7 @@
 
 package dev.pigweed.pw_rpc;
 
-import com.google.common.flogger.FluentLogger;
+// import com.google.common.flogger.FluentLogger;
 import com.google.protobuf.MessageLite;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +22,8 @@ import javax.annotation.Nullable;
 
 /** Tracks the state of service method invocations. */
 public class RpcManager {
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+  // TODO(pwbug/611): Restore logging without a mandatory Flogger dependency.
+  // private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final Map<PendingRpc, StreamObserverCall<?, ?>> pending = new HashMap<>();
 
   /**
@@ -36,7 +37,7 @@ public class RpcManager {
   public synchronized StreamObserverCall<?, ?> start(
       PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload)
       throws ChannelOutputException {
-    logger.atFine().log("Start %s", rpc);
+    // logger.atFine().log("Start %s", rpc);
     rpc.channel().send(Packets.request(rpc, payload));
     return pending.put(rpc, call);
   }
@@ -50,12 +51,12 @@ public class RpcManager {
   @Nullable
   public synchronized StreamObserverCall<?, ?> open(
       PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload) {
-    logger.atFine().log("Open %s", rpc);
+    // logger.atFine().log("Open %s", rpc);
     try {
       rpc.channel().send(Packets.request(rpc, payload));
     } catch (ChannelOutputException e) {
-      logger.atFine().withCause(e).log(
-          "Ignoring error opening %s; listening for unrequested responses", rpc);
+      // logger.atFine().withCause(e).log(
+      //    "Ignoring error opening %s; listening for unrequested responses", rpc);
     }
     return pending.put(rpc, call);
   }
@@ -66,7 +67,7 @@ public class RpcManager {
       throws ChannelOutputException {
     StreamObserverCall<?, ?> call = pending.remove(rpc);
     if (call != null) {
-      logger.atFine().log("Cancel %s", rpc);
+      // logger.atFine().log("Cancel %s", rpc);
       rpc.channel().send(Packets.cancel(rpc));
     }
     return call;
@@ -96,7 +97,7 @@ public class RpcManager {
   public synchronized StreamObserverCall<?, ?> clear(PendingRpc rpc) {
     StreamObserverCall<?, ?> call = pending.remove(rpc);
     if (call != null) {
-      logger.atFine().log("Clear %s", rpc);
+      // logger.atFine().log("Clear %s", rpc);
     }
     return call;
   }
