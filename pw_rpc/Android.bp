@@ -17,13 +17,15 @@ java_library {
     host_supported: true,
     srcs: ["java/main/dev/pigweed/pw_rpc/*.java"],
     visibility: ["//visibility:public"],
+    static_libs: [
+        "pw_rpc_packet_proto_java_lite",
+    ],
     libs: [
         "auto_value_annotations",
         "flogger-0.5.1",
         "guava",
         "jsr305",
         "libprotobuf-java-lite",
-        "pw_rpc_packet_proto_java_lite",
     ],
     plugins: ["auto_value_plugin"],
     sdk_version: "current",
