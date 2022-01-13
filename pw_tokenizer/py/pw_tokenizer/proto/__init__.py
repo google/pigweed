@@ -37,7 +37,9 @@ def decode_optionally_tokenized(detokenizer: detokenize.Detokenizer,
     # Try detokenizing as binary.
     result = detokenizer.detokenize(data)
     if result.ok():
-        return str(result)
+        # Rather than just returning the detokenized string, continue
+        # detokenization in case recursive Base64 detokenization is needed.
+        data = str(result).encode()
 
     # Attempt to decode as UTF-8.
     try:

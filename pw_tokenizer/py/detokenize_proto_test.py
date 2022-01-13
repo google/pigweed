@@ -22,8 +22,11 @@ from pw_tokenizer_tests.detokenize_proto_test_pb2 import TheMessage
 from pw_tokenizer import detokenize, encode, tokens
 from pw_tokenizer.proto import detokenize_fields, decode_optionally_tokenized
 
-_DATABASE = tokens.Database(
-    [tokens.TokenizedStringEntry(0xAABBCCDD, "Luke, we're gonna have %s")])
+_DATABASE = tokens.Database([
+    tokens.TokenizedStringEntry(0xAABBCCDD, "Luke, we're gonna have %s"),
+    tokens.TokenizedStringEntry(0x12345678, "This string has a $oeQAAA=="),
+    tokens.TokenizedStringEntry(0x0000e4a1, "recursive token"),
+])
 _DETOKENIZER = detokenize.Detokenizer(_DATABASE)
 
 
@@ -39,11 +42,22 @@ class TestDetokenizeProtoFields(unittest.TestCase):
         detokenize_fields(_DETOKENIZER, proto)
         self.assertEqual(proto.message, b"Luke, we're gonna have company")
 
+    def test_recursive_binary(self) -> None:
+        proto = TheMessage(message=b'\x78\x56\x34\x12')
+        detokenize_fields(_DETOKENIZER, proto)
+        self.assertEqual(proto.message, b"This string has a recursive token")
+
     def test_base64(self) -> None:
         base64_msg = encode.prefixed_base64(b'\xDD\xCC\xBB\xAA\x07company')
         proto = TheMessage(message=base64_msg.encode())
         detokenize_fields(_DETOKENIZER, proto)
         self.assertEqual(proto.message, b"Luke, we're gonna have company")
+
+    def test_recursive_base64(self) -> None:
+        base64_msg = encode.prefixed_base64(b'\x78\x56\x34\x12')
+        proto = TheMessage(message=base64_msg.encode())
+        detokenize_fields(_DETOKENIZER, proto)
+        self.assertEqual(proto.message, b"This string has a recursive token")
 
     def test_plain_text_with_prefixed_base64(self) -> None:
         base64_msg = encode.prefixed_base64(b'\xDD\xCC\xBB\xAA\x09pancakes!')
