@@ -94,7 +94,10 @@ class Device:
     def _handle_log_stream_error(self, error: Status):
         """Resets the log stream RPC on error to avoid losing logs."""
         _LOG.error('Log stream error: %s', error)
-        self.listen_to_log_stream()
+
+        # Only re-request logs if the RPC was not cancelled by the client.
+        if error != Status.CANCELLED:
+            self.listen_to_log_stream()
 
     def _log_entries_proto_parser(self, log_entries_proto: log_pb2.LogEntries):
         for log_proto in log_entries_proto.entries:
