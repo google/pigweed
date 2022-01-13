@@ -24,11 +24,12 @@ from prompt_toolkit.output import DummyOutput as FakeOutput
 
 from pw_console.console_app import ConsoleApp
 from pw_console.window_manager import _WINDOW_SPLIT_ADJUST
-from pw_console.window_list import _WINDOW_HEIGHT_ADJUST
+from pw_console.window_list import _WINDOW_HEIGHT_ADJUST, DisplayMode
 
 
 def _create_console_app(logger_count=2):
     console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT)
+    console_app.focus_on_container = MagicMock()
 
     loggers = {}
     for i in range(logger_count):
@@ -411,6 +412,193 @@ class TestWindowManager(unittest.TestCase):
                     ],
                 ],
             )
+
+    def test_focus_next_and_previous_pane(self) -> None:
+        """Test getting the window list for a given pane."""
+        with create_app_session(output=FakeOutput()):
+            console_app = _create_console_app(logger_count=4)
+
+            window_manager = console_app.window_manager
+            self.assertEqual(
+                _window_pane_titles(window_manager),
+                [
+                    [
+                        'Log3 - test_log3',
+                        'Log2 - test_log2',
+                        'Log1 - test_log1',
+                        'Log0 - test_log0',
+                        'Python Repl - ',
+                    ],
+                ],
+            )
+
+            # Scenario: Move between panes with a single stacked window list.
+
+            # Set the first pane in focus.
+            _target_list_and_pane(window_manager, 0, 0)
+            # Switch focus to the next pane
+            window_manager.focus_next_pane()
+            # Pane index 1 should now be focused.
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[1])
+            console_app.focus_on_container.reset_mock()
+
+            # Set the first pane in focus.
+            _target_list_and_pane(window_manager, 0, 0)
+            # Switch focus to the previous pane
+            window_manager.focus_previous_pane()
+            # Previous pane should wrap around to the last pane in the first
+            # window_list.
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[-1])
+            console_app.focus_on_container.reset_mock()
+
+            # Set the last pane in focus.
+            _target_list_and_pane(window_manager, 0, 4)
+            # Switch focus to the next pane
+            window_manager.focus_next_pane()
+            # Next pane should wrap around to the first pane in the first
+            # window_list.
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[0])
+            console_app.focus_on_container.reset_mock()
+
+            # Scenario: Move between panes with a single tabbed window list.
+
+            # Switch to Tabbed view mode
+            window_manager.window_lists[0].set_display_mode(DisplayMode.TABBED)
+            # The set_display_mode call above will call focus_on_container once.
+            console_app.focus_on_container.reset_mock()
+
+            # Setup the switch_to_tab mock
+            window_manager.window_lists[0].switch_to_tab = MagicMock(
+                wraps=window_manager.window_lists[0].switch_to_tab)
+
+            # Set the first pane/tab in focus.
+            _target_list_and_pane(window_manager, 0, 0)
+            # Switch focus to the next pane/tab
+            window_manager.focus_next_pane()
+            # Check switch_to_tab is called
+            window_manager.window_lists[
+                0].switch_to_tab.assert_called_once_with(1)
+            # And that focus_on_container is called only once
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[1])
+            console_app.focus_on_container.reset_mock()
+            window_manager.window_lists[0].switch_to_tab.reset_mock()
+
+            # Set the last pane/tab in focus.
+            _target_list_and_pane(window_manager, 0, 4)
+            # Switch focus to the next pane/tab
+            window_manager.focus_next_pane()
+            # Check switch_to_tab is called
+            window_manager.window_lists[
+                0].switch_to_tab.assert_called_once_with(0)
+            # And that focus_on_container is called only once
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[0])
+            console_app.focus_on_container.reset_mock()
+            window_manager.window_lists[0].switch_to_tab.reset_mock()
+
+            # Set the first pane/tab in focus.
+            _target_list_and_pane(window_manager, 0, 0)
+            # Switch focus to the prev pane/tab
+            window_manager.focus_previous_pane()
+            # Check switch_to_tab is called
+            window_manager.window_lists[
+                0].switch_to_tab.assert_called_once_with(4)
+            # And that focus_on_container is called only once
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[4])
+            console_app.focus_on_container.reset_mock()
+            window_manager.window_lists[0].switch_to_tab.reset_mock()
+
+            # Scenario: Move between multiple window lists with mixed stacked
+            # and tabbed view modes.
+
+            # Setup: Move two panes to the right into their own stacked
+            # window_list.
+            _target_list_and_pane(window_manager, 0, 4)
+            window_manager.move_pane_right()
+            _target_list_and_pane(window_manager, 0, 3)
+            window_manager.move_pane_right()
+            self.assertEqual(
+                _window_pane_titles(window_manager),
+                [
+                    [
+                        'Log3 - test_log3',
+                        'Log2 - test_log2',
+                        'Log1 - test_log1',
+                    ],
+                    [
+                        'Log0 - test_log0',
+                        'Python Repl - ',
+                    ],
+                ],
+            )
+
+            # Setup the switch_to_tab mock on the second window_list
+            window_manager.window_lists[1].switch_to_tab = MagicMock(
+                wraps=window_manager.window_lists[1].switch_to_tab)
+
+            # Set Log1 in focus
+            _target_list_and_pane(window_manager, 0, 2)
+            window_manager.focus_next_pane()
+            # Log0 should now have focus
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[1].active_panes[0])
+            console_app.focus_on_container.reset_mock()
+
+            # Set Log0 in focus
+            _target_list_and_pane(window_manager, 1, 0)
+            window_manager.focus_previous_pane()
+            # Log1 should now have focus
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[2])
+            # The first window list is in tabbed mode so switch_to_tab should be
+            # called once.
+            window_manager.window_lists[
+                0].switch_to_tab.assert_called_once_with(2)
+            # Reset
+            window_manager.window_lists[0].switch_to_tab.reset_mock()
+            console_app.focus_on_container.reset_mock()
+
+            # Set Python Repl in focus
+            _target_list_and_pane(window_manager, 1, 1)
+            window_manager.focus_next_pane()
+            # Log3 should now have focus
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[0])
+            window_manager.window_lists[
+                0].switch_to_tab.assert_called_once_with(0)
+            # Reset
+            window_manager.window_lists[0].switch_to_tab.reset_mock()
+            console_app.focus_on_container.reset_mock()
+
+            # Set Log3 in focus
+            _target_list_and_pane(window_manager, 0, 0)
+            window_manager.focus_next_pane()
+            # Log2 should now have focus
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[0].active_panes[1])
+            window_manager.window_lists[
+                0].switch_to_tab.assert_called_once_with(1)
+            # Reset
+            window_manager.window_lists[0].switch_to_tab.reset_mock()
+            console_app.focus_on_container.reset_mock()
+
+            # Set Python Repl in focus
+            _target_list_and_pane(window_manager, 1, 1)
+            window_manager.focus_previous_pane()
+            # Log0 should now have focus
+            console_app.focus_on_container.assert_called_once_with(
+                window_manager.window_lists[1].active_panes[0])
+            # The second window list is in stacked mode so switch_to_tab should
+            # not be called.
+            window_manager.window_lists[1].switch_to_tab.assert_not_called()
+            # Reset
+            window_manager.window_lists[1].switch_to_tab.reset_mock()
+            console_app.focus_on_container.reset_mock()
 
 
 if __name__ == '__main__':

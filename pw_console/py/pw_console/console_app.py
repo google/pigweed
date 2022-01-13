@@ -495,6 +495,14 @@ class ConsoleApp:
                 '[View]',
                 children=[
                     #         [Menu Item             ][Keybind  ]
+                    MenuItem('Focus Next Window/Tab   Ctrl-Alt-n',
+                             handler=self.window_manager.focus_next_pane),
+                    #         [Menu Item             ][Keybind  ]
+                    MenuItem('Focus Prev Window/Tab   Ctrl-Alt-p',
+                             handler=self.window_manager.focus_previous_pane),
+                    MenuItem('-'),
+
+                    #         [Menu Item             ][Keybind  ]
                     MenuItem('Move Window Up         Ctrl-Alt-Up',
                              handler=functools.partial(
                                  self.run_pane_menu_option,
@@ -674,6 +682,9 @@ class ConsoleApp:
         # Add global key bindings to the help text.
         self.keybind_help_window.add_keybind_help_text('Global',
                                                        self.key_bindings)
+
+        self.keybind_help_window.add_keybind_help_text(
+            'Window Management', self.window_manager.key_bindings)
 
         # Add activated plugin key bindings to the help text.
         for pane in self.window_manager.active_panes():

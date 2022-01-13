@@ -105,6 +105,16 @@ class WindowManager:
             """Enlarge the current window split."""
             self.enlarge_split()
 
+        @bindings.add('escape', 'c-p')  # Ctrl-Alt-p
+        def focus_prev_pane(_event):
+            """Switch focus to the previous window pane or tab."""
+            self.focus_previous_pane()
+
+        @bindings.add('escape', 'c-n')  # Ctrl-Alt-n
+        def focus_next_pane(_event):
+            """Switch focus to the next window pane or tab."""
+            self.focus_next_pane()
+
         @bindings.add('c-u')
         def balance_window_panes(_event):
             """Balance all window sizes."""
@@ -191,6 +201,74 @@ class WindowManager:
             return
         method_to_call = getattr(active_pane, function_name)
         method_to_call()
+        return
+
+    def focus_previous_pane(self) -> None:
+        """Focus on the previous visible window pane or tab."""
+        self.focus_next_pane(reverse_order=True)
+
+    def focus_next_pane(self, reverse_order=False) -> None:
+        """Focus on the next visible window pane or tab."""
+        active_window_list, active_pane = (
+            self._get_active_window_list_and_pane())
+        if not active_window_list:
+            return
+
+        # Total count of window lists and panes
+        window_list_count = len(self.window_lists)
+        pane_count = len(active_window_list.active_panes)
+
+        # Get currently focused indices
+        active_window_list_index = self.window_list_index(active_window_list)
+        active_pane_index = active_window_list.pane_index(active_pane)
+
+        increment = -1 if reverse_order else 1
+        # Assume we can switch to the next pane in the current window_list
+        next_pane_index = active_pane_index + increment
+
+        # Case 1: next_pane_index does not exist in this window list.
+        # Action: Switch to the first pane of the next window list.
+        if next_pane_index >= pane_count or next_pane_index < 0:
+            # Get the next window_list
+            next_window_list_index = ((active_window_list_index + increment) %
+                                      window_list_count)
+            next_window_list = self.window_lists[next_window_list_index]
+
+            # If tabbed window mode is enabled, switch to the first tab.
+            if next_window_list.display_mode == DisplayMode.TABBED:
+                if reverse_order:
+                    next_window_list.switch_to_tab(
+                        len(next_window_list.active_panes) - 1)
+                else:
+                    next_window_list.switch_to_tab(0)
+                return
+
+            # Otherwise switch to the first visible window pane.
+            pane_list = next_window_list.active_panes
+            if reverse_order:
+                pane_list = reversed(pane_list)
+            for pane in pane_list:
+                if pane.show_pane:
+                    self.application.focus_on_container(pane)
+                    return
+
+        # Case 2: next_pane_index does exist and display mode is tabs.
+        # Action: Switch to the next tab of the current window list.
+        if active_window_list.display_mode == DisplayMode.TABBED:
+            active_window_list.switch_to_tab(next_pane_index)
+            return
+
+        # Case 3: next_pane_index does exist and display mode is stacked.
+        # Action: Switch to the next visible window pane.
+        index_range = range(1, pane_count)
+        if reverse_order:
+            index_range = range(pane_count - 1, 0, -1)
+        for i in index_range:
+            next_pane_index = (active_pane_index + i) % pane_count
+            next_pane = active_window_list.active_panes[next_pane_index]
+            if next_pane.show_pane:
+                self.application.focus_on_container(next_pane)
+                return
         return
 
     def move_pane_left(self):

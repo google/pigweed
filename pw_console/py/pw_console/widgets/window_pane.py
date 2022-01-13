@@ -101,6 +101,14 @@ class WindowPane(ABC):
         self.last_pane_width = 0
         self.last_pane_height = 0
 
+    def __repr__(self) -> str:
+        """Create a repr with this pane's title and subtitle."""
+        repr_str = f'{type(self).__qualname__}(pane_title="{self.pane_title()}"'
+        if self.pane_subtitle():
+            repr_str += f', pane_subtitle="{self.pane_subtitle()}"'
+        repr_str += ')'
+        return repr_str
+
     def pane_title(self) -> str:
         return self._pane_title
 

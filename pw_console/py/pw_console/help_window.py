@@ -279,6 +279,7 @@ class HelpWindow(ConditionalContainer):
             key_name = key_name.replace('Control', 'Ctrl-')
             key_name = key_name.replace('Shift', 'Shift-')
             key_name = key_name.replace('Escape-', 'Alt-')
+            key_name = key_name.replace('BackTab', 'Shift-Tab')
             key_list.append(key_name)
 
             key_list_width = len(', '.join(key_list))
