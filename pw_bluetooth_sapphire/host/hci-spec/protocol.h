@@ -1184,7 +1184,7 @@ struct InquiryResult {
 } __PACKED;
 
 struct InquiryResultEventParams {
-  InquiryResultEventParams() = delete;
+  InquiryResultEventParams() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultEventParams);
 
   // The number of responses included.
@@ -1485,7 +1485,7 @@ struct InquiryResultRSSI {
 } __PACKED;
 
 struct InquiryResultWithRSSIEventParams {
-  InquiryResultWithRSSIEventParams() = delete;
+  InquiryResultWithRSSIEventParams() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultWithRSSIEventParams);
 
   // The number of responses included.

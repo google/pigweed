@@ -123,7 +123,7 @@ enum class ExecuteWriteFlag : uint8_t {
 };
 
 struct AttributeData {
-  AttributeData() = delete;
+  AttributeData() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeData);
 
   Handle handle;
@@ -191,7 +191,7 @@ constexpr OpCode kFindByTypeValueRequest = 0x06;
 constexpr OpCode kFindByTypeValueResponse = 0x07;
 
 struct FindByTypeValueRequestParams {
-  FindByTypeValueRequestParams() = delete;
+  FindByTypeValueRequestParams() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(FindByTypeValueRequestParams);
 
   Handle start_handle;
@@ -229,7 +229,7 @@ using ReadByTypeRequestParams16 = ReadByTypeRequestParams<UUIDType::k16Bit>;
 using ReadByTypeRequestParams128 = ReadByTypeRequestParams<UUIDType::k128Bit>;
 
 struct ReadByTypeResponseParams {
-  ReadByTypeResponseParams() = delete;
+  ReadByTypeResponseParams() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByTypeResponseParams);
 
   uint8_t length;
@@ -281,7 +281,7 @@ using ReadByGroupTypeRequestParams16 = ReadByTypeRequestParams16;
 using ReadByGroupTypeRequestParams128 = ReadByTypeRequestParams128;
 
 struct AttributeGroupDataEntry {
-  AttributeGroupDataEntry() = delete;
+  AttributeGroupDataEntry() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeGroupDataEntry);
 
   Handle start_handle;
@@ -290,7 +290,7 @@ struct AttributeGroupDataEntry {
 } __PACKED;
 
 struct ReadByGroupTypeResponseParams {
-  ReadByGroupTypeResponseParams() = delete;
+  ReadByGroupTypeResponseParams() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByGroupTypeResponseParams);
 
   uint8_t length;
@@ -312,7 +312,7 @@ constexpr OpCode kPrepareWriteRequest = 0x16;
 constexpr OpCode kPrepareWriteResponse = 0x17;
 
 struct PrepareWriteRequestParams {
-  PrepareWriteRequestParams() = delete;
+  PrepareWriteRequestParams() = default;
   DISALLOW_COPY_ASSIGN_AND_MOVE(PrepareWriteRequestParams);
 
   Handle handle;
