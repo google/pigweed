@@ -293,6 +293,56 @@ The following expressions are supported:
     stamp = true
   }
 
+pw_exec
+-------
+``pw_exec`` allows for execution of arbitrary programs. It is a wrapper around
+``pw_python_action`` but allows for specifying the program to execute.
+
+.. note:: Prefer to use ``pw_python_action`` instead of calling out to shell
+  scripts, as the python will be more portable. ``pw_exec`` should generally
+  only be used for interacting with legacy/existing scripts.
+
+**Arguments**
+
+* ``program``: The program to run. Can be a full path or just a name (in which
+  case $PATH is searched).
+* ``args``: Optional list of arguments to the program.
+* ``deps``: Dependencies for this target.
+* ``inputs``: Optional list of build inputs to the program.
+* ``outputs``: Optional list of artifacts produced by the program's execution.
+* ``env``: Optional list of key-value pairs defining environment variables for
+  the program.
+* ``env_file``: Optional path to a file containing a list of newline-separated
+  key-value pairs defining environment variables for the program.
+* ``args_file``: Optional path to a file containing additional positional
+  arguments to the program. Each line of the file is appended to the
+  invocation. Useful for specifying arguments from GN metadata.
+* ``skip_empty_args``: If args_file is provided, boolean indicating whether to
+  skip running the program if the file is empty. Used to avoid running
+  commands which error when called without arguments.
+* ``capture_output``: If true, output from the program is hidden unless the
+  program exits with an error. Defaults to true.
+* ``working_directory``: The working directory to execute the subprocess with.
+  If not specified it will not be set and the subprocess will have whatever
+  the parent current working directory is.
+
+**Example**
+
+.. code-block::
+
+  import("$dir_pw_build/exec.gni")
+
+  pw_exec("hello_world") {
+    program = "/bin/sh"
+    args = [
+      "-c",
+      "echo hello \$WORLD",
+    ]
+    env = [
+      "WORLD=world",
+    ]
+  }
+
 pw_input_group
 --------------
 ``pw_input_group`` defines a group of input files which are not directly

@@ -48,6 +48,10 @@ import("python_action.gni")
 #  capture_output: If true, output from the program is hidden unless the program
 #    exits with an error. Defaults to true.
 #
+#  working_directory: The working directory to execute the subprocess with. If
+#    not specified it will not be set and the subprocess will have whatever the
+#    parent current working directory is.
+#
 # Example:
 #
 #   pw_exec("hello_world") {
@@ -101,6 +105,13 @@ template("pw_exec") {
     _capture_output = true
   } else {
     _capture_output = false
+  }
+
+  if (defined(invoker.working_directory)) {
+    _script_args += [
+      "--working-directory",
+      invoker.working_directory,
+    ]
   }
 
   _script_args += [

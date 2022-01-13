@@ -20,6 +20,7 @@ import re
 import shlex
 import subprocess
 import sys
+import pathlib
 from typing import Dict, Optional
 
 # Need to be able to run without pw_cli installed in the virtualenv.
@@ -70,6 +71,9 @@ def argument_parser(
         '--target',
         help='GN build target that runs the program',
     )
+    parser.add_argument('--working-directory',
+                        type=pathlib.Path,
+                        help='Directory to execute program in')
     parser.add_argument(
         'command',
         nargs=argparse.REMAINDER,
@@ -113,6 +117,7 @@ def main() -> int:
 
     # Command starts after the "--".
     command = args.command[1:]
+    extra_kw_args = {}
 
     if args.args_file is not None:
         empty = True
@@ -132,11 +137,13 @@ def main() -> int:
         apply_env_var(string, env)
 
     if args.capture_output:
-        output_args = {'stdout': subprocess.PIPE, 'stderr': subprocess.STDOUT}
-    else:
-        output_args = {}
+        extra_kw_args['stdout'] = subprocess.PIPE
+        extra_kw_args['stderr'] = subprocess.STDOUT
 
-    process = subprocess.run(command, env=env, **output_args)  # type: ignore
+    if args.working_directory:
+        extra_kw_args['cwd'] = args.working_directory
+
+    process = subprocess.run(command, env=env, **extra_kw_args)  # type: ignore
 
     if process.returncode != 0 and args.capture_output:
         _LOG.error('')
