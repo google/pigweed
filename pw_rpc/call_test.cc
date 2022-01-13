@@ -116,7 +116,7 @@ TEST(ServerWriter, Finish_ReturnsStatusFromChannelSend) {
   EXPECT_EQ(Status::Unauthenticated(), writer.Finish());
 }
 
-TEST(ServerWriter, Close) {
+TEST(ServerWriter, Finish) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
@@ -126,17 +126,15 @@ TEST(ServerWriter, Close) {
   EXPECT_EQ(Status::FailedPrecondition(), writer.Finish());
 }
 
-TEST(ServerWriter, Close_ReleasesBuffer) {
+TEST(ServerWriter, Finish_ReleasesBuffer) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   ASSERT_TRUE(writer.active());
-  auto buffer = writer.PayloadBuffer();
-  buffer[0] = std::byte{0};
-  EXPECT_FALSE(writer.output_buffer().empty());
+  ASSERT_FALSE(writer.PayloadBuffer().empty());
   EXPECT_EQ(OkStatus(), writer.Finish());
   EXPECT_FALSE(writer.active());
-  EXPECT_TRUE(writer.output_buffer().empty());
+  // OutputBuffer asserts if the buffer is not released.
 }
 
 TEST(ServerWriter, Open_SendsPacketWithPayload) {

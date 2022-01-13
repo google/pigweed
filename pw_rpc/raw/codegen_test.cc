@@ -69,11 +69,16 @@ class TestService final
     return StatusWithSize(status, test_response.size());
   }
 
-  static void TestAnotherUnaryRpc(ConstByteSpan request,
-                                  RawUnaryResponder& responder) {
-    ByteSpan response = responder.PayloadBuffer();
-    StatusWithSize sws = TestUnaryRpc(request, response);
-    responder.Finish(response.first(sws.size()), sws.status());
+  void TestAnotherUnaryRpc(ConstByteSpan request,
+                           RawUnaryResponder& responder) {
+    if (request.empty()) {
+      last_responder_ = std::move(responder);
+    } else {
+      ByteSpan response = responder.PayloadBuffer();
+      StatusWithSize sws = TestUnaryRpc(request, response);
+
+      responder.Finish(response.first(sws.size()), sws.status());
+    }
   }
 
   void TestServerStreamRpc(ConstByteSpan request, RawServerWriter& writer) {
@@ -113,9 +118,7 @@ class TestService final
     });
   }
 
- protected:
-  RawServerReader last_reader_;
-  RawServerReaderWriter last_reader_writer_;
+  RawUnaryResponder& last_responder() { return last_responder_; }
 
  private:
   static uint32_t ReadInteger(ConstByteSpan request) {
@@ -166,6 +169,10 @@ class TestService final
     EXPECT_TRUE(has_status);
     return has_integer && has_status;
   }
+
+  RawUnaryResponder last_responder_;
+  RawServerReader last_reader_;
+  RawServerReaderWriter last_reader_writer_;
 };
 
 }  // namespace test
@@ -216,6 +223,73 @@ TEST(RawCodegen, Server_InvokeAsyncUnaryRpc) {
       }
     }
   }
+}
+
+TEST(RawCodegen, Server_HandleErrorWhileHoldingBuffer) {
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) ctx;
+
+  ASSERT_FALSE(ctx.service().last_responder().active());
+  ctx.call({});
+  ASSERT_TRUE(ctx.service().last_responder().active());
+
+  ASSERT_FALSE(ctx.service().last_responder().PayloadBuffer().empty());
+
+  ctx.SendClientError(Status::Unimplemented());
+
+  EXPECT_FALSE(ctx.service().last_responder().active());
+}
+
+TEST(RawCodegen, Server_FinishWhileHoldingBuffer) {
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) ctx;
+
+  ASSERT_FALSE(ctx.service().last_responder().active());
+  ctx.call({});
+  ASSERT_TRUE(ctx.service().last_responder().active());
+
+  ASSERT_FALSE(ctx.service().last_responder().PayloadBuffer().empty());
+
+  ctx.service().last_responder().Finish({});
+
+  EXPECT_FALSE(ctx.service().last_responder().active());
+}
+
+TEST(RawCodegen, Server_MoveIntoCallHoldingBuffer) {
+  // Create two call objects on different channels so they are unique.
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) ctx;
+
+  RawUnaryResponder call;
+
+  ctx.call({});
+  ASSERT_FALSE(ctx.service().last_responder().PayloadBuffer().empty());
+
+  call = std::move(ctx.service().last_responder());
+}
+
+TEST(RawCodegen, Server_MoveBetweenActiveCallsWithBuffers) {
+  // Create two call objects on different channels so they are unique.
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) ctx_1;
+  ctx_1.set_channel_id(1);
+
+  PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) ctx_2;
+  ctx_2.set_channel_id(2);
+
+  ctx_1.call({});
+  ASSERT_FALSE(ctx_1.service().last_responder().PayloadBuffer().empty());
+
+  ctx_2.call({});
+  ASSERT_FALSE(ctx_2.service().last_responder().PayloadBuffer().empty());
+
+  ctx_1.service().last_responder() =
+      std::move(ctx_2.service().last_responder());
+
+  ASSERT_TRUE(ctx_1.service().last_responder().active());
+  ASSERT_FALSE(ctx_2.service().last_responder().active());
+
+  ctx_2.service().last_responder() =
+      std::move(ctx_1.service().last_responder());
+
+  ASSERT_FALSE(ctx_1.service().last_responder().active());
+  ASSERT_TRUE(ctx_2.service().last_responder().active());
 }
 
 TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
@@ -326,6 +400,8 @@ class RawCodegenClientTest : public ::testing::Test {
 
   test::pw_rpc::raw::TestService::Client service_client_;
 
+  // Store the payload as a null-terminated string for convenience. Use nullptr
+  // for an empty payload.
   std::optional<const char*> payload_;
   std::optional<Status> status_;
   std::optional<Status> error_;
@@ -333,8 +409,13 @@ class RawCodegenClientTest : public ::testing::Test {
  private:
   void CopyPayload(ConstByteSpan c_string) {
     ASSERT_LE(c_string.size(), sizeof(buffer_));
-    std::memcpy(buffer_, c_string.data(), c_string.size());
-    payload_ = buffer_;
+
+    if (c_string.empty()) {
+      payload_ = nullptr;
+    } else {
+      std::memcpy(buffer_, c_string.data(), c_string.size());
+      payload_ = buffer_;
+    }
   }
 
   char buffer_[64];
@@ -442,6 +523,69 @@ TEST_F(RawCodegenClientTest, InvokeClientStreamRpc_Ok) {
   EXPECT_STREQ(payload_.value(), "(⌐□_□)");
   EXPECT_EQ(status_, Status::InvalidArgument());
   EXPECT_FALSE(error_.has_value());
+}
+
+TEST_F(RawCodegenClientTest, ClientStream_FinishWhileHoldingBuffer) {
+  RawClientWriter call = test::pw_rpc::raw::TestService::TestClientStreamRpc(
+      context_.client(),
+      context_.channel().id(),
+      UnaryOnCompleted(),
+      OnError());
+
+  ASSERT_FALSE(call.PayloadBuffer().empty());
+
+  context_.server()
+      .SendResponse<test::pw_rpc::raw::TestService::TestClientStreamRpc>(
+          {}, OkStatus());
+
+  ASSERT_TRUE(payload_.has_value());
+  EXPECT_EQ(payload_.value(), nullptr);
+  EXPECT_EQ(status_, OkStatus());
+}
+
+TEST_F(RawCodegenClientTest, ClientStream_CancelWhileHoldingBuffer) {
+  RawClientWriter call = test::pw_rpc::raw::TestService::TestClientStreamRpc(
+      context_.client(),
+      context_.channel().id(),
+      UnaryOnCompleted(),
+      OnError());
+
+  ASSERT_FALSE(call.PayloadBuffer().empty());
+
+  EXPECT_EQ(call.Cancel(), OkStatus());
+}
+
+TEST_F(RawCodegenClientTest, ClientStream_MoveIntoCallHoldingBuffer) {
+  RawClientWriter call = test::pw_rpc::raw::TestService::TestClientStreamRpc(
+      context_.client(),
+      context_.channel().id(),
+      UnaryOnCompleted(),
+      OnError());
+
+  // End the client stream so that ending it when moving doesn't free the
+  // acquired payload buffer.
+  EXPECT_EQ(OkStatus(), call.CloseClientStream());
+
+  ASSERT_FALSE(call.PayloadBuffer().empty());
+
+  RawClientWriter call_2;
+
+  call = std::move(call_2);
+  EXPECT_FALSE(call.active());
+}
+
+TEST_F(RawCodegenClientTest, ClientStream_GoOutOfScopeWhileHoldingBuffer) {
+  RawClientWriter call = test::pw_rpc::raw::TestService::TestClientStreamRpc(
+      context_.client(),
+      context_.channel().id(),
+      UnaryOnCompleted(),
+      OnError());
+
+  // End the client stream so that ending it when moving doesn't free the
+  // acquired payload buffer.
+  EXPECT_EQ(OkStatus(), call.CloseClientStream());
+
+  ASSERT_FALSE(call.PayloadBuffer().empty());
 }
 
 TEST_F(RawCodegenClientTest, InvokeClientStreamRpc_Error) {

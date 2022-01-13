@@ -95,26 +95,23 @@ void Call::MoveFrom(Call& other) {
   endpoint().RegisterUniqueCall(*this);
 }
 
-Status Call::EndClientStream() {
-  client_stream_state_ = kClientStreamInactive;
-  return SendPacket(PacketType::CLIENT_STREAM_END, {}, {});
+Status Call::CloseClientStream() {
+  rpc_lock().lock();
+  return CloseClientStreamLocked();
 }
 
-Status Call::CloseAndSendFinalPacket(PacketType type,
-                                     ConstByteSpan response,
-                                     Status status) {
-  rpc_lock().lock();
+Status Call::CloseAndSendFinalPacketLocked(PacketType type,
+                                           ConstByteSpan response,
+                                           Status status) {
   if (!active_locked()) {
     rpc_lock().unlock();
     return Status::FailedPrecondition();
   }
-  Close();
+  UnregisterAndMarkClosed();
   return SendPacket(type, response, status);
 }
 
-ByteSpan Call::PayloadBuffer() {
-  rpc_lock().lock();
-
+ByteSpan Call::PayloadBufferInternal() {
   // Only allow having one active buffer at a time.
   if (response_.empty()) {
     Channel& c = channel();
@@ -133,7 +130,6 @@ ByteSpan Call::PayloadBuffer() {
   //     rather than creating a packet.
   ByteSpan buffer =
       response_.payload(MakePacket(PacketType::CLIENT_STREAM, {}));
-  rpc_lock().unlock();
 
   return buffer;
 }
@@ -152,12 +148,10 @@ Status Call::Write(ConstByteSpan payload) {
 Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   const Packet packet = MakePacket(type, payload, status);
 
-  if (!buffer().Contains(payload)) {
+  if (!response_.Contains(payload)) {
     // TODO(pwbug/597): Ensure the call object is locked before releasing the
     //     RPC lock.
-    rpc_lock().unlock();
-    ByteSpan buffer = PayloadBuffer();
-    rpc_lock().lock();
+    ByteSpan buffer = PayloadBufferInternal();
 
     if (payload.size() > buffer.size()) {
       ReleasePayloadBufferLocked();
@@ -171,17 +165,19 @@ Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
 }
 
 void Call::ReleasePayloadBufferLocked() {
-  PW_DCHECK(active_locked());
-  channel().Release(response_);
+  if (!response_.empty()) {
+    channel().Release(response_);
+  } else {
+    rpc_lock().unlock();
+  }
 }
 
-void Call::Close() {
+void Call::UnregisterAndMarkClosed() {
   if (active_locked()) {
     endpoint().UnregisterCall(*this);
+    rpc_state_ = kInactive;
+    client_stream_state_ = kClientStreamInactive;
   }
-
-  rpc_state_ = kInactive;
-  client_stream_state_ = kClientStreamInactive;
 }
 
 }  // namespace pw::rpc::internal

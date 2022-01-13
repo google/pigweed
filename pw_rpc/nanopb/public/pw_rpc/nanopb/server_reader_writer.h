@@ -46,7 +46,8 @@ class NanopbServerCall : public internal::ServerCall {
 
   NanopbServerCall(const CallContext& context, MethodType type);
 
-  Status SendUnaryResponse(const void* payload, Status status) {
+  Status SendUnaryResponse(const void* payload, Status status)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
     return SendFinalResponse(*this, payload, status);
   }
 

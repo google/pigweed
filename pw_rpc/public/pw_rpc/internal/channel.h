@@ -33,7 +33,7 @@ class Channel : public rpc::Channel {
       : rpc::Channel(id, output) {}
 
   // Represents a buffer acquired from a ChannelOutput.
-  class OutputBuffer {
+  class [[nodiscard]] OutputBuffer {
    public:
     constexpr OutputBuffer() = default;
 

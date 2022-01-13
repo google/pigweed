@@ -98,7 +98,8 @@ class TestUnaryCall : public internal::UnaryResponseClientCall {
 TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
   RawClientTestContext context;
   TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
-  call.SendInitialRequest({});
+  internal::rpc_lock().lock();
+  call.SendInitialClientRequest({});
 
   ASSERT_NE(call.completed, OkStatus());
 
@@ -113,7 +114,8 @@ TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
 TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
   RawClientTestContext context;
   auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
-  call.SendInitialRequest({});
+  internal::rpc_lock().lock();
+  call.SendInitialClientRequest({});
 
   context.server().SendServerStream<BidirectionalStreamMethod>(
       std::as_bytes(std::span("<=>")));
@@ -129,7 +131,8 @@ TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
 TEST(Client, ProcessPacket_InvokesErrorCallback) {
   RawClientTestContext context;
   auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
-  call.SendInitialRequest({});
+  internal::rpc_lock().lock();
+  call.SendInitialClientRequest({});
 
   context.server().SendServerError<BidirectionalStreamMethod>(
       Status::Aborted());

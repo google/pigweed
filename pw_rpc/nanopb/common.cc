@@ -45,8 +45,10 @@ using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 
 Result<ByteSpan> EncodeToPayloadBuffer(Call& call,
                                        const void* payload,
-                                       NanopbSerde serde) {
-  std::span<std::byte> payload_buffer = call.PayloadBuffer();
+                                       NanopbSerde serde)
+    PW_UNLOCK_FUNCTION(rpc_lock()) {
+  std::span<std::byte> payload_buffer = call.PayloadBufferInternal();
+  rpc_lock().unlock();
 
   StatusWithSize result = serde.Encode(payload, payload_buffer);
   if (!result.ok()) {
@@ -98,22 +100,27 @@ bool NanopbSerde::Decode(ConstByteSpan buffer, void* proto_struct) const {
 void NanopbSendInitialRequest(ClientCall& call,
                               NanopbSerde serde,
                               const void* payload) {
-  PW_DCHECK(call.active());
+  PW_DCHECK(call.active_locked());
 
   Result<ByteSpan> result = EncodeToPayloadBuffer(call, payload, serde);
-  rpc_lock().lock();
 
+  rpc_lock().lock();
   if (result.ok()) {
-    call.SendInitialRequestLocked(*result);
+    call.SendInitialClientRequest(*result);
   } else {
     call.HandleError(result.status());
   }
 }
 
 Status NanopbSendStream(Call& call, const void* payload, NanopbSerde serde) {
-  PW_DCHECK(call.active());
+  rpc_lock().lock();
+  if (!call.active_locked()) {
+    rpc_lock().unlock();
+    return Status::FailedPrecondition();
+  }
 
   Result<ByteSpan> result = EncodeToPayloadBuffer(call, payload, serde);
+
   PW_TRY(result.status());
   return call.Write(*result);
 }
@@ -121,7 +128,9 @@ Status NanopbSendStream(Call& call, const void* payload, NanopbSerde serde) {
 Status SendFinalResponse(NanopbServerCall& call,
                          const void* payload,
                          const Status status) {
-  if (!call.active()) {
+  rpc_lock().lock();
+  if (!call.active_locked()) {
+    rpc_lock().unlock();
     return Status::FailedPrecondition();
   }
 

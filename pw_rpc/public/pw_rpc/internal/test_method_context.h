@@ -68,23 +68,9 @@ class InvocationContext {
                                         channel_.id(),
                                         service_.id(),
                                         kMethodId,
+                                        0,
                                         {},
                                         error)
-                                     .Encode(packet)
-                                     .value(),
-                                 output_)
-                  .ok());
-  }
-
-  void SendCancel() {
-    std::byte packet[kNoPayloadPacketSizeBytes];
-    PW_ASSERT(server_
-                  .ProcessPacket(Packet(PacketType::CLIENT_ERROR,
-                                        channel_.id(),
-                                        service_.id(),
-                                        kMethodId,
-                                        {},
-                                        Status::Cancelled())
                                      .Encode(packet)
                                      .value(),
                                  output_)

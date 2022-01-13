@@ -40,11 +40,12 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
                         const Request&... request) {
     CallType call(client, channel_id, service_id, method_id, serde);
 
-    call.set_on_completed(std::move(on_completed));
-    call.set_on_error(std::move(on_error));
+    rpc_lock().lock();
+    call.set_on_completed_locked(std::move(on_completed));
+    call.set_on_error_locked(std::move(on_error));
 
     if constexpr (sizeof...(Request) == 0u) {
-      call.SendInitialRequest({});
+      call.SendInitialClientRequest({});
     } else {
       NanopbSendInitialRequest(call, serde.request(), &request...);
     }
@@ -74,30 +75,18 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
     LockGuard lock(rpc_lock());
     MoveUnaryResponseClientCallFrom(other);
     serde_ = other.serde_;
-    set_on_completed(std::move(other.nanopb_on_completed_));
+    set_on_completed_locked(std::move(other.nanopb_on_completed_));
     return *this;
   }
 
   void set_on_completed(
-      Function<void(const Response& response, Status)>&& on_completed) {
-    nanopb_on_completed_ = std::move(on_completed);
-
-    UnaryResponseClientCall::set_on_completed(
-        [this](ConstByteSpan payload, Status status) {
-          if (nanopb_on_completed_) {
-            Response response_struct{};
-            if (serde_->DecodeResponse(payload, &response_struct)) {
-              nanopb_on_completed_(response_struct, status);
-            } else {
-              // TODO: it's silly to lock this just to call the callback
-              rpc_lock().lock();
-              CallOnError(Status::DataLoss());
-            }
-          }
-        });
+      Function<void(const Response& response, Status)>&& on_completed)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    LockGuard lock(rpc_lock());
+    set_on_completed_locked(std::move(on_completed));
   }
 
-  Status SendClientStream(const void* payload) {
+  Status SendClientStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
     if (!active()) {
       return Status::FailedPrecondition();
     }
@@ -105,6 +94,26 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
  private:
+  void set_on_completed_locked(
+      Function<void(const Response& response, Status)>&& on_completed)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    nanopb_on_completed_ = std::move(on_completed);
+
+    UnaryResponseClientCall::set_on_completed_locked(
+        [this](ConstByteSpan payload, Status status) {
+          if (nanopb_on_completed_) {
+            Response response_struct{};
+            if (serde_->DecodeResponse(payload, &response_struct)) {
+              nanopb_on_completed_(response_struct, status);
+            } else {
+              // TODO(hepler): This should send a DATA_LOSS error and call the
+              //     error callback.
+              CallOnError(Status::DataLoss());
+            }
+          }
+        });
+  }
+
   const NanopbMethodSerde* serde_;
   Function<void(const Response&, Status)> nanopb_on_completed_;
 };
@@ -125,12 +134,13 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
                         const Request&... request) {
     CallType call(client, channel_id, service_id, method_id, serde);
 
-    call.set_on_next(std::move(on_next));
-    call.set_on_completed(std::move(on_completed));
-    call.set_on_error(std::move(on_error));
+    rpc_lock().lock();
+    call.set_on_next_locked(std::move(on_next));
+    call.set_on_completed_locked(std::move(on_completed));
+    call.set_on_error_locked(std::move(on_error));
 
     if constexpr (sizeof...(Request) == 0u) {
-      call.SendInitialRequest({});
+      call.SendInitialClientRequest({});
     } else {
       NanopbSendInitialRequest(call, serde.request(), &request...);
     }
@@ -188,7 +198,8 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
         if (serde_->DecodeResponse(payload, &response_struct)) {
           nanopb_on_next_(response_struct);
         } else {
-          rpc_lock().lock();
+          // TODO(hepler): This should send a DATA_LOSS error and call the
+          //     error callback.
           CallOnError(Status::DataLoss());
         }
       }

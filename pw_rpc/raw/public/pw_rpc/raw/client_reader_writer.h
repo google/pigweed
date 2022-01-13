@@ -54,6 +54,9 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
   // arbitrary external buffer.
   using internal::Call::Write;
 
+  // Notifies the server that no further client stream messages will be sent.
+  using internal::Call::CloseClientStream;
+
   // Cancels this RPC.
   using internal::Call::Cancel;
 
@@ -119,6 +122,7 @@ class RawClientWriter : private internal::UnaryResponseClientCall {
   using internal::UnaryResponseClientCall::set_on_error;
 
   using internal::Call::Cancel;
+  using internal::Call::CloseClientStream;
   using internal::Call::PayloadBuffer;
   using internal::Call::Write;
 
