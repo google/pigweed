@@ -45,8 +45,8 @@ def _value(char: Union[int, str]) -> int:
     return char if isinstance(char, int) else ord(char)
 
 
-def pw_tokenizer_65599_fixed_length_hash(string: Union[str, bytes],
-                                         hash_length: int) -> int:
+def pw_tokenizer_65599_hash(string: Union[str, bytes],
+                            hash_length: int = None) -> int:
     """Hashes the provided string.
 
     This hash function is only used when adding tokens from legacy-style
@@ -63,7 +63,7 @@ def pw_tokenizer_65599_fixed_length_hash(string: Union[str, bytes],
 
 
 def default_hash(string: Union[str, bytes]) -> int:
-    return pw_tokenizer_65599_fixed_length_hash(string, DEFAULT_C_HASH_LENGTH)
+    return pw_tokenizer_65599_hash(string, DEFAULT_C_HASH_LENGTH)
 
 
 class _EntryKey(NamedTuple):

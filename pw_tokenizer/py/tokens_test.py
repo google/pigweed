@@ -158,8 +158,8 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(answer.string, 'The answer: "%s"')
 
     def test_collisions(self):
-        hash_1 = tokens.pw_tokenizer_65599_fixed_length_hash('o000', 96)
-        hash_2 = tokens.pw_tokenizer_65599_fixed_length_hash('0Q1Q', 96)
+        hash_1 = tokens.pw_tokenizer_65599_hash('o000', 96)
+        hash_2 = tokens.pw_tokenizer_65599_hash('0Q1Q', 96)
         self.assertEqual(hash_1, hash_2)
 
         db = tokens.Database.from_strings(['o000', '0Q1Q'])

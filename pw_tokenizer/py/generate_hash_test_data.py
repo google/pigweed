@@ -101,7 +101,7 @@ def _test_case_at_length(data, hash_length):
     return _TEST_CASE.format(str=escaped_str,
                              string_length=len(data),
                              hash_length=hash_length,
-                             hash=tokens.pw_tokenizer_65599_fixed_length_hash(
+                             hash=tokens.pw_tokenizer_65599_hash(
                                  data, hash_length),
                              macro=HASH_MACRO.format(hash_length))
 

@@ -410,6 +410,23 @@ tokenized messages with the ``encode_token_and_args`` function.
 
 .. autofunction:: pw_tokenizer.encode.encode_token_and_args
 
+This function requires a string's token is already calculated. Typically these
+tokens are provided by a database, but they can be manually created using the
+tokenizer hash.
+
+.. autofunction:: pw_tokenizer.tokens.pw_tokenizer_65599_hash
+
+This is particularly useful for offline token database generation in cases where
+tokenized strings in a binary cannot be embedded as parsable pw_tokenizer
+entries.
+
+.. note::
+  In C, the hash length of a string has a fixed limit controlled by
+  ``PW_TOKENIZER_CFG_C_HASH_LENGTH``. To match tokens produced by C (as opposed
+  to C++) code, ``pw_tokenizer_65599_hash()`` should be called with a matching
+  hash length limit. When creating an offline database, it's a good idea to
+  generate tokens for both, and merge the databases.
+
 Encoding
 --------
 The token is a 32-bit hash calculated during compilation. The string is encoded
