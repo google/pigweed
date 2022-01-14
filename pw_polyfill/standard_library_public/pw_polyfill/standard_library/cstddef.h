@@ -61,12 +61,12 @@ constexpr byte& operator&=(byte& l, byte r) noexcept { return l = l & r; }
 constexpr byte& operator^=(byte& l, byte r) noexcept { return l = l ^ r; }
 
 template <typename I>
-inline byte& operator<<=(byte& b, I shift) noexcept {
+constexpr inline byte& operator<<=(byte& b, I shift) noexcept {
   return b = b << shift;
 }
 
 template <typename I>
-inline byte& operator>>=(byte& b, I shift) noexcept {
+constexpr inline byte& operator>>=(byte& b, I shift) noexcept {
   return b = b >> shift;
 }
 
