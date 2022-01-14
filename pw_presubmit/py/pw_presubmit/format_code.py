@@ -111,9 +111,10 @@ def clang_format_check(files: Iterable[Path]) -> Dict[Path, str]:
     return _check_files(files, lambda path, _: _clang_format(path))
 
 
-def clang_format_fix(files: Iterable) -> None:
+def clang_format_fix(files: Iterable) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     _clang_format('-i', *files)
+    return {}
 
 
 def check_gn_format(files: Iterable[Path]) -> Dict[Path, str]:
@@ -125,13 +126,16 @@ def check_gn_format(files: Iterable[Path]) -> Dict[Path, str]:
                                        check=True).stdout)
 
 
-def fix_gn_format(files: Iterable[Path]) -> None:
+def fix_gn_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     log_run(['gn', 'format', *files], check=True)
+    return {}
 
 
 def check_bazel_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
+    errors: Dict[Path, str] = {}
+
     def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
         # buildifier doesn't have an option to output the changed file, so
         # copy the file to a temp location, run buildifier on it, read that
@@ -139,15 +143,27 @@ def check_bazel_format(files: Iterable[Path]) -> Dict[Path, str]:
         with tempfile.TemporaryDirectory() as temp:
             build = Path(temp) / os.path.basename(path)
             build.write_bytes(data)
-            log_run(['buildifier', build], check=True)
+
+            proc = log_run(['buildifier', build], capture_output=True)
+            if proc.returncode:
+                stderr = proc.stderr.decode(errors='replace')
+                stderr = stderr.replace(str(build), str(path))
+                errors[Path(path)] = stderr
             return build.read_bytes()
 
-    return _check_files(files, _format_temp)
+    result = _check_files(files, _format_temp)
+    result.update(errors)
+    return result
 
 
-def fix_bazel_format(files: Iterable[Path]) -> None:
+def fix_bazel_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    log_run(['buildifier', *files], check=True)
+    errors = {}
+    for path in files:
+        proc = log_run(['buildifier', path], capture_output=True)
+        if proc.returncode:
+            errors[path] = proc.stderr.decode()
+    return errors
 
 
 def check_go_format(files: Iterable[Path]) -> Dict[Path, str]:
@@ -157,9 +173,10 @@ def check_go_format(files: Iterable[Path]) -> Dict[Path, str]:
             ['gofmt', path], stdout=subprocess.PIPE, check=True).stdout)
 
 
-def fix_go_format(files: Iterable[Path]) -> None:
+def fix_go_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     log_run(['gofmt', '-w', *files], check=True)
+    return {}
 
 
 def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
@@ -193,9 +210,10 @@ def check_py_format(files: Iterable[Path]) -> Dict[Path, str]:
     return errors
 
 
-def fix_py_format(files: Iterable):
+def fix_py_format(files: Iterable) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     _yapf('--in-place', *files, check=True)
+    return {}
 
 
 _TRAILING_SPACE = re.compile(rb'[ \t]+$', flags=re.MULTILINE)
@@ -224,8 +242,9 @@ def check_trailing_space(files: Iterable[Path]) -> Dict[Path, str]:
     return _check_trailing_space(files, fix=False)
 
 
-def fix_trailing_space(files: Iterable[Path]) -> None:
+def fix_trailing_space(files: Iterable[Path]) -> Dict[Path, str]:
     _check_trailing_space(files, fix=True)
+    return {}
 
 
 def print_format_check(errors: Dict[Path, str],
@@ -260,7 +279,7 @@ class CodeFormat(NamedTuple):
     extensions: Collection[str]
     exclude: Collection[str]
     check: Callable[[Iterable], Dict[Path, str]]
-    fix: Callable[[Iterable], None]
+    fix: Callable[[Iterable], Dict[Path, str]]
 
 
 CPP_HEADER_EXTS = frozenset(
@@ -371,12 +390,22 @@ class CodeFormatter:
 
         return collections.OrderedDict(sorted(errors.items()))
 
-    def fix(self) -> None:
+    def fix(self) -> Dict[Path, str]:
         """Fixes format errors for supported files in place."""
+        all_errors: Dict[Path, str] = {}
         for code_format, files in self._formats.items():
-            code_format.fix(files)
+            errors = code_format.fix(files)
+            if errors:
+                for path, error in errors.items():
+                    _LOG.error('Failed to format %s', path)
+                    for line in error.splitlines():
+                        _LOG.error('%s', line)
+                all_errors.update(errors)
+                continue
+
             _LOG.info('Formatted %s',
                       plural(files, code_format.language + ' file'))
+        return all_errors
 
 
 def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> List[str]:
@@ -423,13 +452,19 @@ def format_files(paths: Collection[Union[Path, str]],
     for line in _file_summary(paths, repo if repo else Path.cwd()):
         print(line, file=sys.stderr)
 
-    errors = formatter.check()
-    print_format_check(errors, show_fix_commands=(not fix))
+    check_errors = formatter.check()
+    print_format_check(check_errors, show_fix_commands=(not fix))
 
-    if errors:
+    if check_errors:
         if fix:
-            formatter.fix()
-            # TODO: This should perhaps check that the fixes were successful.
+            _LOG.info('Applying formatting fixes to %d files',
+                      len(check_errors))
+            fix_errors = formatter.fix()
+            if fix_errors:
+                _LOG.info('Failed to apply formatting fixes')
+                print_format_check(fix_errors, show_fix_commands=False)
+                return 1
+
             _LOG.info('Formatting fixes applied successfully')
             return 0
 
