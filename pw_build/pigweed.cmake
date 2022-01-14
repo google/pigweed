@@ -166,6 +166,8 @@ endmacro()
 #
 #   SOURCES - source files for this library
 #   HEADERS - header files for this library
+#   PUBLIC_INCLUDES - public target_include_directories argument.
+#   PRIVATE_INCLUDES - public target_include_directories argument.
 #   PUBLIC_DEPS - public target_link_libraries arguments
 #   PRIVATE_DEPS - private target_link_libraries arguments
 #   IMPLEMENTS_FACADES - which facades this library implements
@@ -173,7 +175,8 @@ endmacro()
 #   PRIVATE_DEFINES - private target_compile_definitions arguments
 #
 function(pw_add_module_library NAME)
-  _pw_library_args(list_args IMPLEMENTS_FACADES PUBLIC_DEFINES PRIVATE_DEFINES)
+  _pw_library_args(list_args PUBLIC_INCLUDES PRIVATE_INCLUDES IMPLEMENTS_FACADES
+                   PUBLIC_DEFINES PRIVATE_DEFINES)
   _pw_parse_argv_strict(pw_add_module_library 1 "" "" "${list_args}")
 
   # Check that the library's name is prefixed by the module name.
@@ -187,7 +190,15 @@ function(pw_add_module_library NAME)
   endif()
 
   add_library("${NAME}" EXCLUDE_FROM_ALL ${arg_HEADERS} ${arg_SOURCES})
-  target_include_directories("${NAME}" PUBLIC public)
+  if(NOT "${arg_PUBLIC_INCLUDES}" STREQUAL "")
+    target_include_directories("${NAME}" PUBLIC ${arg_PUBLIC_INCLUDES})
+  else()
+    # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
+    target_include_directories("${NAME}" PUBLIC public)
+  endif()
+  if(NOT "${arg_PRIVATE_INCLUDES}" STREQUAL "")
+    target_include_directories("${NAME}" PRIVATE ${arg_PRIVATE_INCLUDES})
+  endif()
   target_link_libraries("${NAME}"
     PUBLIC
       pw_build
@@ -200,6 +211,10 @@ function(pw_add_module_library NAME)
 
   if(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
     target_include_directories("${NAME}" PUBLIC public_overrides)
+    if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
+      # TODO(pwbug/601): Deprecate this legacy implicit PUBLIC_INCLUDES.
+      target_include_directories("${NAME}" PUBLIC public_overrides)
+    endif()
     set(facades ${arg_IMPLEMENTS_FACADES})
     list(TRANSFORM facades APPEND ".facade")
     target_link_libraries("${NAME}" PUBLIC ${facades})
