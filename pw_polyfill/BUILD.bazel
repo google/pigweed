@@ -50,29 +50,87 @@ pw_cc_library(
         "public/pw_polyfill/standard.h",
     ],
     includes = ["public"],
+)
+
+# TODO(pwbug/602): Deprecate this once all users have been migrated to targeted
+# polyfill deps.
+pw_cc_library(
+    name = "overrides",
+    deps = [
+        ":bit",
+        ":cstddef",
+        ":iterator",
+        ":span",
+        ":type_traits",
+    ],
+)
+
+# Provides <bit>'s std::endian.
+pw_cc_library(
+    name = "bit",
+    hdrs = [
+        "public_overrides/bit",
+        "standard_library_public/pw_polyfill/standard_library/bit.h",
+    ],
+    includes = [
+        "public_overrides",
+        "standard_library_public",
+    ],
     deps = [":standard_library"],
 )
 
+# Provides <cstddef>'s std::byte.
 pw_cc_library(
-    name = "overrides",
+    name = "cstddef",
     hdrs = [
-        "public_overrides/bit",
         "public_overrides/cstddef",
-        "public_overrides/iterator",
-        "public_overrides/type_traits",
+        "standard_library_public/pw_polyfill/standard_library/cstddef.h",
     ],
-    includes = ["public_overrides"],
+    includes = [
+        "public_overrides",
+        "standard_library_public",
+    ],
+    deps = [":standard_library"],
+)
+
+# TODO(pwbug/603): Remove this polyfill.
+pw_cc_library(
+    name = "iterator",
+    hdrs = [
+        "public_overrides/iterator",
+        "standard_library_public/pw_polyfill/standard_library/iterator.h",
+    ],
+    includes = [
+        "public_overrides",
+        "standard_library_public",
+    ],
+    deps = [":standard_library"],
+)
+
+# Provides <span>.
+pw_cc_library(
+    name = "span",
+    deps = ["//pw_span"],
+)
+
+# TODO(pwbug/603): Remove this polyfill.
+pw_cc_library(
+    name = "type_traits",
+    hdrs = [
+        "public_overrides/type_traits",
+        "standard_library_public/pw_polyfill/standard_library/type_traits.h",
+    ],
+    includes = [
+        "public_overrides",
+        "standard_library_public",
+    ],
     deps = [":standard_library"],
 )
 
 pw_cc_library(
     name = "standard_library",
     hdrs = [
-        "standard_library_public/pw_polyfill/standard_library/bit.h",
-        "standard_library_public/pw_polyfill/standard_library/cstddef.h",
-        "standard_library_public/pw_polyfill/standard_library/iterator.h",
         "standard_library_public/pw_polyfill/standard_library/namespace.h",
-        "standard_library_public/pw_polyfill/standard_library/type_traits.h",
     ],
     includes = ["standard_library_public"],
     visibility = ["//visibility:private"],

@@ -18,13 +18,13 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("public") {
+config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
 }
 
 pw_source_set("pw_polyfill") {
-  public_configs = [ ":public" ]
+  public_configs = [ ":public_include_path" ]
   remove_public_deps = [ "*" ]
   public_deps = [ ":standard_library" ]
   public = [
@@ -38,18 +38,15 @@ config("overrides_config") {
   visibility = [ ":*" ]
 }
 
-pw_source_set("overrides") {
-  public_configs = [ ":overrides_config" ]
-  remove_public_deps = [ "*" ]
+# TODO(pwbug/602): Remove this overrides target by migrating all users to
+# explicitly depend on the polyfill(s) they require.
+group("overrides") {
   public_deps = [
-    ":standard_library",
-    "$dir_pw_span:polyfill",
-  ]
-  inputs = [
-    "public_overrides/bit",
-    "public_overrides/cstddef",
-    "public_overrides/iterator",
-    "public_overrides/type_traits",
+    ":bit",
+    ":cstddef",
+    ":iterator",
+    ":span",
+    ":type_traits",
   ]
 }
 
@@ -57,20 +54,67 @@ config("standard_library_public") {
   include_dirs = [ "standard_library_public" ]
 }
 
+# Provides <bit>'s std::endian.
+pw_source_set("bit") {
+  public_configs = [
+    ":standard_library_public",
+    ":overrides_config",
+  ]
+  public_deps = [ ":standard_library" ]
+  remove_public_deps = [ "*" ]
+  inputs = [ "public_overrides/bit" ]
+  public = [ "standard_library_public/pw_polyfill/standard_library/bit.h" ]
+}
+
+# Provides <cstddef>'s std::byte.
+pw_source_set("cstddef") {
+  public_configs = [
+    ":standard_library_public",
+    ":overrides_config",
+  ]
+  public_deps = [ ":standard_library" ]
+  remove_public_deps = [ "*" ]
+  inputs = [ "public_overrides/cstddef" ]
+  public = [ "standard_library_public/pw_polyfill/standard_library/cstddef.h" ]
+}
+
+# TODO(pwbug/603): Remove this polyfill.
+pw_source_set("iterator") {
+  public_configs = [
+    ":standard_library_public",
+    ":overrides_config",
+  ]
+  public_deps = [ ":standard_library" ]
+  remove_public_deps = [ "*" ]
+  inputs = [ "public_overrides/iterator" ]
+  public = [ "standard_library_public/pw_polyfill/standard_library/iterator.h" ]
+}
+
+# Provides <span>.
+pw_source_set("span") {
+  remove_public_deps = [ "*" ]
+  public_deps = [ "$dir_pw_span:polyfill" ]
+}
+
+# TODO(pwbug/603): Remove this polyfill.
+pw_source_set("type_traits") {
+  public_configs = [
+    ":standard_library_public",
+    ":overrides_config",
+  ]
+  public_deps = [ ":standard_library" ]
+  remove_public_deps = [ "*" ]
+  inputs = [ "public_overrides/type_traits" ]
+  public =
+      [ "standard_library_public/pw_polyfill/standard_library/type_traits.h" ]
+}
+
 pw_source_set("standard_library") {
   public_configs = [ ":standard_library_public" ]
   remove_public_deps = [ "*" ]
-  public = [
-    "standard_library_public/pw_polyfill/standard_library/bit.h",
-    "standard_library_public/pw_polyfill/standard_library/cstddef.h",
-    "standard_library_public/pw_polyfill/standard_library/iterator.h",
-    "standard_library_public/pw_polyfill/standard_library/namespace.h",
-    "standard_library_public/pw_polyfill/standard_library/type_traits.h",
-  ]
-  visibility = [
-    ":overrides",
-    ":pw_polyfill",
-  ]
+  public =
+      [ "standard_library_public/pw_polyfill/standard_library/namespace.h" ]
+  visibility = [ ":*" ]
 }
 
 pw_test_group("tests") {

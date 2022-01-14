@@ -41,6 +41,8 @@ _pw_build_defaults = {
     "$dir_pw_build:cpp17",
     "$dir_pw_build:relative_paths",
   ]
+
+  # TODO(pwbug/602): Remove this once all uses explicitly depend on polyfills.
   public_deps += [ "$dir_pw_polyfill:overrides" ]
 }
 

@@ -23,9 +23,17 @@ provided by the standard header, so ``pw_polyfill`` is safe to use when
 compiling with any standard C++14 or newer.
 
 The wrapper headers are in ``public_overrides``. These are provided through the
-``"$dir_pw_polyfill:overrides"`` library, which the GN build adds as a
-dependency for all targets. To apply overrides in Bazel or CMake, depend on the
-``//pw_polyfill:overrides`` or ``pw_polyfill.overrides`` targets.
+``"$dir_pw_polyfill"`` libraries, which the GN build adds as a
+dependency for all targets:
+
+* ``$dir_pw_polyfill:bit``
+* ``$dir_pw_polyfill:cstddef``
+* ``$dir_pw_polyfill:iterator``
+* ``$dir_pw_polyfill:span``
+* ``$dir_pw_polyfill:type_traits``
+
+To apply overrides in Bazel or CMake, depend on the targets you need such as
+``//pw_polyfill:span`` or ``pw_polyfill.span`` as an example.
 
 Backported features
 ===================
