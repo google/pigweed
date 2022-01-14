@@ -22,7 +22,7 @@ licenses(["notice"])
 
 exports_files(
     ["tsconfig.json"],
-    visibility = ["//:__subpackages__"],
+    visibility = [":__subpackages__"],
 )
 
 # Fix all Bazel relevant files.

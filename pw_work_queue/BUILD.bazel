@@ -36,7 +36,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_function",
-        "//pw_metric",
+        "//pw_metric:metric",
         "//pw_status",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",

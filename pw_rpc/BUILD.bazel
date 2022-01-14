@@ -115,7 +115,6 @@ pw_cc_library(
         "//pw_function",
         "//pw_log",
         "//pw_result",
-        "//pw_rpc/system_server",
         "//pw_span",
         "//pw_status",
         "//pw_sync:lock_annotations",

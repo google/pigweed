@@ -23,3 +23,8 @@ constraint_value(
     name = "stm32f429i-disc1",
     constraint_setting = ":board",
 )
+
+constraint_value(
+    name = "mimxrt595_evk",
+    constraint_setting = ":board",
+)

@@ -32,6 +32,7 @@
 #include "pw_thread_stl/options.h"
 #include "pw_transfer/transfer.h"
 #include "pw_transfer_test/test_server.raw_rpc.pb.h"
+#include "pw_work_queue/work_queue.h"
 
 namespace pw::transfer {
 namespace {

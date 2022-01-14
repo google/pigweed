@@ -137,6 +137,7 @@ pw_cc_library(
         "//pw_hdlc:pw_rpc",
         "//pw_log",
         "//pw_rpc",
+        "//pw_rpc/system_server",
     ],
 )
 

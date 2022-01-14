@@ -40,6 +40,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_rpc_system_server_backend",
+    build_setting_default = "@pigweed//pw_rpc/system_server:system_server_backend_multiplexer",
+)
+
+label_flag(
     name = "pw_sync_binary_semaphore_backend",
     build_setting_default = "@pigweed//pw_sync:binary_semaphore_backend_multiplexer",
 )
