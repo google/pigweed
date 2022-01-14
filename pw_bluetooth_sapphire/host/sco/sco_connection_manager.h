@@ -78,6 +78,14 @@ class ScoConnectionManager final {
 
   class ConnectionRequest final {
    public:
+    ConnectionRequest(ScoRequestId id_arg, bool initiator_arg, bool received_request_arg,
+                      std::vector<hci_spec::SynchronousConnectionParameters> parameters_arg,
+                      ConnectionCallback callback_arg)
+        : id(id_arg),
+          initiator(initiator_arg),
+          received_request(received_request_arg),
+          parameters(std::move(parameters_arg)),
+          callback(std::move(callback_arg)) {}
     ConnectionRequest(ConnectionRequest&&) = default;
     ConnectionRequest& operator=(ConnectionRequest&&) = default;
     ~ConnectionRequest() {
