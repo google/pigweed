@@ -51,13 +51,13 @@ pw_source_set("support") {
   deps = [
     ":config",
     ":cortex_m_constants",
-    ":cpu_exception",
+    ":util",
     "$dir_pw_cpu_exception:support.facade",
     "$dir_pw_preprocessor:arch",
     dir_pw_log,
     dir_pw_string,
   ]
-  sources = [ "cpu_state.cc" ]
+  sources = [ "support.cc" ]
 }
 
 # The following targets are deprecated, use ":support" instead.
@@ -66,6 +66,19 @@ group("support_armv7m") {
 }
 group("support_armv8m") {
   public_deps = [ ":support" ]
+}
+
+pw_source_set("util") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_cpu_exception_cortex_m/util.h" ]
+  public_deps = [ ":cpu_state" ]
+  deps = [
+    ":config",
+    ":cortex_m_constants",
+    "$dir_pw_preprocessor:arch",
+    dir_pw_log,
+  ]
+  sources = [ "util.cc" ]
 }
 
 pw_source_set("proto_dump") {
@@ -96,19 +109,23 @@ pw_proto_library("cpu_state_protos") {
   sources = [ "pw_cpu_exception_cortex_m_protos/cpu_state.proto" ]
 }
 
-# TODO(pwbug/296): The *_armv7m libraries work on ARMv8-M, but needs some minor
-# patches for complete correctness. Add *_armv8m targets that use the same files
-# but provide preprocessor defines to enable/disable architecture specific code.
+pw_source_set("cpu_state") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_cpu_exception_cortex_m/cpu_state.h" ]
+  public_deps = [
+    "$dir_pw_preprocessor",
+    "$dir_pw_preprocessor:arch",
+  ]
+}
+
 pw_source_set("cpu_exception") {
   public_configs = [
     ":backend_config",
     ":public_include_path",
   ]
-  public = [
-    "public/pw_cpu_exception_cortex_m/cpu_state.h",
-    "public_overrides/pw_cpu_exception_backend/state.h",
-  ]
+  public = [ "public_overrides/pw_cpu_exception_backend/state.h" ]
   public_deps = [
+    ":cpu_state",
     "$dir_pw_preprocessor",
     "$dir_pw_preprocessor:arch",
   ]
@@ -122,14 +139,12 @@ group("cpu_exception_armv8m") {
   public_deps = [ ":cpu_exception" ]
 }
 
-# TODO(pwbug/296): The *_armv7m libraries work on ARMv8-M, but needs some minor
-# patches for complete correctness. Add *_armv8m targets that use the same files
-# but provide preprocessor defines to enable/disable architecture specific code.
 pw_source_set("cpu_exception.impl") {
   sources = [ "entry.cc" ]
   deps = [
     ":config",
     ":cortex_m_constants",
+    ":cpu_state",
     "$dir_pw_cpu_exception:entry.facade",
     "$dir_pw_cpu_exception:handler",
     "$dir_pw_preprocessor:arch",
@@ -147,7 +162,7 @@ group("cpu_exception_armv8m.impl") {
 pw_source_set("snapshot") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    ":cpu_exception",
+    ":cpu_state",
     ":cpu_state_protos.pwpb",
     "$dir_pw_thread:protos.pwpb",
     "$dir_pw_thread:snapshot",
@@ -200,6 +215,7 @@ pw_test("cpu_exception_entry_test") {
   deps = [
     ":cortex_m_constants",
     ":cpu_exception",
+    ":cpu_state",
     "$dir_pw_cpu_exception:entry",
     "$dir_pw_cpu_exception:handler",
     "$dir_pw_cpu_exception:support",

@@ -28,16 +28,37 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "support_armv7m",
-    srcs = ["cpu_state.cc"],
-    hdrs = [
-        "public/pw_cpu_exception_cortex_m/cpu_state.h",
-        "public_overrides/pw_cpu_exception_backend/state.h",
+    name = "cpu_state",
+    hdrs = ["public/pw_cpu_exception_cortex_m/cpu_state.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_preprocessor",
+        "//pw_preprocessor:arch",
     ],
+)
+
+pw_cc_library(
+    name = "util",
+    srcs = ["util.cc"],
+    hdrs = ["public/pw_cpu_exception_cortex_m/util.h"],
     includes = ["public"],
     deps = [
         ":config",
         ":cortex_m_constants",
+        ":cpu_state",
+        "//pw_log",
+        "//pw_preprocessor:arch",
+    ],
+)
+
+pw_cc_library(
+    name = "support",
+    srcs = ["support.cc"],
+    deps = [
+        ":config",
+        ":cortex_m_constants",
+        ":cpu_state",
+        ":util",
         "//pw_log",
         "//pw_preprocessor",
         "//pw_preprocessor:arch",
@@ -46,13 +67,15 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "proto_dump_armv7m",
+    name = "proto_dump",
     srcs = ["proto_dump.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/proto_dump.h"],
+    includes = ["public"],
     deps = [
         ":config",
+        ":cpu_state",
         ":cpu_state_protos",
-        ":support_armv7m",
+        ":support",
         "//pw_protobuf",
         "//pw_status",
         "//pw_stream",
@@ -64,17 +87,20 @@ proto_library(
     srcs = ["pw_cpu_exception_cortex_m_protos/cpu_state.proto"],
 )
 
-# TODO(pwbug/296): The *_armv7m libraries work on ARMv8-M, but needs some minor
-# patches for complete correctness. Add *_armv8m targets that use the same files
-# but provide preprocessor defines to enable/disable architecture specific code.
 pw_cc_library(
-    name = "cpu_exception_armv7m",
+    name = "cpu_exception",
     srcs = ["entry.cc"],
+    hdrs = [
+        "public/pw_cpu_exception_cortex_m/cpu_state.h",
+        "public_overrides/pw_cpu_exception_backend/state.h",
+    ],
+    includes = ["public"],
     deps = [
         ":config",
+        ":cpu_state",
         ":cortex_m_constants",
-        ":proto_dump_armv7m",
-        ":support_armv7m",
+        ":proto_dump",
+        ":support",
         # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
         "//pw_cpu_exception",
         "//pw_preprocessor",
@@ -89,11 +115,10 @@ pw_cc_library(
     deps = [
         ":config",
         ":cortex_m_constants",
+        ":cpu_state",
         ":cpu_state_protos",
-        ":proto_dump_armv7m",
-        ":support_armv7m",
-        # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-        "//pw_cpu_exception",
+        ":proto_dump",
+        ":support",
         "//pw_log",
         "//pw_protobuf",
         "//pw_status",
@@ -115,6 +140,7 @@ pw_cc_test(
         "exception_entry_test.cc",
     ],
     deps = [
-        ":cpu_exception_armv7m",
+        ":cpu_exception",
+        ":cpu_state",
     ],
 )

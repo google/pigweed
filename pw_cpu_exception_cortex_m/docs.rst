@@ -236,3 +236,27 @@ dump from a serialized snapshot proto, for example:
   r10        0xbd15c968
   r11        0x759b95ab
   r12        0x00000000
+
+Module Configuration Options
+============================
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_CPU_EXCEPTION_CORTEX_M_LOG_LEVEL
+
+  The log level to use for this module. Logs below this level are omitted.
+
+  This defaults to ``PW_LOG_LEVEL_DEBUG``.
+
+.. c:macro:: PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
+
+  Enables extended logging in pw::cpu_exception::LogCpuState() and
+  pw::cpu_exception::cortex_m::LogExceptionAnalysis() that dumps the active
+  CFSR fields with help strings. This is disabled by default since it
+  increases the binary size by >1.5KB when using plain-text logs, or ~460
+  Bytes when using tokenized logging. It's useful to enable this for device
+  bringup until your application has an end-to-end crash reporting solution.
+
+  This is disabled by default.

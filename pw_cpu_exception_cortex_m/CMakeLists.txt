@@ -24,12 +24,21 @@ pw_add_module_library(pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m_private/config.h
 )
 
+pw_add_module_library(pw_cpu_exception_cortex_m.cpu_state
+  PUBLIC_DEPS
+    pw_preprocessor
+    pw_preprocessor.arch
+  HEADERS
+    public/pw_cpu_exception_cortex_m/cpu_state.h
+)
+
 pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception
   IMPLEMENTS_FACADES
     pw_cpu_exception.entry
   PUBLIC_DEPS
     pw_preprocessor
     pw_preprocessor.arch
+    pw_cpu_exception_cortex_m.cpu_state
   PRIVATE_DEPS
     pw_cpu_exception.handler
     pw_cpu_exception_cortex_m.config
@@ -37,8 +46,21 @@ pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception
   SOURCES
     entry.cc
   HEADERS
-    public/pw_cpu_exception_cortex_m/cpu_state.h
     public_overrides/pw_cpu_exception_backend/state.h
+)
+
+pw_add_module_library(pw_cpu_exception_cortex_m.util
+  PUBLIC_DEPS
+    pw_cpu_exception_cortex_m.cpu_state
+  PRIVATE_DEPS
+    pw_cpu_exception_cortex_m.config
+    pw_cpu_exception_cortex_m.constants
+    pw_log
+    pw_preprocessor.arch
+  SOURCES
+    util.cc
+  HEADERS
+    public/pw_cpu_exception_cortex_m/util.h
 )
 
 pw_add_module_library(pw_cpu_exception_cortex_m.support
@@ -47,11 +69,12 @@ pw_add_module_library(pw_cpu_exception_cortex_m.support
   PRIVATE_DEPS
     pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants
+    pw_cpu_exception_cortex_m.util
     pw_log
     pw_preprocessor.arch
     pw_string
   SOURCES
-    cpu_state.cc
+    support.cc
 )
 
 pw_proto_library(pw_cpu_exception_cortex_m.cpu_state_protos
@@ -61,7 +84,7 @@ pw_proto_library(pw_cpu_exception_cortex_m.cpu_state_protos
 
 pw_add_module_library(pw_cpu_exception_cortex_m.proto_dump
   PUBLIC_DEPS
-    pw_cpu_exception.entry
+    pw_cpu_exception_cortex_m.cpu_state
     pw_protobuf
     pw_status
     pw_stream
@@ -76,8 +99,8 @@ pw_add_module_library(pw_cpu_exception_cortex_m.proto_dump
 
 pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
   PUBLIC_DEPS
+    pw_cpu_exception_cortex_m.cpu_state
     pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
-    pw_cpu_exception_cortex_m.cpu_exception
     pw_protobuf
     pw_status
   PRIVATE_DEPS

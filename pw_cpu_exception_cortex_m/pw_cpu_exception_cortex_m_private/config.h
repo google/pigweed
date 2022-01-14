@@ -31,8 +31,9 @@
 #define PW_CPU_EXCEPTION_CORTEX_M_LOG_LEVEL PW_LOG_LEVEL_DEBUG
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_LOG_LEVEL
 
-// Enables extended logging in pw::cpu_exception::LogCpuState() that dumps the
-// active CFSR fields with help strings. This is disabled by default since it
+// Enables extended logging in pw::cpu_exception::LogCpuState() and
+// pw::cpu_exception::cortex_m::LogExceptionAnalysis() that dumps the active
+// CFSR fields with help strings. This is disabled by default since it
 // increases the binary size by >1.5KB when using plain-text logs, or ~460
 // Bytes when using tokenized logging. It's useful to enable this for device
 // bringup until your application has an end-to-end crash reporting solution.
