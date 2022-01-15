@@ -46,9 +46,6 @@ static constexpr bool IsErrorV = IsError<T>::value;
 class NoProtocolError {
   friend class Error<NoProtocolError>;
   constexpr NoProtocolError() = delete;
-
-  // This ensures that Error<NoProtocolError> == Error<NoProtocolError> is well-defined
-  constexpr bool operator==(const NoProtocolError&) { return false; }
 };
 
 // Create a fitx::result<Error<…>> from a HostError. The template parameter may be omitted to
@@ -139,21 +136,32 @@ class [[nodiscard]] Error {
   // NOLINTNEXTLINE(google-explicit-constructor)
   constexpr Error(const Error<NoProtocolError>& other) : error_(other.host_error()) {}
 
-  // Evaluates to true if and only if both Errors hold the same kind of error. Errors with different
-  // ProtocolErrorCodes are intentionally not defined, because it's likely an antipattern and the
-  // client can always define comparisons between specific pairs of protocol errors as needed.
-  constexpr bool operator==(const Error& rhs) const {
-    if (error_.index() != rhs.error_.index()) {
+  // Evaluates to true if and only if both Errors hold the same class of error (host vs protocol)
+  // and their codes match in value. Errors with different ProtocolErrorCodes are comparable only if
+  // their ProtocolErrorCodes have a defined operator==, which is generally not the case if the
+  // codes are strongly-type "enum class" enumerations.
+  template <typename RErrorCode>
+  constexpr bool operator==(const Error<RErrorCode>& rhs) const {
+    auto proto_error_visitor = [&](ProtocolErrorCode held) {
+      if constexpr (std::is_same_v<ProtocolErrorCode, NoProtocolError> ||
+                    std::is_same_v<RErrorCode, NoProtocolError>) {
+        // This unreachable branch makes comparisons to Error<NoProtocolError> well-defined, which
+        // allows the "else" branch to compile so long as the protocol error codes are comparable.
+        return false;
+      } else {
+        return held == rhs.protocol_error();
+      }
+    };
+    if (is_host_error() != rhs.is_host_error()) {
       return false;
     }
-    return Visit(
-        [&rhs](HostError held) { return held == std::get<HostError>(rhs.error_); },
-        [&rhs](ProtocolErrorCode held) { return held == std::get<ProtocolErrorCode>(rhs.error_); });
+    return Visit([&rhs](HostError held) { return held == rhs.host_error(); }, proto_error_visitor);
   }
 
-  // This is required to take precedence over the two generic operator!= overloads that would match
-  // Error != Error expressions
-  constexpr bool operator!=(const Error& rhs) const { return !(*this == rhs); }
+  template <typename RErrorCode>
+  constexpr bool operator!=(const Error<RErrorCode>& rhs) const {
+    return !(*this == rhs);
+  }
 
   [[nodiscard]] std::string ToString() const {
     return Visit([](HostError held) { return HostErrorToString(held); },
@@ -248,54 +256,93 @@ class [[nodiscard]] Error {
 // protocol error the Error can hold instead.
 Error(HostError)->Error<NoProtocolError>;
 
-// Shorthand for commutativity
-// The enable_if check ensures that this is sufficiently narrow to never call itself
-template <typename ProtocolErrorCode, typename T>
-constexpr std::enable_if_t<!std::is_convertible_v<T, Error<ProtocolErrorCode>>, bool> operator==(
-    const Error<ProtocolErrorCode>& lhs, const T& rhs) {
-  return rhs == lhs;
-}
-
-template <typename ProtocolErrorCode, typename T>
-constexpr std::enable_if_t<!std::is_convertible_v<T, Error<ProtocolErrorCode>>, bool> operator!=(
-    const Error<ProtocolErrorCode>& lhs, const T& rhs) {
-  return rhs != lhs;
-}
-
-// Shorthand to generate operator!= from any defined operator==
-template <typename ProtocolErrorCode, typename T>
-constexpr bool operator!=(const T& lhs, const Error<ProtocolErrorCode>& rhs) {
-  return !(lhs == rhs);
-}
+// Comparison operators overloads useful for testing using {ASSERT,EXPECT}_{EQ,NE} GoogleTest
+// macros. Each of these must explicitly define a operator!= as well as account for commutative
+// calls, because C++ does not automatically generate these. Those variant overloads can not be
+// generically defined because there's no way to test if those variants can actually be instantiated
+// (using decltype etc), causing problems with e.g. fitx::result<E, T> == fitx::result<F, U>.
 
 // Comparisons to ProtocolErrorCode
 template <typename ProtocolErrorCode>
+constexpr bool operator==(const Error<ProtocolErrorCode>& lhs, const ProtocolErrorCode& rhs) {
+  return lhs.is(rhs);
+}
+
+template <typename ProtocolErrorCode>
 constexpr bool operator==(const ProtocolErrorCode& lhs, const Error<ProtocolErrorCode>& rhs) {
-  return rhs.is(lhs);
+  return rhs == lhs;
+}
+
+template <typename ProtocolErrorCode>
+constexpr bool operator!=(const Error<ProtocolErrorCode>& lhs, const ProtocolErrorCode& rhs) {
+  return !(lhs == rhs);
+}
+
+template <typename ProtocolErrorCode>
+constexpr bool operator!=(const ProtocolErrorCode& lhs, const Error<ProtocolErrorCode>& rhs) {
+  return !(rhs == lhs);
 }
 
 // Comparisons to HostError
 template <typename ProtocolErrorCode>
+constexpr bool operator==(const Error<ProtocolErrorCode>& lhs, const HostError& rhs) {
+  return lhs.is(rhs);
+}
+
+template <typename ProtocolErrorCode>
 constexpr bool operator==(const HostError& lhs, const Error<ProtocolErrorCode>& rhs) {
-  return rhs.is(lhs);
+  return rhs == lhs;
+}
+
+template <typename ProtocolErrorCode>
+constexpr bool operator!=(const HostError& lhs, const Error<ProtocolErrorCode>& rhs) {
+  return !(lhs == rhs);
+}
+
+template <typename ProtocolErrorCode>
+constexpr bool operator!=(const Error<ProtocolErrorCode>& lhs, const HostError& rhs) {
+  return !(rhs == lhs);
 }
 
 // Comparisons to fitx::result<Error<ProtocolErrorCode>>
 template <typename ProtocolErrorCode, typename... Ts>
-constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, Ts...>& lhs,
-                          const Error<ProtocolErrorCode>& rhs) {
+constexpr bool operator==(const Error<ProtocolErrorCode>& lhs,
+                          const fitx::result<Error<ProtocolErrorCode>, Ts...>& rhs) {
   static_assert(std::conjunction_v<std::negation<detail::IsError<Ts>>...>,
                 "fitx::result should not contain Error as a success value");
-  return lhs.is_error() && (lhs.error_value() == rhs);
+  return rhs.is_error() && (rhs.error_value() == lhs);
+}
+
+template <typename ProtocolErrorCode, typename... Ts>
+constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, Ts...>& lhs,
+                          const Error<ProtocolErrorCode>& rhs) {
+  return rhs == lhs;
+}
+
+template <typename ProtocolErrorCode, typename... Ts>
+constexpr bool operator!=(const Error<ProtocolErrorCode>& lhs,
+                          const fitx::result<Error<ProtocolErrorCode>, Ts...>& rhs) {
+  return !(lhs == rhs);
+}
+
+template <typename ProtocolErrorCode, typename... Ts>
+constexpr bool operator!=(const fitx::result<Error<ProtocolErrorCode>, Ts...>& lhs,
+                          const Error<ProtocolErrorCode>& rhs) {
+  return !(rhs == lhs);
 }
 
 // Comparisons between fitx::result<Error<…>> objects
 // Note that this is not standard fitx::result relation behavior which normally compares all error
-// results to be equal. These are preferred in overload resolution because they are more specific
-// templates than the ones provided by fitx.
-template <typename ProtocolErrorCode, typename OtherProtoErrCode, typename T>
-constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, T>& lhs,
-                          const fitx::result<Error<OtherProtoErrCode>, T>& rhs) {
+// results to be equal. These are preferred in overload resolution because they are more specialized
+// templates than the ones provided by fitx. However, because they are more specialized, all of the
+// combinations must be typed out separately to avoid ambiguous overload errors:
+//   1. operands having zero or one success values
+//   2. operation is == or !=
+// The case of comparing a result with a success value to a result without is intentionally not
+// defined because it's not obvious what behavior it should have when both results hold success.
+template <typename LErrorCode, typename RErrorCode, typename T>
+constexpr bool operator==(const fitx::result<Error<LErrorCode>, T>& lhs,
+                          const fitx::result<Error<RErrorCode>, T>& rhs) {
   static_assert(!detail::IsErrorV<T>, "fitx::result should not contain Error as a success value");
   if (lhs.is_ok() != rhs.is_ok()) {
     return false;
@@ -306,15 +353,15 @@ constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, T>& lhs,
   return lhs.error_value() == rhs.error_value();
 }
 
-template <typename ProtocolErrorCode, typename OtherProtoErrCode, typename T>
-constexpr bool operator!=(const fitx::result<Error<ProtocolErrorCode>, T>& lhs,
-                          const fitx::result<Error<OtherProtoErrCode>, T>& rhs) {
+template <typename LErrorCode, typename RErrorCode, typename T>
+constexpr bool operator!=(const fitx::result<Error<LErrorCode>, T>& lhs,
+                          const fitx::result<Error<RErrorCode>, T>& rhs) {
   return !(lhs == rhs);
 }
 
-template <typename ProtocolErrorCode, typename OtherProtoErrCode>
-constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>>& lhs,
-                          const fitx::result<Error<OtherProtoErrCode>>& rhs) {
+template <typename LErrorCode, typename RErrorCode>
+constexpr bool operator==(const fitx::result<Error<LErrorCode>>& lhs,
+                          const fitx::result<Error<RErrorCode>>& rhs) {
   if (lhs.is_ok() != rhs.is_ok()) {
     return false;
   }
@@ -324,9 +371,9 @@ constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>>& lhs,
   return lhs.error_value() == rhs.error_value();
 }
 
-template <typename ProtocolErrorCode, typename OtherProtoErrCode>
-constexpr bool operator!=(const fitx::result<Error<ProtocolErrorCode>>& lhs,
-                          const fitx::result<Error<OtherProtoErrCode>>& rhs) {
+template <typename LErrorCode, typename RErrorCode>
+constexpr bool operator!=(const fitx::result<Error<LErrorCode>>& lhs,
+                          const fitx::result<Error<RErrorCode>>& rhs) {
   return !(lhs == rhs);
 }
 

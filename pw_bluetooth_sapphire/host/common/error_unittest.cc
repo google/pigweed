@@ -111,6 +111,11 @@ TEST(ErrorTest, ResultFromNonSuccessGeneralHostError) {
   EXPECT_TRUE(specific_error.is(HostError::kFailed));
   EXPECT_EQ(general_error, specific_error);
   EXPECT_EQ(specific_error, general_error);
+
+  // Test operator!=
+  constexpr Error different_specific_error = MakeError(TestError::kFail1);
+  EXPECT_NE(general_error, different_specific_error);
+  EXPECT_NE(different_specific_error, general_error);
 }
 
 TEST(ErrorTest, ResultFromNonSuccessProtocolError) {
@@ -199,9 +204,13 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
       fitx::error(MakeError(TestError::kFail1));
   const fitx::result<Error<TestError>, int> different_error_with_value =
       fitx::error(MakeError(TestError::kFail2));
+  EXPECT_EQ(success_with_value, success_with_value);
   EXPECT_NE(success_with_value, error_with_value);
   EXPECT_FALSE(success_with_value == error_with_value);
   EXPECT_NE(error_with_value, different_error_with_value);
+
+  EXPECT_EQ(ToResult(TestError::kFail1).error_value(), error_with_value);
+  EXPECT_NE(ToResult(TestError::kFail2).error_value(), error_with_value);
 }
 
 TEST(ErrorTest, ToResultFromLegacyStatusType) {
