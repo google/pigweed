@@ -104,8 +104,8 @@ void LogicalLink::Initialize(bool randomize_channel_ids) {
     signaling_channel_ =
         std::make_unique<BrEdrSignalingChannel>(OpenFixedChannel(kSignalingChannelId), role_);
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
-        signaling_channel_.get(), fit::bind_member(this, &LogicalLink::OnChannelDisconnectRequest),
-        fit::bind_member(this, &LogicalLink::OnServiceRequest), randomize_channel_ids);
+        signaling_channel_.get(), fit::bind_member<&LogicalLink::OnChannelDisconnectRequest>(this),
+        fit::bind_member<&LogicalLink::OnServiceRequest>(this), randomize_channel_ids);
 
     SendFixedChannelsSupportedInformationRequest();
   }
@@ -726,7 +726,7 @@ void LogicalLink::ServeConnectionParameterUpdateRequest() {
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.ServeConnectionParameterUpdateRequest(
-      fit::bind_member(this, &LogicalLink::OnRxConnectionParameterUpdateRequest));
+      fit::bind_member<&LogicalLink::OnRxConnectionParameterUpdateRequest>(this));
 }
 
 void LogicalLink::OnRxConnectionParameterUpdateRequest(

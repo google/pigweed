@@ -46,7 +46,7 @@ RemoteServiceManager::RemoteServiceManager(std::unique_ptr<Client> client,
   ZX_DEBUG_ASSERT(gatt_dispatcher_);
   ZX_DEBUG_ASSERT(client_);
 
-  client_->SetNotificationHandler(fit::bind_member(this, &RemoteServiceManager::OnNotification));
+  client_->SetNotificationHandler(fit::bind_member<&RemoteServiceManager::OnNotification>(this));
 }
 
 RemoteServiceManager::~RemoteServiceManager() {

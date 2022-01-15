@@ -78,7 +78,7 @@ void GenericAttributeService::Register() {
   ZX_DEBUG_ASSERT(service_id_ != kInvalidId);
 
   local_service_manager_->set_service_changed_callback(
-      fit::bind_member(this, &GenericAttributeService::OnServiceChanged));
+      fit::bind_member<&GenericAttributeService::OnServiceChanged>(this));
 }
 
 void GenericAttributeService::SetServiceChangedIndicationSubscription(PeerId peer_id,

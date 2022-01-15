@@ -247,7 +247,7 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci_spec::ConnectionHand
   ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
   auto ll = internal::LogicalLink::New(handle, ll_type, role, &executor_, max_payload_size,
-                                       fit::bind_member(this, &ChannelManager::QueryService),
+                                       fit::bind_member<&ChannelManager::QueryService>(this),
                                        acl_data_channel_, random_channel_ids_);
   if (ll_node_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));

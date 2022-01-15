@@ -22,27 +22,27 @@ Server::Server(PeerId peer_id, fbl::RefPtr<att::Database> database, fbl::RefPtr<
   ZX_DEBUG_ASSERT(att_);
 
   exchange_mtu_id_ = att_->RegisterHandler(att::kExchangeMTURequest,
-                                           fit::bind_member(this, &Server::OnExchangeMTU));
+                                           fit::bind_member<&Server::OnExchangeMTU>(this));
   find_information_id_ = att_->RegisterHandler(att::kFindInformationRequest,
-                                               fit::bind_member(this, &Server::OnFindInformation));
+                                               fit::bind_member<&Server::OnFindInformation>(this));
   read_by_group_type_id_ = att_->RegisterHandler(
-      att::kReadByGroupTypeRequest, fit::bind_member(this, &Server::OnReadByGroupType));
+      att::kReadByGroupTypeRequest, fit::bind_member<&Server::OnReadByGroupType>(this));
   read_by_type_id_ =
-      att_->RegisterHandler(att::kReadByTypeRequest, fit::bind_member(this, &Server::OnReadByType));
+      att_->RegisterHandler(att::kReadByTypeRequest, fit::bind_member<&Server::OnReadByType>(this));
   read_req_id_ =
-      att_->RegisterHandler(att::kReadRequest, fit::bind_member(this, &Server::OnReadRequest));
+      att_->RegisterHandler(att::kReadRequest, fit::bind_member<&Server::OnReadRequest>(this));
   write_req_id_ =
-      att_->RegisterHandler(att::kWriteRequest, fit::bind_member(this, &Server::OnWriteRequest));
+      att_->RegisterHandler(att::kWriteRequest, fit::bind_member<&Server::OnWriteRequest>(this));
   write_cmd_id_ =
-      att_->RegisterHandler(att::kWriteCommand, fit::bind_member(this, &Server::OnWriteCommand));
+      att_->RegisterHandler(att::kWriteCommand, fit::bind_member<&Server::OnWriteCommand>(this));
   read_blob_req_id_ = att_->RegisterHandler(att::kReadBlobRequest,
-                                            fit::bind_member(this, &Server::OnReadBlobRequest));
+                                            fit::bind_member<&Server::OnReadBlobRequest>(this));
   find_by_type_value_id_ = att_->RegisterHandler(
-      att::kFindByTypeValueRequest, fit::bind_member(this, &Server::OnFindByTypeValueRequest));
+      att::kFindByTypeValueRequest, fit::bind_member<&Server::OnFindByTypeValueRequest>(this));
   prepare_write_id_ = att_->RegisterHandler(att::kPrepareWriteRequest,
-                                            fit::bind_member(this, &Server::OnPrepareWriteRequest));
+                                            fit::bind_member<&Server::OnPrepareWriteRequest>(this));
   exec_write_id_ = att_->RegisterHandler(att::kExecuteWriteRequest,
-                                         fit::bind_member(this, &Server::OnExecuteWriteRequest));
+                                         fit::bind_member<&Server::OnExecuteWriteRequest>(this));
 }
 
 Server::~Server() {

@@ -224,7 +224,7 @@ SecurityManagerImpl::SecurityManagerImpl(
       le_link_(std::move(link)),
       io_cap_(io_capability),
       sm_chan_(std::make_unique<PairingChannel>(
-          smp, fit::bind_member(this, &SecurityManagerImpl::StartNewTimer))),
+          smp, fit::bind_member<&SecurityManagerImpl::StartNewTimer>(this))),
       role_(le_link_->role() == hci::Connection::Role::kCentral ? Role::kInitiator
                                                                 : Role::kResponder),
       weak_ptr_factory_(this) {
@@ -239,7 +239,7 @@ SecurityManagerImpl::SecurityManagerImpl(
 
   // Set up HCI encryption event.
   le_link_->set_encryption_change_callback(
-      fit::bind_member(this, &SecurityManagerImpl::OnEncryptionChange));
+      fit::bind_member<&SecurityManagerImpl::OnEncryptionChange>(this));
   sm_chan_->SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
@@ -334,7 +334,7 @@ void SecurityManagerImpl::OnPairingRequest(const PairingRequestParams& req_param
 
   current_phase_ = Phase1::CreatePhase1Responder(
       sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), req_params, io_cap_, bondable_mode(),
-      required_level, fit::bind_member(this, &SecurityManagerImpl::OnFeatureExchange));
+      required_level, fit::bind_member<&SecurityManagerImpl::OnFeatureExchange>(this));
   std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
 }
 
@@ -362,12 +362,12 @@ ErrorCode SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel level) {
   if (role_ == Role::kInitiator) {
     current_phase_ = Phase1::CreatePhase1Initiator(
         sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), io_cap_, bondable_mode(), level,
-        fit::bind_member(this, &SecurityManagerImpl::OnFeatureExchange));
+        fit::bind_member<&SecurityManagerImpl::OnFeatureExchange>(this));
     std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
   } else {
     current_phase_.emplace<SecurityRequestPhase>(
         sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), level, bondable_mode(),
-        fit::bind_member(this, &SecurityManagerImpl::OnPairingRequest));
+        fit::bind_member<&SecurityManagerImpl::OnPairingRequest>(this));
     std::get<SecurityRequestPhase>(current_phase_).Start();
   }
   return ErrorCode::kNoError;
@@ -391,12 +391,12 @@ void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features, PairingReq
     *pres_writer.mutable_payload<PairingRequestParams>() = pres;
     current_phase_.emplace<Phase2Legacy>(
         sm_chan_->GetWeakPtr(), self, role_, features, *preq_pdu, *pres_pdu, initiator_addr,
-        responder_addr, fit::bind_member(this, &SecurityManagerImpl::OnPhase2EncryptionKey));
+        responder_addr, fit::bind_member<&SecurityManagerImpl::OnPhase2EncryptionKey>(this));
     std::get<Phase2Legacy>(current_phase_).Start();
   } else {
     current_phase_.emplace<Phase2SecureConnections>(
         sm_chan_->GetWeakPtr(), self, role_, features, preq, pres, initiator_addr, responder_addr,
-        fit::bind_member(this, &SecurityManagerImpl::OnPhase2EncryptionKey));
+        fit::bind_member<&SecurityManagerImpl::OnPhase2EncryptionKey>(this));
     std::get<Phase2SecureConnections>(current_phase_).Start();
   }
 }
@@ -501,7 +501,7 @@ void SecurityManagerImpl::EndPhase2() {
   }
   auto self = weak_ptr_factory_.GetWeakPtr();
   current_phase_.emplace<Phase3>(sm_chan_->GetWeakPtr(), self, role_, *features_, security(),
-                                 fit::bind_member(this, &SecurityManagerImpl::OnPairingComplete));
+                                 fit::bind_member<&SecurityManagerImpl::OnPairingComplete>(this));
   std::get<Phase3>(current_phase_).Start();
 }
 

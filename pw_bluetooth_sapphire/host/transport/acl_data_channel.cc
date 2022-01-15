@@ -357,12 +357,12 @@ void AclDataChannelImpl::Initialize(const DataBufferInfo& bredr_buffer_info,
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       hci_spec::kNumberOfCompletedPacketsEventCode,
-      fit::bind_member(this, &AclDataChannelImpl::NumberOfCompletedPacketsCallback));
+      fit::bind_member<&AclDataChannelImpl::NumberOfCompletedPacketsCallback>(this));
   ZX_DEBUG_ASSERT(num_completed_packets_event_handler_id_);
 
   data_buffer_overflow_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       hci_spec::kDataBufferOverflowEventCode,
-      fit::bind_member(this, &AclDataChannelImpl::DataBufferOverflowCallback));
+      fit::bind_member<&AclDataChannelImpl::DataBufferOverflowCallback>(this));
   ZX_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
   is_initialized_ = true;

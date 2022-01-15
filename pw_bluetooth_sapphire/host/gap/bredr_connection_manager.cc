@@ -144,7 +144,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
 
   // Register event handlers
   AddEventHandler(hci_spec::kAuthenticationCompleteEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnAuthenticationComplete));
+                  fit::bind_member<&BrEdrConnectionManager::OnAuthenticationComplete>(this));
   AddEventHandler(hci_spec::kConnectionCompleteEventCode, [this](const hci::EventPacket& event) {
     OnConnectionComplete(ConnectionComplete(event));
     return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -154,23 +154,23 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
     return hci::CommandChannel::EventCallbackResult::kContinue;
   });
   AddEventHandler(hci_spec::kIOCapabilityRequestEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnIoCapabilityRequest));
+                  fit::bind_member<&BrEdrConnectionManager::OnIoCapabilityRequest>(this));
   AddEventHandler(hci_spec::kIOCapabilityResponseEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnIoCapabilityResponse));
+                  fit::bind_member<&BrEdrConnectionManager::OnIoCapabilityResponse>(this));
   AddEventHandler(hci_spec::kLinkKeyRequestEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnLinkKeyRequest));
+                  fit::bind_member<&BrEdrConnectionManager::OnLinkKeyRequest>(this));
   AddEventHandler(hci_spec::kLinkKeyNotificationEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnLinkKeyNotification));
+                  fit::bind_member<&BrEdrConnectionManager::OnLinkKeyNotification>(this));
   AddEventHandler(hci_spec::kSimplePairingCompleteEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnSimplePairingComplete));
+                  fit::bind_member<&BrEdrConnectionManager::OnSimplePairingComplete>(this));
   AddEventHandler(hci_spec::kUserConfirmationRequestEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnUserConfirmationRequest));
+                  fit::bind_member<&BrEdrConnectionManager::OnUserConfirmationRequest>(this));
   AddEventHandler(hci_spec::kUserPasskeyRequestEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnUserPasskeyRequest));
+                  fit::bind_member<&BrEdrConnectionManager::OnUserPasskeyRequest>(this));
   AddEventHandler(hci_spec::kUserPasskeyNotificationEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnUserPasskeyNotification));
+                  fit::bind_member<&BrEdrConnectionManager::OnUserPasskeyNotification>(this));
   AddEventHandler(hci_spec::kRoleChangeEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnRoleChange));
+                  fit::bind_member<&BrEdrConnectionManager::OnRoleChange>(this));
 
   // Set the timeout for outbound connections explicitly to the spec default.
   WritePageTimeout(hci_spec::kDefaultPageTimeoutDuration, [](const hci::Result<> status) {

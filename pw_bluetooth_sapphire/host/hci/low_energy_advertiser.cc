@@ -59,7 +59,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
 
   hci_cmd_runner_->QueueCommand(
       std::move(set_adv_params_packet),
-      fit::bind_member(this, &LowEnergyAdvertiser::OnSetAdvertisingParamsComplete));
+      fit::bind_member<&LowEnergyAdvertiser::OnSetAdvertisingParamsComplete>(this));
 
   // In order to support use cases where advertisers use the return parameters of the
   // SetAdvertisingParams HCI command, we place the remaining advertising setup HCI commands in the

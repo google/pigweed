@@ -93,7 +93,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
 
   result_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci_spec::kInquiryResultEventCode,
-      fit::bind_member(this, &BrEdrDiscoveryManager::InquiryResult));
+      fit::bind_member<&BrEdrDiscoveryManager::InquiryResult>(this));
   ZX_DEBUG_ASSERT(result_handler_id_);
   rssi_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci_spec::kInquiryResultWithRSSIEventCode,

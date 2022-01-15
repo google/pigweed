@@ -126,7 +126,7 @@ class Inspectable {
   // Returns a InspectableGuard wrapper around the contained value that allows for non-const methods
   // to be called. The returned value should only be used as a temporary.
   InspectableGuard<ValueT> Mutable() {
-    return InspectableGuard(value_, fit::bind_member(this, &Inspectable::UpdateProperty));
+    return InspectableGuard(value_, fit::bind_member<&Inspectable::UpdateProperty>(this));
   }
 
   static PropertyInnerT DefaultConvert(const ValueT& value) { return value; }

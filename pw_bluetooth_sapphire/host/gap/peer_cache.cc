@@ -321,9 +321,9 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
     return StoreLowEnergyBond(identifier, data);
   };
 
-  std::unique_ptr<Peer> peer(new Peer(fit::bind_member(this, &PeerCache::NotifyPeerUpdated),
-                                      fit::bind_member(this, &PeerCache::UpdateExpiry),
-                                      fit::bind_member(this, &PeerCache::MakeDualMode),
+  std::unique_ptr<Peer> peer(new Peer(fit::bind_member<&PeerCache::NotifyPeerUpdated>(this),
+                                      fit::bind_member<&PeerCache::UpdateExpiry>(this),
+                                      fit::bind_member<&PeerCache::MakeDualMode>(this),
                                       std::move(store_le_bond_cb), identifier, address, connectable,
                                       &peer_metrics_));
   if (node_) {

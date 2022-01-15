@@ -76,7 +76,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
   if (info_.mode == ChannelMode::kBasic) {
     rx_engine_ = std::make_unique<BasicModeRxEngine>();
     tx_engine_ = std::make_unique<BasicModeTxEngine>(
-        id, max_tx_sdu_size(), fit::bind_member(this, &ChannelImpl::SendFrame));
+        id, max_tx_sdu_size(), fit::bind_member<&ChannelImpl::SendFrame>(this));
   } else {
     // Must capture |link| and not |link_| to avoid having to take |mutex_|.
     auto connection_failure_cb = [this, link] {
@@ -89,7 +89,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
     };
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
         id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window,
-        fit::bind_member(this, &ChannelImpl::SendFrame), std::move(connection_failure_cb));
+        fit::bind_member<&ChannelImpl::SendFrame>(this), std::move(connection_failure_cb));
   }
 }
 

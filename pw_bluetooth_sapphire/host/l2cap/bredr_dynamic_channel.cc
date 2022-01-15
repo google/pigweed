@@ -37,13 +37,13 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterfa
   ZX_DEBUG_ASSERT(sig_);
   BrEdrCommandHandler cmd_handler(sig_);
   cmd_handler.ServeConnectionRequest(
-      fit::bind_member(this, &BrEdrDynamicChannelRegistry::OnRxConnReq));
+      fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxConnReq>(this));
   cmd_handler.ServeConfigurationRequest(
-      fit::bind_member(this, &BrEdrDynamicChannelRegistry::OnRxConfigReq));
+      fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxConfigReq>(this));
   cmd_handler.ServeDisconnectionRequest(
-      fit::bind_member(this, &BrEdrDynamicChannelRegistry::OnRxDisconReq));
+      fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxDisconReq>(this));
   cmd_handler.ServeInformationRequest(
-      fit::bind_member(this, &BrEdrDynamicChannelRegistry::OnRxInfoReq));
+      fit::bind_member<&BrEdrDynamicChannelRegistry::OnRxInfoReq>(this));
 
   SendInformationRequests();
 }

@@ -65,9 +65,9 @@ LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_
   ZX_DEBUG_ASSERT(local_addr_delegate_);
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingReportSubeventCode,
-      fit::bind_member(this, &LegacyLowEnergyScanner::OnAdvertisingReportEvent));
+      fit::bind_member<&LegacyLowEnergyScanner::OnAdvertisingReportEvent>(this));
   scan_timeout_task_.set_handler(
-      fit::bind_member(this, &LegacyLowEnergyScanner::OnScanPeriodComplete));
+      fit::bind_member<&LegacyLowEnergyScanner::OnScanPeriodComplete>(this));
 }
 
 LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {

@@ -44,7 +44,7 @@ Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
     return;
   }
   command_channel_ = command_channel_result.take_value();
-  command_channel_->set_channel_timeout_cb(fit::bind_member(this, &Transport::OnChannelError));
+  command_channel_->set_channel_timeout_cb(fit::bind_member<&Transport::OnChannelError>(this));
 }
 
 Transport::~Transport() {

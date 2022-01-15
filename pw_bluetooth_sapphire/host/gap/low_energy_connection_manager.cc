@@ -383,7 +383,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
       internal::LowEnergyConnectionRequest request = std::move(request_pair.mapped());
 
       auto result_cb =
-          fit::bind_member(this, &LowEnergyConnectionManager::OnLocalInitiatedConnectResult);
+          fit::bind_member<&LowEnergyConnectionManager::OnLocalInitiatedConnectResult>(this);
       std::unique_ptr<internal::LowEnergyConnector> connector =
           internal::LowEnergyConnector::CreateOutboundConnector(
               peer_id, request.connection_options(), hci_connector_, request_timeout_, hci_,

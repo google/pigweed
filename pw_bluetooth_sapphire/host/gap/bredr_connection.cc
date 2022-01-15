@@ -28,7 +28,7 @@ BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::C
       pairing_state_(std::make_unique<PairingState>(
           peer_, link_.get(), request_ && request_->AwaitingOutgoing(),
           std::move(send_auth_request_cb),
-          fit::bind_member(this, &BrEdrConnection::OnPairingStateStatus))),
+          fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this))),
       domain_(std::move(l2cap)),
       sco_manager_(std::make_unique<sco::ScoConnectionManager>(
           peer_id_, link_->handle(), link_->peer_address(), link_->local_address(),

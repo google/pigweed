@@ -265,7 +265,7 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
         // multiple DataType fields for the same UUID (not allowed by CSS v9 Part A 1.1.1), this
         // limit may be exceeded, in which case we reject the packet.
         if (!ParseUuids(field, SizeForType(type),
-                        fit::bind_member(&out_ad, &AdvertisingData::AddServiceUuid))) {
+                        fit::bind_member<&AdvertisingData::AddServiceUuid>(&out_ad))) {
           return fitx::error(ParseError::kUuidsMalformed);
         }
         break;

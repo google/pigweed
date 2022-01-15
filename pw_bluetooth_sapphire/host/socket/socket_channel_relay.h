@@ -198,11 +198,11 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fbl::RefPtr<
   // Note: binding |this| is safe, as BindWait() wraps the bound method inside
   // of a lambda which verifies that |this| hasn't been destroyed.
   BindWait(ZX_SOCKET_READABLE, "socket read waiter", &sock_read_waiter_,
-           fit::bind_member(this, &SocketChannelRelay::OnSocketReadable));
+           fit::bind_member<&SocketChannelRelay::OnSocketReadable>(this));
   BindWait(ZX_SOCKET_WRITE_THRESHOLD, "socket write waiter", &sock_write_waiter_,
-           fit::bind_member(this, &SocketChannelRelay::OnSocketWritable));
+           fit::bind_member<&SocketChannelRelay::OnSocketWritable>(this));
   BindWait(ZX_SOCKET_PEER_CLOSED, "socket close waiter", &sock_close_waiter_,
-           fit::bind_member(this, &SocketChannelRelay::OnSocketClosed));
+           fit::bind_member<&SocketChannelRelay::OnSocketClosed>(this));
 }
 
 template <typename ChannelT>

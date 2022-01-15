@@ -308,7 +308,7 @@ void LowEnergyConnector::OnConnectResult(hci::Result<> status, hci::ConnectionPt
 bool LowEnergyConnector::InitializeConnection(hci::ConnectionPtr link) {
   ZX_ASSERT(link);
 
-  auto peer_disconnect_cb = fit::bind_member(this, &LowEnergyConnector::OnPeerDisconnect);
+  auto peer_disconnect_cb = fit::bind_member<&LowEnergyConnector::OnPeerDisconnect>(this);
   auto error_cb = [this]() { NotifyFailure(); };
 
   Peer* peer = peer_cache_->FindById(peer_id_);
@@ -331,7 +331,7 @@ void LowEnergyConnector::StartInterrogation() {
 
   state_.Set(State::kInterrogating);
   interrogator_.Start(peer_id_, connection_->handle(),
-                      fit::bind_member(this, &LowEnergyConnector::OnInterrogationComplete));
+                      fit::bind_member<&LowEnergyConnector::OnInterrogationComplete>(this));
 }
 
 void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {

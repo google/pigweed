@@ -45,7 +45,7 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
       supports_ll_conn_update_procedure_(true),
       le_features_(hci_spec::LESupportedFeatures{0}),
       should_batch_reports_(false),
-      l2cap_(fit::bind_member(this, &FakePeer::SendPacket)),
+      l2cap_(fit::bind_member<&FakePeer::SendPacket>(this)),
       gatt_server_(this) {
   signaling_server_.RegisterWithL2cap(&l2cap_);
   gatt_server_.RegisterWithL2cap(&l2cap_);

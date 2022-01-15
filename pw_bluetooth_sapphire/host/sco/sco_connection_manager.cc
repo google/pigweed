@@ -69,9 +69,9 @@ ScoConnectionManager::ScoConnectionManager(PeerId peer_id, hci_spec::ConnectionH
   ZX_ASSERT(transport_);
 
   AddEventHandler(hci_spec::kSynchronousConnectionCompleteEventCode,
-                  fit::bind_member(this, &ScoConnectionManager::OnSynchronousConnectionComplete));
+                  fit::bind_member<&ScoConnectionManager::OnSynchronousConnectionComplete>(this));
   AddEventHandler(hci_spec::kConnectionRequestEventCode,
-                  fit::bind_member(this, &ScoConnectionManager::OnConnectionRequest));
+                  fit::bind_member<&ScoConnectionManager::OnConnectionRequest>(this));
 }
 
 ScoConnectionManager::~ScoConnectionManager() {

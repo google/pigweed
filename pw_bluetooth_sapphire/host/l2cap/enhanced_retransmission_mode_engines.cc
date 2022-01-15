@@ -26,17 +26,17 @@ MakeLinkedEnhancedRetransmissionModeEngines(
   // The direction swap here is because our acknowledgment sequence is based on the peer's
   // transmit sequence and vice versa.
   rx_engine->set_receive_seq_num_callback(
-      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::UpdateAckSeq));
+      fit::bind_member<&EnhancedRetransmissionModeTxEngine::UpdateAckSeq>(tx_engine.get()));
   rx_engine->set_ack_seq_num_callback(
-      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::UpdateReqSeq));
+      fit::bind_member<&EnhancedRetransmissionModeTxEngine::UpdateReqSeq>(tx_engine.get()));
   rx_engine->set_remote_busy_set_callback(
-      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::SetRemoteBusy));
+      fit::bind_member<&EnhancedRetransmissionModeTxEngine::SetRemoteBusy>(tx_engine.get()));
   rx_engine->set_remote_busy_cleared_callback(
-      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::ClearRemoteBusy));
+      fit::bind_member<&EnhancedRetransmissionModeTxEngine::ClearRemoteBusy>(tx_engine.get()));
   rx_engine->set_single_retransmit_set_callback(
-      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::SetSingleRetransmit));
+      fit::bind_member<&EnhancedRetransmissionModeTxEngine::SetSingleRetransmit>(tx_engine.get()));
   rx_engine->set_range_retransmit_set_callback(
-      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::SetRangeRetransmit));
+      fit::bind_member<&EnhancedRetransmissionModeTxEngine::SetRangeRetransmit>(tx_engine.get()));
   return {std::move(rx_engine), std::move(tx_engine)};
 }
 

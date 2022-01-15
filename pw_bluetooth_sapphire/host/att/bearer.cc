@@ -280,8 +280,8 @@ Bearer::~Bearer() {
 bool Bearer::Activate() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
-  return chan_->Activate(fit::bind_member(this, &Bearer::OnRxBFrame),
-                         fit::bind_member(this, &Bearer::OnChannelClosed));
+  return chan_->Activate(fit::bind_member<&Bearer::OnRxBFrame>(this),
+                         fit::bind_member<&Bearer::OnChannelClosed>(this));
 }
 
 void Bearer::ShutDown() {

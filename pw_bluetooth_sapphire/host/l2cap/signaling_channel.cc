@@ -279,7 +279,7 @@ void SignalingChannel::OnRxBFrame(ByteBufferPtr sdu) {
   if (!is_open())
     return;
 
-  DecodeRxUnit(std::move(sdu), fit::bind_member(this, &SignalingChannel::CheckAndDispatchPacket));
+  DecodeRxUnit(std::move(sdu), fit::bind_member<&SignalingChannel::CheckAndDispatchPacket>(this));
 }
 
 void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {

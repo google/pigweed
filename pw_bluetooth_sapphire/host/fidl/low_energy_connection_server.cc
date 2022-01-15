@@ -20,7 +20,7 @@ LowEnergyConnectionServer::LowEnergyConnectionServer(
   ZX_DEBUG_ASSERT(conn_);
 
   set_error_handler([this](zx_status_t) { OnClosed(); });
-  conn_->set_closed_callback(fit::bind_member(this, &LowEnergyConnectionServer::OnClosed));
+  conn_->set_closed_callback(fit::bind_member<&LowEnergyConnectionServer::OnClosed>(this));
 }
 
 void LowEnergyConnectionServer::OnClosed() {
