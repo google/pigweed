@@ -269,24 +269,42 @@ def oss_fuzz_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, "fuzzers")
 
 
-def _run_cmake(ctx: PresubmitContext) -> None:
+def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
     build.install_package(ctx.package_root, 'nanopb')
 
-    toolchain = ctx.root / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
+    env = None
+    if 'clang' in toolchain:
+        env = build.env_with_clang_vars()
+
+    toolchain_path = ctx.root / 'pw_toolchain' / toolchain / 'toolchain.cmake'
     build.cmake(ctx.root,
                 ctx.output_dir,
-                f'-DCMAKE_TOOLCHAIN_FILE={toolchain}',
+                f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
                 '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
                 f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
                 '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
-                env=build.env_with_clang_vars())
+                env=env)
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
-def cmake_tests(ctx: PresubmitContext):
-    _run_cmake(ctx)
+def cmake_clang(ctx: PresubmitContext):
+    _run_cmake(ctx, toolchain='host_clang')
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
+
+
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
+                        'CMakeLists.txt'))
+def cmake_gcc(ctx: PresubmitContext):
+    _run_cmake(ctx, toolchain='host_gcc')
+    build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
+
+
+# TODO(mohrr) Remove after removing from LUCI config.
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
+                        'CMakeLists.txt'))
+def cmake_tests(ctx: PresubmitContext):
+    cmake_clang(ctx)
 
 
 # TODO(pwbug/180): Slowly add modules here that work with bazel until all
@@ -741,6 +759,8 @@ OTHER_CHECKS = (
     oss_fuzz_build,
     # TODO(pwbug/346): Enable all Bazel tests when they're fixed.
     bazel_test,
+    cmake_clang,
+    cmake_gcc,
     cmake_tests,
     gn_boringssl_build,
     build.gn_gen_check,
@@ -781,7 +801,7 @@ QUICK = (
     # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
     # the clang issues. The problem is that all clang++ invocations need the
     # two extra flags: "-nostdc++" and "${clang_prefix}/../lib/libc++.a".
-    cmake_tests if sys.platform != 'darwin' else (),
+    cmake_clang if sys.platform != 'darwin' else (),
 )
 
 FULL = (
