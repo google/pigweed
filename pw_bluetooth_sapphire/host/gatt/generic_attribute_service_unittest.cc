@@ -14,8 +14,8 @@
 namespace bt::gatt {
 namespace {
 
-void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
+void NopReadHandler(PeerId, IdType, IdType, uint16_t, const ReadResponder&) {}
+void NopWriteHandler(PeerId, IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
 void NopCCCallback(IdType, IdType, PeerId, bool notify, bool indicate) {}
 void NopSendIndication(PeerId, att::Handle, const ByteBuffer&) {}
 

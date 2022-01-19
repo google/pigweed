@@ -14,9 +14,9 @@
 namespace bt::gatt {
 namespace {
 
-void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
+void NopReadHandler(PeerId, IdType, IdType, uint16_t, const ReadResponder&) {}
 
-void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
+void NopWriteHandler(PeerId, IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
 
 }  // namespace
 

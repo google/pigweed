@@ -18,6 +18,7 @@ namespace bt::gatt {
 
 // Called to read the value of a dynamic characteristic or characteristic
 // descriptor.
+//   - |peer_id|: The PeerId of the peer making the request.
 //   - |service_id|: Identifies the service that the object belongs to.
 //   - |id|: Identifies the object to be read. This is a user assigned
 //           identifier provided while registering the service.
@@ -25,11 +26,12 @@ namespace bt::gatt {
 //   - |responder|: Should be called to respond to the read request with a
 //                  characteristic or descriptor value, or an ATT error code.
 using ReadResponder = att::Attribute::ReadResultCallback;
-using ReadHandler =
-    fit::function<void(IdType service_id, IdType id, uint16_t offset, ReadResponder responder)>;
+using ReadHandler = fit::function<void(PeerId peer_id, IdType service_id, IdType id,
+                                       uint16_t offset, ReadResponder responder)>;
 
 // Called to write the value of a dynamic characteristic or characteristic
 // descriptor.
+//   - |peer_id|: The PeerId of the peer making the request.
 //   - |service_id|: Identifies the service that the object belongs to.
 //   - |id|: Identifies the object to be written. This is a user assigned
 //           identifier provided while registering the service.
@@ -39,8 +41,9 @@ using ReadHandler =
 //                  if the client has initiated a "Write Without Response"
 //                  procedure, in which case a response is not required.
 using WriteResponder = att::Attribute::WriteResultCallback;
-using WriteHandler = fit::function<void(IdType service_id, IdType id, uint16_t offset,
-                                        const ByteBuffer& value, WriteResponder responder)>;
+using WriteHandler =
+    fit::function<void(PeerId peer_id, IdType service_id, IdType id, uint16_t offset,
+                       const ByteBuffer& value, WriteResponder responder)>;
 
 // Called when the peer device with the given |peer_id| has enabled or disabled
 // notifications/indications on the characteristic with id |chrc_id|.

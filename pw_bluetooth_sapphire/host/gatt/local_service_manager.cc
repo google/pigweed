@@ -294,7 +294,7 @@ class LocalServiceManager::ServiceData final {
     uint16_t ext_props = chrc->extended_properties();
     auto self = weak_ptr_factory_.GetWeakPtr();
 
-    auto read_handler = [self, id, props](const auto& peer_id, att::Handle handle, uint16_t offset,
+    auto read_handler = [self, id, props](PeerId peer_id, att::Handle handle, uint16_t offset,
                                           auto result_cb) {
       if (!self) {
         result_cb(att::ErrorCode::kUnlikelyError, BufferView());
@@ -309,10 +309,10 @@ class LocalServiceManager::ServiceData final {
         return;
       }
 
-      self->read_handler_(self->id_, id, offset, std::move(result_cb));
+      self->read_handler_(peer_id, self->id_, id, offset, std::move(result_cb));
     };
 
-    auto write_handler = [self, id, props](const auto& peer_id, att::Handle handle, uint16_t offset,
+    auto write_handler = [self, id, props](PeerId peer_id, att::Handle handle, uint16_t offset,
                                            const auto& value, auto result_cb) {
       if (!self) {
         if (result_cb)
@@ -331,7 +331,7 @@ class LocalServiceManager::ServiceData final {
       if (!result_cb && !(props & Property::kWriteWithoutResponse))
         return;
 
-      self->write_handler_(self->id_, id, offset, value, std::move(result_cb));
+      self->write_handler_(peer_id, self->id_, id, offset, value, std::move(result_cb));
     };
 
     att::Handle chrc_handle = InsertCharacteristicAttributes(
@@ -369,17 +369,17 @@ class LocalServiceManager::ServiceData final {
 
   void AddDescriptor(att::AttributeGrouping* grouping, DescriptorPtr desc) {
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto read_handler = [self, id = desc->id()](const auto& peer_id, att::Handle handle,
-                                                uint16_t offset, auto result_cb) {
+    auto read_handler = [self, id = desc->id()](PeerId peer_id, att::Handle handle, uint16_t offset,
+                                                auto result_cb) {
       if (!self) {
         result_cb(att::ErrorCode::kUnlikelyError, BufferView());
         return;
       }
 
-      self->read_handler_(self->id_, id, offset, std::move(result_cb));
+      self->read_handler_(peer_id, self->id_, id, offset, std::move(result_cb));
     };
 
-    auto write_handler = [self, id = desc->id()](const auto& peer_id, att::Handle handle,
+    auto write_handler = [self, id = desc->id()](PeerId peer_id, att::Handle handle,
                                                  uint16_t offset, const auto& value,
                                                  auto result_cb) {
       // Descriptors cannot be written using the "write without response"
@@ -392,7 +392,7 @@ class LocalServiceManager::ServiceData final {
         return;
       }
 
-      self->write_handler_(self->id_, id, offset, value, std::move(result_cb));
+      self->write_handler_(peer_id, self->id_, id, offset, value, std::move(result_cb));
     };
 
     InsertDescriptorAttribute(grouping, desc->type(), desc->read_permissions(),

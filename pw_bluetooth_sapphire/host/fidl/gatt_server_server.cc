@@ -247,15 +247,16 @@ void GattServerServer::PublishService(ServiceInfo service_info,
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   // Set up event handlers.
-  auto read_handler = [self](auto svc_id, auto id, auto offset, auto responder) mutable {
+  auto read_handler = [self](bt::PeerId /*ignore*/, auto svc_id, auto id, auto offset,
+                             auto responder) mutable {
     if (self) {
       self->OnReadRequest(svc_id, id, offset, std::move(responder));
     } else {
       responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
     }
   };
-  auto write_handler = [self](auto svc_id, auto id, auto offset, const auto& value,
-                              auto responder) mutable {
+  auto write_handler = [self](bt::PeerId /*ignore*/, auto svc_id, auto id, auto offset,
+                              const auto& value, auto responder) mutable {
     if (self) {
       self->OnWriteRequest(svc_id, id, offset, value, std::move(responder));
     } else {

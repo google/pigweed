@@ -31,8 +31,8 @@ inline att::AccessRequirements AllowedNoSecurity() {
   return att::AccessRequirements(false, false, false);
 }
 
-void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
+void NopReadHandler(PeerId, IdType, IdType, uint16_t, const ReadResponder&) {}
+void NopWriteHandler(PeerId, IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
 void NopCCCallback(IdType service_id, IdType chrc_id, PeerId peer_id, bool notify, bool indicate) {}
 
 // Convenience function that registers |service| with |mgr| using the NOP
@@ -432,7 +432,7 @@ TEST(LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
       kChrcId, kChrcType16, Property::kRead, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
   bool called = false;
-  auto read_cb = [&called](auto, auto, auto, auto) { called = true; };
+  auto read_cb = [&called](auto, auto, auto, auto, auto) { called = true; };
 
   EXPECT_NE(0u, RegisterService(&mgr, std::move(service), std::move(read_cb)));
 
@@ -462,7 +462,7 @@ TEST(LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
                                                               kWriteReqs, kUpdateReqs));
 
   bool called = false;
-  auto read_cb = [&called](auto, auto, auto, auto) { called = true; };
+  auto read_cb = [&called](auto, auto, auto, auto, auto) { called = true; };
 
   EXPECT_NE(0u, RegisterService(&mgr, std::move(service), std::move(read_cb)));
 
@@ -497,8 +497,9 @@ TEST(LocalServiceManagerTest, ReadCharacteristic) {
 
   bool called = false;
   IdType svc_id;
-  auto read_cb = [&](auto cb_svc_id, auto id, auto offset, auto responder) {
+  auto read_cb = [&](PeerId peer_id, auto cb_svc_id, auto id, auto offset, auto responder) {
     called = true;
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kChrcId, id);
     EXPECT_EQ(kOffset, offset);
@@ -536,7 +537,7 @@ TEST(LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
       kChrcId, kChrcType16, Property::kWrite, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
   bool called = false;
-  auto write_cb = [&called](auto, auto, auto, auto&, auto) { called = true; };
+  auto write_cb = [&called](auto, auto, auto, auto, auto&, auto) { called = true; };
 
   EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler, std::move(write_cb)));
 
@@ -566,7 +567,7 @@ TEST(LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
                                                               kWriteReqs, kUpdateReqs));
 
   bool called = false;
-  auto write_cb = [&called](auto, auto, auto, auto&, auto) { called = true; };
+  auto write_cb = [&called](auto, auto, auto, auto, auto&, auto) { called = true; };
 
   EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler, std::move(write_cb)));
 
@@ -601,8 +602,10 @@ TEST(LocalServiceManagerTest, WriteCharacteristic) {
 
   bool called = false;
   IdType svc_id;
-  auto write_cb = [&](auto cb_svc_id, auto id, auto offset, const auto& value, auto responder) {
+  auto write_cb = [&](PeerId peer_id, auto cb_svc_id, auto id, auto offset, const auto& value,
+                      auto responder) {
     called = true;
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kChrcId, id);
     EXPECT_EQ(kOffset, offset);
@@ -641,7 +644,7 @@ TEST(LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
   service->AddCharacteristic(std::move(chrc));
 
   bool called = false;
-  auto read_cb = [&called](auto, auto, auto, auto) { called = true; };
+  auto read_cb = [&called](auto, auto, auto, auto, auto) { called = true; };
 
   EXPECT_NE(0u, RegisterService(&mgr, std::move(service), std::move(read_cb)));
 
@@ -678,8 +681,9 @@ TEST(LocalServiceManagerTest, ReadDescriptor) {
 
   bool called = false;
   IdType svc_id;
-  auto read_cb = [&](auto cb_svc_id, auto id, auto offset, const auto& responder) {
+  auto read_cb = [&](PeerId peer_id, auto cb_svc_id, auto id, auto offset, const auto& responder) {
     called = true;
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kDescId, id);
     EXPECT_EQ(kOffset, offset);
@@ -721,7 +725,7 @@ TEST(LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
   service->AddCharacteristic(std::move(chrc));
 
   bool called = false;
-  auto write_cb = [&called](auto, auto, auto, auto&, auto) { called = true; };
+  auto write_cb = [&called](auto, auto, auto, auto, auto&, auto) { called = true; };
 
   EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler, write_cb));
 
@@ -758,9 +762,10 @@ TEST(LocalServiceManagerTest, WriteDescriptor) {
 
   bool called = false;
   IdType svc_id;
-  auto write_cb = [&](auto cb_svc_id, auto id, auto offset, const auto& value,
+  auto write_cb = [&](PeerId peer_id, auto cb_svc_id, auto id, auto offset, const auto& value,
                       const auto& responder) {
     called = true;
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kDescId, id);
     EXPECT_EQ(kOffset, offset);
