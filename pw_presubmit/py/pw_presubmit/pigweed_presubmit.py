@@ -300,13 +300,6 @@ def cmake_gcc(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
-# TODO(mohrr) Remove after removing from LUCI config.
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
-                        'CMakeLists.txt'))
-def cmake_tests(ctx: PresubmitContext):
-    cmake_clang(ctx)
-
-
 # TODO(pwbug/180): Slowly add modules here that work with bazel until all
 # modules are added. Then replace with //...
 _MODULES_THAT_BUILD_WITH_BAZEL = [
@@ -761,7 +754,6 @@ OTHER_CHECKS = (
     bazel_test,
     cmake_clang,
     cmake_gcc,
-    cmake_tests,
     gn_boringssl_build,
     build.gn_gen_check,
     gn_nanopb_build,
