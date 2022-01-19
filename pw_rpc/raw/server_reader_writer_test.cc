@@ -146,13 +146,21 @@ TEST(RawUnaryResponder, Move_FinishesActiveCall) {
   EXPECT_EQ(completions.back(), OkStatus());
 }
 
+// TODO(pwbug/605): Remove the PayloadBuffer() API.
+template <typename T>
+class AccessHidden : public T {
+ public:
+  using T::PayloadBuffer;
+};
+
 TEST(RawUnaryResponder, Move_DifferentActiveCalls_ClosesFirstOnly) {
   ReaderWriterTestContext ctx;
   RawUnaryResponder active_call =
       RawUnaryResponder::Open<TestService::TestUnaryRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  std::span buffer = active_call.PayloadBuffer();
+  std::span buffer = static_cast<AccessHidden<RawUnaryResponder>&>(active_call)
+                         .PayloadBuffer();
   ASSERT_FALSE(buffer.empty());
 
   RawUnaryResponder new_active_call =
@@ -178,7 +186,8 @@ TEST(RawUnaryResponder, ReplaceActiveCall_DoesNotFinishCall) {
       RawUnaryResponder::Open<TestService::TestUnaryRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  std::span buffer = active_call.PayloadBuffer();
+  std::span buffer = static_cast<AccessHidden<RawUnaryResponder>&>(active_call)
+                         .PayloadBuffer();
   constexpr const char kData[] = "Some data!";
   ASSERT_GE(buffer.size(), sizeof(kData));
   std::memcpy(buffer.data(), kData, sizeof(kData));
@@ -223,7 +232,10 @@ TEST(RawServerWriter, Move_InactiveToActive_FinishesActiveCall) {
       RawServerWriter::Open<TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  EXPECT_GT(active_call.PayloadBuffer().size(), 0u);
+  EXPECT_GT(static_cast<AccessHidden<RawServerWriter>&>(active_call)
+                .PayloadBuffer()
+                .size(),
+            0u);
 
   RawServerWriter inactive_call;
 
@@ -241,7 +253,8 @@ TEST(RawServerWriter, ReplaceActiveCall_DoesNotFinishCall) {
       RawServerWriter::Open<TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  std::span buffer = active_call.PayloadBuffer();
+  std::span buffer =
+      static_cast<AccessHidden<RawServerWriter>&>(active_call).PayloadBuffer();
   constexpr const char kData[] = "Some data!";
   ASSERT_GE(buffer.size(), sizeof(kData));
   std::memcpy(buffer.data(), kData, sizeof(kData));

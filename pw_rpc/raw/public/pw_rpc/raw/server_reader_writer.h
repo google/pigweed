@@ -81,12 +81,6 @@ class RawServerReaderWriter : private internal::ServerCall {
   // external buffer.
   using internal::Call::Write;
 
-  // Returns a buffer in which a response payload can be built.
-  using internal::Call::PayloadBuffer;
-
-  // Releases a buffer acquired from PayloadBuffer() without sending any data.
-  void ReleaseBuffer() { ReleasePayloadBuffer(); }
-
   Status Finish(Status status = OkStatus()) {
     return CloseAndSendResponse(status);
   }
@@ -101,6 +95,13 @@ class RawServerReaderWriter : private internal::ServerCall {
       : internal::ServerCall(context, type) {}
 
   using internal::Call::CloseAndSendResponse;
+
+  // TODO(pwbug/605): Remove PayloadBuffer() and ReleaseBuffer().
+  // Returns a buffer in which a response payload can be built.
+  using internal::Call::PayloadBuffer;
+
+  // Releases a buffer acquired from PayloadBuffer() without sending any data.
+  void ReleaseBuffer() { ReleasePayloadBuffer(); }
 
  private:
   friend class internal::RawMethod;  // Needed to construct
@@ -140,8 +141,6 @@ class RawServerReader : private RawServerReaderWriter {
   using RawServerReaderWriter::set_on_client_stream_end;
   using RawServerReaderWriter::set_on_error;
   using RawServerReaderWriter::set_on_next;
-
-  using RawServerReaderWriter::PayloadBuffer;
 
   Status Finish(ConstByteSpan response, Status status = OkStatus()) {
     return CloseAndSendResponse(response, status);
@@ -187,13 +186,16 @@ class RawServerWriter : private RawServerReaderWriter {
   using RawServerReaderWriter::set_on_error;
 
   using RawServerReaderWriter::Finish;
-  using RawServerReaderWriter::PayloadBuffer;
-  using RawServerReaderWriter::ReleaseBuffer;
   using RawServerReaderWriter::Write;
 
   // Allow use as a generic RPC Writer.
   using internal::Call::operator Writer&;
   using internal::Call::operator const Writer&;
+
+ protected:
+  // TODO(pwbug/605): Remove PayloadBuffer() and ReleaseBuffer().
+  using RawServerReaderWriter::PayloadBuffer;
+  using RawServerReaderWriter::ReleaseBuffer;
 
  private:
   template <typename, typename, uint32_t>
@@ -234,12 +236,13 @@ class RawUnaryResponder : private RawServerReaderWriter {
 
   using RawServerReaderWriter::set_on_error;
 
-  using RawServerReaderWriter::PayloadBuffer;
-  using RawServerReaderWriter::ReleaseBuffer;
-
   Status Finish(ConstByteSpan response, Status status = OkStatus()) {
     return CloseAndSendResponse(response, status);
   }
+
+ protected:
+  // TODO(pwbug/605): Remove PayloadBuffer().
+  using RawServerReaderWriter::PayloadBuffer;
 
  private:
   template <typename, typename, uint32_t>
