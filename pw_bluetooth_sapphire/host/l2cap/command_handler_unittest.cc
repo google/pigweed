@@ -55,7 +55,7 @@ class CommandHandlerTest : public TestBase {
     TestBase::SetUp();
     signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<TestCommandHandler>(
-        fake_sig(), fit::bind_member(this, &CommandHandlerTest::OnRequestFail));
+        fake_sig(), fit::bind_member<&CommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
     failed_requests_ = 0;
   }

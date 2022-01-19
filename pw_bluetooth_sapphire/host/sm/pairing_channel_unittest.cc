@@ -57,7 +57,7 @@ class PairingChannelTest : public l2cap::testing::FakeChannelTest {
     ChannelOptions options(cid, mtu);
     options.link_type = ll_type;
     sm_chan_ = std::make_unique<PairingChannel>(
-        CreateFakeChannel(options), fit::bind_member(this, &PairingChannelTest::ResetTimer));
+        CreateFakeChannel(options), fit::bind_member<&PairingChannelTest::ResetTimer>(this));
   }
 
   PairingChannel* sm_chan() { return sm_chan_.get(); }

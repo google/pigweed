@@ -37,7 +37,7 @@ class BrEdrCommandHandlerTest : public TestBase {
     TestBase::SetUp();
     signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<BrEdrCommandHandler>(
-        fake_sig(), fit::bind_member(this, &BrEdrCommandHandlerTest::OnRequestFail));
+        fake_sig(), fit::bind_member<&BrEdrCommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
     failed_requests_ = 0;
   }

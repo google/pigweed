@@ -245,7 +245,7 @@ class ChannelManagerTest : public TestingBase {
   void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size) {
     TestingBase::SetUp();
 
-    acl_data_channel_.set_send_packets_cb(fit::bind_member(this, &ChannelManagerTest::SendPackets));
+    acl_data_channel_.set_send_packets_cb(fit::bind_member<&ChannelManagerTest::SendPackets>(this));
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
     chanmgr_ = std::make_unique<ChannelManager>(max_acl_payload_size, max_le_payload_size,

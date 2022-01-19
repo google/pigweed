@@ -481,8 +481,8 @@ class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
         EXPECT_OUTBOUND_REQ(*sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
     // TODO(63074): Make these tests not rely on strict ordering of channel IDs.
     registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
-        sig(), fit::bind_member(this, &BrEdrDynamicChannelTest::OnChannelClose),
-        fit::bind_member(this, &BrEdrDynamicChannelTest::OnServiceRequest),
+        sig(), fit::bind_member<&BrEdrDynamicChannelTest::OnChannelClose>(this),
+        fit::bind_member<&BrEdrDynamicChannelTest::OnServiceRequest>(this),
         /*random_channel_ids=*/false);
   }
 

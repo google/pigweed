@@ -49,7 +49,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     // Setup fake SMP channel.
     ChannelOptions options(l2cap::kLESMPChannelId);
     fake_chan_ = CreateFakeChannel(options);
-    fake_chan_->SetSendCallback(fit::bind_member(this, &SecurityManagerTest::OnDataReceived),
+    fake_chan_->SetSendCallback(fit::bind_member<&SecurityManagerTest::OnDataReceived>(this),
                                 dispatcher());
 
     // Setup a fake logical link.

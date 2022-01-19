@@ -576,7 +576,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
 
   void SetAttributeWriteHandler(Attribute* attribute) {
     attribute->set_write_handler(
-        fit::bind_member(this, &DatabaseExecuteWriteQueueTest::WriteHandler));
+        fit::bind_member<&DatabaseExecuteWriteQueueTest::WriteHandler>(this));
   }
 
   const std::queue<PendingWrite>& pending_writes() const { return pending_writes_; }

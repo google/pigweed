@@ -97,7 +97,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
         transport()->WeakPtr(), &addr_delegate_, dispatcher(),
-        fit::bind_member(this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
+        fit::bind_member<&LowEnergyConnectionManagerTest::OnIncomingConnection>(this));
 
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     sm_factory_ = std::make_unique<TestSmFactory>();
@@ -111,10 +111,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
         gatt_->AsWeakPtr(), discovery_manager_->GetWeakPtr(),
-        fit::bind_member(sm_factory_.get(), &TestSmFactory::CreateSm));
+        fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()));
 
     test_device()->set_connection_state_callback(
-        fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged));
+        fit::bind_member<&LowEnergyConnectionManagerTest::OnConnectionStateChanged>(this));
     StartTestDevice();
   }
 

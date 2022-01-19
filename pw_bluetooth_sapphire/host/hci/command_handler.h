@@ -91,7 +91,7 @@ class CommandHandler {
   // only need to handle command errors.
   //
   // Example:
-  // handler.AddEventHandler(fit::bind_member(this, &BrEdrConnectionManager::OnConnectionComplete));
+  // handler.AddEventHandler(fit::bind_member<&BrEdrConnectionManager::OnConnectionComplete>(this));
   //
   // handler.SendCommandFinishOnStatus(
   //  CreateConnectionCommand{...},

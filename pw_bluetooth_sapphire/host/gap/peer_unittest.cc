@@ -79,10 +79,10 @@ class PeerTest : public ::gtest::TestLoopFixture {
   // between peers (e.g. by metrics updated in construction).
   void SetUpPeer(const DeviceAddress& address, bool connectable) {
     address_ = address;
-    peer_ = std::make_unique<Peer>(fit::bind_member(this, &PeerTest::NotifyListenersCallback),
-                                   fit::bind_member(this, &PeerTest::UpdateExpiryCallback),
-                                   fit::bind_member(this, &PeerTest::DualModeCallback),
-                                   fit::bind_member(this, &PeerTest::StoreLowEnergyBondCallback),
+    peer_ = std::make_unique<Peer>(fit::bind_member<&PeerTest::NotifyListenersCallback>(this),
+                                   fit::bind_member<&PeerTest::UpdateExpiryCallback>(this),
+                                   fit::bind_member<&PeerTest::DualModeCallback>(this),
+                                   fit::bind_member<&PeerTest::StoreLowEnergyBondCallback>(this),
                                    PeerId(1), address_, connectable, &metrics_);
     peer_->AttachInspect(peer_inspector_.GetRoot());
     // Reset metrics as they should only apply to the new peer under test.
