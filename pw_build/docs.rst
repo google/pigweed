@@ -470,6 +470,100 @@ This will result in a ``.zip`` file called ``foo.zip`` stored in
   ├── file1.txt
   └── renamed.txt
 
+pw_relative_source_file_names
+-----------------------------
+This template recursively walks the listed dependencies and collects the names
+of all the headers and source files required by the targets, and then transforms
+them such that they reflect the ``__FILE__`` when pw_build's ``relative_paths``
+config is applied. This is primarily intended for side-band generation of
+pw_tokenizer tokens so file name tokens can be utilized in places where
+pw_tokenizer is unable to embed token information as part of C/C++ compilation.
+
+This template produces a JSON file containing an array of strings (file paths
+with ``-ffile-prefix-map``-like transformations applied) that can be used to
+`generate a token database <module-pw_tokenizer-database-creation>`_.
+
+**Arguments**
+
+* ``deps``: A required list of targets to recursively extract file names from.
+* ``outputs``: A required array with a single element: the path to write the
+  final JSON file to.
+
+**Example**
+
+Let's say we have the following project structure:
+
+.. code-block::
+
+  project root
+  ├── foo/
+  │   ├── foo.h
+  │   └── foo.cc
+  ├── bar/
+  │   ├── bar.h
+  │   └── bar.cc
+  ├── unused/
+  │   ├── unused.h
+  │   └── unused.cc
+  └── main.cc
+
+And a BUILD.gn at the root:
+
+.. code-block::
+
+  pw_source_set("bar") {
+    public_configs = [ ":bar_headers" ]
+    public = [ "bar/bar.h" ]
+    sources = [ "bar/bar.cc" ]
+  }
+
+  pw_source_set("foo") {
+    public_configs = [ ":foo_headers" ]
+    public = [ "foo/foo.h" ]
+    sources = [ "foo/foo.cc" ]
+    deps = [ ":bar" ]
+  }
+
+
+  pw_source_set("unused") {
+    public_configs = [ ":unused_headers" ]
+    public = [ "unused/unused.h" ]
+    sources = [ "unused/unused.cc" ]
+    deps = [ ":bar" ]
+  }
+
+  pw_executable("main") {
+    sources = [ "main.cc" ]
+    deps = [ ":foo" ]
+  }
+
+  pw_relative_source_file_names("main_source_files") {
+    deps = [ ":main" ]
+    outputs = [ "$target_gen_dir/main_source_files.json" ]
+  }
+
+The json file written to `out/gen/main_source_files.json` will contain:
+
+.. code-block::
+
+  [
+    "bar/bar.cc",
+    "bar/bar.h",
+    "foo/foo.cc",
+    "foo/foo.h",
+    "main.cc"
+  ]
+
+Since ``unused`` isn't a transitive dependency of ``main``, its source files
+are not included. Similarly, even though ``bar`` is not a direct dependency of
+``main``, its source files *are* included because ``foo`` brings in ``bar`` as
+a transitive dependency.
+
+Note how the file paths in this example are relative to the project root rather
+than being absolute paths (e.g. ``/home/user/ralph/coding/my_proj/main.cc``).
+This is a result of transformations applied to strip absolute pathing prefixes,
+matching the behavior of pw_build's ``$dir_pw_build:relative_paths`` config.
+
 CMake
 =====
 Pigweed's `CMake`_ support is provided primarily for projects that have an

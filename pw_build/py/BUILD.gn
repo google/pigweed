@@ -29,6 +29,7 @@ pw_python_package("py") {
     "pw_build/create_python_tree.py",
     "pw_build/error.py",
     "pw_build/exec.py",
+    "pw_build/file_prefix_map.py",
     "pw_build/generate_python_package.py",
     "pw_build/generate_python_package_gn.py",
     "pw_build/generated_tests.py",
@@ -42,6 +43,7 @@ pw_python_package("py") {
   ]
   tests = [
     "create_python_tree_test.py",
+    "file_prefix_map_test.py",
     "python_runner_test.py",
     "zip_test.py",
   ]

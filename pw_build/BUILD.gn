@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
+import("$dir_pw_build/relative_source_file_names.gni")
 import("$dir_pw_docgen/docs.gni")
 import("target_types.gni")
 
@@ -120,24 +121,34 @@ config("cpp17") {
 
 # Removes system-dependent prefixes from macros like __FILE__ and debug symbols.
 config("relative_paths") {
-  cflags = [
+  _transformations = [
     # Remap absolute paths to the build directory to "out", in case absolute
     # paths to files in the build directory are created.
     #
     # Clang and GCC apply these flags in opposite order. The build directory is
     # often nested under //. To ensure that both compilers removed it before
     # removing the absolute path to //, apply the option both first and last.
-    "-ffile-prefix-map=" + rebase_path(root_build_dir) + "=out",
+    rebase_path(root_build_dir) + "=out",
 
     # Remove absolute paths to the repo root.
-    "-ffile-prefix-map=" + rebase_path("//") + "=",
+    rebase_path("//") + "=",
 
     # Remove relative paths from the build directory to the source tree.
-    "-ffile-prefix-map=" + rebase_path("//", root_build_dir) + "=",
+    rebase_path("//", root_build_dir) + "=",
 
     # Repeat option to remap absolute paths to the build directory.
-    "-ffile-prefix-map=" + rebase_path(root_build_dir) + "=out",
+    rebase_path(root_build_dir) + "=out",
   ]
+  cflags = []
+
+  foreach(transform, _transformations) {
+    cflags += [ "-ffile-prefix-map=" + transform ]
+  }
+
+  # Write the transformations to a well known path so that other utilities
+  # that need to present file names that match the compiler's __FILE__
+  # macro can apply the same transformation.
+  write_file(pw_build_RELATIVE_PATH_TRANSFORM_JSON, _transformations, "json")
 }
 
 # This group is linked into all pw_executable, pw_static_library, and
