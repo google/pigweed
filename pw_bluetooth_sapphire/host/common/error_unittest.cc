@@ -211,6 +211,14 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
 
   EXPECT_EQ(ToResult(TestError::kFail1).error_value(), error_with_value);
   EXPECT_NE(ToResult(TestError::kFail2).error_value(), error_with_value);
+
+  const fitx::result<Error<TestError>, int> error_with_value_holding_host_error =
+      fitx::error(MakeError(HostError::kFailed));
+
+  // ToResult(HostError) constructs a bt::Error<NoProtocolError> so comparisons must take this into
+  // account.
+  EXPECT_EQ(ToResult(HostError::kFailed).error_value(), error_with_value_holding_host_error);
+  EXPECT_NE(ToResult(HostError::kFailed).error_value(), error_with_value);
 }
 
 TEST(ErrorTest, ToResultFromLegacyStatusType) {

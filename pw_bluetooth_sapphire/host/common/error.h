@@ -305,29 +305,29 @@ constexpr bool operator!=(const Error<ProtocolErrorCode>& lhs, const HostError& 
 }
 
 // Comparisons to fitx::result<Error<ProtocolErrorCode>>
-template <typename ProtocolErrorCode, typename... Ts>
-constexpr bool operator==(const Error<ProtocolErrorCode>& lhs,
-                          const fitx::result<Error<ProtocolErrorCode>, Ts...>& rhs) {
+template <typename LErrorCode, typename RErrorCode, typename... Ts>
+constexpr bool operator==(const Error<LErrorCode>& lhs,
+                          const fitx::result<Error<RErrorCode>, Ts...>& rhs) {
   static_assert(std::conjunction_v<std::negation<detail::IsError<Ts>>...>,
                 "fitx::result should not contain Error as a success value");
   return rhs.is_error() && (rhs.error_value() == lhs);
 }
 
-template <typename ProtocolErrorCode, typename... Ts>
-constexpr bool operator==(const fitx::result<Error<ProtocolErrorCode>, Ts...>& lhs,
-                          const Error<ProtocolErrorCode>& rhs) {
+template <typename LErrorCode, typename RErrorCode, typename... Ts>
+constexpr bool operator==(const fitx::result<Error<LErrorCode>, Ts...>& lhs,
+                          const Error<RErrorCode>& rhs) {
   return rhs == lhs;
 }
 
-template <typename ProtocolErrorCode, typename... Ts>
-constexpr bool operator!=(const Error<ProtocolErrorCode>& lhs,
-                          const fitx::result<Error<ProtocolErrorCode>, Ts...>& rhs) {
+template <typename LErrorCode, typename RErrorCode, typename... Ts>
+constexpr bool operator!=(const Error<LErrorCode>& lhs,
+                          const fitx::result<Error<RErrorCode>, Ts...>& rhs) {
   return !(lhs == rhs);
 }
 
-template <typename ProtocolErrorCode, typename... Ts>
-constexpr bool operator!=(const fitx::result<Error<ProtocolErrorCode>, Ts...>& lhs,
-                          const Error<ProtocolErrorCode>& rhs) {
+template <typename LErrorCode, typename RErrorCode, typename... Ts>
+constexpr bool operator!=(const fitx::result<Error<LErrorCode>, Ts...>& lhs,
+                          const Error<RErrorCode>& rhs) {
   return !(rhs == lhs);
 }
 

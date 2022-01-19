@@ -621,8 +621,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(3, callback_count);
-  ASSERT_TRUE(result.is_error());
-  EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kPinOrKeyMissing));
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing).error_value(), result);
 }
 
 TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
@@ -742,8 +741,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, callback_count);
-  ASSERT_TRUE(result.is_error());
-  EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kPinOrKeyMissing));
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing).error_value(), result);
 }
 
 TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
