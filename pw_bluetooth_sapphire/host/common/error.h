@@ -104,7 +104,7 @@ constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(const Status<ProtocolE
   return fitx::error(Error<ProtocolErrorCode>(status.error()));
 }
 
-template <typename ProtocolErrorCode>
+template <typename ProtocolErrorCode = NoProtocolError>
 class [[nodiscard]] Error {
   static_assert(!std::is_same_v<HostError, ProtocolErrorCode>,
                 "HostError can not be a protocol error");

@@ -22,7 +22,7 @@ constexpr uint8_t kTestEventParam = 3u;
 template <bool DecodeSucceeds>
 struct TestEvent {
   uint8_t test_param;
-  static fitx::result<bt::Error<NoProtocolError>, TestEvent> Decode(const EventPacket& packet) {
+  static fitx::result<bt::Error<>, TestEvent> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
       return ToResult(HostError::kPacketMalformed).take_error();
     }
@@ -46,8 +46,7 @@ template <bool DecodeSucceeds>
 struct TestCommandCompleteEvent {
   uint8_t test_param;
 
-  static fitx::result<bt::Error<NoProtocolError>, TestCommandCompleteEvent> Decode(
-      const EventPacket& packet) {
+  static fitx::result<bt::Error<>, TestCommandCompleteEvent> Decode(const EventPacket& packet) {
     if (!DecodeSucceeds) {
       return ToResult(HostError::kPacketMalformed).take_error();
     }
