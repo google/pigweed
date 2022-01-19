@@ -55,7 +55,7 @@ static constexpr bool IsNull(const T& v) {
 // call operator, which is templated on the function arguments and return type.
 class GenericFunctionTarget {
  public:
-  GenericFunctionTarget() = default;
+  constexpr GenericFunctionTarget() = default;
 
   GenericFunctionTarget(const GenericFunctionTarget&) = delete;
   GenericFunctionTarget(GenericFunctionTarget&&) = delete;
@@ -79,7 +79,7 @@ class GenericFunctionTarget {
 template <typename Return, typename... Args>
 class FunctionTarget : public GenericFunctionTarget {
  public:
-  FunctionTarget() = default;
+  constexpr FunctionTarget() = default;
 
   // Invoke the callable stored by the function target.
   virtual Return operator()(Args... args) const = 0;
@@ -122,7 +122,9 @@ class InlineFunctionTarget final : public FunctionTarget<Return, Args...> {
       : callable_(std::move(other.callable_)) {}
   InlineFunctionTarget& operator=(InlineFunctionTarget&&) = default;
 
-  Return operator()(Args... args) const final { return callable_(args...); }
+  Return operator()(Args... args) const final {
+    return callable_(std::forward<Args>(args)...);
+  }
 
   void MoveInitializeTo(void* ptr) final {
     new (ptr) InlineFunctionTarget(std::move(*this));

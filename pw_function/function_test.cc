@@ -247,6 +247,28 @@ TEST(Function, MoveAssign_CustomObject) {
 #endif  // __clang_analyzer__
 }
 
+TEST(Function, MoveOnlyType) {
+  class MoveOnlyType {
+   public:
+    MoveOnlyType() = default;
+
+    MoveOnlyType(const MoveOnlyType& other) = delete;
+    MoveOnlyType& operator=(const MoveOnlyType& other) = delete;
+
+    MoveOnlyType(MoveOnlyType&&) = default;
+    MoveOnlyType& operator=(MoveOnlyType&&) = default;
+
+    bool ItsWorking() const { return true; }
+  };
+
+  pw::Function<bool(MoveOnlyType)> function = [](MoveOnlyType value) {
+    return value.ItsWorking();
+  };
+
+  MoveOnlyType move_only;
+  EXPECT_TRUE(function(std::move(move_only)));
+}
+
 }  // namespace
 }  // namespace pw
 
