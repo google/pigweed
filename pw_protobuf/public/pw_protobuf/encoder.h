@@ -46,7 +46,7 @@ namespace pw::protobuf {
 //     size of the largest one.
 //  max_nested_depth: The max number of nested submessage encoders that are
 //     expected to be open simultaneously to encode this proto message.
-static constexpr size_t MaxScratchBufferSize(size_t max_message_size,
+inline constexpr size_t MaxScratchBufferSize(size_t max_message_size,
                                              size_t max_nested_depth) {
   return max_message_size + max_nested_depth * config::kMaxVarintSize;
 }
