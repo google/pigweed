@@ -166,17 +166,27 @@ endmacro()
 #
 #   SOURCES - source files for this library
 #   HEADERS - header files for this library
-#   PUBLIC_INCLUDES - public target_include_directories argument.
-#   PRIVATE_INCLUDES - public target_include_directories argument.
 #   PUBLIC_DEPS - public target_link_libraries arguments
 #   PRIVATE_DEPS - private target_link_libraries arguments
+#   PUBLIC_INCLUDES - public target_include_directories argument
+#   PRIVATE_INCLUDES - public target_include_directories argument
 #   IMPLEMENTS_FACADES - which facades this library implements
 #   PUBLIC_DEFINES - public target_compile_definitions arguments
 #   PRIVATE_DEFINES - private target_compile_definitions arguments
+#   PUBLIC_COMPILE_OPTIONS - public target_compile_options arguments
+#   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
+#   PUBLIC_LINK_OPTIONS - public target_link_options arguments
+#   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 #
 function(pw_add_module_library NAME)
-  _pw_library_args(list_args PUBLIC_INCLUDES PRIVATE_INCLUDES IMPLEMENTS_FACADES
-                   PUBLIC_DEFINES PRIVATE_DEFINES)
+  _pw_library_args(
+      list_args
+          PUBLIC_INCLUDES PRIVATE_INCLUDES
+          IMPLEMENTS_FACADES
+          PUBLIC_DEFINES PRIVATE_DEFINES
+          PUBLIC_COMPILE_OPTIONS PRIVATE_COMPILE_OPTIONS
+          PUBLIC_LINK_OPTIONS PRIVATE_LINK_OPTIONS
+  )
   _pw_parse_argv_strict(pw_add_module_library 1 "" "" "${list_args}")
 
   # Check that the library's name is prefixed by the module name.
@@ -231,6 +241,22 @@ function(pw_add_module_library NAME)
 
   if(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
     target_compile_definitions("${NAME}" PRIVATE ${arg_PRIVATE_DEFINES})
+  endif()
+
+  if(NOT "${arg_PUBLIC_COMPILE_OPTIONS}" STREQUAL "")
+    target_compile_options("${NAME}" PUBLIC ${arg_PUBLIC_COMPILE_OPTIONS})
+  endif()
+
+  if(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
+    target_compile_options("${NAME}" PRIVATE ${arg_PRIVATE_COMPILE_OPTIONS})
+  endif()
+
+  if(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
+    target_link_options("${NAME}" PUBLIC ${arg_PUBLIC_LINK_OPTIONS})
+  endif()
+
+  if(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
+    target_link_options("${NAME}" PRIVATE ${arg_PRIVATE_LINK_OPTIONS})
   endif()
 endfunction(pw_add_module_library)
 
