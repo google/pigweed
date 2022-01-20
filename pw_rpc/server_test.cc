@@ -258,6 +258,22 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsNothing) {
   EXPECT_EQ(output_.packet_count(), 0u);
 }
 
+TEST_F(BasicServer, CloseChannel_Idle) {
+  EXPECT_NE(nullptr, server_.GetChannel(2));
+  EXPECT_EQ(OkStatus(), server_.CloseChannel(2));
+  EXPECT_EQ(nullptr, server_.GetChannel(2));
+}
+
+TEST_F(BasicServer, CloseChannel_Pending_Call) {
+  EXPECT_NE(nullptr, server_.GetChannel(1));
+  EXPECT_EQ(OkStatus(),
+            server_.ProcessPacket(EncodePacket(PacketType::REQUEST, 1, 42, 100),
+                                  output_));
+
+  EXPECT_EQ(OkStatus(), server_.CloseChannel(1));
+  EXPECT_EQ(nullptr, server_.GetChannel(1));
+}
+
 class BidiMethod : public BasicServer {
  protected:
   BidiMethod()

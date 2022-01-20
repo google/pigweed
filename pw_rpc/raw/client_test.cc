@@ -177,5 +177,19 @@ TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
   EXPECT_EQ(context.client().ProcessPacket(*result), Status::InvalidArgument());
 }
 
+TEST(Client, ProcessPacket_ChannelCloseCallsErrorCallback) {
+  RawClientTestContext context;
+  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
+  internal::rpc_lock().lock();
+  call.SendInitialClientRequest({});
+
+  ASSERT_NE(call.completed, OkStatus());
+
+  context.CloseClientChannel(1);
+
+  // call.error is set by the on_error callback.
+  ASSERT_EQ(call.error, Status::Aborted());
+}
+
 }  // namespace
 }  // namespace pw::rpc

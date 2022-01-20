@@ -353,6 +353,17 @@ output.
     dynamic_channel.Configure(GetChannelId(), some_output);
   }
 
+A channel may be closed and unregistered with an endpoint by calling
+``ChannelClose`` on the endpoint with the corresponding channel ID.  This
+will terminate any pending calls and call their ``on_error`` callback
+with the ``ABORTED`` status.
+
+.. code-block:: cpp
+
+  // When a channel is closed, any pending calls will receive
+  // on_error callbacks with ABORTED status.
+  client->CloseChannel(1);
+
 Services
 ========
 A service is a logical grouping of RPCs defined within a .proto file. ``pw_rpc``
@@ -545,6 +556,7 @@ The status code indicates the type of error. The status code is logged, but all
 status codes result in the same action by the server: aborting the RPC.
 
 * ``CANCELLED`` -- The client requested that the RPC be cancelled.
+* ``ABORTED`` -- The RPC was aborted due its channel being closed.
 * ``NOT_FOUND`` -- Received a packet for a service method the client does not
   recognize.
 * ``FAILED_PRECONDITION`` -- Received a packet for a service method that the
@@ -610,6 +622,7 @@ status field indicates the type of error.
   support it (a ``CLIENT_STREAM`` was sent to an RPC with no client stream).
 * ``RESOURCE_EXHAUSTED`` -- The request came on a new channel, but a channel
   could not be allocated for it.
+* ``ABORTED`` -- The RPC was aborted due its channel being closed.
 * ``INTERNAL`` -- The server was unable to respond to an RPC due to an
   unrecoverable internal error.
 

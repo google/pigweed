@@ -43,6 +43,11 @@ class Endpoint {
     return GetInternalChannel(id);
   }
 
+  // Closes a channel and terminates any pending calls on that channel.
+  // If the calls are client requests, their on_error callback will be
+  // called with the ABORTED status.
+  Status CloseChannel(uint32_t channel_id) PW_LOCKS_EXCLUDED(rpc_lock());
+
  protected:
   constexpr Endpoint(std::span<rpc::Channel> channels)
       : channels_(static_cast<internal::Channel*>(channels.data()),

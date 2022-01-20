@@ -107,4 +107,25 @@ Call* Endpoint::FindCallById(uint32_t channel_id,
   return nullptr;
 }
 
+Status Endpoint::CloseChannel(uint32_t channel_id) {
+  LockGuard lock(rpc_lock());
+
+  Channel* channel = GetInternalChannel(channel_id);
+  if (channel == nullptr) {
+    return Status::NotFound();
+  }
+
+  // Close pending calls on the channel that's going away.
+  for (Call& call : calls_) {
+    if (channel_id == call.channel_id_locked()) {
+      // A call removes itself from its endpoint's call list by calling
+      // Endpoint::UnregisterCall().
+      call.Terminate();
+    }
+  }
+
+  channel->Close();
+  return OkStatus();
+}
+
 }  // namespace pw::rpc::internal

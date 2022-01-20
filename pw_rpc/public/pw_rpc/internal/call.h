@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <span>
 #include <utility>
@@ -144,6 +145,24 @@ class Call : public IntrusiveList<Call>::Item {
   void HandleError(Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
     CloseAndReleasePayloadBuffer();
     CallOnError(status);
+  }
+
+  void Terminate() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    // Locking here is problematic because:
+    //
+    //   1. CloseAndReleasePayloadBuffer releases rpc_lock()
+    //   2. CallOnError expect rpc_lock() to be released on call.
+    //
+    // pwbug/605 and pwbug/597 respectively need to be addressed before
+    // the locking here can be cleaned up.
+
+    CloseAndReleasePayloadBuffer();  // releases rpc_lock().
+
+    // CallOnError needs to be called with rpc_lock() released.
+    CallOnError(Status::Aborted());
+
+    // Re-lock rpc_lock().
+    rpc_lock().lock();
   }
 
   // Replaces this Call with a new Call object for the same RPC.

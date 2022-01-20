@@ -32,6 +32,9 @@ class Channel : public rpc::Channel {
   constexpr Channel(uint32_t id, ChannelOutput* output)
       : rpc::Channel(id, output) {}
 
+  // Allow closing a channel for internal API users.
+  using rpc::Channel::Close;
+
   // Represents a buffer acquired from a ChannelOutput.
   class [[nodiscard]] OutputBuffer {
    public:

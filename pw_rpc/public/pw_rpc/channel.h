@@ -134,6 +134,12 @@ class Channel {
 
   void set_channel_id(uint32_t channel_id) { id_ = channel_id; }
 
+  constexpr void Close() {
+    PW_ASSERT(id_ != kUnassignedChannelId);
+    id_ = kUnassignedChannelId;
+    output_ = nullptr;
+  }
+
  private:
   uint32_t id_;
   ChannelOutput* output_;

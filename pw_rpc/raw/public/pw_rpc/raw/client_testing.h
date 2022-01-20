@@ -130,6 +130,8 @@ class RawClientTestContext {
 
   const auto& output() const { return channel_output_; }
 
+  Status CloseClientChannel(uint32_t id) { return client_.CloseChannel(id); }
+
  private:
   RawFakeChannelOutput<kMaxPackets,
                        kPacketEncodeBufferSizeBytes,
