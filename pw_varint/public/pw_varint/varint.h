@@ -70,6 +70,7 @@ size_t pw_varint_ZigZagEncodedSize(int64_t integer);
 
 }  // extern "C"
 
+#include <limits>
 #include <span>
 #include <type_traits>
 

@@ -12,10 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_preprocessor/compiler.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wunused-parameter");
+
 #include <kernel.h>
 
+PW_MODIFY_DIAGNOSTICS_POP();
+
 #include "pw_assert/assert.h"
-#include "pw_preprocessor/compiler.h"
 
 extern "C" void pw_assert_HandleFailure(void) {
   k_panic();

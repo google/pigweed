@@ -13,8 +13,15 @@
 // the License.
 #pragma once
 
+#include "pw_preprocessor/compiler.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wunused-parameter");
+
 #include <logging/log.h>
 #include <logging/log_ctrl.h>
+
+PW_MODIFY_DIAGNOSTICS_POP();
 
 #include "pw_log_zephyr/config.h"
 
