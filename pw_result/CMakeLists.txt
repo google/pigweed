@@ -14,12 +14,27 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_result
+pw_add_module_library(pw_result
+  HEADERS
+    public/pw_result/result.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_assert
     pw_status
+    pw_preprocessor
 )
-
 if(Zephyr_FOUND AND CONFIG_PIGWEED_RESULT)
   zephyr_link_libraries(pw_result)
 endif()
+
+pw_add_test(pw_result.result_test
+  SOURCES
+    result_test.cc
+  DEPS
+    pw_result
+    pw_status
+  GROUPS
+    modules
+    pw_result
+)
