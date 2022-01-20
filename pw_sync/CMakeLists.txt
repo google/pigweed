@@ -154,7 +154,7 @@ pw_add_module_library(pw_sync.binary_semaphore_timed_thread_notification_backend
     pw_sync.binary_semaphore_thread_notification_backend
 )
 
-pw_add_facade(pw_sync.yield_core
+pw_add_module_library(pw_sync.yield_core
   HEADERS
     public/pw_sync/yield_core.h
   PUBLIC_INCLUDES
