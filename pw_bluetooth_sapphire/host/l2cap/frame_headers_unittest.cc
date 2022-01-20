@@ -4,8 +4,6 @@
 
 #include "frame_headers.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
