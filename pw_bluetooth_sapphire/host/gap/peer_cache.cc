@@ -4,9 +4,8 @@
 
 #include "peer_cache.h"
 
+#include <lib/fit/function.h>
 #include <zircon/assert.h>
-
-#include <fbl/function.h>
 
 #include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"

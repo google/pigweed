@@ -12,7 +12,6 @@
 
 #include <map>
 
-#include <fbl/function.h>
 #include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"

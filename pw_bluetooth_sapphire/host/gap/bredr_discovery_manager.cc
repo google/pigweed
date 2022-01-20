@@ -7,6 +7,7 @@
 #include <lib/async/default.h>
 #include <lib/async/time.h>
 #include <lib/fit/defer.h>
+#include <lib/stdcompat/functional.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -97,11 +98,11 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
   ZX_DEBUG_ASSERT(result_handler_id_);
   rssi_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci_spec::kInquiryResultWithRSSIEventCode,
-      fbl::BindMember(this, &BrEdrDiscoveryManager::InquiryResult));
+      cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResult, this));
   ZX_DEBUG_ASSERT(rssi_handler_id_);
   eir_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci_spec::kExtendedInquiryResultEventCode,
-      fbl::BindMember(this, &BrEdrDiscoveryManager::ExtendedInquiryResult));
+      cpp20::bind_front(&BrEdrDiscoveryManager::ExtendedInquiryResult, this));
   ZX_DEBUG_ASSERT(eir_handler_id_);
 
   // Set the Inquiry Scan Settings

@@ -4,7 +4,7 @@
 
 #include "low_energy_address_manager.h"
 
-#include <fbl/function.h>
+#include <lib/fit/function.h>
 
 #include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"

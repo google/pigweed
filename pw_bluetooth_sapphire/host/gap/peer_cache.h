@@ -6,12 +6,12 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_CACHE_H_
 
 #include <lib/async/cpp/task.h>
+#include <lib/fit/function.h>
 #include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 
 #include <unordered_map>
 
-#include <fbl/function.h>
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
@@ -159,7 +159,7 @@ class PeerCache final {
  private:
   class PeerRecord final {
    public:
-    PeerRecord(std::unique_ptr<Peer> peer, fbl::Closure remove_peer_callback)
+    PeerRecord(std::unique_ptr<Peer> peer, fit::closure remove_peer_callback)
         : peer_(std::move(peer)), removal_task_(std::move(remove_peer_callback)) {}
 
     // The copy and move ctors cannot be implicitly defined, since
