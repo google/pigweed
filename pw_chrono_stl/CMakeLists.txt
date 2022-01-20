@@ -14,7 +14,37 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+# This target provides the backend for pw::chrono::SystemClock.
 pw_add_module_library(pw_chrono_stl.system_clock
   IMPLEMENTS_FACADES
     pw_chrono.system_clock
+  HEADERS
+    public/pw_chrono_stl/system_clock_config.h
+    public/pw_chrono_stl/system_clock_inline.h
+    public_overrides/pw_chrono_backend/system_clock_config.h
+    public_overrides/pw_chrono_backend/system_clock_inline.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_chrono.epoch
+)
+
+# This target provides the backend for pw::chrono::SystemTimer.
+pw_add_module_library(pw_chrono_stl.system_timer
+  IMPLEMENTS_FACADES
+    pw_chrono.system_timer
+  HEADERS
+    public/pw_chrono_stl/system_timer_inline.h
+    public/pw_chrono_stl/system_timer_native.h
+    public_overrides/pw_chrono_backend/system_timer_inline.h
+    public_overrides/pw_chrono_backend/system_timer_native.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_function
+  SOURCES
+    system_timer.cc
 )
