@@ -79,11 +79,11 @@ import("$dir_pw_build/python_action.gni")
 #
 #     foo.zip
 #     ├── bar/
-#     │   ├── file3.txt
-#     │   └── some_dir/
-#     │       ├── file4.txt
-#     │       └── some_other_dir/
-#     │           └── file5.txt
+#     │   ├── file3.txt
+#     │   └── some_dir/
+#     │       ├── file4.txt
+#     │       └── some_other_dir/
+#     │           └── file5.txt
 #     ├── file1.txt
 #     └── renamed.txt
 #

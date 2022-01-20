@@ -462,11 +462,11 @@ This will result in a ``.zip`` file called ``foo.zip`` stored in
 
   foo.zip
   ├── bar/
-  │   ├── file3.txt
-  │   └── some_dir/
-  │       ├── file4.txt
-  │       └── some_other_dir/
-  │           └── file5.txt
+  │   ├── file3.txt
+  │   └── some_dir/
+  │       ├── file4.txt
+  │       └── some_other_dir/
+  │           └── file5.txt
   ├── file1.txt
   └── renamed.txt
 
@@ -661,6 +661,13 @@ These variables are typically set in a toolchain CMake file passed to ``cmake``
 with the ``-D`` option (``-DCMAKE_TOOLCHAIN_FILE=path/to/file.cmake``).
 For Pigweed embedded builds, set ``CMAKE_SYSTEM_NAME`` to the empty string
 (``""``).
+
+Toolchains may set the ``pw_build_WARNINGS`` variable to a list of ``INTERFACE``
+libraries with compilation options for Pigweed's upstream libraries. This
+defaults to a strict set of warnings. Projects may need to use less strict
+compilation warnings to compile backends exposed to Pigweed code (such as
+``pw_log``) that cannot compile with Pigweed's flags. If desired, Projects can
+access these warnings by depending on ``pw_build.warnings``.
 
 Third party libraries
 ---------------------

@@ -62,13 +62,15 @@ class Endpoint {
         packet.channel_id(), packet.service_id(), packet.method_id());
   }
 
-  // Finds an internal:::Channel with this ID or nullptr if none matches.
-  Channel* GetInternalChannel(uint32_t id) const;
+  // Finds an internal::Channel with this ID or nullptr if none matches.
+  Channel* GetInternalChannel(uint32_t id) const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Creates a channel with the provided ID and ChannelOutput, if a channel slot
   // is available. Returns a pointer to the channel if one is created, nullptr
   // otherwise.
-  Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
+  Channel* AssignChannel(uint32_t id, ChannelOutput& interface)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
  private:
   // Give Call access to the register/unregister functions.
@@ -103,7 +105,7 @@ class Endpoint {
                      uint32_t method_id)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
-  std::span<Channel> channels_;
+  std::span<Channel> channels_ PW_GUARDED_BY(rpc_lock());
   IntrusiveList<Call> calls_ PW_GUARDED_BY(rpc_lock());
 
   uint32_t next_call_id_;

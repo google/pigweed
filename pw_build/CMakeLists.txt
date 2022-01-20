@@ -48,6 +48,23 @@ target_compile_options(pw_build.reduced_size
     $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
 )
 
+# Define the standard Pigweed compile options.
+#
+# The pw_build.warnings library is used by upstream Pigweed targets to add
+# compiler warnings to the build.
+#
+# Toolchains may override these warnings by setting pw_build_WARNINGS:
+#
+#   set(pw_build_WARNINGS my_warnings CACHE STRING "" FORCE)
+#
+set(pw_build_WARNINGS pw_build.strict_warnings
+    CACHE STRING "Warnings libraries to use for Pigweed upstream code")
+
+add_library(pw_build.warnings INTERFACE)
+target_link_libraries(pw_build.warnings INTERFACE ${pw_build_WARNINGS})
+
+# TODO(hepler): These Zephyr exceptions should be made by overriding
+#     pw_build_WARNINGS.
 add_library(pw_build.strict_warnings INTERFACE)
 if(NOT ZEPHYR_PIGWEED_MODULE_DIR)
   # Only include these flags if we're not building with Zephyr.

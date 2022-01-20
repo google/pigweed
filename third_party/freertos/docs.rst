@@ -7,12 +7,14 @@ FreeRTOS
 The ``$dir_pw_third_party/freertos/`` module contains various helpers to use
 FreeRTOS, including Pigweed backend modules which depend on FreeRTOS.
 
-----------------
-GN Build Support
-----------------
-This module provides support to compile FreeRTOS with GN. This is required when
-compiling backends modules for FreeRTOS.
+-------------
+Build Support
+-------------
+This module provides support to compile FreeRTOS with GN and CMake. This is
+required when compiling backends modules for FreeRTOS.
 
+GN
+==
 In order to use this you are expected to configure the following variables from
 ``$dir_pw_third_party/freertos:freertos.gni``:
 
@@ -26,6 +28,19 @@ In order to use this you are expected to configure the following variables from
 After this is done a ``pw_source_set`` for the FreeRTOS library is created at
 ``$dir_pw_third_party/freertos``.
 
+CMake
+=====
+In order to use this you are expected to set the following variables from
+``third_party/freertos/CMakeLists.txt``:
+
+#. Set the GN ``dir_pw_third_party_freertos`` to the path of the FreeRTOS
+   installation.
+#. Set ``pw_third_party_freertos_CONFIG`` to a library target which provides
+   the FreeRTOS config header.
+#. Set ``pw_third_party_freertos_PORT`` to a library target which provides
+   the FreeRTOS port specific includes and sources.
+
+
 .. _third_party-freertos_disable_task_statics:
 
 Linking against FreeRTOS kernel's static internals
@@ -35,10 +50,12 @@ extern "C", statics can be optionally disabled for the tasks.c source file
 to enable use of things like pw_thread_freertos/util.h's ``ForEachThread``.
 
 To facilitate this, Pigweed offers an opt-in option which can be enabled by
-configuring the following GN
-through ``pw_third_party_freertos_DISABLE_TASKS_STATICS = true``. This redefines
-``static`` to nothing for the ``Source/tasks.c`` FreeRTOS source file
-when building through ``$dir_pw_third_party/freertos``.
+configuring GN through
+``pw_third_party_freertos_DISABLE_TASKS_STATICS = true`` or CMake through
+``set(pw_third_party_freertos_DISABLE_TASKS_STATICS ON CACHE BOOL "" FORCE)``.
+This redefines ``static`` to nothing for the ``Source/tasks.c`` FreeRTOS source
+file when building through ``$dir_pw_third_party/freertos`` in GN and through
+``pw_third_party.freertos`` in CMake.
 
 .. attention:: If you use this, make sure that your FreeRTOSConfig.h and port
   does not rely on any statics inside of tasks.c. For example, you cannot use

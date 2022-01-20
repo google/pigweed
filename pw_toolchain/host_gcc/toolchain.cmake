@@ -16,6 +16,9 @@
 # Regardless of whether it's set or not the following include will ensure it is.
 include(${CMAKE_CURRENT_LIST_DIR}/../../pw_build/pigweed.cmake)
 
+set(CMAKE_C_COMPILER gcc)
+set(CMAKE_CXX_COMPILER g++)
+
 pw_set_backend(pw_assert pw_assert_log)
 pw_set_backend(pw_chrono.system_clock pw_chrono_stl.system_clock)
 pw_set_backend(pw_log pw_log_basic)
@@ -23,5 +26,5 @@ pw_set_backend(pw_rpc.system_server targets.host.system_rpc_server)
 pw_set_backend(pw_sync.mutex pw_sync_stl.mutex_backend)
 pw_set_backend(pw_sys_io pw_sys_io_stdio)
 
-set(CMAKE_C_COMPILER gcc)
-set(CMAKE_CXX_COMPILER g++)
+set(pw_build_WARNINGS pw_build.strict_warnings pw_build.extra_strict_warnings
+    CACHE STRING "" FORCE)
