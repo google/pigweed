@@ -390,6 +390,10 @@ function(pw_add_test NAME)
       pw_unit_test.main
       ${arg_DEPS}
   )
+  # Tests require at least one source file.
+  if(NOT arg_SOURCES)
+    target_sources("${NAME}" PRIVATE $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
+  endif()
 
   # Define a target for running the test. The target creates a stamp file to
   # indicate successful test completion. This allows running tests in parallel
