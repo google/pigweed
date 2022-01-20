@@ -181,19 +181,19 @@ modules. A module's Python package is nested under a ``py/`` directory (see
 
   module_name/
   ├── py/
-  │   ├── BUILD.gn
-  │   ├── setup.cfg
-  │   ├── setup.py
-  │   ├── pyproject.toml
-  │   ├── package_name/
-  │   │   ├── module_a.py
-  │   │   ├── module_b.py
-  │   │   ├── py.typed
-  │   │   └── nested_package/
-  │   │       ├── py.typed
-  │   │       └── module_c.py
-  │   ├── module_a_test.py
-  │   └── module_c_test.py
+  │   ├── BUILD.gn
+  │   ├── setup.cfg
+  │   ├── setup.py
+  │   ├── pyproject.toml
+  │   ├── package_name/
+  │   │   ├── module_a.py
+  │   │   ├── module_b.py
+  │   │   ├── py.typed
+  │   │   └── nested_package/
+  │   │       ├── py.typed
+  │   │       └── module_c.py
+  │   ├── module_a_test.py
+  │   └── module_c_test.py
   └── ...
 
 The ``BUILD.gn`` declares this package in GN. For upstream Pigweed, a presubmit

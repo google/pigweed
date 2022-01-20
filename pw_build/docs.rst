@@ -462,11 +462,11 @@ This will result in a ``.zip`` file called ``foo.zip`` stored in
 
   foo.zip
   ├── bar/
-  │   ├── file3.txt
-  │   └── some_dir/
-  │       ├── file4.txt
-  │       └── some_other_dir/
-  │           └── file5.txt
+  │   ├── file3.txt
+  │   └── some_dir/
+  │       ├── file4.txt
+  │       └── some_other_dir/
+  │           └── file5.txt
   ├── file1.txt
   └── renamed.txt
 
