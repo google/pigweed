@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,44 +14,42 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_checksum
+pw_add_module_library(pw_persistent_ram
   HEADERS
-    public/pw_checksum/crc16_ccitt.h
-    public/pw_checksum/crc32.h
+    public/pw_persistent_ram/persistent.h
+    public/pw_persistent_ram/persistent_buffer.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_assert
+    pw_bytes
+    pw_checksum
     pw_polyfill.cstddef
     pw_polyfill.span
-    pw_bytes
+    pw_preprocessor
+    pw_stream
   SOURCES
-    crc16_ccitt.cc
-    crc32.cc
+    persistent_buffer.cc
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_CHECKSUM)
-  zephyr_link_libraries(pw_checksum)
-endif()
 
-pw_add_test(pw_checksum.crc16_ccitt_test
+pw_add_test(pw_persistent_ram.persistent_test
   SOURCES
-    crc16_ccitt_test.cc
-    crc16_ccitt_test_c.c
+    persistent_test.cc
   DEPS
-    pw_checksum
+    pw_persistent_ram
     pw_random
   GROUPS
     modules
-    pw_checksum
+    pw_persistent_ram
 )
 
-pw_add_test(pw_checksum.crc32_test
+pw_add_test(pw_persistent_ram.persistent_buffer_test
   SOURCES
-    crc32_test.cc
-    crc32_test_c.c
+    persistent_buffer_test.cc
   DEPS
-    pw_checksum
+    pw_persistent_ram
     pw_random
   GROUPS
     modules
-    pw_checksum
+    pw_persistent_ram
 )

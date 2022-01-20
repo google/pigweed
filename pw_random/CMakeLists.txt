@@ -14,9 +14,25 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_random
+pw_add_module_library(pw_random
+  HEADERS
+    public/pw_random/random.h
+    public/pw_random/xor_shift.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_bytes
-    pw_span
+    pw_polyfill.cstddef
+    pw_polyfill.span
     pw_status
+)
+
+pw_add_test(pw_random.xor_shift_star_test
+  SOURCES
+    xor_shift_test.cc
+  DEPS
+    pw_random
+  GROUPS
+    modules
+    pw_random
 )
