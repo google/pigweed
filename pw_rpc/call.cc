@@ -117,6 +117,9 @@ ByteSpan Call::PayloadBufferInternal() {
     Channel& c = channel();
     rpc_lock().unlock();
 
+    // TODO(pwbug/597): Ensure the call object is locked before releasing the
+    //     RPC lock.
+
     // Don't call AcquireBuffer with rpc_lock() held, as this may cause deadlock
     // if the channel is also protected by a mutex.
     Channel::OutputBuffer buffer = c.AcquireBuffer();
