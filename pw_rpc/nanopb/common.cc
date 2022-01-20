@@ -85,6 +85,13 @@ StatusWithSize NanopbSerde::Encode(const void* proto_struct,
   return StatusWithSize(output.bytes_written);
 }
 
+StatusWithSize NanopbSerde::EncodedSizeBytes(const void* proto_struct) const {
+  size_t encoded_size = 0;
+  return pb_get_encoded_size(&encoded_size, fields_, proto_struct)
+             ? StatusWithSize(encoded_size)
+             : StatusWithSize::Unknown();
+}
+
 bool NanopbSerde::Decode(ConstByteSpan buffer, void* proto_struct) const {
   auto input = pb_istream_from_buffer(
       reinterpret_cast<const pb_byte_t*>(buffer.data()), buffer.size());
