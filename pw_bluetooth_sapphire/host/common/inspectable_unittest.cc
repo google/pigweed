@@ -145,13 +145,13 @@ TEST(InspectableTest, MakeContainerOfToStringConvertFunction) {
   std::array values = {StringValue{"fuchsia"}, StringValue{"purple"}, StringValue{"magenta"}};
   StringInspectable inspectable(std::move(values), root.CreateString(kPropertyName, ""),
                                 MakeContainerOfToStringConvertFunction(
-                                    {.prologue = u8"👉", .delimiter = u8"🥺", .epilogue = u8"👈"}));
+                                    {.prologue = "👉", .delimiter = "🥺", .epilogue = "👈"}));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
   EXPECT_THAT(hierarchy.take_value(),
-              AllOf(NodeMatches(PropertyList(ElementsAre(
-                  StringIs(kPropertyName, u8"👉fuchsia🥺purple🥺magenta👈"))))));
+              AllOf(NodeMatches(PropertyList(
+                  ElementsAre(StringIs(kPropertyName, "👉fuchsia🥺purple🥺magenta👈"))))));
 }
 
 TEST(InspectableTest, InspectRealStringProperty) {

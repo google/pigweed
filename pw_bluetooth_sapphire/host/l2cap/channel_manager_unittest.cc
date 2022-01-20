@@ -938,7 +938,7 @@ TEST_F(ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchrono
   ASSERT_TRUE(att_chan->Activate(std::move(att_rx_cb), std::move(att_closed_cb)));
 
   auto smp_rx_cb = [&smp_rx_cb_count](ByteBufferPtr sdu) {
-    EXPECT_EQ(u8"🤨", sdu->AsString());
+    EXPECT_EQ("🤨", sdu->AsString());
     smp_rx_cb_count++;
   };
   bool smp_closed_called = false;

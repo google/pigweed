@@ -228,7 +228,7 @@ TEST_F(L2capTest, InboundL2capSocket) {
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
 
   const char write_data[81] =
-      u8"🚂🚃🚄🚅🚆🚈🚇🚈🚉🚊🚋🚌🚎🚝🚞🚟🚠🚡🛤🛲";
+      "🚂🚃🚄🚅🚆🚈🚇🚈🚉🚊🚋🚌🚎🚝🚞🚟🚠🚡🛤🛲";
 
   // Test outbound data fragments using |kMaxDataPacketLength|.
   constexpr size_t kFirstFragmentPayloadSize = kMaxDataPacketLength - sizeof(l2cap::BasicHeader);
@@ -370,7 +370,7 @@ TEST_F(L2capTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   zx_status_t status = sock.read(0, socket_bytes.mutable_data(), socket_bytes.size(), &bytes_read);
   EXPECT_EQ(ZX_OK, status);
   ASSERT_EQ(4u, bytes_read);
-  EXPECT_EQ(u8"🔰", socket_bytes.view(0, bytes_read).AsString());
+  EXPECT_EQ("🔰", socket_bytes.view(0, bytes_read).AsString());
 
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
                                            NextCommandId(), kLinkHandle, kLocalId, kRemoteId));

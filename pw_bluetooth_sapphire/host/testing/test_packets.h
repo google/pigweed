@@ -58,7 +58,7 @@ DynamicByteBuffer CommandStatusPacket(hci_spec::OpCode op_code, hci_spec::Status
 
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address,
-                                                  const std::string& name = u8"Fuchsia💖");
+                                                  const std::string& name = "Fuchsia💖");
 
 DynamicByteBuffer ReadRemoteVersionInfoPacket(hci_spec::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci_spec::ConnectionHandle conn);

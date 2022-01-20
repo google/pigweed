@@ -8,7 +8,7 @@
 namespace bt::l2cap {
 namespace {
 
-constexpr const char kTestData[] = u8"🍜🥯🍕🥖🍞🍩";  // Carb-heavy dataset
+constexpr const char kTestData[] = "🍜🥯🍕🥖🍞🍩";  // Carb-heavy dataset
 const BufferView kTestBuffer = BufferView(kTestData, sizeof(kTestData) - 1);
 
 TEST(FcsTest, EmptyBufferProducesInitialValue) {

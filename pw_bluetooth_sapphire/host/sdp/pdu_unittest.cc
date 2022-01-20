@@ -706,7 +706,7 @@ TEST(PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
   resp.set_attribute(0x4001, DataElement(protocol::kSDP));
   resp.set_attribute(0x4002, DataElement(uint32_t{0xc0decade}));
   DataElement str;
-  str.Set(std::string(u8"💖"));
+  str.Set(std::string("💖"));
   resp.set_attribute(0x4003, std::move(str));
   resp.set_attribute(0x4005, DataElement(uint32_t{0xC0DEB4BE}));
   resp.set_attribute(kServiceRecordHandle, DataElement(uint32_t{0}));
@@ -1127,7 +1127,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
   resp.SetAttribute(0, 0x4001, DataElement(protocol::kSDP));
   resp.SetAttribute(0, 0x4002, DataElement(uint32_t{0xc0decade}));
   DataElement str;
-  str.Set(std::string(u8"💖"));
+  str.Set(std::string("💖"));
   resp.SetAttribute(0, 0x4003, std::move(str));
   resp.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t{0}));
 
