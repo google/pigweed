@@ -73,7 +73,7 @@ constexpr pw::Result<size_t> NullTerminatedLength(const char* str,
 //
 // Precondition: The destination and source shall not overlap.
 // Precondition: The source shall be a valid pointer.
-PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
+constexpr inline StatusWithSize Copy(const std::string_view& source,
                                               std::span<char> dest) {
   if (dest.empty()) {
     return StatusWithSize::ResourceExhausted();
@@ -87,13 +87,13 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
       copied);
 }
 
-PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
+constexpr inline StatusWithSize Copy(const char* source,
                                               std::span<char> dest) {
   PW_DASSERT(source != nullptr);
   return Copy(ClampedCString(source, dest.size()), dest);
 }
 
-PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
+constexpr inline StatusWithSize Copy(const char* source,
                                               char* dest,
                                               size_t num) {
   return Copy(source, std::span<char>(dest, num));
