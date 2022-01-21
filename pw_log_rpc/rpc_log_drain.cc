@@ -30,6 +30,14 @@ Result<ConstByteSpan> CreateEncodedDropMessage(
   PW_TRY(encoder.status());
   return ConstByteSpan(encoder);
 }
+
+// TODO(pwbug/605): Remove this hack for accessing the PayloadBuffer() API.
+class AccessHiddenFunctions : public rpc::RawServerWriter {
+ public:
+  using RawServerWriter::PayloadBuffer;
+  using RawServerWriter::ReleaseBuffer;
+};
+
 }  // namespace
 
 Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
@@ -53,7 +61,8 @@ Status RpcLogDrain::Flush() {
     if (!server_writer_.active()) {
       return Status::Unavailable();
     }
-    log::LogEntries::MemoryEncoder encoder(server_writer_.PayloadBuffer());
+    log::LogEntries::MemoryEncoder encoder(
+        static_cast<AccessHiddenFunctions&>(server_writer_).PayloadBuffer());
     uint32_t packed_entry_count = 0;
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
     // Avoid sending empty packets.
@@ -61,7 +70,7 @@ Status RpcLogDrain::Flush() {
       // Release buffer when still active to keep the writer in a replaceable
       // state.
       if (server_writer_.active()) {
-        server_writer_.ReleaseBuffer();
+        static_cast<AccessHiddenFunctions&>(server_writer_).ReleaseBuffer();
       }
       continue;
     }

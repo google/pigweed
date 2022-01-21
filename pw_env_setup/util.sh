@@ -244,6 +244,8 @@ pw_bootstrap() {
     "$_PW_PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" "$@"
     _PW_ENV_SETUP_STATUS="$?"
   fi
+
+  cp "$PW_ROOT/pw_env_setup/destination.md" "$_PW_ACTUAL_ENVIRONMENT_ROOT/README.md"
 }
 
 pw_activate() {

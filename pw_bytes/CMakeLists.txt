@@ -14,13 +14,64 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_bytes
+pw_add_module_library(pw_bytes
+  HEADERS
+    public/pw_bytes/array.h
+    public/pw_bytes/byte_builder.h
+    public/pw_bytes/endian.h
+    public/pw_bytes/span.h
+    public/pw_bytes/units.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
-    pw_polyfill.overrides
+    pw_polyfill
+    pw_polyfill.cstddef
+    pw_polyfill.span
     pw_preprocessor
-    pw_span
     pw_status
+  SOURCES
+    byte_builder.cc
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_BYTES)
   zephyr_link_libraries(pw_bytes)
 endif()
+
+pw_add_test(pw_bytes.array_test
+  SOURCES
+    array_test.cc
+  DEPS
+    pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)
+
+pw_add_test(pw_bytes.byte_builder_test
+  SOURCES
+    byte_builder_test.cc
+  DEPS
+    pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)
+
+pw_add_test(pw_bytes.endian_test
+  SOURCES
+    endian_test.cc
+  DEPS
+    pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)
+
+pw_add_test(pw_bytes.units_test
+  SOURCES
+    units_test.cc
+  DEPS
+    pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)

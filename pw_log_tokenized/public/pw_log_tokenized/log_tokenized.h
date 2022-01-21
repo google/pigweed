@@ -58,7 +58,7 @@
     PW_LOG_TOKENIZED_ENCODE_MESSAGE(                                         \
         (_PW_LOG_TOKENIZED_LEVEL(_pw_log_tokenized_level) |                  \
          _PW_LOG_TOKENIZED_MODULE(_pw_log_tokenized_module_token) |          \
-         _PW_LOG_TOKENIZED_FLAGS(flags) | _PW_LOG_TOKENIZED_LINE()),         \
+         _PW_LOG_TOKENIZED_FLAGS(flags) | _PW_LOG_TOKENIZED_LINE(__LINE__)), \
         PW_LOG_TOKENIZED_FORMAT_STRING(message),                             \
         __VA_ARGS__);                                                        \
   } while (0)
@@ -76,10 +76,10 @@
 // If the line number field is present, shift it to its position. Set it to zero
 // if the line number is too large for PW_LOG_TOKENIZED_LINE_BITS.
 #if PW_LOG_TOKENIZED_LINE_BITS == 0
-#define _PW_LOG_TOKENIZED_LINE() ((uintptr_t)0)
+#define _PW_LOG_TOKENIZED_LINE(line) ((uintptr_t)0)
 #else
-#define _PW_LOG_TOKENIZED_LINE()                                            \
-  ((uintptr_t)(__LINE__ < (1 << PW_LOG_TOKENIZED_LINE_BITS) ? __LINE__ : 0) \
+#define _PW_LOG_TOKENIZED_LINE(line)                                \
+  ((uintptr_t)(line < (1 << PW_LOG_TOKENIZED_LINE_BITS) ? line : 0) \
    << PW_LOG_TOKENIZED_LEVEL_BITS)
 #endif  // PW_LOG_TOKENIZED_LINE_BITS
 

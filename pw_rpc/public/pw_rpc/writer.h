@@ -15,6 +15,14 @@
 
 #include "pw_rpc/internal/call.h"
 
+namespace pw::transfer::internal {
+
+// TODO(pwbug/605): Remove this hack for giving pw_transfer access to the
+//     PayloadBuffer() API.
+class Context;
+
+}  // namespace pw::transfer::internal
+
 namespace pw::rpc {
 
 // The Writer class allows writing requests or responses to a streaming RPC.
@@ -35,11 +43,17 @@ class Writer : private internal::Call {
   using internal::Call::active;
   using internal::Call::channel_id;
 
-  using internal::Call::PayloadBuffer;
-  using internal::Call::ReleasePayloadBuffer;
   using internal::Call::Write;
 
+ private:
   friend class internal::Call;
+
+  // TODO(pwbug/605): Remove this hack for giving pw_transfer access to the
+  //     PayloadBuffer() API.
+  friend class transfer::internal::Context;
+
+  using internal::Call::PayloadBuffer;
+  using internal::Call::ReleasePayloadBuffer;
 };
 
 namespace internal {

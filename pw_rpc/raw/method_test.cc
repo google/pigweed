@@ -266,11 +266,19 @@ TEST(RawMethod, ServerReaderWriter_WritesResponses) {
                         encoded.value().size()));
 }
 
+// TODO(pwbug/605): Remove this hack for accessing the PayloadBuffer() API.
+class AccessHiddenFunctions : public rpc::RawServerWriter {
+ public:
+  using RawServerWriter::PayloadBuffer;
+};
+
 TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
   ServerContextForTest<FakeService> context(kServerStream);
   kServerStream.Invoke(context.get(), context.request({}));
 
-  auto buffer = context.service().last_writer.PayloadBuffer();
+  auto buffer =
+      static_cast<AccessHiddenFunctions&>(context.service().last_writer)
+          .PayloadBuffer();
 
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
   std::memcpy(buffer.data(), data.data(), data.size());
@@ -344,7 +352,7 @@ TEST(RawServerWriter,
 
   {
     RawServerWriter writer = std::move(context.service().last_writer);
-    auto buffer = writer.PayloadBuffer();
+    auto buffer = static_cast<AccessHiddenFunctions&>(writer).PayloadBuffer();
     buffer[0] = std::byte{'!'};
     // Don't release the buffer.
   }

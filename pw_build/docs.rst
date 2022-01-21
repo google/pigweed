@@ -470,6 +470,8 @@ This will result in a ``.zip`` file called ``foo.zip`` stored in
   ├── file1.txt
   └── renamed.txt
 
+.. _module-pw_build-relative-source-file-names:
+
 pw_relative_source_file_names
 -----------------------------
 This template recursively walks the listed dependencies and collects the names

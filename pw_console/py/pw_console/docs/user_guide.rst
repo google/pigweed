@@ -33,21 +33,21 @@ On startup the console will display multiple windows one on top of the other.
 
 ::
 
-  +-----------------------------------------------------+
-  | [File] [View] [Window] [Help]       Pigweed Console |
-  +=====================================================+
-  |                                                     |
-  |                                                     |
-  |                                                     |
-  | Log Window                                          |
-  +=====================================================+
-  |                                                     |
-  |                                                     |
-  | Python Results                                      |
-  +- - - - - - - - - - - - - - - - - - - - - - - - - - -+
-  |                                                     |
-  | Python Input                                        |
-  +-----------------------------------------------------+
+  +---------------------------------------------------------+
+  | [File] [Edit] [View] [Window] [Help]    Pigweed Console |
+  +=========================================================+
+  |                                                         |
+  |                                                         |
+  |                                                         |
+  | Log Window                                              |
+  +=========================================================+
+  |                                                         |
+  |                                                         |
+  | Python Results                                          |
+  +- - - - - - - - - - - - - - - - - - - - - - - - - - - - -+
+  |                                                         |
+  | Python Input                                            |
+  +---------------------------------------------------------+
 
 
 Navigation
@@ -64,10 +64,12 @@ Main Menu Navigation with the Keyboard
 ============================================  =====================
 Function                                      Keys
 ============================================  =====================
-Move focus between all active UI elements     :kbd:`Shift-Tab`
+Switch focus to the next window or tab        :kbd:`Ctrl-Alt-n`
+Switch focus to the previous window or tab    :kbd:`Ctrl-Alt-p`
 
-Move focus between windows and the main menu  :kbd:`Ctrl-Up`
-                                              :kbd:`Ctrl-Down`
+Switch focus to the next UI element           :kbd:`Shift-Tab`
+                                              :kbd:`Ctrl-Right`
+Switch focus to the previous UI element       :kbd:`Ctrl-Left`
 
 Move selection in the main menu               :kbd:`Up`
                                               :kbd:`Down`
@@ -413,7 +415,9 @@ Any window can be hidden by clicking the :guilabel:`[x] Show Window` checkbox
 under the :guilabel:`[Window]` menu.
 
 The active window can be moved and resized with the following keys. There are
-also menu options under :guilabel:`[View]` for the same actions.
+also menu options under :guilabel:`[View]` for the same actions. Additionally,
+windows can be resized with the mouse by click dragging on the :guilabel:`====`
+text on the far right side of any toolbar.
 
 ============================================  =====================
 Function                                      Keys

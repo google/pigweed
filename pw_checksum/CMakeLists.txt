@@ -14,12 +14,44 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_checksum
+pw_add_module_library(pw_checksum
+  HEADERS
+    public/pw_checksum/crc16_ccitt.h
+    public/pw_checksum/crc32.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
-    pw_span
-  PRIVATE_DEPS
+    pw_polyfill.cstddef
+    pw_polyfill.span
     pw_bytes
+  SOURCES
+    crc16_ccitt.cc
+    crc32.cc
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_CHECKSUM)
   zephyr_link_libraries(pw_checksum)
 endif()
+
+pw_add_test(pw_checksum.crc16_ccitt_test
+  SOURCES
+    crc16_ccitt_test.cc
+    crc16_ccitt_test_c.c
+  DEPS
+    pw_checksum
+    pw_random
+  GROUPS
+    modules
+    pw_checksum
+)
+
+pw_add_test(pw_checksum.crc32_test
+  SOURCES
+    crc32_test.cc
+    crc32_test_c.c
+  DEPS
+    pw_checksum
+    pw_random
+  GROUPS
+    modules
+    pw_checksum
+)

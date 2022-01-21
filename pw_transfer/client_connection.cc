@@ -21,6 +21,13 @@
 
 namespace pw::transfer::internal {
 
+// TODO(pwbug/605): Remove this hack for accessing the PayloadBuffer() API.
+class AccessHiddenFunctions : public rpc::RawServerReaderWriter {
+ public:
+  using RawServerReaderWriter::PayloadBuffer;
+  using RawServerReaderWriter::ReleaseBuffer;
+};
+
 void ClientConnection::SendStatusChunk(TransferType type,
                                        uint32_t transfer_id,
                                        Status status) {
@@ -30,13 +37,13 @@ void ClientConnection::SendStatusChunk(TransferType type,
 
   rpc::RawServerReaderWriter& destination = stream(type);
 
-  Result<ConstByteSpan> result =
-      internal::EncodeChunk(chunk, destination.PayloadBuffer());
+  Result<ConstByteSpan> result = internal::EncodeChunk(
+      chunk, static_cast<AccessHiddenFunctions&>(destination).PayloadBuffer());
 
   if (!result.ok()) {
     PW_LOG_ERROR("Failed to encode final chunk for transfer %u",
                  static_cast<unsigned>(transfer_id));
-    destination.ReleaseBuffer();
+    static_cast<AccessHiddenFunctions&>(destination).ReleaseBuffer();
     return;
   }
 

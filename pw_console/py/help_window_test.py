@@ -118,10 +118,6 @@ class TestHelpWindow(unittest.TestCase):
 
         self.assertIn(
             inspect.cleandoc("""
-            Pigweed CLI v0.1
-
-            ================================ Help ===============================
-
             Welcome to the Pigweed Console!
             Please enjoy this extra help text.
             """),
@@ -129,27 +125,31 @@ class TestHelpWindow(unittest.TestCase):
         )
         self.assertIn(
             inspect.cleandoc("""
-            ============================ Global Keys ============================
+            ==== Global Keys ====
             """),
             help_window.help_text,
         )
         self.assertIn(
             inspect.cleandoc("""
             Toggle help window. -----------------  F1
-            Quit the application. ---------------  Ctrl-Q, Ctrl-W
+            Quit the application. ---------------  Ctrl-Q
+                                                   Ctrl-W
             """),
             help_window.help_text,
         )
         self.assertIn(
             inspect.cleandoc("""
-            ============================= Focus Keys ============================
+            ==== Focus Keys ====
             """),
             help_window.help_text,
         )
         self.assertIn(
             inspect.cleandoc("""
-            Move focus to the next widget. ------  BackTab, Ctrl-Down, Ctrl-Right
-            Move focus to the previous widget. --  Ctrl-Left, Ctrl-Up
+            Move focus to the next widget. ------  Ctrl-Down
+                                                   Ctrl-Right
+                                                   Shift-Tab
+            Move focus to the previous widget. --  Ctrl-Left
+                                                   Ctrl-Up
             """),
             help_window.help_text,
         )

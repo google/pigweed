@@ -249,8 +249,8 @@ class WindowList:
     def switch_to_tab(self, index: int):
         self.focused_pane_index = index
 
+        # refresh_ui() will focus on the new tab container.
         self.refresh_ui()
-        self.application.focus_on_container(self.active_panes[index])
 
     def set_display_mode(self, mode: DisplayMode):
         self.display_mode = mode

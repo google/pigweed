@@ -23,6 +23,7 @@ from parameterized import parameterized  # type: ignore
 
 from pw_build.python_package import PythonPackage
 from pw_build.create_python_tree import build_python_tree, copy_extra_files
+from pw_build.generate_python_package import _PYPROJECT_FILE as PYPROJECT_TEXT
 
 
 def _setup_cfg(package_name: str) -> str:
@@ -52,6 +53,9 @@ def _create_fake_python_package(location: Path, files: List[str],
         text = f'"""{package_name}"""'
         if str(destination).endswith('setup.cfg'):
             text = _setup_cfg(package_name)
+        elif str(destination).endswith('pyproject.toml'):
+            # Make sure pyproject.toml file has valid syntax.
+            text = PYPROJECT_TEXT
         destination.write_text(text)
 
 

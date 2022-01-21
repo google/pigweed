@@ -74,10 +74,10 @@ class TestService final
     if (request.empty()) {
       last_responder_ = std::move(responder);
     } else {
-      ByteSpan response = responder.PayloadBuffer();
+      std::byte response[32] = {};
       StatusWithSize sws = TestUnaryRpc(request, response);
 
-      responder.Finish(response.first(sws.size()), sws.status());
+      responder.Finish(std::span(response).first(sws.size()), sws.status());
     }
   }
 
@@ -87,8 +87,7 @@ class TestService final
 
     ASSERT_TRUE(DecodeRequest(request, integer, status));
     for (int i = 0; i < integer; ++i) {
-      ByteSpan buffer = writer.PayloadBuffer();
-
+      std::byte buffer[32] = {};
       TestStreamResponse::MemoryEncoder test_stream_response(buffer);
       EXPECT_EQ(OkStatus(), test_stream_response.WriteNumber(i));
       EXPECT_EQ(OkStatus(), writer.Write(test_stream_response));
@@ -225,6 +224,12 @@ TEST(RawCodegen, Server_InvokeAsyncUnaryRpc) {
   }
 }
 
+// TODO(pwbug/605): Remove the PayloadBuffer() API.
+class TestResponder : public RawUnaryResponder {
+ public:
+  using RawUnaryResponder::PayloadBuffer;
+};
+
 TEST(RawCodegen, Server_HandleErrorWhileHoldingBuffer) {
   PW_RAW_TEST_METHOD_CONTEXT(test::TestService, TestAnotherUnaryRpc) ctx;
 
@@ -232,7 +237,9 @@ TEST(RawCodegen, Server_HandleErrorWhileHoldingBuffer) {
   ctx.call({});
   ASSERT_TRUE(ctx.service().last_responder().active());
 
-  ASSERT_FALSE(ctx.service().last_responder().PayloadBuffer().empty());
+  ASSERT_FALSE(static_cast<TestResponder&>(ctx.service().last_responder())
+                   .PayloadBuffer()
+                   .empty());
 
   ctx.SendClientError(Status::Unimplemented());
 
@@ -246,7 +253,9 @@ TEST(RawCodegen, Server_FinishWhileHoldingBuffer) {
   ctx.call({});
   ASSERT_TRUE(ctx.service().last_responder().active());
 
-  ASSERT_FALSE(ctx.service().last_responder().PayloadBuffer().empty());
+  ASSERT_FALSE(static_cast<TestResponder&>(ctx.service().last_responder())
+                   .PayloadBuffer()
+                   .empty());
 
   ctx.service().last_responder().Finish({});
 
@@ -260,7 +269,9 @@ TEST(RawCodegen, Server_MoveIntoCallHoldingBuffer) {
   RawUnaryResponder call;
 
   ctx.call({});
-  ASSERT_FALSE(ctx.service().last_responder().PayloadBuffer().empty());
+  ASSERT_FALSE(static_cast<TestResponder&>(ctx.service().last_responder())
+                   .PayloadBuffer()
+                   .empty());
 
   call = std::move(ctx.service().last_responder());
 }
@@ -274,10 +285,14 @@ TEST(RawCodegen, Server_MoveBetweenActiveCallsWithBuffers) {
   ctx_2.set_channel_id(2);
 
   ctx_1.call({});
-  ASSERT_FALSE(ctx_1.service().last_responder().PayloadBuffer().empty());
+  ASSERT_FALSE(static_cast<TestResponder&>(ctx_1.service().last_responder())
+                   .PayloadBuffer()
+                   .empty());
 
   ctx_2.call({});
-  ASSERT_FALSE(ctx_2.service().last_responder().PayloadBuffer().empty());
+  ASSERT_FALSE(static_cast<TestResponder&>(ctx_2.service().last_responder())
+                   .PayloadBuffer()
+                   .empty());
 
   ctx_1.service().last_responder() =
       std::move(ctx_2.service().last_responder());

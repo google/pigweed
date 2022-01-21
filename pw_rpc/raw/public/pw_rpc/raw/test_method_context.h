@@ -137,16 +137,18 @@ class UnaryContext
   UnaryContext(Args&&... args) : Base(std::forward<Args>(args)...) {}
 
   // Invokes the RPC with the provided request. Returns RPC's StatusWithSize.
+  template <size_t kSynchronousResponseBufferSizeBytes = 64>
   auto call(ConstByteSpan request) {
     if constexpr (MethodTraits<decltype(kMethod)>::kSynchronous) {
       Base::output().clear();
 
       auto responder = Base::template GetResponder<RawUnaryResponder>();
-      ByteSpan response = responder.PayloadBuffer();
-      auto sws =
-          CallMethodImplFunction<kMethod>(Base::service(), request, response);
+      std::byte response[kSynchronousResponseBufferSizeBytes] = {};
+      auto sws = CallMethodImplFunction<kMethod>(
+          Base::service(), request, std::span(response));
       PW_ASSERT(
-          responder.Finish(response.first(sws.size()), sws.status()).ok());
+          responder.Finish(std::span(response).first(sws.size()), sws.status())
+              .ok());
       return sws;
     } else {
       Base::template call<kMethod, RawUnaryResponder>(request);

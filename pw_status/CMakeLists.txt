@@ -16,11 +16,64 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_status_CONFIG)
 
-pw_auto_add_simple_module(pw_status
+pw_add_module_library(pw_status.config
+  HEADERS
+    public/pw_status/internal/config.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
-    ${pw_status_CONFIG}
+    ${pw_thread_CONFIG}
 )
 
+pw_add_module_library(pw_status
+  HEADERS
+    public/pw_status/status.h
+    public/pw_status/status_with_size.h
+    public/pw_status/try.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_status.config
+  SOURCES
+    status.cc
+)
 if(Zephyr_FOUND AND CONFIG_PIGWEED_STATUS)
   zephyr_link_libraries(pw_status)
 endif()
+
+# Use this for pw_status_CONFIG to require pw::Status objects to be used.
+pw_add_module_library(pw_status.check_if_used
+  PUBLIC_DEFINES
+    PW_STATUS_CFG_CHECK_IF_USED=1
+)
+
+pw_add_test(pw_status.status_test
+  SOURCES
+    status_test.cc
+    status_test_c.c
+  DEPS
+    pw_status
+  GROUPS
+    modules
+    pw_status
+)
+
+pw_add_test(pw_status.status_with_size_test
+  SOURCES
+    status_with_size_test.cc
+  DEPS
+    pw_status
+  GROUPS
+    modules
+    pw_status
+)
+
+pw_add_test(pw_status.try_test
+  SOURCES
+    try_test.cc
+  DEPS
+    pw_status
+  GROUPS
+    modules
+    pw_status
+)

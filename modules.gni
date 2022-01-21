@@ -24,6 +24,7 @@ declare_args() {
   dir_pw_assert = get_path_info("pw_assert", "abspath")
   dir_pw_assert_basic = get_path_info("pw_assert_basic", "abspath")
   dir_pw_assert_log = get_path_info("pw_assert_log", "abspath")
+  dir_pw_assert_tokenized = get_path_info("pw_assert_tokenized", "abspath")
   dir_pw_assert_zephyr = get_path_info("pw_assert_zephyr", "abspath")
   dir_pw_base64 = get_path_info("pw_base64", "abspath")
   dir_pw_bloat = get_path_info("pw_bloat", "abspath")

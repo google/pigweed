@@ -36,6 +36,12 @@ namespace pw::file {
 
 using Entry = FlatFileSystemService::Entry;
 
+// TODO(pwbug/605): Remove this hack for accessing the PayloadBuffer() API.
+class AccessHiddenFunctions : public rpc::RawServerWriter {
+ public:
+  using RawServerWriter::PayloadBuffer;
+};
+
 Status FlatFileSystemService::EnumerateFile(
     Entry& entry, pw::file::ListResponse::StreamEncoder& output_encoder) {
   StatusWithSize sws = entry.Name(file_name_buffer_);
@@ -58,7 +64,8 @@ void FlatFileSystemService::EnumerateAllFiles(RawServerWriter& writer) {
   for (Entry* entry : entries_) {
     PW_DCHECK_NOTNULL(entry);
     // For now, don't try to pack entries.
-    pw::file::ListResponse::MemoryEncoder encoder(writer.PayloadBuffer());
+    pw::file::ListResponse::MemoryEncoder encoder(
+        static_cast<AccessHiddenFunctions&>(writer).PayloadBuffer());
     if (Status status = EnumerateFile(*entry, encoder); !status.ok()) {
       if (status != Status::NotFound()) {
         PW_LOG_ERROR("Failed to enumerate file (id: %u) with status %d",
@@ -101,7 +108,8 @@ void FlatFileSystemService::List(ConstByteSpan request,
       return;
     }
 
-    pw::file::ListResponse::MemoryEncoder encoder(writer.PayloadBuffer());
+    pw::file::ListResponse::MemoryEncoder encoder(
+        static_cast<AccessHiddenFunctions&>(writer).PayloadBuffer());
     Status proto_encode_status = EnumerateFile(*result.value(), encoder);
     if (!proto_encode_status.ok()) {
       writer.Finish(proto_encode_status);

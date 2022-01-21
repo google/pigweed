@@ -35,7 +35,14 @@ class UnitTestService final
   // migrated to it.
   template <typename WriteFunction>
   void WriteEvent(WriteFunction event_writer) {
-    Event::MemoryEncoder event(writer_.PayloadBuffer());
+    // TODO(pwbug/605): Remove use of PayloadBuffer().
+    class AccessHiddenFunction : public rpc::RawServerWriter {
+     public:
+      using RawServerWriter::PayloadBuffer;
+    };
+
+    Event::MemoryEncoder event(
+        static_cast<AccessHiddenFunction&>(writer_).PayloadBuffer());
     event_writer(event);
     if (event.status().ok()) {
       writer_.Write(event)

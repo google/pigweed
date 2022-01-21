@@ -14,4 +14,9 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_facade(pw_interrupt)
+pw_add_facade(pw_interrupt.context
+  HEADERS
+    public/pw_interrupt/context.h
+  PUBLIC_INCLUDES
+    public
+)

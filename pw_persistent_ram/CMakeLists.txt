@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,39 +14,42 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_config(pw_function_CONFIG)
-
-pw_add_module_library(pw_function.config
+pw_add_module_library(pw_persistent_ram
   HEADERS
-    public/pw_function/config.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    ${pw_function_CONFIG}
-)
-
-pw_add_module_library(pw_function
-  HEADERS
-    public/pw_function/function.h
-    public/pw_function/internal/function.h
+    public/pw_persistent_ram/persistent.h
+    public/pw_persistent_ram/persistent_buffer.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_assert
-    pw_function.config
+    pw_bytes
+    pw_checksum
+    pw_polyfill.cstddef
+    pw_polyfill.span
     pw_preprocessor
-)
-if(Zephyr_FOUND AND CONFIG_PIGWEED_FUNCTION)
-  zephyr_link_libraries(pw_function)
-endif()
-
-pw_add_test(pw_function.function_test
+    pw_stream
   SOURCES
-    function_test.cc
+    persistent_buffer.cc
+)
+
+pw_add_test(pw_persistent_ram.persistent_test
+  SOURCES
+    persistent_test.cc
   DEPS
-    pw_function
-    pw_polyfill
+    pw_persistent_ram
+    pw_random
   GROUPS
     modules
-    pw_function
+    pw_persistent_ram
+)
+
+pw_add_test(pw_persistent_ram.persistent_buffer_test
+  SOURCES
+    persistent_buffer_test.cc
+  DEPS
+    pw_persistent_ram
+    pw_random
+  GROUPS
+    modules
+    pw_persistent_ram
 )
