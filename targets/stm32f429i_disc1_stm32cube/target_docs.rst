@@ -40,3 +40,17 @@ flashed to a device with the following commands:
 
   openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg -c "program out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf reset exit"
 
+Once the board has been flashed, you can connect to it and send RPC commands
+via the Pigweed console:
+
+.. code:: sh
+
+  pw-system-console -d /dev/ttyACM0 -b 115200 --proto-globs pw_rpc/echo.proto --token-databases out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf
+
+When the console opens, try sending an Echo RPC request. You should get back
+the same message you sent to the device.
+
+.. code:: sh
+
+  >>> device.rpcs.pw.rpc.EchoService.Echo(msg="Hello, Pigweed!")
+  (Status.OK, pw.rpc.EchoMessage(msg='Hello, Pigweed!'))
