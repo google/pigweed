@@ -42,6 +42,8 @@ class RpcChannelOutput : public rpc::ChannelOutput {
         buffer_(buffer),
         address_(address) {}
 
+  size_t MaximumTransmissionUnit() override { return buffer_.size(); }
+
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
   Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
@@ -69,6 +71,8 @@ class RpcChannelOutputBuffer : public rpc::ChannelOutput {
                                    uint64_t address,
                                    const char* channel_name)
       : ChannelOutput(channel_name), writer_(writer), address_(address) {}
+
+  size_t MaximumTransmissionUnit() override { return buffer_.size(); }
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 

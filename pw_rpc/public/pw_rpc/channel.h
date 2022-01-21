@@ -22,13 +22,6 @@
 #include "pw_status/status.h"
 
 namespace pw::rpc {
-namespace internal {
-
-class BaseClientCall;
-
-}  // namespace internal
-
-class Client;
 
 class ChannelOutput {
  public:
@@ -40,7 +33,10 @@ class ChannelOutput {
 
   constexpr const char* name() const { return name_; }
 
-  // Acquire a buffer into which to write an outgoing RPC packet. The
+  // Returns the maximum buffer size that this ChannelOutput can support.
+  virtual size_t MaximumTransmissionUnit() { return 0; }
+
+  // Acquires a buffer into which to write an outgoing RPC packet. The
   // implementation is expected to handle synchronization if necessary.
   virtual std::span<std::byte> AcquireBuffer()
       PW_LOCKS_EXCLUDED(internal::rpc_lock()) = 0;

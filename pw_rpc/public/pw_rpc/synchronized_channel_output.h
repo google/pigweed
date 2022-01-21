@@ -33,6 +33,10 @@ class PW_LOCKABLE("pw::rpc::SynchronizedChannelOutput")
   constexpr SynchronizedChannelOutput(sync::Mutex& mutex, Args&&... args)
       : BaseChannelOutput(std::forward<Args>(args)...), mutex_(mutex) {}
 
+  size_t MaximumTransmissionUnit() final {
+    return BaseChannelOutput::MaximumTransmissionUnit();
+  }
+
   std::span<std::byte> AcquireBuffer() final PW_EXCLUSIVE_LOCK_FUNCTION() {
     mutex_.lock();
     return BaseChannelOutput::AcquireBuffer();

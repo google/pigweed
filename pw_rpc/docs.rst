@@ -1051,3 +1051,33 @@ configuration. This will enable the Kconfig menu for the following:
 * ``pw_rpc.common` which can be enabled via ``CONFIG_PIGWEED_RPC_COMMON=y``.
 * ``pw_rpc.synchronized_channel_output`` which can be enabled via
   ``CONFIG_PIGWEED_RPC_SYNCHRONIZED_CHANNEL_OUTPUT=y``.
+
+ChannelOutput API
+=================
+``pw_rpc`` endpoints sends packets using the :cpp:class:`ChannelOutput`
+interface.
+
+.. cpp:class:: pw::rpc::ChannelOutput
+
+  pw_rpc endpoints use the ``ChannelOutput`` class to send packets. Systems that
+  integrate pw_rpc must use one or more ``ChannelOutput`` instances.
+
+  .. cpp:function:: virtual size_t MaximumTransmissionUnit()
+
+    Returns the size of the largest buffer that :cpp:func:`AcquireBuffer` can
+    allocate.
+
+  .. cpp:function:: virtual std::byte* AcquireBuffer(size_t size_bytes)
+
+    Acquires a buffer of the specified size into which to write an outgoing RPC
+    packet. If a buffer of the specified size cannot be allocated, returns
+    nullptr. The implementation is expected to handle synchronization if
+    necessary.
+
+  .. cpp:function:: virtual Status SendAndReleaseBuffer(std::span<const std::byte> buffer)
+
+    Sends the contents of a buffer previously obtained from
+    :cpp:func:`AcquireBuffer`. This may be called with an empty span, in which
+    case the buffer should be released without sending any data. Returns OK if
+    further packets may be sent or any other status if the Channel is no longer
+    able to send packets.

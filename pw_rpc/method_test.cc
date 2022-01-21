@@ -52,6 +52,7 @@ TEST(Method, Invoke) {
    public:
     constexpr NullChannelOutput() : ChannelOutput("NullChannelOutput") {}
 
+    size_t MaximumTransmissionUnit() override { return 0; }
     ByteSpan AcquireBuffer() override { return {}; }
     Status SendAndReleaseBuffer(ConstByteSpan) override { return OkStatus(); }
   } channel_output;

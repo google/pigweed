@@ -39,6 +39,8 @@ class TestOutput : public ChannelOutput {
       : ChannelOutput(name), sent_data_ {}
   {}
 
+  size_t MaximumTransmissionUnit() override { return buffer_size(); }
+
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
   Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {

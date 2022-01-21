@@ -146,6 +146,8 @@ class FakeChannelOutput : public ChannelOutput {
  private:
   friend class rpc::FakeServer;
 
+  size_t MaximumTransmissionUnit() final { return encoding_buffer_.size(); }
+
   ByteSpan AcquireBuffer() final;
 
   // Processes buffer according to packet type and `return_after_packet_count_`

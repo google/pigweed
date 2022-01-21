@@ -27,6 +27,7 @@ TEST(ChannelOutput, Name) {
   class NameTester : public ChannelOutput {
    public:
     NameTester(const char* name) : ChannelOutput(name) {}
+    size_t MaximumTransmissionUnit() override { return 0; }
     std::span<std::byte> AcquireBuffer() override { return {}; }
     Status SendAndReleaseBuffer(std::span<const std::byte>) override {
       return OkStatus();
