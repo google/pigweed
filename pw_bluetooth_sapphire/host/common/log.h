@@ -10,6 +10,8 @@
 #include <cstddef>
 #include <string>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/to_string.h"
+
 // Logging utilities for the host library. This provides a common abstraction
 // over Zircon DDK debug utilities (used when the host stack code runs in a
 // driver) and printf (when it's used in unit tests and command-line tools).
@@ -158,12 +160,6 @@ class LogContextGuard final {
 // Returns a snapshot of the current registered log scopes that can be restored with
 // LogContextGuard::LogContextGuard(LogContext).
 LogContext SaveLogContext();
-
-// Instantiates on |T| to provide an implementation for bt_str(…) if T has a .ToString() method.
-template <typename T>
-std::string ToString(const T& value) {
-  return value.ToString();
-}
 
 }  // namespace internal
 }  // namespace bt

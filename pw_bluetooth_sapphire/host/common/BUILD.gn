@@ -45,6 +45,7 @@ source_set("common") {
     "task_domain.h",
     "test_helpers.cc",
     "test_helpers.h",
+    "to_string.h",
     "uint128.h",
     "uint256.h",
     "uuid.cc",
