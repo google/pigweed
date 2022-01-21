@@ -594,7 +594,7 @@ Server-to-client packets
 |                   |                                     |
 +-------------------+-------------------------------------+
 
-All server packets contain the same client ID that was set in the initial
+All server packets contain the same ``call_id`` that was set in the initial
 request made by the client, if any.
 
 **Server errors**
