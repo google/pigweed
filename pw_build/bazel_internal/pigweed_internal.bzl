@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,6 +14,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """ An internal set of tools for creating embedded CC targets. """
+
+load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
+load("@rules_cc//cc:toolchain_utils.bzl", "find_cpp_toolchain")
 
 DEBUGGING = [
     "-g",
@@ -142,3 +145,64 @@ def has_pw_assert_dep(deps):
         if dep in pw_assert_targets:
             return True
     return False
+
+def _preprocess_linker_script_impl(ctx):
+    cc_toolchain = find_cpp_toolchain(ctx)
+    output_script = ctx.actions.declare_file(ctx.label.name + ".ld")
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+    cxx_compiler_path = cc_common.get_tool_for_action(
+        feature_configuration = feature_configuration,
+        action_name = C_COMPILE_ACTION_NAME,
+    )
+    c_compile_variables = cc_common.create_compile_variables(
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        user_compile_flags = ctx.fragments.cpp.copts + ctx.fragments.cpp.conlyopts,
+    )
+    env = cc_common.get_environment_variables(
+        feature_configuration = feature_configuration,
+        action_name = C_COMPILE_ACTION_NAME,
+        variables = c_compile_variables,
+    )
+    ctx.actions.run(
+        outputs = [output_script],
+        inputs = depset(
+            [ctx.file.linker_script],
+            transitive = [cc_toolchain.all_files],
+        ),
+        executable = cxx_compiler_path,
+        arguments = [
+            "-E",
+            "-P",
+            "-xc",
+            ctx.file.linker_script.short_path,
+            "-o",
+            output_script.path,
+        ] + [
+            "-D" + d
+            for d in ctx.attr.defines
+        ] + ctx.attr.copts,
+        env = env,
+    )
+    return [DefaultInfo(files = depset([output_script]))]
+
+pw_linker_script = rule(
+    _preprocess_linker_script_impl,
+    attrs = {
+        "copts": attr.string_list(doc = "C compile options."),
+        "defines": attr.string_list(doc = "C preprocessor defines."),
+        "linker_script": attr.label(
+            mandatory = True,
+            allow_single_file = True,
+            doc = "Linker script to preprocess.",
+        ),
+        "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+    },
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    fragments = ["cpp"],
+)

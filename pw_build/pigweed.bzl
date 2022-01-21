@@ -14,7 +14,7 @@
 """Pigweed build environment for bazel."""
 
 load(
-    ":bazel_internal/pigweed_internal.bzl",
+    "//pw_build/bazel_internal:pigweed_internal.bzl",
     _add_cc_and_c_targets = "add_cc_and_c_targets",
     _has_pw_assert_dep = "has_pw_assert_dep",
 )

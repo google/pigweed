@@ -849,6 +849,33 @@ file. The built-in Bazel rules ``cc_binary``, ``cc_library``, and ``cc_test``
 are wrapped with ``pw_cc_binary``, ``pw_cc_library``, and ``pw_cc_test``.
 These wrappers add parameters to calls to the compiler and linker.
 
+In addition to wrapping the built-in rules, Pigweed also provides a custom
+rule for handling linker scripts with Bazel. e.g.
+
+.. code-block:: python
+
+  pw_linker_script(
+    name = "some_linker_script",
+    linker_script = ":some_configurable_linker_script.ld",
+    defines = [
+        "PW_BOOT_FLASH_BEGIN=0x08000200",
+        "PW_BOOT_FLASH_SIZE=1024K",
+        "PW_BOOT_HEAP_SIZE=112K",
+        "PW_BOOT_MIN_STACK_SIZE=1K",
+        "PW_BOOT_RAM_BEGIN=0x20000000",
+        "PW_BOOT_RAM_SIZE=192K",
+        "PW_BOOT_VECTOR_TABLE_BEGIN=0x08000000",
+        "PW_BOOT_VECTOR_TABLE_SIZE=512",
+    ],
+  )
+
+  pw_cc_binary(
+    name = "some_binary",
+    srcs = ["some_source.c"],
+    additional_linker_inputs = [":some_linker_script"],
+    linkopts = ["-T $(location :some_linker_script)"],
+  )
+
 Currently Pigweed is making use of a set of
 `open source <https://github.com/silvergasp/bazel-embedded>`_ toolchains. The
 host builds are only supported on Linux/Mac based systems. Additionally the
