@@ -187,6 +187,9 @@ target. Additionally, it has some of its own arguments:
   output file, ``stamp`` must be in the build directory. Defaults to false.
 * ``environment``: Optional list of strings. Environment variables to set,
   passed as NAME=VALUE strings.
+* ``working_directory``: Optional file path. When provided the current working
+  directory will be set to this location before the Python module or script is
+  run.
 
 **Expressions**
 

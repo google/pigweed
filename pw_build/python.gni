@@ -28,6 +28,11 @@ declare_args() {
   # See pip help install.
   pw_build_PIP_CONSTRAINTS =
       [ "$dir_pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list" ]
+
+  # If true, GN will run each Python test using the coverage command. A separate
+  # coverage data file for each test will be saved. To generate reports from
+  # this information run: pw presubmit --step gn_python_test_coverage
+  pw_build_PYTHON_TEST_COVERAGE = false
 }
 
 # Python packages provide the following targets as $target_name.$subtarget.
@@ -659,7 +664,33 @@ template("pw_python_package") {
 
     if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
       pw_python_action(_test_target) {
-        script = test
+        if (pw_build_PYTHON_TEST_COVERAGE) {
+          module = "coverage"
+          working_directory =
+              rebase_path(get_path_info(test, "dir"), root_build_dir)
+          args = [
+            "run",
+            "--branch",
+
+            # Include all source files in the working_directory when calculating coverage.
+            "--source=.",
+
+            # Test file to run.
+            get_path_info(test, "file"),
+          ]
+
+          # Set the coverage file to a location in out/python/gen/
+          _coverage_data_file = "$target_gen_dir/$target_name.coverage"
+          outputs = [ _coverage_data_file ]
+
+          # The coverage tool only allows setting the output with an environment variable.
+          environment =
+              [ "COVERAGE_FILE=" +
+                rebase_path(_coverage_data_file, get_path_info(test, "dir")) ]
+        } else {
+          script = test
+        }
+
         stamp = true
 
         deps = _test_install_deps

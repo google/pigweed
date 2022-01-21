@@ -815,6 +815,7 @@ FULL = (
     gn_qemu_clang_build if sys.platform != 'win32' else (),
     source_is_in_build_files,
     python_checks.gn_python_check,
+    python_checks.gn_python_test_coverage,
     build_env_setup,
     # Skip gn_teensy_build if running on Windows. The Teensycore installer is
     # an exe that requires an admin role.

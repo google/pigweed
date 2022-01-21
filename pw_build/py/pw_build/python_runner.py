@@ -67,6 +67,11 @@ def _parse_args() -> argparse.Namespace:
         help='Capture subcommand output; display only on error',
     )
     parser.add_argument(
+        '--working-directory',
+        type=Path,
+        help='Change to this working directory before running the subcommand',
+    )
+    parser.add_argument(
         'original_cmd',
         nargs=argparse.REMAINDER,
         help='Python script with arguments to run',
@@ -447,6 +452,7 @@ def main(
     env: Optional[List[str]],
     capture_output: bool,
     touch: Optional[Path],
+    working_directory: Optional[Path],
 ) -> int:
     """Script entry point."""
 
@@ -487,6 +493,9 @@ def main(
     except ExpressionError as err:
         _LOG.error('%s: %s', sys.argv[0], err)
         return 1
+
+    if working_directory:
+        run_args['cwd'] = working_directory
 
     _LOG.debug('RUN %s', ' '.join(shlex.quote(arg) for arg in command))
 

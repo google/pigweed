@@ -48,6 +48,9 @@ import("//build_overrides/pigweed.gni")
 #
 #   python_deps     Dependencies on pw_python_package or related Python targets.
 #
+#   working_directory  Switch to the provided working directory before running
+#                      the Python script or action.
+#
 template("pw_python_action") {
   assert(defined(invoker.script) != defined(invoker.module),
          "pw_python_action requires either 'script' or 'module'")
@@ -114,6 +117,13 @@ template("pw_python_action") {
     _script_args += [
       "--module",
       invoker.module,
+    ]
+  }
+
+  if (defined(invoker.working_directory)) {
+    _script_args += [
+      "--working-directory",
+      invoker.working_directory,
     ]
   }
 
