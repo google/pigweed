@@ -36,7 +36,7 @@ def decode_optionally_tokenized(detokenizer: detokenize.Detokenizer,
     """Decodes data that may be plain text or binary / Base64 tokenized text."""
     # Try detokenizing as binary.
     result = detokenizer.detokenize(data)
-    if result.ok():
+    if result.best_result() is not None:
         # Rather than just returning the detokenized string, continue
         # detokenization in case recursive Base64 detokenization is needed.
         data = str(result).encode()

@@ -42,6 +42,11 @@ class TestDetokenizeProtoFields(unittest.TestCase):
         detokenize_fields(_DETOKENIZER, proto)
         self.assertEqual(proto.message, b"Luke, we're gonna have company")
 
+    def test_binary_missing_arguments(self) -> None:
+        proto = TheMessage(message=b'\xDD\xCC\xBB\xAA')
+        detokenize_fields(_DETOKENIZER, proto)
+        self.assertEqual(proto.message, b"Luke, we're gonna have %s")
+
     def test_recursive_binary(self) -> None:
         proto = TheMessage(message=b'\x78\x56\x34\x12')
         detokenize_fields(_DETOKENIZER, proto)
