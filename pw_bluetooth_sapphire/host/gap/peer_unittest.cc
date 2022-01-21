@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 
-#include <lib/async/cpp/executor.h>
-#include <lib/fpromise/single_threaded_executor.h>
 #include <lib/inspect/testing/cpp/inspect.h>
 
 #include <gmock/gmock.h>
@@ -16,11 +14,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
 
 namespace bt::gap {
 namespace {
 
 using namespace inspect::testing;
+using bt::testing::GetInspectValue;
+using bt::testing::ReadInspect;
 
 constexpr uint16_t kManufacturer = 0x0001;
 constexpr uint16_t kSubversion = 0x0002;
@@ -48,16 +49,6 @@ const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, tru
                                                          true /*secure_connections*/,
                                                          sm::kMaxEncryptionKeySize),
                                   hci_spec::LinkKey(UInt128{4}, 5, 6));
-
-inspect::Hierarchy ReadInspect(inspect::Inspector& inspector) {
-  fpromise::single_threaded_executor executor;
-  fpromise::result<inspect::Hierarchy> hierarchy;
-  executor.schedule_task(inspect::ReadFromInspector(inspector).then(
-      [&](fpromise::result<inspect::Hierarchy>& res) { hierarchy = std::move(res); }));
-  executor.run();
-  ZX_ASSERT(hierarchy.is_ok());
-  return hierarchy.take_value();
-}
 
 class PeerTest : public ::gtest::TestLoopFixture {
  public:
@@ -92,76 +83,60 @@ class PeerTest : public ::gtest::TestLoopFixture {
 
   inspect::Hierarchy ReadPeerInspect() { return ReadInspect(peer_inspector_); }
 
-  template <class PropertyValue>
-  std::optional<typename PropertyValue::value_type> InspectPropertyValueAtPath(
-      inspect::Inspector& inspector, const std::vector<std::string>& path,
-      const std::string& property) {
-    inspect::Hierarchy hierarchy = ReadInspect(inspector);
-    auto node = hierarchy.GetByPath(path);
-    if (!node) {
-      return std::nullopt;
-    }
-    const PropertyValue* prop_value = node->node().get_property<PropertyValue>(property);
-    if (!prop_value) {
-      return std::nullopt;
-    }
-    return prop_value->value();
-  }
-
   std::string InspectLowEnergyConnectionState() {
-    std::optional<std::string> val = InspectPropertyValueAtPath<inspect::StringPropertyValue>(
-        peer_inspector_, {"peer", "le_data"}, Peer::LowEnergyData::kInspectConnectionStateName);
+    std::optional<std::string> val = GetInspectValue<inspect::StringPropertyValue>(
+        peer_inspector_, {"peer", "le_data", Peer::LowEnergyData::kInspectConnectionStateName});
     ZX_ASSERT(val);
     return *val;
   }
 
   int64_t InspectAdvertisingDataParseFailureCount() {
-    std::optional<int64_t> val = InspectPropertyValueAtPath<inspect::IntPropertyValue>(
-        peer_inspector_, {"peer", "le_data"},
-        Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName);
+    std::optional<int64_t> val = GetInspectValue<inspect::IntPropertyValue>(
+        peer_inspector_,
+        {"peer", "le_data", Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName});
     ZX_ASSERT(val);
     return *val;
   }
 
   std::string InspectLastAdvertisingDataParseFailure() {
-    std::optional<std::string> val = InspectPropertyValueAtPath<inspect::StringPropertyValue>(
-        peer_inspector_, {"peer", "le_data"},
-        Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName);
+    std::optional<std::string> val = GetInspectValue<inspect::StringPropertyValue>(
+        peer_inspector_,
+        {"peer", "le_data", Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName});
     ZX_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsLowEnergyConnections() {
-    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
-        metrics_inspector_, {"metrics", "le"}, "connection_events");
+    std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "le", "connection_events"});
     ZX_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsLowEnergyDisconnections() {
-    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
-        metrics_inspector_, {"metrics", "le"}, "disconnection_events");
+    std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "le", "disconnection_events"});
     ZX_ASSERT(val);
     return *val;
   }
 
   std::string InspectBrEdrConnectionState() {
-    std::optional<std::string> val = InspectPropertyValueAtPath<inspect::StringPropertyValue>(
-        peer_inspector_, {"peer", "bredr_data"}, Peer::BrEdrData::kInspectConnectionStateName);
+    std::optional<std::string> val = GetInspectValue<inspect::StringPropertyValue>(
+        peer_inspector_, {"peer", "bredr_data", Peer::BrEdrData::kInspectConnectionStateName});
     ZX_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsBrEdrConnections() {
-    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
-        metrics_inspector_, {"metrics", "bredr"}, "connection_events");
+    std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "bredr", "connection_events"});
     ZX_ASSERT(val);
     return *val;
   }
 
   uint64_t MetricsBrEdrDisconnections() {
-    std::optional<uint64_t> val = InspectPropertyValueAtPath<inspect::UintPropertyValue>(
-        metrics_inspector_, {"metrics", "bredr"}, "disconnection_events");
+    std::optional<uint64_t> val = GetInspectValue<inspect::UintPropertyValue>(
+        metrics_inspector_, {"metrics", "bredr", "disconnection_events"});
     ZX_ASSERT(val);
     return *val;
   }

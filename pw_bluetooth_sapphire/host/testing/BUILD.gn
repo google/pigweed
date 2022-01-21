@@ -9,6 +9,8 @@ source_set("testing") {
 
   sources = [
     "controller_test.h",
+    "inspect_util.cc",
+    "inspect_util.h",
     "mock_controller.cc",
     "mock_controller.h",
     "test_packets.cc",
@@ -19,6 +21,7 @@ source_set("testing") {
 
   public_deps = [
     ":fake_controller",
+    "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/lib/testing/loop_fixture",
@@ -33,6 +36,7 @@ source_set("tests") {
     "fake_l2cap_unittest.cc",
     "fake_sdp_server_unittest.cc",
     "fake_signaling_server_unittest.cc",
+    "inspect_util_unittest.cc",
   ]
 
   deps = [ ":testing" ]
