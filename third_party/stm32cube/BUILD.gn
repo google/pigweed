@@ -25,9 +25,11 @@ assert(dir_pw_third_party_stm32cube != "",
 stm32cube_builder_script =
     "$dir_pw_stm32cube_build/py/pw_stm32cube_build/__main__.py"
 
+rebased_dir_pw_third_party_stm32cube = rebase_path(dir_pw_third_party_stm32cube)
+
 find_files_args = [
   "find_files",
-  dir_pw_third_party_stm32cube,
+  rebased_dir_pw_third_party_stm32cube,
   pw_third_party_stm32cube_PRODUCT,
 ]
 if (pw_third_party_stm32cube_CORE_INIT ==
@@ -39,7 +41,7 @@ if (pw_third_party_stm32cube_CORE_INIT ==
 files = exec_script(stm32cube_builder_script,
                     find_files_args,
                     "scope",
-                    [ "$dir_pw_third_party_stm32cube/files.txt" ])
+                    [ "$rebased_dir_pw_third_party_stm32cube/files.txt" ])
 
 if (pw_third_party_stm32cube_CORE_INIT ==
     "$dir_pw_third_party/stm32cube:core_init_template") {

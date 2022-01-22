@@ -48,17 +48,6 @@
     ]
   },
   {
-    "path": "pigweed/third_party/gcc-arm-none-eabi/${platform}",
-    "platforms": [
-      "linux-amd64",
-      "mac-amd64",
-      "windows-amd64"
-    ],
-    "tags": [
-      "version:10-2020-q4-major"
-    ]
-  },
-  {
     "path": "infra/3pp/tools/protoc/${platform}",
     "platforms": [
       "linux-amd64",

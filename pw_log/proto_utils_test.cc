@@ -16,15 +16,16 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/span.h"
+#include "pw_log/levels.h"
 #include "pw_protobuf/bytes_utils.h"
 #include "pw_protobuf/decoder.h"
 
 namespace pw::log {
 
-void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
-                    pw::log_tokenized::Metadata expected_metadata,
-                    ConstByteSpan expected_tokenized_data,
-                    const int64_t expected_timestamp) {
+void VerifyTokenizedLogEntry(pw::protobuf::Decoder& entry_decoder,
+                             pw::log_tokenized::Metadata expected_metadata,
+                             ConstByteSpan expected_tokenized_data,
+                             const int64_t expected_timestamp) {
   ConstByteSpan tokenized_data;
   EXPECT_TRUE(entry_decoder.Next().ok());  // message [tokenized]
   EXPECT_EQ(1U, entry_decoder.FieldNumber());
@@ -37,9 +38,12 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
   EXPECT_TRUE(entry_decoder.Next().ok());  // line_level
   EXPECT_EQ(2U, entry_decoder.FieldNumber());
   EXPECT_TRUE(entry_decoder.ReadUint32(&line_level).ok());
-  EXPECT_EQ(expected_metadata.level(), line_level & PW_LOG_LEVEL_BITMASK);
-  EXPECT_EQ(expected_metadata.line_number(),
-            (line_level & ~PW_LOG_LEVEL_BITMASK) >> PW_LOG_LEVEL_BITS);
+
+  uint32_t line_number;
+  uint8_t level;
+  std::tie(line_number, level) = UnpackLineLevel(line_level);
+  EXPECT_EQ(expected_metadata.level(), level);
+  EXPECT_EQ(expected_metadata.line_number(), line_number);
 
   if (expected_metadata.flags() != 0) {
     uint32_t flags;
@@ -65,6 +69,108 @@ void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
   }
 }
 
+void VerifyLogEntry(pw::protobuf::Decoder& entry_decoder,
+                    int expected_level,
+                    unsigned int expected_flags,
+                    std::string_view expected_module,
+                    std::string_view expected_file_name,
+                    int expected_line_number,
+                    int64_t expected_ticks_since_epoch,
+                    std::string_view expected_message) {
+  std::string_view message;
+  EXPECT_TRUE(entry_decoder.Next().ok());  // message
+  EXPECT_EQ(1U, entry_decoder.FieldNumber());
+  EXPECT_TRUE(entry_decoder.ReadString(&message).ok());
+  EXPECT_TRUE(std::equal(message.begin(),
+                         message.end(),
+                         expected_message.begin(),
+                         expected_message.end()));
+
+  uint32_t line_level;
+  EXPECT_TRUE(entry_decoder.Next().ok());  // line_level
+  EXPECT_EQ(2U, entry_decoder.FieldNumber());
+  EXPECT_TRUE(entry_decoder.ReadUint32(&line_level).ok());
+  uint32_t line_number;
+  uint8_t level;
+  std::tie(line_number, level) = UnpackLineLevel(line_level);
+  EXPECT_EQ(static_cast<unsigned int>(expected_line_number), line_number);
+  EXPECT_EQ(expected_level, level);
+
+  if (expected_flags != 0) {
+    uint32_t flags;
+    EXPECT_TRUE(entry_decoder.Next().ok());  // flags
+    EXPECT_EQ(3U, entry_decoder.FieldNumber());
+    EXPECT_TRUE(entry_decoder.ReadUint32(&flags).ok());
+    EXPECT_EQ(expected_flags, flags);
+  }
+
+  int64_t timestamp;
+  EXPECT_TRUE(entry_decoder.Next().ok());  // timestamp
+  EXPECT_EQ(4U, entry_decoder.FieldNumber());
+  EXPECT_TRUE(entry_decoder.ReadInt64(&timestamp).ok());
+  EXPECT_EQ(expected_ticks_since_epoch, timestamp);
+
+  if (!expected_module.empty()) {
+    std::string_view module_name;
+    EXPECT_TRUE(entry_decoder.Next().ok());  // module
+    EXPECT_EQ(7U, entry_decoder.FieldNumber());
+    EXPECT_TRUE(entry_decoder.ReadString(&module_name).ok());
+    EXPECT_TRUE(std::equal(module_name.begin(),
+                           module_name.end(),
+                           expected_module.begin(),
+                           expected_module.end()));
+  }
+
+  if (!expected_file_name.empty()) {
+    std::string_view file_name;
+    EXPECT_TRUE(entry_decoder.Next().ok());  // file
+    EXPECT_EQ(8U, entry_decoder.FieldNumber());
+    EXPECT_TRUE(entry_decoder.ReadString(&file_name).ok());
+    EXPECT_TRUE(std::equal(file_name.begin(),
+                           file_name.end(),
+                           expected_file_name.begin(),
+                           expected_file_name.end()));
+  }
+}
+
+TEST(UtilsTest, LineLevelPacking) {
+  constexpr uint8_t kExpectedLevel = PW_LOG_LEVEL_ERROR;
+  constexpr uint32_t kExpectedLine = 1234567;
+  constexpr uint32_t kExpectedLineLevel =
+      (kExpectedLine << PW_LOG_LEVEL_BITS) |
+      (kExpectedLevel & PW_LOG_LEVEL_BITMASK);
+
+  EXPECT_EQ(kExpectedLineLevel, PackLineLevel(kExpectedLine, kExpectedLevel));
+}
+
+TEST(UtilsTest, LineLevelUnpacking) {
+  constexpr uint8_t kExpectedLevel = PW_LOG_LEVEL_ERROR;
+  constexpr uint32_t kExpectedLine = 1234567;
+  constexpr uint32_t kExpectedLineLevel =
+      (kExpectedLine << PW_LOG_LEVEL_BITS) |
+      (kExpectedLevel & PW_LOG_LEVEL_BITMASK);
+
+  uint32_t line_number;
+  uint8_t level;
+  std::tie(line_number, level) = UnpackLineLevel(kExpectedLineLevel);
+
+  EXPECT_EQ(kExpectedLine, line_number);
+  EXPECT_EQ(kExpectedLevel, level);
+}
+
+TEST(UtilsTest, LineLevelPackAndUnpack) {
+  constexpr uint8_t kExpectedLevel = PW_LOG_LEVEL_ERROR;
+  constexpr uint32_t kExpectedLine = 1234567;
+
+  uint32_t line_number;
+  uint8_t level;
+  std::tie(line_number, level) =
+      UnpackLineLevel(PackLineLevel(kExpectedLine, kExpectedLevel));
+
+  EXPECT_EQ(kExpectedLine, line_number);
+  EXPECT_EQ(kExpectedLevel, level);
+}
+
 TEST(UtilsTest, EncodeTokenizedLog) {
   constexpr std::byte kTokenizedData[1] = {(std::byte)0x01};
   constexpr int64_t kExpectedTimestamp = 1;
@@ -78,7 +184,8 @@ TEST(UtilsTest, EncodeTokenizedLog) {
   EXPECT_TRUE(result.ok());
 
   pw::protobuf::Decoder log_decoder(result.value());
-  VerifyLogEntry(log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
+  VerifyTokenizedLogEntry(
+      log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
 
   result = EncodeTokenizedLog(metadata,
                               reinterpret_cast<const uint8_t*>(kTokenizedData),
@@ -88,7 +195,8 @@ TEST(UtilsTest, EncodeTokenizedLog) {
   EXPECT_TRUE(result.ok());
 
   log_decoder.Reset(result.value());
-  VerifyLogEntry(log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
+  VerifyTokenizedLogEntry(
+      log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
 }
 
 TEST(UtilsTest, EncodeTokenizedLog_EmptyFlags) {
@@ -105,7 +213,8 @@ TEST(UtilsTest, EncodeTokenizedLog_EmptyFlags) {
   EXPECT_TRUE(result.ok());
 
   pw::protobuf::Decoder log_decoder(result.value());
-  VerifyLogEntry(log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
+  VerifyTokenizedLogEntry(
+      log_decoder, metadata, kTokenizedData, kExpectedTimestamp);
 }
 
 TEST(UtilsTest, EncodeTokenizedLog_InsufficientSpace) {
@@ -118,6 +227,174 @@ TEST(UtilsTest, EncodeTokenizedLog_InsufficientSpace) {
 
   Result<ConstByteSpan> result = EncodeTokenizedLog(
       metadata, kTokenizedData, kExpectedTimestamp, encode_buffer);
+  EXPECT_TRUE(result.status().IsResourceExhausted());
+}
+
+TEST(UtilsTest, EncodeLog) {
+  constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
+  constexpr unsigned int kExpectedFlags = 2;
+  constexpr std::string_view kExpectedModule("TST");
+  constexpr std::string_view kExpectedFile("proto_test.cc");
+  constexpr int kExpectedLine = 14;
+  constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::string_view kExpectedMessage("msg");
+  std::byte encode_buffer[64];
+
+  Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
+                                           kExpectedFlags,
+                                           kExpectedModule,
+                                           kExpectedFile,
+                                           kExpectedLine,
+                                           kExpectedTimestamp,
+                                           kExpectedMessage,
+                                           encode_buffer);
+  EXPECT_TRUE(result.ok());
+
+  pw::protobuf::Decoder log_decoder(result.value());
+  VerifyLogEntry(log_decoder,
+                 kExpectedLevel,
+                 kExpectedFlags,
+                 kExpectedModule,
+                 kExpectedFile,
+                 kExpectedLine,
+                 kExpectedTimestamp,
+                 kExpectedMessage);
+}
+
+TEST(UtilsTest, EncodeLog_EmptyFlags) {
+  constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
+  constexpr unsigned int kExpectedFlags = 0;
+  constexpr std::string_view kExpectedModule("TST");
+  constexpr std::string_view kExpectedFile("proto_test.cc");
+  constexpr int kExpectedLine = 14;
+  constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::string_view kExpectedMessage("msg");
+  std::byte encode_buffer[64];
+
+  Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
+                                           kExpectedFlags,
+                                           kExpectedModule,
+                                           kExpectedFile,
+                                           kExpectedLine,
+                                           kExpectedTimestamp,
+                                           kExpectedMessage,
+                                           encode_buffer);
+  EXPECT_TRUE(result.ok());
+
+  pw::protobuf::Decoder log_decoder(result.value());
+  VerifyLogEntry(log_decoder,
+                 kExpectedLevel,
+                 kExpectedFlags,
+                 kExpectedModule,
+                 kExpectedFile,
+                 kExpectedLine,
+                 kExpectedTimestamp,
+                 kExpectedMessage);
+}
+
+TEST(UtilsTest, EncodeLog_EmptyFile) {
+  constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
+  constexpr unsigned int kExpectedFlags = 0;
+  constexpr std::string_view kExpectedModule("TST");
+  constexpr std::string_view kExpectedFile;
+  constexpr int kExpectedLine = 14;
+  constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::string_view kExpectedMessage("msg");
+  std::byte encode_buffer[64];
+
+  Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
+                                           kExpectedFlags,
+                                           kExpectedModule,
+                                           kExpectedFile,
+                                           kExpectedLine,
+                                           kExpectedTimestamp,
+                                           kExpectedMessage,
+                                           encode_buffer);
+  EXPECT_TRUE(result.ok());
+
+  pw::protobuf::Decoder log_decoder(result.value());
+  VerifyLogEntry(log_decoder,
+                 kExpectedLevel,
+                 kExpectedFlags,
+                 kExpectedModule,
+                 kExpectedFile,
+                 kExpectedLine,
+                 kExpectedTimestamp,
+                 kExpectedMessage);
+}
+
+TEST(UtilsTest, EncodeLog_EmptyModule) {
+  constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
+  constexpr unsigned int kExpectedFlags = 3;
+  constexpr std::string_view kExpectedModule;
+  constexpr std::string_view kExpectedFile("test.cc");
+  constexpr int kExpectedLine = 14;
+  constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::string_view kExpectedMessage("msg");
+  std::byte encode_buffer[64];
+
+  Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
+                                           kExpectedFlags,
+                                           kExpectedModule,
+                                           kExpectedFile,
+                                           kExpectedLine,
+                                           kExpectedTimestamp,
+                                           kExpectedMessage,
+                                           encode_buffer);
+  EXPECT_TRUE(result.ok());
+
+  pw::protobuf::Decoder log_decoder(result.value());
+  VerifyLogEntry(log_decoder,
+                 kExpectedLevel,
+                 kExpectedFlags,
+                 kExpectedModule,
+                 kExpectedFile,
+                 kExpectedLine,
+                 kExpectedTimestamp,
+                 kExpectedMessage);
+}
+
+TEST(UtilsTest, EncodeLog_EmptyMessage) {
+  constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
+  constexpr unsigned int kExpectedFlags = 0;
+  constexpr std::string_view kExpectedModule;
+  constexpr std::string_view kExpectedFile;
+  constexpr int kExpectedLine = 14;
+  constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::string_view kExpectedMessage;
+  std::byte encode_buffer[64];
+
+  Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
+                                           kExpectedFlags,
+                                           kExpectedModule,
+                                           kExpectedFile,
+                                           kExpectedLine,
+                                           kExpectedTimestamp,
+                                           kExpectedMessage,
+                                           encode_buffer);
+
+  EXPECT_TRUE(result.status().IsInvalidArgument());
+}
+
+TEST(UtilsTest, EncodeLog_InsufficientSpace) {
+  constexpr int kExpectedLevel = PW_LOG_LEVEL_INFO;
+  constexpr unsigned int kExpectedFlags = 0;
+  constexpr std::string_view kExpectedModule;
+  constexpr std::string_view kExpectedFile;
+  constexpr int kExpectedLine = 14;
+  constexpr int64_t kExpectedTimestamp = 1;
+  constexpr std::string_view kExpectedMessage("msg");
+  std::byte encode_buffer[1];
+
+  Result<ConstByteSpan> result = EncodeLog(kExpectedLevel,
+                                           kExpectedFlags,
+                                           kExpectedModule,
+                                           kExpectedFile,
+                                           kExpectedLine,
+                                           kExpectedTimestamp,
+                                           kExpectedMessage,
+                                           encode_buffer);
+
   EXPECT_TRUE(result.status().IsResourceExhausted());
 }
 
