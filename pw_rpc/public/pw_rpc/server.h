@@ -50,15 +50,15 @@ class Server : public internal::Endpoint {
   Status ProcessPacket(ConstByteSpan packet_data) {
     return ProcessPacket(packet_data, nullptr);
   }
-  Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput& interface) {
-    return ProcessPacket(packet_data, &interface);
+  Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput& interface, Function<void()> callback = [](){}) {
+    return ProcessPacket(packet_data, &interface, std::move(callback));
   }
 
  private:
   friend class internal::Call;
   friend class ClientServer;
 
-  Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput* interface)
+  Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput* interface, Function<void()> callback = [](){})
       PW_LOCKS_EXCLUDED(internal::rpc_lock());
 
   std::tuple<Service*, const internal::Method*> FindMethod(

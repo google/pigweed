@@ -33,7 +33,8 @@ using internal::PacketType;
 }  // namespace
 
 Status Server::ProcessPacket(ConstByteSpan packet_data,
-                             ChannelOutput* interface) {
+                             ChannelOutput* interface,
+                             Function<void()> callback) {
   PW_TRY_ASSIGN(Result<Packet> result,
                 Endpoint::ProcessPacket(packet_data, Packet::kServer));
   Packet& packet = *result;
@@ -96,7 +97,8 @@ Status Server::ProcessPacket(ConstByteSpan packet_data,
       const internal::CallContext context(
           *this, *channel, *service, *method, packet.call_id());
       internal::rpc_lock().unlock();
-      method->Invoke(context, packet);
+    std::invoke(callback);
+      method->Invgoke(context, packet);
       break;
     }
     case PacketType::CLIENT_STREAM:
