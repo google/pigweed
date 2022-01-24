@@ -32,10 +32,11 @@ class Iterator {
   using reference = T&;
   using iterator_category = std::forward_iterator_tag;
 
-  constexpr explicit Iterator() : item_(nullptr) {}
+  constexpr explicit Iterator() : item_(nullptr), next_item_(nullptr) {}
 
   constexpr Iterator& operator++() {
-    item_ = static_cast<I*>(item_->next_);
+    item_ = next_item_;
+    next_item_ = static_cast<I*>(item_->next_);
     return *this;
   }
 
@@ -69,9 +70,11 @@ class Iterator {
   friend class ::pw::IntrusiveList;
 
   // Only allow IntrusiveList to create iterators that point to something.
-  constexpr explicit Iterator(I* item) : item_{item} {}
+  constexpr explicit Iterator(I* item)
+      : item_(item), next_item_(static_cast<I*>(item->next_)) {}
 
   I* item_;
+  I* next_item_;
 };
 
 class List {
