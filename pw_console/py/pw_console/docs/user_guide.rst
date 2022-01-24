@@ -112,13 +112,6 @@ Scroll logs down one page                     :kbd:`PageDown`
 
 Jump to the beginning                         :kbd:`g`
 Jump to the end                               :kbd:`G`
-
-Horizontal scroll left or right               :kbd:`Left`
-                                              :kbd:`Right`
-
-Horizontal scroll to the beginning            :kbd:`Home`
-                                              :kbd:`0`
-                                              :kbd:`^`
 ============================================  =====================
 
 Log Window View Options

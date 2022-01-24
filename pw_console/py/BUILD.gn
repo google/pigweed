@@ -36,6 +36,7 @@ pw_python_package("py") {
     "pw_console/log_line.py",
     "pw_console/log_pane.py",
     "pw_console/log_pane_toolbars.py",
+    "pw_console/log_screen.py",
     "pw_console/log_store.py",
     "pw_console/log_view.py",
     "pw_console/mouse.py",

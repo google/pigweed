@@ -443,6 +443,18 @@ class ConsoleApp:
                         'Log Table View',
                         children=[
                             MenuItem(
+                                '{check} Hide Date'.format(
+                                    check=pw_console.widgets.checkbox.
+                                    to_checkbox_text(
+                                        self.prefs.hide_date_from_log_time,
+                                        end='')),
+                                handler=functools.partial(
+                                    self.run_pane_menu_option,
+                                    functools.partial(
+                                        self.toggle_pref_option,
+                                        'hide_date_from_log_time')),
+                            ),
+                            MenuItem(
                                 '{check} Show Python File'.format(
                                     check=pw_console.widgets.checkbox.
                                     to_checkbox_text(
@@ -759,7 +771,8 @@ class ConsoleApp:
         # Fake module column names.
         module_names = ['APP', 'RADIO', 'BAT', 'USB', 'CPU']
         while True:
-            await asyncio.sleep(1)
+            if message_count > 32 or message_count < 2:
+                await asyncio.sleep(1)
             bar_size = 10
             position = message_count % bar_size
             bar_content = " " * (bar_size - position - 1) + "="
@@ -768,16 +781,18 @@ class ConsoleApp:
             new_log_line = 'Log message [{}] # {}'.format(
                 bar_content, message_count)
             if message_count % 10 == 0:
-                new_log_line += (" Lorem ipsum dolor sit amet, consectetur "
-                                 "adipiscing elit.") * 8
-            # TODO(tonymd): Add this in when testing log lines with included
-            # linebreaks.
-            # if message_count % 11 == 0:
-            #     new_log_line += inspect.cleandoc(""" [PYTHON] START
-            #         In []: import time;
-            #                 def t(s):
-            #                     time.sleep(s)
-            #                     return 't({}) seconds done'.format(s)""")
+                new_log_line += (
+                    ' Lorem ipsum \033[34m\033[1mdolor sit amet\033[0m'
+                    ', consectetur '
+                    'adipiscing elit.') * 8
+            if message_count % 11 == 0:
+                new_log_line += ' '
+                new_log_line += (
+                    '[PYTHON] START\n'
+                    'In []: import time;\n'
+                    '        def t(s):\n'
+                    '            time.sleep(s)\n'
+                    '            return "t({}) seconds done".format(s)\n\n')
 
             module_name = module_names[message_count % len(module_names)]
             _FAKE_DEVICE_LOG.info(

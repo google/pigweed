@@ -57,7 +57,7 @@ class HighContrastDarkColors:
 class DarkColors:
     # pylint: disable=too-many-instance-attributes
     default_bg = '#2e2e2e'
-    default_fg = '#bbc2cf'
+    default_fg = '#eeeeee'
 
     dim_bg = '#262626'
     dim_fg = '#dfdfdf'
@@ -71,7 +71,7 @@ class DarkColors:
     inactive_bg = '#3f3f3f'
     inactive_fg = '#bfbfbf'
 
-    line_highlight_bg = '#1e1e1e'
+    line_highlight_bg = '#525252'
     dialog_bg = '#3c3c3c'
 
     red_accent = '#ff6c6b'

@@ -26,7 +26,6 @@ from prompt_toolkit.layout import (
     WindowAlign,
     HorizontalAlign,
 )
-from prompt_toolkit.data_structures import Point
 
 import pw_console.widgets.checkbox
 import pw_console.widgets.mouse_handlers
@@ -41,7 +40,7 @@ class LineInfoBar(ConditionalContainer):
     @staticmethod
     def get_tokens(log_pane: 'LogPane'):
         """Return formatted text tokens for display."""
-        tokens = ' Line {} / {} '.format(
+        tokens = ' Log {} / {} '.format(
             log_pane.log_view.get_current_line() + 1,
             log_pane.log_view.get_total_count(),
         )
@@ -73,15 +72,12 @@ class TableToolbar(ConditionalContainer):
     def __init__(self, log_pane: 'LogPane'):
         # FormattedText of the table column headers.
         table_header_bar_control = FormattedTextControl(
-            log_pane.log_view.render_table_header,
-            get_cursor_position=lambda: Point(
-                log_pane.get_horizontal_scroll_amount(), 0))
+            log_pane.log_view.render_table_header)
         # Left justify the header content.
         table_header_bar_window = Window(
             content=table_header_bar_control,
             align=WindowAlign.LEFT,
             dont_extend_width=False,
-            get_horizontal_scroll=log_pane.get_horizontal_scroll_amount,
         )
         super().__init__(
             VSplit([table_header_bar_window],

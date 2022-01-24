@@ -224,6 +224,9 @@ class PwConsoleEmbed:
         # Add window pane plugins to the layout.
         for window_pane in self.window_plugins:
             window_pane.application = self.console_app
+            # Hide window plugins if the title is hidden by default.
+            if window_pane.pane_title() in self.hidden_by_default_windows:
+                window_pane.show_pane = False
             self.console_app.window_manager.add_pane(window_pane)
 
         # Add toolbar plugins to the layout.

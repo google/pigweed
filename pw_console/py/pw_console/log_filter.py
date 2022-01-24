@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.formatted_text.utils import fragment_list_to_text
 from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.validation import ValidationError, Validator
@@ -107,7 +108,9 @@ class LogFilter:
             return not match
         return match
 
-    def highlight_search_matches(self, line_fragments, selected=False):
+    def highlight_search_matches(self,
+                                 line_fragments,
+                                 selected=False) -> StyleAndTextTuples:
         """Highlight search matches in the current line_fragment."""
         line_text = fragment_list_to_text(line_fragments)
         exploded_fragments = explode_text_fragments(line_fragments)

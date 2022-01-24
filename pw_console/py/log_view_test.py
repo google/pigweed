@@ -21,10 +21,10 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 from parameterized import parameterized  # type: ignore
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.formatted_text import FormattedText
-from pw_console.console_prefs import ConsolePrefs
 
+from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_view import LogView
+from pw_console.text_formatting import join_adjacent_style_tuples
 
 _PYTHON_3_8 = sys.version_info >= (
     3,
@@ -34,6 +34,10 @@ _PYTHON_3_8 = sys.version_info >= (
 
 def _create_log_view():
     log_pane = MagicMock()
+    log_pane.pane_resized = MagicMock(return_value=True)
+    log_pane.current_log_pane_width = 80
+    log_pane.current_log_pane_height = 10
+
     application = MagicMock()
     application.prefs = ConsolePrefs()
     application.prefs.reset_config()
@@ -67,6 +71,7 @@ class TestLogView(unittest.TestCase):
     def test_follow_scrolls_to_bottom(self) -> None:
         log_view, _pane = _create_log_view()
         log_view.toggle_follow()
+        _fragments = log_view.render_content()
         self.assertFalse(log_view.follow)
         self.assertEqual(log_view.get_current_line(), 0)
 
@@ -77,6 +82,7 @@ class TestLogView(unittest.TestCase):
             test_log.addHandler(log_view.log_store)
             for i in range(5):
                 test_log.debug('Test log %s', i)
+        _fragments = log_view.render_content()
 
         self.assertEqual(log_view.get_total_count(), 5)
         self.assertEqual(log_view.get_current_line(), 0)
@@ -88,122 +94,89 @@ class TestLogView(unittest.TestCase):
         with self.assertLogs(test_log, level='DEBUG') as _log_context:
             test_log.addHandler(log_view.log_store)
             test_log.debug('Test log')
+        _fragments = log_view.render_content()
 
         self.assertEqual(log_view.get_total_count(), 6)
         self.assertEqual(log_view.get_current_line(), 5)
 
-    @parameterized.expand([
-        ('no logs',
-         80, 10,  # window_width, window_height
-         0, True,  # log_count, follow_enabled
-         0, [0, -1]),  # expected_total logs, expected_indices
-        ('logs shorter than window height',
-         80, 10,  # window_width, window_height
-         7, True,  # log_count, follow_enabled
-         7, [0, 6]),  # expected_total logs, expected_indices
-        ('logs larger than window height with follow on',
-         80, 10,  # window_width, window_height
-         20, True,  # log_count, follow_enabled
-         10, [10, 19]),  # expected_total logs, expected_indices
-        ('logs larger than window height with follow off',
-         80, 10,  # window_width, window_height
-         20, False,  # log_count, follow_enabled
-         10, [0, 9]),  # expected_total logs, expected_indices
-    ]) # yapf: disable
-    def test_get_log_window_indices(
-        self,
-        _name,
-        window_width,
-        window_height,
-        log_count,
-        follow_enabled,
-        expected_total,
-        expected_indices,
-    ) -> None:
-        """Test get_log_window_indices() with various window sizes and log
-        counts."""
-        log_view, _pane = _create_log_view()
-
-        if not follow_enabled:
-            log_view.toggle_follow()
-
-        # Make required number of log messages
-        if log_count > 0:
-            test_log = logging.getLogger('log_view.test')
-            with self.assertLogs(test_log, level='DEBUG') as _log_context:
-                test_log.addHandler(log_view.log_store)
-                for i in range(log_count):
-                    test_log.debug('Test log %s', i)
-
-        # Get indices
-        start_index, end_index = log_view.get_log_window_indices(
-            available_width=window_width, available_height=window_height)
-
-        self.assertEqual([start_index, end_index], expected_indices)
-
-        # Number of logs should equal the height of the window
-        self.assertEqual((end_index - start_index) + 1, expected_total)
-
     def test_scrolling(self) -> None:
         """Test all scrolling methods."""
-        log_view, _pane = self._create_log_view_with_logs(log_count=100)
+        log_view, log_pane = self._create_log_view_with_logs(log_count=100)
+
         # Page scrolling needs to know the current window height.
-        log_view._window_height = 10  # pylint: disable=protected-access
+        log_pane.pane_resized = MagicMock(return_value=True)
+        log_pane.current_log_pane_width = 80
+        log_pane.current_log_pane_height = 10
+
+        log_view.render_content()
 
         # Follow is on by default, current line should be at the end.
         self.assertEqual(log_view.get_current_line(), 99)
 
         # Move to the beginning.
         log_view.scroll_to_top()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 0)
 
         # Should not be able to scroll before the beginning.
         log_view.scroll_up()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 0)
         log_view.scroll_up_one_page()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 0)
 
         # Single and multi line movement.
         log_view.scroll_down()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 1)
         log_view.scroll(5)
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 6)
         log_view.scroll_up()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 5)
 
         # Page down and up.
         log_view.scroll_down_one_page()
         self.assertEqual(log_view.get_current_line(), 15)
+
         log_view.scroll_up_one_page()
         self.assertEqual(log_view.get_current_line(), 5)
 
         # Move to the end.
         log_view.scroll_to_bottom()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 99)
 
         # Should not be able to scroll beyond the end.
         log_view.scroll_down()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 99)
         log_view.scroll_down_one_page()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 99)
 
-        # Move up a bit.
-        log_view.scroll(-5)
-        self.assertEqual(log_view.get_current_line(), 94)
+        # Move up a bit to turn off follow
+        self.assertEqual(log_view.log_screen.cursor_position, 9)
+        log_view.scroll(-1)
+        self.assertEqual(log_view.log_screen.cursor_position, 8)
+        log_view.render_content()
+        self.assertEqual(log_view.get_current_line(), 98)
 
         # Simulate a mouse click to scroll.
-        # Click 5 lines above current position.
-        log_view.scroll_to_position(Point(0, -5))
-        self.assertEqual(log_view.get_current_line(), 89)
-        # Click 3 lines below current position.
-        log_view.scroll_to_position(Point(0, 3))
-        self.assertEqual(log_view.get_current_line(), 92)
+        # Click 1 lines from the top of the window.
+        log_view.scroll_to_position(Point(0, 1))
+        log_view.render_content()
+        self.assertEqual(log_view.get_current_line(), 90)
 
         # Clicking if follow is enabled should not scroll.
         log_view.toggle_follow()
+        log_view.render_content()
         self.assertTrue(log_view.follow)
         self.assertEqual(log_view.get_current_line(), 99)
-        log_view.scroll_to_position(Point(0, -5))
+        log_view.scroll_to_position(Point(0, 5))
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 99)
 
     def test_render_content_and_cursor_position(self) -> None:
@@ -221,57 +194,43 @@ class TestLogView(unittest.TestCase):
 
         # Mock needed LogPane functions that pull info from prompt_toolkit.
         log_pane.get_horizontal_scroll_amount = MagicMock(return_value=0)
-        log_pane.current_log_pane_width = 30
+        log_pane.current_log_pane_width = 80
         log_pane.current_log_pane_height = 10
 
+        log_view.render_content()
         log_view.scroll_to_top()
         log_view.render_content()
-        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=2))
+        # Scroll to top keeps the cursor on the bottom of the window.
+        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=9))
 
         log_view.scroll_to_bottom()
         log_view.render_content()
-        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=5))
+        self.assertEqual(log_view.get_cursor_position(), Point(x=0, y=9))
 
-        expected_line_cache = [
-            [('', '\n')],
-            [('', '\n')],
-            [
-                ('class:log-time', '20210713 00:00:00'),
-                ('', '  '),
-                ('class:log-level-10', 'DEBUG'),
-                ('', '  '),
-                ('', 'Test log 0'),
-                ('', '\n')
-            ],
-            [
-                ('class:log-time', '20210713 00:00:00'),
-                ('', '  '),
-                ('class:log-level-10', 'DEBUG'),
-                ('', '  '),
-                ('', 'Test log 1'),
-                ('', '\n')
-            ],
-            [
-                ('class:log-time', '20210713 00:00:00'),
-                ('', '  '),
-                ('class:log-level-10', 'DEBUG'),
-                ('', '  '),
-                ('', 'Test log 2'),
-                ('', '\n')
-            ],
-            FormattedText([
-                ('class:selected-log-line [SetCursorPosition]', ''),
-                ('class:selected-log-line class:log-time', '20210713 00:00:00'),
-                ('class:selected-log-line ', '  '),
-                ('class:selected-log-line class:log-level-10', 'DEBUG'),
-                ('class:selected-log-line ', '  '),
-                ('class:selected-log-line ', 'Test log 3'),
-                ('class:selected-log-line ', '                        \n')
-            ]),
+        expected_formatted_text = [
+            ('', '\n\n\n\n\n\n'),
+            ('class:log-time', '20210713 00:00:00'),
+            ('', '  '),
+            ('class:log-level-10', 'DEBUG'),
+            ('', '  Test log 0\n'),
+            ('class:log-time', '20210713 00:00:00'),
+            ('', '  '),
+            ('class:log-level-10', 'DEBUG'),
+            ('', '  Test log 1\n'),
+            ('class:log-time', '20210713 00:00:00'),
+            ('', '  '),
+            ('class:log-level-10', 'DEBUG'),
+            ('', '  Test log 2\n'),
+            ('class:selected-log-line class:log-time', '20210713 00:00:00'),
+            ('class:selected-log-line ', '  '),
+            ('class:selected-log-line class:log-level-10', 'DEBUG'),
+            ('class:selected-log-line ',
+             '  Test log 3                                            \n')
         ]  # yapf: disable
 
-        self.assertEqual(expected_line_cache,
-                         list(log_view._line_fragment_cache))  # pylint: disable=protected-access
+        result_text = join_adjacent_style_tuples(log_view._line_fragment_cache)  # pylint: disable=protected-access
+
+        self.assertEqual(result_text, expected_formatted_text)
 
     def test_clear_scrollback(self) -> None:
         """Test various functions with clearing log scrollback history."""
@@ -280,6 +239,7 @@ class TestLogView(unittest.TestCase):
         starting_log_count = 4
         log_view, _pane = self._create_log_view_with_logs(
             log_count=starting_log_count)
+        log_view.render_content()
 
         # Check setup is correct
         self.assertTrue(log_view.follow)
@@ -289,12 +249,10 @@ class TestLogView(unittest.TestCase):
             list(log.record.message
                  for log in log_view._get_visible_log_lines()),
             ['Test log 0', 'Test log 1', 'Test log 2', 'Test log 3'])
-        self.assertEqual(
-            log_view.get_log_window_indices(available_width=80,
-                                            available_height=10), (0, 3))
 
         # Clear scrollback
         log_view.clear_scrollback()
+        log_view.render_content()
         # Follow is still on
         self.assertTrue(log_view.follow)
         self.assertEqual(log_view.hidden_line_count(), 4)
@@ -306,9 +264,6 @@ class TestLogView(unittest.TestCase):
         self.assertEqual(
             list(log.record.message
                  for log in log_view._get_visible_log_lines()), [])
-        self.assertEqual(
-            log_view.get_log_window_indices(available_width=80,
-                                            available_height=10), (4, 3))
 
         # Add Log 4 more lines
         test_log = logging.getLogger('log_view.test')
@@ -316,6 +271,7 @@ class TestLogView(unittest.TestCase):
             test_log.addHandler(log_view.log_store)
             for i in range(4):
                 test_log.debug('Test log %s', i + starting_log_count)
+        log_view.render_content()
 
         # Current line
         self.assertEqual(log_view.hidden_line_count(), 4)
@@ -327,18 +283,9 @@ class TestLogView(unittest.TestCase):
             list(log.record.message
                  for log in log_view._get_visible_log_lines()),
             ['Test log 4', 'Test log 5', 'Test log 6', 'Test log 7'])
-        # Window height == 2
-        self.assertEqual(
-            log_view.get_log_window_indices(available_width=80,
-                                            available_height=2), (6, 7))
-        # Window height == 10
-        self.assertEqual(
-            log_view.get_log_window_indices(available_width=80,
-                                            available_height=10), (4, 7))
 
-        log_view.scroll_to_top()
-        self.assertEqual(log_view.get_current_line(), 4)
         log_view.scroll_to_bottom()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 7)
         # Turn follow back on
         log_view.toggle_follow()
@@ -354,13 +301,9 @@ class TestLogView(unittest.TestCase):
                      'Test log 0', 'Test log 1', 'Test log 2', 'Test log 3',
                      'Test log 4', 'Test log 5', 'Test log 6', 'Test log 7'
                  ])
-        self.assertEqual(
-            log_view.get_log_window_indices(available_width=80,
-                                            available_height=10), (0, 7))
 
-        log_view.scroll_to_top()
-        self.assertEqual(log_view.get_current_line(), 0)
         log_view.scroll_to_bottom()
+        log_view.render_content()
         self.assertEqual(log_view.get_current_line(), 7)
 
 

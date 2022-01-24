@@ -95,9 +95,9 @@ class TestLogStore(unittest.TestCase):
         )
         self.assertEqual(
             {
-                'log_store.test': 24,
-                'log_store.dev': 24,
-                'log_store.production': 24,
+                'log_store.test': 0,
+                'log_store.dev': 0,
+                'log_store.production': 0,
             },
             log_store.channel_formatted_prefix_widths,
         )

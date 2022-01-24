@@ -174,6 +174,11 @@ class WindowPane(ABC):
         # pylint: disable=no-self-use
         return []
 
+    def pane_resized(self) -> bool:
+        """Return True if the current window size has changed."""
+        return (self.last_pane_width != self.current_pane_width
+                or self.last_pane_height != self.current_pane_height)
+
     def update_pane_size(self, width, height) -> None:
         """Save pane width and height for the current UI render pass."""
         if width:

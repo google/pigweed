@@ -139,15 +139,16 @@ class TableView:
 
     def formatted_row(self, log: LogLine) -> StyleAndTextTuples:
         """Render a single table row."""
+        # pylint: disable=too-many-locals
         padding_formatted_text = ('', self.column_padding)
         # Don't apply any background styling that would override the parent
         # window or selected-log-line style.
         default_style = ''
 
-        fragments: collections.deque = collections.deque()
+        table_fragments: StyleAndTextTuples = []
 
         # NOTE: To preseve ANSI formatting on log level use:
-        # fragments.extend(
+        # table_fragments.extend(
         #     ANSI(log.record.levelname.ljust(
         #         self.column_widths['level'])).__pt_formatted_text__())
 
@@ -158,7 +159,10 @@ class TableView:
             if name in ['msg', 'message', 'file']:
                 continue
 
-            if name == 'time':
+            # hasattr checks are performed here since a log record may not have
+            # asctime or levelname if they are not included in the formatter
+            # fmt string.
+            if name == 'time' and hasattr(log.record, 'asctime'):
                 time_text = log.record.asctime
                 if self.prefs.hide_date_from_log_time:
                     time_text = time_text[self._year_month_day_width:]
@@ -169,7 +173,7 @@ class TableView:
                                    time_text.ljust(self.column_widths['time']))
                 continue
 
-            if name == 'level':
+            if name == 'level' and hasattr(log.record, 'levelname'):
                 # Remove any existing ANSI formatting and apply our colors.
                 level_text = pw_console.text_formatting.strip_ansi(
                     log.record.levelname)
@@ -238,15 +242,15 @@ class TableView:
                                                 column_value.rstrip(),
                                                 default=fallback_style)
 
-                fragments.append((style, column_value))
-                fragments.append(padding_formatted_text)
-            # Add this tuple to fragments.
+                table_fragments.append((style, column_value))
+                table_fragments.append(padding_formatted_text)
+            # Add this tuple to table_fragments.
             elif isinstance(column, tuple):
-                fragments.append(column_value)
+                table_fragments.append(column_value)
                 # Add padding if not the last column.
                 if i < len(columns) - 1:
-                    fragments.append(padding_formatted_text)
+                    table_fragments.append(padding_formatted_text)
 
         # Add the final new line for this row.
-        fragments.append(('', '\n'))
-        return list(fragments)
+        table_fragments.append(('', '\n'))
+        return table_fragments
