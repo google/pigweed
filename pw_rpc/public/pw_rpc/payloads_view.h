@@ -38,20 +38,20 @@ class FakeChannelOutput;
 class PacketFilter {
  public:
   // Use Channel::kUnassignedChannelId to ignore the channel.
-  constexpr PacketFilter(PacketType client_packet_type,
-                         PacketType server_packet_type,
+  constexpr PacketFilter(PacketType packet_type_1,
+                         PacketType packet_type_2,
                          uint32_t channel_id,
                          uint32_t service_id,
                          uint32_t method_id)
-      : client_packet_type_(client_packet_type),
-        server_packet_type_(server_packet_type),
+      : packet_type_1_(packet_type_1),
+        packet_type_2_(packet_type_2),
         channel_id_(channel_id),
         service_id_(service_id),
         method_id_(method_id) {}
 
   constexpr bool operator()(const Packet& packet) const {
-    return (packet.type() == client_packet_type_ ||
-            packet.type() == server_packet_type_) &&
+    return (packet.type() == packet_type_1_ ||
+            packet.type() == packet_type_2_) &&
            (channel_id_ == Channel::kUnassignedChannelId ||
             packet.channel_id() == channel_id_) &&
            packet.service_id() == service_id_ &&
@@ -61,8 +61,8 @@ class PacketFilter {
  private:
   // Support filtering on two packet types to handle reading both client and
   // server streams for bidirectional streams.
-  PacketType client_packet_type_;
-  PacketType server_packet_type_;
+  PacketType packet_type_1_;
+  PacketType packet_type_2_;
   uint32_t channel_id_;
   uint32_t service_id_;
   uint32_t method_id_;
@@ -153,14 +153,14 @@ class PayloadsView {
                      method_id) {}
 
   constexpr PayloadsView(const Vector<internal::Packet>& packets,
-                         PacketType client_packet_type,
-                         PacketType server_packet_type,
+                         PacketType packet_type_1,
+                         PacketType packet_type_2,
                          uint32_t channel_id,
                          uint32_t service_id,
                          uint32_t method_id)
       : view_(packets,
-              internal::test::PacketFilter(client_packet_type,
-                                           server_packet_type,
+              internal::test::PacketFilter(packet_type_1,
+                                           packet_type_2,
                                            channel_id,
                                            service_id,
                                            method_id)) {}
@@ -176,9 +176,8 @@ class PayloadsView {
         return {PacketType::CLIENT_STREAM, PacketType::RESPONSE};
       case MethodType::kBidirectionalStreaming:
         return {PacketType::CLIENT_STREAM, PacketType::SERVER_STREAM};
-      default:
-        PW_ASSERT(false);
     }
+    PW_ASSERT(false);
   }
 
   internal::test::PacketsView view_;
@@ -237,14 +236,14 @@ class StatusView {
   using PacketType = internal::PacketType;
 
   constexpr StatusView(const Vector<internal::Packet>& packets,
-                       PacketType client_packet_type,
-                       PacketType server_packet_type,
+                       PacketType packet_type_1,
+                       PacketType packet_type_2,
                        uint32_t channel_id,
                        uint32_t service_id,
                        uint32_t method_id)
       : view_(packets,
-              internal::test::PacketFilter(client_packet_type,
-                                           server_packet_type,
+              internal::test::PacketFilter(packet_type_1,
+                                           packet_type_2,
                                            channel_id,
                                            service_id,
                                            method_id)) {}

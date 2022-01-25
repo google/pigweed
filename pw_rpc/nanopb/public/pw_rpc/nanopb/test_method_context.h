@@ -114,7 +114,7 @@ class NanopbInvocationContext
   }
 
   NanopbPayloadsView<Response> responses() const {
-    return Base::output().template responses<Response>(
+    return Base::output().template payload_structs<Response>(
         kMethodInfo.serde().response(),
         MethodTraits<decltype(kMethod)>::kType,
         Base::channel_id(),

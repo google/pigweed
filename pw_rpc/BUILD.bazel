@@ -200,6 +200,7 @@ filegroup(
         "nanopb/codegen_test.cc",
         "nanopb/common.cc",
         "nanopb/echo_service_test.cc",
+        "nanopb/fake_channel_output_test.cc",
         "nanopb/method.cc",
         "nanopb/method_info_test.cc",
         "nanopb/method_lookup_test.cc",
