@@ -386,19 +386,38 @@ struct ProtocolErrorTraits<NoProtocolError> {
 
 namespace internal {
 
+// Helper to build a string from result using generic concatenation calls.
+template <typename Result, typename StringBuilder, typename ValueStringBuilder>
+void BuildResultToString(const Result& result, StringBuilder builder,
+                         ValueStringBuilder append_value) {
+  builder("[result: ");
+  if (result.is_ok()) {
+    builder("ok(");
+    append_value();
+  } else {
+    builder("error(");
+    builder(result.error_value().ToString());
+  }
+  builder(")]");
+}
+
 // Produces a human-readable representation of a fitx::result<Error<…>>
 template <typename ProtocolErrorCode, typename... Ts>
 std::string ToString(const fitx::result<Error<ProtocolErrorCode>, Ts...>& result) {
-  std::string out = "[result: ";
-  if (result.is_ok()) {
-    out.append("success");
+  std::string out;
+  auto append_value_string = [&] {
     if constexpr (sizeof...(Ts) > 0) {
-      out.append(" with value");
+      if constexpr (std::conjunction_v<bt::internal::HasToString<Ts>...>) {
+        out += ToString(result.value());
+      } else {
+        // It's not possible to portably print e.g. the name of the value's type, so fall back to a
+        // placeholder. It may be useful to print the size and a hexdump, however.
+        out += "?";
+      }
     }
-  } else {
-    out.append(result.error_value().ToString());
-  }
-  out.append("]");
+  };
+  bt::internal::BuildResultToString(
+      result, [&](auto s) { out += s; }, append_value_string);
   return out;
 }
 
@@ -420,7 +439,53 @@ template <typename ProtocolErrorCode, typename... Ts>
 }
 
 }  // namespace internal
+
+namespace detail {
+
+// Contains a |value| bool member that is true if overload operator<<(Lhs&, const Rhs&) exists
+template <typename Lhs, typename Rhs, typename = void>
+struct IsStreamable : std::false_type {};
+
+template <typename Lhs, typename Rhs>
+struct IsStreamable<Lhs, Rhs,
+                    std::void_t<decltype(std::declval<Lhs&>() << std::declval<const Rhs&>())>>
+    : std::is_same<Lhs&, decltype(std::declval<Lhs&>() << std::declval<const Rhs&>())> {};
+
+template <typename Lhs, typename Rhs>
+constexpr bool IsStreamableV = IsStreamable<Lhs, Rhs>::value;
+
+}  // namespace detail
 }  // namespace bt
+
+// Extends the GoogleTest value printer to print fitx::result<bt::Error<…>, …> types, including
+// converting the contained value of "success" results to strings when possible.
+//
+// This must be defined in namespace fitx because GoogleTest uses argument-dependent lookup (ADL) to
+// find this overload. |os|'s type is templated in order to avoid including <iostream>.
+namespace fitx {
+
+template <typename OStream, typename ProtocolErrorCode, typename... Ts>
+OStream& operator<<(OStream& os,
+                    const fitx::result<::bt::Error<ProtocolErrorCode>, Ts...>& result) {
+  auto stream_value_string = [&] {
+    if constexpr (sizeof...(Ts) > 0) {
+      if constexpr (std::conjunction_v<::bt::internal::HasToString<Ts>...>) {
+        os << ::bt::internal::ToString(result.value());
+      } else if constexpr (std::conjunction_v<::bt::detail::IsStreamable<OStream, Ts>...>) {
+        os << result.value();
+      } else {
+        // It may be prettier to default to ::testing::PrintToString here but that would require
+        // including <gtest/gtest.h> here, which is not ideal.
+        os << "?";
+      }
+    }
+  };
+  ::bt::internal::BuildResultToString(
+      result, [&](auto s) { os << s; }, stream_value_string);
+  return os;
+}
+
+}  // namespace fitx
 
 // Macro to check and log any non-Success status of an event.
 // Use these like:

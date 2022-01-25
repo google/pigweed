@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
 namespace bt {
 namespace {
@@ -292,11 +293,25 @@ TEST(ErrorTest, ProtocolErrorToString) {
 
 TEST(ErrorTest, ToStringOnResult) {
   constexpr fitx::result proto_error_result = ToResult(TestError::kFail2);
-  EXPECT_EQ("[result: fail 2 (TestError 2)]", internal::ToString(proto_error_result));
+  EXPECT_EQ("[result: error(fail 2 (TestError 2))]", internal::ToString(proto_error_result));
   constexpr fitx::result<Error<TestError>> success_result = fitx::ok();
-  EXPECT_EQ("[result: success]", internal::ToString(success_result));
+  EXPECT_EQ("[result: ok()]", internal::ToString(success_result));
   constexpr fitx::result<Error<TestError>, int> success_result_with_value = fitx::ok(1);
-  EXPECT_EQ("[result: success with value]", internal::ToString(success_result_with_value));
+  EXPECT_EQ("[result: ok(?)]", internal::ToString(success_result_with_value));
+  constexpr fitx::result<Error<TestError>, UUID> success_result_with_printable_value =
+      fitx::ok(UUID(uint16_t{}));
+  EXPECT_EQ("[result: ok(00000000-0000-1000-8000-00805f9b34fb)]",
+            internal::ToString(success_result_with_printable_value));
+
+  // Test that GoogleTest's value printer converts to the same string
+  EXPECT_EQ(internal::ToString(proto_error_result), ::testing::PrintToString(proto_error_result));
+  EXPECT_EQ(internal::ToString(success_result), ::testing::PrintToString(success_result));
+  EXPECT_EQ(internal::ToString(success_result_with_printable_value),
+            ::testing::PrintToString(success_result_with_printable_value));
+
+  // The value printer will try to stream types to the GoogleTest ostream if possible, so it may not
+  // always match bt::internal::ToString's output.
+  EXPECT_EQ("[result: ok(1)]", ::testing::PrintToString(success_result_with_value));
 }
 
 TEST(ErrorTest, BtIsErrorMacroCompiles) {
