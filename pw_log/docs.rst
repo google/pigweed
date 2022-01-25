@@ -412,3 +412,14 @@ argument to each macro call seemed like too much. On the other hand, flags are
 something that are typically added on a per-log-statement basis, and is why the
 flags are added on a per-call basis (though hidden through the high-level
 macros).
+
+--------------
+pw_log in Java
+--------------
+``pw_log`` provides a thin Java logging class that uses Google's `Flogger
+<https://google.github.io/flogger/>`_ API. The purpose of this wrapper is to
+support logging on platforms that do not support Flogger. The main
+implementation in ``pw_log/java/main`` simply wraps a
+``com.google.common.flogger.FluentLogger``. An implementation that logs to
+Android's ``android.util.Log`` instead is provided in
+``pw_log/java/android_main``.
