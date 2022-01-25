@@ -79,7 +79,7 @@ def lint_root_metadata(root: RootMetadata) -> Iterable[str]:
             f'{len(root_sig_req.key_ids)} < {root_sig_req.threshold}')
 
     for key_id in root_sig_req.key_ids:
-        if not key_id in [km.key_id for km in root.keys]:
+        if key_id not in [km.key_id for km in root.keys]:
             errors.append(f'Unregistered root key: {key_id.hex()}')
 
     # Check targets signature requirement.
@@ -94,7 +94,7 @@ def lint_root_metadata(root: RootMetadata) -> Iterable[str]:
             f'{len(targets_sig_req.key_ids)} < {targets_sig_req.threshold}')
 
     for key_id in targets_sig_req.key_ids:
-        if not key_id in [km.key_id for km in root.keys]:
+        if key_id not in [km.key_id for km in root.keys]:
             errors.append(f'Unregistered targets key: {key_id.hex()}')
 
     # Make sure no two roles share the same key.
@@ -122,7 +122,7 @@ def verify_root_metadata_signatures(incoming: SignedRootMetadata,
                  f'threshold={sig_requirement.threshold}')
     good_signature_count = 0
     for sig in incoming.signatures:
-        if not sig.key_id in sig_requirement.key_ids:
+        if sig.key_id not in sig_requirement.key_ids:
             continue
 
         key = None
@@ -232,7 +232,7 @@ def verify_targets_metadata(signed: SignedTargetsMetadata,
     good_signatures_count = 0
     for sig in signed.signatures:
         # Ignore extraneous signatures.
-        if not sig.key_id in sig_requirement.key_ids:
+        if sig.key_id not in sig_requirement.key_ids:
             continue
 
         # Extract the public key associated with sig.key_id. There is one and
