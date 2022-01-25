@@ -33,7 +33,37 @@ std::enable_if_t<detail::HasToStringMemberFnV<T>, std::string> ToString(const T&
   return value.ToString();
 }
 
+// Contains a true value if there is a valid overload for |bt::internal::ToString(const T&)|.
+template <typename T, typename = void>
+struct HasToString : std::false_type {};
+
+template <typename T>
+struct HasToString<T, std::void_t<decltype(::bt::internal::ToString(std::declval<const T&>()))>>
+    : std::is_same<std::string, decltype(::bt::internal::ToString(std::declval<const T&>()))> {};
+
+template <typename T>
+constexpr bool HasToStringV = HasToString<T>::value;
+
 }  // namespace internal
+
+// Compatibility for ostream-style string conversions for ToString-able types in namespace bt
+// _only_, due to argument-dependent lookup (ADL) rules. std::ostream is implied through a template
+// parameter to avoid directly including <ostream>.
+//
+// This is particularly useful for GoogleTest expectations. When a check failure against a type like
+// bt::UUID prints this:
+//   24-byte object <00-00 00-00 00-00 00-00 FB-34 9B-5F 80-00 00-80 00-10 00-00 0D-18 00-00>
+// then including this file will cause its value printer to use this overload. Note that only
+// including this file is not enough for types in other namespaces, including those nested in bt.
+// For example, using this with bt::gap::Peer in a test requires the following:
+//   namespace bt::gap {
+//   using ::bt::operator<<;
+//   }  // namespace bt::gap
+template <typename T, typename OStream>
+std::enable_if_t<internal::HasToStringV<T>, OStream&> operator<<(OStream& os, const T& t) {
+  return os << ::bt::internal::ToString(t);
+}
+
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TO_STRING_H_

@@ -285,6 +285,9 @@ TEST(ErrorTest, GeneralHostErrorToString) {
 TEST(ErrorTest, ProtocolErrorToString) {
   constexpr Error error = MakeError(TestError::kFail2);
   EXPECT_EQ(ProtocolErrorTraits<TestError>::ToString(TestError::kFail2), error.ToString());
+
+  // Test that GoogleTest's value printer converts to the same string
+  EXPECT_EQ(internal::ToString(error), ::testing::PrintToString(error));
 }
 
 TEST(ErrorTest, ToStringOnResult) {

@@ -14,6 +14,24 @@ enum class TestError : uint8_t {
   kBar = 1,
 };
 
+}  // namespace
+
+template <>
+struct ProtocolErrorTraits<TestError> {
+  static std::string ToString(TestError code) {
+    switch (code) {
+      case TestError::kFoo:
+        return "TestError::kFoo";
+      case TestError::kBar:
+        return "TestError::kBar";
+      default:
+        return "unknown TestError";
+    }
+  }
+};
+
+namespace {
+
 using TestStatus = Status<TestError>;
 
 TEST(StatusTest, Success) {
