@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "lib/fitx/internal/result.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 
 namespace bt {
 namespace {

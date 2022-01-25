@@ -6,11 +6,14 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_
 
 #include <lib/fitx/result.h>
+#include <zircon/assert.h>
 
 #include <type_traits>
 #include <variant>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt {
 
@@ -22,6 +25,17 @@ namespace bt {
 // As such, Errors can only be constructed indirectly through the ToResult function.
 template <typename ProtocolErrorCode>
 class Error;
+
+// Required trait for ProtocolErrorCode types.
+template <typename ProtocolErrorCode>
+struct ProtocolErrorTraits {
+  // Returns a string representation of the given ProtocolErrorCode value.
+  static std::string ToString(ProtocolErrorCode);
+
+  // Returns true if the given ProtocolErrorCode value represents success. May always return false
+  // if no such value exists.
+  static constexpr bool is_success(ProtocolErrorCode);
+};
 
 namespace detail {
 
@@ -90,18 +104,6 @@ template <typename ProtocolErrorCode>
 [[nodiscard]] constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(
     fitx::error<Error<ProtocolErrorCode>> result) {
   return result;
-}
-
-// TODO(fxbug.dev/86900): Remove this alongside bt::Status
-template <typename ProtocolErrorCode>
-constexpr fitx::result<Error<ProtocolErrorCode>> ToResult(const Status<ProtocolErrorCode>& status) {
-  if (status.is_success()) {
-    return fitx::success();
-  }
-  if (status.is_protocol_error()) {
-    return fitx::error(Error(status.protocol_error()));
-  }
-  return fitx::error(Error<ProtocolErrorCode>(status.error()));
 }
 
 template <typename ProtocolErrorCode = NoProtocolError>
@@ -234,10 +236,6 @@ class [[nodiscard]] Error {
   friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
       ProtocolErrorCode);
   friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(HostError);
-
-  // TODO(fxbug.dev/86900): Remove this alongside bt::Status
-  friend constexpr fitx::result<Error<ProtocolErrorCode>> ToResult<ProtocolErrorCode>(
-      const Status<ProtocolErrorCode>&);
 
   constexpr explicit Error(ProtocolErrorCode proto_error) : error_(proto_error) {
     ZX_ASSERT(!ProtocolErrorTraits<ProtocolErrorCode>::is_success(proto_error));
@@ -423,5 +421,18 @@ template <typename ProtocolErrorCode, typename... Ts>
 
 }  // namespace internal
 }  // namespace bt
+
+// Macro to check and log any non-Success status of an event.
+// Use these like:
+// if (bt_is_error(status, WARN, "gap", "failed to set event mask")) {
+//   ...
+//   return;
+// }
+//
+// It will log with the string prepended to the stringified status if status is
+// a failure. Evaluates to true if the status indicates failure.
+#define bt_is_error(status, flag, tag, fmt...)                            \
+  (::bt::internal::TestForErrorAndLog(status, bt::LogSeverity::flag, tag, \
+                                      bt::internal::BaseName(__FILE__), __LINE__, fmt))
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ERROR_H_
