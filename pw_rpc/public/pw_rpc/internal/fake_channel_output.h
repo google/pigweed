@@ -132,20 +132,6 @@ class FakeChannelOutput : public ChannelOutput {
   // Logs which packets have been sent for debugging purposes.
   void LogPackets() const;
 
- protected:
-  constexpr FakeChannelOutput(Vector<Packet>& packets,
-                              Vector<std::byte>& payloads,
-                              ByteSpan encoding_buffer)
-      : ChannelOutput("pw::rpc::internal::test::FakeChannelOutput"),
-        packets_(packets),
-        payloads_(payloads),
-        encoding_buffer_(encoding_buffer) {}
-
-  const Vector<Packet>& packets() const { return packets_; }
-
- private:
-  friend class rpc::FakeServer;
-
   size_t MaximumTransmissionUnit() final { return encoding_buffer_.size(); }
 
   ByteSpan AcquireBuffer() final;
@@ -162,6 +148,20 @@ class FakeChannelOutput : public ChannelOutput {
     std::fill(encoding_buffer_.begin(), encoding_buffer_.end(), std::byte{0});
     return status;
   }
+
+ protected:
+  constexpr FakeChannelOutput(Vector<Packet>& packets,
+                              Vector<std::byte>& payloads,
+                              ByteSpan encoding_buffer)
+      : ChannelOutput("pw::rpc::internal::test::FakeChannelOutput"),
+        packets_(packets),
+        payloads_(payloads),
+        encoding_buffer_(encoding_buffer) {}
+
+  const Vector<Packet>& packets() const { return packets_; }
+
+ private:
+  friend class rpc::FakeServer;
 
   Status HandlePacket(ConstByteSpan buffer);
   void CopyPayloadToBuffer(Packet& packet);
