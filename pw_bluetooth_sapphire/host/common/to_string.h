@@ -66,4 +66,11 @@ std::enable_if_t<internal::HasToStringV<T>, OStream&> operator<<(OStream& os, co
 
 }  // namespace bt
 
+// Convenience macro for printf-style formatting of an object with a ToString() function overload
+// e.g.:
+//   bt_log(INFO, "tag", "foo happened: %s", bt_str(id));
+//
+// This library provides an ToString() overload that forwards to .ToString() method if it exists.
+#define bt_str(id) (::bt::internal::ToString(id).c_str())
+
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TO_STRING_H_

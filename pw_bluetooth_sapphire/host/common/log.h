@@ -174,13 +174,6 @@ LogContext SaveLogContext();
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
 
-// Convenience macro for printf-style formatting of an object with a ToString() function overload
-// e.g.:
-//   bt_log(INFO, "tag", "foo happened: %s", bt_str(id));
-//
-// This library provides an ToString() overload that forwards to .ToString() method if it exists.
-#define bt_str(id) (::bt::internal::ToString(id).c_str())
-
 #define __BT_CONCAT_(x, y) x##y
 // This level of indirection is required for concatenating the results of macros.
 #define __BT_CONCAT(x, y) __BT_CONCAT_(x, y)
