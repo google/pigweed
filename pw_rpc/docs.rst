@@ -1063,32 +1063,59 @@ configuration. This will enable the Kconfig menu for the following:
   ``CONFIG_PIGWEED_RPC_CLIENT_SERVER=y``.
 * ``pw_rpc.common` which can be enabled via ``CONFIG_PIGWEED_RPC_COMMON=y``.
 
-ChannelOutput API
-=================
-``pw_rpc`` endpoints sends packets using the :cpp:class:`ChannelOutput`
+Encoding and sending packets
+============================
+``pw_rpc`` has to manage interactions among multiple RPC clients, servers,
+client calls, and server calls. To safely synchronize these interactions with
+minimal overhead, ``pw_rpc`` uses a single, global mutex (when
+``PW_RPC_USE_GLOBAL_MUTEX`` is enabled).
+
+Because ``pw_rpc`` uses a global mutex, it also uses a global buffer to encode
+outgoing packets. The size of the buffer is set with
+``PW_RPC_ENCODING_BUFFER_SIZE``, which defaults to 512 B.
+
+Users of ``pw_rpc`` must implement the :cpp:class:`pw::rpc::ChannelOutput`
 interface.
 
 .. cpp:class:: pw::rpc::ChannelOutput
 
-  pw_rpc endpoints use the ``ChannelOutput`` class to send packets. Systems that
-  integrate pw_rpc must use one or more ``ChannelOutput`` instances.
+  ``pw_rpc`` endpoints use :cpp:class:`ChannelOutput` instances to send packets.
+  Systems that integrate pw_rpc must use one or more :cpp:class:`ChannelOutput`
+  instances.
+
+  .. cpp:member:: static constexpr size_t kUnlimited = std::numeric_limits<size_t>::max()
+
+    Value returned from :cpp:func:`MaximumTransmissionUnit` to indicate an
+    unlimited MTU.
 
   .. cpp:function:: virtual size_t MaximumTransmissionUnit()
 
-    Returns the size of the largest buffer that :cpp:func:`AcquireBuffer` can
-    allocate.
+    Returns the size of the largest packet the :cpp:class:`ChannelOutput` can
+    send. :cpp:class:`ChannelOutput` implementations should only override this
+    function if they impose a limit on the MTU. The default implementation
+    returns :cpp:member:`kUnlimited`, which indicates that there is no MTU
+    limit.
 
-  .. cpp:function:: virtual std::byte* AcquireBuffer(size_t size_bytes)
+  .. cpp:function:: virtual pw::Status Send(std::span<std::byte> packet)
 
-    Acquires a buffer of the specified size into which to write an outgoing RPC
-    packet. If a buffer of the specified size cannot be allocated, returns
-    nullptr. The implementation is expected to handle synchronization if
-    necessary.
+    Sends an encoded RPC packet. Returns OK if further packets may be sent, even
+    if the current packet could not be sent. Returns any other status if the
+    Channel is no longer able to send packets.
 
-  .. cpp:function:: virtual Status SendAndReleaseBuffer(std::span<const std::byte> buffer)
+    The RPC system's internal lock is held while this function is called. Avoid
+    long-running operations, since these will delay any other users of the RPC
+    system.
 
-    Sends the contents of a buffer previously obtained from
-    :cpp:func:`AcquireBuffer`. This may be called with an empty span, in which
-    case the buffer should be released without sending any data. Returns OK if
-    further packets may be sent or any other status if the Channel is no longer
-    able to send packets.
+    .. danger::
+
+      No ``pw_rpc`` APIs may be accessed in this function! Implementations MUST
+      NOT access any RPC endpoints (:cpp:class:`pw::rpc::Client`,
+      :cpp:class:`pw::rpc::Server`) or call objects
+      (:cpp:class:`pw::rpc::ServerReaderWriter`,
+      :cpp:class:`pw::rpc::ClientReaderWriter`, etc.) inside the :cpp:func:`Send`
+      function or any descendent calls. Doing so will result in deadlock! RPC APIs
+      may be used by other threads, just not within :cpp:func:`Send`.
+
+      The buffer provided in ``packet`` must NOT be accessed outside of this
+      function. It must be sent immediately or copied elsewhere before the
+      function returns.
