@@ -52,6 +52,7 @@ pw_python_package("pw_snapshot") {
   tests = [ "metadata_test.py" ]
   python_deps = [
     ":pw_snapshot_metadata",
+    "$dir_pw_build_info/py",
     "$dir_pw_cpu_exception_cortex_m/py",
     "$dir_pw_symbolizer/py",
     "$dir_pw_thread:protos.python",

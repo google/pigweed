@@ -14,15 +14,20 @@
 """Tool for processing and outputting Snapshot protos as text"""
 
 import argparse
+import functools
+import logging
 import sys
 from pathlib import Path
 from typing import Optional, BinaryIO, TextIO, Callable
 import pw_tokenizer
 import pw_cpu_exception_cortex_m
+import pw_build_info.build_id
 from pw_snapshot_metadata import metadata
 from pw_snapshot_protos import snapshot_pb2
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_thread import thread_analyzer
+
+_LOG = logging.getLogger('snapshot_processor')
 
 _BRANDING = """
         ____ _       __    _____ _   _____    ____  _____ __  ______  ______
@@ -128,12 +133,31 @@ def process_snapshots(
     return '\n'.join(output)
 
 
+def _snapshot_symbolizer_matcher(
+        artifacts_dir: Path,
+        snapshot: snapshot_pb2.Snapshot) -> LlvmSymbolizer:
+    matching_elf: Optional[Path] = pw_build_info.build_id.find_matching_elf(
+        snapshot.metadata.software_build_uuid, artifacts_dir)
+    if not matching_elf:
+        _LOG.error('Error: No matching ELF found for GNU build ID %s.',
+                   snapshot.metadata.software_build_uuid.hex())
+    return LlvmSymbolizer(matching_elf)
+
+
 def _load_and_dump_snapshots(in_file: BinaryIO, out_file: TextIO,
-                             token_db: Optional[TextIO]):
+                             token_db: Optional[TextIO],
+                             artifacts_dir: Optional[Path]):
     detokenizer = None
     if token_db:
         detokenizer = pw_tokenizer.Detokenizer(token_db)
-    out_file.write(process_snapshots(in_file.read(), detokenizer))
+    symbolizer_matcher: Optional[SymbolizerMatcher] = None
+    if artifacts_dir:
+        symbolizer_matcher = functools.partial(_snapshot_symbolizer_matcher,
+                                               artifacts_dir)
+    out_file.write(
+        process_snapshots(serialized_snapshot=in_file.read(),
+                          detokenizer=detokenizer,
+                          symbolizer_matcher=symbolizer_matcher))
 
 
 def _parse_args():
@@ -151,9 +175,15 @@ def _parse_args():
         '--token-db',
         type=argparse.FileType('r'),
         help='Token database or ELF file to use for detokenization.')
+    parser.add_argument(
+        '--artifacts-dir',
+        type=Path,
+        help=('Directory to recursively search for matching ELF files to use '
+              'for symbolization.'))
     return parser.parse_args()
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(message)s', level=logging.INFO)
     _load_and_dump_snapshots(**vars(_parse_args()))
     sys.exit(0)
