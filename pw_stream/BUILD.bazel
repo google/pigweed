@@ -37,6 +37,8 @@ pw_cc_library(
     deps = [
         "//pw_assert",
         "//pw_bytes",
+        "//pw_polyfill",
+        "//pw_polyfill:iterator",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -82,6 +84,8 @@ pw_cc_test(
     srcs = ["memory_stream_test.cc"],
     deps = [
         ":pw_stream",
+        "//pw_assert",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )

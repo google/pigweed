@@ -102,6 +102,7 @@ pw_cc_library(
         "public_overrides",
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = ["//pw_sync:mutex_facade"],
 )
 
 pw_cc_library(

@@ -36,6 +36,11 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_polyfill",
+        "//pw_polyfill:bit",
+        "//pw_polyfill:cstddef",
+        "//pw_polyfill:iterator",
+        "//pw_polyfill:type_traits",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_status",

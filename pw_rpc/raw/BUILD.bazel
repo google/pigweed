@@ -37,6 +37,7 @@ pw_cc_library(
         "//pw_bytes",
         "//pw_rpc",
         "//pw_rpc:internal_packet_cc.pwpb",
+        "//pw_status",
     ],
 )
 
@@ -70,6 +71,9 @@ pw_cc_library(
         ":fake_channel_output",
         ":server_api",
         "//pw_assert",
+        "//pw_containers:vector",
+        "//pw_preprocessor",
+        "//pw_rpc",
         "//pw_rpc:internal_test_utils",
     ],
 )
@@ -80,6 +84,9 @@ pw_cc_library(
     hdrs = ["public/pw_rpc/raw/client_testing.h"],
     deps = [
         ":test_method_context",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_log",
         "//pw_rpc",
     ],
 )

@@ -58,6 +58,8 @@ pw_cc_library(
         ":config",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_polyfill:bit",
+        "//pw_polyfill:overrides",
         "//pw_result",
         "//pw_span",
         "//pw_status",

@@ -49,6 +49,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":pw_varint",
+        "//pw_span",
         "//pw_status",
         "//pw_stream",
     ],

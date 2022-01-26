@@ -30,7 +30,10 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    deps = ["//pw_polyfill"],
+    deps = [
+        "//pw_polyfill",
+        "//pw_polyfill:standard_library",
+    ],
 )
 
 pw_cc_test(

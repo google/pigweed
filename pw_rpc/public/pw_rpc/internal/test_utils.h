@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <span>
 
+#include "gtest/gtest.h"
 #include "pw_assert/assert.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/channel.h"
