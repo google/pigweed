@@ -200,6 +200,11 @@ class [[nodiscard]] Error {
                  [](ProtocolErrorCode) { return false; });
   }
 
+  template <typename... Ts>
+  [[nodiscard]] constexpr bool is_any_of(Ts... error_codes) const {
+    return (is(error_codes) || ...);
+  }
+
   // Given two "visitors" (callable objects that accept HostError and ProtocolErrorCode), invoke the
   // one that corresponds to the error held in storage, but not the other.
   // This pattern allows the code within the visitors to statically presume the type of the error

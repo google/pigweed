@@ -161,6 +161,18 @@ TEST(ErrorDeathTest, ReadingProtocolErrorThatIsNotPresentIsFatal) {
   ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.protocol_error(), "protocol error");
 }
 
+TEST(ErrorTest, ResultIsAnyOf) {
+  constexpr Error error = MakeError(TestError::kFail1);
+
+  // None of the arguments compare equal to error's contents
+  EXPECT_FALSE(error.is_any_of(HostError::kFailed, TestError::kFail2, TestError::kSuccess));
+
+  // One argument matches
+  EXPECT_TRUE(error.is_any_of(HostError::kFailed, TestError::kFail2, TestError::kFail1));
+  EXPECT_TRUE(error.is_any_of(HostError::kFailed, TestError::kFail1, TestError::kFail2));
+  EXPECT_TRUE(error.is_any_of(TestError::kFail1));
+}
+
 TEST(ErrorTest, ErrorCanBeComparedInTests) {
   const Error error = MakeError(TestError::kFail1);
 
