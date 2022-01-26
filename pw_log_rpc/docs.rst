@@ -158,6 +158,32 @@ with different priorities.
 Calling ``OpenUnrequestedLogStream()`` is a convenient way to set up a log
 stream that is started without the need to receive an RCP request for logs.
 
+---------
+Log Drops
+---------
+Unfortunately, logs can be dropped and not reach the destination. This module
+expects to cover all cases and be able to notify the user of log drops when
+possible. Logs can be dropped when
+
+- They don't pass a filter. This is the expected behavior, so filtered logs will
+  not be tracked as dropped logs.
+- The drains are too slow to keep up. In this case, the ring buffer is full of
+  undrained entries; when new logs come in, old entries are dropped. [#f1]_
+- There is an error creating or adding a new log entry, and the ring buffer is
+  notified that the log had to be dropped. [#f1]_
+- A log entry is too large for the outbound buffer. [#f2]_
+- There are detected errors transmitting log entries. [#f2]_
+- There are undetected errors transmitting or receiving log entries, such as an
+  interface interruption. [#f3]_
+
+.. [#f1] The log stream will contain a ``LogEntry`` message with the number of
+         dropped logs.
+.. [#f2] The log stream will contain a ``LogEntry`` message with the number of
+         dropped logs the next time the stream is flushed only if the drain's
+         error handling is set to close the stream on error.
+.. [#f3] Clients can calculate the number of logs lost in transit using the
+         sequence ID and number of entries in each stream packet.
+
 -------------
 Log Filtering
 -------------
