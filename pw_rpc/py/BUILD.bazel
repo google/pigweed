@@ -55,6 +55,20 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "plugin_nanopb",
+    srcs = [":pw_rpc_common_sources"],
+    imports = ["."],
+    main = "pw_rpc/plugin_nanopb.py",
+    python_version = "PY3",
+    deps = [
+        "//pw_protobuf/py:plugin_library",
+        "//pw_protobuf_compiler/py:pw_protobuf_compiler",
+        "//pw_status/py:pw_status",
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)
+
 py_library(
     name = "pw_rpc",
     srcs = [
