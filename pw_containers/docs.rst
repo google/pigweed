@@ -81,6 +81,11 @@ That means two key things:
     PW_LOG_INFO("Found a square with an area of %lu", square.Area());
   }
 
+  // It is safe to remove items from a list while iterating over it.
+  for (const auto& square : squares) {
+    squares.remove(item);
+  }
+
 pw::containers::FlatMap
 =======================
 FlatMap provides a simple, fixed-size associative array with lookup by key or

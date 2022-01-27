@@ -74,6 +74,10 @@ Status RpcLogDrain::Flush() {
       }
       continue;
     }
+
+    encoder.WriteFirstEntrySequenceId(sequence_id_);
+    sequence_id_ += packed_entry_count;
+
     if (const Status status = server_writer_.Write(encoder); !status.ok()) {
       if (error_handling_ == LogDrainErrorHandling::kCloseStreamOnWriterError) {
         // Only update this drop count when writer errors are not ignored.

@@ -112,6 +112,7 @@ group("module_docs") {
     "$dir_pw_log_basic:docs",
     "$dir_pw_log_null:docs",
     "$dir_pw_log_rpc:docs",
+    "$dir_pw_log_string:docs",
     "$dir_pw_log_tokenized:docs",
     "$dir_pw_malloc:docs",
     "$dir_pw_malloc_freelist:docs",

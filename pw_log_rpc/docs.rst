@@ -89,6 +89,16 @@ also be internal log readers, i.e. ``MultiSink::Drain``\s, attached to the
 
 Components Overview
 ===================
+LogEntry and LogEntries
+-----------------------
+RPC logging uses ``LogEntry`` to encapsulate each entry's data, such as level,
+timestamp, and message. ``LogEntries`` can hold multiple instances of
+``LogEntry`` to send more data using fewer transmissions. The ``LogEntries`` has
+an optional field for the first message's sequence ID that corresponds to the
+count of each ``LogEntry`` that passes the log filter and is sent. A client can
+use this sequence ID and the number of messages in a ``LogEntries`` to figure
+out if logs were dropped during transmission.
+
 RPC log service
 ---------------
 The ``LogService`` class is an RPC service that provides a way to request a log

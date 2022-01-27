@@ -137,11 +137,13 @@ pw_test_group("tests") {
     ":client_reader_writer_test",
     ":codegen_test",
     ":echo_service_test",
+    ":fake_channel_output_test",
     ":method_lookup_test",
     ":method_test",
     ":method_info_test",
     ":method_union_test",
     ":server_reader_writer_test",
+    ":serde_test",
     ":stub_generation_test",
   ]
 }
@@ -177,6 +179,16 @@ pw_test("codegen_test") {
     "..:test_utils",
   ]
   sources = [ "codegen_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_test("fake_channel_output_test") {
+  deps = [
+    ":server_api",
+    ":test_method_context",
+    "..:test_protos.nanopb_rpc",
+  ]
+  sources = [ "fake_channel_output_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
@@ -232,6 +244,15 @@ pw_test("echo_service_test") {
     ":test_method_context",
   ]
   sources = [ "echo_service_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_test("serde_test") {
+  deps = [
+    ":server_api",
+    "..:test_protos.nanopb",
+  ]
+  sources = [ "serde_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
 

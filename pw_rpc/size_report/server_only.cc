@@ -24,6 +24,8 @@ class Output : public pw::rpc::ChannelOutput {
  public:
   Output() : ChannelOutput("output") {}
 
+  size_t MaximumTransmissionUnit() override { return sizeof(buffer_); }
+
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
   pw::Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {

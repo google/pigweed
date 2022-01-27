@@ -20,8 +20,7 @@ from typing import cast, Any, Iterable, Union
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
-
-import pw_rpc.ids
+from pw_rpc import ids
 
 PLUGIN_NAME = 'pw_rpc_codegen'
 PLUGIN_VERSION = '0.3.0'
@@ -45,7 +44,7 @@ STUB_READER_WRITER_TODO = (
 
 def get_id(item: Union[ProtoService, ProtoServiceMethod]) -> str:
     name = item.proto_path() if isinstance(item, ProtoService) else item.name()
-    return f'0x{pw_rpc.ids.calculate(name):08x}'
+    return f'0x{ids.calculate(name):08x}'
 
 
 def client_call_type(method: ProtoServiceMethod, prefix: str) -> str:

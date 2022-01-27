@@ -164,6 +164,7 @@ message LogRequest {}
 
 message LogEntries {
   repeated LogEntry entries = 1;
+  optional uint32 first_entry_sequence_id = 2;
 }
 
 // RPC service for accessing logs.

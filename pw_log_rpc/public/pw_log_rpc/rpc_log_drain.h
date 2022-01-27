@@ -98,7 +98,8 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
         log_entry_buffer_(log_entry_buffer),
         committed_entry_drop_count_(0),
         mutex_(mutex),
-        filter_(filter) {
+        filter_(filter),
+        sequence_id_(0) {
     PW_ASSERT(log_entry_buffer.size_bytes() >= kMinEntryBufferSize);
   }
 
@@ -157,6 +158,8 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   uint32_t committed_entry_drop_count_ PW_GUARDED_BY(mutex_);
   sync::Mutex& mutex_;
   Filter* filter_;
+
+  uint32_t sequence_id_;
 };
 
 }  // namespace pw::log_rpc

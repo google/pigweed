@@ -14,7 +14,7 @@
 
 package dev.pigweed.pw_rpc;
 
-import com.google.common.flogger.FluentLogger;
+// import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -35,7 +35,8 @@ import javax.annotation.Nullable;
  */
 class StreamObserverCall<RequestT extends MessageLite, ResponseT extends MessageLite>
     implements ClientStreaming<RequestT> {
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+  // TODO(pwbug/611): Restore logging without a mandatory Flogger dependency.
+  // private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final RpcManager rpcs;
   private final PendingRpc rpc;
@@ -257,8 +258,8 @@ class StreamObserverCall<RequestT extends MessageLite, ResponseT extends Message
     try {
       return (ResponseT) rpc.method().decodeResponsePayload(payload);
     } catch (InvalidProtocolBufferException e) {
-      logger.atWarning().withCause(e).log(
-          "Failed to decode response for method %s; skipping packet", rpc.method().name());
+      // logger.atWarning().withCause(e).log(
+      //    "Failed to decode response for method %s; skipping packet", rpc.method().name());
       return null;
     }
   }

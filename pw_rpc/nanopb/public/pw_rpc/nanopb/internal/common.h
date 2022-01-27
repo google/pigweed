@@ -45,6 +45,10 @@ class NanopbSerde {
   // Encodes a Nanopb protobuf struct to the serialized wire format.
   StatusWithSize Encode(const void* proto_struct, ByteSpan buffer) const;
 
+  // Calculates the encoded size of the provided protobuf struct without
+  // actually encoding it.
+  StatusWithSize EncodedSizeBytes(const void* proto_struct) const;
+
   // Decodes a serialized protobuf to a Nanopb struct.
   bool Decode(ConstByteSpan buffer, void* proto_struct) const;
 

@@ -54,6 +54,7 @@ class Device:
         self.logger = DEFAULT_DEVICE_LOGGER
         self.logger.setLevel(logging.DEBUG)  # Allow all device logs through.
         self.timestamp_decoder = timestamp_decoder
+        self._expected_log_sequence_id = 0
 
         callback_client_impl = callback_client.Impl(
             default_unary_timeout_s=rpc_timeout_s,
@@ -99,7 +100,27 @@ class Device:
         if error != Status.CANCELLED:
             self.listen_to_log_stream()
 
+    def _handle_log_drop_count(self, drop_count: int):
+        message = f'Dropped {drop_count} log'
+        if drop_count > 1:
+            message += 's'
+        self._emit_device_log(logging.WARNING, '', '', '', message)
+
+    def _check_for_dropped_logs(self, log_entries_proto: log_pb2.LogEntries):
+        # Count log messages received that don't use the dropped field.
+        messages_received = sum(1 if not log_proto.dropped else 0
+                                for log_proto in log_entries_proto.entries)
+        dropped_log_count = (log_entries_proto.first_entry_sequence_id -
+                             self._expected_log_sequence_id)
+        self._expected_log_sequence_id = (
+            log_entries_proto.first_entry_sequence_id + messages_received)
+        if dropped_log_count > 0:
+            self._handle_log_drop_count(dropped_log_count)
+        elif dropped_log_count < 0:
+            _LOG.error('Log sequence ID is smaller than expected')
+
     def _log_entries_proto_parser(self, log_entries_proto: log_pb2.LogEntries):
+        self._check_for_dropped_logs(log_entries_proto)
         for log_proto in log_entries_proto.entries:
             decoded_timestamp = self.decode_timestamp(log_proto.timestamp)
             # Parse level and convert to logging module level number.
@@ -111,18 +132,13 @@ class Device:
             else:
                 message = log_proto.message.decode("utf-8")
             log = pw_log_tokenized.FormatStringWithMetadata(message)
-            decoded_message = log.message
 
             # Handle dropped count.
             if log_proto.dropped:
-                level = logging.WARNING
-                decoded_timestamp = ''
-                decoded_message = f'Dropped {log_proto.dropped} log'
-                if log_proto.dropped > 1:
-                    decoded_message += 's'
-
+                self._handle_log_drop_count(log_proto.dropped)
+                return
             self._emit_device_log(level, '', decoded_timestamp, log.module,
-                                  decoded_message, **dict(log.fields))
+                                  log.message, **dict(log.fields))
 
     def _emit_device_log(self, level: int, source_name: str, timestamp: str,
                          module_name: str, message: str, **metadata_fields):

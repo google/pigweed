@@ -152,9 +152,11 @@ struct TestLogEntry {
   ConstByteSpan tokenized_data = {};
 };
 
-// Unpacks a `LogEntry` proto buffer and compares it with the expected data.
+// Unpacks a `LogEntry` proto buffer to compare it with the expected data and
+// updates the total drop count found.
 void VerifyLogEntry(protobuf::Decoder& entry_decoder,
-                    const TestLogEntry& expected_entry) {
+                    const TestLogEntry& expected_entry,
+                    uint32_t& drop_count_out) {
   ConstByteSpan tokenized_data;
   if (!expected_entry.tokenized_data.empty()) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
@@ -200,9 +202,10 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
   if (expected_entry.dropped) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
     ASSERT_EQ(entry_decoder.FieldNumber(), 6u);  // dropped
-    uint32_t dropped;
+    uint32_t dropped = 0;
     ASSERT_TRUE(entry_decoder.ReadUint32(&dropped).ok());
     EXPECT_EQ(expected_entry.dropped, dropped);
+    drop_count_out += dropped;
   }
   if (expected_entry.metadata.module()) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
@@ -214,20 +217,39 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
   }
 }
 
-// Verifies a stream of log entries, returning the total count found.
+// Verifies a stream of log entries and updates the total drop count found.
 size_t VerifyLogEntries(protobuf::Decoder& entries_decoder,
-                        Vector<TestLogEntry>& expected_entries_stack) {
+                        Vector<TestLogEntry>& expected_entries_stack,
+                        uint32_t expected_first_entry_sequence_id,
+                        uint32_t& drop_count_out) {
   size_t entries_found = 0;
   while (entries_decoder.Next().ok()) {
-    ConstByteSpan entry;
-    EXPECT_TRUE(entries_decoder.ReadBytes(&entry).ok());
-    protobuf::Decoder entry_decoder(entry);
-    if (expected_entries_stack.empty()) {
-      break;
+    if (static_cast<pw::log::LogEntries::Fields>(
+            entries_decoder.FieldNumber()) ==
+        log::LogEntries::Fields::ENTRIES) {
+      ConstByteSpan entry;
+      EXPECT_EQ(entries_decoder.ReadBytes(&entry), OkStatus());
+      protobuf::Decoder entry_decoder(entry);
+      if (expected_entries_stack.empty()) {
+        break;
+      }
+      // Keep track of entries and drops respective counts.
+      uint32_t current_drop_count = 0;
+      VerifyLogEntry(
+          entry_decoder, expected_entries_stack.back(), current_drop_count);
+      drop_count_out += current_drop_count;
+      if (current_drop_count == 0) {
+        ++entries_found;
+      }
+      expected_entries_stack.pop_back();
+    } else if (static_cast<pw::log::LogEntries::Fields>(
+                   entries_decoder.FieldNumber()) ==
+               log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID) {
+      uint32_t first_entry_sequence_id = 0;
+      EXPECT_EQ(entries_decoder.ReadUint32(&first_entry_sequence_id),
+                OkStatus());
+      EXPECT_EQ(expected_first_entry_sequence_id, first_entry_sequence_id);
     }
-    VerifyLogEntry(entry_decoder, expected_entries_stack.back());
-    expected_entries_stack.pop_back();
-    ++entries_found;
   }
   return entries_found;
 }
@@ -235,7 +257,11 @@ size_t VerifyLogEntries(protobuf::Decoder& entries_decoder,
 size_t CountLogEntries(protobuf::Decoder& entries_decoder) {
   size_t entries_found = 0;
   while (entries_decoder.Next().ok()) {
-    ++entries_found;
+    if (static_cast<pw::log::LogEntries::Fields>(
+            entries_decoder.FieldNumber()) ==
+        log::LogEntries::Fields::ENTRIES) {
+      ++entries_found;
+    }
   }
   return entries_found;
 }
@@ -314,11 +340,14 @@ TEST_F(LogServiceTest, StartAndEndStream) {
                                  std::span(std::string_view(kMessage)))});
   }
   size_t entries_found = 0;
+  uint32_t drop_count_found = 0;
   for (auto& response : context.responses()) {
     protobuf::Decoder entry_decoder(response);
-    entries_found += VerifyLogEntries(entry_decoder, message_stack);
+    entries_found += VerifyLogEntries(
+        entry_decoder, message_stack, entries_found, drop_count_found);
   }
   EXPECT_EQ(entries_found, total_entries);
+  EXPECT_EQ(drop_count_found, 0u);
 }
 
 TEST_F(LogServiceTest, HandleDropped) {
@@ -353,12 +382,14 @@ TEST_F(LogServiceTest, HandleDropped) {
 
   // Verify data in responses.
   size_t entries_found = 0;
+  uint32_t drop_count_found = 0;
   for (auto& response : context.responses()) {
     protobuf::Decoder entry_decoder(response);
-    entries_found += VerifyLogEntries(entry_decoder, message_stack);
+    entries_found += VerifyLogEntries(
+        entry_decoder, message_stack, entries_found, drop_count_found);
   }
-  // Expect an extra message with the drop count.
-  EXPECT_EQ(entries_found, total_entries + 1);
+  EXPECT_EQ(entries_found, total_entries);
+  EXPECT_EQ(drop_count_found, total_drop_count);
 }
 
 TEST_F(LogServiceTest, HandleSmallBuffer) {
@@ -385,12 +416,15 @@ TEST_F(LogServiceTest, HandleSmallBuffer) {
 
   // Verify data in responses.
   size_t entries_found = 0;
+  uint32_t drop_count_found = 0;
   for (auto& response : context.responses()) {
     protobuf::Decoder entry_decoder(response);
-    entries_found += VerifyLogEntries(entry_decoder, message_stack);
+    entries_found += VerifyLogEntries(
+        entry_decoder, message_stack, entries_found, drop_count_found);
   }
   // No messages fit the buffer, expect a drop message.
-  EXPECT_EQ(entries_found, 1u);
+  EXPECT_EQ(entries_found, 0u);
+  EXPECT_EQ(drop_count_found, total_drop_count);
 }
 
 TEST_F(LogServiceTest, FlushDrainWithoutMultisink) {
@@ -455,7 +489,9 @@ TEST_F(LogServiceTest, LargeLogEntry) {
   ConstByteSpan entry;
   EXPECT_TRUE(entries_decoder.ReadBytes(&entry).ok());
   protobuf::Decoder entry_decoder(entry);
-  VerifyLogEntry(entry_decoder, expected_entry);
+  uint32_t drop_count = 0;
+  VerifyLogEntry(entry_decoder, expected_entry, drop_count);
+  EXPECT_EQ(drop_count, 0u);
 }
 
 TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
@@ -509,13 +545,18 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
                                  std::span(std::string_view(kMessage)))});
   }
   size_t entries_found = 0;
+  uint32_t drop_count_found = 0;
   for (auto& response : output.payloads<Logs::Listen>()) {
     protobuf::Decoder entry_decoder(response);
-    entries_found += VerifyLogEntries(entry_decoder, message_stack);
+    entries_found += VerifyLogEntries(
+        entry_decoder, message_stack, entries_found, drop_count_found);
   }
 
   // Verify that not all the entries were sent.
-  EXPECT_LE(entries_found, total_entries);
+  EXPECT_LT(entries_found, total_entries);
+  // The drain closes on errors, thus the drop count is reported on the next
+  // call to Flush.
+  EXPECT_EQ(drop_count_found, 0u);
 
   // Reset channel output and resume log stream with a new writer.
   output.clear();
@@ -540,10 +581,13 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
 
   for (auto& response : output.payloads<Logs::Listen>()) {
     protobuf::Decoder entry_decoder(response);
-    entries_found += VerifyLogEntries(entry_decoder, message_stack);
+    entries_found += VerifyLogEntries(entry_decoder,
+                                      message_stack,
+                                      entries_found + total_drop_count,
+                                      drop_count_found);
   }
-  // All entries are accounted for, including the drop message.
-  EXPECT_EQ(entries_found, remaining_entries + 1);
+  EXPECT_EQ(entries_found, remaining_entries);
+  EXPECT_EQ(drop_count_found, total_drop_count);
 }
 
 TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
@@ -570,8 +614,8 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   const uint32_t packets_sent = 4;
   const size_t total_entries = packets_sent * max_messages_per_response;
   const size_t max_entries = 50;
-  // Check we can test all these entries.q
-  ASSERT_GE(max_entries, total_entries);
+  // Check we can test all these entries.
+  ASSERT_GT(max_entries, total_entries);
   AddLogEntries(total_entries - 1, kMessage, kSampleMetadata, kSampleTimestamp);
 
   // Interrupt log stream with an error.
@@ -587,7 +631,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   EXPECT_FALSE(output.done());
 
   // Make sure some packets were sent.
-  ASSERT_GE(output.payloads<Logs::Listen>().size(), 0u);
+  ASSERT_GT(output.payloads<Logs::Listen>().size(), 0u);
 
   // Verify that not all the entries were sent.
   size_t entries_found = 0;
@@ -595,21 +639,34 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
     protobuf::Decoder entry_decoder(response);
     entries_found += CountLogEntries(entry_decoder);
   }
-  EXPECT_LE(entries_found, total_entries);
+  ASSERT_LT(entries_found, total_entries);
 
-  // Verify that all messages were sent and the drop count messageis ignored.
-  const uint32_t total_drop_count = total_entries - entries_found + 1;
+  // Verify that all messages were sent.
+  const uint32_t total_drop_count = total_entries - entries_found;
   Vector<TestLogEntry, max_entries> message_stack;
-  for (size_t i = 0; i < total_drop_count; ++i) {
+  for (size_t i = 0; i < entries_found; ++i) {
     message_stack.push_back({.timestamp = kSampleTimestamp,
                              .tokenized_data = std::as_bytes(
                                  std::span(std::string_view(kMessage)))});
   }
 
-  for (auto& response : output.payloads<Logs::Listen>()) {
-    protobuf::Decoder entry_decoder(response);
-    VerifyLogEntries(entry_decoder, message_stack);
+  entries_found = 0;
+  uint32_t drop_count_found = 0;
+  uint32_t i = 0;
+  for (; i < error_on_packet_count; ++i) {
+    protobuf::Decoder entry_decoder(output.payloads<Logs::Listen>()[i]);
+    entries_found += VerifyLogEntries(
+        entry_decoder, message_stack, entries_found, drop_count_found);
   }
+  for (; i < output.payloads<Logs::Listen>().size(); ++i) {
+    protobuf::Decoder entry_decoder(output.payloads<Logs::Listen>()[i]);
+    entries_found += VerifyLogEntries(entry_decoder,
+                                      message_stack,
+                                      entries_found + total_drop_count,
+                                      drop_count_found);
+  }
+  // This drain ignores errors and thus doesn't report drops on its own.
+  EXPECT_EQ(drop_count_found, 0u);
 
   // More calls to flush with errors will not affect this stubborn drain.
   const size_t previous_stream_packet_count =
@@ -692,11 +749,14 @@ TEST_F(LogServiceTest, FilterLogs) {
   ASSERT_EQ(drain.Flush(), OkStatus());
 
   size_t entries_found = 0;
+  uint32_t drop_count_found = 0;
   for (auto& response : context.responses()) {
     protobuf::Decoder entry_decoder(response);
-    entries_found += VerifyLogEntries(entry_decoder, message_stack);
+    entries_found += VerifyLogEntries(
+        entry_decoder, message_stack, entries_found, drop_count_found);
   }
   EXPECT_EQ(entries_found, 3u);
+  EXPECT_EQ(drop_count_found, 0u);
 }
 
 TEST_F(LogServiceTest, ReopenClosedLogStreamWithAcquiredBuffer) {

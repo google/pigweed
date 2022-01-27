@@ -75,6 +75,7 @@ pw_source_set("log") {
     "$dir_pw_log_tokenized:metadata",
     "$dir_pw_multisink",
     "$dir_pw_result",
+    "$dir_pw_string",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
