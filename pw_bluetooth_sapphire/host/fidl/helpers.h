@@ -133,14 +133,8 @@ fpromise::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
 // Convert a bt::att::Error to fuchsia.bluetooth.gatt.Error.
 fuchsia::bluetooth::gatt::Error GattErrorToFidl(const bt::att::Error& error);
 
-// Convert a bt::Status to fuchsia.bluetooth.gatt.Error. |status| must not indicate success.
-fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> status);
-
 // Convert a bt::att::Error to fuchsia.bluetooth.gatt2.Error.
 fuchsia::bluetooth::gatt2::Error AttErrorToGattFidlError(const bt::att::Error& error);
-
-// Convert a bt::Status to fuchsia.bluetooth.gatt2.Error. |status| must not indicate success.
-fuchsia::bluetooth::gatt2::Error AttStatusToGattFidlError(bt::Status<bt::att::ErrorCode> status);
 
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input);
 fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid);

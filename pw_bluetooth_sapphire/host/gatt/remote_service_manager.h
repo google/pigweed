@@ -14,7 +14,7 @@
 
 #include <fbl/ref_ptr.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/att/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"

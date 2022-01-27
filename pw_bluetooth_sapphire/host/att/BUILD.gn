@@ -28,11 +28,10 @@ static_library("att") {
     "bearer.h",
     "database.cc",
     "database.h",
+    "error.cc",
     "error.h",
     "permissions.cc",
     "permissions.h",
-    "status.cc",
-    "status.h",
     "write_queue.cc",
     "write_queue.h",
   ]

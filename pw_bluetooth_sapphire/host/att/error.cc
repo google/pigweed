@@ -1,8 +1,8 @@
-// Copyright 2018 The Fuchsia Authors. All rights reserved.
+// Copyright 2022 The Fuchsia Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "status.h"
+#include "error.h"
 
 namespace bt {
 namespace {
@@ -54,7 +54,6 @@ std::string ErrorToString(att::ErrorCode ecode) {
 
 }  // namespace
 
-// static
 std::string ProtocolErrorTraits<att::ErrorCode>::ToString(att::ErrorCode ecode) {
   return bt_lib_cpp_string::StringPrintf("%s (ATT %#.2x)", ErrorToString(ecode).c_str(),
                                          static_cast<unsigned int>(ecode));
