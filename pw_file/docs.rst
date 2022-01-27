@@ -49,3 +49,11 @@ All ``Entry`` objects that should be enumerated by a
 prevent ambiguity. Unnamed file entries will NOT be enumerated by a
 ``FlatFileSystemService``, and are considered empty/deleted files. It is valid
 to have empty files that are enumerated with a name.
+
+``FlatFileSystemService`` requires two buffers at construction: one buffer for
+reading file names and another for encoding protobuf responses. The recommended
+encoding buffer size for a particular maximum file name length can be calculated
+with ``EncodingBufferSizeBytes``. For convenience, the
+``FlatFileSystemServiceWithBuffer<kMaxFileNameLength>`` class is provided. That
+class creates a ``FlatFileSystemService`` with a buffer automatically sized
+based on the maximum file name length.
