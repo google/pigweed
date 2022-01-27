@@ -191,7 +191,7 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
             fidl_result.set_value(std::move(read_value));
           } else {
             fidl_result.set_error(fidl_helpers::AttErrorToGattFidlError(
-                bt::ToResult(result.result.error()).error_value()));
+                bt::ToResult(result.result.error_value()).error_value()));
           }
 
           measure_fbg::Size result_size = measure_fbg::Measure(fidl_result);

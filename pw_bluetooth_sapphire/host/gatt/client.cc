@@ -469,7 +469,7 @@ class Impl final : public Client {
       TRACE_DURATION("bluetooth", "gatt::Client::DiscoverCharacteristics read_by_type_cb");
 
       if (result.is_error()) {
-        const auto error = result.error().error;
+        const auto error = result.error_value().error;
 
         // An Error Response code of "Attribute Not Found" indicates the end
         // of the procedure (v5.0, Vol 3, Part G, 4.6.1).
@@ -665,7 +665,7 @@ class Impl final : public Client {
     auto pdu = NewPDU(type_size == sizeof(uint16_t) ? sizeof(att::ReadByTypeRequestParams16)
                                                     : sizeof(att::ReadByTypeRequestParams128));
     if (!pdu) {
-      callback(fpromise::error(
+      callback(fitx::error(
           ReadByTypeError{ToResult(HostError::kOutOfMemory).error_value(), std::nullopt}));
       return;
     }
@@ -689,7 +689,7 @@ class Impl final : public Client {
                                 end_handle](const att::PacketReader& rsp) {
       ZX_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
-        callback(fpromise::error(
+        callback(fitx::error(
             ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
         return;
       }
@@ -706,7 +706,7 @@ class Impl final : public Client {
       // c) Have a list size that is evenly divisible by pair size.
       if (pair_size < sizeof(att::Handle) || list_size < sizeof(att::Handle) ||
           list_size % pair_size != 0) {
-        callback(fpromise::error(
+        callback(fitx::error(
             ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
         return;
       }
@@ -721,7 +721,7 @@ class Impl final : public Client {
         if (handle < start_handle || handle > end_handle) {
           bt_log(TRACE, "gatt",
                  "client received read by type response with handle outside of requested range");
-          callback(fpromise::error(
+          callback(fitx::error(
               ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
           return;
         }
@@ -729,7 +729,7 @@ class Impl final : public Client {
         if (!attributes.empty() && attributes.back().handle >= handle) {
           bt_log(TRACE, "gatt",
                  "client received read by type response with handles in non-increasing order");
-          callback(fpromise::error(
+          callback(fitx::error(
               ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
           return;
         }
@@ -752,7 +752,7 @@ class Impl final : public Client {
       }
       ZX_ASSERT(attr_list_view.size() == 0);
 
-      callback(fpromise::ok(std::move(attributes)));
+      callback(fitx::ok(std::move(attributes)));
     });
 
     auto error_cb =
@@ -761,11 +761,11 @@ class Impl final : public Client {
                  handle);
           // Only some errors have handles.
           std::optional<att::Handle> cb_handle = handle ? std::optional(handle) : std::nullopt;
-          callback(fpromise::error(ReadByTypeError{status.error_value(), cb_handle}));
+          callback(fitx::error(ReadByTypeError{status.error_value(), cb_handle}));
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(fpromise::error(
+      callback(fitx::error(
           ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
     }
   }

@@ -3431,8 +3431,8 @@ TEST_F(ClientTest, ReadByTypeRequestError) {
   std::optional<att::Handle> handle;
   auto cb = [&](Client::ReadByTypeResult result) {
     ASSERT_TRUE(result.is_error());
-    error = result.error().error;
-    handle = result.error().handle;
+    error = result.error_value().error;
+    handle = result.error_value().handle;
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -3523,8 +3523,8 @@ TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
     std::optional<att::Error> error;
     auto cb = [&](Client::ReadByTypeResult result) {
       ASSERT_TRUE(result.is_error());
-      error = result.error().error;
-      EXPECT_FALSE(result.error().handle.has_value());
+      error = result.error_value().error;
+      EXPECT_FALSE(result.error_value().handle.has_value());
     };
 
     // Initiate the request in a loop task, as Expect() below blocks
@@ -3837,7 +3837,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
     cb_called = true;
-    ASSERT_TRUE(result.is_ok()) << bt_str(result.error().error);
+    ASSERT_TRUE(result.is_ok()) << bt_str(result.error_value().error);
     const auto& values = result.value();
     ASSERT_EQ(1u, values.size());
     EXPECT_EQ(kHandle, values[0].handle);

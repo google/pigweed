@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_H_
 
 #include <lib/fit/function.h>
+#include <lib/fitx/result.h>
 #include <zircon/assert.h>
 
 #include <fbl/intrusive_hash_table.h>
@@ -131,7 +132,7 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   // should be used to read complete values.
   struct ReadByTypeResult {
     CharacteristicHandle handle;
-    fpromise::result<ByteBufferPtr, att::ErrorCode> result;
+    fitx::result<att::ErrorCode, ByteBufferPtr> result;
     bool maybe_truncated;
   };
   using ReadByTypeCallback = fit::function<void(att::Result<>, std::vector<ReadByTypeResult>)>;

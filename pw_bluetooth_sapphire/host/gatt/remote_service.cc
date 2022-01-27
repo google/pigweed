@@ -620,7 +620,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
     // Pass results to client when this goes out of scope.
     auto deferred_cb = fit::defer_callback([&]() { cb(fitx::ok(), std::move(values_accum)); });
     if (result.is_error()) {
-      const att::Error& error = result.error().error;
+      const att::Error& error = result.error_value().error;
       deferred_cb = [&cb, error] { cb(fitx::error(error), /*values=*/{}); };
       if (error.is(att::ErrorCode::kAttributeNotFound)) {
         // Treat kAttributeNotFound error as success, since it's used to indicate when a sequence of
@@ -637,10 +637,10 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
         // continue reading after the error.
 
         // A handle must be provided and in the requested read handle range.
-        if (!result.error().handle.has_value()) {
+        if (!result.error_value().handle.has_value()) {
           return;
         }
-        att::Handle error_handle = result.error().handle.value();
+        att::Handle error_handle = result.error_value().handle.value();
         if (error_handle < start || error_handle > end) {
           deferred_cb = [&cb] {
             cb(ToResult(HostError::kPacketMalformed).take_error(), /*values=*/{});
@@ -648,9 +648,9 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
           return;
         }
 
-        values_accum.push_back(RemoteService::ReadByTypeResult{
-            CharacteristicHandle(error_handle), fpromise::error(error.protocol_error()),
-            /*maybe_truncated=*/false});
+        values_accum.push_back(RemoteService::ReadByTypeResult{CharacteristicHandle(error_handle),
+                                                               fitx::error(error.protocol_error()),
+                                                               /*maybe_truncated=*/false});
 
         // Do not attempt to read from the next handle if the error handle is the max handle, as
         // this would cause an overflow.
@@ -679,8 +679,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
       auto buffer = NewSlabBuffer(result.value.size());
       result.value.Copy(buffer.get());
       values_accum.push_back(ReadByTypeResult{CharacteristicHandle(result.handle),
-                                              fpromise::ok(std::move(buffer)),
-                                              result.maybe_truncated});
+                                              fitx::ok(std::move(buffer)), result.maybe_truncated});
     }
 
     // Do not attempt to read from the next handle if the last value handle is the max handle, as
