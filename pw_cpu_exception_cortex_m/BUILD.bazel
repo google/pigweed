@@ -118,7 +118,6 @@ pw_cc_library(
         ":cpu_state",
         ":cpu_state_protos",
         ":proto_dump",
-        ":support",
         "//pw_log",
         "//pw_protobuf",
         "//pw_status",

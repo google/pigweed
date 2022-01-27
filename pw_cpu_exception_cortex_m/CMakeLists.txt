@@ -112,6 +112,8 @@ pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
     pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
     pw_protobuf
     pw_status
+    pw_thread.protos.pwpb
+    pw_thread.snapshot
   PRIVATE_DEPS
     pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants
