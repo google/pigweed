@@ -54,7 +54,7 @@ class RemoteServiceManager final {
   // If |services| is not empty, only discover services that match the UUIDs in |services|.
   // TODO(fxbug.dev/65592): Support initiating multiple service discoveries for different service
   // UUIDs.
-  void Initialize(att::StatusCallback callback, std::vector<UUID> services = {});
+  void Initialize(att::ResultFunction<> callback, std::vector<UUID> services = {});
 
   // Returns a vector containing discovered services that match any of the given
   // |uuids| via |callback|. All services will be returned if |uuids| is empty.
@@ -80,7 +80,7 @@ class RemoteServiceManager final {
 
     // Completes this request by using entries from |services| that match any of
     // the requested UUIDs.
-    void Complete(att::Status status, const ServiceMap& services);
+    void Complete(att::Result<> status, const ServiceMap& services);
 
    private:
     ServiceListCallback callback_;
@@ -103,16 +103,16 @@ class RemoteServiceManager final {
   // Attempt to discover the GATT Profile service. This method must complete before discovery of
   // other services. Notifies |callback| with a status of HostError::kNotFound if the GATT Profile
   // service is not found.
-  void DiscoverGattProfileService(att::StatusCallback callback);
+  void DiscoverGattProfileService(att::ResultFunction<> callback);
 
   // Discovers characteristics of |gatt_profile_service| and enables notifications of the Service
   // Changed characteristic. Notifies |callback| with a status of HostError::kNotFound if the GATT
   // Profile service's Service Changed characteristic is not found.
   void ConfigureServiceChangedNotifications(fbl::RefPtr<RemoteService> gatt_profile_service,
-                                            att::StatusCallback callback);
+                                            att::ResultFunction<> callback);
 
   // Discover the GATT Profile service and configure the Service Changed characteristic therein.
-  void InitializeGattProfileService(att::StatusCallback callback);
+  void InitializeGattProfileService(att::ResultFunction<> callback);
 
   // Create a RemoteService and insert it into the services map, discarding duplicates.
   void AddService(const ServiceData& service_data);
@@ -122,16 +122,16 @@ class RemoteServiceManager final {
   // |status_cb| will be called when the operation completes.
   using ServiceCallback = fit::function<void(const ServiceData&)>;
   void DiscoverServicesOfKind(ServiceKind kind, std::vector<UUID> service_uuids,
-                              att::StatusCallback status_cb);
+                              att::ResultFunction<> status_cb);
 
   // Discover primary and secondary services.
   // If |service_uuids| is non-empty, only discovers services with the given UUIDs.
   // |status_cb| will be called when the operation completes.
-  void DiscoverServices(std::vector<UUID> service_uuids, att::StatusCallback status_cb);
+  void DiscoverServices(std::vector<UUID> service_uuids, att::ResultFunction<> status_cb);
   void DiscoverPrimaryAndSecondaryServicesInRange(std::vector<UUID> service_uuids,
                                                   att::Handle start, att::Handle end,
                                                   ServiceCallback service_cb,
-                                                  att::StatusCallback status_cb);
+                                                  att::ResultFunction<> status_cb);
 
   // Shuts down and cleans up all services.
   void ClearServices();

@@ -51,7 +51,7 @@ class Client {
   // |status| will be set to an error if the MTU exchange fails. The |mtu|
   // parameter will be set to 0 and the underlying bearer's MTU will remain
   // unmodified.
-  using MTUCallback = fit::function<void(att::Status status, uint16_t mtu)>;
+  using MTUCallback = fit::function<void(att::Result<> status, uint16_t mtu)>;
   virtual void ExchangeMTU(MTUCallback callback) = 0;
 
   // Performs a modified version of the "Discover All Primary Services" procedure defined in v5.0,
@@ -71,13 +71,13 @@ class Client {
   // to clear any cached state in this case.
   using ServiceCallback = fit::function<void(const ServiceData&)>;
   virtual void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
-                                att::StatusCallback status_callback) = 0;
+                                att::ResultFunction<> status_callback) = 0;
 
   // Same as DiscoverServices, but only discovers services in the range [range_start, range_end].
   // |range_start| must be less than |range_end|.
   virtual void DiscoverServicesInRange(ServiceKind kind, att::Handle range_start,
                                        att::Handle range_end, ServiceCallback svc_callback,
-                                       att::StatusCallback status_callback) = 0;
+                                       att::ResultFunction<> status_callback) = 0;
 
   // Performs the "Discover All Primary Services by UUID" procedure defined in v5.0, Vol 3, Part G,
   // 4.4.2. |service_callback| is run for each discovered service in order of start handle.
@@ -93,14 +93,14 @@ class Client {
   // error even if some services have been discovered. It is up to the client
   // to clear any cached state in this case.
   virtual void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
-                                         att::StatusCallback status_callback,
+                                         att::ResultFunction<> status_callback,
                                          std::vector<UUID> uuids) = 0;
 
   // Same as DiscoverServicesWithUuids, but only discovers services in the range [range_start,
   // range_end]. |range_start| must be <= |range_end|.
   virtual void DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle range_start,
                                                 att::Handle range_end, ServiceCallback svc_callback,
-                                                att::StatusCallback status_callback,
+                                                att::ResultFunction<> status_callback,
                                                 std::vector<UUID> uuids) = 0;
 
   // Performs the "Discover All Characteristics of a Service" procedure defined
@@ -108,14 +108,14 @@ class Client {
   using CharacteristicCallback = fit::function<void(const CharacteristicData&)>;
   virtual void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                        CharacteristicCallback chrc_callback,
-                                       att::StatusCallback status_callback) = 0;
+                                       att::ResultFunction<> status_callback) = 0;
 
   // Performs the "Discover All Characteristic Descriptors" procedure defined in
   // Vol 3, Part G, 4.7.1.
   using DescriptorCallback = fit::function<void(const DescriptorData&)>;
   virtual void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                                    DescriptorCallback desc_callback,
-                                   att::StatusCallback status_callback) = 0;
+                                   att::ResultFunction<> status_callback) = 0;
 
   // Sends an ATT Read Request with the requested attribute |handle| and returns
   // the resulting value in |callback|. This can be used to send a (short) read
@@ -126,7 +126,7 @@ class Client {
   // If the attribute value might be longer than the reported value, |maybe_truncated| will be true.
   // This can happen if the MTU is too small to read the complete value. ReadBlobRequest() should be
   // used to read the complete value.
-  using ReadCallback = fit::function<void(att::Status, const ByteBuffer&, bool maybe_truncated)>;
+  using ReadCallback = fit::function<void(att::Result<>, const ByteBuffer&, bool maybe_truncated)>;
   virtual void ReadRequest(att::Handle handle, ReadCallback callback) = 0;
 
   // Sends an ATT Read by Type Request with the requested attribute handle range |start_handle| to
@@ -151,7 +151,7 @@ class Client {
     bool maybe_truncated;
   };
   struct ReadByTypeError {
-    att::Status status;
+    att::Error error;
     // Only some att protocol errors include a handle. This handle can either be |start_handle| or
     // the handle of the attribute causing the error, depending on the error (Core Spec v5.2, Vol 3,
     // Part F, 3.4.4.1).
@@ -178,7 +178,7 @@ class Client {
   // HostError::kPacketMalformed is returned if |value| is too large to write in
   // a single ATT request.
   virtual void WriteRequest(att::Handle handle, const ByteBuffer& value,
-                            att::StatusCallback callback) = 0;
+                            att::ResultFunction<> callback) = 0;
 
   // Adds a new PrepareWriteQueue to be sent. This sends multiple
   // PrepareWriteRequests followed by an ExecuteWriteRequest. The request will
@@ -188,7 +188,7 @@ class Client {
   // HostError::kPacketMalformed is returned if any writes in the queue are too
   // large to write in a single ATT request.
   virtual void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
-                                    ReliableMode reliable_mode, att::StatusCallback callback) = 0;
+                                    ReliableMode reliable_mode, att::ResultFunction<> callback) = 0;
 
   // Sends an ATT Prepare Write Request with the requested attribute |handle|,
   // |offset|, and |part_value|. This can be used to send a long write request
@@ -200,7 +200,7 @@ class Client {
   // data written to the buffer.
   // HostError::kPacketMalformed is returned if |part_value| is too large to
   // write in a single ATT request.
-  using PrepareCallback = fit::function<void(att::Status, const ByteBuffer&)>;
+  using PrepareCallback = fit::function<void(att::Result<>, const ByteBuffer&)>;
   virtual void PrepareWriteRequest(att::Handle handle, uint16_t offset,
                                    const ByteBuffer& part_value, PrepareCallback callback) = 0;
 
@@ -209,7 +209,7 @@ class Client {
   // (Vol 3, Part G, 4.9.4)
   //
   // Reports the status of the procedure in |callback|.
-  virtual void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCallback callback) = 0;
+  virtual void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::ResultFunction<> callback) = 0;
 
   // Sends an ATT Write Command with the requested |handle| and |value|. This
   // should only be used with characteristics that support the "Write Without
@@ -217,7 +217,7 @@ class Client {
   //
   // Reports the status of the procedure in |callback|.
   virtual void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value,
-                                    att::StatusCallback callback) = 0;
+                                    att::ResultFunction<> callback) = 0;
 
   // Assigns a callback that will be called when a notification or indication
   // PDU is received.

@@ -32,7 +32,7 @@ using RemoteServiceWatcher = fit::function<void(std::vector<att::Handle> removed
                                                 std::vector<fbl::RefPtr<RemoteService>> modified)>;
 
 using ServiceList = std::vector<fbl::RefPtr<RemoteService>>;
-using ServiceListCallback = fit::function<void(att::Status, ServiceList)>;
+using ServiceListCallback = fit::function<void(att::Result<>, ServiceList)>;
 
 using RemoteServiceCallback = fit::function<void(fbl::RefPtr<RemoteService>)>;
 using DescriptorMap = std::map<DescriptorHandle, DescriptorData>;
@@ -92,14 +92,14 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   // Performs characteristic discovery and reports the result asynchronously in
   // |callback|. Returns the cached results if characteristics were already
   // discovered.
-  using CharacteristicCallback = fit::function<void(att::Status, const CharacteristicMap&)>;
+  using CharacteristicCallback = fit::function<void(att::Result<>, const CharacteristicMap&)>;
   void DiscoverCharacteristics(CharacteristicCallback callback);
 
   // Sends a read request to the characteristic with the given identifier. Fails
   // if characteristics have not been discovered.
   // |maybe_truncated| indicates whether the full value might be longer than the reported value.
   using ReadValueCallback =
-      fit::function<void(att::Status, const ByteBuffer&, bool maybe_truncated)>;
+      fit::function<void(att::Result<>, const ByteBuffer&, bool maybe_truncated)>;
   void ReadCharacteristic(CharacteristicHandle id, ReadValueCallback callback);
 
   // Performs the "Read Long Characteristic Values" procedure which allows
@@ -134,14 +134,14 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
     fpromise::result<ByteBufferPtr, att::ErrorCode> result;
     bool maybe_truncated;
   };
-  using ReadByTypeCallback = fit::function<void(att::Status, std::vector<ReadByTypeResult>)>;
+  using ReadByTypeCallback = fit::function<void(att::Result<>, std::vector<ReadByTypeResult>)>;
   void ReadByType(const UUID& type, ReadByTypeCallback callback);
 
   // Sends a write request to the characteristic with the given identifier.
   //
   // TODO(armansito): Add a ByteBuffer version.
   void WriteCharacteristic(CharacteristicHandle id, std::vector<uint8_t> value,
-                           att::StatusCallback callback);
+                           att::ResultFunction<> callback);
 
   // Sends a write request to the characteristic with the given identifier at
   // the given offset, will write over multiple requests if needed. Fails if
@@ -149,12 +149,12 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   //
   // TODO(armansito): Add a ByteBuffer version.
   void WriteLongCharacteristic(CharacteristicHandle id, uint16_t offset, std::vector<uint8_t> value,
-                               ReliableMode reliable_mode, att::StatusCallback callback);
+                               ReliableMode reliable_mode, att::ResultFunction<> callback);
 
   // Sends a "Write Without Response" to the characteristic with the given
   // identifier. Fails if characteristics have not been discovered.
   void WriteCharacteristicWithoutResponse(CharacteristicHandle id, std::vector<uint8_t> value,
-                                          att::StatusCallback cb);
+                                          att::ResultFunction<> cb);
 
   // Performs the "Read Characteristic Descriptors" procedure (v5.0, Vol 3, Part
   // G, 4.12.1).
@@ -175,14 +175,14 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   //
   // TODO(armansito): Add a ByteBuffer version.
   void WriteDescriptor(DescriptorHandle id, std::vector<uint8_t> value,
-                       att::StatusCallback callback);
+                       att::ResultFunction<> callback);
 
   // Performs the "Write Long Characteristic Descriptors" procedure (v5.0, Vol 3,
   // Part G, 4.12.4).
   //
   // TODO(armansito): Add a ByteBuffer version.
   void WriteLongDescriptor(DescriptorHandle id, uint16_t offset, std::vector<uint8_t> value,
-                           att::StatusCallback callback);
+                           att::ResultFunction<> callback);
 
   // Subscribe to characteristic handle/value notifications or indications
   // from the characteristic with the given identifier. Either notifications or
@@ -206,7 +206,7 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   // obtained via EnableNotifications. The value of the Client Characteristic
   // Configuration descriptor will be cleared if no subscribers remain.
   void DisableNotifications(CharacteristicHandle characteristic_id, IdType handler_id,
-                            att::StatusCallback status_callback);
+                            att::ResultFunction<> status_callback);
 
   // Simulate receiving a notification. HandleNotification is usually called by
   // RemoteServiceManager, but tests without a RemoteServiceManager may use this method.
@@ -236,14 +236,14 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   void StartDescriptorDiscovery();
 
   // Completes all pending characteristic discovery requests.
-  void CompleteCharacteristicDiscovery(att::Status status);
+  void CompleteCharacteristicDiscovery(att::Result<> status);
 
   // Breaks Long Write requests down into a PrepareWriteQueue, then enqueues
   // for the client to process. Drives the "Write Long Characteristic/
   // Descriptor Values" procedure. Called by WriteCharacteristic() and
   // WriteDescriptor().
   void SendLongWriteRequest(att::Handle value_handle, uint16_t offset, BufferView value,
-                            ReliableMode reliable_mode, att::StatusCallback callback);
+                            ReliableMode reliable_mode, att::ResultFunction<> callback);
 
   // Helper function that drives the recursive "Read Long Characteristic Values"
   // procedure. Called by ReadLongCharacteristic().

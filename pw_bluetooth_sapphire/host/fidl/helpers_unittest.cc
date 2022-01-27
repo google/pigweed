@@ -86,6 +86,32 @@ TEST(HelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kProtocolError));
 }
 
+TEST(HelpersTest, GattErrorToFidl) {
+  // Host errors
+  EXPECT_EQ(fbg::Error::INVALID_RESPONSE,
+            GattErrorToFidl(bt::ToResult(bt::HostError::kPacketMalformed).error_value()));
+  EXPECT_EQ(fbg::Error::FAILURE,
+            GattErrorToFidl(bt::ToResult(bt::HostError::kTimedOut).error_value()));
+
+  // Protocol errors
+  EXPECT_EQ(
+      fbg::Error::INSUFFICIENT_AUTHORIZATION,
+      GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kInsufficientAuthorization).error_value()));
+  EXPECT_EQ(
+      fbg::Error::INSUFFICIENT_AUTHENTICATION,
+      GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kInsufficientAuthentication).error_value()));
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
+            GattErrorToFidl(
+                bt::ToResult(bt::att::ErrorCode::kInsufficientEncryptionKeySize).error_value()));
+  EXPECT_EQ(
+      fbg::Error::INSUFFICIENT_ENCRYPTION,
+      GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kInsufficientEncryption).error_value()));
+  EXPECT_EQ(fbg::Error::READ_NOT_PERMITTED,
+            GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kReadNotPermitted).error_value()));
+  EXPECT_EQ(fbg::Error::FAILURE,
+            GattErrorToFidl(bt::ToResult(bt::att::ErrorCode::kUnlikelyError).error_value()));
+}
+
 TEST(HelpersTest, GattStatusToFidl) {
   // Host errors
   EXPECT_EQ(fbg::Error::INVALID_RESPONSE,
@@ -105,6 +131,39 @@ TEST(HelpersTest, GattStatusToFidl) {
             GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kReadNotPermitted)));
   EXPECT_EQ(fbg::Error::FAILURE,
             GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
+}
+
+TEST(HelpersTest, AttErrorToGattFidlError) {
+  // Host errors
+  EXPECT_EQ(fbg2::Error::INVALID_PDU,
+            AttErrorToGattFidlError(bt::ToResult(bt::HostError::kPacketMalformed).error_value()));
+  EXPECT_EQ(fbg2::Error::INVALID_PARAMETERS,
+            AttErrorToGattFidlError(bt::ToResult(bt::HostError::kInvalidParameters).error_value()));
+  EXPECT_EQ(fbg2::Error::UNLIKELY_ERROR,
+            AttErrorToGattFidlError(bt::ToResult(bt::HostError::kTimedOut).error_value()));
+
+  // Protocol errors
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHORIZATION,
+            AttErrorToGattFidlError(
+                bt::ToResult(bt::att::ErrorCode::kInsufficientAuthorization).error_value()));
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_AUTHENTICATION,
+            AttErrorToGattFidlError(
+                bt::ToResult(bt::att::ErrorCode::kInsufficientAuthentication).error_value()));
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
+            AttErrorToGattFidlError(
+                bt::ToResult(bt::att::ErrorCode::kInsufficientEncryptionKeySize).error_value()));
+  EXPECT_EQ(fbg2::Error::INSUFFICIENT_ENCRYPTION,
+            AttErrorToGattFidlError(
+                bt::ToResult(bt::att::ErrorCode::kInsufficientEncryption).error_value()));
+  EXPECT_EQ(
+      fbg2::Error::READ_NOT_PERMITTED,
+      AttErrorToGattFidlError(bt::ToResult(bt::att::ErrorCode::kReadNotPermitted).error_value()));
+  EXPECT_EQ(
+      fbg2::Error::INVALID_HANDLE,
+      AttErrorToGattFidlError(bt::ToResult(bt::att::ErrorCode::kInvalidHandle).error_value()));
+  EXPECT_EQ(
+      fbg2::Error::UNLIKELY_ERROR,
+      AttErrorToGattFidlError(bt::ToResult(bt::att::ErrorCode::kUnlikelyError).error_value()));
 }
 
 TEST(HelpersTest, AttStatusToGattFidlError) {

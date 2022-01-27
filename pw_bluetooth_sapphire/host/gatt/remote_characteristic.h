@@ -36,7 +36,7 @@ class Client;
 class RemoteCharacteristic final {
  public:
   using ValueCallback = fit::function<void(const ByteBuffer&, bool maybe_truncated)>;
-  using NotifyStatusCallback = fit::function<void(att::Status, IdType handler_id)>;
+  using NotifyStatusCallback = fit::function<void(att::Result<>, IdType handler_id)>;
 
   // We use an ordered map so that the Descriptors are exposed to the world in order
   using DescriptorMap = std::map<DescriptorHandle, DescriptorData>;
@@ -76,7 +76,7 @@ class RemoteCharacteristic final {
   //
   // NOTE: The owning RemoteService is responsible for ensuring that this object
   // outlives the discovery procedure.
-  void DiscoverDescriptors(att::Handle range_end, att::StatusCallback callback);
+  void DiscoverDescriptors(att::Handle range_end, att::ResultFunction<> callback);
 
   // (See RemoteService::EnableNotifications in remote_service.h).
   void EnableNotifications(ValueCallback value_callback, NotifyStatusCallback status_callback);
@@ -88,7 +88,7 @@ class RemoteCharacteristic final {
 
   // Resolves all pending notification subscription requests. Called by
   // EnableNotifications().
-  void ResolvePendingNotifyRequests(att::Status status);
+  void ResolvePendingNotifyRequests(att::Result<> status);
 
   // Called when a notification is received for this characteristic.
   void HandleNotification(const ByteBuffer& value, bool maybe_truncated);

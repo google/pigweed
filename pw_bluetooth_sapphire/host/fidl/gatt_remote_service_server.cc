@@ -55,7 +55,7 @@ Characteristic CharacteristicToFidl(const CharacteristicData& characteristic,
   return fidl_char;
 }
 
-void NopStatusCallback(bt::att::Status) {}
+void NopStatusCallback(bt::att::Result<>) {}
 
 }  // namespace
 
@@ -78,35 +78,35 @@ GattRemoteServiceServer::~GattRemoteServiceServer() {
 }
 
 void GattRemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCallback callback) {
-  auto res_cb = [callback = std::move(callback)](bt::att::Status status, const auto& chrcs) {
+  auto res_cb = [callback = std::move(callback)](bt::att::Result<> status, const auto& chrcs) {
     std::vector<Characteristic> fidl_chrcs;
-    if (status) {
+    if (status.is_ok()) {
       for (const auto& [id, chrc] : chrcs) {
         auto& [chr, descs] = chrc;
         fidl_chrcs.push_back(CharacteristicToFidl(chr, descs));
       }
     }
 
-    callback(fidl_helpers::StatusToFidlDeprecated(status, ""), std::move(fidl_chrcs));
+    callback(fidl_helpers::ResultToFidlDeprecated(status, ""), std::move(fidl_chrcs));
   };
 
   service_->DiscoverCharacteristics(std::move(res_cb));
 }
 
 void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+  auto cb = [callback = std::move(callback)](bt::att::Result<> status, const bt::ByteBuffer& value,
                                              auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
-    if (status && value.size()) {
+    if (status.is_ok() && value.size()) {
       vec.resize(value.size());
 
       MutableBufferView vec_view(vec.data(), vec.size());
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
+    callback(fidl_helpers::ResultToFidlDeprecated(status), std::move(vec));
   };
 
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
@@ -116,19 +116,19 @@ void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristic
 void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offset,
                                                      uint16_t max_bytes,
                                                      ReadLongCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+  auto cb = [callback = std::move(callback)](bt::att::Result<> status, const bt::ByteBuffer& value,
                                              auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
-    if (status && value.size()) {
+    if (status.is_ok() && value.size()) {
       vec.resize(value.size());
 
       MutableBufferView vec_view(vec.data(), vec.size());
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
+    callback(fidl_helpers::ResultToFidlDeprecated(status), std::move(vec));
   };
 
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
@@ -138,8 +138,8 @@ void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offse
 
 void GattRemoteServiceServer::WriteCharacteristic(uint64_t id, ::std::vector<uint8_t> value,
                                                   WriteCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status) {
-    callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
+  auto cb = [callback = std::move(callback)](bt::att::Result<> status) {
+    callback(fidl_helpers::ResultToFidlDeprecated(status, ""));
   };
 
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
@@ -150,8 +150,8 @@ void GattRemoteServiceServer::WriteLongCharacteristic(uint64_t id, uint16_t offs
                                                       ::std::vector<uint8_t> value,
                                                       WriteOptions write_options,
                                                       WriteLongCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status) {
-    callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
+  auto cb = [callback = std::move(callback)](bt::att::Result<> status) {
+    callback(fidl_helpers::ResultToFidlDeprecated(status, ""));
   };
 
   auto reliable_mode = fidl_helpers::ReliableModeFromFidl(write_options);
@@ -168,19 +168,19 @@ void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(uint64_t id,
 }
 
 void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+  auto cb = [callback = std::move(callback)](bt::att::Result<> status, const bt::ByteBuffer& value,
                                              auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
-    if (status && value.size()) {
+    if (status.is_ok() && value.size()) {
       vec.resize(value.size());
 
       MutableBufferView vec_view(vec.data(), vec.size());
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
+    callback(fidl_helpers::ResultToFidlDeprecated(status), std::move(vec));
   };
 
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
@@ -189,19 +189,19 @@ void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback
 
 void GattRemoteServiceServer::ReadLongDescriptor(uint64_t id, uint16_t offset, uint16_t max_bytes,
                                                  ReadLongDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value,
+  auto cb = [callback = std::move(callback)](bt::att::Result<> status, const bt::ByteBuffer& value,
                                              auto) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
-    if (status && value.size()) {
+    if (status.is_ok() && value.size()) {
       vec.resize(value.size());
 
       MutableBufferView vec_view(vec.data(), vec.size());
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
+    callback(fidl_helpers::ResultToFidlDeprecated(status), std::move(vec));
   };
 
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
@@ -212,8 +212,8 @@ void GattRemoteServiceServer::WriteDescriptor(uint64_t id, ::std::vector<uint8_t
                                               WriteDescriptorCallback callback) {
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
   service_->WriteDescriptor(DescriptorHandleFromFidl(id), std::move(value),
-                            [callback = std::move(callback)](bt::att::Status status) {
-                              callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
+                            [callback = std::move(callback)](bt::att::Result<> status) {
+                              callback(fidl_helpers::ResultToFidlDeprecated(status, ""));
                             });
 }
 
@@ -222,8 +222,8 @@ void GattRemoteServiceServer::WriteLongDescriptor(uint64_t id, uint16_t offset,
                                                   WriteLongDescriptorCallback callback) {
   // TODO(fxbug.dev/63438): The 64 bit `id` can overflow the 16 bits of a bt::att:Handle. Fix this.
   service_->WriteLongDescriptor(DescriptorHandleFromFidl(id), offset, std::move(value),
-                                [callback = std::move(callback)](bt::att::Status status) {
-                                  callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
+                                [callback = std::move(callback)](bt::att::Result<> status) {
+                                  callback(fidl_helpers::ResultToFidlDeprecated(status, ""));
                                 });
 }
 
@@ -232,23 +232,22 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
   service_->ReadByType(
       fidl_helpers::UuidFromFidl(uuid),
       [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
-          bt::att::Status status, std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
+          bt::att::Result<> status,
+          std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
         if (!self) {
           return;
         }
 
-        switch (status.error()) {
-          case bt::HostError::kNoError:
-            break;
-          case bt::HostError::kInvalidParameters:
+        if (status.is_error()) {
+          if (status.error_value().is(bt::HostError::kInvalidParameters)) {
             bt_log(WARN, "fidl",
                    "%s: called with invalid parameters, closing FIDL channel (peer: %s)", func,
                    bt_str(self->peer_id_));
             self->binding()->Close(ZX_ERR_INVALID_ARGS);
             return;
-          default:
-            cb(fpromise::error(fidl_helpers::GattStatusToFidl(status)));
-            return;
+          }
+          cb(fpromise::error(fidl_helpers::GattErrorToFidl(status.error_value())));
+          return;
         }
 
         if (results.size() > fuchsia::bluetooth::gatt::MAX_READ_BY_TYPE_RESULTS) {
@@ -266,7 +265,7 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
             fidl_result.set_value(result.result.value()->ToVector());
           } else {
             fidl_result.set_error(
-                fidl_helpers::GattStatusToFidl(bt::att::Status(result.result.error())));
+                fidl_helpers::GattErrorToFidl(bt::ToResult(result.result.error()).error_value()));
           }
           fidl_results.push_back(std::move(fidl_result));
         }
@@ -293,8 +292,8 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
     }
 
     service_->DisableNotifications(handle, iter->second,
-                                   [callback = std::move(callback)](bt::att::Status status) {
-                                     callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
+                                   [callback = std::move(callback)](bt::att::Result<> status) {
+                                     callback(fidl_helpers::ResultToFidlDeprecated(status, ""));
                                    });
     notify_handlers_.erase(iter);
 
@@ -318,9 +317,9 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
   };
 
   auto status_cb = [self, svc = service_, handle, callback = std::move(callback)](
-                       bt::att::Status status, HandlerId handler_id) {
+                       bt::att::Result<> status, HandlerId handler_id) {
     if (!self) {
-      if (status) {
+      if (status.is_ok()) {
         // Disable this handler so it doesn't leak.
         svc->DisableNotifications(handle, handler_id, NopStatusCallback);
       }
@@ -329,7 +328,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
       return;
     }
 
-    if (status) {
+    if (status.is_ok()) {
       ZX_DEBUG_ASSERT(handler_id != bt::gatt::kInvalidId);
       ZX_DEBUG_ASSERT(self->notify_handlers_.count(handle) == 1u);
       ZX_DEBUG_ASSERT(self->notify_handlers_[handle] == bt::gatt::kInvalidId);
@@ -339,7 +338,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
       self->notify_handlers_.erase(handle);
     }
 
-    callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
+    callback(fidl_helpers::ResultToFidlDeprecated(status, ""));
   };
 
   service_->EnableNotifications(handle, std::move(value_cb), std::move(status_cb));

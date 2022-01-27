@@ -22,8 +22,8 @@ class GenericAccessClient {
   GenericAccessClient(PeerId peer_id, fbl::RefPtr<gatt::RemoteService> generic_access_service);
 
   // Discover and read the peripheral preferred connections characteristic, if present.
-  using ConnectionParametersCallback =
-      fit::callback<void(fpromise::result<hci_spec::LEPreferredConnectionParameters, att::Status>)>;
+  using ConnectionParametersCallback = fit::callback<void(
+      fpromise::result<hci_spec::LEPreferredConnectionParameters, att::Result<>>)>;
   void ReadPeripheralPreferredConnectionParameters(ConnectionParametersCallback callback);
 
  private:

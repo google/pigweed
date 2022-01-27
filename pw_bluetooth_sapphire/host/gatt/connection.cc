@@ -34,7 +34,7 @@ void Connection::Initialize(std::vector<UUID> service_uuids) {
 
   auto uuids_count = service_uuids.size();
   // status_cb must not capture att_ in order to prevent reference cycle.
-  auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(), uuids_count](att::Status status) {
+  auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(), uuids_count](att::Result<> status) {
     if (!self) {
       return;
     }

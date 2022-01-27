@@ -35,7 +35,7 @@ class FakeLayer final : public GATT {
   void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
   // Assign the status that will be returned by the ListServices callback.
-  void set_list_services_status(att::Status);
+  void set_list_services_status(att::Result<>);
 
   // Ignore future calls to ListServices().
   void stop_list_services() { pause_list_services_ = true; }
@@ -89,7 +89,7 @@ class FakeLayer final : public GATT {
   PersistServiceChangedCCCCallback persist_service_changed_ccc_cb_;
   RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_cb_;
 
-  att::Status list_services_status_;
+  att::Result<> list_services_status_ = fitx::ok();
   bool pause_list_services_ = false;
 
   // Emulated GATT peer.

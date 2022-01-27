@@ -52,6 +52,29 @@ fuchsia::bluetooth::Status NewFidlError(fuchsia::bluetooth::ErrorCode error_code
                                         std::string description);
 
 template <typename ProtocolErrorCode>
+fuchsia::bluetooth::Status ResultToFidlDeprecated(
+    const fitx::result<bt::Error<ProtocolErrorCode>>& result, std::string msg = "") {
+  fuchsia::bluetooth::Status fidl_status;
+  if (result.is_ok()) {
+    return fidl_status;
+  }
+
+  auto error = std::make_unique<fuchsia::bluetooth::Error>();
+  error->description = msg.empty() ? bt_str(result) : std::move(msg);
+  if (result.is_error()) {
+    result.error_value().Visit(
+        [&error](bt::HostError c) { error->error_code = HostErrorToFidlDeprecated(c); },
+        [&error](ProtocolErrorCode c) {
+          error->error_code = fuchsia::bluetooth::ErrorCode::PROTOCOL_ERROR;
+          error->protocol_error_code = static_cast<uint32_t>(c);
+        });
+  }
+
+  fidl_status.error = std::move(error);
+  return fidl_status;
+}
+
+template <typename ProtocolErrorCode>
 fuchsia::bluetooth::Status StatusToFidlDeprecated(const bt::Status<ProtocolErrorCode>& status,
                                                   std::string msg = "") {
   fuchsia::bluetooth::Status fidl_status;
@@ -107,8 +130,14 @@ fpromise::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
   return ResultToFidl(ToResult(status));
 }
 
+// Convert a bt::att::Error to fuchsia.bluetooth.gatt.Error.
+fuchsia::bluetooth::gatt::Error GattErrorToFidl(const bt::att::Error& error);
+
 // Convert a bt::Status to fuchsia.bluetooth.gatt.Error. |status| must not indicate success.
 fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> status);
+
+// Convert a bt::att::Error to fuchsia.bluetooth.gatt2.Error.
+fuchsia::bluetooth::gatt2::Error AttErrorToGattFidlError(const bt::att::Error& error);
 
 // Convert a bt::Status to fuchsia.bluetooth.gatt2.Error. |status| must not indicate success.
 fuchsia::bluetooth::gatt2::Error AttStatusToGattFidlError(bt::Status<bt::att::ErrorCode> status);

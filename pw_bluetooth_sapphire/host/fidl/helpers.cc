@@ -412,6 +412,32 @@ fsys::Error HostErrorToFidl(bt::HostError error) {
   return fsys::Error::FAILED;
 }
 
+fuchsia::bluetooth::gatt::Error GattErrorToFidl(const bt::att::Error& error) {
+  return error.Visit(
+      [](bt::HostError host_error) {
+        return host_error == bt::HostError::kPacketMalformed
+                   ? fuchsia::bluetooth::gatt::Error::INVALID_RESPONSE
+                   : fuchsia::bluetooth::gatt::Error::FAILURE;
+      },
+      [](bt::att::ErrorCode att_error) {
+        switch (att_error) {
+          case bt::att::ErrorCode::kInsufficientAuthorization:
+            return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_AUTHORIZATION;
+          case bt::att::ErrorCode::kInsufficientAuthentication:
+            return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_AUTHENTICATION;
+          case bt::att::ErrorCode::kInsufficientEncryptionKeySize:
+            return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+          case bt::att::ErrorCode::kInsufficientEncryption:
+            return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_ENCRYPTION;
+          case bt::att::ErrorCode::kReadNotPermitted:
+            return fuchsia::bluetooth::gatt::Error::READ_NOT_PERMITTED;
+          default:
+            break;
+        }
+        return fuchsia::bluetooth::gatt::Error::FAILURE;
+      });
+}
+
 fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> status) {
   ZX_ASSERT(!status.is_success());
   switch (status.error()) {
@@ -435,6 +461,40 @@ fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> 
     default:
       return fuchsia::bluetooth::gatt::Error::FAILURE;
   }
+}
+
+fuchsia::bluetooth::gatt2::Error AttErrorToGattFidlError(const bt::att::Error& error) {
+  return error.Visit(
+      [](bt::HostError host_error) {
+        switch (host_error) {
+          case bt::HostError::kPacketMalformed:
+            return fuchsia::bluetooth::gatt2::Error::INVALID_PDU;
+          case bt::HostError::kInvalidParameters:
+            return fuchsia::bluetooth::gatt2::Error::INVALID_PARAMETERS;
+          default:
+            break;
+        }
+        return fuchsia::bluetooth::gatt2::Error::UNLIKELY_ERROR;
+      },
+      [](bt::att::ErrorCode att_error) {
+        switch (att_error) {
+          case bt::att::ErrorCode::kInsufficientAuthorization:
+            return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_AUTHORIZATION;
+          case bt::att::ErrorCode::kInsufficientAuthentication:
+            return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_AUTHENTICATION;
+          case bt::att::ErrorCode::kInsufficientEncryptionKeySize:
+            return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+          case bt::att::ErrorCode::kInsufficientEncryption:
+            return fuchsia::bluetooth::gatt2::Error::INSUFFICIENT_ENCRYPTION;
+          case bt::att::ErrorCode::kReadNotPermitted:
+            return fuchsia::bluetooth::gatt2::Error::READ_NOT_PERMITTED;
+          case bt::att::ErrorCode::kInvalidHandle:
+            return fuchsia::bluetooth::gatt2::Error::INVALID_HANDLE;
+          default:
+            break;
+        }
+        return fuchsia::bluetooth::gatt2::Error::UNLIKELY_ERROR;
+      });
 }
 
 fuchsia::bluetooth::gatt2::Error AttStatusToGattFidlError(bt::Status<bt::att::ErrorCode> status) {

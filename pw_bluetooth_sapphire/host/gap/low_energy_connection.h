@@ -235,7 +235,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Called when service discovery completes. |services| will only include services with the GAP
   // UUID (there should only be one, but this is not guaranteed).
-  void OnGattServicesResult(att::Status status, gatt::ServiceList services);
+  void OnGattServicesResult(att::Result<> status, gatt::ServiceList services);
 
   // Notifies all connection refs of disconnection.
   void CloseRefs();

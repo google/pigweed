@@ -13,11 +13,7 @@
 
 using bt::HostError;
 
-namespace bt {
-
-using att::StatusCallback;
-
-namespace gatt {
+namespace bt::gatt {
 namespace {
 
 MutableByteBufferPtr NewPDU(size_t param_size) {
@@ -139,7 +135,7 @@ class Impl final : public Client {
   void ExchangeMTU(MTUCallback mtu_cb) override {
     auto pdu = NewPDU(sizeof(att::ExchangeMTURequestParams));
     if (!pdu) {
-      mtu_cb(att::Status(HostError::kOutOfMemory), 0);
+      mtu_cb(ToResult(HostError::kOutOfMemory), 0);
       return;
     }
 
@@ -154,7 +150,7 @@ class Impl final : public Client {
         // Received a malformed response. Disconnect the link.
         att_->ShutDown();
 
-        mtu_cb(att::Status(HostError::kPacketMalformed), 0);
+        mtu_cb(ToResult(HostError::kPacketMalformed), 0);
         return;
       }
 
@@ -166,23 +162,22 @@ class Impl final : public Client {
       uint16_t final_mtu = std::max(att::kLEMinMTU, std::min(server_mtu, att_->preferred_mtu()));
       att_->set_mtu(final_mtu);
 
-      mtu_cb(att::Status(), final_mtu);
+      mtu_cb(fitx::ok(), final_mtu);
     });
 
-    auto error_cb =
-        BindErrorCallback([this, mtu_cb = mtu_cb.share()](att::Status status, att::Handle handle) {
+    auto error_cb = BindErrorCallback(
+        [this, mtu_cb = mtu_cb.share()](att::Result<> status, att::Handle handle) {
           // "If the Error Response is sent by the server with the Error Code
           // set to Request Not Supported, [...] the default MTU shall be used
           // (Vol 3, Part G, 4.3.1)"
-          if (status.is_protocol_error() &&
-              status.protocol_error() == att::ErrorCode::kRequestNotSupported) {
+          if (status == ToResult(att::ErrorCode::kRequestNotSupported)) {
             bt_log(DEBUG, "gatt", "peer does not support MTU exchange: using default");
             att_->set_mtu(att::kLEMinMTU);
             mtu_cb(status, att::kLEMinMTU);
             return;
           }
 
-          bt_log(DEBUG, "gatt", "MTU exchange failed: %s", status.ToString().c_str());
+          bt_log(DEBUG, "gatt", "MTU exchange failed: %s", bt_str(status));
           mtu_cb(status, 0);
         });
 
@@ -190,19 +185,19 @@ class Impl final : public Client {
   }
 
   void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
-                        StatusCallback status_callback) override {
+                        att::ResultFunction<> status_callback) override {
     DiscoverServicesInRange(kind, att::kHandleMin, att::kHandleMax, std::move(svc_callback),
                             std::move(status_callback));
   }
 
   void DiscoverServicesInRange(ServiceKind kind, att::Handle range_start, att::Handle range_end,
                                ServiceCallback svc_callback,
-                               StatusCallback status_callback) override {
+                               att::ResultFunction<> status_callback) override {
     ZX_ASSERT(range_start <= range_end);
 
     auto pdu = NewPDU(sizeof(att::ReadByGroupTypeRequestParams16));
     if (!pdu) {
-      status_callback(att::Status(HostError::kOutOfMemory));
+      status_callback(ToResult(HostError::kOutOfMemory));
       return;
     }
 
@@ -224,7 +219,7 @@ class Impl final : public Client {
             // Received malformed response. Disconnect the link.
             bt_log(DEBUG, "gatt", "received malformed Read By Group Type response");
             att_->ShutDown();
-            res_cb(att::Status(HostError::kPacketMalformed));
+            res_cb(ToResult(HostError::kPacketMalformed));
             return;
           }
 
@@ -241,7 +236,7 @@ class Impl final : public Client {
           if (entry_length != kAttrDataSize16 && entry_length != kAttrDataSize128) {
             bt_log(DEBUG, "gatt", "invalid attribute data length");
             att_->ShutDown();
-            res_cb(att::Status(HostError::kPacketMalformed));
+            res_cb(ToResult(HostError::kPacketMalformed));
             return;
           }
 
@@ -249,7 +244,7 @@ class Impl final : public Client {
           if (attr_data_list.size() % entry_length) {
             bt_log(DEBUG, "gatt", "malformed attribute data list");
             att_->ShutDown();
-            res_cb(att::Status(HostError::kPacketMalformed));
+            res_cb(ToResult(HostError::kPacketMalformed));
             return;
           }
 
@@ -262,13 +257,13 @@ class Impl final : public Client {
 
             if (end < start) {
               bt_log(DEBUG, "gatt", "received malformed service range values");
-              res_cb(att::Status(HostError::kPacketMalformed));
+              res_cb(ToResult(HostError::kPacketMalformed));
               return;
             }
 
             if (start < range_start || start > range_end) {
               bt_log(DEBUG, "gatt", "received service range values outside of requested range");
-              res_cb(att::Status(HostError::kPacketMalformed));
+              res_cb(ToResult(HostError::kPacketMalformed));
               return;
             }
 
@@ -276,7 +271,7 @@ class Impl final : public Client {
             // (Core Spec v5.3, Vol 3, Part F, Sec 3.4.4.10)
             if (last_handle.has_value() && start <= last_handle.value()) {
               bt_log(DEBUG, "gatt", "received services out of order");
-              res_cb(att::Status(HostError::kPacketMalformed));
+              res_cb(ToResult(HostError::kPacketMalformed));
               return;
             }
 
@@ -296,7 +291,7 @@ class Impl final : public Client {
 
           // The procedure is over if we have reached the end of the handle range.
           if (!last_handle.has_value() || last_handle.value() == range_end) {
-            res_cb(att::Status());
+            res_cb(fitx::ok());
             return;
           }
 
@@ -306,12 +301,11 @@ class Impl final : public Client {
         });
 
     auto error_cb = BindErrorCallback(
-        [res_cb = status_callback.share()](att::Status status, att::Handle handle) {
+        [res_cb = status_callback.share()](att::Result<> status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.4.1).
-          if (status.is_protocol_error() &&
-              status.protocol_error() == att::ErrorCode::kAttributeNotFound) {
-            res_cb(att::Status());
+          if (status == ToResult(att::ErrorCode::kAttributeNotFound)) {
+            res_cb(fitx::ok());
             return;
           }
 
@@ -322,14 +316,15 @@ class Impl final : public Client {
   }
 
   void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_cb,
-                                 att::StatusCallback status_cb, std::vector<UUID> uuids) override {
+                                 att::ResultFunction<> status_cb,
+                                 std::vector<UUID> uuids) override {
     DiscoverServicesWithUuidsInRange(kind, att::kHandleMin, att::kHandleMax, std::move(svc_cb),
                                      std::move(status_cb), std::move(uuids));
   }
 
   void DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle range_start,
                                         att::Handle range_end, ServiceCallback svc_callback,
-                                        att::StatusCallback status_callback,
+                                        att::ResultFunction<> status_callback,
                                         std::vector<UUID> uuids) override {
     ZX_ASSERT(range_start <= range_end);
     ZX_ASSERT(!uuids.empty());
@@ -340,7 +335,7 @@ class Impl final : public Client {
                                 status_cb = std::move(status_callback),
                                 remaining_uuids = std::move(uuids)](auto status) mutable {
       // Base case
-      if (!status || remaining_uuids.empty()) {
+      if (status.is_error() || remaining_uuids.empty()) {
         status_cb(status);
         return;
       }
@@ -356,12 +351,12 @@ class Impl final : public Client {
   }
 
   void DiscoverServicesByUuidInRange(ServiceKind kind, att::Handle start, att::Handle end,
-                                     ServiceCallback svc_callback, StatusCallback status_callback,
-                                     UUID uuid) {
+                                     ServiceCallback svc_callback,
+                                     att::ResultFunction<> status_callback, UUID uuid) {
     size_t uuid_size_bytes = uuid.CompactSize(/* allow 32 bit UUIDs */ false);
     auto pdu = NewPDU(sizeof(att::FindByTypeValueRequestParams) + uuid_size_bytes);
     if (!pdu) {
-      status_callback(att::Status(HostError::kOutOfMemory));
+      status_callback(ToResult(HostError::kOutOfMemory));
       return;
     }
 
@@ -386,7 +381,7 @@ class Impl final : public Client {
             bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
                    payload_size);
             att_->ShutDown();
-            res_cb(att::Status(HostError::kPacketMalformed));
+            res_cb(ToResult(HostError::kPacketMalformed));
             return;
           }
 
@@ -401,13 +396,13 @@ class Impl final : public Client {
 
             if (end < start) {
               bt_log(DEBUG, "gatt", "received malformed service range values");
-              res_cb(att::Status(HostError::kPacketMalformed));
+              res_cb(ToResult(HostError::kPacketMalformed));
               return;
             }
 
             if (start < discovery_range_start || start > discovery_range_end) {
               bt_log(DEBUG, "gatt", "received service range values outside of requested range");
-              res_cb(att::Status(HostError::kPacketMalformed));
+              res_cb(ToResult(HostError::kPacketMalformed));
               return;
             }
 
@@ -415,7 +410,7 @@ class Impl final : public Client {
             // handles." (Core Spec v5.3, Vol 3, Part F, Sec 3.4.3.4)
             if (last_handle.has_value() && start <= last_handle.value()) {
               bt_log(DEBUG, "gatt", "received services out of order");
-              res_cb(att::Status(HostError::kPacketMalformed));
+              res_cb(ToResult(HostError::kPacketMalformed));
               return;
             }
 
@@ -433,7 +428,7 @@ class Impl final : public Client {
 
           // The procedure is over if we have reached the end of the handle range.
           if (!last_handle.has_value() || last_handle.value() == discovery_range_end) {
-            res_cb(att::Status());
+            res_cb(fitx::ok());
             return;
           }
 
@@ -443,12 +438,11 @@ class Impl final : public Client {
         });
 
     auto error_cb = BindErrorCallback(
-        [res_cb = status_callback.share()](att::Status status, att::Handle handle) {
+        [res_cb = status_callback.share()](att::Result<> status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.4.2).
-          if (status.is_protocol_error() &&
-              status.protocol_error() == att::ErrorCode::kAttributeNotFound) {
-            res_cb(att::Status());
+          if (status == ToResult(att::ErrorCode::kAttributeNotFound)) {
+            res_cb(fitx::ok());
             return;
           }
 
@@ -460,13 +454,13 @@ class Impl final : public Client {
 
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
-                               StatusCallback status_callback) override {
+                               att::ResultFunction<> status_callback) override {
     ZX_ASSERT(range_start <= range_end);
     ZX_ASSERT(chrc_callback);
     ZX_ASSERT(status_callback);
 
     if (range_start == range_end) {
-      status_callback(att::Status());
+      status_callback(fitx::ok());
       return;
     }
 
@@ -475,17 +469,16 @@ class Impl final : public Client {
       TRACE_DURATION("bluetooth", "gatt::Client::DiscoverCharacteristics read_by_type_cb");
 
       if (result.is_error()) {
-        const auto status = result.error().status;
+        const auto error = result.error().error;
 
         // An Error Response code of "Attribute Not Found" indicates the end
         // of the procedure (v5.0, Vol 3, Part G, 4.6.1).
-        if (status.is_protocol_error() &&
-            status.protocol_error() == att::ErrorCode::kAttributeNotFound) {
-          res_cb(att::Status());
+        if (error.is(att::ErrorCode::kAttributeNotFound)) {
+          res_cb(fitx::ok());
           return;
         }
 
-        res_cb(status);
+        res_cb(fitx::error(error));
         return;
       }
 
@@ -521,7 +514,7 @@ class Impl final : public Client {
         } else {
           bt_log(DEBUG, "gatt", "invalid characteristic declaration attribute value size");
           att_->ShutDown();
-          res_cb(att::Status(HostError::kPacketMalformed));
+          res_cb(ToResult(HostError::kPacketMalformed));
           return;
         }
 
@@ -529,7 +522,7 @@ class Impl final : public Client {
         // exist immediately following the characteristic declaration."
         if (value_handle != char_attr.handle + 1) {
           bt_log(DEBUG, "gatt", "characteristic value doesn't follow declaration");
-          res_cb(att::Status(HostError::kPacketMalformed));
+          res_cb(ToResult(HostError::kPacketMalformed));
           return;
         }
 
@@ -542,7 +535,7 @@ class Impl final : public Client {
       // range.
       const auto last_handle = attributes.back().handle;
       if (last_handle == range_end) {
-        res_cb(att::Status());
+        res_cb(fitx::ok());
         return;
       }
 
@@ -556,14 +549,14 @@ class Impl final : public Client {
 
   void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                            DescriptorCallback desc_callback,
-                           StatusCallback status_callback) override {
+                           att::ResultFunction<> status_callback) override {
     ZX_DEBUG_ASSERT(range_start <= range_end);
     ZX_DEBUG_ASSERT(desc_callback);
     ZX_DEBUG_ASSERT(status_callback);
 
     auto pdu = NewPDU(sizeof(att::FindInformationRequestParams));
     if (!pdu) {
-      status_callback(att::Status(HostError::kOutOfMemory));
+      status_callback(ToResult(HostError::kOutOfMemory));
       return;
     }
 
@@ -581,7 +574,7 @@ class Impl final : public Client {
       if (rsp.payload_size() < sizeof(att::FindInformationResponseParams)) {
         bt_log(DEBUG, "gatt", "received malformed Find Information response");
         att_->ShutDown();
-        res_cb(att::Status(HostError::kPacketMalformed));
+        res_cb(ToResult(HostError::kPacketMalformed));
         return;
       }
 
@@ -607,13 +600,13 @@ class Impl final : public Client {
 
       if (!result) {
         att_->ShutDown();
-        res_cb(att::Status(HostError::kPacketMalformed));
+        res_cb(ToResult(HostError::kPacketMalformed));
         return;
       }
 
       // The procedure is over if we have reached the end of the handle range.
       if (last_handle == range_end) {
-        res_cb(att::Status());
+        res_cb(fitx::ok());
         return;
       }
 
@@ -622,12 +615,11 @@ class Impl final : public Client {
     });
 
     auto error_cb = BindErrorCallback(
-        [res_cb = status_callback.share()](att::Status status, att::Handle handle) {
+        [res_cb = status_callback.share()](att::Result<> status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.7.1).
-          if (status.is_protocol_error() &&
-              status.protocol_error() == att::ErrorCode::kAttributeNotFound) {
-            res_cb(att::Status());
+          if (status == ToResult(att::ErrorCode::kAttributeNotFound)) {
+            res_cb(fitx::ok());
             return;
           }
 
@@ -640,7 +632,7 @@ class Impl final : public Client {
   void ReadRequest(att::Handle handle, ReadCallback callback) override {
     auto pdu = NewPDU(sizeof(att::ReadRequestParams));
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory), BufferView(), /*maybe_truncated=*/false);
+      callback(ToResult(HostError::kOutOfMemory), BufferView(), /*maybe_truncated=*/false);
       return;
     }
 
@@ -652,18 +644,17 @@ class Impl final : public Client {
       ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
       bool maybe_truncated = (rsp.payload_size() != att::kMaxAttributeValueLength) &&
                              (rsp.payload_size() == (mtu() - sizeof(rsp.opcode())));
-      callback(att::Status(), rsp.payload_data(), maybe_truncated);
+      callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
     });
 
     auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "read request failed: %s, handle %#.4x", status.ToString().c_str(),
-                 handle);
+        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
+          bt_log(DEBUG, "gatt", "read request failed: %s, handle %#.4x", bt_str(status), handle);
           callback(status, BufferView(), /*maybe_truncated=*/false);
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
+      callback(ToResult(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
     }
   }
 
@@ -674,8 +665,8 @@ class Impl final : public Client {
     auto pdu = NewPDU(type_size == sizeof(uint16_t) ? sizeof(att::ReadByTypeRequestParams16)
                                                     : sizeof(att::ReadByTypeRequestParams128));
     if (!pdu) {
-      callback(
-          fpromise::error(ReadByTypeError{att::Status(HostError::kOutOfMemory), std::nullopt}));
+      callback(fpromise::error(
+          ReadByTypeError{ToResult(HostError::kOutOfMemory).error_value(), std::nullopt}));
       return;
     }
 
@@ -699,7 +690,7 @@ class Impl final : public Client {
       ZX_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
         callback(fpromise::error(
-            ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
+            ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
         return;
       }
 
@@ -716,7 +707,7 @@ class Impl final : public Client {
       if (pair_size < sizeof(att::Handle) || list_size < sizeof(att::Handle) ||
           list_size % pair_size != 0) {
         callback(fpromise::error(
-            ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
+            ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
         return;
       }
 
@@ -731,7 +722,7 @@ class Impl final : public Client {
           bt_log(TRACE, "gatt",
                  "client received read by type response with handle outside of requested range");
           callback(fpromise::error(
-              ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
+              ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
           return;
         }
 
@@ -739,7 +730,7 @@ class Impl final : public Client {
           bt_log(TRACE, "gatt",
                  "client received read by type response with handles in non-increasing order");
           callback(fpromise::error(
-              ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
+              ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
           return;
         }
 
@@ -765,24 +756,24 @@ class Impl final : public Client {
     });
 
     auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
+        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
           bt_log(DEBUG, "gatt", "read by type request failed: %s, handle %#.4x", bt_str(status),
                  handle);
           // Only some errors have handles.
           std::optional<att::Handle> cb_handle = handle ? std::optional(handle) : std::nullopt;
-          callback(fpromise::error(ReadByTypeError{status, cb_handle}));
+          callback(fpromise::error(ReadByTypeError{status.error_value(), cb_handle}));
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(
-          fpromise::error(ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
+      callback(fpromise::error(
+          ReadByTypeError{ToResult(HostError::kPacketMalformed).error_value(), std::nullopt}));
     }
   }
 
   void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) override {
     auto pdu = NewPDU(sizeof(att::ReadBlobRequestParams));
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory), BufferView(), /*maybe_truncated=*/false);
+      callback(ToResult(HostError::kOutOfMemory), BufferView(), /*maybe_truncated=*/false);
       return;
     }
 
@@ -797,32 +788,32 @@ class Impl final : public Client {
           bool maybe_truncated =
               (static_cast<size_t>(offset) + rsp.payload_size() != att::kMaxAttributeValueLength) &&
               (rsp.payload_data().size() == (mtu() - sizeof(att::OpCode)));
-          callback(att::Status(), rsp.payload_data(), maybe_truncated);
+          callback(fitx::ok(), rsp.payload_data(), maybe_truncated);
         });
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "read blob request failed: %s, handle: %#.4x",
-                 status.ToString().c_str(), handle);
-          callback(status, BufferView(), /*maybe_truncated=*/false);
-        });
+    auto error_cb = BindErrorCallback([callback = callback.share()](att::Result<> status,
+                                                                    att::Handle handle) {
+      bt_log(DEBUG, "gatt", "read blob request failed: %s, handle: %#.4x", bt_str(status), handle);
+      callback(status, BufferView(), /*maybe_truncated=*/false);
+    });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
+      callback(ToResult(HostError::kPacketMalformed), BufferView(), /*maybe_truncated=*/false);
     }
   }
 
-  void WriteRequest(att::Handle handle, const ByteBuffer& value, StatusCallback callback) override {
+  void WriteRequest(att::Handle handle, const ByteBuffer& value,
+                    att::ResultFunction<> callback) override {
     const size_t payload_size = sizeof(att::WriteRequestParams) + value.size();
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
       bt_log(TRACE, "gatt", "write request payload exceeds MTU");
-      callback(att::Status(HostError::kPacketMalformed));
+      callback(ToResult(HostError::kPacketMalformed));
       return;
     }
 
     auto pdu = NewPDU(payload_size);
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory));
+      callback(ToResult(HostError::kOutOfMemory));
       return;
     }
 
@@ -838,22 +829,21 @@ class Impl final : public Client {
 
       if (rsp.payload_size()) {
         att_->ShutDown();
-        callback(att::Status(HostError::kPacketMalformed));
+        callback(ToResult(HostError::kPacketMalformed));
         return;
       }
 
-      callback(att::Status());
+      callback(fitx::ok());
     });
 
     auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "write request failed: %s, handle: %#.2x",
-                 status.ToString().c_str(), handle);
+        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
+          bt_log(DEBUG, "gatt", "write request failed: %s, handle: %#.2x", bt_str(status), handle);
           callback(status);
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed));
+      callback(ToResult(HostError::kPacketMalformed));
     }
   }
 
@@ -861,12 +851,12 @@ class Impl final : public Client {
   // of a long write operation.
   struct PreparedWrite {
     bt::att::PrepareWriteQueue prep_write_queue;
-    bt::att::StatusCallback callback;
+    bt::att::ResultFunction<> callback;
     ReliableMode reliable_mode;
   };
 
   void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue, ReliableMode reliable_mode,
-                            att::StatusCallback callback) override {
+                            att::ResultFunction<> callback) override {
     PreparedWrite new_request;
     new_request.prep_write_queue = std::move(prep_write_queue);
     new_request.callback = std::move(callback);
@@ -891,7 +881,7 @@ class Impl final : public Client {
 
       auto prep_write_cb = [this, prep_write = std::move(prep_write),
                             requested_blob = std::move(prep_write_copy)](
-                               att::Status status, const ByteBuffer& blob) mutable {
+                               att::Result<> status, const ByteBuffer& blob) mutable {
         // If the write fails, cancel the prep writes and then move on to the next
         // long write in the queue.
         // The device will echo the value written in the blob, according to the
@@ -901,20 +891,20 @@ class Impl final : public Client {
         if (prep_write.reliable_mode == ReliableMode::kEnabled) {
           if (blob.size() < sizeof(att::PrepareWriteResponseParams)) {
             // The response blob is malformed.
-            status = att::Status(HostError::kNotReliable);
+            status = ToResult(HostError::kNotReliable);
           } else {
             auto blob_offset = le16toh(blob.ReadMember<&att::PrepareWriteResponseParams::offset>());
             auto blob_value = blob.view(sizeof(att::PrepareWriteResponseParams));
             if ((blob_offset != requested_blob.offset()) ||
                 !(blob_value == requested_blob.value())) {
-              status = att::Status(HostError::kNotReliable);
+              status = ToResult(HostError::kNotReliable);
             }
           }
         }
 
-        if (!status) {
+        if (status.is_error()) {
           auto exec_write_cb = [this, callback = std::move(prep_write.callback),
-                                prep_write_status = status](att::Status status) mutable {
+                                prep_write_status = status](att::Result<> status) mutable {
             // In this case return the original failure status. This effectively
             // overrides the ExecuteWrite status.
             callback(prep_write_status);
@@ -941,20 +931,20 @@ class Impl final : public Client {
     }
     // End of this write, send and prepare for next item in overall write queue
     else {
-      auto exec_write_cb = [this,
-                            callback = std::move(prep_write.callback)](att::Status status) mutable {
-        callback(status);
-        // Now that this request is complete, remove it from the overall
-        // queue.
-        ZX_DEBUG_ASSERT(!long_write_queue_.empty());
-        long_write_queue_.pop();
+      auto exec_write_cb =
+          [this, callback = std::move(prep_write.callback)](att::Result<> status) mutable {
+            callback(status);
+            // Now that this request is complete, remove it from the overall
+            // queue.
+            ZX_DEBUG_ASSERT(!long_write_queue_.empty());
+            long_write_queue_.pop();
 
-        // If the super queue still has any long writes left to execute,
-        // initiate them
-        if (long_write_queue_.size() > 0) {
-          ProcessWriteQueue(std::move(long_write_queue_.front()));
-        }
-      };
+            // If the super queue still has any long writes left to execute,
+            // initiate them
+            if (long_write_queue_.size() > 0) {
+              ProcessWriteQueue(std::move(long_write_queue_.front()));
+            }
+          };
 
       ExecuteWriteRequest(att::ExecuteWriteFlag::kWritePending, std::move(exec_write_cb));
     }
@@ -965,13 +955,13 @@ class Impl final : public Client {
     const size_t payload_size = sizeof(att::PrepareWriteRequestParams) + part_value.size();
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
       bt_log(TRACE, "gatt", "prepare write request payload exceeds MTU");
-      callback(att::Status(HostError::kPacketMalformed), BufferView());
+      callback(ToResult(HostError::kPacketMalformed), BufferView());
       return;
     }
 
     auto pdu = NewPDU(payload_size);
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory), BufferView());
+      callback(ToResult(HostError::kOutOfMemory), BufferView());
       return;
     }
 
@@ -986,36 +976,36 @@ class Impl final : public Client {
 
     auto rsp_cb = BindCallback([callback = callback.share()](const att::PacketReader& rsp) {
       ZX_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
-      callback(att::Status(), rsp.payload_data());
+      callback(fitx::ok(), rsp.payload_data());
     });
 
     auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
+        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
           bt_log(DEBUG, "gatt",
                  "prepare write request failed: %s, handle:"
                  "%#.4x",
-                 status.ToString().c_str(), handle);
+                 bt_str(status), handle);
           callback(status, BufferView());
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed), BufferView());
+      callback(ToResult(HostError::kPacketMalformed), BufferView());
     }
   }
 
-  void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCallback callback) override {
+  void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::ResultFunction<> callback) override {
     const size_t payload_size = sizeof(att::ExecuteWriteRequestParams);
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
       // This really shouldn't happen because we aren't consuming any actual
       // payload here, but just in case...
       bt_log(TRACE, "gatt", "execute write request size exceeds MTU");
-      callback(att::Status(HostError::kPacketMalformed));
+      callback(ToResult(HostError::kPacketMalformed));
       return;
     }
 
     auto pdu = NewPDU(payload_size);
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory));
+      callback(ToResult(HostError::kOutOfMemory));
       return;
     }
 
@@ -1028,36 +1018,36 @@ class Impl final : public Client {
 
       if (rsp.payload_size()) {
         att_->ShutDown();
-        callback(att::Status(HostError::kPacketMalformed));
+        callback(ToResult(HostError::kPacketMalformed));
         return;
       }
 
-      callback(att::Status());
+      callback(fitx::ok());
     });
 
     auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
-          bt_log(DEBUG, "gatt", "execute write request failed: %s", status.ToString().c_str());
+        BindErrorCallback([callback = callback.share()](att::Result<> status, att::Handle handle) {
+          bt_log(DEBUG, "gatt", "execute write request failed: %s", bt_str(status));
           callback(status);
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed));
+      callback(ToResult(HostError::kPacketMalformed));
     }
   }
 
   void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value,
-                            att::StatusCallback callback) override {
+                            att::ResultFunction<> callback) override {
     const size_t payload_size = sizeof(att::WriteRequestParams) + value.size();
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
       bt_log(DEBUG, "gatt", "write request payload exceeds MTU");
-      callback(att::Status(HostError::kFailed));
+      callback(ToResult(HostError::kFailed));
       return;
     }
 
     auto pdu = NewPDU(payload_size);
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory));
+      callback(ToResult(HostError::kOutOfMemory));
       return;
     }
 
@@ -1069,7 +1059,7 @@ class Impl final : public Client {
     value.Copy(&value_view);
 
     att_->SendWithoutResponse(std::move(pdu));
-    callback(att::Status());
+    callback(fitx::ok());
   }
 
   void SetNotificationHandler(NotificationCallback handler) override {
@@ -1091,7 +1081,7 @@ class Impl final : public Client {
   // alive.
   att::Bearer::ErrorCallback BindErrorCallback(att::Bearer::ErrorCallback callback) {
     return [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
-               att::Status status, att::Handle handle) {
+               att::Result<> status, att::Handle handle) {
       if (self) {
         callback(status, handle);
       }
@@ -1123,5 +1113,4 @@ std::unique_ptr<Client> Client::Create(fbl::RefPtr<att::Bearer> bearer) {
   return std::make_unique<Impl>(std::move(bearer));
 }
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

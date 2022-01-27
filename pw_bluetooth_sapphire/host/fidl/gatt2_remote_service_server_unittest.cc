@@ -168,7 +168,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeSuccess) {
             break;
           case 1:
             callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
-                bt::att::Status(bt::att::ErrorCode::kAttributeNotFound), start}));
+                bt::ToResult(bt::att::ErrorCode::kAttributeNotFound).error_value(), start}));
             break;
           default:
             FAIL();
@@ -210,7 +210,8 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeResultPermissionError) {
       [&](const bt::UUID& type, bt::att::Handle start, bt::att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
-            bt::att::Status(bt::att::ErrorCode::kInsufficientAuthorization), kServiceEndHandle}));
+            bt::ToResult(bt::att::ErrorCode::kInsufficientAuthorization).error_value(),
+            kServiceEndHandle}));
       });
 
   std::optional<fbg::RemoteService_ReadByType_Result> fidl_result;
@@ -239,7 +240,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeReturnsError) {
         switch (read_count++) {
           case 0:
             callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
-                bt::att::Status(bt::HostError::kPacketMalformed), std::nullopt}));
+                bt::ToResult(bt::HostError::kPacketMalformed).error_value(), std::nullopt}));
             break;
           default:
             FAIL();
@@ -290,7 +291,7 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
         const size_t max_value_count = static_cast<size_t>(ZX_CHANNEL_MAX_MSG_BYTES) / value.size();
         if (read_count == max_value_count) {
           callback(fpromise::error(bt::gatt::Client::ReadByTypeError{
-              bt::att::Status(bt::att::ErrorCode::kAttributeNotFound), start}));
+              bt::ToResult(bt::att::ErrorCode::kAttributeNotFound).error_value(), start}));
           return;
         }
 
@@ -335,7 +336,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadShortCharacteristic) {
       [&](bt::att::Handle handle, bt::gatt::Client::ReadCallback callback) {
         read_count++;
         EXPECT_EQ(handle, kValueHandle);
-        callback(bt::att::Status(), kValue, /*maybe_truncated=*/false);
+        callback(fitx::ok(), kValue, /*maybe_truncated=*/false);
       });
   fake_client()->set_read_blob_request_callback([](auto, auto, auto) { FAIL(); });
 
@@ -385,7 +386,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadLongCharacteristicWithOffset
         read_count++;
         EXPECT_EQ(handle, kValueHandle);
         EXPECT_EQ(offset, kOffset);
-        cb(bt::att::Status(), kValue.view(offset), /*maybe_truncated=*/false);
+        cb(fitx::ok(), kValue.view(offset), /*maybe_truncated=*/false);
       });
 
   std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
@@ -457,7 +458,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadShortDescriptor) {
       [&](bt::att::Handle handle, bt::gatt::Client::ReadCallback callback) {
         read_count++;
         EXPECT_EQ(handle, kDescriptorHandle);
-        callback(bt::att::Status(), kDescriptorValue, /*maybe_truncated=*/false);
+        callback(fitx::ok(), kDescriptorValue, /*maybe_truncated=*/false);
       });
   fake_client()->set_read_blob_request_callback([](auto, auto, auto) { FAIL(); });
 
@@ -514,7 +515,7 @@ TEST_F(Gatt2RemoteServiceServerTest, DiscoverAndReadLongDescriptorWithOffsetAndM
         read_count++;
         EXPECT_EQ(handle, kDescriptorHandle);
         EXPECT_EQ(offset, kOffset);
-        cb(bt::att::Status(), kDescriptorValue.view(offset), /*maybe_truncated=*/false);
+        cb(fitx::ok(), kDescriptorValue.view(offset), /*maybe_truncated=*/false);
       });
 
   std::optional<fpromise::result<fbg::ReadValue, fbg::Error>> fidl_result;
@@ -597,11 +598,11 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponse) {
 
   int write_count = 0;
   fake_client()->set_write_without_rsp_callback(
-      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::StatusCallback cb) {
+      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::ResultFunction<> cb) {
         write_count++;
         EXPECT_EQ(handle, kValueHandle);
         EXPECT_TRUE(ContainersEqual(value, kValue));
-        cb(bt::att::Status());
+        cb(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -638,11 +639,11 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteCharacteristicWithoutResponseValueTooL
 
   int write_count = 0;
   fake_client()->set_write_without_rsp_callback(
-      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::StatusCallback callback) {
+      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::ResultFunction<> callback) {
         write_count++;
         EXPECT_EQ(handle, kValueHandle);
         EXPECT_TRUE(ContainersEqual(value, kValue));
-        callback(bt::att::Status(bt::HostError::kFailed));
+        callback(bt::ToResult(bt::HostError::kFailed));
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -678,11 +679,11 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristic) {
 
   int write_count = 0;
   fake_client()->set_write_request_callback(
-      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::StatusCallback callback) {
+      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::ResultFunction<> callback) {
         write_count++;
         EXPECT_EQ(handle, kValueHandle);
         EXPECT_TRUE(ContainersEqual(value, kValue));
-        callback(bt::att::Status());
+        callback(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -717,14 +718,14 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithNonZeroOffset) 
   int write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
       [&](bt::att::PrepareWriteQueue prep_write_queue, bt::gatt::ReliableMode reliable,
-          bt::att::StatusCallback callback) {
+          bt::att::ResultFunction<> callback) {
         write_count++;
         ASSERT_EQ(prep_write_queue.size(), 1u);
         EXPECT_EQ(prep_write_queue.front().handle(), kValueHandle);
         EXPECT_EQ(prep_write_queue.front().offset(), kOffset);
         EXPECT_EQ(reliable, bt::gatt::ReliableMode::kDisabled);
         EXPECT_TRUE(ContainersEqual(prep_write_queue.front().value(), kValue));
-        callback(bt::att::Status());
+        callback(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -759,14 +760,14 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortCharacteristicWithReliableMode) {
   int write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
       [&](bt::att::PrepareWriteQueue prep_write_queue, bt::gatt::ReliableMode reliable,
-          bt::att::StatusCallback callback) {
+          bt::att::ResultFunction<> callback) {
         write_count++;
         ASSERT_EQ(prep_write_queue.size(), 1u);
         EXPECT_EQ(reliable, bt::gatt::ReliableMode::kEnabled);
         EXPECT_EQ(prep_write_queue.front().handle(), kValueHandle);
         EXPECT_EQ(prep_write_queue.front().offset(), 0u);
         EXPECT_TRUE(ContainersEqual(prep_write_queue.front().value(), kValue));
-        callback(bt::att::Status());
+        callback(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -806,7 +807,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteLongCharacteristicDefaultOptions) {
   int write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
       [&](bt::att::PrepareWriteQueue prep_write_queue, bt::gatt::ReliableMode reliable,
-          bt::att::StatusCallback callback) {
+          bt::att::ResultFunction<> callback) {
         write_count++;
         EXPECT_EQ(reliable, bt::gatt::ReliableMode::kDisabled);
         ASSERT_EQ(prep_write_queue.size(), 2u);
@@ -819,7 +820,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteLongCharacteristicDefaultOptions) {
         EXPECT_EQ(prep_write_queue.front().offset(), kFirstPacketValueSize);
         EXPECT_TRUE(
             ContainersEqual(kValue.view(kFirstPacketValueSize), prep_write_queue.front().value()));
-        callback(bt::att::Status());
+        callback(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -896,11 +897,11 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortDescriptor) {
 
   int write_count = 0;
   fake_client()->set_write_request_callback(
-      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::StatusCallback callback) {
+      [&](bt::att::Handle handle, const bt::ByteBuffer& value, bt::att::ResultFunction<> callback) {
         write_count++;
         EXPECT_EQ(handle, kDescriptorHandle);
         EXPECT_TRUE(ContainersEqual(value, kValue));
-        callback(bt::att::Status());
+        callback(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -942,14 +943,14 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteShortDescriptorWithNonZeroOffset) {
   int write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
       [&](bt::att::PrepareWriteQueue prep_write_queue, bt::gatt::ReliableMode reliable,
-          bt::att::StatusCallback callback) {
+          bt::att::ResultFunction<> callback) {
         write_count++;
         ASSERT_EQ(prep_write_queue.size(), 1u);
         EXPECT_EQ(prep_write_queue.front().handle(), kDescriptorHandle);
         EXPECT_EQ(prep_write_queue.front().offset(), kOffset);
         EXPECT_EQ(reliable, bt::gatt::ReliableMode::kDisabled);
         EXPECT_TRUE(ContainersEqual(prep_write_queue.front().value(), kValue));
-        callback(bt::att::Status());
+        callback(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -996,7 +997,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteLongDescriptorDefaultOptions) {
   int write_count = 0;
   fake_client()->set_execute_prepare_writes_callback(
       [&](bt::att::PrepareWriteQueue prep_write_queue, bt::gatt::ReliableMode reliable,
-          bt::att::StatusCallback callback) {
+          bt::att::ResultFunction<> callback) {
         write_count++;
         EXPECT_EQ(reliable, bt::gatt::ReliableMode::kDisabled);
         ASSERT_EQ(prep_write_queue.size(), 2u);
@@ -1009,7 +1010,7 @@ TEST_F(Gatt2RemoteServiceServerTest, WriteLongDescriptorDefaultOptions) {
         EXPECT_EQ(prep_write_queue.front().offset(), kFirstPacketValueSize);
         EXPECT_TRUE(
             ContainersEqual(kValue.view(kFirstPacketValueSize), prep_write_queue.front().value()));
-        callback(bt::att::Status());
+        callback(fitx::ok());
       });
 
   std::optional<std::vector<fbg::Characteristic>> fidl_characteristics;
@@ -1106,7 +1107,7 @@ TEST_F(Gatt2RemoteServiceServerCharacteristicNotifierTest,
   fake_client()->set_write_request_callback(
       [&](bt::att::Handle handle, const bt::ByteBuffer& /*value*/, auto status_callback) {
         EXPECT_EQ(handle, ccc_descriptor_handle());
-        status_callback(bt::att::Status());
+        status_callback(fitx::ok());
       });
 
   fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
@@ -1168,7 +1169,7 @@ TEST_F(Gatt2RemoteServiceServerCharacteristicNotifierTest,
   fake_client()->set_write_request_callback(
       [&](bt::att::Handle handle, const bt::ByteBuffer& /*value*/, auto status_callback) {
         EXPECT_EQ(handle, ccc_descriptor_handle());
-        status_callback(bt::att::Status());
+        status_callback(fitx::ok());
       });
 
   fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
@@ -1212,7 +1213,7 @@ TEST_F(Gatt2RemoteServiceServerCharacteristicNotifierTest,
   fake_client()->set_write_request_callback(
       [&](bt::att::Handle handle, const bt::ByteBuffer& /*value*/, auto status_callback) {
         EXPECT_EQ(handle, ccc_descriptor_handle());
-        status_callback(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthentication));
+        status_callback(bt::ToResult(bt::att::ErrorCode::kInsufficientAuthentication));
       });
 
   fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;
@@ -1233,9 +1234,9 @@ TEST_F(
     RegisterCharacteristicNotifierAndDestroyServerBeforeStatusCallbackCausesNotificationsToBeDisabled) {
   // Respond to CCC write with success status so that notifications are enabled.
   int ccc_write_count = 0;
-  bt::att::StatusCallback enable_notifications_status_cb = nullptr;
+  bt::att::ResultFunction<> enable_notifications_status_cb = nullptr;
   fake_client()->set_write_request_callback([&](bt::att::Handle handle, const bt::ByteBuffer& value,
-                                                bt::att::StatusCallback status_callback) {
+                                                bt::att::ResultFunction<> status_callback) {
     ccc_write_count++;
     EXPECT_EQ(handle, ccc_descriptor_handle());
     if (ccc_write_count == 1) {
@@ -1243,7 +1244,7 @@ TEST_F(
       enable_notifications_status_cb = std::move(status_callback);
     } else {
       EXPECT_EQ(value[0], 0u);  // Disable value
-      status_callback(bt::att::Status());
+      status_callback(fitx::ok());
     }
   });
 
@@ -1260,7 +1261,7 @@ TEST_F(
 
   DestroyServer();
   ASSERT_TRUE(enable_notifications_status_cb);
-  enable_notifications_status_cb(bt::att::Status());
+  enable_notifications_status_cb(fitx::ok());
   RunLoopUntilIdle();
   // Notifications should have been disabled in enable notifications status callback.
   EXPECT_EQ(ccc_write_count, 2);
@@ -1271,9 +1272,9 @@ TEST_F(
     RegisterCharacteristicNotifierAndDestroyServerAfterStatusCallbackCausesNotificationsToBeDisabled) {
   // Respond to CCC write with success status so that notifications are enabled.
   int ccc_write_count = 0;
-  bt::att::StatusCallback enable_notifications_status_cb = nullptr;
+  bt::att::ResultFunction<> enable_notifications_status_cb = nullptr;
   fake_client()->set_write_request_callback([&](bt::att::Handle handle, const bt::ByteBuffer& value,
-                                                bt::att::StatusCallback status_callback) {
+                                                bt::att::ResultFunction<> status_callback) {
     ccc_write_count++;
     EXPECT_EQ(handle, ccc_descriptor_handle());
     if (ccc_write_count == 1) {
@@ -1281,7 +1282,7 @@ TEST_F(
     } else {
       EXPECT_EQ(value[0], 0u);  // Disable value
     }
-    status_callback(bt::att::Status());
+    status_callback(fitx::ok());
   });
 
   fidl::InterfaceHandle<fbg::CharacteristicNotifier> notifier_handle;

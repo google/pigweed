@@ -180,7 +180,7 @@ class Impl final : public GATT {
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       // Connection not found.
-      callback(att::Status(HostError::kNotFound), ServiceList());
+      callback(ToResult(HostError::kNotFound), ServiceList());
       return;
     }
     iter->second.remote_service_manager()->ListServices(uuids, std::move(callback));

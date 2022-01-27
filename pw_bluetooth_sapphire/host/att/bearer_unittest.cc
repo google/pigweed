@@ -20,7 +20,7 @@ constexpr OpCode kTestResponse3 = kFindByTypeValueResponse;
 constexpr OpCode kTestCommand = kWriteCommand;
 
 void NopCallback(const PacketReader& /*unused*/) {}
-void NopErrorCallback(Status /*unused*/, Handle /*unused*/) {}
+void NopErrorCallback(Result<> /*unused*/, Handle /*unused*/) {}
 void NopHandler(Bearer::TransactionId /*unused*/, const PacketReader& /*unused*/) {}
 
 class BearerTest : public l2cap::testing::FakeChannelTest {
@@ -115,8 +115,8 @@ TEST_F(BearerTest, RequestTimeout) {
   bool err_cb_called = false;
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Status status, Handle handle) {
-    EXPECT_EQ(HostError::kTimedOut, status.error());
+  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
+    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
@@ -148,8 +148,8 @@ TEST_F(BearerTest, RequestTimeoutMany) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_count](Status status, Handle handle) {
-    EXPECT_EQ(HostError::kTimedOut, status.error());
+  auto err_cb = [&err_cb_count](Result<> status, Handle handle) {
+    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
     EXPECT_EQ(0, handle);
 
     err_cb_count++;
@@ -183,8 +183,8 @@ TEST_F(BearerTest, IndicationTimeout) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Status status, Handle handle) {
-    EXPECT_EQ(HostError::kTimedOut, status.error());
+  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
+    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
@@ -218,8 +218,8 @@ TEST_F(BearerTest, IndicationTimeoutMany) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_count](Status status, Handle handle) {
-    EXPECT_EQ(HostError::kTimedOut, status.error());
+  auto err_cb = [&err_cb_count](Result<> status, Handle handle) {
+    EXPECT_EQ(ToResult(HostError::kTimedOut), status);
     EXPECT_EQ(0, handle);
 
     err_cb_count++;
@@ -290,8 +290,8 @@ TEST_F(BearerTest, SendRequestWrongResponse) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Status status, Handle handle) {
-    EXPECT_EQ(HostError::kFailed, status.error());
+  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
+    EXPECT_EQ(ToResult(HostError::kFailed), status);
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
@@ -328,9 +328,9 @@ TEST_F(BearerTest, SendRequestErrorResponseTooShort) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(HostError::kFailed, status.error());
+    EXPECT_EQ(ToResult(HostError::kFailed), status);
 
     err_cb_called = true;
   };
@@ -366,9 +366,9 @@ TEST_F(BearerTest, SendRequestErrorResponseTooLong) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(HostError::kFailed, status.error());
+    EXPECT_EQ(ToResult(HostError::kFailed), status);
 
     err_cb_called = true;
   };
@@ -409,9 +409,9 @@ TEST_F(BearerTest, SendRequestErrorResponseWrongOpCode) {
 
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(HostError::kFailed, status.error());
+    EXPECT_EQ(ToResult(HostError::kFailed), status);
 
     err_cb_called = true;
   };
@@ -448,9 +448,8 @@ TEST_F(BearerTest, SendRequestErrorResponse) {
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
   bool err_cb_called = false;
-  auto err_cb = [&err_cb_called](Status status, Handle handle) {
-    EXPECT_TRUE(status.is_protocol_error());
-    EXPECT_EQ(ErrorCode::kRequestNotSupported, status.protocol_error());
+  auto err_cb = [&err_cb_called](Result<> status, Handle handle) {
+    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported), status);
     EXPECT_EQ(0x0001, handle);
 
     err_cb_called = true;
@@ -504,7 +503,7 @@ TEST_F(BearerTest, CloseChannelAndDeleteBearerWhileRequestsArePending) {
   constexpr size_t kExpectedCount = 3;
 
   size_t cb_count = 0;
-  auto error_cb = [this, &cb_count](Status /*unused*/, Handle /*unused*/) {
+  auto error_cb = [this, &cb_count](Result<> /*unused*/, Handle /*unused*/) {
     cb_count++;
 
     // Delete the bearer on the first callback. The remaining callbacks should
@@ -550,12 +549,11 @@ TEST_F(BearerTest, SendManyRequests) {
   unsigned int success_count = 0u;
   unsigned int error_count = 0u;
 
-  auto error_cb = [&success_count, &error_count](Status status, Handle handle) {
+  auto error_cb = [&success_count, &error_count](Result<> status, Handle handle) {
     // This should only be called for the second request (the first request
     // should have already succeeded).
     EXPECT_EQ(1u, success_count);
-    EXPECT_TRUE(status.is_protocol_error());
-    EXPECT_EQ(ErrorCode::kRequestNotSupported, status.protocol_error());
+    EXPECT_EQ(ToResult(ErrorCode::kRequestNotSupported), status);
     EXPECT_EQ(0x0001, handle);
 
     error_count++;
@@ -1102,15 +1100,15 @@ class BearerTestSecurity : public BearerTest {
         NewBuffer(kTestRequest),
         [this](auto& /*unused*/) {
           request_success_count_++;
-          last_request_status_ = Status();
+          last_request_status_ = fitx::ok();
         },
-        [this](Status status, Handle /*unused*/) {
+        [this](Result<> status, Handle /*unused*/) {
           request_error_count_++;
           last_request_status_ = status;
         });
   }
 
-  const Status& last_request_status() const { return last_request_status_; }
+  const Result<>& last_request_status() const { return last_request_status_; }
   size_t request_success_count() const { return request_success_count_; }
   size_t request_error_count() const { return request_error_count_; }
   size_t att_request_count() const { return att_request_count_; }
@@ -1119,7 +1117,7 @@ class BearerTestSecurity : public BearerTest {
   sm::SecurityLevel requested_security_level() const { return requested_security_level_; }
 
  private:
-  Status last_request_status_;
+  Result<> last_request_status_ = fitx::ok();
   size_t request_success_count_ = 0u;
   size_t request_error_count_ = 0u;
 
@@ -1193,7 +1191,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeWithMitmAfterInsufficientAuthenticatio
   EXPECT_EQ(1u, security_request_count());
   EXPECT_EQ(1u, request_success_count());
   EXPECT_EQ(0u, request_error_count());
-  EXPECT_TRUE(last_request_status());
+  EXPECT_TRUE(last_request_status().is_ok());
 }
 
 TEST_F(BearerTestSecurity, SecurityUpgradeFailsAfterAuthError) {
@@ -1226,7 +1224,7 @@ TEST_F(BearerTestSecurity, SecurityUpgradeFailsAfterAuthError) {
   EXPECT_EQ(1u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ErrorCode::kInsufficientAuthentication, last_request_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication), last_request_status());
 }
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
@@ -1273,7 +1271,7 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
   EXPECT_EQ(2u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ErrorCode::kInsufficientAuthentication, last_request_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication), last_request_status());
 }
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncrypted) {
@@ -1291,7 +1289,7 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncrypted) {
   EXPECT_EQ(0u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ErrorCode::kInsufficientEncryption, last_request_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientEncryption), last_request_status());
 }
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncryptedWithMitm) {
@@ -1309,7 +1307,7 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncryptedWithMitm) {
   EXPECT_EQ(0u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ErrorCode::kInsufficientAuthentication, last_request_status().protocol_error());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication), last_request_status());
 }
 
 }  // namespace

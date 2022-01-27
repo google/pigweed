@@ -75,9 +75,9 @@ void Server::SendNotification(att::Handle handle, const ByteBuffer& value, bool 
 
   att_->StartTransaction(
       std::move(buffer), [](const auto&) { bt_log(TRACE, "gatt", "got confirmation!"); },
-      [](att::Status status, att::Handle handle) {
-        bt_log(DEBUG, "gatt", "indication failed (result %s, handle: %#.4x)",
-               status.ToString().c_str(), handle);
+      [](att::Result<> status, att::Handle handle) {
+        bt_log(DEBUG, "gatt", "indication failed (result %s, handle: %#.4x)", bt_str(status),
+               handle);
       });
 }
 

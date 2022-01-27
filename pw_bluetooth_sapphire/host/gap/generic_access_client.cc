@@ -23,7 +23,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
       return;
     }
 
-    if (!status) {
+    if (status.is_error()) {
       cb(fpromise::error(status));
       return;
     }
@@ -42,7 +42,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
              "GAP service does not have peripheral preferred connection parameters characteristic "
              "(peer: %s)",
              bt_str(self->peer_id_));
-      cb(fpromise::error(att::Status(HostError::kNotFound)));
+      cb(fpromise::error(ToResult(HostError::kNotFound)));
       return;
     }
 
@@ -66,7 +66,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
                "peripheral preferred connection parameters characteristic has invalid value size "
                "(peer: %s)",
                bt_str(self->peer_id_));
-        cb(fpromise::error(att::Status(HostError::kPacketMalformed)));
+        cb(fpromise::error(ToResult(HostError::kPacketMalformed)));
         return;
       }
 

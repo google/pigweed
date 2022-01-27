@@ -442,7 +442,7 @@ TEST_F(Gatt2ClientServerTest, ListServicesFails) {
                                  kTestServiceUuid0);
   gatt()->AddPeerService(kPeerId, svc_data);
 
-  gatt()->set_list_services_status(bt::att::Status(bt::HostError::kPacketMalformed));
+  gatt()->set_list_services_status(bt::ToResult(bt::HostError::kPacketMalformed));
 
   int watch_cb_count = 0;
   proxy()->WatchServices(/*uuids=*/{}, [&](auto, auto) { watch_cb_count++; });

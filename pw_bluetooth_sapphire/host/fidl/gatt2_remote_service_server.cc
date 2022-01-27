@@ -16,19 +16,19 @@ namespace measure_fbg = measure_tape::fuchsia::bluetooth::gatt2;
 namespace bthost {
 namespace {
 
-bt::att::StatusCallback MakeStatusCallback(
+bt::att::ResultFunction<> MakeStatusCallback(
     bt::PeerId peer_id, const char* request_name, fbg::Handle fidl_handle,
     fit::function<void(fpromise::result<void, fbg::Error>)> callback) {
-  return
-      [peer_id, fidl_handle, callback = std::move(callback), request_name](bt::att::Status status) {
-        if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", request_name,
-                        bt_str(peer_id), fidl_handle.value)) {
-          callback(fpromise::error(fidl_helpers::AttStatusToGattFidlError(status)));
-          return;
-        }
+  return [peer_id, fidl_handle, callback = std::move(callback),
+          request_name](bt::att::Result<> status) {
+    if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", request_name,
+                    bt_str(peer_id), fidl_handle.value)) {
+      callback(fpromise::error(fidl_helpers::AttErrorToGattFidlError(status.error_value())));
+      return;
+    }
 
-        callback(fpromise::ok());
-      };
+    callback(fpromise::ok());
+  };
 }
 
 fbg::Characteristic CharacteristicToFidl(
@@ -72,11 +72,11 @@ fbg::Characteristic CharacteristicToFidl(
 // converted by FIDL move constructor).
 [[nodiscard]] fpromise::result<::fuchsia::bluetooth::gatt2::ReadValue,
                                ::fuchsia::bluetooth::gatt2::Error>
-ReadResultToFidl(bt::PeerId peer_id, fbg::Handle handle, bt::att::Status status,
+ReadResultToFidl(bt::PeerId peer_id, fbg::Handle handle, bt::att::Result<> status,
                  const bt::ByteBuffer& value, bool maybe_truncated, const char* request) {
   if (bt_is_error(status, INFO, "fidl", "%s: error (peer: %s, handle: 0x%lX)", request,
                   bt_str(peer_id), handle.value)) {
-    return fpromise::error(fidl_helpers::AttStatusToGattFidlError(status));
+    return fpromise::error(fidl_helpers::AttErrorToGattFidlError(status.error_value()));
   }
 
   fbg::ReadValue fidl_value;
@@ -135,8 +135,8 @@ void Gatt2RemoteServiceServer::Close(zx_status_t status) { binding()->Close(stat
 
 void Gatt2RemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCallback callback) {
   auto res_cb = [callback = std::move(callback)](
-                    bt::att::Status status, const bt::gatt::CharacteristicMap& characteristics) {
-    if (!status) {
+                    bt::att::Result<> status, const bt::gatt::CharacteristicMap& characteristics) {
+    if (status.is_error()) {
       callback({});
       return;
     }
@@ -157,22 +157,20 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
   service_->ReadByType(
       fidl_helpers::UuidFromFidl(uuid),
       [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
-          bt::att::Status status, std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
+          bt::att::Result<> status,
+          std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
         if (!self) {
           return;
         }
 
-        switch (status.error()) {
-          case bt::HostError::kNoError:
-            break;
-          case bt::HostError::kInvalidParameters:
-            bt_log(WARN, "fidl", "%s: called with invalid parameters (peer: %s)", func,
-                   bt_str(self->peer_id_));
-            cb(fpromise::error(fbg::Error::INVALID_PARAMETERS));
-            return;
-          default:
-            cb(fpromise::error(fbg::Error::UNLIKELY_ERROR));
-            return;
+        if (status == ToResult(bt::HostError::kInvalidParameters)) {
+          bt_log(WARN, "fidl", "%s: called with invalid parameters (peer: %s)", func,
+                 bt_str(self->peer_id_));
+          cb(fpromise::error(fbg::Error::INVALID_PARAMETERS));
+          return;
+        } else if (status.is_error()) {
+          cb(fpromise::error(fbg::Error::UNLIKELY_ERROR));
+          return;
         }
 
         const size_t kVectorOverhead = sizeof(fidl_message_header_t) + sizeof(fidl_vector_t);
@@ -192,8 +190,8 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
             read_value.set_maybe_truncated(result.maybe_truncated);
             fidl_result.set_value(std::move(read_value));
           } else {
-            fidl_result.set_error(
-                fidl_helpers::AttStatusToGattFidlError(bt::att::Status(result.result.error())));
+            fidl_result.set_error(fidl_helpers::AttErrorToGattFidlError(
+                bt::ToResult(result.result.error()).error_value()));
           }
 
           measure_fbg::Size result_size = measure_fbg::Measure(fidl_result);
@@ -225,7 +223,7 @@ void Gatt2RemoteServiceServer::ReadCharacteristic(fbg::Handle fidl_handle, fbg::
   const char* kRequestName = __FUNCTION__;
   bt::gatt::RemoteService::ReadValueCallback read_cb =
       [peer_id = peer_id_, fidl_handle, kRequestName, callback = std::move(callback)](
-          bt::att::Status status, const bt::ByteBuffer& value, bool maybe_truncated) {
+          bt::att::Result<> status, const bt::ByteBuffer& value, bool maybe_truncated) {
         callback(
             ReadResultToFidl(peer_id, fidl_handle, status, value, maybe_truncated, kRequestName));
       };
@@ -251,12 +249,12 @@ void Gatt2RemoteServiceServer::WriteCharacteristic(fbg::Handle fidl_handle,
 
   FillInDefaultWriteOptions(options);
 
-  bt::att::StatusCallback write_cb =
+  bt::att::ResultFunction<> write_cb =
       MakeStatusCallback(peer_id_, __FUNCTION__, fidl_handle, std::move(callback));
 
   if (options.write_mode() == fbg::WriteMode::WITHOUT_RESPONSE) {
     if (options.offset() != 0) {
-      write_cb(bt::att::Status(bt::HostError::kInvalidParameters));
+      write_cb(bt::ToResult(bt::HostError::kInvalidParameters));
       return;
     }
     service_->WriteCharacteristicWithoutResponse(handle, std::move(value), std::move(write_cb));
@@ -290,7 +288,7 @@ void Gatt2RemoteServiceServer::ReadDescriptor(::fuchsia::bluetooth::gatt2::Handl
   const char* kRequestName = __FUNCTION__;
   bt::gatt::RemoteService::ReadValueCallback read_cb =
       [peer_id = peer_id_, fidl_handle, kRequestName, callback = std::move(callback)](
-          bt::att::Status status, const bt::ByteBuffer& value, bool maybe_truncated) {
+          bt::att::Result<> status, const bt::ByteBuffer& value, bool maybe_truncated) {
         callback(
             ReadResultToFidl(peer_id, fidl_handle, status, value, maybe_truncated, kRequestName));
       };
@@ -315,13 +313,13 @@ void Gatt2RemoteServiceServer::WriteDescriptor(fbg::Handle fidl_handle, std::vec
 
   FillInDefaultWriteOptions(options);
 
-  bt::att::StatusCallback write_cb =
+  bt::att::ResultFunction<> write_cb =
       MakeStatusCallback(peer_id_, __FUNCTION__, fidl_handle, std::move(callback));
 
   // WITHOUT_RESPONSE and RELIABLE write modes are not supported for descriptors.
   if (options.write_mode() == fbg::WriteMode::WITHOUT_RESPONSE ||
       options.write_mode() == fbg::WriteMode::RELIABLE) {
-    write_cb(bt::att::Status(bt::HostError::kInvalidParameters));
+    write_cb(bt::ToResult(bt::HostError::kInvalidParameters));
     return;
   }
 
@@ -386,9 +384,9 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
 
   auto status_cb = [self, service = service_, char_handle, notifier_id,
                     notifier_handle = std::move(notifier_handle), callback = std::move(callback)](
-                       bt::att::Status status, bt::gatt::IdType handler_id) mutable {
+                       bt::att::Result<> status, bt::gatt::IdType handler_id) mutable {
     if (!self) {
-      if (status) {
+      if (status.is_ok()) {
         // Disable this handler so it doesn't leak.
         service->DisableNotifications(char_handle, handler_id, [](auto /*status*/) {
           // There is no notifier to clean up because the server has been destroyed.
@@ -397,8 +395,8 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
       return;
     }
 
-    if (!status.is_success()) {
-      callback(fpromise::error(fidl_helpers::AttStatusToGattFidlError(status)));
+    if (status.is_error()) {
+      callback(fpromise::error(fidl_helpers::AttErrorToGattFidlError(status.error_value())));
       return;
     }
 

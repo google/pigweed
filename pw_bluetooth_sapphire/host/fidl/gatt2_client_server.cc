@@ -164,7 +164,7 @@ void Gatt2ClientServer::WatchServices(std::vector<fb::Uuid> fidl_uuids,
     std::vector<bt::UUID> uuids_vector(uuids.begin(), uuids.end());
     gatt()->ListServices(
         peer_id_, std::move(uuids_vector),
-        [self](bt::att::Status status, const bt::gatt::ServiceList& services) {
+        [self](bt::att::Result<> status, const bt::gatt::ServiceList& services) {
           if (!self) {
             return;
           }

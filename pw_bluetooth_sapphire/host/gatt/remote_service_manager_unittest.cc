@@ -11,6 +11,7 @@
 
 #include "fake_client.h"
 #include "lib/gtest/test_loop_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
@@ -39,7 +40,7 @@ constexpr att::Handle kDesc1 = 4;
 constexpr att::Handle kDesc2 = 5;
 constexpr att::Handle kEnd = 5;
 
-void NopStatusCallback(att::Status) {}
+void NopStatusCallback(att::Result<>) {}
 void NopValueCallback(const ByteBuffer& /*value*/, bool /*maybe_truncated*/) {}
 
 class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
@@ -85,7 +86,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
       std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
     fake_client()->set_characteristics(std::move(fake_chrs));
     fake_client()->set_descriptors(std::move(fake_descrs));
-    fake_client()->set_characteristic_discovery_status(att::Status());
+    fake_client()->set_characteristic_discovery_status(fitx::ok());
   }
 
   // Discover the characteristics of |service| based on the given |fake_data|.
@@ -118,7 +119,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     SetupCharacteristics(service, {{chr}}, {{desc}});
 
     fake_client()->set_write_request_callback(
-        [&](att::Handle, const auto&, auto status_callback) { status_callback(att::Status()); });
+        [&](att::Handle, const auto&, auto status_callback) { status_callback(fitx::ok()); });
 
     RunLoopUntilIdle();
 
@@ -126,12 +127,12 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   }
 
   void EnableNotifications(fbl::RefPtr<RemoteService> service, CharacteristicHandle chr_id,
-                           att::Status* out_status, IdType* out_id,
+                           att::Result<>* out_status, IdType* out_id,
                            RemoteService::ValueCallback callback = NopValueCallback) {
     ZX_DEBUG_ASSERT(out_status);
     ZX_DEBUG_ASSERT(out_id);
     service->EnableNotifications(chr_id, std::move(callback),
-                                 [&](att::Status cb_status, IdType cb_id) {
+                                 [&](att::Result<> cb_status, IdType cb_id) {
                                    *out_status = cb_status;
                                    *out_id = cb_id;
                                  });
@@ -156,12 +157,12 @@ TEST_F(RemoteServiceManagerTest, InitializeNoServices) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(services.empty());
 
   mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
@@ -181,12 +182,12 @@ TEST_F(RemoteServiceManagerTest, Initialize) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(2u, services.size());
   EXPECT_EQ(svc1.range_start, services[0]->handle());
   EXPECT_EQ(svc2.range_start, services[1]->handle());
@@ -197,9 +198,9 @@ TEST_F(RemoteServiceManagerTest, Initialize) {
 TEST_F(RemoteServiceManagerTest, InitializeFailure) {
   fake_client()->set_discover_services_callback([](ServiceKind kind) {
     if (kind == ServiceKind::PRIMARY) {
-      return att::Status(att::ErrorCode::kRequestNotSupported);
+      return ToResult(att::ErrorCode::kRequestNotSupported);
     }
-    return att::Status();
+    return att::Result<>(fitx::ok());
   });
 
   ServiceList watcher_services;
@@ -214,14 +215,12 @@ TEST_F(RemoteServiceManagerTest, InitializeFailure) {
   });
   ASSERT_TRUE(services.empty());
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(status);
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
+  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_TRUE(services.empty());
   EXPECT_TRUE(watcher_services.empty());
 }
@@ -232,12 +231,12 @@ TEST_F(RemoteServiceManagerTest, InitializeByUUIDNoServices) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; }, {kTestServiceUuid1});
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, {kTestServiceUuid1});
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(services.empty());
 
   mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
@@ -258,13 +257,13 @@ TEST_F(RemoteServiceManagerTest, InitializeWithUuids) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; },
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; },
                     {kTestServiceUuid1, kTestServiceUuid3});
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_THAT(services,
               UnorderedElementsAre(Pointee(::testing::Property(&RemoteService::info, Eq(svc1))),
                                    Pointee(::testing::Property(&RemoteService::info, Eq(svc3)))));
@@ -273,9 +272,9 @@ TEST_F(RemoteServiceManagerTest, InitializeWithUuids) {
 TEST_F(RemoteServiceManagerTest, InitializeByUUIDFailure) {
   fake_client()->set_discover_services_callback([](ServiceKind kind) {
     if (kind == ServiceKind::PRIMARY) {
-      return att::Status(att::ErrorCode::kRequestNotSupported);
+      return ToResult(att::ErrorCode::kRequestNotSupported);
     }
-    return att::Status();
+    return att::Result<>(fitx::ok());
   });
 
   ServiceList watcher_services;
@@ -290,14 +289,12 @@ TEST_F(RemoteServiceManagerTest, InitializeByUUIDFailure) {
   });
   ASSERT_TRUE(services.empty());
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; }, {kTestServiceUuid1});
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; }, {kTestServiceUuid1});
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(status);
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
+  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_TRUE(services.empty());
   EXPECT_TRUE(watcher_services.empty());
 }
@@ -312,12 +309,12 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServices) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(svc.range_start, services[0]->handle());
   EXPECT_EQ(svc.type, services[0]->uuid());
@@ -335,12 +332,12 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServices) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(2u, services.size());
   EXPECT_EQ(ServiceKind::PRIMARY, services[0]->info().kind);
   EXPECT_EQ(ServiceKind::SECONDARY, services[1]->info().kind);
@@ -359,11 +356,11 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOfOrder
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(2u, services.size());
   EXPECT_EQ(ServiceKind::SECONDARY, services[0]->info().kind);
   EXPECT_EQ(ServiceKind::PRIMARY, services[1]->info().kind);
@@ -373,9 +370,9 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryAndSecondaryServicesOutOfOrder
 TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
   fake_client()->set_discover_services_callback([](ServiceKind kind) {
     if (kind == ServiceKind::SECONDARY) {
-      return att::Status(att::ErrorCode::kRequestNotSupported);
+      return ToResult(att::ErrorCode::kRequestNotSupported);
     }
-    return att::Status();
+    return att::Result<>(fitx::ok());
   });
 
   ServiceList services;
@@ -383,13 +380,11 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status;
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = fitx::ok();
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(status);
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
+  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_TRUE(services.empty());
 }
 
@@ -397,9 +392,9 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesFailure) {
 TEST_F(RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedGroupType) {
   fake_client()->set_discover_services_callback([](ServiceKind kind) {
     if (kind == ServiceKind::PRIMARY) {
-      return att::Status(att::ErrorCode::kUnsupportedGroupType);
+      return ToResult(att::ErrorCode::kUnsupportedGroupType);
     }
-    return att::Status();
+    return att::Result<>(fitx::ok());
   });
 
   ServiceList services;
@@ -407,13 +402,11 @@ TEST_F(RemoteServiceManagerTest, InitializePrimaryServicesErrorUnsupportedGroupT
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status;
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = fitx::ok();
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(status);
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(att::ErrorCode::kUnsupportedGroupType, status.protocol_error());
+  EXPECT_EQ(ToResult(att::ErrorCode::kUnsupportedGroupType), status);
   EXPECT_TRUE(services.empty());
 }
 
@@ -423,9 +416,9 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesErrorUnsupportedGrou
   fake_client()->set_services({{svc1}});
   fake_client()->set_discover_services_callback([](ServiceKind kind) {
     if (kind == ServiceKind::SECONDARY) {
-      return att::Status(att::ErrorCode::kUnsupportedGroupType);
+      return ToResult(att::ErrorCode::kUnsupportedGroupType);
     }
-    return att::Status();
+    return att::Result<>(fitx::ok());
   });
 
   ServiceList services;
@@ -433,11 +426,11 @@ TEST_F(RemoteServiceManagerTest, InitializeSecondaryServicesErrorUnsupportedGrou
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status;
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = fitx::ok();
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(svc1, services[0]->info());
 }
@@ -453,12 +446,12 @@ TEST_F(RemoteServiceManagerTest, ListServicesBeforeInit) {
   });
   EXPECT_TRUE(services.empty());
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(svc.range_start, services[0]->handle());
   EXPECT_EQ(svc.type, services[0]->uuid());
@@ -469,12 +462,12 @@ TEST_F(RemoteServiceManagerTest, ListServicesAfterInit) {
   std::vector<ServiceData> fake_services{{svc}};
   fake_client()->set_services(std::move(fake_services));
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
 
-  ASSERT_TRUE(status);
+  ASSERT_TRUE(status.is_ok());
 
   ServiceList services;
   mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
@@ -499,20 +492,20 @@ TEST_F(RemoteServiceManagerTest, ListServicesByUuid) {
         service_watcher_services.insert(service_watcher_services.end(), added.begin(), added.end());
       });
 
-  att::Status list_services_status;
+  att::Result<> list_services_status = fitx::ok();
   ServiceList list_services;
-  mgr()->ListServices(std::move(uuids), [&](att::Status cb_status, ServiceList cb_services) {
+  mgr()->ListServices(std::move(uuids), [&](att::Result<> cb_status, ServiceList cb_services) {
     list_services_status = cb_status;
     list_services = std::move(cb_services);
   });
   ASSERT_TRUE(service_watcher_services.empty());
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
-  EXPECT_TRUE(list_services_status);
+  EXPECT_TRUE(status.is_ok());
+  EXPECT_TRUE(list_services_status.is_ok());
   // Only svc1 has a type in |uuids|.
   EXPECT_EQ(1u, list_services.size());
   EXPECT_EQ(svc1.range_start, list_services[0]->handle());
@@ -527,16 +520,15 @@ TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsAfterShutDown) {
 
   service->ShutDown();
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   size_t chrcs_size;
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status = cb_status;
     chrcs_size = chrcs.size();
   });
 
   RunLoopUntilIdle();
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
   EXPECT_EQ(0u, chrcs_size);
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   EXPECT_FALSE(service->IsDiscovered());
@@ -556,23 +548,23 @@ TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
       expected = {{CharacteristicHandle(3), {fake_chrc1, {}}},
                   {CharacteristicHandle(5), {fake_chrc2, {}}}};
 
-  att::Status status1(HostError::kFailed);
+  att::Result<> status1 = ToResult(HostError::kFailed);
 
-  auto cb = [expected](att::Status* status) {
-    return [status, expected](att::Status cb_status, const auto& chrcs) {
+  auto cb = [expected](att::Result<>* status) {
+    return [status, expected](att::Result<> cb_status, const auto& chrcs) {
       *status = cb_status;
       EXPECT_EQ(expected, chrcs);
     };
   };
 
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status1 = cb_status;
     EXPECT_EQ(expected, chrcs);
   });
 
   // Queue a second request.
-  att::Status status2(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  att::Result<> status2 = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status2 = cb_status;
     EXPECT_EQ(expected, chrcs);
   });
@@ -581,19 +573,19 @@ TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
   // Only one ATT request should have been made.
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_TRUE(service->IsDiscovered());
-  EXPECT_TRUE(status1);
-  EXPECT_TRUE(status2);
+  EXPECT_TRUE(status1.is_ok());
+  EXPECT_TRUE(status2.is_ok());
   EXPECT_EQ(data.range_start, fake_client()->last_chrc_discovery_start_handle());
   EXPECT_EQ(data.range_end, fake_client()->last_chrc_discovery_end_handle());
 
   // Request discovery again. This should succeed without an ATT request.
-  status1 = att::Status(HostError::kFailed);
+  status1 = ToResult(HostError::kFailed);
   service->DiscoverCharacteristics(
-      [&status1](att::Status cb_status, const auto&) { status1 = cb_status; });
+      [&status1](att::Result<> cb_status, const auto&) { status1 = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status1);
+  EXPECT_TRUE(status1.is_ok());
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_TRUE(service->IsDiscovered());
 }
@@ -606,17 +598,17 @@ TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsError) {
   std::vector<CharacteristicData> fake_chrcs{{chrc1, chrc2}};
   fake_client()->set_characteristics(std::move(fake_chrcs));
 
-  fake_client()->set_characteristic_discovery_status(att::Status(HostError::kNotSupported));
+  fake_client()->set_characteristic_discovery_status(ToResult(HostError::kNotSupported));
 
-  att::Status status1;
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  att::Result<> status1 = fitx::ok();
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status1 = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
 
   // Queue a second request.
-  att::Status status2;
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  att::Result<> status2 = fitx::ok();
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status2 = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
@@ -625,10 +617,8 @@ TEST_F(RemoteServiceManagerTest, DiscoverCharacteristicsError) {
   // Only one request should have been made.
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_FALSE(service->IsDiscovered());
-  EXPECT_FALSE(status1);
-  EXPECT_FALSE(status2);
-  EXPECT_EQ(HostError::kNotSupported, status1.error());
-  EXPECT_EQ(HostError::kNotSupported, status2.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status1);
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status2);
 }
 
 // Discover descriptors of a service with one characteristic.
@@ -643,8 +633,8 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
   DescriptorData fake_desc2(kDesc2, kTestUuid4);
   fake_client()->set_descriptors({{fake_desc1, fake_desc2}});
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto chrcs) {
     status = cb_status;
     EXPECT_EQ(1u, chrcs.size());
 
@@ -660,7 +650,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_TRUE(service->IsDiscovered());
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kDesc1, fake_client()->last_desc_discovery_start_handle());
   EXPECT_EQ(kEnd, fake_client()->last_desc_discovery_end_handle());
 }
@@ -676,10 +666,10 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
   DescriptorData fake_desc1(kDesc1, kTestUuid3);
   DescriptorData fake_desc2(kDesc2, kTestUuid4);
   fake_client()->set_descriptors({{fake_desc1, fake_desc2}});
-  fake_client()->set_descriptor_discovery_status(att::Status(HostError::kNotSupported));
+  fake_client()->set_descriptor_discovery_status(ToResult(HostError::kNotSupported));
 
-  att::Status status;
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  att::Result<> status = fitx::ok();
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
@@ -688,8 +678,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
   EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_FALSE(service->IsDiscovered());
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 // Discover descriptors of a service with multiple characteristics
@@ -711,8 +700,8 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
   fake_client()->set_characteristics({{fake_char1, fake_char2, fake_char3}});
   fake_client()->set_descriptors({{fake_desc1, fake_desc2, fake_desc3}});
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status = cb_status;
 
     std::map<CharacteristicHandle,
@@ -730,7 +719,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
   // should have been skipped for characteristic #2 due to its handles.
   EXPECT_EQ(2u, fake_client()->desc_discovery_count());
   EXPECT_TRUE(service->IsDiscovered());
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 }
 
 // Discover descriptors of a service with multiple characteristics. The first
@@ -754,10 +743,10 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
   fake_client()->set_descriptors({{fake_desc1, fake_desc2, fake_desc3}});
 
   // The first request will fail
-  fake_client()->set_descriptor_discovery_status(att::Status(HostError::kNotSupported), 1);
+  fake_client()->set_descriptor_discovery_status(ToResult(HostError::kNotSupported), 1);
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
@@ -768,7 +757,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
   // should have been skipped for characteristic #2 due to its handles.
   EXPECT_EQ(2u, fake_client()->desc_discovery_count());
   EXPECT_FALSE(service->IsDiscovered());
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 // Discover descriptors of a service with multiple characteristics. The last
@@ -792,10 +781,10 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
   fake_client()->set_descriptors({{fake_desc1, fake_desc2, fake_desc3}});
 
   // The last request will fail
-  fake_client()->set_descriptor_discovery_status(att::Status(HostError::kNotSupported), 2);
+  fake_client()->set_descriptor_discovery_status(ToResult(HostError::kNotSupported), 2);
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto& chrcs) {
     status = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
@@ -806,7 +795,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
   // should have been skipped for characteristic #2 due to its handles.
   EXPECT_EQ(2u, fake_client()->desc_discovery_count());
   EXPECT_FALSE(service->IsDiscovered());
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 // Discover descriptors of a service with extended properties set.
@@ -828,13 +817,13 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesSucces
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDesc1, handle);
-    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
+    callback(fitx::ok(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto chrcs) {
     status = cb_status;
     EXPECT_EQ(1u, chrcs.size());
 
@@ -857,7 +846,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesSucces
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(1u, read_cb_count);
   EXPECT_TRUE(service->IsDiscovered());
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kDesc1, fake_client()->last_desc_discovery_start_handle());
   EXPECT_EQ(kEnd, fake_client()->last_desc_discovery_end_handle());
 }
@@ -877,13 +866,13 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSet) {
   // Callback should not be executed.
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
-    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
+    callback(fitx::ok(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto chrcs) {
     status = cb_status;
     EXPECT_EQ(1u, chrcs.size());
 
@@ -903,7 +892,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSet) {
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(0u, read_cb_count);
   EXPECT_TRUE(service->IsDiscovered());
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 }
 
 // Discover descriptors of a service with two descriptors containing ExtendedProperties.
@@ -922,13 +911,13 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropertiesEr
 
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
-    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
+    callback(fitx::ok(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto chrcs) {
     status = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
@@ -938,8 +927,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropertiesEr
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(0u, read_cb_count);
   EXPECT_FALSE(service->IsDiscovered());
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 // Discover descriptors of a service with ExtendedProperties set, but with
@@ -960,14 +948,14 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescVa
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDesc1, handle);
-    callback(att::Status(att::ErrorCode::kReadNotPermitted), BufferView(),
+    callback(ToResult(att::ErrorCode::kReadNotPermitted), BufferView(),
              /*maybe_truncated=*/false);
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto chrcs) {
     status = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
@@ -976,8 +964,8 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescVa
 
   EXPECT_EQ(1u, read_cb_count);
   EXPECT_FALSE(service->IsDiscovered());
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kProtocolError, status.error());
+  ASSERT_TRUE(status.is_error());
+  EXPECT_TRUE(status.error_value().is_protocol_error());
 }
 
 // Discover descriptors of a service with ExtendedProperties set, but with
@@ -998,13 +986,13 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescIn
   size_t read_cb_count = 0;
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDesc1, handle);
-    callback(att::Status(), BufferView(), /*maybe_truncated=*/false);  // Invalid return buf
+    callback(fitx::ok(), BufferView(), /*maybe_truncated=*/false);  // Invalid return buf
     read_cb_count++;
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
 
-  att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Result<> cb_status, const auto chrcs) {
     status = cb_status;
     EXPECT_TRUE(chrcs.empty());
   });
@@ -1014,8 +1002,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescIn
   EXPECT_EQ(1u, fake_client()->desc_discovery_count());
   EXPECT_EQ(1u, read_cb_count);
   EXPECT_FALSE(service->IsDiscovered());
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+  EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
 constexpr CharacteristicHandle kDefaultCharacteristic(3);
@@ -1043,46 +1030,46 @@ TEST_F(RemoteServiceManagerTest, ReadCharAfterShutDown) {
 
   service->ShutDown();
 
-  att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+  att::Result<> status = fitx::ok();
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Result<> cb_status, const auto&,
                                                           auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadCharWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
-  att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+  att::Result<> status = fitx::ok();
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Result<> cb_status, const auto&,
                                                           auto) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadCharNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
-  att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+  att::Result<> status = fitx::ok();
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Result<> cb_status, const auto&,
                                                           auto) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadCharNotSupported) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {UnreadableChrc()});
-  att::Status status;
-  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Status cb_status, const auto&,
+  att::Result<> status = fitx::ok();
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Result<> cb_status, const auto&,
                                                           auto) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadCharSendsReadRequest) {
@@ -1094,20 +1081,20 @@ TEST_F(RemoteServiceManagerTest, ReadCharSendsReadRequest) {
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    callback(att::Status(), kValue, /*maybe_truncated=*/false);
+    callback(fitx::ok(), kValue, /*maybe_truncated=*/false);
   });
 
-  att::Status status(HostError::kFailed);
-  service->ReadCharacteristic(kDefaultCharacteristic,
-                              [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
-                                status = cb_status;
-                                EXPECT_TRUE(ContainersEqual(kValue, value));
-                                EXPECT_FALSE(maybe_truncated);
-                              });
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->ReadCharacteristic(kDefaultCharacteristic, [&](att::Result<> cb_status,
+                                                          const auto& value, bool maybe_truncated) {
+    status = cb_status;
+    EXPECT_TRUE(ContainersEqual(kValue, value));
+    EXPECT_FALSE(maybe_truncated);
+  });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadLongAfterShutDown) {
@@ -1115,55 +1102,55 @@ TEST_F(RemoteServiceManagerTest, ReadLongAfterShutDown) {
 
   service->ShutDown();
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       CharacteristicHandle(0), 0, 512,
-      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+      [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadLongWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       CharacteristicHandle(0), 0, 512,
-      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+      [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadLongNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       CharacteristicHandle(0), 0, 512,
-      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+      [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadLongNotSupported) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {UnreadableChrc()});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, 0, 512,
-      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+      [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 // 0 is not a valid parameter for the |max_size| field of ReadLongCharacteristic
@@ -1171,14 +1158,14 @@ TEST_F(RemoteServiceManagerTest, ReadLongMaxSizeZero) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {ReadableChrc()});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, 0, 0,
-      [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+      [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kInvalidParameters, status.error());
+  EXPECT_EQ(ToResult(HostError::kInvalidParameters), status);
 }
 
 // The complete attribute value is read in a single request.
@@ -1197,20 +1184,20 @@ TEST_F(RemoteServiceManagerTest, ReadLongSingleBlob) {
     request_count++;
     EXPECT_EQ(request_count, 1);
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    callback(att::Status(), kValue, /*maybe_truncated=*/false);
+    callback(fitx::ok(), kValue, /*maybe_truncated=*/false);
   });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(kValue, value));
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadLongMultipleBlobs) {
@@ -1239,7 +1226,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongMultipleBlobs) {
     EXPECT_EQ(read_count, 1);
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
     auto blob = expected_value.view(0, att::kLEMinMTU - 1);
-    callback(att::Status(), blob, /*maybe_truncated=*/true);
+    callback(fitx::ok(), blob, /*maybe_truncated=*/true);
   });
 
   fake_client()->set_read_blob_request_callback(
@@ -1257,20 +1244,20 @@ TEST_F(RemoteServiceManagerTest, ReadLongMultipleBlobs) {
           maybe_truncated = false;
         }
 
-        callback(att::Status(), blob, maybe_truncated);
+        callback(fitx::ok(), blob, maybe_truncated);
       });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value, value));
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -1296,28 +1283,28 @@ TEST_F(RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErrorIgno
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     read_count++;
     EXPECT_EQ(read_count, 1);
-    callback(att::Status(), expected_value.view(), /*maybe_truncated=*/true);
+    callback(fitx::ok(), expected_value.view(), /*maybe_truncated=*/true);
   });
 
   fake_client()->set_read_blob_request_callback(
       [&](att::Handle handle, uint16_t offset, auto callback) {
         read_count++;
         EXPECT_EQ(read_count, 2);
-        callback(att::Status(att::ErrorCode::kAttributeNotLong), BufferView(),
+        callback(ToResult(att::ErrorCode::kAttributeNotLong), BufferView(),
                  /*maybe_truncated=*/false);
       });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value, value));
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -1334,22 +1321,21 @@ TEST_F(RemoteServiceManagerTest, ReadLongCharacteristicAttributeNotLongErrorOnFi
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     read_count++;
     EXPECT_EQ(read_count, 1);
-    callback(att::Status(att::ErrorCode::kAttributeNotLong), BufferView(),
+    callback(ToResult(att::ErrorCode::kAttributeNotLong), BufferView(),
              /*maybe_truncated=*/false);
   });
   fake_client()->set_read_blob_request_callback([&](auto, auto, auto) { FAIL(); });
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(status.protocol_error(), att::ErrorCode::kAttributeNotLong);
+  EXPECT_EQ(ToResult(att::ErrorCode::kAttributeNotLong), status);
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -1382,7 +1368,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
     EXPECT_EQ(read_count, 1);
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
     auto blob = expected_value.view(0, att::kLEMinMTU - 1);
-    callback(att::Status(), blob, /*maybe_truncated=*/true);
+    callback(fitx::ok(), blob, /*maybe_truncated=*/true);
   });
 
   fake_client()->set_read_blob_request_callback(
@@ -1400,20 +1386,20 @@ TEST_F(RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
           maybe_truncated = false;
         }
 
-        callback(att::Status(), blob, maybe_truncated);
+        callback(fitx::ok(), blob, maybe_truncated);
       });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value, value));
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -1443,7 +1429,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
     EXPECT_EQ(read_count, 1);
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
     BufferView blob = expected_value.view(0, att::kLEMinMTU - 1);
-    callback(att::Status(), blob, /*maybe_truncated=*/true);
+    callback(fitx::ok(), blob, /*maybe_truncated=*/true);
   });
 
   fake_client()->set_read_blob_request_callback(
@@ -1452,20 +1438,20 @@ TEST_F(RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
         EXPECT_GT(read_count, 1);
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         BufferView blob = expected_value.view(offset, att::kLEMinMTU - 1);
-        callback(att::Status(), blob, /*maybe_truncated=*/true);
+        callback(fitx::ok(), blob, /*maybe_truncated=*/true);
       });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value.view(0, kMaxBytes), value));
         EXPECT_TRUE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -1495,20 +1481,20 @@ TEST_F(RemoteServiceManagerTest, ReadLongAtOffset) {
         read_blob_count++;
         BufferView blob = expected_value.view(offset, att::kLEMinMTU - 1);
         bool maybe_truncated = (read_blob_count != kExpectedBlobCount);
-        callback(att::Status(), blob, maybe_truncated);
+        callback(fitx::ok(), blob, maybe_truncated);
       });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kExpectedBlobCount, read_blob_count);
 }
 
@@ -1539,20 +1525,20 @@ TEST_F(RemoteServiceManagerTest, ReadLongAtOffsetWithMaxBytes) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         read_blob_count++;
         BufferView blob = expected_value.view(offset, att::kLEMinMTU - 1);
-        callback(att::Status(), blob, /*maybe_truncated=*/true);
+        callback(fitx::ok(), blob, /*maybe_truncated=*/true);
       });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_TRUE(ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
         EXPECT_TRUE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kExpectedBlobCount, read_blob_count);
 }
 
@@ -1574,7 +1560,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongError) {
     read_count++;
     EXPECT_EQ(read_count, 1);
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
-    callback(att::Status(), first_blob, /*maybe_truncated=*/true);
+    callback(fitx::ok(), first_blob, /*maybe_truncated=*/true);
   });
 
   fake_client()->set_read_blob_request_callback(
@@ -1582,21 +1568,21 @@ TEST_F(RemoteServiceManagerTest, ReadLongError) {
         read_count++;
         EXPECT_EQ(read_count, 2);
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
-        callback(att::Status(att::ErrorCode::kInvalidOffset), BufferView(),
+        callback(ToResult(att::ErrorCode::kInvalidOffset), BufferView(),
                  /*maybe_truncated=*/false);
       });
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_EQ(0u, value.size());  // No value should be returned on error.
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_EQ(att::ErrorCode::kInvalidOffset, status.protocol_error());
+  EXPECT_EQ(ToResult(att::ErrorCode::kInvalidOffset), status);
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -1618,21 +1604,21 @@ TEST_F(RemoteServiceManagerTest, ReadLongShutDownWhileInProgress) {
     read_count++;
     EXPECT_EQ(kDefaultChrcValueHandle, handle);
     service->ShutDown();
-    callback(att::Status(), first_blob, /*maybe_truncated=*/true);
+    callback(fitx::ok(), first_blob, /*maybe_truncated=*/true);
   });
   fake_client()->set_read_blob_request_callback([&](auto, auto, auto) { FAIL(); });
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongCharacteristic(
       kDefaultCharacteristic, kOffset, kMaxBytes,
-      [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
         status = cb_status;
         EXPECT_EQ(0u, value.size());  // No value should be returned on error.
         EXPECT_FALSE(maybe_truncated);
       });
 
   RunLoopUntilIdle();
-  EXPECT_EQ(HostError::kCanceled, status.error());
+  EXPECT_EQ(ToResult(HostError::kCanceled), status);
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -1668,18 +1654,19 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeNotFou
             break;
           case 2:
             EXPECT_EQ(kHandle1 + 1, start);
-            callback(fpromise::error(
-                Client::ReadByTypeError{att::Status(att::ErrorCode::kAttributeNotFound), start}));
+            callback(fpromise::error(Client::ReadByTypeError{
+                ToResult(att::ErrorCode::kAttributeNotFound).error_value(), start}));
             break;
           default:
             FAIL();
         }
       });
 
-  std::optional<att::Status> status;
+  std::optional<att::Result<>> status;
   service->ReadByType(
-      kCharUuid, [&](att::Status cb_status, std::vector<RemoteService::ReadByTypeResult> values) {
+      kCharUuid, [&](att::Result<> cb_status, std::vector<RemoteService::ReadByTypeResult> values) {
         status = cb_status;
+        EXPECT_TRUE(status->is_ok()) << bt_str(status.value());
         ASSERT_EQ(2u, values.size());
         EXPECT_EQ(CharacteristicHandle(kHandle0), values[0].handle);
         ASSERT_TRUE(values[0].result.is_ok());
@@ -1694,7 +1681,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeNotFou
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
   // kAttributeNotFound error should be treated as success.
-  EXPECT_TRUE(status->is_success()) << bt_str(status.value());
+  EXPECT_TRUE(status->is_ok()) << bt_str(status.value());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEndHandle) {
@@ -1718,8 +1705,8 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEndHandl
         callback(fpromise::ok(kValues));
       });
 
-  std::optional<att::Status> status;
-  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) {
+  std::optional<att::Result<>> status;
+  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) {
     status = cb_status;
     ASSERT_EQ(1u, values.size());
     EXPECT_EQ(CharacteristicHandle(kHandle), values[0].handle);
@@ -1729,7 +1716,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEndHandl
 
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success()) << bt_str(status.value());
+  EXPECT_TRUE(status->is_ok()) << bt_str(status.value());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
@@ -1746,18 +1733,19 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
       att::ErrorCode::kReadNotPermitted};
 
   size_t read_count = 0;
-  fake_client()->set_read_by_type_request_callback([&](const UUID& type, att::Handle start,
-                                                       att::Handle end, auto callback) {
-    if (read_count < errors.size()) {
-      EXPECT_EQ(kStartHandle + read_count, start);
-      callback(fpromise::error(Client::ReadByTypeError{att::Status(errors[read_count++]), start}));
-    } else {
-      FAIL();
-    }
-  });
+  fake_client()->set_read_by_type_request_callback(
+      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+        if (read_count < errors.size()) {
+          EXPECT_EQ(kStartHandle + read_count, start);
+          callback(fpromise::error(
+              Client::ReadByTypeError{ToResult(errors[read_count++]).error_value(), start}));
+        } else {
+          FAIL();
+        }
+      });
 
-  std::optional<att::Status> status;
-  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) {
+  std::optional<att::Result<>> status;
+  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) {
     status = cb_status;
     ASSERT_EQ(errors.size(), values.size());
     for (size_t i = 0; i < values.size(); i++) {
@@ -1771,7 +1759,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  ASSERT_TRUE(status->is_success());
+  ASSERT_TRUE(status->is_ok());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
@@ -1803,24 +1791,23 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
               callback(fpromise::ok(kValues));
               break;
             case 1:
-              callback(fpromise::error(Client::ReadByTypeError{att::Status(code), std::nullopt}));
+              callback(fpromise::error(
+                  Client::ReadByTypeError{ToResult(code).error_value(), std::nullopt}));
               break;
             default:
               FAIL();
           }
         });
 
-    std::optional<att::Status> status;
-    service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) {
+    std::optional<att::Result<>> status;
+    service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) {
       status = cb_status;
       EXPECT_EQ(0u, values.size());
     });
 
     RunLoopUntilIdle();
     ASSERT_TRUE(status.has_value());
-    ASSERT_TRUE(!status->is_success());
-    ASSERT_TRUE(status->is_protocol_error());
-    EXPECT_EQ(code, status->protocol_error());
+    EXPECT_EQ(ToResult(code), status);
   }
 }
 
@@ -1836,17 +1823,15 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandle) {
   fake_client()->set_read_by_type_request_callback(
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
-        callback(fpromise::error(
-            Client::ReadByTypeError{att::Status(att::ErrorCode::kReadNotPermitted), std::nullopt}));
+        callback(fpromise::error(Client::ReadByTypeError{
+            ToResult(att::ErrorCode::kReadNotPermitted).error_value(), std::nullopt}));
       });
 
-  std::optional<att::Status> status;
-  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) { status = cb_status; });
+  std::optional<att::Result<>> status;
+  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  ASSERT_TRUE(!status->is_success());
-  ASSERT_TRUE(status->is_protocol_error());
-  EXPECT_EQ(att::ErrorCode::kReadNotPermitted, status->protocol_error());
+  EXPECT_EQ(ToResult(att::ErrorCode::kReadNotPermitted), *status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHandle) {
@@ -1862,15 +1847,14 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHandle)
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         callback(fpromise::error(Client::ReadByTypeError{
-            att::Status(att::ErrorCode::kReadNotPermitted), kEndHandle + 1}));
+            ToResult(att::ErrorCode::kReadNotPermitted).error_value(), kEndHandle + 1}));
       });
 
-  std::optional<att::Status> status;
-  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) { status = cb_status; });
+  std::optional<att::Result<>> status;
+  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) { status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  ASSERT_TRUE(!status->is_success());
-  EXPECT_EQ(HostError::kPacketMalformed, status->error());
+  EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsErrorIfUuidIsInternal) {
@@ -1891,15 +1875,15 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsErrorIfUuidIsInternal) {
   fake_client()->set_read_by_type_request_callback([&](auto, auto, auto, auto) { ADD_FAILURE(); });
 
   for (const UUID& uuid : kInternalUuids) {
-    std::optional<att::Status> status;
-    service->ReadByType(uuid, [&](att::Status cb_status, auto values) {
+    std::optional<att::Result<>> status;
+    service->ReadByType(uuid, [&](att::Result<> cb_status, auto values) {
       status = cb_status;
       EXPECT_EQ(0u, values.size());
     });
 
     RunLoopUntilIdle();
     ASSERT_TRUE(status.has_value()) << "UUID: " << bt_str(uuid);
-    EXPECT_EQ(status->error(), HostError::kInvalidParameters);
+    EXPECT_EQ(ToResult(HostError::kInvalidParameters), *status);
   }
 }
 
@@ -1908,38 +1892,38 @@ TEST_F(RemoteServiceManagerTest, WriteCharAfterShutDown) {
 
   service->ShutDown();
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteCharacteristic(kDefaultCharacteristic, std::vector<uint8_t>(),
-                               [&](att::Status cb_status) { status = cb_status; });
+                               [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteCharWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteCharacteristic(kDefaultCharacteristic, std::vector<uint8_t>(),
-                               [&](att::Status cb_status) { status = cb_status; });
+                               [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteCharNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteCharacteristic(kDefaultCharacteristic, std::vector<uint8_t>(),
-                               [&](att::Status cb_status) { status = cb_status; });
+                               [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteCharNotSupported) {
@@ -1947,18 +1931,18 @@ TEST_F(RemoteServiceManagerTest, WriteCharNotSupported) {
   auto service = SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1),
                                        {ReadableChrc()});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteCharacteristic(kDefaultCharacteristic, std::vector<uint8_t>(),
-                               [&](att::Status cb_status) { status = cb_status; });
+                               [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteCharSendsWriteRequest) {
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
-  constexpr att::Status kStatus(att::ErrorCode::kWriteNotPermitted);
+  constexpr att::Result<> kStatus = ToResult(att::ErrorCode::kWriteNotPermitted);
 
   auto service = SetupServiceWithChrcs(
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1),
@@ -1971,13 +1955,12 @@ TEST_F(RemoteServiceManagerTest, WriteCharSendsWriteRequest) {
         status_callback(kStatus);
       });
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteCharacteristic(kDefaultCharacteristic, kValue,
-                               [&](att::Status cb_status) { status = cb_status; });
+                               [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_protocol_error());
   EXPECT_EQ(kStatus, status);
 }
 
@@ -2029,16 +2012,16 @@ TEST_F(RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
 
         process_long_write_count++;
 
-        callback(att::Status());
+        callback(fitx::ok());
       });
 
   ReliableMode mode = ReliableMode::kDisabled;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value, mode,
-                                   [&](att::Status cb_status) { status = cb_status; });
+                                   [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, process_long_write_count);
 }
 
@@ -2082,16 +2065,16 @@ TEST_F(RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
 
         process_long_write_count++;
 
-        callback(att::Status());
+        callback(fitx::ok());
       });
 
   ReliableMode mode = ReliableMode::kDisabled;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value, mode,
-                                   [&](att::Status cb_status) { status = cb_status; });
+                                   [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, process_long_write_count);
 }
 
@@ -2106,7 +2089,7 @@ TEST_F(RemoteServiceManagerTest, WriteCharLongReliableWrite) {
   // The callback should be triggered once to read the value of the descriptor containing
   // the ExtendedProperties bitfield.
   auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
-    callback(att::Status(), kExtendedPropValue, /*maybe_truncated=*/false);
+    callback(fitx::ok(), kExtendedPropValue, /*maybe_truncated=*/false);
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
 
@@ -2131,16 +2114,16 @@ TEST_F(RemoteServiceManagerTest, WriteCharLongReliableWrite) {
       [&](att::PrepareWriteQueue write_queue, auto /*reliable_mode*/, auto callback) {
         EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
         process_long_write_count++;
-        callback(att::Status());
+        callback(fitx::ok());
       });
 
   ReliableMode mode = ReliableMode::kEnabled;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value, mode,
-                                   [&](att::Status cb_status) { status = cb_status; });
+                                   [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, process_long_write_count);
 }
 
@@ -2155,14 +2138,13 @@ TEST_F(RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   bool called = false;
   fake_client()->set_write_without_rsp_callback([&](auto, const auto&, auto) { called = true; });
 
-  std::optional<att::Status> status;
+  std::optional<att::Result<>> status;
   service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, std::vector<uint8_t>(),
-                                              [&](att::Status cb_status) { status = cb_status; });
+                                              [&](att::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   EXPECT_FALSE(called);
   ASSERT_TRUE(status.has_value());
-  ASSERT_FALSE(status->is_success());
-  EXPECT_EQ(status->error(), HostError::kNotSupported);
+  EXPECT_EQ(ToResult(HostError::kNotSupported), *status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteWithoutResponseBeforeCharacteristicDiscovery) {
@@ -2172,14 +2154,13 @@ TEST_F(RemoteServiceManagerTest, WriteWithoutResponseBeforeCharacteristicDiscove
   bool called = false;
   fake_client()->set_write_without_rsp_callback([&](auto, const auto&, auto) { called = true; });
 
-  std::optional<att::Status> status;
+  std::optional<att::Result<>> status;
   service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, std::vector<uint8_t>(),
-                                              [&](att::Status cb_status) { status = cb_status; });
+                                              [&](att::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   EXPECT_FALSE(called);
   ASSERT_TRUE(status.has_value());
-  ASSERT_FALSE(status->is_success());
-  EXPECT_EQ(status->error(), HostError::kNotReady);
+  EXPECT_EQ(ToResult(HostError::kNotReady), *status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithoutResponseProperty) {
@@ -2192,20 +2173,20 @@ TEST_F(RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithoutResp
 
   bool called = false;
   fake_client()->set_write_without_rsp_callback(
-      [&](att::Handle handle, const auto& value, att::StatusCallback cb) {
+      [&](att::Handle handle, const auto& value, att::ResultFunction<> cb) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
         called = true;
-        cb(att::Status());
+        cb(fitx::ok());
       });
 
-  std::optional<att::Status> status;
+  std::optional<att::Result<>> status;
   service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, kValue,
-                                              [&](att::Status cb_status) { status = cb_status; });
+                                              [&](att::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
   EXPECT_TRUE(called);
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
 }
 
 TEST_F(RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProperty) {
@@ -2217,21 +2198,21 @@ TEST_F(RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProperty) {
 
   bool called = false;
   fake_client()->set_write_without_rsp_callback(
-      [&](att::Handle handle, const auto& value, att::StatusCallback cb) {
+      [&](att::Handle handle, const auto& value, att::ResultFunction<> cb) {
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
         EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
         called = true;
-        cb(att::Status());
+        cb(fitx::ok());
       });
 
-  std::optional<att::Status> status;
+  std::optional<att::Result<>> status;
   service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, kValue,
-                                              [&](att::Status cb_status) { status = cb_status; });
+                                              [&](att::Result<> cb_status) { status = cb_status; });
   RunLoopUntilIdle();
 
   EXPECT_TRUE(called);
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadDescAfterShutDown) {
@@ -2239,35 +2220,38 @@ TEST_F(RemoteServiceManagerTest, ReadDescAfterShutDown) {
 
   service->ShutDown();
 
-  att::Status status;
-  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+  att::Result<> status = fitx::ok();
+  service->ReadDescriptor(0,
+                          [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
-  att::Status status;
-  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+  att::Result<> status = fitx::ok();
+  service->ReadDescriptor(0,
+                          [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadDescriptorNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
-  att::Status status;
-  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+  att::Result<> status = fitx::ok();
+  service->ReadDescriptor(0,
+                          [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequest) {
@@ -2291,44 +2275,44 @@ TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequest) {
 
   fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
     EXPECT_EQ(kDescrHandle, handle);
-    callback(att::Status(), kValue, /*maybe_truncated=*/false);
+    callback(fitx::ok(), kValue, /*maybe_truncated=*/false);
   });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->ReadDescriptor(DescriptorHandle(kDescrHandle),
-                          [&](att::Status cb_status, const auto& value, auto) {
+                          [&](att::Result<> cb_status, const auto& value, auto) {
                             status = cb_status;
                             EXPECT_TRUE(ContainersEqual(kValue, value));
                           });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadLongDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongDescriptor(
-      0, 0, 512, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+      0, 0, 512, [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, ReadLongDescNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->ReadLongDescriptor(
-      0, 0, 512, [&](att::Status cb_status, const auto&, auto) { status = cb_status; });
+      0, 0, 512, [&](att::Result<> cb_status, const auto&, auto) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 // Tests that ReadLongDescriptor sends Read Blob requests. Other conditions
@@ -2365,7 +2349,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongDescriptor) {
     EXPECT_EQ(read_count, 1);
     EXPECT_EQ(kDescrHandle, handle);
     auto blob = expected_value.view(0, att::kLEMinMTU - 1);
-    callback(att::Status(), blob, /*maybe_truncated=*/true);
+    callback(fitx::ok(), blob, /*maybe_truncated=*/true);
   });
 
   fake_client()->set_read_blob_request_callback(
@@ -2383,19 +2367,20 @@ TEST_F(RemoteServiceManagerTest, ReadLongDescriptor) {
           maybe_truncated = false;
         }
 
-        callback(att::Status(), blob, maybe_truncated);
+        callback(fitx::ok(), blob, maybe_truncated);
       });
 
-  att::Status status(HostError::kFailed);
-  service->ReadLongDescriptor(DescriptorHandle(kDescrHandle), kOffset, kMaxBytes,
-                              [&](att::Status cb_status, const auto& value, bool maybe_truncated) {
-                                status = cb_status;
-                                EXPECT_TRUE(ContainersEqual(expected_value, value));
-                                EXPECT_FALSE(maybe_truncated);
-                              });
+  att::Result<> status = ToResult(HostError::kFailed);
+  service->ReadLongDescriptor(
+      DescriptorHandle(kDescrHandle), kOffset, kMaxBytes,
+      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
+        status = cb_status;
+        EXPECT_TRUE(ContainersEqual(expected_value, value));
+        EXPECT_FALSE(maybe_truncated);
+      });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(kExpectedBlobCount, read_count);
 }
 
@@ -2404,38 +2389,38 @@ TEST_F(RemoteServiceManagerTest, WriteDescAfterShutDown) {
 
   service->ShutDown();
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteDescriptor(0, std::vector<uint8_t>(),
-                           [&](att::Status cb_status) { status = cb_status; });
+                           [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteDescWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteDescriptor(0, std::vector<uint8_t>(),
-                           [&](att::Status cb_status) { status = cb_status; });
+                           [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteDescNotFound) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteDescriptor(0, std::vector<uint8_t>(),
-                           [&](att::Status cb_status) { status = cb_status; });
+                           [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteDescNotAllowed) {
@@ -2446,20 +2431,20 @@ TEST_F(RemoteServiceManagerTest, WriteDescNotAllowed) {
   DescriptorData desc(4, types::kClientCharacteristicConfig);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteDescriptor(4, std::vector<uint8_t>(),
-                           [&](att::Status cb_status) { status = cb_status; });
+                           [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 TEST_F(RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
   constexpr att::Handle kValueHandle = 3;
   constexpr att::Handle kDescrHandle = 4;
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
-  const att::Status kStatus(HostError::kNotSupported);
+  const att::Result<> kStatus = ToResult(HostError::kNotSupported);
 
   ServiceData data(ServiceKind::PRIMARY, 1, kDescrHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
@@ -2475,9 +2460,9 @@ TEST_F(RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
         status_callback(kStatus);
       });
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->WriteDescriptor(kDescrHandle, kValue,
-                           [&](att::Status cb_status) { status = cb_status; });
+                           [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_EQ(kStatus, status);
@@ -2538,15 +2523,15 @@ TEST_F(RemoteServiceManagerTest, WriteDescLongSuccess) {
 
         process_long_write_count++;
 
-        callback(att::Status());
+        callback(fitx::ok());
       });
 
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->WriteLongDescriptor(DescriptorHandle(kDescrHandle), kOffset, full_write_value,
-                               [&](att::Status cb_status) { status = cb_status; });
+                               [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1u, process_long_write_count);
 }
 
@@ -2555,38 +2540,38 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsAfterShutDown) {
 
   service->ShutDown();
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType) { status = cb_status; });
+                               [&](att::Result<> cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 TEST_F(RemoteServiceManagerTest, EnableNotificationsWhileNotReady) {
   auto service = SetUpFakeService(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1));
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType) { status = cb_status; });
+                               [&](att::Result<> cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, EnableNotificationsCharNotFound) {
   auto service =
       SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 2, kTestServiceUuid1), {});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType) { status = cb_status; });
+                               [&](att::Result<> cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, EnableNotificationsNoProperties) {
@@ -2597,12 +2582,12 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsNoProperties) {
   DescriptorData desc(4, types::kClientCharacteristicConfig);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType) { status = cb_status; });
+                               [&](att::Result<> cb_status, IdType) { status = cb_status; });
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 TEST_F(RemoteServiceManagerTest, EnableNotificationsSuccess) {
@@ -2618,20 +2603,20 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsSuccess) {
       [&](att::Handle handle, const auto& value, auto status_callback) {
         EXPECT_EQ(kCCCHandle, handle);
         EXPECT_TRUE(ContainersEqual(kCCCNotifyValue, value));
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
   IdType id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType cb_id) {
+                               [&](att::Result<> cb_status, IdType cb_id) {
                                  status = cb_status;
                                  id = cb_id;
                                });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_NE(kInvalidId, id);
 }
 
@@ -2648,20 +2633,20 @@ TEST_F(RemoteServiceManagerTest, EnableIndications) {
       [&](att::Handle handle, const auto& value, auto status_callback) {
         EXPECT_EQ(kCCCHandle, handle);
         EXPECT_TRUE(ContainersEqual(kCCCIndicateValue, value));
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
   IdType id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType cb_id) {
+                               [&](att::Result<> cb_status, IdType cb_id) {
                                  status = cb_status;
                                  id = cb_id;
                                });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_NE(kInvalidId, id);
 }
 
@@ -2681,21 +2666,20 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsError) {
       [&](att::Handle handle, const auto& value, auto status_callback) {
         EXPECT_EQ(kCCCHandle, handle);
         EXPECT_TRUE(ContainersEqual(kExpectedValue, value));
-        status_callback(att::Status(att::ErrorCode::kUnlikelyError));
+        status_callback(ToResult(att::ErrorCode::kUnlikelyError));
       });
 
   IdType id = kInvalidId;
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType cb_id) {
+                               [&](att::Result<> cb_status, IdType cb_id) {
                                  status = cb_status;
                                  id = cb_id;
                                });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(att::ErrorCode::kUnlikelyError, status.protocol_error());
+  EXPECT_EQ(ToResult(att::ErrorCode::kUnlikelyError), status);
   EXPECT_EQ(kInvalidId, id);
 }
 
@@ -2715,7 +2699,7 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestMany) {
   SetupCharacteristics(service, {{chr1, chr2}}, {{desc1, desc2}});
 
   int ccc_write_count = 0;
-  att::StatusCallback status_callback1, status_callback2;
+  att::ResultFunction<> status_callback1, status_callback2;
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_cb) {
         if (handle == kCCCHandle1) {
@@ -2733,34 +2717,34 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestMany) {
   size_t cb_count = 0u;
 
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status status, IdType id) {
+                               [&](att::Result<> status, IdType id) {
                                  cb_count++;
                                  EXPECT_EQ(1u, id);
-                                 EXPECT_TRUE(status);
+                                 EXPECT_TRUE(status.is_ok());
                                });
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status status, IdType id) {
+                               [&](att::Result<> status, IdType id) {
                                  cb_count++;
                                  EXPECT_EQ(2u, id);
-                                 EXPECT_TRUE(status);
+                                 EXPECT_TRUE(status.is_ok());
                                });
   service->EnableNotifications(kSecondCharacteristic, NopValueCallback,
-                               [&](att::Status status, IdType id) {
+                               [&](att::Result<> status, IdType id) {
                                  cb_count++;
                                  EXPECT_EQ(1u, id);
-                                 EXPECT_TRUE(status);
+                                 EXPECT_TRUE(status.is_ok());
                                });
   service->EnableNotifications(kSecondCharacteristic, NopValueCallback,
-                               [&](att::Status status, IdType id) {
+                               [&](att::Result<> status, IdType id) {
                                  cb_count++;
                                  EXPECT_EQ(2u, id);
-                                 EXPECT_TRUE(status);
+                                 EXPECT_TRUE(status.is_ok());
                                });
   service->EnableNotifications(kSecondCharacteristic, NopValueCallback,
-                               [&](att::Status status, IdType id) {
+                               [&](att::Result<> status, IdType id) {
                                  cb_count++;
                                  EXPECT_EQ(3u, id);
-                                 EXPECT_TRUE(status);
+                                 EXPECT_TRUE(status.is_ok());
                                });
 
   RunLoopUntilIdle();
@@ -2772,16 +2756,16 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestMany) {
 
   // An ATT response should resolve all pending requests for the right
   // characteristic.
-  status_callback1(att::Status());
+  status_callback1(fitx::ok());
   EXPECT_EQ(2u, cb_count);
-  status_callback2(att::Status());
+  status_callback2(fitx::ok());
   EXPECT_EQ(5u, cb_count);
 
   // An extra request should succeed without sending any PDUs.
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status status, IdType) {
+                               [&](att::Result<> status, IdType) {
                                  cb_count++;
-                                 EXPECT_TRUE(status);
+                                 EXPECT_TRUE(status.is_ok());
                                });
 
   RunLoopUntilIdle();
@@ -2802,7 +2786,7 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
   int ccc_write_count = 0;
-  att::StatusCallback status_callback;
+  att::ResultFunction<> status_callback;
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_cb) {
         EXPECT_EQ(kCCCHandle, handle);
@@ -2813,8 +2797,8 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
       });
 
   int cb_count = 0;
-  att::Status status;
-  auto cb = [&](att::Status cb_status, IdType id) {
+  att::Result<> status = fitx::ok();
+  auto cb = [&](att::Result<> cb_status, IdType id) {
     status = cb_status;
     cb_count++;
   };
@@ -2830,9 +2814,9 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
   EXPECT_EQ(1, ccc_write_count);
   EXPECT_EQ(0, cb_count);
 
-  status_callback(att::Status(HostError::kNotSupported));
+  status_callback(ToResult(HostError::kNotSupported));
   EXPECT_EQ(3, cb_count);
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 
   // A new request should write to the descriptor again.
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback, std::move(cb));
@@ -2842,10 +2826,10 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
   EXPECT_EQ(2, ccc_write_count);
   EXPECT_EQ(3, cb_count);
 
-  status_callback(att::Status());
+  status_callback(fitx::ok());
   EXPECT_EQ(2, ccc_write_count);
   EXPECT_EQ(4, cb_count);
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 }
 
 // Enabling notifications should succeed without a descriptor write.
@@ -2861,16 +2845,16 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
   int notify_count = 0;
   auto notify_cb = [&](const auto& value, bool /*maybe_truncated*/) { notify_count++; };
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   IdType id;
   service->EnableNotifications(kDefaultCharacteristic, std::move(notify_cb),
-                               [&](att::Status _status, IdType _id) {
+                               [&](att::Result<> _status, IdType _id) {
                                  status = _status;
                                  id = _id;
                                });
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_FALSE(write_requested);
 
   fake_client()->SendNotification(/*indicate=*/false, 3, StaticByteBuffer('y', 'e'),
@@ -2881,7 +2865,7 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
   service->DisableNotifications(kDefaultCharacteristic, id,
                                 [&](auto _status) { status = _status; });
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_FALSE(write_requested);
 
   // The handler should no longer receive notifications.
@@ -2914,10 +2898,10 @@ TEST_F(RemoteServiceManagerTest, NotificationCallback) {
   SetupCharacteristics(service, {{chr1, chr2}}, {{desc1, desc2}});
 
   fake_client()->set_write_request_callback(
-      [&](att::Handle, const auto&, auto status_callback) { status_callback(att::Status()); });
+      [&](att::Handle, const auto&, auto status_callback) { status_callback(fitx::ok()); });
 
   IdType handler_id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
 
   int chr1_count = 0;
   auto chr1_cb = [&](const ByteBuffer& value, bool maybe_truncated) {
@@ -2942,9 +2926,9 @@ TEST_F(RemoteServiceManagerTest, NotificationCallback) {
                                   /*maybe_truncated=*/true);
 
   EnableNotifications(service, kDefaultCharacteristic, &status, &handler_id, std::move(chr1_cb));
-  ASSERT_TRUE(status);
+  ASSERT_TRUE(status.is_ok());
   EnableNotifications(service, kSecondCharacteristic, &status, &handler_id, std::move(chr2_cb));
-  ASSERT_TRUE(status);
+  ASSERT_TRUE(status.is_ok());
 
   // Notify characteristic 1.
   fake_client()->SendNotification(/*indicate=*/false, 3,
@@ -2961,12 +2945,12 @@ TEST_F(RemoteServiceManagerTest, NotificationCallback) {
   EXPECT_EQ(1, chr2_count);
 
   // Disable notifications from characteristic 1.
-  status = att::Status(HostError::kFailed);
+  status = ToResult(HostError::kFailed);
   service->DisableNotifications(kDefaultCharacteristic, handler_id,
-                                [&](att::Status cb_status) { status = cb_status; });
+                                [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 
   // Notifications for characteristic 1 should get dropped.
   fake_client()->SendNotification(/*indicate=*/false, 3,
@@ -2983,65 +2967,65 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsAfterShutDown) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   EnableNotifications(service, kDefaultCharacteristic, &status, &id);
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_NE(kInvalidId, id);
 
   service->ShutDown();
 
   service->DisableNotifications(kDefaultCharacteristic, id,
-                                [&](att::Status cb_status) { status = cb_status; });
+                                [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kFailed, status.error());
+  EXPECT_EQ(ToResult(HostError::kFailed), status);
 }
 
 TEST_F(RemoteServiceManagerTest, DisableNotificationsWhileNotReady) {
   ServiceData data(ServiceKind::PRIMARY, 1, 4, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   service->DisableNotifications(kDefaultCharacteristic, 1,
-                                [&](att::Status cb_status) { status = cb_status; });
+                                [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotReady, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotReady), status);
 }
 
 TEST_F(RemoteServiceManagerTest, DisableNotificationsCharNotFound) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   EnableNotifications(service, kDefaultCharacteristic, &status, &id);
 
   // "1" is an invalid characteristic ID.
   service->DisableNotifications(kInvalidCharacteristic, id,
-                                [&](att::Status cb_status) { status = cb_status; });
+                                [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, DisableNotificationsIdNotFound) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   EnableNotifications(service, kDefaultCharacteristic, &status, &id);
 
   // Valid characteristic ID but invalid notification handler ID.
   service->DisableNotifications(kDefaultCharacteristic, id + 1,
-                                [&](att::Status cb_status) { status = cb_status; });
+                                [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(HostError::kNotFound, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotFound), status);
 }
 
 TEST_F(RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
@@ -3049,7 +3033,7 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   EnableNotifications(service, kDefaultCharacteristic, &status, &id);
 
   // Should disable notifications
@@ -3061,16 +3045,16 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
         EXPECT_EQ(kCCCHandle, handle);
         EXPECT_TRUE(ContainersEqual(kExpectedValue, value));
         ccc_write_count++;
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
-  status = att::Status(HostError::kFailed);
+  status = ToResult(HostError::kFailed);
   service->DisableNotifications(kDefaultCharacteristic, id,
-                                [&](att::Status cb_status) { status = cb_status; });
+                                [&](att::Result<> cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1, ccc_write_count);
 }
 
@@ -3079,9 +3063,9 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsDuringShutDown) {
   auto service = SetupNotifiableService();
 
   IdType id = kInvalidId;
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   EnableNotifications(service, kDefaultCharacteristic, &status, &id);
-  ASSERT_TRUE(status);
+  ASSERT_TRUE(status.is_ok());
 
   // Should disable notifications
   const auto kExpectedValue = CreateStaticByteBuffer(0x00, 0x00);
@@ -3092,7 +3076,7 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsDuringShutDown) {
         EXPECT_EQ(kCCCHandle, handle);
         EXPECT_TRUE(ContainersEqual(kExpectedValue, value));
         ccc_write_count++;
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
   // Shutting down the service should clear the CCC.
@@ -3109,9 +3093,9 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
   std::vector<IdType> handler_ids;
 
   for (int i = 0; i < 2; i++) {
-    att::Status status(HostError::kFailed);
+    att::Result<> status = ToResult(HostError::kFailed);
     EnableNotifications(service, kDefaultCharacteristic, &status, &id);
-    ASSERT_TRUE(status);
+    ASSERT_TRUE(status.is_ok());
     handler_ids.push_back(id);
   }
 
@@ -3119,33 +3103,33 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_callback) {
         ccc_write_count++;
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
   // Disabling should succeed without an ATT transaction.
-  att::Status status(HostError::kFailed);
+  att::Result<> status = ToResult(HostError::kFailed);
   service->DisableNotifications(kDefaultCharacteristic, handler_ids.back(),
-                                [&](att::Status cb_status) { status = cb_status; });
+                                [&](att::Result<> cb_status) { status = cb_status; });
   handler_ids.pop_back();
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(0, ccc_write_count);
 
   // Enabling should succeed without an ATT transaction.
-  status = att::Status(HostError::kFailed);
+  status = ToResult(HostError::kFailed);
   EnableNotifications(service, kDefaultCharacteristic, &status, &id);
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(0, ccc_write_count);
   handler_ids.push_back(id);
 
   // Disabling all should send out an ATT transaction.
   while (!handler_ids.empty()) {
-    att::Status status(HostError::kFailed);
+    att::Result<> status = ToResult(HostError::kFailed);
     service->DisableNotifications(kDefaultCharacteristic, handler_ids.back(),
-                                  [&](att::Status cb_status) { status = cb_status; });
+                                  [&](att::Result<> cb_status) { status = cb_status; });
     handler_ids.pop_back();
     RunLoopUntilIdle();
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   }
 
   EXPECT_EQ(1, ccc_write_count);
@@ -3163,23 +3147,22 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeErrorOnLastHandleDoesNotOverflowHandl
       [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
         ASSERT_EQ(0u, read_count++);
         EXPECT_EQ(kStartHandle, start);
-        callback(fpromise::error(
-            Client::ReadByTypeError{att::Status(att::ErrorCode::kReadNotPermitted), kEndHandle}));
+        callback(fpromise::error(Client::ReadByTypeError{
+            ToResult(att::ErrorCode::kReadNotPermitted).error_value(), kEndHandle}));
       });
 
-  std::optional<att::Status> status;
+  std::optional<att::Result<>> status;
   std::vector<RemoteService::ReadByTypeResult> results;
-  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto cb_results) {
+  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto cb_results) {
     status = cb_status;
     results = std::move(cb_results);
   });
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success());
+  EXPECT_TRUE(status->is_ok());
   ASSERT_EQ(1u, results.size());
   EXPECT_EQ(CharacteristicHandle(kEndHandle), results[0].handle);
-  ASSERT_TRUE(results[0].result.is_error());
-  EXPECT_EQ(results[0].result.error(), att::ErrorCode::kReadNotPermitted);
+  EXPECT_EQ(att::ErrorCode::kReadNotPermitted, results[0].result.error());
 }
 
 TEST_F(RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflowHandle) {
@@ -3203,8 +3186,8 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflowHand
         callback(fpromise::ok(kValues));
       });
 
-  std::optional<att::Status> status;
-  service->ReadByType(kCharUuid, [&](att::Status cb_status, auto values) {
+  std::optional<att::Result<>> status;
+  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) {
     status = cb_status;
     ASSERT_EQ(1u, values.size());
     EXPECT_EQ(CharacteristicHandle(kHandle), values[0].handle);
@@ -3214,7 +3197,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeResultOnLastHandleDoesNotOverflowHand
 
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
-  EXPECT_TRUE(status->is_success()) << bt_str(status.value());
+  EXPECT_TRUE(status->is_ok()) << bt_str(status.value());
 }
 
 class RemoteServiceManagerServiceChangedTest : public RemoteServiceManagerTest {
@@ -3246,13 +3229,13 @@ class RemoteServiceManagerServiceChangedTest : public RemoteServiceManagerTest {
           write_request_count_++;
           EXPECT_EQ(ccc_descriptor_handle_, handle);
           EXPECT_TRUE(ContainersEqual(kCCCIndicateValue, value));
-          status_callback(att::Status());
+          status_callback(fitx::ok());
         });
 
-    att::Status status(HostError::kFailed);
-    mgr()->Initialize([&status](att::Status val) { status = val; });
+    att::Result<> status = ToResult(HostError::kFailed);
+    mgr()->Initialize([&status](att::Result<> val) { status = val; });
     RunLoopUntilIdle();
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     EXPECT_EQ(write_request_count_, 1);
     ASSERT_EQ(1u, svc_watcher_data_.size());
     ASSERT_EQ(1u, svc_watcher_data_[0].added.size());
@@ -3374,8 +3357,8 @@ TEST_F(RemoteServiceManagerServiceChangedTest, AddModifyAndRemoveService) {
   // Discover the characteristic with the CCC descriptor before enabling characteristic value
   // notifications.
   svc_watcher_data()[0].added[0]->DiscoverCharacteristics(
-      [&](att::Status status, const CharacteristicMap& characteristics) {
-        EXPECT_TRUE(status.is_success());
+      [&](att::Result<> status, const CharacteristicMap& characteristics) {
+        EXPECT_TRUE(status.is_ok());
         EXPECT_EQ(characteristics.size(), 1u);
       });
   RunLoopUntilIdle();
@@ -3387,16 +3370,16 @@ TEST_F(RemoteServiceManagerServiceChangedTest, AddModifyAndRemoveService) {
         svc1_ccc_write_request_count++;
         EXPECT_EQ(kSvc1CCCHandle, handle);
         EXPECT_TRUE(ContainersEqual(kCCCIndicateValue, value));
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
-  std::optional<att::Status> original_notification_status;
+  std::optional<att::Result<>> original_notification_status;
   svc_watcher_data()[0].added[0]->EnableNotifications(
       bt::gatt::CharacteristicHandle(kSvc1ChrcValueHandle), NopValueCallback,
-      [&](att::Status cb_status, IdType cb_id) { original_notification_status = cb_status; });
+      [&](att::Result<> cb_status, IdType cb_id) { original_notification_status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(original_notification_status);
-  EXPECT_TRUE(original_notification_status->is_success());
+  EXPECT_TRUE(original_notification_status->is_ok());
   EXPECT_EQ(svc1_ccc_write_request_count, 1);
 
   // Send a notification that svc1 has been modified. Service Changed notifications guarantee that
@@ -3418,19 +3401,19 @@ TEST_F(RemoteServiceManagerServiceChangedTest, AddModifyAndRemoveService) {
   svc_watcher_data()[1].modified[0]->AddRemovedHandler([&]() { modified_service_removed = true; });
 
   svc_watcher_data()[1].modified[0]->DiscoverCharacteristics(
-      [&](att::Status status, const CharacteristicMap& characteristics) {
-        EXPECT_TRUE(status.is_success());
+      [&](att::Result<> status, const CharacteristicMap& characteristics) {
+        EXPECT_TRUE(status.is_ok());
         EXPECT_EQ(characteristics.size(), 1u);
       });
   RunLoopUntilIdle();
 
-  std::optional<att::Status> modified_notification_status;
+  std::optional<att::Result<>> modified_notification_status;
   svc_watcher_data()[1].modified[0]->EnableNotifications(
       bt::gatt::CharacteristicHandle(kSvc1ChrcValueHandle), NopValueCallback,
-      [&](att::Status cb_status, IdType cb_id) { modified_notification_status = cb_status; });
+      [&](att::Result<> cb_status, IdType cb_id) { modified_notification_status = cb_status; });
   RunLoopUntilIdle();
   ASSERT_TRUE(modified_notification_status);
-  EXPECT_TRUE(modified_notification_status->is_success());
+  EXPECT_TRUE(modified_notification_status->is_ok());
   EXPECT_EQ(svc1_ccc_write_request_count, 2);
 
   // Remove svc1.
@@ -3497,7 +3480,7 @@ TEST_F(RemoteServiceManagerTest, ServiceChangedDuringInitialization) {
                                       svc_changed_range_buffer, /*maybe_truncated=*/false);
     }
     discover_services_count++;
-    return att::Status();
+    return fitx::ok();
   });
 
   // Expect a Service Changed Client Characteristic Config descriptor write that enables
@@ -3508,16 +3491,16 @@ TEST_F(RemoteServiceManagerTest, ServiceChangedDuringInitialization) {
         write_request_count++;
         EXPECT_EQ(kCCCDescriptorHandle, handle);
         EXPECT_TRUE(ContainersEqual(kCCCIndicateValue, value));
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&](att::Status val) {
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&](att::Result<> val) {
     status = val;
     EXPECT_EQ(1, svc_watcher_count);
   });
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(1, write_request_count);
   EXPECT_EQ(1, svc_watcher_count);
 }
@@ -3664,14 +3647,14 @@ TEST_P(RemoteServiceManagerServiceChangedTestWithServiceKindParam,
 
   // Cause only the first service discovery to fail.
   int discover_services_count = 0;
-  fake_client()->set_discover_services_callback([&](ServiceKind kind) {
+  fake_client()->set_discover_services_callback([&](ServiceKind kind) -> att::Result<> {
     if (kind == kKind) {
       discover_services_count++;
       if (discover_services_count == 1) {
-        return att::Status(HostError::kFailed);
+        return ToResult(HostError::kFailed);
       }
     }
-    return att::Status();
+    return fitx::ok();
   });
 
   auto svc1_changed_range_buffer = StaticByteBuffer(
@@ -3711,9 +3694,9 @@ TEST_F(RemoteServiceManagerServiceChangedTest,
 
   fake_client()->set_discover_services_callback([](ServiceKind kind) {
     if (kind == ServiceKind::SECONDARY) {
-      return att::Status(att::ErrorCode::kUnsupportedGroupType);
+      return ToResult(att::ErrorCode::kUnsupportedGroupType);
     }
-    return att::Status();
+    return att::Result<>(fitx::ok());
   });
 
   // Send a notification that svc1 has been added.
@@ -3772,16 +3755,15 @@ TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
 
   fake_client()->set_discover_services_callback([](ServiceKind kind) {
     if (kind == ServiceKind::PRIMARY) {
-      return att::Status(att::ErrorCode::kRequestNotSupported);
+      return ToResult(att::ErrorCode::kRequestNotSupported);
     }
-    return att::Status();
+    return att::Result<>(fitx::ok());
   });
 
-  std::optional<att::Status> status;
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  std::optional<att::Result<>> status;
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
-  ASSERT_TRUE(status);
-  EXPECT_EQ(*status, att::Status(att::ErrorCode::kRequestNotSupported));
+  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), *status);
 }
 
 TEST_F(RemoteServiceManagerTest, MultipleGattProfileServicesFailsInitialization) {
@@ -3790,11 +3772,10 @@ TEST_F(RemoteServiceManagerTest, MultipleGattProfileServicesFailsInitialization)
   std::vector<ServiceData> fake_services{{gatt_svc0, gatt_svc1}};
   fake_client()->set_services(std::move(fake_services));
 
-  std::optional<att::Status> status;
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  std::optional<att::Result<>> status;
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
-  ASSERT_TRUE(status);
-  EXPECT_EQ(*status, att::Status(HostError::kFailed));
+  EXPECT_EQ(ToResult(HostError::kFailed), *status);
 }
 
 TEST_F(RemoteServiceManagerTest, InitializeEmptyGattProfileService) {
@@ -3808,10 +3789,10 @@ TEST_F(RemoteServiceManagerTest, InitializeEmptyGattProfileService) {
     services.insert(services.end(), added.begin(), added.end());
   });
 
-  att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  att::Result<> status = ToResult(HostError::kFailed);
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   ASSERT_EQ(2u, services.size());
   EXPECT_EQ(gatt_svc.range_start, services[0]->handle());
   EXPECT_EQ(gatt_svc.type, services[0]->uuid());
@@ -3848,15 +3829,13 @@ TEST_F(RemoteServiceManagerTest, EnableServiceChangedNotificationsReturnsError) 
       [&](att::Handle handle, const auto& value, auto status_callback) {
         write_request_count++;
         EXPECT_EQ(kCCCDescriptorHandle, handle);
-        status_callback(att::Status(att::ErrorCode::kWriteNotPermitted));
+        status_callback(ToResult(att::ErrorCode::kWriteNotPermitted));
       });
 
-  std::optional<att::Status> status;
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  std::optional<att::Result<>> status;
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
-  ASSERT_TRUE(status);
-  EXPECT_TRUE(status->is_protocol_error());
-  EXPECT_EQ(status->protocol_error(), att::ErrorCode::kWriteNotPermitted);
+  EXPECT_EQ(ToResult(att::ErrorCode::kWriteNotPermitted), *status);
   EXPECT_EQ(write_request_count, 1);
 }
 
@@ -3867,22 +3846,21 @@ TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileServiceCharacteristi
   fake_client()->set_services(std::move(fake_services));
 
   fake_client()->set_characteristic_discovery_status(
-      att::Status(att::ErrorCode::kRequestNotSupported));
+      ToResult(att::ErrorCode::kRequestNotSupported));
 
-  std::optional<att::Status> status;
-  mgr()->Initialize([&status](att::Status val) { status = val; });
+  std::optional<att::Result<>> status;
+  mgr()->Initialize([&status](att::Result<> val) { status = val; });
   RunLoopUntilIdle();
-  ASSERT_TRUE(status);
-  EXPECT_EQ(*status, att::Status(att::ErrorCode::kRequestNotSupported));
+  EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), *status);
 }
 
 TEST_F(RemoteServiceManagerTest, DisableNotificationInHandlerCallback) {
   const CharacteristicHandle kChrcValueHandle(3);
   fbl::RefPtr<RemoteService> svc = SetupNotifiableService();
   std::optional<IdType> handler_id;
-  RemoteCharacteristic::NotifyStatusCallback status_cb = [&](att::Status status,
+  RemoteCharacteristic::NotifyStatusCallback status_cb = [&](att::Result<> status,
                                                              IdType cb_handler_id) {
-    EXPECT_TRUE(status.is_success());
+    EXPECT_TRUE(status.is_ok());
     handler_id = cb_handler_id;
   };
 

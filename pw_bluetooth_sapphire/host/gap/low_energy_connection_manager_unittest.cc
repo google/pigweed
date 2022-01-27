@@ -1719,7 +1719,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   service_client->set_read_request_callback(
       [char_value_handle, char_value](att::Handle handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(att::Status(), char_value, /*maybe_truncated=*/false);
+          read_cb(fitx::ok(), char_value, /*maybe_truncated=*/false);
         }
       });
 
@@ -1773,7 +1773,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   service_client->set_read_request_callback(
       [char_value_handle, invalid_char_value](auto handle, auto read_cb) {
         if (handle == char_value_handle) {
-          read_cb(att::Status(), invalid_char_value, /*maybe_truncated=*/false);
+          read_cb(fitx::ok(), invalid_char_value, /*maybe_truncated=*/false);
         }
       });
 
@@ -1806,8 +1806,7 @@ TEST_F(LowEnergyConnectionManagerTest, GapServiceCharacteristicDiscoveryError) {
   gatt::CharacteristicData char_data(gatt::kRead, /*ext_props=*/std::nullopt, char_handle,
                                      char_value_handle,
                                      kPeripheralPreferredConnectionParametersCharacteristic);
-  service_client->set_characteristic_discovery_status(
-      att::Status(att::ErrorCode::kReadNotPermitted));
+  service_client->set_characteristic_discovery_status(ToResult(att::ErrorCode::kReadNotPermitted));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback = [&conn_ref](auto result) {
@@ -1827,7 +1826,7 @@ TEST_F(LowEnergyConnectionManagerTest, GapServiceListServicesError) {
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
 
-  fake_gatt()->set_list_services_status(att::Status(HostError::kFailed));
+  fake_gatt()->set_list_services_status(ToResult(HostError::kFailed));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_ref;
   auto callback = [&conn_ref](auto result) {

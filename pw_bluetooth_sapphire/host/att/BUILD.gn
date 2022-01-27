@@ -28,6 +28,7 @@ static_library("att") {
     "bearer.h",
     "database.cc",
     "database.h",
+    "error.h",
     "permissions.cc",
     "permissions.h",
     "status.cc",

@@ -226,7 +226,7 @@ void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Ha
 
     bt_log(TRACE, "att", "Failed to start transaction: out of memory!");
     auto t = std::move(current_);
-    t->error_callback(Status(HostError::kOutOfMemory), kInvalidHandle);
+    t->error_callback(ToResult(HostError::kOutOfMemory), kInvalidHandle);
 
     // Process the next command until we can send OR we have drained the queue.
     current_ = queue_.pop_front();
@@ -239,7 +239,7 @@ void Bearer::TransactionQueue::Reset() {
   current_ = nullptr;
 }
 
-void Bearer::TransactionQueue::InvokeErrorAll(Status status) {
+void Bearer::TransactionQueue::InvokeErrorAll(Result<> status) {
   if (current_) {
     current_->error_callback(status, kInvalidHandle);
   }
@@ -318,7 +318,7 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
 
   // Terminate all remaining procedures with an error. This is safe even if
   // the bearer got deleted by |closed_cb_|.
-  Status status(due_to_timeout ? HostError::kTimedOut : HostError::kFailed);
+  Result<> status = ToResult(due_to_timeout ? HostError::kTimedOut : HostError::kFailed);
   req_queue.InvokeErrorAll(status);
   ind_queue.InvokeErrorAll(status);
 }
@@ -579,7 +579,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
     if (!report_error) {
       transaction->callback(packet);
     } else if (transaction->error_callback) {
-      transaction->error_callback(Status(error_code), attr_in_error);
+      transaction->error_callback(ToResult(error_code), attr_in_error);
     }
 
     // Send out the next queued transaction
@@ -598,7 +598,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
         if (!self || !status) {
-          t->error_callback(Status(error_code), attr_in_error);
+          t->error_callback(ToResult(error_code), attr_in_error);
           return;
         }
 

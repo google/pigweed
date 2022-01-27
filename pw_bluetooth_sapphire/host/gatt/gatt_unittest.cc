@@ -79,7 +79,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
       [&](att::Handle handle, const auto& value, auto status_callback) {
         write_request_count++;
         EXPECT_EQ(kCCCDescriptorHandle, handle);
-        status_callback(att::Status());
+        status_callback(fitx::ok());
       });
 
   std::vector<ServiceWatcherData> svc_watcher_data;
@@ -209,10 +209,8 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
 
   // Return success when a Service Changed Client Characteristic Config descriptor write is
   // performed.
-  client_1->set_write_request_callback(
-      [&](att::Handle handle, const auto& value, auto status_callback) {
-        status_callback(att::Status());
-      });
+  client_1->set_write_request_callback([&](att::Handle handle, const auto& value,
+                                           auto status_callback) { status_callback(fitx::ok()); });
 
   auto fake_chan_1 = fbl::AdoptRef(
       new l2cap::testing::FakeChannel(/*id=*/1, /*remote_id=*/2, /*handle=*/3, bt::LinkType::kLE));

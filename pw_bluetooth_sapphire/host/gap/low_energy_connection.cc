@@ -502,7 +502,7 @@ void LowEnergyConnection::InitializeGatt(fbl::RefPtr<l2cap::Channel> att_channel
   });
 }
 
-void LowEnergyConnection::OnGattServicesResult(att::Status status, gatt::ServiceList services) {
+void LowEnergyConnection::OnGattServicesResult(att::Result<> status, gatt::ServiceList services) {
   if (bt_is_error(status, INFO, "gap-le", "error discovering GAP service (peer: %s)",
                   bt_str(peer_id()))) {
     return;

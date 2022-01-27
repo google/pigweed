@@ -115,7 +115,7 @@ class Bearer final : public fbl::RefCounted<Bearer> {
   // Returns false if |pdu| is empty, exceeds the current MTU, or does not
   // correspond to a request or indication.
   using TransactionCallback = fit::function<void(const PacketReader& packet)>;
-  using ErrorCallback = fit::function<void(Status, Handle attr_in_error)>;
+  using ErrorCallback = fit::function<void(Result<>, Handle attr_in_error)>;
   bool StartTransaction(ByteBufferPtr pdu, TransactionCallback callback,
                         ErrorCallback error_callback);
 
@@ -233,7 +233,7 @@ class Bearer final : public fbl::RefCounted<Bearer> {
     void Reset();
 
     // Invokes the error callbacks of all transactions with |status|.
-    void InvokeErrorAll(Status status);
+    void InvokeErrorAll(Result<> status);
 
    private:
     LinkedList<PendingTransaction> queue_;

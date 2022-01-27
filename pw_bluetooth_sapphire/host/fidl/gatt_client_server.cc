@@ -45,12 +45,12 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
   }
 
   auto cb = [callback = std::move(callback), peer_id = peer_id_, func = __FUNCTION__](
-                bt::att::Status status, auto services) {
+                bt::att::Result<> status, auto services) {
     std::vector<ServiceInfo> out;
-    if (!status) {
+    if (status.is_error()) {
       bt_log(WARN, "fidl", "%s: Failed to discover services (peer: %s)", func, bt_str(peer_id));
       auto fidl_status =
-          fidl_helpers::StatusToFidlDeprecated(status, "Failed to discover services");
+          fidl_helpers::ResultToFidlDeprecated(status, "Failed to discover services");
       callback(std::move(fidl_status), std::move(out));
       return;
     }

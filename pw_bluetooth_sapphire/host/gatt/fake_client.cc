@@ -12,8 +12,6 @@
 
 namespace bt::gatt::testing {
 
-using att::StatusCallback;
-
 FakeClient::FakeClient(async_dispatcher_t* dispatcher)
     : dispatcher_(dispatcher), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
@@ -32,20 +30,20 @@ void FakeClient::ExchangeMTU(MTUCallback callback) {
 }
 
 void FakeClient::DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
-                                  StatusCallback status_callback) {
+                                  att::ResultFunction<> status_callback) {
   DiscoverServicesInRange(kind, /*start=*/att::kHandleMin, /*end=*/att::kHandleMax,
                           std::move(svc_callback), std::move(status_callback));
 }
 
 void FakeClient::DiscoverServicesInRange(ServiceKind kind, att::Handle start, att::Handle end,
                                          ServiceCallback svc_callback,
-                                         att::StatusCallback status_callback) {
+                                         att::ResultFunction<> status_callback) {
   DiscoverServicesWithUuidsInRange(kind, start, end, std::move(svc_callback),
                                    std::move(status_callback), /*uuids=*/{});
 }
 
 void FakeClient::DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
-                                           att::StatusCallback status_callback,
+                                           att::ResultFunction<> status_callback,
                                            std::vector<UUID> uuids) {
   DiscoverServicesWithUuidsInRange(kind, /*start=*/att::kHandleMin, /*end=*/att::kHandleMax,
                                    std::move(svc_callback), std::move(status_callback),
@@ -54,16 +52,16 @@ void FakeClient::DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc
 
 void FakeClient::DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle start,
                                                   att::Handle end, ServiceCallback svc_callback,
-                                                  att::StatusCallback status_callback,
+                                                  att::ResultFunction<> status_callback,
                                                   std::vector<UUID> uuids) {
-  att::Status status;
+  att::Result<> status = fitx::ok();
   if (discover_services_callback_) {
     status = discover_services_callback_(kind);
   }
 
   std::unordered_set<UUID> uuids_set(uuids.cbegin(), uuids.cend());
 
-  if (status.is_success()) {
+  if (status.is_ok()) {
     for (const ServiceData& svc : services_) {
       bool uuid_matches = uuids.empty() || uuids_set.find(svc.type) != uuids_set.end();
       if (svc.kind == kind && uuid_matches && svc.range_start >= start && svc.range_start <= end) {
@@ -77,7 +75,7 @@ void FakeClient::DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle 
 
 void FakeClient::DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                          CharacteristicCallback chrc_callback,
-                                         StatusCallback status_callback) {
+                                         att::ResultFunction<> status_callback) {
   last_chrc_discovery_start_handle_ = range_start;
   last_chrc_discovery_end_handle_ = range_end;
   chrc_discovery_count_++;
@@ -96,12 +94,12 @@ void FakeClient::DiscoverCharacteristics(att::Handle range_start, att::Handle ra
 
 void FakeClient::DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                                      DescriptorCallback desc_callback,
-                                     StatusCallback status_callback) {
+                                     att::ResultFunction<> status_callback) {
   last_desc_discovery_start_handle_ = range_start;
   last_desc_discovery_end_handle_ = range_end;
   desc_discovery_count_++;
 
-  att::Status status;
+  att::Result<> status = fitx::ok();
   if (!desc_discovery_status_target_ || desc_discovery_count_ == desc_discovery_status_target_) {
     status = desc_discovery_status_;
   }
@@ -138,14 +136,14 @@ void FakeClient::ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallba
 }
 
 void FakeClient::WriteRequest(att::Handle handle, const ByteBuffer& value,
-                              StatusCallback callback) {
+                              att::ResultFunction<> callback) {
   if (write_request_callback_) {
     write_request_callback_(handle, value, std::move(callback));
   }
 }
 
 void FakeClient::ExecutePrepareWrites(att::PrepareWriteQueue write_queue,
-                                      ReliableMode reliable_mode, att::StatusCallback callback) {
+                                      ReliableMode reliable_mode, att::ResultFunction<> callback) {
   if (execute_prepare_writes_callback_) {
     execute_prepare_writes_callback_(std::move(write_queue), reliable_mode, std::move(callback));
   }
@@ -157,14 +155,14 @@ void FakeClient::PrepareWriteRequest(att::Handle handle, uint16_t offset,
     prepare_write_request_callback_(handle, offset, part_value, std::move(callback));
   }
 }
-void FakeClient::ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCallback callback) {
+void FakeClient::ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::ResultFunction<> callback) {
   if (execute_write_request_callback_) {
     execute_write_request_callback_(flag, std::move(callback));
   }
 }
 
 void FakeClient::WriteWithoutResponse(att::Handle handle, const ByteBuffer& value,
-                                      att::StatusCallback callback) {
+                                      att::ResultFunction<> callback) {
   if (write_without_rsp_callback_) {
     write_without_rsp_callback_(handle, value, std::move(callback));
   }

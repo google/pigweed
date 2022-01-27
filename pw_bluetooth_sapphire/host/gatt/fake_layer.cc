@@ -189,7 +189,7 @@ void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {
   discover_services_cb_ = std::move(cb);
 }
 
-void FakeLayer::set_list_services_status(att::Status status) { list_services_status_ = status; }
+void FakeLayer::set_list_services_status(att::Result<> status) { list_services_status_ = status; }
 
 void FakeLayer::SetSetPersistServiceChangedCCCCallbackCallback(
     SetPersistServiceChangedCCCCallbackCallback cb) {

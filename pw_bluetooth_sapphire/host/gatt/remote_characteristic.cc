@@ -32,7 +32,7 @@ RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client,
 }
 
 RemoteCharacteristic::~RemoteCharacteristic() {
-  ResolvePendingNotifyRequests(att::Status(HostError::kFailed));
+  ResolvePendingNotifyRequests(ToResult(HostError::kFailed));
 
   // Clear the CCC if we have enabled notifications and destructor was not called as a result of a
   // Service Changed notification.
@@ -57,7 +57,7 @@ void RemoteCharacteristic::UpdateDataWithExtendedProperties(ExtendedProperties e
 }
 
 void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
-                                               att::StatusCallback callback) {
+                                               att::ResultFunction<> callback) {
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(range_end >= info().value_handle);
@@ -66,7 +66,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
   descriptors_.clear();
 
   if (info().value_handle == range_end) {
-    callback(att::Status());
+    callback(fitx::ok());
     return;
   }
 
@@ -106,17 +106,17 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     ZX_DEBUG_ASSERT(success);
   };
 
-  auto status_cb = [self, cb = std::move(callback)](att::Status status) mutable {
+  auto status_cb = [self, cb = std::move(callback)](att::Result<> status) mutable {
     if (!self) {
-      cb(att::Status(HostError::kFailed));
+      cb(ToResult(HostError::kFailed));
       return;
     }
 
     if (self->discovery_error_) {
-      status = att::Status(HostError::kFailed);
+      status = ToResult(HostError::kFailed);
     }
 
-    if (!status) {
+    if (status.is_error()) {
       self->descriptors_.clear();
       cb(status);
       return;
@@ -125,9 +125,9 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     // If the characteristic contains the ExtendedProperties descriptor, perform a Read operation
     // to get the extended properties before notifying the callback.
     if (self->ext_prop_handle_ != att::kInvalidHandle) {
-      auto read_cb = [self, cb = std::move(cb)](att::Status status, const ByteBuffer& data,
+      auto read_cb = [self, cb = std::move(cb)](att::Result<> status, const ByteBuffer& data,
                                                 bool /*maybe_truncated*/) {
-        if (!status) {
+        if (status.is_error()) {
           cb(status);
           return;
         }
@@ -136,7 +136,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
         // ExtendedProperties bitfield. If the retrieved |data| is malformed, respond with an error
         // and return early.
         if (data.size() != sizeof(uint16_t)) {
-          cb(att::Status(HostError::kPacketMalformed));
+          cb(ToResult(HostError::kPacketMalformed));
           return;
         }
 
@@ -165,7 +165,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 
   if (!(info().properties & (Property::kNotify | Property::kIndicate))) {
     bt_log(DEBUG, "gatt", "characteristic does not support notifications");
-    status_callback(att::Status(HostError::kNotSupported), kInvalidId);
+    status_callback(ToResult(HostError::kNotSupported), kInvalidId);
     return;
   }
 
@@ -175,7 +175,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 
     IdType id = next_notify_handler_id_++;
     notify_handlers_[id] = std::move(value_callback);
-    status_callback(att::Status(), id);
+    status_callback(fitx::ok(), id);
     return;
   }
 
@@ -191,7 +191,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
   // notifications to have been enabled.
   if (ccc_handle_ == att::kInvalidHandle) {
     bt_log(TRACE, "gatt", "notications enabled without characteristic configuration");
-    ResolvePendingNotifyRequests(att::Status());
+    ResolvePendingNotifyRequests(fitx::ok());
     return;
   }
 
@@ -206,8 +206,8 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto ccc_write_cb = [self](att::Status status) {
-    bt_log(DEBUG, "gatt", "CCC write status (enable): %s", status.ToString().c_str());
+  auto ccc_write_cb = [self](att::Result<> status) {
+    bt_log(DEBUG, "gatt", "CCC write status (enable): %s", bt_str(status));
     if (self) {
       self->ResolvePendingNotifyRequests(status);
     }
@@ -254,8 +254,8 @@ void RemoteCharacteristic::DisableNotificationsInternal() {
   StaticByteBuffer<2> ccc_value;
   ccc_value.SetToZeros();
 
-  auto ccc_write_cb = [](att::Status status) {
-    bt_log(DEBUG, "gatt", "CCC write status (disable): %s", status.ToString().c_str());
+  auto ccc_write_cb = [](att::Result<> status) {
+    bt_log(DEBUG, "gatt", "CCC write status (disable): %s", bt_str(status));
   };
 
   // We send the request without handling the status as there is no good way to
@@ -264,7 +264,7 @@ void RemoteCharacteristic::DisableNotificationsInternal() {
   client_->WriteRequest(ccc_handle_, ccc_value, std::move(ccc_write_cb));
 }
 
-void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Status status) {
+void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Result<> status) {
   // Don't iterate requests as callbacks can add new requests.
   while (!pending_notify_reqs_.empty()) {
     auto req = std::move(pending_notify_reqs_.front());
@@ -272,7 +272,7 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Status status) {
 
     IdType id = kInvalidId;
 
-    if (status) {
+    if (status.is_ok()) {
       id = next_notify_handler_id_++;
       // Add handler to map before calling status callback in case callback removes the handler.
       notify_handlers_[id] = std::move(req.value_callback);
