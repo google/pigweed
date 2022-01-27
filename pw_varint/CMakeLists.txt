@@ -14,13 +14,54 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_varint
+pw_add_module_library(pw_varint
+  HEADERS
+    public/pw_varint/varint.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
+    pw_polyfill.cstddef
+    pw_polyfill.span
     pw_preprocessor
-    pw_span
-    pw_status
-    pw_stream
+  SOURCES
+    varint.cc
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_VARINT)
   zephyr_link_libraries(pw_varint)
 endif()
+
+pw_add_module_library(pw_varint.stream
+  HEADERS
+    public/pw_varint/stream.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_status
+    pw_stream
+  SOURCES
+    stream.cc
+  PRIVATE_DEPS
+    pw_varint
+)
+
+pw_add_test(pw_varint.varint_test
+  SOURCES
+    varint_test.cc
+    varint_test_c.c
+  DEPS
+    pw_varint
+  GROUPS
+    modules
+    pw_varint
+)
+
+pw_add_test(pw_varint.stream_test
+  SOURCES
+    stream_test.cc
+  DEPS
+    pw_stream
+    pw_varint.stream
+  GROUPS
+    modules
+    pw_varint
+)

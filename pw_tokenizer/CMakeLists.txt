@@ -13,27 +13,43 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_tokenizer_CONFIG)
 
 pw_add_module_library(pw_tokenizer.config
-  PUBLIC_DEPS
-    ${pw_tokenizer_CONFIG}
   HEADERS
     public/pw_tokenizer/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_tokenizer_CONFIG}
 )
 
 pw_add_module_library(pw_tokenizer
+  HEADERS
+    public/pw_tokenizer/encode_args.h
+    public/pw_tokenizer/hash.h
+    public/pw_tokenizer/tokenize.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers
+    pw_polyfill.span
+    pw_preprocessor
+    pw_tokenizer.config
   SOURCES
     encode_args.cc
     hash.cc
+    public/pw_tokenizer/internal/argument_types.h
+    public/pw_tokenizer/internal/argument_types_macro_4_byte.h
+    public/pw_tokenizer/internal/argument_types_macro_8_byte.h
+    public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h
+    public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_256_hash_macro.h
+    public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h
+    public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h
+    public/pw_tokenizer/internal/tokenize_string.h
     tokenize.cc
-  PUBLIC_DEPS
-    pw_containers
-    pw_polyfill.overrides
-    pw_preprocessor
-    pw_span
-    pw_tokenizer.config
   PRIVATE_DEPS
     pw_varint
 )
@@ -52,44 +68,71 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 endif()
 
 pw_add_module_library(pw_tokenizer.base64
-  SOURCES
-    base64.cc
+  HEADERS
+    public/pw_tokenizer/base64.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_base64
-    pw_containers
-    pw_polyfill.overrides
-    pw_preprocessor
-    pw_span
+    pw_polyfill.cstddef
+    pw_polyfill.span
+    pw_tokenizer
+    pw_tokenizer.config
+  SOURCES
+    base64.cc
 )
 
 pw_add_module_library(pw_tokenizer.decoder
+  HEADERS
+    public/pw_tokenizer/detokenize.h
+    public/pw_tokenizer/token_database.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_polyfill.span
+    pw_tokenizer
   SOURCES
     decode.cc
     detokenize.cc
+    public/pw_tokenizer/internal/decode.h
     token_database.cc
-  PUBLIC_DEPS
-    pw_span
-    pw_tokenizer
   PRIVATE_DEPS
     pw_varint
 )
 
 pw_add_facade(pw_tokenizer.global_handler
-  SOURCES
-    tokenize_to_global_handler.cc
-  PUBLIC_DEPS
-    pw_tokenizer
   DEFAULT_BACKEND
     pw_build.empty  # Default to an empty backend so the tests can run.
+  HEADERS
+    public/pw_tokenizer/tokenize_to_global_handler.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
+    pw_tokenizer
+  SOURCES
+    tokenize_to_global_handler.cc
 )
 
 pw_add_facade(pw_tokenizer.global_handler_with_payload
-  SOURCES
-    tokenize_to_global_handler_with_payload.cc
-  PUBLIC_DEPS
-    pw_tokenizer
   DEFAULT_BACKEND
     pw_build.empty  # Default to an empty backend so the tests can run.
+  HEADERS
+    public/pw_tokenizer/tokenize_to_global_handler_with_payload.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
+    pw_tokenizer
+  SOURCES
+    tokenize_to_global_handler_with_payload.cc
+)
+
+pw_proto_library(pw_tokenizer.proto
+  SOURCES
+    options.proto
+  PREFIX
+    pw_tokenizer/proto
 )
 
 # Executable for generating test data for the C++ and Python detokenizers. This
