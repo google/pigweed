@@ -113,6 +113,16 @@ pw_add_test(pw_protobuf.codegen_test
     pw_protobuf
 )
 
+pw_add_test(pw_protobuf.serialized_size_test
+  SOURCES
+    serialized_size_test.cc
+  DEPS
+    pw_protobuf
+  GROUPS
+    modules
+    pw_protobuf
+)
+
 pw_add_test(pw_protobuf.stream_decoder_test
   SOURCES
     stream_decoder_test.cc

@@ -592,6 +592,16 @@ fields in a message.
 
 .. include:: size_report/decoder_incremental
 
+---------------------------
+Serialized size calculation
+---------------------------
+``pw_protobuf/serialized_size.h`` provides a set of functions for calculating
+how much memory serialized protocol buffer fields require. The
+``kMaxSizeBytes*`` variables provide the maximum encoded sizes of each field
+type. The ``SizeOfField*()`` functions calculate the encoded size of a field of
+the specified type, given a particular key and, for variable length fields
+(varint or delimited), a value.
+
 --------------------------
 Available protobuf modules
 --------------------------

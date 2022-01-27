@@ -58,19 +58,19 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // field is not accounted since a dropped message has all other fields unset.
   static constexpr size_t kMinEntrySizeWithoutPayload =
       // message
-      protobuf::SizeOfFieldKey(1) +
+      protobuf::FieldNumberSizeBytes(1) +
       1  // Assume minimum varint length, skip the payload bytes.
       // line_level
-      + protobuf::SizeOfFieldKey(2) +
+      + protobuf::FieldNumberSizeBytes(2) +
       protobuf::kMaxSizeBytesUint32
       // flags
-      + protobuf::SizeOfFieldKey(3) +
+      + protobuf::FieldNumberSizeBytes(3) +
       protobuf::kMaxSizeBytesUint32
       // timestamp or time_since_last_entry
-      + protobuf::SizeOfFieldKey(4) +
+      + protobuf::FieldNumberSizeBytes(4) +
       protobuf::kMaxSizeBytesInt64
       // Module
-      + protobuf::SizeOfFieldKey(7) +
+      + protobuf::FieldNumberSizeBytes(7) +
       1;  // Assume minimum varint length, skip the module bytes.
   // The smallest buffer size must be able to fit a typical token size: 4 bytes.
   static constexpr size_t kMinEntryBufferSize = kMinEntrySizeWithoutPayload + 4;
@@ -79,7 +79,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // bytes added to the encoded LogEntry. This constant and kMinEntryBufferSize
   // can be used to calculate the minimum RPC ChannelOutput buffer size.
   static constexpr size_t kLogEntryEncodeFrameSize =
-      protobuf::SizeOfFieldKey(1)  // LogEntry
+      protobuf::FieldNumberSizeBytes(1)  // LogEntry
       + protobuf::kMaxSizeOfLength;
 
   // Creates a closed log stream with a writer that can be set at a later time.

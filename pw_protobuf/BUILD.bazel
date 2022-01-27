@@ -119,6 +119,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "serialized_size_test",
+    srcs = ["serialized_size_test.cc"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "stream_decoder_test",
     srcs = ["stream_decoder_test.cc"],
     deps = [
