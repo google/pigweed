@@ -11,6 +11,7 @@
 
 #include "gatt_client_server.h"
 #include "helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -468,8 +469,8 @@ void LowEnergyCentralServer::ConnectPeripheral(
     if (result.is_error()) {
       bt_log(INFO, "fidl", "%s: failed to connect to peer (peer: %s)", func, bt_str(peer_id));
       self->connections_deprecated_.erase(peer_id);
-      callback(fidl_helpers::StatusToFidlDeprecated(
-          bt::Status<bt::hci_spec::StatusCode>(result.error_value()), "failed to connect"));
+      callback(fidl_helpers::ResultToFidlDeprecated(bt::ToResult(result.error_value()),
+                                                    "failed to connect"));
       return;
     }
 

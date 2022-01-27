@@ -64,29 +64,14 @@ fuchsia::bluetooth::Status ResultToFidlDeprecated(
   if (result.is_error()) {
     result.error_value().Visit(
         [&error](bt::HostError c) { error->error_code = HostErrorToFidlDeprecated(c); },
-        [&error](ProtocolErrorCode c) {
-          error->error_code = fuchsia::bluetooth::ErrorCode::PROTOCOL_ERROR;
-          error->protocol_error_code = static_cast<uint32_t>(c);
+        [&](ProtocolErrorCode c) {
+          if constexpr (!std::is_same_v<ProtocolErrorCode, bt::NoProtocolError>) {
+            error->error_code = fuchsia::bluetooth::ErrorCode::PROTOCOL_ERROR;
+            error->protocol_error_code = static_cast<uint32_t>(c);
+          } else {
+            ZX_PANIC("Protocol branch visited by bt::Error<NoProtocolError>");
+          }
         });
-  }
-
-  fidl_status.error = std::move(error);
-  return fidl_status;
-}
-
-template <typename ProtocolErrorCode>
-fuchsia::bluetooth::Status StatusToFidlDeprecated(const bt::Status<ProtocolErrorCode>& status,
-                                                  std::string msg = "") {
-  fuchsia::bluetooth::Status fidl_status;
-  if (status.is_success()) {
-    return fidl_status;
-  }
-
-  auto error = std::make_unique<fuchsia::bluetooth::Error>();
-  error->error_code = HostErrorToFidlDeprecated(status.error());
-  error->description = msg.empty() ? status.ToString() : std::move(msg);
-  if (status.is_protocol_error()) {
-    error->protocol_error_code = static_cast<uint32_t>(status.protocol_error());
   }
 
   fidl_status.error = std::move(error);
