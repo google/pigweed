@@ -65,6 +65,8 @@ function(pw_proto_library NAME)
 
   if("${arg_STRIP_PREFIX}" STREQUAL "")
     set(arg_STRIP_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}")
+  else()
+    get_filename_component(arg_STRIP_PREFIX "${arg_STRIP_PREFIX}" ABSOLUTE)
   endif()
 
   foreach(path IN LISTS arg_SOURCES arg_INPUTS)
@@ -187,7 +189,14 @@ function(_pw_pwpb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   # Create the library with the generated source files.
   add_library("${NAME}.pwpb" INTERFACE)
   target_include_directories("${NAME}.pwpb" INTERFACE "${OUT_DIR}/pwpb")
-  target_link_libraries("${NAME}.pwpb" INTERFACE pw_build pw_protobuf ${DEPS})
+  target_link_libraries("${NAME}.pwpb"
+    INTERFACE
+      pw_build
+      pw_polyfill.cstddef
+      pw_polyfill.span
+      pw_protobuf
+      ${DEPS}
+  )
   add_dependencies("${NAME}.pwpb" "${NAME}._generate.pwpb")
 endfunction(_pw_pwpb_library)
 
