@@ -25,10 +25,7 @@ config("default_config") {
 pw_source_set("pw_varint") {
   public_configs = [ ":default_config" ]
   public_deps = [ dir_pw_preprocessor ]
-  sources = [
-    "public/pw_varint/varint.h",
-    "varint.cc",
-  ]
+  sources = [ "varint.cc" ]
   public = [ "public/pw_varint/varint.h" ]
 }
 
