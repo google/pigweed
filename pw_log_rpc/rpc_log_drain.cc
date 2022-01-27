@@ -31,13 +31,6 @@ Result<ConstByteSpan> CreateEncodedDropMessage(
   return ConstByteSpan(encoder);
 }
 
-// TODO(pwbug/605): Remove this hack for accessing the PayloadBuffer() API.
-class AccessHiddenFunctions : public rpc::RawServerWriter {
- public:
-  using RawServerWriter::PayloadBuffer;
-  using RawServerWriter::ReleaseBuffer;
-};
-
 }  // namespace
 
 Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
@@ -52,7 +45,7 @@ Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
   return OkStatus();
 }
 
-Status RpcLogDrain::Flush() {
+Status RpcLogDrain::Flush(ByteSpan encoding_buffer) {
   PW_CHECK_NOTNULL(multisink_);
 
   LogDrainState log_sink_state = LogDrainState::kMoreEntriesRemaining;
@@ -61,17 +54,11 @@ Status RpcLogDrain::Flush() {
     if (!server_writer_.active()) {
       return Status::Unavailable();
     }
-    log::LogEntries::MemoryEncoder encoder(
-        static_cast<AccessHiddenFunctions&>(server_writer_).PayloadBuffer());
+    log::LogEntries::MemoryEncoder encoder(encoding_buffer);
     uint32_t packed_entry_count = 0;
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
     // Avoid sending empty packets.
     if (encoder.size() == 0) {
-      // Release buffer when still active to keep the writer in a replaceable
-      // state.
-      if (server_writer_.active()) {
-        static_cast<AccessHiddenFunctions&>(server_writer_).ReleaseBuffer();
-      }
       continue;
     }
 
@@ -110,7 +97,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
                                    log_entry_buffer_);
       // Add encoded drop messsage if fits in buffer.
       if (drop_message_result.ok() &&
-          drop_message_result.value().size() + kLogEntryEncodeFrameSize <
+          drop_message_result.value().size() + kLogEntriesEncodeFrameSize <
               encoder.ConservativeWriteLimit()) {
         PW_CHECK_OK(encoder.WriteBytes(
             static_cast<uint32_t>(log::LogEntries::Fields::ENTRIES),
@@ -138,8 +125,8 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
 
     // Check if the entry fits in encoder buffer.
     const size_t encoded_entry_size =
-        possible_entry.value().entry().size() + kLogEntryEncodeFrameSize;
-    if (encoded_entry_size + kLogEntryEncodeFrameSize > total_buffer_size) {
+        possible_entry.value().entry().size() + kLogEntriesEncodeFrameSize;
+    if (encoded_entry_size + kLogEntriesEncodeFrameSize > total_buffer_size) {
       // Entry is larger than the entire available buffer.
       ++committed_entry_drop_count_;
       PW_CHECK_OK(PopEntry(possible_entry.value()));

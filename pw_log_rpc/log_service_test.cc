@@ -144,6 +144,8 @@ class LogServiceTest : public ::testing::Test {
                   RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors,
                   &filters_[2]),
   };
+
+  std::array<std::byte, 128> encoding_buffer_ = {};
 };
 struct TestLogEntry {
   log_tokenized::Metadata metadata = kSampleMetadata;
@@ -269,7 +271,7 @@ size_t CountLogEntries(protobuf::Decoder& entries_decoder) {
 TEST_F(LogServiceTest, AssignWriter) {
   // Drains don't have writers.
   for (auto& drain : drain_map_.drains()) {
-    EXPECT_EQ(drain.Flush(), Status::Unavailable());
+    EXPECT_EQ(drain.Flush(encoding_buffer_), Status::Unavailable());
   }
 
   // Create context directed to drain with ID 1.
@@ -280,12 +282,12 @@ TEST_F(LogServiceTest, AssignWriter) {
 
   // Call RPC, which sets the drain's writer.
   context.call(rpc_request_buffer);
-  EXPECT_EQ(active_drain.Flush(), OkStatus());
+  EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
 
   // Other drains are still missing writers.
   for (auto& drain : drain_map_.drains()) {
     if (drain.channel_id() != drain_channel_id) {
-      EXPECT_EQ(drain.Flush(), Status::Unavailable());
+      EXPECT_EQ(drain.Flush(encoding_buffer_), Status::Unavailable());
     }
   }
 
@@ -294,7 +296,7 @@ TEST_F(LogServiceTest, AssignWriter) {
   LOG_SERVICE_METHOD_CONTEXT second_call_context(drain_map_);
   second_call_context.set_channel_id(drain_channel_id);
   second_call_context.call(rpc_request_buffer);
-  EXPECT_EQ(active_drain.Flush(), OkStatus());
+  EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
   ASSERT_TRUE(second_call_context.done());
   EXPECT_EQ(second_call_context.responses().size(), 0u);
 
@@ -303,7 +305,7 @@ TEST_F(LogServiceTest, AssignWriter) {
   LOG_SERVICE_METHOD_CONTEXT third_call_context(drain_map_);
   third_call_context.set_channel_id(drain_channel_id);
   third_call_context.call(rpc_request_buffer);
-  EXPECT_EQ(active_drain.Flush(), OkStatus());
+  EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
   ASSERT_FALSE(third_call_context.done());
   EXPECT_EQ(third_call_context.responses().size(), 0u);
   EXPECT_EQ(active_drain.Close(), OkStatus());
@@ -321,7 +323,7 @@ TEST_F(LogServiceTest, StartAndEndStream) {
 
   // Request logs.
   context.call(rpc_request_buffer);
-  EXPECT_EQ(active_drain.Flush(), OkStatus());
+  EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
 
   // Not done until the stream is finished.
   ASSERT_FALSE(context.done());
@@ -364,7 +366,7 @@ TEST_F(LogServiceTest, HandleDropped) {
 
   // Request logs.
   context.call(rpc_request_buffer);
-  EXPECT_EQ(active_drain.Flush(), OkStatus());
+  EXPECT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
   active_drain.Close();
   ASSERT_EQ(context.status(), OkStatus());
   // There is at least 1 response with multiple log entries packed.
@@ -405,7 +407,7 @@ TEST_F(LogServiceTest, HandleSmallBuffer) {
   AddLogEntries(total_entries, kLongMessage, kSampleMetadata, kSampleTimestamp);
   // Request logs.
   context.call(rpc_request_buffer);
-  EXPECT_EQ(small_buffer_drain.value()->Flush(), OkStatus());
+  EXPECT_EQ(small_buffer_drain.value()->Flush(encoding_buffer_), OkStatus());
   EXPECT_EQ(small_buffer_drain.value()->Close(), OkStatus());
   ASSERT_EQ(context.status(), OkStatus());
   ASSERT_GE(context.responses().size(), 1u);
@@ -478,7 +480,7 @@ TEST_F(LogServiceTest, LargeLogEntry) {
   LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
   context.set_channel_id(drain_channel_id);
   context.call(rpc_request_buffer);
-  ASSERT_EQ(active_drain.Flush(), OkStatus());
+  ASSERT_EQ(active_drain.Flush(encoding_buffer_), OkStatus());
   active_drain.Close();
   ASSERT_EQ(context.status(), OkStatus());
   ASSERT_EQ(context.responses().size(), 1u);
@@ -531,7 +533,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
       server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
   // This drain closes on errors.
-  EXPECT_EQ(drain.value()->Flush(), Status::Aborted());
+  EXPECT_EQ(drain.value()->Flush(encoding_buffer_), Status::Aborted());
   EXPECT_TRUE(output.done());
 
   // Make sure not all packets were sent.
@@ -563,7 +565,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamSendsDropCount) {
   writer = rpc::RawServerWriter::Open<Logs::Listen>(
       server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
-  EXPECT_EQ(drain.value()->Flush(), OkStatus());
+  EXPECT_EQ(drain.value()->Flush(encoding_buffer_), OkStatus());
 
   // Add expected messages to the stack in the reverse order they are received.
   message_stack.clear();
@@ -627,7 +629,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
       server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
   // This drain ignores errors.
-  EXPECT_EQ(drain.value()->Flush(), OkStatus());
+  EXPECT_EQ(drain.value()->Flush(encoding_buffer_), OkStatus());
   EXPECT_FALSE(output.done());
 
   // Make sure some packets were sent.
@@ -672,7 +674,7 @@ TEST_F(LogServiceTest, InterruptedLogStreamIgnoresErrors) {
   const size_t previous_stream_packet_count =
       output.payloads<Logs::Listen>().size();
   output.set_send_status(Status::Unavailable());
-  EXPECT_EQ(drain.value()->Flush(), OkStatus());
+  EXPECT_EQ(drain.value()->Flush(encoding_buffer_), OkStatus());
   EXPECT_FALSE(output.done());
   ASSERT_EQ(output.payloads<Logs::Listen>().size(),
             previous_stream_packet_count);
@@ -746,7 +748,7 @@ TEST_F(LogServiceTest, FilterLogs) {
   LOG_SERVICE_METHOD_CONTEXT context(drain_map_);
   context.set_channel_id(drain.channel_id());
   context.call({});
-  ASSERT_EQ(drain.Flush(), OkStatus());
+  ASSERT_EQ(drain.Flush(encoding_buffer_), OkStatus());
 
   size_t entries_found = 0;
   uint32_t drop_count_found = 0;
@@ -774,13 +776,13 @@ TEST_F(LogServiceTest, ReopenClosedLogStreamWithAcquiredBuffer) {
       server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
   // This drain closes on errors.
-  EXPECT_EQ(drain.value()->Flush(), OkStatus());
+  EXPECT_EQ(drain.value()->Flush(encoding_buffer_), OkStatus());
 
   // Request log stream with a new writer.
   writer = rpc::RawServerWriter::Open<Logs::Listen>(
       server, drain_channel_id, log_service);
   EXPECT_EQ(drain.value()->Open(writer), OkStatus());
-  EXPECT_EQ(drain.value()->Flush(), OkStatus());
+  EXPECT_EQ(drain.value()->Flush(encoding_buffer_), OkStatus());
 }
 
 }  // namespace

@@ -47,16 +47,18 @@ TEST(RpcLogDrain, TryFlushDrainWithClosedWriter) {
       nullptr);
   EXPECT_EQ(drain.channel_id(), drain_id);
 
+  std::byte encoding_buffer[128] = {};
+
   // Attach drain to a MultiSink.
   std::array<std::byte, kBufferSize * 2> multisink_buffer;
   multisink::MultiSink multisink(multisink_buffer);
   multisink.AttachDrain(drain);
-  EXPECT_EQ(drain.Flush(), Status::Unavailable());
+  EXPECT_EQ(drain.Flush(encoding_buffer), Status::Unavailable());
 
   rpc::RawServerWriter writer;
   ASSERT_FALSE(writer.active());
   EXPECT_EQ(drain.Open(writer), Status::FailedPrecondition());
-  EXPECT_EQ(drain.Flush(), Status::Unavailable());
+  EXPECT_EQ(drain.Flush(encoding_buffer), Status::Unavailable());
 }
 
 TEST(RpcLogDrainMap, GetDrainsByIdFromDrainMap) {
@@ -108,6 +110,8 @@ TEST(RpcLogDrain, FlushingDrainWithOpenWriter) {
   RpcLogDrainMap drain_map(drains);
   LogService log_service(drain_map);
 
+  std::byte encoding_buffer[128] = {};
+
   rpc::RawFakeChannelOutput<3, 128> output;
   rpc::Channel channel(rpc::Channel::Create<drain_id>(&output));
   rpc::Server server(std::span(&channel, 1));
@@ -117,20 +121,20 @@ TEST(RpcLogDrain, FlushingDrainWithOpenWriter) {
   std::array<std::byte, kBufferSize * 2> multisink_buffer;
   multisink::MultiSink multisink(multisink_buffer);
   multisink.AttachDrain(drain);
-  EXPECT_EQ(drain.Flush(), Status::Unavailable());
+  EXPECT_EQ(drain.Flush(encoding_buffer), Status::Unavailable());
 
   rpc::RawServerWriter writer =
       rpc::RawServerWriter::Open<log::pw_rpc::raw::Logs::Listen>(
           server, drain_id, log_service);
   ASSERT_TRUE(writer.active());
   EXPECT_EQ(drain.Open(writer), OkStatus());
-  EXPECT_EQ(drain.Flush(), OkStatus());
+  EXPECT_EQ(drain.Flush(encoding_buffer), OkStatus());
   // Can call multliple times until closed on error.
-  EXPECT_EQ(drain.Flush(), OkStatus());
+  EXPECT_EQ(drain.Flush(encoding_buffer), OkStatus());
   EXPECT_EQ(drain.Close(), OkStatus());
   rpc::RawServerWriter& writer_ref = writer;
   ASSERT_FALSE(writer_ref.active());
-  EXPECT_EQ(drain.Flush(), Status::Unavailable());
+  EXPECT_EQ(drain.Flush(encoding_buffer), Status::Unavailable());
 }
 
 TEST(RpcLogDrain, TryReopenOpenedDrain) {

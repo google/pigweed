@@ -150,10 +150,14 @@ channel ID.
 
 RpcLogDrainThread
 -----------------
-The module includes a sample thread that flushes each drain sequentially. Future
-work might replace this with enqueueing the flush work on a work queue. The user
-can also choose to have different threads flushing individual ``RpcLogDrain``\s
-with different priorities.
+The module includes a sample thread that flushes each drain sequentially.
+``RpcLogDrainThread`` takes an encoding buffer span at construction.
+``RpcLogDrainThreadWithBuffer`` takes a template parameter for the buffer size,
+which must be large enough to fit at least one log entry.
+
+Future work might replace this with enqueueing the flush work on a work queue.
+The user can also choose to have different threads flushing individual
+``RpcLogDrain``\s with different priorities.
 
 Calling ``OpenUnrequestedLogStream()`` is a convenient way to set up a log
 stream that is started without the need to receive an RCP request for logs.

@@ -57,41 +57,34 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // must account for the max message size to avoid log entry drops. The dropped
   // field is not accounted since a dropped message has all other fields unset.
   static constexpr size_t kMinEntrySizeWithoutPayload =
-      // message
-      protobuf::FieldNumberSizeBytes(1) +
-      1  // Assume minimum varint length, skip the payload bytes.
-      // line_level
-      + protobuf::FieldNumberSizeBytes(2) +
-      protobuf::kMaxSizeBytesUint32
-      // flags
-      + protobuf::FieldNumberSizeBytes(3) +
-      protobuf::kMaxSizeBytesUint32
-      // timestamp or time_since_last_entry
-      + protobuf::FieldNumberSizeBytes(4) +
-      protobuf::kMaxSizeBytesInt64
-      // Module
-      + protobuf::FieldNumberSizeBytes(7) +
-      1;  // Assume minimum varint length, skip the module bytes.
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MESSAGE, 0) +
+      protobuf::SizeOfFieldUint32(log::LogEntry::Fields::LINE_LEVEL) +
+      protobuf::SizeOfFieldUint32(log::LogEntry::Fields::FLAGS) +
+      protobuf::SizeOfFieldInt64(log::LogEntry::Fields::TIMESTAMP) +
+      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MODULE, 0);
+
   // The smallest buffer size must be able to fit a typical token size: 4 bytes.
   static constexpr size_t kMinEntryBufferSize = kMinEntrySizeWithoutPayload + 4;
 
-  // When encoding LogEntry in LogEntries, there are kLogEntryEncodeFrameSize
+  // When encoding LogEntry in LogEntries, there are kLogEntriesEncodeFrameSize
   // bytes added to the encoded LogEntry. This constant and kMinEntryBufferSize
   // can be used to calculate the minimum RPC ChannelOutput buffer size.
-  static constexpr size_t kLogEntryEncodeFrameSize =
-      protobuf::FieldNumberSizeBytes(1)  // LogEntry
-      + protobuf::kMaxSizeOfLength;
+  static constexpr size_t kLogEntriesEncodeFrameSize =
+      protobuf::FieldNumberSizeBytes(log::LogEntries::Fields::ENTRIES) +
+      protobuf::kMaxSizeOfLength +
+      protobuf::SizeOfFieldUint32(
+          log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID);
 
   // Creates a closed log stream with a writer that can be set at a later time.
   // The provided buffer must be large enough to hold the largest transmittable
   // log::LogEntry or a drop count message at the very least. The user can
   // choose to provide a unique mutex for the drain, or share it to save RAM as
   // long as they are aware of contengency issues.
-  RpcLogDrain(const uint32_t channel_id,
-              ByteSpan log_entry_buffer,
-              sync::Mutex& mutex,
-              LogDrainErrorHandling error_handling,
-              Filter* filter = nullptr)
+  constexpr RpcLogDrain(const uint32_t channel_id,
+                        ByteSpan log_entry_buffer,
+                        sync::Mutex& mutex,
+                        LogDrainErrorHandling error_handling,
+                        Filter* filter = nullptr)
       : channel_id_(channel_id),
         error_handling_(error_handling),
         server_writer_(),
@@ -128,7 +121,7 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // OK - all entries were consumed.
   // ABORTED - there was an error writing the packet, and error_handling equals
   // `kCloseStreamOnWriterError`.
-  Status Flush() PW_LOCKS_EXCLUDED(mutex_);
+  Status Flush(ByteSpan encoding_buffer) PW_LOCKS_EXCLUDED(mutex_);
 
   // Ends RPC log stream without flushing.
   //

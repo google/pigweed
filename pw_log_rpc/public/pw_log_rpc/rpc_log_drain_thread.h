@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <span>
 
 #include "pw_log_rpc/log_service.h"
@@ -32,11 +33,15 @@ namespace pw::log_rpc {
 // manages multiple log streams. It is a suitable option when a minimal
 // thread count is desired but comes with the cost of individual log streams
 // blocking each other's flushing.
-class RpcLogDrainThread final : public thread::ThreadCore,
-                                public multisink::MultiSink::Listener {
+class RpcLogDrainThread : public thread::ThreadCore,
+                          public multisink::MultiSink::Listener {
  public:
-  RpcLogDrainThread(multisink::MultiSink& multisink, RpcLogDrainMap& drain_map)
-      : drain_map_(drain_map), multisink_(multisink) {}
+  RpcLogDrainThread(multisink::MultiSink& multisink,
+                    RpcLogDrainMap& drain_map,
+                    std::span<std::byte> encoding_buffer)
+      : drain_map_(drain_map),
+        multisink_(multisink),
+        encoding_buffer_(encoding_buffer) {}
 
   void OnNewEntryAvailable() override {
     new_log_available_notification_.release();
@@ -51,7 +56,7 @@ class RpcLogDrainThread final : public thread::ThreadCore,
     while (true) {
       new_log_available_notification_.acquire();
       for (auto& drain : drain_map_.drains()) {
-        drain.Flush().IgnoreError();
+        drain.Flush(encoding_buffer_).IgnoreError();
       }
     }
   }
@@ -73,6 +78,24 @@ class RpcLogDrainThread final : public thread::ThreadCore,
   sync::ThreadNotification new_log_available_notification_;
   RpcLogDrainMap& drain_map_;
   multisink::MultiSink& multisink_;
+  std::span<std::byte> encoding_buffer_;
+};
+
+template <size_t kEncodingBufferSizeBytes>
+class RpcLogDrainThreadWithBuffer final : public RpcLogDrainThread {
+ public:
+  RpcLogDrainThreadWithBuffer(multisink::MultiSink& multisink,
+                              RpcLogDrainMap& drain_map)
+      : RpcLogDrainThread(multisink, drain_map, encoding_buffer_array_) {}
+
+ private:
+  static_assert(kEncodingBufferSizeBytes >=
+                    RpcLogDrain::kLogEntriesEncodeFrameSize +
+                        RpcLogDrain::kMinEntryBufferSize,
+                "RpcLogDrainThread's encoding buffer must be large enough for "
+                "at least one entry");
+
+  std::byte encoding_buffer_array_[kEncodingBufferSizeBytes];
 };
 
 }  // namespace pw::log_rpc
