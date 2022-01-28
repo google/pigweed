@@ -23,7 +23,6 @@ class Peer;
 // based on certain parameters, such as service UUIDs that might be present in
 // EIR or advertising data, or based on available proximity information, to name
 // a few.
-// TODO(77549): Support filtering on service data UUIDs.
 class DiscoveryFilter final {
  public:
   DiscoveryFilter() = default;
@@ -51,8 +50,17 @@ class DiscoveryFilter final {
   void set_service_uuids(const std::vector<UUID>& service_uuids) { service_uuids_ = service_uuids; }
   const std::vector<UUID>& service_uuids() const { return service_uuids_; }
 
+  // Filter on service data UUIDs.
+  //
+  // Passing an empty value for |service_data_uuids| effectively disables this
+  // filter.
+  void set_service_data_uuids(const std::vector<UUID>& service_data_uuids) {
+    service_data_uuids_ = service_data_uuids;
+  }
+  const std::vector<UUID>& service_data_uuids() const { return service_data_uuids_; }
+
   // Sets a string to be matched against the device name. A scan result
-  // satisifes this filter if part of the complete or shortened device name
+  // satisfies this filter if part of the complete or shortened device name
   // fields matches |name_substring|.
   //
   // Passing an empty value for |name_substring| effectively disables this
@@ -109,6 +117,7 @@ class DiscoveryFilter final {
 
  private:
   std::vector<UUID> service_uuids_;
+  std::vector<UUID> service_data_uuids_;
   std::string name_substring_;
   std::optional<uint8_t> flags_;
   bool all_flags_required_;

@@ -15,6 +15,7 @@
 
 #include "lib/inspect/cpp/reader.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
@@ -40,6 +41,8 @@ const DeviceAddress kAddress2(DeviceAddress::Type::kLEPublic, {2});
 const DeviceAddress kAddress3(DeviceAddress::Type::kLEPublic, {3});
 const DeviceAddress kAddress4(DeviceAddress::Type::kLEPublic, {4});
 const DeviceAddress kAddress5(DeviceAddress::Type::kLEPublic, {5});
+
+constexpr uint16_t kServiceDataUuid = 0x1234;
 
 constexpr zx::duration kTestScanPeriod = zx::sec(10);
 
@@ -135,6 +138,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   //   - Connectable, not scannable;
   //   - General discoverable;
   //   - UUIDs: 0x180d, 0x180f;
+  //   - Service Data UUIDs: kServiceDataUuid;
   //   - has name: "Device 0"
   //
   // Peer 1:
@@ -159,6 +163,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete 16-bit service UUIDs
         0x05, 0x03, 0x0d, 0x18, 0x0f, 0x18,
+
+        // 16-bit service data UUID
+        0x03, DataType::kServiceData16Bit, LowerBits(kServiceDataUuid), UpperBits(kServiceDataUuid),
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '0');
@@ -663,41 +670,51 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[4]->filter()->set_connectable(false);
   sessions[4]->SetResultCallback(std::move(result_cb));
 
+  // Session 5 is interested in peers with UUID 0x180d and service data UUID 0x1234.
+  std::unordered_set<DeviceAddress> peers_session5;
+  result_cb = [&peers_session5](const auto& peer) { peers_session5.insert(peer.address()); };
+  sessions.push_back(StartDiscoverySession());
+
+  sessions[5]->filter()->set_service_uuids({UUID(uuid)});
+  sessions[5]->filter()->set_service_data_uuids({UUID(kServiceDataUuid)});
+  sessions[5]->SetResultCallback(std::move(result_cb));
+
   RunLoopUntilIdle();
 
-  EXPECT_EQ(5u, sessions.size());
+  EXPECT_EQ(6u, sessions.size());
 
-#define EXPECT_CONTAINS(addr, dev_list) EXPECT_TRUE(dev_list.find(addr) != dev_list.end())
   // At this point all sessions should have processed all peers at least once.
 
   // Session 0: Should have seen all peers except for peer 3, which is
   // non-discoverable.
   EXPECT_EQ(3u, peers_session0.size());
-  EXPECT_CONTAINS(kAddress0, peers_session0);
-  EXPECT_CONTAINS(kAddress1, peers_session0);
-  EXPECT_CONTAINS(kAddress2, peers_session0);
+  EXPECT_THAT(peers_session0, ::testing::Contains(kAddress0));
+  EXPECT_THAT(peers_session0, ::testing::Contains(kAddress1));
+  EXPECT_THAT(peers_session0, ::testing::Contains(kAddress2));
 
   // Session 1: Should have only seen peer 1.
   EXPECT_EQ(1u, peers_session1.size());
-  EXPECT_CONTAINS(kAddress1, peers_session1);
+  EXPECT_THAT(peers_session1, ::testing::Contains(kAddress1));
 
   // Session 2: Should have only seen peers 0 and 1
   EXPECT_EQ(2u, peers_session2.size());
-  EXPECT_CONTAINS(kAddress0, peers_session2);
-  EXPECT_CONTAINS(kAddress1, peers_session2);
+  EXPECT_THAT(peers_session2, ::testing::Contains(kAddress0));
+  EXPECT_THAT(peers_session2, ::testing::Contains(kAddress1));
 
   // Session 3: Should have only seen peers 0, 2, and 3
   EXPECT_EQ(3u, peers_session3.size());
-  EXPECT_CONTAINS(kAddress0, peers_session3);
-  EXPECT_CONTAINS(kAddress2, peers_session3);
-  EXPECT_CONTAINS(kAddress3, peers_session3);
+  EXPECT_THAT(peers_session3, ::testing::Contains(kAddress0));
+  EXPECT_THAT(peers_session3, ::testing::Contains(kAddress2));
+  EXPECT_THAT(peers_session3, ::testing::Contains(kAddress3));
 
   // Session 4: Should have seen peers 2 and 3
   EXPECT_EQ(2u, peers_session4.size());
-  EXPECT_CONTAINS(kAddress2, peers_session4);
-  EXPECT_CONTAINS(kAddress3, peers_session4);
+  EXPECT_THAT(peers_session4, ::testing::Contains(kAddress2));
+  EXPECT_THAT(peers_session4, ::testing::Contains(kAddress3));
 
-#undef EXPECT_CONTAINS
+  // Session 5: Should only see peer 0.
+  EXPECT_EQ(1u, peers_session5.size());
+  EXPECT_THAT(peers_session5, ::testing::Contains(kAddress0));
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNotifications) {

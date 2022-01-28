@@ -57,6 +57,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
   // Filters that require iterating over advertising data.
   bool flags_ok = !flags_;
   bool service_uuids_ok = service_uuids_.empty();
+  bool service_data_uuids_ok = service_data_uuids_.empty();
   bool name_ok = name_substring_.empty();
   bool manufacturer_ok = !manufacturer_code_;
   bool pathloss_ok = !pathloss_;
@@ -153,6 +154,21 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
           service_uuids_ok = MatchUuids(service_uuids_, data, UUIDElemSize::k128Bit);
         }
         break;
+      case DataType::kServiceData16Bit:
+        if (!service_data_uuids_ok) {
+          service_data_uuids_ok = MatchUuids(service_data_uuids_, data, UUIDElemSize::k16Bit);
+        }
+        break;
+      case DataType::kServiceData32Bit:
+        if (!service_data_uuids_ok) {
+          service_data_uuids_ok = MatchUuids(service_data_uuids_, data, UUIDElemSize::k32Bit);
+        }
+        break;
+      case DataType::kServiceData128Bit:
+        if (!service_data_uuids_ok) {
+          service_data_uuids_ok = MatchUuids(service_data_uuids_, data, UUIDElemSize::k128Bit);
+        }
+        break;
       default:
         break;
     }
@@ -171,11 +187,12 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
       return false;
   }
 
-  return flags_ok && service_uuids_ok && name_ok && manufacturer_ok;
+  return flags_ok && service_uuids_ok && service_data_uuids_ok && name_ok && manufacturer_ok;
 }
 
 void DiscoveryFilter::Reset() {
   service_uuids_.clear();
+  service_data_uuids_.clear();
   name_substring_.clear();
   connectable_.reset();
   manufacturer_code_.reset();
