@@ -20,6 +20,9 @@
 #include "pw_rpc/nanopb/client_testing.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
+
 namespace pw::rpc {
 namespace {
 
@@ -136,3 +139,5 @@ TEST(NanopbClientReaderWriter, CallbacksMoveCorrectly) {
 
 }  // namespace
 }  // namespace pw::rpc
+
+PW_MODIFY_DIAGNOSTICS_POP();

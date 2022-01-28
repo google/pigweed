@@ -18,13 +18,9 @@ namespace pw::rpc::internal {
 
 void ClientCall::CloseClientCall() {
   if (client_stream_open()) {
-    // TODO(pwbug/597): Ensure the call object is locked before releasing the
-    //     RPC mutex.
     CloseClientStreamLocked();
-    rpc_lock().lock();  // Reacquire after sending the packet
   }
-  CloseAndReleasePayloadBuffer();
-  rpc_lock().lock();  // Reacquire releasing the buffer
+  UnregisterAndMarkClosed();
 }
 
 }  // namespace pw::rpc::internal

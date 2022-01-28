@@ -23,7 +23,6 @@
 #include "pw_hdlc/rpc_channel.h"
 #include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
-#include "pw_rpc/synchronized_channel_output.h"
 #include "pw_sync/mutex.h"
 #include "pw_system/config.h"
 #include "pw_system/io.h"
@@ -33,13 +32,9 @@ namespace {
 
 constexpr size_t kMaxTransmissionUnit = PW_SYSTEM_MAX_TRANSMISSION_UNIT;
 
-sync::Mutex channel_output_mutex;
-rpc::SynchronizedChannelOutput<
-    hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit>>
-    hdlc_channel_output(channel_output_mutex,
-                        GetWriter(),
-                        PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS,
-                        "HDLC channel");
+hdlc::RpcChannelOutput hdlc_channel_output(GetWriter(),
+                                           PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS,
+                                           "HDLC channel");
 rpc::Channel channels[] = {
     rpc::Channel::Create<kDefaultChannelId>(&hdlc_channel_output)};
 rpc::Server server(channels);

@@ -1062,8 +1062,6 @@ configuration. This will enable the Kconfig menu for the following:
 * ``pw_rpc.client_server`` which can be enabled via
   ``CONFIG_PIGWEED_RPC_CLIENT_SERVER=y``.
 * ``pw_rpc.common` which can be enabled via ``CONFIG_PIGWEED_RPC_COMMON=y``.
-* ``pw_rpc.synchronized_channel_output`` which can be enabled via
-  ``CONFIG_PIGWEED_RPC_SYNCHRONIZED_CHANNEL_OUTPUT=y``.
 
 ChannelOutput API
 =================

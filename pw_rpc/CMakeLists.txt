@@ -88,15 +88,6 @@ if (NOT "${pw_sync.mutex_BACKEND}" STREQUAL "pw_sync.mutex.NO_BACKEND_SET" AND
   target_link_libraries(pw_rpc.common PUBLIC pw_sync.mutex)
 endif()
 
-pw_add_module_library(pw_rpc.synchronized_channel_output
-  PUBLIC_DEPS
-    pw_rpc.common
-    pw_sync.mutex
-)
-if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_SYNCHRONIZED_CHANNEL_OUTPUT)
-  zephyr_link_libraries(pw_rpc.synchronized_channel_output)
-endif()
-
 pw_add_module_library(pw_rpc.test_utils
   SOURCES
     fake_channel_output.cc

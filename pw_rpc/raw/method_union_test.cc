@@ -108,6 +108,7 @@ TEST(RawMethodUnion, InvokesUnary) {
   const Method& method =
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request(test_request));
 
   EXPECT_EQ(context.service().last_request.integer, 456);
@@ -136,6 +137,7 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
+  rpc_lock().lock();
   method.Invoke(context.get(), context.request(test_request));
 
   EXPECT_EQ(0u, context.output().packet_count());

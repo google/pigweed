@@ -14,6 +14,7 @@
 
 #include "pw_rpc/raw/internal/method.h"
 
+#include <cstddef>
 #include <cstring>
 
 #include "pw_rpc/internal/packet.h"
@@ -23,20 +24,26 @@ namespace pw::rpc::internal {
 void RawMethod::SynchronousUnaryInvoker(const CallContext& context,
                                         const Packet& request) {
   RawUnaryResponder responder(context);
-  std::span payload_buffer = responder.PayloadBuffer();
+  rpc_lock().unlock();
+  // TODO(hepler): Remove support for raw synchronous unary methods. Unlike
+  //     synchronous Nanopb methods, they provide little value compared to
+  //     asynchronous unary methods. For now, just provide a fixed buffer on the
+  //     stack.
+  std::byte payload_buffer[64] = {};
 
   StatusWithSize sws =
       static_cast<const RawMethod&>(context.method())
           .function_.synchronous_unary(
-              context.service(), request.payload(), payload_buffer);
+              context.service(), request.payload(), std::span(payload_buffer));
 
-  responder.Finish(payload_buffer.first(sws.size()), sws.status())
+  responder.Finish(std::span(payload_buffer, sws.size()), sws.status())
       .IgnoreError();
 }
 
 void RawMethod::AsynchronousUnaryInvoker(const CallContext& context,
                                          const Packet& request) {
   RawUnaryResponder responder(context);
+  rpc_lock().unlock();
   static_cast<const RawMethod&>(context.method())
       .function_.asynchronous_unary(
           context.service(), request.payload(), responder);
@@ -45,6 +52,7 @@ void RawMethod::AsynchronousUnaryInvoker(const CallContext& context,
 void RawMethod::ServerStreamingInvoker(const CallContext& context,
                                        const Packet& request) {
   RawServerWriter server_writer(context);
+  rpc_lock().unlock();
   static_cast<const RawMethod&>(context.method())
       .function_.server_streaming(
           context.service(), request.payload(), server_writer);
@@ -53,6 +61,7 @@ void RawMethod::ServerStreamingInvoker(const CallContext& context,
 void RawMethod::ClientStreamingInvoker(const CallContext& context,
                                        const Packet&) {
   RawServerReader reader(context);
+  rpc_lock().unlock();
   static_cast<const RawMethod&>(context.method())
       .function_.stream_request(context.service(), reader);
 }
@@ -60,6 +69,7 @@ void RawMethod::ClientStreamingInvoker(const CallContext& context,
 void RawMethod::BidirectionalStreamingInvoker(const CallContext& context,
                                               const Packet&) {
   RawServerReaderWriter reader_writer(context);
+  rpc_lock().unlock();
   static_cast<const RawMethod&>(context.method())
       .function_.stream_request(context.service(), reader_writer);
 }

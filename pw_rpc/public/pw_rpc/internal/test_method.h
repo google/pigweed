@@ -17,6 +17,7 @@
 #include <cstring>
 #include <span>
 
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_union.h"
 #include "pw_rpc/internal/packet.h"
@@ -48,7 +49,8 @@ class TestMethod : public Method {
   };
 
   template <MethodType kType>
-  static void InvokeForTest(const CallContext& context, const Packet& request) {
+  static void InvokeForTest(const CallContext& context, const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
     const auto& test_method = static_cast<const TestMethod&>(context.method());
     test_method.last_channel_id_ = context.channel().id();
     test_method.last_request_ = request;
@@ -56,6 +58,7 @@ class TestMethod : public Method {
 
     // Create a call object so it registers / unregisters with the server.
     FakeServerCall fake_call(context, kType);
+    rpc_lock().unlock();
   }
 
   static constexpr Invoker GetInvoker(MethodType type) {

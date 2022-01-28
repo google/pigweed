@@ -15,6 +15,7 @@
 #include "pw_rpc/raw/server_reader_writer.h"
 
 #include "gtest/gtest.h"
+#include "pw_rpc/internal/lock.h"
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc/writer.h"
@@ -146,22 +147,11 @@ TEST(RawUnaryResponder, Move_FinishesActiveCall) {
   EXPECT_EQ(completions.back(), OkStatus());
 }
 
-// TODO(pwbug/605): Remove the PayloadBuffer() API.
-template <typename T>
-class AccessHidden : public T {
- public:
-  using T::PayloadBuffer;
-};
-
 TEST(RawUnaryResponder, Move_DifferentActiveCalls_ClosesFirstOnly) {
   ReaderWriterTestContext ctx;
   RawUnaryResponder active_call =
       RawUnaryResponder::Open<TestService::TestUnaryRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
-
-  std::span buffer = static_cast<AccessHidden<RawUnaryResponder>&>(active_call)
-                         .PayloadBuffer();
-  ASSERT_FALSE(buffer.empty());
 
   RawUnaryResponder new_active_call =
       RawUnaryResponder::Open<TestService::TestAnotherUnaryRpc>(
@@ -186,12 +176,6 @@ TEST(RawUnaryResponder, ReplaceActiveCall_DoesNotFinishCall) {
       RawUnaryResponder::Open<TestService::TestUnaryRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  std::span buffer = static_cast<AccessHidden<RawUnaryResponder>&>(active_call)
-                         .PayloadBuffer();
-  constexpr const char kData[] = "Some data!";
-  ASSERT_GE(buffer.size(), sizeof(kData));
-  std::memcpy(buffer.data(), kData, sizeof(kData));
-
   RawUnaryResponder new_active_call =
       RawUnaryResponder::Open<TestService::TestUnaryRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
@@ -200,7 +184,10 @@ TEST(RawUnaryResponder, ReplaceActiveCall_DoesNotFinishCall) {
 
   ASSERT_TRUE(ctx.output.completions<TestService::TestUnaryRpc>().empty());
 
-  EXPECT_EQ(OkStatus(), active_call.Finish(buffer, Status::InvalidArgument()));
+  constexpr const char kData[] = "Some data!";
+  EXPECT_EQ(OkStatus(),
+            active_call.Finish(std::as_bytes(std::span(kData)),
+                               Status::InvalidArgument()));
 
   EXPECT_STREQ(
       reinterpret_cast<const char*>(
@@ -232,11 +219,6 @@ TEST(RawServerWriter, Move_InactiveToActive_FinishesActiveCall) {
       RawServerWriter::Open<TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  EXPECT_GT(static_cast<AccessHidden<RawServerWriter>&>(active_call)
-                .PayloadBuffer()
-                .size(),
-            0u);
-
   RawServerWriter inactive_call;
 
   active_call = std::move(inactive_call);
@@ -253,12 +235,6 @@ TEST(RawServerWriter, ReplaceActiveCall_DoesNotFinishCall) {
       RawServerWriter::Open<TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  std::span buffer =
-      static_cast<AccessHidden<RawServerWriter>&>(active_call).PayloadBuffer();
-  constexpr const char kData[] = "Some data!";
-  ASSERT_GE(buffer.size(), sizeof(kData));
-  std::memcpy(buffer.data(), kData, sizeof(kData));
-
   RawServerWriter new_active_call =
       RawServerWriter::Open<TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
@@ -268,7 +244,8 @@ TEST(RawServerWriter, ReplaceActiveCall_DoesNotFinishCall) {
   ASSERT_TRUE(
       ctx.output.completions<TestService::TestServerStreamRpc>().empty());
 
-  EXPECT_EQ(OkStatus(), active_call.Write(buffer));
+  constexpr const char kData[] = "Some data!";
+  EXPECT_EQ(OkStatus(), active_call.Write(std::as_bytes(std::span(kData))));
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output.payloads<TestService::TestServerStreamRpc>()

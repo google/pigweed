@@ -19,24 +19,26 @@
 // clang-format on
 
 #include "pw_log/log.h"
-#include "pw_rpc/internal/packet.h"
+#include "pw_rpc/internal/config.h"
 
 namespace pw::rpc::internal {
 
-using std::byte;
+namespace {
 
-std::span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
-  const size_t reserved_size = packet.MinEncodedSizeBytes();
-  return reserved_size <= buffer_.size() ? buffer_.subspan(reserved_size)
-                                         : std::span<byte>();
+std::array<std::byte, cfg::kEncodingBufferSizeBytes> encoding_buffer
+    PW_GUARDED_BY(rpc_lock());
+
 }
 
-Status Channel::SendSpan(ByteSpan buffer,
-                         const internal::Packet& packet) const {
-  Result encoded = packet.Encode(buffer);
+ByteSpan GetPayloadBuffer() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  return ByteSpan(encoding_buffer)
+      .subspan(Packet::kMinEncodedSizeWithoutPayload);
+}
+
+Status Channel::Send(const Packet& packet) {
+  Result encoded = packet.Encode(encoding_buffer);
 
   if (!encoded.ok()) {
-    output().DiscardBuffer(buffer);
     PW_LOG_ERROR(
         "Failed to encode RPC packet type %u to channel %u buffer, status %u",
         static_cast<unsigned>(packet.type()),
@@ -45,12 +47,12 @@ Status Channel::SendSpan(ByteSpan buffer,
     return Status::Internal();
   }
 
-  Status status = output().SendAndReleaseBuffer(encoded.value());
+  Status sent = output().Send(encoded.value());
 
-  if (!status.ok()) {
+  if (!sent.ok()) {
     PW_LOG_DEBUG("Channel %u failed to send packet with status %u",
                  static_cast<unsigned>(id()),
-                 status.code());
+                 sent.code());
 
     // TODO(pwbug/503): It is important that pw_rpc provide a consistent set of
     //     status codes in its APIs. This status comes from a user class and
@@ -60,11 +62,11 @@ Status Channel::SendSpan(ByteSpan buffer,
     //     closed RPC call object). Long term, the statuses need to be
     //     standardized across all APIs. For example, this might return OK,
     //     UNAVAILABLE, or DATA_LOSS and other codes are mapped to UNKNOWN.
-    if (status.IsFailedPrecondition()) {
-      status = Status::Unknown();
+    if (sent.IsFailedPrecondition()) {
+      sent = Status::Unknown();
     }
   }
-  return status;
+  return sent;
 }
 
 }  // namespace pw::rpc::internal

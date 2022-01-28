@@ -32,10 +32,12 @@ void NanopbMethod::CallSynchronousUnary(const CallContext& context,
                                         void* request_struct,
                                         void* response_struct) const {
   if (!DecodeRequest(context.channel(), request, request_struct)) {
+    rpc_lock().unlock();
     return;
   }
 
   NanopbServerCall responder(context, MethodType::kUnary);
+  rpc_lock().unlock();
   const Status status = function_.synchronous_unary(
       context.service(), request_struct, response_struct);
   responder.SendUnaryResponse(response_struct, status).IgnoreError();
@@ -46,10 +48,12 @@ void NanopbMethod::CallUnaryRequest(const CallContext& context,
                                     const Packet& request,
                                     void* request_struct) const {
   if (!DecodeRequest(context.channel(), request, request_struct)) {
+    rpc_lock().unlock();
     return;
   }
 
   NanopbServerCall server_writer(context, type);
+  rpc_lock().unlock();
   function_.unary_request(context.service(), request_struct, server_writer);
 }
 

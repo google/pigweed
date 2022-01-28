@@ -49,6 +49,11 @@
 #define PW_RPC_USE_GLOBAL_MUTEX 0
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
 
+// Size of the global RPC packet encoding buffer in bytes.
+#ifndef PW_RPC_ENCODING_BUFFER_SIZE_BYTES
+#define PW_RPC_ENCODING_BUFFER_SIZE_BYTES 512
+#endif  // PW_RPC_ENCODING_BUFFER_SIZE_BYTES
+
 // The log level to use for this module. Logs below this level are omitted.
 #ifndef PW_RPC_CONFIG_LOG_LEVEL
 #define PW_RPC_CONFIG_LOG_LEVEL PW_LOG_LEVEL_INFO
@@ -68,7 +73,11 @@ constexpr std::bool_constant<PW_RPC_CLIENT_STREAM_END_CALLBACK>
 inline constexpr size_t kNanopbStructMinBufferSize =
     PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE;
 
+inline constexpr size_t kEncodingBufferSizeBytes =
+    PW_RPC_ENCODING_BUFFER_SIZE_BYTES;
+
 #undef PW_RPC_NANOPB_STRUCT_MIN_BUFFER_SIZE
+#undef PW_RPC_ENCODING_BUFFER_SIZE_BYTES
 
 }  // namespace pw::rpc::cfg
 

@@ -74,7 +74,6 @@ pw_source_set("server") {
     "public/pw_rpc/internal/method.h",
     "public/pw_rpc/internal/method_lookup.h",
     "public/pw_rpc/internal/method_union.h",
-    "public/pw_rpc/internal/open_call.h",
     "public/pw_rpc/internal/server_call.h",
     "server.cc",
     "server_call.cc",
@@ -157,16 +156,6 @@ pw_source_set("common") {
     "public/pw_rpc/method_type.h",
   ]
   friend = [ "./*" ]
-}
-
-pw_source_set("synchronized_channel_output") {
-  public_configs = [ ":public_include_path" ]
-  public_deps = [
-    ":common",
-    "$dir_pw_sync:lock_annotations",
-    "$dir_pw_sync:mutex",
-  ]
-  public = [ "public/pw_rpc/synchronized_channel_output.h" ]
 }
 
 pw_source_set("benchmark") {

@@ -13,11 +13,15 @@
 // the License.
 
 #include "gtest/gtest.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/nanopb/test_method_context.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
+
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
 
 namespace pw::rpc {
 namespace test {
@@ -368,3 +372,5 @@ TEST(NanopbCodegen, Client_StaticMethod_InvokesServerStreamingRpcWithCallback) {
 
 }  // namespace
 }  // namespace pw::rpc
+
+PW_MODIFY_DIAGNOSTICS_POP();

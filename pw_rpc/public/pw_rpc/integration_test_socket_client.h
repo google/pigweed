@@ -52,7 +52,7 @@ class SocketClientContext {
   void ProcessPackets();
 
   stream::SocketStream stream_;
-  hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit> channel_output_;
+  hdlc::RpcChannelOutput channel_output_;
   Channel channel_;
   Client client_;
 };

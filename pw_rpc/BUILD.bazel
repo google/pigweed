@@ -89,7 +89,6 @@ pw_cc_library(
         "public/pw_rpc/internal/method_info.h",
         "public/pw_rpc/internal/method_lookup.h",
         "public/pw_rpc/internal/method_union.h",
-        "public/pw_rpc/internal/open_call.h",
         "public/pw_rpc/internal/packet.h",
         "public/pw_rpc/internal/server_call.h",
         "public/pw_rpc/method_type.h",
@@ -118,17 +117,6 @@ pw_cc_library(
         "//pw_span",
         "//pw_status",
         "//pw_sync:lock_annotations",
-    ],
-)
-
-pw_cc_library(
-    name = "synchronized_channel_output",
-    hdrs = ["public/pw_rpc/synchronized_channel_output.h"],
-    includes = ["public"],
-    deps = [
-        ":pw_rpc",
-        "//pw_sync:lock_annotations",
-        "//pw_sync:mutex",
     ],
 )
 

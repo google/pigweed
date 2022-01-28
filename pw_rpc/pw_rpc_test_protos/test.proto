@@ -22,6 +22,7 @@ message TestRequest {
 
 message TestResponse {
   int32 value = 1;
+  repeated uint32 repeated_field = 2;
 }
 
 message TestStreamResponse {

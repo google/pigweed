@@ -18,6 +18,7 @@
 #include <span>
 
 #include "pw_bytes/span.h"
+#include "pw_protobuf/serialized_size.h"
 #include "pw_rpc/internal/packet.pwpb.h"
 #include "pw_status/status_with_size.h"
 
@@ -26,6 +27,17 @@ namespace pw::rpc::internal {
 class Packet {
  public:
   static constexpr uint32_t kUnassignedId = 0;
+
+  static constexpr size_t kMinEncodedSizeWithoutPayload =
+      protobuf::SizeOfFieldEnum(RpcPacket::Fields::TYPE, 7) +
+      protobuf::SizeOfFieldUint32(RpcPacket::Fields::CHANNEL_ID) +
+      protobuf::SizeOfFieldUint32(RpcPacket::Fields::SERVICE_ID) +
+      protobuf::SizeOfFieldUint32(RpcPacket::Fields::METHOD_ID) +
+      protobuf::SizeOfDelimitedFieldWithoutValue(RpcPacket::Fields::PAYLOAD) +
+      protobuf::SizeOfFieldUint32(RpcPacket::Fields::STATUS,
+                                  Status::Unauthenticated().code()) +
+      protobuf::SizeOfFieldUint32(RpcPacket::Fields::CALL_ID);
+  ;
 
   // Parses a packet from a protobuf message. Missing or malformed fields take
   // their default values.

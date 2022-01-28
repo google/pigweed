@@ -67,7 +67,7 @@ TEST(NanopbUnaryResponder, Open_ReturnsUsableResponder) {
       NanopbUnaryResponder<pw_rpc_test_TestResponse>::Open<
           TestService::TestUnaryRpc>(ctx.server, ctx.channel.id(), ctx.service);
 
-  responder.Finish({.value = 4321});
+  responder.Finish({.value = 4321, .repeated_field = {}});
 
   EXPECT_EQ(ctx.output.last_response<TestService::TestUnaryRpc>().value, 4321);
   EXPECT_EQ(ctx.output.last_status(), OkStatus());

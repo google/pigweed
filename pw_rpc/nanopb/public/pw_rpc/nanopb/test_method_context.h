@@ -129,15 +129,11 @@ class NanopbInvocationContext
              MethodTraits<decltype(kMethod)>::kType,
              std::forward<Args>(args)...) {}
 
-  void SendClientStream(const Request& request) {
-    // Borrow a buffer from the ChannelOutput for sending the request.
-    ChannelOutput& channel_output = Base::output();
-    std::span buffer = channel_output.AcquireBuffer();
-
-    Base::SendClientStream(buffer.first(
+  template <size_t kEncodingBufferSizeBytes = 128>
+  void SendClientStream(const Request& request) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    std::array<std::byte, kEncodingBufferSizeBytes> buffer;
+    Base::SendClientStream(std::span(buffer).first(
         kMethodInfo.serde().EncodeRequest(&request, buffer).size()));
-
-    channel_output.DiscardBuffer(buffer);
   }
 
  private:

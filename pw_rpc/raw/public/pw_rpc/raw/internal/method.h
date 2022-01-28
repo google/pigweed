@@ -116,18 +116,23 @@ class RawMethod : public Method {
       : Method(id, invoker), function_(function) {}
 
   static void SynchronousUnaryInvoker(const CallContext& context,
-                                      const Packet& request);
+                                      const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
   static void AsynchronousUnaryInvoker(const CallContext& context,
-                                       const Packet& request);
+                                       const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
   static void ServerStreamingInvoker(const CallContext& context,
-                                     const Packet& request);
+                                     const Packet& request)
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
-  static void ClientStreamingInvoker(const CallContext& context, const Packet&);
+  static void ClientStreamingInvoker(const CallContext& context, const Packet&)
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
   static void BidirectionalStreamingInvoker(const CallContext& context,
-                                            const Packet&);
+                                            const Packet&)
+      PW_UNLOCK_FUNCTION(rpc_lock());
 
   // Stores the user-defined RPC.
   Function function_;

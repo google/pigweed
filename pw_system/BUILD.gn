@@ -101,7 +101,6 @@ pw_source_set("rpc") {
     "$dir_pw_assert",
     "$dir_pw_hdlc:pw_rpc",
     "$dir_pw_hdlc:rpc_channel_output",
-    "$dir_pw_rpc:synchronized_channel_output",
     "$dir_pw_sync:mutex",
   ]
 }

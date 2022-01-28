@@ -61,17 +61,17 @@ Result<Packet> Endpoint::ProcessPacket(std::span<const std::byte> data,
 }
 
 void Endpoint::RegisterCall(Call& call) {
-  rpc_lock().lock();
-
   Call* const existing_call = FindCallById(
       call.channel_id_locked(), call.service_id(), call.method_id());
 
   RegisterUniqueCall(call);
 
   if (existing_call != nullptr) {
-    existing_call->ReplaceWithNewInstance(call);
-  } else {
-    rpc_lock().unlock();
+    // TODO(pwbug/597): Ensure call object is locked when calling callback. For
+    //     on_error, could potentially move the callback and call it after the
+    //     lock is released.
+    existing_call->HandleError(Status::Cancelled());
+    rpc_lock().lock();
   }
 }
 

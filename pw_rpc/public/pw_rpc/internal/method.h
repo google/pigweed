@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "pw_rpc/internal/call_context.h"
+#include "pw_rpc/internal/lock.h"
 
 namespace pw::rpc {
 
@@ -65,8 +66,12 @@ class Method {
   // calls the invoker function, which handles the RPC request and response
   // according to the RPC type and protobuf implementation and calls the
   // user-defined RPC function.
-  void Invoke(const CallContext& context, const Packet& request) const {
-    return invoker_(context, request);
+  //
+  // The rpc_lock() must be held through creating the call object and released
+  // before calling into the RPC body.
+  void Invoke(const CallContext& context, const Packet& request) const
+      PW_UNLOCK_FUNCTION(rpc_lock()) PW_NO_LOCK_SAFETY_ANALYSIS {
+    return invoker_(context, request);  // The invoker must unlock rpc_lock().
   }
 
  protected:

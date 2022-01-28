@@ -22,6 +22,7 @@
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
@@ -57,6 +58,62 @@ class Server : public internal::Endpoint {
  private:
   friend class internal::Call;
   friend class ClientServer;
+
+  // Give call classes access to OpenContext.
+  friend class RawServerReaderWriter;
+  friend class RawServerWriter;
+  friend class RawServerReader;
+  friend class RawUnaryResponder;
+
+  template <typename, typename>
+  friend class NanopbServerReaderWriter;
+  template <typename>
+  friend class NanopbServerWriter;
+  template <typename, typename>
+  friend class NanopbServerReader;
+  template <typename>
+  friend class NanopbUnaryResponder;
+
+  // Creates a call context for a particular RPC. Unlike the CallContext
+  // constructor, this function checks the type of RPC at compile time.
+  template <auto kMethod,
+            MethodType kExpected,
+            typename ServiceImpl,
+            typename MethodImpl>
+  internal::CallContext OpenContext(uint32_t channel_id,
+                                    ServiceImpl& service,
+                                    const MethodImpl& method)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
+    using Info = internal::MethodInfo<kMethod>;
+    if constexpr (kExpected == MethodType::kUnary) {
+      static_assert(
+          Info::kType == kExpected,
+          "ServerResponse objects may only be opened for unary RPCs.");
+    } else if constexpr (kExpected == MethodType::kServerStreaming) {
+      static_assert(
+          Info::kType == kExpected,
+          "ServerWriters may only be opened for server streaming RPCs.");
+    } else if constexpr (kExpected == MethodType::kClientStreaming) {
+      static_assert(
+          Info::kType == kExpected,
+          "ServerReaders may only be opened for client streaming RPCs.");
+    } else if constexpr (kExpected == MethodType::kBidirectionalStreaming) {
+      static_assert(Info::kType == kExpected,
+                    "ServerReaderWriters may only be opened for bidirectional "
+                    "streaming RPCs.");
+    }
+
+    // TODO(pwbug/505): Update the CallContext to store the ID instead, and
+    //     lookup the channel by ID.
+    internal::Channel* channel = GetInternalChannel(channel_id);
+    PW_ASSERT(channel != nullptr);
+
+    // Unrequested RPCs always use 0 as the call ID. When an actual request is
+    // sent, the call will be replaced with its real ID.
+    constexpr uint32_t kOpenCallId = 0;
+
+    return internal::CallContext(*this, *channel, service, method, kOpenCallId);
+  }
 
   Status ProcessPacket(ConstByteSpan packet_data, ChannelOutput* interface)
       PW_LOCKS_EXCLUDED(internal::rpc_lock());

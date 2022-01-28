@@ -20,6 +20,9 @@
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
+
 namespace pw::rpc {
 namespace {
 
@@ -387,3 +390,5 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
 
 }  // namespace
 }  // namespace pw::rpc
+
+PW_MODIFY_DIAGNOSTICS_POP();

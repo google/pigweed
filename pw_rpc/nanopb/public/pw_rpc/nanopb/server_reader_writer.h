@@ -22,7 +22,6 @@
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/internal/method_lookup.h"
-#include "pw_rpc/internal/open_call.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc/server.h"
@@ -60,7 +59,7 @@ class NanopbServerCall : public internal::ServerCall {
 
   NanopbServerCall& operator=(NanopbServerCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    internal::LockGuard lock(internal::rpc_lock());
     MoveNanopbServerCallFrom(other);
     return *this;
   }
@@ -100,7 +99,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
 
   BaseNanopbServerReader& operator=(BaseNanopbServerReader&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    internal::LockGuard lock(internal::rpc_lock());
     MoveNanopbServerCallFrom(other);
     set_on_next_locked(std::move(other.nanopb_on_next_));
     return *this;
@@ -108,7 +107,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
 
   void set_on_next(Function<void(const Request& request)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    internal::LockGuard lock(internal::rpc_lock());
     set_on_next_locked(std::move(on_next));
   }
 
@@ -155,8 +154,8 @@ class NanopbServerReaderWriter
     static_assert(std::is_same_v<Response, typename Info::Response>,
                   "The response type of a NanopbServerReaderWriter must match "
                   "the method.");
-    return {internal::OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
         channel_id,
         service,
         internal::MethodLookup::GetNanopbMethod<ServiceImpl,
@@ -222,8 +221,8 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
     static_assert(
         std::is_same_v<Response, typename Info::Response>,
         "The response type of a NanopbServerReader must match the method.");
-    return {internal::OpenContext<kMethod, MethodType::kClientStreaming>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kClientStreaming>(
         channel_id,
         service,
         internal::MethodLookup::GetNanopbMethod<ServiceImpl,
@@ -276,8 +275,8 @@ class NanopbServerWriter : private internal::NanopbServerCall {
     static_assert(
         std::is_same_v<Response, typename Info::Response>,
         "The response type of a NanopbServerWriter must match the method.");
-    return {internal::OpenContext<kMethod, MethodType::kServerStreaming>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kServerStreaming>(
         channel_id,
         service,
         internal::MethodLookup::GetNanopbMethod<ServiceImpl,
@@ -337,8 +336,8 @@ class NanopbUnaryResponder : private internal::NanopbServerCall {
     static_assert(
         std::is_same_v<Response, typename Info::Response>,
         "The response type of a NanopbUnaryResponder must match the method.");
-    return {internal::OpenContext<kMethod, MethodType::kUnary>(
-        server,
+    internal::LockGuard lock(internal::rpc_lock());
+    return {server.OpenContext<kMethod, MethodType::kUnary>(
         channel_id,
         service,
         internal::MethodLookup::GetNanopbMethod<ServiceImpl,

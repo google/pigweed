@@ -33,22 +33,14 @@ namespace pw::rpc::internal {
 template <size_t kOutputBufferSize>
 class TestOutput : public ChannelOutput {
  public:
-  static constexpr size_t buffer_size() { return kOutputBufferSize; }
-
   constexpr TestOutput(const char* name = "TestOutput")
       : ChannelOutput(name), sent_data_ {}
   {}
 
-  size_t MaximumTransmissionUnit() override { return buffer_size(); }
-
-  std::span<std::byte> AcquireBuffer() override { return buffer_; }
-
-  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
+  Status Send(std::span<const std::byte> buffer) override {
     if (buffer.empty()) {
       return OkStatus();
     }
-
-    PW_ASSERT(buffer.data() == buffer_.data());
 
     packet_count_ += 1;
     sent_data_ = buffer;
@@ -57,8 +49,6 @@ class TestOutput : public ChannelOutput {
     sent_packet_ = result.value_or(internal::Packet());
     return send_status_;
   }
-
-  std::span<const std::byte> buffer() const { return buffer_; }
 
   size_t packet_count() const { return packet_count_; }
 
@@ -71,7 +61,6 @@ class TestOutput : public ChannelOutput {
   }
 
  private:
-  std::array<std::byte, buffer_size()> buffer_;
   std::span<const std::byte> sent_data_;
   internal::Packet sent_packet_;
   size_t packet_count_ = 0;

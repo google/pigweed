@@ -91,7 +91,7 @@ class Endpoint {
 
   // Adds a call to the internal call registry. If a matching call already
   // exists, it is cancelled locally (on_error called, no packet sent).
-  void RegisterCall(Call& call) PW_LOCKS_EXCLUDED(rpc_lock());
+  void RegisterCall(Call& call) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Registers a call that is known to be unique. The calls list is NOT checked
   // for existing calls.

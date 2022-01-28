@@ -63,11 +63,9 @@ class UnaryResponseClientCall : public ClientCall {
                         uint32_t method_id,
                         Function<void(ConstByteSpan, Status)>&& on_completed,
                         Function<void(Status)>&& on_error,
-                        ConstByteSpan request) {
-    // TODO(pwbug/597): Consider requring the lock during call construction.
-    CallType call(client, channel_id, service_id, method_id);
-
+                        ConstByteSpan request) PW_LOCKS_EXCLUDED(rpc_lock()) {
     rpc_lock().lock();
+    CallType call(client, channel_id, service_id, method_id);
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
 
@@ -78,8 +76,9 @@ class UnaryResponseClientCall : public ClientCall {
   void HandleCompleted(ConstByteSpan response, Status status)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     const bool invoke_callback = on_completed_ != nullptr;
-    CloseAndReleasePayloadBuffer();
+    UnregisterAndMarkClosed();
 
+    rpc_lock().unlock();
     if (invoke_callback) {
       on_completed_(response, status);
     }
@@ -144,10 +143,9 @@ class StreamResponseClientCall : public ClientCall {
                         Function<void(Status)>&& on_completed,
                         Function<void(Status)>&& on_error,
                         ConstByteSpan request) {
-    // TODO(hepler): FIGURE OUT LOCKING HERE
+    rpc_lock().lock();
     CallType call(client, channel_id, service_id, method_id);
 
-    rpc_lock().lock();
     call.set_on_next_locked(std::move(on_next));
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
@@ -159,9 +157,10 @@ class StreamResponseClientCall : public ClientCall {
   void HandleCompleted(Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
     const bool invoke_callback = on_completed_ != nullptr;
 
-    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
-    CloseAndReleasePayloadBuffer();
+    UnregisterAndMarkClosed();
+    rpc_lock().unlock();
 
+    // TODO(pwbug/597): Ensure on_completed_ is properly guarded.
     if (invoke_callback) {
       on_completed_(status);
     }
