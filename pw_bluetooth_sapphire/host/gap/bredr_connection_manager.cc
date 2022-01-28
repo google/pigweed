@@ -741,13 +741,13 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
   }
   auto& request = req_iter->second;
 
-  bool completed_request_was_outgoing =
-      pending_request_ && pending_request_->peer_address() == address;
+  bool completes_outgoing_request =
+      pending_request_.has_value() && pending_request_->peer_address() == address;
   bool failed = status.is_error();
 
-  const char* direction = completed_request_was_outgoing ? "outgoing" : "incoming";
+  const char* direction = completes_outgoing_request ? "outgoing" : "incoming";
   const char* result = status.is_ok() ? "complete" : "error";
-  hci_spec::ConnectionRole role = completed_request_was_outgoing
+  hci_spec::ConnectionRole role = completes_outgoing_request
                                       ? hci_spec::ConnectionRole::kCentral
                                       : hci_spec::ConnectionRole::kPeripheral;
   if (request.role_change()) {
@@ -757,17 +757,25 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
   bt_log(INFO, "gap-bredr", "%s connection %s (status: %s, role: %s)", direction, result,
          bt_str(status), role == hci_spec::ConnectionRole::kCentral ? "leader" : "follower");
 
-  if (completed_request_was_outgoing) {
+  if (completes_outgoing_request) {
     // Determine the modified status in case of cancellation or timeout
     status = pending_request_->CompleteRequest(status);
     pending_request_.reset();
   } else {
+    // This incoming connection arrived while we're trying to make an outgoing connection; not an
+    // impossible coincidence but log it in case it's interesting.
+    // TODO(fxbug.dev/92299): Added to investigate timing and can be removed if it adds no value
+    if (pending_request_.has_value()) {
+      bt_log(INFO, "gap-bredr",
+             "doesn't complete pending outgoing connection to peer %s (addr: %s)",
+             bt_str(pending_request_->peer_id()), bt_str(pending_request_->peer_address()));
+    }
     // If this was an incoming attempt, clear it
     request.CompleteIncoming();
   }
 
   if (failed) {
-    if (request.HasIncoming() || (!completed_request_was_outgoing && request.AwaitingOutgoing())) {
+    if (request.HasIncoming() || (!completes_outgoing_request && request.AwaitingOutgoing())) {
       // This request failed, but we're still waiting on either:
       // * an in-progress incoming request or
       // * to attempt our own outgoing request
