@@ -21,6 +21,7 @@ namespace pw::transfer::internal {
 void ClientContext::StartRead(Client& client,
                               uint32_t transfer_id,
                               work_queue::WorkQueue& work_queue,
+                              EncodingBuffer& encoding_buffer,
                               stream::Writer& writer,
                               rpc::RawClientReaderWriter& stream,
                               Function<void(Status)>&& on_completion,
@@ -31,12 +32,14 @@ void ClientContext::StartRead(Client& client,
   client_ = &client;
   on_completion_ = std::move(on_completion);
 
-  InitializeForReceive(transfer_id, work_queue, stream, writer, timeout);
+  InitializeForReceive(
+      transfer_id, work_queue, encoding_buffer, stream, writer, timeout);
 }
 
 void ClientContext::StartWrite(Client& client,
                                uint32_t transfer_id,
                                work_queue::WorkQueue& work_queue,
+                               EncodingBuffer& encoding_buffer,
                                stream::Reader& reader,
                                rpc::RawClientReaderWriter& stream,
                                Function<void(Status)>&& on_completion,
@@ -47,7 +50,8 @@ void ClientContext::StartWrite(Client& client,
   client_ = &client;
   on_completion_ = std::move(on_completion);
 
-  InitializeForTransmit(transfer_id, work_queue, stream, reader, timeout);
+  InitializeForTransmit(
+      transfer_id, work_queue, encoding_buffer, stream, reader, timeout);
 }
 
 }  // namespace pw::transfer::internal

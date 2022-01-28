@@ -30,9 +30,11 @@ enum TransferType : bool { kRead, kWrite };
 // a pw_transfer client.
 class ClientConnection {
  public:
-  constexpr ClientConnection(uint32_t max_pending_bytes,
+  constexpr ClientConnection(EncodingBuffer& encoding_buffer,
+                             uint32_t max_pending_bytes,
                              uint32_t max_chunk_size_bytes)
-      : max_parameters_(max_pending_bytes, max_chunk_size_bytes) {}
+      : encoding_buffer_(encoding_buffer),
+        max_parameters_(max_pending_bytes, max_chunk_size_bytes) {}
 
   void InitializeRead(rpc::RawServerReaderWriter& reader_writer,
                       Function<void(ConstByteSpan)>&& callback) {
@@ -58,6 +60,8 @@ class ClientConnection {
   void SendStatusChunk(TransferType type, uint32_t transfer_id, Status status);
 
  private:
+  EncodingBuffer& encoding_buffer_;
+
   // Persistent streams for read and write transfers. The server never closes
   // these streams -- they remain open until the client ends them.
   rpc::RawServerReaderWriter read_stream_;

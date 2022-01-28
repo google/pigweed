@@ -116,6 +116,8 @@ class Client {
 
   internal::TransferParameters max_parameters_;
   internal::ChunkDataBuffer chunk_data_buffer_;
+
+  internal::EncodingBuffer encoding_buffer_;
 };
 
 }  // namespace pw::transfer

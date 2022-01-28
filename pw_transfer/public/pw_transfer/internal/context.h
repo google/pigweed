@@ -130,6 +130,7 @@ class Context {
         timer_([this](chrono::SystemClock::time_point) { this->OnTimeout(); }),
         chunk_timeout_(chrono::SystemClock::duration::zero()),
         work_queue_(nullptr),
+        encoding_buffer_(nullptr),
         on_completion_(on_completion) {}
 
   enum class TransferState : uint8_t {
@@ -162,6 +163,7 @@ class Context {
   void InitializeForTransmit(
       uint32_t transfer_id,
       work_queue::WorkQueue& work_queue,
+      EncodingBuffer& encoding_buffer,
       rpc::Writer& rpc_writer,
       stream::Reader& reader,
       chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
@@ -169,6 +171,7 @@ class Context {
     Initialize(kTransmit,
                transfer_id,
                work_queue,
+               encoding_buffer,
                rpc_writer,
                reader,
                chunk_timeout,
@@ -180,6 +183,7 @@ class Context {
   void InitializeForReceive(
       uint32_t transfer_id,
       work_queue::WorkQueue& work_queue,
+      EncodingBuffer& encoding_buffer,
       rpc::Writer& rpc_writer,
       stream::Writer& writer,
       chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
@@ -187,6 +191,7 @@ class Context {
     Initialize(kReceive,
                transfer_id,
                work_queue,
+               encoding_buffer,
                rpc_writer,
                writer,
                chunk_timeout,
@@ -212,6 +217,7 @@ class Context {
   void Initialize(Type type,
                   uint32_t transfer_id,
                   work_queue::WorkQueue& work_queue,
+                  EncodingBuffer& encoding_buffer,
                   rpc::Writer& rpc_writer,
                   stream::Stream& stream,
                   chrono::SystemClock::duration chunk_timeout,
@@ -316,6 +322,7 @@ class Context {
   chrono::SystemTimer timer_;
   chrono::SystemClock::duration chunk_timeout_;
   work_queue::WorkQueue* work_queue_;
+  EncodingBuffer* encoding_buffer_;
 
   CompletionFunction on_completion_;
 };

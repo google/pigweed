@@ -70,10 +70,8 @@ Status Context::SendInitialTransmitChunk() {
   internal::Chunk chunk = {};
   chunk.transfer_id = transfer_id_;
 
-  Result<ConstByteSpan> result =
-      EncodeChunk(chunk, rpc_writer_->PayloadBuffer());
+  Result<ConstByteSpan> result = EncodeChunk(chunk, *encoding_buffer_);
   if (!result.ok()) {
-    rpc_writer_->ReleasePayloadBuffer();
     return result.status();
   }
 
@@ -302,7 +300,7 @@ void Context::ProcessReceiveChunk(ChunkDataBuffer& buffer,
 }
 
 Status Context::SendNextDataChunk() {
-  ByteSpan buffer = rpc_writer_->PayloadBuffer();
+  ByteSpan buffer = *encoding_buffer_;
 
   // Begin by doing a partial encode of all the metadata fields, leaving the
   // buffer with usable space for the chunk data at the end.
@@ -334,7 +332,6 @@ Status Context::SendNextDataChunk() {
           "Transfer %u is not finished, but the receiver cannot accept any "
           "more data (offset == window_end_offset)",
           static_cast<unsigned>(transfer_id_));
-      rpc_writer_->ReleasePayloadBuffer();
       return Status::ResourceExhausted();
     }
 
@@ -346,14 +343,12 @@ Status Context::SendNextDataChunk() {
     PW_LOG_ERROR("Transfer %u Read() failed with status %u",
                  static_cast<unsigned>(transfer_id_),
                  data.status().code());
-    rpc_writer_->ReleasePayloadBuffer();
     return Status::DataLoss();
   }
 
   if (!encoder.status().ok()) {
     PW_LOG_ERROR("Transfer %u failed to encode transmit chunk",
                  static_cast<unsigned>(transfer_id_));
-    rpc_writer_->ReleasePayloadBuffer();
     return Status::Internal();
   }
 
@@ -433,12 +428,11 @@ Status Context::SendTransferParameters(TransmitAction action) {
   // transport-layer issue, so there isn't much that can be done by the transfer
   // service. The client will time out and can try to restart the transfer.
   Result<ConstByteSpan> data =
-      internal::EncodeChunk(parameters, rpc_writer_->PayloadBuffer());
+      internal::EncodeChunk(parameters, *encoding_buffer_);
   if (!data.ok()) {
     PW_LOG_ERROR("Failed to encode parameters for transfer %u: %d",
                  static_cast<unsigned>(parameters.transfer_id),
                  data.status().code());
-    rpc_writer_->ReleasePayloadBuffer();
     FinishAndSendStatus(Status::Internal());
     return Status::Internal();
   }
@@ -475,6 +469,7 @@ Status Context::UpdateAndSendTransferParameters(
 void Context::Initialize(Type type,
                          uint32_t transfer_id,
                          work_queue::WorkQueue& work_queue,
+                         EncodingBuffer& encoding_buffer,
                          rpc::Writer& rpc_writer,
                          stream::Stream& stream,
                          chrono::SystemClock::duration chunk_timeout,
@@ -500,6 +495,7 @@ void Context::Initialize(Type type,
   last_chunk_offset_ = 0;
   chunk_timeout_ = chunk_timeout;
   work_queue_ = &work_queue;
+  encoding_buffer_ = &encoding_buffer;
 
   state_lock_.unlock();
 }
@@ -510,12 +506,11 @@ void Context::SendStatusChunk(Status status) {
   chunk.status = status.code();
 
   Result<ConstByteSpan> result =
-      internal::EncodeChunk(chunk, rpc_writer_->PayloadBuffer());
+      internal::EncodeChunk(chunk, *encoding_buffer_);
 
   if (!result.ok()) {
     PW_LOG_ERROR("Failed to encode final chunk for transfer %u",
                  static_cast<unsigned>(transfer_id_));
-    rpc_writer_->ReleasePayloadBuffer();
     return;
   }
 
