@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_log/log.h"
+#include "pw_unit_test/config.h"
 #include "pw_unit_test/internal/rpc_event_handler.h"
 #include "pw_unit_test_proto/unit_test.pwpb.h"
 #include "pw_unit_test_proto/unit_test.raw_rpc.pb.h"
@@ -35,14 +36,7 @@ class UnitTestService final
   // migrated to it.
   template <typename WriteFunction>
   void WriteEvent(WriteFunction event_writer) {
-    // TODO(pwbug/605): Remove use of PayloadBuffer().
-    class AccessHiddenFunction : public rpc::RawServerWriter {
-     public:
-      using RawServerWriter::PayloadBuffer;
-    };
-
-    Event::MemoryEncoder event(
-        static_cast<AccessHiddenFunction&>(writer_).PayloadBuffer());
+    Event::MemoryEncoder event(encoding_buffer_);
     event_writer(event);
     if (event.status().ok()) {
       writer_.Write(event)
@@ -60,6 +54,7 @@ class UnitTestService final
   internal::RpcEventHandler handler_;
   RawServerWriter writer_;
   bool verbose_;
+  std::array<std::byte, config::kEventBufferSize> encoding_buffer_ = {};
 };
 
 }  // namespace pw::unit_test

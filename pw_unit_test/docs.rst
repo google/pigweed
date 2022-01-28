@@ -362,6 +362,12 @@ Module Configuration Options
 The following configurations can be adjusted via compile-time configuration of
 this module.
 
+.. c:macro:: PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
+
+  The size of the event buffer that the UnitTestService contains.
+  This buffer is used to encode events.  By default this is set to
+  128 bytes.
+
 .. c:macro:: PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
 
   The size of the memory pool to use for test fixture instances. By default this
