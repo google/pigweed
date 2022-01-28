@@ -73,6 +73,18 @@ TEST(SerializedSize, SizeOfVarintField) {
   static_assert(SizeOfVarintField(16, INT64_C(-1)) == 2 + 10);
 }
 
+TEST(SerializedSize, SizeOfDelimitedFieldWithoutValue) {
+  static_assert(SizeOfDelimitedFieldWithoutValue(1, 0) == 1 + 1);
+  static_assert(SizeOfDelimitedFieldWithoutValue(1, 1) == 1 + 1);
+  static_assert(SizeOfDelimitedFieldWithoutValue(1, 128) == 1 + 2);
+  static_assert(SizeOfDelimitedFieldWithoutValue(1, 1000) == 1 + 2);
+  static_assert(SizeOfDelimitedFieldWithoutValue(1) == 1 + 5);
+  static_assert(SizeOfDelimitedFieldWithoutValue(16, 0) == 2 + 1);
+  static_assert(SizeOfDelimitedFieldWithoutValue(16, 1) == 2 + 1);
+  static_assert(SizeOfDelimitedFieldWithoutValue(16, 128) == 2 + 2);
+  static_assert(SizeOfDelimitedFieldWithoutValue(16) == 2 + 5);
+}
+
 TEST_DELIMITED(SizeOfDelimitedField);
 
 TEST_FIXED(Float);

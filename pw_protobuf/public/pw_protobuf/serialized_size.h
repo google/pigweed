@@ -75,11 +75,22 @@ constexpr size_t SizeOfVarintField(T field_number, U value) {
 }
 
 // Calculates the size of a delimited field (string, bytes, nested message,
-// packed repeated).
+// packed repeated), excluding the data itself. This accounts for the field
+// tag and length varint only. The default value for length_bytes assumes
+// the length is kMaxSizeOfLength bytes long.
 template <typename T>
-constexpr size_t SizeOfDelimitedField(T field_number, size_t length_bytes) {
-  return FieldNumberSizeBytes(field_number) +
-         varint::EncodedSize(length_bytes) + length_bytes;
+constexpr size_t SizeOfDelimitedFieldWithoutValue(
+    T field_number,
+    uint32_t length_bytes = std::numeric_limits<uint32_t>::max()) {
+  return FieldNumberSizeBytes(field_number) + varint::EncodedSize(length_bytes);
+}
+
+// Calculates the total size of a delimited field (string, bytes, nested
+// message, packed repeated), including the data itself.
+template <typename T>
+constexpr size_t SizeOfDelimitedField(T field_number, uint32_t length_bytes) {
+  return SizeOfDelimitedFieldWithoutValue(field_number, length_bytes) +
+         length_bytes;
 }
 
 // Calculates the size of a proto field in the wire format. This is the size of
@@ -167,11 +178,11 @@ constexpr size_t SizeOfFieldBool(T field_number) {
   return FieldNumberSizeBytes(field_number) + 1;
 }
 template <typename T>
-constexpr size_t SizeOfFieldString(T field_number, size_t length_bytes) {
+constexpr size_t SizeOfFieldString(T field_number, uint32_t length_bytes) {
   return SizeOfDelimitedField(field_number, length_bytes);
 }
 template <typename T>
-constexpr size_t SizeOfFieldBytes(T field_number, size_t length_bytes) {
+constexpr size_t SizeOfFieldBytes(T field_number, uint32_t length_bytes) {
   return SizeOfDelimitedField(field_number, length_bytes);
 }
 template <typename T, typename U = int32_t>

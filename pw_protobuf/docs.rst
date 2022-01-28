@@ -600,7 +600,8 @@ how much memory serialized protocol buffer fields require. The
 ``kMaxSizeBytes*`` variables provide the maximum encoded sizes of each field
 type. The ``SizeOfField*()`` functions calculate the encoded size of a field of
 the specified type, given a particular key and, for variable length fields
-(varint or delimited), a value.
+(varint or delimited), a value. The ``SizeOf*Field`` functions calculate the
+encoded size of fields with a particular wire format (delimited, varint).
 
 --------------------------
 Available protobuf modules
