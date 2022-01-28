@@ -18,8 +18,6 @@
 
 namespace bt::sdp {
 
-class Status;
-
 // Each service has a service record handle that uniquely identifies that
 // service within an SDP server.
 using ServiceHandle = uint32_t;

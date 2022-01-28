@@ -29,7 +29,7 @@ class FakeClient : public Client {
 
   virtual void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
                                        const std::unordered_set<AttributeId> &req_attributes,
-                                       SearchResultCallback result_cb,
+                                       SearchResultFunction result_cb,
                                        async_dispatcher_t *cb_dispatcher) override {
     if (!service_search_attributes_cb_) {
       FAIL() << "ServiceSearchAttributes with no callback set";
@@ -39,15 +39,15 @@ class FakeClient : public Client {
                                   std::move(result_cb), cb_dispatcher);
   }
 
-  using ServiceSearchAttributesCalllback =
+  using ServiceSearchAttributesCallback =
       fit::function<void(std::unordered_set<UUID>, std::unordered_set<AttributeId>,
-                         SearchResultCallback, async_dispatcher_t *)>;
-  void SetServiceSearchAttributesCallback(ServiceSearchAttributesCalllback callback) {
+                         SearchResultFunction, async_dispatcher_t *)>;
+  void SetServiceSearchAttributesCallback(ServiceSearchAttributesCallback callback) {
     service_search_attributes_cb_ = std::move(callback);
   }
 
  private:
-  ServiceSearchAttributesCalllback service_search_attributes_cb_;
+  ServiceSearchAttributesCallback service_search_attributes_cb_;
   fit::closure destroyed_cb_;
 };
 
@@ -111,8 +111,9 @@ TEST_F(ServiceDiscovererTest, NoResults) {
   client->SetServiceSearchAttributesCallback(
       [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
         searches.emplace_back(std::move(pattern));
-        async::PostTask(cb_dispatcher,
-                        [cb = std::move(callback)]() { cb(Status(HostError::kNotFound), {}); });
+        async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
+          cb(ToResult(HostError::kNotFound).take_error());
+        });
       });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
@@ -160,8 +161,9 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
   client->SetServiceSearchAttributesCallback(
       [&searches](auto pattern, auto attributes, auto callback, auto *cb_dispatcher) {
         searches.emplace_back(std::move(pattern));
-        async::PostTask(cb_dispatcher,
-                        [cb = std::move(callback)]() { cb(Status(HostError::kNotFound), {}); });
+        async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
+          cb(ToResult(HostError::kNotFound).take_error());
+        });
       });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
@@ -186,10 +188,10 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             // This would normally be a element list. uint32_t for Testing.
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
 
-            if (!cb(Status(), rsp.attributes(0))) {
+            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            cb(Status(HostError::kNotFound), {});
+            cb(ToResult(HostError::kNotFound).take_error());
           });
         } else if (pattern.count(profile::kAudioSink)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
@@ -197,10 +199,10 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             // This would normally be a element list. uint32_t for Testing.
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
 
-            if (!cb(Status(), rsp.attributes(0))) {
+            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            cb(Status(HostError::kNotFound), {});
+            cb(ToResult(HostError::kNotFound).take_error());
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -238,13 +240,13 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
             rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
 
-            if (!cb(Status(), rsp.attributes(0))) {
+            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            if (!cb(Status(), rsp.attributes(1))) {
+            if (!cb(fitx::ok(std::cref(rsp.attributes(1))))) {
               return;
             }
-            cb(Status(HostError::kNotFound), {});
+            cb(ToResult(HostError::kNotFound).take_error());
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -287,7 +289,7 @@ TEST_F(ServiceDiscovererTest, Disconnected) {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            cb(Status(HostError::kLinkDisconnected), {});
+            cb(ToResult(HostError::kLinkDisconnected).take_error());
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;
@@ -348,13 +350,13 @@ TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
             rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
             rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
 
-            if (!cb(Status(), rsp.attributes(0))) {
+            if (!cb(fitx::ok(std::cref(rsp.attributes(0))))) {
               return;
             }
-            if (!cb(Status(), rsp.attributes(1))) {
+            if (!cb(fitx::ok(std::cref(rsp.attributes(1))))) {
               return;
             }
-            cb(Status(HostError::kNotFound), {});
+            cb(ToResult(HostError::kNotFound).take_error());
           });
         } else {
           std::cerr << "Searched for " << pattern.size() << std::endl;

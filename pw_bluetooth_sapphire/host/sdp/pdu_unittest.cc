@@ -10,7 +10,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
 namespace bt::sdp {
 namespace {
@@ -50,12 +49,11 @@ TEST(PDUTest, ErrorResponse) {
                              0xFF, 0x00   // dummy extra bytes to cause an error
       );
 
-  Status status = response.Parse(kInvalidContState.view(sizeof(Header)));
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+  fitx::result<Error<>> status = response.Parse(kInvalidContState.view(sizeof(Header)));
+  EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 
   status = response.Parse(kInvalidContState.view(sizeof(Header), 2));
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(response.complete());
   EXPECT_EQ(ErrorCode::kInvalidContinuationState, response.error_code());
 
@@ -173,11 +171,11 @@ TEST(PDUTest, ServiceSearchResponseParse) {
 
   ServiceSearchResponse resp;
   auto status = resp.Parse(kValidResponse);
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 
   // Can't parse into an already complete record.
   status = resp.Parse(kValidResponse);
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   const auto kNotEnoughRecords =
       CreateStaticByteBuffer(0x00, 0x02,              // Total service record count: 2
@@ -188,7 +186,7 @@ TEST(PDUTest, ServiceSearchResponseParse) {
   // Doesn't contain the right # of records.
   ServiceSearchResponse resp2;
   status = resp2.Parse(kNotEnoughRecords);
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   // A Truncated packet doesn't parse either.
   const auto kTruncated = CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
@@ -196,7 +194,7 @@ TEST(PDUTest, ServiceSearchResponseParse) {
   );
   ServiceSearchResponse resp3;
   status = resp3.Parse(kTruncated);
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   // Too many bytes for the number of records is also not allowed (with or without a continuation
   // state)
@@ -208,7 +206,7 @@ TEST(PDUTest, ServiceSearchResponseParse) {
   );
   ServiceSearchResponse resp4;
   status = resp4.Parse(kTooLong);
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   const auto kTooLongWithContinuation =
       CreateStaticByteBuffer(0x00, 0x04,              // Total service record count: 1
@@ -220,7 +218,7 @@ TEST(PDUTest, ServiceSearchResponseParse) {
       );
   ServiceSearchResponse resp5;
   status = resp5.Parse(kTooLongWithContinuation);
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 }
 
 TEST(PDUTest, ServiceSearchResponsePDU) {
@@ -604,7 +602,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   ServiceAttributeResponse resp;
   auto status = resp.Parse(kValidResponseEmpty);
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
 
   const auto kValidResponseItems = CreateStaticByteBuffer(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
@@ -620,7 +618,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   ServiceAttributeResponse resp2;
   status = resp2.Parse(kValidResponseItems);
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_EQ(2u, resp2.attributes().size());
   auto it = resp2.attributes().find(0x00);
   EXPECT_NE(resp2.attributes().end(), it);
@@ -644,7 +642,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   ServiceAttributeResponse resp3;
   status = resp3.Parse(kInvalidItemsWrongOrder);
 
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   const auto kInvalidHandleWrongType = CreateStaticByteBuffer(
       0x00, 0x11,  // AttributeListByteCount (17 bytes)
@@ -660,7 +658,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
   ServiceAttributeResponse resp_wrongtype;
   status = resp_wrongtype.Parse(kInvalidHandleWrongType);
 
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   const auto kInvalidByteCount = CreateStaticByteBuffer(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
@@ -675,8 +673,7 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
 
   ServiceAttributeResponse resp4;
   status = resp4.Parse(kInvalidByteCount);
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+  EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 
   // Sending too much data eventually fails.
   auto kContinuationPacket = DynamicByteBuffer(4096);
@@ -689,13 +686,11 @@ TEST(PDUTest, ServiceAttributeResponseParse) {
 
   ServiceAttributeResponse resp5;
   status = resp5.Parse(kContinuationPacket);
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kInProgress, status.error());
-  while (!status && status.error() == HostError::kInProgress) {
+  EXPECT_EQ(ToResult(HostError::kInProgress), status);
+  while (status == ToResult(HostError::kInProgress)) {
     status = resp5.Parse(kContinuationPacket);
   }
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 TEST(PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
@@ -944,7 +939,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   ServiceSearchAttributeResponse resp;
   auto status = resp.Parse(kValidResponseEmpty);
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(resp.complete());
   EXPECT_EQ(0u, resp.num_attribute_lists());
 
@@ -963,7 +958,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 
   status = resp.Parse(kValidResponseItems);
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(resp.complete());
   EXPECT_EQ(1u, resp.num_attribute_lists());
   EXPECT_EQ(2u, resp.attributes(0).size());
@@ -995,7 +990,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   ServiceSearchAttributeResponse resp2;
   status = resp2.Parse(kValidResponseTwoLists);
 
-  EXPECT_TRUE(status);
+  EXPECT_TRUE(status.is_ok());
   EXPECT_TRUE(resp2.complete());
   EXPECT_EQ(2u, resp2.num_attribute_lists());
 
@@ -1025,7 +1020,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   ServiceSearchAttributeResponse resp3;
   status = resp3.Parse(kInvalidItemsWrongOrder);
 
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   const auto kInvalidHandleWrongType = CreateStaticByteBuffer(
       0x00, 0x13,  // AttributeListByteCount (19 bytes)
@@ -1043,7 +1038,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
   ServiceAttributeResponse resp_wrongtype;
   status = resp_wrongtype.Parse(kInvalidHandleWrongType);
 
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   const auto kInvalidByteCount = CreateStaticByteBuffer(
       0x00, 0x12,  // AttributeListsByteCount (18 bytes)
@@ -1059,7 +1054,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 
   status = resp3.Parse(kInvalidByteCount);
 
-  EXPECT_FALSE(status);
+  EXPECT_TRUE(status.is_error());
 
   // Sending too much data eventually fails.
   auto kContinuationPacket = DynamicByteBuffer(4096);
@@ -1072,13 +1067,11 @@ TEST(PDUTest, ServiceSearchAttributeResponseParse) {
 
   ServiceSearchAttributeResponse resp4;
   status = resp4.Parse(kContinuationPacket);
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kInProgress, status.error());
-  while (!status && status.error() == HostError::kInProgress) {
+  EXPECT_EQ(ToResult(HostError::kInProgress), status);
+  while (status == ToResult(HostError::kInProgress)) {
     status = resp4.Parse(kContinuationPacket);
   }
-  EXPECT_FALSE(status);
-  EXPECT_EQ(HostError::kNotSupported, status.error());
+  EXPECT_EQ(ToResult(HostError::kNotSupported), status);
 }
 
 TEST(PDUTest, ServiceSearchAttributeResponseGetPDU) {

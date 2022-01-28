@@ -50,26 +50,28 @@ TEST_F(ClientTest, ConnectAndQuery) {
     EXPECT_TRUE(fake_chan()->activated());
 
     size_t cb_count = 0;
-    auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-      cb_count++;
-      if (cb_count == 3) {
-        EXPECT_FALSE(status);
-        EXPECT_EQ(HostError::kNotFound, status.error());
-        return true;
-      }
-      // All results should have the ServiceClassIdList.
-      EXPECT_EQ(1u, attrs.count(kServiceClassIdList));
-      // The first result has a kProtocolDescriptorList and the second has a
-      // kBluetoothProfileDescriptorList
-      if (cb_count == 1) {
-        EXPECT_EQ(1u, attrs.count(kProtocolDescriptorList));
-        EXPECT_EQ(0u, attrs.count(kBluetoothProfileDescriptorList));
-      } else if (cb_count == 2) {
-        EXPECT_EQ(0u, attrs.count(kProtocolDescriptorList));
-        EXPECT_EQ(1u, attrs.count(kBluetoothProfileDescriptorList));
-      }
-      return true;
-    };
+    auto result_cb =
+        [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+                attrs_result) {
+          cb_count++;
+          if (cb_count == 3) {
+            EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+            return true;
+          }
+          const std::map<AttributeId, DataElement>& attrs = attrs_result.value();
+          // All results should have the ServiceClassIdList.
+          EXPECT_EQ(1u, attrs.count(kServiceClassIdList));
+          // The first result has a kProtocolDescriptorList and the second has a
+          // kBluetoothProfileDescriptorList
+          if (cb_count == 1) {
+            EXPECT_EQ(1u, attrs.count(kProtocolDescriptorList));
+            EXPECT_EQ(0u, attrs.count(kBluetoothProfileDescriptorList));
+          } else if (cb_count == 2) {
+            EXPECT_EQ(0u, attrs.count(kProtocolDescriptorList));
+            EXPECT_EQ(1u, attrs.count(kBluetoothProfileDescriptorList));
+          }
+          return true;
+        };
 
     const auto kSearchExpectedParams = CreateStaticByteBuffer(
         // ServiceSearchPattern
@@ -144,13 +146,14 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
     EXPECT_TRUE(fake_chan()->activated());
 
     size_t cb_count = 0;
-    auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-      cb_count++;
-      // We return no results for both queries.
-      EXPECT_FALSE(status);
-      EXPECT_EQ(HostError::kNotFound, status.error());
-      return true;
-    };
+    auto result_cb =
+        [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+                attrs_result) {
+          cb_count++;
+          // We return no results for both queries.
+          EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+          return true;
+        };
 
     const auto kSearchExpectedParams = CreateStaticByteBuffer(
         // ServiceSearchPattern
@@ -220,13 +223,14 @@ TEST_F(ClientTest, TwoQueriesQueued) {
     EXPECT_TRUE(fake_chan()->activated());
 
     size_t cb_count = 0;
-    auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-      cb_count++;
-      // We return no results for both queries.
-      EXPECT_FALSE(status);
-      EXPECT_EQ(HostError::kNotFound, status.error());
-      return true;
-    };
+    auto result_cb =
+        [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+                attrs_result) {
+          cb_count++;
+          // We return no results for both queries.
+          EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+          return true;
+        };
 
     const auto kSearchExpectedParams = CreateStaticByteBuffer(
         // ServiceSearchPattern
@@ -301,18 +305,20 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
-  auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-    cb_count++;
-    if (cb_count == 3) {
-      EXPECT_FALSE(status);
-      EXPECT_EQ(HostError::kNotFound, status.error());
-      return true;
-    }
-    // All results should have the ServiceClassIdList.
-    EXPECT_EQ(1u, attrs.count(kServiceClassIdList));
-    EXPECT_EQ(1u, attrs.count(kProtocolDescriptorList));
-    return true;
-  };
+  auto result_cb =
+      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+              attrs_result) {
+        cb_count++;
+        if (cb_count == 3) {
+          EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+          return true;
+        }
+        const std::map<AttributeId, DataElement>& attrs = attrs_result.value();
+        // All results should have the ServiceClassIdList.
+        EXPECT_EQ(1u, attrs.count(kServiceClassIdList));
+        EXPECT_EQ(1u, attrs.count(kProtocolDescriptorList));
+        return true;
+      };
 
   const auto kSearchExpectedParams = CreateStaticByteBuffer(
       // ServiceSearchPattern
@@ -376,12 +382,13 @@ TEST_F(ClientTest, NoResults) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
-  auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-    cb_count++;
-    EXPECT_FALSE(status);
-    EXPECT_EQ(HostError::kNotFound, status.error());
-    return true;
-  };
+  auto result_cb =
+      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+              attrs_result) {
+        cb_count++;
+        EXPECT_EQ(ToResult(HostError::kNotFound).error_value(), attrs_result);
+        return true;
+      };
 
   const auto kSearchExpectedParams = CreateStaticByteBuffer(
       // ServiceSearchPattern
@@ -438,12 +445,13 @@ TEST_F(ClientTest, Disconnected) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
-  auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-    cb_count++;
-    EXPECT_FALSE(status);
-    EXPECT_EQ(HostError::kLinkDisconnected, status.error());
-    return true;
-  };
+  auto result_cb =
+      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+              attrs_result) {
+        cb_count++;
+        EXPECT_EQ(ToResult(HostError::kLinkDisconnected).error_value(), attrs_result);
+        return true;
+      };
 
   const auto kSearchExpectedParams = CreateStaticByteBuffer(
       // ServiceSearchPattern
@@ -496,12 +504,13 @@ TEST_F(ClientTest, InvalidResponse) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
-  auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-    cb_count++;
-    EXPECT_FALSE(status);
-    EXPECT_EQ(HostError::kPacketMalformed, status.error());
-    return true;
-  };
+  auto result_cb =
+      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+              attrs_result) {
+        cb_count++;
+        EXPECT_EQ(ToResult(HostError::kPacketMalformed).error_value(), attrs_result);
+        return true;
+      };
 
   const auto kSearchExpectedParams = CreateStaticByteBuffer(
       // ServiceSearchPattern
@@ -555,12 +564,13 @@ TEST_F(ClientTest, Timeout) {
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;
-  auto result_cb = [&](auto status, const std::map<AttributeId, DataElement> &attrs) {
-    cb_count++;
-    EXPECT_FALSE(status);
-    EXPECT_EQ(HostError::kTimedOut, status.error());
-    return true;
-  };
+  auto result_cb =
+      [&](fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+              attrs_result) {
+        cb_count++;
+        EXPECT_EQ(ToResult(HostError::kTimedOut).error_value(), attrs_result);
+        return true;
+      };
 
   const auto kSearchExpectedParams = CreateStaticByteBuffer(
       // ServiceSearchPattern

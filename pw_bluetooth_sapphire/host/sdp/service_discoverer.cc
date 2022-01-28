@@ -6,6 +6,8 @@
 
 #include <lib/async/default.h>
 
+#include <functional>
+
 namespace bt::sdp {
 
 ServiceDiscoverer::ServiceDiscoverer() : next_id_(1) {}
@@ -52,15 +54,16 @@ bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id, std::unique_ptr<Cl
   DiscoverySession session;
   session.client = std::move(client);
   for (auto& it : searches_) {
-    Client::SearchResultCallback result_cb =
+    Client::SearchResultFunction result_cb =
         [this, peer_id, search_id = it.first](
-            auto status, const std::map<AttributeId, DataElement>& attributes) {
+            fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+                attributes_result) {
           auto it = searches_.find(search_id);
-          if (it == searches_.end() || !status) {
+          if (it == searches_.end() || attributes_result.is_error()) {
             FinishPeerSearch(peer_id, search_id);
             return false;
           }
-          it->second.callback(peer_id, attributes);
+          it->second.callback(peer_id, attributes_result.value());
           return true;
         };
     session.client->ServiceSearchAttributes({it.second.uuid}, it.second.attributes,

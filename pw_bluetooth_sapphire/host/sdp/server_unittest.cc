@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 
 namespace bt::sdp {
@@ -530,7 +529,7 @@ TEST_F(ServerTest, ServiceSearchRequest) {
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     handles = resp.service_record_handle_list();
     recv = true;
   };
@@ -597,7 +596,7 @@ TEST_F(ServerTest, ServiceSearchRequestOneOfMany) {
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
     handles = resp.service_record_handle_list();
     recv = true;
   };
@@ -660,15 +659,14 @@ TEST_F(ServerTest, ServiceSearchContinuationState) {
     EXPECT_LE(len,
               0x2F);  // 10 records (4 * 10) + 2 (total count) + 2 (current count) + 3 (cont state)
     packet.Resize(len);
-    Status st = rsp.Parse(packet.payload_data());
+    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
     if (received == 0) {
       // Server should have split this into more than one response.
-      EXPECT_FALSE(st);
-      EXPECT_EQ(HostError::kInProgress, st.error());
+      EXPECT_EQ(ToResult(HostError::kInProgress), result);
       EXPECT_FALSE(rsp.complete());
     }
     received++;
-    if (!st && (st.error() != HostError::kInProgress)) {
+    if (result.is_error() && !result.error_value().is(HostError::kInProgress)) {
       // This isn't a valid packet and we shouldn't try to get
       // a continuation.
       return;
@@ -765,15 +763,14 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
     uint16_t len = betoh16(packet.header().param_length);
     EXPECT_LE(len, 0x11);  // 10 + 2 (byte count) + 5 (cont state)
     packet.Resize(len);
-    Status st = rsp.Parse(packet.payload_data());
+    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
     if (received == 0) {
       // Server should have split this into more than one response.
-      EXPECT_FALSE(st);
-      EXPECT_EQ(HostError::kInProgress, st.error());
+      EXPECT_EQ(ToResult(HostError::kInProgress), result);
       EXPECT_FALSE(rsp.complete());
     }
     received++;
-    if (!st && (st.error() != HostError::kInProgress)) {
+    if (result.is_error() && !result.error_value().is(HostError::kInProgress)) {
       // This isn't a valid packet and we shouldn't try to get
       // a continuation.
       return;
@@ -921,15 +918,14 @@ TEST_F(ServerTest, SearchAttributeRequest) {
     uint16_t len = betoh16(packet.header().param_length);
     EXPECT_LE(len, 0x11);  // 2 (byte count) + 10 (max len) + 5 (cont state)
     packet.Resize(len);
-    Status st = rsp.Parse(packet.payload_data());
+    fitx::result<Error<>> result = rsp.Parse(packet.payload_data());
     if (received == 0) {
       // Server should have split this into more than one response.
-      EXPECT_FALSE(st);
-      EXPECT_EQ(HostError::kInProgress, st.error());
+      EXPECT_EQ(ToResult(HostError::kInProgress), result);
       EXPECT_FALSE(rsp.complete());
     }
     received++;
-    if (!st && (st.error() != HostError::kInProgress)) {
+    if (result.is_error() && !result.error_value().is(HostError::kInProgress)) {
       // This isn't a valid packet and we shouldn't try to get
       // a continuation.
       return;
@@ -1097,7 +1093,7 @@ TEST_F(ServerTest, BrowseGroup) {
     uint16_t len = betoh16(packet.header().param_length);
     packet.Resize(len);
     auto status = rsp.Parse(packet.payload_data());
-    EXPECT_TRUE(status);
+    EXPECT_TRUE(status.is_ok());
   };
 
   fake_chan()->SetSendCallback(send_cb, dispatcher());

@@ -6,15 +6,17 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_
 
 #include <lib/async/cpp/task.h>
+#include <lib/fitx/result.h>
 
+#include <functional>
 #include <unordered_map>
 
 #include <fbl/ref_ptr.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
 namespace bt::sdp {
 
@@ -38,11 +40,11 @@ class Client {
   //     be called.
   //   - when no more services remain, the result_cb status will be
   //     HostError::kNotFound. The return value is ignored.
-  using SearchResultCallback =
-      fit::function<bool(sdp::Status, const std::map<AttributeId, DataElement>&)>;
+  using SearchResultFunction = fit::function<bool(
+      fitx::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>)>;
   virtual void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
                                        const std::unordered_set<AttributeId>& req_attributes,
-                                       SearchResultCallback result_cb,
+                                       SearchResultFunction result_cb,
                                        async_dispatcher_t* cb_dispatcher) = 0;
 };
 

@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
 namespace bt::sdp {
 
@@ -180,15 +179,15 @@ size_t Request::WriteContinuationState(MutableByteBuffer* buf) const {
   return written_size;
 }
 
-Status ErrorResponse::Parse(const ByteBuffer& buf) {
+fitx::result<Error<>> ErrorResponse::Parse(const ByteBuffer& buf) {
   if (complete()) {
-    return Status(HostError::kNotReady);
+    return ToResult(HostError::kNotReady);
   }
   if (buf.size() != sizeof(ErrorCode)) {
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
   error_code_ = ErrorCode(betoh16(buf.To<uint16_t>()));
-  return Status();
+  return fitx::ok();
 }
 
 MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid, uint16_t,
@@ -293,15 +292,15 @@ const BufferView ServiceSearchResponse::ContinuationState() const {
   return continuation_state_->view();
 }
 
-Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
+fitx::result<Error<>> ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   if (complete() && total_service_record_count_ != 0) {
     // This response was previously complete and non-empty.
     bt_log(TRACE, "sdp", "Can't parse into a complete response");
-    return Status(HostError::kNotReady);
+    return ToResult(HostError::kNotReady);
   }
   if (buf.size() < (2 * sizeof(uint16_t))) {
     bt_log(TRACE, "sdp", "Packet too small to parse");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   uint16_t total_service_record_count = betoh16(buf.To<uint16_t>());
@@ -309,7 +308,7 @@ Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   if (total_service_record_count_ != 0 &&
       total_service_record_count_ != total_service_record_count) {
     bt_log(TRACE, "sdp", "Continuing packet has different record count");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
   total_service_record_count_ = total_service_record_count;
 
@@ -318,18 +317,18 @@ Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   size_t expected_record_bytes = sizeof(ServiceHandle) * record_count;
   if (buf.size() < (read_size + expected_record_bytes)) {
     bt_log(TRACE, "sdp", "Packet too small for %d records: %zu", record_count, buf.size());
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
   BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size + expected_record_bytes), &cont_state_view)) {
     bt_log(TRACE, "sdp", "Failed to find continuation state");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
   size_t expected_size =
       read_size + expected_record_bytes + cont_state_view.size() + sizeof(uint8_t);
   if (expected_size != buf.size()) {
     bt_log(TRACE, "sdp", "Packet should be %zu not %zu", expected_size, buf.size());
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   for (uint16_t i = 0; i < record_count; i++) {
@@ -341,9 +340,9 @@ Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   } else {
     continuation_state_ = NewSlabBuffer(cont_state_view.size());
     continuation_state_->Write(cont_state_view);
-    return Status(HostError::kInProgress);
+    return ToResult(HostError::kInProgress);
   }
-  return Status();
+  return fitx::ok();
 }
 
 // Continuation state: Index of the start record for the continued response.
@@ -526,30 +525,30 @@ const BufferView ServiceAttributeResponse::ContinuationState() const {
 
 bool ServiceAttributeResponse::complete() const { return !continuation_state_; }
 
-Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
+fitx::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   if (complete() && attributes_.size() != 0) {
     // This response was previously complete and non-empty
     bt_log(TRACE, "sdp", "Can't parse into a complete response");
     // partial_response_ is already empty
-    return Status(HostError::kNotReady);
+    return ToResult(HostError::kNotReady);
   }
 
   if (buf.size() < sizeof(uint16_t)) {
     bt_log(TRACE, "sdp", "Packet too small to parse");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   uint32_t attribute_list_byte_count = betoh16(buf.To<uint16_t>());
   size_t read_size = sizeof(uint16_t);
   if (buf.size() < read_size + attribute_list_byte_count + sizeof(uint8_t)) {
     bt_log(TRACE, "sdp", "Not enough bytes in rest of packet");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
   // Check to see if there's continuation.
   BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size + attribute_list_byte_count), &cont_state_view)) {
     bt_log(TRACE, "sdp", "Continutation state is not valid");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   if (cont_state_view.size() == 0) {
@@ -563,7 +562,7 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
       read_size + attribute_list_byte_count + cont_state_view.size() + sizeof(uint8_t);
   if (buf.size() != expected_size) {
     bt_log(TRACE, "sdp", "Packet should be %zu not %zu", expected_size, buf.size());
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   auto attribute_list_bytes = buf.view(read_size, attribute_list_byte_count);
@@ -578,7 +577,7 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
       bt_log(INFO, "sdp", "ServiceAttributeResponse exceeds supported size (%zu), dropping",
              new_partial_size);
       partial_response_ = nullptr;
-      return Status(HostError::kNotSupported);
+      return ToResult(HostError::kNotSupported);
     }
 
     auto new_partial = NewSlabBuffer(new_partial_size);
@@ -592,7 +591,7 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     if (continuation_state_) {
       // This is incomplete, we can't parse it yet.
       bt_log(TRACE, "sdp", "Continutation state, returning in progress");
-      return Status(HostError::kInProgress);
+      return ToResult(HostError::kInProgress);
     }
     attribute_list_bytes = partial_response_->view();
   }
@@ -601,7 +600,7 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   size_t elem_size = DataElement::Read(&attribute_list, attribute_list_bytes);
   if ((elem_size == 0) || (attribute_list.type() != DataElement::Type::kSequence)) {
     bt_log(TRACE, "sdp", "Couldn't parse attribute list or it wasn't a sequence");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   // Data Element sequence containing alternating attribute id and attribute
@@ -614,17 +613,17 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     std::optional<AttributeId> id = it->Get<uint16_t>();
     if (!id || (val == nullptr)) {
       attributes_.clear();
-      return Status(HostError::kPacketMalformed);
+      return ToResult(HostError::kPacketMalformed);
     }
     if (*id < last_id) {
       attributes_.clear();
-      return Status(HostError::kPacketMalformed);
+      return ToResult(HostError::kPacketMalformed);
     }
     attributes_.emplace(*id, val->Clone());
     last_id = *id;
     idx += 2;
   }
-  return Status();
+  return fitx::ok();
 }
 
 // Continuation state: index of # of bytes into the attribute list element
@@ -852,12 +851,12 @@ const BufferView ServiceSearchAttributeResponse::ContinuationState() const {
 
 bool ServiceSearchAttributeResponse::complete() const { return !continuation_state_; }
 
-Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
+fitx::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
   if (complete() && attribute_lists_.size() != 0) {
     // This response was previously complete and non-empty
     bt_log(TRACE, "sdp", "can't parse into a complete response");
     ZX_DEBUG_ASSERT(!partial_response_);
-    return Status(HostError::kNotReady);
+    return ToResult(HostError::kNotReady);
   }
 
   // Minimum size is an AttributeListsByteCount, an empty AttributeLists
@@ -865,20 +864,20 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
   // of AttributeLists
   if (buf.size() < sizeof(uint16_t) + 3) {
     bt_log(TRACE, "sdp", "packet too small to parse");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   uint16_t attribute_lists_byte_count = betoh16(buf.To<uint16_t>());
   size_t read_size = sizeof(uint16_t);
   if (buf.view(read_size).size() < attribute_lists_byte_count + sizeof(uint8_t)) {
     bt_log(TRACE, "sdp", "not enough bytes in rest of packet as indicated");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
   // Check to see if there's continuation.
   BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size + attribute_lists_byte_count), &cont_state_view)) {
     bt_log(TRACE, "sdp", "continutation state is not valid");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
 
   if (cont_state_view.size() == 0) {
@@ -899,7 +898,7 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
     if (new_partial_size > kMaxSupportedAttributeListBytes) {
       bt_log(INFO, "sdp", "ServiceSearchAttributeResponse exceeds supported size, dropping");
       partial_response_ = nullptr;
-      return Status(HostError::kNotSupported);
+      return ToResult(HostError::kNotSupported);
     }
 
     auto new_partial = NewSlabBuffer(new_partial_size);
@@ -913,7 +912,7 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
     if (continuation_state_) {
       // This is incomplete, we can't parse it yet.
       bt_log(TRACE, "sdp", "continutation state found, returning in progress");
-      return Status(HostError::kInProgress);
+      return ToResult(HostError::kInProgress);
     }
     attribute_lists_bytes = partial_response_->view();
   }
@@ -922,7 +921,7 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
   size_t elem_size = DataElement::Read(&attribute_lists, attribute_lists_bytes);
   if ((elem_size == 0) || (attribute_lists.type() != DataElement::Type::kSequence)) {
     bt_log(TRACE, "sdp", "couldn't parse attribute lists or wasn't a sequence");
-    return Status(HostError::kPacketMalformed);
+    return ToResult(HostError::kPacketMalformed);
   }
   bt_log(TRACE, "sdp", "parsed AttributeLists: %s", attribute_lists.ToString().c_str());
 
@@ -934,7 +933,7 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
        list_it = attribute_lists.At(++list_idx)) {
     if ((list_it->type() != DataElement::Type::kSequence)) {
       bt_log(TRACE, "sdp", "list %zu wasn't a sequence", list_idx);
-      return Status(HostError::kPacketMalformed);
+      return ToResult(HostError::kPacketMalformed);
     }
     attribute_lists_.emplace(list_idx, std::map<AttributeId, DataElement>());
     AttributeId last_id = 0;
@@ -945,13 +944,13 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
       if (!id || (val == nullptr)) {
         attribute_lists_.clear();
         bt_log(TRACE, "sdp", "attribute isn't a number or value doesn't exist");
-        return Status(HostError::kPacketMalformed);
+        return ToResult(HostError::kPacketMalformed);
       }
       bt_log(TRACE, "sdp", "adding %zu:%s = %s", list_idx, bt_str(*it), bt_str(*val));
       if (*id < last_id) {
         attribute_lists_.clear();
         bt_log(TRACE, "sdp", "attribute ids are in wrong order");
-        return Status(HostError::kPacketMalformed);
+        return ToResult(HostError::kPacketMalformed);
       }
       attribute_lists_.at(list_idx).emplace(*id, val->Clone());
       last_id = *id;
@@ -959,7 +958,7 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
     }
   }
   partial_response_ = nullptr;
-  return Status();
+  return fitx::ok();
 }
 
 void ServiceSearchAttributeResponse::SetAttribute(uint32_t idx, AttributeId id, DataElement value) {
