@@ -23,7 +23,7 @@ def directory(arg: str) -> Path:
     if path.is_dir():
         return path.resolve()
 
-    raise argparse.ArgumentTypeError(f'{path} is not a directory')
+    raise argparse.ArgumentTypeError(f'"{path}" is not a directory')
 
 
 def log_level(arg: str) -> int:
@@ -31,4 +31,4 @@ def log_level(arg: str) -> int:
         return getattr(logging, arg.upper())
     except AttributeError:
         raise argparse.ArgumentTypeError(
-            f'{arg.upper()} is not a valid log level')
+            f'"{arg.upper()}" is not a valid log level')
